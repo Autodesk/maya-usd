@@ -22,8 +22,8 @@
 ///         provides some methods to convert between half/float and half/double using the F16C conversion intrinsics.
 ///         To enable HW conversions, pass the compiler flag -mf16c to clang or gcc.
 //----------------------------------------------------------------------------------------------------------------------
-
 #pragma once
+
 #if __F16C__
 #include <immintrin.h>
 #endif
@@ -32,9 +32,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace AL {
-namespace usd {
-namespace utils {
+namespace MayaUsdUtils {
 
 #ifdef __F16C__
 
@@ -256,6 +254,5 @@ inline GfHalf double2half_1f(const double f)
 }
 #endif
 
-} // utils
-} // usd
-} // AL
+} // MayaUsdUtils
+

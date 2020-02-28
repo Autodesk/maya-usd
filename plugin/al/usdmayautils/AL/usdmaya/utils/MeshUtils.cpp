@@ -13,11 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/utils/DiffPrimVar.h"
-#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/utils/Utils.h"
-#include "AL/usd/utils/DebugCodes.h"
+
+#include <mayaUsdUtils/DebugCodes.h>
+#include <mayaUsdUtils/DiffCore.h>
 
 #include "pxr/usd/usdUtils/pipeline.h"
 
@@ -852,7 +855,7 @@ void MeshImportContext::applyColourSetData()
           // Set colors
           if (!fnMesh.setColors(colours, &colourSetName, representation))
           {
-            TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
+            TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
                 colourSetName.asChar(), fnMesh.name().asChar(), status.errorString().asChar());
             continue;
           }
@@ -866,7 +869,7 @@ void MeshImportContext::applyColourSetData()
             std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
             if (mayaIndices.length() != connects.length())
             {
-              TF_DEBUG(ALUTILS_INFO).Msg(
+              TF_DEBUG(MAYAUSDUTILS_INFO).Msg(
                   "Retrieved indexed values are not compatible with topology for colour set \"%s\" on mesh \"%s\"\n",
                   colourSetName.asChar(), fnMesh.name().asChar());
               continue;
@@ -906,14 +909,14 @@ void MeshImportContext::applyColourSetData()
 
           if (mayaIndices.length() != uint32_t(fnMesh.numFaceVertices()))
           {
-            TF_DEBUG(ALUTILS_INFO).Msg("Incompatible colour indices for colour set \"%s\" on mesh \"%s\"\n",
+            TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Incompatible colour indices for colour set \"%s\" on mesh \"%s\"\n",
                 colourSetName.asChar(), fnMesh.name().asChar());
             continue;
           }
           // Assign colors to indices
           if (!fnMesh.assignColors(mayaIndices, &colourSetName))
           {
-            TF_DEBUG(ALUTILS_INFO).Msg(
+            TF_DEBUG(MAYAUSDUTILS_INFO).Msg(
                 "Failed to assign colour indices for colour set \"%s\" on mesh \"%s\", error: %s\n",
                 colourSetName.asChar(), fnMesh.name().asChar(), status.errorString().asChar());
           }
@@ -981,13 +984,13 @@ void MeshImportContext::applyUVs()
               s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
             }
             else
             {
-              TF_DEBUG(ALUTILS_INFO).Msg("Failed to set UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+              TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to set UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                   uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
             }
           }
@@ -1002,7 +1005,7 @@ void MeshImportContext::applyUVs()
               MStatus s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
             }
@@ -1012,7 +1015,7 @@ void MeshImportContext::applyUVs()
               MStatus s = fnMesh.assignUVs(counts, connects, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
             }
@@ -1030,7 +1033,7 @@ void MeshImportContext::applyUVs()
               MStatus s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
             }
@@ -1043,7 +1046,7 @@ void MeshImportContext::applyUVs()
               MStatus s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
             }
@@ -2064,7 +2067,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
         fnMesh.getNormalIds(normalCounts, normalIndices);
 
         // if prim vars are all identical, we have a constant value
-        if(usd::utils::vec3AreAllTheSame(normalsData, numNormals))
+        if(MayaUsdUtils::vec3AreAllTheSame(normalsData, numNormals))
         {
           VtArray<GfVec3f> normals(1);
           if(copyAsPrimvar)
@@ -2083,7 +2086,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
         else
         if(numNormals != normalIndices.length())
         {
-          if(usd::utils::compareArray(&normalIndices[0], &faceConnects[0], normalIndices.length(), faceConnects.length()))
+          if(MayaUsdUtils::compareArray(&normalIndices[0], &faceConnects[0], normalIndices.length(), faceConnects.length()))
           {
             VtArray<GfVec3f> normals(numNormals);
             if(copyAsPrimvar)

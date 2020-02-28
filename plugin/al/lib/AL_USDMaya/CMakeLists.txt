@@ -197,7 +197,7 @@ target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
-    AL_USDUtils
+    mayaUsdUtils
     AL_USDTransaction
     ar 
     gf 

@@ -16,9 +16,9 @@
 #pragma once
 
 #include "AL/usdmaya/Api.h"
-
-#include "AL/usd/utils/ForwardDeclares.h"
 #include "AL/event/EventHandler.h"
+
+#include <mayaUsdUtils/ForwardDeclares.h>
 
 namespace AL {
 namespace usdmaya {

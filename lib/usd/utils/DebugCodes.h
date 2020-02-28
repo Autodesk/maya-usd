@@ -16,26 +16,8 @@
 #pragma once
 
 #include "pxr/pxr.h"
-#include "pxr/usd/usd/prim.h"
+#include "pxr/base/tf/debug.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// forward declare usd types
-class GfMatrix4d;
-class SdfPath;
-class SdfValueTypeName;
-class TfToken;
-class UsdAttribute;
-class UsdPrim;
-class UsdGeomCamera;
-class UsdLuxDistantLight;
-
+TF_DEBUG_CODES(MAYAUSDUTILS_INFO);
 PXR_NAMESPACE_CLOSE_SCOPE
-
-namespace AL {
-namespace usd {
-namespace utils {
-  typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
-}
-}
-}

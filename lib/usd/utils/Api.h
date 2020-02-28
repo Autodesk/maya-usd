@@ -15,26 +15,26 @@
 //
 
 #if defined _WIN32 || defined __CYGWIN__
-  #ifdef AL_USD_UTILS_EXPORT
+  #ifdef MAYA_USD_UTILS_EXPORT
     #ifdef __GNUC__
-      #define AL_USD_UTILS_PUBLIC __attribute__ ((dllexport))
+      #define MAYA_USD_UTILS_PUBLIC __attribute__ ((dllexport))
     #else
-      #define AL_USD_UTILS_PUBLIC __declspec(dllexport)
+      #define MAYA_USD_UTILS_PUBLIC __declspec(dllexport)
     #endif
   #else
     #ifdef __GNUC__
-      #define AL_USD_UTILS_PUBLIC __attribute__ ((dllimport))
+      #define MAYA_USD_UTILS_PUBLIC __attribute__ ((dllimport))
     #else
-      #define AL_USD_UTILS_PUBLIC __declspec(dllimport)
+      #define MAYA_USD_UTILS_PUBLIC __declspec(dllimport)
     #endif
   #endif
-  #define AL_USD_UTILS_LOCAL
+  #define MAYA_USD_UTILS_LOCAL
 #else
   #if __GNUC__ >= 4
-    #define AL_USD_UTILS_PUBLIC __attribute__ ((visibility ("default")))
-    #define AL_USD_UTILS_LOCAL  __attribute__ ((visibility ("hidden")))
+    #define MAYA_USD_UTILS_PUBLIC __attribute__ ((visibility ("default")))
+    #define MAYA_USD_UTILS_LOCAL  __attribute__ ((visibility ("hidden")))
   #else
-    #define AL_USD_UTILS_PUBLIC
-    #define AL_USD_UTILS_LOCAL
+    #define MAYA_USD_UTILS_PUBLIC
+    #define MAYA_USD_UTILS_LOCAL
   #endif
 #endif

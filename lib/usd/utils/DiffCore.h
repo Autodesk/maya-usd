@@ -15,13 +15,11 @@
 //
 #pragma once
 
-#include "AL/usd/utils/Api.h"
-#include "AL/usd/utils/ALHalf.h"
+#include "Api.h"
+#include "ALHalf.h"
 #include <cstdint>
 
-namespace AL {
-namespace usd {
-namespace utils {
+namespace MayaUsdUtils {
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  tests to see whether the U & V coordinates are identical
@@ -30,7 +28,7 @@ namespace utils {
 /// \param  count the number of elements to test
 /// \return true if all elements in the arrays are identical
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool vec2AreAllTheSame(const float* u, const float* v, size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -39,7 +37,7 @@ bool vec2AreAllTheSame(const float* u, const float* v, size_t count);
 /// \param  count the number of elements to test
 /// \return true if all elements in the arrays are identical
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool vec2AreAllTheSame(const float* array, size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -48,7 +46,7 @@ bool vec2AreAllTheSame(const float* array, size_t count);
 /// \param  count the number of elements to test
 /// \return true if all elements in the arrays are identical
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool vec3AreAllTheSame(const float* array, size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -57,7 +55,7 @@ bool vec3AreAllTheSame(const float* array, size_t count);
 /// \param  count the number of elements to test
 /// \return true if all elements in the arrays are identical
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool vec4AreAllTheSame(const float* array, size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -66,7 +64,7 @@ bool vec4AreAllTheSame(const float* array, size_t count);
 /// \param  count the number of elements to test
 /// \return true if all elements in the arrays are identical
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool vec2AreAllTheSame(const double* array, size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -75,7 +73,7 @@ bool vec2AreAllTheSame(const double* array, size_t count);
 /// \param  count the number of elements to test
 /// \return true if all elements in the arrays are identical
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool vec3AreAllTheSame(const double* array, size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -84,7 +82,7 @@ bool vec3AreAllTheSame(const double* array, size_t count);
 /// \param  count the number of elements to test
 /// \return true if all elements in the arrays are identical
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool vec4AreAllTheSame(const double* array, size_t count);
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -97,7 +95,7 @@ bool vec4AreAllTheSame(const double* array, size_t count);
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const GfHalf* const input0,
     const float* const input1,
@@ -132,7 +130,7 @@ inline bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const GfHalf* const input0,
     const double* const input1,
@@ -167,7 +165,7 @@ inline bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const float* const input0,
     const float* const input1,
@@ -186,7 +184,7 @@ bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareArray3Dto4D(
     const float* const input3d,
     const float* const input4d,
@@ -195,7 +193,7 @@ bool compareArray3Dto4D(
     const float eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareArrayFloat3DtoDouble4D(
     const float* const input3d,
     const double* const input4d,
@@ -213,7 +211,7 @@ bool compareArrayFloat3DtoDouble4D(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const double* const input0,
     const double* const input1,
@@ -231,7 +229,7 @@ bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const double* const input0,
     const float* const input1,
@@ -266,7 +264,7 @@ inline bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const int8_t* const input0,
     const int8_t* const input1,
@@ -331,7 +329,7 @@ inline bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const int32_t* const input0,
     const int32_t* const input1,
@@ -396,7 +394,7 @@ inline bool compareArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareUvArray(
     const float* const u0,
     const float* const v0,
@@ -415,7 +413,7 @@ bool compareUvArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareUvArray(
     const float u0,
     const float v0,
@@ -434,7 +432,7 @@ bool compareUvArray(
 /// \return true if the two arrays are similar to each other, false if their sizes don't match,
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
-AL_USD_UTILS_PUBLIC
+MAYA_USD_UTILS_PUBLIC
 bool compareRGBAArray(
     const float r,
     const float g,
@@ -445,9 +443,4 @@ bool compareRGBAArray(
     const float eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-} // utils
-} // usd
-} // AL
-//----------------------------------------------------------------------------------------------------------------------
-
-
+} // MayaUsdUtils
