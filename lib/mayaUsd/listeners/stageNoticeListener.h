@@ -38,7 +38,7 @@ class UsdMayaStageNoticeListener : public TfWeakBase
 {
     public:
         MAYAUSD_CORE_PUBLIC
-        UsdMayaStageNoticeListener();
+        UsdMayaStageNoticeListener() = default;
 
         MAYAUSD_CORE_PUBLIC
         virtual ~UsdMayaStageNoticeListener();
@@ -47,31 +47,38 @@ class UsdMayaStageNoticeListener : public TfWeakBase
         MAYAUSD_CORE_PUBLIC
         void SetStage(const UsdStageWeakPtr& stage);
 
-        /// Callback type for StageContentsChanged notices.
-        typedef std::function<void (const UsdNotice::StageContentsChanged& notice)>
-            StageContentsChangedCallback;
+        /// Callback type for stage notices.
+        using StageContentsChangedCallback = std::function<void(const UsdNotice::StageContentsChanged& notice)>;
+        using StageObjectsChangedCallback = std::function<void(const UsdNotice::ObjectsChanged& notice)>;
 
         /// Sets the callback to be invoked when the listener receives a
         /// StageContentsChanged notice.
         MAYAUSD_CORE_PUBLIC
         void SetStageContentsChangedCallback(
-                const StageContentsChangedCallback& callback);
+            const StageContentsChangedCallback& callback);
+
+        MAYAUSD_CORE_PUBLIC
+        void SetStageObjectsChangedCallback(
+            const StageObjectsChangedCallback& callback);
 
     private:
-        UsdMayaStageNoticeListener(const UsdMayaStageNoticeListener&);
-        UsdMayaStageNoticeListener& operator=(
-                const UsdMayaStageNoticeListener&);
+        UsdMayaStageNoticeListener(const UsdMayaStageNoticeListener&) = delete;
+        UsdMayaStageNoticeListener& operator=(const UsdMayaStageNoticeListener&)  = delete;
 
         UsdStageWeakPtr _stage;
 
-        /// Handling for UsdNotice::StageContentsChanged.
+        /// Handling for UsdNotices
+        TfNotice::Key _stageContentsChangedKey{};
+        StageContentsChangedCallback _stageContentsChangedCallback{};
 
-        TfNotice::Key _stageContentsChangedKey;
-        StageContentsChangedCallback _stageContentsChangedCallback;
+        TfNotice::Key _stageObjectsChangedKey{};
+        StageObjectsChangedCallback _stageObjectsChangedCallback{};
 
         void _UpdateStageContentsChangedRegistration();
         void _OnStageContentsChanged(
-                const UsdNotice::StageContentsChanged& notice) const;
+            const UsdNotice::StageContentsChanged& notice) const;
+        void _OnStageObjectsChanged(
+            const UsdNotice::ObjectsChanged& notice, const UsdStageWeakPtr& sender) const;
 };
 
 

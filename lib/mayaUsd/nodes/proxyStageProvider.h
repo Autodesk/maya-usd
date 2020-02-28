@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,21 +13,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDMAYA_DEBUGCODES_H
-#define PXRUSDMAYA_DEBUGCODES_H
+#ifndef MAYAUSD_PROXY_STAGE_PROVIDER_H
+#define MAYAUSD_PROXY_STAGE_PROVIDER_H
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/debug.h>
+#include "../base/api.h"
+
+#include "pxr/pxr.h"
+
+#include "pxr/usd/usd/stage.h"
+#include "pxr/usd/usd/timeCode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEBUG_CODES(
-    PXRUSDMAYA_REGISTRY,
-    PXRUSDMAYA_DIAGNOSTICS,
-    PXRUSDMAYA_TRANSLATORS,
-    USDMAYA_PROXYSHAPEBASE,
-    USDMAYA_PROXYACCESSOR
-);
+
+// Interface class 
+class ProxyStageProvider
+{
+public:
+    MAYAUSD_CORE_PUBLIC
+    virtual UsdTimeCode     getTime() const = 0;
+    MAYAUSD_CORE_PUBLIC
+    virtual UsdStageRefPtr  getUsdStage() const = 0;
+
+    MAYAUSD_CORE_PUBLIC
+    virtual ~ProxyStageProvider() = default;
+};
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
