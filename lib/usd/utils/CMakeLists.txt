@@ -61,9 +61,9 @@ mayaUsd_promoteHeaderListWithSubdir(
 # -----------------------------------------------------------------------------
 install(TARGETS ${TARGET_NAME}
     LIBRARY
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
     RUNTIME
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
 install(FILES ${headers}
@@ -72,6 +72,6 @@ install(FILES ${headers}
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 
-            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd OPTIONAL
+            DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL
     )
 endif()
