@@ -1,4 +1,4 @@
-set(TARGET_NAME "MayaUsdUtils")
+set(TARGET_NAME "mayaUsdUtils")
 
 add_library(${TARGET_NAME} SHARED)
 
