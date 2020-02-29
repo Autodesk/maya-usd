@@ -21,6 +21,8 @@
 
 #include <pxr/base/gf/matrix4d.h>
 
+#include <vector>
+
 #include <boost/shared_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -30,11 +32,19 @@ public:
     explicit HdMayaConstantShadowMatrix(const GfMatrix4d& mat)
         : _shadowMatrix(mat) {}
 
+#if HDX_API_VERSION >= 6
+    inline std::vector<GfMatrix4d> Compute(
+        const GfVec4f& viewport,
+        CameraUtilConformWindowPolicy policy) override {
+        return {_shadowMatrix};
+    }
+#else
     inline GfMatrix4d Compute(
         const GfVec4f& viewport,
         CameraUtilConformWindowPolicy policy) override {
         return _shadowMatrix;
     }
+#endif
 
 private:
     GfMatrix4d _shadowMatrix;

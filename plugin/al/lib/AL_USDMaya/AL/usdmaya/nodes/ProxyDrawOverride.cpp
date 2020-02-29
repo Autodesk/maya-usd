@@ -314,7 +314,11 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
               MMatrix value;
               lightParam->getParameter(paramNames[i], value);
               GfMatrix4d m(value.matrix);
+#if HDX_API_VERSION >= 6
+              light.SetShadowMatrices({m});
+#else
               light.SetShadowMatrix(m);
+#endif
             }
             break;
           case MHWRender::MLightParameterInformation::kShadowColor:

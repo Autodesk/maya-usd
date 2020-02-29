@@ -240,7 +240,11 @@ void UsdAttributeEnumString::set(const std::string& value)
 Ufe::AttributeEnumString::EnumValues UsdAttributeEnumString::getEnumValues() const
 {
 	PXR_NS::TfToken tk(name());
+#if USD_VERSION_NUM > 2002
+	auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(tk);
+#else
 	auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(fPrim.GetTypeName(), tk);
+#endif
 	if (attrDefn && attrDefn->HasAllowedTokens())
 	{
 		auto tokenArray = attrDefn->GetAllowedTokens();
