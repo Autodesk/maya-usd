@@ -22,6 +22,7 @@
 #include <QtCore/QStringList>
 
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/sdf/types.h>
 
 class QLabel;
 class QComboBox;
@@ -56,12 +57,14 @@ public:
 		// with. It should be set with one of the DELEGATE_TYPE from above.
 		kTypeRole = Qt::UserRole + 1,
 
-		// The variant name role is used to hold the current variant name (from the
-		// qt label)/
+		// The variant name role is used to hold the current variant names (from the
+		// qt labels in the editor widget).
+		// Data = QStringList of variant names.
 		kVariantNameRole = Qt::UserRole + 2,
 
-		// The variant selection role is used to hold the current variant selection
-		// (from the qt combobox).
+		// The variant selection role is used to hold the current variant selections
+		// (from the qt comboboxes in the editor widget).
+		// Data = QStringList of variant selections.
 		kVariantSelectionRole = Qt::UserRole + 3
 	};
 
@@ -89,7 +92,7 @@ class VariantsEditorWidget: public QWidget
 	Q_OBJECT
 
 public:
-	VariantsEditorWidget(QWidget* parent, const ItemDelegate* itemDelegate, const UsdPrim& prim);
+	VariantsEditorWidget(QWidget* parent, const ItemDelegate* itemDelegate, const UsdPrim& prim, const SdfVariantSelectionMap& varSelMap);
 
 	QStringList variantNames() const;
 

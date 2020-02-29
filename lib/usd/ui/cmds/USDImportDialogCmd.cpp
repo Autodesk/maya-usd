@@ -16,6 +16,7 @@
 
 #include "USDImportDialogCmd.h"
 #include "views/USDImportDialog.h"
+#include "views/USDQtUtil.h"
 
 #include <mayaUsd/fileio/importData.h>
 
@@ -37,6 +38,8 @@ const MString USDImportDialogCmd::fsName("usdImportDialog");
 
 namespace {
 
+constexpr auto kPrimPathFlag = "-pp";
+constexpr auto kPrimPathFlagLong = "-primPath";
 constexpr auto kClearDataFlag = "-cd";
 constexpr auto kClearDataFlagLong = "-clearData";
 
@@ -67,7 +70,22 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 {
 	MStatus st;
 	MArgParser argData(syntax(), args, &st);
+	if (!st) return st;
 
+	if (argData.isQuery())
+	{
+		if (argData.isFlagSet(kPrimPathFlag))
+		{
+			const ImportData& importData = ImportData::cinstance();
+			std::string rootPrimPath = importData.rootPrimPath();
+			setResult(rootPrimPath.c_str());
+			return MS::kSuccess;
+		}
+
+		return MS::kInvalidParameter;
+	}
+
+	// Edit flags below:
 	if(argData.isFlagSet(kClearDataFlag))
 	{
 		ImportData& importData = ImportData::instance();
@@ -84,28 +102,34 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 		fo.setRawFullName(filenameArray[0]);
 		if (fo.exists())
 		{
+			USDQtUtil usdQtUtil;
+			ImportData& importData = ImportData::instance();
 			MString usdFile = fo.resolvedFullName();
-			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(usdFile.asChar(), MQtUtil::mainWindow()));
+			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(usdFile.asChar(), &importData, usdQtUtil, MQtUtil::mainWindow()));
 			if (usdImportDialog->execute())
 			{
-				ImportData& importData = ImportData::instance();
+				// The user clicked 'Apply' so copy the info from the dialog to the import data instance.
 				importData.setFilename(usdImportDialog->filename());
 				importData.setStageInitialLoadSet(usdImportDialog->stageInitialLoadSet());
 				importData.setRootPrimPath(usdImportDialog->rootPrimPath());
-				importData.setStagePopulationMask(usdImportDialog->stagePopulationMask());
+				// Don't set the stage pop mask until we solve how to use it together with
+				// the root prim path.
+				//importData.setStagePopulationMask(usdImportDialog->stagePopulationMask());
 				importData.setPrimVariantSelections(usdImportDialog->primVariantSelections());
 			}
 			return MS::kSuccess;
 		}
 	}
+
 	return MS::kInvalidParameter;
 }
 
 MSyntax USDImportDialogCmd::createSyntax()
 {
 	MSyntax syntax;
-	syntax.enableQuery(false);
+	syntax.enableQuery(true);
 	syntax.enableEdit(false);
+	syntax.addFlag(kPrimPathFlag, kPrimPathFlagLong);
 	syntax.addFlag(kClearDataFlag, kClearDataFlagLong);
 	syntax.setObjectType(MSyntax::kStringObjects, 1, 1);
 	return syntax;

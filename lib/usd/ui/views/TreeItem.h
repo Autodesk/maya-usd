@@ -18,6 +18,7 @@
 #include <mayaUsd/ui/api.h>
 
 #include <QtGui/QStandardItem>
+#include <QtGui/QPixmap>
 
 #include <pxr/usd/usd/prim.h>
 
@@ -41,6 +42,14 @@ public:
 		kName,
 		kType,
 		kVariants
+	};
+
+	enum class CheckState
+	{
+		kChecked,
+		kChecked_Disabled,
+		kUnchecked,
+		kUnchecked_Disabled
 	};
 
 	/**
@@ -70,11 +79,12 @@ public:
 
 	//! Returns the check state of this tree item.
 	//! Only valid for kLoad type.
-	Qt::CheckState checkState() const { return fCheckState; }
+	TreeItem::CheckState checkState() const { return fCheckState; }
+	const QPixmap& checkImage() const;
 
 	//! Sets the checkstate of this tree item.
 	//! Only valid for kLoad type.
-	void setCheckState(Qt::CheckState st);
+	void setCheckState(TreeItem::CheckState st);
 
 	//! Returns true if the variant selection for this item was modified.
 	//! Only valid for kVariants type.
@@ -95,10 +105,15 @@ protected:
 	Type fType;
 
 	// For the LOAD column, the check state.
-	Qt::CheckState fCheckState;
+	CheckState fCheckState;
 
 	// Special flag set when the variant selection was modified.
 	bool fVariantSelectionModified;
+
+	static QPixmap* fsCheckBoxOn;
+	static QPixmap* fsCheckBoxOnDisabled;
+	static QPixmap* fsCheckBoxOff;
+	static QPixmap* fsCheckBoxOffDisabled;
 };
 
 } // namespace MayaUsd

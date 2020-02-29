@@ -35,6 +35,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {
 
+class IMayaMQtUtil;
+
 /**
  * \brief USD file import dialog.
  */
@@ -50,7 +52,7 @@ public:
 	 * \param filename Absolute file path of a USD file to import.
 	 * \param parent A reference to the parent widget of the dialog.
 	 */
-	explicit USDImportDialog(const std::string& filename, QWidget* parent = nullptr);
+	explicit USDImportDialog(const std::string& filename, const ImportData* importData, const IMayaMQtUtil& mayaQtUtil, QWidget* parent = nullptr);
 
 	//! Destructor.
 	~USDImportDialog();
@@ -62,6 +64,9 @@ public:
 	UsdStage::InitialLoadSet stageInitialLoadSet() const override;
 	ImportData::PrimVariantSelections primVariantSelections() const override;
 	bool execute() override;
+
+private Q_SLOTS:
+	void onItemClicked(const QModelIndex&);
 
 protected:
 	// Reference to the Qt UI View of the dialog:

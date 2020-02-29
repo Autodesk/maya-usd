@@ -25,6 +25,8 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtCore/QSortFilterProxyModel>
 
+#include <mayaUsd/fileio/importData.h>
+
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/variantSets.h>
 
@@ -43,7 +45,26 @@ QWidget* ItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem&
 		assert(treeItem != nullptr);
 		if (nullptr != treeItem)
 		{
-			VariantsEditorWidget* editor = new VariantsEditorWidget(parent, this, treeItem->prim());
+			// Look in the import data (from the tree model) to see if it has a prim variant selection
+			// matching the prim from this item. If found we send that variant selection to the editor
+			// so that it will set that value rather (in the combobox) rather than the one from prim.
+			SdfVariantSelectionMap varSelMap;
+			TreeModel* treeModel = qobject_cast<TreeModel*>(treeItem->model());
+			if ((treeModel != nullptr) && (treeModel->importData() != nullptr))
+			{
+				const ImportData::PrimVariantSelections& primVarSel = treeModel->importData()->primVariantSelections();
+				ImportData::PrimVariantSelections::const_iterator iter = primVarSel.find(treeItem->prim().GetPath());
+				if (iter != std::end(primVarSel))
+				{
+					varSelMap = iter->second;
+				}
+			}
+
+			VariantsEditorWidget* editor = new VariantsEditorWidget(parent, this, treeItem->prim(), varSelMap);
+			if (!varSelMap.empty())
+			{
+				setModelData(editor, treeItem->model(), treeItem->model()->indexFromItem(treeItem));
+			}
 			return editor;
 		}
 	}
@@ -129,7 +150,7 @@ void ItemDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewI
 
 TreeItem* ItemDelegate::getTreeItemForIndex(const QModelIndex& index) const
 {
-	// Do we have an item directly form our tree model?
+	// Do we have an item directly from our tree model?
 	const TreeModel* treeModel = qobject_cast<const TreeModel*>(index.model());
 	if (nullptr != treeModel)
 	{
@@ -162,7 +183,7 @@ void ItemDelegate::commitVariantSelection(VariantsEditorWidget* editor)
 // VariantsEditorWidget
 //------------------------------------------------------------------------------
 
-VariantsEditorWidget::VariantsEditorWidget(QWidget* parent, const ItemDelegate* itemDelegate, const UsdPrim& prim)
+VariantsEditorWidget::VariantsEditorWidget(QWidget* parent, const ItemDelegate* itemDelegate, const UsdPrim& prim, const SdfVariantSelectionMap& varSelMap)
 	: QWidget(parent)
 {
 	assert(prim.HasVariantSets());
@@ -184,7 +205,18 @@ VariantsEditorWidget::VariantsEditorWidget(QWidget* parent, const ItemDelegate* 
 		// The names list will contain the variant selection, followed by all
 		// the variant names.
 		QStringList qtVarNames;
-		qtVarNames.push_back(QString::fromStdString(varSet1.GetVariantSelection()));
+
+		// Check to see if the input variant selection map contains this variant.
+		// If yes, then we use the selection from the map, rather than the prim.
+		SdfVariantSelectionMap::const_iterator iter = varSelMap.find(varSet1.GetName());
+		if (iter != std::end(varSelMap))
+		{
+			qtVarNames.push_back(QString::fromStdString(iter->second));
+		}
+		else
+		{
+			qtVarNames.push_back(QString::fromStdString(varSet1.GetVariantSelection()));
+		}
 
 		// Set the tree item with the data needed to fill the combo box.
 		const auto usdVarNames = varSet1.GetVariantNames();

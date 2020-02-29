@@ -21,6 +21,7 @@
 #include "TreeModelFactory.h"
 #include "views/TreeItem.h"
 #include "views/TreeModel.h"
+#include "views/IMayaMQtUtil.h"
 
 #include <QtCore/QObject>
 #include <QtGui/QStandardItemModel>
@@ -36,9 +37,9 @@ static_assert(!std::is_constructible<TreeModelFactory>::value, "TreeModelFactory
 
 
 /*static*/
-std::unique_ptr<TreeModel> TreeModelFactory::createEmptyTreeModel(QObject* parent)
+std::unique_ptr<TreeModel> TreeModelFactory::createEmptyTreeModel(const IMayaMQtUtil& mayaQtUtil, const ImportData* importData /*= nullptr*/, QObject* parent /*= nullptr*/)
 {
-	std::unique_ptr<TreeModel> treeModel(new TreeModel(parent));
+	std::unique_ptr<TreeModel> treeModel(new TreeModel(mayaQtUtil, importData, parent));
 	treeModel->setHorizontalHeaderLabels({	QObject::tr(""),
 											QObject::tr("Prim Name"),
 											QObject::tr("Prim Type"),
@@ -47,9 +48,15 @@ std::unique_ptr<TreeModel> TreeModelFactory::createEmptyTreeModel(QObject* paren
 }
 
 /*static*/
-std::unique_ptr<TreeModel> TreeModelFactory::createFromStage(const UsdStageRefPtr& stage, QObject* parent, int* nbItems /*= nullptr*/)
+std::unique_ptr<TreeModel> TreeModelFactory::createFromStage
+(
+	const UsdStageRefPtr& stage,
+	const IMayaMQtUtil& mayaQtUtil,
+	const ImportData* importData /*= nullptr*/,
+	QObject* parent, int* nbItems /*= nullptr*/
+)
 {
-	std::unique_ptr<TreeModel> treeModel = createEmptyTreeModel(parent);
+	std::unique_ptr<TreeModel> treeModel = createEmptyTreeModel(mayaQtUtil, importData, parent);
 	int cnt = buildTreeHierarchy(stage->GetPseudoRoot(), treeModel->invisibleRootItem());
 	if (nbItems != nullptr)
 		*nbItems = cnt;
