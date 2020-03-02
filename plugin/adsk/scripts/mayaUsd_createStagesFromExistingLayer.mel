@@ -15,17 +15,17 @@
 
 proc setOptionVars (int $forceFactorySettings)
 {
-	if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_primPath`) {
-		optionVar -stringValue stageFromExistingLayer_primPath "";
-	}
+    if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_primPath`) {
+        optionVar -stringValue stageFromExistingLayer_primPath "";
+    }
 
-	if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_excludePrimPath`) {
-		optionVar -stringValue stageFromExistingLayer_excludePrimPath "";
-	}
+    if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_excludePrimPath`) {
+        optionVar -stringValue stageFromExistingLayer_excludePrimPath "";
+    }
 
-	if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_loadPayloads`) {
-		optionVar -intValue stageFromExistingLayer_loadPayloads 1;
-	}        
+    if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_loadPayloads`) {
+        optionVar -intValue stageFromExistingLayer_loadPayloads 1;
+    }
 }
 
 // stageFromExistingLayer_UISetup
@@ -99,18 +99,18 @@ proc doCreateStage(string $fileName) {
     select -r $shapeNode;
 }
 
-global proc createUSdStagesFromExistingCallback(string $parent, int $doIt)
+global proc createStagesFromExistingCallback(string $parent, int $doIt)
 {
     stageFromExistingLayer_UICommit($parent);
 
-	if ($doIt) {
-		mayaUsd_createStagesFromExistingLayer; 
-		addToRecentCommandQueue "mayaUsd_createStagesFromExistingLayer" 
+    if ($doIt) {
+        mayaUsd_createStagesFromExistingLayer; 
+        addToRecentCommandQueue "mayaUsd_createStagesFromExistingLayer" 
             "mayaUsdCreateStageFromExistingLayer";
-	}
+    }
 }
 
-global proc createUSdStagesFromExistingSetup(string $parent, int $forceFactorySettings)
+global proc createStagesFromExistingSetup(string $parent, int $forceFactorySettings)
 {
     setOptionVars($forceFactorySettings);
 
@@ -120,63 +120,63 @@ global proc createUSdStagesFromExistingSetup(string $parent, int $forceFactorySe
 global proc mayaUsd_createStagesFromExistingLayerOptions()
 {
     global int $gOptionBoxTemplateFrameSpacing;
-    
-	setOptionVars(false);
-	
-	string $commandName = "createUSdStagesFromExisting";
-	string $callback = ($commandName + "Callback");
-	string $setup = ($commandName + "Setup");
 
-	string $layout = getOptionBox();
-	setParent $layout;
-	
+    setOptionVars(false);
+
+    string $commandName = "createStagesFromExisting";
+    string $callback = ($commandName + "Callback");
+    string $setup = ($commandName + "Setup");
+
+    string $layout = getOptionBox();
+    setParent $layout;
+
     setOptionBoxCommandName($commandName);
 
-	setUITemplate -pushTemplate DefaultTemplate;
+    setUITemplate -pushTemplate DefaultTemplate;
 
-    string $parent = `formLayout createUSdStagesFromExistingOptions`;
+    string $parent = `formLayout createStagesFromExistingOptions`;
 
     string $settingsFrame = stageFromExistingLayer_UISetup($parent);
 
-	formLayout -e
-		-af $settingsFrame "top" $gOptionBoxTemplateFrameSpacing
-		-af $settingsFrame "left" $gOptionBoxTemplateFrameSpacing
-		-af $settingsFrame "right" $gOptionBoxTemplateFrameSpacing
-		-af $settingsFrame "bottom"  $gOptionBoxTemplateFrameSpacing
-	$parent;
+    formLayout -e
+        -af $settingsFrame "top" $gOptionBoxTemplateFrameSpacing
+        -af $settingsFrame "left" $gOptionBoxTemplateFrameSpacing
+        -af $settingsFrame "right" $gOptionBoxTemplateFrameSpacing
+        -af $settingsFrame "bottom"  $gOptionBoxTemplateFrameSpacing
+        $parent;
 
-	string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
-	button -edit -label "Create Stages"
-		-command ($callback + " " + $parent + " " + 1 + "; hideOptionBox;")
-		$applyCloseBtn;
+    string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
+    button -edit -label "Create Stages"
+        -command ($callback + " " + $parent + " " + 1 + "; hideOptionBox;")
+        $applyCloseBtn;
 
-	string $applyBtn = getOptionBoxApplyBtn();
-	button -edit -label "Save and Close"
-		-command ($callback + " " + $parent + " " + 0 + "; hideOptionBox;")
-		$applyBtn;
+    string $applyBtn = getOptionBoxApplyBtn();
+    button -edit -label "Save and Close"
+        -command ($callback + " " + $parent + " " + 0 + "; hideOptionBox;")
+        $applyBtn;
 
-	string $cancelBtn = getOptionBoxCloseBtn();
-	button -edit -label "Cancel"
-		-command ("hideOptionBox;")
-		$cancelBtn;
+    string $cancelBtn = getOptionBoxCloseBtn();
+    button -edit -label "Cancel"
+        -command ("hideOptionBox;")
+        $cancelBtn;
 
-	string $resetBtn = getOptionBoxResetBtn();
-	button -edit 
-		-command ($setup + " " + $parent + " " + 1)
-		$resetBtn;
+    string $resetBtn = getOptionBoxResetBtn();
+    button -edit 
+        -command ($setup + " " + $parent + " " + 1)
+        $resetBtn;
 
-	string $saveBtn = getOptionBoxSaveBtn();
-	button -edit 
-		-command ($callback + " " + $parent + " " + 0)
-		$saveBtn;
+    string $saveBtn = getOptionBoxSaveBtn();
+    button -edit 
+        -command ($callback + " " + $parent + " " + 0)
+        $saveBtn;
 
-	setOptionBoxTitle("Create USD Stage Options");
+    setOptionBoxTitle("Create USD Stage Options");
 
-	setOptionBoxHelpTag( "" );
+    setOptionBoxHelpTag( "" );
 
-	eval (($setup + " " + $parent + " " + 0));	
-	
-	showOptionBox();
+    eval (($setup + " " + $parent + " " + 0));	
+
+    showOptionBox();
 }
 
 global proc mayaUsd_createStagesFromExistingLayer() {
