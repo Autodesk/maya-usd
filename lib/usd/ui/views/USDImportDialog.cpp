@@ -60,7 +60,9 @@ USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* 
 
 	// Configure the TreeView of the dialog:
 	fProxyModel->setSourceModel(fTreeModel.get());
+#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
 	fProxyModel->setRecursiveFilteringEnabled(true);
+#endif
 	fProxyModel->setDynamicSortFilter(false);
 	fProxyModel->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 	fUI->treeView->setModel(fProxyModel.get());

@@ -11,19 +11,17 @@ Before building the project, consult the following table to ensure you use the r
 |        Required       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
 |    Operating System   |         Windows 10        | Catalina (10.15), Mojave (10.14), High Sierra (10.13)        |       CentOS 7              |
-|   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3),  Maya2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1), Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2), Maya 2019/2020 (gcc 6.3.1) |
+|   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3)<br>Maya 2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1)<br>Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2)<br>Maya 2019/2020 (gcc 6.3.1) |
 | Minimum Cmake Version |           3.13            |                             3.13                             |         3.13                |
 |         Python        |           2.7.15          |                            2.7.15                            |        2.7.15               |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              |      PyYAML, PySide, PyOpenGL, Jinja2             |
-|    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja(Recommended)                       |    Ninja(Recommended)       |
+|    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja (Recommended)                      |    Ninja (Recommended)      |
 |    Command processor  | Visual Studio X64 2015 or 2017 command prompt  |                     bash                |             bash            |
 | Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018, 2019, 2020     |
 
 |        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
-|          Qt           |           5.12.6          |                             5.12.6                           |         5.12.6              |
-
-***NOTE:*** The optional Qt features require building with Qt version 5.12.6, which is the version used by Maya 2020. They are not supported with Maya 2018 and 2019 since those versions of Maya use Qt 5.6.1.
+|          Qt           | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 |
 
 ***NOTE:*** We haven't fully tested the plug-ins on ```Catalina``` and it is still at the experimental stage.
 
@@ -114,7 +112,6 @@ BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries. 
 BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
 CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON
-CMAKE_WANT_QT_BUILD         | enables building with Qt (if found).                       | ON
 
 ##### Stages
 
