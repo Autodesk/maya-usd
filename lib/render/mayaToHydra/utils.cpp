@@ -120,8 +120,8 @@ static void _BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
             "Error in render delegate options function: \n%s",
             status.errorString().asChar());
     }
-
 }
+
 std::pair<const MtohRendererDescriptionVector&, const MtohRendererSettings&>
 MtohInitializeRenderPlugins() {
     using Storage = std::pair<MtohRendererDescriptionVector, MtohRendererSettings>;

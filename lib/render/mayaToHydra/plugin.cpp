@@ -60,6 +60,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
         for (const auto& desc : MtohGetRendererDescriptions()) {
             std::unique_ptr<MtohRenderOverride> mtohRenderer(new MtohRenderOverride(desc));
             renderer->registerOverride(mtohRenderer.get());
+            // registerOverride took the pointer, so release ownership
             mtohRenderer.release();
         }
     }

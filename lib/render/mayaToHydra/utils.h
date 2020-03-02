@@ -43,7 +43,6 @@ using MtohRendererSettings =
     std::unordered_map<TfToken, HdRenderSettingDescriptorList,
                        TfToken::HashFunctor>;
 
-TfTokenVector MtohGetRendererPlugins();
 std::string MtohGetRendererPluginDisplayName(const TfToken& id);
 TfToken MtohGetDefaultRenderer();
 const MtohRendererDescriptionVector& MtohGetRendererDescriptions();
