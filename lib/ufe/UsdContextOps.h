@@ -29,7 +29,15 @@ PXR_NAMESPACE_USING_DIRECTIVE
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief Interface for scene item operations.
+//! \brief Interface for scene item context operations.
+/*!
+    This class defines the interface that USD run-time implements to
+    provide contextual operation support (example Outliner context menu).
+
+    This class is not copy-able, nor move-able.
+
+    \see UFE ContextOps class documentation for more details
+*/
 class MAYAUSD_CORE_PUBLIC UsdContextOps : public Ufe::ContextOps
 {
 public:
