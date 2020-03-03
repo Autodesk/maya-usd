@@ -11,7 +11,7 @@
 
 over "GLOBAL" (
     customData = {
-        string libraryName        = "@SCHEMA_PLUGIN@"
+        string libraryName        = "@TARGET_NAME@"
         string libraryPath        = "."
     }
 ) {}

@@ -1,6 +1,5 @@
 #
-# =======================================================================
-# Copyright 2019 Autodesk
+# Copyright 2020 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# =======================================================================
 #
-
 include(CMakeParseArguments)
 
 # The name of the operating system for which CMake is to build
@@ -150,7 +147,7 @@ function(mayaUsd_install_rpath rpathRef NAME)
 endfunction()
 
 function(mayaUsd_promoteMayaUsdHeader)
-    set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/base/mayaUsd.h.src)
+    set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/mayaUsd.h.src)
     set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
     if (NOT EXISTS ${dstFile})
         message(STATUS "promoting: " ${srcFile})
@@ -160,55 +157,21 @@ endfunction()
 
 #
 # mayaUsd_promoteHeaderList(
-#                        [SUBDIR <optional sub-directory>])
-#                        [FILES <list of files>]
+#                        [SUBDIR  <sub-directory name>]
+#                        [FILES   <list of files>]
+#                        [BASEDIR <sub-directory name>])
 #
-#   SUBDIR        - optional sub-directory in which to promote files.
-#   FILES         - list of files to promote.
+#   SUBDIR     - sub-directory in which to promote files.
+#   FILES      - list of files to promote.
+#   BASESDIR   - base dirctory where promoted headers are installed into.
+#                if not defined, mayaUsd subdirectory is used by default. 
+#
 #
 function(mayaUsd_promoteHeaderList)
-    cmake_parse_arguments(PREFIX 
-        ""          # options
-        "SUBDIR"    # one_value keywords
-        "HEADERS"   # multi_value keywords
-        ${ARGN}
-    )
-
-    set(DEST_DIR ${CMAKE_BINARY_DIR}/include/mayaUsd)
-    if(PREFIX_SUBDIR)
-        set(DEST_DIR ${DEST_DIR}/${PREFIX_SUBDIR})
-    endif()
-
-     if(PREFIX_HEADERS)
-        set(headerFiles ${PREFIX_HEADERS})
-    else()
-        message(FATAL_ERROR "HEADERS keyword is not specified.")
-    endif()
-
-    foreach(header ${headerFiles})
-        set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${DEST_DIR}/${header})
-
-        set(content "#pragma once\n#include \"${srcFile}\"\n")
-
-        if (NOT EXISTS ${dstFile})
-            message(STATUS "promoting: " ${srcFile})
-            file(WRITE ${dstFile} "${content}")
-        else()
-            file(READ ${dstFile} oldContent)
-            if (NOT "${content}" STREQUAL "${oldContent}")
-                message(STATUS "Promoting ${srcfile}")
-                file(WRITE ${dstFile} "${content}")
-            endif()
-        endif()
-    endforeach()
-endfunction()
-
-function(mayaUsd_promoteHeaderListWithSubdir)
     cmake_parse_arguments(PREFIX
         ""
         "SUBDIR" # one_value keywords
-        "HEADERS;BASE_PATH" # multi_value keywords
+        "HEADERS;BASEDIR" # multi_value keywords
         ${ARGN}
     )
 
@@ -218,20 +181,20 @@ function(mayaUsd_promoteHeaderListWithSubdir)
         message(FATAL_ERROR "HEADERS keyword is not specified.")
     endif()
 
-    set(basePath ${CMAKE_BINARY_DIR}/include)
-    if (PREFIX_BASE_PATH)
-        set(basePath ${basePath}/${PREFIX_BASE_PATH})
+    set(baseDir ${CMAKE_BINARY_DIR}/include)
+    if (PREFIX_BASEDIR)
+        set(baseDir ${baseDir}/${PREFIX_BASEDIR})
     else()
-        set(basePath ${basePath}/mayaUsd)
+        set(baseDir ${baseDir}/mayaUsd)
     endif()
 
     if (PREFIX_SUBDIR)
-        set(basePath ${basePath}/${PREFIX_SUBDIR})
+        set(baseDir ${baseDir}/${PREFIX_SUBDIR})
     endif()
 
     foreach(header ${headerFiles})
         set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${basePath}/${header})
+        set(dstFile ${baseDir}/${header})
 
         set(content "#pragma once\n#include \"${srcFile}\"\n")
 
@@ -401,15 +364,17 @@ function(separate_argument_list listName)
 endfunction()
 
 # python extension module suffix
-function(set_python_module_suffix target)
+function(set_python_module_property target)
     if(IS_WINDOWS)
         set_target_properties(${target}
             PROPERTIES
+                PREFIX ""
                 SUFFIX ".pyd"
         )
     elseif(IS_LINUX OR IS_MACOSX)
         set_target_properties(${target}
             PROPERTIES
+                PREFIX ""
                 SUFFIX ".so"
         )
     endif()

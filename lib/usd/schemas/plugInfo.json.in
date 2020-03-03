@@ -26,8 +26,8 @@
                     }
                 }
             }, 
-            "LibraryPath": "${SCHEMAS_LIBRARY_DIR}/@CMAKE_SHARED_LIBRARY_PREFIX@@SCHEMA_PLUGIN@@CMAKE_SHARED_LIBRARY_SUFFIX@", 
-            "Name": "@SCHEMA_PLUGIN@", 
+            "LibraryPath": "${SCHEMAS_LIBRARY_DIR}/@CMAKE_SHARED_LIBRARY_PREFIX@@TARGET_NAME@@CMAKE_SHARED_LIBRARY_SUFFIX@", 
+            "Name": "@TARGET_NAME@", 
             "ResourcePath": "resources", 
             "Root": "..", 
             "Type": "library"
