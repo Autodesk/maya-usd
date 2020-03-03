@@ -19,6 +19,7 @@
 #include <pxr/pxr.h>
 
 #include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/renderDelegate.h>
 
 #include <string>
 #include <vector>
@@ -37,10 +38,16 @@ struct MtohRendererDescription {
 
 using MtohRendererDescriptionVector = std::vector<MtohRendererDescription>;
 
-TfTokenVector MtohGetRendererPlugins();
+// Map from MtohRendererDescription::rendererName to it's a HdRenderSettingDescriptorList
+using MtohRendererSettings =
+    std::unordered_map<TfToken, HdRenderSettingDescriptorList,
+                       TfToken::HashFunctor>;
+
 std::string MtohGetRendererPluginDisplayName(const TfToken& id);
 TfToken MtohGetDefaultRenderer();
 const MtohRendererDescriptionVector& MtohGetRendererDescriptions();
+const MtohRendererSettings& MtohGetRendererSettings();
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
