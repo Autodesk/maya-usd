@@ -16,6 +16,8 @@
 
 #include "UsdRotatePivotTranslateUndoableCommand.h"
 #include "private/Utils.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
+#include "../base/debugCodes.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -26,17 +28,8 @@ UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(c
 	, fPath(ufePath)
 	, fNoPivotOp(false)
 {
-	// Prim does not have a pivot translate attribute
-	const TfToken xpivot("xformOp:translate:pivot");
-	if (!fPrim.HasAttribute(xpivot))
-	{
-		fNoPivotOp = true;
-		// Add an empty pivot translate.
-		rotatePivotTranslateOp(fPrim, fPath, 0, 0, 0);
-	}
-
-	fPivotAttrib = fPrim.GetAttribute(xpivot);
-	fPivotAttrib.Get<GfVec3f>(&fPrevPivotValue);
+	MayaUsdUtils::MayaTransformAPI api(prim);
+	fPrevPivotValue = api.rotatePivot(fTimeCode);
 }
 
 UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand()
@@ -51,7 +44,11 @@ UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableComma
 
 void UsdRotatePivotTranslateUndoableCommand::undo()
 {
-	fPivotAttrib.Set(fPrevPivotValue);
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotatePivotTranslateUndoableCommand::undo %s (%lf, %lf, %lf) @%lf\n",
+	  fPath.string().c_str(), fPrevPivotValue[0], fPrevPivotValue[1], fPrevPivotValue[2], fTimeCode.GetValue());
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	api.rotatePivot(GfVec3f(fPrevPivotValue), fTimeCode);
+
 	// Todo : We would want to remove the xformOp
 	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 }
@@ -69,7 +66,10 @@ void UsdRotatePivotTranslateUndoableCommand::redo()
 
 bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)
 {
-	rotatePivotTranslateOp(fPrim, fPath, x, y, z);
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotatePivotTranslateUndoableCommand::translate %s (%lf, %lf, %lf) @%lf\n", 
+		fPath.string().c_str(), x, y, z, fTimeCode.GetValue());
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	api.rotatePivot(GfVec3f(x, y, z), fTimeCode);
 	return true;
 }
 

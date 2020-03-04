@@ -1483,6 +1483,20 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::notifyPreSelectionChanged()
+{
+  triggerEvent("SelectionStarted");
+  triggerEvent("PreSelectionChanged");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::notifyPostSelectionChanged()
+{
+  triggerEvent("PostSelectionChanged");
+  triggerEvent("SelectionEnded");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // nodes
 } // usdmaya
 } // AL

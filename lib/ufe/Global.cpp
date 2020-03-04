@@ -69,11 +69,27 @@ Ufe::HierarchyHandler::Ptr g_MayaHierarchyHandler;
 // Subject singleton for observation of all USD stages.
 StagesSubject::Ptr g_StagesSubject;
 
+ProxyShapeHierarchyHandler::Ptr g_ProxyHandler;
+
 bool InPathChange::fInPathChange = false;
 
 //------------------------------------------------------------------------------
 // Functions
 //------------------------------------------------------------------------------
+
+void refreshStages()
+{
+	if(g_StagesSubject)
+	{
+		if(Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid) != g_ProxyHandler)
+		{
+			g_ProxyHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
+			Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, g_ProxyHandler);
+		}
+
+		g_StagesSubject->afterOpen();
+	}
+}
 
 // Only intended to be called by the plugin initialization, to
 // initialize the stage model.
@@ -92,8 +108,8 @@ MStatus initialize()
 		return MS::kFailure;
 
 	g_MayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
-	auto proxyShapeHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
-	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, proxyShapeHandler);
+	g_ProxyHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
+	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, g_ProxyHandler);
 
 	auto usdHierHandler = UsdHierarchyHandler::create();
 	auto usdTrans3dHandler = UsdTransform3dHandler::create();
@@ -111,6 +127,8 @@ MStatus initialize()
         UFE_V2(, usdContextOpsHandler)
 #endif
     );
+
+
 
 #if !defined(NDEBUG)
 	assert(g_USDRtid != 0);

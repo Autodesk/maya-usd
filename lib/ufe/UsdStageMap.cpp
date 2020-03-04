@@ -16,6 +16,7 @@
 
 #include "UsdStageMap.h"
 #include "Utils.h"
+#include "../nodes/proxyShapeBase.h"
 
 #include <maya/MFnDagNode.h>
 
@@ -102,7 +103,9 @@ UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path) const
 	// A stage is bound to a single Dag proxy shape.
 	auto iter = fObjectToStage.find(proxyShape);
 	if (iter != std::end(fObjectToStage))
+	{
 		return iter->second;
+	}
 	return nullptr;
 }
 

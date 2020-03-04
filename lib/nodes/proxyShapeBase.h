@@ -233,6 +233,9 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         bool isUfeSelectionEnabled() const {
             return _isUfeSelectionEnabled;
         }
+        
+        virtual void notifyPreSelectionChanged() {}
+        virtual void notifyPostSelectionChanged() {}
 
     protected:
         MAYAUSD_CORE_PUBLIC

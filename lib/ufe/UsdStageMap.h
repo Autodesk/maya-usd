@@ -76,6 +76,8 @@ public:
 	Ufe::Path path(UsdStageWeakPtr stage) const;
 
 	void clear();
+	size_t size() const
+		{ return fStageToObject.size(); }
 
 private:
 	// We keep two maps for fast lookup when there are many proxy shapes.

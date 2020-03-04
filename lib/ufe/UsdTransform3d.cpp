@@ -19,6 +19,8 @@
 #include "UsdRotateUndoableCommand.h"
 #include "UsdScaleUndoableCommand.h"
 #include "UsdRotatePivotTranslateUndoableCommand.h"
+#include "UsdScalePivotTranslateUndoableCommand.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
 #include "private/Utils.h"
 
 #include <pxr/usd/usdGeom/xformCache.h>
@@ -97,23 +99,15 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
-	translateOp(fPrim, fItem->path(), x, y, z);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	api.translate(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::translation() const
 {
-	double x{0}, y{0}, z{0};
-	const TfToken xlate("xformOp:translate");
-	if (fPrim.HasAttribute(xlate))
-	{
-		// Initially, attribute can be created, but have no value.
-		GfVec3d v;
-		if (fPrim.GetAttribute(xlate).Get<GfVec3d>(&v))
-		{
-			x = v[0]; y = v[1]; z = v[2];
-		}
-	}
-	return Ufe::Vector3d(x, y, z);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	auto translate = api.translate(timeCode());
+	return Ufe::Vector3d(translate[0], translate[1], translate[2]);
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
@@ -124,7 +118,9 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 
 void UsdTransform3d::rotate(double x, double y, double z)
 {
-	rotateOp(fPrim, fItem->path(), x, y, z);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	auto order = api.rotateOrder();
+	api.rotate(GfVec3f(x, y, z), order, timeCode());
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
@@ -135,7 +131,8 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 
 void UsdTransform3d::scale(double x, double y, double z)
 {
-	scaleOp(fPrim, fItem->path(), x, y, z);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	api.scale(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
@@ -146,23 +143,15 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 
 void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)
 {
-	rotatePivotTranslateOp(fPrim, fItem->path(), x, y, z);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	api.rotatePivot(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::rotatePivot() const
 {
-	double x{0}, y{0}, z{0};
-	const TfToken xpivot("xformOp:translate:pivot");
-	if (fPrim.HasAttribute(xpivot))
-	{
-		// Initially, attribute can be created, but have no value.
-		GfVec3f v;
-		if (fPrim.GetAttribute(xpivot).Get<GfVec3f>(&v))
-		{
-			x = v[0]; y = v[1]; z = v[2];
-		}
-	}
-	return Ufe::Vector3d(x, y, z);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	auto value = api.rotatePivot(timeCode());
+	return Ufe::Vector3d(value[0], value[1], value[2]);
 }
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotTranslateCmd()
@@ -172,12 +161,15 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotTranslateCmd()
 
 void UsdTransform3d::scalePivotTranslate(double x, double y, double z)
 {
-	return rotatePivotTranslate(x, y, z);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	api.scalePivot(GfVec3f(x, y, z), timeCode());
 }
 
 Ufe::Vector3d UsdTransform3d::scalePivot() const
 {
-	return rotatePivot();
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	auto value = api.scalePivot(timeCode());
+	return Ufe::Vector3d(value[0], value[1], value[2]);
 }
 
 Ufe::Matrix4d UsdTransform3d::segmentInclusiveMatrix() const

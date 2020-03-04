@@ -765,7 +765,7 @@ bool ProxyDrawOverride::userSelect(
     {
       // Get the Hierarchy Handler of USD - Id = 2
       Ufe::HierarchyHandler::Ptr handler =
-        Ufe::RunTimeMgr::instance().hierarchyHandler(2);
+        Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
       if (handler == nullptr)
       {
         MGlobal::displayError("USD Hierarchy handler has not been loaded - Picking is not possible");

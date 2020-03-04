@@ -16,6 +16,8 @@
 
 #include "UsdRotateUndoableCommand.h"
 #include "private/Utils.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
+#include "../base/debugCodes.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -26,28 +28,8 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(const UsdPrim& prim, const Uf
 	, fPath(ufePath)
 	, fNoRotateOp(false)
 {
-	// Since we want to change xformOp:rotateXYZ, and we need to store the prevRotate for 
-	// undo purpose, we need to make sure we convert it to common API xformOps (In case we have 
-	// rotateX, rotateY or rotateZ ops)
-	try {
-		convertToCompatibleCommonAPI(prim);
-	}
-	catch (...) {
-		// Since Maya cannot catch this error at this moment, store it until we actually rotate
-		fFailedInit = std::current_exception(); // capture
-		return;
-	}
-
-	// Prim does not have a rotateXYZ attribute
-	const TfToken xrot("xformOp:rotateXYZ");
-	if (!fPrim.HasAttribute(xrot))
-	{
-		rotateOp(fPrim, fPath, 0, 0, 0);	// Add an empty rotate
-		fNoRotateOp = true;
-	}
-
-	fRotateAttrib = fPrim.GetAttribute(xrot);
-	fRotateAttrib.Get<GfVec3f>(&fPrevRotateValue);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	fPrevRotateValue = api.rotate(fTimeCode);
 }
 
 UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
@@ -62,11 +44,13 @@ UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(const UsdPrim& pr
 
 void UsdRotateUndoableCommand::undo()
 {
-	// Check if initialization went ok.
-	if (!fFailedInit)
-	{
-		fRotateAttrib.Set(fPrevRotateValue);
-	}
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	const auto order = api.rotateOrder();
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotateUndoableCommand::undo %s (%lf, %lf, %lf) [%d] @%lf\n", 
+		fPath.string().c_str(), fPrevRotateValue[0], fPrevRotateValue[1], fPrevRotateValue[2], int(order), fTimeCode.GetValue());
+
+	api.rotate(M_PI * fPrevRotateValue / 180.0f, order, fTimeCode);
+
 	// Todo : We would want to remove the xformOp
 	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 }
@@ -89,12 +73,11 @@ void UsdRotateUndoableCommand::perform()
 
 bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 {
-	// Fail early - Initialization did not go as expected.
-	if (fFailedInit)
-	{
-		std::rethrow_exception(fFailedInit);
-	}
-	rotateOp(fPrim, fPath, x, y, z);
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	const auto order = api.rotateOrder();
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdRotateUndoableCommand::rotate %s (%lf, %lf, %lf) [%d] @%lf\n", 
+		fPath.string().c_str(), x, y, z, int(order), fTimeCode.GetValue());
+	api.rotate(M_PI * GfVec3f(x, y, z) / 180.0f, order, fTimeCode);
 	return true;
 }
 

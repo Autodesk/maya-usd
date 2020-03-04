@@ -88,7 +88,19 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
 	UsdPrim prim;
 	if (auto stage = getStage(Ufe::Path(segments[0])))
 	{
-		prim = stage->GetPrimAtPath(SdfPath(segments[1].string()));
+		std::string pathText = segments[1].string();
+		prim = stage->GetPrimAtPath(SdfPath(pathText));
+		if(!prim)
+		{
+			// remove junk after last '.' character
+			size_t index = pathText.find_last_of('.');
+			
+			if(index != std::string::npos)
+			{
+				pathText.resize(index);
+				prim = stage->GetPrimAtPath(SdfPath(pathText));
+			}
+		}
 	}
 	return prim;
 }

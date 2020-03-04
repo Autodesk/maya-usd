@@ -17,6 +17,8 @@
 #include "UsdScaleUndoableCommand.h"
 #include "private/Utils.h"
 #include "Utils.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
+#include "../base/debugCodes.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -27,16 +29,8 @@ UsdScaleUndoableCommand::UsdScaleUndoableCommand(const UsdPrim& prim, const Ufe:
 	, fPath(ufePath)
 	, fNoScaleOp(false)
 {
-	// Prim does not have a scale attribute
-	const TfToken xscale("xformOp:scale");
-	if (!fPrim.HasAttribute(xscale))
-	{
-		fNoScaleOp = true;
-		scaleOp(fPrim, fPath, 1, 1, 1);	// Add a neutral scale xformOp.
-	}
-
-	fScaleAttrib = fPrim.GetAttribute(xscale);
-	fScaleAttrib.Get<GfVec3f>(&fPrevScaleValue);
+	MayaUsdUtils::MayaTransformAPI api(prim);
+	fPrevScaleValue = api.scale(fTimeCode);
 }
 
 UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
@@ -51,7 +45,10 @@ UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(const UsdPrim& prim
 
 void UsdScaleUndoableCommand::undo()
 {
-	fScaleAttrib.Set(fPrevScaleValue);
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdScaleUndoableCommand::undo %s (%lf, %lf, %lf) @%lf\n",
+		fPath.string().c_str(), fPrevScaleValue[0], fPrevScaleValue[1], fPrevScaleValue[2], fTimeCode.GetValue());
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	api.scale(fPrevScaleValue, fTimeCode);
 	// Todo : We would want to remove the xformOp
 	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 }
@@ -74,7 +71,10 @@ void UsdScaleUndoableCommand::perform()
 
 bool UsdScaleUndoableCommand::scale(double x, double y, double z)
 {
-	scaleOp(fPrim, fPath, x, y, z);
+	TF_DEBUG(MAYAUSD_UFE_MANIPULATORS).Msg("UsdScaleUndoableCommand::scale %s (%lf, %lf, %lf) @%lf\n", 
+		fPath.string().c_str(), x, y, z, fTimeCode.GetValue());
+	MayaUsdUtils::MayaTransformAPI api(fPrim);
+	api.scale(GfVec3f(x, y, z), fTimeCode);
 	return true;
 }
 
