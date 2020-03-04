@@ -1,6 +1,6 @@
 from pxr import Tf
-import _AL_USDUtils
-Tf.PrepareModule(_AL_USDUtils, locals())
+import _mayaUsdUtils
+Tf.PrepareModule(_mayaUsdUtils, locals())
 del Tf
 
 try:

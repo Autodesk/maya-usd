@@ -1,5 +1,5 @@
 
-from AL.usd.utils import MayaTransformAPI, RotationOrder
+from mayaUsdUtils import MayaTransformAPI, RotationOrder
 from pxr import Usd, Sdf, Gf, UsdGeom
 import unittest
 
@@ -137,3 +137,4 @@ class TestMayaTransformAPI(unittest.TestCase):
         ops = xform.GetOrderedXformOps()
         self.assertTrue(len(ops) == 1)
         self.assertTrue(ops[0].GetOpType() == UsdGeom.XformOp.TypeRotateZYX)
+        
