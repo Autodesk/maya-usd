@@ -30,16 +30,12 @@
 class TestUIQtUtil : public MayaUsd::IMayaMQtUtil
 {
 public:
-	~TestUIQtUtil() override;
+	~TestUIQtUtil() override = default;
 
 	int dpiScale(int size) const override;
 	float dpiScale(float size) const override;
 	QPixmap* createPixmap(const std::string& imageName) const override;
 };
-
-TestUIQtUtil::~TestUIQtUtil()
-{
-}
 
 int TestUIQtUtil::dpiScale(int size) const
 {
@@ -114,7 +110,7 @@ int main(int argc, char *argv[])
 
     // Create and show the ImportUI
     TestUIQtUtil uiQtUtil;
-    MayaUsd::USDImportDialog usdImportDialog(usdFile, &importData, &uiQtUtil);
+    MayaUsd::USDImportDialog usdImportDialog(usdFile, &importData, uiQtUtil);
 
     // Give the dialog the Maya dark style.
     QStyle* adsk = app.style();

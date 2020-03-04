@@ -13,14 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usd/utils/DiffCore.h"
-#include "AL/usd/utils/SIMD.h"
+#include "DiffCore.h"
+#include "SIMD.h"
 #include <cmath>
 #include <algorithm>
 
-namespace AL {
-namespace usd {
-namespace utils {
+namespace MayaUsdUtils {
 
 //----------------------------------------------------------------------------------------------------------------------
 bool vec2AreAllTheSame(const float* u, const float* v, size_t count)
@@ -1479,8 +1477,4 @@ bool compareRGBAArray(
   return true;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-} // utils
-} // usd
-} // AL
-//----------------------------------------------------------------------------------------------------------------------
+} // MayaUsdUtils

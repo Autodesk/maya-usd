@@ -59,7 +59,7 @@
 # define ENABLE_SOME_AVX_ROUTINES 1
 #endif
 
-namespace AL {
+namespace MayaUsdUtils {
 
 #if defined(__SSE__)
 typedef __m128 f128;
@@ -415,4 +415,5 @@ inline f128 loadmask3f(const void* const ptr, size_t count)
 }
 #endif
 
-} // AL
+} // MayaUsdUtils
+

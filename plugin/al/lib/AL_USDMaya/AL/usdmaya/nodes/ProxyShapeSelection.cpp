@@ -664,6 +664,31 @@ MObject ProxyShape::makeUsdTransformChain(
 
   createMayaNode(usdPrim, node, parentNode, modifier, modifier2, outStage, outTime, pushToPrim, readAnimatedValues);
 
+  // build up new lock-prim list
+  TfToken lockPropertyToken;
+  if (usdPrim.GetMetadata<TfToken>(Metadata::locked, & lockPropertyToken))
+  {
+    if (lockPropertyToken == Metadata::lockTransform)
+    {
+      m_lockManager.setLocked(usdPrim.GetPath());
+    }
+    else
+    if (lockPropertyToken == Metadata::lockUnlocked)
+    {
+      m_lockManager.setUnlocked(usdPrim.GetPath());
+    }
+    else
+    if (lockPropertyToken == Metadata::lockInherited)
+    {
+      m_lockManager.setInherited(usdPrim.GetPath());
+    }
+  }
+  else
+  {
+    m_lockManager.setInherited(usdPrim.GetPath());
+  }
+
+
   if(resultingPath)
     *resultingPath = recordUsdPrimToMayaPath(usdPrim, node);
   else
@@ -766,7 +791,7 @@ void ProxyShape::removeUsdTransformChain_internal(
         modifier.reparentNode(object);
         modifier.deleteNode(object);
       }
-      m_currentLockedPrims.erase(primPath);
+      m_lockManager.setInherited(primPath);
     }
 
     parentPrim = parentPrim.GetParent();
@@ -785,6 +810,8 @@ void ProxyShape::removeUsdTransformChain(
   MObject parentTM = MObject::kNullObj;
   MObject object = MObject::kNullObj;
 
+  // ensure the transforms have been removed from the selectability and lock db's. 
+  m_lockManager.setInherited(path);
   while(!parentPrim.IsEmpty())
   {
     auto it = m_requiredPaths.find(parentPrim);
@@ -805,10 +832,11 @@ void ProxyShape::removeUsdTransformChain(
         {
           modifier.reparentNode(object);
           modifier.deleteNode(object);
+
+          m_lockManager.setInherited(parentPrim);
         }
       }
 
-      m_currentLockedPrims.erase(parentPrim);
       m_requiredPaths.erase(it);
       TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
     }
@@ -1002,6 +1030,7 @@ void ProxyShape::removeTransformRefs(const std::vector<std::pair<SdfPath, MObjec
         {
           TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeTransformRefs m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
           m_requiredPaths.erase(it);
+          m_lockManager.setInherited(iter.first);
         }
       }
 

@@ -7,7 +7,6 @@ add_library(${TARGET_NAME} SHARED)
 target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
-        AL/maya/test_DiffCore.cpp
         AL/maya/test_EventHandler.cpp
         AL/maya/test_MatrixToSRT.cpp
         AL/maya/test_MayaEventManager.cpp
@@ -32,6 +31,7 @@ target_sources(${TARGET_NAME}
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_ExtraDataPlugin.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
+        AL/usdmaya/nodes/test_lockPrims.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
         AL/usdmaya/nodes/test_ProxyUsdGeomCamera.cpp
@@ -85,7 +85,7 @@ target_link_libraries(${TARGET_NAME}
         AL_EventSystem
         AL_USDMayaUtils
         AL_MayaUtils
-        AL_USDUtils
+        mayaUsdUtils
         AL_USDMaya   #Adding this recursively pulls in lots of things
         AL_MayaTest
         AL_USDMayaSchemas

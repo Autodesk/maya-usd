@@ -130,6 +130,22 @@ namespace {
     name = MString(name.asChar() + 1);
     return name;
   }
+
+  // Cache "associatedNode" attribute to avoid look-up cost. Since UsdMayaTranslatorMayaReference doesn't have initialization method
+  // we use method with static variable to defere the search when everything is initialized.
+  const MObject getAssociatedNodeAttr()
+  {
+    static MObject associatedNodeAttr = MNodeClass("reference").attribute("associatedNode");
+    return associatedNodeAttr;
+  }
+
+  // Cache "message" attribute to avoid look-up cost. Since UsdMayaTranslatorMayaReference doesn't have initialization method
+  // we use method with static variable to defere the search when everything is initialized.
+  const MObject getMessageAttr()
+  {
+    static MObject messageAttr = MNodeClass("dagNode").attribute("message");
+    return messageAttr;
+  }
 }
 
 const TfToken UsdMayaTranslatorMayaReference::m_namespaceName = TfToken("mayaNamespace");
@@ -234,14 +250,15 @@ UsdMayaTranslatorMayaReference::UnloadMayaReference(const MObject& parent){
     MFnDependencyNode fnParent(parent, &status);
     if (status)
     {
-        MPlug messagePlug = fnParent.findPlug("message", true, &status);
+        MPlug messagePlug(fnParent.object(), getMessageAttr());
         if (status)
         {
             MPlugArray referencePlugs;
             messagePlug.connectedTo(referencePlugs, false, true);
 
             // Unload the connected references.
-            for (uint32_t i = 0; i < referencePlugs.length(); ++i)
+            auto referencePlugsLength = referencePlugs.length();
+            for (uint32_t i = 0; i < referencePlugsLength; ++i)
             {
                 MObject temp = referencePlugs[i].node();
                 if (temp.hasFn(MFn::kReference))
@@ -258,7 +275,7 @@ UsdMayaTranslatorMayaReference::UnloadMayaReference(const MObject& parent){
 MStatus 
 UsdMayaTranslatorMayaReference::connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode)
 {
-    MPlug srcPlug = dagNode.findPlug("message", true);
+    MPlug srcPlug(dagNode.object(), getMessageAttr());
     /*
        From the Maya docs:
        > This message attribute is used to connect specific nodes that may be
@@ -268,7 +285,7 @@ UsdMayaTranslatorMayaReference::connectReferenceAssociatedNode(MFnDagNode& dagNo
        > if it is removed.
      */
     MStatus result;
-    MPlug destArrayPlug = refNode.findPlug("associatedNode", true);
+    MPlug destArrayPlug(refNode.object(), getAssociatedNodeAttr());
     bool wasConnected = false;
     unsigned int destIndex = 0;
     result = connectedOrFirstAvailableIndex(srcPlug, destArrayPlug, destIndex, wasConnected);
@@ -340,7 +357,7 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
   MFnDependencyNode fnParent(parent, &status);
   if(status)
   {
-    MPlug messagePlug = fnParent.findPlug("message", &status);
+    MPlug messagePlug(fnParent.object(), getMessageAttr());
     MPlugArray referencePlugs;
     messagePlug.connectedTo(referencePlugs, false, true);
     for (uint32_t i = 0, n = referencePlugs.length(); i < n; ++i) {

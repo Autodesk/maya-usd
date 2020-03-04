@@ -63,4 +63,8 @@ foreach(script ${test_script_files})
     )
 endforeach()
 
+if (UFE_FOUND)
+    add_subdirectory(ufe)
+endif()
+
 add_subdirectory(usd)

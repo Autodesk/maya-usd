@@ -24,7 +24,6 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
-#include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
@@ -41,7 +40,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (defaultRenderGlobals)
     (mtohTextureMemoryPerTexture)
-    (mtohMaximumShadowMapResolution)
     (mtohColorSelectionHighlight)
     (mtohColorSelectionHighlightColor)
     (mtohColorSelectionHighlightColorA)
@@ -52,9 +50,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 // clang-format on
 
 namespace {
-
-std::unordered_map<TfToken, HdRenderSettingDescriptorList, TfToken::HashFunctor>
-    _rendererAttributes;
 
 void _CreateEnumAttribute(
     MFnDependencyNode& node, const TfToken& attrName,
@@ -82,6 +77,14 @@ void _CreateEnumAttribute(
     for (const auto& v : values) { eAttr.addField(v.GetText(), id++); }
     eAttr.setDefault(defValue.GetText());
     node.addAttribute(o);
+}
+
+void _CreateEnumAttribute(MFnDependencyNode& node, const TfToken& attrName,
+    const TfEnum& defValue) {
+    std::vector<std::string> names = TfEnum::GetAllNames(defValue);
+    TfTokenVector tokens(names.begin(), names.end());
+    return _CreateEnumAttribute(node, attrName, tokens,
+        TfToken(TfEnum::GetDisplayName(defValue)));
 }
 
 void _CreateTypedAttribute(
@@ -217,6 +220,11 @@ void _GetFromPlug<std::string>(const MPlug& plug, std::string& out) {
     out = plug.asString().asChar();
 }
 
+template <>
+void _GetFromPlug<TfEnum>(const MPlug& plug, TfEnum& out) {
+    out = TfEnum(out.GetType(), plug.asInt());
+}
+
 template <typename T>
 bool _GetAttribute(
     const MFnDependencyNode& node, const TfToken& attrName, T& out) {
@@ -239,102 +247,10 @@ void _GetColorAttribute(
     out[3] = plugA.asFloat();
 }
 
-bool _IsSupportedAttribute(const VtValue& v) {
-    return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
-           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>();
-}
 
-constexpr auto _renderOverrideOptionBoxTemplate = R"mel(
-global proc {{override}}OptionBox() {
-    string $windowName = "{{override}}OptionsWindow";
-    if (`window -exists $windowName`) {
-        showWindow $windowName;
-        return;
-    }
-    string $cc = "mtoh -updateRenderGlobals; refresh -f";
-
-    mtoh -createRenderGlobals;
-
-    window -title "Maya to Hydra Settings" "{{override}}OptionsWindow";
-    scrollLayout;
-    frameLayout -label "Hydra Settings";
-    columnLayout;
-    attrControlGrp -label "Enable Motion Samples" -attribute "defaultRenderGlobals.mtohEnableMotionSamples" -changeCommand $cc;
-    attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
-    attrControlGrp -label "OpenGL Selection Overlay" -attribute "defaultRenderGlobals.mtohSelectionOverlay" -changeCommand $cc;
-    attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
-    attrControlGrp -label "Highlight Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlight" -changeCommand $cc;
-    attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;
-    setParent ..;
-    setParent ..;
-    {{override}}Options();
-    setParent ..;
-
-    showWindow $windowName;
-}
-)mel";
 } // namespace
 
 MtohRenderGlobals::MtohRenderGlobals() {}
-
-void MtohInitializeRenderGlobals() {
-    const auto& rendererDescs = MtohGetRendererDescriptions();
-    for (const auto& rendererDesc : rendererDescs) {
-        const auto optionBoxCommand = TfStringReplace(
-            _renderOverrideOptionBoxTemplate, "{{override}}",
-            rendererDesc.overrideName.GetText());
-        auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
-        if (!status) {
-            TF_WARN(
-                "Error in render override option box command function: \n%s",
-                status.errorString().asChar());
-        }
-        auto* rendererPlugin =
-            HdRendererPluginRegistry::GetInstance().GetRendererPlugin(
-                rendererDesc.rendererName);
-        if (rendererPlugin == nullptr) { continue; }
-        auto* renderDelegate = rendererPlugin->CreateRenderDelegate();
-        if (renderDelegate == nullptr) { continue; }
-        const auto rendererSettingDescriptors =
-            renderDelegate->GetRenderSettingDescriptors();
-        _rendererAttributes[rendererDesc.rendererName] =
-            rendererSettingDescriptors;
-        delete renderDelegate;
-
-        std::stringstream ss;
-        ss << "global proc " << rendererDesc.overrideName << "Options() {\n";
-        ss << "\tstring $cc = \"mtoh -updateRenderGlobals; refresh -f\";\n";
-        ss << "\tframeLayout -label \"" << rendererDesc.displayName
-           << "Options\" -collapsable true;\n";
-        ss << "\tcolumnLayout;\n";
-        for (const auto& desc : rendererSettingDescriptors) {
-            if (!_IsSupportedAttribute(desc.defaultValue)) { continue; }
-            const auto attrName = TfStringPrintf(
-                "%s%s", rendererDesc.rendererName.GetText(),
-                desc.key.GetText());
-            ss << "\tattrControlGrp -label \"" << desc.name
-               << "\" -attribute \"defaultRenderGlobals." << attrName
-               << "\" -changeCommand $cc;\n";
-        }
-        if (rendererDesc.rendererName == MtohTokens->HdStormRendererPlugin) {
-            ss << "\tattrControlGrp -label \"Maximum shadow map size"
-               << "\" -attribute \"defaultRenderGlobals."
-               << _tokens->mtohMaximumShadowMapResolution.GetString()
-               << "\" -changeCommand $cc;\n";
-        }
-        ss << "\tsetParent ..;\n";
-        ss << "\tsetParent ..;\n";
-        ss << "}\n";
-
-        const auto optionsCommand = ss.str();
-        status = MGlobal::executeCommand(optionsCommand.c_str());
-        if (!status) {
-            TF_WARN(
-                "Error in render delegate options function: \n%s",
-                status.errorString().asChar());
-        }
-    }
-}
 
 MObject MtohCreateRenderGlobals() {
     MSelectionList slist;
@@ -365,12 +281,12 @@ MObject MtohCreateRenderGlobals() {
             return o;
         });
     _CreateNumericAttribute(
-        node, _tokens->mtohMaximumShadowMapResolution, MFnNumericData::kInt,
+        node, MtohTokens->mtohMaximumShadowMapResolution, MFnNumericData::kInt,
         []() -> MObject {
             MFnNumericAttribute nAttr;
             const auto o = nAttr.create(
-                _tokens->mtohMaximumShadowMapResolution.GetText(),
-                _tokens->mtohMaximumShadowMapResolution.GetText(),
+                MtohTokens->mtohMaximumShadowMapResolution.GetText(),
+                MtohTokens->mtohMaximumShadowMapResolution.GetText(),
                 MFnNumericData::kInt);
             nAttr.setMin(32);
             nAttr.setMax(8192);
@@ -395,7 +311,7 @@ MObject MtohCreateRenderGlobals() {
         defGlobals.colorSelectionHighlightColor);
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
-    for (const auto& rit : _rendererAttributes) {
+    for (const auto& rit : MtohGetRendererSettings()) {
         const auto rendererName = rit.first;
         for (const auto& attr : rit.second) {
             const TfToken attrName(TfStringPrintf(
@@ -436,6 +352,10 @@ MObject MtohCreateRenderGlobals() {
                 _CreateStringAttribute(
                     node, attrName,
                     attr.defaultValue.UncheckedGet<std::string>());
+            } else if (attr.defaultValue.IsHolding<TfEnum>()) {
+                _CreateEnumAttribute(
+                    node, attrName,
+                    attr.defaultValue.UncheckedGet<TfEnum>());
             }
         }
     }
@@ -458,7 +378,7 @@ MtohRenderGlobals MtohGetRenderGlobals() {
         node, _tokens->mtohEnableMotionSamples,
         ret.delegateParams.enableMotionSamples);
     _GetAttribute(
-        node, _tokens->mtohMaximumShadowMapResolution,
+        node, MtohTokens->mtohMaximumShadowMapResolution,
         ret.delegateParams.maximumShadowMapResolution);
     _GetEnum(node, _tokens->mtohSelectionOverlay, ret.selectionOverlay);
     _GetAttribute(
@@ -473,7 +393,7 @@ MtohRenderGlobals MtohGetRenderGlobals() {
         ret.colorSelectionHighlightColor);
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
-    for (const auto& rit : _rendererAttributes) {
+    for (const auto& rit : MtohGetRendererSettings()) {
         const auto rendererName = rit.first;
         auto& settings = ret.rendererSettings[rendererName];
         settings.reserve(rit.second.size());
@@ -500,6 +420,10 @@ MtohRenderGlobals MtohGetRenderGlobals() {
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<std::string>()) {
                 auto v = attr.defaultValue.UncheckedGet<std::string>();
+                _GetAttribute(node, attrName, v);
+                settings.emplace_back(attr.key, v);
+            } else if (attr.defaultValue.IsHolding<TfEnum>()) {
+                auto v = attr.defaultValue.UncheckedGet<TfEnum>();
                 _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             }

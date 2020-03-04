@@ -18,7 +18,7 @@ target_link_libraries(${PXR_PACKAGE}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
-    AL_USDUtils
+    mayaUsdUtils
     AL_USDMaya
     ${MAYA_LIBRARIES}
 )

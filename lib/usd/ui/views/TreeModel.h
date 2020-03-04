@@ -49,7 +49,7 @@ public:
 	 * \brief Constructor.
 	 * \param parent A reference to the parent of the TreeModel.
 	 */
-	explicit TreeModel(const IMayaMQtUtil* mayaQtUtil, const ImportData* importData = nullptr, QObject* parent = nullptr) noexcept;
+	explicit TreeModel(const IMayaMQtUtil& mayaQtUtil, const ImportData* importData = nullptr, QObject* parent = nullptr) noexcept;
 
 	// QStandardItemModel overrides
 	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
@@ -75,7 +75,7 @@ public:
 	void openPersistentEditors(QTreeView* tv, const QModelIndex& parent);
 
 	const ImportData* importData() const { return fImportData; }
-	const IMayaMQtUtil* mayaQtUtil() const { return fMayaQtUtil; }
+	const IMayaMQtUtil& mayaQtUtil() const { return fMayaQtUtil; }
 
 	void onItemClicked(TreeItem* item);
 
@@ -91,7 +91,7 @@ private:
 	const ImportData*			fImportData;
 
 	// Special interface we can use to perform Maya Qt utilities (such as Pixmap loading).
-	const IMayaMQtUtil*			fMayaQtUtil;
+	const IMayaMQtUtil&			fMayaQtUtil;
 };
 
 } // namespace MayaUsd

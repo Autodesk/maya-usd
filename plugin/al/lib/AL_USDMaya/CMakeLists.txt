@@ -118,6 +118,7 @@ list(APPEND AL_usdmaya_nodes_headers
 
 list(APPEND AL_usdmaya_nodes_proxy_headers
         AL/usdmaya/nodes/proxy/PrimFilter.h
+        AL/usdmaya/nodes/proxy/LockManager.h
 )
 
 list(APPEND AL_usdmaya_nodes_source
@@ -136,7 +137,9 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/Scope.cpp
         AL/usdmaya/nodes/BasicTransformationMatrix.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
+        AL/usdmaya/nodes/proxy/LockManager.cpp
         AL/usdmaya/nodes/proxy/PrimFilter.cpp
+        AL/usdmaya/nodes/proxy/ProxyShapeMetaData.cpp
 )
 
 list(APPEND AL_usdmaya_public_headers
@@ -194,7 +197,7 @@ target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
-    AL_USDUtils
+    mayaUsdUtils
     AL_USDTransaction
     ar 
     gf 

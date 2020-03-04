@@ -14,10 +14,10 @@
 // limitations under the License.
 //
 #include "AL/maya/utils/NodeHelper.h"
-#include "AL/usd/utils/SIMD.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
+#include <mayaUsdUtils/SIMD.h>
 
 #include "maya/MObject.h"
 #include "maya/MStatus.h"

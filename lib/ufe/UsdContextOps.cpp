@@ -21,6 +21,7 @@
 #include <ufe/attribute.h>
 
 #include <pxr/usd/usd/variantSets.h>
+#include "pxr/base/tf/diagnostic.h"
 
 #include <maya/MGlobal.h>
 
@@ -28,6 +29,7 @@
 
 namespace {
 
+//! \brief Undoable command for variant selection change
 class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand
 {
 public:
@@ -154,6 +156,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 {
     // Empty argument means no operation was specified, error.
     if (itemPath.empty()) {
+        TF_CODING_ERROR("Empty path means no operation was specified");
         return nullptr;
     }
 
@@ -161,6 +164,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // Operation is to set a variant in a variant set.  Need both the
         // variant set and the variant as arguments to the operation.
         if (itemPath.size() != 3u) {
+            TF_CODING_ERROR("Wrong number of arguments");
             return nullptr;
         }
 

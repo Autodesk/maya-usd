@@ -28,7 +28,7 @@ MAYAUSD_NS_DEF {
 // and without it we have an undefined symbol.
 IUSDImportView::~IUSDImportView() { }
 
-USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* importData,const IMayaMQtUtil* mayaQtUtil, QWidget* parent /*= nullptr*/)
+USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* importData,const IMayaMQtUtil& mayaQtUtil, QWidget* parent /*= nullptr*/)
 	: QDialog{ parent }
 	, fUI{ new Ui::ImportDialog() }
 	, fStage{ UsdStage::Open(filename, UsdStage::InitialLoadSet::LoadNone) }
@@ -37,8 +37,6 @@ USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* 
 {
 	if (!fStage)
 		throw std::invalid_argument("Invalid filename passed to USD Import Dialog");
-	if (mayaQtUtil == nullptr)
-		throw std::invalid_argument("Invalid IMayaMQtUtil passed to USD Import Dialog");
 
 	fUI->setupUi(this);
 
@@ -62,7 +60,9 @@ USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* 
 
 	// Configure the TreeView of the dialog:
 	fProxyModel->setSourceModel(fTreeModel.get());
+#if QT_VERSION >= QT_VERSION_CHECK(5, 10, 0)
 	fProxyModel->setRecursiveFilteringEnabled(true);
+#endif
 	fProxyModel->setDynamicSortFilter(false);
 	fProxyModel->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 	fUI->treeView->setModel(fProxyModel.get());
@@ -85,7 +85,7 @@ USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* 
 	fTreeModel->openPersistentEditors(fUI->treeView, QModelIndex());
 
 	// Set some initial widths for the tree view columns.
-	const int kLoadWidth = mayaQtUtil->dpiScale(25);
+	const int kLoadWidth = mayaQtUtil.dpiScale(25);
 	constexpr int kTypeWidth = 120;
 	constexpr int kNameWidth = 500;
 	header->setMinimumSectionSize(kLoadWidth);

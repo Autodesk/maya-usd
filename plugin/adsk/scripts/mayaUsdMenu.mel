@@ -65,8 +65,17 @@ proc initRuntimeCommands() {
             -category   "Menu items.Maya USD"
             -command    "mayaUsd_createStagesFromExistingLayer"
             mayaUsdCreateStageFromExistingLayer;
-        source "mayaUsd_createStagesFromExistingLayer.mel";
     }
+
+    if (!`runTimeCommand -exists mayaUsdCreateStageFromExistingLayerOptions`) {
+        runTimeCommand -default true
+            -annotation "Create a USD Stage from an existing USD layer options"
+            -category   "Menu items.Maya USD"
+            -command    "mayaUsd_createStagesFromExistingLayerOptions"
+            mayaUsdCreateStageFromExistingLayerOptions;
+    }    
+
+    source "mayaUsd_createStagesFromExistingLayer.mel";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -95,6 +104,7 @@ global proc mayaUsdMenu_createMenuCallback() {
                 -annotation "Create a USD stage" 
                 -version $mayaVersion`;
             menuItem -runTimeCommand mayaUsdCreateStageFromExistingLayer;
+            menuItem -runTimeCommand mayaUsdCreateStageFromExistingLayerOptions -optionBox true;
         } else {
             error "Could not create mayaUSD create menu";
         }

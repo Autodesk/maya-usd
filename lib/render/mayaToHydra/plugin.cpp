@@ -48,14 +48,6 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
 
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
 
-    auto* renderer = MHWRender::MRenderer::theRenderer();
-    if (renderer) {
-        for (const auto& desc : MtohGetRendererDescriptions()) {
-            auto* override = new MtohRenderOverride(desc);
-            renderer->registerOverride(override);
-        }
-    }
-
     if (!plugin.registerCommand(
             MtohViewCmd::name, MtohViewCmd::creator,
             MtohViewCmd::createSyntax)) {
@@ -64,7 +56,14 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
         return ret;
     }
 
-    MtohInitializeRenderGlobals();
+    if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
+        for (const auto& desc : MtohGetRendererDescriptions()) {
+            std::unique_ptr<MtohRenderOverride> mtohRenderer(new MtohRenderOverride(desc));
+            renderer->registerOverride(mtohRenderer.get());
+            // registerOverride took the pointer, so release ownership
+            mtohRenderer.release();
+        }
+    }
 
     return ret;
 }

@@ -13,11 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#include "DebugCodes.h"
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include "pxr/base/tf/registryManager.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-TF_DEBUG_CODES(ALUTILS_INFO);
+
+TF_REGISTRY_FUNCTION(TfDebug)
+{
+  TF_DEBUG_ENVIRONMENT_SYMBOL(MAYAUSDUTILS_INFO, "MAYAUSDUTILS' General debug messages");
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

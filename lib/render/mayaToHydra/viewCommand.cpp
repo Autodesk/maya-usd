@@ -141,9 +141,9 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
     if (!status) { return status; }
 
     if (db.isFlagSet(_listRenderers)) {
-        for (const auto& renderer : MtohGetRendererPlugins()) {
-            appendToResult(renderer.GetText());
-        }
+        for (auto& plugin : MtohGetRendererDescriptions())
+            appendToResult(plugin.rendererName.GetText());
+
         // Want to return an empty list, not None
         if (!isCurrentResultArray()) { setResult(MStringArray()); }
     } else if (db.isFlagSet(_listActiveRenderers)) {
