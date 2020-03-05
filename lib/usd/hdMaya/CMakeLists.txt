@@ -58,6 +58,7 @@ target_include_directories(${TARGET_NAME}
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/.."
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
+        ${CMAKE_BINARY_DIR}/include
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
         "${CMAKE_CURRENT_BINARY_DIR}/.."

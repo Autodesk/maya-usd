@@ -121,9 +121,12 @@ target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# properties
+# include directories
 # -----------------------------------------------------------------------------
-set_python_module_property(${UFE_PYTHON_TARGET_NAME})
+target_include_directories(${UFE_PYTHON_TARGET_NAME}
+    PRIVATE
+        ${CMAKE_BINARY_DIR}/include
+)
 
 # -----------------------------------------------------------------------------
 # link libraries
@@ -132,6 +135,11 @@ target_link_libraries(${UFE_PYTHON_TARGET_NAME}
     PUBLIC
         ${PROJECT_NAME}
 )
+
+# -----------------------------------------------------------------------------
+# properties
+# -----------------------------------------------------------------------------
+set_python_module_property(${UFE_PYTHON_TARGET_NAME})
 
 # -----------------------------------------------------------------------------
 # run-time search paths

@@ -43,7 +43,7 @@ target_compile_definitions(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
     PRIVATE
-        ${MAYAUSD_INCLUDE_DIR}
+        ${CMAKE_BINARY_DIR}/include
         ${PXR_INCLUDE_DIRS}
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )

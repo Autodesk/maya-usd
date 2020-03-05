@@ -44,9 +44,12 @@ target_compile_definitions(${PYTHON_TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# properties
+# include directories
 # -----------------------------------------------------------------------------
-set_python_module_property(${PYTHON_TARGET_NAME})
+target_include_directories(${PYTHON_TARGET_NAME}
+    PRIVATE
+        ${CMAKE_BINARY_DIR}/include
+)
 
 # -----------------------------------------------------------------------------
 # link libraries
@@ -55,6 +58,11 @@ target_link_libraries(${PYTHON_TARGET_NAME}
     PRIVATE
         ${PROJECT_NAME}
 )
+
+# -----------------------------------------------------------------------------
+# properties
+# -----------------------------------------------------------------------------
+set_python_module_property(${PYTHON_TARGET_NAME})
 
 # -----------------------------------------------------------------------------
 # run-time search paths

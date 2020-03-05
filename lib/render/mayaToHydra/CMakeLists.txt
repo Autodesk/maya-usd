@@ -40,6 +40,7 @@ target_include_directories(${TARGET_NAME}
         "${CMAKE_CURRENT_SOURCE_DIR}/.."
         ${MAYA_INCLUDE_DIRS}
         ${CMAKE_BINARY_DIR}/usd
+        ${CMAKE_BINARY_DIR}/include
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 

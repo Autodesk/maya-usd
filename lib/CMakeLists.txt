@@ -54,12 +54,12 @@ endif()
 # -----------------------------------------------------------------------------
 target_include_directories(${PROJECT_NAME} 
     PUBLIC
-        ${CMAKE_BINARY_DIR}/include
         ${MAYA_INCLUDE_DIRS}
         ${PXR_INCLUDE_DIRS}
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_BINARY_DIR}/include
 )
 
 # -----------------------------------------------------------------------------
