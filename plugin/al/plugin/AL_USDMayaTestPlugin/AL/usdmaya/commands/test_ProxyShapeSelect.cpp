@@ -159,16 +159,16 @@ TEST(ProxyShapeSelect, selectNode1)
   EXPECT_EQ(2u, proxy->selectedPaths().size());
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
   EXPECT_EQ(1u, proxy->selectedPaths().count(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
-  EXPECT_TRUE(proxy->isRequiredPath(SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1")));
-  EXPECT_FALSE(proxy->isRequiredPath(SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2")));
+  EXPECT_TRUE(isAlive(proxy, SdfPath("/root/hip2/knee2/ankle2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/ltoe2")));
+  EXPECT_TRUE(isSelected(proxy, SdfPath("/root/hip2/knee2/ankle2/rtoe2")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1")));
+  EXPECT_FALSE(isAlive(proxy, SdfPath("/root/hip1/knee1/ankle1")));
+  EXPECT_FALSE(isSelected(proxy, SdfPath("/root/hip1/knee1/ankle1/ltoe1")));
   compareNodes({SdfPath("/root/hip2/knee2/ankle2/ltoe2"), SdfPath("/root/hip2/knee2/ankle2/rtoe2")});
 
   // when undoing this command, the previous path should be selected

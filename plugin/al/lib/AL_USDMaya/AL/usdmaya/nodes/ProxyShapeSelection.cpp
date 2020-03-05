@@ -977,20 +977,77 @@ void SelectionUndoHelper::doIt()
 {
   TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::SelectionUndoHelper::doIt %lu %lu\n", m_insertedRefs.size(), m_removedRefs.size());
   m_proxy->m_pleaseIgnoreSelection = true;
-  m_modifier1.doIt();
-  m_modifier2.doIt();
-  m_proxy->insertTransformRefs(m_insertedRefs, nodes::ProxyShape::kSelection);
-  m_proxy->removeTransformRefs(m_removedRefs, nodes::ProxyShape::kSelection);
-  m_proxy->selectedPaths() = m_paths;
-  if(!m_internal)
+  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
   {
-    MGlobal::setActiveSelectionList(m_newSelection, MGlobal::kReplaceList);
+    m_modifier1.doIt();
+    m_modifier2.doIt();
+    m_proxy->insertTransformRefs(m_insertedRefs, nodes::ProxyShape::kSelection);
+    m_proxy->removeTransformRefs(m_removedRefs, nodes::ProxyShape::kSelection);
+    m_proxy->selectedPaths() = m_paths;
+    if(!m_internal)
+    {
+      MGlobal::setActiveSelectionList(m_newSelection, MGlobal::kReplaceList);
+    }
+    m_proxy->m_pleaseIgnoreSelection = false;
+    if(!MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims"))
+    {
+      m_proxy->constructLockPrims();
+    }
   }
-  m_proxy->m_pleaseIgnoreSelection = false;
-  if(!MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims"))
+  #if defined(WANT_UFE_BUILD)
+  else
   {
-    m_proxy->constructLockPrims();
+    m_proxy->m_selectedPaths.clear();
+    for(auto& it : m_newUFESelection)
+    {
+      const auto& path = it->path();
+      const auto& pathStr = path.string();
+      const auto index = pathStr.find_first_of('/');
+      if(index != std::string::npos)
+      {
+        m_proxy->m_selectedPaths.insert(SdfPath(pathStr.c_str() + index));
+      }
+      else
+      {
+        // Presumably the root node has been selected, but it doesn't appear I 
+        // can handle that edge case in UFE?
+      }
+    }
+    Ufe::GlobalSelection::get()->replaceWith(m_newUFESelection);
+    if(m_selectRoot)
+    {
+      MSelectionList sl;
+      MGlobal::getActiveSelectionList(sl);
+      sl.add(m_proxy->thisMObject());
+
+      // UGH. This nukes the UFE selection, and it doesn't appear it's possible to create a valid
+      // UFE path for the root node???
+      MGlobal::setActiveSelectionList(sl);
+    }
+
+    if(m_unselectRoot)
+    {
+      MSelectionList sl;
+      MGlobal::getActiveSelectionList(sl);
+      MObject proxyObj = m_proxy->thisMObject();
+      for(uint32_t i = 0, n = sl.length(); i < n; ++i)
+      {
+        MObject obj;
+        sl.getDependNode(i, obj);
+        if(obj == proxyObj)
+        {
+          sl.remove(i);
+          break;
+        }
+      }
+
+      /// UGH! This clears the UFE selection :(
+      MGlobal::setActiveSelectionList(sl);
+
+      m_proxy->m_pleaseIgnoreSelection = false;
+    }
   }
+  #endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------
