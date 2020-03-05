@@ -41,5 +41,8 @@ Ufe::Rtid getUsdRunTimeId();
 MAYAUSD_CORE_PUBLIC
 Ufe::Rtid getMayaRunTimeId();
 
+MAYAUSD_CORE_PUBLIC
+void refreshStages();
+
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

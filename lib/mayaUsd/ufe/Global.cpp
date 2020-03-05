@@ -107,6 +107,12 @@ StagesSubject::Ptr g_StagesSubject;
 bool InPathChange::inGuard = false;
 bool InAddOrDeleteOperation::inGuard = false;
 
+void refreshStages()
+{
+    if (!g_StagesSubject) return;
+    g_StagesSubject->afterOpen();
+}
+
 //------------------------------------------------------------------------------
 // Functions
 //------------------------------------------------------------------------------

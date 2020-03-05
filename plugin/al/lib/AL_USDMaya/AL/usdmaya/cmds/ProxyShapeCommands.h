@@ -53,8 +53,9 @@ public:
 
     /// \brief  find the proxy shape nodeata base
     /// \param  args the valid argument data base
+    /// \param  returnedPath optionally return the dag path of the shape
     /// \return the proxy shape specified in the selected command arguments
-    nodes::ProxyShape* getShapeNode(const MArgDatabase& args);
+    nodes::ProxyShape* getShapeNode(const MArgDatabase& args, MDagPath* returnedPath = nullptr);
 
     /// \brief  get the USD stage
     /// \param  args the valid argument data base

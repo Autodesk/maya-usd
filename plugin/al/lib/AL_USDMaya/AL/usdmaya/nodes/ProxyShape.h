@@ -43,6 +43,7 @@
 #include <maya/MSelectionList.h>
 
 #if defined(WANT_UFE_BUILD)
+#include "ufe/selection.h"
 #include "ufe/ufe.h"
 
 UFE_NS_DEF
@@ -125,7 +126,13 @@ private:
     MSelectionList                           m_newSelection;
     std::vector<std::pair<SdfPath, MObject>> m_insertedRefs;
     std::vector<std::pair<SdfPath, MObject>> m_removedRefs;
-    bool                                     m_internal;
+#if defined(WANT_UFE_BUILD)
+    Ufe::Selection m_newUFESelection = Ufe::Selection();
+    Ufe::Selection m_previousUFESelection = Ufe::Selection();
+    bool           m_selectRoot = false;
+    bool           m_unselectRoot = false;
+#endif
+    bool m_internal = false;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1119,6 +1126,9 @@ public:
     }
 
 private:
+    void notifyPreSelectionChanged() override;
+    void notifyPostSelectionChanged() override;
+
     SdfPathVector m_pathsOrdered;
     AL_USDMAYA_PUBLIC
     static std::vector<MObjectHandle> m_unloadedProxyShapes;

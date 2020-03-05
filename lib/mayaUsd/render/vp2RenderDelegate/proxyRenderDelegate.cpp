@@ -1108,6 +1108,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         return false;
     }
 
+    if (_proxyShapeData->ProxyShape())
+        ((MayaUsdProxyShapeBase*)_proxyShapeData->ProxyShape())->notifyPreSelectionChanged();
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
     TF_UNUSED(listAdjustment);
 
@@ -1137,6 +1140,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 #else
     dagPath = _proxyShapeData->ProxyDagPath();
 #endif
+
+    if (_proxyShapeData->ProxyShape())
+        ((MayaUsdProxyShapeBase*)_proxyShapeData->ProxyShape())->notifyPostSelectionChanged();
 
     return true;
 }

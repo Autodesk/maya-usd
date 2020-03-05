@@ -40,6 +40,8 @@
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/StagesSubject.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/usd/ar/resolver.h>
@@ -1448,6 +1450,8 @@ void ProxyShape::loadStage()
             MGlobal::displayWarning(MString("Failed to open usd file \"") + file + "\"");
         }
     }
+
+    MayaUsd::ufe::refreshStages();
 
     // Get the prim, if the stage is valid.
     // If no primPath string specified, then use the pseudo-root.

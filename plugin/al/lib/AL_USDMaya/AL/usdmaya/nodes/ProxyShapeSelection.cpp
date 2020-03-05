@@ -19,12 +19,24 @@
 #include "AL/usdmaya/nodes/Scope.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+#include "mayaUsd/nodes/proxyShapeBase.h"
+#include "mayaUsd/nodes/proxyShapePlugin.h"
+#include "mayaUsd/ufe/Global.h"
 
 #include <maya/MFnDagNode.h>
 #include <maya/MProfiler.h>
 #include <maya/MPxCommand.h>
 
 #include <cinttypes>
+
+#if defined(WANT_UFE_BUILD)
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
+#include <ufe/path.h>
+#include <ufe/runTimeMgr.h>
+#include <ufe/sceneItem.h>
+#include <ufe/selection.h>
+#endif
 
 namespace AL {
 namespace usdmaya {
@@ -869,7 +881,6 @@ void ProxyShape::removeUsdTransformChain_internal(
             }
             m_lockManager.setInherited(primPath);
         }
-
         parentPrim = parentPrim.GetParent();
     }
 }
@@ -1069,18 +1080,65 @@ void SelectionUndoHelper::doIt()
             m_insertedRefs.size(),
             m_removedRefs.size());
     m_proxy->m_pleaseIgnoreSelection = true;
-    m_modifier1.doIt();
-    m_modifier2.doIt();
-    m_proxy->insertTransformRefs(m_insertedRefs, nodes::ProxyShape::kSelection);
-    m_proxy->removeTransformRefs(m_removedRefs, nodes::ProxyShape::kSelection);
-    m_proxy->selectedPaths() = m_paths;
-    if (!m_internal) {
-        MGlobal::setActiveSelectionList(m_newSelection, MGlobal::kReplaceList);
+    if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
+        m_modifier1.doIt();
+        m_modifier2.doIt();
+        m_proxy->insertTransformRefs(m_insertedRefs, nodes::ProxyShape::kSelection);
+        m_proxy->removeTransformRefs(m_removedRefs, nodes::ProxyShape::kSelection);
+        m_proxy->selectedPaths() = m_paths;
+        if (!m_internal) {
+            MGlobal::setActiveSelectionList(m_newSelection, MGlobal::kReplaceList);
+        }
+        m_proxy->m_pleaseIgnoreSelection = false;
+        if (!MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims")) {
+            m_proxy->constructLockPrims();
+        }
     }
-    m_proxy->m_pleaseIgnoreSelection = false;
-    if (!MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims")) {
-        m_proxy->constructLockPrims();
+#if defined(WANT_UFE_BUILD)
+    else {
+        m_proxy->m_selectedPaths.clear();
+        for (auto& it : m_newUFESelection) {
+            const auto& path = it->path();
+            const auto& pathStr = path.string();
+            const auto  index = pathStr.find_first_of('/');
+            if (index != std::string::npos) {
+                m_proxy->m_selectedPaths.insert(SdfPath(pathStr.c_str() + index));
+            } else {
+                // Presumably the root node has been selected, but it doesn't appear I
+                // can handle that edge case in UFE?
+            }
+        }
+        Ufe::GlobalSelection::get()->replaceWith(m_newUFESelection);
+        if (m_selectRoot) {
+            MSelectionList sl;
+            MGlobal::getActiveSelectionList(sl);
+            sl.add(m_proxy->thisMObject());
+
+            // UGH. This nukes the UFE selection, and it doesn't appear it's possible to create a
+            // valid UFE path for the root node???
+            MGlobal::setActiveSelectionList(sl);
+        }
+
+        if (m_unselectRoot) {
+            MSelectionList sl;
+            MGlobal::getActiveSelectionList(sl);
+            MObject proxyObj = m_proxy->thisMObject();
+            for (uint32_t i = 0, n = sl.length(); i < n; ++i) {
+                MObject obj;
+                sl.getDependNode(i, obj);
+                if (obj == proxyObj) {
+                    sl.remove(i);
+                    break;
+                }
+            }
+
+            /// UGH! This clears the UFE selection :(
+            MGlobal::setActiveSelectionList(sl);
+
+            m_proxy->m_pleaseIgnoreSelection = false;
+        }
     }
+#endif
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1092,18 +1150,60 @@ void SelectionUndoHelper::undoIt()
             m_insertedRefs.size(),
             m_removedRefs.size());
     m_proxy->m_pleaseIgnoreSelection = true;
-    m_modifier2.undoIt();
-    m_modifier1.undoIt();
-    m_proxy->insertTransformRefs(m_removedRefs, nodes::ProxyShape::kSelection);
-    m_proxy->removeTransformRefs(m_insertedRefs, nodes::ProxyShape::kSelection);
-    m_proxy->selectedPaths() = m_previousPaths;
-    if (!m_internal) {
-        MGlobal::setActiveSelectionList(m_previousSelection, MGlobal::kReplaceList);
+    if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
+        m_modifier2.undoIt();
+        m_modifier1.undoIt();
+        m_proxy->insertTransformRefs(m_removedRefs, nodes::ProxyShape::kSelection);
+        m_proxy->removeTransformRefs(m_insertedRefs, nodes::ProxyShape::kSelection);
+        m_proxy->selectedPaths() = m_previousPaths;
+        if (!m_internal) {
+            MGlobal::setActiveSelectionList(m_previousSelection, MGlobal::kReplaceList);
+        }
+
+        if (!MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims")) {
+            m_proxy->constructLockPrims();
+        }
     }
+#if defined(WANT_UFE_BUILD)
+    else {
+        Ufe::GlobalSelection::get()->replaceWith(m_previousUFESelection);
+
+        m_proxy->m_selectedPaths.clear();
+        for (auto& it : m_previousUFESelection) {
+            auto&       path = it->path();
+            std::string pathStr = path.string();
+            auto        index = pathStr.find_first_of('/');
+            if (index != std::string::npos) {
+                m_proxy->m_selectedPaths.insert(SdfPath(pathStr.c_str() + index));
+            } else {
+                // UHM. Not sure what to do here?
+            }
+        }
+
+        if (m_unselectRoot) {
+            MSelectionList sl;
+            MGlobal::getActiveSelectionList(sl);
+            sl.add(m_proxy->thisMObject());
+            MGlobal::setActiveSelectionList(sl);
+        }
+
+        if (m_selectRoot) {
+            MSelectionList sl;
+            MGlobal::getActiveSelectionList(sl);
+            MObject proxyObj = m_proxy->thisMObject();
+            for (uint32_t i = 0, n = sl.length(); i < n; ++i) {
+                MObject obj;
+                sl.getDependNode(i, obj);
+                if (obj == proxyObj) {
+                    sl.remove(i);
+                    break;
+                }
+            }
+            MGlobal::setActiveSelectionList(sl);
+        }
+    }
+#endif
     m_proxy->m_pleaseIgnoreSelection = false;
-    if (!MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims")) {
-        m_proxy->constructLockPrims();
-    }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1218,271 +1318,400 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
     triggerEvent("SelectionStarted");
 
     m_pleaseIgnoreSelection = true;
-    prepSelect();
-
-    MGlobal::getActiveSelectionList(helper.m_previousSelection);
-
-    helper.m_previousPaths = selectedPaths();
-    if (MGlobal::kReplaceList == helper.m_mode) {
-        if (helper.m_paths.empty()) {
-            helper.m_mode = MGlobal::kRemoveFromList;
-            helper.m_paths = selectedPaths();
-        }
-    } else {
-        helper.m_newSelection = helper.m_previousSelection;
-    }
     MStringArray newlySelectedPaths;
 
-    auto removeFromMSel = [](MSelectionList& sel, const MObject& toRemove) -> bool {
-        for (uint32_t i = 0, n = sel.length(); i < n; ++i) {
-            MObject obj;
-            sel.getDependNode(i, obj);
-            if (obj == toRemove) {
-                sel.remove(i);
-                return true;
-            }
-        }
-        return false;
-    };
+    if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
+        prepSelect();
 
-    switch (helper.m_mode) {
-    case MGlobal::kReplaceList: {
-        std::vector<SdfPath> keepPrims;
-        std::vector<UsdPrim> insertPrims;
-        for (auto path : orderedPaths) {
-            bool alreadySelected = m_selectedPaths.count(path) > 0;
+        MGlobal::getActiveSelectionList(helper.m_previousSelection);
 
-            auto prim = stage->GetPrimAtPath(path);
-            if (prim) {
-                if (!alreadySelected)
-                    insertPrims.push_back(prim);
-                else
-                    keepPrims.push_back(path);
+        helper.m_previousPaths = selectedPaths();
+        if (MGlobal::kReplaceList == helper.m_mode) {
+            if (helper.m_paths.empty()) {
+                helper.m_mode = MGlobal::kRemoveFromList;
+                helper.m_paths = selectedPaths();
             }
+        } else {
+            helper.m_newSelection = helper.m_previousSelection;
         }
 
-        if (keepPrims.empty() && insertPrims.empty()) {
-            m_pleaseIgnoreSelection = false;
-            triggerEvent("PreSelectionChanged");
-            triggerEvent("PostSelectionChanged");
-            triggerEvent("SelectionEnded");
+        auto removeFromMSel = [](MSelectionList& sel, const MObject& toRemove) -> bool {
+            for (uint32_t i = 0, n = sel.length(); i < n; ++i) {
+                MObject obj;
+                sel.getDependNode(i, obj);
+                if (obj == toRemove) {
+                    sel.remove(i);
+                    return true;
+                }
+            }
             return false;
-        }
+        };
 
-        std::sort(keepPrims.begin(), keepPrims.end());
+        switch (helper.m_mode) {
+        case MGlobal::kReplaceList: {
+            std::vector<SdfPath> keepPrims;
+            std::vector<UsdPrim> insertPrims;
+            for (auto path : orderedPaths) {
+                bool alreadySelected = m_selectedPaths.count(path) > 0;
 
-        m_selectedPaths.clear();
-
-        uint32_t hasNodesToCreate = 0;
-        for (auto prim : insertPrims) {
-            if (prim.IsPseudoRoot()) {
-                // For pseudo root, just modify maya's selection, don't alter
-                // our internal paths
-                newlySelectedPaths.append(MFnDagNode(thisMObject()).fullPathName());
-                addObjToSelectionList(helper.m_newSelection, thisMObject());
-                continue;
+                auto prim = stage->GetPrimAtPath(path);
+                if (prim) {
+                    if (!alreadySelected)
+                        insertPrims.push_back(prim);
+                    else
+                        keepPrims.push_back(path);
+                }
             }
-            m_selectedPaths.insert(prim.GetPath());
-            MString pathName;
-            MObject object = makeUsdTransformChain_internal(
-                prim,
-                helper.m_modifier1,
-                ProxyShape::kSelection,
-                &helper.m_modifier2,
-                &hasNodesToCreate,
-                &pathName);
-            newlySelectedPaths.append(pathName);
-            addObjToSelectionList(helper.m_newSelection, object);
-            helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
-        }
 
-        for (auto iter : helper.m_previousPaths) {
-            auto    temp = m_requiredPaths.find(iter);
-            MObject object = temp->second.node();
-            if (!std::binary_search(keepPrims.begin(), keepPrims.end(), iter)) {
-                auto prim = stage->GetPrimAtPath(iter);
-                removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
-                helper.m_removedRefs.emplace_back(iter, object);
-            } else {
+            if (keepPrims.empty() && insertPrims.empty()) {
+                m_pleaseIgnoreSelection = false;
+                triggerEvent("PreSelectionChanged");
+                triggerEvent("PostSelectionChanged");
+                triggerEvent("SelectionEnded");
+                return false;
+            }
+
+            std::sort(keepPrims.begin(), keepPrims.end());
+
+            m_selectedPaths.clear();
+
+            uint32_t hasNodesToCreate = 0;
+            for (auto prim : insertPrims) {
+                if (prim.IsPseudoRoot()) {
+                    // For pseudo root, just modify maya's selection, don't alter
+                    // our internal paths
+                    newlySelectedPaths.append(MFnDagNode(thisMObject()).fullPathName());
+                    addObjToSelectionList(helper.m_newSelection, thisMObject());
+                    continue;
+                }
+                m_selectedPaths.insert(prim.GetPath());
+                MString pathName;
+                MObject object = makeUsdTransformChain_internal(
+                    prim,
+                    helper.m_modifier1,
+                    ProxyShape::kSelection,
+                    &helper.m_modifier2,
+                    &hasNodesToCreate,
+                    &pathName);
+                newlySelectedPaths.append(pathName);
                 addObjToSelectionList(helper.m_newSelection, object);
-                m_selectedPaths.insert(iter);
+                helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
             }
-        }
 
-        helper.m_paths = m_selectedPaths;
-    } break;
+            for (auto iter : helper.m_previousPaths) {
+                auto    temp = m_requiredPaths.find(iter);
+                MObject object = temp->second.node();
+                if (!std::binary_search(keepPrims.begin(), keepPrims.end(), iter)) {
+                    auto prim = stage->GetPrimAtPath(iter);
+                    removeUsdTransformChain_internal(
+                        prim, helper.m_modifier1, ProxyShape::kSelection);
+                    helper.m_removedRefs.emplace_back(iter, object);
+                } else {
+                    addObjToSelectionList(helper.m_newSelection, object);
+                    m_selectedPaths.insert(iter);
+                }
+            }
 
-    case MGlobal::kAddToHeadOfList:
-    case MGlobal::kAddToList: {
-        std::vector<UsdPrim> prims;
-        for (auto path : orderedPaths) {
-            bool alreadySelected = m_selectedPaths.count(path) > 0;
+            helper.m_paths = m_selectedPaths;
+        } break;
 
-            if (!alreadySelected) {
+        case MGlobal::kAddToHeadOfList:
+        case MGlobal::kAddToList: {
+            std::vector<UsdPrim> prims;
+            for (auto path : orderedPaths) {
+                bool alreadySelected = m_selectedPaths.count(path) > 0;
+
+                if (!alreadySelected) {
+                    auto prim = stage->GetPrimAtPath(path);
+                    if (prim) {
+                        prims.push_back(prim);
+                    }
+                }
+            }
+
+            helper.m_paths.insert(helper.m_previousPaths.begin(), helper.m_previousPaths.end());
+
+            uint32_t hasNodesToCreate = 0;
+            for (auto prim : prims) {
+                if (prim.IsPseudoRoot()) {
+                    // For pseudo root, just modify maya's selection
+                    // However, since we don't want the pseudo root to "pollute" our
+                    // internal selected paths, we also need to make sure we clear
+                    // it from m_paths.  (We don't need to do those in other modes,
+                    // because those set m_paths to m_selectePaths).
+                    newlySelectedPaths.append(MFnDagNode(thisMObject()).fullPathName());
+                    addObjToSelectionList(helper.m_newSelection, thisMObject());
+                    helper.m_paths.erase(prim.GetPath());
+                    continue;
+                }
+
+                m_selectedPaths.insert(prim.GetPath());
+                MString pathName;
+                MObject object = makeUsdTransformChain_internal(
+                    prim,
+                    helper.m_modifier1,
+                    ProxyShape::kSelection,
+                    &helper.m_modifier2,
+                    &hasNodesToCreate,
+                    &pathName);
+                newlySelectedPaths.append(pathName);
+                addObjToSelectionList(helper.m_newSelection, object);
+                helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
+            }
+        } break;
+
+        case MGlobal::kRemoveFromList: {
+            std::vector<UsdPrim> prims;
+
+            // We use helper.m_paths, not orderedPaths here, because
+            // if mode was MGlobal::kReplaceList at start, but helper.m_paths
+            // was empty, we switch mode to kRemoveFromList, and
+            // changed helper.m_paths to previousPaths.  This is fine, though
+            // because we only need order so we can get right order for
+            // newlySelectedPaths - which is not altered in this branch
+            for (auto path : helper.m_paths) {
+                bool alreadySelected;
+                if (path == SdfPath::AbsoluteRootPath()) {
+                    // For pseudo-root, remove proxy shape from maya's selection
+                    alreadySelected = removeFromMSel(helper.m_newSelection, thisMObject());
+                } else {
+                    alreadySelected = m_selectedPaths.count(path) > 0;
+                }
+
+                if (alreadySelected) {
+                    auto prim = stage->GetPrimAtPath(path);
+
+                    if (prim) {
+                        prims.push_back(prim);
+                    }
+                }
+            }
+
+            if (prims.empty()) {
+                m_pleaseIgnoreSelection = false;
+                triggerEvent("PreSelectionChanged");
+                triggerEvent("PostSelectionChanged");
+                triggerEvent("SelectionEnded");
+                return false;
+            }
+
+            for (auto prim : prims) {
+                if (prim.IsPseudoRoot()) {
+                    // We've already removed this when iterating helper.m_paths,
+                    // we just added to prims so the "prims.empty" early-exit test wouldn't
+                    // fire
+                    continue;
+                }
+                auto    temp = m_requiredPaths.find(prim.GetPath());
+                MObject object = temp->second.node();
+
+                m_selectedPaths.erase(prim.GetPath());
+
+                removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
+                removeFromMSel(helper.m_newSelection, object);
+                helper.m_removedRefs.emplace_back(prim.GetPath(), object);
+            }
+            helper.m_paths = m_selectedPaths;
+        } break;
+
+        case MGlobal::kXORWithList: {
+            std::vector<UsdPrim> removePrims;
+            std::vector<UsdPrim> insertPrims;
+            for (auto path : orderedPaths) {
+                bool alreadySelected;
+                if (path == SdfPath::AbsoluteRootPath()) {
+                    // For pseudo-root, remove proxy shape from maya's selection
+                    alreadySelected = removeFromMSel(helper.m_newSelection, thisMObject());
+                } else {
+                    alreadySelected = m_selectedPaths.count(path) > 0;
+                }
+
                 auto prim = stage->GetPrimAtPath(path);
                 if (prim) {
-                    prims.push_back(prim);
+                    if (alreadySelected)
+                        removePrims.push_back(prim);
+                    else {
+                        insertPrims.push_back(prim);
+                    }
                 }
             }
-        }
 
-        helper.m_paths.insert(helper.m_previousPaths.begin(), helper.m_previousPaths.end());
-
-        uint32_t hasNodesToCreate = 0;
-        for (auto prim : prims) {
-            if (prim.IsPseudoRoot()) {
-                // For pseudo root, just modify maya's selection
-                // However, since we don't want the pseudo root to "pollute" our
-                // internal selected paths, we also need to make sure we clear
-                // it from m_paths.  (We don't need to do those in other modes,
-                // because those set m_paths to m_selectePaths).
-                newlySelectedPaths.append(MFnDagNode(thisMObject()).fullPathName());
-                addObjToSelectionList(helper.m_newSelection, thisMObject());
-                helper.m_paths.erase(prim.GetPath());
-                continue;
+            if (removePrims.empty() && insertPrims.empty()) {
+                m_pleaseIgnoreSelection = false;
+                triggerEvent("PreSelectionChanged");
+                triggerEvent("PostSelectionChanged");
+                triggerEvent("SelectionEnded");
+                return false;
             }
 
-            m_selectedPaths.insert(prim.GetPath());
-            MString pathName;
-            MObject object = makeUsdTransformChain_internal(
-                prim,
-                helper.m_modifier1,
-                ProxyShape::kSelection,
-                &helper.m_modifier2,
-                &hasNodesToCreate,
-                &pathName);
-            newlySelectedPaths.append(pathName);
-            addObjToSelectionList(helper.m_newSelection, object);
-            helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
-        }
-    } break;
-
-    case MGlobal::kRemoveFromList: {
-        std::vector<UsdPrim> prims;
-
-        // We use helper.m_paths, not orderedPaths here, because
-        // if mode was MGlobal::kReplaceList at start, but helper.m_paths
-        // was empty, we switch mode to kRemoveFromList, and
-        // changed helper.m_paths to previousPaths.  This is fine, though
-        // because we only need order so we can get right order for
-        // newlySelectedPaths - which is not altered in this branch
-        for (auto path : helper.m_paths) {
-            bool alreadySelected;
-            if (path == SdfPath::AbsoluteRootPath()) {
-                // For pseudo-root, remove proxy shape from maya's selection
-                alreadySelected = removeFromMSel(helper.m_newSelection, thisMObject());
-            } else {
-                alreadySelected = m_selectedPaths.count(path) > 0;
-            }
-
-            if (alreadySelected) {
-                auto prim = stage->GetPrimAtPath(path);
-
-                if (prim) {
-                    prims.push_back(prim);
+            for (auto prim : removePrims) {
+                if (prim.IsPseudoRoot()) {
+                    // We've already removed this when iterating orderedPaths,
+                    // we just added to removePrims so the "removePrims.empty" early-exit test
+                    // wouldn't fire
+                    continue;
                 }
-            }
-        }
+                auto    temp = m_requiredPaths.find(prim.GetPath());
+                MObject object = temp->second.node();
 
-        if (prims.empty()) {
-            m_pleaseIgnoreSelection = false;
-            triggerEvent("PreSelectionChanged");
-            triggerEvent("PostSelectionChanged");
-            triggerEvent("SelectionEnded");
-            return false;
-        }
+                m_selectedPaths.erase(prim.GetPath());
 
-        for (auto prim : prims) {
-            if (prim.IsPseudoRoot()) {
-                // We've already removed this when iterating helper.m_paths,
-                // we just added to prims so the "prims.empty" early-exit test wouldn't
-                // fire
-                continue;
-            }
-            auto    temp = m_requiredPaths.find(prim.GetPath());
-            MObject object = temp->second.node();
-
-            m_selectedPaths.erase(prim.GetPath());
-
-            removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
-            removeFromMSel(helper.m_newSelection, object);
-            helper.m_removedRefs.emplace_back(prim.GetPath(), object);
-        }
-        helper.m_paths = m_selectedPaths;
-    } break;
-
-    case MGlobal::kXORWithList: {
-        std::vector<UsdPrim> removePrims;
-        std::vector<UsdPrim> insertPrims;
-        for (auto path : orderedPaths) {
-            bool alreadySelected;
-            if (path == SdfPath::AbsoluteRootPath()) {
-                // For pseudo-root, remove proxy shape from maya's selection
-                alreadySelected = removeFromMSel(helper.m_newSelection, thisMObject());
-            } else {
-                alreadySelected = m_selectedPaths.count(path) > 0;
+                removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
+                removeFromMSel(helper.m_newSelection, object);
+                helper.m_removedRefs.emplace_back(prim.GetPath(), object);
             }
 
-            auto prim = stage->GetPrimAtPath(path);
-            if (prim) {
-                if (alreadySelected)
-                    removePrims.push_back(prim);
-                else {
-                    insertPrims.push_back(prim);
+            uint32_t hasNodesToCreate = 0;
+            for (auto prim : insertPrims) {
+                if (prim.IsPseudoRoot()) {
+                    // For pseudo root, just modify maya's selection, don't alter
+                    // our internal paths
+                    newlySelectedPaths.append(MFnDagNode(thisMObject()).fullPathName());
+                    addObjToSelectionList(helper.m_newSelection, thisMObject());
+                    continue;
                 }
+                m_selectedPaths.insert(prim.GetPath());
+                MString pathName;
+                MObject object = makeUsdTransformChain_internal(
+                    prim,
+                    helper.m_modifier1,
+                    ProxyShape::kSelection,
+                    &helper.m_modifier2,
+                    &hasNodesToCreate,
+                    &pathName);
+                newlySelectedPaths.append(pathName);
+                addObjToSelectionList(helper.m_newSelection, object);
+                helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
             }
+            helper.m_paths = m_selectedPaths;
+        } break;
         }
-
-        if (removePrims.empty() && insertPrims.empty()) {
-            m_pleaseIgnoreSelection = false;
-            triggerEvent("PreSelectionChanged");
-            triggerEvent("PostSelectionChanged");
-            triggerEvent("SelectionEnded");
-            return false;
-        }
-
-        for (auto prim : removePrims) {
-            if (prim.IsPseudoRoot()) {
-                // We've already removed this when iterating orderedPaths,
-                // we just added to removePrims so the "removePrims.empty" early-exit test
-                // wouldn't fire
-                continue;
-            }
-            auto    temp = m_requiredPaths.find(prim.GetPath());
-            MObject object = temp->second.node();
-
-            m_selectedPaths.erase(prim.GetPath());
-
-            removeUsdTransformChain_internal(prim, helper.m_modifier1, ProxyShape::kSelection);
-            removeFromMSel(helper.m_newSelection, object);
-            helper.m_removedRefs.emplace_back(prim.GetPath(), object);
-        }
-
-        uint32_t hasNodesToCreate = 0;
-        for (auto prim : insertPrims) {
-            if (prim.IsPseudoRoot()) {
-                // For pseudo root, just modify maya's selection, don't alter
-                // our internal paths
-                newlySelectedPaths.append(MFnDagNode(thisMObject()).fullPathName());
-                addObjToSelectionList(helper.m_newSelection, thisMObject());
-                continue;
-            }
-            m_selectedPaths.insert(prim.GetPath());
-            MString pathName;
-            MObject object = makeUsdTransformChain_internal(
-                prim,
-                helper.m_modifier1,
-                ProxyShape::kSelection,
-                &helper.m_modifier2,
-                &hasNodesToCreate,
-                &pathName);
-            newlySelectedPaths.append(pathName);
-            addObjToSelectionList(helper.m_newSelection, object);
-            helper.m_insertedRefs.emplace_back(prim.GetPath(), object);
-        }
-        helper.m_paths = m_selectedPaths;
-    } break;
     }
+#if defined(WANT_UFE_BUILD)
+    else {
+        auto selection = Ufe::GlobalSelection::get();
+        helper.m_previousUFESelection = *selection;
+        helper.m_previousPaths = selectedPaths();
+        auto proxyShapePath = ufePath();
+        auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
+        if (handler == nullptr) {
+            triggerEvent("SelectionEnded");
+            return false;
+        }
+
+        // determine whether the proxy shape node is currently selected
+        // (this is to handle the edge case where we select or deselect the root prim)
+        MSelectionList sl;
+        MGlobal::getActiveSelectionList(sl);
+        const bool proxyIsSelected = sl.hasItem(thisMObject());
+
+        const SdfPath root("/");
+        switch (helper.m_mode) {
+        case MGlobal::kReplaceList: {
+            helper.m_newUFESelection = Ufe::Selection();
+            for (auto& selectedPath : orderedPaths) {
+                // when selecting the root path, select the ProxyShape node using normal maya
+                // selection
+                if (selectedPath == root) {
+                    helper.m_selectRoot = true;
+                } else {
+                    // Build a path segment of the USD picked object
+                    Ufe::PathSegment ps_usd(
+                        selectedPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
+
+                    // Create a sceneItem
+                    Ufe::SceneItem::Ptr si = handler->createItem(proxyShapePath + ps_usd);
+
+                    // Add the sceneItem to selection
+                    helper.m_newUFESelection.append(si);
+
+                    newlySelectedPaths.append(si->path().string().c_str());
+                }
+            }
+        } break;
+
+        case MGlobal::kAddToHeadOfList:
+        case MGlobal::kAddToList: {
+            helper.m_newUFESelection = *selection;
+            for (auto& selectedPath : orderedPaths) {
+                // when selecting the root path, select the ProxyShape node using normal maya
+                // selection
+                if (selectedPath == root) {
+                    if (!proxyIsSelected)
+                        helper.m_selectRoot = true;
+
+                } else {
+                    // Build a path segment of the USD picked object
+                    Ufe::PathSegment ps_usd(
+                        selectedPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
+
+                    // Create a sceneItem
+                    const Ufe::SceneItem::Ptr& si { handler->createItem(proxyShapePath + ps_usd) };
+
+                    // Add the sceneItem to selection
+                    helper.m_newUFESelection.append(si);
+
+                    newlySelectedPaths.append(si->path().string().c_str());
+                }
+            }
+        } break;
+
+        case MGlobal::kRemoveFromList: {
+            helper.m_newUFESelection = *selection;
+            for (auto& selectedPath : orderedPaths) {
+                // when selecting the root path, select the ProxyShape node using normal maya
+                // selection
+                if (selectedPath == root) {
+                    if (proxyIsSelected)
+                        helper.m_unselectRoot = true;
+                } else {
+                    // Build a path segment of the USD picked object
+                    Ufe::PathSegment ps_usd(
+                        selectedPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
+
+                    // Create a sceneItem
+                    const Ufe::SceneItem::Ptr& si { handler->createItem(proxyShapePath + ps_usd) };
+
+                    // Add the sceneItem to selection
+                    helper.m_newUFESelection.remove(si);
+                }
+            }
+        } break;
+
+        case MGlobal::kXORWithList: {
+            helper.m_newUFESelection = *selection;
+            for (auto& selectedPath : orderedPaths) {
+                // when selecting the root path, select the ProxyShape node using normal maya
+                // selection
+                if (selectedPath == root) {
+                    helper.m_selectRoot = !proxyIsSelected;
+                    helper.m_unselectRoot = proxyIsSelected;
+                } else {
+                    // Build a path segment of the USD picked object
+                    Ufe::PathSegment ps_usd(
+                        selectedPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
+
+                    // Create a sceneItem
+                    const Ufe::SceneItem::Ptr& si { handler->createItem(proxyShapePath + ps_usd) };
+
+                    // Add the sceneItem to selection
+                    if (!helper.m_newUFESelection.remove(si)) {
+                        helper.m_newUFESelection.append(si);
+                        newlySelectedPaths.append(si->path().string().c_str());
+                    }
+                }
+            }
+        } break;
+        }
+
+        // append the proxy shape path if the root prim was selected.
+        if (helper.m_selectRoot) {
+            MDagPath path;
+            MDagPath::getAPathTo(thisMObject(), path);
+            newlySelectedPaths.append(MString("|world") + path.fullPathName());
+        }
+    }
+#endif
 
     triggerEvent("PreSelectionChanged");
     if (newlySelectedPaths.length()) {
@@ -1493,6 +1722,20 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
     m_pleaseIgnoreSelection = false;
     triggerEvent("SelectionEnded");
     return true;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::notifyPreSelectionChanged()
+{
+    triggerEvent("SelectionStarted");
+    triggerEvent("PreSelectionChanged");
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::notifyPostSelectionChanged()
+{
+    triggerEvent("PostSelectionChanged");
+    triggerEvent("SelectionEnded");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
