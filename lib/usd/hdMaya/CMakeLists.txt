@@ -96,9 +96,9 @@ target_link_libraries(${TARGET_NAME}
         usdImaging
         usdImagingGL
         mayaUsd
+        Boost::boost
         ${OPENGL_gl_LIBRARY} 
         ${MAYA_LIBRARIES}
-        ${Boost_LIBRARIES} 
         ${GLEW_LIBRARY}
         ${TBB_LIBRARIES}
         ${PYTHON_LIBRARIES}

@@ -146,15 +146,6 @@ function(mayaUsd_install_rpath rpathRef NAME)
     )
 endfunction()
 
-function(mayaUsd_promoteMayaUsdHeader)
-    set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/mayaUsd.h.src)
-    set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
-    if (NOT EXISTS ${dstFile})
-        message(STATUS "promoting: " ${srcFile})
-    endif()
-    configure_file(${srcFile} ${dstFile})
-endfunction()
-
 #
 # mayaUsd_promoteHeaderList(
 #                        [SUBDIR  <sub-directory name>]
