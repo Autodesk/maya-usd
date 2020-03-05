@@ -37,7 +37,7 @@ target_compile_definitions(${PROJECT_NAME}
         MAYAUSD_CORE_EXPORT
         MFB_PACKAGE_NAME="${PROJECT_NAME}"
         MFB_ALT_PACKAGE_NAME="${PROJECT_NAME}"
-        MFB_PACKAGE_MODULE=mayaUsd
+        MFB_PACKAGE_MODULE="${PROJECT_NAME}"
         $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
@@ -90,8 +90,8 @@ target_link_libraries(${PROJECT_NAME}
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
         ${MAYA_LIBRARIES}
     PRIVATE
-        ${Boost_FILESYSTEM_LIBRARY}
-        ${Boost_SYSTEM_LIBRARY}
+        Boost::filesystem
+        Boost::system
 )
 
 # -----------------------------------------------------------------------------
