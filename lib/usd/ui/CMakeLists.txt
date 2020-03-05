@@ -29,11 +29,13 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         cmds/USDImportDialogCmd.cpp
         factories/TreeModelFactory.cpp
+        images/ui.qrc
         views/ItemDelegate.cpp
         views/TreeItem.cpp
         views/TreeModel.cpp
         views/USDImportDialog.cpp
         views/USDImportDialog.ui
+        views/USDQtUtil.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -43,11 +45,13 @@ set(mayaUsdUI_headers
     api.h
     cmds/USDImportDialogCmd.h
     factories/TreeModelFactory.h
+    views/IMayaMQtUtil.h
     views/IUSDImportView.h
     views/ItemDelegate.h
     views/TreeItem.h
     views/TreeModel.h
     views/USDImportDialog.h
+    views/USDQtUtil.h
 )
 
 mayaUsd_promoteHeaderList(SUBDIR "ui" HEADERS ${mayaUsdUI_headers})
@@ -68,6 +72,7 @@ target_include_directories(${PROJECT_NAME}
     PRIVATE
         ${MAYA_INCLUDE_DIRS}
         ${PXR_INCLUDE_DIRS}
+        ${CMAKE_BINARY_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
