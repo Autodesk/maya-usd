@@ -13,6 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Modifications copyright (C) 2020 Autodesk
+//
+
 #include "pxr/pxr.h"
 
 #include "../../fileio/primReaderRegistry.h"
@@ -22,18 +25,37 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-PXRUSDMAYA_DEFINE_READER(UsdGeomMesh, args, context)
+// Prim reader for mesh
+class MayaUsdPrimReaderMesh final : public UsdMayaPrimReader
 {
-    const UsdPrim& usdPrim = args.GetUsdPrim();
-    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return UsdMayaTranslatorMesh::Create(
-            UsdGeomMesh(usdPrim),
-            parentNode,
-            args,
-            context);
+public:
+    MayaUsdPrimReaderMesh(const UsdMayaPrimReaderArgs& args) 
+        : UsdMayaPrimReader(args) {}
+
+    ~MayaUsdPrimReaderMesh() override {}
+
+    bool Read(UsdMayaPrimReaderContext* context) override;
+};
+
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, UsdGeomMesh) 
+{
+    UsdMayaPrimReaderRegistry::Register<UsdGeomMesh>(
+        [](const UsdMayaPrimReaderArgs& args) {
+            return std::make_shared<MayaUsdPrimReaderMesh>(args);
+        });
 }
 
+bool
+MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
+{
+    const UsdPrim& usdPrim = _GetArgs().GetUsdPrim();
+
+    auto parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+
+    return UsdMayaTranslatorMesh::Create(UsdGeomMesh(usdPrim),
+                                         parentNode,
+                                         _GetArgs(),
+                                         context);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
