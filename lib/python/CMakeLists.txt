@@ -1,3 +1,11 @@
+# -----------------------------------------------------------------------------
+# sources
+# -----------------------------------------------------------------------------
+target_sources(${PROJECT_NAME}
+    PRIVATE
+        moduleDeps.cpp
+)
+
 # Python extension library for mayaUsd library bindings. Pixar's TF_WRAP_MODULE
 # macro expects the library name to be prefixed with _, but adds an underscore
 # to the package name when creating the Python extension module initialization
@@ -17,7 +25,6 @@ add_library(${PYTHON_TARGET_NAME} SHARED)
 target_sources(${PYTHON_TARGET_NAME} 
     PRIVATE
         module.cpp
-        moduleDeps.cpp
         wrapAdaptor.cpp
         wrapBlockSceneModificationContext.cpp
         wrapColorSpace.cpp
