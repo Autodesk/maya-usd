@@ -305,19 +305,30 @@ set_target_properties(${PYTHON_LIBRARY_LOCATION}
 )
 set_property(GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}/${PYTHON_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
-install(FILES __init__.py
-    DESTINATION ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py)
+execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py)
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.pyc
+    DESTINATION
+        ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}
 )
 install(CODE
-    "file(WRITE \"${AL_INSTALL_PREFIX}/lib/python/AL/__init__.py\"
+    "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/python/AL/__init__.py\"
     \"try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/python/AL/__init__.py
+    DESTINATION ${AL_INSTALL_PREFIX}/lib/python/AL
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
     DESTINATION ${AL_INSTALL_PREFIX}/lib/usd/${LIBRARY_NAME}/resources
 )
 install(CODE
-    "file(WRITE \"${AL_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+    "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
+    DESTINATION ${AL_INSTALL_PREFIX}/lib/usd
 )
 
 # install public headers
