@@ -40,16 +40,13 @@ set(pythonPath
     "$ENV{PYTHONPATH}"
 )
 
-if(IS_WINDOWS)
-    string(REPLACE ";" "\;" path "${path}")
-    string(REPLACE ";" "\;" pythonPath "${pythonPath}")
-else()
-    separate_arguments(path NATIVE_COMMAND "${path}")
-    separate_arguments(pythonPath NATIVE_COMMAND "${pythonPath}")
+set(pxrPluginPath 
+    "${CMAKE_INSTALL_PREFIX}/lib/usd"
+)
 
-    string(REPLACE "\;" ":" path "${path}")
-    string(REPLACE "\;" ":" pythonPath "${pythonPath}")
-endif()
+separate_argument_list(path)
+separate_argument_list(pythonPath)
+separate_argument_list(pxrPluginPath)
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
@@ -66,6 +63,7 @@ foreach(script ${test_script_files})
     set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT
         "PATH=${path}"
         "PYTHONPATH=${pythonPath}"
+        "PXR_PLUGINPATH_NAME=${pxrPluginPath}"
         "MAYA_NO_STANDALONE_ATEXIT=1"
     )
 endforeach()
