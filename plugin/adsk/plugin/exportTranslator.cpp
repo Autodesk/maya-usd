@@ -93,6 +93,7 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
                 theOption[1].split(',', filteredTypes);
             }
             else if (argName == "frameSample") {
+                frameSamples.clear();
                 MStringArray samplesStrings;
                 theOption[1].split(' ', samplesStrings);
                 unsigned int nbSams = samplesStrings.length();
