@@ -89,7 +89,7 @@ pxr_register_test(testPxrUsdPreviewSurfaceExport
     TESTENV testPxrUsdPreviewSurfaceExport
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources:${TEST_INSTALL_PREFIX}/maya/plugin/pxrUsdPreviewSurface/resources
+        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
