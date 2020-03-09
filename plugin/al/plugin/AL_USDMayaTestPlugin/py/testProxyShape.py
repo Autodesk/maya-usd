@@ -179,8 +179,6 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         self._stageA.prim = self._stageA.stage.GetPrimAtPath("/{}".format(self._stageA.poly))
         self._stageB.prim = self._stageB.stage.GetPrimAtPath("/{}".format(self._stageB.poly))
 
-        os.remove(stageA_file.name)
-        os.remove(stageB_file.name)
 
     def tearDown(self):
         """New Maya scene, unload plugin, reset data."""
@@ -191,6 +189,9 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         self._stageA = self.MayaUsdTestData()
         self._stageB = self.MayaUsdTestData()
 
+        os.remove(self.stageA_file.name)
+        os.remove(self.stageB_file.name)
+        
     def test_getMayaPathFromUsdPrim_success(self):
         """Maya scenes can contain multiple proxies. Query each proxy and test they return the correct Maya nodes."""
 
