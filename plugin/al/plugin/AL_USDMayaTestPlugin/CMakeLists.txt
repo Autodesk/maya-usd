@@ -7,7 +7,6 @@ add_library(${TARGET_NAME} SHARED)
 target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
-        AL/maya/test_DiffCore.cpp
         AL/maya/test_EventHandler.cpp
         AL/maya/test_MatrixToSRT.cpp
         AL/maya/test_MayaEventManager.cpp
@@ -32,6 +31,7 @@ target_sources(${TARGET_NAME}
         AL/usdmaya/nodes/test_ActiveInactive.cpp
         AL/usdmaya/nodes/test_ExtraDataPlugin.cpp
         AL/usdmaya/nodes/test_LayerManager.cpp
+        AL/usdmaya/nodes/test_lockPrims.cpp
         AL/usdmaya/nodes/test_ProxyShape.cpp
         AL/usdmaya/nodes/test_ProxyShapeSelectabilityDB.cpp
         AL/usdmaya/nodes/test_ProxyUsdGeomCamera.cpp
@@ -85,7 +85,7 @@ target_link_libraries(${TARGET_NAME}
         AL_EventSystem
         AL_USDMayaUtils
         AL_MayaUtils
-        AL_USDUtils
+        mayaUsdUtils
         AL_USDMaya   #Adding this recursively pulls in lots of things
         AL_MayaTest
         AL_USDMayaSchemas
@@ -100,10 +100,13 @@ if(IS_MACOSX OR IS_LINUX)
     if(BUILD_TESTS)
         mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib/gtest")
     endif()
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../../USD/lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
     endif()
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib")
@@ -139,9 +142,15 @@ set(mayaPluginPath
     "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
 )
 
+set(pxrPluginPath
+    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd"
+    "${CMAKE_INSTALL_PREFIX}/lib/usd"
+)
+
 separate_argument_list(path)
 separate_argument_list(pythonPath)
 separate_argument_list(mayaPluginPath)
+separate_argument_list(pxrPluginPath)
 
 add_test(
     NAME ${TARGET_NAME}
@@ -158,7 +167,7 @@ set_property(TEST ${TARGET_NAME} APPEND PROPERTY ENVIRONMENT
     "PYTHONPATH=${pythonPath}"
     "PATH=${path}"
     "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
-    "PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd"
+    "PXR_PLUGINPATH_NAME=${pxrPluginPath}"
     "MAYA_NO_STANDALONE_ATEXIT=1"
 )
 

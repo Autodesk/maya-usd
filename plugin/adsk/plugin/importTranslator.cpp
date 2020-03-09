@@ -60,8 +60,17 @@ UsdMayaImportTranslator::reader(
         MPxFileTranslator::FileAccessMode  /*mode*/)
 {
     std::string fileName(file.fullName().asChar(), file.fullName().length());
-    std::string primPath("/");
     std::map<std::string, std::string> variants;
+
+    // If the input filename doesn't match the one in the importData we clear out
+    // the import data. This would happen if the user performed an import with
+    // the dialog and then manually with a different file name.
+    MayaUsd::ImportData& importData = MayaUsd::ImportData::instance();
+    if (fileName != importData.filename())
+    {
+        importData.clearData();
+        importData.setFilename(fileName);
+    }
 
     bool readAnimData = true;
     bool useCustomFrameRange = false;
@@ -89,6 +98,8 @@ UsdMayaImportTranslator::reader(
                 timeInterval.SetMin(theOption[1].asDouble());
             } else if (argName == "endTime") {
                 timeInterval.SetMax(theOption[1].asDouble());
+            } else if (argName == "primPath") {
+                importData.setRootPrimPath(theOption[1].asChar());
             } else {
                 userArgs[argName] =
                     UsdMayaUtil::ParseArgumentValue(
@@ -113,9 +124,16 @@ UsdMayaImportTranslator::reader(
             userArgs,
             /* importWithProxyShapes = */ false,
             timeInterval);
-    UsdMaya_ReadJob mUsdReadJob(fileName, primPath, variants, jobArgs);
+
+    UsdMaya_ReadJob mUsdReadJob(importData, jobArgs);
     std::vector<MDagPath> addedDagPaths;
     bool success = mUsdReadJob.Read(&addedDagPaths);
+
+    // After a successful import we clear the import data as we don't want to
+    // re-use it on a subsequent import.
+    if (success)
+        importData.clearData();
+
     return (success) ? MS::kSuccess : MS::kFailure;
 }
 

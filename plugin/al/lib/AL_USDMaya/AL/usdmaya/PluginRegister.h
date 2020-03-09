@@ -47,11 +47,8 @@
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
-
-#if USD_VERSION_NUM >= 1903
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/glContext.h"
-#endif
 
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
@@ -174,13 +171,11 @@ MStatus registerPlugin(AFnPlugin& plugin)
 {
   GlfGlewInit();
 
-  #if USD_VERSION_NUM >= 1903
   // We may be in a non-gui maya... if so,
   // GlfContextCaps::InitInstance() will error
   if (GlfGLContext::GetCurrentGLContext()->IsValid()) {
     GlfContextCaps::InitInstance();
   }
-  #endif
 
   if(!MGlobal::optionVarExists("AL_usdmaya_selectMode"))
   {
@@ -209,7 +204,7 @@ MStatus registerPlugin(AFnPlugin& plugin)
 
   if(!MGlobal::optionVarExists("AL_usdmaya_pushToPrim"))
   {
-    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", false);
+    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", true);
   }
 
   if(!MGlobal::optionVarExists("AL_usdmaya_ignoreLockPrims"))
@@ -345,6 +340,30 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL::maya::utils::MenuBuilder::addEntry("USD/Selection Ignore Lock Prims Enabled", "optionVar -iv \\\"AL_usdmaya_ignoreLockPrims\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims"));
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
+
+  // As of 2-Aug-2019, these PlugPlugin translators are not loaded
+  // automatically.  To be investigated.  A duplicate of this code is in the
+  // Autodesk plugin.cpp.
+  const std::vector<std::string> translatorPluginNames{
+      "mayaUsd_Schemas", "mayaUsd_Translators" };
+  const auto& plugRegistry = PlugRegistry::GetInstance();
+  std::stringstream msg("mayaUsdPlugin: ");
+  for (const auto& pluginName : translatorPluginNames) {
+      auto plugin = plugRegistry.GetPluginWithName(pluginName);
+      if (!plugin) {
+          status = MStatus::kFailure;
+          msg << "translator " << pluginName << " not found.";
+          status.perror(msg.str().c_str());
+      }
+      else {
+          // Load is a no-op if already loaded.
+          if (!plugin->Load()) {
+              status = MStatus::kFailure;
+              msg << pluginName << " translator load failed.";
+              status.perror(msg.str().c_str());
+          }
+      }
+  }
 
   // Force all plugins to be loaded at startup time. Unless we load plugins upfront
   // options will not be registered until the start of import or export, and won't be available in the GUI

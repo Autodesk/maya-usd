@@ -186,7 +186,7 @@ UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
 
         MObject parentNode = ctx.GetMayaNode(proxyPrim.GetPath().GetParentPath(), false);
         if (!UsdMayaTranslatorModelAssembly::ReadAsProxy(proxyPrim,
-                                                            mVariants,
+                                                            mImportData.rootVariantSelections(),
                                                             parentNode,
                                                             args,
                                                             &ctx)) {
@@ -236,7 +236,7 @@ UsdMaya_ReadJobWithSceneAssembly::_ProcessSubAssemblyPrims(
         // We use the file path of the file currently being imported and
         // the path to the prim within that file when creating the
         // subassembly.
-        std::string subAssemblyUsdFilePath = mFileName;
+        std::string subAssemblyUsdFilePath = mImportData.filename();
         SdfPath subAssemblyUsdPrimPath = subAssemblyPrim.GetPath();
 
         if (!_CreateParentTransformNodes(subAssemblyPrim, args, &ctx)) {

@@ -45,10 +45,17 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
 		#
         # testDuplicateCmd.py
         # testMoveCmd.py
+        testObject3d.py
         # testRotateCmd.py
         # testScaleCmd.py
         # testTransform3dTranslate.py
+        testRename.py
     )
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
+        list(APPEND test_script_files
+            testContextOps.py
+        )
+    endif()
 endif()
 
 # copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there

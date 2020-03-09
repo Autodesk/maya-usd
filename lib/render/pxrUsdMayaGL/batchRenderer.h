@@ -34,6 +34,9 @@
 #include "pxr/base/gf/vec4d.h"
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakBase.h"
+#if USD_VERSION_NUM > 2002
+#include "pxr/imaging/hd/driver.h"
+#endif
 #include "pxr/imaging/hd/engine.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprimCollection.h"
@@ -88,6 +91,10 @@ class UsdMayaGLBatchRenderer
         : public TfSingleton<UsdMayaGLBatchRenderer>, public TfWeakBase
 {
 public:
+
+    /// Maya profiler category ID
+    MAYAUSD_CORE_PUBLIC
+    static const int ProfilerCategory;
 
     /// Initialize the batch renderer.
     ///
@@ -450,6 +457,10 @@ private:
     /// *after* the render index. We enforce that ordering by declaring the
     /// render delegate *before* the render index, since class members are
     /// destructed in reverse declaration order.
+#if USD_VERSION_NUM > 2002
+    std::unique_ptr<class Hgi> _hgi;
+    HdDriver _hgiDriver;
+#endif
     HdEngine _hdEngine;
     HdStRenderDelegate _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;

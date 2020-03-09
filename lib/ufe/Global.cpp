@@ -22,7 +22,6 @@
 #include "UsdTransform3dHandler.h"
 #include "UsdSceneItemOpsHandler.h"
 
-#include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/hierarchyHandler.h>
 #include <ufe/ProxyShapeHierarchyHandler.h>
@@ -30,6 +29,12 @@
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // Note: must come after include of ufe files so we have the define.
 #include "UsdAttributesHandler.h"
+#include "UsdObject3dHandler.h"
+#if UFE_PREVIEW_VERSION_NUM >= 2009
+#include "UsdContextOpsHandler.h"
+#endif
+#else
+#include "UfeVersionCompat.h"
 #endif
 
 #include <string>
@@ -93,14 +98,20 @@ MStatus initialize()
 	auto usdHierHandler = UsdHierarchyHandler::create();
 	auto usdTrans3dHandler = UsdTransform3dHandler::create();
 	auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
-#ifdef UFE_V2_FEATURES_AVAILABLE
-	auto usdAttributesHandler = UsdAttributesHandler::create();
-	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler, usdAttributesHandler, nullptr);
-#else
-	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, usdSceneItemOpsHandler);
+	UFE_V2(auto usdAttributesHandler = UsdAttributesHandler::create();)
+	UFE_V2(auto usdObject3dHandler = UsdObject3dHandler::create();)
+#if UFE_PREVIEW_VERSION_NUM >= 2009
+	UFE_V2(auto usdContextOpsHandler = UsdContextOpsHandler::create();)
 #endif
+	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
+		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, 
+        usdSceneItemOpsHandler
+        UFE_V2(, usdAttributesHandler, usdObject3dHandler)
+#if UFE_PREVIEW_VERSION_NUM >= 2009
+        UFE_V2(, usdContextOpsHandler)
+#endif
+    );
+
 #if !defined(NDEBUG)
 	assert(g_USDRtid != 0);
 #endif
@@ -126,6 +137,11 @@ MStatus finalize()
 	g_StagesSubject.Reset();
 
 	return MS::kSuccess;
+}
+
+Ufe::Rtid getUsdRunTimeId()
+{
+    return g_USDRtid;
 }
 
 } // namespace ufe

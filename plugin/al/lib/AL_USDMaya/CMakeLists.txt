@@ -118,6 +118,7 @@ list(APPEND AL_usdmaya_nodes_headers
 
 list(APPEND AL_usdmaya_nodes_proxy_headers
         AL/usdmaya/nodes/proxy/PrimFilter.h
+        AL/usdmaya/nodes/proxy/LockManager.h
 )
 
 list(APPEND AL_usdmaya_nodes_source
@@ -136,7 +137,9 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/Scope.cpp
         AL/usdmaya/nodes/BasicTransformationMatrix.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
+        AL/usdmaya/nodes/proxy/LockManager.cpp
         AL/usdmaya/nodes/proxy/PrimFilter.cpp
+        AL/usdmaya/nodes/proxy/ProxyShapeMetaData.cpp
 )
 
 list(APPEND AL_usdmaya_public_headers
@@ -167,14 +170,15 @@ target_compile_definitions(${LIBRARY_NAME}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
-# AL_USDMayaGL
 target_include_directories(
     ${LIBRARY_NAME}
     PUBLIC
     ${PXR_INCLUDE_DIRS}
     ${MAYA_INCLUDE_DIRS}
+    $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
 set(Boost_LINK_LIBRARIES
@@ -193,7 +197,7 @@ target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
-    AL_USDUtils
+    mayaUsdUtils
     AL_USDTransaction
     ar 
     gf 
@@ -214,11 +218,8 @@ target_link_libraries(${LIBRARY_NAME}
     ${MAYA_OpenMaya_LIBRARY}
     ${MAYA_OpenMayaRender_LIBRARY}
     mayaUsd
+    $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
-
-if(UFE_FOUND)
-    target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
-endif()
 
 if(NEED_BOOST_FILESYSTEM)
     target_link_libraries(${LIBRARY_NAME}

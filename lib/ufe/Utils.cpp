@@ -18,12 +18,15 @@
 #include "private/Utils.h"
 #include "UsdStageMap.h"
 #include "ProxyShapeHandler.h"
+#include "../nodes/proxyShapeBase.h"
 
 #include <pxr/base/tf/hashset.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MFnDependencyNode.h>
 
 #include <cassert>
 #include <string>
@@ -105,6 +108,9 @@ SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim)
 
 	SdfLayerHandle defLayer;
 	auto layerStack = prim.GetStage()->GetLayerStack();
+    auto stage = prim.GetStage();
+    auto primFromPath = stage->GetPrimAtPath(prim.GetPath());
+
 	for (auto layer : layerStack)
 	{
 		auto primSpec = layer->GetPrimAtPath(prim.GetPath());
@@ -216,6 +222,46 @@ MDagPath nameToDagPath(const std::string& name)
 	MStatus status = selection.getDagPath(0, dag);
 	CHECK_MSTATUS(status);
 	return dag;
+}
+
+UsdTimeCode getTime(const Ufe::Path& path)
+{
+    // Path should not be empty.
+    if (!TF_VERIFY(!path.empty())) {
+        return UsdTimeCode::Default();
+    }
+
+    // Get the time from the proxy shape.  This will be the tail component of
+    // the first path segment.
+    auto proxyShapePath = Ufe::Path(path.getSegments()[0]);
+
+    // Keep a single-element path to MObject cache, as all USD prims in a stage
+    // share the same proxy shape.
+    static std::pair<Ufe::Path, MObjectHandle> cache;
+
+    MObject proxyShapeObj;
+
+    if (cache.first == proxyShapePath && cache.second.isValid()) {
+        proxyShapeObj = cache.second.object();
+    }
+    else {
+        // Not found in the cache, or no longer valid.  Get the proxy shape
+        // MObject from its path, and put it in the cache.  Pop the head of the
+        // UFE path to get rid of "|world", which is implicit in Maya.
+        auto proxyShapeDagPath = nameToDagPath(
+            proxyShapePath.popHead().string());
+        TF_VERIFY(proxyShapeDagPath.isValid());
+        proxyShapeObj = proxyShapeDagPath.node();
+        cache = std::pair<Ufe::Path, MObjectHandle>(
+            proxyShapePath, MObjectHandle(proxyShapeObj));
+    }
+    
+    // Get time from the proxy shape.
+    MFnDependencyNode fn(proxyShapeObj);
+    auto proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+    TF_VERIFY(proxyShape);
+
+    return proxyShape->getTime();
 }
 
 } // namespace ufe

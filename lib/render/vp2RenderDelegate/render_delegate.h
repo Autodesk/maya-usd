@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -109,7 +109,11 @@ public:
     MHWRender::MShaderInstance* GetFallbackShader(const MColor& color) const;
     MHWRender::MShaderInstance* GetFallbackCPVShader() const;
     MHWRender::MShaderInstance* Get3dSolidShader(const MColor& color) const;
+    MHWRender::MShaderInstance* Get3dCPVSolidShader() const;
     MHWRender::MShaderInstance* Get3dFatPointShader() const;
+
+    MHWRender::MShaderInstance* GetBasisCurvesLinearFallbackShader(const MColor& color) const;
+    MHWRender::MShaderInstance* GetBasisCurvesCubicFallbackShader(const MColor& color) const;
 
     const MHWRender::MSamplerState* GetSamplerState(
         const MHWRender::MSamplerStateDesc& desc) const;

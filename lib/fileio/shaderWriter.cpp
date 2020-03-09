@@ -20,8 +20,8 @@
 
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/property.h"
 
 #include <maya/MFnDependencyNode.h>
 
@@ -39,24 +39,24 @@ UsdMayaShaderWriter::UsdMayaShaderWriter(
 
 /* virtual */
 TfToken
-UsdMayaShaderWriter::GetShadingPropertyNameForMayaAttrName(
+UsdMayaShaderWriter::GetShadingAttributeNameForMayaAttrName(
         const TfToken& mayaAttrName)
 {
     return TfToken();
 }
 
 /* virtual */
-UsdProperty
-UsdMayaShaderWriter::GetShadingPropertyForMayaAttrName(
+UsdAttribute
+UsdMayaShaderWriter::GetShadingAttributeForMayaAttrName(
         const TfToken& mayaAttrName)
 {
-    const TfToken propertyName =
-        GetShadingPropertyNameForMayaAttrName(mayaAttrName);
-    if (propertyName.IsEmpty()) {
-        return UsdProperty();
+    const TfToken attrName =
+        GetShadingAttributeNameForMayaAttrName(mayaAttrName);
+    if (attrName.IsEmpty()) {
+        return UsdAttribute();
     }
 
-    return _usdPrim.GetProperty(propertyName);
+    return _usdPrim.GetAttribute(attrName);
 }
 
 

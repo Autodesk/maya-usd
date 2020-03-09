@@ -20,7 +20,8 @@
 #include <vector>
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/sdf/path.h"
-#include "AL/usd/utils/ForwardDeclares.h"
+
+#include <mayaUsdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -55,6 +56,11 @@ struct PrimFilterInterface
 
 
   virtual std::string generateTranslatorId(UsdPrim prim) = 0;
+
+  /// \brief  check if a prim is dirty.
+  /// \param  prim the prim to check.
+  /// \return returns true if yes, false otherwise.
+  virtual bool isPrimDirty(const UsdPrim& prim) = 0;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -70,7 +76,7 @@ public:
   /// \param  proxy the proxy shape
   /// \param  forceImport mirrors the status of the -fi flag
   AL_USDMAYA_PUBLIC
-  PrimFilter(const SdfPathVector& previousPrims, const AL::usd::utils::UsdPrimVector& newPrimSet, PrimFilterInterface* proxy, bool forceImport = false);
+  PrimFilter(const SdfPathVector& previousPrims, const MayaUsdUtils::UsdPrimVector& newPrimSet, PrimFilterInterface* proxy, bool forceImport = false);
 
   /// \brief  returns the set of prims to create
   inline const std::vector<UsdPrim>& newPrimSet() const

@@ -46,12 +46,10 @@ class TransformationMatrix
 
   friend class Transform;
 
-  UsdPrim m_prim;
   UsdGeomXformable m_xform;
   UsdTimeCode m_time;
   std::vector<UsdGeomXformOp> m_xformops;
   std::vector<TransformOperation> m_orderedOps;
-  MObjectHandle m_transformNode;
 
   // tweak values. These are applied on top of the USD transform values to produce the final result.
   MVector m_scaleTweak;
@@ -356,11 +354,6 @@ class TransformationMatrix
 
 public:
 
-  /// \brief  sets the MObject for the transform
-  /// \param  object the MObject for the custom transform node
-  void setMObject(const MObject object) override
-    { m_transformNode = object; }
-
   /// \brief  the type ID of the transformation matrix
   AL_USDMAYA_PUBLIC
   static const MTypeId kTypeId;
@@ -501,6 +494,36 @@ public:
   void pushScaleToPrim();
   void pushShearToPrim();
   void pushTransformToPrim();
+
+  // Helper class.  Creating a variable of this class temporarily disables
+  // push to prim after saving its original state.  When the variable goes
+  // out of scope, the original push to prim state is restored by the
+  // destructor.
+  //
+  class Scoped_DisablePushToPrim
+  {
+  public:
+    Scoped_DisablePushToPrim(TransformationMatrix& tm) : m_transformationMatrix(tm)
+    {
+      m_IsPushToPrimEnabled = m_transformationMatrix.pushToPrimEnabled();
+      m_transformationMatrix.m_flags &= ~TransformationMatrix::kPushToPrimEnabled;
+    }
+
+    ~Scoped_DisablePushToPrim()
+    {
+      if(m_IsPushToPrimEnabled)
+      {
+        m_transformationMatrix.m_flags |= TransformationMatrix::kPushToPrimEnabled;
+      }
+    }
+
+  private:
+    // The TransformationMatrix whose push to prim state is being affected.
+    TransformationMatrix& m_transformationMatrix;
+
+    // Holder for the original value of push to prim state. 
+    bool m_IsPushToPrimEnabled;
+  };
 
 };
 

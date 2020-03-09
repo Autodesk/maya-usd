@@ -38,6 +38,7 @@
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 
+#include <functional>
 #include <memory>
 
 using namespace AL::usdmaya::fileio::translators;
@@ -94,6 +95,25 @@ public:
   TfType getTranslatedType() const override
   {
     return this->CallPureVirtual<TfType>("getTranslatedType")();
+  }
+
+  std::size_t generateUniqueKey(const UsdPrim& prim) const override
+  {
+    if (Override o = GetOverride("generateUniqueKey"))
+    {
+      auto res = std::function<boost::python::object (const UsdPrim&)>(TfPyCall<boost::python::object>(o))(prim);
+      if (!res) {
+        return 0;
+      }
+      TfPyLock pyLock;
+      boost::python::str strObj(res);
+      boost::python::extract<std::string> strValue(strObj);
+      if (strValue.check())
+      {
+        return std::hash<std::string>{}(strValue);
+      }
+    }
+    return 0;
   }
 
   bool needsTransformParent() const override
@@ -266,6 +286,7 @@ void wrapTranslatorBase()
     .def(TfMakePyConstructor(&TranslatorBaseWrapper::New))
     .def("initialize", &TranslatorBase::initialize, &TranslatorBaseWrapper::initialize)
     .def("getTranslatedType", boost::python::pure_virtual(&TranslatorBase::getTranslatedType))
+    .def("generateUniqueKey", &TranslatorBase::generateUniqueKey, &TranslatorBaseWrapper::generateUniqueKey)
     .def("context", &TranslatorBase::context)
     .def("needsTransformParent", &TranslatorBase::needsTransformParent, &TranslatorBaseWrapper::needsTransformParent)
     .def("importableByDefault", &TranslatorBase::importableByDefault, &TranslatorBaseWrapper::importableByDefault)

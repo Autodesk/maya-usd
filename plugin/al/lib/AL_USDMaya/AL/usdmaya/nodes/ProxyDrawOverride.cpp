@@ -314,7 +314,11 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
               MMatrix value;
               lightParam->getParameter(paramNames[i], value);
               GfMatrix4d m(value.matrix);
+#if HDX_API_VERSION >= 6
+              light.SetShadowMatrices({m});
+#else
               light.SetShadowMatrix(m);
+#endif
             }
             break;
           case MHWRender::MLightParameterInformation::kShadowColor:
@@ -386,17 +390,10 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     int originX, originY, width, height;
     context.getViewportDimensions(originX, originY, width, height);
 
-    #if USD_VERSION_NUM > 1907
     engine->SetCameraState(
         GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kViewMtx).matrix),
         GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix));
     engine->SetRenderViewport(GfVec4d(originX, originY, width, height));
-    #else
-    engine->SetCameraState(
-        GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kViewMtx).matrix),
-        GfMatrix4d(context.getMatrix(MHWRender::MFrameContext::kProjectionMtx).matrix),
-        GfVec4d(originX, originY, width, height));
-    #endif
 
     engine->SetRootTransform(GfMatrix4d(ptr->m_objPath.inclusiveMatrix().matrix));
 
@@ -407,9 +404,6 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
     combined.reserve(paths1.size() + paths2.size());
     combined.insert(combined.end(), paths1.begin(), paths1.end());
     combined.insert(combined.end(), paths2.begin(), paths2.end());
-
-    engine->SetSelected(combined);
-    engine->SetSelectionColor(GfVec4f(1.0f, 2.0f/3.0f, 0.0f, 1.0f));
 
     ptr->m_params.frame = ptr->m_shape->outTimePlug().asMTime().as(MTime::uiUnit());
     engine->Render(ptr->m_rootPrim, ptr->m_params);

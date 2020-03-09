@@ -136,6 +136,20 @@ public:
   virtual MStatus postImport(const UsdPrim& prim)
     { return MS::kSuccess; }
 
+  /// \brief  If your plugin has its own hashing mechanism, your plugin can override this method to return
+  ///         a *meaningful* value as the unique key for the prim, e.g. a md5 hash or uuid string.
+  ///         This method happens just before updating the prim or removing the prim (e.g. when switching variant), then
+  ///         USDMaya checks this hash value to decide if update() / tearDown() / import() are really necessary to be
+  ///         called.
+  ///         Not implementing this method, returning empty string or a false value would indicate this prim is always
+  ///         needed to be updated (or tearDown() and import(), depends on the return value of supportsUpdate()), this
+  ///         is the backward compatible method (prior 0.35.3); returning a constant value would indicate
+  ///         this prim does not need to be updated (or recreated) at all.
+  /// \param  prim the prim to inspect.
+  /// \return unique key string.
+  virtual std::size_t generateUniqueKey(const UsdPrim& prim) const
+    { return 0; }
+
   /// \brief  This method will be called prior to the tear down process taking place. This is the last chance you have
   ///         to do any serialisation whilst all of the existing nodes are available to query.
   /// \param  prim the prim that may be modified or deleted as a result of a variant switch

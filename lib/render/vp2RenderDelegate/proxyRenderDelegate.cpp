@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/selectionTracker.h"
 #include "pxr/imaging/hdx/taskController.h"
+#include "pxr/imaging/hd/basisCurves.h"
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/repr.h"
@@ -67,6 +68,7 @@ namespace
     //! Representation selector for selection update
     const HdReprSelector kSelectionReprSelector(HdVP2ReprTokens->selection);
 
+#if defined(WANT_UFE_BUILD)
     MGlobal::ListAdjustment GetListAdjustment()
     {
         // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
@@ -96,6 +98,7 @@ namespace
 
         return listAdjustment;
     }
+#endif // defined(WANT_UFE_BUILD)
 
     //! \brief  Configure repr descriptions
     void _ConfigureReprs()
@@ -124,6 +127,15 @@ namespace
         // Special token for selection update and no need to create repr. Adding
         // the empty desc to remove Hydra warning.
         HdMesh::ConfigureRepr(HdVP2ReprTokens->selection, HdMeshReprDesc());
+
+        // Wireframe desc for bbox display.
+        HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->bbox,
+            HdBasisCurvesGeomStyleWire);
+
+        // Special token for selection update and no need to create repr. Adding
+        // the null desc to remove Hydra warning.
+        HdBasisCurves::ConfigureRepr(HdVP2ReprTokens->selection,
+            HdBasisCurvesGeomStyleInvalid);
     }
 
 #if defined(WANT_UFE_BUILD)
@@ -239,7 +251,11 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
     if (!_renderIndex) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate RenderIndex");
+#if USD_VERSION_NUM > 2002
+        _renderIndex = HdRenderIndex::New(_renderDelegate, HdDriverVector());
+#else
         _renderIndex = HdRenderIndex::New(_renderDelegate);
+#endif
 
         // Add additional configurations after render index creation.
         static std::once_flag reprsOnce;
@@ -364,6 +380,15 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
             SelectionChanged();
         }
     }
+
+    const int refineLevel = _proxyShape->getComplexity();
+    if (refineLevel != _sceneDelegate->GetRefineLevelFallback())
+    {
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L1, "SetRefineLevelFallback");
+
+        _sceneDelegate->SetRefineLevelFallback(refineLevel);
+    }
 }
 
 //! \brief  Execute Hydra engine to perform minimal VP2 draw data update based on change tracker.
@@ -381,14 +406,17 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     const bool inSelectionPass = (frameContext.getSelectionInfo() != nullptr);
     const bool inPointSnapping = pointSnappingActive();
 
+#if defined(WANT_UFE_BUILD)
     // Query selection adjustment mode only if the update is triggered in a selection pass.
     _globalListAdjustment = (inSelectionPass && !inPointSnapping) ? GetListAdjustment() : MGlobal::kReplaceList;
-#else
+#endif // defined(WANT_UFE_BUILD)
+
+#else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     HdReprSelector reprSelector = kPointsReprSelector;
 
     constexpr bool inSelectionPass = false;
     constexpr bool inPointSnapping = false;
-#endif
+#endif // defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
 
     if (inSelectionPass) {
         if (inPointSnapping && !reprSelector.Contains(HdReprTokens->points)) {

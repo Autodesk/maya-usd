@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 #include "render_delegate.h"
 
+#include "basisCurves.h"
 #include "bboxGeom.h"
 #include "material.h"
 #include "mesh.h"
@@ -45,8 +46,12 @@ namespace
     /*! \brief List of supported Rprims by VP2 render delegate
     */
     inline const TfTokenVector& _SupportedRprimTypes() {
-        static const TfTokenVector r{ HdPrimTypeTokens->mesh };
-        return r;
+        static const TfTokenVector SUPPORTED_RPRIM_TYPES =
+        {
+            HdPrimTypeTokens->basisCurves,
+            HdPrimTypeTokens->mesh
+        };
+        return SUPPORTED_RPRIM_TYPES;
     }
 
     /*! \brief List of supported Sprims by VP2 render delegate
@@ -67,8 +72,24 @@ namespace
     const MString _diffuseColorParameterName = "diffuseColor";    //!< Shader parameter name
     const MString _solidColorParameterName   = "solidColor";      //!< Shader parameter name
     const MString _pointSizeParameterName    = "pointSize";       //!< Shader parameter name
-    const MString _fallbackShaderName        = "FallbackShader";  //!< Name of the fallback shader
     const MString _structOutputName          = "outSurfaceFinal"; //!< Output struct name of the fallback shader
+
+    //! Enum class for fallback shader types
+    enum class FallbackShaderType
+    {
+        kCommon = 0,
+        kBasisCurvesLinear,
+        kBasisCurvesCubic,
+        kCount
+    };
+
+    //! Array of shader fragment names indexed by FallbackShaderType
+    const MString _fallbackShaderNames[] =
+    {
+        "FallbackShader",
+        "BasisCurvesLinearFallbackShader",
+        "BasisCurvesCubicFallbackShader"
+    };
 
     /*! \brief  Color hash helper class, used by shader registry
     */
@@ -119,6 +140,11 @@ namespace
 
             TF_VERIFY(_fallbackCPVShader);
 
+            _3dCPVSolidShader = shaderMgr->getStockShader(
+                MHWRender::MShaderManager::k3dCPVSolidShader);
+
+            TF_VERIFY(_3dCPVSolidShader);
+
             _3dFatPointShader = shaderMgr->getStockShader(
                 MHWRender::MShaderManager::k3dFatPointShader);
 
@@ -145,7 +171,13 @@ namespace
             return _3dFatPointShader;
         }
 
-        /*! \brief  Returns a 3d green shader that can be used for selection highlight.
+        /*! \brief  Returns a 3d CPV solid-color shader instance.
+        */
+        MHWRender::MShaderInstance* Get3dCPVSolidShader() const {
+            return _3dCPVSolidShader;
+        }
+
+        /*! \brief  Returns a 3d solid shader with the specified color.
         */
         MHWRender::MShaderInstance* Get3dSolidShader(const MColor& color)
         {
@@ -192,16 +224,24 @@ namespace
             allowing only one instance per color which enables consolidation of
             draw calls with same shader instance.
 
-            \param color    Color to set on given shader instance
+            \param color   Color to set on given shader instance
+            \param index   Index to the required shader name in _fallbackShaderNames
 
             \return A new or existing copy of shader instance with given color
         */
-        MHWRender::MShaderInstance* GetFallbackShader(const MColor& color)
+        MHWRender::MShaderInstance* GetFallbackShader(const MColor& color, FallbackShaderType type)
         {
+            if (type >= FallbackShaderType::kCount) {
+                return nullptr;
+            }
+
+            const size_t index = static_cast<size_t>(type);
+            auto& shaderMap = _fallbackShaders[index];
+
             // Look for it first with reader lock
-            tbb::spin_rw_mutex::scoped_lock lock(_fallbackShaders._mutex, false/*write*/);
-            auto it = _fallbackShaders._map.find(color);
-            if (it != _fallbackShaders._map.end()) {
+            tbb::spin_rw_mutex::scoped_lock lock(shaderMap._mutex, false/*write*/);
+            auto it = shaderMap._map.find(color);
+            if (it != shaderMap._map.end()) {
                 return it->second;
             }
 
@@ -209,8 +249,8 @@ namespace
             lock.upgrade_to_writer();
 
             // Double check that it wasn't inserted by another thread
-            it = _fallbackShaders._map.find(color);
-            if (it != _fallbackShaders._map.end()) {
+            it = shaderMap._map.find(color);
+            if (it != shaderMap._map.end()) {
                 return it->second;
             }
 
@@ -220,7 +260,7 @@ namespace
             const MHWRender::MShaderManager* shaderMgr =
                 renderer ? renderer->getShaderManager() : nullptr;
             if (TF_VERIFY(shaderMgr)) {
-                shader = shaderMgr->getFragmentShader(_fallbackShaderName,
+                shader = shaderMgr->getFragmentShader(_fallbackShaderNames[index],
                     _structOutputName, true);
 
                 if (TF_VERIFY(shader)) {
@@ -228,7 +268,7 @@ namespace
                     shader->setParameter(_diffuseColorParameterName, diffuseColor);
 
                     // Insert instance we just created
-                    _fallbackShaders._map[color] = shader;
+                    shaderMap._map[color] = shader;
                 }
             }
 
@@ -238,11 +278,13 @@ namespace
     private:
         bool                    _isInitialized { false };  //!< Whether the shader cache is initialized
 
-        MShaderMap              _fallbackShaders;          //!< Shader registry used by fallback shaders
-        MShaderMap              _3dSolidShaders;           //!< Shader registry used by fallback shaders
+        //! Shader registry used by fallback shaders
+        MShaderMap              _fallbackShaders[static_cast<size_t>(FallbackShaderType::kCount)];
+        MShaderMap              _3dSolidShaders;
 
         MHWRender::MShaderInstance*  _fallbackCPVShader { nullptr }; //!< Fallback shader with CPV support
         MHWRender::MShaderInstance*  _3dFatPointShader { nullptr };  //!< 3d shader for points
+        MHWRender::MShaderInstance*  _3dCPVSolidShader { nullptr };  //!< 3d CPV solid-color shader
     };
 
     MShaderCache sShaderCache;  //!< Global shader cache to minimize the number of unique shaders.
@@ -468,6 +510,9 @@ HdRprim* HdVP2RenderDelegate::CreateRprim(
     if (typeId == HdPrimTypeTokens->mesh) {
         return new HdVP2Mesh(this, rprimId, instancerId);
     }
+    if (typeId == HdPrimTypeTokens->basisCurves) {
+        return new HdVP2BasisCurves(this, rprimId, instancerId);
+    }
     //if (typeId == HdPrimTypeTokens->volume) {
     //    return new HdVP2Volume(this, rprimId, instancerId);
     //}
@@ -649,7 +694,37 @@ MString HdVP2RenderDelegate::GetLocalNodeName(const MString& name) const {
 MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(
     const MColor& color) const
 {
-    return sShaderCache.GetFallbackShader(color);
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kCommon);
+}
+
+/*! \brief  Returns a fallback shader instance when no material is bound.
+
+    This method is keeping registry of all fallback shaders generated, keeping minimal
+    number of shader instances.
+
+    \param color    Color to set on given shader instance
+
+    \return A new or existing copy of shader instance with given color parameter set
+*/
+MHWRender::MShaderInstance*
+HdVP2RenderDelegate::GetBasisCurvesLinearFallbackShader(const MColor& color) const
+{
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kBasisCurvesLinear);
+}
+
+/*! \brief  Returns a fallback shader instance when no material is bound.
+
+    This method is keeping registry of all fallback shaders generated, keeping minimal
+    number of shader instances.
+
+    \param color    Color to set on given shader instance
+
+    \return A new or existing copy of shader instance with given color parameter set
+*/
+MHWRender::MShaderInstance*
+HdVP2RenderDelegate::GetBasisCurvesCubicFallbackShader(const MColor& color) const
+{
+    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kBasisCurvesCubic);
 }
 
 /*! \brief  Returns a fallback CPV shader instance when no material is bound.
@@ -659,12 +734,19 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackCPVShader() const
     return sShaderCache.GetFallbackCPVShader();
 }
 
-/*! \brief  Returns a 3d green shader that can be used for selection highlight.
+/*! \brief  Returns a 3d solid-color shader.
 */
 MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dSolidShader(
     const MColor& color) const
 {
     return sShaderCache.Get3dSolidShader(color);
+}
+
+/*! \brief  Returns a 3d CPV solid-color shader.
+*/
+MHWRender::MShaderInstance* HdVP2RenderDelegate::Get3dCPVSolidShader() const
+{
+    return sShaderCache.Get3dCPVSolidShader();
 }
 
 /*! \brief  Returns a white 3d fat point shader.

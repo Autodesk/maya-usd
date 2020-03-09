@@ -232,7 +232,11 @@ Ufe::Attribute::Type UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttr
 			// tokens, then use String instead.
 			if (iter->second == Ufe::Attribute::kEnumString)
 			{
+#if USD_VERSION_NUM > 2002
+				auto attrDefn = fPrim.GetPrimDefinition().GetSchemaAttributeSpec(usdAttr.GetName());
+#else
 				auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(fPrim.GetTypeName(), usdAttr.GetName());
+#endif
 				if (!attrDefn || !attrDefn->HasAllowedTokens())
 					return Ufe::Attribute::kString;
 			}

@@ -422,7 +422,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 
 /* virtual */
 TfToken
-PxrUsdTranslators_FileTextureWriter::GetShadingPropertyNameForMayaAttrName(
+PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
         const TfToken& mayaAttrName)
 {
     if (!_usdPrim) {

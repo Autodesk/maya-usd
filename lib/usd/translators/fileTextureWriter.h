@@ -43,7 +43,7 @@ class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
 
         void Write(const UsdTimeCode& usdTime) override;
 
-        TfToken GetShadingPropertyNameForMayaAttrName(
+        TfToken GetShadingAttributeNameForMayaAttrName(
                 const TfToken& mayaAttrName) override;
 };
 

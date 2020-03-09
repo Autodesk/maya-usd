@@ -74,21 +74,36 @@ namespace {
     class PxrMayaHdShadowMatrix : public HdxShadowMatrixComputation
     {
         public:
+#if HDX_API_VERSION >= 6
             PxrMayaHdShadowMatrix(const GlfSimpleLight& light)
             {
                 // We use the shadow matrix as provided by Maya directly.
-                _shadowMatrix = light.GetShadowMatrix();
+                _shadowMatrices = light.GetShadowMatrices();
+            }
+
+            std::vector<GfMatrix4d> Compute(
+                    const GfVec4f& viewport,
+                    CameraUtilConformWindowPolicy policy) override
+            {
+                return _shadowMatrices;
+            }
+#else
+            PxrMayaHdShadowMatrix(const GlfSimpleLight& light)
+            {
+                // We use the shadow matrix as provided by Maya directly.
+                _shadowMatrices.push_back(light.GetShadowMatrix());
             }
 
             GfMatrix4d Compute(
                     const GfVec4f& viewport,
                     CameraUtilConformWindowPolicy policy) override
             {
-                return _shadowMatrix;
+                return _shadowMatrices.back();
             }
+#endif
 
         private:
-            GfMatrix4d _shadowMatrix;
+            std::vector<GfMatrix4d> _shadowMatrices;
     };
 }
 
