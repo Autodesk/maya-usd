@@ -89,8 +89,6 @@ list(APPEND mayaUsd_src
     fileio/translators/translatorMaterial.cpp
     fileio/translators/translatorMayaReference.cpp
     fileio/translators/translatorMesh.cpp
-    fileio/translators/translatorMesh_PrimVars.cpp
-    fileio/translators/translatorMesh_SubDiv.cpp
     fileio/translators/translatorNurbsPatch.cpp
     fileio/translators/translatorPrim.cpp
     fileio/translators/translatorRfMLight.cpp

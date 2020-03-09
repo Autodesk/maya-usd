@@ -551,6 +551,15 @@ bool FindAncestorSceneAssembly(
 MAYAUSD_CORE_PUBLIC
 MBoundingBox GetInfiniteBoundingBox();
 
+MAYAUSD_CORE_PUBLIC
+MString convert(const std::string&);
+
+MAYAUSD_CORE_PUBLIC
+MString convert(const TfToken& token);
+
+MAYAUSD_CORE_PUBLIC
+std::string convert(const MString&);
+
 } // namespace UsdMayaUtil
 
 

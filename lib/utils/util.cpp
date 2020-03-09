@@ -2013,3 +2013,21 @@ UsdMayaUtil::GetInfiniteBoundingBox()
     constexpr double inf = std::numeric_limits<double>::infinity();
     return MBoundingBox(MPoint(-inf, -inf, -inf), MPoint(inf, inf, inf));
 }
+
+MString 
+UsdMayaUtil::convert(const TfToken& token)
+{
+  return MString(token.GetText(), token.size());
+}
+
+std::string 
+UsdMayaUtil::convert(const MString& str)
+{
+    return std::string(str.asChar(), str.length());
+}
+
+MString 
+UsdMayaUtil::convert(const std::string& str)
+{
+    return MString(str.data(), static_cast<int>(str.size()));
+}
