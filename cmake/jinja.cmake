@@ -44,7 +44,7 @@ function(init_jinja)
             message(FATAL_ERROR "JINJA_LOCATION not set")
         endif()
 
-        set(JINJA_ROOT "${JINJA_LOCATION}")
+        set(JINJA_ROOT "${JINJA_LOCATION}/src")
 
         # Add Jinja2 to the python path so that usdGenSchemas can run properly.
         mayaUsd_append_path_to_env_var("PYTHONPATH" "${JINJA_ROOT}")

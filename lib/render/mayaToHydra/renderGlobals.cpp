@@ -79,6 +79,14 @@ void _CreateEnumAttribute(
     node.addAttribute(o);
 }
 
+void _CreateEnumAttribute(MFnDependencyNode& node, const TfToken& attrName,
+    const TfEnum& defValue) {
+    std::vector<std::string> names = TfEnum::GetAllNames(defValue);
+    TfTokenVector tokens(names.begin(), names.end());
+    return _CreateEnumAttribute(node, attrName, tokens,
+        TfToken(TfEnum::GetDisplayName(defValue)));
+}
+
 void _CreateTypedAttribute(
     MFnDependencyNode& node, const TfToken& attrName, MFnData::Type type,
     const std::function<MObject()>& creator) {
@@ -212,6 +220,11 @@ void _GetFromPlug<std::string>(const MPlug& plug, std::string& out) {
     out = plug.asString().asChar();
 }
 
+template <>
+void _GetFromPlug<TfEnum>(const MPlug& plug, TfEnum& out) {
+    out = TfEnum(out.GetType(), plug.asInt());
+}
+
 template <typename T>
 bool _GetAttribute(
     const MFnDependencyNode& node, const TfToken& attrName, T& out) {
@@ -339,6 +352,10 @@ MObject MtohCreateRenderGlobals() {
                 _CreateStringAttribute(
                     node, attrName,
                     attr.defaultValue.UncheckedGet<std::string>());
+            } else if (attr.defaultValue.IsHolding<TfEnum>()) {
+                _CreateEnumAttribute(
+                    node, attrName,
+                    attr.defaultValue.UncheckedGet<TfEnum>());
             }
         }
     }
@@ -403,6 +420,10 @@ MtohRenderGlobals MtohGetRenderGlobals() {
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<std::string>()) {
                 auto v = attr.defaultValue.UncheckedGet<std::string>();
+                _GetAttribute(node, attrName, v);
+                settings.emplace_back(attr.key, v);
+            } else if (attr.defaultValue.IsHolding<TfEnum>()) {
+                auto v = attr.defaultValue.UncheckedGet<TfEnum>();
                 _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             }
