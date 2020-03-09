@@ -152,10 +152,6 @@ MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
     // assign invisible faces
     UsdMayaMeshUtil::assignInvisibleFaces(mesh, meshRead.meshObject());
 
-    if(!retStatus){
-        return false;
-    }
-
     return true;
 }
 
