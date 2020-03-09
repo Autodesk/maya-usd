@@ -38,6 +38,13 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdObject3dHandler.cpp
             UsdUndoCreateGroupCommand.cpp
     )
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdContextOps.cpp
+                UsdContextOpsHandler.cpp
+        )
+    endif()
 endif()
 
 set(headers
@@ -71,6 +78,8 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdAttribute.h
         UsdAttributes.h
         UsdAttributesHandler.h
+        UsdContextOps.h
+        UsdContextOpsHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
         UsdUndoCreateGroupCommand.h
