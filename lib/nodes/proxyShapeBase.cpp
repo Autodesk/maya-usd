@@ -955,8 +955,9 @@ MayaUsdProxyShapeBase::parentTransform()
     return proxyTransformPath;
 }
 
-MayaUsdProxyShapeBase::MayaUsdProxyShapeBase() :
-    MPxSurfaceShape()
+MayaUsdProxyShapeBase::MayaUsdProxyShapeBase(const bool enableUfeSelection) :
+        MPxSurfaceShape(),
+        _isUfeSelectionEnabled(enableUfeSelection)
 {
     TfRegistryManager::GetInstance().SubscribeTo<MayaUsdProxyShapeBase>();
 }

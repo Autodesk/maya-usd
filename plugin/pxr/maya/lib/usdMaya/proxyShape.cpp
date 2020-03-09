@@ -282,8 +282,8 @@ UsdMayaProxyShape::getInternalValueInContext(
 }
 
 UsdMayaProxyShape::UsdMayaProxyShape() :
-    MayaUsdProxyShapeBase(),
-    _useFastPlayback(false)
+        MayaUsdProxyShapeBase(/* enableUfeSelection = */ false),
+        _useFastPlayback(false)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaProxyShape>();
 }

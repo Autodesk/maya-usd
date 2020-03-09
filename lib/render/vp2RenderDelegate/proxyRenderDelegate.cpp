@@ -506,6 +506,14 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     MDagPath& dagPath) const
 {
 #if defined(WANT_UFE_BUILD)
+    if (_proxyShape == nullptr) {
+        return false;
+    }
+
+    if (!_proxyShape->isUfeSelectionEnabled()) {
+        return false;
+    }
+
     // When point snapping, only the point position matters, so return false
     // to use the DAG path from the default implementation and avoid the UFE
     // global selection list to be updated.
@@ -514,9 +522,6 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
     auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
     if (handler == nullptr)
-        return false;
-
-    if (_proxyShape == nullptr)
         return false;
 
     // Extract id of the owner Rprim. A SdfPath directly created from the render
