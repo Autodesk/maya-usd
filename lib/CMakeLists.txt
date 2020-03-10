@@ -495,6 +495,7 @@ target_link_libraries(${LIBRARY_NAME}
     usdSkel
     usdUtils
     vt
+    mayaUsdUtils
 )
 
 if(UFE_FOUND)

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <fstream>
-#include "AL/usd/utils/MayaTransformAPI.h"
+#include "../MayaTransformAPI.h"
 #include <pxr/usd/usdGeom/xform.h>
 
 const char* const fullXformDef = 
@@ -51,99 +51,99 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     ops.push_back(translate);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivotTranslate = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivotTranslate"));
     ops.push_back(rotatePivotTranslate);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivot = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"));
     ops.push_back(rotatePivot);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotate = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
     ops.push_back(rotate);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotateAxis = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotateAxis"));
     ops.push_back(rotateAxis);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivotINV = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"), true);
     ops.push_back(rotatePivotINV);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivotTranslate = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivotTranslate"));
     ops.push_back(scalePivotTranslate);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivot = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"));
     ops.push_back(scalePivot);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto shear = xform.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("shear"));
     ops.push_back(shear);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto scale = xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale"));
     ops.push_back(scale);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivotINV = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"), true);
     ops.push_back(scalePivotINV);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
   }
   #endif
@@ -158,99 +158,99 @@ TEST(MayaTransformAPI, orderCheckIsValid)
     ops.push_back(translate);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivotTranslate = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivotTranslate"));
     ops.push_back(rotatePivotTranslate);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivot = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"));
     ops.push_back(rotatePivot);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotate = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat);
     ops.push_back(rotate);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotateAxis = xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotateAxis"));
     ops.push_back(rotateAxis);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto rotatePivotINV = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotatePivot"), true);
     ops.push_back(rotatePivotINV);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivotTranslate = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivotTranslate"));
     ops.push_back(scalePivotTranslate);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivot = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"));
     ops.push_back(scalePivot);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto shear = xform.AddTransformOp(UsdGeomXformOp::PrecisionDouble, TfToken("shear"));
     ops.push_back(shear);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto scale = xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat);
     ops.push_back(scale);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
 
     auto scalePivotINV = xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("scalePivot"), true);
     ops.push_back(scalePivotINV);
     xform.SetXformOpOrder(ops);
     {
-      AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+      MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
       EXPECT_TRUE(api);
-      EXPECT_EQ(AL::usd::utils::TransformAPI::kMaya, api.api());
+      EXPECT_EQ(MayaUsdUtils::TransformAPI::kMaya, api.api());
     }
   }
 }
@@ -260,7 +260,7 @@ TEST(MayaTransformAPI, scale)
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-  AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+  MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
   EXPECT_TRUE(api);
 
   api.scale(GfVec3f(1, 2, 3));
@@ -272,7 +272,7 @@ TEST(MayaTransformAPI, scale)
   bool resetsXformStack;
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-  ASSERT_EQ(1, ops.size());
+  ASSERT_EQ(1U, ops.size());
   EXPECT_EQ(UsdGeomXformOp::TypeScale, ops[0].GetOpType());
   EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
 }
@@ -282,7 +282,7 @@ TEST(MayaTransformAPI, rotateAxis)
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-  AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+  MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
   EXPECT_TRUE(api);
 
   api.rotateAxis(GfVec3f(1, 2, 3));
@@ -294,7 +294,7 @@ TEST(MayaTransformAPI, rotateAxis)
   bool resetsXformStack;
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-  ASSERT_EQ(1, ops.size());
+  ASSERT_EQ(1U, ops.size());
   EXPECT_EQ(UsdGeomXformOp::TypeRotateXYZ, ops[0].GetOpType());
   EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
 }
@@ -304,7 +304,7 @@ TEST(MayaTransformAPI, translate)
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-  AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+  MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
   EXPECT_TRUE(api);
 
   api.translate(GfVec3f(1, 2, 3));
@@ -316,7 +316,7 @@ TEST(MayaTransformAPI, translate)
   bool resetsXformStack;
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-  ASSERT_EQ(1, ops.size());
+  ASSERT_EQ(1U, ops.size());
   EXPECT_EQ(UsdGeomXformOp::TypeTranslate, ops[0].GetOpType());
   EXPECT_EQ(UsdGeomXformOp::PrecisionDouble, ops[0].GetPrecision());
 }
@@ -326,7 +326,7 @@ TEST(MayaTransformAPI, scalePivot)
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-  AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+  MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
   EXPECT_TRUE(api);
 
   api.scalePivot(GfVec3f(1, 2, 3));
@@ -338,7 +338,7 @@ TEST(MayaTransformAPI, scalePivot)
   bool resetsXformStack;
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-  ASSERT_EQ(2, ops.size());
+  ASSERT_EQ(2U, ops.size());
   EXPECT_EQ(UsdGeomXformOp::TypeTranslate, ops[0].GetOpType());
   EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
   EXPECT_EQ(UsdGeomXformOp::TypeTranslate, ops[1].GetOpType());
@@ -350,7 +350,7 @@ TEST(MayaTransformAPI, rotatePivot)
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-  AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+  MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
   EXPECT_TRUE(api);
 
   api.rotatePivot(GfVec3f(1, 2, 3));
@@ -362,7 +362,7 @@ TEST(MayaTransformAPI, rotatePivot)
   bool resetsXformStack;
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-  ASSERT_EQ(2, ops.size());
+  ASSERT_EQ(2U, ops.size());
   EXPECT_EQ(UsdGeomXformOp::TypeTranslate, ops[0].GetOpType());
   EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
   EXPECT_EQ(UsdGeomXformOp::TypeTranslate, ops[1].GetOpType());
@@ -374,7 +374,7 @@ TEST(MayaTransformAPI, rotatePivotTranslate)
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-  AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+  MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
   EXPECT_TRUE(api);
 
   api.rotatePivotTranslate(GfVec3f(1, 2, 3));
@@ -386,7 +386,7 @@ TEST(MayaTransformAPI, rotatePivotTranslate)
   bool resetsXformStack;
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-  ASSERT_EQ(1, ops.size());
+  ASSERT_EQ(1U, ops.size());
   EXPECT_EQ(UsdGeomXformOp::TypeTranslate, ops[0].GetOpType());
   EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
 }
@@ -396,7 +396,7 @@ TEST(MayaTransformAPI, scalePivotTranslate)
   UsdStageRefPtr stage = UsdStage::CreateInMemory();
   UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-  AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+  MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
   EXPECT_TRUE(api);
 
   api.scalePivotTranslate(GfVec3f(1, 2, 3));
@@ -408,7 +408,7 @@ TEST(MayaTransformAPI, scalePivotTranslate)
   bool resetsXformStack;
   std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-  ASSERT_EQ(1, ops.size());
+  ASSERT_EQ(1U, ops.size());
   EXPECT_EQ(UsdGeomXformOp::TypeTranslate, ops[0].GetOpType());
   EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
 }
@@ -419,20 +419,20 @@ TEST(MayaTransformAPI, rotate)
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-    AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+    MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
     EXPECT_TRUE(api);
 
-    api.rotate(GfVec3f(1, 2, 3), AL::usd::utils::RotationOrder::kXYZ);
+    api.rotate(GfVec3f(1, 2, 3), MayaUsdUtils::RotationOrder::kXYZ);
     auto value = api.rotate();
     EXPECT_NEAR(value[0], 1.0f, 0.1f);
     EXPECT_NEAR(value[1], 2.0f, 0.1f);
     EXPECT_NEAR(value[2], 3.0f, 0.1f);
-    EXPECT_EQ(AL::usd::utils::RotationOrder::kXYZ, api.rotateOrder());
+    EXPECT_EQ(MayaUsdUtils::RotationOrder::kXYZ, api.rotateOrder());
 
     bool resetsXformStack;
     std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-    ASSERT_EQ(1, ops.size());
+    ASSERT_EQ(1U, ops.size());
     EXPECT_EQ(UsdGeomXformOp::TypeRotateXYZ, ops[0].GetOpType());
     EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
   }
@@ -441,20 +441,20 @@ TEST(MayaTransformAPI, rotate)
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-    AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+    MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
     EXPECT_TRUE(api);
 
-    api.rotate(GfVec3f(1, 2, 3), AL::usd::utils::RotationOrder::kXZY);
+    api.rotate(GfVec3f(1, 2, 3), MayaUsdUtils::RotationOrder::kXZY);
     auto value = api.rotate();
     EXPECT_NEAR(value[0], 1.0f, 0.1f);
     EXPECT_NEAR(value[1], 2.0f, 0.1f);
     EXPECT_NEAR(value[2], 3.0f, 0.1f);
-    EXPECT_EQ(AL::usd::utils::RotationOrder::kXZY, api.rotateOrder());
+    EXPECT_EQ(MayaUsdUtils::RotationOrder::kXZY, api.rotateOrder());
 
     bool resetsXformStack;
     std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-    ASSERT_EQ(1, ops.size());
+    ASSERT_EQ(1U, ops.size());
     EXPECT_EQ(UsdGeomXformOp::TypeRotateXZY, ops[0].GetOpType());
     EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
   }
@@ -463,20 +463,20 @@ TEST(MayaTransformAPI, rotate)
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-    AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+    MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
     EXPECT_TRUE(api);
 
-    api.rotate(GfVec3f(1, 2, 3), AL::usd::utils::RotationOrder::kYXZ);
+    api.rotate(GfVec3f(1, 2, 3), MayaUsdUtils::RotationOrder::kYXZ);
     auto value = api.rotate();
     EXPECT_NEAR(value[0], 1.0f, 0.1f);
     EXPECT_NEAR(value[1], 2.0f, 0.1f);
     EXPECT_NEAR(value[2], 3.0f, 0.1f);
-    EXPECT_EQ(AL::usd::utils::RotationOrder::kYXZ, api.rotateOrder());
+    EXPECT_EQ(MayaUsdUtils::RotationOrder::kYXZ, api.rotateOrder());
 
     bool resetsXformStack;
     std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-    ASSERT_EQ(1, ops.size());
+    ASSERT_EQ(1U, ops.size());
     EXPECT_EQ(UsdGeomXformOp::TypeRotateYXZ, ops[0].GetOpType());
     EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
   }
@@ -485,20 +485,20 @@ TEST(MayaTransformAPI, rotate)
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-    AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+    MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
     EXPECT_TRUE(api);
 
-    api.rotate(GfVec3f(1, 2, 3), AL::usd::utils::RotationOrder::kYZX);
+    api.rotate(GfVec3f(1, 2, 3), MayaUsdUtils::RotationOrder::kYZX);
     auto value = api.rotate();
     EXPECT_NEAR(value[0], 1.0f, 0.1f);
     EXPECT_NEAR(value[1], 2.0f, 0.1f);
     EXPECT_NEAR(value[2], 3.0f, 0.1f);
-    EXPECT_EQ(AL::usd::utils::RotationOrder::kYZX, api.rotateOrder());
+    EXPECT_EQ(MayaUsdUtils::RotationOrder::kYZX, api.rotateOrder());
 
     bool resetsXformStack;
     std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-    ASSERT_EQ(1, ops.size());
+    ASSERT_EQ(1U, ops.size());
     EXPECT_EQ(UsdGeomXformOp::TypeRotateYZX, ops[0].GetOpType());
     EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
   }
@@ -507,20 +507,20 @@ TEST(MayaTransformAPI, rotate)
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-    AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+    MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
     EXPECT_TRUE(api);
 
-    api.rotate(GfVec3f(1, 2, 3), AL::usd::utils::RotationOrder::kZXY);
+    api.rotate(GfVec3f(1, 2, 3), MayaUsdUtils::RotationOrder::kZXY);
     auto value = api.rotate();
     EXPECT_NEAR(value[0], 1.0f, 0.1f);
     EXPECT_NEAR(value[1], 2.0f, 0.1f);
     EXPECT_NEAR(value[2], 3.0f, 0.1f);
-    EXPECT_EQ(AL::usd::utils::RotationOrder::kZXY, api.rotateOrder());
+    EXPECT_EQ(MayaUsdUtils::RotationOrder::kZXY, api.rotateOrder());
 
     bool resetsXformStack;
     std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-    ASSERT_EQ(1, ops.size());
+    ASSERT_EQ(1U, ops.size());
     EXPECT_EQ(UsdGeomXformOp::TypeRotateZXY, ops[0].GetOpType());
     EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
   }
@@ -529,20 +529,20 @@ TEST(MayaTransformAPI, rotate)
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-    AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+    MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
     EXPECT_TRUE(api);
 
-    api.rotate(GfVec3f(1, 2, 3), AL::usd::utils::RotationOrder::kZYX);
+    api.rotate(GfVec3f(1, 2, 3), MayaUsdUtils::RotationOrder::kZYX);
     auto value = api.rotate();
     EXPECT_NEAR(value[0], 1.0f, 0.1f);
     EXPECT_NEAR(value[1], 2.0f, 0.1f);
     EXPECT_NEAR(value[2], 3.0f, 0.1f);
-    EXPECT_EQ(AL::usd::utils::RotationOrder::kZYX, api.rotateOrder());
+    EXPECT_EQ(MayaUsdUtils::RotationOrder::kZYX, api.rotateOrder());
 
     bool resetsXformStack;
     std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&resetsXformStack);
 
-    ASSERT_EQ(1, ops.size());
+    ASSERT_EQ(1U, ops.size());
     EXPECT_EQ(UsdGeomXformOp::TypeRotateZYX, ops[0].GetOpType());
     EXPECT_EQ(UsdGeomXformOp::PrecisionFloat, ops[0].GetPrecision());
   }
@@ -551,7 +551,7 @@ TEST(MayaTransformAPI, rotate)
     UsdStageRefPtr stage = UsdStage::CreateInMemory();
     UsdGeomXform xform = UsdGeomXform::Define(stage, SdfPath("/maya_xform"));
 
-    AL::usd::utils::MayaTransformAPI api(xform.GetPrim());
+    MayaUsdUtils::MayaTransformAPI api(xform.GetPrim());
     EXPECT_TRUE(api);
 
     api.inheritsTransform(true);
@@ -578,7 +578,7 @@ print ("    UsdStageRefPtr stage = UsdStage::Open(path);\n");
 print ("    ASSERT_TRUE(stage);\n");
 print ("    UsdPrim prim = stage->GetPrimAtPath(SdfPath(\"/pCube1\"));\n");
 print ("    ASSERT_TRUE(prim);\n");
-print ("    AL::usd::utils::MayaTransformAPI api(prim);\n");
+print ("    MayaUsdUtils::MayaTransformAPI api(prim);\n");
 print ("    ASSERT_TRUE(api);\n");
 print ("    const double expected[4][4] = {\n");
 print ("      {" + $tm[0] + ", " + $tm[1] + ", " + $tm[2] + ", 0},\n");
@@ -622,7 +622,7 @@ TEST(MayaTransformAPI, asMatrix)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {1.935285327, -0.501800553, 0.05354350602, 0},
@@ -663,7 +663,7 @@ TEST(MayaTransformAPI, asMatrix)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {1.935285327, -0.5019804767, 0.05182955793, 0},
@@ -704,7 +704,7 @@ TEST(MayaTransformAPI, asMatrix)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {1.929874975, -0.5226665623, 0.04901270024, 0},
@@ -746,7 +746,7 @@ TEST(MayaTransformAPI, asMatrix)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {1.935285327, -0.4808946444, -0.1530066764, 0},
@@ -787,7 +787,7 @@ TEST(MayaTransformAPI, asMatrix)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {1.940695679, -0.4595033172, -0.1501898187, 0},
@@ -828,7 +828,7 @@ TEST(MayaTransformAPI, asMatrix)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {1.935285327, -0.4803693265, -0.1546480269, 0},
@@ -872,7 +872,7 @@ TEST(MayaTransformAPI, asMatrix2)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {0.1869686008, 0.7665979058, -0.6143048048, 0},
@@ -894,7 +894,7 @@ TEST(MayaTransformAPI, asMatrix2)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {0.1875377363, 0.8291052843, -0.5267010775, 0},
@@ -915,7 +915,7 @@ TEST(MayaTransformAPI, asMatrix2)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {0.1947094843, 0.7906667212, -0.5804604661, 0},
@@ -937,7 +937,7 @@ TEST(MayaTransformAPI, asMatrix2)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {0.1426716351, 0.782667423, -0.605868393, 0},
@@ -959,7 +959,7 @@ TEST(MayaTransformAPI, asMatrix2)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {0.2372957406, 0.8330603844, -0.4997010381, 0},
@@ -980,7 +980,7 @@ TEST(MayaTransformAPI, asMatrix2)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {0.190785138, 0.8500296655, -0.4909690407, 0},
@@ -1006,7 +1006,7 @@ TEST(MayaTransformAPI, eulerXYZtoMatrix)
       {0.344131896, -0.07019954024, 0.9362933636}};
     GfVec3f r(0.2f, 0.3f, 0.4f);
     GfVec3f m[3];
-    AL::usd::utils::eulerXYZtoMatrix(r, m);
+    MayaUsdUtils::eulerXYZtoMatrix(r, m);
     EXPECT_NEAR(expected[0][0], m[0][0], 1e-5f);
     EXPECT_NEAR(expected[0][1], m[0][1], 1e-5f);
     EXPECT_NEAR(expected[0][2], m[0][2], 1e-5f);
@@ -1029,7 +1029,7 @@ TEST(MayaTransformAPI, asMatrix3)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {0.9362933636, 0.2896294776, -0.1986693308, 0},
@@ -1056,7 +1056,7 @@ TEST(MayaTransformAPI, asMatrix3)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {1.304954803, 0.4036698245, -0.2768945156, 0},
@@ -1083,7 +1083,7 @@ TEST(MayaTransformAPI, asMatrix3)
     ASSERT_TRUE(stage);
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
-    AL::usd::utils::MayaTransformAPI api(prim);
+    MayaUsdUtils::MayaTransformAPI api(prim);
     ASSERT_TRUE(api);
     const double expected[4][4] = {
       {1.293383638, 1.238086455, -0.8912354878, 0},
@@ -1122,12 +1122,12 @@ TEST(MayaTransformAPI, convertToTRS)
 
     // convert to TRS
     {
-      AL::usd::utils::MayaTransformAPI api(prim, true);
+      MayaUsdUtils::MayaTransformAPI api(prim, true);
       UsdGeomXformable xform(prim);
       ASSERT_TRUE(prim);
       bool reset;
       std::vector<UsdGeomXformOp> ops = xform.GetOrderedXformOps(&reset);
-      ASSERT_EQ(3, ops.size());
+      ASSERT_EQ(3U, ops.size());
       EXPECT_EQ(UsdGeomXformOp::TypeTranslate, ops[0].GetOpType());
       EXPECT_EQ(UsdGeomXformOp::TypeRotateXYZ, ops[1].GetOpType());
       EXPECT_EQ(UsdGeomXformOp::TypeScale, ops[2].GetOpType());
@@ -1173,10 +1173,10 @@ TEST(MayaTransformAPI, commonProfile)
     UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCube1"));
     ASSERT_TRUE(prim);
 
-    AL::usd::utils::MayaTransformAPI api(prim, false);
+    MayaUsdUtils::MayaTransformAPI api(prim, false);
 
     EXPECT_TRUE(api);
-    EXPECT_EQ(AL::usd::utils::TransformAPI::kCommon, api.api());
+    EXPECT_EQ(MayaUsdUtils::TransformAPI::kCommon, api.api());
 
     GfVec3f pivot = api.rotatePivot();
     EXPECT_NEAR(10.0f, pivot[0], 1e-5f);

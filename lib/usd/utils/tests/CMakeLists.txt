@@ -29,7 +29,7 @@ target_link_libraries(${USDUTILS_TEST_EXECUTABLE_NAME}
     usd
     usdGeom
     vt
-    ${USDUTILS_LIBRARY_NAME}
+    mayaUsdUtils
     -lpthread -lm
 )
 

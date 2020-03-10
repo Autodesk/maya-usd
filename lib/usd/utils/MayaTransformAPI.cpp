@@ -14,11 +14,9 @@
 // limitations under the License.
 //
 
-#include "AL/usd/utils/MayaTransformAPI.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
 
-namespace AL {
-namespace usd {
-namespace utils {
+namespace MayaUsdUtils {
 
 namespace {
 namespace tokens {
@@ -877,7 +875,7 @@ void MayaTransformAPI::setFromMatrix(const GfMatrix4d& matrix, const UsdTimeCode
     // The inverted rotate pivot is the only translation affected by rotation in this case,
     // so transform it, and remove from the translation.
     GfVec3f rp = rotatePivot(time), orp;
-    AL::usd::utils::rotate(-rp, m, orp);
+    MayaUsdUtils::rotate(-rp, m, orp);
     t -= rotatePivotTranslate(time);
     t -= rp;
     t -= orp;
@@ -902,7 +900,7 @@ void MayaTransformAPI::setFromMatrix(const GfMatrix4d& matrix, const UsdTimeCode
     // The inverted rotate pivot is the only translation affected by rotation in this case,
     // so transform it, and remove from the translation.
     GfVec3f orp;
-    AL::usd::utils::rotate(R, m, orp);
+    MayaUsdUtils::rotate(R, m, orp);
     t -= orp;
 
     translate(t, time);
@@ -929,7 +927,7 @@ void MayaTransformAPI::setFromMatrix(const GfMatrix4d& matrix, const UsdTimeCode
     // The inverted rotate pivot is the only translation affected by rotation in this case,
     // so transform it, and remove from the translation.
     GfVec3f orp;
-    AL::usd::utils::rotate(R, m, orp);
+    MayaUsdUtils::rotate(R, m, orp);
     t -= rpt;
     t -= rp;
     t -= orp;
@@ -1044,7 +1042,5 @@ GfVec3d MayaTransformAPI::_extractTranslateFromMatrix(const UsdTimeCode time) co
 
 
 //----------------------------------------------------------------------------------------------------------------------
-} // utils
-} // usd
-} // AL
+} // MayaUsdUtils
 //----------------------------------------------------------------------------------------------------------------------
