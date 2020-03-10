@@ -15,8 +15,7 @@ target_sources(${TARGET_NAME}
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME} 
-    PRIVATE 
-        ${GTEST_INCLUDE_DIRS}
+    PRIVATE
         ${USD_INCLUDE_DIR}
 )
 
@@ -25,7 +24,7 @@ target_include_directories(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME}
     PRIVATE 
-        ${GTEST_LIBRARIES}
+        GTest::GTest
         mayaUsdUtils
 )
 

@@ -50,10 +50,11 @@ set(headers
     SIMD.h
 )
 
-mayaUsd_promoteHeaderListWithSubdir( 
-    HEADERS 
+mayaUsd_promoteHeaderList( 
+    HEADERS
         ${headers}
-    BASE_PATH ${TARGET_NAME}
+    BASEDIR
+        ${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------

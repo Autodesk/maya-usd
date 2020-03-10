@@ -30,7 +30,7 @@ add_library(${PXR_TRANSLATORS_PACKAGE}
   plugin.cpp
 )
 
-MAYA_SET_PLUGIN_PROPERTIES(${PXR_TRANSLATORS_PACKAGE})
+maya_set_plugin_properties(${PXR_TRANSLATORS_PACKAGE})
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
