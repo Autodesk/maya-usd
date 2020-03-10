@@ -93,7 +93,7 @@ target_link_libraries(${TARGET_NAME}
 )
 
 # handle run-time search paths
-if(IS_MACOSX OR IS_LINUX) 
+if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "plugin")
     mayaUsd_add_rpath(rpath "../lib")
     if(BUILD_TESTS)

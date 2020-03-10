@@ -155,7 +155,7 @@ endfunction()
 #   SUBDIR     - sub-directory in which to promote files.
 #   FILES      - list of files to promote.
 #   BASESDIR   - base dirctory where promoted headers are installed into.
-#                if not defined, mayaUsd subdirectory is used by default. 
+#                if not defined, mayaUsd subdirectory is used by default.
 #
 #
 function(mayaUsd_promoteHeaderList)
@@ -211,7 +211,7 @@ endfunction()
 #   FILES         - list of files to copy
 #
 function(mayaUsd_copyFiles target)
-    cmake_parse_arguments(PREFIX 
+    cmake_parse_arguments(PREFIX
         ""             # options
         "DESTINATION"  # one_value keywords
         "FILES"        # multi_value keywords
@@ -277,10 +277,10 @@ function(mayaUsd_copyDirectory target)
         message(FATAL_ERROR "DIRECTORY keyword is not specified.")
     endif()
 
-    # figure out files in directories by traversing all the subdirectories 
+    # figure out files in directories by traversing all the subdirectories
     # relative to directory
     file(GLOB_RECURSE srcFiles RELATIVE ${directory} ${directory}/*)
- 
+
     foreach(file ${srcFiles})
         get_filename_component(input_file "${dir_name}/${file}" ABSOLUTE)
         get_filename_component(output_file "${destination}/${dir_name}/${file}" ABSOLUTE)

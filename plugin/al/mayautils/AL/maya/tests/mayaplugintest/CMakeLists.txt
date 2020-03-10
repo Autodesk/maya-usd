@@ -4,7 +4,7 @@ find_package(GTest REQUIRED)
 
 add_library(${TARGET_NAME} SHARED)
 
-target_sources(${TARGET_NAME} 
+target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
         test_maya_MenuBuilder.cpp
@@ -51,7 +51,7 @@ install(TARGETS ${TARGET_NAME}
 )
 
 target_include_directories(${TARGET_NAME}
-    PUBLIC 
+    PUBLIC
     ${MAYAUTILS_INCLUDE_LOCATION}
 )
 

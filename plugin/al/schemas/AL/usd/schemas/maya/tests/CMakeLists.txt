@@ -4,7 +4,7 @@ find_package(GTest REQUIRED)
 
 add_executable(${TARGET_NAME})
 
-target_sources(${TARGET_NAME} 
+target_sources(${TARGET_NAME}
     PRIVATE
         main.cpp
         testMayaSchemas.cpp
