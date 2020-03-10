@@ -51,6 +51,7 @@ namespace
 template<typename T>
 bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T& value)
 {
+    // USD Attribute Notification doubling problem:
     // As of 24-Nov-2019, calling Set() on a UsdAttribute causes two "info only"
     // change notifications to be sent (see StagesSubject::stageChanged).  With
     // the current USD implementation (USD 19.11), UsdAttribute::Set() ends up
