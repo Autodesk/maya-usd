@@ -161,8 +161,8 @@ endfunction()
 function(mayaUsd_promoteHeaderList)
     cmake_parse_arguments(PREFIX
         ""
-        "SUBDIR" # one_value keywords
-        "HEADERS;BASEDIR" # multi_value keywords
+        "SUBDIR;BASEDIR" # one_value keywords
+        "HEADERS" # multi_value keywords
         ${ARGN}
     )
 
