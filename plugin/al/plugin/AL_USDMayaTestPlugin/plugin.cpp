@@ -24,17 +24,25 @@
 
 using AL::maya::test::UnitTestHarness;
 
+bool g_AL_usdmaya_ignoreLockPrims = false;
+
 AL_USDMAYATEST_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
   MFnPlugin plugin(obj, "Animal Logic", "1.0", "Any");
   AL_REGISTER_COMMAND(plugin, UnitTestHarness);
-  return AL::usdmaya::registerPlugin(plugin);
+  auto status = AL::usdmaya::registerPlugin(plugin);
+  // make sure lockPrims are enabled prior to running tests. 
+  // Store the value as a global so it can be restored when the plugin unloads. 
+  g_AL_usdmaya_ignoreLockPrims = MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims");
+  MGlobal::setOptionVarValue("AL_usdmaya_ignoreLockPrims", false);
+  return status;
 }
 
 AL_USDMAYATEST_PLUGIN_PUBLIC
 MStatus uninitializePlugin(MObject obj)
 {
+  MGlobal::setOptionVarValue("AL_usdmaya_ignoreLockPrims", g_AL_usdmaya_ignoreLockPrims);
   MFnPlugin plugin(obj);
   AL_UNREGISTER_COMMAND(plugin, UnitTestHarness);
   return AL::usdmaya::unregisterPlugin(plugin);
