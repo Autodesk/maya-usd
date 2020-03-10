@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usd/utils/MayaTransformAPI.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
 
 #include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/makePyConstructor.h>
@@ -28,7 +28,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 void wrapMayaTransformAPI()
 {
   {
-    typedef AL::usd::utils::RotationOrder This;
+    typedef MayaUsdUtils::RotationOrder This;
     enum_<This>("RotationOrder")
         .value("kXYZ", This::kXYZ)
         .value("kYZX", This::kYZX)
@@ -39,7 +39,7 @@ void wrapMayaTransformAPI()
   }
 
   {
-    typedef AL::usd::utils::MayaTransformAPI This;
+    typedef MayaUsdUtils::MayaTransformAPI This;
     class_<This>("MayaTransformAPI", no_init)
       .def(init<const UsdPrim&, bool>((arg("prim"), arg("convertMatrixToComponents"))))
       .def("scale", (void (This::*)(const GfVec3f&, const UsdTimeCode&)) &This::scale)
