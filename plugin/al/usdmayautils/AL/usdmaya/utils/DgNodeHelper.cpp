@@ -1141,6 +1141,48 @@ MStatus DgNodeHelper::setVisAttrAnim(const MObject node, const MObject attr, con
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setClippingRangeAttrAnim(const MObject node, const MObject nearAttr, const MObject farAttr, const UsdAttribute & usdAttr, MObjectArray *newAnimCurves)
+{
+  if (!usdAttr.GetNumTimeSamples())
+  {
+    return MS::kFailure;
+  }
+
+  const char* const errorString = "DgNodeTranslator::setClippingRangeAttrAnim: Error adding keyframes";
+  MStatus status;
+
+  MPlug nearPlug(node, nearAttr);
+  MFnAnimCurve fnCurveNear;
+  status = prepareAnimCurve(nearPlug, fnCurveNear, newAnimCurves);
+  if(!status)return MS::kFailure;
+
+  MPlug farPlug(node, farAttr);
+  MFnAnimCurve fnCurveFar;
+  status = prepareAnimCurve(farPlug, fnCurveFar, newAnimCurves);
+  if(!status)return MS::kFailure;
+
+  std::vector<double> times;
+  usdAttr.GetTimeSamples(&times);
+
+  GfVec2f clippingRange;
+  for(auto const& timeValue: times)
+  {
+    if (!usdAttr.Get(&clippingRange, timeValue))
+    {
+      continue;
+    }
+    MTime tm(timeValue, MTime::kFilm);
+
+    fnCurveNear.addKey(tm, clippingRange[0], MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
+    fnCurveFar.addKey(tm, clippingRange[1], MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
+  }
+
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::getBoolArray(const MObject& node, const MObject& attr, std::vector<bool>& values)
 {
   //

@@ -40,6 +40,8 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
   auto const endAttribScaled =  m_scaledAnimatedPlugs.end();
   auto const startTransformAttrib = m_animatedTransformPlugs.begin();
   auto const endTransformAttrib = m_animatedTransformPlugs.end();
+  auto const startMultiAttrib = m_animatedMultiPlugs.begin();
+  auto const endMultiAttrib = m_animatedMultiPlugs.end();
   auto const startMesh = m_animatedMeshes.begin();
   auto const endMesh = m_animatedMeshes.end();
   auto const startWSM = m_worldSpaceOutputs.begin();
@@ -48,6 +50,7 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
   if((startAttrib != endAttrib) ||
      (startAttribScaled != endAttribScaled) ||
      (startTransformAttrib != endTransformAttrib) ||
+     (startMultiAttrib != endMultiAttrib) ||
      (startMesh != endMesh) ||
      (startWSM != endWSM) ||
      (!m_animatedNodes.empty()))
@@ -76,6 +79,25 @@ void AnimationTranslator::exportAnimation(const ExporterParams& params)
       for (auto it = startTransformAttrib; it != endTransformAttrib; ++it)
       {
         translators::TransformTranslator::copyAttributeValue(it->first, it->second, timeCode);
+      }
+      for (auto it = startMultiAttrib; it != endMultiAttrib; ++it)
+      {
+        // Note: so far there is only one attribute need to be treated specially
+        //       we do this special handling for this particular attribute atm,
+        //       will see if we need to generalize once have more requests
+        if (it->first.GetName() == UsdGeomTokens->clippingRange && it->second.size() == 2)
+        {
+          const auto& plugs(it->second);
+          MDistance nearDistance;
+          MDistance farDistance;
+          if (plugs[0].getValue(nearDistance) == MStatus::kSuccess && plugs[1].getValue(farDistance) == MStatus::kSuccess)
+          {
+            GfVec2f clippingRange{
+              static_cast<float>(nearDistance.as(MDistance::kCentimeters)),
+              static_cast<float>(farDistance.as(MDistance::kCentimeters))};
+            it->first.Set(clippingRange,timeCode);
+          }
+        }
       }
       for(auto it = startMesh; it != endMesh; ++it)
       {

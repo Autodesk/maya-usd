@@ -91,6 +91,7 @@ typedef std::map<MPlug, UsdAttribute, compare_MPlug> PlugAttrVector;
 typedef std::map<MDagPath, UsdAttribute, compare_MDagPath> MeshAttrVector;
 typedef std::map<MPlug, ScaledPair, compare_MPlug> PlugAttrScaledVector;
 typedef std::map<MDagPath, UsdAttribute, compare_MDagPath> WorldSpaceAttrVector;
+typedef std::map<UsdAttribute, std::vector<MPlug>> AttrMultiPlugsVector;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A utility class to help with exporting animated plugs from maya
@@ -195,6 +196,34 @@ public:
       m_animatedTransformPlugs.emplace(plug, attribute);
   }
 
+  /// \brief  add plugs to the animation translator (if plugs are animated)
+  ///         values of plugs will be mapped to a single Usd attribute value
+  /// \param  plugs the maya attributes to test
+  /// \param  attribute the corresponding maya attribute to write the anim data into if plugs are animated
+  /// \param  assumeExpressionIsAnimated if we encounter an expression, assume that the attribute is animated (true) or
+  ///         static (false).
+  inline void addMultiPlugs(const std::vector<MPlug>& plugs, const UsdAttribute& attribute, const bool assumeExpressionIsAnimated)
+  {
+    if (m_animatedMultiPlugs.find(attribute) != m_animatedMultiPlugs.end())
+    {
+      return;
+    }
+    bool hasAnimation = false;
+    for (const auto& plug: plugs)
+    {
+      if (isAnimated(plug, assumeExpressionIsAnimated))
+      {
+        hasAnimation = true;
+        break;
+      }
+    }
+    if (!hasAnimation)
+    {
+      return;
+    }
+    m_animatedMultiPlugs.emplace(attribute, plugs);
+  }
+
   /// \brief  add a scaled plug to the animation translator (if the plug is animated)
   /// \param  plug the maya attribute to test
   /// \param  attribute the corresponding maya attribute to write the anim data into if the plug is animated
@@ -250,6 +279,7 @@ protected:
   PlugAttrVector m_animatedTransformPlugs;
   MeshAttrVector m_animatedMeshes;
   WorldSpaceAttrVector m_worldSpaceOutputs;
+  AttrMultiPlugsVector m_animatedMultiPlugs;
 };
 
 
