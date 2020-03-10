@@ -34,9 +34,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-constexpr auto MTOH_DEFAULT_RENDERER_PLUGIN_NAME =
-    "MTOH_DEFAULT_RENDERER_PLUGIN";
-
 constexpr auto _renderOverrideOptionBoxTemplate = R"mel(
 global proc {{override}}OptionBox() {
     string $windowName = "{{override}}OptionsWindow";
