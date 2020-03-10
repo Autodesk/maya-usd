@@ -14,7 +14,9 @@ mayaUsd_copyFiles(${TARGET_NAME}
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
-    mayaUsd_add_pymodule_test(${target})
+    mayaUsd_add_test(${target}
+        PYTHON_MODULE ${target}
+    )
 endforeach()
 
 if (UFE_FOUND)

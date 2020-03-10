@@ -130,8 +130,8 @@ maya.cmds.loadPlugin('AL_USDMayaTestPlugin')
 sys.exit(maya.cmds.AL_maya_test_UnitTestHarness())
 ")
 
-mayaUsd_add_py_test(${TARGET_NAME} "${pycode}"
-    AL GTEST
+mayaUsd_add_test(${TARGET_NAME}
+    PYTHON_COMMAND "${pycode}"
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

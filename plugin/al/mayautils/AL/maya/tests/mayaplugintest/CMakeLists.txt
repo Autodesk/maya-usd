@@ -86,8 +86,8 @@ maya.cmds.loadPlugin('AL_MayaUtilsTests')
 sys.exit(maya.cmds.AL_maya_test_UnitTestHarness())
 ")
 
-mayaUsd_add_py_test(${TARGET_NAME} "${pycode}"
-    AL GTEST
-    MAYA_PLUG_IN_PATH
-        "${MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH}"
+mayaUsd_add_test(${TARGET_NAME}
+    PYTHON_COMMAND "${pycode}"
+    ENV
+        "MAYA_PLUG_IN_PATH=${MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH}"
 )

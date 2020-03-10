@@ -296,6 +296,22 @@ function(mayaUsd_copyDirectory target)
     endforeach()
 endfunction()
 
+function(mayaUsd_split_head_tail input_string split_string var_head var_tail)
+    string(FIND "${input_string}" "${split_string}" head_end)
+    if("${head_end}" EQUAL -1)
+        message(FATAL_ERROR "input_string '${input_string}' did not contain "
+            "split_string '${split_string}'")
+    endif()
+
+    string(LENGTH "${split_string}" split_string_len)
+    math(EXPR tail_start "${head_end} + ${split_string_len}")
+
+    string(SUBSTRING "${input_string}" 0 "${head_end}" "${var_head}")
+    string(SUBSTRING "${input_string}" "${tail_start}" -1 "${var_tail}")
+    set("${var_head}" "${${var_head}}" PARENT_SCOPE)
+    set("${var_tail}" "${${var_tail}}" PARENT_SCOPE)
+endfunction()
+
 function(mayaUsd_indent outvar lines)
     string(REPLACE "\n" "\n    " lines "${lines}")
     set("${outvar}" "    ${lines}" PARENT_SCOPE)

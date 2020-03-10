@@ -44,10 +44,6 @@ endif()
 
 # unit tests
 
-add_test(
-    NAME ${TARGET_NAME}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+mayaUsd_add_test(${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
 )
-
-mayaUsd_set_test_env(${TARGET_NAME} AL GTEST)

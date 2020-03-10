@@ -1,3 +1,3 @@
-mayaUsd_add_pymodule_test(TestAdditionalTranslators
-    AL MODULE testTranslators
+mayaUsd_add_test(TestAdditionalTranslators
+    PYTHON_MODULE testTranslators
 )
