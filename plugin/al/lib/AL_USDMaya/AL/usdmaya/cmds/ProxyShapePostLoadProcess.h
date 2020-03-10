@@ -61,6 +61,8 @@ public:
   /// \param  schemaPrims an array of prims for which transforms should be created
   /// \param  proxyTransformPath a path to the transform node that resides above the proxy shape
   /// \param  objsToCreate a mapping from the MObjects created (for the transform nodes), to the UsdPrim that is represented
+  /// \param  pushToPrim specifies the value of the pushToPrim attribute on the created transform nodes
+  /// \param  readAnimatedValues specifies the value of the readAnimatedValues attribute on the created transform nodes
   static void createTranformChainsForSchemaPrims(
       nodes::ProxyShape* shape,
       const std::vector<UsdPrim>& schemaPrims,

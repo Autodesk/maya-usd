@@ -61,18 +61,14 @@ public:
 
   /// \brief  Override this method to import a prim into your scene.
   /// \param  prim the usd prim to be imported into maya
-  /// \param  parent a handle to an MObject that represents an AL_usd_Transform node. You should parent your DAG
-  ///         objects under this node. If the prim you are importing is NOT a DAG object (e.g. surface shader, etc),
-  ///         then you can ignore this parameter.
-  /// \param  output a handle to an MObject created in the importing process
+  /// \param  node the maya node to import the data onto
   /// \return MS::kSuccess if all ok
   MStatus import(const UsdPrim& prim, const MObject& node) 
     { importCalled = true; UsdPrim(prim).CreateAttribute(TfToken("imported"), SdfValueTypeNames->Float); return MS::kSuccess; }
 
   /// \brief  Override this method to export a Maya object into USD
-  /// \param  stage the stage to write the data into 
-  /// \param  dagPath the Maya dag path of the object to export
-  /// \param  usdPath the path in the USD stage where the prim should be created
+  /// \param  prim the USD prim to store the extra data attributes
+  /// \param  node the maya node to read the data from
   /// \param  params the exporter params
   /// \return the prim created
   MStatus exportObject(UsdPrim& prim, const MObject& node, const ExporterParams& params) 
