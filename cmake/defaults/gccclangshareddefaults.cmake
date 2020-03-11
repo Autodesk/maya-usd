@@ -14,16 +14,20 @@
 # limitations under the License.
 #
 
-# This file contains a set of flags/settings shared between our 
+# This file contains a set of flags/settings shared between our
 # GCC and Clang configs. This allows clangdefaults and gccdefaults
 # to remain minimal, marking the points where divergence is required.
 include(Options)
 
-# Turn on C++11; pxr won't build without it. 
+# Turn on C++11; pxr won't build without it.
 set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -std=c++11")
 
 # Enable all warnings.
-set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Wall")
+# Note on -Wunused-const-variable:
+#    gcc - -Wall does NOT turn this on
+#    clang - according to docs, -Wall DOES enable this (but manually specifying doesn't hurt)
+# Therefore, turning it on for both provides the same behavior between them
+set(_PXR_GCC_CLANG_SHARED_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS} -Wall -Wunused-const-variable")
 
 # Errors are warnings in strict build mode.
 if (${PXR_STRICT_BUILD_MODE})
