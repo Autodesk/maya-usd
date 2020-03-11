@@ -32,10 +32,15 @@ endfunction()
 #                            MAYA_PLUG_IN_PATH
 #                            MAYA_SCRIPT_PATH
 #                            PXR_PLUGINPATH_NAME
-#                        varvalue will be split into a list at EITHER
-#                        ":" or ";" characters, and then joined using a
-#                        platform-appropriate separator - ie, ":" on posix,
-#                        ";" on Windows
+#                        Note that the format of these name/value pairs should
+#                        be the same as that used with
+#                        `set_property(TEST test_name APPEND PROPERTY ENVIRONMENT ...)`
+#                        That means that if the passed in env var is a "list", it
+#                        must already be separated by platform-appropriate
+#                        path-separators, escaped if needed - ie, ":" on
+#                        Linux/MacOS, and "\;" on Windows. Use
+#                        separate_argument_list before passing to this func
+#                        if you start with a cmake-style list.
 #
 function(mayaUsd_add_test test_name)
     # -----------------
@@ -174,7 +179,19 @@ finally:
     list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
 
-    # process the passed-in ENV values
+    # inherit PATH and PYTHONPATH from ENV to get USD entries
+    # these should come last (esp PYTHONPATH, in case another module is overriding
+    # with pkgutil)
+    list(APPEND mayaUsd_varname_PATH $ENV{PATH})
+    list(APPEND mayaUsd_varname_PYTHONPATH $ENV{PYTHONPATH})
+
+    # convert the internally-processed envs from cmake list
+    foreach(pathvar ${all_path_vars})
+        separate_argument_list(mayaUsd_varname_${pathvar})
+    endforeach()
+
+    # prepend the passed-in ENV values - assume these are already
+    # separated + escaped
     foreach(name_value_pair ${PREFIX_ENV})
         mayaUsd_split_head_tail("${name_value_pair}" "=" env_name env_value)
         if(NOT env_name)
@@ -182,27 +199,23 @@ finally:
                 "missing: ${name_value_pair}")
         endif()
 
-        # convert env_value into a list, separated by ":" or ";"
-        string(REPLACE ":" ";" env_value "${env_value}")
-
-        # now either append to existing list, or create new
+        # now either prepend to existing list, or create new
         if("${env_name}" IN_LIST all_path_vars)
-            list(APPEND "mayaUsd_varname_${env_name}" ${env_value})
+            if(IS_WINDOWS)
+                set(mayaUsd_varname_${env_name}
+                    "${env_value}\;${mayaUsd_varname_${env_name}}")
+            else()
+                set(mayaUsd_varname_${env_name}
+                    "${env_value}:${mayaUsd_varname_${env_name}}")
+            endif()
         else()
             set("mayaUsd_varname_${env_name}" ${env_value})
             list(APPEND all_path_vars "${env_name}")
         endif()
     endforeach()
 
-    # inherit PATH and PYTHONPATH from ENV to get USD entries
-    # these should come last (esp PYTHONPATH, in case another module is overriding
-    # with pkgutil)
-    list(APPEND mayaUsd_varname_PATH $ENV{PATH})
-    list(APPEND mayaUsd_varname_PYTHONPATH $ENV{PYTHONPATH})
-
-    # Finalize env vars
+    # set all env vars
     foreach(pathvar ${all_path_vars})
-        separate_argument_list(mayaUsd_varname_${pathvar})
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
             "${pathvar}=${mayaUsd_varname_${pathvar}}")
     endforeach()
