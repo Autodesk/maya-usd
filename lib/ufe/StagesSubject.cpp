@@ -39,7 +39,7 @@
 #include <maya/MMessage.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
-#include <pxr/usd/usdGeom/xformop.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include <vector>
 
