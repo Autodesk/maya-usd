@@ -29,7 +29,11 @@
 #include <ufe/sceneNotification.h>
 #include <ufe/transform3d.h>
 #include <ufe/object3d.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2010
 #include <ufe/object3dNotification.h>
+#endif
+#endif
 
 #include <maya/MSceneMessage.h>
 #include <maya/MMessage.h>
@@ -253,12 +257,14 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			}
 		}
 
+#if UFE_PREVIEW_VERSION_NUM >= 2010
 		// Send a special message when visibility has changed.
 		if (changedPath.GetNameToken() == UsdGeomTokens->visibility)
 		{
 			Ufe::VisibilityChanged vis(ufePath);
 			Ufe::Object3d::notify(vis);
 		}
+#endif
 #endif
 
 		// We need to determine if the change is a Transform3d change.
