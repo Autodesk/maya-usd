@@ -25,6 +25,8 @@
 MAYAUSD_NS_DEF {
 
 class MAYAUSD_UI_PUBLIC USDImportDialogCmd : public MPxCommand {
+    MStatus applyToProxy(const MString& proxyPath);
+
 public:
 	USDImportDialogCmd() = default;
 	~USDImportDialogCmd() override = default;
