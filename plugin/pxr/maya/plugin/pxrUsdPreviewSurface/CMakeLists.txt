@@ -83,13 +83,22 @@ pxr_install_test_dir(
 )
 set(TEST_INSTALL_PREFIX "${PXR_INSTALL_PREFIX}")
 
+set(testMayaScriptPath
+    ${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
+    ${TEST_INSTALL_PREFIX}/maya/plugin/pxrUsdPreviewSurface/resources
+)
+
+if (NOT IS_WINDOWS)
+    string(REPLACE ";" ":" testMayaScriptPath "${testMayaScriptPath}")
+endif()
+
 pxr_register_test(testPxrUsdPreviewSurfaceExport
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testPxrUsdPreviewSurfaceExport"
     TESTENV testPxrUsdPreviewSurfaceExport
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
+        MAYA_SCRIPT_PATH=${testMayaScriptPath}
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
