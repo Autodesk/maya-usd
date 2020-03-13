@@ -260,9 +260,9 @@ namespace
             // map instead of acquiring via MShaderManager::getFragmentShader(),
             // which creates new shader fragment graph for each shader instance
             // and causes expensive shader compilation and rebinding.
-            auto iter = shaderMap._map.cbegin();
-            if (iter != shaderMap._map.cend()) {
-                shader = iter->second->clone();
+            it = shaderMap._map.begin();
+            if (it != shaderMap._map.end()) {
+                shader = it->second->clone();
             }
             else {
                 MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
