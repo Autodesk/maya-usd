@@ -1,7 +1,7 @@
 # Changelog
 
 ## [0.1.0] - 2020-03-15
-This release adds *all* the changes made in refactoring_sandbox branch, including BaseProxyShape, Maya’s Attribute Editor and Outliner support via Ufe-USD runtime plugin, VP2RenderDelegate and Maya To Hydra. Added Autodesk plugin with Import/Export workflows and initial support for stage creation.
+This release adds *all* changes made to refactoring_sandbox branch, including BaseProxyShape, Maya’s Attribute Editor and Outliner support via Ufe-USD runtime plugin, VP2RenderDelegate and Maya To Hydra. Added Autodesk plugin with Import/Export workflows and initial support for stage creation.
 
 Made several build improvements, including fixing regression tests execution on all supported platforms. 
 
