@@ -147,28 +147,28 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         cmds.file(force=True, new=True)
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
-
-        stageA_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        stageB_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        stageA_file.close()
-        stageB_file.close()
+        
+        self.stageA_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        self.stageB_file = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        self.stageA_file.close()
+        self.stageB_file.close()
 
         cube = cmds.polyCube(constructionHistory=False, name="cube")[0]
         sphere = cmds.polySphere(constructionHistory=False, name="cube")[0]
 
         cmds.select(cube, replace=True)
-        cmds.file(stageA_file.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(self.stageA_file.name, exportSelected=True, force=True, type="AL usdmaya export")
 
         cmds.select(sphere, replace=True)
-        cmds.file(stageB_file.name, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(self.stageB_file.name, exportSelected=True, force=True, type="AL usdmaya export")
 
         self._stageA.poly = cube
         self._stageB.poly = sphere
 
         cmds.file(force=True, new=True)
 
-        self._stageA.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageA_file.name)[0]
-        self._stageB.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=stageB_file.name)[0]
+        self._stageA.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self.stageA_file.name)[0]
+        self._stageB.proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self.stageB_file.name)[0]
 
         self._stageA.proxy = AL.usdmaya.ProxyShape.getByName(self._stageA.proxyName)
         self._stageB.proxy = AL.usdmaya.ProxyShape.getByName(self._stageB.proxyName)
