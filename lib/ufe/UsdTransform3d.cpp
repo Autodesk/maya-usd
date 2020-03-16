@@ -20,6 +20,7 @@
 #include "UsdScaleUndoableCommand.h"
 #include "UsdRotatePivotTranslateUndoableCommand.h"
 #include "private/Utils.h"
+#include "Utils.h"
 
 #include <pxr/usd/usdGeom/xformCache.h>
 
@@ -41,17 +42,17 @@ namespace {
 		return uMat;
 	}
 
-	Ufe::Matrix4d primToUfeXform(const UsdPrim& prim)
+	Ufe::Matrix4d primToUfeXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
-		UsdGeomXformCache xformCache;
+		UsdGeomXformCache xformCache(time);
 		GfMatrix4d usdMatrix = xformCache.GetLocalToWorldTransform(prim);
 		Ufe::Matrix4d xform = convertFromUsd(usdMatrix);
 		return xform;
 	}
 
-	Ufe::Matrix4d primToUfeExclusiveXform(const UsdPrim& prim)
+	Ufe::Matrix4d primToUfeExclusiveXform(const UsdPrim& prim, const UsdTimeCode& time)
 	{
-		UsdGeomXformCache xformCache;
+		UsdGeomXformCache xformCache(time);
 		GfMatrix4d usdMatrix = xformCache.GetParentToWorldTransform(prim);
 		Ufe::Matrix4d xform = convertFromUsd(usdMatrix);
 		return xform;
@@ -108,7 +109,7 @@ Ufe::Vector3d UsdTransform3d::translation() const
 	{
 		// Initially, attribute can be created, but have no value.
 		GfVec3d v;
-		if (fPrim.GetAttribute(xlate).Get<GfVec3d>(&v))
+		if (fPrim.GetAttribute(xlate).Get<GfVec3d>(&v,getTime(path())))
 		{
 			x = v[0]; y = v[1]; z = v[2];
 		}
@@ -157,7 +158,7 @@ Ufe::Vector3d UsdTransform3d::rotatePivot() const
 	{
 		// Initially, attribute can be created, but have no value.
 		GfVec3f v;
-		if (fPrim.GetAttribute(xpivot).Get<GfVec3f>(&v))
+		if (fPrim.GetAttribute(xpivot).Get<GfVec3f>(&v,getTime(path())))
 		{
 			x = v[0]; y = v[1]; z = v[2];
 		}
@@ -182,12 +183,12 @@ Ufe::Vector3d UsdTransform3d::scalePivot() const
 
 Ufe::Matrix4d UsdTransform3d::segmentInclusiveMatrix() const
 {
-	return primToUfeXform(fPrim);
+	return primToUfeXform(fPrim,getTime(path()));
 }
  
 Ufe::Matrix4d UsdTransform3d::segmentExclusiveMatrix() const
 {
-	return primToUfeExclusiveXform(fPrim);
+	return primToUfeExclusiveXform(fPrim,getTime(path()));
 }
 
 } // namespace ufe
