@@ -24,6 +24,7 @@ Ufe::Vector3d toVector3d(const GfVec3d& v)
     return Ufe::Vector3d(v[0], v[1], v[2]);
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2010
 Ufe::AttributeEnumString::Ptr getVisibilityAttribute(Ufe::SceneItem::Ptr item)
 {
     auto objAttrs = Ufe::Attributes::attributes(item);
@@ -40,6 +41,7 @@ Ufe::AttributeEnumString::Ptr getVisibilityAttribute(Ufe::SceneItem::Ptr item)
     std::string err = TfStringPrintf("Could not get visibility attribute for Object3d: %s", item->path().string().c_str());
     throw std::runtime_error(err.c_str());
 }
+#endif
 
 }
 
