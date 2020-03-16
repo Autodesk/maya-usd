@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include <hdMaya/utils.h>
+#include "utils.h"
 
 #include <pxr/base/tf/fileUtils.h>
 

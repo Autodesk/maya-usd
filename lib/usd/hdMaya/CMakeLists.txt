@@ -34,7 +34,7 @@ target_sources(${TARGET_NAME}
         delegates/proxyDelegate.cpp
         delegates/proxyUsdImagingDelegate.cpp
         delegates/testDelegate.cpp
-        
+
         debugCodes.cpp
         utils.cpp
 )
@@ -44,10 +44,7 @@ target_sources(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME} 
     PRIVATE 
-        "HDMAYA_EXPORT=1"
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
-    PUBLIC
-        $<$<BOOL:${IS_WINDOWS}>:NOMINMAX>
+        HDMAYA_EXPORT
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
@@ -56,19 +53,8 @@ target_compile_definitions(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME} 
     PRIVATE
-        "${CMAKE_CURRENT_SOURCE_DIR}/.."
-        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
         ${CMAKE_BINARY_DIR}/include
-    PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
-        "${CMAKE_CURRENT_BINARY_DIR}/.."
-    SYSTEM PUBLIC
-        ${MAYA_INCLUDE_DIRS} 
-        ${GLEW_INCLUDE_DIR}
-        ${Boost_INCLUDE_DIRS}
-        ${PYTHON_INCLUDE_DIRS}
-        ${TBB_INCLUDE_DIRS}
-        ${CMAKE_BINARY_DIR}
 )
 
 # -----------------------------------------------------------------------------
@@ -76,33 +62,8 @@ target_include_directories(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME} 
     PUBLIC 
-        arch 
-        gf 
-        plug
-        tf
-        vt
-        glf
-        hd
-        hdSt
-        hdx
-        hf
-        pxOsd
-        usd
-        sdf
-        sdr
-        usdGeom
-        usdLux
-        usdHydra
-        usdImaging
-        usdImagingGL
         mayaUsd
-        Boost::boost
-        ${OPENGL_gl_LIBRARY} 
-        ${MAYA_LIBRARIES}
-        ${GLEW_LIBRARY}
-        ${TBB_LIBRARIES}
-        ${PYTHON_LIBRARIES}
-        $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
+    PRIVATE
         $<$<BOOL:${USD_001905_BUILD}>:hio>
 )
 

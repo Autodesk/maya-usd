@@ -23,7 +23,6 @@ target_sources(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME}
     PRIVATE 
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
         # M3dView needs this (technically, MNativeWindowHdl.h)
         # private atm because M3dView is only used in .cpp right now
         # gcc will NOT set this automatically
@@ -37,11 +36,7 @@ target_compile_definitions(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME} 
     PRIVATE 
-        "${CMAKE_CURRENT_SOURCE_DIR}/.."
-        ${MAYA_INCLUDE_DIRS}
-        ${CMAKE_BINARY_DIR}/usd
         ${CMAKE_BINARY_DIR}/include
-        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
 # -----------------------------------------------------------------------------
@@ -50,8 +45,6 @@ target_include_directories(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME} 
     PRIVATE 
         hdMaya 
-        usdShade
-        ${MAYA_LIBRARIES}
 )
 
 # -----------------------------------------------------------------------------
