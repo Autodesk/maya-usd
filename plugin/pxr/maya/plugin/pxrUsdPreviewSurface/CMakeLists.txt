@@ -83,14 +83,12 @@ pxr_install_test_dir(
 )
 set(TEST_INSTALL_PREFIX "${PXR_INSTALL_PREFIX}")
 
+# TODO: disabling the second entry since currently testWrapper.py on Windows
+# can't handle the cases where there are multiple value entries. 
 set(testMayaScriptPath
     ${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-    ${TEST_INSTALL_PREFIX}/maya/plugin/pxrUsdPreviewSurface/resources
+    #${TEST_INSTALL_PREFIX}/maya/plugin/pxrUsdPreviewSurface/resources
 )
-
-if (NOT IS_WINDOWS)
-    string(REPLACE ";" ":" testMayaScriptPath "${testMayaScriptPath}")
-endif()
 
 pxr_register_test(testPxrUsdPreviewSurfaceExport
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
