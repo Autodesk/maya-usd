@@ -39,6 +39,10 @@ public:
 	// Ufe::Object3d overrides
 	Ufe::SceneItem::Ptr sceneItem() const override;
     Ufe::BBox3d boundingBox() const override;
+#if UFE_PREVIEW_VERSION_NUM >= 2010
+    bool visibility() const override;
+    void setVisibility(bool vis) override;
+#endif
 
 private:
 	UsdSceneItem::Ptr fItem;

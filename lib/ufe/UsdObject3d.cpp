@@ -9,16 +9,39 @@
 #include "UsdObject3d.h"
 #include "Utils.h"
 
+#include "ufe/attributes.h"
 #include "ufe/types.h"
 
-#include "pxr/usd/usdGeom/bboxCache.h"
-#include "pxr/usd/usd/timeCode.h"
+#include <pxr/usd/usdGeom/bboxCache.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/tokens.h>
+
+#include <stdexcept>
 
 namespace {
 Ufe::Vector3d toVector3d(const GfVec3d& v)
 {
     return Ufe::Vector3d(v[0], v[1], v[2]);
 }
+
+#if UFE_PREVIEW_VERSION_NUM >= 2010
+Ufe::AttributeEnumString::Ptr getVisibilityAttribute(Ufe::SceneItem::Ptr item)
+{
+    auto objAttrs = Ufe::Attributes::attributes(item);
+    if (objAttrs)
+    {
+        auto visAttr = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(objAttrs->attribute(UsdGeomTokens->visibility));
+        if (visAttr)
+           return visAttr;
+    }
+
+    // Getting here is considered a serious error. In UsdObject3dHandler::object3d()
+    // we only create and return a valid Ufe::Object3d interface for imageable geometry.
+    // Those kind of prims must have a visibility attribute.
+    std::string err = TfStringPrintf("Could not get visibility attribute for Object3d: %s", item->path().string().c_str());
+    throw std::runtime_error(err.c_str());
+}
+#endif
 
 }
 
@@ -68,6 +91,25 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     auto max = range.GetMax();
 	return Ufe::BBox3d(toVector3d(min), toVector3d(max));
 }
+
+#if UFE_PREVIEW_VERSION_NUM >= 2010
+bool UsdObject3d::visibility() const
+{
+    auto visAttr = getVisibilityAttribute(sceneItem());
+    if (visAttr) {
+        return (visAttr->get() != UsdGeomTokens->invisible);
+    }
+    return false;
+}
+
+void UsdObject3d::setVisibility(bool vis)
+{
+    auto visAttr = getVisibilityAttribute(sceneItem());
+    if (visAttr) {
+        visAttr->set(vis ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
+    }
+}
+#endif
 
 } // namespace ufe
 } // namespace MayaUsd

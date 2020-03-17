@@ -18,21 +18,12 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testGroupCmd.py
         testAttribute.py
         testAttributes.py
-		# The following files test UFE_V1 interfaces, and therefore should not
-		# depend on UFE_V2.  However, the test code relies on capability to
-		# retrieve a USD prim from a UFE scene item, which in turn depends on
-		# functionality that is only available in UFE_V2.  Therefore, run the
-		# tests only if UFE_V2 is available.  PPT, 11-Oct-2019.
-		#
-		# MAYA-101385: until Maya switches back to UFE_V2, fail, so commented
-		# out.  PPT, 11-Oct-2019.
-		#
-        # testDuplicateCmd.py
-        # testMoveCmd.py
+        testDuplicateCmd.py
+        testMoveCmd.py
         testObject3d.py
-        # testRotateCmd.py
-        # testScaleCmd.py
-        # testTransform3dTranslate.py
+        testRotateCmd.py
+        testScaleCmd.py
+        testTransform3dTranslate.py
         testRename.py
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
@@ -97,5 +88,9 @@ foreach(script ${test_script_files})
         "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
         "PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
         "MAYA_NO_STANDALONE_ATEXIT=1"
+        "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
     )
+
+    # Assign a ctest label to these tests for easy filtering.
+    set_tests_properties(${target} PROPERTIES LABELS ufe)
 endforeach()
