@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "fileio/registryHelper.h"
+#include "registryHelper.h"
 
 #include "base/debugCodes.h"
 

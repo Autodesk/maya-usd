@@ -117,12 +117,7 @@ target_compile_definitions(${PYTHON_LIBRARY_NAME}
         MFB_PACKAGE_MODULE=AL.usd.schemas.maya
 )
 
-set_target_properties(${PYTHON_LIBRARY_NAME}
-    PROPERTIES 
-        PREFIX ""
-)
-
-set_python_module_suffix(${PYTHON_LIBRARY_NAME})
+set_python_module_property(${PYTHON_LIBRARY_NAME})
 
 target_link_libraries(${PYTHON_LIBRARY_NAME} AL_USDMayaSchemas ${DEPENDANT_LIBRARIES})
 
