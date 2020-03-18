@@ -568,7 +568,7 @@ void Export::copyTransformParams(UsdPrim prim, MFnTransform& fnTransform)
   translators::TransformTranslator::copyAttributes(fnTransform.object(), prim, m_params, fnTransform.dagPath());
   if(m_params.m_dynamicAttributes)
   {
-    translators::DgNodeTranslator::copyDynamicAttributes(fnTransform.object(), prim);
+    translators::DgNodeTranslator::copyDynamicAttributes(fnTransform.object(), prim, m_params.m_animTranslator);
   }
 
   // handle the special case of exporting 

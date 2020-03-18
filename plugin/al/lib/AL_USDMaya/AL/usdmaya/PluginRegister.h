@@ -16,13 +16,9 @@
 #pragma once
 #include "pxr/pxr.h"
 #include "pxr/imaging/glf/glew.h"
-#include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/glContext.h"
-
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/cmds/CreateUsdPrim.h"
 #include "AL/usdmaya/cmds/DebugCommands.h"
 #include "AL/usdmaya/cmds/EventCommand.h"
@@ -47,18 +43,22 @@
 #include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
+#include "AL/usdmaya/nodes/Scope.h"
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
-
-#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 5) 
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/glContext.h"
-#endif
 
 #include "maya/MDrawRegistry.h"
 #include "maya/MGlobal.h"
 #include "maya/MStatus.h"
+
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -171,13 +171,11 @@ MStatus registerPlugin(AFnPlugin& plugin)
 {
   GlfGlewInit();
 
-  #if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 5) 
   // We may be in a non-gui maya... if so,
   // GlfContextCaps::InitInstance() will error
   if (GlfGLContext::GetCurrentGLContext()->IsValid()) {
     GlfContextCaps::InitInstance();
   }
-  #endif
 
   if(!MGlobal::optionVarExists("AL_usdmaya_selectMode"))
   {
@@ -206,7 +204,12 @@ MStatus registerPlugin(AFnPlugin& plugin)
 
   if(!MGlobal::optionVarExists("AL_usdmaya_pushToPrim"))
   {
-    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", false);
+    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", true);
+  }
+
+  if(!MGlobal::optionVarExists("AL_usdmaya_ignoreLockPrims"))
+  {
+    MGlobal::setOptionVarValue("AL_usdmaya_ignoreLockPrims", false);
   }
 
   MStatus status;
@@ -232,7 +235,6 @@ MStatus registerPlugin(AFnPlugin& plugin)
     }
   }
 
-  AL_REGISTER_DATA(plugin, AL::usdmaya::StageData);
   AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
   AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
@@ -272,7 +274,33 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
   AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
   AL_REGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
-  AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
+  
+  status = MayaUsdProxyShapePlugin::initialize(plugin);
+  CHECK_MSTATUS(status);
+
+  if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
+      status = plugin.registerShape(
+          AL::usdmaya::nodes::ProxyShape::kTypeName,
+          AL::usdmaya::nodes::ProxyShape::kTypeId,
+          AL::usdmaya::nodes::ProxyShape::creator,
+          AL::usdmaya::nodes::ProxyShape::initialise,
+          AL::usdmaya::nodes::ProxyShapeUI::creator,
+          MayaUsdProxyShapePlugin::getProxyShapeClassification()
+      );
+      CHECK_MSTATUS(status);
+  }
+  else {
+      AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
+  }
+
+#if defined(WANT_UFE_BUILD)
+  status = MayaUsd::ufe::initialize();
+  if (!status) {
+    status.perror("Unable to initialize ufe.");
+  }
+#endif
+
+  AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Scope, AL::usdmaya::nodes::BasicTransformationMatrix);
   AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
@@ -309,17 +337,44 @@ MStatus registerPlugin(AFnPlugin& plugin)
   AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (animated)", "AL_usdmaya_meshAnimImport");
   AL::maya::utils::MenuBuilder::addEntry("USD/Selection Enabled", "optionVar -iv \\\"AL_usdmaya_selectionEnabled\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"));
   AL::maya::utils::MenuBuilder::addEntry("USD/Enable pushToPrim", "optionVar -iv \\\"AL_usdmaya_pushToPrim\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"));
+  AL::maya::utils::MenuBuilder::addEntry("USD/Selection Ignore Lock Prims Enabled", "optionVar -iv \\\"AL_usdmaya_ignoreLockPrims\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims"));
   CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
   AL::usdmaya::Global::onPluginLoad();
 
+  // As of 2-Aug-2019, these PlugPlugin translators are not loaded
+  // automatically.  To be investigated.  A duplicate of this code is in the
+  // Autodesk plugin.cpp.
+  const std::vector<std::string> translatorPluginNames{
+      "mayaUsd_Schemas", "mayaUsd_Translators" };
+  const auto& plugRegistry = PlugRegistry::GetInstance();
+  std::stringstream msg("mayaUsdPlugin: ");
+  for (const auto& pluginName : translatorPluginNames) {
+      auto plugin = plugRegistry.GetPluginWithName(pluginName);
+      if (!plugin) {
+          status = MStatus::kFailure;
+          msg << "translator " << pluginName << " not found.";
+          status.perror(msg.str().c_str());
+      }
+      else {
+          // Load is a no-op if already loaded.
+          if (!plugin->Load()) {
+              status = MStatus::kFailure;
+              msg << pluginName << " translator load failed.";
+              status.perror(msg.str().c_str());
+          }
+      }
+  }
+
   // Force all plugins to be loaded at startup time. Unless we load plugins upfront
   // options will not be registered until the start of import or export, and won't be available in the GUI
+  const TfType& translatorType = TfType::Find<AL::usdmaya::fileio::translators::TranslatorBase>();
   PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
   for(auto& plugin : plugins)
   {
-    if(!plugin->IsLoaded())
+    if(!plugin->IsLoaded() && plugin->DeclaresType(translatorType, true))
       plugin->Load();
   }
+
   return status;
 }
 
@@ -334,6 +389,11 @@ template<typename AFnPlugin>
 MStatus unregisterPlugin(AFnPlugin& plugin)
 {
   MStatus status;
+
+#if defined(WANT_UFE_BUILD)
+  status = MayaUsd::ufe::finalize();
+  CHECK_MSTATUS(status);
+#endif
 
   // gpuCachePluginMain used as an example.
   if (MGlobal::kInteractive == MGlobal::mayaState()) {
@@ -395,11 +455,15 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
+
+  status = MayaUsdProxyShapePlugin::finalize(plugin);
+  CHECK_MSTATUS(status);
+
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
+  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Scope);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
   AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-  AL_UNREGISTER_DATA(plugin, AL::usdmaya::StageData);
 
   AL::usdmaya::Global::onPluginUnload();
   return status;

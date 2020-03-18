@@ -1,0 +1,196 @@
+// Copyright 2020 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+proc setOptionVars (int $forceFactorySettings)
+{
+    if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_primPath`) {
+        optionVar -stringValue stageFromExistingLayer_primPath "";
+    }
+
+    if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_excludePrimPath`) {
+        optionVar -stringValue stageFromExistingLayer_excludePrimPath "";
+    }
+
+    if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_loadPayloads`) {
+        optionVar -intValue stageFromExistingLayer_loadPayloads 1;
+    }
+}
+
+// stageFromExistingLayer_UISetup
+// creates the options of the stageFromExistingLayer dialog
+global proc string stageFromExistingLayer_UISetup(string $parent) {
+    setParent $parent;
+    string $layout = `scrollLayout -childResizable true`;
+
+    frameLayout -label "USD Layer Options" -collapsable false;
+    textFieldGrp -l "Prim Path:" 
+        -ann "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded." 
+        -sbm "Loads the specified prim path" 
+        primPathField;
+    textFieldGrp -l "Exclude Prim Paths:" 
+        -ann "Excludes the specified prim paths from the loaded USD data. Multiple prim paths must be separated by a comma." 
+        -sbm "Excludes the specified prim paths from the loaded USD data" 
+        excludePrimPathField;
+    checkBoxGrp -l "Load Payloads:" 
+        -ann "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded." 
+        -sbm "Loads prims marked as payloads" 
+        loadPayloadsCheckBox;
+
+    return $layout;
+}
+
+// stageFromExistingLayer_UIInit
+// init defaults values for the options of the stageFromExistingLayer dialog
+global proc stageFromExistingLayer_UIInit(string $parent, string $filterType) {
+    setOptionVars(false);
+
+    string $ppath = `optionVar -q stageFromExistingLayer_primPath`;
+    string $exppath = `optionVar -q stageFromExistingLayer_excludePrimPath`;
+    int $loadp = `optionVar -q stageFromExistingLayer_loadPayloads`;
+
+    setParent $parent;
+    textFieldGrp -e -text $ppath primPathField;
+    textFieldGrp -e -text $exppath excludePrimPathField;
+    checkBoxGrp -e -value1 $loadp loadPayloadsCheckBox;
+}
+
+global proc stageFromExistingLayer_UICommit(string $parent) {
+    setParent $parent;
+
+    // fetch values
+    optionVar -stringValue stageFromExistingLayer_primPath
+        (`textFieldGrp -q -text  primPathField`);
+    optionVar -stringValue stageFromExistingLayer_excludePrimPath
+        (`textFieldGrp -q -text  excludePrimPathField`);
+    optionVar -intValue stageFromExistingLayer_loadPayloads
+        (`checkBoxGrp -q -value1 loadPayloadsCheckBox`);
+}
+
+proc doCreateStage(string $fileName) {
+    // actually load the file
+    string $baseName = capitalizeString(`basenameEx $fileName`);
+    if( isValidObjectName($baseName) )
+        $baseName += "_usd";
+    else
+        $baseName = "UsdStage";
+
+    string $ppath = `optionVar -q stageFromExistingLayer_primPath`;
+    string $exppath = `optionVar -q stageFromExistingLayer_excludePrimPath`;
+    int $loadp = `optionVar -q stageFromExistingLayer_loadPayloads`;
+
+    string $shapeNode = `createNode "mayaUsdProxyShape" -skipSelect -name ($baseName+"Shape")`;
+    setAttr -type "string" ($shapeNode+".filePath") $fileName;
+    setAttr -type "string" ($shapeNode+".primPath") $ppath;
+    setAttr -type "string" ($shapeNode+".excludePrimPaths") $exppath;
+    setAttr ($shapeNode+".loadPayloads") $loadp;
+    connectAttr time1.outTime ($shapeNode+".time");
+    select -r $shapeNode;
+}
+
+global proc createStagesFromExistingCallback(string $parent, int $doIt)
+{
+    stageFromExistingLayer_UICommit($parent);
+
+    if ($doIt) {
+        mayaUsd_createStagesFromExistingLayer; 
+        addToRecentCommandQueue "mayaUsd_createStagesFromExistingLayer" 
+            "mayaUsdCreateStageFromExistingLayer";
+    }
+}
+
+global proc createStagesFromExistingSetup(string $parent, int $forceFactorySettings)
+{
+    setOptionVars($forceFactorySettings);
+
+    stageFromExistingLayer_UIInit($parent, "");
+}
+
+global proc mayaUsd_createStagesFromExistingLayerOptions()
+{
+    global int $gOptionBoxTemplateFrameSpacing;
+
+    setOptionVars(false);
+
+    string $commandName = "createStagesFromExisting";
+    string $callback = ($commandName + "Callback");
+    string $setup = ($commandName + "Setup");
+
+    string $layout = getOptionBox();
+    setParent $layout;
+
+    setOptionBoxCommandName($commandName);
+
+    setUITemplate -pushTemplate DefaultTemplate;
+
+    string $parent = `formLayout createStagesFromExistingOptions`;
+
+    string $settingsFrame = stageFromExistingLayer_UISetup($parent);
+
+    formLayout -e
+        -af $settingsFrame "top" $gOptionBoxTemplateFrameSpacing
+        -af $settingsFrame "left" $gOptionBoxTemplateFrameSpacing
+        -af $settingsFrame "right" $gOptionBoxTemplateFrameSpacing
+        -af $settingsFrame "bottom"  $gOptionBoxTemplateFrameSpacing
+        $parent;
+
+    string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
+    button -edit -label "Create Stages"
+        -command ($callback + " " + $parent + " " + 1 + "; hideOptionBox;")
+        $applyCloseBtn;
+
+    string $applyBtn = getOptionBoxApplyBtn();
+    button -edit -label "Save and Close"
+        -command ($callback + " " + $parent + " " + 0 + "; hideOptionBox;")
+        $applyBtn;
+
+    string $cancelBtn = getOptionBoxCloseBtn();
+    button -edit -label "Cancel"
+        -command ("hideOptionBox;")
+        $cancelBtn;
+
+    string $resetBtn = getOptionBoxResetBtn();
+    button -edit 
+        -command ($setup + " " + $parent + " " + 1)
+        $resetBtn;
+
+    string $saveBtn = getOptionBoxSaveBtn();
+    button -edit 
+        -command ($callback + " " + $parent + " " + 0)
+        $saveBtn;
+
+    setOptionBoxTitle("Create USD Stage Options");
+
+    setOptionBoxHelpTag( "" );
+
+    eval (($setup + " " + $parent + " " + 0));	
+
+    showOptionBox();
+}
+
+global proc mayaUsd_createStagesFromExistingLayer() {
+    string $result[] = `fileDialog2 
+        -fileMode 1
+        -caption "Create USD Stage From Existing Layer"
+        -fileFilter "All USD Files (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz"
+        -okCaption "Create"
+        -optionsUICreate "stageFromExistingLayer_UISetup"
+        -optionsUIInit "stageFromExistingLayer_UIInit"
+        -optionsUICommit "stageFromExistingLayer_UICommit"`;
+
+    if (size($result) > 0) {
+        doCreateStage($result[0]);
+    }
+        
+}

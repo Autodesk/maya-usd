@@ -270,8 +270,8 @@
 /// \ingroup   mayautils
 #define AL_REGISTER_DATA(plugin, X){ \
   MStatus status = plugin.registerData( \
-    X ::kName, \
-    X ::kTypeId, \
+    X ::typeName, \
+    X ::mayaTypeId, \
     X ::creator); \
   if(!status) { \
     status.perror("unable to register data " #X); \
@@ -309,7 +309,7 @@
 /// a macro to unregister a custom MPxData derived object from maya
 /// \ingroup   mayautils
 #define AL_UNREGISTER_DATA(plugin, X) {\
-  MStatus status = plugin.deregisterData(X  ::kTypeId); \
+  MStatus status = plugin.deregisterData(X  ::mayaTypeId); \
   if (!status) { \
       status.perror("deregisterData AL::usdmaya::" #X); \
       return status; \

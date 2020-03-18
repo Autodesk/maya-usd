@@ -1,6 +1,8 @@
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas gf plug tf)
-
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
+# MayaReference provides import translation for AL_usd_MayaReference.
+# As such, its AL_USDMAYA_DEFINE_TRANSLATOR does a
+# TfType::Find<AL_usd_MayaReference>, which requires AL_usd_MayaReference's
+# typeid.  We must therefore link against mayaUsd_Schemas.
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd mayaUsd_Schemas gf plug tf)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
@@ -22,13 +24,21 @@ add_library(${TRANSLATORS_PACKAGE}
     DirectionalLight.cpp
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
+# HS OCT 2019, do we really need to define 
+# AL_MAYA_MACROS_EXPORT for this target?
+if(NOT IS_WINDOWS)
+    set_target_properties(${TRANSLATORS_PACKAGE}
+          PROPERTIES COMPILE_DEFINITIONS
+          "AL_MAYA_MACROS_EXPORT;${_macDef}"
+    )
+endif()
+
 set(arg_PUBLIC_HEADER_FILES
     Camera.h
-)
-
-target_compile_definitions(${TRANSLATORS_PACKAGE}
-  PRIVATE
-    AL_MAYA_MACROS_EXPORT
 )
 
 # Copy the plugin metadata file in a hierarchy replicating the install hierarchy.
@@ -62,40 +72,49 @@ target_include_directories(
     ../lib/AL_USDMaya
 )
 
-set_target_properties(${TRANSLATORS_PACKAGE}
- PROPERTIES COMPILE_DEFINITIONS
-     "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
-)
-
-set_target_properties(${TRANSLATORS_PACKAGE}
-        PROPERTIES COMPILE_DEFINITIONS
-        "MFB_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE};MFB_ALT_TRANSLATORS_PACKAGE=${TRANSLATORS_PACKAGE}"
-        )
+# handle run-time search paths
+if(IS_MACOSX OR IS_LINUX) 
+    mayaUsd_init_rpath(rpath "lib")
+    mayaUsd_add_rpath(rpath "../lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+    if (IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+    endif()
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${TRANSLATORS_PACKAGE})
+endif()
 
 target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})
 
 install(TARGETS ${TRANSLATORS_PACKAGE}
  LIBRARY
- DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+ DESTINATION ${AL_INSTALL_PREFIX}/lib
  RUNTIME
- DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
+ DESTINATION ${AL_INSTALL_PREFIX}/lib
 )
-if(MSVC)
-    install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PACKAGE}> DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
+if(IS_WINDOWS)
+    install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PACKAGE}> DESTINATION ${AL_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
- DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/${TRANSLATORS_PACKAGE}/resources
+ DESTINATION ${AL_INSTALL_PREFIX}/lib/usd/${TRANSLATORS_PACKAGE}/resources
 )
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${CMAKE_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${AL_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
 )
 
 # install public headers
 install(FILES ${arg_PUBLIC_HEADER_FILES}
-     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${DIRECTORY_PATH}
+     DESTINATION ${AL_INSTALL_PREFIX}/include/${DIRECTORY_PATH}
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

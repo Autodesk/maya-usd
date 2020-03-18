@@ -224,7 +224,7 @@ TEST(translators_CameraTranslator, cameraShapeName)
   MFnDagNode camDag(camObj);
   ASSERT_EQ(MString("AL_usdmaya_Transform"), camDag.typeName());
   ASSERT_EQ(MString("cam"), camDag.name());
-  ASSERT_EQ(1, camDag.childCount());
+  ASSERT_EQ(1u, camDag.childCount());
   MFnDagNode shapeDag(camDag.child(0));
   ASSERT_EQ(MString("camera"), shapeDag.typeName());
   ASSERT_EQ(MString("camShape"), shapeDag.name());

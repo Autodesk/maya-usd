@@ -17,6 +17,8 @@
 
 from pxr import UsdMaya
 
+import mayaUsd.lib as mayaUsdLib
+
 from pxr import Sdf
 from pxr import Tf
 from pxr import UsdGeom
@@ -43,7 +45,7 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.group(name="group1", empty=True)
 
-        proxy = UsdMaya.Adaptor('group1')
+        proxy = mayaUsdLib.Adaptor('group1')
         self.assertTrue(proxy)
         self.assertEqual(proxy.GetAppliedSchemas(), [])
 
@@ -73,7 +75,7 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.group(name="group1", empty=True)
 
-        proxy = UsdMaya.Adaptor('group1')
+        proxy = mayaUsdLib.Adaptor('group1')
         self.assertTrue(proxy.GetSchema(UsdGeom.ModelAPI))
         self.assertTrue(proxy.GetSchema(UsdGeom.Xform))
 
@@ -91,7 +93,7 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.group(name="group1", empty=True)
 
-        proxy = UsdMaya.Adaptor('group1')
+        proxy = mayaUsdLib.Adaptor('group1')
         self.assertEqual(proxy.GetAppliedSchemas(), [])
 
         proxy.ApplySchema(UsdGeom.ModelAPI)
@@ -117,8 +119,8 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.group(name="group1", empty=True)
 
-        modelAPI = UsdMaya.Adaptor('group1').ApplySchema(UsdGeom.ModelAPI)
-        xform = UsdMaya.Adaptor('group1').GetSchema(UsdGeom.Xform)
+        modelAPI = mayaUsdLib.Adaptor('group1').ApplySchema(UsdGeom.ModelAPI)
+        xform = mayaUsdLib.Adaptor('group1').GetSchema(UsdGeom.Xform)
 
         # Schema attributes list versus authored attributes list.
         self.assertIn(UsdGeom.Tokens.modelCardTextureXPos,
@@ -173,7 +175,7 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.group(name="group1", empty=True)
 
-        proxy = UsdMaya.Adaptor('group1')
+        proxy = mayaUsdLib.Adaptor('group1')
         self.assertEqual(proxy.GetAllAuthoredMetadata(), {})
         self.assertIsNone(proxy.GetMetadata("instanceable"))
 
@@ -203,8 +205,8 @@ class testUsdMayaAdaptor(unittest.TestCase):
 
     def testStaticHelpers(self):
         """Tests the static helpers for querying metadata and schema info."""
-        self.assertIn("MotionAPI", UsdMaya.Adaptor.GetRegisteredAPISchemas())
-        self.assertIn("hidden", UsdMaya.Adaptor.GetPrimMetadataFields())
+        self.assertIn("MotionAPI", mayaUsdLib.Adaptor.GetRegisteredAPISchemas())
+        self.assertIn("hidden", mayaUsdLib.Adaptor.GetPrimMetadataFields())
 
     def testAttributeAliases(self):
         """Tests behavior with the purpose/USD_purpose alias."""
@@ -214,7 +216,7 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.addAttr("group1", longName="USD_purpose", dataType="string")
         cmds.setAttr("group1.USD_purpose", "proxy", type="string")
         self.assertEqual(
-                UsdMaya.Adaptor("group1")
+                mayaUsdLib.Adaptor("group1")
                     .GetSchema(UsdGeom.Xform)
                     .GetAttribute(UsdGeom.Tokens.purpose)
                     .Get(),
@@ -224,7 +226,7 @@ class testUsdMayaAdaptor(unittest.TestCase):
                 dataType="string")
         cmds.setAttr("group1.USD_ATTR_purpose", "render", type="string")
         self.assertEqual(
-                UsdMaya.Adaptor("group1")
+                mayaUsdLib.Adaptor("group1")
                     .GetSchema(UsdGeom.Xform)
                     .GetAttribute(UsdGeom.Tokens.purpose)
                     .Get(),
@@ -232,7 +234,7 @@ class testUsdMayaAdaptor(unittest.TestCase):
 
         cmds.deleteAttr("group1.USD_purpose")
         self.assertEqual(
-                UsdMaya.Adaptor("group1")
+                mayaUsdLib.Adaptor("group1")
                     .GetSchema(UsdGeom.Xform)
                     .GetAttribute(UsdGeom.Tokens.purpose)
                     .Get(),
@@ -240,12 +242,12 @@ class testUsdMayaAdaptor(unittest.TestCase):
 
         cmds.deleteAttr("group1.USD_ATTR_purpose")
         self.assertIsNone(
-                UsdMaya.Adaptor("group1")
+                mayaUsdLib.Adaptor("group1")
                     .GetSchema(UsdGeom.Xform)
                     .GetAttribute(UsdGeom.Tokens.purpose)
                     .Get())
 
-        UsdMaya.Adaptor("group1")\
+        mayaUsdLib.Adaptor("group1")\
                     .GetSchema(UsdGeom.Xform)\
                     .CreateAttribute(UsdGeom.Tokens.purpose)
         self.assertTrue(cmds.attributeQuery("USD_ATTR_purpose", node="group1",
@@ -256,46 +258,46 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.createNode("joint", name="TestJoint")
         self.assertTrue(
-                UsdMaya.Adaptor("TestJoint").GetSchema(UsdSkel.Skeleton))
+                mayaUsdLib.Adaptor("TestJoint").GetSchema(UsdSkel.Skeleton))
         self.assertFalse(
-                UsdMaya.Adaptor("TestJoint").GetSchema(UsdGeom.Mesh))
+                mayaUsdLib.Adaptor("TestJoint").GetSchema(UsdGeom.Mesh))
 
         cmds.createNode("camera", name="TestCamera")
         self.assertTrue(
-                UsdMaya.Adaptor("TestCamera").GetSchema(UsdGeom.Camera))
+                mayaUsdLib.Adaptor("TestCamera").GetSchema(UsdGeom.Camera))
 
         cmds.createNode("mesh", name="TestMesh")
         self.assertTrue(
-                UsdMaya.Adaptor("TestMesh").GetSchema(UsdGeom.Mesh))
+                mayaUsdLib.Adaptor("TestMesh").GetSchema(UsdGeom.Mesh))
 
         cmds.createNode("instancer", name="TestInstancer")
         self.assertTrue(
-                UsdMaya.Adaptor("TestInstancer").GetSchema(
+                mayaUsdLib.Adaptor("TestInstancer").GetSchema(
                 UsdGeom.PointInstancer))
 
         cmds.createNode("nurbsSurface", name="TestNurbsSurface")
         self.assertTrue(
-                UsdMaya.Adaptor("TestNurbsSurface").GetSchema(
+                mayaUsdLib.Adaptor("TestNurbsSurface").GetSchema(
                 UsdGeom.NurbsPatch))
 
         cmds.createNode("nurbsCurve", name="TestNurbsCurve")
         self.assertTrue(
-                UsdMaya.Adaptor("TestNurbsCurve").GetSchema(
+                mayaUsdLib.Adaptor("TestNurbsCurve").GetSchema(
                 UsdGeom.NurbsCurves))
 
         cmds.createNode("locator", name="TestLocator")
         self.assertTrue(
-                UsdMaya.Adaptor("TestLocator").GetSchema(UsdGeom.Xform))
+                mayaUsdLib.Adaptor("TestLocator").GetSchema(UsdGeom.Xform))
 
         cmds.createNode("nParticle", name="TestParticles")
         self.assertTrue(
-                UsdMaya.Adaptor("TestParticles").GetSchema(UsdGeom.Points))
+                mayaUsdLib.Adaptor("TestParticles").GetSchema(UsdGeom.Points))
 
     def testUndoRedo(self):
         """Tests that adaptors work with undo/redo."""
         cmds.file(new=True, force=True)
         cmds.group(name="group1", empty=True)
-        adaptor = UsdMaya.Adaptor("group1")
+        adaptor = mayaUsdLib.Adaptor("group1")
         self.assertEqual(adaptor.GetAppliedSchemas(), [])
 
         # Do a single operation, then undo, then redo.
@@ -330,7 +332,7 @@ class testUsdMayaAdaptor(unittest.TestCase):
     def testGetAttributeAliases(self):
         """Tests the GetAttributeAliases function."""
         self.assertEqual(
-                UsdMaya.Adaptor.GetAttributeAliases("subdivisionScheme"),
+                mayaUsdLib.Adaptor.GetAttributeAliases("subdivisionScheme"),
                 ["USD_ATTR_subdivisionScheme", "USD_subdivisionScheme"])
 
 if __name__ == '__main__':

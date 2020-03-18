@@ -49,7 +49,7 @@ private:
   bool supportsInactive() const
     { return true; }
 
-  bool needsTransformParent() const
+  bool needsTransformParent() const override
     { return false; }
 
   MStatus setFrameRange(const UsdPrim& prim, bool setCurrentFrame);

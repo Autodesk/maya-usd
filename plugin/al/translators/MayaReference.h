@@ -27,34 +27,14 @@ namespace fileio {
 namespace translators {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief Class that has the actual test-able logic for maintenance of the Maya Reference.
-//----------------------------------------------------------------------------------------------------------------------
-class MayaReferenceLogic
-{
-public:
-
-  MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent, MString& mayaReferencePath, MString& rigNamespaceM) const;
-  MStatus UnloadMayaReference(MObject& parent) const;
-  MStatus update(const UsdPrim& prim, MObject parent) const;
-
-private:
-  MStatus connectReferenceAssociatedNode(MFnDagNode& dagNode, MFnReference& refNode) const;
-
-  static const TfToken m_namespaceName;
-  static const TfToken m_referenceName;
-
-  static const char* const m_primNSAttr;
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-/// \brief Class to translate an image plane in and out of maya.
+/// \brief Class to translate an maya reference into maya.
 //----------------------------------------------------------------------------------------------------------------------
 class MayaReference : public TranslatorBase
 {
 public:
   AL_USDMAYA_DECLARE_TRANSLATOR(MayaReference);
-private:
 
+protected:
   MStatus initialize() override;
   MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
   MStatus tearDown(const SdfPath& path) override;
@@ -64,8 +44,15 @@ private:
 
   bool canBeOverridden() override
     { return true; }
-    
-  MayaReferenceLogic m_mayaReferenceLogic;
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief Class to translate an old schema maya reference into maya.
+//----------------------------------------------------------------------------------------------------------------------
+class ALMayaReference : public MayaReference
+{
+public:
+  AL_USDMAYA_DECLARE_TRANSLATOR(ALMayaReference);
 };
 
 //----------------------------------------------------------------------------------------------------------------------

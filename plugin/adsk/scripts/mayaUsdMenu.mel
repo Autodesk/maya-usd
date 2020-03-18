@@ -1,0 +1,151 @@
+// Copyright 2020 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+///////////////////////////////////////////////////////////////////////////////
+// globals
+// variable used to keep track of created menus
+global string $gMayaUsdCreateSubMenu = "";
+
+///////////////////////////////////////////////////////////////////////////////
+// findDividerByLabel
+// search a menu for a divider by its (localized) label
+proc string findDividerByLabel(string $menuName, string $label) {
+    $allMenuItems = `menu -q -itemArray $menuName`;
+    for ($menuItem in $allMenuItems) {
+        if (`menuItem -q -divider $menuItem`) {
+            if ($label == `menuItem -q -dividerLabel $menuItem`) {
+                return $menuItem;
+            }
+        }
+    }
+    return "";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// addMenuCallback
+// safely add a post menu callback to a menu
+proc addMenuCallback(string $menuName, string $cmd) {
+    string $existingCallbacks = `menu -q -pmc $menuName`;
+    // append the callback
+    menu -e -pmc ($existingCallbacks + ";" + $cmd + ";") $menuName;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// removeMenuCallback
+// safely remove a post menu callback to a menu
+proc removeMenuCallback(string $menuName, string $cmd) {
+    string $existingCallbacks = `menu -q -pmc $menuName`;
+    // remove our callback from the string of callbacks
+    string $newCallbacks =
+        `substitute (";"+$cmd+".*;") $existingCallbacks ""`;
+    menu -e -pmc $newCallbacks $menuName;
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// initRuntimeCommands
+// create all the runtime commands we'll use and the user can map to hotkeys
+proc initRuntimeCommands() {
+    if (!`runTimeCommand -exists mayaUsdCreateStageFromExistingLayer`) {
+        runTimeCommand -default true
+            -label "Stage From Existing Layer..."
+            -annotation "Create a USD Stage from an existing USD layer"
+            -category   "Menu items.Maya USD"
+            -command    "mayaUsd_createStagesFromExistingLayer"
+            mayaUsdCreateStageFromExistingLayer;
+    }
+
+    if (!`runTimeCommand -exists mayaUsdCreateStageFromExistingLayerOptions`) {
+        runTimeCommand -default true
+            -annotation "Create a USD Stage from an existing USD layer options"
+            -category   "Menu items.Maya USD"
+            -command    "mayaUsd_createStagesFromExistingLayerOptions"
+            mayaUsdCreateStageFromExistingLayerOptions;
+    }    
+
+    source "mayaUsd_createStagesFromExistingLayer.mel";
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// getMayaMajorVersion
+// this is used to get the "new feature" highlight 
+proc string getMayaMajorVersion() {
+    string $version = `about -apiVersion`;
+    return `substring $version 1 4`;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// mayaUsdMenu_createMenuCallback
+// setup the items in Maya's "Create" menu
+global proc mayaUsdMenu_createMenuCallback() {
+    global string $gMayaUsdCreateSubMenu;
+
+    if ($gMayaUsdCreateSubMenu == "") {    
+        global string $gMainCreateMenu; // maya's create menu
+
+        string $mayaVersion = getMayaMajorVersion();
+        // find the insertion point, after the Scene Management separator
+        $sceneManagementDivider = findDividerByLabel($gMainCreateMenu, uiRes("m_ModCreateMenu.kCreateSceneMgt"));
+        if ($sceneManagementDivider != "") {
+            $gMayaUsdCreateSubMenu = `menuItem -subMenu true -insertAfter $sceneManagementDivider 
+                -label "Universal Scene Description (USD)" 
+                -annotation "Create a USD stage" 
+                -version $mayaVersion`;
+            menuItem -runTimeCommand mayaUsdCreateStageFromExistingLayer;
+            menuItem -runTimeCommand mayaUsdCreateStageFromExistingLayerOptions -optionBox true;
+        } else {
+            error "Could not create mayaUSD create menu";
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// initCreateMenu
+// setup the items in Maya's "Create" menu
+proc initCreateMenu() {
+    global string $gMainCreateMenu; // maya's create menu
+    addMenuCallback($gMainCreateMenu, "mayaUsdMenu_createMenuCallback()");
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// termCreateMenu
+// destroys the items in Maya's "Create" menu
+proc termCreateMenu() {
+    global string $gMainCreateMenu; // maya's create menu
+    global string $gMayaUsdCreateSubMenu;
+    if ($gMayaUsdCreateSubMenu != "") {
+        deleteUI -mi $gMayaUsdCreateSubMenu;
+        $gMayaUsdCreateSubMenu = "";
+    }
+    removeMenuCallback($gMainCreateMenu, "mayaUsdMenu_createMenuCallback()");
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+// mayaUsdMenu_loadui
+// main entry point on plugin load
+global proc mayaUsdMenu_loadui() {
+    
+    initRuntimeCommands();
+    initCreateMenu();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// mayaUsdMenu_unloadui
+// main entry point on plugin unload
+global proc mayaUsdMenu_unloadui() {
+    termCreateMenu();
+}
+

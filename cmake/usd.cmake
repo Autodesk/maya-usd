@@ -1,6 +1,5 @@
 #
-# =======================================================================
-# Copyright 2019 Autodesk, Inc. All rights reserved.
+# Copyright 2020 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,15 +12,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# =======================================================================
 #
-
-
 function(init_usd)
     # Adjust PYTHONPATH, PATH
-    append_path_to_env_var("PYTHONPATH" "${PXR_USD_LOCATION}/lib/python")
+    mayaUsd_append_path_to_env_var("PYTHONPATH" "${PXR_USD_LOCATION}/lib/python")
     if(WIN32)
-        append_path_to_env_var("PATH" "${PXR_USD_LOCATION}/bin;${PXR_USD_LOCATION}/lib")
+        mayaUsd_append_path_to_env_var("PATH" "${PXR_USD_LOCATION}/bin;${PXR_USD_LOCATION}/lib")
     endif()
 endfunction()
 

@@ -81,32 +81,32 @@ TEST(LayerManager, conditionalCreator)
 
   // Before we start, should no LayerManagers
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 0);
+  EXPECT_EQ(managers.length(), 0u);
 
   // After we make one, should be one
   createLayerManager();
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 1);
+  EXPECT_EQ(managers.length(), 1u);
 
   // Trying to make another should fail
   createLayerManager();
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 1);
+  EXPECT_EQ(managers.length(), 1u);
 
   // Delete the layer manager
   deleteLayerManager(managers[0]);
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 0);
+  EXPECT_EQ(managers.length(), 0u);
 
   // Should be able to make another one again
   createLayerManager();
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 1);
+  EXPECT_EQ(managers.length(), 1u);
 
   // Trying to make another should fail
   createLayerManager();
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 1);
+  EXPECT_EQ(managers.length(), 1u);
 }
 
 //  static MObject findNode();
@@ -122,7 +122,7 @@ TEST(LayerManager, findNode)
 
   // Before we start, should no LayerManagers
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 0);
+  EXPECT_EQ(managers.length(), 0u);
   result = AL::usdmaya::nodes::LayerManager::findNode();
   EXPECT_TRUE(result.isNull());
   EXPECT_FALSE(AL::usdmaya::nodes::LayerManager::findManager());
@@ -131,7 +131,7 @@ TEST(LayerManager, findNode)
   MObject manager = AL::usdmaya::nodes::LayerManager::findOrCreateNode();
   EXPECT_FALSE(manager.isNull());
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 1);
+  EXPECT_EQ(managers.length(), 1u);
   EXPECT_EQ(managers[0], manager);
   result = AL::usdmaya::nodes::LayerManager::findNode();
   EXPECT_FALSE(result.isNull());
@@ -140,7 +140,7 @@ TEST(LayerManager, findNode)
   EXPECT_FALSE(result.isNull());
   EXPECT_EQ(result, manager);
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 1);
+  EXPECT_EQ(managers.length(), 1u);
 
   auto managerPtr =
       static_cast<AL::usdmaya::nodes::LayerManager*>(MFnDependencyNode(manager).userNode());
@@ -151,13 +151,13 @@ TEST(LayerManager, findNode)
   // Trying to make another should fail
   createLayerManager();
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 1);
+  EXPECT_EQ(managers.length(), 1u);
   EXPECT_EQ(managers[0], manager);
 
   // Delete the layer manager
   deleteLayerManager(managers[0]);
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 0);
+  EXPECT_EQ(managers.length(), 0u);
   result = AL::usdmaya::nodes::LayerManager::findNode();
   EXPECT_TRUE(result.isNull());
   EXPECT_FALSE(AL::usdmaya::nodes::LayerManager::findManager());
@@ -166,7 +166,7 @@ TEST(LayerManager, findNode)
   manager = AL::usdmaya::nodes::LayerManager::findOrCreateNode();
   EXPECT_FALSE(manager.isNull());
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 1);
+  EXPECT_EQ(managers.length(), 1u);
   EXPECT_EQ(managers[0], manager);
   result = AL::usdmaya::nodes::LayerManager::findNode();
   EXPECT_FALSE(result.isNull());
@@ -175,7 +175,7 @@ TEST(LayerManager, findNode)
   EXPECT_FALSE(result.isNull());
   EXPECT_EQ(result, manager);
   getLayerManagers(managers);
-  EXPECT_EQ(managers.length(), 1);
+  EXPECT_EQ(managers.length(), 1u);
 
   managerPtr =
       static_cast<AL::usdmaya::nodes::LayerManager*>(MFnDependencyNode(manager).userNode());
@@ -205,7 +205,7 @@ TEST(LayerManager, addRemoveLayer)
   ASSERT_FALSE(manager->findLayer(anonLayer->GetIdentifier()));
   ASSERT_FALSE(manager->findLayer(realLayer->GetIdentifier()));
   manager->getLayerIdentifiers(layerIds);
-  ASSERT_EQ(layerIds.length(), 0);
+  ASSERT_EQ(layerIds.length(), 0u);
 
   // try adding an anonymous layer
   {
@@ -216,7 +216,7 @@ TEST(LayerManager, addRemoveLayer)
     ASSERT_EQ(manager->findLayer(anonLayer->GetIdentifier()), anonLayer);
     ASSERT_FALSE(manager->findLayer(realLayer->GetIdentifier()));
     manager->getLayerIdentifiers(layerIds);
-    ASSERT_EQ(layerIds.length(), 1);
+    ASSERT_EQ(layerIds.length(), 1u);
     ASSERT_EQ(MString(anonLayer->GetIdentifier().c_str()), layerIds[0]);
   }
 
@@ -228,7 +228,7 @@ TEST(LayerManager, addRemoveLayer)
     ASSERT_EQ(manager->findLayer(anonLayer->GetIdentifier()), anonLayer);
     ASSERT_EQ(manager->findLayer(realLayer->GetIdentifier()), realLayer);
     manager->getLayerIdentifiers(layerIds);
-    ASSERT_EQ(layerIds.length(), 2);
+    ASSERT_EQ(layerIds.length(), 2u);
     // since there's ony two items, and they may be returned in arbitrary
     // order, just check both orderings
     if (MString(anonLayer->GetIdentifier().c_str()) == layerIds[0])
@@ -250,7 +250,7 @@ TEST(LayerManager, addRemoveLayer)
     ASSERT_FALSE(manager->findLayer(anonLayer->GetIdentifier()));
     ASSERT_EQ(manager->findLayer(realLayer->GetIdentifier()), realLayer);
     manager->getLayerIdentifiers(layerIds);
-    ASSERT_EQ(layerIds.length(), 1);
+    ASSERT_EQ(layerIds.length(), 1u);
     ASSERT_EQ(MString(realLayer->GetIdentifier().c_str()), layerIds[0]);
   }
 
@@ -262,7 +262,7 @@ TEST(LayerManager, addRemoveLayer)
     ASSERT_FALSE(manager->findLayer(anonLayer->GetIdentifier()));
     ASSERT_FALSE(manager->findLayer(realLayer->GetIdentifier()));
     manager->getLayerIdentifiers(layerIds);
-    ASSERT_EQ(layerIds.length(), 0);
+    ASSERT_EQ(layerIds.length(), 0u);
   }
 }
 
@@ -290,8 +290,8 @@ def Scope "blabla"
   auto *manager = AL::usdmaya::nodes::LayerManager::findOrCreateManager();
   ASSERT_TRUE(manager);
 
-  ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
-  ASSERT_EQ(0, manager->layersPlug().evaluateNumElements());
+  ASSERT_EQ(0u, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(0u, manager->layersPlug().evaluateNumElements());
 
   auto realLayer = SdfLayer::New(
       SdfFileFormat::FindById(UsdUsdaFileFormatTokens->Id),
@@ -343,11 +343,11 @@ def Scope "blabla"
   };
 
   auto assertLayersPopulated = [&] () {
-    ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
-    ASSERT_EQ(1, manager->layersPlug().evaluateNumElements());
+    ASSERT_EQ(0u, manager->layersPlug().numConnectedElements());
+    ASSERT_EQ(1u, manager->layersPlug().evaluateNumElements());
     MPlug layersPlug0 = manager->layersPlug().elementByPhysicalIndex(0, &status);
     ASSERT_TRUE(status);
-    ASSERT_EQ(0, layersPlug0.logicalIndex(&status));
+    ASSERT_EQ(0u, layersPlug0.logicalIndex(&status));
     ASSERT_TRUE(status);
     // lame that MPlug.child(MObject&) won't accept const MObject&... so make a temp non-const one
     MObject tempNonConst;
@@ -370,17 +370,17 @@ def Scope "blabla"
   };
 
   // Now try making dummy connections to the layers attribute
-  ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
-  ASSERT_EQ(0, manager->layersPlug().evaluateNumElements());
+  ASSERT_EQ(0u, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(0u, manager->layersPlug().evaluateNumElements());
   { SCOPED_TRACE(""); makeConnections(); }
-  ASSERT_EQ(2, manager->layersPlug().numConnectedElements());
-  ASSERT_EQ(2, manager->layersPlug().evaluateNumElements());
+  ASSERT_EQ(2u, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(2u, manager->layersPlug().evaluateNumElements());
 
 
   // Then make sure clearSerialisationAttributes wipes them out
   manager->clearSerialisationAttributes();
-  ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
-  ASSERT_EQ(0, manager->layersPlug().evaluateNumElements());
+  ASSERT_EQ(0u, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(0u, manager->layersPlug().evaluateNumElements());
 
   // Now, populate, we should have one layer plug
   manager->populateSerialisationAttributes();
@@ -388,11 +388,11 @@ def Scope "blabla"
 
   // Try clearing, then making connections, then re-populating
   manager->clearSerialisationAttributes();
-  ASSERT_EQ(0, manager->layersPlug().numConnectedElements());
-  ASSERT_EQ(0, manager->layersPlug().evaluateNumElements());
+  ASSERT_EQ(0u, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(0u, manager->layersPlug().evaluateNumElements());
   { SCOPED_TRACE(""); makeConnections(); }
-  ASSERT_EQ(2, manager->layersPlug().numConnectedElements());
-  ASSERT_EQ(2, manager->layersPlug().evaluateNumElements());
+  ASSERT_EQ(2u, manager->layersPlug().numConnectedElements());
+  ASSERT_EQ(2u, manager->layersPlug().evaluateNumElements());
   manager->populateSerialisationAttributes();
   { SCOPED_TRACE(""); assertLayersPopulated(); }
 }
@@ -443,20 +443,20 @@ TEST(LayerManager, simpleSaveRestore)
     MStringArray result;
     MGlobal::executeCommand(MString("ls -type " ) + AL::usdmaya::nodes::LayerManager::kTypeName,
                             result);
-    EXPECT_EQ(result.length(), 1);
+    EXPECT_EQ(result.length(), 1u);
 
     // ...however, it's layers attribute should be empty (only used during serialization / deserialization!)
     MFnDependencyNode mfnLayerMan(layerManagerNode);
     MPlug layerPlug = mfnLayerMan.findPlug("layers");
     ASSERT_FALSE(layerPlug.isNull());
     ASSERT_TRUE(layerPlug.isArray());
-    EXPECT_EQ(layerPlug.evaluateNumElements(), 0);
+    EXPECT_EQ(layerPlug.evaluateNumElements(), 0u);
 
     // Make sure that we still have the edits we made...
     MSelectionList list;
     list.add(shapeName);
     MObject shapeObj;
-    ASSERT_EQ(list.length(), 1);
+    ASSERT_EQ(list.length(), 1u);
     list.getDependNode(0, shapeObj);
     ASSERT_FALSE(shapeObj.isNull());
     MFnDagNode fn(shapeObj);

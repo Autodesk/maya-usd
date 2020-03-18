@@ -133,28 +133,25 @@ void NodeHelper::addFrame(const char* frameTitle)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void NodeHelper::addInheritedAttr(const char* longName)
+bool NodeHelper::addFrameAttr(const char* longName, uint32_t flags, bool forceShow, Frame::AttributeUiType attrType)
 {
-  if(m_internal)
+  if(forceShow || ((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode)))
   {
-    Frame& frame = *m_internal->m_frames.begin();
-    frame.m_attributes.push_back(longName);
-    frame.m_attributeTypes.push_back(Frame::kNormal);
+    if(m_internal)
+    {
+      Frame& frame = *m_internal->m_frames.begin();
+      frame.m_attributes.push_back(longName);
+      frame.m_attributeTypes.push_back(attrType);
+      return true;
+    }
   }
+  return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addEnumAttr(const char* longName, const char* shortName, uint32_t flags, const char* const * strings, const int16_t* values)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
 
   MFnEnumAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnData::kString);
@@ -194,17 +191,14 @@ MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, u
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void NodeHelper::inheritStringAttr(const char* longName, uint32_t flags, bool forceShow)
+{
+  addFrameAttr(longName, flags, forceShow);
+}
+//----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, const char* defaultValue, uint32_t flags, bool forceShow)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if(forceShow || ((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode)))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  inheritStringAttr(longName, flags, forceShow);
 
   MFnTypedAttribute fn;
   MFnStringData stringData;
@@ -217,18 +211,25 @@ MObject NodeHelper::addStringAttr(const char* longName, const char* shortName, c
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject NodeHelper::addFilePathAttr(const char* longName, const char* shortName, uint32_t flags, FileMode fileMode, const char* fileFilter)
+void NodeHelper::inheritFilePathAttr(const char* longName, uint32_t flags, FileMode fileMode, const char* fileFilter)
 {
-  if(m_internal)
+  if(addFrameAttr(longName, flags, false, (Frame::AttributeUiType)fileMode))
   {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
+    // Technically, shouldn't need to check m_internal again, as addFrameAttr
+    // shouldn't return true unless m_internal is non-null... however, checking
+    // out of paranoia that this might change in the future.
+    if(m_internal)
     {
-      frame.m_attributes.push_back(longName);
+      Frame& frame = *m_internal->m_frames.begin();
       frame.m_fileFilters.push_back(fileFilter);
-      frame.m_attributeTypes.push_back((Frame::AttributeUiType)fileMode);
     }
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MObject NodeHelper::addFilePathAttr(const char* longName, const char* shortName, uint32_t flags, FileMode fileMode, const char* fileFilter)
+{
+  inheritFilePathAttr(longName, flags, fileMode, fileFilter);
   MFnTypedAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnData::kString);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -240,15 +241,7 @@ MObject NodeHelper::addFilePathAttr(const char* longName, const char* shortName,
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addInt8Attr(const char* longName, const char* shortName, int8_t defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnNumericData::kChar, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -260,15 +253,7 @@ MObject NodeHelper::addInt8Attr(const char* longName, const char* shortName, int
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addInt16Attr(const char* longName, const char* shortName, int16_t defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnNumericData::kShort, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -278,17 +263,16 @@ MObject NodeHelper::addInt16Attr(const char* longName, const char* shortName, in
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void NodeHelper::inheritInt32Attr(const char* longName, uint32_t flags)
+{
+  addFrameAttr(longName, flags);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addInt32Attr(const char* longName, const char* shortName, int32_t defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  inheritInt32Attr(longName, flags);
+
   MFnNumericAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnNumericData::kInt, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -300,15 +284,7 @@ MObject NodeHelper::addInt32Attr(const char* longName, const char* shortName, in
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addInt64Attr(const char* longName, const char* shortName, int64_t defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnNumericData::kInt64, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -320,15 +296,7 @@ MObject NodeHelper::addInt64Attr(const char* longName, const char* shortName, in
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addFloatAttr(const char* longName, const char* shortName, float defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnNumericData::kFloat, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -338,17 +306,16 @@ MObject NodeHelper::addFloatAttr(const char* longName, const char* shortName, fl
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void NodeHelper::inheritTimeAttr(const char* longName, uint32_t flags)
+{
+  addFrameAttr(longName, flags);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addTimeAttr(const char* longName, const char* shortName, const MTime& defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  inheritTimeAttr(longName, flags);
+
   MFnUnitAttribute fn;
   MObject attribute = fn.create(longName, shortName, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -360,15 +327,7 @@ MObject NodeHelper::addTimeAttr(const char* longName, const char* shortName, con
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addDistanceAttr(const char* longName, const char* shortName, const MDistance& defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnUnitAttribute fn;
   MObject attribute = fn.create(longName, shortName, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -380,15 +339,7 @@ MObject NodeHelper::addDistanceAttr(const char* longName, const char* shortName,
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addAngleAttr(const char* longName, const char* shortName, const MAngle& defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnUnitAttribute fn;
   MObject attribute = fn.create(longName, shortName, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -400,15 +351,7 @@ MObject NodeHelper::addAngleAttr(const char* longName, const char* shortName, co
 
 MObject NodeHelper::addFloatArrayAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
 
   MStatus status;
   MFnTypedAttribute fnAttr;
@@ -439,15 +382,7 @@ MObject NodeHelper::addFloatArrayAttr(const MObject& node, const char* longName,
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addDoubleAttr(const char* longName, const char* shortName, double defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnNumericData::kDouble, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -457,17 +392,16 @@ MObject NodeHelper::addDoubleAttr(const char* longName, const char* shortName, d
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void NodeHelper::inheritBoolAttr(const char* longName, uint32_t flags)
+{
+  addFrameAttr(longName, flags);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addBoolAttr(const char* longName, const char* shortName, bool defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  inheritBoolAttr(longName, flags);
+
   MFnNumericAttribute fn;
   MObject attribute = fn.create(longName, shortName, MFnNumericData::kBoolean, defaultValue);
   MStatus status = applyAttributeFlags(fn, flags);
@@ -479,15 +413,7 @@ MObject NodeHelper::addBoolAttr(const char* longName, const char* shortName, boo
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addFloat3Attr(const char* longName, const char* shortName, float defaultX, float defaultY, float defaultZ, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute;
   if(flags & kColour)
@@ -513,15 +439,7 @@ MObject NodeHelper::addFloat3Attr(const char* longName, const char* shortName, f
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addPointAttr(const char* longName, const char* shortName, const MPoint& defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute;
   attribute = fn.createPoint(longName, shortName);
@@ -535,15 +453,7 @@ MObject NodeHelper::addPointAttr(const char* longName, const char* shortName, co
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVectorAttr(const char* longName, const char* shortName, const MVector& defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute;
   MString ln(longName);
@@ -561,15 +471,7 @@ MObject NodeHelper::addVectorAttr(const char* longName, const char* shortName, c
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addAngle3Attr(const char* longName, const char* shortName, float defaultX, float defaultY, float defaultZ, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnUnitAttribute fnu;
   MFnNumericAttribute fn;
   MObject attribute;
@@ -588,15 +490,7 @@ MObject NodeHelper::addAngle3Attr(const char* longName, const char* shortName, f
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addDistance3Attr(const char* longName, const char* shortName, float defaultX, float defaultY, float defaultZ, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnUnitAttribute fnu;
   MFnNumericAttribute fn;
   MObject attribute;
@@ -615,15 +509,7 @@ MObject NodeHelper::addDistance3Attr(const char* longName, const char* shortName
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addMatrixAttr(const char* longName, const char* shortName, const MMatrix& defaultValue, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnMatrixAttribute fn;
   MObject attribute;
   attribute = fn.create(longName, shortName, MFnMatrixAttribute::kDouble);
@@ -637,15 +523,7 @@ MObject NodeHelper::addMatrixAttr(const char* longName, const char* shortName, c
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addMatrix3x3Attr(const char* longName, const char* shortName, const float defaultValue[3][3], uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
 
   MFnNumericAttribute fn;
   MFnCompoundAttribute fnc;
@@ -690,15 +568,7 @@ MObject NodeHelper::addMatrix3x3Attr(const char* longName, const char* shortName
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addMatrix2x2Attr(const char* longName, const char* shortName, const float defaultValue[2][2], uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
 
   MFnNumericAttribute fn;
   MFnCompoundAttribute fnc;
@@ -767,15 +637,7 @@ MObject NodeHelper::addMessageAttr(const char* longName, const char* shortName, 
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec2fAttr(const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute;
   MString ln(longName);
@@ -791,15 +653,7 @@ MObject NodeHelper::addVec2fAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec2iAttr(const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute;
   MString ln(longName);
@@ -815,15 +669,7 @@ MObject NodeHelper::addVec2iAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec2dAttr(const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute;
   MString ln(longName);
@@ -840,15 +686,7 @@ MObject NodeHelper::addVec2dAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addDoubleArrayAttr(const MObject& node, const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
 
   MStatus status;
   MFnTypedAttribute fnAttr;
@@ -881,15 +719,7 @@ MObject NodeHelper::addDoubleArrayAttr(const MObject& node, const char* longName
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec3fAttr(const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute;
   MString ln(longName);
@@ -906,15 +736,7 @@ MObject NodeHelper::addVec3fAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec3iAttr(const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute;
   MString ln(longName);
@@ -931,15 +753,7 @@ MObject NodeHelper::addVec3iAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec3dAttr(const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MObject attribute;
   MString ln(longName);
@@ -958,15 +772,7 @@ MObject NodeHelper::addVec3dAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec4fAttr(const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MFnCompoundAttribute fnc;
   MObject attribute;
@@ -990,15 +796,7 @@ MObject NodeHelper::addVec4fAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec4iAttr(const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MFnCompoundAttribute fnc;
   MObject attribute;
@@ -1022,15 +820,7 @@ MObject NodeHelper::addVec4iAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addVec4dAttr(const char* longName, const char* shortName, uint32_t flags)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnNumericAttribute fn;
   MFnCompoundAttribute fnc;
   MObject attribute;
@@ -1054,15 +844,7 @@ MObject NodeHelper::addVec4dAttr(const char* longName, const char* shortName, ui
 //----------------------------------------------------------------------------------------------------------------------
 MObject NodeHelper::addCompoundAttr(const char* longName, const char* shortName, uint32_t flags, std::initializer_list<MObject> objs)
 {
-  if(m_internal)
-  {
-    Frame& frame = *m_internal->m_frames.begin();
-    if((flags & kWritable) && !(flags & kHidden) && !(flags & kDontAddToNode))
-    {
-      frame.m_attributes.push_back(longName);
-      frame.m_attributeTypes.push_back(Frame::kNormal);
-    }
-  }
+  addFrameAttr(longName, flags);
   MFnCompoundAttribute fn;
   MObject obj = fn.create(longName, shortName);
   for(auto it : objs)

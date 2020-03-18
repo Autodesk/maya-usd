@@ -19,21 +19,7 @@
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 */
-#if (__cplusplus >= 201703L)
-# include <filesystem>
-#else
-# include <boost/filesystem.hpp>
-#endif
 
-namespace AL {
-namespace filesystem {
-#if (__cplusplus >= 201703L)
-typedef std::filesystem::path path;
-#else
-typedef boost::filesystem::path path;
-#endif
-}
-}
 #include "maya/MEvaluationNode.h"
 #include "maya/MEventMessage.h"
 #include "maya/MFileIO.h"
@@ -61,7 +47,6 @@ typedef boost::filesystem::path path;
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/StageCache.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/Version.h"
 #include "AL/usdmaya/utils/Utils.h"
@@ -77,6 +62,10 @@ typedef boost::filesystem::path path;
 #include "pxr/usd/usdUtils/stageCache.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
+#include <mayaUsd/listeners/proxyShapeNotice.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/utilFileSystem.h>
+
 #if defined(WANT_UFE_BUILD)
 #include "ufe/path.h"
 #endif
@@ -88,20 +77,12 @@ typedef void (*proxy_function_prototype)(void* userData, AL::usdmaya::nodes::Pro
 
 const char* ProxyShape::s_selectionMaskName = "al_ProxyShape";
 
-MDagPath ProxyShape::parentTransform()
-{
-  MFnDagNode fn(thisMObject());
-  MDagPath proxyTransformPath;
-  fn.getPath(proxyTransformPath);
-  proxyTransformPath.pop();
-  return proxyTransformPath;
-}
-
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::serialiseTranslatorContext()
 {
   triggerEvent("PreSerialiseContext");
 
+  context()->updateUniqueKeys();
   serializedTrCtxPlug().setValue(context()->serialise());
 
   triggerEvent("PostSerialiseContext");
@@ -120,103 +101,13 @@ void ProxyShape::deserialiseTranslatorContext()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static std::string resolvePath(const std::string& filePath)
-{
-  ArResolver& resolver = ArGetResolver();
-
-  return resolver.Resolve(filePath);
-}
-
-static std::string getDir(const std::string &fullFilePath)
-{
-  return AL::filesystem::path(fullFilePath).parent_path().string();
-}
-
-static std::string getMayaReferencedFileDir(const MObject &proxyShapeNode)
-{
-  // Can not use MFnDependencyNode(proxyShapeNode).isFromReferencedFile() to test if it is reference node or not,
-  // which always return false even the proxyShape node is referenced...
-
-  MStatus stat;
-  MFnReference refFn;
-  MItDependencyNodes dgIter(MFn::kReference, &stat);
-  for (; !dgIter.isDone(); dgIter.next())
-  {
-    MObject cRefNode = dgIter.thisNode();
-    refFn.setObject(cRefNode);
-    if(refFn.containsNodeExactly(proxyShapeNode, &stat))
-    {
-      // According to Maya API document, the second argument is 'includePath' and set it to true to include the file path.
-      // However, I have to set it to false to return the full file path otherwise I get a file name only...
-      MString refFilePath = refFn.fileName(true, false, false, &stat);
-      if(!refFilePath.length())
-        return std::string();
-
-      std::string referencedFilePath = refFilePath.asChar();
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("getMayaReferencedFileDir: The reference file that contains the proxyShape node is : %s\n", referencedFilePath.c_str());
-
-      return getDir(referencedFilePath);
-    }
-  }
-
-  return std::string();
-}
-
-static std::string getMayaSceneFileDir()
-{
-  std::string currentFile = AL::maya::utils::convert(MFileIO::currentFile());
-  size_t filePathSize = currentFile.size();
-  if(filePathSize < 4)
-    return std::string();
-
-  // If scene is untitled, the maya file will be MayaWorkspaceDir/untitled :
-  constexpr char ma_ext[] = ".ma";
-  constexpr char mb_ext[] = ".mb";
-  auto ext_start = currentFile.end() - 3;
-  if(std::equal(ma_ext, ma_ext + 3, ext_start) ||
-     std::equal(mb_ext, mb_ext + 3, ext_start))
-    return getDir(currentFile);
-
-  return std::string();
-}
-
-static std::string resolveRelativePathWithinMayaContext(const MObject &proxyShape, const std::string& relativeFilePath)
-{
-  if (relativeFilePath.length() < 3)
-    return relativeFilePath;
-
-  std::string currentFileDir = getMayaReferencedFileDir(proxyShape);
-  if(currentFileDir.empty())
-    currentFileDir = getMayaSceneFileDir();
-
-  if(currentFileDir.empty())
-    return relativeFilePath;
-
-  boost::system::error_code errorCode;
-  AL::filesystem::path path = boost::filesystem::canonical(relativeFilePath, currentFileDir, errorCode);
-  if (errorCode){
-    // file does not exist
-    return std::string();
-  }
-  return path.string();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 AL_MAYA_DEFINE_NODE(ProxyShape, AL_USDMAYA_PROXYSHAPE, AL_usdmaya);
 
-MObject ProxyShape::m_filePath = MObject::kNullObj;
-MObject ProxyShape::m_primPath = MObject::kNullObj;
-MObject ProxyShape::m_excludePrimPaths = MObject::kNullObj;
 MObject ProxyShape::m_populationMaskIncludePaths = MObject::kNullObj;
 MObject ProxyShape::m_excludedTranslatedGeometry = MObject::kNullObj;
-MObject ProxyShape::m_time = MObject::kNullObj;
 MObject ProxyShape::m_timeOffset = MObject::kNullObj;
 MObject ProxyShape::m_timeScalar = MObject::kNullObj;
 MObject ProxyShape::m_outTime = MObject::kNullObj;
-MObject ProxyShape::m_complexity = MObject::kNullObj;
-MObject ProxyShape::m_outStageData = MObject::kNullObj;
-MObject ProxyShape::m_displayGuides = MObject::kNullObj;
-MObject ProxyShape::m_displayRenderGuides = MObject::kNullObj;
 MObject ProxyShape::m_layers = MObject::kNullObj;
 MObject ProxyShape::m_serializedSessionLayer = MObject::kNullObj;
 MObject ProxyShape::m_sessionLayerName = MObject::kNullObj;
@@ -245,29 +136,7 @@ int m_stageCacheId;
 UsdPrim ProxyShape::getUsdPrim(MDataBlock& dataBlock) const
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getUsdPrim\n");
-  UsdPrim usdPrim;
-  StageData* outData = inputDataValue<StageData>(dataBlock, m_outStageData);
-  if(outData)
-  {
-    if(outData->stage)
-    {
-      usdPrim = (outData->primPath.IsEmpty()) ?
-                 outData->stage->GetPseudoRoot() :
-                 outData->stage->GetPrimAtPath(outData->primPath);
-    }
-  }
-  return usdPrim;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-SdfPathVector ProxyShape::getExcludePrimPaths() const
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getExcludePrimPaths\n");
-
-  SdfPathVector paths = getPrimPathsFromCommaJoinedString(excludePrimPathsPlug().asString());
-  SdfPathVector temp = getPrimPathsFromCommaJoinedString(excludedTranslatedGeometryPlug().asString());
-  paths.insert(paths.end(), temp.begin(), temp.end());
-  return paths;
+  return _GetUsdPrim(dataBlock);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -399,7 +268,7 @@ void ProxyShape::translatePrimsIntoMaya(
   if(context()->isExcludedGeometryDirty())
   {
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape:translatePrimsIntoMaya excluded geometry has been modified, reconstructing imaging engine \n");
-    constructGLImagingEngine();
+    constructExcludedPrims(); //if excluded prims changed, this will call constructGLImagingEngine
   }
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -470,7 +339,7 @@ void ProxyShape::constructGLImagingEngine()
       excludedGeometryPaths.insert(excludedGeometryPaths.end(), m_excludedGeometry.begin(), m_excludedGeometry.end());
       for(auto& it : translatedGeo)
       {
-        excludedGeometryPaths.push_back(it.second);  
+        excludedGeometryPaths.push_back(it.second);
       }
 
       m_engine = new Engine(m_path, excludedGeometryPaths);
@@ -520,12 +389,12 @@ MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray
     }
   }
 
-  if(plugBeingDirtied == m_time || plugBeingDirtied == m_timeOffset || plugBeingDirtied == m_timeScalar)
+  if(plugBeingDirtied == time() || plugBeingDirtied == m_timeOffset || plugBeingDirtied == m_timeScalar)
   {
     plugs.append(outTimePlug());
     return MS::kSuccess;
   }
-  if(plugBeingDirtied == m_filePath)
+  if(plugBeingDirtied == filePath())
   {
     MHWRender::MRenderer::setGeometryDrawDirty(thisMObject(), true);
   }
@@ -605,14 +474,15 @@ bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRen
 
   const float complexities[] = {1.05f, 1.15f, 1.25f, 1.35f, 1.45f, 1.55f, 1.65f, 1.75f, 1.9f}; 
   attribs.complexity = complexities[complexityPlug().asInt()];
-  attribs.showGuides = displayGuidesPlug().asBool();
-  attribs.showRender = displayRenderGuidesPlug().asBool();
+  attribs.showGuides = drawGuidePurposePlug().asBool();
+  attribs.showProxy = drawProxyPurposePlug().asBool();
+  attribs.showRender = drawRenderPurposePlug().asBool();
   return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 ProxyShape::ProxyShape()
-  : MPxSurfaceShape(), AL::maya::utils::NodeHelper(), AL::event::NodeEvents(&AL::event::EventScheduler::getScheduler()),
+  : MayaUsdProxyShapeBase(), AL::maya::utils::NodeHelper(), AL::event::NodeEvents(&AL::event::EventScheduler::getScheduler()),
     m_context(fileio::translators::TranslatorContext::create(this)),
     m_translatorManufacture(context())
 {
@@ -629,101 +499,6 @@ ProxyShape::ProxyShape()
   m_transactionNoticeKey = TfNotice::Register(me, &ProxyShape::onTransactionNotice, stage);
 
   registerEvents();
-
-  m_findExcludedPrims.preIteration = [this]() {
-    m_excludedTaggedGeometry.clear();
-  };
-  m_findExcludedPrims.iteration = [this]( const fileio::TransformIterator& transformIterator,
-                                          const UsdPrim& prim) {
-
-    bool excludeGeo = false;
-    if(prim.GetMetadata(Metadata::excludeFromProxyShape, &excludeGeo))
-    {
-      if (excludeGeo)
-      {
-        m_excludedTaggedGeometry.push_back(prim.GetPrimPath());
-      }
-    }
-
-    // If prim has exclusion tag or is a descendent of a prim with it, create as Maya geo
-    if (excludeGeo || primHasExcludedParent(prim))
-    {
-      VtValue schemaName(fileio::ALExcludedPrimSchema.GetString());
-      prim.SetCustomDataByKey(fileio::ALSchemaType, schemaName);
-    }
-  };
-  m_findExcludedPrims.postIteration = [this]() {
-    constructExcludedPrims();
-  };
-
-  m_findUnselectablePrims.preIteration = [this]() {
-
-  };
-  m_findUnselectablePrims.iteration = [this]
-                                    (const fileio::TransformIterator& transformIterator, const UsdPrim& prim) {
-
-    TfToken selectabilityPropertyToken;
-    if(prim.GetMetadata<TfToken>(Metadata::selectability, &selectabilityPropertyToken))
-    {
-
-      //Check if this prim is unselectable
-      if(selectabilityPropertyToken == Metadata::unselectable)
-      {
-        m_findUnselectablePrims.newUnselectables.push_back(prim.GetPath());
-      }
-      else if(m_selectabilityDB.isPathUnselectable(prim.GetPath()) && selectabilityPropertyToken != Metadata::unselectable)
-      {
-        m_findUnselectablePrims.removeUnselectables.push_back(prim.GetPath());
-      }
-    }
-  };
-  m_findUnselectablePrims.postIteration = [this]() {
-    if(m_findUnselectablePrims.removeUnselectables.size() > 0)
-    {
-      m_selectabilityDB.removePathsAsUnselectable(m_findUnselectablePrims.removeUnselectables);
-    }
-
-    if(m_findUnselectablePrims.newUnselectables.size() > 0)
-    {
-      m_selectabilityDB.addPathsAsUnselectable(m_findUnselectablePrims.newUnselectables);
-    }
-
-    m_findUnselectablePrims.newUnselectables.clear();
-    m_findUnselectablePrims.removeUnselectables.clear();
-  };
-
-  m_findLockedPrims.preIteration = [this]() {
-    this->m_lockTransformPrims.clear();
-    this->m_lockInheritedPrims.clear();
-  };
-  m_findLockedPrims.iteration = [this] ( const fileio::TransformIterator& transformIterator,
-                                         const UsdPrim& prim)
-  {
-    TfToken lockPropertyToken;
-    if (prim.GetMetadata<TfToken>(Metadata::locked, & lockPropertyToken))
-    {
-      if (lockPropertyToken == Metadata::lockTransform)
-      {
-        this->m_lockTransformPrims.insert(prim.GetPath());
-      }
-      else if (lockPropertyToken == Metadata::lockInherited)
-      {
-        this->m_lockInheritedPrims.insert(prim.GetPath());
-      }
-    }
-    else
-    {
-      this->m_lockInheritedPrims.insert(prim.GetPath());
-    }
-
-  };
-  m_findLockedPrims.postIteration = [this]() {
-    constructLockPrims();
-  };
-
-  m_hierarchyIterationLogics[0] = &m_findExcludedPrims;
-  m_hierarchyIterationLogics[1] = &m_findUnselectablePrims;
-  m_hierarchyIterationLogics[2] = &m_findLockedPrims;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -741,33 +516,12 @@ ProxyShape::~ProxyShape()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-static const char* const rotate_order_strings[] =
-{
-  "xyz",
-  "yzx",
-  "zxy",
-  "xzy",
-  "yxz",
-  "zyx",
-  0
-};
-
-//----------------------------------------------------------------------------------------------------------------------
-static const int16_t rotate_order_values[] =
-{
-  0,
-  1,
-  2,
-  3,
-  4,
-  5,
-  -1
-};
-
-//----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::initialise()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::initialise\n");
+
+  MStatus retValue = inheritAttributesFrom(MayaUsdProxyShapeBase::typeName);
+  CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
   const char* errorString = "ProxyShape::initialize";
   try
@@ -780,23 +534,23 @@ MStatus ProxyShape::initialise()
     //for backward compatibility (or at least to stop maya spewing out errors on scene open). This attribute was removed in 0.32.17
     addStringAttr("serializedArCtx", "arcd", kReadable|kWritable|kHidden);
     // m_filePath / m_primPath / m_excludePrimPaths are internal just so we get notification on change
-    m_filePath = addFilePathAttr("filePath", "fp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
+    inheritFilePathAttr("filePath", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal, kLoad, "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc)");
 
-    m_primPath = addStringAttr("primPath", "pp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal);
-    m_excludePrimPaths = addStringAttr("excludePrimPaths", "epp", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal);
+    inheritStringAttr("primPath", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal);
+    inheritStringAttr("excludePrimPaths", kCached | kReadable | kWritable | kStorable | kAffectsAppearance | kInternal);
     m_populationMaskIncludePaths = addStringAttr("populationMaskIncludePaths", "pmi", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_excludedTranslatedGeometry = addStringAttr("excludedTranslatedGeometry", "etg", kCached | kReadable | kWritable | kStorable | kAffectsAppearance);
 
-    m_complexity = addInt32Attr("complexity", "cplx", 0, kCached | kConnectable | kReadable | kWritable | kAffectsAppearance | kKeyable | kStorable);
-    setMinMax(m_complexity, 0, 8, 0, 4);
-    m_outStageData = addDataAttr("outStageData", "od", StageData::kTypeId, kConnectable | kReadable | kWritable | kAffectsAppearance);
-    m_displayGuides = addBoolAttr("displayGuides", "dg", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
-    m_displayRenderGuides = addBoolAttr("displayRenderGuides", "drg", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    inheritInt32Attr("complexity", kCached | kConnectable | kReadable | kWritable | kAffectsAppearance | kKeyable | kStorable);
+    // outStageData attribute already added in base class.
+    inheritBoolAttr("drawGuidePurpose", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    inheritBoolAttr("drawProxyPurpose", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
+    inheritBoolAttr("drawRenderPurpose", kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
     m_unloaded = addBoolAttr("unloaded", "ul", false, kCached | kKeyable | kWritable | kAffectsAppearance | kStorable);
     m_serializedTrCtx = addStringAttr("serializedTrCtx", "srtc", kReadable|kWritable|kStorable|kHidden);
 
     addFrame("USD Timing Information");
-    m_time = addTimeAttr("time", "tm", MTime(0.0), kCached | kConnectable | kReadable | kWritable | kStorable | kAffectsAppearance);
+    inheritTimeAttr("time", kCached | kConnectable | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_timeOffset = addTimeAttr("timeOffset", "tmo", MTime(0.0), kCached | kConnectable | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_timeScalar = addDoubleAttr("timeScalar", "tms", 1.0, kCached | kConnectable | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_outTime = addTimeAttr("outTime", "otm", MTime(0.0), kCached | kConnectable | kReadable | kAffectsAppearance);
@@ -830,14 +584,14 @@ MStatus ProxyShape::initialise()
 
     m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
 
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_time, m_outTime), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(time(), m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeScalar, m_outTime), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_filePath, m_outStageData), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_primPath, m_outStageData), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_populationMaskIncludePaths, m_outStageData), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_stageDataDirty, m_outStageData), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_assetResolverConfig, m_outStageData), errorString);
+    // file path and prim path affects on out stage data already done in base
+    // class.
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_populationMaskIncludePaths, outStageData()), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_stageDataDirty, outStageData()), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_assetResolverConfig, outStageData()), errorString);
   }
   catch (const MStatus& status)
   {
@@ -1063,7 +817,7 @@ void ProxyShape::serializeAll()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender)
 {
-  if(MFileIO::isReadingFile())
+  if(MFileIO::isReadingFile() || AL::usdmaya::utils::BlockNotifications::isBlockingNotifications())
     return;
 
   if (!sender || sender != m_stage)
@@ -1071,200 +825,20 @@ void ProxyShape::onObjectsChanged(UsdNotice::ObjectsChanged const& notice, UsdSt
 
   TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::onObjectsChanged called m_compositionHasChanged=%i\n", m_compositionHasChanged);
 
-  bool shouldCleanBBoxCache = false;
-
-  const UsdNotice::ObjectsChanged::PathRange resyncedPaths = notice.GetResyncedPaths();
-  for(const SdfPath& path : resyncedPaths)
+  if (!AL::usd::transaction::TransactionManager::InProgress(sender))
   {
-    auto it = m_requiredPaths.find(path);
-    if(it != m_requiredPaths.end())
-    {
-      UsdPrim newPrim = m_stage->GetPrimAtPath(path);
-      Transform* tm = it->second.transform();
-      if(!tm)
-        continue;
-      TransformationMatrix* tmm = tm->transform();
-      if(!tmm)
-        continue;
-      tmm->setPrim(newPrim, tm); // Might be (invalid/nullptr) but that's OK at least it won't crash
-    }
-    else
-    {
-      UsdPrim newPrim = m_stage->GetPrimAtPath(path);
-      if(newPrim && newPrim.IsA<UsdGeomXformable>())
-      {
-        shouldCleanBBoxCache = true;
-      }
-    }
-  }
-
-  // check to see if any transform ops have been modified (update the bounds accordingly)
-  if(!shouldCleanBBoxCache)
-  {
+    TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::onObjectsChanged - no transaction in progress - processing all changes\n");
+    const UsdNotice::ObjectsChanged::PathRange resyncedPaths = notice.GetResyncedPaths();
     const UsdNotice::ObjectsChanged::PathRange changedOnlyPaths = notice.GetChangedInfoOnlyPaths();
-    for(const SdfPath& path : changedOnlyPaths)
+    processChangedObjects(SdfPathVector(resyncedPaths), SdfPathVector(changedOnlyPaths));
+
+    // If redraw wasn't requested from Maya i.e. external stage modification
+    // We need to request redraw on idle, so viewport is updated
+    if (!m_requestedRedraw)
     {
-      UsdPrim changedPrim = m_stage->GetPrimAtPath(path);
-      if(path.IsPrimPropertyPath())
-      {
-        const std::string tokenString = path.GetElementString();
-        if(std::strncmp(tokenString.c_str(), ".xformOp", 8) == 0)
-        {
-          shouldCleanBBoxCache = true;
-          break;
-        }
-      }
+      m_requestedRedraw = true;
+      MGlobal::executeCommandOnIdle("refresh");
     }
-  }
-
-  // do we need to clear the bounding box cache?
-  if(shouldCleanBBoxCache)
-  {
-    m_boundingBoxCache.clear();
-
-    // Ideally we want to have a way to force maya to call ProxyShape::boundingBox() again to update the bbox attributes. 
-    // This may lead to a delay in the bbox updates (e.g. usually you need to reselect the proxy before the bounds will 
-    // be updated).
-  }
-
-  // These paths are subtree-roots representing entire subtrees that may have
-  // changed. In this case, we must dump all cached data below these points
-  // and repopulate those trees.
-  const bool compositionChanged = m_compositionHasChanged;
-  if(m_compositionHasChanged)
-  {
-    m_compositionHasChanged = false;
-    onPrimResync(m_changedPath, m_variantSwitchedPrims);
-    m_variantSwitchedPrims.clear();
-    m_changedPath = SdfPath();
-
-    std::stringstream strstr;
-    strstr << "Breakdown for Variant Switch:\n";
-    AL::usdmaya::Profiler::printReport(strstr);
-  }
-
-  SdfPathVector newUnselectables;
-  SdfPathVector removeUnselectables;
-  auto recordSelectablePrims = [&newUnselectables, &removeUnselectables, this](const UsdPrim& prim){
-    TfToken unselectablePropertyValue;
-    if(prim.GetMetadata(Metadata::selectability, &unselectablePropertyValue))
-    {
-      //Check if this prim is unselectable
-      if(unselectablePropertyValue == Metadata::unselectable)
-      {
-        newUnselectables.push_back(prim.GetPath());
-      }
-      else if(m_selectabilityDB.isPathUnselectable(prim.GetPath()) && unselectablePropertyValue != Metadata::unselectable)
-      {
-        removeUnselectables.push_back(prim.GetPath());
-      }
-    }
-  };
-
-  SdfPathSet lockTransformPrims;
-  SdfPathSet lockInheritedPrims;
-  SdfPathSet unlockedPrims;
-  auto recordPrimsLockStatus = [&lockTransformPrims, &lockInheritedPrims, &unlockedPrims](const UsdPrim& prim) {
-    TfToken lockPropertyValue;
-    if (prim.GetMetadata(Metadata::locked, &lockPropertyValue))
-    {
-      if (lockPropertyValue == Metadata::lockTransform)
-      {
-        lockTransformPrims.insert(prim.GetPath());
-      }
-      else if (lockPropertyValue == Metadata::lockInherited)
-      {
-        lockInheritedPrims.insert(prim.GetPath());
-      }
-      else if (lockPropertyValue == Metadata::lockUnlocked)
-      {
-        unlockedPrims.insert(prim.GetPath());
-      }
-    }
-    else
-    {
-      lockInheritedPrims.insert(prim.GetPath());
-    }
-  };
-
-  for(const SdfPath& path : resyncedPaths)
-  {
-    UsdPrim newPrim = m_stage->GetPrimAtPath(path);
-    if(newPrim && newPrim.IsActive())
-    {
-      recordSelectablePrims(newPrim);
-      recordPrimsLockStatus(newPrim);
-    }
-    else
-    {
-      auto iter = m_lockTransformPrims.lower_bound(path);
-      if(iter != m_lockTransformPrims.end() && *iter == path)
-      {
-        auto end = iter;
-        auto len = iter->GetString().size();
-        while(++end != m_lockTransformPrims.end())
-        {
-          if(len < end->GetString().size())
-          {
-            if(!std::equal(iter->GetString().begin(), iter->GetString().end(), end->GetString().begin()))
-            {
-              break;
-            }
-          }
-          else break;
-        }
-        // remove paths from the locked prim set
-        m_lockTransformPrims.erase(iter, end);
-      }
-    }
-  }
-
-  const UsdNotice::ObjectsChanged::PathRange changedInfoOnlyPaths = notice.GetChangedInfoOnlyPaths();
-  for(const SdfPath& path : changedInfoOnlyPaths)
-  {
-    UsdPrim changedPrim;
-    if(path.IsPropertyPath())
-    {
-      changedPrim = m_stage->GetPrimAtPath(path.GetParentPath());
-    }
-    else
-    {
-      changedPrim = m_stage->GetPrimAtPath(path);
-    }
-    if(changedPrim)
-    {
-      recordSelectablePrims(changedPrim);
-      recordPrimsLockStatus(changedPrim);
-    }
-    else
-    {
-      TF_DEBUG(ALUSDMAYA_EVENTS).Msg("invalid prim path found: %s\n", path.GetText());
-    }
-  }
-
-
-  if(!removeUnselectables.empty())
-  {
-    m_selectabilityDB.removePathsAsUnselectable(removeUnselectables);
-  }
-
-  if(!newUnselectables.empty())
-  {
-    m_selectabilityDB.addPathsAsUnselectable(newUnselectables);
-  }
-
-  if(compositionChanged)
-  {
-    updateLockPrims(lockTransformPrims, lockInheritedPrims, unlockedPrims);
-    constructLockPrims();
-  }
-
-  // If redraw wasn't requested from Maya i.e. external stage modification
-  // We need to request redraw on idle, so viewport is updated
-  if (!m_requestedRedraw && !AL::usd::transaction::TransactionManager::InProgress(sender))
-  {
-    m_requestedRedraw = true;
-    MGlobal::executeCommandOnIdle("refresh");
   }
 }
 
@@ -1291,7 +865,7 @@ void ProxyShape::validateTransforms()
         continue;
       }
 
-      Transform* tm = it.second.transform();
+      Scope* tm = it.second.getTransformNode();
       if(!tm)
       {
         UsdPrim newPrim = m_stage->GetPrimAtPath(it.first);
@@ -1324,10 +898,109 @@ void ProxyShape::validateTransforms()
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onTransactionNotice(AL::usd::transaction::CloseNotice const &notice, const UsdStageWeakPtr& stage)
 {
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::onTransactionNotice - transaction closed - processing changes\n");
+
+  processChangedObjects(notice.GetResyncedPaths(), notice.GetChangedInfoOnlyPaths());
   if (!m_requestedRedraw)
   {
     m_requestedRedraw = true;
     MGlobal::executeCommandOnIdle("refresh");
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void ProxyShape::processChangedObjects(const SdfPathVector& resyncedPaths, const SdfPathVector& changedOnlyPaths)
+{
+  TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::processChangedObjects - processing changes\n");
+
+  bool shouldCleanBBoxCache = false;
+
+  if (!m_stage)
+  {
+    TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::processChangedObjects - Invalid stage\n");
+    return;
+  }
+
+  for(const SdfPath& path : resyncedPaths)
+  {
+    auto it = m_requiredPaths.find(path);
+    if(it != m_requiredPaths.end())
+    {
+      UsdPrim newPrim = m_stage->GetPrimAtPath(path);
+      if (!newPrim.IsValid())
+      {
+        TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::processChangedObjects - resyncedPaths (1) contains invalid path %s\n", path.GetText());
+        continue;
+      }
+      Scope* tm = it->second.getTransformNode();
+      if(!tm)
+        continue;
+      BasicTransformationMatrix* tmm = tm->transform();
+      if(!tmm)
+        continue;
+      tmm->setPrim(newPrim, tm); // Might be (invalid/nullptr) but that's OK at least it won't crash
+    }
+    else
+    {
+      UsdPrim newPrim = m_stage->GetPrimAtPath(path);
+      if (!newPrim.IsValid())
+      {
+        TF_DEBUG(ALUSDMAYA_EVENTS).Msg("ProxyShape::processChangedObjects - resyncedPaths (2) contains invalid path %s\n", path.GetText());
+        continue;
+      }
+      if(newPrim && newPrim.IsA<UsdGeomXformable>())
+      {
+        shouldCleanBBoxCache = true;
+      }
+    }
+  }
+
+  // check to see if any transform ops have been modified (update the bounds accordingly)
+  if(!shouldCleanBBoxCache)
+  {
+    for(const SdfPath& path : changedOnlyPaths)
+    {
+      UsdPrim changedPrim = m_stage->GetPrimAtPath(path);
+      if(path.IsPrimPropertyPath())
+      {
+        const std::string tokenString = path.GetElementString();
+        if(std::strncmp(tokenString.c_str(), ".xformOp", 8) == 0)
+        {
+          shouldCleanBBoxCache = true;
+          break;
+        }
+      }
+    }
+  }
+
+  // do we need to clear the bounding box cache?
+  if(shouldCleanBBoxCache)
+  {
+    clearBoundingBoxCache();
+
+    // Ideally we want to have a way to force maya to call ProxyShape::boundingBox() again to update the bbox attributes.
+    // This may lead to a delay in the bbox updates (e.g. usually you need to reselect the proxy before the bounds will
+    // be updated).
+  }
+
+  if(isLockPrimFeatureActive())
+  {
+    processChangedMetaData(resyncedPaths, changedOnlyPaths);
+  }
+
+  // These paths are subtree-roots representing entire subtrees that may have
+  // changed. In this case, we must dump all cached data below these points
+  // and repopulate those trees.
+  if(m_compositionHasChanged)
+  {
+    m_compositionHasChanged = false;
+    onPrimResync(m_changedPath, m_variantSwitchedPrims);
+    m_variantSwitchedPrims.clear();
+    m_changedPath = SdfPath();
+
+    std::stringstream strstr;
+    strstr << "Breakdown for Variant Switch:\n";
+    AL::usdmaya::Profiler::printReport(strstr);
   }
 }
 
@@ -1342,7 +1015,18 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
   std::vector<UsdPrim> prims;
   fileio::SchemaPrimsUtils utils(manufacture);
 
-  fileio::TransformIterator it(m_stage->GetPrimAtPath(startPath), proxyTransformPath);
+  const UsdPrim prim = m_stage->GetPrimAtPath(startPath);
+  if (!prim.IsValid())
+  {
+    MString errorString;
+    errorString.format(MString("'^1s' is not a valid prim path in proxy shape: '^2s'"),
+                               startPath.GetString().c_str(),
+                               proxyTransformPath.fullPathName());
+    MGlobal::displayError(errorString);
+    return prims;
+  }
+
+  fileio::TransformIterator it(prim, proxyTransformPath);
   for(; !it.done(); it.next())
   {
     UsdPrim prim = it.prim();
@@ -1357,7 +1041,6 @@ std::vector<UsdPrim> ProxyShape::huntForNativeNodesUnderPrim(
       prims.push_back(prim);
     }
   }
-  findExcludedGeometry();
   return prims;
 }
 
@@ -1376,12 +1059,22 @@ void ProxyShape::variantSelectionListener(SdfNotice::LayersDidChange const& noti
 // nodes based on the contents of the new variant selection.
 {
   if(MFileIO::isReadingFile())
-  {
     return;
-  }
 
+  if (!m_stage)
+    return;
+
+  const SdfLayerHandleVector stack = m_stage->GetLayerStack();
+
+#if USD_VERSION_NUM > 1911
+  TF_FOR_ALL(itr, notice.GetChangeListVec())
+#else
   TF_FOR_ALL(itr, notice.GetChangeListMap())
+#endif
   {
+    if (std::find(stack.begin(), stack.end(), itr->first) == stack.end())
+      continue;
+
     TF_FOR_ALL(entryIter, itr->second.GetEntryList())
     {
       const SdfPath &path = entryIter->first;
@@ -1426,7 +1119,7 @@ void ProxyShape::loadStage()
 
   const int stageIdVal = inputInt32Value(dataBlock, m_stageCacheId);
   UsdStageCache::Id stageId = UsdStageCache::Id().FromLongInt(stageIdVal);
-  MString file = inputStringValue(dataBlock, m_filePath);
+  MString file = inputStringValue(dataBlock, filePath());
 
   if (m_stage)
   {
@@ -1456,7 +1149,7 @@ void ProxyShape::loadStage()
       // Save the initial edit target and all dirty layers.
       trackAllDirtyLayers();
       file.set(m_stage->GetRootLayer()->GetIdentifier().c_str());
-      outputStringValue(dataBlock, m_filePath, file);
+      outputStringValue(dataBlock, filePath(), file);
     }
     else
     {
@@ -1481,16 +1174,16 @@ void ProxyShape::loadStage()
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage original USD file path is %s\n", fileString.c_str());
 
-    AL::filesystem::path filestringPath(fileString);
+    boost::filesystem::path filestringPath(fileString);
     if (filestringPath.is_absolute())
     {
-      fileString = resolvePath(fileString);
+      fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the USD file path to %s\n",
                                           fileString.c_str());
     }
     else
     {
-      fileString = resolveRelativePathWithinMayaContext(thisMObject(), fileString);
+      fileString = UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(thisMObject(), fileString);
       TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShape::reloadStage resolved the relative USD file path to %s\n",
                                           fileString.c_str());
     }
@@ -1587,6 +1280,13 @@ void ProxyShape::loadStage()
           stageId = StageCache::Get().Insert(m_stage);
           outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
 
+          // Set the stage in datablock so it's ready in case it needs to be accessed
+          MObject data;
+          MayaUsdStageData* usdStageData = createData<MayaUsdStageData>(MayaUsdStageData::mayaTypeId, data);
+          usdStageData->stage = m_stage;
+          usdStageData->primPath = m_path;
+          outputDataValue(dataBlock, outStageData(), usdStageData);
+          
           // Set the edit target to the session layer so any user interaction will wind up there
           m_stage->SetEditTarget(m_stage->GetSessionLayer());
           // Save the initial edit target
@@ -1605,7 +1305,7 @@ void ProxyShape::loadStage()
   // Get the prim
   // If no primPath string specified, then use the pseudo-root.
   const SdfPath rootPath(std::string("/"));
-  MString primPathStr = inputStringValue(dataBlock, m_primPath);
+  MString primPathStr = inputStringValue(dataBlock, primPath());
   if (primPathStr.length())
   {
     m_path = SdfPath(AL::maya::utils::convert(primPathStr));
@@ -1625,7 +1325,10 @@ void ProxyShape::loadStage()
     AL_BEGIN_PROFILE_SECTION(PostLoadProcess);
       // execute the post load process to import any custom prims
       cmds::ProxyShapePostLoadProcess::initialise(this);
-      findTaggedPrims();
+      if(isLockPrimFeatureActive())
+      {
+        findPrimsWithMetaData();
+      }
     AL_END_PROFILE_SECTION();
   }
 
@@ -1645,190 +1348,25 @@ void ProxyShape::loadStage()
   triggerEvent("PostStageLoaded");
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-bool ProxyShape::updateLockPrims(const SdfPathSet& lockTransformPrims, const SdfPathSet& lockInheritedPrims,
-                                 const SdfPathSet& unlockedPrims)
-{
-  bool lockChanged = false;
-  for (auto lock : lockTransformPrims)
-  {
-    auto inserted = m_lockTransformPrims.insert(lock);
-    lockChanged = lockChanged || inserted.second;
-    auto erased = m_lockInheritedPrims.erase(lock);
-    lockChanged = lockChanged || erased;
-  }
-  for (auto inherited : lockInheritedPrims)
-  {
-    auto erased = m_lockTransformPrims.erase(inherited);
-    lockChanged = lockChanged || erased;
-    auto inserted = m_lockInheritedPrims.insert(inherited);
-    lockChanged = lockChanged || inserted.second;
-  }
-  for (auto unlocked : unlockedPrims)
-  {
-    auto erased = m_lockTransformPrims.erase(unlocked);
-    lockChanged = lockChanged || erased;
-    erased = m_lockInheritedPrims.erase(unlocked);
-    lockChanged = lockChanged || erased;
-  }
-  return lockChanged;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::constructExcludedPrims()
-{
-  auto excludedPaths = getExcludePrimPaths();
-  if (m_excludedGeometry != excludedPaths)
-  {
-    std::swap(m_excludedGeometry, excludedPaths);
-    constructGLImagingEngine();
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool ProxyShape::lockTransformAttribute(const SdfPath& path, const bool lock)
-{
-  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Setting lock for '%s'\n", path.GetText());
-
-  UsdPrim prim = m_stage->GetPrimAtPath(path);
-  if(!prim.IsValid())
-  {
-    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute prim path not valid '%s'\n", path.GetText());
-    return false;
-  }
-
-  MObject lockObject;
-  MString pathStr = getMayaPathFromUsdPrim(prim);
-  if (pathStr.length())
-  {
-    MSelectionList sl;
-    MObject selObj;
-    if (sl.add(pathStr) == MStatus::kSuccess)
-    {
-      sl.getDependNode(0, selObj);
-    }
-    if (selObj.hasFn(MFn::kTransform))
-    {
-      lockObject = selObj;
-    }
-  }
-  else
-  {
-    std::vector<MObjectHandle> objHdls;
-    context()->getMObjects(path, objHdls);
-    for (auto objHdl : objHdls)
-    {
-      if (objHdl.isValid() && objHdl.object().hasFn(MFn::kTransform))
-      {
-        lockObject = objHdl.object();
-        break;
-      }
-    }
-  }
-
-  if (lockObject.isNull())
-  {
-    TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute NOT setting lock for '%s' - lockObject not valid\n", path.GetText());
-    return false;
-  }
-
-
-  MPlug t(lockObject, m_transformTranslate);
-  MPlug r(lockObject, m_transformRotate);
-  MPlug s(lockObject, m_transformScale);
-
-  t.setLocked(lock);
-  r.setLocked(lock);
-  s.setLocked(lock);
-
-  if (lock && MFnDependencyNode(lockObject).typeId() == AL_USDMAYA_TRANSFORM)
-  {
-    MPlug plug(lockObject, Transform::pushToPrim());
-    if(plug.asBool()) plug.setBool(false);
-  }
-  TF_DEBUG_MSG(ALUSDMAYA_EVALUATION,"ProxyShape::lockTransformAttribute Set lock for '%s'\n", prim.GetPath().GetText());
-  return true;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::constructLockPrims()
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::constructLockPrims\n");
-  SdfPathSet primsNeedLock = m_lockTransformPrims;
-
-  // add inherited lock prims if their parents are already in.
-  for (auto inherited : m_lockInheritedPrims)
-  {
-    const SdfPath parentPath = inherited.GetParentPath();
-    if (parentPath.IsEmpty())
-      continue;
-    auto parentIter = primsNeedLock.find(parentPath);
-    if (parentIter != primsNeedLock.end())
-    {
-      auto lowerIter = std::lower_bound(parentIter, primsNeedLock.end(), inherited);
-      primsNeedLock.insert(lowerIter, inherited);
-    }
-  }
-
-  SdfPathVector primsToLock;
-  primsToLock.reserve(primsNeedLock.size());
-  SdfPathVector primsToUnlock;
-  primsToUnlock.reserve(m_currentLockedPrims.size());
-  std::set_difference(primsNeedLock.begin(), primsNeedLock.end(), m_currentLockedPrims.begin(),
-                      m_currentLockedPrims.end(), std::back_inserter(primsToLock));
-  std::set_difference(m_currentLockedPrims.begin(), m_currentLockedPrims.end(), primsNeedLock.begin(),
-                      primsNeedLock.end(), std::back_inserter(primsToUnlock));
-
-
-  for (auto lock : primsToLock)
-  {
-    if (lockTransformAttribute(lock, true))
-    {
-      m_currentLockedPrims.insert(lock);
-    }
-  }
-  for (auto unlock : primsToUnlock)
-  {
-    if (lockTransformAttribute(unlock, false))
-    {
-      m_currentLockedPrims.erase(unlock);
-    }
-  }
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::postConstructor()
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::postConstructor\n");
 
+  ParentClass::postConstructor();
+
   // Apply render defaults
-  setRenderable(true);
   MPlug(thisMObject(), m_visibleInReflections).setValue(true);
   MPlug(thisMObject(), m_visibleInRefractions).setValue(true);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool ProxyShape::primHasExcludedParent(UsdPrim prim)
-{
-  if(prim.IsValid())
-  {
-    SdfPath primPath = prim.GetPrimPath();
-    TF_FOR_ALL(excludedPath, m_excludedTaggedGeometry)
-    {
-      if (primPath.HasPrefix(*excludedPath))
-      {
-        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::primHasExcludedParent %s=true\n", primPath.GetText());
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-//----------------------------------------------------------------------------------------------------------------------
 MString ProxyShape::recordUsdPrimToMayaPath(const UsdPrim &usdPrim,
-                                            const MObject &mayaObject){
+                                            const MObject &mayaObject)
+{
+  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::recordUsdPrimToMayaPath store path to %s\n", usdPrim.GetPrimPath().GetText());
+
   // Retrieve the proxy shapes transform path which will be used in the
   // UsdPrim->MayaNode mapping in the case where there is delayed node creation.
   MFnDagNode shapeFn(thisMObject());
@@ -1847,7 +1385,8 @@ MString ProxyShape::recordUsdPrimToMayaPath(const UsdPrim &usdPrim,
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim) const {
+MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim) const
+{
   PrimPathToDagPath::const_iterator itr = m_primPathToDagPath.find(usdPrim.GetPath());
   if (itr == m_primPathToDagPath.end()){
     TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getMayaPathFromUsdPrim could not find stored MayaPath\n");
@@ -1855,85 +1394,14 @@ MString ProxyShape::getMayaPathFromUsdPrim(const UsdPrim& usdPrim) const {
   }
   return itr->second;
 }
-//----------------------------------------------------------------------------------------------------------------------
-
-void ProxyShape::findTaggedPrims()
-{
-  findTaggedPrims(m_hierarchyIterationLogics);
-}
 
 //----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::findTaggedPrims(const HierarchyIterationLogics& iterationLogics)
+void ProxyShape::copyInternalData(MPxNode* srcNode)
 {
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::iteratePrimHierarchy\n");
-  if(!m_stage)
-    return;
-
-  for(auto hl : iterationLogics)
-  {
-    hl->preIteration();
-  }
-
-  MDagPath m_parentPath;
-  for(fileio::TransformIterator it(m_stage, m_parentPath); !it.done(); it.next())
-  {
-    const UsdPrim& prim = it.prim();
-    if(!prim.IsValid())
-      continue;
-
-    for(auto hl : iterationLogics)
-    {
-      hl->iteration(it, prim);
-    }
-  }
-
-  for(auto hl : iterationLogics)
-  {
-    hl->postIteration();
-  }
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::findExcludedGeometry()
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findExcludedGeometry\n");
-  if(!m_stage)
-    return;
-
-  m_findExcludedPrims.preIteration();
-  MDagPath m_parentPath;
-
-  for(fileio::TransformIterator it(m_stage, m_parentPath); !it.done(); it.next())
-  {
-    const UsdPrim& prim = it.prim();
-    if(!prim.IsValid())
-      continue;
-    m_findExcludedPrims.iteration(it, prim);
-  }
-
-  m_findExcludedPrims.postIteration();
-}
-
-//----------------------------------------------------------------------------------------------------------------------
-void ProxyShape::findSelectablePrims()
-{
-  TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::findSelectablePrims\n");
-  if(!m_stage)
-    return;
-
-  m_findUnselectablePrims.preIteration();
-
-  MDagPath m_parentPath;
-  for(fileio::TransformIterator it(m_stage, m_parentPath); !it.done(); it.next())
-  {
-    const UsdPrim& prim = it.prim();
-    if(!prim.IsValid())
-      continue;
-
-    m_findUnselectablePrims.iteration(it, prim);
-  }
-
-  m_findUnselectablePrims.postIteration();
+  // On duplication, the ProxyShape has a null stage, and m_filePathDirty is
+  // false, even if the file path attribute is set.  We must ensure the next
+  // call to computeOutStageData() calls loadStage().
+  m_filePathDirty = true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1941,7 +1409,7 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
 {
   // create new stage data
   MObject data;
-  StageData* usdStageData = createData<StageData>(StageData::kTypeId, data);
+  MayaUsdStageData* usdStageData = createData<MayaUsdStageData>(MayaUsdStageData::mayaTypeId, data);
   if(!usdStageData)
   {
     return MS::kFailure;
@@ -1958,11 +1426,14 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
   usdStageData->primPath = m_path;
 
   // set the cached output value, and flush
-  MStatus status = outputDataValue(dataBlock, m_outStageData, usdStageData);
+  MStatus status = outputDataValue(dataBlock, outStageData(), usdStageData);
   if(!status)
   {
     return MS::kFailure;
   }
+
+  UsdMayaProxyStageSetNotice(*this).Send();
+
   return status;
 }
 
@@ -1972,7 +1443,7 @@ bool ProxyShape::isStageValid() const
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::isStageValid\n");
   MDataBlock dataBlock = const_cast<ProxyShape*>(this)->forceCache();
 
-  StageData* outData = inputDataValue<StageData>(dataBlock, m_outStageData);
+  MayaUsdStageData* outData = inputDataValue<MayaUsdStageData>(dataBlock, outStageData());
   if(outData && outData->stage)
     return true;
 
@@ -1984,11 +1455,11 @@ UsdStageRefPtr ProxyShape::getUsdStage() const
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getUsdStage\n");
 
-  MPlug plug(thisMObject(), m_outStageData);
+  MPlug plug(thisMObject(), outStageData());
   MObject data;
   plug.getValue(data);
   MFnPluginData fnData(data);
-  StageData* outData = static_cast<StageData*>(fnData.data());
+  MayaUsdStageData* outData = static_cast<MayaUsdStageData*>(fnData.data());
   if(outData)
   {
     return outData->stage;
@@ -1996,10 +1467,15 @@ UsdStageRefPtr ProxyShape::getUsdStage() const
   return UsdStageRefPtr();
 }
 
+UsdTimeCode ProxyShape::getTime() const
+{
+    return UsdTimeCode(outTimePlug().asMTime().as(MTime::uiUnit()));
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ProxyShape::computeOutputTime(const MPlug& plug, MDataBlock& dataBlock, MTime& currentTime)
 {
-  MTime inTime = inputTimeValue(dataBlock, m_time);
+  MTime inTime = inputTimeValue(dataBlock, time());
   MTime inTimeOffset = inputTimeValue(dataBlock, m_timeOffset);
   double inTimeScalar = inputDoubleValue(dataBlock, m_timeScalar);
   currentTime.setValue((inTime.as(MTime::uiUnit()) - inTimeOffset.as(MTime::uiUnit())) * inTimeScalar);
@@ -2018,11 +1494,13 @@ MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
     return computeOutputTime(plug, dataBlock, currentTime);
   }
   else
-  if(plug == m_outStageData)
+  if(plug == outStageData())
   {
     MStatus status = computeOutputTime(MPlug(plug.node(), m_outTime), dataBlock, currentTime);
     return status == MS::kSuccess ? computeOutStageData(plug, dataBlock) : status;
   }
+  // Completely skip over parent class compute(), because it has inStageData
+  // and inStageDataCached attributes we don't use.
   return MPxSurfaceShape::compute(plug, dataBlock);
 }
 
@@ -2036,13 +1514,14 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
   // the datablock for us, but this would be too late for these subfunctions
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::setInternalValue %s\n", plug.name().asChar());
 
-  if(plug == m_filePath || plug == m_assetResolverConfig || plug == m_stageCacheId)
+  if(plug == filePath() || plug == m_assetResolverConfig || plug == m_stageCacheId)
   {
     m_filePathDirty = true;
     
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
-    if (plug == m_filePath || plug == m_assetResolverConfig)
+
+    if (plug == filePath() || plug == m_assetResolverConfig)
     {
       AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, plug, dataHandle.asString()),
                                      false,
@@ -2066,11 +1545,11 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
     return true;
   }
   else
-  if(plug == m_primPath)
+  if(plug == primPath())
   {
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
-    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, m_primPath, dataHandle.asString()),
+    AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, primPath(), dataHandle.asString()),
         false, "ProxyShape::setInternalValue - error setting primPath");
 
     if(m_stage)
@@ -2096,7 +1575,7 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
     return true;
   }
   else
-  if(plug == m_excludePrimPaths || plug == m_excludedTranslatedGeometry)
+  if(plug == excludePrimPaths() || plug == m_excludedTranslatedGeometry)
   {
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
@@ -2126,98 +1605,17 @@ bool ProxyShape::isBounded() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MBoundingBox ProxyShape::boundingBox() const
+void ProxyShape::CacheEmptyBoundingBox(MBoundingBox& cachedBBox)
 {
-  MStatus status;
+  cachedBBox = MBoundingBox(
+      MPoint(-100000.0f, -100000.0f, -100000.0f),
+      MPoint( 100000.0f,  100000.0f,  100000.0f));
+}
 
-  // Make sure outStage is up to date
-  MDataBlock dataBlock = const_cast<ProxyShape*>(this)->forceCache();
-
-  // This would seem to be superfluous? unless it is actually forcing a DG pull?
-  MDataHandle outDataHandle = dataBlock.inputValue(m_outStageData, &status);
-  (void)outDataHandle;
-  CHECK_MSTATUS_AND_RETURN(status, MBoundingBox() );
-
-  // XXX:aluk
-  // If we could cheaply determine whether a stage only has static geometry,
-  // we could make this value a constant one for that case, avoiding the
-  // memory overhead of a cache entry per frame
-  UsdTimeCode currTime = UsdTimeCode(inputTimeValue(dataBlock, m_outTime).as(MTime::uiUnit()));
-
-  // RB: There must be a nicer way of doing this that avoids the map?
-  // The time codes are likely to be ranged, so an ordered array + binary search would surely work?
-  std::map<UsdTimeCode, MBoundingBox>::const_iterator cacheLookup = m_boundingBoxCache.find(currTime);
-  if (cacheLookup != m_boundingBoxCache.end())
-  {
-    return cacheLookup->second;
-  }
-
-  GfBBox3d allBox;
-  UsdPrim prim = getUsdPrim(dataBlock);
-  if (prim)
-  {
-    UsdGeomImageable imageablePrim(prim);
-    bool showGuides = inputBoolValue(dataBlock, m_displayGuides);
-    bool showRenderGuides = inputBoolValue(dataBlock, m_displayRenderGuides);
-    if (showGuides && showRenderGuides)
-    {
-      allBox = imageablePrim.ComputeUntransformedBound(
-            currTime,
-            UsdGeomTokens->default_,
-            UsdGeomTokens->proxy,
-            UsdGeomTokens->guide,
-            UsdGeomTokens->render);
-    }
-    else
-    if (showGuides && !showRenderGuides)
-    {
-      allBox = imageablePrim.ComputeUntransformedBound(
-            currTime,
-            UsdGeomTokens->default_,
-            UsdGeomTokens->proxy,
-            UsdGeomTokens->guide);
-    }
-    else if (!showGuides && showRenderGuides)
-    {
-      allBox = imageablePrim.ComputeUntransformedBound(
-            currTime,
-            UsdGeomTokens->default_,
-            UsdGeomTokens->proxy,
-            UsdGeomTokens->render);
-    }
-    else
-    {
-      allBox = imageablePrim.ComputeUntransformedBound(
-            currTime,
-            UsdGeomTokens->default_,
-            UsdGeomTokens->proxy);
-    }
-  }
-  else
-  {
-    return MBoundingBox();
-  }
-
-  // insert new cache entry
-  MBoundingBox& retval = m_boundingBoxCache[currTime];
-
-  // Convert to GfRange3d to MBoundingBox
-  GfRange3d boxRange = allBox.ComputeAlignedBox();
-  if (!boxRange.IsEmpty())
-  {
-    retval = MBoundingBox(MPoint(boxRange.GetMin()[0],
-                                 boxRange.GetMin()[1],
-                                 boxRange.GetMin()[2]),
-                          MPoint(boxRange.GetMax()[0],
-                                 boxRange.GetMax()[1],
-                                 boxRange.GetMax()[2]));
-  }
-  else
-  {
-    retval = MBoundingBox(MPoint(-100000.0f, -100000.0f, -100000.0f), MPoint(100000.0f, 100000.0f, 100000.0f));
-  }
-
-  return retval;
+//----------------------------------------------------------------------------------------------------------------------
+UsdTimeCode ProxyShape::GetOutputTime(MDataBlock dataBlock) const
+{
+  return UsdTimeCode(inputDoubleValue(dataBlock, m_outTime));
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -2312,14 +1710,14 @@ void ProxyShape::deserialiseTransformRefs()
         if(sl.getDependNode(0, node))
         {
           MFnDependencyNode fn(node);
-          if(fn.typeId() == AL_USDMAYA_TRANSFORM)
+          Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
+          if(transformNode)
           {
-            Transform* ptr = (Transform*)fn.userNode();
             const uint32_t required = tstrs[2].asUnsigned();
             const uint32_t selected = tstrs[3].asUnsigned();
             const uint32_t refCounts = tstrs[4].asUnsigned();
             SdfPath path(tstrs[1].asChar());
-            m_requiredPaths.emplace(path, TransformReference(node, ptr, required, selected, refCounts));
+            m_requiredPaths.emplace(path, TransformReference(node, transformNode, required, selected, refCounts));
             TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::deserialiseTransformRefs m_requiredPaths added AL_usdmaya_Transform TransformReference: %s\n", path.GetText());
           }
           else
@@ -2342,7 +1740,7 @@ void ProxyShape::deserialiseTransformRefs()
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* node, uint32_t r, uint32_t s, uint32_t rc)
+ProxyShape::TransformReference::TransformReference(MObject mayaNode, Scope* node, uint32_t r, uint32_t s, uint32_t rc)
   : m_node(mayaNode)
   , m_transform(nullptr)
 {
@@ -2350,11 +1748,11 @@ ProxyShape::TransformReference::TransformReference(MObject mayaNode, Transform* 
   m_selected = s;
   m_selectedTemp = 0;
   m_refCount = rc;
-  m_transform = transform();
+  m_transform = getTransformNode();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-Transform* ProxyShape::TransformReference::transform() const
+Scope* ProxyShape::TransformReference::getTransformNode() const
 {
   MObjectHandle n(node());
   if(n.isValid() && n.isAlive())
@@ -2363,10 +1761,11 @@ Transform* ProxyShape::TransformReference::transform() const
     MFnDependencyNode fn(n.object(), &status);
     if(status == MS::kSuccess)
     {
-      if(fn.typeId() == AL_USDMAYA_TRANSFORM)
+      Scope* transformNode = dynamic_cast<Scope*>(fn.userNode());
+      if(transformNode)
       {
-        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found valid AL_usdmaya_Tranform: %s\n", fn.absoluteName().asChar());
-        return (Transform*)fn.userNode();
+        TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("TransformReference::transform found valid AL_usdmaya Transform or Scope: %s\n", fn.absoluteName().asChar());
+        return (Scope*)fn.userNode();
       }
       else
       {

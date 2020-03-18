@@ -116,56 +116,56 @@ class TransactionTest : public TfWeakBase, public ::testing::Test {
 TEST_F(TransactionTest, Transaction)
 {
   Transaction transaction(m_stage, m_stage->GetSessionLayer());
-  EXPECT_EQ(opened(), 0);
-  EXPECT_EQ(closed(), 0);
+  EXPECT_EQ(opened(), 0u);
+  EXPECT_EQ(closed(), 0u);
   // Open notice should be triggered
   EXPECT_TRUE(transaction.Open());
-  EXPECT_EQ(opened(), 1);
-  EXPECT_EQ(closed(), 0);
+  EXPECT_EQ(opened(), 1u);
+  EXPECT_EQ(closed(), 0u);
   // Opening same transaction is allowed, but should not trigger notices
   EXPECT_TRUE(transaction.Open());
-  EXPECT_EQ(opened(), 1);
-  EXPECT_EQ(closed(), 0);
+  EXPECT_EQ(opened(), 1u);
+  EXPECT_EQ(closed(), 0u);
   // Close notices should not be emitted until last close
   EXPECT_TRUE(transaction.Close());
-  EXPECT_EQ(opened(), 1);
-  EXPECT_EQ(closed(), 0);
+  EXPECT_EQ(opened(), 1u);
+  EXPECT_EQ(closed(), 0u);
   // Close notice should be triggered
   EXPECT_TRUE(transaction.Close());
-  EXPECT_EQ(opened(), 1);
-  EXPECT_EQ(closed(), 1);
+  EXPECT_EQ(opened(), 1u);
+  EXPECT_EQ(closed(), 1u);
   // This should fail and no notices should be sent
   EXPECT_FALSE(transaction.Close());
-  EXPECT_EQ(opened(), 1);
-  EXPECT_EQ(closed(), 1);
+  EXPECT_EQ(opened(), 1u);
+  EXPECT_EQ(closed(), 1u);
 }
 
 /// Test that ScopedTransaction works as expected
 TEST_F(TransactionTest, ScopedTransaction)
 {
-  EXPECT_EQ(opened(), 0);
+  EXPECT_EQ(opened(), 0u);
   {
     ScopedTransaction outer(m_stage, m_stage->GetSessionLayer());
-    EXPECT_EQ(opened(), 1);
-    EXPECT_EQ(closed(), 0);
+    EXPECT_EQ(opened(), 1u);
+    EXPECT_EQ(closed(), 0u);
     {
       /// Opening a transaction for same layer should not trigger notices
       ScopedTransaction inner(m_stage, m_stage->GetSessionLayer());
-      EXPECT_EQ(opened(), 1);
-      EXPECT_EQ(closed(), 0);
+      EXPECT_EQ(opened(), 1u);
+      EXPECT_EQ(closed(), 0u);
     }
-    EXPECT_EQ(opened(), 1);
-    EXPECT_EQ(closed(), 0);
+    EXPECT_EQ(opened(), 1u);
+    EXPECT_EQ(closed(), 0u);
     {
       /// Opening a transaction for different layer should trigger notices
       ScopedTransaction inner(m_stage, m_stage->GetRootLayer());
-      EXPECT_EQ(opened(), 2);
-      EXPECT_EQ(closed(), 0);
+      EXPECT_EQ(opened(), 2u);
+      EXPECT_EQ(closed(), 0u);
     }
-    EXPECT_EQ(opened(), 2);
-    EXPECT_EQ(closed(), 1);
+    EXPECT_EQ(opened(), 2u);
+    EXPECT_EQ(closed(), 1u);
   }
-  EXPECT_EQ(closed(), 2);
+  EXPECT_EQ(closed(), 2u);
 }
 
 /// Test that CloseNotice reports changes as expected

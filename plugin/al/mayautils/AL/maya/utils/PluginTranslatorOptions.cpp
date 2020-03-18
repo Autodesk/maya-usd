@@ -100,7 +100,7 @@ bool PluginTranslatorOptionsContext::isRegistered(const char* const pluginTransl
 //----------------------------------------------------------------------------------------------------------------------
 AL_MAYA_UTILS_PUBLIC
 PluginTranslatorOptions::PluginTranslatorOptions(PluginTranslatorOptionsContext& context, const char* const pluginTranslatorGrouping)
-: m_options(), m_context(context), m_grouping(pluginTranslatorGrouping)
+: m_grouping(pluginTranslatorGrouping), m_options(), m_context(context)
 {
   context.registerPluginTranslatorOptions(this);
 }

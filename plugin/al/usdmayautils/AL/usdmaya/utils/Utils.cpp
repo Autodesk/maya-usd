@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/utils/Utils.h"
-#include "AL/usd/utils/DebugCodes.h"
 #include "AL/maya/utils/Utils.h"
+
+#include <mayaUsdUtils/DebugCodes.h>
 
 #include "maya/MDagPath.h"
 #include "maya/MEulerRotation.h"
@@ -24,9 +25,30 @@
 #include "maya/MMatrix.h"
 #include "maya/MVector.h"
 
+#include <atomic>
+
+namespace {
+    std::atomic<std::int32_t> _blockingCount;
+}
+
 namespace AL {
 namespace usdmaya {
 namespace utils {
+
+//----------------------------------------------------------------------------------------------------------------------
+BlockNotifications::BlockNotifications() {
+    _blockingCount++;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+BlockNotifications::~BlockNotifications() {
+    _blockingCount--;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool BlockNotifications::isBlockingNotifications() {
+    return _blockingCount.load() > 0;
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 void matrixToSRT(const GfMatrix4d& value, double S[3], MEulerRotation& R, double T[3])
@@ -98,7 +120,7 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
     std::replace(mayaElementPath.begin(), mayaElementPath.end(), '/','|');
   }
 
-  TF_DEBUG(ALUTILS_INFO).Msg("Mapped the path for prim=%s to mayaObject=%s\n", usdPrim.GetName().GetText(), mayaElementPath.c_str());
+  TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Mapped the path for prim=%s to mayaObject=%s\n", usdPrim.GetName().GetText(), mayaElementPath.c_str());
 
   return AL::maya::utils::convert(mayaElementPath);
 }

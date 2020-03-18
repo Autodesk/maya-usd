@@ -14,7 +14,8 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/utils/DiffPrimVar.h"
-#include "AL/usd/utils/SIMD.h"
+#include <mayaUsdUtils/SIMD.h>
+#include <mayaUsdUtils/DiffCore.h>
 
 #include "maya/MDoubleArray.h"
 #include "maya/MFloatArray.h"
@@ -23,6 +24,8 @@
 #include "maya/MUintArray.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+using namespace MayaUsdUtils;
 
 namespace AL {
 namespace usdmaya {
@@ -47,7 +50,7 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
       result |= kPoints;
     }
     else
-    if(!usd::utils::compareArray(usdPoints, mayaPoints, usdPointsCount * 3, mayaPointsCount * 3))
+    if(!MayaUsdUtils::compareArray(usdPoints, mayaPoints, usdPointsCount * 3, mayaPointsCount * 3))
     {
       result |= kPoints;
     }
@@ -68,7 +71,7 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
       const int32_t* const usdNormalIndices = (const int32_t*)indexData.cdata();
       if(usdNormals && usdNormalIndices)
       {
-        if(mesh.numNormals() != normalData.size())
+        if(size_t(mesh.numNormals()) != normalData.size())
         {
           result |= kNormals;
         }
@@ -107,7 +110,7 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
       const float* const mayaNormals = (const float* const)mesh.getRawNormals(&status);
       const size_t usdNormalsCount = normalData.size();
       const size_t mayaNormalsCount = mesh.numVertices();
-      if(!usd::utils::compareArray(usdNormals, mayaNormals, usdNormalsCount * 3, mayaNormalsCount * 3))
+      if(!MayaUsdUtils::compareArray(usdNormals, mayaNormals, usdNormalsCount * 3, mayaNormalsCount * 3))
       {
         result |= kNormals;
       }
@@ -144,13 +147,13 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
 
       }
 
-      if(numPolygons && !usd::utils::compareArray(&vertexCount[0], pFaceVertexCounts, numPolygons, numPolygons))
+      if(numPolygons && !MayaUsdUtils::compareArray(&vertexCount[0], pFaceVertexCounts, numPolygons, numPolygons))
       {
         result |= kFaceVertexCounts;
       }
 
       const int* const pFaceVertexIndices = faceVertexIndices.cdata();
-      if(numFaceVerts && !usd::utils::compareArray(&vertexList[0], pFaceVertexIndices, numFaceVerts, numFaceVerts))
+      if(numFaceVerts && !MayaUsdUtils::compareArray(&vertexList[0], pFaceVertexIndices, numFaceVerts, numFaceVerts))
       {
         result |= kFaceVertexIndices;
       }
@@ -192,7 +195,7 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
       result |= kHoleIndices;
     }
     else
-    if(numMayaHoleIndices && !usd::utils::compareArray((int32_t*)&mayaHoleIndices[0], holeIndices.cdata(), numMayaHoleIndices, numHoleIndices))
+    if(numMayaHoleIndices && !MayaUsdUtils::compareArray((int32_t*)&mayaHoleIndices[0], holeIndices.cdata(), numMayaHoleIndices, numHoleIndices))
     {
       result |= kHoleIndices;
     }
@@ -227,7 +230,7 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
         result |= kCreaseIndices;
       }
       else
-      if(numMayaCreaseIndices && !usd::utils::compareArray((const int32_t*)&mayaCreaseIndices[0], creasesIndices.cdata(), numMayaCreaseIndices, numCreaseIndices))
+      if(numMayaCreaseIndices && !MayaUsdUtils::compareArray((const int32_t*)&mayaCreaseIndices[0], creasesIndices.cdata(), numMayaCreaseIndices, numCreaseIndices))
       {
         result |= kCreaseIndices;
       }
@@ -246,7 +249,7 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
         result |= kCreaseWeights;
       }
       else
-      if(numMayaCreaseWeights && !usd::utils::compareArray(&mayaCreaseWeights[0], creasesWeights.cdata(), numMayaCreaseWeights, numCreaseWeights))
+      if(numMayaCreaseWeights && !MayaUsdUtils::compareArray(&mayaCreaseWeights[0], creasesWeights.cdata(), numMayaCreaseWeights, numCreaseWeights))
       {
         result |= kCreaseWeights;
       }
@@ -277,7 +280,7 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
     }
     else
     {
-      if(numMayaVertexIds && !usd::utils::compareArray((const int32_t*)&mayaVertexIdValues[0], vertexIdValues.cdata(), numVertexIds, numMayaVertexIds))
+      if(numMayaVertexIds && !MayaUsdUtils::compareArray((const int32_t*)&mayaVertexIdValues[0], vertexIdValues.cdata(), numVertexIds, numMayaVertexIds))
       {
         result |= kCornerIndices;
       }
@@ -291,7 +294,7 @@ uint32_t diffFaceVertices(UsdGeomMesh& geom, MFnMesh& mesh, UsdTimeCode timeCode
     }
     else
     {
-      if(numMayaCreaseValues && !usd::utils::compareArray(&mayaCreaseValues[0], creaseValues.cdata(), numCreaseValues, numMayaCreaseValues))
+      if(numMayaCreaseValues && !MayaUsdUtils::compareArray(&mayaCreaseValues[0], creaseValues.cdata(), numCreaseValues, numMayaCreaseValues))
       {
         result |= kCornerSharpness;
       }
@@ -399,7 +402,7 @@ public:
 //----------------------------------------------------------------------------------------------------------------------
 void ColourSetBuilder::constructNewlyAddedSets(MStringArray& setNames, const std::vector<UsdGeomPrimvar>& primvars)
 {
-  for(int i = 0; i < setNames.length(); ++i)
+  for(int i = 0; unsigned(i) < setNames.length(); ++i)
   {
     for(auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
     {
@@ -452,7 +455,7 @@ void ColourSetBuilder::performDiffTest(PrimVarDiffReport& report)
         if (vtValue.IsHolding<VtArray<GfVec3f> >())
         {
           const VtArray<GfVec3f> rawVal = vtValue.Get<VtArray<GfVec3f> >();
-          if(!usd::utils::compareArray(
+          if(!MayaUsdUtils::compareArray(
               (const double*)rawVal.cdata(),
               &definition.m_colours[0].r,
               rawVal.size(),
@@ -465,7 +468,7 @@ void ColourSetBuilder::performDiffTest(PrimVarDiffReport& report)
         if (vtValue.IsHolding<VtArray<GfVec4f> >())
         {
           const VtArray<GfVec4f> rawVal = vtValue.Get<VtArray<GfVec4f> >();
-          if(!usd::utils::compareArray(
+          if(!MayaUsdUtils::compareArray(
               &definition.m_colours[0].r,
               (const float*)rawVal.cdata(),
               definition.m_colours.length() * 4,
@@ -478,7 +481,7 @@ void ColourSetBuilder::performDiffTest(PrimVarDiffReport& report)
         if (vtValue.IsHolding<VtArray<GfVec3d> >())
         {
           const VtArray<GfVec3d> rawVal = vtValue.Get<VtArray<GfVec3d> >();
-          if(!usd::utils::compareArray(
+          if(!MayaUsdUtils::compareArray(
               (const double*)rawVal.cdata(),
               &definition.m_colours[0].r,
               rawVal.size(),
@@ -491,7 +494,7 @@ void ColourSetBuilder::performDiffTest(PrimVarDiffReport& report)
         if (vtValue.IsHolding<VtArray<GfVec4d> >())
         {
           const VtArray<GfVec4d> rawVal = vtValue.Get<VtArray<GfVec4d> >();
-          if(!usd::utils::compareArray(
+          if(!MayaUsdUtils::compareArray(
               &definition.m_colours[0].r,
               (const float*)rawVal.cdata(),
               definition.m_colours.length() * 4,
@@ -654,7 +657,7 @@ void UvSetBuilder::performDiffTest(PrimVarDiffReport& report)
             definition.m_primVar.GetIndices(&usdindices);
             bool uv_indices_have_changed = false;
             bool data_has_changed = false;
-            if(!usd::utils::compareArray(
+            if(!MayaUsdUtils::compareArray(
                 (const int32_t*)&definition.m_mayaUvIndices[0],
                 usdindices.cdata(),
                 definition.m_mayaUvIndices.length(),
@@ -663,7 +666,7 @@ void UvSetBuilder::performDiffTest(PrimVarDiffReport& report)
               uv_indices_have_changed = true;
             }
 
-            if(!usd::utils::compareUvArray(
+            if(!MayaUsdUtils::compareUvArray(
                 (const float*)&definition.m_u[0],
                 (const float*)&definition.m_v[0],
                 (const float*)rawVal.cdata(),
@@ -679,7 +682,7 @@ void UvSetBuilder::performDiffTest(PrimVarDiffReport& report)
           }
           else
           {
-            if(!usd::utils::compareUvArray(
+            if(!MayaUsdUtils::compareUvArray(
                 (const float*)&definition.m_u[0],
                 (const float*)&definition.m_v[0],
                 (const float*)rawVal.cdata(),
@@ -725,13 +728,13 @@ TfToken guessUVInterpolationType(
     MIntArray& pointIndices)
 {
   // if UV coords are all identical, we have a constant value
-  if(usd::utils::vec2AreAllTheSame(&u[0], &v[0], u.length()))
+  if(MayaUsdUtils::vec2AreAllTheSame(&u[0], &v[0], u.length()))
   {
     return UsdGeomTokens->constant;
   }
 
   // if the UV indices match the vertex indices, we have per-vertex assignment
-  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  if(MayaUsdUtils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
   {
     return UsdGeomTokens->vertex;
   }
@@ -797,7 +800,7 @@ TfToken guessUVInterpolationTypeExtensive(
   }
 
   // if UV coords are all identical, we have a constant value
-  if(usd::utils::vec2AreAllTheSame(&u[0], &v[0], u.length()))
+  if(MayaUsdUtils::vec2AreAllTheSame(&u[0], &v[0], u.length()))
   {
     return UsdGeomTokens->constant;
   }
@@ -895,13 +898,13 @@ TfToken guessVec3InterpolationType(
     MIntArray& pointIndices)
 {
   // if UV coords are all identical, we have a constant value
-  if(usd::utils::vec3AreAllTheSame(xyz, numElements))
+  if(MayaUsdUtils::vec3AreAllTheSame(xyz, numElements))
   {
     return UsdGeomTokens->constant;
   }
 
   // if the UV indices match the vertex indices, we have per-vertex assignment
-  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  if(MayaUsdUtils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
   {
     return UsdGeomTokens->vertex;
   }
@@ -954,7 +957,7 @@ TfToken guessVec3InterpolationTypeExtensive(
     MIntArray& faceCounts)
 {
   // if prim vars are all identical, we have a constant value
-  if(usd::utils::vec3AreAllTheSame(xyz, numElements))
+  if(MayaUsdUtils::vec3AreAllTheSame(xyz, numElements))
   {
     return UsdGeomTokens->constant;
   }
@@ -1081,13 +1084,13 @@ TfToken guessVec3InterpolationType(
     MIntArray& pointIndices)
 {
   // if UV coords are all identical, we have a constant value
-  if(usd::utils::vec3AreAllTheSame(xyz, numElements))
+  if(MayaUsdUtils::vec3AreAllTheSame(xyz, numElements))
   {
     return UsdGeomTokens->constant;
   }
 
   // if the UV indices match the vertex indices, we have per-vertex assignment
-  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  if(MayaUsdUtils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
   {
     return UsdGeomTokens->vertex;
   }
@@ -1140,7 +1143,7 @@ TfToken guessVec3InterpolationTypeExtensive(
     MIntArray& faceCounts)
 {
   // if UV coords are all identical, we have a constant value
-  if(usd::utils::vec3AreAllTheSame(xyz, numElements))
+  if(MayaUsdUtils::vec3AreAllTheSame(xyz, numElements))
   {
     return UsdGeomTokens->constant;
   }
@@ -1229,13 +1232,13 @@ TfToken guessVec4InterpolationType(
     MIntArray& pointIndices)
 {
   // if UV coords are all identical, we have a constant value
-  if(usd::utils::vec4AreAllTheSame(xyzw, numElements))
+  if(MayaUsdUtils::vec4AreAllTheSame(xyzw, numElements))
   {
     return UsdGeomTokens->constant;
   }
 
   // if the UV indices match the vertex indices, we have per-vertex assignment
-  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  if(MayaUsdUtils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
   {
     return UsdGeomTokens->vertex;
   }
@@ -1287,7 +1290,7 @@ TfToken guessVec4InterpolationTypeExtensive(
     MIntArray& faceCounts)
 {
   // if prim vars are all identical, we have a constant value
-  if(usd::utils::vec4AreAllTheSame(xyzw, numElements))
+  if(MayaUsdUtils::vec4AreAllTheSame(xyzw, numElements))
   {
     return UsdGeomTokens->constant;
   }
@@ -1410,13 +1413,13 @@ TfToken guessVec4InterpolationType(
     MIntArray& pointIndices)
 {
   // if UV coords are all identical, we have a constant value
-  if(usd::utils::vec4AreAllTheSame(xyzw, numElements))
+  if(MayaUsdUtils::vec4AreAllTheSame(xyzw, numElements))
   {
     return UsdGeomTokens->constant;
   }
 
   // if the UV indices match the vertex indices, we have per-vertex assignment
-  if(usd::utils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
+  if(MayaUsdUtils::compareArray(&indices[0], &pointIndices[0], indices.length(), pointIndices.length()))
   {
     return UsdGeomTokens->vertex;
   }
@@ -1469,7 +1472,7 @@ TfToken guessVec4InterpolationTypeExtensive(
     MIntArray& faceCounts)
 {
   // if prim vars are all identical, we have a constant value
-  if(usd::utils::vec4AreAllTheSame(xyzw, numElements))
+  if(MayaUsdUtils::vec4AreAllTheSame(xyzw, numElements))
   {
     return UsdGeomTokens->constant;
   }
@@ -1615,7 +1618,7 @@ TfToken guessColourSetInterpolationType(
     const size_t numElements)
 {
   // if prim vars are all identical, we have a constant value
-  if(usd::utils::vec4AreAllTheSame(rgba, numElements))
+  if(MayaUsdUtils::vec4AreAllTheSame(rgba, numElements))
   {
     return UsdGeomTokens->constant;
   }
@@ -1634,7 +1637,7 @@ TfToken guessColourSetInterpolationTypeExtensive(
     std::vector<uint32_t>& indicesToExtract)
 {
   // if prim vars are all identical, we have a constant value
-  if(usd::utils::vec4AreAllTheSame(rgba, numElements))
+  if(MayaUsdUtils::vec4AreAllTheSame(rgba, numElements))
   {
     return UsdGeomTokens->constant;
   }

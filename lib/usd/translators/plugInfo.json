@@ -1,0 +1,67 @@
+{
+    "Plugins": [
+      {
+        "Info": {
+          "UsdMaya": {
+            "PrimReader": {
+              "providesTranslator": [
+                "UsdGeomCamera",
+                "UsdGeomMesh",
+                "UsdGeomNurbsCurves",
+                "UsdGeomNurbsPatch",
+                "UsdGeomScope",
+                "UsdGeomXform",
+                "UsdLuxCylinderLight",
+                "UsdLuxDiskLight",
+                "UsdLuxDistantLight",
+                "UsdLuxDomeLight",
+                "UsdLuxGeometryLight",
+                "UsdLuxRectLight",
+                "UsdLuxSphereLight",
+                "UsdRiPxrAovLight",
+                "UsdRiPxrEnvDayLight",
+                "UsdShadeMaterial",
+                "UsdSkelRoot",
+                "UsdSkelSkeleton",
+                "MayaUsd_SchemasALMayaReference",
+                "MayaUsd_SchemasMayaReference"
+              ]
+            },
+            "PrimUpdater": {
+              "providesTranslator": [
+                "MayaUsd_SchemasALMayaReference",
+                "MayaUsd_SchemasMayaReference"
+              ]
+            },
+            "PrimWriter": {
+              "providesTranslator": [
+                "camera",
+                "file",
+                "instancer",
+                "joint",
+                "locator",
+                "mesh",
+                "nParticle",
+                "nurbsCurve",
+                "nurbsSurface",
+                "particle",
+                "PxrAovLight",
+                "PxrCylinderLight",
+                "PxrDiskLight",
+                "PxrDistantLight",
+                "PxrDomeLight",
+                "PxrEnvDayLight",
+                "PxrMeshLight",
+                "PxrRectLight",
+                "PxrSphereLight",
+                "stroke"
+              ]
+            }
+          }
+        },
+        "LibraryPath": "../../../@CMAKE_SHARED_LIBRARY_PREFIX@@TARGET_NAME@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+        "Name": "@TARGET_NAME@",
+        "Type": "library"
+      }
+    ]
+}

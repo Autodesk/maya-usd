@@ -16,7 +16,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/editUtil.h"
 
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyEnum.h"
@@ -207,7 +207,7 @@ _GetAvarEdits(boost::python::dict& assemEditDict)
         pathDict[pathEdits->first] = valueMap;
     }
 
-    return pathDict;
+    return std::move(pathDict);
 }
 
 

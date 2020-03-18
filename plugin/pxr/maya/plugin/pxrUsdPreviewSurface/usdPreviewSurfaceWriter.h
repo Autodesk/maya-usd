@@ -19,9 +19,9 @@
 /// \file pxrUsdPreviewSurface/usdPreviewSurfaceWriter.h
 
 #include "pxr/pxr.h"
-#include "usdMaya/shaderWriter.h"
+#include <mayaUsd/fileio/shaderWriter.h>
 
-#include "usdMaya/writeJobContext.h"
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include "pxr/base/tf/token.h"
 #include "pxr/usd/sdf/path.h"
@@ -43,7 +43,7 @@ class PxrMayaUsdPreviewSurface_Writer : public UsdMayaShaderWriter
 
         void Write(const UsdTimeCode& usdTime) override;
 
-        TfToken GetShadingPropertyNameForMayaAttrName(
+        TfToken GetShadingAttributeNameForMayaAttrName(
                 const TfToken& mayaAttrName) override;
 };
 

@@ -65,7 +65,7 @@ TEST(DiffGeom, pointTests)
     geom.CreateFaceVertexCountsAttr(VtValue(vfc));
 
     VtArray<GfVec3f> points(numP);
-    for(int i = 0 ; i < numP; ++i)
+    for(size_t i = 0 ; i < numP; ++i)
     {
       points[i][0] = P[i][0];
       points[i][1] = P[i][1];
@@ -103,7 +103,7 @@ TEST(DiffGeom, pointTests)
     geom.CreateFaceVertexCountsAttr(VtValue(svfc));
 
     VtArray<GfVec3f> points(numP);
-    for(int i = 0 ; i < numP; ++i)
+    for(size_t i = 0 ; i < numP; ++i)
     {
       points[i][0] = P[i][0];
       points[i][1] = P[i][1];
@@ -161,7 +161,7 @@ TEST(DiffGeom, normalTests)
     geom.SetNormalsInterpolation(UsdGeomTokens->vertex);
 
     VtArray<GfVec3f> points(numP);
-    for(int i = 0 ; i < numP; ++i)
+    for(size_t i = 0 ; i < numP; ++i)
     {
       points[i][0] = P[i][0];
       points[i][1] = P[i][1];
@@ -172,7 +172,7 @@ TEST(DiffGeom, normalTests)
     geom.CreatePointsAttr(VtValue(points));
 
     VtArray<GfVec3f> normals(numN);
-    for(int i = 0 ; i < numN; ++i)
+    for(size_t i = 0 ; i < numN; ++i)
     {
       normals[i][0] = N[i][0];
       normals[i][1] = N[i][1];
@@ -219,7 +219,7 @@ TEST(DiffGeom, normalTests)
     geom.SetNormalsInterpolation(UsdGeomTokens->vertex);
 
     VtArray<GfVec3f> points(numP);
-    for(int i = 0 ; i < numP; ++i)
+    for(size_t i = 0 ; i < numP; ++i)
     {
       points[i][0] = P[i][0];
       points[i][1] = P[i][1];
@@ -228,7 +228,7 @@ TEST(DiffGeom, normalTests)
     geom.CreatePointsAttr(VtValue(points));
 
     VtArray<GfVec3f> normals(numN);
-    for(int i = 0 ; i < numN; ++i)
+    for(size_t i = 0 ; i < numN; ++i)
     {
       normals[i][0] = N[i][0];
       normals[i][1] = N[i][1];
@@ -267,7 +267,7 @@ TEST(DiffGeom, normalTests)
     geom.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
 
     VtArray<GfVec3f> points(numP);
-    for(int i = 0 ; i < numP; ++i)
+    for(size_t i = 0 ; i < numP; ++i)
     {
       points[i][0] = P[i][0];
       points[i][1] = P[i][1];
@@ -278,7 +278,7 @@ TEST(DiffGeom, normalTests)
     geom.CreatePointsAttr(VtValue(points));
 
     VtArray<GfVec3f> normals(numN);
-    for(int i = 0 ; i < numN; ++i)
+    for(size_t i = 0 ; i < numN; ++i)
     {
       normals[i][0] = N[i][0];
       normals[i][1] = N[i][1];
@@ -325,7 +325,7 @@ TEST(DiffGeom, normalTests)
     geom.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
 
     VtArray<GfVec3f> points(numP);
-    for(int i = 0 ; i < numP; ++i)
+    for(size_t i = 0 ; i < numP; ++i)
     {
       points[i][0] = P[i][0];
       points[i][1] = P[i][1];
@@ -334,7 +334,7 @@ TEST(DiffGeom, normalTests)
     geom.CreatePointsAttr(VtValue(points));
 
     VtArray<GfVec3f> normals(numN);
-    for(int i = 0 ; i < numN; ++i)
+    for(size_t i = 0 ; i < numN; ++i)
     {
       normals[i][0] = N[i][0];
       normals[i][1] = N[i][1];

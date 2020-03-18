@@ -12,6 +12,8 @@ import shlex
 import shutil
 import subprocess
 import sys
+import distutils.util
+import time
 
 ############################################################
 # Helpers for printing output
@@ -44,7 +46,6 @@ def PrintError(error):
     print "ERROR:", error
 
 ############################################################
-
 def Windows():
     return platform.system() == "Windows"
 
@@ -62,6 +63,17 @@ def GetCommandOutput(command):
     except subprocess.CalledProcessError:
         pass
     return None
+
+def GetGitHeadInfo(context):
+    """Returns HEAD commit id and date."""
+    try:
+        with CurrentWorkingDirectory(context.mayaUsdSrcDir):
+            commitSha = subprocess.check_output('git rev-parse HEAD', shell = True).decode()
+            commitDate = subprocess.check_output('git show -s HEAD --format="%ad"', shell = True).decode()
+            return commitSha, commitDate
+    except Exception as exp:
+        PrintError("Failed to run git commands : {exp}".format(exp=exp))
+        sys.exit(1)
 
 def GetXcodeDeveloperDirectory():
     """Returns the active developer directory as reported by 'xcode-select -p'.
@@ -97,75 +109,30 @@ def IsVisualStudio2017OrGreater():
         return version >= VISUAL_STUDIO_2017_VERSION
     return False
 
-def GetPythonInfo():
-    """Returns a tuple containing the path to the Python executable, shared
-    library, and include directory corresponding to the version of Python
-    currently running. Returns None if any path could not be determined. This
-    function always returns None on Windows or Linux.
-
-    This function is primarily used to determine which version of
-    Python USD should link against when multiple versions are installed.
-    """
-    # We just skip all this on Windows. Users on Windows are unlikely to have
-    # multiple copies of the same version of Python, so the problem this
-    # function is intended to solve doesn't arise on that platform.
-    if Windows():
-        return None
-
-    # We also skip all this on Linux. The below code gets the wrong answer on
-    # certain distributions like Ubuntu, which organizes libraries based on
-    # multiarch. The below code yields /usr/lib/libpython2.7.so, but
-    # the library is actually in /usr/lib/x86_64-linux-gnu. Since the problem
-    # this function is intended to solve primarily occurs on macOS, so it's
-    # simpler to just skip this for now.
-    if Linux():
-        return None
-
-    try:
-        import distutils.sysconfig
-
-        pythonExecPath = None
-        pythonLibPath = None
-
-        pythonPrefix = distutils.sysconfig.PREFIX
-        if pythonPrefix:
-            pythonExecPath = os.path.join(pythonPrefix, 'bin', 'python')
-            pythonLibPath = os.path.join(pythonPrefix, 'lib', 'libpython2.7.dylib')
-
-        pythonIncludeDir = distutils.sysconfig.get_python_inc()
-    except:
-        return None
-
-    if pythonExecPath and pythonIncludeDir and pythonLibPath:
-        # Ensure that the paths are absolute, since depending on the version of
-        # Python being run and the path used to invoke it, we may have gotten a
-        # relative path from distutils.sysconfig.PREFIX.
-        return (
-            os.path.abspath(pythonExecPath),
-            os.path.abspath(pythonLibPath),
-            os.path.abspath(pythonIncludeDir))
-
-    return None
-
 def GetCPUCount():
     try:
         return multiprocessing.cpu_count()
     except NotImplementedError:
         return 1
 
-def Run(cmd, logCommandOutput=True):
+def Run(context, cmd):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
     with open(context.logFileLocation, "a") as logfile:
-        logfile.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"))
+        logfile.write("#####################################################################################" + "\n")
+        logfile.write("log date: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + "\n")
+        commitID,commitData = GetGitHeadInfo(context)
+        logfile.write("commit sha: " + commitID)
+        logfile.write("commit date: " + commitData)
+        logfile.write("#####################################################################################" + "\n")
         logfile.write("\n")
         logfile.write(cmd)
         logfile.write("\n")
 
         # Let exceptions escape from subprocess calls -- higher level
         # code will handle them.
-        if logCommandOutput:
+        if context.redirectOutstreamFile:
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
             while True:
@@ -207,6 +174,30 @@ def FormatMultiProcs(numJobs, generator):
 
     return "{tag}{procs}".format(tag=tag, procs=numJobs)
 
+def onerror(func, path, exc_info):
+    """
+    If the error is due to an access error (read only file)
+    add write permission and then retries.
+    If the error is for another reason it re-raises the error.
+    """
+    import stat
+    if not os.access(path, os.W_OK):
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise
+
+def StartBuild():
+    global start_time
+    start_time = time.time()
+
+def StopBuild():
+    end_time = time.time()
+    elapsed_seconds = end_time - start_time
+    hours, remainder = divmod(elapsed_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    print("Elapsed time: {:02}:{:02}:{:02}".format(int(hours), int(minutes), int(seconds)))
+
 ############################################################
 # contextmanager
 @contextlib.contextmanager
@@ -231,7 +222,7 @@ def RunCMake(context, extraArgs=None, stages=None):
     buildDir = context.buildDir
 
     if 'clean' in stages and os.path.isdir(buildDir):
-        shutil.rmtree(buildDir)
+        shutil.rmtree(buildDir, onerror=onerror)
 
     if 'clean' in stages and os.path.isdir(instDir):
         shutil.rmtree(instDir)
@@ -253,11 +244,6 @@ def RunCMake(context, extraArgs=None, stages=None):
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
 
-    # On MacOS, enable the use of @rpath for relocatable builds.
-    osx_rpath = None
-    if MacOS():
-        osx_rpath = "-DCMAKE_MACOSX_RPATH=ON"
-
     # get build variant 
     variant= BuildVariant(context)
 
@@ -267,18 +253,17 @@ def RunCMake(context, extraArgs=None, stages=None):
             os.remove(context.logFileLocation)
 
         if 'configure' in stages:
-            Run('cmake '
+            Run(context,
+                'cmake '
                 '-DCMAKE_INSTALL_PREFIX="{instDir}" '
                 '-DCMAKE_BUILD_TYPE={variant} '
-                '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON'
-                '{osx_rpath} '
+                '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON '
                 '{generator} '
                 '{extraArgs} '
                 '"{srcDir}"'
                 .format(instDir=instDir,
                         variant=variant,
                         srcDir=srcDir,
-                        osx_rpath=(osx_rpath or ""),
                         generator=(generator or ""),
                         extraArgs=(" ".join(extraArgs) if extraArgs else "")))
  
@@ -287,14 +272,68 @@ def RunCMake(context, extraArgs=None, stages=None):
             installArg = "--target install"
 
         if 'build' in stages or 'install' in stages:
-            Run("cmake --build . --config {variant} {installArg} -- {multiproc}"
+            Run(context, "cmake --build . --config {variant} {installArg} -- {multiproc}"
                 .format(variant=variant,
                         installArg=installArg,
                         multiproc=FormatMultiProcs(context.numJobs, generator)))
 
-############################################################
-# Maya USD
-def InstallMayaUSD(context, buildArgs, stages):
+def RunCTest(context, extraArgs=None):
+    buildDir = context.buildDir
+    variant = BuildVariant(context)
+    #TODO we can't currently run tests in parallel, something to revisit.
+    numJobs = 1
+
+    with CurrentWorkingDirectory(buildDir):
+        Run(context,
+            'ctest '
+            '--output-on-failure ' 
+            '--timeout 300 '
+            '-j {numJobs} '
+            '-C {variant} '
+            '{extraArgs} '
+            .format(numJobs=numJobs,
+                    variant=variant,
+                    extraArgs=(" ".join(extraArgs) if extraArgs else "")))
+
+def RunMakeZipArchive(context):
+    installDir = context.instDir
+    buildDir = context.buildDir
+    pkgDir = context.pkgDir
+    variant = BuildVariant(context)
+
+    # extract version from mayausd_version.info
+    mayaUsdVerion = [] 
+    cmakeInfoDir = os.path.join(context.mayaUsdSrcDir, 'cmake')
+    filename = os.path.join(cmakeInfoDir, 'mayausd_version.info')
+    with open(filename, 'r') as filehandle:
+        content = filehandle.readlines()
+        for current_line in content:
+            digitList = re.findall(r'\d+', current_line)
+            versionStr = ''.join(str(e) for e in digitList)
+            mayaUsdVerion.append(versionStr)
+
+    majorVersion = mayaUsdVerion[0]
+    minorVersion = mayaUsdVerion[1]
+    patchLevel   = mayaUsdVerion[2]  
+
+    pkgName = 'MayaUsd' + '-' + majorVersion + '.' + minorVersion + '.' + patchLevel + '-' + (platform.system()) + '-' + variant
+    with CurrentWorkingDirectory(buildDir):
+        shutil.make_archive(pkgName, 'zip', installDir)
+
+        # copy zip file to package directory
+        if not os.path.exists(pkgDir):
+            os.makedirs(pkgDir)
+
+        for file in os.listdir(buildDir):
+            if file.endswith(".zip"):
+                zipFile = os.path.join(buildDir, file)
+                try:
+                    shutil.copy(zipFile, pkgDir)
+                except Exception as exp:
+                    PrintError("Failed to write to directory {pkgDir} : {exp}".format(pkgDir=pkgDir,exp=exp))
+                    sys.exit(1)
+
+def BuildAndInstall(context, buildArgs, stages):
     with CurrentWorkingDirectory(context.mayaUsdSrcDir):
         extraArgs = []
         stagesArgs = []
@@ -310,17 +349,49 @@ def InstallMayaUSD(context, buildArgs, stages):
             extraArgs.append('-DMAYA_DEVKIT_LOCATION="{devkitLocation}"'
                              .format(devkitLocation=context.devkitLocation))
 
-        # Add on any user-specified extra arguments.
-        extraArgs += buildArgs
+        # Many people on Windows may not have python with the 
+        # debugging symbol (python27_d.lib) installed, this is the common case.
+        if context.buildDebug and context.debugPython:
+            extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=ON')
+        else:
+            extraArgs.append('-DMAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG=OFF')
 
-        # Add on any user-specified stages arguments.
+        if context.qtLocation:
+            extraArgs.append('-DQT_LOCATION="{qtLocation}"'
+                             .format(qtLocation=context.qtLocation))
+
+        extraArgs += buildArgs
         stagesArgs += stages
 
         RunCMake(context, extraArgs, stagesArgs)
 
+        # Ensure directory structure is created and is writable.
+        for dir in [context.workspaceDir, context.buildDir, context.instDir]:
+            try:
+                if os.path.isdir(dir):
+                    testFile = os.path.join(dir, "canwrite")
+                    open(testFile, "w").close()
+                    os.remove(testFile)
+                else:
+                    os.makedirs(dir)
+            except Exception as e:
+                PrintError("Could not write to directory {dir}. Change permissions "
+                           "or choose a different location to install to."
+                           .format(dir=dir))
+                sys.exit(1)
+        Print("""Success MayaUSD build and install !!!!""")
+
+def RunTests(context,extraArgs):
+    RunCTest(context,extraArgs)
+    Print("""Success running MayaUSD tests !!!!""")
+
+def Package(context):
+    RunMakeZipArchive(context)
+    Print("""Success packaging MayaUSD !!!!""")
+    Print('Archived package is available in {pkgDir}'.format(pkgDir=context.pkgDir))
+
 ############################################################
 # ArgumentParser
-
 parser = argparse.ArgumentParser(
     formatter_class=argparse.RawDescriptionHelpFormatter)
 
@@ -354,25 +425,38 @@ parser.add_argument("--pxrusd-location", type=str,
 parser.add_argument("--devkit-location", type=str,
                     help="Directory where Maya Devkit is installed.")
 
-parser.add_argument("--build-debug", dest="build_debug", action="store_true",
-                    help="Build in Debug mode")
+varGroup = parser.add_mutually_exclusive_group()
+varGroup.add_argument("--build-debug", dest="build_debug", action="store_true",
+                    help="Build in Debug mode (default: %(default)s)")
 
-parser.add_argument("--build-release", dest="build_release", action="store_true",
-                    help="Build in Release mode")
+varGroup.add_argument("--build-release", dest="build_release", action="store_true",
+                    help="Build in Release mode (default: %(default)s)")
 
-parser.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true",
-                    help="Build in RelWithDebInfo mode")
+varGroup.add_argument("--build-relwithdebug", dest="build_relwithdebug", action="store_true", default=True,
+                    help="Build in RelWithDebInfo mode (default: %(default)s)")
+
+parser.add_argument("--debug-python", dest="debug_python", action="store_true",
+                      help="Define Boost Python Debug if your Python library comes with Debugging symbols (default: %(default)s).")
+
+parser.add_argument("--qt-location", type=str,
+                    help="Directory where Qt is installed.")
 
 parser.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Comma-separated list of arguments passed into CMake when building libraries"))
 
+parser.add_argument("--ctest-args", type=str, nargs="*", default=[],
+                   help=("Comma-separated list of arguments passed into CTest.(e.g -VV, --output-on-failure)"))
+
 parser.add_argument("--stages", type=str, nargs="*", default=['clean','configure','build','install'],
-                   help=("Comma-separated list of stages to execute.( possible stages: clean, configure, build, install)"))
+                   help=("Comma-separated list of stages to execute.(possible stages: clean, configure, build, install, test, package)"))
 
 parser.add_argument("-j", "--jobs", type=int, default=GetCPUCount(),
                     help=("Number of build jobs to run in parallel. "
                           "(default: # of processors [{0}])"
                           .format(GetCPUCount())))
+
+parser.add_argument("--redirect-outstream-file", type=distutils.util.strtobool, dest="redirect_outstream_file", default=True,
+                    help="Redirect output stream to a file. Set this flag to false to redirect output stream to console instead.")
 
 args = parser.parse_args()
 verbosity = args.verbosity
@@ -392,6 +476,8 @@ class InstallContext:
         self.buildRelease = args.build_release
         self.buildRelWithDebug = args.build_relwithdebug
 
+        self.debugPython = args.debug_python
+
         # Workspace directory 
         self.workspaceDir = os.path.abspath(args.workspace_location)
 
@@ -402,6 +488,9 @@ class InstallContext:
         # Install directory
         self.instDir = (os.path.abspath(args.install_location) if args.install_location
                          else os.path.join(self.workspaceDir, "install", BuildVariant(self)))
+
+        # Package directory
+        self.pkgDir = (os.path.join(self.workspaceDir, "package", BuildVariant(self)))
 
         # CMake generator
         self.cmakeGenerator = args.generator
@@ -423,6 +512,10 @@ class InstallContext:
         self.devkitLocation = (os.path.abspath(args.devkit_location)
                                 if args.devkit_location else None)
 
+        # Qt Location
+        self.qtLocation = (os.path.abspath(args.qt_location)
+                           if args.qt_location else None)
+
         # Log File Name
         logFileName="build_log.txt"
         self.logFileLocation=os.path.join(self.buildDir, logFileName)
@@ -438,62 +531,76 @@ class InstallContext:
         for argList in args.stages:
             for arg in argList.split(","):
                 self.stagesArgs.append(arg)
+
+        # CTest arguments
+        self.ctestArgs = list()
+        for argList in args.ctest_args:
+            for arg in argList.split(","):
+                self.ctestArgs.append(arg)
+
+        # Redirect output stream to file
+        self.redirectOutstreamFile = args.redirect_outstream_file
 try:
     context = InstallContext(args)
 except Exception as e:
     PrintError(str(e))
     sys.exit(1)
 
-# Summarize
-summaryMsg = """
-Building with settings:
-  Source directory          {mayaUsdSrcDir}
-  Workspace directory       {workspaceDir}
-  Build directory           {buildDir}
-  Install directory         {instDir}
-  Variant                   {buildVariant}
-  CMake generator           {cmakeGenerator}
-  Build Log                 {logFileLocation}"""
+if __name__ == "__main__":
+    # Summarize
+    summaryMsg = """
+    Building with settings:
+      Source directory          {mayaUsdSrcDir}
+      Workspace directory       {workspaceDir}
+      Build directory           {buildDir}
+      Install directory         {instDir}
+      Variant                   {buildVariant}
+      Python Debug              {debugPython}
+      CMake generator           {cmakeGenerator}"""
 
-if context.buildArgs:
-  summaryMsg += """
-  Extra Build arguments {buildArgs}"""
+    if context.redirectOutstreamFile:
+      summaryMsg += """
+      Build Log                 {logFileLocation}"""
 
-if context.stagesArgs:
-  summaryMsg += """
-  Stages arguments      {stagesArgs}"""
+    if context.buildArgs:
+      summaryMsg += """
+      Build arguments           {buildArgs}"""
 
-summaryMsg = summaryMsg.format(
-    mayaUsdSrcDir=context.mayaUsdSrcDir,
-    workspaceDir=context.workspaceDir,
-    buildDir=context.buildDir,
-    instDir=context.instDir,
-    logFileLocation=context.logFileLocation,
-    buildArgs=context.buildArgs,
-    stagesArgs=context.stagesArgs,
-    buildVariant=BuildVariant(context),
-    cmakeGenerator=("Default" if not context.cmakeGenerator
-                    else context.cmakeGenerator)
-)
+    if context.stagesArgs:
+      summaryMsg += """
+      Stages arguments          {stagesArgs}"""
 
-Print(summaryMsg)
+    if context.ctestArgs:
+      summaryMsg += """
+      CTest arguments           {ctestArgs}"""
 
-# Install MayaUSD
-InstallMayaUSD(context, context.buildArgs, context.stagesArgs)
+    summaryMsg = summaryMsg.format(
+        mayaUsdSrcDir=context.mayaUsdSrcDir,
+        workspaceDir=context.workspaceDir,
+        buildDir=context.buildDir,
+        instDir=context.instDir,
+        logFileLocation=context.logFileLocation,
+        buildArgs=context.buildArgs,
+        stagesArgs=context.stagesArgs,
+        ctestArgs=context.ctestArgs,
+        buildVariant=BuildVariant(context),
+        debugPython=("On" if context.debugPython else "Off"),
+        cmakeGenerator=("Default" if not context.cmakeGenerator
+                        else context.cmakeGenerator)
+    )
 
-# Ensure directory structure is created and is writable.
-for dir in [context.workspaceDir, context.buildDir, context.instDir]:
-    try:
-        if os.path.isdir(dir):
-            testFile = os.path.join(dir, "canwrite")
-            open(testFile, "w").close()
-            os.remove(testFile)
-        else:
-            os.makedirs(dir)
-    except Exception as e:
-        PrintError("Could not write to directory {dir}. Change permissions "
-                   "or choose a different location to install to."
-                   .format(dir=dir))
-        sys.exit(1)
+    Print(summaryMsg)
 
-Print("""Success Maya USD build and install !!!!""")
+    # BuildAndInstall
+    if any(stage in ['clean', 'configure', 'build', 'install'] for stage in context.stagesArgs):
+        StartBuild()
+        BuildAndInstall(context, context.buildArgs, context.stagesArgs)
+        StopBuild()
+
+    # Run Tests
+    if 'test' in context.stagesArgs:
+        RunTests(context, context.ctestArgs)
+
+    # Package
+    if 'package' in context.stagesArgs:
+        Package(context)

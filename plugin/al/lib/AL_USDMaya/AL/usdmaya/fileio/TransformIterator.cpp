@@ -28,10 +28,10 @@ namespace fileio {
 
 
 //----------------------------------------------------------------------------------------------------------------------
-TransformIterator::TransformIterator(UsdStageRefPtr stage, const MDagPath& parentPath)
+TransformIterator::TransformIterator(UsdStageRefPtr stage, const MDagPath& parentPath, bool stopOnInstance)
   : m_primStack(),
     m_stage(stage),
-    m_currentItem(0)
+    m_stopOnInstance(stopOnInstance)
 {
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TransformIterator::TransformIterator parent path: %s\n", parentPath.fullPathName().asChar());
 
@@ -51,10 +51,10 @@ TransformIterator::TransformIterator(UsdStageRefPtr stage, const MDagPath& paren
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-TransformIterator::TransformIterator(const UsdPrim& usdStartPrim, const MDagPath& mayaStartPath)
-  : m_primStack()
-  , m_stage(usdStartPrim.GetStage())
-  , m_currentItem(0)
+TransformIterator::TransformIterator(const UsdPrim& usdStartPrim, const MDagPath& mayaStartPath, bool stopOnInstance)
+  : m_primStack(),
+    m_stage(usdStartPrim.GetStage()),
+    m_stopOnInstance(stopOnInstance)
 {
   m_primStack.reserve(128);
   m_primStack.push_back(StackRef(usdStartPrim));
@@ -96,15 +96,18 @@ bool TransformIterator::next()
   do
   {
     StackRef& r = *(m_primStack.end() - 1);
-    if(r.m_prim.IsInstance())
+    if(r.m_prim.IsInstance() && !m_stopOnInstance)
     {
-      UsdPrim master = r.m_prim.GetMaster();
-      m_primStack.push_back(StackRef(master));
-      m_visitedMasterPrimPaths.insert(master.GetPath());
-      StackRef& p = *(m_primStack.end() - 2);
-      StackRef& c = *(m_primStack.end() - 1);
-      c.m_object = p.m_object;
-      next();
+      if(!m_stopOnInstance)
+      {
+        UsdPrim master = r.m_prim.GetMaster();
+        m_primStack.push_back(StackRef(master));
+        m_visitedMasterPrimPaths.insert(master.GetPath());
+        StackRef& p = *(m_primStack.end() - 2);
+        StackRef& c = *(m_primStack.end() - 1);
+        c.m_object = p.m_object;
+        next();
+      }
       return !done();
     }
     else
@@ -118,7 +121,7 @@ bool TransformIterator::next()
 
       {
         StackRef& b = *(m_primStack.end() - 1);
-        if(b.m_prim.IsInstance())
+        if(b.m_prim.IsInstance() && !m_stopOnInstance)
         {
           m_primStack.pop_back();
         }

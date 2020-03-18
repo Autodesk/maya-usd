@@ -15,10 +15,9 @@
 //
 #include "usdMaya/importTranslator.h"
 
-#include "usdMaya/jobArgs.h"
-#include "usdMaya/readJob.h"
-#include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/writeJob.h"
+#include "usdMaya/readJobWithSceneAssembly.h"
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
 
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/vt/dictionary.h"
@@ -59,8 +58,6 @@ UsdMayaImportTranslator::reader(
         MPxFileTranslator::FileAccessMode  /*mode*/)
 {
     std::string fileName(file.fullName().asChar());
-    std::string primPath("/");
-    std::map<std::string, std::string> variants;
 
     bool readAnimData = true;
     bool useCustomFrameRange = false;
@@ -112,13 +109,11 @@ UsdMayaImportTranslator::reader(
             userArgs,
             /* importWithProxyShapes = */ false,
             timeInterval);
-    UsdMaya_ReadJob* mUsdReadJob =
-        new UsdMaya_ReadJob(fileName,
-                       primPath,
-                       variants,
-                       jobArgs);
+    MayaUsd::ImportData importData(fileName);
+    UsdMaya_ReadJobWithSceneAssembly mUsdReadJob(
+        importData, jobArgs);
     std::vector<MDagPath> addedDagPaths;
-    bool success = mUsdReadJob->Read(&addedDagPaths);
+    bool success = mUsdReadJob.Read(&addedDagPaths);
     return (success) ? MS::kSuccess : MS::kFailure;
 }
 

@@ -18,7 +18,7 @@ target_link_libraries(${PXR_PACKAGE}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
-    AL_USDUtils
+    mayaUsdUtils
     AL_USDMaya
     ${MAYA_LIBRARIES}
 )
@@ -26,42 +26,39 @@ target_link_libraries(${PXR_PACKAGE}
 target_include_directories(${PXR_PACKAGE}
     PRIVATE
         ${MAYA_INCLUDE_DIRS}
-        ${MAYAUSD_INCLUDE_DIR}
         "../../lib/AL_USDMaya"
 )
 
-if(MSVC)
-    set_target_properties(${PXR_PACKAGE} PROPERTIES SUFFIX ".mll")
-elseif(APPLE)
-    set_target_properties(${PXR_PACKAGE}
-        PROPERTIES
-            PREFIX ""
-            SUFFIX ".bundle"
-            MACOSX_RPATH TRUE
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "@loader_path/../lib;@loader_path/../../pxr/lib;@loader_path/../../pxr/maya/lib;${PXR_USD_LOCATION}/lib"
-    )
-else()
-    # This puts the paths into RUNPATH instead of RPATH.
-    # They are the same except that RPATH is searched before LD_LIBRARY_PATH whereas RUNPATH is searched after.
-    # Using RUNPATH will give users the ability to override a shared library.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+maya_set_plugin_properties(${PXR_PACKAGE})
 
-    set_target_properties(${PXR_PACKAGE}
-        PROPERTIES
-            PREFIX ""
-            INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "$ORIGIN/../lib:$ORIGIN/../../pxr/lib:$ORIGIN/../../pxr/maya/lib:${PXR_USD_LOCATION}/lib:${PXR_USD_LOCATION}/lib64"
-    )
+# handle run-time search paths
+if(IS_MACOSX OR IS_LINUX) 
+    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_add_rpath(rpath "../lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+    elseif(DEFINED PXR_USD_LOCATION)
+        mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
+    endif()
+    if(IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+    endif()
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
+    mayaUsd_install_rpath(rpath ${PXR_PACKAGE})
 endif()
 
 install(TARGETS
     ${PXR_PACKAGE}
     LIBRARY
-        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+        DESTINATION ${AL_INSTALL_PREFIX}/plugin
     RUNTIME
-        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+        DESTINATION ${AL_INSTALL_PREFIX}/plugin
 )
-if(MSVC)
-    install(FILES $<TARGET_PDB_FILE:${PXR_PACKAGE}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
+if(IS_WINDOWS)
+    install(FILES $<TARGET_PDB_FILE:${PXR_PACKAGE}> DESTINATION ${AL_INSTALL_PREFIX}/plugin OPTIONAL)
 endif()

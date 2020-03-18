@@ -24,7 +24,6 @@ namespace usdmaya {
 struct guid;
 class Global;
 struct MObjectMap;
-class StageData;
 class StageCache;
 
 namespace cmds {
@@ -75,7 +74,9 @@ class ProxyShape;
 class ProxyShapeUI;
 class SchemaNodeRefDB;
 class Transform;
+class Scope;
 class TransformationMatrix;
+class BasicTransformationMatrix;
 } // nodes
 
 } // usdmaya

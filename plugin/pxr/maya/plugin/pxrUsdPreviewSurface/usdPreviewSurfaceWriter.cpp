@@ -17,11 +17,11 @@
 #include "pxrUsdPreviewSurface/usdPreviewSurfaceWriter.h"
 
 #include "pxrUsdPreviewSurface/usdPreviewSurface.h"
-#include "usdMaya/primWriterRegistry.h"
-#include "usdMaya/shaderWriter.h"
-#include "usdMaya/util.h"
-#include "usdMaya/writeJobContext.h"
-#include "usdMaya/writeUtil.h"
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -310,7 +310,7 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
 
 /* virtual */
 TfToken
-PxrMayaUsdPreviewSurface_Writer::GetShadingPropertyNameForMayaAttrName(
+PxrMayaUsdPreviewSurface_Writer::GetShadingAttributeNameForMayaAttrName(
         const TfToken& mayaAttrName)
 {
     if (!_usdPrim) {

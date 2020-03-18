@@ -55,11 +55,6 @@ public:
   /// \return the stage from a proxy shape node (if found in the args)
   UsdStageRefPtr getShapeNodeStage(const MArgDatabase& args);
 
-  /// \brief  construct the arg data base from an args list. If any errors are found during parsing, an error will be thrown
-  /// \param  args the args list passed to the MPxCommand from Maya
-  /// \return the new data base
-  MArgDatabase makeDatabase(const MArgList& args);
-
 //  /// \brief  hunt for the first node of the specified type found in the selection list object args
 //  /// \param  args the pre-parsed argument data base
 //  /// \param  typeId the typeId of the object type that may appear as one of the selected objects
@@ -147,7 +142,6 @@ class LayerCurrentEditTarget
   UsdEditTarget next;
   UsdStageRefPtr stage;
   bool isQuery;
-  bool previouslyAnEditTarget;
   std::function<std::string(SdfLayerHandle)> getLayerId;
 
 public:

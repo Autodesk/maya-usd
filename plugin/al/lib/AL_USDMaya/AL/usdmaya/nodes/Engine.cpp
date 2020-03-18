@@ -31,9 +31,7 @@
 #include <vector>
 #include "AL/usdmaya/nodes/Engine.h"
 
-#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
 #include "pxr/imaging/hdx/pickTask.h"
-#endif
 #include "pxr/imaging/hdx/taskController.h"
 
 namespace AL {
@@ -56,7 +54,6 @@ bool Engine::TestIntersectionBatch(
     return false;
   }
 
-#if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
   _UpdateHydraCollection(&_intersectCollection, paths, params);
 
   TfTokenVector renderTags;
@@ -87,49 +84,6 @@ bool Engine::TestIntersectionBatch(
   if (allHits.size() == 0) {
     return false;
   }
-  #else 
-
-  _UpdateHydraCollection(&_intersectCollection, paths, params, &_renderTags);
-  
-  HdxIntersector::HitVector allHits;
-  HdxIntersector::Params qparams;
-  qparams.viewMatrix = worldToLocalSpace * viewMatrix;
-  qparams.projectionMatrix = projectionMatrix;
-  qparams.alphaThreshold = params.alphaThreshold;
-  switch (params.cullStyle) {
-    case UsdImagingGLCullStyle::CULL_STYLE_NO_OPINION:
-      qparams.cullStyle = HdCullStyleDontCare;
-      break;
-    case UsdImagingGLCullStyle::CULL_STYLE_NOTHING:
-      qparams.cullStyle = HdCullStyleNothing;
-      break;
-    case UsdImagingGLCullStyle::CULL_STYLE_BACK:
-      qparams.cullStyle = HdCullStyleBack;
-      break;
-    case UsdImagingGLCullStyle::CULL_STYLE_FRONT:
-      qparams.cullStyle = HdCullStyleFront;
-      break;
-    case UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED:
-      qparams.cullStyle = HdCullStyleBackUnlessDoubleSided;
-      break;
-    default:
-      qparams.cullStyle = HdCullStyleDontCare;
-  }
-  qparams.renderTags = _renderTags;
-  qparams.enableSceneMaterials = params.enableSceneMaterials;
-
-  _taskController->SetPickResolution(pickResolution);
-  if (!_taskController->TestIntersection(
-      &_engine,
-      _intersectCollection,
-      qparams,
-      HdxIntersectionModeTokens->unique,
-      &allHits)) {
-    return false;
-  }
-
-
-  #endif
 
   if (!outHit) {
     return true;

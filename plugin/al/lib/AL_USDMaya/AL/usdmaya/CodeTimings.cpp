@@ -17,6 +17,11 @@
 #include <vector>
 #include <algorithm>
 
+#ifdef OSMac_
+// For clock_gettime()
+#include <time.h>
+#endif
+
 namespace AL {
 namespace usdmaya {
 
@@ -157,10 +162,16 @@ void Profiler::popTime()
 {
   assert(m_stackPos > 0);
   --m_stackPos;
-  timespec endtime;
+  timespec endtime{};
   #ifdef _WIN32
   while(clock_gettime(CLOCK_REALTIME_COARSE, &endtime) != 0) /* deliberately empty */;
+  #elif OSMac_
+  // clock_gettime() is only present on OSX 10.12 and above.
+  clock_gettime(CLOCK_REALTIME, &endtime);
+  #else
+  timespec_get(&endtime, TIME_UTC);
   #endif
+
   // compute time difference
   timespec diff = timeDiff(m_timeStack[m_stackPos].m_time, endtime);
   m_timeStack[m_stackPos].m_path->second = timeAdd(diff, m_timeStack[m_stackPos].m_path->second);

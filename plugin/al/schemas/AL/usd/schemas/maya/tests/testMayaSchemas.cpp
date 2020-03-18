@@ -3,7 +3,7 @@
 #include <iostream>
 #include <functional>
 
-#include <AL/usd/schemas/maya/MayaReference.h>
+#include <mayaUsd_Schemas/MayaReference.h>
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stage.h"
@@ -27,7 +27,7 @@ TEST(testMayaSchemas, testMayaReferenceAttributes)
   std::string   mayaNamespace("nsp");
 
   auto stageOut = UsdStage::CreateInMemory();
-  auto mayaRefPrimOut = AL_usd_MayaReference::Define(stageOut, primPath);
+  auto mayaRefPrimOut = MayaUsd_SchemasMayaReference::Define(stageOut, primPath);
   auto primOut = mayaRefPrimOut.GetPrim();
   primOut.CreateAttribute(
       TfToken("mayaReference"),
@@ -40,7 +40,7 @@ TEST(testMayaSchemas, testMayaReferenceAttributes)
   auto primIn = stageIn->GetPrimAtPath(primPath);
   ASSERT_TRUE(primIn.IsValid());
 
-  AL_usd_MayaReference mayaRefPrimIn(primIn);
+  MayaUsd_SchemasMayaReference mayaRefPrimIn(primIn);
   std::string mayaNamespaceIn;
   mayaRefPrimIn.GetMayaNamespaceAttr().Get(&mayaNamespaceIn);
   ASSERT_TRUE(mayaNamespaceIn == mayaNamespace);

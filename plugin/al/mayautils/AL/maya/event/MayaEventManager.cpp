@@ -15,13 +15,14 @@
 //
 #include "AL/maya/event/MayaEventManager.h"
 
-#include <iostream>
 #include <maya/MAnimMessage.h>
 #include <maya/MCameraSetMessage.h>
 #include <maya/MContainerMessage.h>
 #include <maya/MDGMessage.h>
 #include <maya/MModelMessage.h>
 #include <maya/MGlobal.h>
+
+#include <iostream>
 
 namespace AL {
 namespace maya {

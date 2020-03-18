@@ -28,6 +28,7 @@
 
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
+#include "AL/usdmaya/utils/Utils.h"
 
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
@@ -98,7 +99,8 @@ MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
   
   createdObj = importContext.getPolyShape();
   fn.addMember(createdObj);
-  importContext.applyPrimVars();
+  importContext.applyUVs();
+  importContext.applyColourSetData();
 
   if (ctx)
   {
@@ -217,7 +219,7 @@ MStatus Mesh::preTearDown(UsdPrim& prim)
    * This crash and error seems to be happening mainly when switching out a variant that contains a Mesh, and that Mesh has been
    * force translated into Maya.
    */
-  TfNotice::Block block;
+  AL::usdmaya::utils::BlockNotifications blockNow; //don't use TfNotice::Block, render delegates need to know about the change
   // Write the overrides back to the path it was imported at
   MObjectHandle obj;
   context()->getMObject(prim, obj, MFn::kInvalid);
