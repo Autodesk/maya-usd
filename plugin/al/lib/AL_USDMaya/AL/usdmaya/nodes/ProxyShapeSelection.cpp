@@ -1576,10 +1576,19 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
             // Create a sceneItem
             Ufe::SceneItem::Ptr si = handler->createItem(proxyShapePath + ps_usd);
 
-            // Add the sceneItem to selection
-            helper.m_newUFESelection.append(si);
-
-            newlySelectedPaths.append(si->path().string().c_str());
+            if(si)
+            {
+              // Add the sceneItem to selection
+              helper.m_newUFESelection.append(si);
+              newlySelectedPaths.append(si->path().string().c_str());
+            }
+            else
+            {
+              MayaUsd::ufe::refreshStages();
+              si = handler->createItem(proxyShapePath + ps_usd);
+              if(!si)
+                std::cout << "si is null" << std::endl;
+            }
           }
         }
       }
