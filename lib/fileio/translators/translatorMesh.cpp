@@ -59,7 +59,7 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     : m_wantCacheAnimation(wantCacheAnimation)
     , m_pointsNumTimeSamples(0u)
 {
-    MStatus stat;
+    MStatus stat{MS::kSuccess};
 
     // ==============================================
     // construct a Maya mesh
@@ -76,7 +76,6 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
                 "faceVertexCounts), which isn't currently supported. "
                 "Skipping...",
                 prim.GetPath().GetText());
-        stat = MS::kFailure;
     } else {
         fvc.Get(&faceVertexCounts, UsdTimeCode::EarliestTime());
     }
@@ -90,7 +89,6 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
                 "faceVertexIndices), which isn't currently supported. "
                 "Skipping...",
                 prim.GetPath().GetText());
-        stat = MS::kFailure;
     } else {
         fvi.Get(&faceVertexIndices, UsdTimeCode::EarliestTime());
     }
@@ -102,7 +100,6 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
                 "[count: %zu, indices:%zu] on Mesh <%s>. Skipping...",
                 faceVertexCounts.size(), faceVertexIndices.size(),
                 prim.GetPath().GetText());
-        stat = MS::kFailure;
     }
 
     // Gather points and normals
@@ -136,7 +133,6 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     if (points.empty()) {
         TF_RUNTIME_ERROR("points array is empty on Mesh <%s>. Skipping...",
                          prim.GetPath().GetText());
-        stat = MS::kFailure;
     }
 
     std::string reason;
@@ -146,7 +142,8 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
                                        &reason)) {
         TF_RUNTIME_ERROR("Skipping Mesh <%s> with invalid topology: %s",
                          prim.GetPath().GetText(), reason.c_str());
-        stat = MS::kFailure;
+        *status = MS::kFailure;
+        return;
     }
 
     // == Convert data to Maya ( vertices, faces, indices )
@@ -167,8 +164,12 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
                                polygonCounts,
                                polygonConnects,
                                transformObj,
-                               &stat );
+                               &stat);
 
+    if (!stat) {
+        *status = stat;
+        return;
+    }
 
     // Set normals if supplied
     MIntArray normalsFaceIds;
@@ -224,10 +225,11 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     // have time samples to deal with, we're done.
     if (m_pointsNumTimeSamples == 0u) {
         return;
-    }   
+    }
 
-    if (m_wantCacheAnimation){
-        stat = setPointBasedDeformerForMayaNode(m_meshObj, stageNode, prim);
+    if (m_wantCacheAnimation) {
+        *status = setPointBasedDeformerForMayaNode(m_meshObj, stageNode, prim);
+        return;
     }
 
     // Use blendShapeDeformer so that all the points for a frame are contained in a single node.
@@ -255,7 +257,7 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
                                         transformObj,
                                         &stat);
 
-            if (stat != MS::kSuccess) {
+            if (!stat) {
                 continue;
             }
         }
@@ -276,8 +278,7 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
             for (size_t i = 0; i < normals.size(); ++i) {
                 mayaNormals.set(MVector(normals[i][0u],
                                         normals[i][1u],
-                                        normals[i][2u]),
-                                i);
+                                        normals[i][2u]),i);
             }
 
             meshFn.setFaceVertexNormals(mayaNormals,
@@ -323,7 +324,7 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
 MStatus
 TranslatorMeshRead::setPointBasedDeformerForMayaNode(const MObject& mayaObj, const MObject& stageNode, const UsdPrim& prim)
 {
-    MStatus status;
+    MStatus status{MS::kSuccess};
 
     // Get the output time plug and node for Maya's global time object.
     MPlug timePlug = UsdMayaUtil::GetMayaTimePlug();
