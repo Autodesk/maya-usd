@@ -2031,3 +2031,18 @@ UsdMayaUtil::convert(const std::string& str)
 {
     return MString(str.data(), static_cast<int>(str.size()));
 }
+
+MStatus 
+UsdMayaUtil::setName(const MObject& meshObj, const std::string& shapeName)
+{
+    if(meshObj.apiType() != MFn::kMesh){
+        return MS::kFailure;
+    }
+
+    MStatus status{MS::kSuccess};
+
+    MFnMesh meshFn(meshObj);
+    meshFn.setName(MString(shapeName.c_str()), false, &status);
+
+    return status;
+}

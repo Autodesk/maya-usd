@@ -23,6 +23,7 @@
 #include "../../fileio/translators/translatorMesh.h"
 #include "../../fileio/translators/translatorUtil.h"
 #include "../../fileio/utils/meshUtil.h"
+#include "../../utils/util.h"
 #include "../../fileio/utils/readUtil.h"
 #include "../../nodes/stageNode.h"
 
@@ -114,7 +115,7 @@ MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
 
     // shape name
     const auto& primName = prim.GetName().GetString();
-    status = UsdMayaMeshUtil::setName(meshRead.meshObject(), primName);
+    status = UsdMayaUtil::setName(meshRead.meshObject(), primName);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // mesh is a shape, so read Gprim properties

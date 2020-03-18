@@ -95,9 +95,6 @@ namespace UsdMayaMeshUtil
     MAYAUSD_CORE_PUBLIC
     MStatus assignSubDivTagsToMesh(const UsdGeomMesh&, MObject&, MFnMesh&);
 
-    MAYAUSD_CORE_PUBLIC
-    MStatus setName(const MObject& meshObj, const std::string& name);
-
 } // namespace UsdMayaMeshUtil
 
 

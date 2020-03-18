@@ -243,7 +243,7 @@ namespace
             vCoords.append(v[1]);
         }
 
-        MStatus status;
+        MStatus status{MS::kSuccess};
         MString uvSetName(primvarName.GetText());
         if (primvarName == UsdUtilsGetPrimaryUVSetName()) {
             // We assume that the primary USD UV set maps to Maya's default 'map1'
@@ -553,12 +553,12 @@ namespace
         VtValue primvarData;
         primvar.Get(&primvarData);
 
-        MStatus status;
+        MStatus status{MS::kSuccess};
         MPlug plug = meshFn.findPlug(
             name.GetText(),
             /* wantNetworkedPlug = */ true,
             &status);
-        if (status != MS::kSuccess || plug.isNull()) {
+        if (!status || plug.isNull()) {
             return false;
         }
 
@@ -584,7 +584,7 @@ UsdMayaMeshUtil::SetEmitNormalsTag(
         MFnMesh& meshFn,
         const bool emitNormals)
 {
-    MStatus status;
+    MStatus status{MS::kSuccess};
     MFnNumericAttribute nAttr;
     MObject attr = nAttr.create(_meshTokens->USD_EmitNormals.GetText(),
                                 "", MFnNumericData::kBoolean, 0, &status);
@@ -603,7 +603,7 @@ UsdMayaMeshUtil::GetMeshNormals(
         VtArray<GfVec3f>* normalsArray,
         TfToken* interpolation)
 {
-    MStatus status;
+    MStatus status{MS::kSuccess};
 
     // Sanity check first to make sure we can get this mesh's normals.
     int numNormals = mesh.numNormals(&status);
@@ -940,13 +940,14 @@ UsdMayaMeshUtil::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
     //
     const bool USE_CREASE_SETS = true;
 
-    MStatus statusOK;
+    MStatus statusOK{MS::kSuccess};
 
     MDagPath meshPath;
     statusOK = MDagPath::getAPathTo(meshObj,meshPath);
 
-    if (!statusOK)
+    if (!statusOK){
         return MS::kFailure;
+    }
 
     // USD does not support grouped verts and edges, so combine all components
     // with the same weight into one set to reduce the overall crease set
@@ -1119,20 +1120,4 @@ UsdMayaMeshUtil::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
     return MS::kSuccess;
 }
 
-MStatus 
-UsdMayaMeshUtil::setName(const MObject& meshObj, const std::string& shapeName)
-{
-    if(meshObj.apiType() != MFn::kMesh){
-        return MS::kFailure;
-    }
-
-    MStatus status;
-
-    MFnMesh meshFn(meshObj);
-    meshFn.setName(MString(shapeName.c_str()), false, &status);
-
-    return status;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
