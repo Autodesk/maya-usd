@@ -44,7 +44,7 @@ public:
                        const MObject& transformObj,
                        const MObject& stageNode,
                        const GfInterval& frameRange,
-                       bool wantCacheAnimation = true,
+                       bool wantCacheAnimation,
                        MStatus * status = nullptr);
 
     ~TranslatorMeshRead() = default;
