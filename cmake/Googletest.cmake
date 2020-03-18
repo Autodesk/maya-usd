@@ -46,7 +46,7 @@ macro(fetch_googletest)
         endif()
         message(STATUS "========== ...  GoogleTest installed. ==========")
 
-        set(GTEST_ROOT ${GOOGLETEST_BUILD_ROOT}/googletest-install CACHE path "GoogleTest installation root")
+        set(GTEST_ROOT "${GOOGLETEST_BUILD_ROOT}/googletest-install" CACHE PATH "GoogleTest installation root")
     endif()
 
     # FindGTest should get call after GTEST_ROOT is set
@@ -55,12 +55,13 @@ macro(fetch_googletest)
     # https://gitlab.kitware.com/cmake/cmake/issues/17799
     # FindGtest is buggy when dealing with Debug build.
     if (CMAKE_BUILD_TYPE MATCHES Debug AND GTEST_FOUND MATCHES FALSE)
-        message("Setting GTest libraries with debug...")
-        set(GTEST_INCLUDE_DIRS ${GTEST_ROOT}/include)
+        # FindGTest.cmake is buggy when looking for only debug config (it expects both).
+        # So when in debug we set the required gtest vars to the debug libs it would have
+        # found in the find_package(GTest) above. Then we find again. This will then
+        # properly set all the vars and import targets for just debug.
         set(GTEST_LIBRARY ${GTEST_LIBRARY_DEBUG})
-        set(GTEST_LIBRARIES ${GTEST_LIBRARY})
         set(GTEST_MAIN_LIBRARY ${GTEST_MAIN_LIBRARY_DEBUG})
-        set(GTEST_MAIN_LIBRARIES ${GTEST_MAIN_LIBRARY})
+        find_package(GTest QUIET REQUIRED)
     endif()
 
     # On Windows shared libraries are installed in 'bin' instead of 'lib' directory.

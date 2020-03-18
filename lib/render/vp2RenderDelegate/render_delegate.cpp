@@ -256,20 +256,29 @@ namespace
 
             MHWRender::MShaderInstance* shader = nullptr;
 
-            MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
-            const MHWRender::MShaderManager* shaderMgr =
-                renderer ? renderer->getShaderManager() : nullptr;
-            if (TF_VERIFY(shaderMgr)) {
-                shader = shaderMgr->getFragmentShader(_fallbackShaderNames[index],
-                    _structOutputName, true);
-
-                if (TF_VERIFY(shader)) {
-                    float diffuseColor[] = { color.r, color.g, color.b, color.a };
-                    shader->setParameter(_diffuseColorParameterName, diffuseColor);
-
-                    // Insert instance we just created
-                    shaderMap._map[color] = shader;
+            // If the map is not empty, clone any existing shader instance in the
+            // map instead of acquiring via MShaderManager::getFragmentShader(),
+            // which creates new shader fragment graph for each shader instance
+            // and causes expensive shader compilation and rebinding.
+            it = shaderMap._map.begin();
+            if (it != shaderMap._map.end()) {
+                shader = it->second->clone();
+            }
+            else {
+                MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
+                const MHWRender::MShaderManager* shaderMgr =
+                    renderer ? renderer->getShaderManager() : nullptr;
+                if (TF_VERIFY(shaderMgr)) {
+                    shader = shaderMgr->getFragmentShader(
+                        _fallbackShaderNames[index], _structOutputName, true);
                 }
+            }
+
+            // Insert the new shader instance
+            if (TF_VERIFY(shader)) {
+                float diffuseColor[] = { color.r, color.g, color.b, color.a };
+                shader->setParameter(_diffuseColorParameterName, diffuseColor);
+                shaderMap._map[color] = shader;
             }
 
             return shader;

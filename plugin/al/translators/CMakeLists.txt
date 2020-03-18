@@ -109,7 +109,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${AL_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
+ DESTINATION ${AL_INSTALL_PREFIX}/lib/usd
 )
 
 # install public headers

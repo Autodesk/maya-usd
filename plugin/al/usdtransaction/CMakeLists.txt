@@ -30,13 +30,21 @@ configure_file(
 # install python module
 foreach(INPUT_FILE ${PY_INIT_FILES})
   string(REPLACE ${CMAKE_CURRENT_SOURCE_DIR} ${AL_INSTALL_PREFIX}/lib/python OUTPUT_FILE ${INPUT_FILE})
-  install(CODE "execute_process(COMMAND \"${CMAKE_COMMAND}\" -E copy \"${INPUT_FILE}\" \"${OUTPUT_FILE}\")")
-  install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${OUTPUT_FILE}\" \"${AL_INSTALL_PREFIX}\")")
+  install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${INPUT_FILE}\" )")
+  get_filename_component(OUTPUT_PATH ${OUTPUT_FILE} DIRECTORY)
+  install(FILES
+        ${INPUT_FILE}  # .py files
+        ${INPUT_FILE}c # .pyc files
+      DESTINATION ${OUTPUT_PATH}
+  )
 endforeach()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
     DESTINATION ${AL_INSTALL_PREFIX}/lib/usd/${LIBRARY_NAME}/resources
 )
 install(CODE
-    "file(WRITE \"${AL_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+    "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
+    DESTINATION ${AL_INSTALL_PREFIX}/lib/usd
 )
