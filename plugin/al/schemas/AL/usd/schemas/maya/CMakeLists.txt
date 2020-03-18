@@ -16,7 +16,7 @@ set(
 # Bake library name
 configure_file (
     plugInfo.json.in
-    ./plugInfo.json
+    ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
     @ONLY
 )
 
@@ -134,7 +134,7 @@ install(TARGETS ${PYTHON_LIBRARY_NAME}
 
 # configure_file has a nice feature where it will copy the __init__ file over when it gets modified, unlike file(COPY ...)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_BINARY_DIR}/AL/usd/schemas/maya/__init__.py COPYONLY)
-install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${CMAKE_BINARY_DIR}/AL/usd/schemas/maya/__init__.py\" )")
+execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_BINARY_DIR}/AL/usd/schemas/maya/__init__.py)
 
 string(REPLACE "/" ";" folderHierarchy "AL/usd/schemas/maya")
 
@@ -158,6 +158,7 @@ if(${listCount} STRGREATER 1)
         ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py
         "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\n"
       )
+      execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py)
     endforeach(i)
 endif()
 
@@ -167,9 +168,6 @@ install(
     DESTINATION
         ${AL_INSTALL_PREFIX}/lib/python
 )
-
-install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${AL_INSTALL_PREFIX}/lib/python ... \")")
-install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${AL_INSTALL_PREFIX}/lib/python\" )")
 
 ####################################################################################################
 # Install public headers
@@ -199,7 +197,7 @@ file(RELATIVE_PATH
 # Bake relative path
 configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    .
+    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 install(
