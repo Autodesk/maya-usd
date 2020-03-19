@@ -1855,6 +1855,18 @@ Ufe::Path ProxyShape::ufePath() const
 #endif
 
 //----------------------------------------------------------------------------------------------------------------------
+SdfPathVector ProxyShape::getTranslatedPrimPaths() const
+{
+  SdfPathVector paths(m_requiredPaths.size());
+  size_t i = 0;
+  for(auto it = m_requiredPaths.begin(), end = m_requiredPaths.end(); it != end; ++it, ++i)
+  {
+    paths[i] = it->first;
+  }
+  return paths;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // nodes
 } // usdmaya
 } // AL

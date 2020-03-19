@@ -115,55 +115,6 @@ namespace {
 
   struct PyProxyShape
   {
-    //------------------------------------------------------------------------------------------------------------------
-    /// \brief Find Usd prim associated with Maya node.
-    /// \param dagPath Dag path of AL_usdmaya_Transform node.
-    /// \return The Usd prim if found, else an invalid prim.
-    static UsdPrim getUsdPrimFromMayaPath(const std::string& dagPath)
-    {
-      MStatus status;
-      MSelectionList sel;
-      status = sel.add(MString(dagPath.c_str()));
-      if (status)
-      {
-        MObject node;
-        status = sel.getDependNode(0, node);
-        if (status)
-        {
-          MFnDependencyNode depNode(node);
-          if (depNode.typeId() == AL::usdmaya::nodes::Transform::kTypeId || 
-              depNode.typeId() == AL::usdmaya::nodes::Scope::kTypeId)
-          {
-            // Get proxy shape
-            auto transform = static_cast<AL::usdmaya::nodes::Transform*>(depNode.userNode());
-            MPlug stageDataPlug(transform->getProxyShape(), AL::usdmaya::nodes::ProxyShape::outStageData());
-
-            // Get stage data
-            MObject stageObject;
-            status = stageDataPlug.getValue(stageObject);
-            MFnPluginData fnData(stageObject);
-            auto* stageData = static_cast<MayaUsdStageData*>(fnData.data());
-
-            // Validate stage
-            if (stageData && stageData->stage)
-            {
-
-              // Lookup prim path in stage
-              MPlug primPathPlug(node, AL::usdmaya::nodes::Transform::primPath());
-              MString primPath;
-              status = primPathPlug.getValue(primPath);
-              if (status)
-              {
-                return stageData->stage->GetPrimAtPath(SdfPath(primPath.asChar()));
-              }
-            }
-          }
-        }
-      }
-      return UsdPrim();
-    }
-
-    //------------------------------------------------------------------------------------------------------------------
     /// \brief Find Maya node associated with Usd prim.
     /// \param prim A valid Usd prim.
     /// \return The full dag path of the Maya node if found, else an empty string.
@@ -452,14 +403,7 @@ void wrapProxyShape()
         boost::python::return_value_policy<reference_existing_object>())
         .staticmethod("getByName")
     .def("getUsdStage", &ProxyShape::getUsdStage)
-    .def("getUsdPrimFromMayaPath", PyProxyShape::getUsdPrimFromMayaPath,
-         ("Find Usd prim associated with Maya node.\n"
-         "Args:\n"
-         "\tdagPath (str): Dag path of AL_usdmaya_Transform node.\n"
-         "Returns:\n"
-         "\tThe Usd prim if found, else an invalid prim.\n"),
-        (boost::python::arg("dagPath")))
-        .staticmethod("getUsdPrimFromMayaPath")
+    .def("getTranslatedPrimPaths", &ProxyShape::getTranslatedPrimPaths)
     .def("getMayaPathFromUsdPrim", &PyProxyShape::getMayaPathFromUsdPrim,
        ("Find Maya node associated with Usd prim in Proxy's stage.\n"
         "Args:\n"
