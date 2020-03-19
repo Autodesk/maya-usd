@@ -133,11 +133,11 @@ finally:
 
     # Set initial empty values for all path vars
     foreach(pathvar ${all_path_vars})
-        set(${pathvar})
+        set(mayaUsd_varname_${pathvar})
     endforeach()
 
     if(IS_WINDOWS)
-        list(APPEND PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+        list(APPEND mayaUsd_varname_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
     endif()
 
     # NOTE - we prefix varnames with "mayaUsd_varname_" just to make collision
