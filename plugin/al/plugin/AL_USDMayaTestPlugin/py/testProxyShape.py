@@ -26,100 +26,6 @@ import pxr
 
 from maya import cmds
 
-
-class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
-    """Test cases for static function: AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath"""
-
-    def __init__(self, *args, **kwargs):
-        super(TestProxyShapeGetUsdPrimFromMayaPath, self).__init__(*args, **kwargs)
-
-        self._stage = None
-        self._sphere = None
-        self._proxyName = None
-
-    def setUp(self):
-        """Export some sphere geometry as .usda, and import into a new Maya scene."""
-
-        cmds.file(force=True, new=True)
-        cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
-        self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
-
-        _tmpfile = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        _tmpfile.close()
-
-        # Ensure sphere geometry exists
-        self._sphere = cmds.polySphere(constructionHistory=False, name="sphere")[0]
-        cmds.select(self._sphere)
-
-        # Export, new scene, import
-        cmds.file(_tmpfile.name, exportSelected=True, force=True, type="AL usdmaya export")
-        cmds.file(force=True, new=True)
-        self._proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=_tmpfile.name)[0]
-
-        # Ensure proxy exists
-        self.assertIsNotNone(self._proxyName)
-
-        # Store stage
-        proxy = AL.usdmaya.ProxyShape.getByName(self._proxyName)
-        self._stage = proxy.getUsdStage()
-
-        os.remove(_tmpfile.name)
-
-    def tearDown(self):
-        """Unload plugin, new Maya scene, reset class member variables."""
-
-        cmds.file(force=True, new=True)
-        cmds.unloadPlugin("AL_USDMayaPlugin", force=True)
-
-        self._stage = None
-        self._sphere = None
-        self._proxyName = None
-
-    def test_getUsdPrimFromMayaPath_success(self):
-        """Find prim from Maya dag path successfully."""
-
-        # Select prim, Maya node(s) created, query path
-        cmds.AL_usdmaya_ProxyShapeSelect(proxy=self._proxyName, primPath="/{}".format(self._sphere))
-        prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(self._sphere)
-        self.assertTrue(prim.IsValid())
-
-    def test_getUsdPrimFromMayaPath_invalidPrim(self):
-        """Dag paths msut exist and be associated with a prim to return a valid prim."""
-
-        # Dag path of sphere is unselected, doesn't exist
-        cmds.select(clear=True)
-        prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(self._sphere)
-        self.assertFalse(prim.IsValid())
-
-        # 'foo' dag path doesn't exist in Maya
-        prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath("foo")
-        self.assertFalse(prim.IsValid())
-
-        # Query node unassociated with prim
-        cube = cmds.polyCube(constructionHistory=False, name="foo")[0]
-        self.assertTrue(cmds.objExists(cube))
-        prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(cube)
-        self.assertFalse(prim.IsValid())
-
-    def test_getUsdPrimFromMayaPath_duplicateNames(self):
-        """Test short name queries return an invalid prim if duplicates exist in the Maya scene."""
-
-        # Create a transform with the same name as sphere
-        cmds.createNode("transform", name=self._sphere)
-
-        # Select prim, Maya node(s) created
-        cmds.AL_usdmaya_ProxyShapeSelect(proxy=self._proxyName, primPath="/{}".format(self._sphere))
-
-        # Two nodes exist in Maya named "sphere", short name queries return with invalid prim
-        _sphereShortName = self._sphere
-        prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(_sphereShortName)
-        self.assertFalse(prim.IsValid())
-
-        # Query long name? Success!
-        _sphereLongName = cmds.ls(self._sphere, type="AL_usdmaya_Transform")[0]
-        prim = AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath(_sphereLongName)
-        self.assertTrue(prim.IsValid())
-
 class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
     """Test cases for member function: AL.usdmaya.ProxyShape().getMayaPathFromUsdPrim"""
 
@@ -319,8 +225,7 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
 
 if __name__ == "__main__":
 
-    tests = [unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetUsdPrimFromMayaPath),
-             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetMayaPathFromUsdPrim)
+    tests = [unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetMayaPathFromUsdPrim)
               ]
     results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
     exitCode = int(not all([result.wasSuccessful() for result in results]))
