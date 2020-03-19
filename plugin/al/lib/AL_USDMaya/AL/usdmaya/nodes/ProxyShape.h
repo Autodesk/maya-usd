@@ -615,6 +615,15 @@ public:
   AL_USDMAYA_PUBLIC
   MString getMayaPathFromUsdPrim(const UsdPrim& usdPrim) const;
 
+  /// \brief  A method that attempts to abstract away the setting of the pushToPrim attribute on a transform node. 
+  ///         Once support for parenting maya nodes to UFE objects has been added, refactor this method to provide
+  ///         similar read only support. 
+  /// \param  usdPath path to the prim you want to enable/disable pushToPrim
+  /// \param  pushToPrimState enable/disable pushToPrim
+  /// \return true if the node is valid
+  AL_USDMAYA_PUBLIC
+  bool enablePushToPrim(const SdfPath& usdPath, bool pushToPrimState) const;
+
   /// \brief aggregates logic that needs to iterate through the hierarchy looking for properties/metdata on prims
   AL_USDMAYA_PUBLIC
   void findPrimsWithMetaData();
