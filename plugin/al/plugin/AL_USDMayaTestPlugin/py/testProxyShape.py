@@ -103,8 +103,8 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
 
         # These are dynamic prims, so select them to bring into Maya
         cmds.select(clear=True)
-        cmds.AL_usdmaya_ProxyShapeSelect(self._stageA.proxyName, replace=True, primPath=str(self._stageA.prim.GetPath()))
-        cmds.AL_usdmaya_ProxyShapeSelect(self._stageB.proxyName, append=True, primPath=str(self._stageB.prim.GetPath()))
+        cmds.AL_usdmaya_TranslatePrim(fi=True, proxy=self._stageA.proxyName, ip=str(self._stageA.prim.GetPath()))
+        cmds.AL_usdmaya_TranslatePrim(fi=True, proxy=self._stageB.proxyName, ip=str(self._stageB.prim.GetPath()))
 
         # Created Maya node names will match the originals
         self.assertTrue(cmds.objExists(self._stageA.poly))
