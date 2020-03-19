@@ -29,16 +29,15 @@ Before building the project, consult the following table to ensure you use the r
 
 #### 2. Download and Build Pixar USD 
 
-See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD . Pixar has recently removed support for building Maya USD libraries/plug-ins in their github repository and ```build_usd.py```. When building the maya-usd project, it is important the recommended ```Pixar USD``` and ```Animal Logic``` commitID or tag from the table below are used: 
+See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD . Pixar has recently removed support for building Maya USD libraries/plug-ins in their github repository and ```build_usd.py```. When building the maya-usd project, it is important the recommended ```Pixar USD``` commitID or tag from the table below are used: 
 
-|   Required    |      ![](images/pxr.png)          |         ![](images/al.png)            |
-|:------------: |:---------------:  |:-----------------:    |
-| CommitID/tag  | 40c8134(>20.02)   | 631a2911(>0.34.0)     |
-
+|               |      ![](images/pxr.png)          |        
+|:------------: |:---------------:                  |
+|  CommitID/Tags | master: [v19.07](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.07) or [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) <br> dev: [893c8e4](https://github.com/PixarAnimationStudios/USD/commit/893c8e4cc4d45fb3e7364369d7767602de411120) | 
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
-***NOTE:*** Make sure that you don't have older USD locations in your ```PATH``` and ```PYTHONPATH``` environment settings. ```PATH``` and ```PYTHONPATH``` are automatically adjusted inside the project to point to the correct USD location. See ```cmake/usd.cmake```.
+***NOTE:*** Make sure that you don't have an older USD locations in your ```PATH``` and ```PYTHONPATH``` environment settings. ```PATH``` and ```PYTHONPATH``` are automatically adjusted inside the project to point to the correct USD location. See ```cmake/usd.cmake```.
 
 #### 3. Universal Front End (UFE)
 

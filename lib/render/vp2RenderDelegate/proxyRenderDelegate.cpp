@@ -621,11 +621,13 @@ void ProxyRenderDelegate::_FilterSelection()
             continue;
         }
 
-        const SdfPath usdPath(segments[1].string());
-        const SdfPath idxPath(_sceneDelegate->ConvertCachePathToIndexPath(usdPath));
+        SdfPath usdPath(segments[1].string());
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 11
+        usdPath = _sceneDelegate->ConvertCachePathToIndexPath(usdPath);
+#endif
 
         _sceneDelegate->PopulateSelection(HdSelection::HighlightModeSelect,
-            idxPath, UsdImagingDelegate::ALL_INSTANCES, _selection);
+            usdPath, UsdImagingDelegate::ALL_INSTANCES, _selection);
     }
 #endif
 }
