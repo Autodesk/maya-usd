@@ -21,7 +21,8 @@
 #include <ufe/attribute.h>
 
 #include <pxr/usd/usd/variantSets.h>
-#include "pxr/base/tf/diagnostic.h"
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MGlobal.h>
 
@@ -108,10 +109,10 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
         if (attributes) {
             auto visibility =
                 std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
-                    attributes->attribute("visibility"));
+                    attributes->attribute(UsdGeomTokens->visibility));
             if (visibility) {
                 auto current = visibility->get();
-                const std::string l = (current == "invisible") ?
+                const std::string l = (current == UsdGeomTokens->invisible) ?
                     std::string("Make Visible") : std::string("Make Invisible");
                 items.emplace_back("Toggle Visibility", l);
             }
@@ -177,11 +178,11 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         auto attributes = Ufe::Attributes::attributes(sceneItem());
         assert(attributes);
         auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
-            attributes->attribute("visibility"));
+            attributes->attribute(UsdGeomTokens->visibility));
         assert(visibility);
         auto current = visibility->get();
         return visibility->setCmd(
-            current == "invisible" ? "inherited" : "invisible");
+            current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
     } // Visibility
 
     return nullptr;
