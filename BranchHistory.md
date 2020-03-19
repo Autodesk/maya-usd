@@ -120,3 +120,9 @@ Mar 18, 2020:
 git merge --no-ff github/dev
 git merge --no-ff github/donnels/gtest_debug_fix_take2
 ```
+
+```
+Mar 19, 2020:
+git merge --no-ff github/dev
+git merge --no-ff github/tremblp/MAYA-103295/ufe_path_string_usd
+```
