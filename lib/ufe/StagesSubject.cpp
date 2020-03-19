@@ -28,8 +28,8 @@
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/transform3d.h>
-#include <ufe/object3d.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/object3d.h>
 #if UFE_PREVIEW_VERSION_NUM >= 2010
 #include <ufe/object3dNotification.h>
 #endif
