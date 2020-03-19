@@ -61,6 +61,8 @@ public:
     MString pointBasedDeformerName() const;
     size_t pointsNumTimeSamples() const;
 
+    SdfPath shapePath() const;
+
 private:
     MStatus setPointBasedDeformerForMayaNode(const MObject&, 
                                              const MObject&, 
@@ -72,6 +74,8 @@ private:
     MString m_newPointBasedDeformerName;
     bool m_wantCacheAnimation;
     size_t m_pointsNumTimeSamples;
+
+    SdfPath m_shapePath;
 };
 
 } // namespace MayaUsd

@@ -560,9 +560,6 @@ MString convert(const TfToken& token);
 MAYAUSD_CORE_PUBLIC
 std::string convert(const MString&);
 
-MAYAUSD_CORE_PUBLIC
-MStatus setName(const MObject& meshObj, const std::string& name);
-
 } // namespace UsdMayaUtil
 
 

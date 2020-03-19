@@ -171,6 +171,19 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
         return;
     }
 
+    // set mesh name
+    const auto& primName = prim.GetName().GetString();
+    const auto shapeName = TfStringPrintf("%sShape", primName.c_str());
+    meshFn.setName(MString(shapeName.c_str()), false, &stat);
+
+    if (!stat) {
+          *status = stat;
+          return;
+    }
+
+	// store the path
+    m_shapePath = prim.GetPath().AppendChild(TfToken(shapeName));
+
     // Set normals if supplied
     MIntArray normalsFaceIds;
     if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices())) {
@@ -468,6 +481,13 @@ TranslatorMeshRead::pointsNumTimeSamples() const
 {
     return m_pointsNumTimeSamples;
 }
+
+SdfPath 
+TranslatorMeshRead::shapePath() const
+{
+    return m_shapePath;
+}
+
 
 } // namespace MayaUsd
 

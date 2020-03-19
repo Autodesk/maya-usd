@@ -113,18 +113,11 @@ MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
                                          &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    // shape name
-    const auto& primName = prim.GetName().GetString();
-    status = UsdMayaUtil::setName(meshRead.meshObject(), primName);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
     // mesh is a shape, so read Gprim properties
     UsdMayaTranslatorGprim::Read(mesh, meshRead.meshObject(), context);
 
     // undo/redo mesh object
-    const auto shapeName = TfStringPrintf("%sShape", primName.c_str());
-    const auto shapePath = prim.GetPath().AppendChild(TfToken(shapeName));
-    context->RegisterNewMayaNode(shapePath.GetString(), meshRead.meshObject());
+    context->RegisterNewMayaNode(meshRead.shapePath().GetString(), meshRead.meshObject());
 
     // undo/redo deformable mesh (blenshape, PointBasedDeformer)
     if (meshRead.pointsNumTimeSamples() > 0) {
