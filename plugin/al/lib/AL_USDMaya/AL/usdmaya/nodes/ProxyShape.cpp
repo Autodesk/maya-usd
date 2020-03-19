@@ -1867,6 +1867,24 @@ SdfPathVector ProxyShape::getTranslatedPrimPaths() const
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::enablePushToPrim(const SdfPath& usdPath, bool pushToPrimState) const
+{
+  auto iter = m_requiredPaths.find(usdPath);
+  auto mayaNode = iter->second.node();
+  if(mayaNode.hasFn(MFn::kPluginTransformNode))
+  {
+    MFnDependencyNode fn(mayaNode);
+    if(fn.typeId() == AL_USDMAYA_TRANSFORM)
+    {
+      MPlug pushToPrimPlug(mayaNode, Transform::pushToPrim());
+      pushToPrimPlug.setBool(pushToPrimState);
+      return true;
+    }
+  }
+  return false;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // nodes
 } // usdmaya
 } // AL
