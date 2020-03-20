@@ -53,7 +53,6 @@ target_compile_definitions(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME} 
     PRIVATE
-        ${CMAKE_BINARY_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 

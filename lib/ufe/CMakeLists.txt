@@ -132,10 +132,6 @@ target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
-target_include_directories(${UFE_PYTHON_TARGET_NAME}
-    PRIVATE
-        ${CMAKE_BINARY_DIR}/include
-)
 
 # -----------------------------------------------------------------------------
 # link libraries

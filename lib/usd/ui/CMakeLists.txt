@@ -72,7 +72,6 @@ target_include_directories(${PROJECT_NAME}
     PRIVATE
         ${MAYA_INCLUDE_DIRS}
         ${PXR_INCLUDE_DIRS}
-        ${CMAKE_BINARY_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
