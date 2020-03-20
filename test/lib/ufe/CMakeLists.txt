@@ -49,46 +49,13 @@ mayaUsd_copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
 mayaUsd_copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                          FILES ${test_support_files})
 
-# unit tests
-set(path 
-    "${CMAKE_INSTALL_PREFIX}/lib"
-    "$ENV{PATH}"
-)
-
-set(pythonPath
-    "${CMAKE_INSTALL_PREFIX}/lib/python"
-    "$ENV{PYTHONPATH}"
-)
-
-set(mayaPluginPath
-    "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin"
-    "${CMAKE_CURRENT_BINARY_DIR}/ufeTestPlugins"
-)
-
-separate_argument_list(path)
-separate_argument_list(pythonPath)
-separate_argument_list(mayaPluginPath)
-
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
-    add_test(
-        NAME ${target}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys;from unittest import main; \
-                                          import maya.standalone; \
-                                          maya.standalone.initialize(name='python'); \
-                                          import ${target};testProg=main(module=${target},exit=False);\
-                                          maya.standalone.uninitialize(); \
-                                          sys.exit(not testProg.result.wasSuccessful());
-                                          "
-    )
-    set_property(TEST ${target} APPEND PROPERTY ENVIRONMENT 
-        "PYTHONPATH=${pythonPath}"
-        "PATH=${path}"
-        "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
-        "PXR_PLUGINPATH_NAME=${CMAKE_INSTALL_PREFIX}/lib/usd"
-        "MAYA_NO_STANDALONE_ATEXIT=1"
-        "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
+    mayaUsd_add_test(${target}
+        PYTHON_MODULE ${target}
+        ENV
+            "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/ufeTestPlugins"
+            "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
     )
 
     # Assign a ctest label to these tests for easy filtering.
