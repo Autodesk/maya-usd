@@ -129,8 +129,6 @@ private:
 #if defined(WANT_UFE_BUILD)
   Ufe::Selection m_newUFESelection = Ufe::Selection();
   Ufe::Selection m_previousUFESelection = Ufe::Selection();
-  bool m_selectRoot = false;
-  bool m_unselectRoot = false;
 #endif
   bool m_internal = false;
 };

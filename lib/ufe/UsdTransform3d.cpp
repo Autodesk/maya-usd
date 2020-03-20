@@ -92,7 +92,7 @@ MayaUsdProxyShapeBase* UsdTransform3d::proxy() const
 	MDagPath dagPath;
 	sl.getDagPath(0, dagPath);
 	MFnDagNode fn(dagPath);
-  return (MayaUsdProxyShapeBase*)fn.userNode();
+	return (MayaUsdProxyShapeBase*)fn.userNode();
 }
 
 UsdTimeCode UsdTransform3d::timeCode() const

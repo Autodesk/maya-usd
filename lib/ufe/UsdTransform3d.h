@@ -50,7 +50,10 @@ public:
 
 	void setItem(const UsdSceneItem::Ptr& item);
 
+	//! access the current time code 
 	UsdTimeCode timeCode() const;
+
+	//! Access the proxys shape related to this UFE transform
 	MayaUsdProxyShapeBase* proxy() const;
 
 

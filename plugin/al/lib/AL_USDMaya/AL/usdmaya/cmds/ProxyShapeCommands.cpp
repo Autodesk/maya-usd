@@ -15,6 +15,7 @@
 //
 #include "AL/usdmaya/cmds/ProxyShapeCommands.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
+#include "AL/usdmaya/nodes/Scope.h"
 
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
@@ -24,7 +25,10 @@
 #include "maya/MArgList.h"
 #include "maya/MDagPathArray.h"
 #include "maya/MFnDagNode.h"
+#include "maya/MItSelectionList.h"
 #include "maya/MSyntax.h"
+
+#include "mayaUsd/nodes/proxyShapePlugin.h"
 
 #include <ufe/observableSelection.h>
 #include <ufe/globalSelection.h>
@@ -1076,31 +1080,61 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
     }
 
     AL_MAYA_COMMAND_HELP(db, g_helpText);
-    MDagPath proxyDagPath;
     nodes::ProxyShape* proxy = getShapeNode(db);
     if(!proxy)
     {
       throw MS::kFailure;
     }
-
+    MDagPath proxyDagPath;
+    MDagPath::getAPathTo(proxy->thisMObject(), proxyDagPath);
     if(db.isFlagSet("-ls") && db.isQuery())
     {
-      MString matchString = MString("|world") + proxyDagPath.fullPathName();
-
-      m_helper = nullptr;
-      auto sl = Ufe::GlobalSelection::get();
-      MStringArray strings;
-      for(auto& item : *sl)
+      #if defined(WANT_UFE_BUILD)
+      if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
       {
-        auto path = item->path();
-        auto pathStr = path.string();
-        if(std::strncmp(pathStr.c_str(), matchString.asChar(), matchString.length()) == 0)
+        MString matchString = MString("|world") + proxyDagPath.fullPathName();
+
+        m_helper = nullptr;
+        auto sl = Ufe::GlobalSelection::get();
+        MStringArray strings;
+        for(auto& item : *sl)
         {
-          size_t index = pathStr.find_first_of('/');
-          strings.append(pathStr.c_str() + index);
+          auto path = item->path();
+          auto pathStr = path.string();
+          if(std::strncmp(pathStr.c_str(), matchString.asChar(), matchString.length()) == 0)
+          {
+            size_t index = pathStr.find_first_of('/');
+            strings.append(pathStr.c_str() + index);
+          }
         }
+        setResult(strings);
       }
-      setResult(strings);
+      else
+      #endif
+      {
+        // move to parent transform
+        proxyDagPath.pop();
+        const MString proxyDagPathName = proxyDagPath.fullPathName();
+        MSelectionList selected;
+        MGlobal::getActiveSelectionList(selected);
+        MItSelectionList it(selected);
+        MStringArray strings;
+        for(; !it.isDone(); it.next())
+        {
+          MDagPath item;
+          it.getDagPath(item);
+          MString dagPathName = item.fullPathName();
+          if(dagPathName.length() > proxyDagPath.length())
+          {
+            if(std::strncmp(dagPathName.asChar(), proxyDagPathName.asChar(), proxyDagPathName.length()))
+            {
+              MPlug primPath(item.node(), nodes::Scope::primPath());
+              strings.append(primPath.asString());
+            }
+          }
+        }
+        setResult(strings);
+      }
       return MS::kSuccess;
     }
     else
