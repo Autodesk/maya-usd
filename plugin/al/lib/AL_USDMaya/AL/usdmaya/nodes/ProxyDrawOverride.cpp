@@ -761,7 +761,7 @@ bool ProxyDrawOverride::userSelect(
     }
 
 #if defined(WANT_UFE_BUILD)
-    if (ArchHasEnv("MAYA_WANT_UFE_SELECTION"))
+    if (ArchGetEnv("MAYA_WANT_UFE_SELECTION") == "1")
     {
       // Get the Hierarchy Handler of USD - Id = 2
       Ufe::HierarchyHandler::Ptr handler =

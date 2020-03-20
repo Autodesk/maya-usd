@@ -1090,7 +1090,7 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
     if(db.isFlagSet("-ls") && db.isQuery())
     {
       #if defined(WANT_UFE_BUILD)
-      if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+      if(MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
       {
         MString matchString = MString("|world") + proxyDagPath.fullPathName();
 
@@ -1124,9 +1124,9 @@ MStatus ProxyShapeSelect::doIt(const MArgList& args)
           MDagPath item;
           it.getDagPath(item);
           MString dagPathName = item.fullPathName();
-          if(dagPathName.length() > proxyDagPath.length())
+          if(dagPathName.length() > proxyDagPathName.length())
           {
-            if(std::strncmp(dagPathName.asChar(), proxyDagPathName.asChar(), proxyDagPathName.length()))
+            if(std::strncmp(dagPathName.asChar(), proxyDagPathName.asChar(), proxyDagPathName.length()) == 0)
             {
               MPlug primPath(item.node(), nodes::Scope::primPath());
               strings.append(primPath.asString());
