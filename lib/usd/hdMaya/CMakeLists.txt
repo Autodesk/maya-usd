@@ -7,36 +7,14 @@ add_library(${TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME} 
     PRIVATE
-        adapters/adapter.cpp
-        adapters/adapterDebugCodes.cpp
-        adapters/adapterRegistry.cpp
-        adapters/aiSkydomeLightAdapter.cpp
-        adapters/areaLightAdapter.cpp
-        adapters/dagAdapter.cpp
-        adapters/directionalLightAdapter.cpp
-        adapters/lightAdapter.cpp
-        adapters/proxyAdapter.cpp
-        adapters/materialAdapter.cpp
-        adapters/materialNetworkConverter.cpp
-        adapters/mayaAttrs.cpp
-        adapters/meshAdapter.cpp
-        adapters/nurbsCurveAdapter.cpp
-        adapters/pointLightAdapter.cpp
-        adapters/shapeAdapter.cpp
-        adapters/spotLightAdapter.cpp
-        adapters/tokens.cpp
-
-        delegates/delegate.cpp
-        delegates/delegateCtx.cpp
-        delegates/delegateDebugCodes.cpp
-        delegates/delegateRegistry.cpp
-        delegates/sceneDelegate.cpp
-        delegates/proxyDelegate.cpp
-        delegates/proxyUsdImagingDelegate.cpp
-        delegates/testDelegate.cpp
-
         debugCodes.cpp
         utils.cpp
+)
+
+set(headers
+    api.h
+    utils.h
+    debugCodes.h
 )
 
 # -----------------------------------------------------------------------------
@@ -54,6 +32,8 @@ target_compile_definitions(${TARGET_NAME}
 target_include_directories(${TARGET_NAME} 
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+    INTERFACE
+        ${CMAKE_BINARY_DIR}/include
 )
 
 # -----------------------------------------------------------------------------
@@ -64,6 +44,16 @@ target_link_libraries(${TARGET_NAME}
         mayaUsd
     PRIVATE
         $<$<BOOL:${USD_001905_BUILD}>:hio>
+)
+
+# -----------------------------------------------------------------------------
+# promoted headers
+# -----------------------------------------------------------------------------
+mayaUsd_promoteHeaderList( 
+    HEADERS
+        ${headers}
+    BASEDIR
+        ${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
@@ -89,41 +79,7 @@ install(FILES
             ${CMAKE_INSTALL_PREFIX}/lib/usd/hdMaya/resources
 )
 
-install(FILES
-            adapters/adapter.h
-            adapters/adapterDebugCodes.h
-            adapters/adapterRegistry.h
-            adapters/constantShadowMatrix.h
-            adapters/dagAdapter.h
-            adapters/lightAdapter.h
-            adapters/proxyAdapter.h
-            adapters/materialAdapter.h
-            adapters/materialNetworkConverter.h
-            adapters/mayaAttrs.h
-            adapters/shapeAdapter.h
-            adapters/tokens.h
-        DESTINATION 
-            ${CMAKE_INSTALL_PREFIX}/include/hdMaya/adapters
-)
-
-install(FILES
-            delegates/delegate.h
-            delegates/delegateCtx.h
-            delegates/delegateDebugCodes.h
-            delegates/delegateRegistry.h
-            delegates/params.h
-            delegates/proxyDelegate.h
-            delegates/proxyUsdImagingDelegate.h
-            delegates/sceneDelegate.h
-        DESTINATION 
-            ${CMAKE_INSTALL_PREFIX}/include/hdMaya/delegates
-)
-
-install(FILES
-            api.h
-            utils.h
-            debugCodes.h
-            ${HDMAYA_H}
+install(FILES ${headers}
         DESTINATION 
             ${CMAKE_INSTALL_PREFIX}/include/hdMaya
 )
@@ -132,3 +88,9 @@ if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 
             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib OPTIONAL)
 endif()
+
+# -----------------------------------------------------------------------------
+# subdirectories
+# -----------------------------------------------------------------------------
+add_subdirectory(adapters)
+add_subdirectory(delegates)
