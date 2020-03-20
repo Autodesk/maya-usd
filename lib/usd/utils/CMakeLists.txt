@@ -23,10 +23,11 @@ target_compile_definitions(${TARGET_NAME}
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME} 
-    PUBLIC
+    PRIVATE
         ${CMAKE_CURRENT_LIST_DIR}
-        ${USD_INCLUDE_DIR}
+    INTERFACE
         ${CMAKE_BINARY_DIR}/include
+        ${USD_INCLUDE_DIR}
 )
 
 # -----------------------------------------------------------------------------

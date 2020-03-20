@@ -12,14 +12,6 @@ target_sources(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# include directories
-# -----------------------------------------------------------------------------
-target_include_directories(${TARGET_NAME} 
-    PRIVATE
-        ${USD_INCLUDE_DIR}
-)
-
-# -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME}
@@ -29,24 +21,8 @@ target_link_libraries(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# test
+# unit tests
 # -----------------------------------------------------------------------------
-set(path
-    "${CMAKE_INSTALL_PREFIX}/lib"
-    "${CMAKE_INSTALL_PREFIX}/lib/usd"
-    "$ENV{PATH}"
-)
-
-if(IS_WINDOWS)
-    list(APPEND path "${CMAKE_INSTALL_PREFIX}/lib/gtest")
-endif()
-
-separate_argument_list(path)
-
-add_test(NAME ${TARGET_NAME} 
-         COMMAND $<TARGET_FILE:${TARGET_NAME}>
-)
-
-set_property(TEST ${TARGET_NAME} APPEND PROPERTY ENVIRONMENT 
-    "PATH=${path}"
+mayaUsd_add_test(${TARGET_NAME}
+    COMMAND $<TARGET_FILE:${TARGET_NAME}>
 )
