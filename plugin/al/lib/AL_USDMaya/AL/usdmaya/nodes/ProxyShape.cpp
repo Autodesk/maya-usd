@@ -1304,7 +1304,10 @@ void ProxyShape::loadStage()
     }
   }
 
+  #if defined(WANT_UFE_BUILD)
+  // ensure the stages map has been initialised correctly after a stage has been loaded
   MayaUsd::ufe::refreshStages();
+  #endif
 
   // Get the prim
   // If no primPath string specified, then use the pseudo-root.

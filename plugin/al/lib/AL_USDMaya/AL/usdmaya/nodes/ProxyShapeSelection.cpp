@@ -1021,36 +1021,6 @@ void SelectionUndoHelper::doIt()
       }
     }
     Ufe::GlobalSelection::get()->replaceWith(m_newUFESelection);
-    if(m_selectRoot)
-    {
-      MSelectionList sl;
-      MGlobal::getActiveSelectionList(sl);
-      sl.add(m_proxy->thisMObject());
-
-      // UGH. This nukes the UFE selection, and it doesn't appear it's possible to create a valid
-      // UFE path for the root node???
-      MGlobal::setActiveSelectionList(sl);
-    }
-
-    if(m_unselectRoot)
-    {
-      MSelectionList sl;
-      MGlobal::getActiveSelectionList(sl);
-      MObject proxyObj = m_proxy->thisMObject();
-      for(uint32_t i = 0, n = sl.length(); i < n; ++i)
-      {
-        MObject obj;
-        sl.getDependNode(i, obj);
-        if(obj == proxyObj)
-        {
-          sl.remove(i);
-          break;
-        }
-      }
-
-      /// UGH! This clears the UFE selection :(
-      MGlobal::setActiveSelectionList(sl);
-    }
   }
   #endif
   m_proxy->m_pleaseIgnoreSelection = false;
@@ -1097,32 +1067,6 @@ void SelectionUndoHelper::undoIt()
       {
         // UHM. Not sure what to do here?
       }
-    }
-
-    if(m_unselectRoot)
-    {
-      MSelectionList sl;
-      MGlobal::getActiveSelectionList(sl);
-      sl.add(m_proxy->thisMObject());
-      MGlobal::setActiveSelectionList(sl);
-    }
-
-    if(m_selectRoot)
-    {
-      MSelectionList sl;
-      MGlobal::getActiveSelectionList(sl);
-      MObject proxyObj = m_proxy->thisMObject();
-      for(uint32_t i = 0, n = sl.length(); i < n; ++i)
-      {
-        MObject obj;
-        sl.getDependNode(i, obj);
-        if(obj == proxyObj)
-        {
-          sl.remove(i);
-          break;
-        }
-      }
-      MGlobal::setActiveSelectionList(sl);
     }
   }
   #endif
@@ -1549,12 +1493,6 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
       return false;
     }
 
-    // determine whether the proxy shape node is currently selected 
-    // (this is to handle the edge case where we select or deselect the root prim)
-    MSelectionList sl;
-    MGlobal::getActiveSelectionList(sl);
-    const bool proxyIsSelected = sl.hasItem(thisMObject());
-
     const SdfPath root("/");
     switch(helper.m_mode)
     {
@@ -1566,7 +1504,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
           // when selecting the root path, select the ProxyShape node using normal maya selection
           if(selectedPath == root)
           {
-            helper.m_selectRoot = true; 
+            // It doesn't seem possible to be able to select maya nodes with the UFE api?
           }
           else
           {
@@ -1574,7 +1512,17 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
             Ufe::PathSegment ps_usd(selectedPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
 
             // Create a sceneItem
-            Ufe::SceneItem::Ptr si = handler->createItem(proxyShapePath + ps_usd);
+            auto selectionPath = proxyShapePath + ps_usd;
+            Ufe::SceneItem::Ptr si = handler->createItem(selectionPath);
+
+            if(!si)
+            {
+              // if the attempt to create the scene item failed, refresh the stages map, 
+              // and give it another try. Some selection tests were failing due to a lag between 
+              // loadStage, and the notification being processed to init the g_stageMap.
+              MayaUsd::ufe::refreshStages();
+              si = handler->createItem(selectionPath);
+            }
 
             if(si)
             {
@@ -1584,10 +1532,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
             }
             else
             {
-              MayaUsd::ufe::refreshStages();
-              si = handler->createItem(proxyShapePath + ps_usd);
-              if(!si)
-                std::cout << "si is null" << std::endl;
+              std::cout << "UFE Scene Item could not be created for path " << selectionPath.string() << std::endl;
             }
           }
         }
@@ -1603,8 +1548,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
           // when selecting the root path, select the ProxyShape node using normal maya selection
           if(selectedPath == root)
           {
-            if(!proxyIsSelected) helper.m_selectRoot = true;
-            
+            // It doesn't seem possible to be able to select maya nodes with the UFE api?
           }
           else
           {
@@ -1612,12 +1556,28 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
             Ufe::PathSegment ps_usd(selectedPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
 
             // Create a sceneItem
-            const Ufe::SceneItem::Ptr& si { handler->createItem(proxyShapePath + ps_usd) };
+            auto selectionPath = proxyShapePath + ps_usd;
+            Ufe::SceneItem::Ptr si = handler->createItem(selectionPath);
+            
+            if(!si)
+            {
+              // if the attempt to create the scene item failed, refresh the stages map, 
+              // and give it another try. Some selection tests were failing due to a lag between 
+              // loadStage, and the notification being processed to init the g_stageMap.
+              MayaUsd::ufe::refreshStages();
+              si = handler->createItem(selectionPath);
+            }
 
-            // Add the sceneItem to selection
-            helper.m_newUFESelection.append(si);
-
-            newlySelectedPaths.append(si->path().string().c_str());
+            if(si)
+            {
+              // Add the sceneItem to selection
+              helper.m_newUFESelection.append(si);
+              newlySelectedPaths.append(si->path().string().c_str());
+            }
+            else
+            {
+              std::cout << "UFE Scene Item could not be created for path " << selectionPath.string() << std::endl;
+            }
           }
         }
       }
@@ -1631,7 +1591,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
           // when selecting the root path, select the ProxyShape node using normal maya selection
           if(selectedPath == root)
           {
-            if(proxyIsSelected) helper.m_unselectRoot = true;
+            // It doesn't seem possible to be able to select maya nodes with the UFE api?
           }
           else
           {
@@ -1639,10 +1599,26 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
             Ufe::PathSegment ps_usd(selectedPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
 
             // Create a sceneItem
-            const Ufe::SceneItem::Ptr& si { handler->createItem(proxyShapePath + ps_usd) };
+            auto selectionPath = proxyShapePath + ps_usd;
+            Ufe::SceneItem::Ptr si = handler->createItem(selectionPath);
 
-            // Add the sceneItem to selection
-            helper.m_newUFESelection.remove(si);
+            if(!si)
+            {
+              // if the attempt to create the scene item failed, refresh the stages map, 
+              // and give it another try. Some selection tests were failing due to a lag between 
+              // loadStage, and the notification being processed to init the g_stageMap.
+              MayaUsd::ufe::refreshStages();
+              si = handler->createItem(selectionPath);
+            }
+            if(si)
+            {
+              // Add the sceneItem to selection
+              helper.m_newUFESelection.remove(si);
+            }
+            else
+            {
+              std::cout << "UFE Scene Item could not be created for path " << selectionPath.string() << std::endl;
+            }
           }
         }
       }
@@ -1656,8 +1632,7 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
           // when selecting the root path, select the ProxyShape node using normal maya selection
           if(selectedPath == root)
           {
-            helper.m_selectRoot = !proxyIsSelected;
-            helper.m_unselectRoot = proxyIsSelected;
+            // It doesn't seem possible to be able to select maya nodes with the UFE api?
           }
           else
           {
@@ -1665,7 +1640,17 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
             Ufe::PathSegment ps_usd(selectedPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
 
             // Create a sceneItem
-            const Ufe::SceneItem::Ptr& si { handler->createItem(proxyShapePath + ps_usd) };
+            auto selectionPath = proxyShapePath + ps_usd;
+            Ufe::SceneItem::Ptr si = handler->createItem(selectionPath);
+
+            if(!si)
+            {
+              // if the attempt to create the scene item failed, refresh the stages map, 
+              // and give it another try. Some selection tests were failing due to a lag between 
+              // loadStage, and the notification being processed to init the g_stageMap.
+              MayaUsd::ufe::refreshStages();
+              si = handler->createItem(selectionPath);
+            }
 
             // Add the sceneItem to selection
             if (!helper.m_newUFESelection.remove(si)) 
@@ -1677,14 +1662,6 @@ bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orde
         }
       }
       break;
-    }
-    
-    // append the proxy shape path if the root prim was selected.
-    if(helper.m_selectRoot)
-    {
-      MDagPath path;
-      MDagPath::getAPathTo(thisMObject(), path); 
-      newlySelectedPaths.append(MString("|world") + path.fullPathName());
     }
   }
   #endif

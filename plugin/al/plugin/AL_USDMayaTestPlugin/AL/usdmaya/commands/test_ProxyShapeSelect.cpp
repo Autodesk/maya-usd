@@ -1643,57 +1643,57 @@ TEST(ProxyShapeSelect, pseudoRootSelect)
 
   // State 0: nothing selected
 
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
-  EXPECT_EQ(1u, results.length());
-  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
-  {
-    EXPECT_EQ(MString("|transform1|AL_usdmaya_ProxyShape1"), results[0]);
-  }
-  else
-  {
-    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1"), results[0]);
-  }
-  results.clear();
-
-  // State 1: proxy selected
-  // make sure nothing is in the internally selected paths
-  EXPECT_EQ(0u, proxy->selectedPaths().size());
-  // Make sure active selection is as expected
-  { SCOPED_TRACE(""); compareNodes({SdfPath("/")}); };
-
-  // make sure undo clears the previous info
-  MGlobal::executeCommand("undo", false, true);
-
-  // State 0: nothing selected
-  EXPECT_EQ(0u, proxy->selectedPaths().size());
-  { SCOPED_TRACE(""); compareNodes({}); };
-
-  // make sure redo works happily without side effects
-  MGlobal::executeCommand("redo", false, true);
-
-  // State 1: proxy selected
-  EXPECT_EQ(0u, proxy->selectedPaths().size());
-  { SCOPED_TRACE(""); compareNodes({SdfPath("/")}); };
-
-  // Make sure toggle works with a root path, and another path
-  MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -tgl -pp \"/root/hip1/knee1/ankle1/ltoe1\" -pp \"/\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
-  if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
-  {
-    EXPECT_EQ(MString("|transform1|root|hip1|knee1|ankle1|ltoe1"), results[0]);
-  }
-  else
-  {
-    EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip1/knee1/ankle1/ltoe1"), results[0]);
-  }
-
-  results.clear();
-
+  //
   // RB: Disabling this test for now as this is currently broken in UFE pending some feedback. 
   // on how to select the root.
-  //
   // 
   if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
   {
+    MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -pp \"/\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+    EXPECT_EQ(1u, results.length());
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+    {
+      EXPECT_EQ(MString("|transform1|AL_usdmaya_ProxyShape1"), results[0]);
+    }
+    else
+    {
+      EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1"), results[0]);
+    }
+    results.clear();
+
+    // State 1: proxy selected
+    // make sure nothing is in the internally selected paths
+    EXPECT_EQ(0u, proxy->selectedPaths().size());
+    // Make sure active selection is as expected
+    { SCOPED_TRACE(""); compareNodes({SdfPath("/")}); };
+
+    // make sure undo clears the previous info
+    MGlobal::executeCommand("undo", false, true);
+
+    // State 0: nothing selected
+    EXPECT_EQ(0u, proxy->selectedPaths().size());
+    { SCOPED_TRACE(""); compareNodes({}); };
+
+    // make sure redo works happily without side effects
+    MGlobal::executeCommand("redo", false, true);
+
+    // State 1: proxy selected
+    EXPECT_EQ(0u, proxy->selectedPaths().size());
+    { SCOPED_TRACE(""); compareNodes({SdfPath("/")}); };
+
+    // Make sure toggle works with a root path, and another path
+    MGlobal::executeCommand("AL_usdmaya_ProxyShapeSelect -r -tgl -pp \"/root/hip1/knee1/ankle1/ltoe1\" -pp \"/\" \"AL_usdmaya_ProxyShape1\"", results, false, true);
+    if(!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
+    {
+      EXPECT_EQ(MString("|transform1|root|hip1|knee1|ankle1|ltoe1"), results[0]);
+    }
+    else
+    {
+      EXPECT_EQ(MString("|world|transform1|AL_usdmaya_ProxyShape1/root/hip1/knee1/ankle1/ltoe1"), results[0]);
+    }
+
+    results.clear();
+
     // State 2: ltoe1 selected
     // make sure ltoe1 is contained in the selected paths (for hydra selection)
     EXPECT_EQ(1u, proxy->selectedPaths().size());

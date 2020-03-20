@@ -549,6 +549,10 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     Ufe::SceneItem::Ptr si = handler->createItem(_proxyShape->ufePath() + pathSegment);
     if (!si) {
+        // It seems there is a lag between the creation of the usd stage, and the 
+        // initialisation of the g_StageMap. This would cause the unit tests to fail, 
+        // so if we get a null scene item returned, attempt to initialise the stage map,
+        // and give the selection a second attempt. 
         MayaUsd::ufe::refreshStages();
         si = handler->createItem(_proxyShape->ufePath() + pathSegment);
         if(!si)

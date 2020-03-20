@@ -69,8 +69,6 @@ Ufe::HierarchyHandler::Ptr g_MayaHierarchyHandler;
 // Subject singleton for observation of all USD stages.
 StagesSubject::Ptr g_StagesSubject;
 
-ProxyShapeHierarchyHandler::Ptr g_ProxyHandler;
-
 bool InPathChange::fInPathChange = false;
 
 //------------------------------------------------------------------------------
@@ -102,8 +100,8 @@ MStatus initialize()
 		return MS::kFailure;
 
 	g_MayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
-	g_ProxyHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
-	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, g_ProxyHandler);
+	auto proxyHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
+	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, proxyHandler);
 
 	auto usdHierHandler = UsdHierarchyHandler::create();
 	auto usdTrans3dHandler = UsdTransform3dHandler::create();
