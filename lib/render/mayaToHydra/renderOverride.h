@@ -44,8 +44,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
 
-#include "../../usd/hdMaya/delegates/delegate.h"
-#include "../../usd/hdMaya/delegates/params.h"
+#include <hdMaya/delegates/delegate.h>
+#include <hdMaya/delegates/params.h>
 
 #include "defaultLightDelegate.h"
 #include "renderGlobals.h"

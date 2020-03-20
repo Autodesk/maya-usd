@@ -54,10 +54,10 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <exception>
 
 #include "mayaUsd/render/px_vp20/utils.h"
-#include "../../usd/hdMaya/delegates/delegateRegistry.h"
-#include "../../usd/hdMaya/delegates/sceneDelegate.h"
 
-#include "../../usd/hdMaya/utils.h"
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <hdMaya/delegates/sceneDelegate.h>
+#include <hdMaya/utils.h>
 
 #include "pluginDebugCodes.h"
 #include "renderOverrideUtils.h"
