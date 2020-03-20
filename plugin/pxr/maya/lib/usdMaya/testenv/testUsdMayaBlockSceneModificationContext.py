@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
+import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -53,7 +53,7 @@ class testUsdMayaBlockSceneModificationContext(unittest.TestCase):
         cmds.polyCube()
         self._AssertSceneIsModified(True)
 
-        with UsdMaya.BlockSceneModificationContext():
+        with mayaUsdLib.BlockSceneModificationContext():
             # Create a cube inside the context manager.
             cmds.polyCube()
 
@@ -68,7 +68,7 @@ class testUsdMayaBlockSceneModificationContext(unittest.TestCase):
         exits.
         """
 
-        with UsdMaya.BlockSceneModificationContext():
+        with mayaUsdLib.BlockSceneModificationContext():
             # Create a cube inside the context manager.
             cmds.polyCube()
 

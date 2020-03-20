@@ -17,7 +17,19 @@
 
 #include <boost/python/args.hpp>
 #include <boost/python/def.hpp>
-#include <boost/python.hpp>
+
+// On Windows, against certain versions of Maya and with strict compiler
+// settings on, we are getting warning-as-error problems with a couple
+// boost includes.  Disabling those warnings for the specific includes
+// for now instead of disabling the strict settings at a higher level.
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4275 )
+#endif
+  #include <boost/python.hpp>
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif
 
 #include <pxr/base/tf/refPtr.h>
 

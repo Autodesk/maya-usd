@@ -13,11 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/utils/DiffPrimVar.h"
-#include "AL/usdmaya/utils/MeshUtils.h"
 #include "AL/usdmaya/utils/Utils.h"
-#include "AL/usd/utils/DebugCodes.h"
+
+#include <mayaUsdUtils/DebugCodes.h>
+#include <mayaUsdUtils/DiffCore.h>
 
 #include "pxr/usd/usdUtils/pipeline.h"
 
@@ -29,6 +32,12 @@
 namespace AL {
 namespace usdmaya {
 namespace utils {
+
+
+const TfToken prefToken("pref");
+const TfToken displayColorToken("displayColor");
+const TfToken displayOpacityToken("displayOpacity");
+const TfToken primvarDisplayOpacityToken("primvars:displayOpacity");
 
 //----------------------------------------------------------------------------------------------------------------------
 void floatToDouble(double* output, const float* const input, size_t count)
@@ -202,13 +211,11 @@ void MeshImportContext::gatherFaceConnectsAndVertices()
   // According to the docs for UsdGeomMesh: If 'normals' and 'primvars:normals' are both specified, the latter has precedence.
   const TfToken primvarNormalsToken("primvars:normals");
   TfToken interpolation = mesh.GetNormalsInterpolation();
-  bool isIndexed = false;
   bool hasNormalsOpinion = false;
   if(mesh.HasPrimvar(primvarNormalsToken))
   {
     UsdGeomPrimvar primvar = mesh.GetPrimvar(primvarNormalsToken);
     interpolation = primvar.GetInterpolation();
-    isIndexed = primvar.IsIndexed();
     hasNormalsOpinion = true;
     primvar.Get(&normalsData, m_timeCode);
   }
@@ -753,8 +760,175 @@ bool MeshImportContext::applyEdgeCreases()
   return false;
 }
 
+
+void MeshImportContext::applyColourSetData()
+{
+  const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
+  for (auto it = primvars.begin(), end = primvars.end(); it != end; ++it)
+  {
+
+    const UsdGeomPrimvar& primvar = *it;
+    TfToken name, interpolation;
+    SdfValueTypeName typeName;
+    int elementSize;
+    
+    primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
+
+    TfToken role = typeName.GetRole();
+    if(role != SdfValueRoleNames->Color)
+      continue;
+
+    // early out for channels that are definitely not colourSets
+    if (name == prefToken || name == displayOpacityToken)
+      continue;
+    VtValue vtValue;
+    MColorArray colours;
+    MString colourSetName(name.GetText());
+    fnMesh.setDisplayColors(true);
+
+    if (primvar.Get(&vtValue, m_timeCode))
+    {
+
+      //early out for primvar channels that are not Vec3/Vec4 (so exclude UVs for example)
+      if (!(vtValue.IsHolding<VtArray<GfVec3f>>() || vtValue.IsHolding<VtArray<GfVec4f>>()))
+        continue;
+
+      MStatus status;
+  #if MAYA_API_VERSION >= 201800
+      colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, nullptr, &status);
+  #else
+      colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, &status);
+  #endif
+      if (status)
+      {
+        status = fnMesh.setCurrentColorSetName(colourSetName);
+        if (status)
+        {
+          // Prepare maya colours array
+          MFnMesh::MColorRepresentation representation{};
+          if (vtValue.IsHolding<VtArray<GfVec3f>>())
+          {
+            //If we can find the special displayColorToken used by USD, let's check for the optional matching displayOpacityToken too
+            bool setCombinedDisplayAndOpacityColourSet = false;
+            if (name == displayColorToken)
+            {
+              UsdPrim prim = mesh.GetPrim();
+              if (prim.HasAttribute(primvarDisplayOpacityToken))
+              {
+                UsdAttribute usdAttr = prim.GetAttribute(primvarDisplayOpacityToken);
+                UsdGeomPrimvar primvar = UsdGeomPrimvar(usdAttr);
+                VtValue opacityValues;
+                if (primvar.Get(&opacityValues, m_timeCode))
+                {
+                  if (opacityValues.IsHolding<VtArray<float>>())
+                  {
+                    const VtArray<float> rawValOpacity = opacityValues.UncheckedGet<VtArray<float>>();
+                    colours.setLength(rawValOpacity.size());
+                    const VtArray<GfVec3f> rawValColour = vtValue.UncheckedGet<VtArray<GfVec3f>>();
+                    assert(rawValOpacity.size() == rawValColour.size());
+        
+                    for (uint32_t i = 0, n = rawValColour.size(); i < n; ++i)
+                      colours[i] = MColor(rawValColour[i][0], rawValColour[i][1], rawValColour[i][2], rawValOpacity[i]);
+                    representation = MFnMesh::kRGBA;
+                    setCombinedDisplayAndOpacityColourSet = true;
+                  }
+                }
+              }
+            }
+            if (!setCombinedDisplayAndOpacityColourSet) 
+            {
+              const VtArray<GfVec3f> rawVal = vtValue.UncheckedGet<VtArray<GfVec3f>>();
+              colours.setLength(rawVal.size());
+              for (uint32_t i = 0, n = rawVal.size(); i < n; ++i)
+                colours[i] = MColor(rawVal[i][0], rawVal[i][1], rawVal[i][2]);
+              representation = MFnMesh::kRGB;
+            }
+          }
+          else if (vtValue.IsHolding<VtArray<GfVec4f> >())
+          {
+            const VtArray<GfVec4f> rawVal = vtValue.UncheckedGet<VtArray<GfVec4f> >();
+            colours.setLength(rawVal.size());
+            memcpy(&colours[0], (const float*) rawVal.cdata(), sizeof(float) * 4 * rawVal.size());
+            representation = MFnMesh::kRGBA;
+          }
+        
+          // Set colors
+          if (!fnMesh.setColors(colours, &colourSetName, representation))
+          {
+            TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
+                colourSetName.asChar(), fnMesh.name().asChar(), status.errorString().asChar());
+            continue;
+          }
+
+          // When primvar is indexed assume these indices
+          MIntArray mayaIndices;
+          VtIntArray usdindices;
+          if (primvar.GetIndices(&usdindices, m_timeCode))
+          {
+            mayaIndices.setLength(usdindices.size());
+            std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
+            if (mayaIndices.length() != connects.length())
+            {
+              TF_DEBUG(MAYAUSDUTILS_INFO).Msg(
+                  "Retrieved indexed values are not compatible with topology for colour set \"%s\" on mesh \"%s\"\n",
+                  colourSetName.asChar(), fnMesh.name().asChar());
+              continue;
+            }
+          }
+
+          // Otherwise generate indices based on interpolation
+          if (mayaIndices.length() == 0)
+          {
+            if (interpolation == UsdGeomTokens->faceVarying)
+            {
+              generateIncrementingIndices(mayaIndices, colours.length());
+            }
+            else if (interpolation == UsdGeomTokens->uniform)
+            {
+              if (colours.length() == counts.length())
+              {
+                mayaIndices.setLength(connects.length());
+                for (uint32_t i = 0, idx = 0, n = counts.length(); i < n; ++i)
+                {
+                  for (uint32_t j = 0; j < size_t(counts[i]); ++j)
+                  {
+                    mayaIndices[idx++] = i;
+                  }
+                }
+              }
+            }
+            else if (interpolation == UsdGeomTokens->vertex)
+            {
+              mayaIndices = connects;
+            }
+            else if (interpolation == UsdGeomTokens->constant)
+            {
+              mayaIndices = MIntArray(connects.length(), 0);
+            }
+          }
+
+          if (mayaIndices.length() != uint32_t(fnMesh.numFaceVertices()))
+          {
+            TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Incompatible colour indices for colour set \"%s\" on mesh \"%s\"\n",
+                colourSetName.asChar(), fnMesh.name().asChar());
+            continue;
+          }
+          // Assign colors to indices
+          if (!fnMesh.assignColors(mayaIndices, &colourSetName))
+          {
+            TF_DEBUG(MAYAUSDUTILS_INFO).Msg(
+                "Failed to assign colour indices for colour set \"%s\" on mesh \"%s\", error: %s\n",
+                colourSetName.asChar(), fnMesh.name().asChar(), status.errorString().asChar());
+          }
+        }
+      }
+    }
+  }
+}
+
+
 //----------------------------------------------------------------------------------------------------------------------
-void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
+void MeshImportContext::applyUVs()
 {
   const TfToken prefToken("pref");
   const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
@@ -764,9 +938,11 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
     TfToken name, interpolation;
     SdfValueTypeName typeName;
     int elementSize;
+    
     primvar.GetDeclarationInfo(&name, &typeName, &interpolation, &elementSize);
-    // Prevent pref data from being displayed as colorset
-    if (name == prefToken)
+
+    // early out for channels that are definitely not UVs
+    if (name == prefToken || name == displayOpacityToken || name == displayColorToken)
       continue;
     VtValue vtValue;
 
@@ -774,8 +950,6 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
     {
       if (vtValue.IsHolding<VtArray<GfVec2f> >())
       {
-        if(!createUvs)
-          continue;
         MIntArray mayaIndices;
         MFloatArray u, v;
         const VtArray<GfVec2f> rawVal = vtValue.Get<VtArray<GfVec2f> >();
@@ -810,13 +984,13 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
               s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
             }
             else
             {
-              TF_DEBUG(ALUTILS_INFO).Msg("Failed to set UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+              TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to set UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                   uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
             }
           }
@@ -831,7 +1005,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
               MStatus s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
             }
@@ -841,7 +1015,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
               MStatus s = fnMesh.assignUVs(counts, connects, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
             }
@@ -859,7 +1033,7 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
               MStatus s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
             }
@@ -872,119 +1046,9 @@ void MeshImportContext::applyPrimVars(bool createUvs, bool createColours)
               MStatus s = fnMesh.assignUVs(counts, mayaIndices, uv_set);
               if(!s)
               {
-                TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
+                TF_DEBUG(MAYAUSDUTILS_INFO).Msg("Failed to assign UVS for uvset \"%s\" on mesh \"%s\", error: %s\n",
                     uvSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
               }
-            }
-          }
-        }
-      }
-      else
-      if (vtValue.IsHolding<VtArray<GfVec3f> >() || vtValue.IsHolding<VtArray<GfVec4f> >())
-      {
-        if(!createColours)
-          continue;
-        
-        MColorArray colours;
-        MString colourSetName(name.GetText());
-        fnMesh.setDisplayColors(true);
-
-        MStatus s;
-        #if MAYA_API_VERSION >= 201800
-        colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, nullptr, &s);
-        #else
-        colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, &s);
-        #endif
-        if(s)
-        {
-          s = fnMesh.setCurrentColorSetName(colourSetName);
-          if(s)
-          {
-            // Prepare maya colours array
-            MFnMesh::MColorRepresentation representation;
-            if (vtValue.IsHolding<VtArray<GfVec3f> >())
-            {
-              const VtArray<GfVec3f> rawVal = vtValue.UncheckedGet<VtArray<GfVec3f> >();
-              colours.setLength(rawVal.size());
-              for (uint32_t i = 0, n = rawVal.size(); i < n; ++i)
-                colours[i] = MColor(rawVal[i][0], rawVal[i][1], rawVal[i][2]);
-              representation = MFnMesh::kRGB;
-            }
-            else
-            {
-              const VtArray<GfVec4f> rawVal = vtValue.UncheckedGet<VtArray<GfVec4f> >();
-              colours.setLength(rawVal.size());
-              memcpy(&colours[0], (const float*)rawVal.cdata(), sizeof(float) * 4 * rawVal.size());
-              representation = MFnMesh::kRGBA;
-            }
-            // Set colors
-            if (!fnMesh.setColors(colours, &colourSetName, representation))
-            {
-              TF_DEBUG(ALUTILS_INFO).Msg("Failed to set colours for colour set \"%s\" on mesh \"%s\", error: %s\n",
-              colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
-              continue;
-            }
-
-            // When primvar is indexed assume these indices
-            MIntArray mayaIndices;
-            VtIntArray usdindices;
-            if (primvar.GetIndices(&usdindices, m_timeCode))
-            {
-              mayaIndices.setLength(usdindices.size());
-              std::memcpy(&mayaIndices[0], usdindices.cdata(), sizeof(int) * usdindices.size());
-              if (mayaIndices.length() != connects.length())
-              {
-                TF_DEBUG(ALUTILS_INFO).Msg("Retrieved indexed values are not compatible with topology for colour set \"%s\" on mesh \"%s\"\n",
-                colourSetName.asChar(), fnMesh.name().asChar());
-                continue;
-              }
-            }
-            
-            // Otherwise generate indices based on interpolation
-            if (mayaIndices.length() == 0)
-            {
-              if (interpolation == UsdGeomTokens->faceVarying)
-              {
-                generateIncrementingIndices(mayaIndices, colours.length());
-              }
-              else
-              if (interpolation == UsdGeomTokens->uniform)
-              {
-                if (colours.length() == counts.length())
-                {
-                  mayaIndices.setLength(connects.length());
-                  for (uint32_t i = 0, idx = 0, n = counts.length(); i < n; ++i)
-                  {
-                    for (uint32_t j = 0; j < counts[i]; ++j)
-                    {
-                      mayaIndices[idx++] = i;
-                    }
-                  }
-                }
-              }
-              else
-              if (interpolation == UsdGeomTokens->vertex)
-              {
-                mayaIndices = connects;
-              }
-              else
-              if (interpolation == UsdGeomTokens->constant)
-              {
-                mayaIndices = MIntArray(connects.length(), 0);
-              }
-            }
-            
-            if (mayaIndices.length() != fnMesh.numFaceVertices())
-            {
-              TF_DEBUG(ALUTILS_INFO).Msg("Incompatible colour indices for colour set \"%s\" on mesh \"%s\"\n",
-              colourSetName.asChar(), fnMesh.name().asChar());
-              continue;
-            }
-            // Assign colors to indices
-            if (!fnMesh.assignColors(mayaIndices, &colourSetName))
-            {
-              TF_DEBUG(ALUTILS_INFO).Msg("Failed to assign colour indices for colour set \"%s\" on mesh \"%s\", error: %s\n",
-                  colourSetName.asChar(), fnMesh.name().asChar(), s.errorString().asChar());
             }
           }
         }
@@ -1555,6 +1619,7 @@ void MeshExportContext::copyColourSetData()
   }
 
   MColorArray colours;
+  size_t coloursLength=0;
   VtArray<GfVec4f> colourValues;
   std::vector<uint32_t> indicesToExtract;
 
@@ -1574,20 +1639,21 @@ void MeshExportContext::copyColourSetData()
         colours[offset+j] = faceColours[j];
     }
     TfToken interpolation= UsdGeomTokens->faceVarying;
+    coloursLength = colours.length();
 
     switch(compaction)
     {
     case kNone:
       break;
     case kBasic:
-      interpolation = guessColourSetInterpolationType(&colours[0].r, colours.length());
+      interpolation = guessColourSetInterpolationType(&colours[0].r, coloursLength);
       break;
 
     case kMedium:
     case kFull:
       interpolation = guessColourSetInterpolationTypeExtensive(
           &colours[0].r,
-          colours.length(),
+          coloursLength,
           fnMesh.numVertices(),
           faceConnects,
           faceCounts,
@@ -1596,40 +1662,80 @@ void MeshExportContext::copyColourSetData()
     }
 
     // if outputting as a vec3 (or we're writing to the displayColor GPrim schema attribute)
-    if(MFnMesh::kRGB == representation || colourSetNames[i] ==  "displayColor")
+    if (colourSetNames[i] ==  displayColorToken.GetText())
     {
-      VtArray<GfVec3f> colourValues;
-      if(interpolation == UsdGeomTokens->constant)
+
+      if (representation >= MFnMesh::kRGB)
       {
-        colourValues.resize(1);
-        if(colours.length())
+        VtArray<GfVec3f> colourValues;
+        if(interpolation == UsdGeomTokens->constant)
         {
-          colourValues[0] = GfVec3f(colours[0].r, colours[0].g, colours[0].b);
-        }
-      }
-      else
-      {
-        if(indicesToExtract.empty())
-        {
-          colourValues.resize(colours.length());
-          for (uint32_t j = 0; j < colours.length(); j++)
+          colourValues.resize(1);
+          if(coloursLength)
           {
-            colourValues[j] = GfVec3f(colours[j].r, colours[j].g, colours[j].b);
+            colourValues[0] = GfVec3f(colours[0].r, colours[0].g, colours[0].b);
           }
         }
         else
         {
-          colourValues.resize(indicesToExtract.size());
-          for (uint32_t j = 0; j < indicesToExtract.size(); j++)
+          if(indicesToExtract.empty())
           {
-            assert(indicesToExtract[j] < colours.length());
-            auto& colour = colours[indicesToExtract[j]];
-            colourValues[j] = GfVec3f(colour.r, colour.g, colour.b);
+            colourValues.resize(coloursLength);
+            for (uint32_t j = 0; j < coloursLength; j++)
+            {
+              colourValues[j] = GfVec3f(colours[j].r, colours[j].g, colours[j].b);
+            }
+          }
+          else
+          {
+            colourValues.resize(indicesToExtract.size());
+            for (uint32_t j = 0; j < indicesToExtract.size(); j++)
+            {
+              assert(indicesToExtract[j] < coloursLength);
+              auto& colour = colours[indicesToExtract[j]];
+              colourValues[j] = GfVec3f(colour.r, colour.g, colour.b);
+            }
           }
         }
+        UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Color3fArray, interpolation);
+        colourSet.Set(colourValues, m_timeCode);
       }
-      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Float3Array, interpolation);
-      colourSet.Set(colourValues, m_timeCode);
+      if (MFnMesh::kRGBA == representation )
+      {
+        VtArray<float> alphaValues;
+        if(interpolation == UsdGeomTokens->constant)
+        {
+          alphaValues.resize(1);
+          if(coloursLength)
+          {
+              alphaValues[0] = colours[0].a;
+          }
+        }
+        else
+        {
+          if(indicesToExtract.empty())
+          {
+            alphaValues.resize(coloursLength);
+            for (uint32_t j = 0; j < coloursLength; j++)
+            {
+              alphaValues[j] = colours[0].a;
+            }
+          }
+          else
+          {
+            alphaValues.resize(indicesToExtract.size());
+            for (uint32_t j = 0; j < indicesToExtract.size(); j++)
+            {
+              assert(indicesToExtract[j] < coloursLength);
+              auto& colour = colours[indicesToExtract[j]];
+              alphaValues[j] = colour.a;
+            }
+          }
+        }
+        UsdGeomPrimvar opacitySet = mesh.CreatePrimvar(displayOpacityToken, SdfValueTypeNames->FloatArray, interpolation);
+        opacitySet.Set(alphaValues, m_timeCode);
+      }
+
     }
     else
     {
@@ -1637,7 +1743,7 @@ void MeshExportContext::copyColourSetData()
       if(interpolation == UsdGeomTokens->constant)
       {
         colourValues.resize(1);
-        if(colours.length())
+        if(coloursLength)
         {
           colourValues[0] = GfVec4f(colours[0].r, colours[0].g, colours[0].b, colours[0].a);
         }
@@ -1646,10 +1752,10 @@ void MeshExportContext::copyColourSetData()
       {
         if(indicesToExtract.empty())
         {
-          colourValues.resize(colours.length());
+          colourValues.resize(coloursLength);
           float* to = (float*)colourValues.data();
           const float* from = &colours[0].r;
-          memcpy(to, from, sizeof(float) * 4 * colours.length());
+          memcpy(to, from, sizeof(float) * 4 * coloursLength);
         }
         else
         {
@@ -1661,7 +1767,7 @@ void MeshExportContext::copyColourSetData()
           }
         }
       }
-      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Float4Array, interpolation);
+      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(colourSetNames[i].asChar()), SdfValueTypeNames->Color4fArray, interpolation);
       colourSet.Set(colourValues, m_timeCode);
     }
   }
@@ -1681,7 +1787,7 @@ void MeshExportContext::copyColourSetData()
     else if(diff_report[i].vertexInterpolation()) interp = UsdGeomTokens->vertex;
 
     // if outputting as a vec3 (or we're writing to the displayColor GPrim schema attribute)
-    if(MFnMesh::kRGB == representation || diff_report[i].setName() ==  "displayColor")
+    if(MFnMesh::kRGB == representation || diff_report[i].setName() ==  displayColorToken.GetText())
     {
       VtArray<GfVec3f> colourValues;
       if(interp == UsdGeomTokens->constant)
@@ -1693,8 +1799,8 @@ void MeshExportContext::copyColourSetData()
       {
         if(indicesToExtract.empty())
         {
-          colourValues.resize(colours.length());
-          for (uint32_t j = 0; j < colours.length(); j++)
+          colourValues.resize(coloursLength);
+          for (uint32_t j = 0; j < coloursLength; j++)
           {
             colourValues[j] = GfVec3f(colours[j].r, colours[j].g, colours[j].b);
           }
@@ -1704,13 +1810,13 @@ void MeshExportContext::copyColourSetData()
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
-            assert(indicesToExtract[j] < colours.length());
+            assert(indicesToExtract[j] < coloursLength);
             auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec3f(colour.r, colour.g, colour.b);
           }
         }
       }
-      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Float3Array, interp);
+      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Color3fArray, interp);
       colourSet.Set(colourValues, m_timeCode);
     }
     else
@@ -1725,23 +1831,23 @@ void MeshExportContext::copyColourSetData()
       {
         if(indicesToExtract.empty())
         {
-          colourValues.resize(colours.length());
+          colourValues.resize(coloursLength);
           float* to = (float*)colourValues.data();
           const float* from = &colours[0].r;
-          memcpy(to, from, sizeof(float) * 4 * colours.length());
+          memcpy(to, from, sizeof(float) * 4 * coloursLength);
         }
         else
         {
           colourValues.resize(indicesToExtract.size());
           for (uint32_t j = 0; j < indicesToExtract.size(); j++)
           {
-            assert(indicesToExtract[j] < colours.length());
+            assert(indicesToExtract[j] < coloursLength);
             auto& colour = colours[indicesToExtract[j]];
             colourValues[j] = GfVec4f(colour.r, colour.g, colour.b, colour.a);
           }
         }
       }
-      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Float4Array, interp);
+      UsdGeomPrimvar colourSet = mesh.CreatePrimvar(TfToken(diff_report[i].setName().asChar()), SdfValueTypeNames->Color4fArray, interp);
       colourSet.Set(colourValues, m_timeCode);
     }
   }
@@ -1961,7 +2067,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
         fnMesh.getNormalIds(normalCounts, normalIndices);
 
         // if prim vars are all identical, we have a constant value
-        if(usd::utils::vec3AreAllTheSame(normalsData, numNormals))
+        if(MayaUsdUtils::vec3AreAllTheSame(normalsData, numNormals))
         {
           VtArray<GfVec3f> normals(1);
           if(copyAsPrimvar)
@@ -1980,7 +2086,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
         else
         if(numNormals != normalIndices.length())
         {
-          if(usd::utils::compareArray(&normalIndices[0], &faceConnects[0], normalIndices.length(), faceConnects.length()))
+          if(MayaUsdUtils::compareArray(&normalIndices[0], &faceConnects[0], normalIndices.length(), faceConnects.length()))
           {
             VtArray<GfVec3f> normals(numNormals);
             if(copyAsPrimvar)
@@ -2009,7 +2115,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
                   missing[normalIndices[i]] = faceConnects[i];
                 }
                 else
-                if(it->second != faceConnects[i])
+                if(it->second != uint32_t(faceConnects[i]))
                 {
                   isPerVertex = false;
                 }
@@ -2072,9 +2178,9 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
         {
           // run a check to see if the normalIds is relevant in this case.
           bool isOrdered = true;
-          for(uint32_t i = 0, n = normalIndices.length(); i < n; ++i)
+          for(uint32_t i = 0, n = uint32_t(normalIndices.length()); i < n; ++i)
           {
-            if(normalIndices[i] != i)
+            if(uint32_t(normalIndices[i]) != i)
             {
               isOrdered = false;
               break;

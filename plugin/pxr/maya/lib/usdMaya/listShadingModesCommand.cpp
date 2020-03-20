@@ -15,8 +15,8 @@
 //
 #include "usdMaya/listShadingModesCommand.h"
 
-#include "usdMaya/registryHelper.h"
-#include "usdMaya/shadingModeRegistry.h"
+#include <mayaUsd/fileio/registryHelper.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgDatabase.h>

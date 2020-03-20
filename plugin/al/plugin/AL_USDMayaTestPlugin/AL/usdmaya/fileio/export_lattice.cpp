@@ -60,7 +60,7 @@ TEST(export_ffd, nonanimated)
 
     UsdAttribute pointsAttr = mesh.GetPointsAttr();
     size_t size = pointsAttr.GetNumTimeSamples();
-    EXPECT_EQ(0, size);
+    EXPECT_EQ(0u, size);
   }
 }
 
@@ -98,7 +98,7 @@ TEST(export_ffd, animated)
 
     UsdAttribute pointsAttr = mesh.GetPointsAttr();
     size_t size = pointsAttr.GetNumTimeSamples();
-    EXPECT_EQ(50, size);
+    EXPECT_EQ(50u, size);
   }
 }
 

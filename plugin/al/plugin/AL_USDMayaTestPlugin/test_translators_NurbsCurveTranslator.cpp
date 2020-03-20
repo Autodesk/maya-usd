@@ -165,7 +165,7 @@ TEST(translators_NurbsCurveTranslator, test_widths)
   floatData.setObject(value);
    
   // test the values came through!
-  ASSERT_EQ(floatData.length(), 5);
+  ASSERT_EQ(floatData.length(), 5u);
   EXPECT_FLOAT_EQ(floatData[0], 0.025f);
   EXPECT_FLOAT_EQ(floatData[1], 0.025f);
   EXPECT_FLOAT_EQ(floatData[2], 0.025f);

@@ -1,0 +1,52 @@
+#usda 1.0
+(
+    """ This file contains an example schemata for code generation using
+        usdGenSchema.
+    """
+    subLayers = [
+        @@USD_SCHEMA_PATH@@,
+        @@USDGEOM_SCHEMA_PATH@@,
+    ]
+) 
+
+over "GLOBAL" (
+    customData = {
+        string libraryName        = "@TARGET_NAME@"
+        string libraryPath        = "."
+    }
+) {}
+
+
+###################################################################################################
+
+class MayaReference "MayaReference"(
+  doc = "Data used to import a maya reference."
+  inherits = </Xformable>
+  customData = {
+        string className = "MayaReference"
+        string fileName = "MayaReference"
+      }
+)
+{
+  asset mayaReference(
+    doc = "Path to the maya reference."
+  )
+  string mayaNamespace (
+    doc = "Namespace which the maya reference will be imported under."
+  )
+}
+
+###################################################################################################
+
+class ALMayaReference "ALMayaReference"(
+  doc = "Data used to import a maya reference."
+  inherits = </MayaReference>
+  customData = {
+        string className = "ALMayaReference"
+        string fileName = "ALMayaReference"
+      }
+)
+{
+}
+
+###################################################################################################

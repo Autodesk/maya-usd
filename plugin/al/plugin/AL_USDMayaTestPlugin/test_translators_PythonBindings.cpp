@@ -82,7 +82,7 @@ TEST(translators_PythonBindings, unknownType)
 
   auto pythonTranslators = TranslatorManufacture::getPythonTranslators();
 
-  ASSERT_EQ(pythonTranslators.size(), 1);
+  ASSERT_EQ(pythonTranslators.size(), 1u);
 
   TranslatorManufacture::clearPythonTranslators();
 }

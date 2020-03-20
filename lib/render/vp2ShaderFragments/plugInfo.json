@@ -1,0 +1,11 @@
+{
+    "Plugins": [
+        {
+            "Name": "mayaUsd_ShaderFragments", 
+            "Info": {}, 
+            "ResourcePath": "../../usd/mayaUsd_ShaderFragments/resources", 
+            "Root": "..", 
+            "Type": "resource"
+        }
+    ]
+}

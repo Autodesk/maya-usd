@@ -15,10 +15,10 @@
 //
 #include "usdMaya/exportCommand.h"
 
-#include "usdMaya/shadingModeRegistry.h"
-#include "usdMaya/util.h"
-#include "usdMaya/writeJob.h"
-#include "usdMaya/writeUtil.h"
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
 #include "pxr/usd/usdGeom/tokens.h"
 

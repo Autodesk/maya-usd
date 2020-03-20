@@ -16,7 +16,7 @@
 #include "pxr/pxr.h"
 #include "usdMaya/referenceAssembly.h"
 
-#include "usdMaya/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include "pxr/base/tf/pyContainerConversions.h"
 

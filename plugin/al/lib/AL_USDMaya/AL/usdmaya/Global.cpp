@@ -19,6 +19,7 @@
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
+#include "AL/usdmaya/nodes/Scope.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include <pxr/base/plug/registry.h>
@@ -244,7 +245,8 @@ static void storeSelection()
   };
   auto isTransform = [] (MDagPath p) {
     if(p.node().hasFn(MFn::kPluginTransformNode)) {
-       return MFnDagNode(p).typeName() == "AL_usdmaya_Transform";
+      MTypeId nodeId = MFnDagNode(p).typeId();
+      return nodeId == AL::usdmaya::nodes::Transform::kTypeId || nodeId == AL::usdmaya::nodes::Scope::kTypeId;
     }
     return false;
   };
@@ -372,7 +374,7 @@ static void postFileRead(void*)
       auto stage = proxy->getUsdStage();
       proxy->deserialiseTranslatorContext();
       proxy->translatorManufacture().preparePythonTranslators(proxy->context());
-      proxy->findTaggedPrims();
+      proxy->findPrimsWithMetaData();
       proxy->deserialiseTransformRefs();
     }
     unloadedProxies.clear();
@@ -382,10 +384,10 @@ static void postFileRead(void*)
     for(; !iter.isDone(); iter.next())
     {
       fn.setObject(iter.item());
-      if(fn.typeId() == nodes::Transform::kTypeId)
+      if(fn.typeId() == nodes::Transform::kTypeId || fn.typeId() == nodes::Scope::kTypeId)
       {
         // ensure all of the transforms are referring to the correct prim
-        nodes::Transform* tmPtr = (nodes::Transform*)fn.userNode();
+        nodes::Scope* tmPtr = (nodes::Scope*)fn.userNode();
         tmPtr->transform()->initialiseToPrim(true, tmPtr);
       }
     }

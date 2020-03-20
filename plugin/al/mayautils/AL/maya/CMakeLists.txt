@@ -3,10 +3,8 @@
 # Setup 
 ####################################################################################################
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(MAYAUTILS_LIBRARY_NAME "AL_MayaUtils")
-set(MAYAUTILS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
+set(MAYAUTILS_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib) 
 
 ####################################################################################################
 # Source 
@@ -47,8 +45,13 @@ add_library(${MAYAUTILS_LIBRARY_NAME}
         ${maya_source}
 )
 
+if(IS_MACOSX)
+    set(_macDef OSMac_)
+endif()
+
 target_compile_definitions(${MAYAUTILS_LIBRARY_NAME}
     PRIVATE
+        ${_macDef}
         AL_MAYA_EVENTS_EXPORT
         AL_MAYA_UTILS_EXPORT
         AL_MAYA_MACROS_EXPORT
@@ -56,11 +59,9 @@ target_compile_definitions(${MAYAUTILS_LIBRARY_NAME}
 
 target_include_directories(${MAYAUTILS_LIBRARY_NAME}
     PUBLIC 
-    ${UTILS_INCLUDE_LOCATION}
     ${MAYAUTILS_INCLUDE_LOCATION}
     ${MAYA_INCLUDE_DIRS}
-    ${MAYAUSD_INCLUDE_DIR}
-)
+    )
 
 target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
   AL_EventSystem
@@ -68,6 +69,7 @@ target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
   ${MAYA_OpenMaya_LIBRARY}
   ${MAYA_OpenMayaAnim_LIBRARY}
   ${MAYA_OpenMayaUI_LIBRARY}
+  mayaUsdUtils
 )
 
 ####################################################################################################
@@ -75,11 +77,11 @@ target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
 ####################################################################################################
  
 install( FILES ${maya_utils_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/maya/utils
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/maya/utils
 )
 
 install( FILES ${maya_event_headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/maya/event
+        DESTINATION ${AL_INSTALL_PREFIX}/include/AL/maya/event
 )
 
 install(TARGETS ${MAYAUTILS_LIBRARY_NAME}
@@ -88,7 +90,7 @@ install(TARGETS ${MAYAUTILS_LIBRARY_NAME}
     RUNTIME
     DESTINATION ${MAYAUTILS_LIBRARY_LOCATION}
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${MAYAUTILS_LIBRARY_NAME}> DESTINATION ${MAYAUTILS_LIBRARY_LOCATION} OPTIONAL)
 endif()
 

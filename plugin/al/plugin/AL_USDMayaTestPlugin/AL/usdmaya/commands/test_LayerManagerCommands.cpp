@@ -48,7 +48,8 @@ void setup(std::string testName, UsdStageRefPtr* outStage = nullptr)
   };
 
   MFileIO::newFile(true);
-  const std::string tempPath = "/tmp/"+ testName + ".usda";
+  std::string testFilename = testName + ".usda";
+  const std::string tempPath = buildTempPath(testFilename.c_str());
   MObject shapeParent;
   AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, tempPath, &shapeParent);
 
@@ -80,15 +81,15 @@ TEST(LayerManagerCommands, noDirtyLayers)
     MStringArray dirtyLayerPairs;
     // There should be no dirty layers since we have no edited anything
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dal", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 0);
+    EXPECT_EQ(dirtyLayerPairs.length(), 0u);
     dirtyLayerPairs.clear();
 
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dso", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 0);
+    EXPECT_EQ(dirtyLayerPairs.length(), 0u);
     dirtyLayerPairs.clear();
 
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dlo", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 0);
+    EXPECT_EQ(dirtyLayerPairs.length(), 0u);
     dirtyLayerPairs.clear();
   }
 }
@@ -118,16 +119,16 @@ TEST(LayerManagerCommands, dirtySublayer)
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dal", dirtyLayerPairs, true);
 
     // 4 (layerIdentifier,layerContents), since both the rootlayer and sublayer have been modified.
-    EXPECT_EQ(dirtyLayerPairs.length(), 4);
+    EXPECT_EQ(dirtyLayerPairs.length(), 4u);
     dirtyLayerPairs.clear();
 
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dso", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 0);
+    EXPECT_EQ(dirtyLayerPairs.length(), 0u);
     dirtyLayerPairs.clear();
 
     // 4 (layerIdentifier,layerContents), since both the rootlayer and sublayer have been modified.
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dlo", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 4);
+    EXPECT_EQ(dirtyLayerPairs.length(), 4u);
     dirtyLayerPairs.clear();
   }
 }
@@ -146,16 +147,16 @@ TEST(LayerManagerCommands, dirtySessionLayer)
     stage->DefinePrim(SdfPath("/DirtySessionLayer"));
 
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dal", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 2);
+    EXPECT_EQ(dirtyLayerPairs.length(), 2u);
     dirtyLayerPairs.clear();
 
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dso", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 2);
+    EXPECT_EQ(dirtyLayerPairs.length(), 2u);
     dirtyLayerPairs.clear();
 
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dlo", dirtyLayerPairs, true);
 
-    EXPECT_EQ(dirtyLayerPairs.length(), 0);
+    EXPECT_EQ(dirtyLayerPairs.length(), 0u);
     dirtyLayerPairs.clear();
   }
 }
@@ -188,15 +189,15 @@ TEST(LayerManagerCommands, dirtySublayerSessionLayer)
 
     stage->SetEditTarget(sublayer);
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dal", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 4);
+    EXPECT_EQ(dirtyLayerPairs.length(), 4u);
     dirtyLayerPairs.clear();
 
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dso", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 2);
+    EXPECT_EQ(dirtyLayerPairs.length(), 2u);
     dirtyLayerPairs.clear();
 
     result = MGlobal::executeCommand("AL_usdmaya_LayerManager -dlo", dirtyLayerPairs, true);
-    EXPECT_EQ(dirtyLayerPairs.length(), 2);
+    EXPECT_EQ(dirtyLayerPairs.length(), 2u);
     dirtyLayerPairs.clear();
   }
 }

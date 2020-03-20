@@ -69,7 +69,7 @@ namespace utils {
 // element plug of the parent array... and defining it just
 // creates a confusing name
 #define AL_DECL_MULTI_CHILD_ATTRIBUTE(XX) \
-  private: \
+  protected: \
   AL_MAYA_MACROS_PUBLIC \
   static MObject m_##XX; \
   public: \
@@ -619,10 +619,10 @@ public:
   AL_MAYA_UTILS_PUBLIC
   static void addFrame(const char* frameTitle);
 
-  /// \brief  add an inherited attribute to this node type
+  /// \brief  add an attribute to the current AE template frame
   /// \param  longName  long name of the attribute
   AL_MAYA_UTILS_PUBLIC
-  static void addInheritedAttr(const char* longName);
+  static bool addFrameAttr(const char* longName, uint32_t flags, bool forceShow = false, Frame::AttributeUiType attrType = Frame::kNormal);
 
   /// \brief  add a new compound attribute to this node type
   /// \param  longName  long name for the attribute
@@ -651,6 +651,13 @@ public:
   AL_MAYA_UTILS_PUBLIC
   static MObject addStringAttr(const char* longName, const char* shortName, uint32_t flags, bool forceShow = false);
 
+  /// \brief  inherit in this node type a string attribute from a base node type.
+  /// \param  longName  long name for the attribute
+  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
+  /// \param  forceShow  force attribute to be shown.  Used in case attribute is not writable but needs to be shown i.e. read-only.
+  AL_MAYA_UTILS_PUBLIC
+  static void inheritStringAttr(const char* longName, uint32_t flags, bool forceShow = false);
+
   /// \brief  add a new string attribute to this node type.
   /// \param  longName  long name for the attribute
   /// \param  shortName  short name for the attribute
@@ -671,6 +678,15 @@ public:
   /// \return the MObject for the attribute
   AL_MAYA_UTILS_PUBLIC
   static MObject addFilePathAttr(const char* longName, const char* shortName, uint32_t flags, FileMode fileMode, const char* fileFilter = "");
+
+  /// \brief  inherit in this node type a file path attribute from a base node type.
+  /// \param  longName  long name for the attribute
+  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
+  /// \param  fileMode  an enum that determines whether the GUI should display a file open dialog, file save, or directory dialog.
+  /// \param  fileFilter a file filter of the form:
+  ///           "USD Files (*.usd*) (*.usd*);;Alembic Files (*.abc) (*.abc);;All files (*.*) (*.*)"
+  AL_MAYA_UTILS_PUBLIC
+  static void inheritFilePathAttr(const char* longName, uint32_t flags, FileMode fileMode, const char* fileFilter = "");
 
   /// \brief  add a new integer attribute to this node type.
   /// \param  longName  long name for the attribute
@@ -698,6 +714,12 @@ public:
   /// \return the MObject for the attribute
   AL_MAYA_UTILS_PUBLIC
   static MObject addInt32Attr(const char* longName, const char* shortName, int32_t defaultValue, uint32_t flags);
+
+  /// \brief  inherit in this node type an integer attribute from a base node type.
+  /// \param  longName  long name for the attribute
+  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
+  AL_MAYA_UTILS_PUBLIC
+  static void inheritInt32Attr(const char* longName, uint32_t flags);
 
   /// \brief  add a new integer attribute to this node type.
   /// \param  longName  long name for the attribute
@@ -735,6 +757,12 @@ public:
   AL_MAYA_UTILS_PUBLIC
   static MObject addTimeAttr(const char* longName, const char* shortName, const MTime& defaultValue, uint32_t flags);
 
+  /// \brief  inherit in this node type a time attribute from a base node type.
+  /// \param  longName  long name for the attribute
+  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
+  AL_MAYA_UTILS_PUBLIC
+  static void inheritTimeAttr(const char* longName, uint32_t flags);
+
   /// \brief  add a new time attribute to this node type.
   /// \param  longName  long name for the attribute
   /// \param  shortName  short name for the attribute
@@ -762,6 +790,12 @@ public:
   /// \return the MObject for the attribute
   AL_MAYA_UTILS_PUBLIC
   static MObject addBoolAttr(const char* longName, const char* shortName, bool defaultValue, uint32_t flags);
+
+  /// \brief  inherit in this node type a boolean attribute from a base node type.
+  /// \param  longName  long name for the attribute
+  /// \param  flags  a bitfield containing a mask of the AttributeFlags enumeration. Describes if the attribute is an input/output/etc
+  AL_MAYA_UTILS_PUBLIC
+  static void inheritBoolAttr(const char* longName, uint32_t flags);
 
   /// \brief  add a new float3 attribute to this node type.
   /// \param  longName  long name for the attribute

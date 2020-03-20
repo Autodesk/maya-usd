@@ -2,10 +2,8 @@
 # Setup 
 ####################################################################################################
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/${INSTALL_DIR_SUFFIX} )
-
 set(EVENTS_LIBRARY_NAME "AL_EventSystem")
-set(EVENTS_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
+set(EVENTS_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib) 
 
 # The list that will be populated with sources, sources will be the ones compiled into the library
 list(APPEND utils_source)
@@ -44,6 +42,6 @@ install(TARGETS ${EVENTS_LIBRARY_NAME}
     RUNTIME
     DESTINATION ${EVENTS_LIBRARY_LOCATION}
 )
-if(MSVC)
+if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${EVENTS_LIBRARY_NAME}> DESTINATION ${EVENTS_LIBRARY_LOCATION} OPTIONAL)
 endif()

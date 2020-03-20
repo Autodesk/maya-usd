@@ -86,14 +86,6 @@ struct AL_USDMayaSchemasTokensType {
     /// 
     /// State which makes the Prim unlocked regardless of its parent's state
     const TfToken lock_unlocked;
-    /// \brief "mayaNamespace"
-    /// 
-    /// AL_usd_MayaReference
-    const TfToken mayaNamespace;
-    /// \brief "mayaReference"
-    /// 
-    /// AL_usd_MayaReference
-    const TfToken mayaReference;
     /// \brief "al_usdmaya_mergedTransform"
     /// 
     /// State which makes the prim merged

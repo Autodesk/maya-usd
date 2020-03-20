@@ -56,6 +56,9 @@ _disable_warning("4180")
 # tbb/enumerable_thread_specific.h
 _disable_warning("4334")
 
+# suppress deprecation warning.
+_disable_warning("4996")
+
 # Disable warning C4996 regarding fopen(), strcpy(), etc.
 _add_define("_CRT_SECURE_NO_WARNINGS")
 
@@ -76,6 +79,13 @@ _add_define("YY_NO_UNISTD_H")
 # explicitly told otherwise.
 if (NOT Boost_USE_STATIC_LIBS)
     _add_define("BOOST_ALL_DYN_LINK")
+endif()
+
+if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+    # We should not have to add this define manually as it is added by the
+    # compiler when you specify the /MTd or /MDd option. But it is not - needs
+    # to be investigated.
+    _add_define(_DEBUG)
 endif()
 
 # Need half::_toFloat and half::_eLut.

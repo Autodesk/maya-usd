@@ -1,5 +1,24 @@
-import unittest
+#!/usr/bin/env python
 
+#
+# Copyright 2020 Autodesk
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+import os
+import unittest
+import tempfile
 
 from maya import cmds
 
@@ -327,6 +346,48 @@ class TestPythonTranslators(unittest.TestCase):
 
         self.assertFalse(cmds.objExists('|bobo|root|peter01|rig'))
 
+    def test_variantSwitch_listener_from_different_stage(self):
+        """Test listener only responds to changes made to layers found in proxy shape owned stages."""
+
+        usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
+
+        # Make a dummy stage that mimics prim path found in test data
+        otherHandle = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
+        otherHandle.close()
+
+        # Scope
+        if True:
+            stage = Usd.Stage.CreateInMemory()
+            stage.DefinePrim("/root/peter01")
+            stage.Export(otherHandle.name)
+
+        # Open both stages
+        testStage = Usd.Stage.Open("../test_data/inactivetest.usda")
+        otherStage = Usd.Stage.Open(otherHandle.name)
+
+        # Cache
+        stageCache = UsdUtils.StageCache.Get()
+        stageCache.Insert(testStage)
+        stageCache.Insert(otherStage)
+        stageId = stageCache.GetId(testStage)
+
+        # Import legit test data
+        cmds.AL_usdmaya_ProxyShapeImport(stageId=stageId.ToLongInt(), name='bobo')
+
+        # Make sure both paths are valid
+        self.assertTrue(testStage.GetPrimAtPath("/root/peter01"))
+        self.assertTrue(otherStage.GetPrimAtPath("/root/peter01"))
+
+        # Modify stage that isn't loaded by AL_USDMaya
+        prim = otherStage.GetPrimAtPath("/root/peter01")
+        prim.SetActive(False)
+
+        # Ensure stage on proxy wasn't modified
+        self.assertEqual(CubeGenerator.getState()["tearDownCount"], 0)
+
+        # Cleanup
+        os.remove(otherHandle.name)
+
     # this test is in progress... I cannot make it fail currently but
     # the motion translator in unicorn is definitely crashing Maya
     # if needsTransformParent() returns True.
@@ -352,9 +413,269 @@ class TestPythonTranslators(unittest.TestCase):
         vs.SetVariantSelection("noCubes")
 
 
+class TestTranslatorUniqueKey(usdmaya.TranslatorBase):
+    """
+    Basic Translator for testing unique key
+    """
+    def __init__(self, *args, **kwargs):
+        super(TestTranslatorUniqueKey, self).__init__(*args, **kwargs)
+        self._supportsUpdate = False
+        self.resetCounters()
+        self.primHashValues = dict()
+
+    def initialize(self):
+        return True
+
+    def resetCounters(self):
+        self.preTearDownCount = 0
+        self.tearDownCount = 0
+        self.importObjectCount = 0
+        self.postImportCount = 0
+        self.updateCount = 0
+
+    def setSupportsUpdate(self, state):
+        self._supportsUpdate = state
+
+    def generateUniqueKey(self, prim):
+        return self.primHashValues.get(str(prim.GetPath()))
+
+    def preTearDown(self, prim):
+        self.preTearDownCount += 1
+        return True
+
+    def tearDown(self, path):
+        self.tearDownCount += 1
+        self.removeItems(path)
+        return True
+
+    def canExport(self, mayaObjectName):
+        return False
+
+    def needsTransformParent(self):
+        return True
+
+    def supportsUpdate(self):
+        return self._supportsUpdate
+
+    def importableByDefault(self):
+        return True
+
+    def exportObject(self, stage, path, usdPath, params):
+        return
+
+    def postImport(self, prim):
+        self.postImportCount += 1
+        return True
+
+    def getTranslatedType(self):
+        return Tf.Type.Unknown
+
+    def importObject(self, prim, parent=None):
+        self.importObjectCount += 1
+        numCubesAttr = prim.GetAttribute("numCubes")
+        numCubes = 0
+        if numCubesAttr.IsValid():
+            numCubes = numCubesAttr.Get()
+
+        dgNodes = []
+        for x in range(numCubes):
+            nodes = cmds.polyCube()
+            dgNodes.append(nodes[1])
+            cmds.parent(nodes[0], parent)
+
+        # Only insert the DG nodes. The Dag nodes
+        # created under the parent will be deleted
+        # by AL_USDMaya automatically when the parent
+        # transform is deleted.
+        for n in dgNodes:
+            self.insertItem(prim, n)
+
+        return True
+
+    def update(self, prim):
+        self.updateCount += 1
+        return True
+
+
+class TestPythonTranslatorsUniqueKey(unittest.TestCase):
+
+    def setUp(self):
+        cmds.file(force=True, new=True)
+        cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
+        self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
+
+        self.translator = TestTranslatorUniqueKey()
+
+        usdmaya.TranslatorBase.registerTranslator(self.translator, 'beast_bindings')
+
+        self.stage = Usd.Stage.Open('../test_data/rig_bindings.usda')
+        self.rootPrim = self.stage.GetPrimAtPath('/root')
+
+        self.stageCache = UsdUtils.StageCache.Get()
+        self.stageCache.Insert(self.stage)
+        self.stageId = self.stageCache.GetId(self.stage)
+
+    def tearDown(self):
+        UsdUtils.StageCache.Get().Clear()
+        usdmaya.TranslatorBase.clearTranslators()
+        self.translator = None
+        self.stage = None
+        self.stageCache = None
+        self.stageId = None
+
+    def test_withoutSupportsUpdate(self):
+        self.translator.setSupportsUpdate(False)
+
+        # pre-generate hash value for testing only
+        self.translator.primHashValues['/root/static_four_cubes'] = 'static'
+        self.translator.primHashValues['/root/dynamic_five_cubes'] = None
+
+        vs = self.rootPrim.GetVariantSet('cubes')
+        vs.SetVariantSelection('fourCubes')
+
+        cmds.AL_usdmaya_ProxyShapeImport(stageId=self.stageId.ToLongInt(), name='bindings_grp')
+        self.assertEqual(self.translator.preTearDownCount, 0)
+        self.assertEqual(self.translator.tearDownCount, 0)
+        self.assertEqual(self.translator.importObjectCount, 2)
+        self.assertEqual(self.translator.postImportCount, 2)
+        self.assertEqual(self.translator.updateCount, 0)
+        self.assertTrue(cmds.objExists('|bindings_grp|root|static_four_cubes'))
+        self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
+
+        self.translator.resetCounters()
+        # swapping variant set
+        vs.SetVariantSelection('fiveCubes')
+
+        # preTearDownCount happens two times:
+        #  - one for before changing variant set
+        #   "static_four_cubes", "dynamic_five_cubes", +2
+        #  - one for before unloading when re-sync
+        #   "dynamic_five_cubes", +1
+        self.assertEqual(self.translator.preTearDownCount, 3)
+
+        # "dynamic_five_cubes" has no hash, will be removed and recreated (+1)
+        self.assertEqual(self.translator.tearDownCount, 1)
+        self.assertEqual(self.translator.importObjectCount, 1)
+        self.assertEqual(self.translator.postImportCount, 1)
+        self.assertEqual(self.translator.updateCount, 0)
+        self.assertTrue(cmds.objExists('|bindings_grp|root|static_four_cubes'))
+        self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
+
+        ###
+        self.translator.resetCounters()
+
+        # set hash to constant value for both
+        # assuming something changed in Maya and invalided the hash
+        self.translator.primHashValues['/root/static_four_cubes'] = 1242569910549196999 # <= hash(...)
+        self.translator.primHashValues['/root/dynamic_five_cubes'] = -8694302015330580362
+        # switch variant again
+        vs.SetVariantSelection('fourCubes')
+
+        # both of them will be removed and recreated
+        self.assertEqual(self.translator.preTearDownCount, 4)
+        self.assertEqual(self.translator.tearDownCount, 2)
+        self.assertEqual(self.translator.importObjectCount, 2)
+        self.assertEqual(self.translator.postImportCount, 2)
+        self.assertEqual(self.translator.updateCount, 0)
+        self.assertTrue(cmds.objExists('|bindings_grp|root|static_four_cubes'))
+        self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
+
+        ###
+        self.translator.resetCounters()
+
+        # switch variant without changing the hash, no update will happen
+        vs.SetVariantSelection('fiveCubes')
+        # two preTearDown() will be called to update the hash before unloading
+        self.assertEqual(self.translator.preTearDownCount, 2)
+        # no removing nor recreating will happen, the hash are the same
+        self.assertEqual(self.translator.tearDownCount, 0)
+        self.assertEqual(self.translator.importObjectCount, 0)
+        self.assertEqual(self.translator.postImportCount, 0)
+        self.assertEqual(self.translator.updateCount, 0)
+        self.assertTrue(cmds.objExists('|bindings_grp|root|static_four_cubes'))
+        self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
+
+    def test_withSupportsUpdate(self):
+        self.translator.setSupportsUpdate(True)
+
+        # pre-generate hash value for testing only
+        self.translator.primHashValues['/root/static_four_cubes'] = 1242569910549196999
+        self.translator.primHashValues['/root/dynamic_five_cubes'] = None
+
+        vs = self.rootPrim.GetVariantSet('cubes')
+        vs.SetVariantSelection('fourCubes')
+
+        cmds.AL_usdmaya_ProxyShapeImport(stageId=self.stageId.ToLongInt(), name='bindings_grp')
+        self.assertEqual(self.translator.preTearDownCount, 0)
+        self.assertEqual(self.translator.tearDownCount, 0)
+        self.assertEqual(self.translator.importObjectCount, 2)
+        self.assertEqual(self.translator.postImportCount, 2)
+        self.assertEqual(self.translator.updateCount, 0)
+        self.assertTrue(cmds.objExists('|bindings_grp|root|static_four_cubes'))
+        self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
+
+        ###
+        self.translator.resetCounters()
+        # swapping variant set
+        # "static_four_cubes" will not be updated;
+        # "dynamic_five_cubes" will be updated
+        vs.SetVariantSelection('fiveCubes')
+
+        # preTearDownCount happens two times:
+        #  - one for before changing variant set
+        #   "static_four_cubes", "dynamic_five_cubes", +2
+        #  - one for before unloading when re-sync
+        #    (none for this case) +0
+        self.assertEqual(self.translator.preTearDownCount, 2)
+
+        # "dynamic_five_cubes" has no hash, will be updated (+1)
+        self.assertEqual(self.translator.tearDownCount, 0)
+        self.assertEqual(self.translator.importObjectCount, 0)
+        self.assertEqual(self.translator.postImportCount, 1)
+        self.assertEqual(self.translator.updateCount, 1)
+        self.assertTrue(cmds.objExists('|bindings_grp|root|static_four_cubes'))
+        self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
+
+        ###
+        self.translator.resetCounters()
+
+        # set hash to constant value for both
+        # assuming something changed in Maya and invalided the hash
+        self.translator.primHashValues['/root/static_four_cubes'] = '12345'
+        self.translator.primHashValues['/root/dynamic_five_cubes'] = '12345'
+        # switch variant again
+        # both of them will be updated
+        vs.SetVariantSelection('fourCubes')
+
+        # both of them will be removed and recreated
+        self.assertEqual(self.translator.preTearDownCount, 2)
+        self.assertEqual(self.translator.tearDownCount, 0)
+        self.assertEqual(self.translator.importObjectCount, 0)
+        self.assertEqual(self.translator.postImportCount, 2)
+        self.assertEqual(self.translator.updateCount, 2)
+        self.assertTrue(cmds.objExists('|bindings_grp|root|static_four_cubes'))
+        self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
+
+        ###
+        self.translator.resetCounters()
+
+        # switch variant without changing the hash, no update will happen
+        vs.SetVariantSelection('fiveCubes')
+        # two preTearDown() will be called to update the hash before unloading
+        self.assertEqual(self.translator.preTearDownCount, 2)
+        # no removing nor recreating will happen, the hash are the same
+        self.assertEqual(self.translator.tearDownCount, 0)
+        self.assertEqual(self.translator.importObjectCount, 0)
+        self.assertEqual(self.translator.postImportCount, 0)
+        self.assertEqual(self.translator.updateCount, 0)
+        self.assertTrue(cmds.objExists('|bindings_grp|root|static_four_cubes'))
+        self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
+
+
 if __name__ == "__main__":
 
     tests = [unittest.TestLoader().loadTestsFromTestCase(TestPythonTranslators)]
+    tests += [unittest.TestLoader().loadTestsFromTestCase(TestPythonTranslatorsUniqueKey)]
     
     results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
     exitCode = int(not all([result.wasSuccessful() for result in results]))

@@ -1,0 +1,64 @@
+<!--
+========================================================================
+Copyright 2019 Autodesk
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment uiName="Float4ToFloatW" name="Float4ToFloatW" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        Extracts the W component of a 4D float vector.
+    </description>
+    <properties>
+        <float4 name="input"/>
+    </properties>
+    <values/>
+    <outputs>
+        <float name="output"/>
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="Float4ToFloatW"/>
+            <source>
+                <![CDATA[
+float Float4ToFloatW(float4 input)
+{
+    return input.w;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="Float4ToFloatW"/>
+            <source>
+                <![CDATA[
+float Float4ToFloatW(vec4 input_is_glsl_kw)
+{
+    return input_is_glsl_kw.w;
+}
+]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="Float4ToFloatW"/>
+            <source>
+                <![CDATA[
+float Float4ToFloatW(float4 input)
+{
+    return input.w;
+}
+]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

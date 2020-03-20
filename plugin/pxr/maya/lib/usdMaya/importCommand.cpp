@@ -15,9 +15,9 @@
 //
 #include "usdMaya/importCommand.h"
 
-#include "usdMaya/jobArgs.h"
-#include "usdMaya/readJob.h"
-#include "usdMaya/shadingModeRegistry.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include "usdMaya/readJobWithSceneAssembly.h"
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
 #include "pxr/usd/ar/resolver.h"
 
@@ -201,7 +201,11 @@ UsdMayaImportCommand::doIt(const MArgList & args)
                 /* importWithProxyShapes = */ false,
                 timeInterval);
 
-    mUsdReadJob = new UsdMaya_ReadJob(mFileName, mPrimPath, mVariants, jobArgs);
+    MayaUsd::ImportData importData(mFileName);
+    importData.setRootVariantSelections(std::move(mVariants));
+    importData.setRootPrimPath(mPrimPath);
+
+    mUsdReadJob = new UsdMaya_ReadJobWithSceneAssembly(importData, jobArgs);
 
     // Add optional command params
     if (argData.isFlagSet("parent")) {

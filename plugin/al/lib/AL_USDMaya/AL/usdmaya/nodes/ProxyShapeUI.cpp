@@ -20,6 +20,9 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
 
+#include "maya/MFnDagNode.h"
+#include "maya/MMatrix.h"
+#include "maya/MTime.h"
 #include "maya/MDrawInfo.h"
 #include "maya/MDrawRequest.h"
 #include "maya/MDrawRequestQueue.h"
@@ -36,6 +39,7 @@
 #include "ufe/runTimeMgr.h"
 #include "ufe/globalSelection.h"
 #include "ufe/observableSelection.h"
+#include "ufe/log.h"
 #endif
 
 #include "pxr/usd/usd/modelAPI.h"
@@ -104,7 +108,10 @@ void ProxyShapeUI::getDrawRequests(const MDrawInfo& drawInfo, bool isObjectAndAc
 
   MDrawRequest request = drawInfo.getPrototype(*this);
 
+  // If there are no side effects to calling surfaceShape(), the following two
+  // lines can be removed, as they are unused.  PPT, 8-Jan-2020.
   ProxyShape* shape = static_cast<ProxyShape*>(surfaceShape());
+  (void) shape;
 
   // add the request to the queue
   requests.add(request);
@@ -138,8 +145,9 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   auto stage = shape->getUsdStage();
   UsdImagingGLRenderParams params;
 
-  params.showGuides = shape->displayGuidesPlug().asBool();
-  params.showRender = shape->displayRenderGuidesPlug().asBool();
+  params.showGuides = shape->drawGuidePurposePlug().asBool();
+  params.showProxy = shape->drawProxyPurposePlug().asBool();
+  params.showRender = shape->drawRenderPurposePlug().asBool();
 
   params.frame = UsdTimeCode(shape->outTimePlug().asMTime().as(MTime::uiUnit()));
   params.complexity = 1.0f;
@@ -154,7 +162,7 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   unsigned int x, y, w, h;
   view.viewport(x, y, w, h);
   
-  #if (PXR_MAJOR_VERSION > 0) || (PXR_MINOR_VERSION >= 19 && PXR_PATCH_VERSION >= 7) 
+  #if USD_VERSION_NUM >= 1911
   engine->SetCameraState(
       GfMatrix4d((model.inverse() * viewMatrix).matrix),
       GfMatrix4d(projection.matrix));
@@ -345,8 +353,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
   proxyShape->m_pleaseIgnoreSelection = true;
 
   UsdImagingGLRenderParams params;
-  params.showGuides = proxyShape->displayGuidesPlug().asBool();
-  params.showRender = proxyShape->displayRenderGuidesPlug().asBool();
+  params.showGuides = proxyShape->drawGuidePurposePlug().asBool();
+  params.showProxy = proxyShape->drawProxyPurposePlug().asBool();
+  params.showRender = proxyShape->drawRenderPurposePlug().asBool();
 
   UsdPrim root = proxyShape->getUsdStage()->GetPseudoRoot();
 
@@ -371,7 +380,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   auto selected = false;
 
-  auto getHitPath = [&engine] (const Engine::HitBatch::const_reference& it) -> SdfPath
+  auto getHitPath = [&engine] (Engine::HitBatch::const_reference& it) -> SdfPath
   {
     const Engine::HitInfo& hit = it.second;
     auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
@@ -500,7 +509,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&engine, &paths, &getHitPath](Engine::HitBatch::const_reference& it)
+      auto addHit = [&paths, &getHitPath](Engine::HitBatch::const_reference& it)
       {
         paths.push_back(getHitPath(it));
       };
@@ -594,6 +603,12 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
                     if (!globalSelection->remove(si)) {
                         globalSelection->append(si);
                     }
+                }
+                break;
+                case MGlobal::kAddToHeadOfList:
+                {
+                    // No such operation on UFE selection.
+                    UFE_LOG("UFE does not support prepend to selection.");
                 }
                 break;
                 }

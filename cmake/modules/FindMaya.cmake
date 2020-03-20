@@ -10,8 +10,8 @@
 # MAYA_<lib>_LIBRARY  Path to <lib> library
 # MAYA_INCLUDE_DIRS   Path to the devkit's include directories
 # MAYA_API_VERSION    Maya version (6-8 digits)
+# MAYA_APP_VERSION    Maya app version (4 digits)
 #
-# IMPORTANT: Currently, there's only support for OSX platform and Maya version 2017 because of ABI issues with libc++.
 
 #=============================================================================
 # Copyright 2011-2012 Francisco Requena <frarees@gmail.com>
@@ -26,15 +26,51 @@
 # (To distribute this file outside of CMake, substitute the full
 #  License text for the above reference.)
 
-if(APPLE)
-    # Note: according to official Autodesk sources (and how it sets up
-    # MAYA_LOCATION itself), MAYA_LOCATION should include Maya.app/Contents
-    # on MacOS - ie:
-    #   /Applications/Autodesk/maya2019/Maya.app/Contents
-    # However, for legacy reasons, and for maximum compatibility, setting
-    # it to the installation root is also supported, ie:
-    #   /Applications/Autodesk/maya2019
+#=============================================================================
+# Macro for setting up typical plugin properties. These include:
+#  - OS-specific plugin suffix (.mll, .so, .bundle)
+#  - Removal of 'lib' prefix on osx/linux
+#  - OS-specific defines
+#  - Post-commnad for correcting Qt library linking on osx
+#  - Windows link flags for exporting initializePlugin/uninitializePlugin
+macro(maya_set_plugin_properties target)
+    set_target_properties(${target} PROPERTIES
+                          SUFFIX ${MAYA_PLUGIN_SUFFIX})
 
+    set(_maya_DEFINES REQUIRE_IOSTREAM _BOOL)
+
+    if(IS_MACOSX)
+        set(_maya_DEFINES "${_maya_DEFINES}" MAC_PLUGIN OSMac_ OSMac_MachO)
+        set_target_properties(${target} PROPERTIES
+                              PREFIX "")
+    elseif(WIN32)
+        set(_maya_DEFINES "${_maya_DEFINES}" _AFXDLL _MBCS NT_PLUGIN)
+        set_target_properties( ${target} PROPERTIES
+                               LINK_FLAGS "/export:initializePlugin /export:uninitializePlugin")
+    else()
+        set(_maya_DEFINES "${_maya_DEFINES}" LINUX LINUX_64)
+        set_target_properties( ${target} PROPERTIES
+                               PREFIX "")
+    endif()
+    target_compile_definitions(${target}
+        PRIVATE
+            ${_maya_DEFINES}
+    )
+endmacro()
+#=============================================================================
+
+if(IS_MACOSX)
+    set(MAYA_PLUGIN_SUFFIX ".bundle")
+elseif(IS_WINDOWS)
+    set(MAYA_PLUGIN_SUFFIX ".mll")
+else(IS_LINUX)
+    set(MAYA_PLUGIN_SUFFIX ".so")
+endif()
+
+if(IS_MACOSX)
+    # On OSX, setting MAYA_LOCATION to either the base installation dir (ie,
+    # `/Application/Autodesk/maya20xx`), or the Contents folder in the Maya.app dir
+    # (ie, `/Application/Autodesk/maya20xx/Maya.app/Contents`) are supported.
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
@@ -42,6 +78,7 @@ if(APPLE)
             "$ENV{MAYA_LOCATION}/../.."
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
+            "/Applications/Autodesk/maya2020"
             "/Applications/Autodesk/maya2019"
             "/Applications/Autodesk/maya2018"
             "/Applications/Autodesk/maya2017"
@@ -62,12 +99,13 @@ if(APPLE)
         DOC
             "Maya's libraries path"
     )
-elseif(UNIX)
+elseif(IS_LINUX)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
+            "/usr/autodesk/maya2020-x64"
             "/usr/autodesk/maya2019-x64"
             "/usr/autodesk/maya2018-x64"
             "/usr/autodesk/maya2017-x64"
@@ -87,12 +125,13 @@ elseif(UNIX)
         DOC
             "Maya's libraries path"
     )
-elseif(WIN32)
+elseif(IS_WINDOWS)
     find_path(MAYA_BASE_DIR
             include/maya/MFn.h
         HINTS
             "${MAYA_LOCATION}"
             "$ENV{MAYA_LOCATION}"
+            "C:/Program Files/Autodesk/Maya2020"
             "C:/Program Files/Autodesk/Maya2019"
             "C:/Program Files/Autodesk/Maya2018"
             "C:/Program Files/Autodesk/Maya2017"
@@ -185,7 +224,7 @@ foreach(MAYA_LIB
     if (MAYA_${MAYA_LIB}_LIBRARY)
         list(APPEND MAYA_LIBRARIES ${MAYA_${MAYA_LIB}_LIBRARY})
     endif()
-endforeach(MAYA_LIB)
+endforeach()
 
 find_program(MAYA_EXECUTABLE
         maya
@@ -218,6 +257,15 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MTypes.h")
     # Tease the MAYA_API_VERSION numbers from the lib headers
     file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MTypes.h TMP REGEX "#define MAYA_API_VERSION.*$")
     string(REGEX MATCHALL "[0-9]+" MAYA_API_VERSION ${TMP})
+
+    # MAYA_APP_VERSION
+    file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MTypes.h MAYA_APP_VERSION REGEX "#define MAYA_APP_VERSION.*$")
+    if(MAYA_APP_VERSION)
+        string(REGEX MATCHALL "[0-9]+" MAYA_APP_VERSION ${MAYA_APP_VERSION})
+    else()
+        string(SUBSTRING ${MAYA_API_VERSION} "0" "4" MAYA_APP_VERSION)
+    endif()
+
 endif()
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
@@ -232,4 +280,6 @@ find_package_handle_standard_args(Maya
         MAYA_LIBRARIES
     VERSION_VAR
         MAYA_API_VERSION
+    VERSION_VAR
+        MAYA_APP_VERSION
 )

@@ -8,13 +8,16 @@
 # UFE_FOUND           Defined if a UFE installation has been detected
 # UFE_LIBRARY         Path to UFE library
 # UFE_INCLUDE_DIR     Path to the UFE include directory
+# UFE_VERSION         UFE version (major.minor.patch) from ufe.h
 #
 
 find_path(UFE_INCLUDE_DIR
         ufe/versionInfo.h
     HINTS
+        $ENV{UFE_INCLUDE_ROOT}
         ${UFE_INCLUDE_ROOT}
         ${MAYA_DEVKIT_LOCATION}
+        $ENV{MAYA_DEVKIT_LOCATION}
         ${MAYA_LOCATION}
         $ENV{MAYA_LOCATION}
         ${MAYA_BASE_DIR}
@@ -25,32 +28,45 @@ find_path(UFE_INCLUDE_DIR
         "UFE header path"
 )
 
-# get UFE_VERSION from ufe.h
+# Get the UFE_VERSION and features from ufe.h
 if(UFE_INCLUDE_DIR AND EXISTS "${UFE_INCLUDE_DIR}/ufe/ufe.h")
-    foreach(_ufe_comp MAJOR MINOR)
-        file(STRINGS
-            "${UFE_INCLUDE_DIR}/ufe/ufe.h"
-            _ufe_tmp
-            REGEX "#define UFE_${_ufe_comp}_VERSION .*$")
-        string(REGEX MATCHALL "[0-9]+" UFE_${_ufe_comp}_VERSION ${_ufe_tmp})
-    endforeach()
-    foreach(_ufe_comp PATCH)
-        file(STRINGS
-            "${UFE_INCLUDE_DIR}/ufe/ufe.h"
-            _ufe_tmp
-            REGEX "#define UFE_${_ufe_comp}_LEVEL .*$")
-        string(REGEX MATCHALL "[0-9]+" UFE_${_ufe_comp}_LEVEL ${_ufe_tmp})
-    endforeach()
+    # Parse the file and get the three lines that have the version info.
+    file(STRINGS
+        "${UFE_INCLUDE_DIR}/ufe/ufe.h"
+        _ufe_vers
+        REGEX "#define[ ]+(UFE_MAJOR_VERSION|UFE_MINOR_VERSION|UFE_PATCH_LEVEL)[ ]+[0-9]+$")
 
+    # Then extract the number from each one.
+    foreach(_ufe_tmp ${_ufe_vers})
+        if(_ufe_tmp MATCHES "#define[ ]+(UFE_MAJOR_VERSION|UFE_MINOR_VERSION|UFE_PATCH_LEVEL)[ ]+([0-9]+)$")
+            set(${CMAKE_MATCH_1} ${CMAKE_MATCH_2})
+        endif()
+    endforeach()
     set(UFE_VERSION ${UFE_MAJOR_VERSION}.${UFE_MINOR_VERSION}.${UFE_PATCH_LEVEL})
+
+    if("${UFE_MAJOR_VERSION}" STREQUAL "0")
+        math(EXPR UFE_PREVIEW_VERSION_NUM "${UFE_MINOR_VERSION} * 1000 + ${UFE_PATCH_LEVEL}")
+    endif()
+
+    file(STRINGS
+        "${UFE_INCLUDE_DIR}/ufe/ufe.h"
+        _ufe_features
+        REGEX "#define UFE_V[0-9]+_FEATURES_AVAILABLE$")
+    foreach(_ufe_tmp ${_ufe_features})
+        if(_ufe_tmp MATCHES "#define UFE_V([0-9]+)_FEATURES_AVAILABLE$")
+            set(CMAKE_UFE_V${CMAKE_MATCH_1}_FEATURES_AVAILABLE ON)
+        endif()
+    endforeach()
 endif()
 
 find_library(UFE_LIBRARY
     NAMES
         ufe_${UFE_MAJOR_VERSION}
     HINTS
+        $ENV{UFE_LIB_ROOT}
         ${UFE_LIB_ROOT}
         ${MAYA_DEVKIT_LOCATION}
+        $ENV{MAYA_DEVKIT_LOCATION}
         ${MAYA_LOCATION}
         $ENV{MAYA_LOCATION}
         ${MAYA_BASE_DIR}
@@ -75,3 +91,9 @@ find_package_handle_standard_args(UFE
     VERSION_VAR
         UFE_VERSION
 )
+
+if(UFE_FOUND)
+    message(STATUS "UFE include dir: ${UFE_INCLUDE_DIR}")
+    message(STATUS "UFE library: ${UFE_LIBRARY}")
+    message(STATUS "UFE version: ${UFE_VERSION}")
+endif()

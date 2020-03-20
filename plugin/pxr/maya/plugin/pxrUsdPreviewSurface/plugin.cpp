@@ -78,15 +78,19 @@ static
 MStatus
 _RegisterFragments()
 {
-    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    // We do not force the renderer to initialize in case we're running in a
+    // headless context. If we cannot get a handle to the renderer or the
+    // fragment manager, we assume that's the case and simply return success.
+    MHWRender::MRenderer* theRenderer =
+        MHWRender::MRenderer::theRenderer(/* initializeRenderer = */ false);
     if (!theRenderer) {
-        return MS::kFailure;
+        return MS::kSuccess;
     }
 
     MHWRender::MFragmentManager* fragmentManager =
         theRenderer->getFragmentManager();
     if (!fragmentManager) {
-        return MS::kFailure;
+        return MS::kSuccess;
     }
 
     // Register all fragments.
@@ -145,15 +149,20 @@ static
 MStatus
 _DeregisterFragments()
 {
-    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    // Similar to registration, we do not force the renderer to initialize in
+    // case we're running in a headless context. If we cannot get a handle to
+    // the renderer or the fragment manager, we assume that's the case and
+    // simply return success.
+    MHWRender::MRenderer* theRenderer =
+        MHWRender::MRenderer::theRenderer(/* initializeRenderer = */ false);
     if (!theRenderer) {
-        return MS::kFailure;
+        return MS::kSuccess;
     }
 
     MHWRender::MFragmentManager* fragmentManager =
         theRenderer->getFragmentManager();
     if (!fragmentManager) {
-        return MS::kFailure;
+        return MS::kSuccess;
     }
 
     // De-register all fragment graphs.
@@ -183,15 +192,15 @@ _DeregisterFragments()
 #if MAYA_API_VERSION >= 201700
     // Clear the shader manager's effect cache as well so that any changes to
     // the fragments will get picked up if they are re-registered.
-    const MHWRender::MShaderManager* shaderMgr = theRenderer->getShaderManager();
-    if (!shaderMgr) {
-        return MS::kFailure;
-    }
-
-    MStatus status = shaderMgr->clearEffectCache();
-    if (status != MS::kSuccess) {
-        MGlobal::displayWarning("Failed to clear shader manager effect cache");
-        return status;
+    const MHWRender::MShaderManager* shaderMgr =
+        theRenderer->getShaderManager();
+    if (shaderMgr) {
+        MStatus status = shaderMgr->clearEffectCache();
+        if (status != MS::kSuccess) {
+            MGlobal::displayWarning(
+                "Failed to clear shader manager effect cache");
+            return status;
+        }
     }
 #endif
 
@@ -214,17 +223,15 @@ initializePlugin(MObject obj)
         &PxrMayaUsdPreviewSurface::fullClassification);
     CHECK_MSTATUS(status);
 
-    if (MGlobal::mayaState() == MGlobal::kInteractive) {
-        status = _RegisterFragments();
-        CHECK_MSTATUS(status);
+    status = _RegisterFragments();
+    CHECK_MSTATUS(status);
 
-        status =
-            MHWRender::MDrawRegistry::registerSurfaceShadingNodeOverrideCreator(
-                PxrMayaUsdPreviewSurface::drawDbClassification,
-                _RegistrantId,
-                PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
-        CHECK_MSTATUS(status);
-    }
+    status =
+        MHWRender::MDrawRegistry::registerSurfaceShadingNodeOverrideCreator(
+            PxrMayaUsdPreviewSurface::drawDbClassification,
+            _RegistrantId,
+            PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
+    CHECK_MSTATUS(status);
 
     return status;
 }
@@ -236,16 +243,14 @@ uninitializePlugin(MObject obj)
     MStatus status;
     MFnPlugin plugin(obj);
 
-    if (MGlobal::mayaState() == MGlobal::kInteractive) {
-        status =
-            MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
-                PxrMayaUsdPreviewSurface::drawDbClassification,
-                _RegistrantId);
-        CHECK_MSTATUS(status);
+    status =
+        MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
+            PxrMayaUsdPreviewSurface::drawDbClassification,
+            _RegistrantId);
+    CHECK_MSTATUS(status);
 
-        status = _DeregisterFragments();
-        CHECK_MSTATUS(status);
-    }
+    status = _DeregisterFragments();
+    CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(PxrMayaUsdPreviewSurface::typeId);
     CHECK_MSTATUS(status);

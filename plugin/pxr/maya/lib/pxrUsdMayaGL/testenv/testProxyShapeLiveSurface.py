@@ -80,6 +80,13 @@ class testProxyShapeLiveSurface(unittest.TestCase):
                 edit=True, displayAppearance='smoothShaded', rnm='vp2Renderer')
         cmds.showWindow(window)
 
+        # Force all views to re-draw. This causes us to block until the
+        # geometry we're making live has actually been evaluated and is present
+        # in the viewport. Otherwise execution of the test may continue and the
+        # create tool may be invoked before there's any geometry there, in
+        # which case the tool won't create anything.
+        cmds.refresh()
+
         # Get the viewport widget.
         view = OMUI.M3dView()
         OMUI.M3dView.getM3dViewFromModelPanel(panel, view)
@@ -125,6 +132,13 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         cmds.modelEditor(cmds.modelPanel(panel, q=True, modelEditor=True),
                 edit=True, displayAppearance='smoothShaded', rnm='vp2Renderer')
         cmds.showWindow(window)
+
+        # Force all views to re-draw. This causes us to block until the
+        # geometry we're making live has actually been evaluated and is present
+        # in the viewport. Otherwise execution of the test may continue and the
+        # create tool may be invoked before there's any geometry there, in
+        # which case the tool won't create anything.
+        cmds.refresh()
 
         # Get the viewport widget.
         view = OMUI.M3dView()

@@ -17,17 +17,31 @@
 #pragma once
 
 #include "AL/usdmaya/utils/Api.h"
-
+#include "AL/maya/utils/ForwardDeclares.h"
 #include "maya/MString.h"
 
-#include "AL/maya/utils/ForwardDeclares.h"
-#include "AL/usd/utils/ForwardDeclares.h"
+#include <mayaUsdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace AL {
 namespace usdmaya {
 namespace utils {
+
+//----------------------------------------------------------------------------------------------------------------------
+/// \brief  Helper class used to stop proxy shape from processing any USD notifications (this affects all threads)
+/// \ingroup usdmaya
+class BlockNotifications {
+public:
+    AL_USDMAYA_UTILS_PUBLIC
+    BlockNotifications();
+
+    AL_USDMAYA_UTILS_PUBLIC
+    ~BlockNotifications();
+
+    AL_USDMAYA_UTILS_PUBLIC
+    static bool isBlockingNotifications();
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Returns the dagPath result of mapping UsdPrim -> Maya Object.

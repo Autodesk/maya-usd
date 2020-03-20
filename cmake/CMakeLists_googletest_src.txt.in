@@ -1,0 +1,37 @@
+cmake_minimum_required(VERSION 3.12.0)
+
+project(googletest-download NONE)
+
+# Not specifying CONFIGURE_COMMAND, BUILD_COMMAND, or INSTALL_COMMAND means use
+# CMake.  Specifying a XXX_COMMAND as  empty string means omit the step.
+# Need to force the use of the shared C run-time.
+
+include(ExternalProject)
+
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(FORCE_SHARED_CRT "")
+if(MSVC)
+  set(FORCE_SHARED_CRT "-DFORCE_SHARED_CRT=OFF")
+endif()
+
+ExternalProject_Add(googletest
+  DOWNLOAD_COMMAND  ""
+  UPDATE_COMMAND    ""
+  SOURCE_DIR        "${GOOGLETEST_SRC_DIR}"
+  BINARY_DIR        "${GOOGLETEST_BUILD_ROOT}/googletest-build"
+  CMAKE_ARGS
+                    "-DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}"
+                    "-DCMAKE_INSTALL_PREFIX=${GOOGLETEST_BUILD_ROOT}/googletest-install"
+                    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
+                    "-Dgtest_force_shared_crt=ON"
+                    "-DBUILD_SHARED_LIBS=ON"
+                    "-DCMAKE_MACOSX_RPATH=ON"
+                    "-DCMAKE_POSITION_INDEPENDENT_CODE=ON"
+                    "${FORCE_SHARED_CRT}"
+                    "-DCMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}"
+                    "-DCMAKE_CXX_EXTENSIONS=${CMAKE_CXX_EXTENSIONS}"
+                    "-DCMAKE_CXX_STANDARD_REQUIRED=${CMAKE_CXX_STANDARD_REQUIRED}"
+)

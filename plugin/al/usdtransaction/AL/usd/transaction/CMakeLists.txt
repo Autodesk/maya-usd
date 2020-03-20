@@ -4,10 +4,17 @@
 ####################################################################################################
 
 set(USDTRANSACTION_LIBRARY_NAME "AL_USDTransaction")
-set(USDTRANSACTION_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib) 
+set(USDTRANSACTION_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib) 
 
-set(USDTRANSACTION_PYTHON_LIBRARY_NAME _${USDTRANSACTION_LIBRARY_NAME})
-set(USDTRANSACTION_PYTHON_LIBRARY_LOCATION ${CMAKE_INSTALL_PREFIX}/lib/python/AL/usd/transaction) 
+# Python bindings
+if(IS_WINDOWS AND MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+  # On Windows when compiling with debug python the library must be named with _d.
+  set(USDTRANSACTION_PYTHON_LIBRARY_NAME _${USDTRANSACTION_LIBRARY_NAME}_d)
+  else()
+  set(USDTRANSACTION_PYTHON_LIBRARY_NAME _${USDTRANSACTION_LIBRARY_NAME})
+endif()
+
+set(USDTRANSACTION_PYTHON_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/python/AL/usd/transaction) 
 
 ####################################################################################################
 # General 
@@ -81,9 +88,17 @@ target_link_libraries(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
 
 set_target_properties(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
   PROPERTIES 
-    PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+# handle run-time search paths
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath ${USDTRANSACTION_PYTHON_LIBRARY_LOCATION})
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
+    mayaUsd_install_rpath(rpath ${USDTRANSACTION_PYTHON_LIBRARY_NAME})
+endif()
+
+set_python_module_property(${USDTRANSACTION_PYTHON_LIBRARY_NAME})
 
 if(NOT SKIP_USDMAYA_TESTS)
   add_subdirectory(tests)
@@ -95,7 +110,7 @@ endif()
 
 # install the public headers
 install(FILES ${usdtransaction_headers}
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/AL/usd/transaction
+  DESTINATION ${AL_INSTALL_PREFIX}/include/AL/usd/transaction
 )
 
 # install the library

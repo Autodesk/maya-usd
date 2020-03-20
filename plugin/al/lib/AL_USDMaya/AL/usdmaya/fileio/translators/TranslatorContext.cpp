@@ -19,6 +19,8 @@
 #include "maya/MSelectionList.h"
 #include "maya/MFnDagNode.h"
 
+#include <string>
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
@@ -270,8 +272,6 @@ void TranslatorContext::removeItems(const SdfPath& path)
     MDagModifier modifier2;
     MObjectHandleArray tempXforms;
     MStatus status;
-    bool hasDagNodes = false;
-    bool hasDependNodes = false;
 
     // Store the DAG nodes to delete in a vector which we will sort via their path length
     std::vector<std::pair<int, MObject>> dagNodesToDelete;
@@ -392,6 +392,10 @@ MString TranslatorContext::serialise() const
     {
       oss << "," << getNodeName(it.createdNodes()[i].object());
     }
+    if (it.uniqueKey())
+    {
+      oss << ",uniquekey:" << it.uniqueKey();
+    }
     oss << ";";
   }
   return MString(oss.str().c_str());
@@ -421,8 +425,27 @@ void TranslatorContext::deserialise(const MString& string)
 
     PrimLookup lookup(SdfPath(strings2[0].asChar()), strings3[0].asChar(), obj);
 
+    static const MString uniqueKeyPrefix("uniquekey:");
+
     for(uint32_t j = 2; j < strings3.length(); ++j)
     {
+      if (strings3[j].substring(0, 10) == uniqueKeyPrefix)
+      {
+        auto keyStr(strings3[j].substring(10, strings3[j].length()));
+        if (keyStr.length())
+        {
+          try
+          {
+            lookup.setUniqueKey(std::stoul(keyStr.asChar()));
+          }
+          catch (std::logic_error&)
+          {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext:deserialise ignored invalid hash value for prim='%s' [hash='%s']\n", lookup.path().GetText(), keyStr.asChar());
+          }
+        }
+        continue;
+      }
+
       MSelectionList sl;
       sl.add(strings3[j].asChar());
       MObject obj;
@@ -537,9 +560,52 @@ void TranslatorContext::removeEntries(const SdfPathVector& itemsToRemove)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void TranslatorContext::updateUniqueKeys()
+{
+  auto stage = getUsdStage();
+  for (auto& lookup: m_primMapping)
+  {
+    const auto& prim = stage->GetPrimAtPath(lookup.path());
+    if (prim)
+    {
+      std::string translatorId = getTranslatorIdForPath(lookup.path());
+      auto translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
+      if(translator)
+      {
+        auto key(translator->generateUniqueKey(prim));
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::updateUniqueKeys [generateUniqueKey] prim='%s', uniqueKey='%lu'\n", lookup.path().GetText(), key);
+        lookup.setUniqueKey(key);
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void TranslatorContext::updateUniqueKey(const UsdPrim& prim)
+{
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::updateUniqueKey\n");
+
+  const auto path(prim.GetPath());
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::updateUniqueKey [generateUniqueKey] updating unique key for prim='%s'\n", path.GetText());
+
+  std::string translatorId = getTranslatorIdForPath(path);
+  auto translator = m_proxyShape->translatorManufacture().getTranslatorFromId(translatorId);
+  if(translator)
+  {
+    auto it = find(path);
+    if(it != m_primMapping.end() && it->path() == path)
+    {
+      auto key(translator->generateUniqueKey(prim));
+      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::updateUniqueKey [generateUniqueKey] prim='%s', uniqueKey='%lu', previousUniqueKey='%lu'\n", path.GetText(), key, it->uniqueKey());
+      it->setUniqueKey(key);
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void TranslatorContext::preUnloadPrim(UsdPrim& prim, const MObject& primObj)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim %s");
+  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorContext::preUnloadPrim %s", prim.GetPath().GetText());
   assert(m_proxyShape);
   auto stage = m_proxyShape->getUsdStage();
   if(stage)

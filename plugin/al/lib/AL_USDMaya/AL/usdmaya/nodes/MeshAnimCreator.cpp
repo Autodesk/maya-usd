@@ -19,7 +19,6 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/MeshAnimCreator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
-#include "AL/usdmaya/StageData.h"
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
 
@@ -27,6 +26,8 @@
 #include "maya/MTime.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
+
+#include <mayaUsd/nodes/stageData.h>
 
 namespace AL {
 namespace usdmaya {
@@ -52,7 +53,7 @@ MStatus MeshAnimCreator::initialise()
     // do not write these nodes to the file. They will be created automagically by the proxy shape
     m_primPath = addStringAttr("primPath", "pp", kReadable | kWritable);
     m_inTime = addTimeAttr("inTime", "it", MTime(), kReadable | kWritable | kStorable | kConnectable);
-    m_inStageData = addDataAttr("inStageData", "isd", StageData::kTypeId, kWritable | kStorable | kConnectable);
+    m_inStageData = addDataAttr("inStageData", "isd", MayaUsdStageData::mayaTypeId, kWritable | kStorable | kConnectable);
     m_outMesh = addMeshAttr("outMesh", "out", kReadable | kStorable | kConnectable);
     attributeAffects(m_primPath, m_outMesh);
     attributeAffects(m_inTime, m_outMesh);
@@ -95,7 +96,8 @@ MStatus MeshAnimCreator::compute(const MPlug& plug, MDataBlock& data)
     context.applyVertexNormals();
     context.applyEdgeCreases();
     context.applyVertexCreases();
-    context.applyPrimVars();
+    context.applyUVs();
+    context.applyColourSetData();
     outputHandle.set(obj);
   }
   return status;

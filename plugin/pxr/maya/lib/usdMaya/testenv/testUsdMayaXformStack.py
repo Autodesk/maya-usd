@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import Gf
 from pxr import Usd
+
+import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone
@@ -46,7 +46,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     # tests:
     #   UsdMayaXformOpClassification::GetOpType
     def test00GetOpType(self):
-        translateOp = UsdMaya.XformStack.CommonStack().GetOps()[0]
+        translateOp = mayaUsdLib.XformStack.CommonStack().GetOps()[0]
         # could import UsdGeom, and compare objects
         # directly, but had a bug where if you didn't
         # import UsdGeom, the wrappers for
@@ -71,7 +71,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::GetOps    
     def testMayaStack(self):
         from pxr import UsdGeom
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(
             [(x.GetName(), x.IsInvertedTwin(), x.GetOpType()) for x in mayaStack.GetOps()],
             [
@@ -97,7 +97,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::GetOps
     def testCommonStack(self):
         from pxr import UsdGeom
-        commonStack = UsdMaya.XformStack.CommonStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(
             [(x.GetName(), x.IsInvertedTwin(), x.GetOpType()) for x in commonStack.GetOps()],
             [
@@ -117,7 +117,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::GetOps
     def testMatrixStack(self):
         from pxr import UsdGeom
-        matrixStack = UsdMaya.XformStack.MatrixStack()
+        matrixStack = mayaUsdLib.XformStack.MatrixStack()
         self.assertEqual(
             [(x.GetName(), x.IsInvertedTwin(), x.GetOpType()) for x in matrixStack.GetOps()],
             [('transform', False, UsdGeom.XformOp.TypeTransform)]
@@ -129,7 +129,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::FindOp
     def testIsCompatibleType(self):
         from pxr import UsdGeom
-        commonStack = UsdMaya.XformStack.CommonStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
         
         translateOp = commonStack.FindOp('translate') 
         for opType in UsdGeom.XformOp.Type.allValues:
@@ -162,8 +162,8 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::CommonStack
     #   UsdMayaXformStack::MayaStack
     def testOpClassEqual(self):
-        mayaTranslate = UsdMaya.XformStack.MayaStack().GetOps()[0]
-        commonTranslate = UsdMaya.XformStack.CommonStack().GetOps()[0]
+        mayaTranslate = mayaUsdLib.XformStack.MayaStack().GetOps()[0]
+        commonTranslate = mayaUsdLib.XformStack.CommonStack().GetOps()[0]
         self.assertIsNot(mayaTranslate, commonTranslate)
         self.assertEqual(mayaTranslate, commonTranslate)
 
@@ -172,7 +172,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::MayaStack
     #   UsdMayaXformStack::FindOp
     def testCompatibleAttrNames(self):
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         
         translateOp = mayaStack.FindOp('translate')
         self.assertItemsEqual(
@@ -235,12 +235,12 @@ class testUsdMayaXformStack(unittest.TestCase):
         
     def testNoInit(self):
         try:
-            UsdMaya.XformOpClassification()
+            mayaUsdLib.XformOpClassification()
         except Exception as e:
             self.assertTrue('cannot be instantiated from Python' in str(e))
 
         try:
-            UsdMaya.XformStack()
+            mayaUsdLib.XformStack()
         except Exception as e:
             self.assertTrue('cannot be instantiated from Python' in str(e))
 
@@ -250,13 +250,13 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::CommonStack
     #   UsdMayaXformStack::MatrixStack
     def testGetInversionTwins(self):
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(mayaStack.GetInversionTwins(),
                          [(2, 5), (7, 10)])
-        commonStack = UsdMaya.XformStack.CommonStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(commonStack.GetInversionTwins(),
                          [(1, 4)])
-        matrixStack = UsdMaya.XformStack.MatrixStack()
+        matrixStack = mayaUsdLib.XformStack.MatrixStack()
         self.assertEqual(matrixStack.GetInversionTwins(),
                          [])
     
@@ -266,11 +266,11 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::CommonStack
     #   UsdMayaXformStack::MatrixStack
     def testGetNameMatters(self):
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertTrue(mayaStack.GetNameMatters())
-        commonStack = UsdMaya.XformStack.CommonStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertTrue(commonStack.GetNameMatters())
-        matrixStack = UsdMaya.XformStack.MatrixStack()
+        matrixStack = mayaUsdLib.XformStack.MatrixStack()
         self.assertFalse(matrixStack.GetNameMatters())
         
     # tests:
@@ -280,13 +280,13 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::CommonStack
     #   UsdMayaXformStack::MatrixStack
     def testGetSize(self):
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(len(mayaStack), 11)
         self.assertEqual(mayaStack.GetSize(), 11)
-        commonStack = UsdMaya.XformStack.CommonStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(len(commonStack), 5)
         self.assertEqual(commonStack.GetSize(), 5)
-        matrixStack = UsdMaya.XformStack.MatrixStack()
+        matrixStack = mayaUsdLib.XformStack.MatrixStack()
         self.assertEqual(len(matrixStack), 1)
         self.assertEqual(matrixStack.GetSize(), 1)
         
@@ -294,7 +294,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::MayaStack
     #   UsdMayaXformOpClassification::GetName
     def testIndexing(self):
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(mayaStack[0].GetName(), 'translate')
         self.assertEqual(mayaStack[1].GetName(), 'rotatePivotTranslate')
         self.assertEqual(mayaStack[2].GetName(), 'rotatePivot')
@@ -333,7 +333,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::MayaStack
     #   UsdMayaXformStack::CommonStack
     def testFindOpIndex(self):
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(mayaStack.FindOpIndex('translate'), 0)
         self.assertEqual(mayaStack.FindOpIndex('rotatePivotTranslate'), 1)
         self.assertEqual(mayaStack.FindOpIndex('rotatePivot'), 2)
@@ -400,7 +400,7 @@ class testUsdMayaXformStack(unittest.TestCase):
         self.assertIs(mayaStack.FindOpIndex('pivot', isInvertedTwin=False), None)
         self.assertIs(mayaStack.FindOpIndex('pivot', False), None)
         
-        commonStack = UsdMaya.XformStack.CommonStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(commonStack.FindOpIndex('pivot'), 1)
         self.assertEqual(commonStack.FindOpIndex('pivot', isInvertedTwin=True), 4)
         self.assertEqual(commonStack.FindOpIndex('pivot', True), 4)
@@ -426,7 +426,7 @@ class testUsdMayaXformStack(unittest.TestCase):
         def getNameInverted(op):
             return (op.GetName(), op.IsInvertedTwin())
         
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(getNameInverted(mayaStack.FindOp('translate')),
                     ('translate', False))
         self.assertEqual(getNameInverted(mayaStack.FindOp('rotatePivotTranslate')),
@@ -530,7 +530,7 @@ class testUsdMayaXformStack(unittest.TestCase):
         self.assertIs(mayaStack.FindOp('pivot', isInvertedTwin=False), None)
         self.assertIs(mayaStack.FindOp('pivot', False), None)
         
-        commonStack = UsdMaya.XformStack.CommonStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(getNameInverted(commonStack.FindOp('pivot')),
                     ('pivot', False))
         self.assertEqual(getNameInverted(commonStack.FindOp('pivot', isInvertedTwin=True)),
@@ -560,7 +560,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     #   UsdMayaXformStack::MayaStack
     #   UsdMayaXformStack::CommonStack
     def testFindOpIndexPair(self):
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         self.assertEqual(mayaStack.FindOpIndexPair('translate'), (0, None))
         self.assertEqual(mayaStack.FindOpIndexPair('rotatePivotTranslate'), (1, None))
         self.assertEqual(mayaStack.FindOpIndexPair('rotatePivot'), (2, 5))
@@ -573,7 +573,7 @@ class testUsdMayaXformStack(unittest.TestCase):
 
         self.assertEqual(mayaStack.FindOpIndexPair('pivot'), (None, None))
         
-        commonStack = UsdMaya.XformStack.CommonStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
         self.assertEqual(commonStack.FindOpIndexPair('pivot'), (1, 4))
         self.assertEqual(commonStack.FindOpIndexPair('rotate'), (2, None))
         self.assertEqual(commonStack.FindOpIndexPair('scalePivot'), (None, None))
@@ -597,7 +597,7 @@ class testUsdMayaXformStack(unittest.TestCase):
             assertOp(result[0], expected0)
             assertOp(result[1], expected1)
         
-        mayaStack = UsdMaya.XformStack.MayaStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
         assertFindOpPair(mayaStack, 'translate',
                          ('translate', False), None)
         assertFindOpPair(mayaStack, 'rotatePivotTranslate',
@@ -619,7 +619,7 @@ class testUsdMayaXformStack(unittest.TestCase):
 
         assertFindOpPair(mayaStack, 'pivot', None, None)
         
-        commonStack = UsdMaya.XformStack.CommonStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
         assertFindOpPair(commonStack, 'pivot',
                          ('pivot', False), ('pivot', True))
         assertFindOpPair(commonStack, 'rotate',
@@ -629,7 +629,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     def makeMayaStackAttrs(self):
         from pxr import UsdGeom
         
-        self.stack = UsdMaya.XformStack.MayaStack()
+        self.stack = mayaUsdLib.XformStack.MayaStack()
         self.stage = Usd.Stage.CreateInMemory()
         self.prim = self.stage.DefinePrim('/myPrim', 'Xform')
         self.xform = UsdGeom.Xform(self.prim)
@@ -653,7 +653,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     def makeCommonStackAttrs(self):
         from pxr import UsdGeom
         
-        self.stack = UsdMaya.XformStack.CommonStack()
+        self.stack = mayaUsdLib.XformStack.CommonStack()
         self.stage = Usd.Stage.CreateInMemory()
         self.prim = self.stage.DefinePrim('/myPrim', 'Xform')
         self.xform = UsdGeom.Xform(self.prim)
@@ -671,7 +671,7 @@ class testUsdMayaXformStack(unittest.TestCase):
     def makeMatrixStackAttrs(self):
         from pxr import UsdGeom
         
-        self.stack = UsdMaya.XformStack.MatrixStack()
+        self.stack = mayaUsdLib.XformStack.MatrixStack()
         self.stage = Usd.Stage.CreateInMemory()
         self.prim = self.stage.DefinePrim('/myPrim', 'Xform')
         self.xform = UsdGeom.Xform(self.prim)
@@ -835,7 +835,7 @@ class testUsdMayaXformStack(unittest.TestCase):
         # ...so, ie, just the "shear" transform from the maya stack!
         orderedOps = [self.ops['shear']]
         
-        matrixStack = UsdMaya.XformStack.MatrixStack()
+        matrixStack = mayaUsdLib.XformStack.MatrixStack()
         expectedOps = [matrixStack[0]]
         
         # check names doesn't match
@@ -922,13 +922,13 @@ class testUsdMayaXformStack(unittest.TestCase):
     def doFirstMatchingTest(self, stacks, opNames, matchingStack, expectEmpty=False):
         orderedOps, expected = self.makeXformOpsAndExpectedClassifications(
             matchingStack, opNames, expectEmpty=expectEmpty)
-        result = UsdMaya.XformStack.FirstMatchingSubstack(stacks, orderedOps)
+        result = mayaUsdLib.XformStack.FirstMatchingSubstack(stacks, orderedOps)
         self.assertEqual(result, expected)
         
     def testFirstMatchingSubstack(self):
-        mayaStack = UsdMaya.XformStack.MayaStack()
-        commonStack = UsdMaya.XformStack.CommonStack()
-        matrixStack = UsdMaya.XformStack.MatrixStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
+        matrixStack = mayaUsdLib.XformStack.MatrixStack()
         
         # Should match maya only:
         self.makeMayaStackAttrs()
@@ -1081,9 +1081,9 @@ class testUsdMayaXformStack(unittest.TestCase):
         
         self.longMessage = True
         
-        mayaStack = UsdMaya.XformStack.MayaStack()
-        commonStack = UsdMaya.XformStack.CommonStack()
-        matrixStack = UsdMaya.XformStack.MatrixStack()
+        mayaStack = mayaUsdLib.XformStack.MayaStack()
+        commonStack = mayaUsdLib.XformStack.CommonStack()
+        matrixStack = mayaUsdLib.XformStack.MatrixStack()
         
         self.makeMayaStackAttrs()
         self.ops['rotateX'] = self.xform.AddRotateXOp(opSuffix='rotate')
@@ -1136,7 +1136,7 @@ class testUsdMayaXformStack(unittest.TestCase):
                 errMessage = '\nstackNames: ' + str(stackNames)
                 
                 expectNone = not (mayaStack in stackList or commonStack in stackList)
-                resultList = UsdMaya.XformStack.FirstMatchingSubstack(
+                resultList = mayaUsdLib.XformStack.FirstMatchingSubstack(
                     stackList, orderedOps)
                 if expectNone:
                     self.assertEqual(resultList, [], str(stackNames))

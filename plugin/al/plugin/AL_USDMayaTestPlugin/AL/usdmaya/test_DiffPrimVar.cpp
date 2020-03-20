@@ -80,7 +80,7 @@ TEST(DiffPrimVar, diffGeomVerts)
 
     // hopefully nothing will have changed here
     uint32_t result = AL::usdmaya::utils::diffGeom(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents);
-    EXPECT_EQ(0, result);
+    EXPECT_EQ(0u, result);
 
     MPoint p, pm;
     fn.getPoint(4, p);
@@ -139,7 +139,7 @@ TEST(DiffPrimVar, diffGeomNormals)
 
     // hopefully nothing will have changed here
     uint32_t result = AL::usdmaya::utils::diffGeom(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents);
-    EXPECT_EQ(0, result);
+    EXPECT_EQ(0u, result);
 
     MIntArray vertexList;
     fn.getPolygonVertices(2, vertexList);
@@ -202,7 +202,7 @@ TEST(DiffPrimVar, diffFaceVertices)
 
     // hopefully nothing will have changed here
     uint32_t result = AL::usdmaya::utils::diffFaceVertices(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents);
-    EXPECT_EQ(0, result);
+    EXPECT_EQ(0u, result);
 
     // a command that will extrude the final triangle, and delete the 4 new faces.
     // Result should be the same number of poly counts, but the face vertices will have changed
@@ -293,7 +293,7 @@ TEST(DiffPrimVar, diffHoles1)
     UsdPrim geomPrim = stage->GetPrimAtPath(primPath);
     UsdGeomMesh geom(geomPrim);
 
-    EXPECT_EQ(0, AL::usdmaya::utils::diffFaceVertices(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents));
+    EXPECT_EQ(0u, AL::usdmaya::utils::diffFaceVertices(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents));
 
     {
       MUintArray invisbleFaces;
@@ -354,7 +354,7 @@ TEST(DiffPrimVar, diffCreaseEdges)
     UsdPrim geomPrim = stage->GetPrimAtPath(primPath);
     UsdGeomMesh geom(geomPrim);
 
-    EXPECT_EQ(0, AL::usdmaya::utils::diffFaceVertices(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents));
+    EXPECT_EQ(0u, AL::usdmaya::utils::diffFaceVertices(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents));
 
     ASSERT_TRUE(MGlobal::executeCommand("delete pCube1"));
 
@@ -439,7 +439,7 @@ TEST(DiffPrimVar, diffCreaseVertices)
     UsdPrim geomPrim = stage->GetPrimAtPath(primPath);
     UsdGeomMesh geom(geomPrim);
 
-    EXPECT_EQ(0, AL::usdmaya::utils::diffFaceVertices(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents));
+    EXPECT_EQ(0u, AL::usdmaya::utils::diffFaceVertices(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents));
 
     ASSERT_TRUE(MGlobal::executeCommand("delete pCubeShape1"));
     ASSERT_TRUE(MGlobal::executeCommand("delete pCube1"));
@@ -523,15 +523,15 @@ TEST(DiffPrimVar, diffUvSetNames)
 
     AL::usdmaya::utils::PrimVarDiffReport r;
     MStringArray names = AL::usdmaya::utils::hasNewUvSet(geom, fn, r);
-    EXPECT_EQ(0, names.length());
-    EXPECT_EQ(0, r.size());
+    EXPECT_EQ(0u, names.length());
+    EXPECT_EQ(0u, r.size());
 
     fn.createUVSetWithName("newUvSet");
 
     r.clear();
     names = AL::usdmaya::utils::hasNewUvSet(geom, fn, r);
-    EXPECT_EQ(0, r.size());
-    ASSERT_EQ(1, names.length());
+    EXPECT_EQ(0u, r.size());
+    ASSERT_EQ(1u, names.length());
     EXPECT_EQ(MString("newUvSet"), names[0]);
 
     // extract the uv coords, modify them slightly, and pass back to maya
@@ -543,7 +543,7 @@ TEST(DiffPrimVar, diffUvSetNames)
 
     r.clear();
     names = AL::usdmaya::utils::hasNewUvSet(geom, fn, r);
-    ASSERT_EQ(1, r.size());
+    ASSERT_EQ(1u, r.size());
 
     {
       const AL::usdmaya::utils::PrimVarDiffEntry& pve = r[0];
@@ -558,7 +558,7 @@ TEST(DiffPrimVar, diffUvSetNames)
     EXPECT_TRUE(fn.setUVs(us, vs, &name) == MS::kSuccess);
     r.clear();
     names = AL::usdmaya::utils::hasNewUvSet(geom, fn, r);
-    ASSERT_EQ(0, r.size());
+    ASSERT_EQ(0u, r.size());
 
     MIntArray uvCounts, mayaUvIndices;
     EXPECT_TRUE(fn.getAssignedUVs(uvCounts, mayaUvIndices, &name) == MS::kSuccess);
@@ -568,7 +568,7 @@ TEST(DiffPrimVar, diffUvSetNames)
 
     r.clear();
     names = AL::usdmaya::utils::hasNewUvSet(geom, fn, r);
-    ASSERT_EQ(1, r.size());
+    ASSERT_EQ(1u, r.size());
 
     {
       const AL::usdmaya::utils::PrimVarDiffEntry& pve = r[0];
@@ -588,7 +588,7 @@ TEST(DiffPrimVar, diffColourSetNames)
   MStringArray result;
 
   ASSERT_TRUE(MGlobal::executeCommand("polyCube -w 1 -h 1 -d 1 -sx 1 -sy 1 -sz 1 -ax 0 1 0 -cuv 2 -ch 0", result) == MS::kSuccess);
-  ASSERT_EQ(1, result.length());
+  ASSERT_EQ(1u, result.length());
 
   {
     MSelectionList sl;
@@ -641,15 +641,15 @@ TEST(DiffPrimVar, diffColourSetNames)
 
     AL::usdmaya::utils::PrimVarDiffReport r;
     MStringArray names = AL::usdmaya::utils::hasNewColourSet(geom, fn, r);
-    EXPECT_EQ(0, names.length());
-    EXPECT_EQ(0, r.size());
+    EXPECT_EQ(0u, names.length());
+    EXPECT_EQ(0u, r.size());
 
     colours[colours.length() - 1].r = 0.1f;
     fn.setColors(colours, &setName);
 
     names = AL::usdmaya::utils::hasNewColourSet(geom, fn, r);
-    EXPECT_EQ(0, names.length());
-    ASSERT_EQ(1, r.size());
+    EXPECT_EQ(0u, names.length());
+    ASSERT_EQ(1u, r.size());
 
     {
       const AL::usdmaya::utils::PrimVarDiffEntry& pve = r[0];
@@ -664,14 +664,14 @@ TEST(DiffPrimVar, diffColourSetNames)
 
     r.clear();
     names = AL::usdmaya::utils::hasNewColourSet(geom, fn, r);
-    EXPECT_EQ(0, names.length());
-    ASSERT_EQ(0, r.size());
+    EXPECT_EQ(0u, names.length());
+    ASSERT_EQ(0u, r.size());
 
     fn.createColorSetWithName("newColorSet");
 
     names = AL::usdmaya::utils::hasNewColourSet(geom, fn, r);
-    EXPECT_EQ(0, r.size());
-    ASSERT_EQ(1, names.length());
+    EXPECT_EQ(0u, r.size());
+    ASSERT_EQ(1u, names.length());
     EXPECT_EQ(MString("newColorSet"), names[0]);
   }
 }

@@ -37,13 +37,14 @@
 #include "pxr/usd/usdGeom/xform.h"
 
 #include "AL/usdmaya/TypeIDs.h"
-#include <AL/usdmaya/StageData.h>
+#include <mayaUsd/nodes/stageData.h>
 #include <AL/maya/utils/MayaHelperMacros.h>
 
 using AL::usdmaya::nodes::ProxyShape;
 using AL::usdmaya::nodes::ProxyUsdGeomCamera;
 
 using AL::maya::test::buildTempPath;
+using AL::maya::test::compareTempPaths;
 
 TEST(ProxyUsdGeomCamera, cameraProxyReadWriteAttributes)
 {
@@ -88,7 +89,7 @@ TEST(ProxyUsdGeomCamera, cameraProxyReadWriteAttributes)
   EXPECT_TRUE(root);
 
   // make sure path is correct
-  EXPECT_EQ(temp_path, root->GetRealPath());
+  compareTempPaths(temp_path, root->GetRealPath());
 
   UsdPrim cameraPrim = stage->GetPrimAtPath(SdfPath("/root/cam"));
   EXPECT_TRUE(cameraPrim);
@@ -174,7 +175,7 @@ TEST(ProxyUsdGeomCamera, cameraProxyReadWriteAttributes)
   double shutterOpen;
   camera.GetShutterOpenAttr().Get(&shutterOpen, usdTime);
   EXPECT_EQ(200.0, shutterOpen);
-  
+
   // USD -> Maya
   camera.GetShutterOpenAttr().Set(50.0, usdTime);
   EXPECT_EQ(50.0, proxyCamera->shutterOpenPlug().asDouble());
@@ -185,7 +186,7 @@ TEST(ProxyUsdGeomCamera, cameraProxyReadWriteAttributes)
   double shutterClose;
   camera.GetShutterCloseAttr().Get(&shutterClose, usdTime);
   EXPECT_EQ(200.0, shutterClose);
-  
+
   // USD -> Maya
   camera.GetShutterCloseAttr().Set(50.0, usdTime);
   EXPECT_EQ(50.0, proxyCamera->shutterClosePlug().asDouble());

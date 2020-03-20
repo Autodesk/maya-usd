@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdMaya/readJob.h"
+#include "usdMaya/readJobWithSceneAssembly.h"
 
-#include "usdMaya/primReaderArgs.h"
-#include "usdMaya/primReaderContext.h"
-#include "usdMaya/primReaderRegistry.h"
-#include "usdMaya/stageCache.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/utils/stageCache.h>
 #include "usdMaya/translatorModelAssembly.h"
-#include "usdMaya/translatorUtil.h"
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -170,7 +170,7 @@ _CreateParentTransformNodes(
 }
 
 bool
-UsdMaya_ReadJob::_ProcessProxyPrims(
+UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
         const std::vector<UsdPrim>& proxyPrims,
         const UsdPrim& pxrGeomRoot,
         const std::vector<std::string>& collapsePointPathStrings)
@@ -186,7 +186,7 @@ UsdMaya_ReadJob::_ProcessProxyPrims(
 
         MObject parentNode = ctx.GetMayaNode(proxyPrim.GetPath().GetParentPath(), false);
         if (!UsdMayaTranslatorModelAssembly::ReadAsProxy(proxyPrim,
-                                                            mVariants,
+                                                            mImportData.rootVariantSelections(),
                                                             parentNode,
                                                             args,
                                                             &ctx)) {
@@ -225,7 +225,7 @@ UsdMaya_ReadJob::_ProcessProxyPrims(
 }
 
 bool
-UsdMaya_ReadJob::_ProcessSubAssemblyPrims(
+UsdMaya_ReadJobWithSceneAssembly::_ProcessSubAssemblyPrims(
             const std::vector<UsdPrim>& subAssemblyPrims)
 {
     TF_FOR_ALL(iter, subAssemblyPrims) {
@@ -236,7 +236,7 @@ UsdMaya_ReadJob::_ProcessSubAssemblyPrims(
         // We use the file path of the file currently being imported and
         // the path to the prim within that file when creating the
         // subassembly.
-        std::string subAssemblyUsdFilePath = mFileName;
+        std::string subAssemblyUsdFilePath = mImportData.filename();
         SdfPath subAssemblyUsdPrimPath = subAssemblyPrim.GetPath();
 
         if (!_CreateParentTransformNodes(subAssemblyPrim, args, &ctx)) {
@@ -259,7 +259,7 @@ UsdMaya_ReadJob::_ProcessSubAssemblyPrims(
 }
 
 bool
-UsdMaya_ReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
+UsdMaya_ReadJobWithSceneAssembly::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
 {
     TF_FOR_ALL(iter, cameraPrims) {
         const UsdPrim cameraPrim = *iter;
@@ -283,7 +283,7 @@ UsdMaya_ReadJob::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
 }
 
 bool
-UsdMaya_ReadJob::_DoImportWithProxies(UsdPrimRange& range)
+UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
 {
     MStatus status;
 

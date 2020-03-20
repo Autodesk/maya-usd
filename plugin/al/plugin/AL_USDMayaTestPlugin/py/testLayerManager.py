@@ -1,3 +1,21 @@
+#!/usr/bin/env python
+
+#
+# Copyright 2020 Autodesk
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
 import os
 import tempfile
 import unittest
@@ -16,16 +34,18 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
 
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".usda") as _tmpfile:
-            self._usdaFile = _tmpfile.name
-            # Ensure sphere geometry exists
-            self._sphere = cmds.polySphere(constructionHistory=False, name="sphere")[0]
-            cmds.select(self._sphere)
+        _tmpfile = tempfile.NamedTemporaryFile(delete=False, suffix=".usda")
+        _tmpfile.close()
 
-            # Export, new scene, import
-            cmds.file(self._usdaFile, exportSelected=True, force=True, type="AL usdmaya export")
-            cmds.file(force=True, new=True)
-            self._proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self._usdaFile)[0]
+        self._usdaFile = _tmpfile.name
+        # Ensure sphere geometry exists
+        self._sphere = cmds.polySphere(constructionHistory=False, name="sphere")[0]
+        cmds.select(self._sphere)
+
+        # Export, new scene, import
+        cmds.file(self._usdaFile, exportSelected=True, force=True, type="AL usdmaya export")
+        cmds.file(force=True, new=True)
+        self._proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=self._usdaFile)[0]
 
         # Ensure proxy exists
         self.assertIsNotNone(self._proxyName)
@@ -55,19 +75,24 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         newPrimPath = "/ChangeInRoot"
         self._stage.DefinePrim(newPrimPath, "xform")
         self._stage.SetEditTarget(self._stage.GetSessionLayer())
-        with tempfile.NamedTemporaryFile(delete=True, suffix=".ma") as _tmpMayafile:
-            cmds.file(rename=_tmpMayafile.name)
-            cmds.file(save=True, force=True)
-            cmds.file(new=True, force=True)
-            cmds.file(_tmpMayafile.name, open=True)
-            self.assertIsNotNone(self._proxyName)
-            ps = ProxyShape.getByName(self._proxyName)
-            self.assertTrue(ps)
-            stage = ps.getUsdStage()
-            self.assertTrue(stage)
-            self.assertTrue(stage.GetPrimAtPath(newPrimPath))
-            self.assertTrue(stage.GetRootLayer().Reload())
-            self.assertFalse(stage.GetPrimAtPath(newPrimPath))
+
+        _tmpMayafile = tempfile.NamedTemporaryFile(delete=True, suffix=".ma") 
+        _tmpMayafile.close()
+
+        cmds.file(rename=_tmpMayafile.name)
+        cmds.file(save=True, force=True)
+        cmds.file(new=True, force=True)
+        cmds.file(_tmpMayafile.name, open=True)
+        self.assertIsNotNone(self._proxyName)
+        ps = ProxyShape.getByName(self._proxyName)
+        self.assertTrue(ps)
+        stage = ps.getUsdStage()
+        self.assertTrue(stage)
+        self.assertTrue(stage.GetPrimAtPath(newPrimPath))
+        self.assertTrue(stage.GetRootLayer().Reload())
+        self.assertFalse(stage.GetPrimAtPath(newPrimPath))
+
+        os.remove(_tmpMayafile.name)
 
     def test_sessionLayerSerialisation(self):
         """ A clean session layer should not be serialised on Maya scene save, nor we get
@@ -79,12 +104,15 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         self.assertTrue(self._stage)
         self._stage.SetEditTarget(self._stage.GetSessionLayer())
         # Save the scene with clean session layer:
-        with tempfile.NamedTemporaryFile(delete=True, suffix=".ma") as _tmpMayafile:
-            cmds.file(rename=_tmpMayafile.name)
-            cmds.file(save=True, force=True)
-            cmds.file(new=True, force=True)
-            cmds.file(_tmpMayafile.name, open=True)
-            self.assertFalse(cmds.getAttr('%s.sessionLayerName' % self._proxyName))
+        _tmpMayafile = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
+        _tmpMayafile.close()
+
+        cmds.file(rename=_tmpMayafile.name)
+        cmds.file(save=True, force=True)
+        cmds.file(new=True, force=True)
+        cmds.file(_tmpMayafile.name, open=True)
+        self.assertFalse(cmds.getAttr('%s.sessionLayerName' % self._proxyName))
+        os.remove(_tmpMayafile.name)
 
         ps = ProxyShape.getByName(self._proxyName)
         self.assertTrue(ps)
@@ -93,20 +121,24 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         stage.SetEditTarget(stage.GetSessionLayer())
         newPrimPath = "/ChangeInSession"
         stage.DefinePrim(newPrimPath, "xform")
-        with tempfile.NamedTemporaryFile(delete=True, suffix=".ma") as _tmpMayafile:
-            cmds.file(rename=_tmpMayafile.name)
-            cmds.file(save=True, force=True)
-            cmds.file(new=True, force=True)
-            cmds.file(_tmpMayafile.name, open=True)
-            self.assertTrue(cmds.getAttr('%s.sessionLayerName' % self._proxyName))
+        _tmpMayafile = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
+        _tmpMayafile.close()
 
-            ps = ProxyShape.getByName(self._proxyName)
-            self.assertTrue(ps)
-            stage = ps.getUsdStage()
-            self.assertTrue(stage)
-            self.assertTrue(stage.GetPrimAtPath(newPrimPath))
-            self.assertTrue(stage.GetSessionLayer().Reload())
-            self.assertFalse(stage.GetPrimAtPath(newPrimPath))
+        cmds.file(rename=_tmpMayafile.name)
+        cmds.file(save=True, force=True)
+        cmds.file(new=True, force=True)
+        cmds.file(_tmpMayafile.name, open=True)
+        self.assertTrue(cmds.getAttr('%s.sessionLayerName' % self._proxyName))
+
+        ps = ProxyShape.getByName(self._proxyName)
+        self.assertTrue(ps)
+        stage = ps.getUsdStage()
+        self.assertTrue(stage)
+        self.assertTrue(stage.GetPrimAtPath(newPrimPath))
+        self.assertTrue(stage.GetSessionLayer().Reload())
+        self.assertFalse(stage.GetPrimAtPath(newPrimPath))
+
+        os.remove(_tmpMayafile.name)
 
 
 
