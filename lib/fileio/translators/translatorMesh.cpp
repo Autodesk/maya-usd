@@ -13,39 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Modifications copyright (C) 2020 Autodesk
+//
+
 #include "translatorMesh.h"
 
-#include "../utils/meshUtil.h"
 #include "../../nodes/pointBasedDeformerNode.h"
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-#include "../utils/readUtil.h"
-#include "../utils/roundTripUtil.h"
 #include "../../nodes/stageNode.h"
-#include "translatorGprim.h"
-#include "translatorMaterial.h"
-#include "translatorUtil.h"
 #include "../../utils/util.h"
+#include "../utils/meshUtil.h"
+#include "../utils/readUtil.h"
 
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/base/vt/types.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/tokens.h"
-#include "pxr/usd/sdf/types.h"
-#include "pxr/usd/sdf/valueTypeName.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/primvar.h"
-#include "pxr/usd/usdGeom/tokens.h"
-
+#include <maya/MColor.h>
+#include <maya/MColorArray.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDoubleArray.h>
+#include <maya/MFloatArray.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnDagNode.h>
@@ -55,191 +38,32 @@
 #include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
+#include <maya/MItMeshFaceVertex.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
-#include <maya/MStatus.h>
 #include <maya/MString.h>
-#include <maya/MStringArray.h>
-#include <maya/MTimeArray.h>
-#include <maya/MUintArray.h>
-#include <maya/MVector.h>
-#include <maya/MVectorArray.h>
 
 #include <string>
 #include <vector>
 
+MAYAUSD_NS_DEF {
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
-static
-bool
-_SetupPointBasedDeformerForMayaNode(
-        MObject& mayaObj,
-        const UsdPrim& prim,
-        UsdMayaPrimReaderContext* context)
+TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh, 
+                                       const UsdPrim& prim, 
+                                       const MObject& transformObj,
+                                       const MObject& stageNode,
+                                       const GfInterval& frameRange,
+                                       bool wantCacheAnimation,
+                                       MStatus * status)
+    : m_wantCacheAnimation(wantCacheAnimation)
+    , m_pointsNumTimeSamples(0u)
 {
-    // We try to get the USD stage node from the context's registry, so if we
-    // don't have a reader context, we can't continue.
-    if (!context) {
-        return false;
-    }
+    MStatus stat{MS::kSuccess};
 
-    MObject stageNode =
-        context->GetMayaNode(
-            SdfPath(UsdMayaStageNodeTokens->MayaTypeName.GetString()),
-            false);
-    if (stageNode.isNull()) {
-        return false;
-    }
-
-    // Get the output time plug and node for Maya's global time object.
-    MPlug timePlug = UsdMayaUtil::GetMayaTimePlug();
-    if (timePlug.isNull()) {
-        return false;
-    }
-
-    MStatus status;
-    MObject timeNode = timePlug.node(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // Clear the selection list so that the deformer command doesn't try to add
-    // anything to the new deformer's set. We'll do that manually afterwards.
-    status = MGlobal::clearSelectionList();
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // Create the point based deformer node for this prim.
-    const std::string pointBasedDeformerNodeName =
-        TfStringPrintf("usdPointBasedDeformerNode%s",
-                       TfStringReplace(prim.GetPath().GetString(),
-                                       SdfPathTokens->childDelimiter.GetString(),
-                                       "_").c_str());
-
-    const std::string deformerCmd = TfStringPrintf(
-        "from maya import cmds; cmds.deformer(name=\'%s\', type=\'%s\')[0]",
-        pointBasedDeformerNodeName.c_str(),
-        UsdMayaPointBasedDeformerNodeTokens->MayaTypeName.GetText());
-    MString newPointBasedDeformerName;
-    status = MGlobal::executePythonCommand(deformerCmd.c_str(),
-                                           newPointBasedDeformerName);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // Get the newly created point based deformer node.
-    MObject pointBasedDeformerNode;
-    status = UsdMayaUtil::GetMObjectByName(newPointBasedDeformerName.asChar(),
-                                              pointBasedDeformerNode);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    context->RegisterNewMayaNode(newPointBasedDeformerName.asChar(),
-                                 pointBasedDeformerNode);
-
-    MFnDependencyNode depNodeFn(pointBasedDeformerNode, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    MDGModifier dgMod;
-
-    // Set the prim path on the deformer node.
-    MPlug primPathPlug =
-        depNodeFn.findPlug(UsdMayaPointBasedDeformerNode::primPathAttr,
-                           true,
-                           &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    status = dgMod.newPlugValueString(primPathPlug, prim.GetPath().GetText());
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // Connect the stage node's stage output to the deformer node.
-    status = dgMod.connect(stageNode,
-                           UsdMayaStageNode::outUsdStageAttr,
-                           pointBasedDeformerNode,
-                           UsdMayaPointBasedDeformerNode::inUsdStageAttr);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // Connect the global Maya time to the deformer node.
-    status = dgMod.connect(timeNode,
-                           timePlug.attribute(),
-                           pointBasedDeformerNode,
-                           UsdMayaPointBasedDeformerNode::timeAttr);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    status = dgMod.doIt();
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // Add the Maya object to the point based deformer node's set.
-    const MFnGeometryFilter geomFilterFn(pointBasedDeformerNode, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    MObject deformerSet = geomFilterFn.deformerSet(&status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    MFnSet setFn(deformerSet, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    status = setFn.addMember(mayaObj);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // When we created the point based deformer, Maya will have automatically
-    // created a tweak deformer and put it *before* the point based deformer in
-    // the deformer chain. We don't want that, since any component edits made
-    // interactively in Maya will appear to have no effect since they'll be
-    // overridden by the point based deformer. Instead, we want the tweak to go
-    // *after* the point based deformer. To do this, we need to dig for the
-    // name of the tweak deformer node that Maya created to be able to pass it
-    // to the reorderDeformers command.
-    const MFnDagNode dagNodeFn(mayaObj, &status);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // XXX: This seems to be the "most sane" way of finding the tweak deformer
-    // node's name...
-    const std::string findTweakCmd = TfStringPrintf(
-        "from maya import cmds; [x for x in cmds.listHistory(\'%s\') if cmds.nodeType(x) == \'tweak\'][0]",
-        dagNodeFn.fullPathName().asChar());
-
-    MString tweakDeformerNodeName;
-    status = MGlobal::executePythonCommand(findTweakCmd.c_str(),
-                                           tweakDeformerNodeName);
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    // Do the reordering.
-    const std::string reorderDeformersCmd = TfStringPrintf(
-        "from maya import cmds; cmds.reorderDeformers(\'%s\', \'%s\', \'%s\')",
-        tweakDeformerNodeName.asChar(),
-        newPointBasedDeformerName.asChar(),
-        dagNodeFn.fullPathName().asChar());
-    status = MGlobal::executePythonCommand(reorderDeformersCmd.c_str());
-    CHECK_MSTATUS_AND_RETURN(status, false);
-
-    return true;
-}
-
-/* static */
-bool
-UsdMayaTranslatorMesh::Create(
-        const UsdGeomMesh& mesh,
-        MObject parentNode,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context)
-{
-    if (!mesh) {
-        return false;
-    }
-
-    const UsdPrim& prim = mesh.GetPrim();
-
-    MStatus status;
-
-    // Create node (transform)
-    MObject mayaNodeTransformObj;
-    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
-                                                       parentNode,
-                                                       args,
-                                                       context,
-                                                       &status,
-                                                       &mayaNodeTransformObj)) {
-        return false;
-    }
-
+    // ==============================================
+    // construct a Maya mesh
+    // ==============================================
     VtIntArray faceVertexCounts;
     VtIntArray faceVertexIndices;
 
@@ -252,7 +76,6 @@ UsdMayaTranslatorMesh::Create(
                 "faceVertexCounts), which isn't currently supported. "
                 "Skipping...",
                 prim.GetPath().GetText());
-        return false;
     } else {
         fvc.Get(&faceVertexCounts, UsdTimeCode::EarliestTime());
     }
@@ -266,7 +89,6 @@ UsdMayaTranslatorMesh::Create(
                 "faceVertexIndices), which isn't currently supported. "
                 "Skipping...",
                 prim.GetPath().GetText());
-        return false;
     } else {
         fvi.Get(&faceVertexIndices, UsdTimeCode::EarliestTime());
     }
@@ -278,7 +100,6 @@ UsdMayaTranslatorMesh::Create(
                 "[count: %zu, indices:%zu] on Mesh <%s>. Skipping...",
                 faceVertexCounts.size(), faceVertexIndices.size(),
                 prim.GetPath().GetText());
-        return false; // invalid mesh, so exit
     }
 
     // Gather points and normals
@@ -289,17 +110,17 @@ UsdMayaTranslatorMesh::Create(
     UsdTimeCode pointsTimeSample = UsdTimeCode::EarliestTime();
     UsdTimeCode normalsTimeSample = UsdTimeCode::EarliestTime();
     std::vector<double> pointsTimeSamples;
-    size_t pointsNumTimeSamples = 0u;
-    if (!args.GetTimeInterval().IsEmpty()) {
-        mesh.GetPointsAttr().GetTimeSamplesInInterval(args.GetTimeInterval(),
+
+    if (!frameRange.IsEmpty()) {
+        mesh.GetPointsAttr().GetTimeSamplesInInterval(frameRange,
                                                       &pointsTimeSamples);
         if (!pointsTimeSamples.empty()) {
-            pointsNumTimeSamples = pointsTimeSamples.size();
+            m_pointsNumTimeSamples = pointsTimeSamples.size();
             pointsTimeSample = pointsTimeSamples.front();
         }
 
         std::vector<double> normalsTimeSamples;
-        mesh.GetNormalsAttr().GetTimeSamplesInInterval(args.GetTimeInterval(),
+        mesh.GetNormalsAttr().GetTimeSamplesInInterval(frameRange,
                                                        &normalsTimeSamples);
         if (!normalsTimeSamples.empty()) {
             normalsTimeSample = normalsTimeSamples.front();
@@ -312,7 +133,6 @@ UsdMayaTranslatorMesh::Create(
     if (points.empty()) {
         TF_RUNTIME_ERROR("points array is empty on Mesh <%s>. Skipping...",
                          prim.GetPath().GetText());
-        return false;
     }
 
     std::string reason;
@@ -322,13 +142,13 @@ UsdMayaTranslatorMesh::Create(
                                        &reason)) {
         TF_RUNTIME_ERROR("Skipping Mesh <%s> with invalid topology: %s",
                          prim.GetPath().GetText(), reason.c_str());
-        return false;
+        *status = MS::kFailure;
+        return;
     }
 
-
-    // == Convert data
+    // == Convert data to Maya ( vertices, faces, indices )
     const size_t mayaNumVertices = points.size();
-    MPointArray mayaPoints(mayaNumVertices);
+    MPointArray mayaPoints(mayaNumVertices); 
     for (size_t i = 0u; i < mayaNumVertices; ++i) {
         mayaPoints.set(i, points[i][0], points[i][1], points[i][2]);
     }
@@ -338,40 +158,31 @@ UsdMayaTranslatorMesh::Create(
 
     // == Create Mesh Shape Node
     MFnMesh meshFn;
-    MObject meshObj = meshFn.create(mayaPoints.length(),
-                                    polygonCounts.length(),
-                                    mayaPoints,
-                                    polygonCounts,
-                                    polygonConnects,
-                                    mayaNodeTransformObj,
-                                    &status);
-    if (status != MS::kSuccess) {
-        return false;
+    m_meshObj = meshFn.create( mayaPoints.length(),
+                               polygonCounts.length(),
+                               mayaPoints,
+                               polygonCounts,
+                               polygonConnects,
+                               transformObj,
+                               &stat);
+
+    if (!stat) {
+        *status = stat;
+        return;
     }
 
-    // Since we are "decollapsing", we will create a xform and a shape node for each USD prim
-    const std::string usdPrimName = prim.GetName().GetString();
-    const std::string shapeName = TfStringPrintf("%sShape",
-                                                 usdPrimName.c_str());
+    // set mesh name
+    const auto& primName = prim.GetName().GetString();
+    const auto shapeName = TfStringPrintf("%sShape", primName.c_str());
+    meshFn.setName(MString(shapeName.c_str()), false, &stat);
 
-    // Set mesh name and register
-    meshFn.setName(MString(shapeName.c_str()), false, &status);
-    if (context) {
-        const SdfPath shapePath =
-            prim.GetPath().AppendChild(TfToken(shapeName));
-        context->RegisterNewMayaNode(shapePath.GetString(), meshObj); // used for undo/redo
+    if (!stat) {
+          *status = stat;
+          return;
     }
 
-    // If a material is bound, create (or reuse if already present) and assign it
-    // If no binding is present, assign the mesh to the default shader
-    const TfToken& shadingMode = args.GetShadingMode();
-    UsdMayaTranslatorMaterial::AssignMaterial(shadingMode,
-                                                 mesh,
-                                                 meshObj,
-                                                 context);
-
-    // Mesh is a shape, so read Gprim properties
-    UsdMayaTranslatorGprim::Read(mesh, meshObj, context);
+	// store the path
+    m_shapePath = prim.GetPath().AppendChild(TfToken(shapeName));
 
     // Set normals if supplied
     MIntArray normalsFaceIds;
@@ -387,8 +198,7 @@ UsdMayaTranslatorMesh::Create(
             for (size_t i = 0u; i < normals.size(); ++i) {
                 mayaNormals.set(MVector(normals[i][0u],
                                         normals[i][1u],
-                                        normals[i][2u]),
-                                i);
+                                        normals[i][2u]),i);
             }
 
             meshFn.setFaceVertexNormals(mayaNormals,
@@ -396,6 +206,20 @@ UsdMayaTranslatorMesh::Create(
                                         polygonConnects);
         }
      }
+
+    // If we are dealing with polys, check if there are normals and set the
+    // internal emit-normals tag so that the normals will round-trip.
+    // If we are dealing with a subdiv, read additional subdiv tags.
+    TfToken subdScheme;
+    if (mesh.GetSubdivisionSchemeAttr().Get(&subdScheme) && subdScheme == UsdGeomTokens->none) {
+         if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices()) &&
+                 mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying) {
+             UsdMayaMeshUtil::SetEmitNormalsTag(meshFn, true);
+         }
+    } 
+    else {
+        stat = UsdMayaMeshUtil::assignSubDivTagsToMesh(mesh, m_meshObj, meshFn);
+    }
 
     // Copy UsdGeomMesh schema attrs into Maya if they're authored.
     UsdMayaReadUtil::ReadSchemaAttributesFromPrim<UsdGeomMesh>(
@@ -407,152 +231,28 @@ UsdMayaTranslatorMesh::Create(
             UsdGeomTokens->faceVaryingLinearInterpolation
         });
 
-    // If we are dealing with polys, check if there are normals and set the
-    // internal emit-normals tag so that the normals will round-trip.
-    // If we are dealing with a subdiv, read additional subdiv tags.
-    TfToken subdScheme;
-    if (mesh.GetSubdivisionSchemeAttr().Get(&subdScheme) &&
-            subdScheme == UsdGeomTokens->none) {
-        if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices()) &&
-                mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying) {
-            UsdMayaMeshUtil::SetEmitNormalsTag(meshFn, true);
-        }
-    } else {
-        _AssignSubDivTagsToMesh(mesh, meshObj, meshFn);
-    }
-
-    // Set Holes
-    VtIntArray holeIndices;
-    mesh.GetHoleIndicesAttr().Get(&holeIndices); // not animatable
-    if (!holeIndices.empty()) {
-        MUintArray mayaHoleIndices;
-        mayaHoleIndices.setLength(holeIndices.size());
-        for (size_t i = 0u; i < holeIndices.size(); ++i) {
-            mayaHoleIndices[i] = holeIndices[i];
-        }
-
-        if (meshFn.setInvisibleFaces(mayaHoleIndices) != MS::kSuccess) {
-            TF_RUNTIME_ERROR("Unable to set Invisible Faces on <%s>",
-                             meshFn.fullPathName().asChar());
-        }
-    }
-
-    // GETTING PRIMVARS
-    const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
-    TF_FOR_ALL(iter, primvars) {
-        const UsdGeomPrimvar& primvar = *iter;
-        const TfToken name = primvar.GetBaseName();
-        const TfToken fullName = primvar.GetPrimvarName();
-        const SdfValueTypeName typeName = primvar.GetTypeName();
-        const TfToken& interpolation = primvar.GetInterpolation();
-
-        // Exclude primvars using the full primvar name without "primvars:".
-        // This applies to all primvars; we don't care if it's a color set, a
-        // UV set, etc.
-        if (args.GetExcludePrimvarNames().count(fullName) != 0) {
-            continue;
-        }
-
-        // If the primvar is called either displayColor or displayOpacity check
-        // if it was really authored from the user.  It may not have been
-        // authored by the user, for example if it was generated by shader
-        // values and not an authored colorset/entity.
-        // If it was not really authored, we skip the primvar.
-        if (name == UsdMayaMeshColorSetTokens->DisplayColorColorSetName ||
-                name == UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName) {
-            if (!UsdMayaRoundTripUtil::IsAttributeUserAuthored(primvar)) {
-                continue;
-            }
-        }
-
-        // XXX: Maya stores UVs in MFloatArrays and color set data in MColors
-        // which store floats, so we currently only import primvars holding
-        // float-typed arrays. Should we still consider other precisions
-        // (double, half, ...) and/or numeric types (int)?
-        if (typeName == SdfValueTypeNames->TexCoord2fArray ||
-                (UsdMayaReadUtil::ReadFloat2AsUV() &&
-                 typeName == SdfValueTypeNames->Float2Array)) {
-            // Looks for TexCoord2fArray types for UV sets first
-            // Otherwise, if env variable for reading Float2
-            // as uv sets is turned on, we assume that Float2Array primvars
-            // are UV sets.
-            if (!_AssignUVSetPrimvarToMesh(primvar, meshFn)) {
-                TF_WARN("Unable to retrieve and assign data for UV set <%s> on "
-                        "mesh <%s>",
-                        name.GetText(),
-                        mesh.GetPrim().GetPath().GetText());
-            }
-        } else if (typeName == SdfValueTypeNames->FloatArray ||
-                   typeName == SdfValueTypeNames->Float3Array ||
-                   typeName == SdfValueTypeNames->Color3fArray ||
-                   typeName == SdfValueTypeNames->Float4Array ||
-                   typeName == SdfValueTypeNames->Color4fArray) {
-            if (!_AssignColorSetPrimvarToMesh(mesh, primvar, meshFn)) {
-                TF_WARN("Unable to retrieve and assign data for color set <%s> "
-                        "on mesh <%s>",
-                        name.GetText(),
-                        mesh.GetPrim().GetPath().GetText());
-            }
-        } else if (interpolation == UsdGeomTokens->constant){
-            // Constant primvars get added as attributes on the mesh.
-            if (!_AssignConstantPrimvarToMesh(primvar, meshFn)) {
-                TF_WARN("Unable to assign constant primvar <%s> as attribute "
-                        "on mesh <%s>",
-                        name.GetText(),
-                        mesh.GetPrim().GetPath().GetText());
-            }
-        }
-    }
-
-    // We only vizualize the colorset by default if it is "displayColor".
-    MStringArray colorSetNames;
-    if (meshFn.getColorSetNames(colorSetNames) == MS::kSuccess) {
-        for (unsigned int i = 0u; i < colorSetNames.length(); ++i) {
-            const MString colorSetName = colorSetNames[i];
-            if (std::string(colorSetName.asChar())
-                    == UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetString()) {
-                const MFnMesh::MColorRepresentation csRep =
-                    meshFn.getColorRepresentation(colorSetName);
-                if (csRep == MFnMesh::kRGB || csRep == MFnMesh::kRGBA) {
-                    // both of these are needed to show the colorset.
-                    MPlug plg = meshFn.findPlug("displayColors");
-                    if (!plg.isNull()) {
-                        plg.setBool(true);
-                    }
-                    meshFn.setCurrentColorSetName(colorSetName);
-                }
-                break;
-            }
-        }
-    }
-
+    // ==================================================
+    // construct blendshape object, PointBasedDeformer
+    // ==================================================
     // Code below this point is for handling deforming meshes, so if we don't
     // have time samples to deal with, we're done.
-    if (pointsNumTimeSamples == 0u) {
-        return true;
+    if (m_pointsNumTimeSamples == 0u) {
+        return;
     }
 
-    // If we're using the imported USD as an animation cache, try to setup the
-    // point based deformer for this prim. If that fails, we'll fallback on
-    // creating a blend shape deformer.
-    if (args.GetUseAsAnimationCache() &&
-            _SetupPointBasedDeformerForMayaNode(meshObj, prim, context)) {
-        return true;
+    if (m_wantCacheAnimation) {
+        *status = setPointBasedDeformerForMayaNode(m_meshObj, stageNode, prim);
+        return;
     }
 
-    // Use blendShapeDeformer so that all the points for a frame are contained
-    // in a single node.
-    //
+    // Use blendShapeDeformer so that all the points for a frame are contained in a single node.
     MPointArray mayaAnimPoints(mayaNumVertices);
     MObject meshAnimObj;
 
     MFnBlendShapeDeformer blendFn;
-    MObject blendObj = blendFn.create(meshObj);
-    if (context) {
-        context->RegisterNewMayaNode(blendFn.name().asChar(), blendObj); // used for undo/redo
-    }
+    m_meshBlendObj = blendFn.create(m_meshObj);
 
-    for (unsigned int ti = 0u; ti < pointsNumTimeSamples; ++ti) {
+    for (unsigned int ti = 0u; ti < m_pointsNumTimeSamples; ++ti) {
         mesh.GetPointsAttr().Get(&points, pointsTimeSamples[ti]);
 
         for (unsigned int i = 0u; i < mayaNumVertices; ++i) {
@@ -567,15 +267,16 @@ UsdMayaTranslatorMesh::Create(
                                         mayaAnimPoints,
                                         polygonCounts,
                                         polygonConnects,
-                                        mayaNodeTransformObj,
-                                        &status);
-            if (status != MS::kSuccess) {
+                                        transformObj,
+                                        &stat);
+
+            if (!stat) {
                 continue;
             }
         }
         else {
             // Reuse the already created mesh by copying it and then setting the points
-            meshAnimObj = meshFn.copy(meshAnimObj, mayaNodeTransformObj, &status);
+            meshAnimObj = meshFn.copy(meshAnimObj, transformObj, &stat);
             meshFn.setPoints(mayaAnimPoints);
         }
 
@@ -585,13 +286,12 @@ UsdMayaTranslatorMesh::Create(
         //
         mesh.GetNormalsAttr().Get(&normals, pointsTimeSamples[ti]);
         if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices()) &&
-                normalsFaceIds.length() == static_cast<size_t>(meshFn.numFaceVertices())) {
+                    normalsFaceIds.length() == static_cast<size_t>(meshFn.numFaceVertices())) {
             MVectorArray mayaNormals(normals.size());
             for (size_t i = 0; i < normals.size(); ++i) {
                 mayaNormals.set(MVector(normals[i][0u],
                                         normals[i][1u],
-                                        normals[i][2u]),
-                                i);
+                                        normals[i][2u]),i);
             }
 
             meshFn.setFaceVertexNormals(mayaNormals,
@@ -602,7 +302,7 @@ UsdMayaTranslatorMesh::Create(
         // Add as target and set as an intermediate object. We do *not*
         // register the mesh object for undo/redo, since it will be handled
         // automatically by deleting the blend shape deformer object.
-        blendFn.addTarget(meshObj, ti, meshAnimObj, 1.0);
+        blendFn.addTarget(m_meshObj, ti, meshAnimObj, 1.0);
         meshFn.setIntermediateObject(true);
     }
 
@@ -611,19 +311,19 @@ UsdMayaTranslatorMesh::Create(
 
     // Construct the time array to be used for all the keys
     MTimeArray timeArray;
-    timeArray.setLength(pointsNumTimeSamples);
-    for (unsigned int ti = 0u; ti < pointsNumTimeSamples; ++ti) {
+    timeArray.setLength(m_pointsNumTimeSamples);
+    for (unsigned int ti = 0u; ti < m_pointsNumTimeSamples; ++ti) {
         timeArray.set(MTime(pointsTimeSamples[ti]), ti);
     }
 
     // Key/Animate the weights
     MPlug plgAry = blendFn.findPlug("weight");
     if (!plgAry.isNull() && plgAry.isArray()) {
-        for (unsigned int ti = 0u; ti < pointsNumTimeSamples; ++ti) {
-            MPlug plg = plgAry.elementByLogicalIndex(ti, &status);
-            MDoubleArray valueArray(pointsNumTimeSamples, 0.0);
+        for (unsigned int ti = 0u; ti < m_pointsNumTimeSamples; ++ti) {
+            MPlug plg = plgAry.elementByLogicalIndex(ti, &stat);
+            MDoubleArray valueArray(m_pointsNumTimeSamples, 0.0);
             valueArray[ti] = 1.0; // Set the time value where this mesh's weight should be 1.0
-            MObject animObj = animFn.create(plg, nullptr, &status);
+            MObject animObj = animFn.create(plg, nullptr, &stat);
             animFn.addKeys(&timeArray, &valueArray);
             // We do *not* register the anim curve object for undo/redo,
             // since it will be handled automatically by deleting the blend
@@ -631,8 +331,163 @@ UsdMayaTranslatorMesh::Create(
         }
     }
 
-    return true;
+    *status = stat;
+}
+
+MStatus
+TranslatorMeshRead::setPointBasedDeformerForMayaNode(const MObject& mayaObj, const MObject& stageNode, const UsdPrim& prim)
+{
+    MStatus status{MS::kSuccess};
+
+    // Get the output time plug and node for Maya's global time object.
+    MPlug timePlug = UsdMayaUtil::GetMayaTimePlug();
+    if (timePlug.isNull()) {
+        status = MS::kFailure;
+    }
+
+    MObject timeNode = timePlug.node(&status);
+    CHECK_MSTATUS(status);
+
+    // Clear the selection list so that the deformer command doesn't try to add
+    // anything to the new deformer's set. We'll do that manually afterwards.
+    status = MGlobal::clearSelectionList();
+    CHECK_MSTATUS(status);
+
+    // Create the point based deformer node for this prim.
+    const std::string pointBasedDeformerNodeName =
+        TfStringPrintf("usdPointBasedDeformerNode%s",
+                       TfStringReplace(prim.GetPath().GetString(),
+                                       SdfPathTokens->childDelimiter.GetString(),
+                                       "_").c_str());
+
+    const std::string deformerCmd = TfStringPrintf(
+        "from maya import cmds; cmds.deformer(name=\'%s\', type=\'%s\')[0]",
+        pointBasedDeformerNodeName.c_str(),
+        UsdMayaPointBasedDeformerNodeTokens->MayaTypeName.GetText());
+    status = MGlobal::executePythonCommand(deformerCmd.c_str(),
+                                           m_newPointBasedDeformerName);
+    CHECK_MSTATUS(status);
+
+    // Get the newly created point based deformer node.
+    status = UsdMayaUtil::GetMObjectByName(m_newPointBasedDeformerName.asChar(),
+                                              m_pointBasedDeformerNode);
+    CHECK_MSTATUS(status);
+
+    MFnDependencyNode depNodeFn(m_pointBasedDeformerNode, &status);
+    CHECK_MSTATUS(status);
+
+    MDGModifier dgMod;
+
+    // Set the prim path on the deformer node.
+    MPlug primPathPlug =
+        depNodeFn.findPlug(UsdMayaPointBasedDeformerNode::primPathAttr,
+                           true,
+                           &status);
+    CHECK_MSTATUS(status);
+
+    status = dgMod.newPlugValueString(primPathPlug, prim.GetPath().GetText());
+    CHECK_MSTATUS(status);
+
+    // Connect the stage node's stage output to the deformer node.
+    status = dgMod.connect(stageNode,
+                           UsdMayaStageNode::outUsdStageAttr,
+                           m_pointBasedDeformerNode,
+                           UsdMayaPointBasedDeformerNode::inUsdStageAttr);
+    CHECK_MSTATUS(status);
+
+    // Connect the global Maya time to the deformer node.
+    status = dgMod.connect(timeNode,
+                           timePlug.attribute(),
+                           m_pointBasedDeformerNode,
+                           UsdMayaPointBasedDeformerNode::timeAttr);
+    CHECK_MSTATUS(status);
+
+    status = dgMod.doIt();
+    CHECK_MSTATUS(status);
+
+    // Add the Maya object to the point based deformer node's set.
+    const MFnGeometryFilter geomFilterFn(m_pointBasedDeformerNode, &status);
+    CHECK_MSTATUS(status);
+
+    MObject deformerSet = geomFilterFn.deformerSet(&status);
+    CHECK_MSTATUS(status);
+
+    MFnSet setFn(deformerSet, &status);
+    CHECK_MSTATUS(status);
+
+    status = setFn.addMember(mayaObj);
+    CHECK_MSTATUS(status);
+
+    // When we created the point based deformer, Maya will have automatically
+    // created a tweak deformer and put it *before* the point based deformer in
+    // the deformer chain. We don't want that, since any component edits made
+    // interactively in Maya will appear to have no effect since they'll be
+    // overridden by the point based deformer. Instead, we want the tweak to go
+    // *after* the point based deformer. To do this, we need to dig for the
+    // name of the tweak deformer node that Maya created to be able to pass it
+    // to the reorderDeformers command.
+    const MFnDagNode dagNodeFn(mayaObj, &status);
+    CHECK_MSTATUS(status);
+
+    // XXX: This seems to be the "most sane" way of finding the tweak deformer
+    // node's name...
+    const std::string findTweakCmd = TfStringPrintf(
+        "from maya import cmds; [x for x in cmds.listHistory(\'%s\') if cmds.nodeType(x) == \'tweak\'][0]",
+        dagNodeFn.fullPathName().asChar());
+
+    MString tweakDeformerNodeName;
+    status = MGlobal::executePythonCommand(findTweakCmd.c_str(),
+                                           tweakDeformerNodeName);
+    CHECK_MSTATUS(status);
+
+    // Do the reordering.
+    const std::string reorderDeformersCmd = TfStringPrintf(
+        "from maya import cmds; cmds.reorderDeformers(\'%s\', \'%s\', \'%s\')",
+        tweakDeformerNodeName.asChar(),
+        m_newPointBasedDeformerName.asChar(),
+        dagNodeFn.fullPathName().asChar());
+    status = MGlobal::executePythonCommand(reorderDeformersCmd.c_str());
+    CHECK_MSTATUS(status);
+
+    return status;
+}
+
+MObject 
+TranslatorMeshRead::meshObject() const
+{
+    return m_meshObj;
+}
+
+MObject 
+TranslatorMeshRead::blendObject() const
+{
+    return m_meshBlendObj;
+}
+
+MObject 
+TranslatorMeshRead::pointBasedDeformerNode() const
+{
+    return m_pointBasedDeformerNode;
+}
+
+MString 
+TranslatorMeshRead::pointBasedDeformerName() const
+{
+    return m_newPointBasedDeformerName;
+}
+
+size_t 
+TranslatorMeshRead::pointsNumTimeSamples() const
+{
+    return m_pointsNumTimeSamples;
+}
+
+SdfPath 
+TranslatorMeshRead::shapePath() const
+{
+    return m_shapePath;
 }
 
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // namespace MayaUsd
+

@@ -43,8 +43,6 @@ target_sources(${PROJECT_NAME}
         translators/translatorMaterial.cpp
         translators/translatorMayaReference.cpp
         translators/translatorMesh.cpp
-        translators/translatorMesh_PrimVars.cpp
-        translators/translatorMesh_SubDiv.cpp
         translators/translatorNurbsPatch.cpp
         translators/translatorPrim.cpp
         translators/translatorRfMLight.cpp
