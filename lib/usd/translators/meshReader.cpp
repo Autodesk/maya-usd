@@ -78,7 +78,7 @@ MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    MStatus status;
+    MStatus status{MS::kSuccess};
 
     const auto& prim = _GetArgs().GetUsdPrim();
     auto mesh = UsdGeomMesh(prim);
