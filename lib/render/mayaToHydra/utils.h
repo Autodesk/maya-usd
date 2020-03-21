@@ -44,7 +44,6 @@ using MtohRendererSettings =
                        TfToken::HashFunctor>;
 
 std::string MtohGetRendererPluginDisplayName(const TfToken& id);
-TfToken MtohGetDefaultRenderer();
 const MtohRendererDescriptionVector& MtohGetRendererDescriptions();
 const MtohRendererSettings& MtohGetRendererSettings();
 

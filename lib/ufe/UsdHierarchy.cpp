@@ -33,6 +33,22 @@
 #include <cassert>
 #include <stdexcept>
 
+namespace {
+	UsdPrimSiblingRange filteredChildren( const UsdPrim& prim )
+	{
+		// We need to be able to traverse down to instance proxies, so turn
+		// on that part of the predicate, since by default, it is off. Since
+		// the equivalent of GetChildren is
+		// GetFilteredChildren( UsdPrimDefaultPredicate ),
+		// we will use that as the initial value.
+		//
+		Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
+		predicate = predicate.TraverseInstanceProxies(true);
+		return prim.GetFilteredChildren(predicate);
+	}
+
+}
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -78,14 +94,14 @@ Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const
 
 bool UsdHierarchy::hasChildren() const
 {
-	return !fPrim.GetChildren().empty();
+	return !filteredChildren(fPrim).empty();
 }
 
 Ufe::SceneItemList UsdHierarchy::children() const
 {
 	// Return USD children only, i.e. children within this run-time.
 	Ufe::SceneItemList children;
-	for (auto child : fPrim.GetChildren())
+	for (auto child : filteredChildren(fPrim))
 	{
 		children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
 	}

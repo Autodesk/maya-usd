@@ -59,8 +59,8 @@
             }
           }
         },
-        "LibraryPath": "../../../@CMAKE_SHARED_LIBRARY_PREFIX@@TRANSLATORS_PLUGIN@@CMAKE_SHARED_LIBRARY_SUFFIX@",
-        "Name": "@TRANSLATORS_PLUGIN@",
+        "LibraryPath": "../../../@CMAKE_SHARED_LIBRARY_PREFIX@@TARGET_NAME@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+        "Name": "@TARGET_NAME@",
         "Type": "library"
       }
     ]

@@ -28,9 +28,18 @@
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/transform3d.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/object3d.h>
+#if UFE_PREVIEW_VERSION_NUM >= 2010
+#include <ufe/object3dNotification.h>
+#endif
+#endif
 
 #include <maya/MSceneMessage.h>
 #include <maya/MMessage.h>
+
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include <vector>
 
@@ -247,13 +256,21 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 				Ufe::Attributes::notify(ufePath, changedPath.GetName());
 			}
 		}
+
+#if UFE_PREVIEW_VERSION_NUM >= 2010
+		// Send a special message when visibility has changed.
+		if (changedPath.GetNameToken() == UsdGeomTokens->visibility)
+		{
+			Ufe::VisibilityChanged vis(ufePath);
+			Ufe::Object3d::notify(vis);
+		}
+#endif
 #endif
 
 		// We need to determine if the change is a Transform3d change.
 		// We must at least pick up xformOp:translate, xformOp:rotateXYZ, 
 		// and xformOp:scale.
-		static std::string xformOp(".xformOp:");
-		if (changedPath.GetElementString().substr(0, xformOp.length()) == xformOp)
+		if(UsdGeomXformOp::IsXformOp(changedPath.GetNameToken()))
 		{
 			Ufe::Transform3d::notify(ufePath);
 		}

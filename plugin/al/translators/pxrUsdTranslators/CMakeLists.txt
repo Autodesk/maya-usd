@@ -30,7 +30,7 @@ add_library(${PXR_TRANSLATORS_PACKAGE}
   plugin.cpp
 )
 
-MAYA_SET_PLUGIN_PROPERTIES(${PXR_TRANSLATORS_PACKAGE})
+maya_set_plugin_properties(${PXR_TRANSLATORS_PACKAGE})
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
@@ -79,7 +79,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${AL_INSTALL_PREFIX}/plugin/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/plugin/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugin/plugInfo.json
+ DESTINATION ${AL_INSTALL_PREFIX}/plugin
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

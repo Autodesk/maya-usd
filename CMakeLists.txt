@@ -1,6 +1,5 @@
 #
-# =======================================================================
-# Copyright 2019 Autodesk
+# Copyright 2020 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,16 +12,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# =======================================================================
 #
-
-cmake_minimum_required(VERSION 3.12.0)
+cmake_minimum_required(VERSION 3.13...3.17)
 
 project(maya-usd)
 
-#==============================================================================
-# Define common build variables
-#==============================================================================
+#------------------------------------------------------------------------------
+# options
+#------------------------------------------------------------------------------
 option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
@@ -31,30 +28,39 @@ option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 
-#==============================================================================
-# Internal flags to control build
-#==============================================================================
+#------------------------------------------------------------------------------
+# internal flags to control build
+#------------------------------------------------------------------------------
 # MAYAUSD_TO_USD_RELATIVE_PATH : Set this variable to any relative path from install
 #                                folder to USD location. If defined will set relative
 #                                rpaths for USD libraries.
 
+#------------------------------------------------------------------------------
+# global options
+#------------------------------------------------------------------------------
 # Avoid noisy install messages
 set(CMAKE_INSTALL_MESSAGE "NEVER")
-#==============================================================================
-# Modules and Definitions
-#==============================================================================
-list(APPEND CMAKE_MODULE_PATH
+
+set(CMAKE_OSX_ARCHITECTURES "x86_64")
+
+set(CMAKE_MODULE_PATH
+    ${CMAKE_MODULE_PATH}
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
 )
 
+# Use RUNPATH instead of RPATH for all shared libs and executables on Linux
+if(IS_LINUX)
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+endif()
+
+#------------------------------------------------------------------------------
+# modules and definitions
+#------------------------------------------------------------------------------
 if (BUILD_MAYAUSD_LIBRARY)
     include(cmake/mayausd_version.info)
     set(MAYAUSD_VERSION "${MAYAUSD_MAJOR_VERSION}.${MAYAUSD_MINOR_VERSION}.${MAYAUSD_PATCH_LEVEL}")
-endif()
-
-if (APPLE)
-   set(CMAKE_OSX_ARCHITECTURES "x86_64")
 endif()
 
 if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED Python_EXECUTABLE)
@@ -119,9 +125,9 @@ else()
     message(STATUS "QT_LOCATION not set. Building Qt features will be disabled.")
 endif()
 
-#==============================================================================
-# Compiler
-#==============================================================================
+#------------------------------------------------------------------------------
+# compiler configuration
+#------------------------------------------------------------------------------
 # CXXDefaults will set a variety of variables for the project.
 # Consume them here. This is an effort to keep the most common
 # build files readable.
@@ -137,36 +143,28 @@ if(NOT WIN32)
 endif()
 string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-# Use RUNPATH instead of RPATH for all shared libs and executables on Linux
-if(IS_LINUX)
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
-endif()
-
-#==============================================================================
-# Tests
-#==============================================================================
+#------------------------------------------------------------------------------
+# test
+#------------------------------------------------------------------------------
 if (BUILD_TESTS)
     include(cmake/Googletest.cmake)
+    include(cmake/test.cmake)
     fetch_googletest()
-
     enable_testing()
-
     add_subdirectory(test)
-
     set(MAYAUSD_GTEST_PATH "PATH+:=lib/gtest")
 endif()
 
-#==============================================================================
-# CORE
-#==============================================================================
+#------------------------------------------------------------------------------
+# lib
+#------------------------------------------------------------------------------
 if (BUILD_MAYAUSD_LIBRARY)
     add_subdirectory(lib)
 endif()
 
-#==============================================================================
-# PLUGINS
-#==============================================================================
+#------------------------------------------------------------------------------
+# plugins
+#------------------------------------------------------------------------------
 if (BUILD_PXR_PLUGIN)
     add_subdirectory(plugin/pxr)
 endif()
@@ -187,11 +185,10 @@ if (BUILD_ADSK_PLUGIN)
     add_subdirectory(plugin/adsk)
 endif()
 
-#==============================================================================
-# Install mayaUSD.mod
-#==============================================================================
+#------------------------------------------------------------------------------
+# install
+#------------------------------------------------------------------------------
 configure_file(mayaUSD.mod.template ${PROJECT_BINARY_DIR}/mayaUSD.mod)
 install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod
     DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
-

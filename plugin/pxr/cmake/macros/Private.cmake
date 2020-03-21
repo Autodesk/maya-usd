@@ -918,7 +918,7 @@ function(_pxr_python_module NAME)
             FOLDER "${folder}"
     )
 
-    set_python_module_suffix(${LIBRARY_NAME})
+    set_python_module_property(${LIBRARY_NAME})
  
     target_compile_definitions(${LIBRARY_NAME}
         PRIVATE
