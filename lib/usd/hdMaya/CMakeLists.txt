@@ -32,8 +32,6 @@ target_compile_definitions(${TARGET_NAME}
 target_include_directories(${TARGET_NAME} 
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-    INTERFACE
-        ${CMAKE_BINARY_DIR}/include
 )
 
 # -----------------------------------------------------------------------------
