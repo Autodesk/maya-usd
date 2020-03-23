@@ -72,7 +72,7 @@ macro(fetch_googletest)
         endif()
         install(FILES "${GTEST_ROOT}/bin/${GTEST_SHARED_LIB_NAME}" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/gtest")
     else()
-        install(FILES "${GTEST_LIBRARIES}" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+        install(FILES "${GTEST_LIBRARY}" DESTINATION "${CMAKE_INSTALL_PREFIX}/lib/gtest")
     endif()
 
 endmacro()
