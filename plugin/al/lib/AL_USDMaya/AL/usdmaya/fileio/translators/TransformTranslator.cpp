@@ -547,7 +547,7 @@ bool animationCheck(AnimationTranslator* animTranslator, MPlug plug)
 
 //----------------------------------------------------------------------------------------------------------------------
 UsdAttribute addTranslateOp(
-    const UsdGeomXform& xformSchema,
+    const UsdGeomXformable& xformSchema,
     const char* attrName,
     const GfVec3f& currentValue,
     const UsdTimeCode& time)
@@ -558,8 +558,17 @@ UsdAttribute addTranslateOp(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+UsdAttribute addInverseTranslateOp(
+    const UsdGeomXformable& xformSchema,
+    const char* attrName)
+{
+  UsdGeomXformOp op = xformSchema.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken(attrName), true);
+  return op.GetAttr();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 UsdAttribute addTranslateOp(
-    const UsdGeomXform& xformSchema,
+    const UsdGeomXformable& xformSchema,
     const char* attrName,
     const GfVec3d& currentValue,
     const UsdTimeCode& time)
@@ -633,7 +642,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
   static const GfVec3f defaultShear(0.0f);
   static const GfVec3f defaultRotation(0.0f);
   static const GfVec3f defaultRotateAxis(0.0f);
-  static const GfVec3f defaultTranslation(0.0f);
+  static const GfVec3d defaultTranslation(0.0f);
   static const GfVec3f defaultScalePivot(0.0f);
   static const GfVec3f defaultRotatePivot(0.0f);
   static const GfVec3f defaultScalePivotTranslate(0.0f);
@@ -727,8 +736,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     plugAnimated = animationCheck(animTranslator, MPlug(from, m_rotatePivot));
     if(plugAnimated || rotatePivot != defaultRotatePivot)
     {
-      UsdAttribute rotatePivotINVAttr = addTranslateOp(xformSchema, "rotatePivotINV", -rotatePivot, params.m_timeCode);
-      if(plugAnimated && animTranslator) animTranslator->forceAddPlug(MPlug(from, m_rotatePivot), rotatePivotINVAttr);
+      addInverseTranslateOp(xformSchema, "rotatePivot");
     }
 
     plugAnimated = animationCheck(animTranslator, MPlug(from, m_scalePivotTranslate));
@@ -767,8 +775,7 @@ MStatus TransformTranslator::copyAttributes(const MObject& from, UsdPrim& to, co
     plugAnimated = animationCheck(animTranslator, MPlug(from, m_scalePivot));
     if(plugAnimated || scalePivot != defaultScalePivot)
     {
-      UsdAttribute scalePivotINVAttr = addTranslateOp(xformSchema, "scalePivotINV", -scalePivot, params.m_timeCode);
-      if(plugAnimated && animTranslator) animTranslator->forceAddPlug(MPlug(from, m_scalePivot), scalePivotINVAttr);
+      addInverseTranslateOp(xformSchema, "scalePivot");
     }
   }
   else
