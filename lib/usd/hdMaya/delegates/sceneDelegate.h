@@ -19,9 +19,7 @@
 #include <pxr/pxr.h>
 
 #include <pxr/base/gf/vec4d.h>
-
 #include <pxr/usd/sdf/path.h>
-
 #include <pxr/imaging/hd/meshTopology.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 
@@ -30,10 +28,10 @@
 
 #include <memory>
 
-#include "../adapters/lightAdapter.h"
-#include "../adapters/materialAdapter.h"
-#include "../adapters/shapeAdapter.h"
-#include "delegateCtx.h"
+#include <hdMaya/adapters/lightAdapter.h>
+#include <hdMaya/adapters/materialAdapter.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/delegateCtx.h>
 
 /*
  * Notes.

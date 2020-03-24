@@ -13,17 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "delegateCtx.h"
+#include <hdMaya/delegates/delegateCtx.h>
 
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
 #include <pxr/base/gf/range1d.h>
-
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hio/glslfx.h>
 
-#include "../../../utils/util.h"
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MFnLight.h>
 

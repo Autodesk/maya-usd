@@ -18,6 +18,7 @@
 #define HDMAYA_AL_PROXY_USDIMAGING_DELEGATE_H
 
 #include <pxr/usdImaging/usdImaging/delegate.h>
+
 #include <maya/MDagPath.h>
 
 PXR_NAMESPACE_OPEN_SCOPE

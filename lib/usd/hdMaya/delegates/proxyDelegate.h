@@ -17,7 +17,7 @@
 #ifndef HDMAYA_AL_PROXY_DELEGATE_H
 #define HDMAYA_AL_PROXY_DELEGATE_H
 
-#include "delegate.h"
+#include <hdMaya/delegates/delegate.h>
 
 #include <pxr/pxr.h>
 

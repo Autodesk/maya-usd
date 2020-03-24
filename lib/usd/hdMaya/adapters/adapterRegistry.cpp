@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "adapterRegistry.h"
+#include <hdMaya/adapters/adapterRegistry.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -22,7 +22,7 @@
 
 #include <maya/MFnDependencyNode.h>
 
-#include "../../../nodes/proxyShapeBase.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <mutex>
 

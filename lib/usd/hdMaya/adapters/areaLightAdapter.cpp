@@ -18,9 +18,9 @@
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 
-#include "adapterDebugCodes.h"
-#include "adapterRegistry.h"
-#include "lightAdapter.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/lightAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

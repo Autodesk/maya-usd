@@ -37,9 +37,9 @@
 
 #include <maya/MMessage.h>
 
-#include "adapter.h"
-#include "adapterDebugCodes.h"
-#include "../utils.h"
+#include <hdMaya/adapters/adapter.h>
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

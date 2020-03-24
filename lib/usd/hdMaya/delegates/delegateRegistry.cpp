@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "delegateRegistry.h"
+#include <hdMaya/delegates/delegateRegistry.h>
 
-#include "delegateDebugCodes.h"
+#include <hdMaya/delegates/delegateDebugCodes.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>

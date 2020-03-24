@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "debugCodes.h"
+#include <hdMaya/debugCodes.h>
 
 #include <pxr/base/tf/registryManager.h>
 

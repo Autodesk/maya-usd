@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "delegateDebugCodes.h"
+#include <hdMaya/delegates/delegateDebugCodes.h>
 
 #include <pxr/base/tf/registryManager.h>
 

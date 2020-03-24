@@ -28,10 +28,10 @@
 #include <maya/MPointArray.h>
 #include <maya/MPolyMessage.h>
 
-#include "adapterDebugCodes.h"
-#include "adapterRegistry.h"
-#include "mayaAttrs.h"
-#include "shapeAdapter.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

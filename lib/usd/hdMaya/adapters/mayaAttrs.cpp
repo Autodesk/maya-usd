@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "mayaAttrs.h"
+#include <hdMaya/adapters/mayaAttrs.h>
 
 #include <pxr/base/tf/diagnostic.h>
 

@@ -13,14 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "materialNetworkConverter.h"
-
-#include "adapterDebugCodes.h"
-#include "materialAdapter.h"
-#include "mayaAttrs.h"
-#include "tokens.h"
-
-#include "mayaUsd/utils/util.h"
+#include <hdMaya/adapters/materialNetworkConverter.h>
 
 #include <pxr/usd/sdr/registry.h>
 #include <pxr/usd/sdr/shaderProperty.h>
@@ -31,7 +24,14 @@
 #include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
 
-#include "../utils.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/materialAdapter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/tokens.h>
+
+#include <hdMaya/utils.h>
+
+#include <mayaUsd/utils/util.h>
 
 #include <mutex>
 

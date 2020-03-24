@@ -21,12 +21,12 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdLux/tokens.h>
 
-#include "adapterDebugCodes.h"
-#include "adapterRegistry.h"
-#include "lightAdapter.h"
-#include "mayaAttrs.h"
-#include "tokens.h"
-#include "../utils.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/lightAdapter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/tokens.h>
+#include <hdMaya/utils.h>
 
 #include <maya/MPlugArray.h>
 

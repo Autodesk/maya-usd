@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "sceneDelegate.h"
+#include <hdMaya/delegates/sceneDelegate.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/range3d.h>
@@ -28,24 +28,24 @@
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hd/tokens.h>
 
+#include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/renderSetupTask.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/tokens.h>
 
-#include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
+#include <maya/MDGMessage.h>
 #include <maya/MItDag.h>
 #include <maya/MMatrixArray.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MString.h>
 
-#include "../adapters/adapterRegistry.h"
-#include "../adapters/mayaAttrs.h"
-#include "delegateDebugCodes.h"
-#include "delegateRegistry.h"
-#include "../utils.h"
-#include <pxr/imaging/hd/light.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/delegates/delegateDebugCodes.h>
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <hdMaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

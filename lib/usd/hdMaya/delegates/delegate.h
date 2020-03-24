@@ -16,22 +16,12 @@
 #ifndef HDMAYA_DELEGATE_H
 #define HDMAYA_DELEGATE_H
 
-#include <pxr/pxr.h>
-
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/selection.h>
-#if USD_VERSION_NUM >= 1911
-#include <pxr/imaging/hd/rendererPlugin.h>
-#else
-#include <pxr/imaging/hdx/rendererPlugin.h>
-PXR_NAMESPACE_OPEN_SCOPE
-using HdRendererPlugin = HdxRendererPlugin;
-PXR_NAMESPACE_CLOSE_SCOPE
-#endif
-
 #include <pxr/imaging/hdx/taskController.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
@@ -40,8 +30,17 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include <memory>
 
-#include "../api.h"
-#include "params.h"
+#include <hdMaya/api.h>
+#include <hdMaya/delegates/params.h>
+
+#if USD_VERSION_NUM >= 1911
+#include <pxr/imaging/hd/rendererPlugin.h>
+#else
+#include <pxr/imaging/hdx/rendererPlugin.h>
+PXR_NAMESPACE_OPEN_SCOPE
+using HdRendererPlugin = HdxRendererPlugin;
+PXR_NAMESPACE_CLOSE_SCOPE
+#endif
 
 #if WANT_UFE_BUILD
 #include <ufe/selection.h>

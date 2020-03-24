@@ -18,7 +18,7 @@
 
 #include <pxr/pxr.h>
 
-#include "adapter.h"
+#include <hdMaya/adapters/adapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

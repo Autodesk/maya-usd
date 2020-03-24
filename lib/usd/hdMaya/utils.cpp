@@ -14,10 +14,9 @@
 // limitations under the License.
 //
 
-#include "utils.h"
+#include <hdMaya/utils.h>
 
 #include <pxr/base/tf/fileUtils.h>
-
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/image.h>
 #include <pxr/imaging/glf/textureHandle.h>

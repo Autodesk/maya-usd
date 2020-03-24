@@ -14,14 +14,13 @@
 // limitations under the License.
 //
 
-#include "proxyDelegate.h"
+#include <hdMaya/delegates/proxyDelegate.h>
 
-#include "../adapters/proxyAdapter.h"
-#include "../debugCodes.h"
+#include <hdMaya/adapters/proxyAdapter.h>
+#include <hdMaya/debugCodes.h>
+#include <hdMaya/delegates/delegateRegistry.h>
 
-#include "delegateRegistry.h"
-
-#include "../../../nodes/proxyShapeBase.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/type.h>

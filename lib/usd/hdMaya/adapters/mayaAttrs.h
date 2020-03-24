@@ -21,7 +21,7 @@
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 
-#include "../api.h"
+#include <hdMaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

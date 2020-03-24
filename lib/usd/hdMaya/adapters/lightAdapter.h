@@ -26,7 +26,7 @@
 #include <maya/MFnLight.h>
 #include <maya/MFnNonExtendedLight.h>
 
-#include "dagAdapter.h"
+#include <hdMaya/adapters/dagAdapter.h>
 #include <pxr/imaging/hd/light.h>
 
 PXR_NAMESPACE_OPEN_SCOPE

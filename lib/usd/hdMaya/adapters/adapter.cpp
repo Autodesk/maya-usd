@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "adapter.h"
-#include "adapterDebugCodes.h"
+#include <hdMaya/adapters/adapter.h>
 
 #include <pxr/base/tf/type.h>
 
 #include <maya/MNodeMessage.h>
 
-#include "materialNetworkConverter.h"
-#include "mayaAttrs.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/materialNetworkConverter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

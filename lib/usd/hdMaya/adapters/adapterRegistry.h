@@ -21,10 +21,10 @@
 
 #include <maya/MFn.h>
 
-#include "lightAdapter.h"
-#include "materialAdapter.h"
-#include "shapeAdapter.h"
-#include "../delegates/delegateCtx.h"
+#include <hdMaya/adapters/lightAdapter.h>
+#include <hdMaya/adapters/materialAdapter.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/delegateCtx.h>
 
 #include <unordered_map>
 

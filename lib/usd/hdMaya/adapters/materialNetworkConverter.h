@@ -16,7 +16,7 @@
 #ifndef HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 #define HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 
-#include "../api.h"
+#include <hdMaya/api.h>
 
 #include <pxr/base/tf/token.h>
 

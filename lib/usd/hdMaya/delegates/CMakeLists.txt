@@ -7,9 +7,9 @@ target_sources(${TARGET_NAME}
         delegateCtx.cpp
         delegateDebugCodes.cpp
         delegateRegistry.cpp
-        sceneDelegate.cpp
         proxyDelegate.cpp
         proxyUsdImagingDelegate.cpp
+        sceneDelegate.cpp
         testDelegate.cpp
 )
 
@@ -22,6 +22,7 @@ set(headers
     proxyDelegate.h
     proxyUsdImagingDelegate.h
     sceneDelegate.h
+    testDelegate.h
 )
 
 # -----------------------------------------------------------------------------

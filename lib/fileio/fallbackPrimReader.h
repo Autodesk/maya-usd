@@ -18,8 +18,8 @@
 
 /// \file usdMaya/fallbackPrimReader.h
 
-#include "primReader.h"
-#include "primReaderRegistry.h"
+#include "mayaUsd/fileio/primReader.h"
+#include "mayaUsd/fileio/primReaderRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

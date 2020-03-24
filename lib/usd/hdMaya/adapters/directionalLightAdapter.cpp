@@ -21,10 +21,10 @@
 
 #include <maya/MFnDirectionalLight.h>
 
-#include "adapterDebugCodes.h"
-#include "adapterRegistry.h"
-#include "lightAdapter.h"
-#include "mayaAttrs.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/lightAdapter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 #include <memory>
 
