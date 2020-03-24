@@ -26,7 +26,7 @@ Every file should start with the Apache 2.0 licensing statement:
 * If existing code is being refactored or moved within the repo then the original copyright lines should be maintained. You should only append a new copyright line if significant new changes are added. For example, if some utility code is being moved from a plugin into a common area, and the work involved is only minor name changes or include path updates, then the original copyright should be maintained. In this case, there is no requirement to add a new copyright for the person that handled the refactoring.
 
 ### #pragma once vs include guard
-Do not use `#pragma once` to avoid files being `#include’d` multiple times (which can cause duplication of definitions & compilation errors). While it's widely supported, it's a non-standard and non-portable extension. In some cases using `#pragme once` may include two copies of the same file when they are accessible via multiple different paths.
+Do not use `#pragma once` to avoid files being `#include’d` multiple times (which can cause duplication of definitions & compilation errors). While it's widely supported, it's a non-standard and non-portable extension. In some cases using `#pragma once` may include two copies of the same file when they are accessible via multiple different paths.
 
 All code should use include guards instead `#pragma once`. For example:
 ```cpp
@@ -80,7 +80,7 @@ enum Roles;
 ```
 
 **Variable Names**
-Variables names, including function parametersm and data members should use lowerCamelCase, with no underscores. For example:
+Variables names, including function parameters and data members should use lowerCamelCase, with no underscores. For example:
 ```cpp
 const MDagPath& dagPath
 const MVector& rayDirection
@@ -154,7 +154,7 @@ All included public header files from outside and inside the project should be `
 #include <mayaUsd/nodes/stageData.h>
 ```
 
-Private project’s header files should be `#include`'d using the file name when in the same folder. Private headers may live in sub-directories, but they should never included using "._" or ".._" as part of a relative paths. For example:
+Private project’s header files should be `#include`'d using the file name when in the same folder. Private headers may live in sub-directories, but they should never be included using "._" or ".._" as part of a relative paths. For example:
 ```cpp
 #include “privateUtils.h"
 #include “pvt/helperFunctions.h"
@@ -193,18 +193,18 @@ Headers should be included in the following order, with each section separated b
 ```
 
 ### Cross-platform development
-* Consult the [build.md](https://github.com/Autodesk/maya-usd/blob/dev/doc/build.md) compatibility table to ensure you use the recommended tool (i.e., dcompiler, operating system, CMake, etc.) versions.
+* Consult the [build.md](https://github.com/Autodesk/maya-usd/blob/dev/doc/build.md) compatibility table to ensure you use the recommended tool (i.e., compiler, operating system, CMake, etc.) versions.
 * Before pull requests (PRs) are considered for integration, they must compile and all tests should pass on all suppported platforms.
 
 ### Conditional compilation (Maya, USD, UFE version)
 **Maya**
-	* MAYA_API_VERSION is the consistent macro to test Maya version (MAYA_APP_VERSION * 10000 + MAJOR_VERSION * 100 + MINOR_VERSION)
-	* MAYA_APP_VERSION is available only since Maya 2019 and is a simple year number, so it is not allowed.
+	* `MAYA_API_VERSION` is the consistent macro to test Maya version (`MAYA_APP_VERSION` * 10000 + `MAJOR_VERSION` * 100 + `MINOR_VERSION`)
+	* `MAYA_APP_VERSION` is available only since Maya 2019 and is a simple year number, so it is not allowed.
 **UFE**
-	* WANT_UFE_BUILD equals 1 if UFE is found and it should be used for conditional compilation on codes depending on UFE.
+	* `WANT_UFE_BUILD` equals 1 if UFE is found and it should be used for conditional compilation on codes depending on UFE.
 
 **USD**
-	* USD_VERSION_NUM is the macro to test USD version (USD_MAJOR_VERSION * 10000 + USD_MINOR_VERSION * 100 + USD_PATCH_VERSION)
+	* `USD_VERSION_NUM` is the macro to test USD version (`USD_MAJOR_VERSION` * 10000 + `USD_MINOR_VERSION` * 100 + `USD_PATCH_VERSION`)
 
 Respect the minimum supported version for Maya and USD stated in [build.md](https://github.com/Autodesk/maya-usd/blob/dev/doc/build.md) .
 
@@ -219,11 +219,11 @@ Our library currently has the following boost dependencies:
 
 ## Modern C++
 Our goal is to develop [maya-usd](https://github.com/autodesk/maya-usd) following modern C++ practices. We’ll follow the [C++ Core Guidelines](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and pay attention to:
-* using (vs typedef) keyword
-* virtual, override and final keyword
-* default and delete keywords
-* auto keyword
-* initialization - {}
-* nullptr keyword
+* `using` (vs `typedef`) keyword
+* `virtual`, `override` and `final` keyword
+* `default` and `delete` keywords
+* `auto` keyword
+* initialization - `{}`
+* `nullptr` keyword
 * …
 
