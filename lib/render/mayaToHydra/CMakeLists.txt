@@ -34,10 +34,6 @@ target_compile_definitions(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
-target_include_directories(${TARGET_NAME} 
-    PRIVATE 
-        ${CMAKE_BINARY_DIR}/include
-)
 
 # -----------------------------------------------------------------------------
 # link libraries
