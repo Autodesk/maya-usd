@@ -126,3 +126,9 @@ Mar 19, 2020:
 git merge --no-ff github/dev
 git merge --no-ff github/tremblp/MAYA-103295/ufe_path_string_usd
 ```
+
+```
+Mar 24, 2020:
+git merge --no-ff github/dev
+Manually fix file: test/lib/ufe/testAttribute.py
+```

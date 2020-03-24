@@ -406,7 +406,7 @@ class AttributeTestCase(unittest.TestCase):
         ufeAttr.set(vec)
 
         # Then make sure that new UFE value matches what it in USD.
-        assertVectorAlmostEqual(self, ufeAttr.get(), usdAttr.Get())
+        self.assertVectorAlmostEqual(ufeAttr.get(), usdAttr.Get())
 
         self.runUndoRedo(ufeAttr,
                          ufe.Vector3d(vec.x()-1.0, vec.y()-2.0, vec.z()-3.0))
@@ -550,6 +550,5 @@ class AttributeTestCase(unittest.TestCase):
         ufeCmd.execute(ball34XlateAttr.setCmd(ufe.Vector3d(7, 8, 9)))
 
         self.assertEqual(ball34Obs.notifications, 3)
-        self.assertEqual(ball34Obs.notifications(), 3)
-        self.assertEqual(ball35Obs.notifications(), 3)
-        self.assertEqual(globalObs.notifications(), 7)
+        self.assertEqual(ball35Obs.notifications, 3)
+        self.assertEqual(globalObs.notifications, 7)
