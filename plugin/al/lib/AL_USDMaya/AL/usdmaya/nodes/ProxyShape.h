@@ -451,6 +451,8 @@ public:
   ///         flags to true. (This has to be done after the transform has been created and initialized, otherwise
   ///         the default maya values will be pushed in the UsdPrim, wiping out the values you just loaded)
   /// \param  createCount the returned number of transforms that were created.
+  /// \param  pushToPrim the initial value for the pushToPrim attributes on the generate transform nodes
+  /// \param  readAnimatedValues the initial value for the readAnimatedValues attributes on the generate transform nodes
   /// \return the MObject of the parent transform node for the usdPrim
   /// \todo   The mode ProxyShape::kSelection will cause the possibility of instability in the selection system.
   ///         This mode will be removed at a future date
@@ -698,9 +700,9 @@ public:
   void onPrePrimChanged(const SdfPath& path, SdfPathVector& outPathVector);
 
   // \brief process any USD objects which have been changed, normally by a notice of some kind
-  /// \param[in] vector of topmost paths for which hierarchy has changed
-  /// \param[in] vector of paths that changed properties
-  /// \param[in] do we need to handle the complex prim locking and selection logic that is curently on by default?
+  /// \param[in] resyncedPaths vector of topmost paths for which hierarchy has changed
+  /// \param[in] changedOnlyPaths vector of paths that changed properties
+  /// \note do we need to handle the complex prim locking and selection logic that is curently on by default?
   void processChangedObjects(const SdfPathVector& resyncedPaths, const SdfPathVector& changedOnlyPaths);
 
   /// \brief Re-Creates and updates the maya prim hierarchy starting from the specified primpath

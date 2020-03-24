@@ -24,5 +24,4 @@ Animal Logic forum is [here](https://groups.google.com/forum/#!forum/al_usdmaya-
 + [Contributing](doc/CONTRIBUTING.md)
 + [Building](doc/build.md)
 + [License](doc/LICENSE.md)
-+ [Developer](doc/DEVELOPER.md)
 + [MayaToHydra](doc/MayaToHydra.md)

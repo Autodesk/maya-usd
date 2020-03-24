@@ -13,64 +13,69 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+// Modifications copyright (C) 2020 Autodesk
+//
 
-/// \file usdMaya/translatorMesh.h
-
-#ifndef PXRUSDMAYA_TRANSLATOR_MESH_H
-#define PXRUSDMAYA_TRANSLATOR_MESH_H
+#pragma once
 
 #include "../../base/api.h"
 
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-
 #include "pxr/pxr.h"
-
 #include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/primvar.h"
 
-#include <maya/MFnMesh.h>
 #include <maya/MObject.h>
+#include <maya/MString.h>
 
+PXR_NAMESPACE_USING_DIRECTIVE
 
-PXR_NAMESPACE_OPEN_SCOPE
+MAYAUSD_NS_DEF {
 
-
-/// Provides helper functions for translating UsdGeomMesh prims into Maya
-/// meshes.
-class UsdMayaTranslatorMesh
+//
+// \class MayaUsd::TranslatorMeshRead
+//
+// This class is used to translate a UsdGeomMesh prim 
+// using schema mesh utilities into a Maya mesh.
+//
+class MAYAUSD_CORE_PUBLIC TranslatorMeshRead
 {
-    public:
-        /// Creates an MFnMesh under \p parentNode from \p mesh.
-        MAYAUSD_CORE_PUBLIC
-        static bool Create(
-                const UsdGeomMesh& mesh,
-                MObject parentNode,
-                const UsdMayaPrimReaderArgs& args,
-                UsdMayaPrimReaderContext* context);
+public:
+    TranslatorMeshRead(const UsdGeomMesh& mesh,
+                       const UsdPrim& prim, 
+                       const MObject& transformObj,
+                       const MObject& stageNode,
+                       const GfInterval& frameRange,
+                       bool wantCacheAnimation,
+                       MStatus * status = nullptr);
 
-    private:
-        static bool _AssignSubDivTagsToMesh(
-                const UsdGeomMesh& primSchema,
-                MObject& meshObj,
-                MFnMesh& meshFn);
+    ~TranslatorMeshRead() = default;
 
-        static bool _AssignUVSetPrimvarToMesh(
-                const UsdGeomPrimvar& primvar,
-                MFnMesh& meshFn);
+    TranslatorMeshRead(const TranslatorMeshRead&) = delete;
+    TranslatorMeshRead& operator=(const TranslatorMeshRead&) = delete;
+    TranslatorMeshRead(TranslatorMeshRead&&) = delete;
+    TranslatorMeshRead& operator=(TranslatorMeshRead&&) = delete;
 
-        static bool _AssignColorSetPrimvarToMesh(
-                const UsdGeomMesh& primSchema,
-                const UsdGeomPrimvar& primvar,
-                MFnMesh& meshFn);
+    MObject meshObject() const;
 
-        static bool _AssignConstantPrimvarToMesh(
-                const UsdGeomPrimvar& primvar,
-                MFnMesh& meshFn);
+    MObject blendObject() const;
+    MObject pointBasedDeformerNode() const;
+    MString pointBasedDeformerName() const;
+    size_t pointsNumTimeSamples() const;
+
+    SdfPath shapePath() const;
+
+private:
+    MStatus setPointBasedDeformerForMayaNode(const MObject&, 
+                                             const MObject&, 
+                                             const UsdPrim&);
+private:
+    MObject m_meshObj;
+    MObject m_meshBlendObj;
+    MObject m_pointBasedDeformerNode;
+    MString m_newPointBasedDeformerName;
+    bool m_wantCacheAnimation;
+    size_t m_pointsNumTimeSamples;
+
+    SdfPath m_shapePath;
 };
 
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-
-#endif
+} // namespace MayaUsd

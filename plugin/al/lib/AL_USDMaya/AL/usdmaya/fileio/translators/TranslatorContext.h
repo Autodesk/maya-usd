@@ -315,8 +315,7 @@ public:
   {
     /// \brief  ctor
     /// \param  path the prim path of the items we will be tracking
-    /// \param  translatorId. Used to help us determine which translator plugin
-    ///         to call to tear down this prim.
+    /// \param  translatorId Used to help us determine which translator plugin to call to tear down this prim.
     /// \param  mayaObj the maya transform
     PrimLookup(const SdfPath& path, const std::string& translatorId, MObject mayaObj)
       : m_path(path), m_translatorId(translatorId), m_uniqueKey(0), m_object(mayaObj), m_createdNodes() { }
@@ -350,7 +349,7 @@ public:
       { return m_uniqueKey; }
 
     /// \brief  set the unique key for this prim
-    /// \param the unique key for this prim
+    /// \param  key the unique key for this prim
     void setUniqueKey(const std::size_t key)
       { m_uniqueKey = key; }
 

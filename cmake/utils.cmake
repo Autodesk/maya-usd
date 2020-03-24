@@ -155,7 +155,7 @@ endfunction()
 #   SUBDIR     - sub-directory in which to promote files.
 #   FILES      - list of files to promote.
 #   BASESDIR   - base dirctory where promoted headers are installed into.
-#                if not defined, mayaUsd subdirectory is used by default. 
+#                if not defined, mayaUsd subdirectory is used by default.
 #
 #
 function(mayaUsd_promoteHeaderList)
@@ -202,11 +202,6 @@ function(mayaUsd_promoteHeaderList)
     endforeach()
 endfunction()
 
-function(mayaUsd_get_unittest_target unittest_target unittest_basename)
-    get_filename_component(unittest_name ${unittest_basename} NAME_WE)
-    set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
-endfunction()
-
 #
 # mayaUsd_copyFiles( <target>
 #                    [DESTINATION <destination>]
@@ -216,7 +211,7 @@ endfunction()
 #   FILES         - list of files to copy
 #
 function(mayaUsd_copyFiles target)
-    cmake_parse_arguments(PREFIX 
+    cmake_parse_arguments(PREFIX
         ""             # options
         "DESTINATION"  # one_value keywords
         "FILES"        # multi_value keywords
@@ -282,10 +277,10 @@ function(mayaUsd_copyDirectory target)
         message(FATAL_ERROR "DIRECTORY keyword is not specified.")
     endif()
 
-    # figure out files in directories by traversing all the subdirectories 
+    # figure out files in directories by traversing all the subdirectories
     # relative to directory
     file(GLOB_RECURSE srcFiles RELATIVE ${directory} ${directory}/*)
- 
+
     foreach(file ${srcFiles})
         get_filename_component(input_file "${dir_name}/${file}" ABSOLUTE)
         get_filename_component(output_file "${destination}/${dir_name}/${file}" ABSOLUTE)
@@ -299,6 +294,27 @@ function(mayaUsd_copyDirectory target)
         )
 
     endforeach()
+endfunction()
+
+function(mayaUsd_split_head_tail input_string split_string var_head var_tail)
+    string(FIND "${input_string}" "${split_string}" head_end)
+    if("${head_end}" EQUAL -1)
+        message(FATAL_ERROR "input_string '${input_string}' did not contain "
+            "split_string '${split_string}'")
+    endif()
+
+    string(LENGTH "${split_string}" split_string_len)
+    math(EXPR tail_start "${head_end} + ${split_string_len}")
+
+    string(SUBSTRING "${input_string}" 0 "${head_end}" "${var_head}")
+    string(SUBSTRING "${input_string}" "${tail_start}" -1 "${var_tail}")
+    set("${var_head}" "${${var_head}}" PARENT_SCOPE)
+    set("${var_tail}" "${${var_tail}}" PARENT_SCOPE)
+endfunction()
+
+function(mayaUsd_indent outvar lines)
+    string(REPLACE "\n" "\n    " lines "${lines}")
+    set("${outvar}" "    ${lines}" PARENT_SCOPE)
 endfunction()
 
 # parse list arguments into a new list separated by ";" or ":"

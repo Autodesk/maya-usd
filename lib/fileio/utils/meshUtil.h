@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-/// \file usdMaya/meshUtil.h
+// Modifications copyright (C) 2020 Autodesk
+//
 
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
@@ -26,7 +26,11 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
+#include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usdGeom/mesh.h"
 
+#include <maya/MDagPath.h>
+#include <maya/MObject.h>
 #include <maya/MFnMesh.h>
 #include <maya/MString.h>
 
@@ -59,7 +63,7 @@ namespace UsdMayaMeshUtil
     /// Helper method for getting Maya mesh normals as a VtVec3fArray.
     MAYAUSD_CORE_PUBLIC
     bool GetMeshNormals(
-        const MObject& mesh,
+        const MFnMesh& mesh,
         VtArray<GfVec3f>* normalsArray,
         TfToken* interpolation);
 
@@ -81,6 +85,15 @@ namespace UsdMayaMeshUtil
     /// the OpenSubdiv2-style tagging.
     MAYAUSD_CORE_PUBLIC
     TfToken GetSubdivFVLinearInterpolation(const MFnMesh& mesh);
+
+    MAYAUSD_CORE_PUBLIC
+    void assignPrimvarsToMesh(const UsdGeomMesh&, const MObject&, const TfToken::Set&);
+
+    MAYAUSD_CORE_PUBLIC
+    void assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj);
+
+    MAYAUSD_CORE_PUBLIC
+    MStatus assignSubDivTagsToMesh(const UsdGeomMesh&, MObject&, MFnMesh&);
 
 } // namespace UsdMayaMeshUtil
 

@@ -372,6 +372,7 @@ public:
 
   /// \brief  set the prim that this transformation matrix will read/write to.
   /// \param  prim the prim
+  /// \param  transformNode the owning transform node
   void setPrim(const UsdPrim& prim, Scope* transformNode) override;
 
   /// \brief  Returns the timecode to use when pushing the transform values to the USD prim. If readFromTimeline flag
