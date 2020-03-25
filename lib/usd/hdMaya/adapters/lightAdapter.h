@@ -21,13 +21,13 @@
 #include <pxr/base/gf/frustum.h>
 
 #include <pxr/imaging/glf/simpleLight.h>
+#include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
 
 #include <maya/MFnLight.h>
 #include <maya/MFnNonExtendedLight.h>
 
 #include <hdMaya/adapters/dagAdapter.h>
-#include <pxr/imaging/hd/light.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

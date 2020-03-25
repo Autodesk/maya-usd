@@ -28,7 +28,6 @@
 #include <hdMaya/adapters/materialAdapter.h>
 #include <hdMaya/adapters/mayaAttrs.h>
 #include <hdMaya/adapters/tokens.h>
-
 #include <hdMaya/utils.h>
 
 #include <mayaUsd/utils/util.h>

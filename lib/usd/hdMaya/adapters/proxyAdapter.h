@@ -1,8 +1,8 @@
 #ifndef HDMAYA_AL_PROXY_ADAPTER_H
 #define HDMAYA_AL_PROXY_ADAPTER_H
 
-#include <hdMaya/delegates/proxyUsdImagingDelegate.h>
 #include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/proxyUsdImagingDelegate.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/weakBase.h>
