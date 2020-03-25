@@ -25,9 +25,9 @@ macro(fetch_googletest)
         # sequence parsing errors.  PPT, 22-Nov-2018.
         file(TO_CMAKE_PATH ${CMAKE_MAKE_PROGRAM} CMAKE_MAKE_PROGRAM)
         if (GOOGLETEST_SRC_DIR)
-            configure_file(cmake/CMakeLists_googletest_src.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
+            configure_file(cmake/googletest_src.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
         else()
-            configure_file(cmake/CMakeLists_googletest_download.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
+            configure_file(cmake/googletest_download.txt.in ${GOOGLETEST_BUILD_ROOT}/googletest-config/CMakeLists.txt)
         endif()
 
         message(STATUS "========== Installing GoogleTest... ==========")
