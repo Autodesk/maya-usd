@@ -27,7 +27,7 @@
 	bool hasValue() const override { return UsdAttribute::hasValue(); }						\
 	std::string name() const override { return UsdAttribute::name(); }						\
 	std::string documentation() const override { return UsdAttribute::documentation(); }	\
-	std::string string() const override { return UsdAttribute::string(sceneItem()); }
+	std::string string() const override { return UsdAttribute::string(Ufe::Attribute::sceneItem()); }
 
 MAYAUSD_NS_DEF {
 namespace ufe {

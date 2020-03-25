@@ -391,7 +391,7 @@ T TypedUsdAttribute<T>::get() const
 	if (!hasValue()) return T();
 
 	PXR_NS::VtValue vt;
-	if (fUsdAttr.Get(&vt, getCurrentTime(sceneItem())) && vt.IsHolding<T>())
+	if (fUsdAttr.Get(&vt, getCurrentTime(Ufe::Attribute::sceneItem())) && vt.IsHolding<T>())
 	{
 		return vt.UncheckedGet<T>();
 	}
@@ -404,7 +404,7 @@ template<typename T>
 void TypedUsdAttribute<T>::set(const T& value)
 {
 	T dummy;
-	UFE_ASSERT_MSG(fUsdAttr.Get<T>(&dummy, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
+	UFE_ASSERT_MSG(fUsdAttr.Get<T>(&dummy, getCurrentTime(Ufe::Attribute::sceneItem())), kErrorMsgInvalidType);
 	bool b = setUsdAttr<T>(fUsdAttr, value);
 	UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 }
