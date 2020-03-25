@@ -147,7 +147,7 @@ string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 # test
 #------------------------------------------------------------------------------
 if (BUILD_TESTS)
-    include(cmake/Googletest.cmake)
+    include(cmake/googletest.cmake)
     include(cmake/test.cmake)
     fetch_googletest()
     enable_testing()
