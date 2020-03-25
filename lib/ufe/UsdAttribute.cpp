@@ -16,6 +16,7 @@
 
 #include "UsdAttribute.h"
 #include "StagesSubject.h"
+#include "Utils.h"
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
@@ -79,12 +80,20 @@ bool setUsdAttr(const PXR_NS::UsdAttribute& attr, const T& value)
 	return attr.Set<T>(value);
 }
 
-std::string getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr)
+PXR_NS::UsdTimeCode getCurrentTime(const Ufe::SceneItem::Ptr& item)
+{
+	// Attributes with time samples will fail when calling Get with default time code.
+	// So we'll always use the current time when calling Get. If there are no time
+	// samples, it will fall-back to the default time code.
+	return MayaUsd::ufe::getTime(item->path());
+}
+
+std::string getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
 	if (!attr.HasValue()) return std::string();
 
 	PXR_NS::VtValue v;
-	if (attr.Get(&v))
+	if (attr.Get(&v, time))
 	{
 		if (v.CanCast<std::string>())
 		{
@@ -102,12 +111,12 @@ std::string getUsdAttributeValueAsString(const PXR_NS::UsdAttribute& attr)
 }
 
 template<typename T, typename U>
-U getUsdAttributeVectorAsUfe(const PXR_NS::UsdAttribute& attr)
+U getUsdAttributeVectorAsUfe(const PXR_NS::UsdAttribute& attr, const PXR_NS::UsdTimeCode& time)
 {
 	if (!attr.HasValue()) return U();
 
 	PXR_NS::VtValue vt;
-	if (attr.Get(&vt) && vt.IsHolding<T>())
+	if (attr.Get(&vt, time) && vt.IsHolding<T>())
 	{
 		T gfVec = vt.UncheckedGet<T>();
 		U ret(gfVec[0], gfVec[1], gfVec[2]);
@@ -119,10 +128,10 @@ U getUsdAttributeVectorAsUfe(const PXR_NS::UsdAttribute& attr)
 }
 
 template<typename T, typename U>
-void setUsdAttributeVectorFromUfe(PXR_NS::UsdAttribute& attr, const U& value)
+void setUsdAttributeVectorFromUfe(PXR_NS::UsdAttribute& attr, const U& value, const PXR_NS::UsdTimeCode& time)
 {
 	T vec;
-	UFE_ASSERT_MSG(attr.Get<T>(&vec), kErrorMsgInvalidType);
+	UFE_ASSERT_MSG(attr.Get<T>(&vec, time), kErrorMsgInvalidType);
 	vec.Set(value.x(), value.y(), value.z());
 	bool b = setUsdAttr<T>(attr, vec);
 	UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
@@ -163,9 +172,9 @@ std::string UsdAttribute::documentation() const
 	return fUsdAttr.GetDocumentation();
 }
 
-std::string UsdAttribute::string() const
+std::string UsdAttribute::string(const Ufe::SceneItem::Ptr& item) const
 {
-	return getUsdAttributeValueAsString(fUsdAttr);
+	return getUsdAttributeValueAsString(fUsdAttr, getCurrentTime(item));
 }
 
 //------------------------------------------------------------------------------
@@ -219,7 +228,7 @@ std::string UsdAttributeEnumString::get() const
 {
 	UFE_ASSERT_MSG(hasValue(), kErrorMsgEnumNoValue);
 	PXR_NS::VtValue vt;
-	if (fUsdAttr.Get(&vt) && vt.IsHolding<TfToken>())
+	if (fUsdAttr.Get(&vt, getCurrentTime(sceneItem())) && vt.IsHolding<TfToken>())
 	{
 		TfToken tok = vt.UncheckedGet<TfToken>();
 		return tok.GetString();
@@ -232,7 +241,7 @@ std::string UsdAttributeEnumString::get() const
 void UsdAttributeEnumString::set(const std::string& value)
 {
 	PXR_NS::TfToken dummy;
-	UFE_ASSERT_MSG(fUsdAttr.Get<PXR_NS::TfToken>(&dummy), kErrorMsgInvalidType);
+	UFE_ASSERT_MSG(fUsdAttr.Get<PXR_NS::TfToken>(&dummy, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
 	PXR_NS::TfToken tok(value);
 	bool b = setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
 	UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
@@ -278,7 +287,7 @@ std::string TypedUsdAttribute<std::string>::get() const
 	if (!hasValue()) return std::string();
 
 	PXR_NS::VtValue vt;
-	if (fUsdAttr.Get(&vt))
+	if (fUsdAttr.Get(&vt, getCurrentTime(sceneItem())))
 	{
 		// The USDAttribute can be holding either TfToken or string.
 		if (vt.IsHolding<TfToken>())
@@ -304,7 +313,7 @@ void TypedUsdAttribute<std::string>::set(const std::string& value)
 	if (typeName.GetHash() == SdfValueTypeNames->String.GetHash())
 	{
 		std::string dummy;
-		UFE_ASSERT_MSG(fUsdAttr.Get<std::string>(&dummy), kErrorMsgInvalidType);
+		UFE_ASSERT_MSG(fUsdAttr.Get<std::string>(&dummy, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
 		bool b = setUsdAttr<std::string>(fUsdAttr, value);
 		UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 		return;
@@ -312,7 +321,7 @@ void TypedUsdAttribute<std::string>::set(const std::string& value)
 	else if (typeName.GetHash() == SdfValueTypeNames->Token.GetHash())
 	{
 		PXR_NS::TfToken dummy;
-		UFE_ASSERT_MSG(fUsdAttr.Get<PXR_NS::TfToken>(&dummy), kErrorMsgInvalidType);
+		UFE_ASSERT_MSG(fUsdAttr.Get<PXR_NS::TfToken>(&dummy, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
 		PXR_NS::TfToken tok(value);
 		bool b = setUsdAttr<PXR_NS::TfToken>(fUsdAttr, tok);
 		UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
@@ -326,7 +335,7 @@ void TypedUsdAttribute<std::string>::set(const std::string& value)
 template<>
 Ufe::Color3f TypedUsdAttribute<Ufe::Color3f>::get() const
 {
-	return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Color3f>(fUsdAttr);
+	return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Color3f>(fUsdAttr, getCurrentTime(sceneItem()));
 }
 
 // Note: cannot use setUsdAttributeVectorFromUfe since it relies on x/y/z
@@ -334,7 +343,7 @@ template<>
 void TypedUsdAttribute<Ufe::Color3f>::set(const Ufe::Color3f& value)
 {
 	GfVec3f vec;
-	UFE_ASSERT_MSG(fUsdAttr.Get<GfVec3f>(&vec), kErrorMsgInvalidType);
+	UFE_ASSERT_MSG(fUsdAttr.Get<GfVec3f>(&vec, getCurrentTime(sceneItem())), kErrorMsgInvalidType);
 	vec.Set(value.r(), value.g(), value.b());
 	bool b = setUsdAttr<GfVec3f>(fUsdAttr, vec);
 	UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
@@ -343,37 +352,37 @@ void TypedUsdAttribute<Ufe::Color3f>::set(const Ufe::Color3f& value)
 template<>
 Ufe::Vector3i TypedUsdAttribute<Ufe::Vector3i>::get() const
 {
-	return getUsdAttributeVectorAsUfe<GfVec3i, Ufe::Vector3i>(fUsdAttr);
+	return getUsdAttributeVectorAsUfe<GfVec3i, Ufe::Vector3i>(fUsdAttr, getCurrentTime(sceneItem()));
 }
 
 template<>
 void TypedUsdAttribute<Ufe::Vector3i>::set(const Ufe::Vector3i& value)
 {
-	setUsdAttributeVectorFromUfe<GfVec3i, Ufe::Vector3i>(fUsdAttr, value);
+	setUsdAttributeVectorFromUfe<GfVec3i, Ufe::Vector3i>(fUsdAttr, value, getCurrentTime(sceneItem()));
 }
 
 template<>
 Ufe::Vector3f TypedUsdAttribute<Ufe::Vector3f>::get() const
 {
-	return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Vector3f>(fUsdAttr);
+	return getUsdAttributeVectorAsUfe<GfVec3f, Ufe::Vector3f>(fUsdAttr, getCurrentTime(sceneItem()));
 }
 
 template<>
 void TypedUsdAttribute<Ufe::Vector3f>::set(const Ufe::Vector3f& value)
 {
-	setUsdAttributeVectorFromUfe<GfVec3f, Ufe::Vector3f>(fUsdAttr, value);
+	setUsdAttributeVectorFromUfe<GfVec3f, Ufe::Vector3f>(fUsdAttr, value, getCurrentTime(sceneItem()));
 }
 
 template<>
 Ufe::Vector3d TypedUsdAttribute<Ufe::Vector3d>::get() const
 {
-	return getUsdAttributeVectorAsUfe<GfVec3d, Ufe::Vector3d>(fUsdAttr);
+	return getUsdAttributeVectorAsUfe<GfVec3d, Ufe::Vector3d>(fUsdAttr, getCurrentTime(sceneItem()));
 }
 
 template<>
 void TypedUsdAttribute<Ufe::Vector3d>::set(const Ufe::Vector3d& value)
 {
-	setUsdAttributeVectorFromUfe<GfVec3d, Ufe::Vector3d>(fUsdAttr, value);
+	setUsdAttributeVectorFromUfe<GfVec3d, Ufe::Vector3d>(fUsdAttr, value, getCurrentTime(sceneItem()));
 }
 
 template<typename T>
@@ -382,7 +391,7 @@ T TypedUsdAttribute<T>::get() const
 	if (!hasValue()) return T();
 
 	PXR_NS::VtValue vt;
-	if (fUsdAttr.Get(&vt) && vt.IsHolding<T>())
+	if (fUsdAttr.Get(&vt, getCurrentTime(Ufe::Attribute::sceneItem())) && vt.IsHolding<T>())
 	{
 		return vt.UncheckedGet<T>();
 	}
@@ -395,7 +404,7 @@ template<typename T>
 void TypedUsdAttribute<T>::set(const T& value)
 {
 	T dummy;
-	UFE_ASSERT_MSG(fUsdAttr.Get<T>(&dummy), kErrorMsgInvalidType);
+	UFE_ASSERT_MSG(fUsdAttr.Get<T>(&dummy, getCurrentTime(Ufe::Attribute::sceneItem())), kErrorMsgInvalidType);
 	bool b = setUsdAttr<T>(fUsdAttr, value);
 	UFE_ASSERT_MSG(b, kErrorMsgFailedSet);
 }
