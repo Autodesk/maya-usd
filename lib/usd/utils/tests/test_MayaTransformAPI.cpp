@@ -569,49 +569,6 @@ const char* getDataPath(const char* const str)
   return buffer;
 }
 
-/*
-$name = "yxz_srt_only";
-$tm = `xform -q -m`;
-print ("\n  // " + $name + "\n");
-print ("  {\n    const char* const path = getDataPath(\"" + $name +"\");\n");
-print ("    UsdStageRefPtr stage = UsdStage::Open(path);\n");
-print ("    ASSERT_TRUE(stage);\n");
-print ("    UsdPrim prim = stage->GetPrimAtPath(SdfPath(\"/pCube1\"));\n");
-print ("    ASSERT_TRUE(prim);\n");
-print ("    MayaUsdUtils::MayaTransformAPI api(prim);\n");
-print ("    ASSERT_TRUE(api);\n");
-print ("    const double expected[4][4] = {\n");
-print ("      {" + $tm[0] + ", " + $tm[1] + ", " + $tm[2] + ", 0},\n");
-print ("      {" + $tm[4] + ", " + $tm[5] + ", " + $tm[6] + ", 0},\n");
-print ("      {" + $tm[8] + ", " + $tm[9] + ", " + $tm[10] + ", 0},\n");
-print ("      {" + $tm[12] + ", " + $tm[13] + ", " + $tm[14] + ", 1}\n");
-print ("    };\n");
-print ("    GfMatrix4d computed = api.asMatrix();\n");
-print ("    for(int i = 0; i < 4; ++i)\n");
-print ("      for(int j = 0; j < 4; ++j)\n");
-print ("        EXPECT_NEAR(expected[i][j], computed[i][j], 1e-5);\n");
-print ("    // access components\n");
-print ("    auto scale = api.scale();\n");
-print ("    auto rotate = api.rotate();\n");
-print ("    auto order = api.rotateOrder();\n");
-print ("    auto translate = api.translate();\n");
-print ("    api.setFromMatrix(computed);\n");
-print ("    auto scaleAfter = api.scale();\n");
-print ("    auto rotateAfter = api.rotate();\n");
-print ("    auto orderAfter = api.rotateOrder();\n");
-print ("    auto translateAfter = api.translate();\n");
-print ("    EXPECT_NEAR(scale[0], scaleAfter[0], 1e-5);\n");
-print ("    EXPECT_NEAR(scale[1], scaleAfter[1], 1e-5);\n");
-print ("    EXPECT_NEAR(scale[2], scaleAfter[2], 1e-5);\n");
-print ("    EXPECT_NEAR(translate[0], translateAfter[0], 1e-5);\n");
-print ("    EXPECT_NEAR(translate[1], translateAfter[1], 1e-5);\n");
-print ("    EXPECT_NEAR(translate[2], translateAfter[2], 1e-5);\n");
-print ("    EXPECT_NEAR(rotate[0], rotateAfter[0], 1e-5);\n");
-print ("    EXPECT_NEAR(rotate[1], rotateAfter[1], 1e-5);\n");
-print ("    EXPECT_NEAR(rotate[2], rotateAfter[2], 1e-5);\n");
-print ("    EXPECT_EQ(order, orderAfter);\n");
-print ("  }\n");
-*/
 
 TEST(MayaTransformAPI, asMatrix)
 {

@@ -80,52 +80,52 @@ public:
   /// \param  scale value of the scaling at the specified time
   /// \param  time the time at which to set the scaling
   MAYA_USD_UTILS_PUBLIC
-  void scale(const GfVec3f& value, const UsdTimeCode& time = UsdTimeCode::Default());
+  void scale(const GfVec3f& scale, const UsdTimeCode& time = UsdTimeCode::Default());
 
   /// \brief  applies a rotateAxis value at the specified time code
   /// \param  rotateAxis value of the rotateAxis at the specified time
   /// \param  time the time at which to set the rotateAxis
   MAYA_USD_UTILS_PUBLIC
-  void rotateAxis(const GfVec3f& value, const UsdTimeCode& time = UsdTimeCode::Default());
+  void rotateAxis(const GfVec3f& rotateAxis, const UsdTimeCode& time = UsdTimeCode::Default());
 
   /// \brief  applies a rotation value at the specified time code
   /// \param  order the rotation order to use
   /// \param  rotation value of the rotation at the specified time
   /// \param  time the time at which to set the rotation
   MAYA_USD_UTILS_PUBLIC
-  void rotate(const GfVec3f& value, RotationOrder order, const UsdTimeCode& time = UsdTimeCode::Default());
+  void rotate(const GfVec3f& rotation, RotationOrder order, const UsdTimeCode& time = UsdTimeCode::Default());
 
   /// \brief  applies a translation value at the specified time code
   /// \param  translation value of the translation at the specified time
   /// \param  time the time at which to set the translation
   MAYA_USD_UTILS_PUBLIC
-  void translate(const GfVec3d& value, const UsdTimeCode& time = UsdTimeCode::Default());
+  void translate(const GfVec3d& translation, const UsdTimeCode& time = UsdTimeCode::Default());
 
   /// \brief  applies a scalePivot value at the specified time code
   /// \param  scalePivot value of the scalePivot at the specified time
   /// \param  time the time at which to set the scalePivot
   MAYA_USD_UTILS_PUBLIC
-  void scalePivot(const GfVec3f& value, const UsdTimeCode& time = UsdTimeCode::Default());
+  void scalePivot(const GfVec3f& scalePivot, const UsdTimeCode& time = UsdTimeCode::Default());
 
   /// \brief  applies a rotatePivot value at the specified time code
   /// \param  rotatePivot value of the rotatePivot at the specified time
   /// \param  time the time at which to set the rotatePivot
   MAYA_USD_UTILS_PUBLIC
-  void rotatePivot(const GfVec3f& value, const UsdTimeCode& time = UsdTimeCode::Default());
+  void rotatePivot(const GfVec3f& rotatePivot, const UsdTimeCode& time = UsdTimeCode::Default());
 
   /// \brief  applies a scalePivotTranslate value at the specified time code
   /// \param  scalePivotTranslate value of the scalePivotTranslate at the specified time
   /// \param  time the time at which to set the scalePivotTranslate
   MAYA_USD_UTILS_PUBLIC
-  void scalePivotTranslate(const GfVec3f& value, const UsdTimeCode& time = UsdTimeCode::Default());
+  void scalePivotTranslate(const GfVec3f& scalePivotTranslate, const UsdTimeCode& time = UsdTimeCode::Default());
 
   /// \brief  applies a rotatePivotTranslate value at the specified time code
   /// \param  rotatePivotTranslate value of the rotatePivotTranslate at the specified time
   /// \param  time the time at which to set the rotatePivotTranslate
   MAYA_USD_UTILS_PUBLIC
-  void rotatePivotTranslate(const GfVec3f& value, const UsdTimeCode& time = UsdTimeCode::Default());
+  void rotatePivotTranslate(const GfVec3f& rotatePivotTranslate, const UsdTimeCode& time = UsdTimeCode::Default());
 
-  /// \brief  sets thewhether parent transforms affect this UsdGeomXform. 
+  /// \brief  sets whether the parent transforms affect this UsdGeomXform. 
   /// \param  inherit sets the resetStack parameter within UsdGeomXform
   MAYA_USD_UTILS_PUBLIC
   void inheritsTransform(bool inherit);
@@ -190,7 +190,7 @@ public:
 
   /// \brief  evaluates the matrix at the specified time code
   /// \param  time the time at which to evaluate the transform
-  /// \return the local speace matrix for this prim
+  /// \return the local space matrix for this prim
   MAYA_USD_UTILS_PUBLIC
   GfMatrix4d asMatrix(const UsdTimeCode& time = UsdTimeCode::Default()) const;
 
@@ -222,7 +222,7 @@ public:
 
 protected:
   void convertMatrixOpToComponentOps(const UsdGeomXformOp& op);
-  bool matchesMayaTrasformProfile(const std::vector<UsdGeomXformOp>& orderedOps);
+  bool initializeMayaTransformProfile(const std::vector<UsdGeomXformOp>& orderedOps);
   void rebuildXformOrder();
   void insertScaleOp();  
   void insertRotateOp(RotationOrder order);  
@@ -236,7 +236,7 @@ private:
   GfVec3f _extractScaleFromMatrix(const UsdTimeCode time) const;
   GfVec3f _extractRotateFromMatrix(const UsdTimeCode time) const;
   GfVec3d _extractTranslateFromMatrix(const UsdTimeCode time) const;
-  bool _matchesMayaTrasformProfile(const std::vector<UsdGeomXformOp>& orderedOps);
+  bool _initializeMayaTransformProfile(const std::vector<UsdGeomXformOp>& orderedOps);
   UsdPrim m_prim;
   UsdGeomXformOp m_pivot = UsdGeomXformOp();
   UsdGeomXformOp m_pivotINV = UsdGeomXformOp();

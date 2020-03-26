@@ -65,9 +65,9 @@ const TfToken scaleOld("xformOp:scale:scale");
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool MayaTransformAPI::matchesMayaTrasformProfile(const std::vector<UsdGeomXformOp>& orderedOps)
+bool MayaTransformAPI::initializeMayaTransformProfile(const std::vector<UsdGeomXformOp>& orderedOps)
 {
-  bool result = _matchesMayaTrasformProfile(orderedOps);
+  bool result = _initializeMayaTransformProfile(orderedOps);
   if(!result)
   {
     m_api = TransformAPI::kFallback;
@@ -76,7 +76,7 @@ bool MayaTransformAPI::matchesMayaTrasformProfile(const std::vector<UsdGeomXform
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool MayaTransformAPI::_matchesMayaTrasformProfile(const std::vector<UsdGeomXformOp>& orderedOps)
+bool MayaTransformAPI::_initializeMayaTransformProfile(const std::vector<UsdGeomXformOp>& orderedOps)
 {
   // no ops defined, so we can assume the maya profile can be used. 
   if(orderedOps.empty())
@@ -293,7 +293,7 @@ MayaTransformAPI::MayaTransformAPI(UsdPrim prim, bool convertMatrixOpToComponent
 {
   bool reset = false;
   std::vector<UsdGeomXformOp> ops = UsdGeomXformable(prim).GetOrderedXformOps(&reset);
-  if(matchesMayaTrasformProfile(ops))
+  if(initializeMayaTransformProfile(ops))
   {
     // only assign if we can process the data
     m_prim = prim;
