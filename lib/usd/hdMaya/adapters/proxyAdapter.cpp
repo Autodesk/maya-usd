@@ -14,15 +14,13 @@
 // limitations under the License.
 //
 
-#include "proxyAdapter.h"
-#include "adapterRegistry.h"
+#include <hdMaya/adapters/proxyAdapter.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/debugCodes.h>
+#include <hdMaya/delegates/proxyDelegate.h>
+#include <hdMaya/delegates/sceneDelegate.h>
 
-#include "../debugCodes.h"
-
-#include "../delegates/proxyDelegate.h"
-#include "../delegates/sceneDelegate.h"
-
-#include "../../../nodes/proxyShapeBase.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <maya/MTime.h>
 #include <maya/MGlobal.h>
@@ -31,7 +29,6 @@
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 #endif // WANT_UFE_BUILD
-
 
 PXR_NAMESPACE_OPEN_SCOPE
 

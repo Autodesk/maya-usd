@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "USDQtUtil.h"
+#include <mayaUsdUI/ui/views/USDQtUtil.h>
 
 #include <maya/MQtUtil.h>
 

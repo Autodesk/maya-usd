@@ -14,14 +14,14 @@
 // limitations under the License.
 //
 
-#include "TreeItem.h"
-#include "TreeModel.h"
-#include "ItemDelegate.h"
-#include "IMayaMQtUtil.h"
-
-#include <maya/MQtUtil.h>
+#include <mayaUsdUI/ui/views/TreeItem.h>
+#include <mayaUsdUI/ui/views/TreeModel.h>
+#include <mayaUsdUI/ui/views/ItemDelegate.h>
+#include <mayaUsdUI/ui/views/IMayaMQtUtil.h>
 
 #include <cassert>
+
+#include <maya/MQtUtil.h>
 
 MAYAUSD_NS_DEF {
 

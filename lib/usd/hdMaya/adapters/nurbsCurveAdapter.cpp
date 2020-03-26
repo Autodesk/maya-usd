@@ -13,25 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+
 #include <pxr/pxr.h>
-
 #include <pxr/base/tf/type.h>
-
-#include <pxr/usd/usdGeom/tokens.h>
-
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/pxOsd/tokens.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MFnNurbsCurve.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
 #include <maya/MPolyMessage.h>
-
-#include "adapterDebugCodes.h"
-#include "adapterRegistry.h"
-#include "mayaAttrs.h"
-#include "shapeAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

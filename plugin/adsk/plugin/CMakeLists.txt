@@ -28,6 +28,13 @@ target_sources(${TARGET_NAME}
         ProxyShape.cpp
 )
 
+set(headers
+    base/api.h
+    exportTranslator.h
+    importTranslator.h
+    ProxyShape.h
+)
+
 # -----------------------------------------------------------------------------
 # compile definitions
 # -----------------------------------------------------------------------------
@@ -43,8 +50,6 @@ target_compile_definitions(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
     PRIVATE
-        ${CMAKE_BINARY_DIR}/include
-        ${PXR_INCLUDE_DIRS}
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
@@ -53,19 +58,8 @@ target_include_directories(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME}
     PRIVATE
-        ar 
-        gf
-        kind
-        plug
-        sdf
-        tf
-        usd
-        usdGeom
-        usdUtils
-        mayaUsd
         $<$<BOOL:${Qt5_FOUND}>:mayaUsdUI>
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
-        ${MAYA_LIBRARIES}
 )
 
 # -----------------------------------------------------------------------------
@@ -92,6 +86,16 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
+
+# -----------------------------------------------------------------------------
+# promoted headers
+# -----------------------------------------------------------------------------
+mayaUsd_promoteHeaderList( 
+    HEADERS
+        ${headers}
+    BASEDIR
+        ${TARGET_NAME}
+)
 
 # -----------------------------------------------------------------------------
 # install

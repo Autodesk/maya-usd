@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "exportTranslator.h"
+#include <mayaUsdPlugin/exportTranslator.h>
 
 #include <string>
 #include <set>
@@ -29,8 +29,6 @@
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
-
-
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

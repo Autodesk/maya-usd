@@ -96,7 +96,7 @@ if(IS_WINDOWS)
 endif()
 
 install(FILES ${headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd_Schemas
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}_Schemas
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json

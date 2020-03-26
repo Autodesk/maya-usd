@@ -16,7 +16,7 @@
 #ifndef MAYAUSD_SCHEMAS_API_H
 #define MAYAUSD_SCHEMAS_API_H
 
-#include "pxr/base/arch/export.h"
+#include <pxr/base/arch/export.h>
 
 #if defined(PXR_STATIC)
 #   define MAYAUSD_SCHEMAS_API

@@ -17,18 +17,17 @@
 #ifndef HDMAYA_AL_PROXY_DELEGATE_H
 #define HDMAYA_AL_PROXY_DELEGATE_H
 
-#include "delegate.h"
+#include <hdMaya/delegates/delegate.h>
+
+#include <memory>
+
+#include <maya/MMessage.h>
 
 #include <pxr/pxr.h>
-
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
-
-#include <maya/MMessage.h>
-
-#include <memory>
 
 #if WANT_UFE_BUILD
 #include <ufe/selection.h>

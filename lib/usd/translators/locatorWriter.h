@@ -18,12 +18,11 @@
 
 /// \file pxrUsdTranslators/locatorWriter.h
 
-#include "pxr/pxr.h"
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
-#include "../../fileio/primWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 
 #include <maya/MFnDependencyNode.h>
 

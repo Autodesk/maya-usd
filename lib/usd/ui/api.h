@@ -42,6 +42,3 @@
 #endif
 #endif
 
-// Convenience symbol versioning include: because api.h is widely
-// included, this reduces the need to explicitly include mayaUsd.h.
-#include "mayaUsd/mayaUsd.h"

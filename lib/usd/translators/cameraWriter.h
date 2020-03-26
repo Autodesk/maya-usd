@@ -18,17 +18,15 @@
 
 /// \file pxrUsdTranslators/cameraWriter.h
 
-#include "pxr/pxr.h"
-
-#include "../../fileio/primWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/camera.h"
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/camera.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

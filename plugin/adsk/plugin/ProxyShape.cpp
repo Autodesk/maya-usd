@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "ProxyShape.h"
+#include <mayaUsdPlugin/ProxyShape.h>
 
-#include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
 
 MAYAUSD_NS_DEF {
 

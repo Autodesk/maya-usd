@@ -13,18 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "adapterRegistry.h"
+#include <hdMaya/adapters/adapterRegistry.h>
+
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
+#include <mutex>
+
+#include <maya/MFnDependencyNode.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/tf/type.h>
-
-#include <maya/MFnDependencyNode.h>
-
-#include "../../../nodes/proxyShapeBase.h"
-
-#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

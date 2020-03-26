@@ -16,16 +16,15 @@
 #ifndef HDMAYA_ADAPTER_H
 #define HDMAYA_ADAPTER_H
 
-#include <pxr/pxr.h>
-
-#include <pxr/usd/sdf/path.h>
-
-#include <maya/MMessage.h>
+#include <hdMaya/api.h>
+#include <hdMaya/delegates/delegateCtx.h>
 
 #include <vector>
 
-#include "../api.h"
-#include "../delegates/delegateCtx.h"
+#include <maya/MMessage.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

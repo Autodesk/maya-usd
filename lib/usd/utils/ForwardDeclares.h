@@ -15,8 +15,8 @@
 //
 #pragma once
 
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
