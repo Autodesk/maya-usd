@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import tempfile
 import maya.cmds as mc
@@ -29,7 +30,7 @@ def importStageWithSphere(proxyShapeName='AL_usdmaya_Proxy'):
     tempFile.close()
     mc.file(tempFile.name, exportSelected=True, force=True, type="AL usdmaya export")
     dir(tempFile)
-    print "tempFile ", tempFile.name
+    print("tempFile ", tempFile.name)
 
     # clear scene
     mc.file(f=True, new=True)

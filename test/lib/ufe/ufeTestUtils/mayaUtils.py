@@ -19,6 +19,7 @@
 """
     Helper functions regarding Maya that will be used throughout the test.
 """
+from __future__ import print_function
 
 
 import maya.cmds as cmds
@@ -42,8 +43,8 @@ def loadPlugin(pluginName):
             cmds.loadPlugin( pluginName, quiet = True )
         return True
     except:
-        print sys.exc_info()[1]
-        print "Unable to load %s" % pluginName
+        print(sys.exc_info()[1])
+        print("Unable to load %s" % pluginName)
         return False
             
 def isPluginLoaded(pluginName):

@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
 from pxr import Gf
 
 from maya import cmds
@@ -180,7 +181,7 @@ class testUsdImportXforms(unittest.TestCase):
                                 attrName, expected, actual, abs(expected - actual)),
                             delta=1e-4)
                     except Exception:
-                        print "full failed xform:"
+                        print("full failed xform:")
                         pprint.pprint(attrVals)
                         raise
                     
@@ -256,7 +257,7 @@ class testUsdImportXforms(unittest.TestCase):
             mayaPath = _usdToMayaPath(usdPath)
             mayaMatrix = Gf.Matrix4d(*cmds.xform(mayaPath, query=True, matrix=True, worldSpace=True))
 
-            print 'testing matrix at', usdPath
+            print('testing matrix at', usdPath)
             self.assertTrue(Gf.IsClose(
                 usdMatrix.ExtractTranslation(), 
                 mayaMatrix.ExtractTranslation(), 

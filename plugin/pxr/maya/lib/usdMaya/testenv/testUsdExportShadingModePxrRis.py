@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
 import os
 import unittest
 
@@ -71,7 +72,7 @@ class testUsdExportShadingModePxrRis(unittest.TestCase):
         # Validate the surface shader that is connected to the material.
         materialOutputs = material.GetOutputs()
         self.assertEqual(len(materialOutputs), 4)
-        print self._stage.ExportToString()
+        print(self._stage.ExportToString())
         materialOutput = material.GetOutput('ri:surface')
         (connectableAPI, outputName, outputType) = materialOutput.GetConnectedSource()
         self.assertEqual(outputName, 'out')

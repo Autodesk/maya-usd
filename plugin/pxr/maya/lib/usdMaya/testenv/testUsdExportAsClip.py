@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import print_function
 import os
 import unittest
 
@@ -31,7 +32,7 @@ class testUsdExportAsClip(unittest.TestCase):
 
         cmds.file(os.path.abspath('UsdExportAsClipTest.ma'), open=True,
             force=True)
-        print os.path.abspath('UsdExportAsClipTest.ma')
+        print(os.path.abspath('UsdExportAsClipTest.ma'))
 
         cmds.loadPlugin('pxrUsd', quiet=True)
 
@@ -116,7 +117,7 @@ class testUsdExportAsClip(unittest.TestCase):
         canonicalUsdFile = os.path.abspath('canonical.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=canonicalUsdFile, frameRange=(1, 20))
 
-        print 'comparing: \nnormal: {}\nstitched: {}'.format(canonicalUsdFile, stitchedPath)
+        print('comparing: \nnormal: {}\nstitched: {}'.format(canonicalUsdFile, stitchedPath))
         canonicalStage = Usd.Stage.Open(canonicalUsdFile)
         clipsStage = Usd.Stage.Open(stitchedPath)
         # visible

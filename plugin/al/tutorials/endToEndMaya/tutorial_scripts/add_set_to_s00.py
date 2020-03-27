@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
 import os
 ASSET_BASE = os.path.join('../../', 'models')
 
@@ -45,9 +46,9 @@ def main():
 
     stage.GetEditTarget().GetLayer().Save()
 
-    print '==='
-    print 'usdview %s' % sequenceFilePath
-    print 'usdcat %s' % setsLayoutLayerFilePath
+    print('===')
+    print('usdview %s' % sequenceFilePath)
+    print('usdcat %s' % setsLayoutLayerFilePath)
 
 if __name__ == '__main__':
     main()

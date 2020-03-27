@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+from __future__ import print_function
 import os
 import unittest
 
@@ -96,7 +97,7 @@ class testUsdExportSkeleton(unittest.TestCase):
         # problems, since they are not members of the dagPose. As a result,
         # no dag pose is exported. Need to come up with a way to handle this
         # correctly in export.
-        print "Expect warnings about invalid restTransforms"
+        print("Expect warnings about invalid restTransforms")
         usdFile = os.path.abspath('UsdExportSkeleton.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                        shadingMode='none', frameRange=frameRange,

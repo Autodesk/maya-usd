@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
 import os
 import unittest
 
@@ -92,7 +93,7 @@ class testUsdExportFilterTypes(unittest.TestCase):
                 options['filterTypes'] = ','.join(filter)
             kwargs['options'] = ';'.join('{}={}'.format(key, val)
                                          for key, val in options.iteritems())
-        print "running: {}(*{!r}, **{!r})".format(exportMethod.__name__, args, kwargs)
+        print("running: {}(*{!r}, **{!r})".format(exportMethod.__name__, args, kwargs))
         exportMethod(*args, **kwargs)
         return Usd.Stage.Open(usdFile)
 

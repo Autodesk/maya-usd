@@ -1,3 +1,4 @@
+from __future__ import print_function
 #
 # Copyright 2016 Pixar
 #
@@ -28,7 +29,7 @@ import sys
 import py_compile
 
 if len(sys.argv) < 4:
-    print "Usage: %s src.py file.py file.pyc" % sys.argv[0]
+    print("Usage: %s src.py file.py file.pyc" % sys.argv[0])
     sys.exit(1)
 
 try:
@@ -45,14 +46,14 @@ except py_compile.PyCompileError as compileError:
         try:
             linenumber = exc_value[1][1]
             line = exc_value[1][3]
-            print '%s:%s: %s: "%s"' % (sys.argv[1], linenumber, error, line)
+            print('%s:%s: %s: "%s"' % (sys.argv[1], linenumber, error, line))
         except IndexError:
-            print '%s: Syntax error: "%s"' % (sys.argv[1], error)
+            print('%s: Syntax error: "%s"' % (sys.argv[1], error))
     else:
-        print "%s: Unhandled compile error: (%s) %s" % (
-            sys.argv[1], compileError.exc_type_name, exc_value)
+        print("%s: Unhandled compile error: (%s) %s" % (
+            sys.argv[1], compileError.exc_type_name, exc_value))
     sys.exit(1)
 except:
     exc_type, exc_value, exc_traceback = sys.exc_info()
-    print "%s: Unhandled exception: %s" % (sys.argv[1], exc_value)
+    print("%s: Unhandled exception: %s" % (sys.argv[1], exc_value))
     sys.exit(1)

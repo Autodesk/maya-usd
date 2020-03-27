@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+from __future__ import print_function
 import os
 ASSET_BASE = os.path.join(os.getcwd(), 'models')
 
@@ -41,9 +42,9 @@ def main():
 
     stage.GetEditTarget().GetLayer().Save()
 
-    print '==='
-    print 'usdview %s' % shotFilePath
-    print 'usdcat %s' % animLayerFilePath
+    print('===')
+    print('usdview %s' % shotFilePath)
+    print('usdcat %s' % animLayerFilePath)
 
 def _AddCueRigAndCacheVariants(stage):
     from pxr import Kind, Sdf, Usd, UsdGeom
