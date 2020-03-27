@@ -6,136 +6,37 @@ This build branch is a downstream branch from dev. The purpose is to merge in br
 
 Note: you should never create a pull request to merge changes into this branch. Instead simply (selectively) merge in branches from github where an open PR exists.
 
-The only file to modify in this branch is this one.
+The only file to manually modify in this branch would be this one.
 
-## How it was initially created
+Under no circumstances should you modify the existing history of the build branch. Force push and rebase are **not** allowed.
 
-```
-git fetch --all --prune --prune-tags --tags
-git checkout github/dev
-git checkout -b build
-```
+## Github remote repo
 
-## History of merges
+You need to have cloned the [internal maya-usd repo](https://git.autodesk.com/maya3d/maya-usd).
 
-The following is a list of the history of merges that were done in this build branch. Each time you modify the build branch you should add a section at the bottom outlining
-the steps you did. 
+And then add the [public Github repo](https://github.com/Autodesk/maya-usd) as a remote.
+
+In this case the internal repo named **origin** and the github is named **github**.
 
 ```
-git merge --no-ff github/implement_ufe_attribute_notify_dev
-git merge --no-ff github/autodesk/MAYA-100225/fixes_al_unit_tests
-git merge --no-ff github/donnels/MAYA-101325/new_import_ui_feature_wip
-git push
+$ git remote -v
+github  https://github.com/Autodesk/maya-usd (fetch)
+github  https://github.com/Autodesk/maya-usd (push)
+origin  https://git.autodesk.com/maya3d/maya-usd.git (fetch)
+origin  https://git.autodesk.com/maya3d/maya-usd.git (push)
 ```
 
+## How to update *build* branch from latest *dev*
 ```
-git merge --no-ff github/autodesk/MAYA-100225/fixes_al_unit_tests
-Note: this merged back in dev as Hamed merged dev to his branch.
-git merge --no-ff github/ufe_bbox_support_dev
-git add BranchHistory.md
-git commit -m "Adding Branch History file"
-git push
-```
-
-```
-Jan 28, 2020:
-git merge --no-ff github/donnels/MAYA-101325/new_import_ui_feature_wip
-git merge --no-ff github/autodesk/MAYA-100225/fixes_al_unit_tests
-git merge --no-ff github/dev
-git merge --no-ff github/adsk/MAYA-102918/add_mayausd_export_translator
-git merge --no-ff github/ufe_bbox_support_dev
-git push
-```
-
-```
-Jan 30, 2020:
 git merge --no-ff github/dev
 git push
+- This push will automatically trigger the preflight build
 ```
 
+## How to merge in a branch from open PR
 ```
-Feb 05, 2020:
-git merge --no-ff github/donnels/MAYA-101325/new_import_ui_feature_wip
-git merge --no-ff github/dev
+git fetch --all
+git merge --no-ff github/<branch_name>
 git push
-```
-
-```
-Feb 06, 2020:
-git merge --no-ff github/dev
-git merge --no-ff github/chenh/MAYA-101845/usd-geom-curves
-git push
-```
-
-```
-Feb 11, 2020:
-git merge --no-ff github/dev
-git merge --no-ff github/donnels/MAYA-102920/rpath_changes_for_maya_build
-git merge --no-ff github/donnels/MAYA-103070/protect_importui_from_missing_command
-git push
-```
-
-```
-Feb 18, 2020:
-git merge --no-ff github/adsk/MAYA-102918/add_mayausd_export_translator
-git merge --no-ff github/donnels/MAYA-102920/rpath_changes_for_maya_build
-git merge --no-ff github/dev
-git push
-```
-
-```
-Feb 25, 2020:
-git merge --no-ff github/adsk/MAYA-102918/add_mayausd_export_translator
-git merge --no-ff github/donnels/MAYA-103070/minimal_import_ui_pr113
-git merge --no-ff github/Autodesk/tremblp/MAYA-103495/contextual_operations
-git merge --no-ff github/roussel/MAYA-103409/Minimal_Create_USD_Stage
-git merge --no-ff github/dev
-```
-
-```
-Feb 27, 2020:
-git merge --no-ff github/adsk/MAYA-102918/add_mayausd_export_translator
-git merge --no-ff github/fowlert/MAYA-103561/enable_usdz_read
-git merge --no-ff github/roussel/MAYA-103409/Minimal_Create_USD_Stage
-```
-
-```
-Mar 04, 2020:
-git merge --no-ff github/dev
-```
-
-```
-Mar 05, 2020:
-git merge --no-ff github/dev
-```
-
-```
-Mar 17, 2020:
-git merge --no-ff github/dev
-git merge --no-ff github/donnels/MAYA-103655/implement_object3d_visibility
-```
-
-```
-Mar 18, 2020:
-git merge --no-ff github/dev
-git merge --no-ff github/donnels/gtest_debug_fix_take2
-```
-
-```
-Mar 19, 2020:
-git merge --no-ff github/dev
-git merge --no-ff github/tremblp/MAYA-103295/ufe_path_string_usd
-```
-
-```
-Mar 24, 2020:
-git merge --no-ff github/dev
-Manually fix file: test/lib/ufe/testAttribute.py
-```
-
-```
-Mar 25, 2020:
-git merge --no-ff github/dev
-git merge --no-ff github/donnels/103421/use_current_time_when_getting_attribute_value
-git merge --no-ff github/donnels/MAYA-104008/transform_attributes_xformop_order
+- This push will automatically trigger the preflight build
 ```
