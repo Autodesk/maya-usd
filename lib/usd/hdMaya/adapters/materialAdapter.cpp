@@ -13,20 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "materialAdapter.h"
+#include <hdMaya/adapters/materialAdapter.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/materialNetworkConverter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/tokens.h>
+#include <hdMaya/utils.h>
+
+#include <maya/MNodeMessage.h>
+#include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
 
 #include <pxr/base/tf/fileUtils.h>
-
+#include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/glf/textureRegistry.h>
+#include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/imaging/hd/instanceRegistry.h>
 #include <pxr/imaging/hd/material.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
 #include <pxr/imaging/hdSt/resourceRegistry.h>
-
-#include <pxr/imaging/glf/contextCaps.h>
-#include <pxr/imaging/glf/textureRegistry.h>
-#include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/imaging/hdSt/textureResource.h>
 #include <pxr/imaging/hio/glslfx.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/sdr/registry.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 #include <pxr/usdImaging/usdImagingGL/package.h>
@@ -34,20 +43,6 @@
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hdSt/textureResourceHandle.h>
 #endif
-
-#include <pxr/usd/sdf/types.h>
-
-#include <pxr/usd/sdr/registry.h>
-
-#include <maya/MNodeMessage.h>
-#include <maya/MPlug.h>
-#include <maya/MPlugArray.h>
-
-#include "adapterRegistry.h"
-#include "materialNetworkConverter.h"
-#include "mayaAttrs.h"
-#include "tokens.h"
-#include "../utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

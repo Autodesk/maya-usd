@@ -13,15 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "shapeAdapter.h"
-
-#include <pxr/base/tf/type.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#include "adapterDebugCodes.h"
-#include "mayaAttrs.h"
+#include <pxr/base/tf/type.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,16 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "delegateRegistry.h"
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <hdMaya/delegates/delegateDebugCodes.h>
 
-#include "delegateDebugCodes.h"
+#include <mutex>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/tf/type.h>
-
-#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "adapterDebugCodes.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
 
 #include <pxr/base/tf/registryManager.h>
 

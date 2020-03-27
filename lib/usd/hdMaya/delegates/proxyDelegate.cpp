@@ -14,17 +14,16 @@
 // limitations under the License.
 //
 
-#include "proxyDelegate.h"
+#include <hdMaya/delegates/proxyDelegate.h>
+#include <hdMaya/adapters/proxyAdapter.h>
+#include <hdMaya/debugCodes.h>
+#include <hdMaya/delegates/delegateRegistry.h>
 
-#include "../adapters/proxyAdapter.h"
-#include "../debugCodes.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
-#include "delegateRegistry.h"
-
-#include "../../../nodes/proxyShapeBase.h"
-
-#include <pxr/base/tf/envSetting.h>
-#include <pxr/base/tf/type.h>
+#include <atomic>
+#include <mutex>
+#include <unordered_set>
 
 #include <maya/MDGMessage.h>
 #include <maya/MFnDagNode.h>
@@ -35,9 +34,8 @@
 #include <maya/MObject.h>
 #include <maya/MSceneMessage.h>
 
-#include <atomic>
-#include <mutex>
-#include <unordered_set>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/type.h>
 
 #if WANT_UFE_BUILD
 #include <ufe/rtid.h>

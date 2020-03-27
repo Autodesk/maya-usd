@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 
-#include "USDImportDialogCmd.h"
-#include "views/USDImportDialog.h"
-#include "views/USDQtUtil.h"
+#include <mayaUsdUI/ui/cmds/USDImportDialogCmd.h>
+#include <mayaUsdUI/ui/views/USDImportDialog.h>
+#include <mayaUsdUI/ui/views/USDQtUtil.h>
 
 #include <mayaUsd/fileio/importData.h>
 

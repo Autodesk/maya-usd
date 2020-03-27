@@ -14,13 +14,15 @@
 // limitations under the License.
 //
 
-#include "USDImportDialog.h"
-#include "IMayaMQtUtil.h"
-#include "factories/TreeModelFactory.h"
-#include "ItemDelegate.h"
-#include "ui_USDImportDialog.h"
+#include <mayaUsdUI/ui/views/USDImportDialog.h>
+#include <mayaUsdUI/ui/views/IMayaMQtUtil.h>
+#include <mayaUsdUI/ui/views/ItemDelegate.h>
 
 #include <stdexcept>
+
+#include <mayaUsdUI/ui/factories/TreeModelFactory.h>
+
+#include "ui_USDImportDialog.h"
 
 MAYAUSD_NS_DEF {
 

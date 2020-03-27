@@ -16,9 +16,9 @@
 #ifndef HDMAYA_SHAPE_ADAPTER_H
 #define HDMAYA_SHAPE_ADAPTER_H
 
-#include <pxr/pxr.h>
+#include <hdMaya/adapters/dagAdapter.h>
 
-#include "dagAdapter.h"
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

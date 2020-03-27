@@ -13,27 +13,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "materialNetworkConverter.h"
+#include <hdMaya/adapters/materialNetworkConverter.h>
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/materialAdapter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/tokens.h>
+#include <hdMaya/utils.h>
 
-#include "adapterDebugCodes.h"
-#include "materialAdapter.h"
-#include "mayaAttrs.h"
-#include "tokens.h"
+#include <mutex>
 
-#include "mayaUsd/utils/util.h"
-
-#include <pxr/usd/sdr/registry.h>
-#include <pxr/usd/sdr/shaderProperty.h>
-#include <pxr/usd/usdHydra/tokens.h>
-#include <pxr/usdImaging/usdImaging/tokens.h>
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
 
-#include "../utils.h"
-
-#include <mutex>
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usd/sdr/shaderProperty.h>
+#include <pxr/usd/usdHydra/tokens.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

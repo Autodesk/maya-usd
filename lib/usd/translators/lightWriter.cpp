@@ -14,12 +14,10 @@
 // limitations under the License.
 //
 
-#include "../../fileio/translators/translatorRfMLight.h"
-#include "../../fileio/primWriterRegistry.h"
-
+#include <mayaUsd/fileio/translators/translatorRfMLight.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PXRUSDMAYA_DEFINE_WRITER(PxrAovLight, args, context)
 {

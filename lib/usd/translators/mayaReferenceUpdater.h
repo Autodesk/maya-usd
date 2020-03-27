@@ -18,12 +18,11 @@
 
 /// \file pxrUsdTranslators/mayaReferenceUpdater.h
 
-#include "pxr/pxr.h"
-
-#include "../../fileio/primUpdater.h"
+#include <mayaUsd/fileio/primUpdater.h>
 
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,10 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include "proxyUsdImagingDelegate.h"
-
-#include "../../../nodes/proxyShapeBase.h"
+#include <hdMaya/delegates/proxyUsdImagingDelegate.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <maya/MMatrix.h>
 

@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include <mayaUsd/ui/api.h>
+#include <mayaUsdUI/ui/api.h>
 
+#include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/importData.h>
 
 #include <pxr/usd/usd/stage.h>

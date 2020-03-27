@@ -15,7 +15,10 @@
 //
 #pragma once
 
-#include <mayaUsd/ui/api.h>
+#include <mayaUsdUI/ui/api.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsdUI/ui/views/IUSDImportView.h>
+#include <mayaUsdUI/ui/views/TreeModel.h>
 
 #include <memory>
 
@@ -23,9 +26,6 @@
 #include <QtCore/QSortFilterProxyModel>
 
 #include <pxr/usd/usd/stage.h>
-
-#include "IUSDImportView.h"
-#include "TreeModel.h"
 
 namespace Ui {
 	class ImportDialog;

@@ -15,8 +15,10 @@
 //
 #pragma once
 
-#include <mayaUsd/ui/api.h>
-#include <mayaUsd/ui/views/IMayaMQtUtil.h>
+#include <mayaUsdUI/ui/api.h>
+#include <mayaUsdUI/ui/views/IMayaMQtUtil.h>
+
+#include <mayaUsd/base/api.h>
 
 MAYAUSD_NS_DEF {
 
