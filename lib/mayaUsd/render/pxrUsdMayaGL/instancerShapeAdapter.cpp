@@ -13,42 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./instancerShapeAdapter.h"
+#include <mayaUsd/render/pxrUsdMayaGL/instancerShapeAdapter.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
+#include <mayaUsd/utils/util.h>
 
-#include "./batchRenderer.h"
-#include "./debugCodes.h"
-#include "./renderParams.h"
-#include "./shapeAdapter.h"
+#include <string>
 
-#include "../../utils/util.h"
-#include "../../fileio/utils/writeUtil.h"
-
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/gf/matrix4d.h"
-
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/usd/kind/registry.h"
-
-#include "pxr/usd/sdf/path.h"
-
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-
-#include "pxr/usd/usdGeom/pointInstancer.h"
-
-#include "pxr/usdImaging/usdImaging/delegate.h"
+#include <boost/functional/hash.hpp>
 
 #include <maya/M3dView.h>
 #include <maya/MColor.h>
@@ -64,13 +39,27 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <boost/functional/hash.hpp>
-
-#include <string>
-
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/enums.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/repr.h>
+#include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/tokens.h>
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/pointInstancer.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

@@ -18,19 +18,17 @@
 
 /// \file pxrUsdMayaGL/userData.h
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
+#include <mayaUsd/base/api.h>
 
-#include "pxr/base/gf/vec4f.h"
+#include <memory>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MUserData.h>
 
-#include <memory>
-
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec4f.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Container for all of the information needed for a draw request in the
 /// legacy viewport or Viewport 2.0, without requiring shape querying at draw

@@ -16,21 +16,18 @@
 #ifndef PXRUSDMAYA_WRITE_JOB_H
 #define PXRUSDMAYA_WRITE_JOB_H
 
-/// \file usdMaya/writeJob.h
+#include <mayaUsd/base/api.h>
 
-#include "../../base/api.h"
+#include <mayaUsd/fileio/chaser/chaser.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
-#include "../chaser/chaser.h"
-#include "../../utils/util.h"
-#include "../writeJobContext.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/base/tf/hashmap.h"
+#include <string>
 
 #include <maya/MObjectHandle.h>
 
-#include <string>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/hashmap.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

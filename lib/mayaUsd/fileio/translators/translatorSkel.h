@@ -13,27 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-/// \file usdMaya/translatorSkel.h
-
 #ifndef PXRUSDMAYA_TRANSLATOR_SKEL_H
 #define PXRUSDMAYA_TRANSLATOR_SKEL_H
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
+#include <mayaUsd/base/api.h>
 
-#include "pxr/base/vt/array.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/vt/array.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class UsdSkelSkeleton;
 class UsdSkelSkeletonQuery;
 class UsdSkelSkinningQuery;
-
 
 struct UsdMayaTranslatorSkel
 {

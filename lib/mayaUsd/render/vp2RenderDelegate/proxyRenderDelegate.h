@@ -17,15 +17,9 @@
 #ifndef PROXY_RENDER_DELEGATE
 #define PROXY_RENDER_DELEGATE
 
-#include "pxr/pxr.h"
+#include <mayaUsd/base/api.h>
 
-#include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/selection.h"
-#include "pxr/imaging/hd/task.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-
-#include "../../base/api.h"
+#include <memory>
 
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
@@ -35,7 +29,12 @@
 #include <maya/MObject.h>
 #include <maya/MPxSubSceneOverride.h>
 
-#include <memory>
+#include <pxr/pxr.h>
+#include <pxr/imaging/hd/engine.h>
+#include <pxr/imaging/hd/selection.h>
+#include <pxr/imaging/hd/task.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
 
 #if defined(WANT_UFE_BUILD)
 #include <ufe/observer.h>

@@ -18,9 +18,8 @@
 
 /// \file pxrUsdMayaGL/proxyDrawOverride.h
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "./usdProxyShapeAdapter.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -35,9 +34,9 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {

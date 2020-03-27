@@ -13,44 +13,45 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./sceneDelegate.h"
+#include <mayaUsd/render/pxrUsdMayaGL/sceneDelegate.h>
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "./renderParams.h"
+#include <mayaUsd/base/api.h>
 
-#include "../px_vp20/utils.h"
+#include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
 
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec4d.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stl.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/imaging/cameraUtil/conformWindow.h"
-#include "pxr/imaging/glf/simpleLight.h"
-#include "pxr/imaging/glf/simpleLightingContext.h"
-#include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/task.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hdSt/light.h"
-#include "pxr/imaging/hdx/pickTask.h"
-#include "pxr/imaging/hdx/renderSetupTask.h"
-#include "pxr/imaging/hdx/renderTask.h"
-#include "pxr/imaging/hdx/selectionTask.h"
-#include "pxr/imaging/hdx/shadowMatrixComputation.h"
-#include "pxr/imaging/hdx/shadowTask.h"
-#include "pxr/imaging/hdx/simpleLightTask.h"
-#include "pxr/imaging/hdx/tokens.h"
-#include "pxr/usd/sdf/path.h"
+#include <pxr/pxr.h>
+
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec4d.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stl.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/imaging/cameraUtil/conformWindow.h>
+#include <pxr/imaging/glf/simpleLight.h>
+#include <pxr/imaging/glf/simpleLightingContext.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/repr.h>
+#include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/imaging/hd/task.h>
+#include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/hd/camera.h>
+#include <pxr/imaging/hdSt/light.h>
+#include <pxr/imaging/hdx/pickTask.h>
+#include <pxr/imaging/hdx/renderSetupTask.h>
+#include <pxr/imaging/hdx/renderTask.h>
+#include <pxr/imaging/hdx/selectionTask.h>
+#include <pxr/imaging/hdx/shadowMatrixComputation.h>
+#include <pxr/imaging/hdx/shadowTask.h>
+#include <pxr/imaging/hdx/simpleLightTask.h>
+#include <pxr/imaging/hdx/tokens.h>
+#include <pxr/usd/sdf/path.h>
 
 #include <maya/MDrawContext.h>
 

@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 
-#include "ProxyShapeHandler.h"
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
 
-#include "../utils/query.h"
+#include <mayaUsd/utils/query.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>

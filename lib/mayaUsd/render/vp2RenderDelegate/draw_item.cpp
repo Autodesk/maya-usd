@@ -14,10 +14,10 @@
 // limitations under the License.
 //
 
-#include "pxr/imaging/hd/mesh.h"
+#include <mayaUsd/render/vp2RenderDelegate/draw_item.h>
+#include <mayaUsd/render/vp2RenderDelegate/render_delegate.h>
 
-#include "draw_item.h"
-#include "render_delegate.h"
+#include <pxr/imaging/hd/mesh.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

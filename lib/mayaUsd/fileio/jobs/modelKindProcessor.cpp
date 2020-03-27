@@ -13,13 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "modelKindProcessor.h"
+#include <mayaUsd/fileio/jobs/modelKindProcessor.h>
 
-#include "pxr/usd/kind/registry.h"
-#include "pxr/usd/usd/modelAPI.h"
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/usd/modelAPI.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 UsdMaya_ModelKindProcessor::UsdMaya_ModelKindProcessor(
     const UsdMayaJobExportArgs& args)
@@ -27,7 +26,6 @@ UsdMaya_ModelKindProcessor::UsdMaya_ModelKindProcessor(
       _rootIsAssembly(KindRegistry::IsA(args.rootKind, KindTokens->assembly))
 {
 }
-
 
 /// Returns the root-most ancestor of prim, which is either a component
 /// or a root-level prim.

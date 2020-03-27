@@ -16,13 +16,12 @@
 #ifndef MTOH_UTILS_H
 #define MTOH_UTILS_H
 
-#include <pxr/pxr.h>
-
-#include <pxr/base/tf/token.h>
-#include <pxr/imaging/hd/renderDelegate.h>
-
 #include <string>
 #include <vector>
+
+#include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/renderDelegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

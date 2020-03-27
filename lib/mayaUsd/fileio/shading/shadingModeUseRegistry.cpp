@@ -13,28 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "../primWriter.h"
-#include "../shaderWriter.h"
-#include "shadingModeExporter.h"
-#include "shadingModeExporterContext.h"
-#include "shadingModeRegistry.h"
-#include "../utils/shadingUtil.h"
-#include "../../utils/util.h"
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/types.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdShade/connectableAPI.h"
-#include "pxr/usd/usdShade/input.h"
-#include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/tokens.h"
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
+#include <mayaUsd/utils/util.h>
+
+#include <memory>
+#include <string>
 
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
@@ -45,12 +34,22 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <memory>
-#include <string>
-
+#include <pxr/pxr.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
+#include <pxr/usd/usdShade/input.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/output.h>
+#include <pxr/usd/usdShade/shader.h>
+#include <pxr/usd/usdShade/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 namespace {
 

@@ -16,26 +16,20 @@
 #ifndef PXRUSDMAYA_SHADING_UTIL_H
 #define PXRUSDMAYA_SHADING_UTIL_H
 
-/// \file usdMaya/shadingUtil.h
+#include <mayaUsd/base/api.h>
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/valueTypeName.h"
-#include "pxr/usd/usdShade/input.h"
-#include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/shader.h"
-
+#include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/usdShade/input.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/output.h>
+#include <pxr/usd/usdShade/shader.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 namespace UsdMayaShadingUtil
 {
-
-
 /// Create an input on the given material and shader and create a connection
 /// between them.
 ///

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "primReader.h"
+#include <mayaUsd/fileio/primReader.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

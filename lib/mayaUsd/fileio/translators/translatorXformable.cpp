@@ -13,22 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "translatorXformable.h"
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/translators/translatorPrim.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/xformStack.h>
 
-#include "translatorPrim.h"
-#include "translatorUtil.h"
-#include "../utils/xformStack.h"
-
-#include "pxr/base/gf/math.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include <algorithm>
+#include <unordered_map>
+#include <vector>
 
 #include <maya/MDagModifier.h>
 #include <maya/MEulerRotation.h>
@@ -43,13 +35,18 @@
 #include <maya/MTransformationMatrix.h>
 #include <maya/MVector.h>
 
-#include <algorithm>
-#include <unordered_map>
-#include <vector>
-
+#include <pxr/base/gf/math.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 // This function retrieves a value for a given xformOp and given time sample. It
 // knows how to deal with different type of ops and angle conversion

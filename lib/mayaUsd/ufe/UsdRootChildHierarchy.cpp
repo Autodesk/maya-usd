@@ -13,12 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include "UsdRootChildHierarchy.h"
-
-#include <ufe/runTimeMgr.h>
+#include <mayaUsd/ufe/UsdRootChildHierarchy.h>
 
 #include <cassert>
+
+#include <ufe/runTimeMgr.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

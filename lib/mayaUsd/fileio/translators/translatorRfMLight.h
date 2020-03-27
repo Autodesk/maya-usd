@@ -16,19 +16,16 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_RFM_LIGHT_H
 #define PXRUSDMAYA_TRANSLATOR_RFM_LIGHT_H
 
-/// \file usdMaya/translatorRfMLight.h
+#include <mayaUsd/base/api.h>
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
-#include "../../base/api.h"
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-#include "../primWriterArgs.h"
-#include "../primWriterContext.h"
-
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 struct UsdMayaTranslatorRfMLight
 {

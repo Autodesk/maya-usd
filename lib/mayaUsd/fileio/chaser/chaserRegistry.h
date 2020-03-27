@@ -16,20 +16,18 @@
 #ifndef PXRUSDMAYA_CHASER_REGISTRY_H
 #define PXRUSDMAYA_CHASER_REGISTRY_H
 
-/// \file usdMaya/chaserRegistry.h
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/chaser/chaser.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/utils/util.h>
 
-#include "../../base/api.h"
-#include "chaser.h"
-#include "../jobs/jobArgs.h"
-#include "../../utils/util.h"
+#include <pxr/pxr.h>
 
-#include "pxr/pxr.h"
+#include <pxr/base/tf/declarePtrs.h>
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/singleton.h>
 
-#include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/singleton.h"
-
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/stage.h>
 
 #include <functional>
 

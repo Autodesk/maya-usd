@@ -13,28 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <mayaUsd/render/vp2RenderDelegate/mesh.h>
 
-#include "mesh.h"
-#include "bboxGeom.h"
-#include "debugCodes.h"
-#include "draw_item.h"
-#include "material.h"
-#include "instancer.h"
-#include "proxyRenderDelegate.h"
-#include "render_delegate.h"
-#include "tokens.h"
+#include <mayaUsd/render/vp2RenderDelegate/bboxGeom.h>
+#include <mayaUsd/render/vp2RenderDelegate/debugCodes.h>
+#include <mayaUsd/render/vp2RenderDelegate/draw_item.h>
+#include <mayaUsd/render/vp2RenderDelegate/instancer.h>
+#include <mayaUsd/render/vp2RenderDelegate/material.h>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/render/vp2RenderDelegate/render_delegate.h>
+#include <mayaUsd/render/vp2RenderDelegate/tokens.h>
 
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/meshUtil.h"
-#include "pxr/imaging/hd/smoothNormals.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
+#include <numeric>
 
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
 
-#include <numeric>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/imaging/hd/meshUtil.h>
+#include <pxr/imaging/hd/smoothNormals.h>
+#include <pxr/imaging/hd/vertexAdjacency.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

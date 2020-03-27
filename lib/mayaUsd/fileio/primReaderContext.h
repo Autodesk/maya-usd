@@ -16,18 +16,14 @@
 #ifndef PXRUSDMAYA_PRIMREADERCONTEXT_H
 #define PXRUSDMAYA_PRIMREADERCONTEXT_H
 
-/// \file usdMaya/primReaderContext.h
-
-#include "../base/api.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/usd/prim.h"
+#include <mayaUsd/base/api.h>
 
 #include <maya/MObject.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdMayaPrimReaderContext
 /// \brief This class provides an interface for reader plugins to communicate

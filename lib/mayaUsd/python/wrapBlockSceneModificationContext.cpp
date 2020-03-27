@@ -13,18 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include <mayaUsd/utils/blockSceneModificationContext.h>
-
-#include <boost/python.hpp>
 
 #include <memory>
 
+#include <boost/python.hpp>
+
+#include <pxr/pxr.h>
+
 using namespace boost::python;
 
-
 PXR_NAMESPACE_USING_DIRECTIVE;
-
 
 namespace {
 

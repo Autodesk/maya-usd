@@ -14,25 +14,15 @@
 // limitations under the License.
 //
 
-#include "util.h"
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/colorSpace.h>
 
-#include "colorSpace.h"
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
-#include "pxr/base/gf/gamma.h"
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/hashmap.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/base/vt/types.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/tokens.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/metrics.h"
+#include <boost/functional/hash.hpp>
 
 #include <maya/MAnimControl.h>
 #include <maya/MAnimUtil.h>
@@ -40,8 +30,8 @@
 #include <maya/MArgList.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
-#include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
+#include <maya/MDGModifier.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -67,13 +57,21 @@
 #include <maya/MStringArray.h>
 #include <maya/MTime.h>
 
-#include <boost/functional/hash.hpp>
-
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
+#include <pxr/base/gf/gamma.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/hashmap.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/tokens.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/metrics.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

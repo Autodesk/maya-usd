@@ -14,23 +14,15 @@
 // limitations under the License.
 //
 
-#include "debugCodes.h"
-#include "material.h"
-#include "render_delegate.h"
+#include <mayaUsd/render/vp2RenderDelegate/material.h>
 
-#include "pxr/imaging/glf/image.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/usd/ar/packageUtils.h"
-#include "pxr/usd/sdf/assetPath.h"
-#include "pxr/usd/usdHydra/tokens.h"
-#include "pxr/usdImaging/usdImaging/tokens.h"
+#include <mayaUsd/render/vp2RenderDelegate/debugCodes.h>
+#include <mayaUsd/render/vp2RenderDelegate/render_delegate.h>
 
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/tf/diagnostic.h"
+#include <iostream>
+#include <string>
+
+#include <boost/filesystem.hpp>
 
 #include <maya/MProfiler.h>
 #include <maya/MStatus.h>
@@ -42,11 +34,19 @@
 #include <maya/MShaderManager.h>
 #include <maya/MTextureManager.h>
 
-#include <boost/filesystem.hpp>
+#include <pxr/imaging/glf/image.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/usd/ar/packageUtils.h>
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/usdHydra/tokens.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
-#include <iostream>
-#include <string>
-
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/matrix4f.h>
+#include <pxr/base/tf/diagnostic.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

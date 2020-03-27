@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "../base/api.h"
+#include <mayaUsd/base/api.h>
 
 #include <ufe/transform3dUndoableCommands.h>
 

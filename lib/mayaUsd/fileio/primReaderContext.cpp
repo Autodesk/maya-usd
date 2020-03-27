@@ -13,10 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "primReaderContext.h"
+#include <mayaUsd/fileio/primReaderContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 UsdMayaPrimReaderContext::UsdMayaPrimReaderContext(
         ObjectRegistry* pathNodeMap)

@@ -16,20 +16,16 @@
 #ifndef PXRUSDMAYA_QUERY_H
 #define PXRUSDMAYA_QUERY_H
 
-/// \file usdMaya/query.h
-
-#include "../base/api.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/prim.h"
+#include <mayaUsd/base/api.h>
 
 #include <string>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 struct UsdMayaQuery
 {

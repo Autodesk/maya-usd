@@ -15,9 +15,9 @@
 //
 #pragma once
 
-#include "../base/api.h"
+#include <mayaUsd/base/api.h>
 
-#include "UsdContextOps.h"
+#include <mayaUsd/ufe/UsdContextOps.h>
 
 #include <ufe/contextOpsHandler.h>
 

@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "proxyShapeNotice.h"
+#include <mayaUsd/listeners/proxyShapeNotice.h>
 
-#include "pxr/base/tf/instantiateType.h"
+#include <pxr/base/tf/instantiateType.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -18,9 +18,8 @@
 
 /// \file pxrUsdMayaGL/proxyShapeUI.h
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "./usdProxyShapeAdapter.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
 
 #include <maya/M3dView.h>
 #include <maya/MDrawInfo.h>
@@ -33,9 +32,9 @@
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionList.h>
 
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class UsdMayaProxyShapeUI : public MPxSurfaceShapeUI
 {

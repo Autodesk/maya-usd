@@ -13,29 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "shadingModeRegistry.h"
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
-#include "../registryHelper.h"
-#include "shadingModeExporter.h"
-#include "shadingModeExporterContext.h"
-#include "shadingModeImporter.h"
-
-#include "pxr/base/tf/instantiateSingleton.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
+#include <mayaUsd/fileio/registryHelper.h>
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/shading/shadingModeImporter.h>
 
 #include <map>
 #include <string>
 #include <utility>
 
+#include <pxr/base/tf/instantiateSingleton.h>
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
     PXRUSDMAYA_SHADINGMODE_TOKENS);
-
 
 typedef std::map<TfToken, UsdMayaShadingModeExporterCreator> _ExportRegistry;
 static _ExportRegistry _exportReg;

@@ -13,13 +13,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "renderOverride.h"
+#include <mayaUsd/render/mayaToHydra/renderOverride.h>
+
+#include <mayaUsd/render/mayaToHydra/pluginDebugCodes.h>
+#include <mayaUsd/render/mayaToHydra/renderOverrideUtils.h>
+#include <mayaUsd/render/vp2RenderDelegate/tokens.h>
+#include <mayaUsd/render/mayaToHydra/utils.h>
+#include <mayaUsd/render/px_vp20/utils.h>
+
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <hdMaya/delegates/sceneDelegate.h>
+#include <hdMaya/utils.h>
+
+#include <atomic>
+#include <chrono>
+#include <exception>
+
+#include <maya/M3dView.h>
+#include <maya/MDagPath.h>
+#include <maya/MDrawContext.h>
+#include <maya/MEventMessage.h>
+#include <maya/MGlobal.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MSceneMessage.h>
+#include <maya/MSelectionList.h>
+#include <maya/MTimerMessage.h>
+#include <maya/MUiMessage.h>
 
 #include <pxr/base/gf/matrix4d.h>
-
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/vt/value.h>
-
 #include <pxr/imaging/glf/contextCaps.h>
 
 #include <pxr/imaging/hd/rprim.h>
@@ -37,32 +60,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <pxr/imaging/hgi/hgi.h>
 #include <pxr/imaging/hgi/tokens.h>
 #endif
-
-#include <maya/M3dView.h>
-#include <maya/MDagPath.h>
-#include <maya/MDrawContext.h>
-#include <maya/MEventMessage.h>
-#include <maya/MGlobal.h>
-#include <maya/MNodeMessage.h>
-#include <maya/MSceneMessage.h>
-#include <maya/MSelectionList.h>
-#include <maya/MTimerMessage.h>
-#include <maya/MUiMessage.h>
-
-#include <atomic>
-#include <chrono>
-#include <exception>
-
-#include "mayaUsd/render/px_vp20/utils.h"
-#include "../../usd/hdMaya/delegates/delegateRegistry.h"
-#include "../../usd/hdMaya/delegates/sceneDelegate.h"
-
-#include "../../usd/hdMaya/utils.h"
-
-#include "pluginDebugCodes.h"
-#include "renderOverrideUtils.h"
-#include "tokens.h"
-#include "utils.h"
 
 #if WANT_UFE_BUILD
 #include <maya/MFileIO.h>

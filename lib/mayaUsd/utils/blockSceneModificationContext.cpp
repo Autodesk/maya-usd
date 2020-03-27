@@ -13,18 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "blockSceneModificationContext.h"
-
-#include "pxr/base/tf/stringUtils.h"
+#include <mayaUsd/utils/blockSceneModificationContext.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/tf/stringUtils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 UsdMayaBlockSceneModificationContext::UsdMayaBlockSceneModificationContext()
 {

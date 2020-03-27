@@ -15,13 +15,13 @@
 //
 #pragma once
 
-#include "../base/api.h"
+#include <mayaUsd/base/api.h>
 
 #include <ufe/transform3dUndoableCommands.h>
 
-#include <pxr/usd/usd/attribute.h>
-
 #include <exception>
+
+#include <pxr/usd/usd/attribute.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

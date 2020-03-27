@@ -16,19 +16,16 @@
 #ifndef PXRUSDMAYA_PRIMWRITERERARGS_H
 #define PXRUSDMAYA_PRIMWRITERERARGS_H
 
-/// \file usdMaya/primWriterArgs.h
-
-#include "../base/api.h"
-
-#include "pxr/pxr.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/base/gf/vec3f.h"
+#include <mayaUsd/base/api.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/pxr.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/gf/vec3f.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdMayaPrimWriterArgs
 /// \brief This class holds read-only arguments that are passed into the writer

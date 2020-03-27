@@ -13,19 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "translatorPrim.h"
+#include <mayaUsd/fileio/translators/translatorPrim.h>
 
-#include "../utils/readUtil.h"
-#include "translatorUtil.h"
-#include "../../utils/util.h"
-
-#include "pxr/usd/usdGeom/imageable.h"
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnDagNode.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/usd/usdGeom/imageable.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 UsdMayaTranslatorPrim::Read(

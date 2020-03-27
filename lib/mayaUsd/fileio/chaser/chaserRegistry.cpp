@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "chaserRegistry.h"
+#include <mayaUsd/fileio/chaser/chaserRegistry.h>
 
-#include "../../base/debugCodes.h"
-#include "../registryHelper.h"
-
-#include "pxr/base/tf/instantiateSingleton.h"
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/fileio/registryHelper.h>
 
 #include <map>
+
+#include <pxr/base/tf/instantiateSingleton.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -14,22 +14,20 @@
 // limitations under the License.
 //
 #include <maya/MFnPlugin.h>
-
-#include "renderGlobals.h"
-#include "renderOverride.h"
-#include "viewCommand.h"
+#include <mayaUsd/render/mayaToHydra/renderGlobals.h>
+#include <mayaUsd/render/mayaToHydra/renderOverride.h>
+#include <mayaUsd/render/mayaToHydra/viewCommand.h>
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <hdMaya/adapters/adapter.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/envSetting.h>
 
-#include "../../usd/hdMaya/adapters/adapter.h"
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     MStatus ret = MS::kSuccess;

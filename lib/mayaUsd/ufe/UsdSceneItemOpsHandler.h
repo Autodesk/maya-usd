@@ -15,9 +15,9 @@
 //
 #pragma once
 
-#include "../base/api.h"
+#include <mayaUsd/base/api.h>
 
-#include "UsdSceneItemOps.h"
+#include <mayaUsd/ufe/UsdSceneItemOps.h>
 
 #include <ufe/sceneItemOpsHandler.h>
 

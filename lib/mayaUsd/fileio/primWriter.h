@@ -16,34 +16,29 @@
 #ifndef PXRUSDMAYA_PRIM_WRITER_H
 #define PXRUSDMAYA_PRIM_WRITER_H
 
-/// \file usdMaya/primWriter.h
+#include <mayaUsd/base/api.h>
 
-#include "pxr/pxr.h"
-#include "../base/api.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/utils/util.h>
 
-#include "jobs/jobArgs.h"
-#include "../utils/util.h"
-
-#include "pxr/base/vt/value.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdUtils/sparseValueWriter.h"
+#include <memory>
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 
-#include <memory>
-
+#include <pxr/pxr.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class UsdMayaWriteJobContext;
-
 
 /// Base class for all built-in and user-defined prim writers. Translates Maya
 /// node data into USD prim(s).

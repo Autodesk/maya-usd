@@ -13,30 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 
 #include <mayaUsd/fileio/utils/meshUtil.h>
 #include <mayaUsd/utils/util.h>
 
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
+#include <string>
+
+#include <boost/python/class.hpp>
+#include <boost/python.hpp>
 
 #include <maya/MFnMesh.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 
-#include <boost/python/class.hpp>
-#include <boost/python.hpp>
-
-#include <string>
-
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
 
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
 
 namespace {
 

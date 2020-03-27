@@ -18,14 +18,7 @@
 
 /// \file pxrUsdMayaGL/hdImagingShapeUI.h
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-
-// XXX: On Linux, some Maya headers (notably M3dView.h) end up indirectly
-//      including X11/Xlib.h, which #define's "Bool" as int. This can cause
-//      compilation issues if sdf/types.h is included afterwards, so to fix
-//      this, we ensure that it gets included first.
-#include "pxr/usd/sdf/types.h"
+#include <mayaUsd/base/api.h>
 
 #include <maya/M3dView.h>
 #include <maya/MDrawInfo.h>
@@ -33,9 +26,15 @@
 #include <maya/MDrawRequestQueue.h>
 #include <maya/MPxSurfaceShapeUI.h>
 
+#include <pxr/pxr.h>
+
+// XXX: On Linux, some Maya headers (notably M3dView.h) end up indirectly
+//      including X11/Xlib.h, which #define's "Bool" as int. This can cause
+//      compilation issues if sdf/types.h is included afterwards, so to fix
+//      this, we ensure that it gets included first.
+#include <pxr/usd/sdf/types.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Class for drawing the pxrHdImagingShape node in the legacy viewport
 ///

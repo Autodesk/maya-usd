@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "render_param.h"
+#include <mayaUsd/render/vp2RenderDelegate/render_param.h>
 
 #include <maya/MProfiler.h>
 

@@ -14,26 +14,23 @@
 // limitations under the License.
 //
 
-/// \file usdMaya/readUtil.h
-
 #ifndef PXRUSDMAYA_READUTIL_H
 #define PXRUSDMAYA_READUTIL_H
 
-#include "../../base/api.h"
+#include <mayaUsd/base/api.h>
 
-#include "pxr/pxr.h"
-#include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/usd/usd/attribute.h"
+#include <string>
 
 #include <maya/MDGModifier.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 
-#include <string>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/usd/attribute.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// This struct contains helpers for reading USD (thus writing Maya data).
 struct UsdMayaReadUtil

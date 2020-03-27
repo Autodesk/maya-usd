@@ -16,19 +16,14 @@
 #ifndef PXRUSDMAYA_PRIMREADERARGS_H
 #define PXRUSDMAYA_PRIMREADERARGS_H
 
-/// \file usdMaya/primReaderArgs.h
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 
-#include "../base/api.h"
-#include "jobs/jobArgs.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/base/gf/interval.h"
-
-#include "pxr/usd/usd/prim.h"
+#include <pxr/pxr.h>
+#include <pxr/base/gf/interval.h>
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class UsdMayaPrimReaderArgs
 /// \brief This class holds read-only arguments that are passed into reader plugins for

@@ -13,19 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "translatorUtil.h"
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
-#include "../utils/adaptor.h"
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-#include "translatorXformable.h"
-#include "../../utils/util.h"
-#include "../utils/xformStack.h"
-
-#include "pxr/usd/sdf/schema.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>
@@ -37,12 +32,14 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/schema.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/xformable.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 const MString _DEFAULT_TRANSFORM_TYPE("transform");
-
 
 /* static */
 bool

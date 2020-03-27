@@ -30,25 +30,24 @@
 // limitations under the License.
 //
 
-#include "translatorMayaReference.h"
+#include <mayaUsd/fileio/translators/translatorMayaReference.h>
 
-#include "../../utils/util.h"
-#include "../../base/debugCodes.h"
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/utils/util.h>
 
-#include <maya/MSelectionList.h>
-#include <maya/MGlobal.h>
 #include <maya/MDGModifier.h>
-#include <maya/MNodeClass.h>
-#include <maya/MPlug.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnCamera.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTransform.h>
-#include <maya/MFnTypedAttribute.h>
 #include <maya/MFnTransform.h>
-#include <maya/MFnCamera.h>
-#include <maya/MFileIO.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
-
-#include <maya/MFnDagNode.h>
+#include <maya/MNodeClass.h>
+#include <maya/MPlug.h>
+#include <maya/MSelectionList.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

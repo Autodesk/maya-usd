@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 
-#include "UsdTransform3dHandler.h"
-#include "UsdSceneItem.h"
+#include <mayaUsd/ufe/UsdTransform3dHandler.h>
+
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

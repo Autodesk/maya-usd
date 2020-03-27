@@ -13,31 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include "render_delegate.h"
-
-#include "basisCurves.h"
-#include "bboxGeom.h"
-#include "material.h"
-#include "mesh.h"
-
-#include "render_pass.h"
-#include "instancer.h"
-
-#include "pxr/imaging/hd/bprim.h"
-#include "pxr/imaging/hd/camera.h"
-#include "pxr/imaging/hd/instancer.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/rprim.h"
-#include "pxr/imaging/hd/tokens.h"
-
-#include <maya/MProfiler.h>
+#include <mayaUsd/render/vp2RenderDelegate/render_delegate.h>
+#include <mayaUsd/render/vp2RenderDelegate/basisCurves.h>
+#include <mayaUsd/render/vp2RenderDelegate/bboxGeom.h>
+#include <mayaUsd/render/vp2RenderDelegate/instancer.h>
+#include <mayaUsd/render/vp2RenderDelegate/material.h>
+#include <mayaUsd/render/vp2RenderDelegate/mesh.h>
+#include <mayaUsd/render/vp2RenderDelegate/render_pass.h>
 
 #include <unordered_map>
 
-#include "tbb/spin_rw_mutex.h"
+#include <tbb/spin_rw_mutex.h>
 #include <tbb/reader_writer_lock.h>
 #include <boost/functional/hash.hpp>
+
+#include <maya/MProfiler.h>
+
+#include <pxr/imaging/hd/bprim.h>
+#include <pxr/imaging/hd/camera.h>
+#include <pxr/imaging/hd/instancer.h>
+#include <pxr/imaging/hd/resourceRegistry.h>
+#include <pxr/imaging/hd/rprim.h>
+#include <pxr/imaging/hd/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

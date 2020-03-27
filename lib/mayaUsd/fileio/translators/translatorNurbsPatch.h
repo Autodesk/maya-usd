@@ -16,21 +16,17 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H
 #define PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H
 
-/// \file usdMaya/translatorNurbsPatch.h
+#include <mayaUsd/base/api.h>
 
-#include "../../base/api.h"
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/usdGeom/nurbsPatch.h"
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
 
 #include <maya/MObject.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/nurbsPatch.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
-
-
 
 struct UsdMayaTranslatorNurbsPatch
 {

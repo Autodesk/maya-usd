@@ -14,14 +14,14 @@
 // limitations under the License.
 //
 
-#include <boost/python.hpp>
-
-#include "UsdSceneItem.h"
-#include "Utils.h"
-#include "Global.h"
+#include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/runTimeMgr.h>
 #include <ufe/rtid.h>
+
+#include <boost/python.hpp>
 
 #include <pxr/base/tf/stringUtils.h>
 

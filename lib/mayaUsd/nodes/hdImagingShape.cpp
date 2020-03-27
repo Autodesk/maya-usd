@@ -13,17 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "hdImagingShape.h"
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/utils/blockSceneModificationContext.h>
+#include <mayaUsd/utils/util.h>
 
-#include "../utils/blockSceneModificationContext.h"
-#include "../fileio/translators/translatorUtil.h"
-#include "../utils/util.h"
-
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
+#include <string>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDGMessage.h>
@@ -47,11 +42,13 @@
 #include <maya/MUuid.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <string>
-
+#include <pxr/pxr.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_ENV_SETTING(
     PXRMAYAHD_DEFAULT_SELECTION_RESOLUTION,

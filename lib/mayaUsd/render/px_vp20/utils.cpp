@@ -14,24 +14,15 @@
 // limitations under the License.
 //
 // glew must be included before any other GL header.
-#include "pxr/imaging/glf/glew.h"
+#include <pxr/imaging/glf/glew.h>
 
-#include "./utils.h"
+#include <mayaUsd/render/px_vp20/glslProgram.h>
+#include <mayaUsd/render/px_vp20/utils.h>
 
-#include "./glslProgram.h"
-
-#include "pxr/base/gf/math.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/imaging/garch/gl.h"
-#include "pxr/imaging/glf/simpleLight.h"
-#include "pxr/imaging/glf/simpleLightingContext.h"
-#include "pxr/imaging/glf/simpleMaterial.h"
-#include "pxr/imaging/hdx/version.h"
+#include <cmath>
+#include <ostream>
+#include <string>
+#include <vector>
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -52,14 +43,20 @@
 #include <maya/MStatus.h>
 #include <maya/MTransformationMatrix.h>
 
-#include <cmath>
-#include <ostream>
-#include <string>
-#include <vector>
-
+#include <pxr/base/gf/math.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/matrix4f.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/imaging/garch/gl.h>
+#include <pxr/imaging/glf/simpleLight.h>
+#include <pxr/imaging/glf/simpleLightingContext.h>
+#include <pxr/imaging/glf/simpleMaterial.h>
+#include <pxr/imaging/hdx/version.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /* static */
 bool

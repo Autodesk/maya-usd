@@ -16,17 +16,13 @@
 #ifndef PXRUSDMAYA_REGISTRYHELPER_H
 #define PXRUSDMAYA_REGISTRYHELPER_H
 
-/// \file usdMaya/registryHelper.h
-
-#include "pxr/pxr.h"
-
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/dictionary.h"
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/pxr.h>
 
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// private helper so that both reader/writer registries can share the same
 /// plugin discovery/load mechanism.

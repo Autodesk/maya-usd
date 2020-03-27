@@ -13,14 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./instancerImager.h"
-
-#include "./batchRenderer.h"
-#include "./debugCodes.h"
-
-#include "../../nodes/hdImagingShape.h"
-
-#include "pxr/base/tf/instantiateSingleton.h"
+#include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
 
 #include <maya/MDagMessage.h>
 #include <maya/MDagPath.h>
@@ -28,6 +24,8 @@
 #include <maya/MGlobal.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MObjectHandle.h>
+
+#include <pxr/base/tf/instantiateSingleton.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

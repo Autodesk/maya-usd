@@ -13,23 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "translatorCamera.h"
+#include <mayaUsd/fileio/translators/translatorCamera.h>
 
-#include "../jobs/jobArgs.h"
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-#include "translatorUtil.h"
-#include "../../utils/util.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/utils/util.h>
 
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/tf/type.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdGeom/tokens.h"
+#include <string>
+#include <vector>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDistance.h>
@@ -37,11 +30,16 @@
 #include <maya/MPlug.h>
 #include <maya/MObject.h>
 
-#include <string>
-#include <vector>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/tf/type.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 static bool _ReadToCamera(
         const UsdGeomCamera& usdCamera,

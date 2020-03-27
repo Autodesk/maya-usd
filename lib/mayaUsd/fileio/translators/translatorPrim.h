@@ -16,20 +16,17 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_PRIM_H
 #define PXRUSDMAYA_TRANSLATOR_PRIM_H
 
-/// \file usdMaya/translatorPrim.h
+#include <mayaUsd/base/api.h>
 
-#include "../../base/api.h"
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/usd/prim.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <maya/MObject.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Provides helper functions for reading UsdPrim.  This should more
 /// accurately take a UsdGeomImageable.

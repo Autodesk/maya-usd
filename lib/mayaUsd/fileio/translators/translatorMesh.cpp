@@ -13,16 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Modifications copyright (C) 2020 Autodesk
-//
+#include <mayaUsd/fileio/translators/translatorMesh.h>
+#include <mayaUsd/fileio/utils/meshUtil.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/nodes/pointBasedDeformerNode.h>
+#include <mayaUsd/nodes/stageNode.h>
+#include <mayaUsd/utils/util.h>
 
-#include "translatorMesh.h"
-
-#include "../../nodes/pointBasedDeformerNode.h"
-#include "../../nodes/stageNode.h"
-#include "../../utils/util.h"
-#include "../utils/meshUtil.h"
-#include "../utils/readUtil.h"
+#include <string>
+#include <vector>
 
 #include <maya/MColor.h>
 #include <maya/MColorArray.h>
@@ -43,9 +42,6 @@
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
 #include <maya/MString.h>
-
-#include <string>
-#include <vector>
 
 MAYAUSD_NS_DEF {
 
@@ -181,7 +177,7 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
           return;
     }
 
-	// store the path
+    // store the path
     m_shapePath = prim.GetPath().AppendChild(TfToken(shapeName));
 
     // Set normals if supplied
@@ -490,4 +486,5 @@ TranslatorMeshRead::shapePath() const
 
 
 } // namespace MayaUsd
+
 

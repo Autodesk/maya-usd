@@ -16,25 +16,20 @@
 #ifndef PXRUSDMAYA_FUNCTOR_PRIM_WRITER_H
 #define PXRUSDMAYA_FUNCTOR_PRIM_WRITER_H
 
-/// \file usdMaya/functorPrimWriter.h
-
-#include "pxr/pxr.h"
-#include "transformWriter.h"
-
-#include "primWriter.h"
-#include "primWriterRegistry.h"
-#include "writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <functional>
 
+#include <maya/MFnDependencyNode.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class UsdMaya_FunctorPrimWriter
 /// \brief This class is scaffolding to hold bare prim writer functions and

@@ -16,20 +16,16 @@
 #ifndef PXRUSDMAYA_DIAGNOSTICDELEGATE_H
 #define PXRUSDMAYA_DIAGNOSTICDELEGATE_H
 
-/// \file usdMaya/diagnosticDelegate.h
-
-#include "../base/api.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/base/tf/diagnosticMgr.h"
-
-#include "pxr/usd/usdUtils/coalescingDiagnosticDelegate.h"
-
-#include <maya/MGlobal.h>
+#include <mayaUsd/base/api.h>
 
 #include <atomic>
 #include <memory>
+
+#include <maya/MGlobal.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/tf/diagnosticMgr.h>
+#include <pxr/usd/usdUtils/coalescingDiagnosticDelegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

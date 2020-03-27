@@ -16,14 +16,12 @@
 #ifndef USDMAYA_NOTICE_H
 #define USDMAYA_NOTICE_H
 
-/// \file usdMaya/notice.h
-
-#include "pxr/base/tf/notice.h"
-
-#include "../base/api.h"
+#include <mayaUsd/base/api.h>
 
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
+
+#include <pxr/base/tf/notice.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

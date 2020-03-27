@@ -13,10 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "./utils_legacy.h"
-
-#include "pxr/base/gf/matrix4d.h"
+#include <mayaUsd/render/px_vp20/utils_legacy.h>
 
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
@@ -24,9 +21,10 @@
 #include <maya/MSelectInfo.h>
 #include <maya/MStatus.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /* static */
 bool

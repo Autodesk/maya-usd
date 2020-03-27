@@ -13,30 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "jobArgs.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 
-#include "../registryHelper.h"
-#include "../shading/shadingModeRegistry.h"
+#include <mayaUsd/fileio/registryHelper.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/dictionary.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/schema.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdUtils/pipeline.h"
+#include <ostream>
+#include <string>
 
 #include <maya/MDagPath.h>
 #include <maya/MGlobal.h>
 #include <maya/MNodeClass.h>
 #include <maya/MTypeId.h>
 
-#include <ostream>
-#include <string>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/dictionary.h>
 
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/schema.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,13 +16,10 @@
 #ifndef PXRUSDMAYA_COLORSPACE_H
 #define PXRUSDMAYA_COLORSPACE_H
 
-/// \file usdMaya/colorSpace.h
+#include <mayaUsd/base/api.h>
 
-#include "../base/api.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/base/gf/gamma.h"
+#include <pxr/pxr.h>
+#include <pxr/base/gf/gamma.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

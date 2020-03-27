@@ -17,22 +17,19 @@
 #ifndef PXRUSDMAYA_PRIM_UPDATER_REGISTRY_H
 #define PXRUSDMAYA_PRIM_UPDATER_REGISTRY_H
 
-#include "pxr/pxr.h"
-#include "../base/api.h"
-
-#include "primUpdater.h"
-#include "primUpdaterContext.h"
-
-#include "pxr/usd/sdf/path.h"
-
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primUpdater.h>
+#include <mayaUsd/fileio/primUpdaterContext.h>
 
 #include <functional>
 #include <string>
 
+#include <maya/MFnDependencyNode.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class UsdMayaPrimUpdaterRegistry
 /// \brief Provides functionality to register and lookup USD updater plugins

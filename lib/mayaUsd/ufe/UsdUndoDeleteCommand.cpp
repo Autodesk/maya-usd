@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "UsdUndoDeleteCommand.h"
+#include <mayaUsd/ufe/UsdUndoDeleteCommand.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

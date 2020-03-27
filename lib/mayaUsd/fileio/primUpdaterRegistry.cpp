@@ -14,29 +14,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "primUpdaterRegistry.h"
-
-#include "../base/debugCodes.h"
-#include "registryHelper.h"
-
-#include "pxr/base/plug/registry.h"
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stl.h"
-#include "pxr/base/tf/token.h"
-
-#include "pxr/usd/usd/schemaBase.h"
+#include <mayaUsd/fileio/primUpdaterRegistry.h>
+#include <mayaUsd/fileio/registryHelper.h>
+#include <mayaUsd/base/debugCodes.h>
 
 #include <map>
 #include <string>
 #include <utility>
 
+#include <pxr/pxr.h>
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stl.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/usd/schemaBase.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens,
     (UsdMaya)

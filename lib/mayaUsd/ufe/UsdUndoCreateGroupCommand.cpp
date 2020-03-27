@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "UsdUndoCreateGroupCommand.h"
+#include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
 
 #include <ufe/scene.h>
 #include <ufe/hierarchy.h>

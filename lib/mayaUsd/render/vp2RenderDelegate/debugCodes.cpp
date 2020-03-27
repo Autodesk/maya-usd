@@ -13,10 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <mayaUsd/render/vp2RenderDelegate/debugCodes.h>
 
-#include "debugCodes.h"
-
-#include "pxr/base/tf/registryManager.h"
+#include <pxr/base/tf/registryManager.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,24 +16,19 @@
 #ifndef PXRUSDMAYA_INSTANCED_NODE_WRITER_H
 #define PXRUSDMAYA_INSTANCED_NODE_WRITER_H
 
-/// \file usdMaya/instancedNodeWriter.h
-
-#include "pxr/pxr.h"
-#include "primWriter.h"
-
-#include "../utils/util.h"
-#include "writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <vector>
 
+#include <maya/MFnDependencyNode.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// This is a "helper" prim writer used internally by UsdMayaWriteJobContext to
 /// author nodes that are directly instanced in Maya.

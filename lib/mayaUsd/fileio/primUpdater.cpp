@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "primUpdater.h"
+#include <mayaUsd/fileio/primUpdater.h>
 
 #include <maya/MFnDagNode.h>
 #include <maya/MStatus.h>

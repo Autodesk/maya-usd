@@ -16,28 +16,23 @@
 #ifndef PXRUSDMAYA_SHADING_MODE_IMPORTER_H
 #define PXRUSDMAYA_SHADING_MODE_IMPORTER_H
 
-/// \file usdMaya/shadingModeImporter.h
-
-#include "../../base/api.h"
-#include "../primReaderContext.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdShade/material.h"
-
-#include <maya/MObject.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <functional>
 
+#include <maya/MObject.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/gprim.h>
+#include <pxr/usd/usdShade/material.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 #define PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS \
     ((MayaMaterialNamespace, "USD_Materials"))

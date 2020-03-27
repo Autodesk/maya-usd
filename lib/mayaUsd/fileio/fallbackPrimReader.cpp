@@ -13,11 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "fallbackPrimReader.h"
+#include <mayaUsd/fileio/fallbackPrimReader.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
-#include "translators/translatorUtil.h"
-
-#include "pxr/usd/usdGeom/imageable.h"
+#include <pxr/usd/usdGeom/imageable.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

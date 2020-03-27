@@ -13,12 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "translatorCurves.h"
-
-#include "translatorUtil.h"
-
-#include "pxr/usd/usdGeom/basisCurves.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+#include <mayaUsd/fileio/translators/translatorCurves.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFnAnimCurve.h>
@@ -31,9 +27,10 @@
 #include <maya/MTime.h>
 #include <maya/MTimeArray.h>
 
+#include <pxr/usd/usdGeom/basisCurves.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
-
-
 
 /* static */
 bool

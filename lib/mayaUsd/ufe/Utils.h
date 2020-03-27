@@ -15,19 +15,18 @@
 //
 #pragma once
 
-#include "../base/api.h"
-
-#include "UsdSceneItem.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
+
+#include <maya/MDagPath.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/base/tf/token.h>
-
-#include <maya/MDagPath.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

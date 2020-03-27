@@ -13,27 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "functorPrimWriter.h"
-
-#include "primWriter.h"
-#include "primWriterArgs.h"
-#include "primWriterContext.h"
-#include "primWriterRegistry.h"
-#include "transformWriter.h"
-#include "writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/functorPrimWriter.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <functional>
 
+#include <maya/MFnDependencyNode.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 UsdMaya_FunctorPrimWriter::UsdMaya_FunctorPrimWriter(
         const MFnDependencyNode& depNodeFn,

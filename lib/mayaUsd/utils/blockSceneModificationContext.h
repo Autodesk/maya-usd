@@ -16,14 +16,11 @@
 #ifndef PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
 #define PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
 
-/// \file usdMaya/blockSceneModificationContext.h
+#include <mayaUsd/base/api.h>
 
-#include "pxr/pxr.h"
-#include "../base/api.h"
-
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Utility class for wrapping a scope of Maya operations such that the
 /// modification status of the Maya scene is preserved.

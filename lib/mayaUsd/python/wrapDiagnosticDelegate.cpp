@@ -14,11 +14,12 @@
 // limitations under the License.
 //
 
-#include "pxr/pxr.h"
 #include <mayaUsd/utils/diagnosticDelegate.h>
 
 #include <boost/noncopyable.hpp>
 #include <boost/python.hpp>
+
+#include <pxr/pxr.h>
 
 using namespace boost::python;
 

@@ -16,17 +16,15 @@
 #ifndef PXRUSDMAYA_FUNCTORPRIMREADER_H
 #define PXRUSDMAYA_FUNCTORPRIMREADER_H
 
-/// \file usdMaya/functorPrimReader.h
-
-#include "../base/api.h"
-#include "primReader.h"
-#include "primReaderArgs.h"
-#include "primReaderContext.h"
-#include "primReaderRegistry.h"
-
-#include "pxr/pxr.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReader.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primReaderRegistry.h>
 
 #include <functional>
+
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

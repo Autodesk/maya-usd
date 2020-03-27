@@ -13,19 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "./hdImagingShapeUI.h"
-
-#include "./batchRenderer.h"
-#include "./debugCodes.h"
-#include "./instancerImager.h"
-#include "./userData.h"
-
-#include "../../nodes/hdImagingShape.h"
-
-#include "pxr/base/gf/vec2i.h"
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/trace/trace.h"
+#include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeUI.h>
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 #include <maya/M3dView.h>
 #include <maya/MDGContext.h>
@@ -40,9 +33,12 @@
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MStatus.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec2i.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/trace/trace.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /* static */
 void*

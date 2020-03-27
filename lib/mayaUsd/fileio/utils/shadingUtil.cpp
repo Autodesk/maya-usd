@@ -13,19 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "shadingUtil.h"
+#include <mayaUsd/fileio/utils/shadingUtil.h>
 
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/valueTypeName.h"
-#include "pxr/usd/usdShade/input.h"
-#include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/shader.h"
-
+#include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/usdShade/input.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/output.h>
+#include <pxr/usd/usdShade/shader.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
 
 UsdShadeInput
 UsdMayaShadingUtil::CreateMaterialInputAndConnectShader(

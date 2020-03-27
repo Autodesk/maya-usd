@@ -18,8 +18,7 @@
 
 /// \file pxrUsdMayaGL/hdImagingShapeDrawOverride.h
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
+#include <mayaUsd/base/api.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -32,6 +31,7 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

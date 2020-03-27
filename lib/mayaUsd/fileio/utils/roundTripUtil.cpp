@@ -13,21 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "roundTripUtil.h"
+#include <mayaUsd/fileio/utils/roundTripUtil.h>
 
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stl.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/dictionary.h"
-#include "pxr/base/vt/value.h"
-
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/primvar.h"
-
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stl.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/primvar.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

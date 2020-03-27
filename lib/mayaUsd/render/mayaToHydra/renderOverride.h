@@ -16,9 +16,25 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
-#include <pxr/imaging/glf/glew.h>
-#include <pxr/pxr.h>
+#include <mayaUsd/render/mayaToHydra/defaultLightDelegate.h>
+#include <mayaUsd/render/mayaToHydra/renderGlobals.h>
+#include <mayaUsd/render/mayaToHydra/utils.h>
 
+#include <hdMaya/delegates/delegate.h>
+#include <hdMaya/delegates/params.h>
+
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <mutex>
+
+#include <maya/MCallbackIdArray.h>
+#include <maya/MMessage.h>
+#include <maya/MString.h>
+#include <maya/MViewport2Renderer.h>
+
+#include <pxr/pxr.h>
+#include <pxr/imaging/glf/glew.h>
 #include <pxr/base/tf/singleton.h>
 
 #if USD_VERSION_NUM > 2002
@@ -38,23 +54,6 @@ using HdRendererPlugin = HdxRendererPlugin;
 PXR_NAMESPACE_CLOSE_SCOPE
 #endif
 #include <pxr/imaging/hdx/taskController.h>
-
-#include <maya/MCallbackIdArray.h>
-#include <maya/MMessage.h>
-#include <maya/MString.h>
-#include <maya/MViewport2Renderer.h>
-
-#include "../../usd/hdMaya/delegates/delegate.h"
-#include "../../usd/hdMaya/delegates/params.h"
-
-#include "defaultLightDelegate.h"
-#include "renderGlobals.h"
-#include "utils.h"
-
-#include <atomic>
-#include <chrono>
-#include <memory>
-#include <mutex>
 
 #if WANT_UFE_BUILD
 #include <ufe/observer.h>

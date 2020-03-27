@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "UsdAttributes.h"
+#include <mayaUsd/ufe/UsdAttributes.h>
 
 #include <ufe/ufeAssert.h>
 

@@ -13,25 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./shapeAdapter.h"
-
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "./batchRenderer.h"
-#include "./debugCodes.h"
-#include "./renderParams.h"
-#include "./softSelectHelper.h"
-#include "./userData.h"
-
-#include "pxr/base/gf/gamma.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/usd/sdf/path.h"
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -49,9 +37,18 @@
 #include <maya/MUuid.h>
 #include <maya/MUserData.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/gf/gamma.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/repr.h>
+#include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/usd/sdf/path.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 // Helper function that converts M3dView::DisplayStyle (legacy viewport) into
 // MHWRender::MFrameContext::DisplayStyle (Viewport 2.0).

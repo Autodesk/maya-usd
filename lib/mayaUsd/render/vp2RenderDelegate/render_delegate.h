@@ -17,18 +17,18 @@
 #ifndef HD_VP2_RENDER_DELEGATE
 #define HD_VP2_RENDER_DELEGATE
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/imaging/hd/resourceRegistry.h"
+#include <mayaUsd/render/vp2RenderDelegate/render_param.h>
+#include <mayaUsd/render/vp2RenderDelegate/resource_registry.h>
 
-#include "render_param.h"
-#include "resource_registry.h"
+#include <mutex>
+#include <atomic>
 
 #include <maya/MString.h>
 #include <maya/MShaderManager.h>
 
-#include <mutex>
-#include <atomic>
+#include <pxr/pxr.h>
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/imaging/hd/resourceRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

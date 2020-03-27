@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "usdPrimProvider.h"
+#include <mayaUsd/nodes/usdPrimProvider.h>
+
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

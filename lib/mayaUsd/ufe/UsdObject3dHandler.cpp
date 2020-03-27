@@ -6,8 +6,9 @@
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
 
-#include "UsdObject3dHandler.h"
-#include "UsdSceneItem.h"
+#include <mayaUsd/ufe/UsdObject3dHandler.h>
+
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usdGeom/imageable.h>
 

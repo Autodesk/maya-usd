@@ -13,19 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "translatorSkel.h"
+#include <mayaUsd/fileio/translators/translatorSkel.h>
 
-#include "translatorUtil.h"
-#include "translatorXformable.h"
-#include "../../utils/util.h"
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/staticData.h"
-#include "pxr/base/tf/staticTokens.h"
+#include <pxr/base/tf/staticData.h>
+#include <pxr/base/tf/staticTokens.h>
 
-#include "pxr/usd/usdSkel/skeleton.h"
-#include "pxr/usd/usdSkel/skeletonQuery.h"
-#include "pxr/usd/usdSkel/skinningQuery.h"
-#include "pxr/usd/usdSkel/topology.h"
+#include <pxr/usd/usdSkel/skeleton.h>
+#include <pxr/usd/usdSkel/skeletonQuery.h>
+#include <pxr/usd/usdSkel/skinningQuery.h>
+#include <pxr/usd/usdSkel/topology.h>
 
 #include <maya/MDoubleArray.h>
 #include <maya/MDagModifier.h>
@@ -44,9 +44,7 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 // There are a lot of nodes and connections that go into a basic skinning rig.
 // The following is an overview of everything that must be rigged up:

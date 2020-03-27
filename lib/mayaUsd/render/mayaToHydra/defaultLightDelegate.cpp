@@ -13,13 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "defaultLightDelegate.h"
+#include <mayaUsd/render/mayaToHydra/defaultLightDelegate.h>
 
-#include "../../usd/hdMaya/delegates/delegateDebugCodes.h"
+#include <hdMaya/delegates/delegateDebugCodes.h>
 
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
-
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>

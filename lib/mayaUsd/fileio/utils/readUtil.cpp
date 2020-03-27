@@ -13,20 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "readUtil.h"
-
-#include "adaptor.h"
-#include "../../utils/colorSpace.h"
-#include "../../utils/util.h"
-
-#include "pxr/base/gf/gamma.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/vt/array.h"
-
-#include "pxr/usd/sdf/assetPath.h"
-#include "pxr/usd/sdf/listOp.h"
-#include "pxr/usd/usd/tokens.h"
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFloatArray.h>
@@ -47,6 +37,14 @@
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MVectorArray.h>
+
+#include <pxr/base/gf/gamma.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/sdf/listOp.h>
+#include <pxr/usd/usd/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

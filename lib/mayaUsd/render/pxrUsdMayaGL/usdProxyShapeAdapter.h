@@ -18,26 +18,23 @@
 
 /// \file pxrUsdMayaGL/usdProxyShapeAdapter.h
 
-#include "pxr/pxr.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
-#include "../../base/api.h"
-#include "./shapeAdapter.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
+#include <memory>
 
 #include <maya/M3dView.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MPxSurfaceShape.h>
 
-#include <memory>
-
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class UsdMayaProxyDrawOverride;
 class UsdMayaProxyShapeUI;

@@ -13,18 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "viewCommand.h"
+#include <mayaUsd/render/mayaToHydra/viewCommand.h>
+
+#include <mayaUsd/render/mayaToHydra/renderGlobals.h>
+#include <mayaUsd/render/mayaToHydra/renderOverride.h>
+#include <mayaUsd/render/mayaToHydra/renderOverride.h>
+#include <mayaUsd/render/mayaToHydra/utils.h>
+
+#include <hdMaya/delegates/delegateRegistry.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MGlobal.h>
 #include <maya/MSyntax.h>
-
-#include "../../usd/hdMaya/delegates/delegateRegistry.h"
-#include "renderOverride.h"
-
-#include "renderGlobals.h"
-#include "renderOverride.h"
-#include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

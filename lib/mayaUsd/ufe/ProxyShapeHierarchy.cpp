@@ -14,17 +14,17 @@
 // limitations under the License.
 //
 
-#include "ProxyShapeHierarchy.h"
-#include "Utils.h"
+#include <mayaUsd/ufe/ProxyShapeHierarchy.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/log.h>
 #include <ufe/pathComponent.h>
 #include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
 
-#include <pxr/usd/usd/stage.h>
-
 #include <stdexcept>
+
+#include <pxr/usd/usd/stage.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

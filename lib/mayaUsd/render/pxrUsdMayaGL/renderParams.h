@@ -18,18 +18,15 @@
 
 /// \file pxrUsdMayaGL/renderParams.h
 
-#include "pxr/pxr.h"
-
-#include "../../base/api.h"
-
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/token.h"
+#include <mayaUsd/base/api.h>
 
 #include <boost/functional/hash.hpp>
 
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/token.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 struct PxrMayaHdRenderParams
 {

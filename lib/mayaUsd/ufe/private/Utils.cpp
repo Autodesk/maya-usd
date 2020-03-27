@@ -14,15 +14,15 @@
 // limitations under the License.
 //
 
-#include "Utils.h"
+#include <mayaUsd/ufe/private/Utils.h>
+
+#include <string>
+#include <memory>
 
 #include <ufe/log.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformable.h>
-
-#include <string>
-#include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

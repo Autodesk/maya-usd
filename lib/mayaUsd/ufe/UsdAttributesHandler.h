@@ -15,9 +15,8 @@
 //
 #pragma once
 
-#include "../base/api.h"
-
-#include "UsdAttributes.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdAttributes.h>
 
 #include <ufe/attributesHandler.h>
 

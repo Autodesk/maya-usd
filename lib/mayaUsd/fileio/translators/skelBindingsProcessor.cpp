@@ -13,14 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "skelBindingsProcessor.h"
+#include <mayaUsd/fileio/translators/skelBindingsProcessor.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdSkel/bindingAPI.h"
-#include "pxr/usd/usdSkel/root.h"
-#include "pxr/usd/usdUtils/authoring.h"
-
-#include "translatorUtil.h"
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdSkel/bindingAPI.h>
+#include <pxr/usd/usdSkel/root.h>
+#include <pxr/usd/usdUtils/authoring.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

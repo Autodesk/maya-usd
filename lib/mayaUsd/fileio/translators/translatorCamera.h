@@ -16,21 +16,18 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_CAMERA_H
 #define PXRUSDMAYA_TRANSLATOR_CAMERA_H
 
-/// \file usdMaya/translatorCamera.h
+#include <mayaUsd/base/api.h>
 
-#include "../../base/api.h"
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/usdGeom/camera.h"
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
 
 #include <maya/MFnCamera.h>
 #include <maya/MObject.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/camera.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Provides helper functions for translating to/from UsdGeomCamera
 struct UsdMayaTranslatorCamera

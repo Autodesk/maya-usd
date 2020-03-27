@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "UsdSceneItemOpsHandler.h"
+#include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

@@ -17,12 +17,12 @@
 #ifndef HD_VP2_MATERIAL
 #define HD_VP2_MATERIAL
 
-#include "pxr/pxr.h"
-#include "pxr/imaging/hd/material.h"
+#include <unordered_map>
 
 #include <maya/MShaderManager.h>
 
-#include <unordered_map>
+#include <pxr/pxr.h>
+#include <pxr/imaging/hd/material.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

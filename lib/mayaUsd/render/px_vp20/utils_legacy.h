@@ -18,16 +18,14 @@
 
 /// \file px_vp20/utils_legacy.h
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
+#include <mayaUsd/base/api.h>
 
-#include "pxr/base/gf/matrix4d.h"
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
 
 #include <maya/MSelectInfo.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// This class contains helper methods and utilities to help with the
 /// transition from the Maya legacy viewport to Viewport 2.0.

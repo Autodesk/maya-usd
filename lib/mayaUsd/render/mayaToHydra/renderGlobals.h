@@ -16,20 +16,20 @@
 #ifndef MTOH_RENDER_GLOBALS_H
 #define MTOH_RENDER_GLOBALS_H
 
-#include <pxr/pxr.h>
+#include <mayaUsd/render/mayaToHydra/tokens.h>
+#include <mayaUsd/render/mayaToHydra/utils.h>
 
-#include <pxr/base/gf/vec4f.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/value.h>
-
-#include <maya/MObject.h>
-
-#include "tokens.h"
-#include "utils.h"
-#include "../../usd/hdMaya/delegates/params.h"
+#include <hdMaya/delegates/params.h>
 
 #include <unordered_map>
 #include <vector>
+
+#include <maya/MObject.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

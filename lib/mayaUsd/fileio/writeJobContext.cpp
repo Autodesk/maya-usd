@@ -13,30 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "writeJobContext.h"
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/fileio/instancedNodeWriter.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/translators/skelBindingsProcessor.h>
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h>
 
-#include "instancedNodeWriter.h"
-#include "jobs/jobArgs.h"
-#include "primWriter.h"
-#include "primWriterRegistry.h"
-#include "translators/skelBindingsProcessor.h"
-#include "../utils/stageCache.h"
-#include "transformWriter.h"
-#include "../utils/util.h"
-
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ar/resolverContext.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/scope.h"
-#include "pxr/usd/usdGeom/xform.h"
+#include <sstream>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -46,26 +37,31 @@
 #include <maya/MItDag.h>
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MPxNode.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-#include <maya/MPxNode.h>
 
-#include <sstream>
-#include <string>
-#include <typeinfo>
-#include <utility>
-#include <vector>
-
+#include <pxr/pxr.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolverContext.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usdGeom/xform.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (Shape)
 );
-
 
 namespace {
 

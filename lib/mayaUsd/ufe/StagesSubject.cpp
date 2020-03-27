@@ -14,11 +14,12 @@
 // limitations under the License.
 //
 
-#include "StagesSubject.h"
-#include "Utils.h"
-#include "UsdStageMap.h"
-#include "ProxyShapeHandler.h"
-#include "private/InPathChange.h"
+#include <mayaUsd/ufe/StagesSubject.h>
+
+#include <mayaUsd/ufe/private/InPathChange.h>
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/attributes.h>
@@ -35,16 +36,16 @@
 #endif
 #endif
 
+#include <vector>
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <unordered_map>
+
 #include <maya/MSceneMessage.h>
 #include <maya/MMessage.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
-
-#include <vector>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <unordered_map>
 
 namespace {
 

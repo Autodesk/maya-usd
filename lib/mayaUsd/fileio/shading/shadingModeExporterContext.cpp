@@ -13,26 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "shadingModeExporterContext.h"
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 
-#include "../jobs/jobArgs.h"
-#include "../../utils/util.h"
-#include "../writeJobContext.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/types.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdGeom/scope.h"
-#include "pxr/usd/usdGeom/subset.h"
-#include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/materialBindingAPI.h"
-#include "pxr/usd/usdShade/shader.h"
+#include <string>
+#include <utility>
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -47,9 +35,20 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <string>
-#include <utility>
-
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/iterator.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usdGeom/subset.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
+#include <pxr/usd/usdShade/shader.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

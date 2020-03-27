@@ -13,10 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "primWriterContext.h"
+#include <mayaUsd/fileio/primWriterContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 UsdMayaPrimWriterContext::UsdMayaPrimWriterContext(
         const UsdTimeCode& timeCode,

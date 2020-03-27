@@ -15,10 +15,10 @@
 //
 #pragma once
 
-#include "../base/api.h"
+#include <mayaUsd/base/api.h>
 
-#include "UsdHierarchy.h"
-#include "UsdRootChildHierarchy.h"
+#include <mayaUsd/ufe/UsdHierarchy.h>
+#include <mayaUsd/ufe/UsdRootChildHierarchy.h>
 
 #include <ufe/hierarchyHandler.h>
 

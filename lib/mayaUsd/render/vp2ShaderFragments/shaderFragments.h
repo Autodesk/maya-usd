@@ -17,7 +17,7 @@
 #ifndef HD_VP2_SHADER_FRAGMENTS
 #define HD_VP2_SHADER_FRAGMENTS
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
 #include <maya/MStatus.h>
 

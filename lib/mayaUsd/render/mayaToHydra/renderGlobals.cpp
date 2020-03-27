@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "renderGlobals.h"
+#include <mayaUsd/render/mayaToHydra/renderGlobals.h>
+#include <mayaUsd/render/mayaToHydra/utils.h>
 
-#include <pxr/imaging/hd/renderDelegate.h>
-#include <pxr/imaging/hd/rendererPlugin.h>
-#include <pxr/imaging/hd/rendererPluginRegistry.h>
+#include <functional>
+#include <sstream>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -28,10 +28,9 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
-#include "utils.h"
-
-#include <functional>
-#include <sstream>
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
+#include <pxr/imaging/hd/rendererPluginRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

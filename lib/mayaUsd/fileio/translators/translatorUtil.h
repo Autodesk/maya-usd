@@ -16,15 +16,16 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_UTIL_H
 #define PXRUSDMAYA_TRANSLATOR_UTIL_H
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
+#include <mayaUsd/base/api.h>
 
-#include "pxr/usd/usd/prim.h"
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
 
 #include <maya/MObject.h>
 #include <maya/MString.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

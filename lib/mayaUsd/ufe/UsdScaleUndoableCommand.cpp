@@ -14,9 +14,10 @@
 // limitations under the License.
 //
 
-#include "UsdScaleUndoableCommand.h"
-#include "private/Utils.h"
-#include "Utils.h"
+#include <mayaUsd/ufe/UsdScaleUndoableCommand.h>
+
+#include <mayaUsd/ufe/private/Utils.h>
+#include <mayaUsd/ufe/Utils.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

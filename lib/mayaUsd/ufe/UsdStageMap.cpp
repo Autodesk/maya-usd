@@ -14,12 +14,12 @@
 // limitations under the License.
 //
 
-#include "UsdStageMap.h"
-#include "Utils.h"
-
-#include <maya/MFnDagNode.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <cassert>
+
+#include <maya/MFnDagNode.h>
 
 namespace {
 

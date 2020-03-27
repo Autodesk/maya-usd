@@ -13,37 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "../../utils/colorSpace.h"
-#include "./shadingModeExporter.h"
-#include "./shadingModeExporterContext.h"
-#include "./shadingModeRegistry.h"
-#include "../translators/translatorMaterial.h"
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
 
-#include "pxr/pxr.h"
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/utils/colorSpace.h>
 
-#include "pxr/base/gf/gamma.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/base/vt/types.h"
-#include "pxr/base/vt/value.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/valueTypeName.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdGeom/primvar.h"
-#include "pxr/usd/usdRi/materialAPI.h"
-#include "pxr/usd/usdShade/connectableAPI.h"
-#include "pxr/usd/usdShade/input.h"
-#include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/output.h"
-#include "pxr/usd/usdShade/shader.h"
-#include "pxr/usd/usdShade/tokens.h"
+#include <string>
 
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
@@ -54,11 +31,31 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <string>
-
+#include <pxr/pxr.h>
+#include <pxr/base/gf/gamma.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/gprim.h>
+#include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdRi/materialAPI.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
+#include <pxr/usd/usdShade/input.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/output.h>
+#include <pxr/usd/usdShade/shader.h>
+#include <pxr/usd/usdShade/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

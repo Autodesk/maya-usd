@@ -14,8 +14,12 @@
 // limitations under the License.
 //
 
-#include "UsdAttribute.h"
-#include "StagesSubject.h"
+#include <mayaUsd/ufe/UsdAttribute.h>
+#include <mayaUsd/ufe/StagesSubject.h>
+
+#include <unordered_map>
+#include <unordered_set>
+#include <iostream>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
@@ -26,10 +30,6 @@
 // The UFE_ASSERT_MSG has a built-in throw which we want to use for error handling.
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
-
-#include <unordered_map>
-#include <unordered_set>
-#include <iostream>
 
 // Note: normally we would use this using directive, but here we cannot because
 //		 our class is called UsdAttribute which is exactly the same as the one

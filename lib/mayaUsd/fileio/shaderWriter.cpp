@@ -13,21 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "shaderWriter.h"
-
-#include "writeJobContext.h"
-
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/prim.h"
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 UsdMayaShaderWriter::UsdMayaShaderWriter(
         const MFnDependencyNode& depNodeFn,

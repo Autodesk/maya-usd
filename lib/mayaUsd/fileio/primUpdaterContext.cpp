@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "primUpdaterContext.h"
+#include <mayaUsd/fileio/primUpdaterContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

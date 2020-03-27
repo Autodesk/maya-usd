@@ -14,10 +14,10 @@
 // limitations under the License.
 //
 
-#include "bboxGeom.h"
+#include <mayaUsd/render/vp2RenderDelegate/bboxGeom.h>
 
-#include "pxr/base/arch/threads.h"
-#include "pxr/base/tf/diagnostic.h"
+#include <pxr/base/arch/threads.h>
+#include <pxr/base/tf/diagnostic.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

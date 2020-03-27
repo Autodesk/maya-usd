@@ -14,19 +14,11 @@
 // limitations under the License.
 //
 
-#include "Utils.h"
-#include "private/Utils.h"
-#include "UsdStageMap.h"
-#include "ProxyShapeHandler.h"
-#include "../nodes/proxyShapeBase.h"
-
-#include <pxr/base/tf/hashset.h>
-#include <pxr/usd/usd/stage.h>
-
-#include <maya/MGlobal.h>
-#include <maya/MSelectionList.h>
-#include <maya/MObjectHandle.h>
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/private/Utils.h>
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 
 #include <cassert>
 #include <string>
@@ -34,6 +26,14 @@
 #include <regex>
 #include <memory>
 #include <stdexcept>
+
+#include <maya/MGlobal.h>
+#include <maya/MSelectionList.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MFnDependencyNode.h>
+
+#include <pxr/base/tf/hashset.h>
+#include <pxr/usd/usd/stage.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

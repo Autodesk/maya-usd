@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "UsdContextOpsHandler.h"
+#include <mayaUsd/ufe/UsdContextOpsHandler.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

@@ -15,7 +15,7 @@
 //
 // Modifications copyright (C) 2019 Autodesk
 //
-#include "sampler.h"
+#include <mayaUsd/render/vp2RenderDelegate/sampler.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

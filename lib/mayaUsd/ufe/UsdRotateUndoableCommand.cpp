@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 
-#include "UsdRotateUndoableCommand.h"
-#include "private/Utils.h"
+#include <mayaUsd/ufe/UsdRotateUndoableCommand.h>
+
+#include <mayaUsd/ufe/private/Utils.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

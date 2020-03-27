@@ -13,34 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "writeUtil.h"
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
+#include <mayaUsd/utils/colorSpace.h>
 
-#include "adaptor.h"
-#include "../../utils/colorSpace.h"
-#include "../translators/translatorUtil.h"
-#include "userTaggedAttribute.h"
-
-#include "pxr/base/gf/gamma.h"
-#include "pxr/base/gf/rotation.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/types.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/valueTypeName.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/inherits.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/property.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/imageable.h"
-#include "pxr/usd/usdGeom/primvar.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdRi/statementsAPI.h"
-#include "pxr/usd/usdUtils/sparseValueWriter.h"
+#include <string>
+#include <vector>
 
 #include <maya/MDoubleArray.h>
+#include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnEnumAttribute.h>
@@ -55,7 +38,6 @@
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MFnVectorArrayData.h>
-#include <maya/MFnAttribute.h>
 #include <maya/MMatrix.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -65,12 +47,27 @@
 #include <maya/MVector.h>
 #include <maya/MVectorArray.h>
 
-#include <string>
-#include <vector>
-
+#include <pxr/pxr.h>
+#include <pxr/base/gf/gamma.h>
+#include <pxr/base/gf/rotation.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/inherits.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/property.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/imageable.h>
+#include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdRi/statementsAPI.h>
+#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_ENV_SETTING(
     PIXMAYA_WRITE_UV_AS_FLOAT2,

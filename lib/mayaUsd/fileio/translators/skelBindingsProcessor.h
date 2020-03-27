@@ -16,22 +16,19 @@
 #ifndef PXRUSDMAYA_SKEL_BINDINGS_PROCESSOR_H
 #define PXRUSDMAYA_SKEL_BINDINGS_PROCESSOR_H
 
-/// \file usdMaya/skelBindingsProcessor.h
-
-#include "../../base/api.h"
-#include "../../utils/util.h"
-
-#include "pxr/pxr.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/pathTable.h"
-
-#include <maya/MDagPath.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
 
 #include <set>
 #include <unordered_map>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <maya/MDagPath.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/pathTable.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// This class encapsulates all of the logic for writing or modifying
 /// SkelRoot prims for all scopes that have skel bindings.

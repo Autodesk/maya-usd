@@ -13,16 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./userData.h"
-
-#include "pxr/pxr.h"
-#include "../../base/api.h"
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 #include <maya/MUserData.h>
 
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Note that we set deleteAfterUse=false when calling the MUserData
 /// constructor. This ensures that the draw data survives across multiple draw

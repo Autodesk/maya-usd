@@ -14,13 +14,13 @@
 // limitations under the License.
 //
 
-#include "UsdTransform3d.h"
-#include "UsdTranslateUndoableCommand.h"
-#include "UsdRotateUndoableCommand.h"
-#include "UsdScaleUndoableCommand.h"
-#include "UsdRotatePivotTranslateUndoableCommand.h"
-#include "private/Utils.h"
-#include "Utils.h"
+#include <mayaUsd/ufe/UsdTransform3d.h>
+#include <mayaUsd/ufe/private/Utils.h>
+#include <mayaUsd/ufe/UsdRotatePivotTranslateUndoableCommand.h>
+#include <mayaUsd/ufe/UsdRotateUndoableCommand.h>
+#include <mayaUsd/ufe/UsdScaleUndoableCommand.h>
+#include <mayaUsd/ufe/UsdTranslateUndoableCommand.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/usdGeom/xformCache.h>
 

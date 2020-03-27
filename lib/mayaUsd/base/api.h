@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "pxr/base/arch/export.h"
+#include <pxr/base/arch/export.h>
 
 #if defined _WIN32 || defined __CYGWIN__
 

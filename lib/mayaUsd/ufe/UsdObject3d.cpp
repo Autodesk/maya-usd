@@ -6,17 +6,17 @@
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
 
-#include "UsdObject3d.h"
-#include "Utils.h"
+#include <mayaUsd/ufe/UsdObject3d.h>
+#include <mayaUsd/ufe/Utils.h>
 
-#include "ufe/attributes.h"
-#include "ufe/types.h"
+#include <ufe/attributes.h>
+#include <ufe/types.h>
+
+#include <stdexcept>
 
 #include <pxr/usd/usdGeom/bboxCache.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/tokens.h>
-
-#include <stdexcept>
 
 namespace {
 Ufe::Vector3d toVector3d(const GfVec3d& v)

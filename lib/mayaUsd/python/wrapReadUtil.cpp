@@ -14,17 +14,17 @@
 // limitations under the License.
 //
 
-#include "pxr/pxr.h"
-#include <mayaUsd/utils/util.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/pyConversions.h"
+#include <boost/python.hpp>
 
 #include <maya/MObject.h>
 
-#include <boost/python.hpp>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/pyConversions.h>
 
 using namespace boost::python;
 

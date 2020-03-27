@@ -14,13 +14,13 @@
 // limitations under the License.
 //
 
-#include "shaderFragments.h"
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/thisPlugin.h"
-#include "pxr/base/tf/stringUtils.h"
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/thisPlugin.h>
+#include <pxr/base/tf/stringUtils.h>
 
-#include "pxr/usdImaging/usdImaging/tokens.h"
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MViewport2Renderer.h>

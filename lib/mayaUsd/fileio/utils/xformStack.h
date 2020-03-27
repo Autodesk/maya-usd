@@ -16,17 +16,18 @@
 #ifndef PXRUSDMAYA_XFORM_STACK_H
 #define PXRUSDMAYA_XFORM_STACK_H
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "pxr/base/tf/refPtr.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/usdGeom/xformOp.h"
-
-#include <maya/MTransformationMatrix.h>
+#include <mayaUsd/base/api.h>
 
 #include <limits>
 #include <vector>
 #include <unordered_map>
+
+#include <maya/MTransformationMatrix.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/tf/refPtr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

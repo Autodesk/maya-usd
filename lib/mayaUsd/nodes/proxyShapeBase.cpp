@@ -13,40 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "proxyShapeBase.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/listeners/proxyShapeNotice.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/query.h>
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
-#include "../base/debugCodes.h"
-#include "../listeners/proxyShapeNotice.h"
-#include "../utils/query.h"
-#include "../utils/stageCache.h"
-#include "../utils/utilFileSystem.h"
-#include "stageData.h"
-
-#include "pxr/base/gf/bbox3d.h"
-#include "pxr/base/gf/range3d.h"
-#include "pxr/base/gf/ray.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/fileUtils.h"
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/tf/staticData.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/trace/trace.h"
-
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/stageCacheContext.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/bboxCache.h"
-#include "pxr/usd/usdGeom/imageable.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdUtils/stageCache.h"
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -54,18 +32,18 @@
 #include <maya/MDataHandle.h>
 #include <maya/MDGContext.h>
 #include <maya/MFileIO.h>
-#include <maya/MItDependencyNodes.h>
-#include <maya/MFnReference.h>
 #include <maya/MFnCompoundAttribute.h>
-#include <maya/MFnData.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MFnData.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
+#include <maya/MFnReference.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -77,10 +55,30 @@
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <map>
-#include <string>
-#include <utility>
-#include <vector>
+#include <pxr/base/gf/bbox3d.h>
+#include <pxr/base/gf/range3d.h>
+#include <pxr/base/gf/ray.h>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/fileUtils.h>
+#include <pxr/base/tf/hash.h>
+#include <pxr/base/tf/pathUtils.h>
+#include <pxr/base/tf/staticData.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/trace/trace.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/stageCacheContext.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/bboxCache.h>
+#include <pxr/usd/usdGeom/imageable.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdUtils/stageCache.h>
 
 #if defined(WANT_UFE_BUILD)
 #include <ufe/path.h>

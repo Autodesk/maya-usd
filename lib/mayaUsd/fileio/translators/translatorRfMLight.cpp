@@ -13,39 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "translatorRfMLight.h"
+#include <mayaUsd/fileio/translators/translatorRfMLight.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
+#include <mayaUsd/utils/util.h>
 
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-#include "../primReaderRegistry.h"
-#include "../primWriterArgs.h"
-#include "../primWriterContext.h"
-#include "../primWriterRegistry.h"
-#include "translatorUtil.h"
-#include "translatorXformable.h"
-#include "../../utils/util.h"
-
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/usd/sdf/assetPath.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdLux/light.h"
-#include "pxr/usd/usdLux/cylinderLight.h"
-#include "pxr/usd/usdLux/diskLight.h"
-#include "pxr/usd/usdLux/distantLight.h"
-#include "pxr/usd/usdLux/domeLight.h"
-#include "pxr/usd/usdLux/geometryLight.h"
-#include "pxr/usd/usdLux/rectLight.h"
-#include "pxr/usd/usdLux/shadowAPI.h"
-#include "pxr/usd/usdLux/shapingAPI.h"
-#include "pxr/usd/usdLux/sphereLight.h"
-#include "pxr/usd/usdRi/pxrAovLight.h"
-#include "pxr/usd/usdRi/pxrEnvDayLight.h"
+#include <string>
 
 #include <maya/MColor.h>
 #include <maya/MFnDependencyNode.h>
@@ -54,11 +33,29 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <string>
-
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdLux/light.h>
+#include <pxr/usd/usdLux/cylinderLight.h>
+#include <pxr/usd/usdLux/diskLight.h>
+#include <pxr/usd/usdLux/distantLight.h>
+#include <pxr/usd/usdLux/domeLight.h>
+#include <pxr/usd/usdLux/geometryLight.h>
+#include <pxr/usd/usdLux/rectLight.h>
+#include <pxr/usd/usdLux/shadowAPI.h>
+#include <pxr/usd/usdLux/shapingAPI.h>
+#include <pxr/usd/usdLux/sphereLight.h>
+#include <pxr/usd/usdRi/pxrAovLight.h>
+#include <pxr/usd/usdRi/pxrEnvDayLight.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

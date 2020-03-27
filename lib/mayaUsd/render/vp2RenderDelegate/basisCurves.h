@@ -17,17 +17,17 @@
 #ifndef HDVP2_BASIS_CURVES_H
 #define HDVP2_BASIS_CURVES_H
 
-#include "pxr/pxr.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/imaging/hd/basisCurves.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/usd/sdf/path.h"
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
+#include <memory>
 
 #include <maya/MHWGeometry.h>
 
-#include "proxyRenderDelegate.h"
-
-#include <memory>
+#include <pxr/pxr.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/imaging/hd/basisCurves.h>
+#include <pxr/imaging/hd/enums.h>
+#include <pxr/usd/sdf/path.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

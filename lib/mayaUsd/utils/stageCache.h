@@ -16,20 +16,15 @@
 #ifndef PXRUSDMAYA_STAGECACHE_H
 #define PXRUSDMAYA_STAGECACHE_H
 
-/// \file usdMaya/stageCache.h
-
-#include "../base/api.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/stageCache.h"
+#include <mayaUsd/base/api.h>
 
 #include <string>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/stageCache.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class UsdMayaStageCache
 {

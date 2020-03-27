@@ -16,25 +16,21 @@
 #ifndef PXRUSDMAYA_PRIM_WRITER_REGISTRY_H
 #define PXRUSDMAYA_PRIM_WRITER_REGISTRY_H
 
-/// \file usdMaya/primWriterRegistry.h
-
-#include "pxr/pxr.h"
-#include "../base/api.h"
-
-#include "primWriter.h"
-#include "primWriterArgs.h"
-#include "primWriterContext.h"
-
-#include "pxr/usd/sdf/path.h"
-
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
 
 #include <functional>
 #include <string>
 
+#include <maya/MFnDependencyNode.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class UsdMayaPrimWriterRegistry
 /// \brief Provides functionality to register and lookup USD writer plugins

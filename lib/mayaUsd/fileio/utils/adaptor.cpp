@@ -13,22 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "adaptor.h"
+#include <mayaUsd/fileio/utils/adaptor.h>
 
-#include "../primWriterRegistry.h"
-#include "readUtil.h"
-#include "../registryHelper.h"
-#include "../../utils/util.h"
-#include "writeUtil.h"
-
-#include "pxr/usd/sdf/schema.h"
-#include "pxr/usd/usd/apiSchemaBase.h"
-#include "pxr/usd/usd/schemaBase.h"
-#include "pxr/usd/usd/tokens.h"
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/registryHelper.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
+
+#include <pxr/usd/sdf/schema.h>
+#include <pxr/usd/usd/apiSchemaBase.h>
+#include <pxr/usd/usd/schemaBase.h>
+#include <pxr/usd/usd/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

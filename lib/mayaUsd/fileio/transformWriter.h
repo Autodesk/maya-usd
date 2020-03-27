@@ -16,21 +16,12 @@
 #ifndef PXRUSDMAYA_TRANSFORM_WRITER_H
 #define PXRUSDMAYA_TRANSFORM_WRITER_H
 
-/// \file usdMaya/transformWriter.h
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
-#include "pxr/pxr.h"
-#include "../base/api.h"
-
-#include "primWriter.h"
-#include "writeJobContext.h"
-
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/xformOp.h"
-#include "pxr/usd/usdGeom/xformable.h"
-#include "pxr/usd/usdUtils/sparseValueWriter.h"
+#include <unordered_map>
+#include <vector>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MEulerRotation.h>
@@ -38,12 +29,16 @@
 #include <maya/MPlug.h>
 #include <maya/MString.h>
 
-#include <unordered_map>
-#include <vector>
-
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdGeom/xformOp.h>
+#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Writes transforms and serves as the base class for custom transform writers.
 /// Handles the conversion of Maya transformation data into USD xformOps.

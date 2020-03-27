@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 
-#include "UsdUndoDuplicateCommand.h"
-#include "Utils.h"
+#include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
+
+#include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>

@@ -13,10 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "primReaderArgs.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 UsdMayaPrimReaderArgs::UsdMayaPrimReaderArgs(
         const UsdPrim& prim,

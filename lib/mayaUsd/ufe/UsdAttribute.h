@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "UsdSceneItem.h"
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <ufe/attribute.h>
 

@@ -17,7 +17,7 @@
 #ifndef HD_VP2_RESOURCE_REGISTRY
 #define HD_VP2_RESOURCE_REGISTRY
 
-#include "task_commit.h"
+#include <mayaUsd/render/vp2RenderDelegate/task_commit.h>
 
 #include <tbb/concurrent_queue.h>
 #include <tbb/tbb_allocator.h>
