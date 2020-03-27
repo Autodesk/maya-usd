@@ -144,7 +144,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         # undo to restore state to original.
         cmds.undo()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2011', 'testVisibility only available in UFE preview 2011 and greater')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2011', 'testDeleteArgs only available in UFE preview 2011 and greater')
     def testDeleteArgs(self):
         '''Delete Maya and USD objects passed as command arguments.'''
 
