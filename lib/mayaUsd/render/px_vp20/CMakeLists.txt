@@ -23,5 +23,5 @@ mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/px_vp20)
 # install
 # -----------------------------------------------------------------------------
 install(FILES ${headers}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/px_vp20
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/px_vp20
 )

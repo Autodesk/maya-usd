@@ -3,33 +3,36 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        hdImagingShape.cpp
-        pointBasedDeformerNode.cpp
-        proxyShapeBase.cpp
-        proxyShapePlugin.cpp
-        stageData.cpp
-        stageNode.cpp
-        usdPrimProvider.cpp
+        shadingModePxrRis.cpp
+        shadingModeDisplayColor.cpp
+        shadingModeExporter.cpp
+        shadingModeExporterContext.cpp
+        shadingModeImporter.cpp
+        shadingModeRegistry.cpp
+        shadingModeUseRegistry.cpp
 )
 
 set(headers
-    hdImagingShape.h
-    pointBasedDeformerNode.h
-    proxyShapeBase.h
-    proxyShapePlugin.h
-    stageData.h
-    stageNode.h
-    usdPrimProvider.h
+    shadingModeExporter.h
+    shadingModeExporterContext.h
+    shadingModeImporter.h
+    shadingModePxrRis_rfm_map.h
+    shadingModeRegistry.h
 )
 
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR nodes)
+mayaUsd_promoteHeaderList(
+    HEADERS 
+        ${headers} 
+    BASEDIR 
+        ${PROJECT_NAME}/fileio/shading
+)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
 install(FILES ${headers}
-     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/nodes/
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/fileio/shading
 )

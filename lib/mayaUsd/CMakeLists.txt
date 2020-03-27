@@ -57,8 +57,6 @@ target_include_directories(${PROJECT_NAME}
         ${MAYA_INCLUDE_DIRS}
         ${PXR_INCLUDE_DIRS}
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_BINARY_DIR}/include
 )
 
@@ -152,7 +150,6 @@ add_subdirectory(render)
 if(UFE_FOUND)
     add_subdirectory(ufe)
 endif()
-
 add_subdirectory(utils)
 
 if(BUILD_HDMAYA)

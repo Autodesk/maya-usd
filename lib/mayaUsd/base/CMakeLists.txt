@@ -27,9 +27,9 @@ mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR base)
 # install
 # -----------------------------------------------------------------------------
 install(FILES ${headers}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/base
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/base
 )
 
 install(FILES ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}
 )
