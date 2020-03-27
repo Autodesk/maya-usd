@@ -1,4 +1,6 @@
+import fnmatch
 import ufe
+import mayaUsd.ufe
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
 
 from pxr import UsdGeom, UsdShade
@@ -10,16 +12,34 @@ class AEBaseTemplate(ufeAeTemplate.Template):
         self.attrS = ufe.Attributes.attributes(ufeSceneItem)
         super(AEBaseTemplate, self).__init__(ufeSceneItem)
 
-    def createSection(self, layoutName, attrList):
+    def createSection(self, layoutName, attrList, collapse=False):
         # We create the section named "layoutName" if at least one
         # of the attributes from the input list exists.
         for attr in attrList:
             if self.attrS.hasAttribute(attr):
-                with ufeAeTemplate.Layout(self, layoutName):
+                with ufeAeTemplate.Layout(self, layoutName, collapse):
                     # Note: addControls will silently skip any attributes
                     #       which does not exist.
                     self.addControls(attrList)
                 return
+
+    def createTransformAttributesSection(self):
+        # Get the xformOp order and add those attributes (in order)
+        # followed by the xformOp order attribute.
+        prim = mayaUsd.ufe.getPrimFromRawItem(self.item.getRawAddress())
+        geomX = UsdGeom.Xformable(prim)
+        xformOps = geomX.GetOrderedXformOps()
+        xformOpOrderNames = [op.GetOpName() for op in xformOps]
+        xformOpOrderNames.append(UsdGeom.Tokens.xformOpOrder)
+        # Don't use createSection because we want a sub-section for Unused.
+        with ufeAeTemplate.Layout(self, 'Transform Attributes'):
+            self.addControls(xformOpOrderNames)
+
+            # Get the remainder of the xformOps and add them in an Unused section.
+            allAttrs = self.attrS.attributeNames
+            xformOpUnusedNames = fnmatch.filter(allAttrs, 'xformOp:*')
+            xformOpUnusedNames = [ele for ele in xformOpUnusedNames if ele not in xformOpOrderNames]
+            self.createSection('Unused Transform Attributes', xformOpUnusedNames, collapse=True)
 
     def buildUI(self, ufeSceneItem):
         # Create all the various sections.
@@ -32,24 +52,7 @@ class AEBaseTemplate(ufeAeTemplate.Template):
             UsdShade.Tokens.infoImplementationSource]
         )
 
-        self.createSection('Transform Attributes',
-            ['xformOp:translate',
-            'xformOp:transform',
-            'xformOp:translate:pivot',
-            'xformOp:rotateX',
-            'xformOp:rotateXYZ',
-            'xformOp:rotateXZY',
-            'xformOp:rotateYXZ',
-            'xformOp:rotateYZX',
-            'xformOp:rotateZ',
-            'xformOp:rotateZXY',
-            'xformOp:rotateZYX',
-            'xformOp:scale',
-            'xformOp:orient',
-            UsdGeom.Tokens.xformOpOrder]
-        )
-        # Wildcard for suffixes - still to come from nat
-        # in order of xformOp order - still to come from nat
+        self.createTransformAttributesSection()
 
         self.createSection('Mesh Component Display',
             [UsdGeom.Tokens.doubleSided,
