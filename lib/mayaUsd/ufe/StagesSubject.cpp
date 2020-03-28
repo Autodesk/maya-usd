@@ -45,6 +45,7 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
 namespace {
 
 // The attribute change notification guard is not meant to be nested, but
