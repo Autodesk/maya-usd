@@ -20,7 +20,6 @@ target_sources(${PROJECT_NAME}
 set(headers
     basisCurves.h
     bboxGeom.h
-    CMakeLists.txt
     debugCodes.h
     draw_item.h
     instancer.h

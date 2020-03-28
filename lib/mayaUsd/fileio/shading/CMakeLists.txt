@@ -3,11 +3,11 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        shadingModePxrRis.cpp
         shadingModeDisplayColor.cpp
         shadingModeExporter.cpp
         shadingModeExporterContext.cpp
         shadingModeImporter.cpp
+        shadingModePxrRis.cpp
         shadingModeRegistry.cpp
         shadingModeUseRegistry.cpp
 )

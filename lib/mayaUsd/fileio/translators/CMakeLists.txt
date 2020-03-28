@@ -3,7 +3,6 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        translatorRfMLight.cpp
         skelBindingsProcessor.cpp
         translatorCamera.cpp
         translatorCurves.cpp
@@ -13,6 +12,7 @@ target_sources(${PROJECT_NAME}
         translatorMesh.cpp
         translatorNurbsPatch.cpp
         translatorPrim.cpp
+        translatorRfMLight.cpp
         translatorSkel.cpp
         translatorUtil.cpp
         translatorXformable.cpp
