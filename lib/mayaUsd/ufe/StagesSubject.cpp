@@ -34,12 +34,10 @@
 #if UFE_PREVIEW_VERSION_NUM >= 2010
 #include <ufe/object3dNotification.h>
 #endif
+#include <unordered_map>
 #endif
 
 #include <vector>
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <unordered_map>
 
 #include <maya/MSceneMessage.h>
 #include <maya/MMessage.h>
