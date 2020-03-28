@@ -16,7 +16,8 @@
 
 #include <mayaUsd/ufe/UsdUndoRenameCommand.h>
 
-#include <mayaUsd/ufe/private/InPathChange.h>
+#include "private/InPathChange.h"
+
 #include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/scene.h>

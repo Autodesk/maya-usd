@@ -16,7 +16,8 @@
 
 #include <mayaUsd/ufe/Global.h>
 
-#include <mayaUsd/ufe/private/InPathChange.h>
+#include "private/InPathChange.h"
+
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
 #include <mayaUsd/ufe/StagesSubject.h>

@@ -15,8 +15,10 @@
 //
 
 #include <mayaUsd/ufe/Utils.h>
+
+#include "private/Utils.h"
+
 #include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/ufe/private/Utils.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 

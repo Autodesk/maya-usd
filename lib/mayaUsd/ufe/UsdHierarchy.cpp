@@ -19,8 +19,9 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <mayaUsd/ufe/private/InPathChange.h>
-#include <mayaUsd/ufe/private/Utils.h>
+#include "private/InPathChange.h"
+#include "private/Utils.h"
+
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 

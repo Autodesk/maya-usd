@@ -16,7 +16,8 @@
 
 #include <mayaUsd/ufe/UsdScaleUndoableCommand.h>
 
-#include <mayaUsd/ufe/private/Utils.h>
+#include "private/Utils.h"
+
 #include <mayaUsd/ufe/Utils.h>
 
 MAYAUSD_NS_DEF {

@@ -15,7 +15,7 @@
 //
 #include <mayaUsd/ufe/UsdRotatePivotTranslateUndoableCommand.h>
 
-#include <mayaUsd/ufe/private/Utils.h>
+#include "private/Utils.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {

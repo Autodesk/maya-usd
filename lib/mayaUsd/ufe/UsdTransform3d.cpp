@@ -15,7 +15,9 @@
 //
 
 #include <mayaUsd/ufe/UsdTransform3d.h>
-#include <mayaUsd/ufe/private/Utils.h>
+
+#include "private/Utils.h"
+
 #include <mayaUsd/ufe/UsdRotatePivotTranslateUndoableCommand.h>
 #include <mayaUsd/ufe/UsdRotateUndoableCommand.h>
 #include <mayaUsd/ufe/UsdScaleUndoableCommand.h>

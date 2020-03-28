@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include <mayaUsd/ufe/private/Utils.h>
+#include "Utils.h"
 
 #include <string>
 #include <memory>
