@@ -537,10 +537,14 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // therefore drawInstID is usdInstID plus 1 considering VP2 defines the
     // instance ID of the first instance as 1.
     const int drawInstID = intersection.instanceID();
+    const int usdInstID = drawInstID - 1;
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+    rprimId = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID);
+#else
     if (drawInstID > 0) {
-        const int usdInstID = drawInstID - 1;
         rprimId = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
     }
+#endif
 
     const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
 

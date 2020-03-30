@@ -381,7 +381,9 @@ UsdMayaGLHdRenderer::TestIntersection(
 
     return _renderer->TestIntersection(viewMatrix,
                                        projectionMatrix,
+#if !defined(USDIMAGINGGL_API_VERSION) || USDIMAGINGGL_API_VERSION < 3
                                        GfMatrix4d().SetIdentity(),
+#endif
                                        _renderedPrim,
                                        params,
                                        hitPoint);
