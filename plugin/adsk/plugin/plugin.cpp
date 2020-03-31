@@ -17,6 +17,8 @@
 #include "base/api.h"
 #include "importTranslator.h"
 #include "exportTranslator.h"
+#include "adskExportCommand.h"
+#include "adskImportCommand.h"
 #include "ProxyShape.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
@@ -72,6 +74,22 @@ MStatus initializePlugin(MObject obj)
         false);
     if (!status) {
         status.perror("mayaUsdPlugin: unable to register export translator.");
+    }
+
+    status = plugin.registerCommand(
+        MayaUsd::ADSKMayaUSDExportCommand::commandName,
+        MayaUsd::ADSKMayaUSDExportCommand::creator,
+        MayaUsd::ADSKMayaUSDExportCommand::createSyntax);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register export command.");
+    }
+
+    status = plugin.registerCommand(
+        MayaUsd::ADSKMayaUSDImportCommand::commandName,
+        MayaUsd::ADSKMayaUSDImportCommand::creator,
+        MayaUsd::ADSKMayaUSDImportCommand::createSyntax);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register import command.");
     }
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
@@ -167,6 +185,16 @@ MStatus uninitializePlugin(MObject obj)
     status = plugin.deregisterFileTranslator(MayaUsd::UsdMayaExportTranslator::translatorName);
     if (!status) {
         status.perror("mayaUsdPlugin: unable to deregister export translator.");
+    }
+
+    status = plugin.deregisterCommand(MayaUsd::ADSKMayaUSDExportCommand::commandName);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to deregister export command.");
+    }
+
+    status = plugin.deregisterCommand(MayaUsd::ADSKMayaUSDImportCommand::commandName);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to deregister import command.");
     }
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);

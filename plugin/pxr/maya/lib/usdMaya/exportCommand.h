@@ -24,23 +24,19 @@
 
 #include <maya/MPxCommand.h>
 
+#include <mayaUsd/fileio/commands/baseExportCommand.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-class UsdMayaExportCommand : public MPxCommand
+class PxrMayaUSDExportCommand : public MayaUsd::MayaUSDExportCommand
 {
   public:
     PXRUSDMAYA_API
-    UsdMayaExportCommand();
+    PxrMayaUSDExportCommand();
     PXRUSDMAYA_API
-    ~UsdMayaExportCommand() override;
-
-    PXRUSDMAYA_API
-    MStatus doIt(const MArgList& args) override;
-    bool  isUndoable () const override { return false; };
-
-    PXRUSDMAYA_API
-    static MSyntax  createSyntax();
+    ~PxrMayaUSDExportCommand() override;
+    
     PXRUSDMAYA_API
     static void* creator();
 };

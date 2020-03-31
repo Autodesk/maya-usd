@@ -23,6 +23,8 @@ add_library(${TARGET_NAME} MODULE)
 target_sources(${TARGET_NAME} 
     PRIVATE
         plugin.cpp
+        adskImportCommand.cpp
+        adskExportCommand.cpp
         importTranslator.cpp
         exportTranslator.cpp
         ProxyShape.cpp

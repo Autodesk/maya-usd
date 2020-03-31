@@ -25,6 +25,8 @@ target_sources(${PROJECT_NAME}
         writeJobContext.cpp
         chaser/chaser.cpp
         chaser/chaserRegistry.cpp
+        commands/baseExportCommand.cpp
+        commands/baseImportCommand.cpp
         jobs/jobArgs.cpp
         jobs/modelKindProcessor.cpp
         jobs/readJob.cpp
@@ -83,6 +85,8 @@ set(headers
     writeJobContext.h
     chaser/chaser.h
     chaser/chaserRegistry.h
+    commands/baseExportCommand.h
+    commands/baseImportCommand.h
     jobs/jobArgs.h
     jobs/modelKindProcessor.h
     jobs/readJob.h
