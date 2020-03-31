@@ -17,6 +17,19 @@ include(CXXHelpers)
 include(Version)
 include(Options)
 
+# Require C++14 if we're either building for Maya 2019 or later, or if we're
+# building against USD 20.05 or later. Otherwise require C++11.
+if ((MAYA_APP_VERSION VERSION_GREATER_EQUAL 2019) OR
+        ((DEFINED USD_VERSION_NUM) AND
+         (USD_VERSION_NUM VERSION_GREATER_EQUAL 2005)))
+    set(CMAKE_CXX_STANDARD 14)
+else()
+    set(CMAKE_CXX_STANDARD 11)
+endif()
+
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
