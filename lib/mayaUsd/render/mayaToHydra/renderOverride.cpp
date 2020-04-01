@@ -613,7 +613,11 @@ void MtohRenderOverride::_SelectionChanged() {
     MSelectionList sel;
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
     SdfPathVector selectedPaths;
+#if USD_VERSION_NUM > 2002
+    auto selection = std::make_shared<HdSelection>();
+#else
     auto selection = boost::make_shared<HdSelection>();
+#endif // USD_VERSION_NUM > 2002
 
 #if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection =
