@@ -148,6 +148,12 @@ In general, macros should be avoided (see [Modern C++](https://docs.google.com/d
 * Comments for users of classes and functions must be written in headers files. Comments in definition files are meant for contributors and maintainers.
 
 ### Include directive
+For source files (.cpp) with an associated header file (.h) that resides in the same directory, it should be `#include`'d with double quotes and no path.  This formatting should be followed regardless with whether the associated header is public or private. For example:
+```cpp
+// In foobar.cpp
+#include "foobar.h"
+```
+
 All included public header files from outside and inside the project should be `#include`’d using angle brackets. For example:
 ```cpp
 #include <pxr/base/tf/stringUtils.h>
@@ -156,8 +162,8 @@ All included public header files from outside and inside the project should be `
 
 Private project’s header files should be `#include`'d using the file name when in the same folder. Private headers may live in sub-directories, but they should never be included using "._" or ".._" as part of a relative paths. For example:
 ```cpp
-#include “privateUtils.h"
-#include “pvt/helperFunctions.h"
+#include "privateUtils.h"
+#include "pvt/helperFunctions.h"
 ```
 
 ### Include order
@@ -166,14 +172,15 @@ Headers should be included in the following order, with each section separated b
 1. Related header
 2. C system headers
 3. C++ standard library headers
-4. Other libraries’ headers
+4. Other external libraries’ headers
 5. Autodesk + Maya headers
 6. Pixar + USD headers
-7. Your project’s headers
-8. Conditional includes
+7. All public headers from this repository (maya-usd)
+8. All private headers
+9. Conditional includes
 
 ```cpp
-#include “exportTranslator.h"
+#include "exportTranslator.h"
  
 #include <string>
  
@@ -186,6 +193,8 @@ Headers should be included in the following order, with each section separated b
 #include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
+
+#include "private/util.h"
 
 #if defined(WANT_UFE_BUILD)
   #include <ufe/ufe.h>
