@@ -16,14 +16,14 @@
 #ifndef PXRUSDMAYA_QUERY_H
 #define PXRUSDMAYA_QUERY_H
 
-#include <mayaUsd/base/api.h>
-
 #include <string>
 #include <vector>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

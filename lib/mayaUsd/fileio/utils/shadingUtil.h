@@ -16,8 +16,6 @@
 #ifndef PXRUSDMAYA_SHADING_UTIL_H
 #define PXRUSDMAYA_SHADING_UTIL_H
 
-#include <mayaUsd/base/api.h>
-
 #include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -25,6 +23,8 @@
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

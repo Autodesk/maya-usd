@@ -13,10 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/nodes/proxyShapePlugin.h>
-#include <mayaUsd/nodes/hdImagingShape.h>
-#include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/nodes/stageData.h>
+#include "proxyShapePlugin.h"
 
 #include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h>
 #include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeUI.h>
@@ -31,6 +28,10 @@
 #include <maya/MDrawRegistry.h>
 
 #include <pxr/base/tf/envSetting.h>
+
+#include "mayaUsd/nodes/hdImagingShape.h"
+#include "mayaUsd/nodes/proxyShapeBase.h"
+#include "mayaUsd/nodes/stageData.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

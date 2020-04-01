@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/base/api.h>
-
 #include <string>
 
 #include <boost/filesystem.hpp>
@@ -22,6 +20,8 @@
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,17 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/render/mayaToHydra/renderOverride.h>
-
-#include <mayaUsd/render/mayaToHydra/pluginDebugCodes.h>
-#include <mayaUsd/render/mayaToHydra/renderOverrideUtils.h>
-#include <mayaUsd/render/vp2RenderDelegate/tokens.h>
-#include <mayaUsd/render/mayaToHydra/utils.h>
-#include <mayaUsd/render/px_vp20/utils.h>
-
-#include <hdMaya/delegates/delegateRegistry.h>
-#include <hdMaya/delegates/sceneDelegate.h>
-#include <hdMaya/utils.h>
+#include "renderOverride.h"
 
 #include <atomic>
 #include <chrono>
@@ -44,7 +34,6 @@
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/imaging/glf/contextCaps.h>
-
 #include <pxr/imaging/hd/rprim.h>
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
@@ -67,6 +56,17 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <ufe/observableSelection.h>
 #include <ufe/selectionNotification.h>
 #endif // WANT_UFE_BUILD
+
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <hdMaya/delegates/sceneDelegate.h>
+#include <hdMaya/utils.h>
+
+#include <mayaUsd/render/px_vp20/utils.h>
+
+#include "pluginDebugCodes.h"
+#include "renderOverrideUtils.h"
+#include "tokens.h"
+#include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

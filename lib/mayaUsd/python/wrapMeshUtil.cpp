@@ -13,10 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/fileio/utils/meshUtil.h>
-#include <mayaUsd/utils/util.h>
-
 #include <string>
 
 #include <boost/python/class.hpp>
@@ -31,6 +27,9 @@
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
+
+#include <mayaUsd/fileio/utils/meshUtil.h>
+#include <mayaUsd/utils/util.h>
 
 using namespace boost::python;
 

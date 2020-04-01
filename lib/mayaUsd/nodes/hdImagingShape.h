@@ -16,9 +16,6 @@
 #ifndef PXRUSDMAYA_HD_IMAGING_SHAPE_H
 #define PXRUSDMAYA_HD_IMAGING_SHAPE_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/utils/util.h>
-
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
@@ -33,6 +30,9 @@
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

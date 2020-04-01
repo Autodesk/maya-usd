@@ -15,12 +15,7 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
-#include <mayaUsd/fileio/utils/meshUtil.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/fileio/utils/readUtil.h>
-#include <mayaUsd/fileio/utils/roundTripUtil.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/utils/colorSpace.h>
+#include "meshUtil.h"
 
 #include <maya/MFloatVector.h>
 #include <maya/MFloatVectorArray.h>
@@ -47,6 +42,12 @@
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
+
+#include "mayaUsd/fileio/utils/adaptor.h"
+#include "mayaUsd/fileio/utils/readUtil.h"
+#include "mayaUsd/fileio/utils/roundTripUtil.h"
+#include "mayaUsd/utils/colorSpace.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,11 +16,11 @@
 #ifndef PXRUSDMAYA_REGISTRYHELPER_H
 #define PXRUSDMAYA_REGISTRYHELPER_H
 
+#include <functional>
+
+#include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
-#include <pxr/pxr.h>
-
-#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

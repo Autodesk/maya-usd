@@ -13,11 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef PXRUSDMAYA_READUTIL_H
 #define PXRUSDMAYA_READUTIL_H
-
-#include <mayaUsd/base/api.h>
 
 #include <string>
 
@@ -29,6 +26,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/attribute.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

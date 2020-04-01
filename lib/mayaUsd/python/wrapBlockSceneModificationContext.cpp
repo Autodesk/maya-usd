@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/utils/blockSceneModificationContext.h>
-
 #include <memory>
 
 #include <boost/python.hpp>
 
 #include <pxr/pxr.h>
+
+#include <mayaUsd/utils/blockSceneModificationContext.h>
 
 using namespace boost::python;
 

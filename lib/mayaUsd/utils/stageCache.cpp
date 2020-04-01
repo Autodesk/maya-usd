@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/utils/stageCache.h>
-#include <mayaUsd/listeners/notice.h>
+#include "stageCache.h"
 
 #include <map>
 #include <memory>
@@ -31,6 +30,8 @@
 #include <pxr/usd/sdf/relationshipSpec.h>
 #include <pxr/usd/usd/stageCache.h>
 #include <pxr/usd/usdGeom/tokens.h>
+
+#include "mayaUsd/listeners/notice.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

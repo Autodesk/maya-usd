@@ -16,8 +16,6 @@
 #ifndef PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
 #define PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
 
-#include <mayaUsd/base/api.h>
-
 #include <map>
 #include <string>
 #include <vector>
@@ -29,6 +27,8 @@
 #include <pxr/base/tf/iterator.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

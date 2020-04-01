@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/shading/shadingModeImporter.h>
+#include "shadingModeImporter.h"
 
 #include <maya/MFnSet.h>
 #include <maya/MObject.h>

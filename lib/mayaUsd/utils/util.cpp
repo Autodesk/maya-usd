@@ -13,9 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/utils/colorSpace.h>
+#include "util.h"
 
 #include <sstream>
 #include <string>
@@ -72,6 +70,8 @@
 #include <pxr/usd/sdf/tokens.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/metrics.h>
+
+#include "colorSpace.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

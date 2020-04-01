@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/listeners/stageNoticeListener.h>
+#include "stageNoticeListener.h"
 
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>

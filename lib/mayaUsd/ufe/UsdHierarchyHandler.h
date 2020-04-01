@@ -15,12 +15,12 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/ufe/UsdHierarchy.h>
-#include <mayaUsd/ufe/UsdRootChildHierarchy.h>
-
 #include <ufe/hierarchyHandler.h>
+
+#include "mayaUsd/base/api.h"
+
+#include "mayaUsd/ufe/UsdHierarchy.h"
+#include "mayaUsd/ufe/UsdRootChildHierarchy.h"
 
 //PXR_NAMESPACE_USING_DIRECTIVE
 

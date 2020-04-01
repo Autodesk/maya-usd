@@ -13,10 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "ProxyShapeHierarchyHandler.h"
 
-#include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
-#include <mayaUsd/ufe/ProxyShapeHierarchy.h>
-#include <mayaUsd/ufe/Utils.h>
+#include "mayaUsd/ufe/ProxyShapeHierarchy.h"
+#include "mayaUsd/ufe/Utils.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {

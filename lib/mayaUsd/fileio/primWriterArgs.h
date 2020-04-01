@@ -16,14 +16,14 @@
 #ifndef PXRUSDMAYA_PRIMWRITERERARGS_H
 #define PXRUSDMAYA_PRIMWRITERERARGS_H
 
-#include <mayaUsd/base/api.h>
-
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/base/gf/vec3f.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

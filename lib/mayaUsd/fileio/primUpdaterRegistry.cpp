@@ -14,9 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/primUpdaterRegistry.h>
-#include <mayaUsd/fileio/registryHelper.h>
-#include <mayaUsd/base/debugCodes.h>
+#include "primUpdaterRegistry.h"
 
 #include <map>
 #include <string>
@@ -31,6 +29,9 @@
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/schemaBase.h>
+
+#include "mayaUsd/fileio/registryHelper.h"
+#include "mayaUsd/base/debugCodes.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

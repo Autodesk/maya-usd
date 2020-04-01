@@ -17,8 +17,7 @@
 //
 #include <pxr/imaging/glf/glew.h>
 
-#include <mayaUsd/render/vp2RenderDelegate/instancer.h>
-#include <mayaUsd/render/vp2RenderDelegate/sampler.h>
+#include "instancer.h"
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/quaternion.h>
@@ -27,6 +26,8 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
+
+#include "sampler.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

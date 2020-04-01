@@ -13,10 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/translators/translatorXformable.h>
-#include <mayaUsd/fileio/translators/translatorPrim.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/utils/xformStack.h>
+#include "translatorXformable.h"
 
 #include <algorithm>
 #include <unordered_map>
@@ -35,16 +32,20 @@
 #include <maya/MTransformationMatrix.h>
 #include <maya/MVector.h>
 
+#include <pxr/pxr.h>
 #include <pxr/base/gf/math.h>
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformable.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
+
+#include "mayaUsd/fileio/translators/translatorPrim.h"
+#include "mayaUsd/fileio/translators/translatorUtil.h"
+#include "mayaUsd/fileio/utils/xformStack.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,13 +16,6 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
-#include <mayaUsd/render/mayaToHydra/defaultLightDelegate.h>
-#include <mayaUsd/render/mayaToHydra/renderGlobals.h>
-#include <mayaUsd/render/mayaToHydra/utils.h>
-
-#include <hdMaya/delegates/delegate.h>
-#include <hdMaya/delegates/params.h>
-
 #include <atomic>
 #include <chrono>
 #include <memory>
@@ -58,6 +51,13 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #if WANT_UFE_BUILD
 #include <ufe/observer.h>
 #endif // WANT_UFE_BUILD
+
+#include <hdMaya/delegates/delegate.h>
+#include <hdMaya/delegates/params.h>
+
+#include "defaultLightDelegate.h"
+#include "renderGlobals.h"
+#include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

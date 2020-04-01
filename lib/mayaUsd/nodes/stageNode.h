@@ -16,8 +16,6 @@
 #ifndef PXRUSDMAYA_STAGE_NODE_H
 #define PXRUSDMAYA_STAGE_NODE_H
 
-#include <mayaUsd/base/api.h>
-
 #include <maya/MDataBlock.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -28,6 +26,8 @@
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

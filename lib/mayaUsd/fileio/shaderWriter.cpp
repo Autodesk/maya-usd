@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include "shaderWriter.h"
 
 #include <maya/MFnDependencyNode.h>
 
@@ -23,6 +22,8 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
+
+#include "mayaUsd/fileio/writeJobContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/registryHelper.h>
-#include <mayaUsd/base/debugCodes.h>
+#include "registryHelper.h"
 
 #include <map>
 #include <vector>
@@ -28,6 +27,8 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/stringUtils.h>
+
+#include "mayaUsd/base/debugCodes.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

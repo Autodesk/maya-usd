@@ -13,12 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef HD_VP2_RENDER_DELEGATE
 #define HD_VP2_RENDER_DELEGATE
-
-#include <mayaUsd/render/vp2RenderDelegate/render_param.h>
-#include <mayaUsd/render/vp2RenderDelegate/resource_registry.h>
 
 #include <mutex>
 #include <atomic>
@@ -29,6 +25,9 @@
 #include <pxr/pxr.h>
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
+
+#include "render_param.h"
+#include "resource_registry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,11 +16,11 @@
 #ifndef PXRUSDMAYA_PROXY_SHAPE_PLUGIN_H
 #define PXRUSDMAYA_PROXY_SHAPE_PLUGIN_H
 
-#include <mayaUsd/base/api.h>
-
 #include <maya/MApiNamespace.h>
 
 #include <pxr/pxr.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

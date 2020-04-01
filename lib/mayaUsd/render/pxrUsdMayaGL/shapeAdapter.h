@@ -18,9 +18,7 @@
 
 /// \file pxrUsdMayaGL/shapeAdapter.h
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
-#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
+#include <memory>
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
@@ -45,8 +43,10 @@
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MUserData.h>
 
-#include <memory>
+#include "mayaUsd/base/api.h"
 
+#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
+#include "mayaUsd/render/pxrUsdMayaGL/userData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

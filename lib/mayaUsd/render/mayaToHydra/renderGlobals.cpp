@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/render/mayaToHydra/renderGlobals.h>
-#include <mayaUsd/render/mayaToHydra/utils.h>
+#include "renderGlobals.h"
 
 #include <functional>
 #include <sstream>
@@ -31,6 +30,8 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
+
+#include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

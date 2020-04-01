@@ -16,9 +16,6 @@
 #ifndef PXRUSDMAYA_SHADING_MODE_IMPORTER_H
 #define PXRUSDMAYA_SHADING_MODE_IMPORTER_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primReaderContext.h>
-
 #include <functional>
 
 #include <maya/MObject.h>
@@ -26,11 +23,13 @@
 #include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
-
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdShade/material.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/primReaderContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,10 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "UsdAttributesHandler.h"
 
-#include <mayaUsd/ufe/UsdAttributesHandler.h>
-
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include "mayaUsd/ufe/UsdSceneItem.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {

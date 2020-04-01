@@ -13,13 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/render/pxrUsdMayaGL/instancerShapeAdapter.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
-#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
-#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
-#include <mayaUsd/utils/util.h>
+#include "instancerShapeAdapter.h"
 
 #include <string>
 
@@ -39,8 +33,8 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <pxr/base/gf/vec4f.h>
 #include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -58,6 +52,14 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+
+#include "mayaUsd/fileio/utils/writeUtil.h"
+#include "mayaUsd/utils/util.h"
+
+#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
+#include "mayaUsd/render/pxrUsdMayaGL/debugCodes.h"
+#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
+#include "mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

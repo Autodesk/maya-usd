@@ -16,12 +16,12 @@
 #ifndef PXRUSDMAYA_PRIMREADERCONTEXT_H
 #define PXRUSDMAYA_PRIMREADERCONTEXT_H
 
-#include <mayaUsd/base/api.h>
-
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

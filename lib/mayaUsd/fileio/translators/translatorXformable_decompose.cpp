@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/translators/translatorXformable.h>
-
 #include <maya/MVector.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/math.h>
 #include <pxr/base/gf/matrix3d.h>
 #include <pxr/base/gf/transform.h>
+
+#include "mayaUsd/fileio/translators/translatorXformable.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

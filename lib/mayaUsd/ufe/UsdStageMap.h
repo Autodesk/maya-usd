@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
+#include "mayaUsd/base/api.h"
 
 #include <ufe/path.h>
 

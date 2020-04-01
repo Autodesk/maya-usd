@@ -15,13 +15,13 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-
 #include <ufe/path.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/translators/translatorGprim.h>
+#include "translatorGprim.h"
 
 #include <maya/MFnDagNode.h>
 
-#include <mayaUsd/utils/util.h>
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

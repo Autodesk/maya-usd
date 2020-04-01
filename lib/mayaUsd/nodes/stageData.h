@@ -16,8 +16,6 @@
 #ifndef PXRUSDMAYA_STAGE_DATA_H
 #define PXRUSDMAYA_STAGE_DATA_H
 
-#include <mayaUsd/base/api.h>
-
 #include <maya/MMessage.h>
 #include <maya/MPxData.h>
 #include <maya/MPxGeometryData.h>
@@ -28,6 +26,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

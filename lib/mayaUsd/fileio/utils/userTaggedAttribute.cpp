@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
-#include <mayaUsd/utils/util.h>
+#include "userTaggedAttribute.h"
 
 #include <set>
 #include <string>
@@ -32,6 +31,8 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usdGeom/tokens.h>
+
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

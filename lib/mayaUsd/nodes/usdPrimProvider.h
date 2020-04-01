@@ -16,10 +16,10 @@
 #ifndef PXRUSDMAYA_USD_PRIM_PROVIDER_H
 #define PXRUSDMAYA_USD_PRIM_PROVIDER_H
 
-#include <mayaUsd/base/api.h>
-
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

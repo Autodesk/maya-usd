@@ -18,12 +18,12 @@
 
 /// \file px_vp20/utils_legacy.h
 
-#include <mayaUsd/base/api.h>
-
 #include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
 
 #include <maya/MSelectInfo.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

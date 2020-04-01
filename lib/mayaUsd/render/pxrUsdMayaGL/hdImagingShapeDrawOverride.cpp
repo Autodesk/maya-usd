@@ -13,17 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h>
-#include <mayaUsd/nodes/hdImagingShape.h>
-
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
-#include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
-#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
+#include "hdImagingShapeDrawOverride.h"
 
 #include <maya/MBoundingBox.h>
-#include <maya/MDGContext.h>
 #include <maya/MDagPath.h>
+#include <maya/MDGContext.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFrameContext.h>
@@ -41,6 +35,12 @@
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/trace/trace.h>
+
+#include "mayaUsd/nodes/hdImagingShape.h"
+#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
+#include "mayaUsd/render/pxrUsdMayaGL/debugCodes.h"
+#include "mayaUsd/render/pxrUsdMayaGL/instancerImager.h"
+#include "mayaUsd/render/pxrUsdMayaGL/userData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

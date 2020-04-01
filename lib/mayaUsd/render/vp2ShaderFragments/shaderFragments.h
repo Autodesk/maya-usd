@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef HD_VP2_SHADER_FRAGMENTS
 #define HD_VP2_SHADER_FRAGMENTS
 

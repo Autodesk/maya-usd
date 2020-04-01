@@ -16,9 +16,9 @@
 #ifndef PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
 #define PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
 
-#include <mayaUsd/base/api.h>
-
 #include <pxr/pxr.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

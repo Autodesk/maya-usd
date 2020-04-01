@@ -13,13 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/translators/translatorCamera.h>
-
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/primReaderArgs.h>
-#include <mayaUsd/utils/util.h>
+#include "translatorCamera.h"
 
 #include <string>
 #include <vector>
@@ -38,6 +32,12 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/tokens.h>
+
+#include "mayaUsd/fileio/jobs/jobArgs.h"
+#include "mayaUsd/fileio/primReaderArgs.h"
+#include "mayaUsd/fileio/primReaderContext.h"
+#include "mayaUsd/fileio/translators/translatorUtil.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

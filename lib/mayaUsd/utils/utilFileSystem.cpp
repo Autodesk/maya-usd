@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/utils/utilFileSystem.h>
-
-#include <mayaUsd/base/debugCodes.h>
+#include "utilFileSystem.h"
 
 #include <maya/MFileIO.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MFnReference.h>
 
 #include <pxr/usd/ar/resolver.h>
+
+#include "mayaUsd/base/debugCodes.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -16,12 +16,6 @@
 #ifndef PXRUSDMAYA_WRITE_JOB_CONTEXT_H
 #define PXRUSDMAYA_WRITE_JOB_CONTEXT_H
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
-
 #include <memory>
 
 #include <maya/MDagPath.h>
@@ -30,6 +24,11 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/jobs/jobArgs.h"
+#include "mayaUsd/fileio/primWriter.h"
+#include "mayaUsd/fileio/primWriterRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,15 +16,11 @@
 #ifndef PXRUSDMAYA_TRANSFORM_WRITER_H
 #define PXRUSDMAYA_TRANSFORM_WRITER_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-
 #include <unordered_map>
 #include <vector>
 
-#include <maya/MFnDependencyNode.h>
 #include <maya/MEulerRotation.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnTransform.h>
 #include <maya/MPlug.h>
 #include <maya/MString.h>
@@ -37,6 +33,10 @@
 #include <pxr/usd/usdGeom/xformable.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/primWriter.h"
+#include "mayaUsd/fileio/writeJobContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

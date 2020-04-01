@@ -16,11 +16,7 @@
 #ifndef PXRUSDMAYA_SHADING_MODE_EXPORTER_CONTEXT_H
 #define PXRUSDMAYA_SHADING_MODE_EXPORTER_CONTEXT_H
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include "mayaUsd/base/api.h"
 
 #include <string>
 #include <utility>
@@ -35,6 +31,10 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+
+#include "mayaUsd/fileio/jobs/jobArgs.h"
+#include "mayaUsd/fileio/writeJobContext.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/utils/blockSceneModificationContext.h>
+#include "blockSceneModificationContext.h"
 
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>

@@ -13,14 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/utils/xformStack.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/pyContainerConversions.h>
-#include <pxr/base/tf/pyEnum.h>
-#include <pxr/base/tf/pyResultConversions.h>
-#include <pxr/base/tf/stringUtils.h>
-
 #include <boost/python/class.hpp>
 #include <boost/python/copy_const_reference.hpp>
 #include <boost/python/import.hpp>
@@ -28,6 +20,14 @@
 
 #include <maya/MEulerRotation.h>
 #include <maya/MTransformationMatrix.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/tf/pyContainerConversions.h>
+#include <pxr/base/tf/pyEnum.h>
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/stringUtils.h>
+
+#include <mayaUsd/fileio/utils/xformStack.h>
 
 using namespace std;
 using boost::python::object;

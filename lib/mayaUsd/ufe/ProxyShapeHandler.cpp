@@ -13,14 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/ufe/ProxyShapeHandler.h>
-
-#include <mayaUsd/utils/query.h>
+#include "ProxyShapeHandler.h"
 
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
+
+#include "mayaUsd/utils/query.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {

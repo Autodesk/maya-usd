@@ -16,16 +16,15 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_CAMERA_H
 #define PXRUSDMAYA_TRANSLATOR_CAMERA_H
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/primReaderArgs.h>
-
 #include <maya/MFnCamera.h>
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/camera.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/primReaderArgs.h"
+#include "mayaUsd/fileio/primReaderContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

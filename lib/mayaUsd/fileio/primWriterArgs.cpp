@@ -13,10 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/primWriterArgs.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
+#include "primWriterArgs.h"
 
 #include <maya/MFnDependencyNode.h>
+
+#include "mayaUsd/fileio/utils/writeUtil.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,13 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/utils/diagnosticDelegate.h>
-
 #include <boost/noncopyable.hpp>
 #include <boost/python.hpp>
 
 #include <pxr/pxr.h>
+
+#include <mayaUsd/utils/diagnosticDelegate.h>
 
 using namespace boost::python;
 

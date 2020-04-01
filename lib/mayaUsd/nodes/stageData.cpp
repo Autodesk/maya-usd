@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/nodes/stageData.h>
+#include "stageData.h"
 
 #include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>

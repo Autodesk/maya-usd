@@ -13,11 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "Utils.h"
 
-#include <string>
 #include <memory>
+#include <string>
 
 #include <ufe/log.h>
 

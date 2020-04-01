@@ -16,8 +16,6 @@
 #ifndef PXRUSDMAYA_UTIL_H
 #define PXRUSDMAYA_UTIL_H
 
-#include <mayaUsd/base/api.h>
-
 #include <map>
 #include <set>
 #include <string>
@@ -54,6 +52,8 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/timeCode.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

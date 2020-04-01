@@ -16,11 +16,6 @@
 #ifndef PXRUSDMAYA_PRIM_WRITER_REGISTRY_H
 #define PXRUSDMAYA_PRIM_WRITER_REGISTRY_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/primWriterArgs.h>
-#include <mayaUsd/fileio/primWriterContext.h>
-
 #include <functional>
 #include <string>
 
@@ -29,6 +24,10 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/primWriter.h"
+#include "mayaUsd/fileio/primWriterArgs.h"
+#include "mayaUsd/fileio/primWriterContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

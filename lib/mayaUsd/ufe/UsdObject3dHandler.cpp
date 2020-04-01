@@ -6,11 +6,11 @@
 // otherwise accompanies this software in either electronic or hard copy form.
 // ===========================================================================
 
-#include <mayaUsd/ufe/UsdObject3dHandler.h>
-
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include "UsdObject3dHandler.h"
 
 #include <pxr/usd/usdGeom/imageable.h>
+
+#include "mayaUsd/ufe/UsdSceneItem.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {

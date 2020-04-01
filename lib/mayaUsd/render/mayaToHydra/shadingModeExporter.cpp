@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/shading/shadingModeExporter.h>
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-
-#include <hdMaya/adapters/materialNetworkConverter.h>
-
 #include <pxr/pxr.h>
 #include <pxr/imaging/hio/glslfx.h>
 #include <pxr/usd/usdShade/connectableAPI.h>
 #include <pxr/usd/usdShade/shader.h>
+
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+
+#include <hdMaya/adapters/materialNetworkConverter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

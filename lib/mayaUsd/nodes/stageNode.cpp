@@ -13,9 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/nodes/stageNode.h>
-#include <mayaUsd/nodes/stageData.h>
-#include <mayaUsd/utils/stageCache.h>
+#include "stageNode.h"
 
 #include <string>
 
@@ -41,6 +39,9 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCacheContext.h>
+
+#include "mayaUsd/nodes/stageData.h"
+#include "mayaUsd/utils/stageCache.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

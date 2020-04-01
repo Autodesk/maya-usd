@@ -29,19 +29,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef PXRUSDMAYA_TRANSLATOR_GPRIM_H
 #define PXRUSDMAYA_TRANSLATOR_GPRIM_H
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/primWriterContext.h>
 
 #include <maya/MObject.h>
 #include <maya/MFnReference.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/primReaderContext.h"
+#include "mayaUsd/fileio/primWriterContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

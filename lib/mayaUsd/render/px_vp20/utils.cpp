@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 // glew must be included before any other GL header.
 #include <pxr/imaging/glf/glew.h>
 
-#include <mayaUsd/render/px_vp20/glslProgram.h>
-#include <mayaUsd/render/px_vp20/utils.h>
+#include "utils.h"
 
 #include <cmath>
 #include <ostream>
@@ -38,9 +38,9 @@
 #include <maya/MIntArray.h>
 #include <maya/MMatrix.h>
 #include <maya/MSelectionContext.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
-#include <maya/MStatus.h>
 #include <maya/MTransformationMatrix.h>
 
 #include <pxr/base/gf/math.h>
@@ -55,6 +55,8 @@
 #include <pxr/imaging/glf/simpleLightingContext.h>
 #include <pxr/imaging/glf/simpleMaterial.h>
 #include <pxr/imaging/hdx/version.h>
+
+#include "mayaUsd/render/px_vp20/glslProgram.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/utils/undoHelperCommand.h>
-
-#include <maya/MSyntax.h>
+#include "undoHelperCommand.h"
 
 #include <pxr/base/tf/errorMark.h>
+
+#include <maya/MSyntax.h>
 
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString

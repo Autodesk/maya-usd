@@ -13,28 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/shading/shadingModePxrRis_rfm_map.h>
-#include <mayaUsd/fileio/shading/shadingModeExporter.h>
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/fileio/shading/shadingModeImporter.h>
-
-// Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/utils/roundTripUtil.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/utils/util.h>
-
 #include <vector>
 
 #include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnSet.h>
+#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-#include <maya/MGlobal.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -55,6 +43,19 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
+#include "mayaUsd/fileio/shading/shadingModeExporter.h"
+#include "mayaUsd/fileio/shading/shadingModeExporterContext.h"
+#include "mayaUsd/fileio/shading/shadingModeImporter.h"
+
+// Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
+#include "mayaUsd/fileio/shading/shadingModePxrRis_rfm_map.h"
+
+#include "mayaUsd/fileio/shading/shadingModeRegistry.h"
+#include "mayaUsd/fileio/translators/translatorUtil.h"
+#include "mayaUsd/fileio/utils/roundTripUtil.h"
+#include "mayaUsd/fileio/utils/writeUtil.h"
+#include "mayaUsd/utils/util.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -68,7 +69,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((RmanVolumeShaderPlugName, "volumeShader"))
 );
-
 
 namespace {
 

@@ -16,10 +16,10 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_UTIL_H
 #define PXRUSDMAYA_TRANSLATOR_UTIL_H
 
-#include <mayaUsd/base/api.h>
+#include "mayaUsd/base/api.h"
 
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/primReaderArgs.h>
+#include "mayaUsd/fileio/primReaderContext.h"
+#include "mayaUsd/fileio/primReaderArgs.h"
 
 #include <maya/MObject.h>
 #include <maya/MString.h>

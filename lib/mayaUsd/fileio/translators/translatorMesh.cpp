@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/translators/translatorMesh.h>
-#include <mayaUsd/fileio/utils/meshUtil.h>
-#include <mayaUsd/fileio/utils/readUtil.h>
-#include <mayaUsd/nodes/pointBasedDeformerNode.h>
-#include <mayaUsd/nodes/stageNode.h>
-#include <mayaUsd/utils/util.h>
+#include "translatorMesh.h"
 
 #include <string>
 #include <vector>
@@ -42,6 +37,12 @@
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
 #include <maya/MString.h>
+
+#include "mayaUsd/fileio/utils/meshUtil.h"
+#include "mayaUsd/fileio/utils/readUtil.h"
+#include "mayaUsd/nodes/pointBasedDeformerNode.h"
+#include "mayaUsd/nodes/stageNode.h"
+#include "mayaUsd/utils/util.h"
 
 MAYAUSD_NS_DEF {
 

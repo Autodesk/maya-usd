@@ -17,10 +17,6 @@
 #define PXRUSDMAYAGL_INSTANCER_SHAPE_ADAPTER_H
 
 /// \file pxrUsdMayaGL/instancerShapeAdapter.h
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
-
 #include <memory>
 
 #include <maya/M3dView.h>
@@ -30,6 +26,10 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+
+#include "mayaUsd/base/api.h"
+
+#include "mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -17,14 +17,13 @@
 #ifndef PXRUSDMAYA_PRIMUPDATERCONTEXT_H
 #define PXRUSDMAYA_PRIMUPDATERCONTEXT_H
 
-#include <mayaUsd/base/api.h>
-
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include "mayaUsd/base/api.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdMayaPrimUpdaterContext
 /// \brief This class provides an interface for updater plugins to communicate

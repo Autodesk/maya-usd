@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/ufe/UsdStageMap.h>
-#include <mayaUsd/ufe/Utils.h>
+#include "UsdStageMap.h"
 
 #include <cassert>
 
 #include <maya/MFnDagNode.h>
+
+#include "mayaUsd/ufe/Utils.h"
 
 namespace {
 

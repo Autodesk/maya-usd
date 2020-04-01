@@ -13,15 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/render/pxrUsdMayaGL/sceneDelegate.h>
+#include "sceneDelegate.h"
 
-#include <mayaUsd/base/api.h>
+#include <vector>
+#include <boost/functional/hash.hpp>
 
-#include <mayaUsd/render/px_vp20/utils.h>
-#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <maya/MDrawContext.h>
 
 #include <pxr/pxr.h>
-
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec4d.h>
@@ -35,13 +34,13 @@
 #include <pxr/imaging/cameraUtil/conformWindow.h>
 #include <pxr/imaging/glf/simpleLight.h>
 #include <pxr/imaging/glf/simpleLightingContext.h>
+#include <pxr/imaging/hd/camera.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/task.h>
 #include <pxr/imaging/hd/tokens.h>
-#include <pxr/imaging/hd/camera.h>
 #include <pxr/imaging/hdSt/light.h>
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/renderSetupTask.h>
@@ -53,15 +52,11 @@
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <maya/MDrawContext.h>
-
-#include <boost/functional/hash.hpp>
-
-#include <vector>
-
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/render/px_vp20/utils.h"
+#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

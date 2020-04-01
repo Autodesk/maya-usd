@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-
-#include <mayaUsd/fileio/registryHelper.h>
-#include <mayaUsd/fileio/shading/shadingModeExporter.h>
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/fileio/shading/shadingModeImporter.h>
+#include "shadingModeRegistry.h"
 
 #include <map>
 #include <string>
@@ -28,6 +23,11 @@
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+
+#include "mayaUsd/fileio/registryHelper.h"
+#include "mayaUsd/fileio/shading/shadingModeExporter.h"
+#include "mayaUsd/fileio/shading/shadingModeExporterContext.h"
+#include "mayaUsd/fileio/shading/shadingModeImporter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

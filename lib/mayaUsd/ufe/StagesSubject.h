@@ -15,9 +15,6 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/listeners/proxyShapeNotice.h>
-
 #include <maya/MCallbackIdArray.h>
 
 #include <ufe/ufe.h>            // For UFE_V2_FEATURES_AVAILABLE
@@ -27,6 +24,9 @@
 #include <pxr/base/tf/hash.h>
 #include <pxr/base/tf/notice.h>
 #include <pxr/usd/usd/notice.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/listeners/proxyShapeNotice.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

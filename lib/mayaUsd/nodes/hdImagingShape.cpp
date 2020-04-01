@@ -13,17 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/nodes/hdImagingShape.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/utils/blockSceneModificationContext.h>
-#include <mayaUsd/utils/util.h>
+#include "hdImagingShape.h"
 
 #include <string>
 
 #include <maya/MBoundingBox.h>
-#include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
+#include <maya/MDGMessage.h>
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -47,6 +44,10 @@
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
+
+#include "mayaUsd/fileio/translators/translatorUtil.h"
+#include "mayaUsd/utils/blockSceneModificationContext.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

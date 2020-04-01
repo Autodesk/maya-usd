@@ -16,10 +16,6 @@
 #ifndef PXRUSDMAYA_PROXY_SHAPE_BASE_H
 #define PXRUSDMAYA_PROXY_SHAPE_BASE_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/listeners/stageNoticeListener.h>
-#include <mayaUsd/nodes/usdPrimProvider.h>
-
 #include <map>
 
 #include <maya/MBoundingBox.h>
@@ -58,9 +54,11 @@ constexpr int USD_UFE_RUNTIME_ID = 2;
 constexpr char USD_UFE_SEPARATOR = '/';
 #endif
 
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/listeners/stageNoticeListener.h"
+#include "mayaUsd/nodes/usdPrimProvider.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 #define MAYAUSD_PROXY_SHAPE_BASE_TOKENS \
     ((MayaTypeName, "mayaUsdProxyShapeBase"))
@@ -68,7 +66,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens,
                          MAYAUSD_CORE_PUBLIC,
                          MAYAUSD_PROXY_SHAPE_BASE_TOKENS);
-
 
 class MayaUsdProxyShapeBase : public MPxSurfaceShape,
                               public UsdMayaUsdPrimProvider

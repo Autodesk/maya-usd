@@ -17,8 +17,6 @@
 #define PXRUSDMAYAGL_SCENE_DELEGATE_H
 
 /// \file pxrUsdMayaGL/sceneDelegate.h
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
 
 #include <memory>
 #include <unordered_map>
@@ -38,6 +36,10 @@
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/task.h>
 #include <pxr/usd/sdf/path.h>
+
+#include "mayaUsd/base/api.h"
+
+#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

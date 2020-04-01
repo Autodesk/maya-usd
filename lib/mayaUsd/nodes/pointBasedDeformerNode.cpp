@@ -13,24 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/nodes/pointBasedDeformerNode.h>
+#include "pointBasedDeformerNode.h"
 
-#include <mayaUsd/nodes/stageData.h>
-
-#include <pxr/base/gf/math.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/base/vt/types.h>
-
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/pointBased.h>
+#include <string>
 
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
@@ -50,7 +35,22 @@
 #include <maya/MTime.h>
 #include <maya/MTypeId.h>
 
-#include <string>
+#include <pxr/base/gf/math.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/vt/types.h>
+
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/pointBased.h>
+
+#include "mayaUsd/nodes/stageData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

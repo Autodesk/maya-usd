@@ -16,8 +16,6 @@
 #ifndef PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_H
 #define PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_H
 
-#include <mayaUsd/base/api.h>
-
 #include <maya/MDataBlock.h>
 #include <maya/MItGeometry.h>
 #include <maya/MMatrix.h>
@@ -29,6 +27,8 @@
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

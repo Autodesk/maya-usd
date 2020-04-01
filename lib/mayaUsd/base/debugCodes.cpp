@@ -13,12 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/base/debugCodes.h>
+#include "debugCodes.h"
 
 #include <pxr/base/tf/registryManager.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
@@ -33,4 +32,3 @@ TF_REGISTRY_FUNCTION(TfDebug)
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -13,14 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/jobs/readJob.h>
-
-#include <mayaUsd/fileio/primReaderRegistry.h>
-#include <mayaUsd/utils/stageCache.h>
-#include <mayaUsd/nodes/stageNode.h>
-#include <mayaUsd/fileio/translators/translatorMaterial.h>
-#include <mayaUsd/fileio/translators/translatorXformable.h>
-#include <mayaUsd/utils/util.h>
+#include "readJob.h"
 
 #include <map>
 #include <string>
@@ -53,6 +46,13 @@
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usd/usdUtils/stageCache.h>
+
+#include "mayaUsd/fileio/primReaderRegistry.h"
+#include "mayaUsd/fileio/translators/translatorMaterial.h"
+#include "mayaUsd/fileio/translators/translatorXformable.h"
+#include "mayaUsd/nodes/stageNode.h"
+#include "mayaUsd/utils/stageCache.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

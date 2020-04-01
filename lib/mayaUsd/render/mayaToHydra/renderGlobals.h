@@ -16,11 +16,6 @@
 #ifndef MTOH_RENDER_GLOBALS_H
 #define MTOH_RENDER_GLOBALS_H
 
-#include <mayaUsd/render/mayaToHydra/tokens.h>
-#include <mayaUsd/render/mayaToHydra/utils.h>
-
-#include <hdMaya/delegates/params.h>
-
 #include <unordered_map>
 #include <vector>
 
@@ -30,6 +25,11 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+
+#include <hdMaya/delegates/params.h>
+
+#include "tokens.h"
+#include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

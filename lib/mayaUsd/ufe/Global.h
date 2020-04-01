@@ -15,11 +15,11 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
+#include <maya/MStatus.h>
 
 #include <ufe/rtid.h>
 
-#include <maya/MStatus.h>
+#include "mayaUsd/base/api.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/utils/shadingUtil.h>
+#include "shadingUtil.h"
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>

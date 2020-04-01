@@ -16,9 +16,6 @@
 #ifndef PXRUSDMAYA_SKEL_BINDINGS_PROCESSOR_H
 #define PXRUSDMAYA_SKEL_BINDINGS_PROCESSOR_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/utils/util.h>
-
 #include <set>
 #include <unordered_map>
 
@@ -27,6 +24,9 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/pathTable.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

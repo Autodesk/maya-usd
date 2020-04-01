@@ -18,7 +18,7 @@
 
 /// \file pxrUsdMayaGL/userData.h
 
-#include <mayaUsd/base/api.h>
+#include "mayaUsd/base/api.h"
 
 #include <memory>
 

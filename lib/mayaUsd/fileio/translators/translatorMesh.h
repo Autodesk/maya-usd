@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <mayaUsd/base/api.h>
+#include "mayaUsd/base/api.h"
 
 #include <maya/MObject.h>
 #include <maya/MString.h>

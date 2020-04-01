@@ -29,11 +29,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/fileio/translators/translatorMayaReference.h>
-
-#include <mayaUsd/base/debugCodes.h>
-#include <mayaUsd/utils/util.h>
+#include "translatorMayaReference.h"
 
 #include <maya/MDGModifier.h>
 #include <maya/MFileIO.h>
@@ -48,6 +44,9 @@
 #include <maya/MNodeClass.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
+
+#include "mayaUsd/base/debugCodes.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

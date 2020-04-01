@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/render/vp2RenderDelegate/draw_item.h>
-#include <mayaUsd/render/vp2RenderDelegate/render_delegate.h>
+#include "draw_item.h"
 
 #include <pxr/imaging/hd/mesh.h>
+
+#include "render_delegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

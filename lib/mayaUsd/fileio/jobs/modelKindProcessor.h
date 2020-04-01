@@ -16,9 +16,6 @@
 #ifndef PXRUSDMAYA_MODEL_KIND_PROCESSOR_H
 #define PXRUSDMAYA_MODEL_KIND_PROCESSOR_H
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primWriter.h>
-
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -27,8 +24,10 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include "mayaUsd/fileio/jobs/jobArgs.h"
+#include "mayaUsd/fileio/primWriter.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// This class encapsulates all of the logic for writing model kinds from
 /// UsdMaya_WriteJob. It is a "black box" that reads each newly-written prim, one

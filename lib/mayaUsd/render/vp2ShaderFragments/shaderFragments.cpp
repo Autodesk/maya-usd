@@ -13,19 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "shaderFragments.h"
 
-#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
+#include <maya/MFragmentManager.h>
+#include <maya/MGlobal.h>
+#include <maya/MShaderManager.h>
+#include <maya/MViewport2Renderer.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/thisPlugin.h>
 #include <pxr/base/tf/stringUtils.h>
-
 #include <pxr/usdImaging/usdImaging/tokens.h>
-
-#include <maya/MGlobal.h>
-#include <maya/MViewport2Renderer.h>
-#include <maya/MFragmentManager.h>
-#include <maya/MShaderManager.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

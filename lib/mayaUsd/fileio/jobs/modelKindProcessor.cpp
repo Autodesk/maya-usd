@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/jobs/modelKindProcessor.h>
+#include "modelKindProcessor.h"
 
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/usd/modelAPI.h>

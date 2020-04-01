@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include <pxr/base/arch/export.h>
 
 #if defined _WIN32 || defined __CYGWIN__

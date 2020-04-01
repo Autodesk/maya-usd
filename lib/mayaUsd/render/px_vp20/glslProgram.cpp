@@ -17,7 +17,7 @@
 // glew must be included before any other GL header.
 #include <pxr/imaging/glf/glew.h>
 
-#include <mayaUsd/render/px_vp20/glslProgram.h>
+#include "glslProgram.h"
 
 #include <string>
 

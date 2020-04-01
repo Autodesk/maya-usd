@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/ufe/UsdRotatePivotTranslateUndoableCommand.h>
+#include "UsdRotatePivotTranslateUndoableCommand.h"
 
 #include "private/Utils.h"
 

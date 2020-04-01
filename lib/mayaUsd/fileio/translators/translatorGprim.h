@@ -16,15 +16,14 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_GPRIM_H
 #define PXRUSDMAYA_TRANSLATOR_GPRIM_H
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/primWriterContext.h>
-
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/gprim.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/primReaderContext.h"
+#include "mayaUsd/fileio/primWriterContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

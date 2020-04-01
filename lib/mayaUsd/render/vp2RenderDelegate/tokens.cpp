@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/render/vp2RenderDelegate/tokens.h>
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

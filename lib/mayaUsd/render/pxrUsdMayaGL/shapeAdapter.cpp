@@ -13,13 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
-#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
-#include <mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h>
-#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
+#include "shapeAdapter.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -34,8 +28,8 @@
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
-#include <maya/MUuid.h>
 #include <maya/MUserData.h>
+#include <maya/MUuid.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/gamma.h>
@@ -47,6 +41,14 @@
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/usd/sdf/path.h>
+
+#include "mayaUsd/base/api.h"
+
+#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
+#include "mayaUsd/render/pxrUsdMayaGL/debugCodes.h"
+#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
+#include "mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h"
+#include "mayaUsd/render/pxrUsdMayaGL/userData.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

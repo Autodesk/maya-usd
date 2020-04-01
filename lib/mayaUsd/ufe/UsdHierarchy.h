@@ -15,12 +15,12 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/ufe/UsdSceneItem.h>
-
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
+
+#include "mayaUsd/base/api.h"
+
+#include "mayaUsd/ufe/UsdSceneItem.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {

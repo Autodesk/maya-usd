@@ -7,11 +7,11 @@
 // ===========================================================================
 #pragma once
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/ufe/UsdObject3d.h>
-
 #include <ufe/object3dHandler.h>
+
+#include "mayaUsd/base/api.h"
+
+#include "mayaUsd/ufe/UsdObject3d.h"
 
 MAYAUSD_NS_DEF {
 namespace ufe {

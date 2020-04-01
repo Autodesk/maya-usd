@@ -13,10 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/utils/query.h>
-
-#include <mayaUsd/nodes/usdPrimProvider.h>
-#include <mayaUsd/utils/util.h>
+#include "query.h"
 
 #include <string>
 
@@ -31,6 +28,9 @@
 #include <pxr/usd/ar/resolverContext.h>
 #include <pxr/usd/ar/resolverContextBinder.h>
 #include <pxr/usd/usd/prim.h>
+
+#include "mayaUsd/nodes/usdPrimProvider.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

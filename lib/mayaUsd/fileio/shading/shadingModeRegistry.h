@@ -16,12 +16,6 @@
 #ifndef PXRUSDMAYA_SHADING_MODE_REGISTRY_H
 #define PXRUSDMAYA_SHADING_MODE_REGISTRY_H
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/fileio/shading/shadingModeExporter.h>
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/fileio/shading/shadingModeImporter.h>
-
 #include <string>
 
 #include <maya/MObject.h>
@@ -32,6 +26,11 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/tf/weakBase.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/shading/shadingModeExporter.h"
+#include "mayaUsd/fileio/shading/shadingModeExporterContext.h"
+#include "mayaUsd/fileio/shading/shadingModeImporter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

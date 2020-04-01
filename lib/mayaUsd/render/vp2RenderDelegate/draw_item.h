@@ -13,22 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef HD_VP2_DRAW_ITEM
 #define HD_VP2_DRAW_ITEM
-
-#include <pxr/pxr.h>
-
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/imaging/hd/drawItem.h>
-#include <pxr/imaging/hd/mesh.h>
-#include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MHWGeometry.h>
 #include <maya/MMatrix.h>
 #include <maya/MString.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/imaging/hd/drawItem.h>
+#include <pxr/imaging/hd/mesh.h>
+#include <pxr/usd/usd/timeCode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

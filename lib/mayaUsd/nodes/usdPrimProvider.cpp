@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/nodes/usdPrimProvider.h>
+#include "usdPrimProvider.h"
 
 #include <pxr/pxr.h>
 

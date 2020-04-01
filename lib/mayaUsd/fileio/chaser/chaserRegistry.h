@@ -16,23 +16,20 @@
 #ifndef PXRUSDMAYA_CHASER_REGISTRY_H
 #define PXRUSDMAYA_CHASER_REGISTRY_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/chaser/chaser.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/utils/util.h>
+#include <functional>
 
 #include <pxr/pxr.h>
-
 #include <pxr/base/tf/declarePtrs.h>
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/singleton.h>
-
 #include <pxr/usd/usd/stage.h>
 
-#include <functional>
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/chaser/chaser.h"
+#include "mayaUsd/fileio/jobs/jobArgs.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DECLARE_WEAK_PTRS(UsdMayaChaserRegistry);
 

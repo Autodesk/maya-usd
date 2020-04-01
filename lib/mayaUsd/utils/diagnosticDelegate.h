@@ -16,8 +16,6 @@
 #ifndef PXRUSDMAYA_DIAGNOSTICDELEGATE_H
 #define PXRUSDMAYA_DIAGNOSTICDELEGATE_H
 
-#include <mayaUsd/base/api.h>
-
 #include <atomic>
 #include <memory>
 
@@ -26,6 +24,8 @@
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnosticMgr.h>
 #include <pxr/usd/usdUtils/coalescingDiagnosticDelegate.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

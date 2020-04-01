@@ -13,10 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/utils/readUtil.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/utils/colorSpace.h>
-#include <mayaUsd/utils/util.h>
+#include "readUtil.h"
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFloatArray.h>
@@ -45,6 +42,10 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/listOp.h>
 #include <pxr/usd/usd/tokens.h>
+
+#include "mayaUsd/fileio/utils/adaptor.h"
+#include "mayaUsd/utils/colorSpace.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

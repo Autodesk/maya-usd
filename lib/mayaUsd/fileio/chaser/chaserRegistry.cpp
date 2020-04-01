@@ -13,17 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/chaser/chaserRegistry.h>
-
-#include <mayaUsd/base/debugCodes.h>
-#include <mayaUsd/fileio/registryHelper.h>
+#include "chaserRegistry.h"
 
 #include <map>
 
 #include <pxr/base/tf/instantiateSingleton.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include "mayaUsd/base/debugCodes.h"
+#include "mayaUsd/fileio/registryHelper.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaChaserRegistry::FactoryContext::FactoryContext(
         const UsdStagePtr& stage,

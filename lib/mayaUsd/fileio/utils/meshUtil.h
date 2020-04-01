@@ -15,11 +15,8 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
-
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
-
-#include <mayaUsd/base/api.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MFnMesh.h>
@@ -33,6 +30,8 @@
 #include <pxr/base/vt/array.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usdGeom/mesh.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

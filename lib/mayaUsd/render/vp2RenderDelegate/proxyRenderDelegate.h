@@ -13,11 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef PROXY_RENDER_DELEGATE
 #define PROXY_RENDER_DELEGATE
-
-#include <mayaUsd/base/api.h>
 
 #include <memory>
 
@@ -35,6 +32,8 @@
 #include <pxr/imaging/hd/task.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
+
+#include "mayaUsd/base/api.h"
 
 #if defined(WANT_UFE_BUILD)
 #include <ufe/observer.h>

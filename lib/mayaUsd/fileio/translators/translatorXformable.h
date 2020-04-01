@@ -16,10 +16,7 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_XFORMABLE_H
 #define PXRUSDMAYA_TRANSLATOR_XFORMABLE_H
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/primReaderArgs.h>
+#include "mayaUsd/base/api.h"
 
 #include <maya/MObject.h>
 
@@ -27,6 +24,9 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/usd/usdGeom/xformable.h>
+
+#include "mayaUsd/fileio/primReaderArgs.h"
+#include "mayaUsd/fileio/primReaderContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

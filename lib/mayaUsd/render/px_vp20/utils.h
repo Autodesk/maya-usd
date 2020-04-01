@@ -18,7 +18,7 @@
 
 /// \file px_vp20/utils.h
 
-#include <mayaUsd/base/api.h>
+#include "mayaUsd/base/api.h"
 
 #include <array>
 #include <ostream>

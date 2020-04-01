@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/listeners/proxyShapeNotice.h>
+#include "proxyShapeNotice.h"
 
 #include <pxr/base/tf/instantiateType.h>
 

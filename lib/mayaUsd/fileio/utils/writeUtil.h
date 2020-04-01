@@ -16,9 +16,6 @@
 #ifndef PXRUSDMAYA_WRITEUTIL_H
 #define PXRUSDMAYA_WRITEUTIL_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
-
 #include <string>
 
 #include <maya/MFnArrayAttrsData.h>
@@ -37,6 +34,9 @@
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/primvar.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/utils/userTaggedAttribute.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,8 +16,6 @@
 #ifndef PXRUSDMAYA_STAGE_NOTICE_LISTENER_H
 #define PXRUSDMAYA_STAGE_NOTICE_LISTENER_H
 
-#include <mayaUsd/base/api.h>
-
 #include <functional>
 
 #include <pxr/pxr.h>
@@ -25,6 +23,8 @@
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/stage.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

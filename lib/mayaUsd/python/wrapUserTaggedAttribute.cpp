@@ -13,9 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
-#include <mayaUsd/utils/util.h>
-
 #include <string>
 #include <vector>
 
@@ -32,6 +29,9 @@
 #include <pxr/base/tf/pyResultConversions.h>
 #include <pxr/base/tf/pyStaticTokens.h>
 #include <pxr/base/tf/token.h>
+
+#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

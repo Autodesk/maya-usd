@@ -18,8 +18,7 @@
 
 /// \file pxrUsdMayaGL/proxyDrawOverride.h
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
+#include "mayaUsd/base/api.h"
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -35,6 +34,8 @@
 #include <maya/MViewport2Renderer.h>
 
 #include <pxr/pxr.h>
+
+#include "mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

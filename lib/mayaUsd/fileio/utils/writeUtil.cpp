@@ -13,11 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
-#include <mayaUsd/utils/colorSpace.h>
+#include "writeUtil.h"
 
 #include <string>
 #include <vector>
@@ -66,6 +62,11 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdRi/statementsAPI.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
+
+#include "mayaUsd/fileio/translators/translatorUtil.h"
+#include "mayaUsd/fileio/utils/adaptor.h"
+#include "mayaUsd/fileio/utils/userTaggedAttribute.h"
+#include "mayaUsd/utils/colorSpace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

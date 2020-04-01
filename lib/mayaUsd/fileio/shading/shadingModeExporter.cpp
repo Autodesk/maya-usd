@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/shading/shadingModeExporter.h>
-
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include "shadingModeExporter.h"
 
 #include <string>
 #include <utility>
@@ -37,6 +32,11 @@
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/materialBindingAPI.h>
 #include <pxr/usd/usdUtils/authoring.h>
+
+#include "mayaUsd/fileio/jobs/jobArgs.h"
+#include "mayaUsd/fileio/shading/shadingModeExporterContext.h"
+#include "mayaUsd/fileio/writeJobContext.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/render/px_vp20/utils_legacy.h>
+#include "utils_legacy.h"
 
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>

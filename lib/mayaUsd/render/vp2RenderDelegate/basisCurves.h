@@ -13,11 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef HDVP2_BASIS_CURVES_H
 #define HDVP2_BASIS_CURVES_H
-
-#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 #include <memory>
 
@@ -28,6 +25,8 @@
 #include <pxr/imaging/hd/basisCurves.h>
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/usd/sdf/path.h>
+
+#include "mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

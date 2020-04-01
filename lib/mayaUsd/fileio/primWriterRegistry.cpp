@@ -13,10 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/base/debugCodes.h>
-#include <mayaUsd/fileio/functorPrimWriter.h>
-#include <mayaUsd/fileio/registryHelper.h>
+#include "primWriterRegistry.h"
 
 #include <map>
 #include <string>
@@ -29,6 +26,10 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/token.h>
+
+#include "mayaUsd/base/debugCodes.h"
+#include "mayaUsd/fileio/functorPrimWriter.h"
+#include "mayaUsd/fileio/registryHelper.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

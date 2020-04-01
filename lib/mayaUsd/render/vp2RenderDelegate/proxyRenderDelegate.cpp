@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
-#include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/nodes/stageData.h>
-#include <mayaUsd/render/vp2RenderDelegate/render_delegate.h>
-#include <mayaUsd/render/vp2RenderDelegate/tokens.h>
-#include <mayaUsd/utils/util.h>
+#include "proxyRenderDelegate.h"
 
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
@@ -38,6 +33,13 @@
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+
+#include "mayaUsd/nodes/proxyShapeBase.h"
+#include "mayaUsd/nodes/stageData.h"
+#include "mayaUsd/utils/util.h"
+
+#include "render_delegate.h"
+#include "tokens.h"
 
 #if defined(WANT_UFE_BUILD)
 #include <ufe/sceneItem.h>

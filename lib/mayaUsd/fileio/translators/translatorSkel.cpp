@@ -13,15 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/translators/translatorSkel.h>
-
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/translators/translatorXformable.h>
-#include <mayaUsd/utils/util.h>
+#include "translatorSkel.h"
 
 #include <pxr/base/tf/staticData.h>
 #include <pxr/base/tf/staticTokens.h>
-
 #include <pxr/usd/usdSkel/skeleton.h>
 #include <pxr/usd/usdSkel/skeletonQuery.h>
 #include <pxr/usd/usdSkel/skinningQuery.h>
@@ -43,6 +38,10 @@
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+
+#include "mayaUsd/fileio/translators/translatorUtil.h"
+#include "mayaUsd/fileio/translators/translatorXformable.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

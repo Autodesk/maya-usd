@@ -18,8 +18,6 @@
 
 /// \file pxrUsdMayaGL/hdImagingShapeDrawOverride.h
 
-#include <mayaUsd/base/api.h>
-
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
@@ -33,8 +31,9 @@
 
 #include <pxr/pxr.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include "mayaUsd/base/api.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// Draw override for drawing the pxrHdImagingShape node in Viewport 2.0
 ///

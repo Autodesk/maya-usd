@@ -16,11 +16,6 @@
 #ifndef PXRUSDMAYA_PRIM_WRITER_H
 #define PXRUSDMAYA_PRIM_WRITER_H
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/utils/util.h>
-
 #include <memory>
 
 #include <maya/MDagPath.h>
@@ -35,6 +30,10 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/jobs/jobArgs.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

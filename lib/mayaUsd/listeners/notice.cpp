@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/listeners/notice.h>
-
 #include <maya/MFileIO.h>
 #include <maya/MSceneMessage.h>
 
 #include <pxr/base/tf/instantiateType.h>
+
+#include "mayaUsd/listeners/notice.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

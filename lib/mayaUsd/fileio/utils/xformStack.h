@@ -12,15 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef PXRUSDMAYA_XFORM_STACK_H
 #define PXRUSDMAYA_XFORM_STACK_H
 
-#include <mayaUsd/base/api.h>
-
 #include <limits>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include <maya/MTransformationMatrix.h>
 
@@ -28,6 +25,8 @@
 #include <pxr/base/tf/refPtr.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usdGeom/xformOp.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -14,16 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/render/vp2RenderDelegate/basisCurves.h>
-
-#include <mayaUsd/render/vp2RenderDelegate/bboxGeom.h>
-#include <mayaUsd/render/vp2RenderDelegate/debugCodes.h>
-#include <mayaUsd/render/vp2RenderDelegate/draw_item.h>
-#include <mayaUsd/render/vp2RenderDelegate/instancer.h>
-#include <mayaUsd/render/vp2RenderDelegate/material.h>
-#include <mayaUsd/render/vp2RenderDelegate/render_delegate.h>
-#include <mayaUsd/render/vp2RenderDelegate/tokens.h>
+#include "basisCurves.h"
 
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
@@ -32,10 +23,17 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/vt/value.h>
-
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/tokens.h>
+
+#include "bboxGeom.h"
+#include "debugCodes.h"
+#include "draw_item.h"
+#include "instancer.h"
+#include "material.h"
+#include "render_delegate.h"
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

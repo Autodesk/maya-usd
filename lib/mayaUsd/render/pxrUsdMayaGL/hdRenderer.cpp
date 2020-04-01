@@ -22,10 +22,6 @@
 // gl.h
 #include <pxr/imaging/glf/glew.h>
 
-#include <mayaUsd/render/px_vp20/utils.h>
-#include <mayaUsd/render/px_vp20/utils_legacy.h>
-#include <mayaUsd/render/pxrUsdMayaGL/hdRenderer.h>
-
 #include <memory>
 
 #include <maya/M3dView.h>
@@ -40,6 +36,10 @@
 #include <maya/MSelectInfo.h>
 #include <maya/MStateManager.h>
 #include <maya/MViewport2Renderer.h>
+
+#include "mayaUsd/render/px_vp20/utils.h"
+#include "mayaUsd/render/px_vp20/utils_legacy.h"
+#include "mayaUsd/render/pxrUsdMayaGL/hdRenderer.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

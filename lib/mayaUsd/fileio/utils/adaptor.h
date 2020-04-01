@@ -16,8 +16,6 @@
 #ifndef PXRUSDMAYA_ADAPTOR_H
 #define PXRUSDMAYA_ADAPTOR_H
 
-#include <mayaUsd/base/api.h>
-
 #include <maya/MDGModifier.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
@@ -29,6 +27,8 @@
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/schemaRegistry.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

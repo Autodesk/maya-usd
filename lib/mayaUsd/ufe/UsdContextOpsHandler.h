@@ -15,11 +15,11 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsd/ufe/UsdContextOps.h>
-
 #include <ufe/contextOpsHandler.h>
+
+#include "mayaUsd/base/api.h"
+
+#include "mayaUsd/ufe/UsdContextOps.h"
 
 //PXR_NAMESPACE_USING_DIRECTIVE
 

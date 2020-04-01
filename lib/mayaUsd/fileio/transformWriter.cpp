@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/transformWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/fileio/utils/xformStack.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include "transformWriter.h"
 
 #include <vector>
 
@@ -40,6 +35,12 @@
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
+
+#include "mayaUsd/fileio/primWriterRegistry.h"
+#include "mayaUsd/fileio/utils/adaptor.h"
+#include "mayaUsd/fileio/utils/xformStack.h"
+#include "mayaUsd/fileio/writeJobContext.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,17 +16,17 @@
 #ifndef PXRUSDMAYA_SHADING_MODE_EXPORTER_H
 #define PXRUSDMAYA_SHADING_MODE_EXPORTER_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-
 #include <functional>
 #include <memory>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usdShade/material.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/shading/shadingModeExporterContext.h"
+#include "mayaUsd/utils/util.h"
+#include "mayaUsd/fileio/writeJobContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -15,9 +15,6 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
 
@@ -27,6 +24,10 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/base/tf/token.h>
+
+#include "mayaUsd/base/api.h"
+
+#include "mayaUsd/ufe/UsdSceneItem.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

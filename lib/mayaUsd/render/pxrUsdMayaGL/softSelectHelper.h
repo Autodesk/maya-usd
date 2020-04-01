@@ -18,8 +18,6 @@
 
 /// \file pxrUsdMayaGL/softSelectHelper.h
 
-#include <mayaUsd/base/api.h>
-
 #include <unordered_map>
 
 #include <maya/MColor.h>
@@ -29,6 +27,8 @@
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/hash.h>
+
+#include "mayaUsd/base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

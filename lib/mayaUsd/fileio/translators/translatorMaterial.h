@@ -16,11 +16,6 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 #define PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
-
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>
@@ -28,6 +23,11 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdShade/material.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/primReaderContext.h"
+#include "mayaUsd/fileio/writeJobContext.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

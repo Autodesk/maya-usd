@@ -13,14 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd/ufe/StagesSubject.h>
-
-#include "private/InPathChange.h"
-
-#include <mayaUsd/ufe/ProxyShapeHandler.h>
-#include <mayaUsd/ufe/UsdStageMap.h>
-#include <mayaUsd/ufe/Utils.h>
+#include "StagesSubject.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/attributes.h>
@@ -45,6 +38,11 @@
 
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
+
+#include "private/InPathChange.h"
+#include "mayaUsd/ufe/ProxyShapeHandler.h"
+#include "mayaUsd/ufe/UsdStageMap.h"
+#include "mayaUsd/ufe/Utils.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 namespace {

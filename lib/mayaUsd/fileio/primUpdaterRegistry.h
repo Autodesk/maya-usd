@@ -17,10 +17,6 @@
 #ifndef PXRUSDMAYA_PRIM_UPDATER_REGISTRY_H
 #define PXRUSDMAYA_PRIM_UPDATER_REGISTRY_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primUpdater.h>
-#include <mayaUsd/fileio/primUpdaterContext.h>
-
 #include <functional>
 #include <string>
 
@@ -28,6 +24,10 @@
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/primUpdater.h"
+#include "mayaUsd/fileio/primUpdaterContext.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

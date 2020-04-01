@@ -16,9 +16,6 @@
 #ifndef PXRUSDMAYA_UNDO_HELPER_CMD_H
 #define PXRUSDMAYA_UNDO_HELPER_CMD_H
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-
 #include <maya/MApiNamespace.h> // For MFnPlugin
 #include <maya/MDGModifier.h>
 #include <maya/MGlobal.h>
@@ -27,6 +24,9 @@
 #include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/fileio/utils/adaptor.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
