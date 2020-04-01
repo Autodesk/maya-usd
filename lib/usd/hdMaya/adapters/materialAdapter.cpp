@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/materialAdapter.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/materialNetworkConverter.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/adapters/tokens.h>
-#include <hdMaya/utils.h>
+#include "materialAdapter.h"
 
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
@@ -43,6 +38,12 @@
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hdSt/textureResourceHandle.h>
 #endif
+
+#include "hdMaya/adapters/adapterRegistry.h"
+#include "hdMaya/adapters/materialNetworkConverter.h"
+#include "hdMaya/adapters/mayaAttrs.h"
+#include "hdMaya/adapters/tokens.h"
+#include "hdMaya/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

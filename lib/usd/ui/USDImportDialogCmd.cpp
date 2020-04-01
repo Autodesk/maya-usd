@@ -13,24 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "USDImportDialogCmd.h"
 
-#include <mayaUsdUI/ui/cmds/USDImportDialogCmd.h>
-#include <mayaUsdUI/ui/views/USDImportDialog.h>
-#include <mayaUsdUI/ui/views/USDQtUtil.h>
-
-#include <mayaUsd/fileio/importData.h>
-
-#include <maya/MStatus.h>
-#include <maya/MSyntax.h>
 #include <maya/MArgParser.h>
-#include <maya/MString.h>
-#include <maya/MStringArray.h>
 #include <maya/MFileObject.h>
 #include <maya/MQtUtil.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+#include <maya/MStringArray.h>
+#include <maya/MSyntax.h>
 
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
 #include <maya/MFnPlugin.h>
+
+#include <mayaUsd/fileio/importData.h>
+
+#include "mayaUsdUI/ui/USDImportDialog.h"
+#include "mayaUsdUI/ui/USDQtUtil.h"
 
 MAYAUSD_NS_DEF {
 

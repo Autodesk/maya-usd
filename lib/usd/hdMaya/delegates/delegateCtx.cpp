@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/delegates/delegateCtx.h>
-#include <mayaUsd/utils/util.h>
+#include "delegateCtx.h"
 
 #include <array>
 
@@ -26,6 +25,8 @@
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hio/glslfx.h>
+
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

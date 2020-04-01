@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Autodesk
+// Copyright 2019 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,31 +16,28 @@
 
 #pragma once
 
-#include <mayaUsdUI/ui/api.h>
+#include <maya/MPxCommand.h>
 
-#include <mayaUsd/base/api.h>
+#include <mayaUsd/mayaUsd.h>
 
-#include <string>
-
-class QPixmap;
+#include "mayaUsdUI/ui/api.h"
 
 MAYAUSD_NS_DEF {
 
-/**
- * \class IMayaMQtUtil
- * \brief Class used to handle interfacing with Maya's MQtUtil class.
- */
-class MAYAUSD_UI_PUBLIC IMayaMQtUtil
-{
+class MAYAUSD_UI_PUBLIC USDImportDialogCmd : public MPxCommand {
 public:
-	virtual ~IMayaMQtUtil() {}
+	USDImportDialogCmd() = default;
+	~USDImportDialogCmd() override = default;
 
-	//! Get the scaled size for Maya interface scaling. 
-	virtual int dpiScale(int size) const = 0;
-	virtual float dpiScale(float size) const = 0;
+	static MStatus initialize(MFnPlugin&);
+	static MStatus finalize(MFnPlugin&);
 
-	//! Loads the a pixmap for the given resource name.
-	virtual QPixmap* createPixmap(const std::string& imageName) const = 0;
+	static const MString fsName;
+
+	static void* creator();
+	static MSyntax createSyntax();
+
+	MStatus doIt(const MArgList& args) override;
 };
 
 } // namespace MayaUsd

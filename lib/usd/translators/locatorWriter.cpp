@@ -13,11 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd_Translators/locatorWriter.h>
-
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include "locatorWriter.h"
 
 #include <maya/MFnDependencyNode.h>
 
@@ -25,11 +21,14 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usdGeom/xform.h>
 
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_WRITER(locator, PxrUsdTranslators_LocatorWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(locator, UsdGeomXform);
-
 
 PxrUsdTranslators_LocatorWriter::PxrUsdTranslators_LocatorWriter(
         const MFnDependencyNode& depNodeFn,

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/utils.h>
+#include "utils.h"
 
 #include <maya/MPlugArray.h>
 

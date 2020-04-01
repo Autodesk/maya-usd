@@ -16,8 +16,6 @@
 #ifndef HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 #define HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 
-#include <hdMaya/api.h>
-
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 
@@ -25,6 +23,8 @@
 #include <pxr/imaging/hd/material.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
+
+#include "hdMaya/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

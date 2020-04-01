@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsdUtils/DiffCore.h>
-
-#include <mayaUsdUtils/SIMD.h>
+#include "DiffCore.h"
 
 #include <cmath>
 #include <algorithm>
+
+#include "mayaUsdUtils/SIMD.h"
 
 namespace MayaUsdUtils {
 

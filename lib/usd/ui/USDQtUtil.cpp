@@ -13,23 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#include "USDQtUtil.h"
 
-#include <mayaUsdUI/ui/api.h>
-#include <mayaUsdUI/ui/views/IMayaMQtUtil.h>
+#include <maya/MQtUtil.h>
 
-#include <mayaUsd/base/api.h>
+#include <QtGui/QPixmap>
 
 MAYAUSD_NS_DEF {
 
-class MAYAUSD_UI_PUBLIC USDQtUtil : public IMayaMQtUtil
+int USDQtUtil::dpiScale(int size) const
 {
-public:
-	~USDQtUtil() override = default;
+	return MQtUtil::dpiScale(size);
+}
 
-	int dpiScale(int size) const override;
-	float dpiScale(float size) const override;
-	QPixmap* createPixmap(const std::string& imageName) const override;
-};
+float USDQtUtil::dpiScale(float size) const
+{
+	return MQtUtil::dpiScale(size);
+}
+
+QPixmap* USDQtUtil::createPixmap(const std::string& imageName) const
+{
+	return MQtUtil::createPixmap(imageName.c_str());
+}
 
 } // namespace MayaUsd

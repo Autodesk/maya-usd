@@ -47,6 +47,7 @@ target_sources(${TARGET_NAME}
 )
 
 set(headers
+    api.h
     cameraReader.h
     cameraWriter.h
     fileTextureWriter.h
@@ -63,14 +64,14 @@ set(headers
     meshWriter_Primvars.h
     meshWriter_Skin.h
     meshWriter_Subdiv.h
-    nurbsCurveWriter.h
     nurbsCurvesReader.h
+    nurbsCurveWriter.h
     nurbsPatchReader.h
     nurbsSurfaceWriter.h
     particleWriter.h
     scopeReader.h
-    strokeWriter.h
     skelReader.h
+    strokeWriter.h
     xformReader.h
 )
 

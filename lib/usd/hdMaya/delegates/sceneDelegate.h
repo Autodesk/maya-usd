@@ -15,10 +15,6 @@
 //
 #ifndef HDMAYA_SCENE_DELEGATE_H
 #define HDMAYA_SCENE_DELEGATE_H
-#include <hdMaya/adapters/lightAdapter.h>
-#include <hdMaya/adapters/materialAdapter.h>
-#include <hdMaya/adapters/shapeAdapter.h>
-#include <hdMaya/delegates/delegateCtx.h>
 
 #include <memory>
 
@@ -30,6 +26,11 @@
 #include <pxr/imaging/hd/meshTopology.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/usd/sdf/path.h>
+
+#include "hdMaya/adapters/lightAdapter.h"
+#include "hdMaya/adapters/materialAdapter.h"
+#include "hdMaya/adapters/shapeAdapter.h"
+#include "hdMaya/delegates/delegateCtx.h"
 
 /*
  * Notes.

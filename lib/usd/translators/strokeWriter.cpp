@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd_Translators/strokeWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
+#include "strokeWriter.h"
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFnDependencyNode.h>
@@ -35,6 +34,8 @@
 #include <pxr/usd/usdGeom/basisCurves.h>
 #include <pxr/usd/usdGeom/primvar.h>
 #include <pxr/usd/usdGeom/tokens.h>
+
+#include <mayaUsd/fileio/primWriterRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

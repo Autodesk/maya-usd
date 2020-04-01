@@ -17,8 +17,6 @@
 #define PXRUSDTRANSLATORS_FILE_TEXTURE_WRITER_H
 
 /// \file pxrUsdTranslators/fileTextureWriter.h
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <maya/MFnDependencyNode.h>
 
@@ -26,6 +24,9 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
+
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

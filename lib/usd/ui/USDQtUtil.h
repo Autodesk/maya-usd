@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,30 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #pragma once
 
-#include <mayaUsdUI/ui/api.h>
+#include <mayaUsd/mayaUsd.h>
 
-#include <mayaUsd/base/api.h>
-
-#include <maya/MPxCommand.h>
+#include "mayaUsdUI/ui/api.h"
+#include "mayaUsdUI/ui/IMayaMQtUtil.h"
 
 MAYAUSD_NS_DEF {
 
-class MAYAUSD_UI_PUBLIC USDImportDialogCmd : public MPxCommand {
+class MAYAUSD_UI_PUBLIC USDQtUtil : public IMayaMQtUtil
+{
 public:
-	USDImportDialogCmd() = default;
-	~USDImportDialogCmd() override = default;
+	~USDQtUtil() override = default;
 
-	static MStatus initialize(MFnPlugin&);
-	static MStatus finalize(MFnPlugin&);
-
-	static const MString fsName;
-
-	static void* creator();
-	static MSyntax createSyntax();
-
-	MStatus doIt(const MArgList& args) override;
+	int dpiScale(int size) const override;
+	float dpiScale(float size) const override;
+	QPixmap* createPixmap(const std::string& imageName) const override;
 };
 
 } // namespace MayaUsd

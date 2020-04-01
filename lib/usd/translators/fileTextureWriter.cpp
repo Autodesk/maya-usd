@@ -13,11 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd_Translators/fileTextureWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include "fileTextureWriter.h"
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
@@ -40,6 +36,11 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdUtils/pipeline.h>
+
+#include "mayaUsd/fileio/primWriterRegistry.h"
+#include "mayaUsd/fileio/shaderWriter.h"
+#include "mayaUsd/fileio/writeJobContext.h"
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

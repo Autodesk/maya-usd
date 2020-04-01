@@ -17,8 +17,6 @@
 #define PXRUSDTRANSLATORS_NURBS_CURVE_WRITER_H
 
 /// \file pxrUsdTranslators/nurbsCurveWriter.h
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <maya/MFnDependencyNode.h>
 
@@ -26,6 +24,9 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/nurbsCurves.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

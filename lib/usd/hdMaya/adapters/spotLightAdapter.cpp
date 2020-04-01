@@ -13,12 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/lightAdapter.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/utils.h>
-
 #include <maya/MColor.h>
 #include <maya/MFnSpotLight.h>
 #include <maya/MPlug.h>
@@ -31,6 +25,12 @@
 #include <pxr/imaging/hdx/shadowMatrixComputation.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
 #include <pxr/usd/usdLux/tokens.h>
+
+#include "hdMaya/adapters/adapterDebugCodes.h"
+#include "hdMaya/adapters/adapterRegistry.h"
+#include "hdMaya/adapters/lightAdapter.h"
+#include "hdMaya/adapters/mayaAttrs.h"
+#include "hdMaya/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

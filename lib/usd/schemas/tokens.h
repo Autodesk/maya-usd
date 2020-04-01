@@ -25,14 +25,13 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-#include <mayaUsd_Schemas/api.h>
-
-#include <pxr/pxr.h>
+#include <vector>
 
 #include <pxr/base/tf/staticData.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 
-#include <vector>
+#include "mayaUsd_Schemas/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

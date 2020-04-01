@@ -13,14 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsdUI/ui/views/USDImportDialog.h>
-#include <mayaUsdUI/ui/views/IMayaMQtUtil.h>
-#include <mayaUsdUI/ui/views/ItemDelegate.h>
+#include "USDImportDialog.h"
 
 #include <stdexcept>
 
-#include <mayaUsdUI/ui/factories/TreeModelFactory.h>
+#include "mayaUsdUI/ui/IMayaMQtUtil.h"
+#include "mayaUsdUI/ui/ItemDelegate.h"
+#include "mayaUsdUI/ui/TreeModelFactory.h"
 
 #include "ui_USDImportDialog.h"
 

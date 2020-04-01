@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd_Translators/api.h>
-
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
 
 #include <pxr/pxr.h>
+
+#include "mayaUsd_Translators/api.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

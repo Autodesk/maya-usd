@@ -15,8 +15,6 @@
 //
 #ifndef HDMAYA_DELEGATE_H
 #define HDMAYA_DELEGATE_H
-#include <hdMaya/api.h>
-#include <hdMaya/delegates/params.h>
 
 #include <memory>
 
@@ -24,12 +22,12 @@
 #include <maya/MDrawContext.h>
 #include <maya/MSelectionList.h>
 
+#include <pxr/pxr.h>
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/selection.h>
 #include <pxr/imaging/hdx/taskController.h>
-#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
 #if USD_VERSION_NUM >= 1911
@@ -44,6 +42,9 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #if WANT_UFE_BUILD
 #include <ufe/selection.h>
 #endif // WANT_UFE_BUILD
+
+#include "hdMaya/api.h"
+#include "hdMaya/delegates/params.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

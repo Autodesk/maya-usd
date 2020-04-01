@@ -13,11 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #pragma once
-
-#include <mayaUsdUI/ui/api.h>
-
-#include <mayaUsd/base/api.h>
 
 #include <memory>
 #include <unordered_set>
@@ -26,6 +23,10 @@
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <mayaUsd/mayaUsd.h>
+
+#include "mayaUsdUI/ui/api.h"
 
 class QObject;
 class QStandardItem;

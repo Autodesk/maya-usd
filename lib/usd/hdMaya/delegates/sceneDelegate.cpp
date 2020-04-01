@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/delegates/sceneDelegate.h>
-#include <hdMaya/adapters/adapterRegistry.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-#include <hdMaya/delegates/delegateDebugCodes.h>
-#include <hdMaya/delegates/delegateRegistry.h>
-#include <hdMaya/utils.h>
+#include "sceneDelegate.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -42,6 +37,12 @@
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdGeom/tokens.h>
+
+#include "hdMaya/adapters/adapterRegistry.h"
+#include "hdMaya/adapters/mayaAttrs.h"
+#include "hdMaya/delegates/delegateDebugCodes.h"
+#include "hdMaya/delegates/delegateRegistry.h"
+#include "hdMaya/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

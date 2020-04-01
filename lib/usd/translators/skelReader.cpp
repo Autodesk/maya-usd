@@ -13,10 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/primReaderRegistry.h>
-#include <mayaUsd/fileio/translators/translatorSkel.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>
@@ -27,6 +23,10 @@
 #include <pxr/usd/usdSkel/root.h>
 #include <pxr/usd/usdSkel/skeletonQuery.h>
 #include <pxr/usd/usdSkel/skinningQuery.h>
+
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/translators/translatorSkel.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,8 +16,6 @@
 #ifndef HDMAYA_LIGHT_ADAPTER_H
 #define HDMAYA_LIGHT_ADAPTER_H
 
-#include <hdMaya/adapters/dagAdapter.h>
-
 #include <maya/MFnLight.h>
 #include <maya/MFnNonExtendedLight.h>
 
@@ -26,6 +24,8 @@
 #include <pxr/imaging/glf/simpleLight.h>
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
+
+#include "hdMaya/adapters/dagAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

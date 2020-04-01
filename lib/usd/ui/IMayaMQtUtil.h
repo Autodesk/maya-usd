@@ -14,27 +14,33 @@
 // limitations under the License.
 //
 
-#include <mayaUsdUI/ui/views/USDQtUtil.h>
+#pragma once
 
-#include <maya/MQtUtil.h>
+#include <string>
 
-#include <QtGui/QPixmap>
+#include <mayaUsd/base/api.h>
+
+#include "mayaUsdUI/ui/api.h"
+
+class QPixmap;
 
 MAYAUSD_NS_DEF {
 
-int USDQtUtil::dpiScale(int size) const
+/**
+ * \class IMayaMQtUtil
+ * \brief Class used to handle interfacing with Maya's MQtUtil class.
+ */
+class MAYAUSD_UI_PUBLIC IMayaMQtUtil
 {
-	return MQtUtil::dpiScale(size);
-}
+public:
+	virtual ~IMayaMQtUtil() {}
 
-float USDQtUtil::dpiScale(float size) const
-{
-	return MQtUtil::dpiScale(size);
-}
+	//! Get the scaled size for Maya interface scaling. 
+	virtual int dpiScale(int size) const = 0;
+	virtual float dpiScale(float size) const = 0;
 
-QPixmap* USDQtUtil::createPixmap(const std::string& imageName) const
-{
-	return MQtUtil::createPixmap(imageName.c_str());
-}
+	//! Loads the a pixmap for the given resource name.
+	virtual QPixmap* createPixmap(const std::string& imageName) const = 0;
+};
 
 } // namespace MayaUsd
