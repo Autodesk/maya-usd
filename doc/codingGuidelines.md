@@ -160,7 +160,7 @@ All included public header files from outside and inside the project should be `
 #include <mayaUsd/nodes/stageData.h>
 ```
 
-Private project’s header files should be `#include`'d using the file name when in the same folder. Private headers may live in sub-directories, but they should never be included using "._" or ".._" as part of a relative paths. For example:
+Private project’s header files should be `#include`'d using the quotes, and a relative path. Private headers may live in the same directory or sub-directories, but they should never be included using "._" or ".._" as part of a relative paths. For example:
 ```cpp
 #include "privateUtils.h"
 #include "pvt/helperFunctions.h"
