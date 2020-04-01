@@ -16,17 +16,16 @@
 //
 #pragma once
 
-#include <mayaUsdPlugin/base/api.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
 #include <pxr/pxr.h>
+
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+
+#include "base/api.h"
 
 MAYAUSD_NS_DEF {
 

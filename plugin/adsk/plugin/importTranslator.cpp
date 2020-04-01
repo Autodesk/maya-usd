@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsdPlugin/importTranslator.h>
+#include "importTranslator.h"
 
 #include <map>
 #include <string>

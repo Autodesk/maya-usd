@@ -28,13 +28,6 @@ target_sources(${TARGET_NAME}
         ProxyShape.cpp
 )
 
-set(headers
-    base/api.h
-    exportTranslator.h
-    importTranslator.h
-    ProxyShape.h
-)
-
 # -----------------------------------------------------------------------------
 # compile definitions
 # -----------------------------------------------------------------------------
@@ -86,16 +79,6 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
-
-# -----------------------------------------------------------------------------
-# promoted headers
-# -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList( 
-    HEADERS
-        ${headers}
-    BASEDIR
-        ${TARGET_NAME}
-)
 
 # -----------------------------------------------------------------------------
 # install

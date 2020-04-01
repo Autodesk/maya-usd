@@ -13,29 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsdPlugin/base/api.h>
-
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsdPlugin/exportTranslator.h>
-#include <mayaUsdPlugin/importTranslator.h>
-#include <mayaUsdPlugin/ProxyShape.h>
-
-#include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/nodes/proxyShapePlugin.h>
-#include <mayaUsd/nodes/stageData.h>
-#include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
-#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
-
-#include <mayaUsd/utils/undoHelperCommand.h>
-#if defined(WANT_QT_BUILD)
-#include <mayaUsdUI/ui/cmds/USDImportDialogCmd.h>
-#endif
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/ufe/Global.h>
-#endif
-
 #include <sstream>
 
 #include <maya/MFnPlugin.h>
@@ -45,6 +22,27 @@
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
+
+#include <mayaUsd/utils/undoHelperCommand.h>
+#if defined(WANT_QT_BUILD)
+#include <mayaUsdUI/ui/USDImportDialogCmd.h>
+#endif
+
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#endif
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
+#include "base/api.h"
+#include "exportTranslator.h"
+#include "importTranslator.h"
+#include "ProxyShape.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
