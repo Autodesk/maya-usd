@@ -137,7 +137,8 @@ UsdMayaImportTranslator::identifyFile(
 
     if (fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() ||
         fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() ||
-        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
+        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText() ||
+        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionPackage.GetText()) {
         retValue = kIsMyFileType;
     }
 
