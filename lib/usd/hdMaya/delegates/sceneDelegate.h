@@ -27,10 +27,10 @@
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/usd/sdf/path.h>
 
-#include "hdMaya/adapters/lightAdapter.h"
-#include "hdMaya/adapters/materialAdapter.h"
-#include "hdMaya/adapters/shapeAdapter.h"
-#include "hdMaya/delegates/delegateCtx.h"
+#include <hdMaya/adapters/lightAdapter.h>
+#include <hdMaya/adapters/materialAdapter.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/delegateCtx.h>
 
 /*
  * Notes.

@@ -25,9 +25,9 @@
 
 #include <mayaUsd/mayaUsd.h>
 
-#include "mayaUsdUI/ui/api.h"
-#include "mayaUsdUI/ui/IUSDImportView.h"
-#include "mayaUsdUI/ui/TreeModel.h"
+#include <mayaUsdUI/ui/api.h>
+#include <mayaUsdUI/ui/IUSDImportView.h>
+#include <mayaUsdUI/ui/TreeModel.h>
 
 namespace Ui {
 	class ImportDialog;

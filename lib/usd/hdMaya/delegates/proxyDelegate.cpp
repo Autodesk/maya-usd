@@ -36,11 +36,11 @@
 #include <ufe/runTimeMgr.h>
 #endif // WANT_UFE_BUILD
 
-#include "mayaUsd/nodes/proxyShapeBase.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
-#include "hdMaya/adapters/proxyAdapter.h"
-#include "hdMaya/debugCodes.h"
-#include "hdMaya/delegates/delegateRegistry.h"
+#include <hdMaya/adapters/proxyAdapter.h>
+#include <hdMaya/debugCodes.h>
+#include <hdMaya/delegates/delegateRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

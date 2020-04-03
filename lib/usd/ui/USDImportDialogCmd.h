@@ -20,7 +20,7 @@
 
 #include <mayaUsd/mayaUsd.h>
 
-#include "mayaUsdUI/ui/api.h"
+#include <mayaUsdUI/ui/api.h>
 
 MAYAUSD_NS_DEF {
 

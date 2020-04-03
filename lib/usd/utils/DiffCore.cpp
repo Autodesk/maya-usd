@@ -18,7 +18,7 @@
 #include <cmath>
 #include <algorithm>
 
-#include "mayaUsdUtils/SIMD.h"
+#include <mayaUsdUtils/SIMD.h>
 
 namespace MayaUsdUtils {
 

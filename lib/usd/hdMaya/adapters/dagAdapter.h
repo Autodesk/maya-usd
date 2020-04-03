@@ -33,9 +33,9 @@
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 
-#include "hdMaya/adapters/adapter.h"
-#include "hdMaya/adapters/adapterDebugCodes.h"
-#include "hdMaya/utils.h"
+#include <hdMaya/adapters/adapter.h>
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

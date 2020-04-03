@@ -28,8 +28,8 @@
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/tokens.h>
 
-#include "hdMaya/adapters/adapterDebugCodes.h"
-#include "hdMaya/adapters/mayaAttrs.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

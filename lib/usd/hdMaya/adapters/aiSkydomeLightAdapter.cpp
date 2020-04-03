@@ -21,12 +21,12 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdLux/tokens.h>
 
-#include "hdMaya/adapters/adapterDebugCodes.h"
-#include "hdMaya/adapters/adapterRegistry.h"
-#include "hdMaya/adapters/lightAdapter.h"
-#include "hdMaya/adapters/mayaAttrs.h"
-#include "hdMaya/adapters/tokens.h"
-#include "hdMaya/utils.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/lightAdapter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/tokens.h>
+#include <hdMaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

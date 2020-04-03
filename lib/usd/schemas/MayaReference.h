@@ -29,8 +29,8 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
-#include "mayaUsd_Schemas/api.h"
-#include "mayaUsd_Schemas/tokens.h"
+#include <mayaUsd_Schemas/api.h>
+#include <mayaUsd_Schemas/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

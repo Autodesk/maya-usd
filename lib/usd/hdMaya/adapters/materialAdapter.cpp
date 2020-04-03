@@ -39,11 +39,11 @@
 #include <pxr/imaging/hdSt/textureResourceHandle.h>
 #endif
 
-#include "hdMaya/adapters/adapterRegistry.h"
-#include "hdMaya/adapters/materialNetworkConverter.h"
-#include "hdMaya/adapters/mayaAttrs.h"
-#include "hdMaya/adapters/tokens.h"
-#include "hdMaya/utils.h"
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/materialNetworkConverter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/tokens.h>
+#include <hdMaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

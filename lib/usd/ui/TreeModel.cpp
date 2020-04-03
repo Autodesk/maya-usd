@@ -20,9 +20,9 @@
 #include <QtWidgets/QTreeView>
 #include <QtCore/QSortFilterProxyModel>
 
-#include "mayaUsdUI/ui/TreeItem.h"
-#include "mayaUsdUI/ui/ItemDelegate.h"
-#include "mayaUsdUI/ui/IMayaMQtUtil.h"
+#include <mayaUsdUI/ui/TreeItem.h>
+#include <mayaUsdUI/ui/ItemDelegate.h>
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
 
 MAYAUSD_NS_DEF {
 

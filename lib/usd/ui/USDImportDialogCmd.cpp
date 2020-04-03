@@ -29,8 +29,8 @@
 
 #include <mayaUsd/fileio/importData.h>
 
-#include "mayaUsdUI/ui/USDImportDialog.h"
-#include "mayaUsdUI/ui/USDQtUtil.h"
+#include <mayaUsdUI/ui/USDImportDialog.h>
+#include <mayaUsdUI/ui/USDQtUtil.h>
 
 MAYAUSD_NS_DEF {
 

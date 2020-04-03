@@ -25,7 +25,7 @@
 
 #include <mayaUsd/mayaUsd.h>
 
-#include "mayaUsdUI/ui/api.h"
+#include <mayaUsdUI/ui/api.h>
 
 class QLabel;
 class QComboBox;

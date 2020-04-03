@@ -31,7 +31,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 
-#include "mayaUsd_Schemas/api.h"
+#include <mayaUsd_Schemas/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -23,7 +23,7 @@
 
 #include <mayaUsd/mayaUsd.h>
 
-#include "mayaUsdUI/ui/api.h"
+#include <mayaUsdUI/ui/api.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

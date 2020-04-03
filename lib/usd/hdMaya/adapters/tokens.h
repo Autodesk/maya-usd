@@ -19,7 +19,7 @@
 #include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
 
-#include "hdMaya/api.h"
+#include <hdMaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

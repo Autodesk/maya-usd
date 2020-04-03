@@ -21,7 +21,7 @@
 
 #include <pxr/pxr.h>
 
-#include "hdMaya/api.h"
+#include <hdMaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

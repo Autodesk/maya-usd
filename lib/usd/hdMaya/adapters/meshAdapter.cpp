@@ -32,11 +32,11 @@
 #include <pxr/imaging/pxOsd/tokens.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include "hdMaya/adapters/adapterDebugCodes.h"
-#include "hdMaya/adapters/adapterRegistry.h"
-#include "hdMaya/adapters/mayaAttrs.h"
-#include "hdMaya/adapters/shapeAdapter.h"
-#include "hdMaya/adapters/tokens.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/adapters/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

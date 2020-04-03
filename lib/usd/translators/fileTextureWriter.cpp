@@ -37,10 +37,10 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
-#include "mayaUsd/fileio/primWriterRegistry.h"
-#include "mayaUsd/fileio/shaderWriter.h"
-#include "mayaUsd/fileio/writeJobContext.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -22,9 +22,9 @@
 #include <QtCore/QObject>
 #include <QtGui/QStandardItemModel>
 
-#include "mayaUsdUI/ui/IMayaMQtUtil.h"
-#include "mayaUsdUI/ui/TreeItem.h"
-#include "mayaUsdUI/ui/TreeModel.h"
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
+#include <mayaUsdUI/ui/TreeItem.h>
+#include <mayaUsdUI/ui/TreeModel.h>
 
 MAYAUSD_NS_DEF {
 

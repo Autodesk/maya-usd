@@ -20,7 +20,7 @@
 
 #include <mayaUsd/base/api.h>
 
-#include "mayaUsdUI/ui/api.h"
+#include <mayaUsdUI/ui/api.h>
 
 class QPixmap;
 

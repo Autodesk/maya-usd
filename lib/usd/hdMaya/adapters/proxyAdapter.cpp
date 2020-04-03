@@ -25,10 +25,10 @@
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
-#include "hdMaya/adapters/adapterRegistry.h"
-#include "hdMaya/debugCodes.h"
-#include "hdMaya/delegates/proxyDelegate.h"
-#include "hdMaya/delegates/sceneDelegate.h"
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/debugCodes.h>
+#include <hdMaya/delegates/proxyDelegate.h>
+#include <hdMaya/delegates/sceneDelegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

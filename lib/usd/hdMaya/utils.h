@@ -37,8 +37,8 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/textureResource.h>
 
-#include "hdMaya/api.h"
-#include "hdMaya/adapters/mayaAttrs.h"
+#include <hdMaya/api.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -25,7 +25,7 @@
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
 
-#include "hdMaya/adapters/dagAdapter.h"
+#include <hdMaya/adapters/dagAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

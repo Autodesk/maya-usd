@@ -24,7 +24,7 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 
-#include "hdMaya/api.h"
+#include <hdMaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

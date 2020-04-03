@@ -7,8 +7,8 @@
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 
-#include "hdMaya/adapters/shapeAdapter.h"
-#include "hdMaya/delegates/proxyUsdImagingDelegate.h"
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/proxyUsdImagingDelegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

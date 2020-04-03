@@ -17,9 +17,9 @@
 
 #include <stdexcept>
 
-#include "mayaUsdUI/ui/IMayaMQtUtil.h"
-#include "mayaUsdUI/ui/ItemDelegate.h"
-#include "mayaUsdUI/ui/TreeModelFactory.h"
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
+#include <mayaUsdUI/ui/ItemDelegate.h>
+#include <mayaUsdUI/ui/TreeModelFactory.h>
 
 #include "ui_USDImportDialog.h"
 

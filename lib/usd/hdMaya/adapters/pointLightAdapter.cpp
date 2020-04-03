@@ -22,9 +22,9 @@
 #include <pxr/imaging/hd/light.h>
 #include <pxr/usd/usdLux/tokens.h>
 
-#include "hdMaya/adapters/adapterDebugCodes.h"
-#include "hdMaya/adapters/adapterRegistry.h"
-#include "hdMaya/adapters/lightAdapter.h"
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/lightAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

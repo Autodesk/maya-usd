@@ -23,10 +23,10 @@
 #include <pxr/pxr.h>
 #include <pxr/base/tf/singleton.h>
 
-#include "hdMaya/adapters/lightAdapter.h"
-#include "hdMaya/adapters/materialAdapter.h"
-#include "hdMaya/adapters/shapeAdapter.h"
-#include "hdMaya/delegates/delegateCtx.h"
+#include <hdMaya/adapters/lightAdapter.h>
+#include <hdMaya/adapters/materialAdapter.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/delegateCtx.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

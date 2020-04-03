@@ -18,8 +18,8 @@
 
 #include <mayaUsd/mayaUsd.h>
 
-#include "mayaUsdUI/ui/api.h"
-#include "mayaUsdUI/ui/IMayaMQtUtil.h"
+#include <mayaUsdUI/ui/api.h>
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
 
 MAYAUSD_NS_DEF {
 

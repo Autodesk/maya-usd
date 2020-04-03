@@ -43,8 +43,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <ufe/selection.h>
 #endif // WANT_UFE_BUILD
 
-#include "hdMaya/api.h"
-#include "hdMaya/delegates/params.h"
+#include <hdMaya/api.h>
+#include <hdMaya/delegates/params.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

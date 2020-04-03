@@ -35,8 +35,8 @@
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 
-#include "mayaUsd_Translators/jointWriter.h"
-#include "mayaUsd_Translators/meshWriter.h"
+#include <mayaUsd_Translators/jointWriter.h>
+#include <mayaUsd_Translators/meshWriter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

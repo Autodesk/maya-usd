@@ -28,8 +28,8 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
-#include "mayaUsd_Schemas/api.h"
-#include "mayaUsd_Schemas/MayaReference.h"
+#include <mayaUsd_Schemas/api.h>
+#include <mayaUsd_Schemas/MayaReference.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

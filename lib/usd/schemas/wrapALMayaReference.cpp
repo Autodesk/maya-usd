@@ -25,7 +25,7 @@
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/pyConversions.h>
 
-#include "mayaUsd_Schemas/ALMayaReference.h"
+#include <mayaUsd_Schemas/ALMayaReference.h>
 
 using namespace boost::python;
 

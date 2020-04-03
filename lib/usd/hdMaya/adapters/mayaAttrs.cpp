@@ -17,7 +17,7 @@
 
 #include <pxr/base/tf/diagnostic.h>
 
-#include "hdMaya/adapters/mayaAttrs.h"
+#include <hdMaya/adapters/mayaAttrs.h>
 
 #define SET_NODE_CLASS(nodeTypeName)     \
     using namespace nodeTypeName;        \

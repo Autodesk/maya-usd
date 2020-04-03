@@ -38,11 +38,11 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include "hdMaya/adapters/adapterRegistry.h"
-#include "hdMaya/adapters/mayaAttrs.h"
-#include "hdMaya/delegates/delegateDebugCodes.h"
-#include "hdMaya/delegates/delegateRegistry.h"
-#include "hdMaya/utils.h"
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/delegates/delegateDebugCodes.h>
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <hdMaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

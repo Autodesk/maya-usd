@@ -25,7 +25,7 @@
 #include <pxr/usd/usd/pyConversions.h>
 #include <pxr/usd/usd/schemaBase.h>
 
-#include "mayaUsd_Schemas/MayaReference.h"
+#include <mayaUsd_Schemas/MayaReference.h>
 
 using namespace boost::python;
 

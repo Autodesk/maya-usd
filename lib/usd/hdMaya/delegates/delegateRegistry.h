@@ -23,7 +23,7 @@
 #include <pxr/base/tf/singleton.h>
 #include <pxr/usd/sdf/path.h>
 
-#include "hdMaya/delegates/delegate.h"
+#include <hdMaya/delegates/delegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

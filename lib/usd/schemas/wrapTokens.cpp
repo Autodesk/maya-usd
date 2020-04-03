@@ -16,7 +16,7 @@
 // GENERATED FILE.  DO NOT EDIT.
 #include <boost/python/class.hpp>
 
-#include "mayaUsd_Schemas/tokens.h"
+#include <mayaUsd_Schemas/tokens.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
