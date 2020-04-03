@@ -148,7 +148,7 @@ In general, macros should be avoided (see [Modern C++](https://docs.google.com/d
 * Comments for users of classes and functions must be written in headers files. Comments in definition files are meant for contributors and maintainers.
 
 ### Include directive
-For source files (.cpp) with an associated header file (.h) that resides in the same directory, it should be `#include`'d with double quotes and no path.  This formatting should be followed regardless with whether the associated header is public or private. For example:
+For source files (.cpp) with an associated header file (.h) that resides in the same directory, it should be `#include`'d with double quotes and no path.  This formatting should be followed regardless of with whether the associated header is public or private. For example:
 ```cpp
 // In foobar.cpp
 #include "foobar.h"
@@ -160,7 +160,7 @@ All included public header files from outside and inside the project should be `
 #include <mayaUsd/nodes/stageData.h>
 ```
 
-Private project’s header files should be `#include`'d using the quotes, and a relative path. Private headers may live in the same directory or sub-directories, but they should never be included using "._" or ".._" as part of a relative paths. For example:
+Private project’s header files should be `#include`'d using double quotes, and a relative path. Private headers may live in the same directory or sub-directories, but they should never be included using "._" or ".._" as part of a relative path. For example:
 ```cpp
 #include "privateUtils.h"
 #include "pvt/helperFunctions.h"
