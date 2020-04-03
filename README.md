@@ -26,3 +26,10 @@ Animal Logic forum is [here](https://groups.google.com/forum/#!forum/al_usdmaya-
 + [Coding guidelines](doc/codingGuidelines.md)
 + [License](doc/LICENSE.md)
 + [MayaToHydra](doc/MayaToHydra.md)
+
+
+## Download ##
+
+Compiled binary releases are available for download from the [releases page](https://github.com/Autodesk/maya-usd/releases).
+
+Maya USD is officially supported and tested on Linux (CentOS 7), Windows 10, MacOS 10.14.
