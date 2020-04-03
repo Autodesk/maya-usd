@@ -21,7 +21,7 @@
 
 #include <pxr/usd/ar/resolver.h>
 
-#include "mayaUsd/base/debugCodes.h"
+#include <mayaUsd/base/debugCodes.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -16,8 +16,8 @@
 #ifndef PXRUSDMAYA_FALLBACK_PRIM_READER_H
 #define PXRUSDMAYA_FALLBACK_PRIM_READER_H
 
-#include "mayaUsd/fileio/primReader.h"
-#include "mayaUsd/fileio/primReaderRegistry.h"
+#include <mayaUsd/fileio/primReader.h>
+#include <mayaUsd/fileio/primReaderRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

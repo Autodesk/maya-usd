@@ -24,7 +24,7 @@
 #include <pxr/pxr.h>
 #include <pxr/imaging/garch/gl.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -40,8 +40,8 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCacheContext.h>
 
-#include "mayaUsd/nodes/stageData.h"
-#include "mayaUsd/utils/stageCache.h"
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/stageCache.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

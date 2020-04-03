@@ -31,9 +31,8 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include "mayaUsd/base/api.h"
-
-#include "mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

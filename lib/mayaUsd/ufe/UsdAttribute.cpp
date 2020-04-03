@@ -29,7 +29,7 @@
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
 
-#include "mayaUsd/ufe/StagesSubject.h"
+#include <mayaUsd/ufe/StagesSubject.h>
 
 // Note: normally we would use this using directive, but here we cannot because
 //		 our class is called UsdAttribute which is exactly the same as the one

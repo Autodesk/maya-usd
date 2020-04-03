@@ -39,10 +39,11 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
+#include <mayaUsd/ufe/Utils.h>
+
 #include "private/InPathChange.h"
-#include "mayaUsd/ufe/ProxyShapeHandler.h"
-#include "mayaUsd/ufe/UsdStageMap.h"
-#include "mayaUsd/ufe/Utils.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 namespace {

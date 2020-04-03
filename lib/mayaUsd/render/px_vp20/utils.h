@@ -18,8 +18,6 @@
 
 /// \file px_vp20/utils.h
 
-#include "mayaUsd/base/api.h"
-
 #include <array>
 #include <ostream>
 
@@ -36,6 +34,8 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/imaging/garch/gl.h>
 #include <pxr/imaging/glf/simpleLightingContext.h>
+
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

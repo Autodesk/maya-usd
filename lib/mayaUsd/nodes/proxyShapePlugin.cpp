@@ -29,9 +29,9 @@
 
 #include <pxr/base/tf/envSetting.h>
 
-#include "mayaUsd/nodes/hdImagingShape.h"
-#include "mayaUsd/nodes/proxyShapeBase.h"
-#include "mayaUsd/nodes/stageData.h"
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/stageData.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

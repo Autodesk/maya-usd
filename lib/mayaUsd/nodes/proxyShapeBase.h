@@ -54,9 +54,9 @@ constexpr int USD_UFE_RUNTIME_ID = 2;
 constexpr char USD_UFE_SEPARATOR = '/';
 #endif
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/listeners/stageNoticeListener.h"
-#include "mayaUsd/nodes/usdPrimProvider.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/listeners/stageNoticeListener.h>
+#include <mayaUsd/nodes/usdPrimProvider.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -25,9 +25,9 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/primUpdater.h"
-#include "mayaUsd/fileio/primUpdaterContext.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primUpdater.h>
+#include <mayaUsd/fileio/primUpdaterContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

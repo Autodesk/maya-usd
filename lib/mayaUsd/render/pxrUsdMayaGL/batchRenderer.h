@@ -51,15 +51,14 @@
 #include <pxr/imaging/hd/driver.h>
 #endif
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/listeners/notice.h"
-#include "mayaUsd/utils/diagnosticDelegate.h"
-#include "mayaUsd/utils/util.h"
-
-#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
-#include "mayaUsd/render/pxrUsdMayaGL/sceneDelegate.h"
-#include "mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h"
-#include "mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/sceneDelegate.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
+#include <mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

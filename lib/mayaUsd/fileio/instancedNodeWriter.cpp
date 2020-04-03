@@ -27,9 +27,9 @@
 #include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include "mayaUsd/fileio/primWriter.h"
-#include "mayaUsd/fileio/writeJobContext.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

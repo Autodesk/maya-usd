@@ -23,7 +23,7 @@
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/base/tf/token.h>
 
-#include "mayaUsd/ufe/Utils.h"
+#include <mayaUsd/ufe/Utils.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

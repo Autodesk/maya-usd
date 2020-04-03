@@ -25,8 +25,8 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/utils/adaptor.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

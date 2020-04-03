@@ -24,10 +24,10 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 
-#include "mayaUsd/fileio/registryHelper.h"
-#include "mayaUsd/fileio/shading/shadingModeExporter.h"
-#include "mayaUsd/fileio/shading/shadingModeExporterContext.h"
-#include "mayaUsd/fileio/shading/shadingModeImporter.h"
+#include <mayaUsd/fileio/registryHelper.h>
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/shading/shadingModeImporter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

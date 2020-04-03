@@ -40,12 +40,12 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
-#include "mayaUsd/fileio/jobs/jobArgs.h"
-#include "mayaUsd/fileio/translators/translatorGprim.h"
-#include "mayaUsd/fileio/utils/adaptor.h"
-#include "mayaUsd/fileio/utils/writeUtil.h"
-#include "mayaUsd/fileio/writeJobContext.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/translators/translatorGprim.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

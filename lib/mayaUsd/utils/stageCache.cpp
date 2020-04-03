@@ -31,7 +31,7 @@
 #include <pxr/usd/usd/stageCache.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include "mayaUsd/listeners/notice.h"
+#include <mayaUsd/listeners/notice.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

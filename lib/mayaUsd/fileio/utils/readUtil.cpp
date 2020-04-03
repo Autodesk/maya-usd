@@ -43,9 +43,9 @@
 #include <pxr/usd/sdf/listOp.h>
 #include <pxr/usd/usd/tokens.h>
 
-#include "mayaUsd/fileio/utils/adaptor.h"
-#include "mayaUsd/utils/colorSpace.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

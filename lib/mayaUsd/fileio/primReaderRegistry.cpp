@@ -27,10 +27,10 @@
 #include <pxr/base/tf/type.h>
 #include <pxr/usd/usd/schemaBase.h>
 
-#include "mayaUsd/base/debugCodes.h"
-#include "mayaUsd/fileio/fallbackPrimReader.h"
-#include "mayaUsd/fileio/functorPrimReader.h"
-#include "mayaUsd/fileio/registryHelper.h"
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/fileio/fallbackPrimReader.h>
+#include <mayaUsd/fileio/functorPrimReader.h>
+#include <mayaUsd/fileio/registryHelper.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

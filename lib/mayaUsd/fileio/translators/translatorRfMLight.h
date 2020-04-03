@@ -18,11 +18,11 @@
 
 #include <pxr/pxr.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/primReaderArgs.h"
-#include "mayaUsd/fileio/primReaderContext.h"
-#include "mayaUsd/fileio/primWriterArgs.h"
-#include "mayaUsd/fileio/primWriterContext.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -33,7 +33,7 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 #if defined(WANT_UFE_BUILD)
 #include <ufe/observer.h>

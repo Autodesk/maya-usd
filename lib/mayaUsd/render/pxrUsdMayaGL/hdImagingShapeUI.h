@@ -30,7 +30,7 @@
 #include <maya/MDrawRequestQueue.h>
 #include <maya/MPxSurfaceShapeUI.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

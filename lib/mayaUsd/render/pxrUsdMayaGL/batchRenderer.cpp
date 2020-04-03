@@ -80,11 +80,10 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #endif
 
-#include "mayaUsd/render/px_vp20/utils.h"
-#include "mayaUsd/render/px_vp20/utils_legacy.h"
-
-#include "mayaUsd/render/pxrUsdMayaGL/debugCodes.h"
-#include "mayaUsd/render/pxrUsdMayaGL/userData.h"
+#include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/render/px_vp20/utils_legacy.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

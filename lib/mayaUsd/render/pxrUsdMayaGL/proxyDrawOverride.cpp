@@ -38,12 +38,11 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/trace/trace.h>
 
-#include "mayaUsd/nodes/proxyShapeBase.h"
-#include "mayaUsd/render/px_vp20/utils.h"
-
-#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
-#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
-#include "mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

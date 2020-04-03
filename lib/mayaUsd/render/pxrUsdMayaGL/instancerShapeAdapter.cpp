@@ -53,13 +53,12 @@
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include "mayaUsd/fileio/utils/writeUtil.h"
-#include "mayaUsd/utils/util.h"
-
-#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
-#include "mayaUsd/render/pxrUsdMayaGL/debugCodes.h"
-#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
-#include "mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h"
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -51,12 +51,12 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/nodes/proxyShapeBase.h"
-#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
-#include "mayaUsd/render/pxrUsdMayaGL/debugCodes.h"
-#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
-#include "mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

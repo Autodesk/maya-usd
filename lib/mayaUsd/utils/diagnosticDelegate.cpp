@@ -23,7 +23,7 @@
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/stackTrace.h>
 
-#include "mayaUsd/base/debugCodes.h"
+#include <mayaUsd/base/debugCodes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

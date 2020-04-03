@@ -21,7 +21,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

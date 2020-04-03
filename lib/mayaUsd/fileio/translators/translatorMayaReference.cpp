@@ -45,8 +45,8 @@
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
 
-#include "mayaUsd/base/debugCodes.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

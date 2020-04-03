@@ -43,10 +43,9 @@
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MUserData.h>
 
-#include "mayaUsd/base/api.h"
-
-#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
-#include "mayaUsd/render/pxrUsdMayaGL/userData.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

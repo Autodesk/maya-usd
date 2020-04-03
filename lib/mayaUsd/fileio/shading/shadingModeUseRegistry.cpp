@@ -40,13 +40,13 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include "mayaUsd/fileio/primWriter.h"
-#include "mayaUsd/fileio/shaderWriter.h"
-#include "mayaUsd/fileio/shading/shadingModeExporter.h"
-#include "mayaUsd/fileio/shading/shadingModeExporterContext.h"
-#include "mayaUsd/fileio/shading/shadingModeRegistry.h"
-#include "mayaUsd/fileio/utils/shadingUtil.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

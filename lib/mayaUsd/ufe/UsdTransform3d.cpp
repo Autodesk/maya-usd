@@ -17,11 +17,12 @@
 
 #include <pxr/usd/usdGeom/xformCache.h>
 
-#include "mayaUsd/ufe/UsdRotatePivotTranslateUndoableCommand.h"
-#include "mayaUsd/ufe/UsdRotateUndoableCommand.h"
-#include "mayaUsd/ufe/UsdScaleUndoableCommand.h"
-#include "mayaUsd/ufe/UsdTranslateUndoableCommand.h"
-#include "mayaUsd/ufe/Utils.h"
+#include <mayaUsd/ufe/UsdRotatePivotTranslateUndoableCommand.h>
+#include <mayaUsd/ufe/UsdRotateUndoableCommand.h>
+#include <mayaUsd/ufe/UsdScaleUndoableCommand.h>
+#include <mayaUsd/ufe/UsdTranslateUndoableCommand.h>
+#include <mayaUsd/ufe/Utils.h>
+
 #include "private/Utils.h"
 
 MAYAUSD_NS_DEF {

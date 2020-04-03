@@ -26,7 +26,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

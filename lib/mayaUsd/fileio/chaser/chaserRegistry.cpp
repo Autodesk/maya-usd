@@ -19,8 +19,8 @@
 
 #include <pxr/base/tf/instantiateSingleton.h>
 
-#include "mayaUsd/base/debugCodes.h"
-#include "mayaUsd/fileio/registryHelper.h"
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/fileio/registryHelper.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

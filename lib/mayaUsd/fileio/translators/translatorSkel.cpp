@@ -39,9 +39,9 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#include "mayaUsd/fileio/translators/translatorUtil.h"
-#include "mayaUsd/fileio/translators/translatorXformable.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

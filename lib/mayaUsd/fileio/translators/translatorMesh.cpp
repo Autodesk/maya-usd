@@ -38,11 +38,11 @@
 #include <maya/MPointArray.h>
 #include <maya/MString.h>
 
-#include "mayaUsd/fileio/utils/meshUtil.h"
-#include "mayaUsd/fileio/utils/readUtil.h"
-#include "mayaUsd/nodes/pointBasedDeformerNode.h"
-#include "mayaUsd/nodes/stageNode.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/utils/meshUtil.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/nodes/pointBasedDeformerNode.h>
+#include <mayaUsd/nodes/stageNode.h>
+#include <mayaUsd/utils/util.h>
 
 MAYAUSD_NS_DEF {
 

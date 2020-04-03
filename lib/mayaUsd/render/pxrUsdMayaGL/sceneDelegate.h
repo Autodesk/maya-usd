@@ -37,9 +37,9 @@
 #include <pxr/imaging/hd/task.h>
 #include <pxr/usd/sdf/path.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
-#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

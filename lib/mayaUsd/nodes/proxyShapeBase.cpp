@@ -78,12 +78,12 @@
 #include <ufe/path.h>
 #endif
 
-#include "mayaUsd/base/debugCodes.h"
-#include "mayaUsd/listeners/proxyShapeNotice.h"
-#include "mayaUsd/nodes/stageData.h"
-#include "mayaUsd/utils/query.h"
-#include "mayaUsd/utils/stageCache.h"
-#include "mayaUsd/utils/utilFileSystem.h"
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/listeners/proxyShapeNotice.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/query.h>
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

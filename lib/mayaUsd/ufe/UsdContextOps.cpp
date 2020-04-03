@@ -26,7 +26,7 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include "mayaUsd/ufe/Utils.h"
+#include <mayaUsd/ufe/Utils.h>
 
 namespace {
 

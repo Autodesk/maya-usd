@@ -24,10 +24,10 @@
 #include <pxr/base/tf/singleton.h>
 #include <pxr/usd/usd/stage.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/chaser/chaser.h"
-#include "mayaUsd/fileio/jobs/jobArgs.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/chaser/chaser.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

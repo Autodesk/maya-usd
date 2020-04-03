@@ -17,7 +17,7 @@
 
 #include "private/Utils.h"
 
-#include "mayaUsd/ufe/Utils.h"
+#include <mayaUsd/ufe/Utils.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

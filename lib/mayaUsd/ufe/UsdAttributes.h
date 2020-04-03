@@ -21,10 +21,9 @@
 
 #include <pxr/usd/usd/prim.h>
 
-#include "mayaUsd/base/api.h"
-
-#include "mayaUsd/ufe/UsdSceneItem.h"
-#include "mayaUsd/ufe/UsdAttribute.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/UsdAttribute.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

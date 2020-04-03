@@ -20,8 +20,8 @@
 #include <pxr/base/gf/interval.h>
 #include <pxr/usd/usd/prim.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/jobs/jobArgs.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

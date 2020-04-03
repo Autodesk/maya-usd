@@ -25,9 +25,9 @@
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/base/tf/token.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
-#include "mayaUsd/ufe/UsdSceneItem.h"
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

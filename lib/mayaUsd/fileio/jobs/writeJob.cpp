@@ -57,16 +57,16 @@
 #include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usd/usdUtils/dependencies.h>
 
-#include "mayaUsd/fileio/chaser/chaser.h"
-#include "mayaUsd/fileio/chaser/chaserRegistry.h"
-#include "mayaUsd/fileio/jobs/jobArgs.h"
-#include "mayaUsd/fileio/jobs/modelKindProcessor.h"
-#include "mayaUsd/fileio/primWriter.h"
-#include "mayaUsd/fileio/primWriterRegistry.h"
-#include "mayaUsd/fileio/shading/shadingModeExporterContext.h"
-#include "mayaUsd/fileio/transformWriter.h"
-#include "mayaUsd/fileio/translators/translatorMaterial.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/chaser/chaser.h>
+#include <mayaUsd/fileio/chaser/chaserRegistry.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/jobs/modelKindProcessor.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -24,11 +24,11 @@
 #include <pxr/usd/usd/schemaBase.h>
 #include <pxr/usd/usd/tokens.h>
 
-#include "mayaUsd/fileio/primWriterRegistry.h"
-#include "mayaUsd/fileio/registryHelper.h"
-#include "mayaUsd/fileio/utils/readUtil.h"
-#include "mayaUsd/fileio/utils/writeUtil.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/registryHelper.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

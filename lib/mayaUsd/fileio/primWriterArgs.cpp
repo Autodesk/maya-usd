@@ -17,7 +17,7 @@
 
 #include <maya/MFnDependencyNode.h>
 
-#include "mayaUsd/fileio/utils/writeUtil.h"
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

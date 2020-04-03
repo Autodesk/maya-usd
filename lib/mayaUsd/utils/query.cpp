@@ -29,8 +29,8 @@
 #include <pxr/usd/ar/resolverContextBinder.h>
 #include <pxr/usd/usd/prim.h>
 
-#include "mayaUsd/nodes/usdPrimProvider.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/nodes/usdPrimProvider.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

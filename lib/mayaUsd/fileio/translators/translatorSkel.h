@@ -16,10 +16,10 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_SKEL_H
 #define PXRUSDMAYA_TRANSLATOR_SKEL_H
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
-#include "mayaUsd/fileio/primReaderArgs.h"
-#include "mayaUsd/fileio/primReaderContext.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/vt/array.h>

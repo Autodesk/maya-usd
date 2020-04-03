@@ -19,7 +19,7 @@
 
 #include <ufe/rtid.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

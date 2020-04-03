@@ -34,9 +34,9 @@
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
 
-#include "mayaUsd/nodes/proxyShapeBase.h"
-#include "mayaUsd/nodes/stageData.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/util.h>
 
 #include "render_delegate.h"
 #include "tokens.h"

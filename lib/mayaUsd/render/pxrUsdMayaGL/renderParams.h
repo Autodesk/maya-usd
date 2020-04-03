@@ -24,7 +24,7 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/token.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

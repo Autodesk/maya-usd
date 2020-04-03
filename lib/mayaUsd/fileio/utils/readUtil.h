@@ -27,7 +27,7 @@
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/usd/attribute.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

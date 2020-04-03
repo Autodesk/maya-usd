@@ -21,7 +21,7 @@
 #include <pxr/pxr.h>
 #include <pxr/imaging/hd/mesh.h>
 
-#include "mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h"
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -24,8 +24,8 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
-#include "mayaUsd/fileio/jobs/jobArgs.h"
-#include "mayaUsd/fileio/primWriter.h"
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

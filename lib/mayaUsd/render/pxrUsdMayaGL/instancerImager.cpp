@@ -24,9 +24,9 @@
 
 #include <pxr/base/tf/instantiateSingleton.h>
 
-#include "mayaUsd/nodes/hdImagingShape.h"
-#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
-#include "mayaUsd/render/pxrUsdMayaGL/debugCodes.h"
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

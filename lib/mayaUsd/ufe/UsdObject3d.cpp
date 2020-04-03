@@ -24,7 +24,7 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include "mayaUsd/ufe/Utils.h"
+#include <mayaUsd/ufe/Utils.h>
 
 namespace {
 Ufe::Vector3d toVector3d(const GfVec3d& v)

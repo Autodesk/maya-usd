@@ -38,9 +38,9 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/primReaderContext.h"
-#include "mayaUsd/fileio/primWriterContext.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primWriterContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

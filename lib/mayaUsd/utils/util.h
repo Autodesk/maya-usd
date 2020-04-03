@@ -53,7 +53,7 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

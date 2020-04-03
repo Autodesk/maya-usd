@@ -25,8 +25,8 @@
 #include <pxr/base/tf/notice.h>
 #include <pxr/usd/usd/notice.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/listeners/proxyShapeNotice.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/listeners/proxyShapeNotice.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -25,10 +25,10 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/jobs/jobArgs.h"
-#include "mayaUsd/fileio/primWriter.h"
-#include "mayaUsd/fileio/primWriterRegistry.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

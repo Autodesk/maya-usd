@@ -24,12 +24,12 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include "mayaUsd/fileio/primWriter.h"
-#include "mayaUsd/fileio/primWriterArgs.h"
-#include "mayaUsd/fileio/primWriterContext.h"
-#include "mayaUsd/fileio/primWriterRegistry.h"
-#include "mayaUsd/fileio/transformWriter.h"
-#include "mayaUsd/fileio/writeJobContext.h"
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -23,10 +23,10 @@
 #include <pxr/pxr.h>
 #include <pxr/base/tf/hashmap.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/chaser/chaser.h"
-#include "mayaUsd/fileio/writeJobContext.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/chaser/chaser.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

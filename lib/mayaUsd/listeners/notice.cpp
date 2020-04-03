@@ -18,7 +18,7 @@
 
 #include <pxr/base/tf/instantiateType.h>
 
-#include "mayaUsd/listeners/notice.h"
+#include <mayaUsd/listeners/notice.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

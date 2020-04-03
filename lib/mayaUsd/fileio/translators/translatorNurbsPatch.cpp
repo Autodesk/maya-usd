@@ -32,11 +32,11 @@
 
 #include <pxr/usd/usdGeom/nurbsPatch.h>
 
-#include "mayaUsd/fileio/primReaderArgs.h"
-#include "mayaUsd/fileio/primReaderContext.h"
-#include "mayaUsd/fileio/translators/translatorGprim.h"
-#include "mayaUsd/fileio/translators/translatorMaterial.h"
-#include "mayaUsd/fileio/translators/translatorUtil.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/translators/translatorGprim.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -50,7 +50,7 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/pointBased.h>
 
-#include "mayaUsd/nodes/stageData.h"
+#include <mayaUsd/nodes/stageData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

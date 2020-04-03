@@ -30,9 +30,9 @@
 #include <pxr/base/tf/hashset.h>
 #include <pxr/usd/usd/stage.h>
 
-#include "mayaUsd/nodes/proxyShapeBase.h"
-#include "mayaUsd/ufe/ProxyShapeHandler.h"
-#include "mayaUsd/ufe/UsdStageMap.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
 
 #include "private/Utils.h"
 

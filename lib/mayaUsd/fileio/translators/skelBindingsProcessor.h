@@ -25,8 +25,8 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/pathTable.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

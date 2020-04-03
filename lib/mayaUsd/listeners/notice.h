@@ -21,7 +21,7 @@
 
 #include <pxr/base/tf/notice.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

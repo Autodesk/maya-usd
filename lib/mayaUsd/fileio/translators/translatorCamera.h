@@ -22,9 +22,9 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/camera.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/primReaderArgs.h"
-#include "mayaUsd/fileio/primReaderContext.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

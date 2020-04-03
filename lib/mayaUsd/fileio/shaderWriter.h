@@ -24,9 +24,9 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/path.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/primWriter.h"
-#include "mayaUsd/fileio/writeJobContext.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

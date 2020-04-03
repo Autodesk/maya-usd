@@ -31,8 +31,8 @@
 #include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

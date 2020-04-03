@@ -27,8 +27,8 @@
 #include <pxr/imaging/glf/drawTarget.h>
 #include <pxr/imaging/glf/glContext.h>
 
-#include "mayaUsd/nodes/proxyShapeBase.h"
-#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -19,7 +19,7 @@
 
 #include <maya/MFnDagNode.h>
 
-#include "mayaUsd/ufe/Utils.h"
+#include <mayaUsd/ufe/Utils.h>
 
 namespace {
 

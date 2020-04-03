@@ -26,7 +26,7 @@
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/usd/sdf/path.h>
 
-#include "mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h"
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -33,8 +33,8 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
-#include "mayaUsd/fileio/registryHelper.h"
-#include "mayaUsd/fileio/shading/shadingModeRegistry.h"
+#include <mayaUsd/fileio/registryHelper.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

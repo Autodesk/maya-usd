@@ -15,8 +15,6 @@
 //
 #pragma once
 
-#include "mayaUsd/base/api.h"
-
 #include <ufe/path.h>
 
 #include <unordered_map>
@@ -25,6 +23,8 @@
 
 #include <pxr/usd/usd/stage.h>
 #include <pxr/base/tf/hash.h>
+
+#include <mayaUsd/base/api.h>
 
 // Allow for use of MObjectHandle with std::unordered_map.
 namespace std {

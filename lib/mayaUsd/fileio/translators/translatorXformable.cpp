@@ -43,9 +43,9 @@
 #include <pxr/usd/usdGeom/xformable.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
-#include "mayaUsd/fileio/translators/translatorPrim.h"
-#include "mayaUsd/fileio/translators/translatorUtil.h"
-#include "mayaUsd/fileio/utils/xformStack.h"
+#include <mayaUsd/fileio/translators/translatorPrim.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/xformStack.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

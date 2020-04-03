@@ -47,14 +47,14 @@
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdGeom/xform.h>
 
-#include "mayaUsd/fileio/instancedNodeWriter.h"
-#include "mayaUsd/fileio/jobs/jobArgs.h"
-#include "mayaUsd/fileio/primWriter.h"
-#include "mayaUsd/fileio/primWriterRegistry.h"
-#include "mayaUsd/fileio/transformWriter.h"
-#include "mayaUsd/fileio/translators/skelBindingsProcessor.h"
-#include "mayaUsd/utils/stageCache.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/instancedNodeWriter.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/translators/skelBindingsProcessor.h>
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

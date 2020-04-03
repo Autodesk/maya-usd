@@ -52,9 +52,9 @@
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/usd/sdf/path.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/render/px_vp20/utils.h"
-#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

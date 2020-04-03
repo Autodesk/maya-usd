@@ -31,9 +31,8 @@
 
 #include <pxr/pxr.h>
 
-#include "mayaUsd/base/api.h"
-
-#include "mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

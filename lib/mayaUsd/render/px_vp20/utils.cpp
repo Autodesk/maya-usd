@@ -56,7 +56,7 @@
 #include <pxr/imaging/glf/simpleMaterial.h>
 #include <pxr/imaging/hdx/version.h>
 
-#include "mayaUsd/render/px_vp20/glslProgram.h"
+#include <mayaUsd/render/px_vp20/glslProgram.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

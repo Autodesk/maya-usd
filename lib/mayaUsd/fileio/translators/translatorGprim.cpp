@@ -17,7 +17,7 @@
 
 #include <maya/MFnDagNode.h>
 
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

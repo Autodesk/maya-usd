@@ -25,7 +25,7 @@
 #include <pxr/base/tf/diagnosticMgr.h>
 #include <pxr/usd/usdUtils/coalescingDiagnosticDelegate.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

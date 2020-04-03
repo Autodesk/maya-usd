@@ -18,8 +18,6 @@
 
 /// \file pxrUsdMayaGL/userData.h
 
-#include "mayaUsd/base/api.h"
-
 #include <memory>
 
 #include <maya/MBoundingBox.h>
@@ -27,6 +25,8 @@
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/vec4f.h>
+
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

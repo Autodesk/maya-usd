@@ -9,9 +9,8 @@
 
 #include <ufe/object3d.h>
 
-#include "mayaUsd/base/api.h"
-
-#include "mayaUsd/ufe/UsdSceneItem.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

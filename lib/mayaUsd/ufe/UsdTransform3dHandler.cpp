@@ -15,7 +15,7 @@
 //
 #include "UsdTransform3dHandler.h"
 
-#include "mayaUsd/ufe/UsdSceneItem.h"
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

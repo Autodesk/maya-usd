@@ -27,9 +27,9 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
 
-#include "mayaUsd/fileio/importData.h"
-#include "mayaUsd/fileio/jobs/jobArgs.h"
-#include "mayaUsd/fileio/primReaderContext.h"
+#include <mayaUsd/fileio/importData.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

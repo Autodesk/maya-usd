@@ -10,7 +10,7 @@
 
 #include <pxr/usd/usdGeom/imageable.h>
 
-#include "mayaUsd/ufe/UsdSceneItem.h"
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

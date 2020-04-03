@@ -35,8 +35,8 @@
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/primvar.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/utils/userTaggedAttribute.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

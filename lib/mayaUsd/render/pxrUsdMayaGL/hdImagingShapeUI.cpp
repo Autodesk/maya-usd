@@ -33,11 +33,11 @@
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/trace/trace.h>
 
-#include "mayaUsd/nodes/hdImagingShape.h"
-#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
-#include "mayaUsd/render/pxrUsdMayaGL/debugCodes.h"
-#include "mayaUsd/render/pxrUsdMayaGL/instancerImager.h"
-#include "mayaUsd/render/pxrUsdMayaGL/userData.h"
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

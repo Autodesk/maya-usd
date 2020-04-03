@@ -20,7 +20,7 @@
 #include <pxr/usd/usdSkel/root.h>
 #include <pxr/usd/usdUtils/authoring.h>
 
-#include "mayaUsd/fileio/translators/translatorUtil.h"
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

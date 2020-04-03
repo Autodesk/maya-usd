@@ -20,7 +20,7 @@
 #include <pxr/base/gf/matrix3d.h>
 #include <pxr/base/gf/transform.h>
 
-#include "mayaUsd/fileio/translators/translatorXformable.h"
+#include <mayaUsd/fileio/translators/translatorXformable.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

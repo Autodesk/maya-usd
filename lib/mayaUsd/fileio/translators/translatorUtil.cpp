@@ -30,12 +30,12 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
-#include "mayaUsd/fileio/primReaderArgs.h"
-#include "mayaUsd/fileio/primReaderContext.h"
-#include "mayaUsd/fileio/translators/translatorXformable.h"
-#include "mayaUsd/fileio/utils/adaptor.h"
-#include "mayaUsd/fileio/utils/xformStack.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

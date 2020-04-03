@@ -48,11 +48,11 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include "mayaUsd/fileio/shading/shadingModeExporter.h"
-#include "mayaUsd/fileio/shading/shadingModeExporterContext.h"
-#include "mayaUsd/fileio/shading/shadingModeRegistry.h"
-#include "mayaUsd/fileio/translators/translatorMaterial.h"
-#include "mayaUsd/utils/colorSpace.h"
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/utils/colorSpace.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

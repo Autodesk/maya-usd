@@ -46,15 +46,15 @@
 #include <pxr/usd/usdRi/pxrAovLight.h>
 #include <pxr/usd/usdRi/pxrEnvDayLight.h>
 
-#include "mayaUsd/fileio/primReaderArgs.h"
-#include "mayaUsd/fileio/primReaderContext.h"
-#include "mayaUsd/fileio/primReaderRegistry.h"
-#include "mayaUsd/fileio/primWriterArgs.h"
-#include "mayaUsd/fileio/primWriterContext.h"
-#include "mayaUsd/fileio/primWriterRegistry.h"
-#include "mayaUsd/fileio/translators/translatorUtil.h"
-#include "mayaUsd/fileio/translators/translatorXformable.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

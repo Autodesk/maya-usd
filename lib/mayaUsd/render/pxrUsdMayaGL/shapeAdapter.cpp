@@ -42,13 +42,12 @@
 #include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/usd/sdf/path.h>
 
-#include "mayaUsd/base/api.h"
-
-#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
-#include "mayaUsd/render/pxrUsdMayaGL/debugCodes.h"
-#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
-#include "mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h"
-#include "mayaUsd/render/pxrUsdMayaGL/userData.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

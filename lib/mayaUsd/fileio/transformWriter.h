@@ -34,9 +34,9 @@
 #include <pxr/usd/usdGeom/xformOp.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/primWriter.h"
-#include "mayaUsd/fileio/writeJobContext.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -24,7 +24,7 @@
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/stage.h>
 
-#include "mayaUsd/base/api.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

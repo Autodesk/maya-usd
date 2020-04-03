@@ -31,9 +31,9 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
-#include "mayaUsd/base/api.h"
-#include "mayaUsd/fileio/jobs/jobArgs.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

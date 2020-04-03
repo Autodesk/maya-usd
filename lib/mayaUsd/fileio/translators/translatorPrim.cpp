@@ -20,9 +20,9 @@
 
 #include <pxr/usd/usdGeom/imageable.h>
 
-#include "mayaUsd/fileio/translators/translatorUtil.h"
-#include "mayaUsd/fileio/utils/readUtil.h"
-#include "mayaUsd/utils/util.h"
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

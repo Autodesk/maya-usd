@@ -19,7 +19,7 @@
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 
-#include "mayaUsd/utils/query.h"
+#include <mayaUsd/utils/query.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

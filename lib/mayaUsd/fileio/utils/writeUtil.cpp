@@ -63,10 +63,10 @@
 #include <pxr/usd/usdRi/statementsAPI.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
-#include "mayaUsd/fileio/translators/translatorUtil.h"
-#include "mayaUsd/fileio/utils/adaptor.h"
-#include "mayaUsd/fileio/utils/userTaggedAttribute.h"
-#include "mayaUsd/utils/colorSpace.h"
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
+#include <mayaUsd/utils/colorSpace.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -41,10 +41,10 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include "mayaUsd/nodes/proxyShapeBase.h"
-#include "mayaUsd/render/pxrUsdMayaGL/batchRenderer.h"
-#include "mayaUsd/render/pxrUsdMayaGL/renderParams.h"
-#include "mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h"
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
