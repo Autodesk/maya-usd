@@ -31,15 +31,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {
 
-MayaUSDImportCommand::MayaUSDImportCommand()
-{
-}
-
-/* virtual */
-MayaUSDImportCommand::~MayaUSDImportCommand()
-{
-}
-
 /* static */
 MSyntax
 MayaUSDImportCommand::createSyntax()
@@ -144,7 +135,6 @@ MayaUSDImportCommand::doIt(const MArgList & args)
         return MS::kFailure;
     }
 
-    // Specify usd PrimPath.  Default will be "/<useFileBasename>"
     std::string mPrimPath;
     if (argData.isFlagSet(kPrimPathFlag))
     {
@@ -155,7 +145,7 @@ MayaUSDImportCommand::doIt(const MArgList & args)
     }
 
     // Add variant (variantSet, variant).  Multi-use
-    std::map<std::string,std::string> mVariants;
+    SdfVariantSelectionMap mVariants;
     for (unsigned int i=0; i < argData.numberOfFlagUses(kVariantFlag); ++i)
     {
         MArgList tmpArgList;
@@ -166,7 +156,7 @@ MayaUSDImportCommand::doIt(const MArgList & args)
         mVariants.insert( std::pair<std::string, std::string>(tmpKey.asChar(), tmpVal.asChar()) );
     }
 
-    bool readAnimData = true;
+    bool readAnimData = false;
     if (argData.isFlagSet(kReadAnimDataFlag)) {
         argData.getFlagArgument(kReadAnimDataFlag, 0, readAnimData);
     }

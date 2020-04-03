@@ -19,14 +19,6 @@ MAYAUSD_NS_DEF {
 
 const MString ADSKMayaUSDExportCommand::commandName("mayaUSDExport");
 
-ADSKMayaUSDExportCommand::ADSKMayaUSDExportCommand()
-{
-}
-
-ADSKMayaUSDExportCommand::~ADSKMayaUSDExportCommand()
-{
-}
-
 void* ADSKMayaUSDExportCommand::creator()
 {
     return new ADSKMayaUSDExportCommand();

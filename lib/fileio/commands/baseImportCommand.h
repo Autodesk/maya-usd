@@ -17,7 +17,7 @@
 #ifndef MAYA_IMPORT_COMMAND_H
 #define MAYA_IMPORT_COMMAND_H
 
-#include "../../base/api.h"
+#include <mayaUsd/base/api.h>
 
 #include <memory>
 
@@ -63,9 +63,6 @@ class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand
     static constexpr auto kVariantFlagLong = "variant";
     static constexpr auto kVerboseFlag = "v";
     static constexpr auto kVerboseFlagLong = "verbose";
-
-    MayaUSDImportCommand();
-    ~MayaUSDImportCommand() override;
 
     MStatus doIt(const MArgList& args) override;
     MStatus redoIt() override;

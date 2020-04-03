@@ -17,7 +17,7 @@
 #ifndef MAYA_EXPORT_COMMAND_H
 #define MAYA_EXPORT_COMMAND_H
 
-#include "../../base/api.h"
+#include <mayaUsd/base/api.h>
 
 #include <memory>
 
@@ -49,7 +49,7 @@ class MAYAUSD_CORE_PUBLIC MayaUSDExportCommand : public MPxCommand
     static constexpr auto kExportInstancesFlag = "ein";
     static constexpr auto kMergeTransformAndShapeFlag = "mt";
     static constexpr auto kStripNamespacesFlag = "sn";
-    static constexpr auto kExportRefsAsInstFlag = "eri";
+    static constexpr auto kExportRefsAsInstanceableFlag = "eri";
     static constexpr auto kExportDisplayColorFlag = "dsp";
     static constexpr auto kShadingModeFlag = "shd";
     static constexpr auto kMaterialsScopeNameFlag = "msn";
@@ -89,9 +89,6 @@ class MAYAUSD_CORE_PUBLIC MayaUSDExportCommand : public MPxCommand
     static constexpr auto kFrameStrideFlagLong = "frameStride";
     static constexpr auto kFrameRangeFlag = "fr";
     static constexpr auto kFrameRangeFlagLong = "frameRange";
-
-    MayaUSDExportCommand();
-    ~MayaUSDExportCommand() override;
 
     MStatus doIt(const MArgList& args) override;
     bool  isUndoable () const override { return false; };

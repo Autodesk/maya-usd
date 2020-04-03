@@ -20,15 +20,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PxrMayaUSDImportCommand::PxrMayaUSDImportCommand()
-{
-}
-
-/* virtual */
-PxrMayaUSDImportCommand::~PxrMayaUSDImportCommand()
-{
-}
-
 /* static */
 void*
 PxrMayaUSDImportCommand::creator()

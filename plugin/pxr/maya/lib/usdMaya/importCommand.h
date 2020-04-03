@@ -33,15 +33,10 @@ class PxrMayaUSDImportCommand : public MayaUsd::MayaUSDImportCommand
 {
   public:
     PXRUSDMAYA_API
-    PxrMayaUSDImportCommand();
-    PXRUSDMAYA_API
-    ~PxrMayaUSDImportCommand() override;
-
-    PXRUSDMAYA_API
     static void* creator();
 
   protected:
-    virtual std::unique_ptr<UsdMaya_ReadJob> initializeReadJob(const MayaUsd::ImportData &, 
+    std::unique_ptr<UsdMaya_ReadJob> initializeReadJob(const MayaUsd::ImportData &, 
         const UsdMayaJobImportArgs &) override;
 };
 

@@ -32,11 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class PxrMayaUSDExportCommand : public MayaUsd::MayaUSDExportCommand
 {
   public:
-    PXRUSDMAYA_API
-    PxrMayaUSDExportCommand();
-    PXRUSDMAYA_API
-    ~PxrMayaUSDExportCommand() override;
-    
+   
     PXRUSDMAYA_API
     static void* creator();
 };

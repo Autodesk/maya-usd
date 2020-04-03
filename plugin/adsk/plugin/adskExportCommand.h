@@ -18,8 +18,6 @@
 
 #include "base/api.h"
 
-#include <maya/MPxCommand.h>
-
 #include <mayaUsd/fileio/commands/baseExportCommand.h>
 
 MAYAUSD_NS_DEF {
@@ -27,8 +25,6 @@ MAYAUSD_NS_DEF {
 class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDExportCommand : public MayaUsd::MayaUSDExportCommand
 {
   public:
-    ADSKMayaUSDExportCommand();
-    ~ADSKMayaUSDExportCommand() override;
 
     static const MString commandName;
 

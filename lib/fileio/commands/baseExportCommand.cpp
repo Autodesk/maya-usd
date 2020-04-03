@@ -32,19 +32,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
-
-} // namespace
-
 MAYAUSD_NS_DEF {
-
-MayaUSDExportCommand::MayaUSDExportCommand()
-{
-}
-
-MayaUSDExportCommand::~MayaUSDExportCommand()
-{
-}
 
 MSyntax MayaUSDExportCommand::createSyntax()
 {
@@ -58,7 +46,7 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(kExportInstancesFlag,
                    UsdMayaJobExportArgsTokens->exportInstances.GetText(),
                    MSyntax::kBoolean);
-    syntax.addFlag(kExportRefsAsInstFlag,
+    syntax.addFlag(kExportRefsAsInstanceableFlag,
                    UsdMayaJobExportArgsTokens->exportRefsAsInstanceable.GetText(),
                    MSyntax::kBoolean);
     syntax.addFlag(kExportDisplayColorFlag,

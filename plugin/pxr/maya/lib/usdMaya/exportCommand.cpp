@@ -17,14 +17,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PxrMayaUSDExportCommand::PxrMayaUSDExportCommand()
-{
-}
-
-PxrMayaUSDExportCommand::~PxrMayaUSDExportCommand()
-{
-}
-
 void* PxrMayaUSDExportCommand::creator()
 {
     return new PxrMayaUSDExportCommand();
