@@ -28,6 +28,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapAdaptor.cpp
         wrapBlockSceneModificationContext.cpp
         wrapColorSpace.cpp
+        wrapConverter.cpp
         wrapDiagnosticDelegate.cpp
         wrapMeshUtil.cpp
         wrapQuery.cpp
