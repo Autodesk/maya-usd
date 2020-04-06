@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include <mayaUsdUI/ui/api.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/importData.h>
-
 #include <pxr/usd/usd/stage.h>
+
+#include <mayaUsd/fileio/importData.h>
+#include <mayaUsd/mayaUsd.h>
+
+#include <mayaUsdUI/ui/api.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

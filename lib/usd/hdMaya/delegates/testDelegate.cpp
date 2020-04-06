@@ -13,10 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <hdMaya/delegates/testDelegate.h>
-#include <hdMaya/delegates/delegateRegistry.h>
+#include "testDelegate.h"
 
 #include <pxr/base/tf/envSetting.h>
+
+#include <hdMaya/delegates/delegateRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

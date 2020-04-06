@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsdUtils/DebugCodes.h>
+#include "DebugCodes.h"
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/registryManager.h>

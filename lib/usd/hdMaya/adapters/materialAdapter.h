@@ -16,9 +16,9 @@
 #ifndef HDMAYA_MATERIAL_ADAPTER_H
 #define HDMAYA_MATERIAL_ADAPTER_H
 
-#include <hdMaya/adapters/adapter.h>
-
 #include <pxr/pxr.h>
+
+#include <hdMaya/adapters/adapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

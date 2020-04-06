@@ -17,8 +17,6 @@
 #define PXRUSDTRANSLATORS_MESH_WRITER_H
 
 /// \file pxrUsdTranslators/meshWriter.h
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <set>
 #include <string>
@@ -38,6 +36,9 @@
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/primvar.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

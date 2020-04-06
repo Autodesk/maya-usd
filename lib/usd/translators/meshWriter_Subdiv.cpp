@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd_Translators/meshWriter.h>
-
 #include <maya/MDoubleArray.h>
 #include <maya/MUintArray.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/mesh.h>
+
+#include <mayaUsd_Translators/meshWriter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

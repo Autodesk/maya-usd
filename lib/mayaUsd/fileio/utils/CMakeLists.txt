@@ -14,11 +14,11 @@ target_sources(${PROJECT_NAME}
 )
 
 set(headers
-    shadingUtil.h
     adaptor.h
     meshUtil.h
     readUtil.h
     roundTripUtil.h
+    shadingUtil.h
     userTaggedAttribute.h
     writeUtil.h
     xformStack.h

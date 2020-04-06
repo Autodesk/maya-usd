@@ -13,7 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd_Schemas/MayaReference.h>
+#include <string>
+
+#include <boost/python.hpp>
 
 #include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyResultConversions.h>
@@ -23,9 +25,7 @@
 #include <pxr/usd/usd/pyConversions.h>
 #include <pxr/usd/usd/schemaBase.h>
 
-#include <boost/python.hpp>
-
-#include <string>
+#include <mayaUsd_Schemas/MayaReference.h>
 
 using namespace boost::python;
 

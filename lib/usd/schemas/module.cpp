@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include <pxr/base/tf/pyModule.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE

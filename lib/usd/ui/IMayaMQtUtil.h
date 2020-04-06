@@ -16,11 +16,11 @@
 
 #pragma once
 
-#include <mayaUsdUI/ui/api.h>
+#include <string>
 
 #include <mayaUsd/base/api.h>
 
-#include <string>
+#include <mayaUsdUI/ui/api.h>
 
 class QPixmap;
 

@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsdUI/ui/views/TreeItem.h>
-#include <mayaUsdUI/ui/views/TreeModel.h>
-#include <mayaUsdUI/ui/views/ItemDelegate.h>
-#include <mayaUsdUI/ui/views/IMayaMQtUtil.h>
+#include "TreeItem.h"
 
 #include <cassert>
 
 #include <maya/MQtUtil.h>
+
+#include <mayaUsdUI/ui/TreeModel.h>
+#include <mayaUsdUI/ui/ItemDelegate.h>
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
 
 MAYAUSD_NS_DEF {
 

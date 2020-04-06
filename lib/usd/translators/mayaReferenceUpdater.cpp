@@ -13,14 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd_Translators/mayaReferenceUpdater.h>
-
-#include <mayaUsd/fileio/primUpdaterRegistry.h>
-#include <mayaUsd/fileio/translators/translatorMayaReference.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd_Schemas/ALMayaReference.h>
-#include <mayaUsd_Schemas/MayaReference.h>
+#include "mayaReferenceUpdater.h"
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/vec2f.h>
@@ -29,6 +22,13 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
+
+#include <mayaUsd/fileio/primUpdaterRegistry.h>
+#include <mayaUsd/fileio/translators/translatorMayaReference.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/utils/util.h>
+#include <mayaUsd_Schemas/ALMayaReference.h>
+#include <mayaUsd_Schemas/MayaReference.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

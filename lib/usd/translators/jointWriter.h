@@ -18,9 +18,6 @@
 
 /// \file pxrUsdTranslators/jointWriter.h
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-
 #include <maya/MFnDependencyNode.h>
 
 #include <pxr/pxr.h>
@@ -31,6 +28,9 @@
 #include <pxr/usd/usdSkel/animMapper.h>
 #include <pxr/usd/usdSkel/skeleton.h>
 #include <pxr/usd/usdSkel/topology.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsdUI/ui/views/USDQtUtil.h>
+#include "USDQtUtil.h"
 
 #include <maya/MQtUtil.h>
 

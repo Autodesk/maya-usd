@@ -13,13 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include <mayaUsd_Translators/instancerWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include "instancerWriter.h"
 
 #include <vector>
 
@@ -30,16 +24,22 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MMatrix.h>
 
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/token.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 #include <pxr/usd/usdGeom/xformOp.h>
+
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

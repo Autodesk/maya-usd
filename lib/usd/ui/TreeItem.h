@@ -13,16 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #pragma once
-
-#include <mayaUsdUI/ui/api.h>
-
-#include <mayaUsd/base/api.h>
 
 #include <QtGui/QStandardItem>
 #include <QtGui/QPixmap>
 
 #include <pxr/usd/usd/prim.h>
+
+#include <mayaUsd/mayaUsd.h>
+
+#include <mayaUsdUI/ui/api.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

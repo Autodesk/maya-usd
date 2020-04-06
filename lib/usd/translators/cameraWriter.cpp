@@ -13,13 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd_Translators/cameraWriter.h>
-
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include "cameraWriter.h"
 
 #include <maya/MFnCamera.h>
 #include <maya/MFnDependencyNode.h>
@@ -33,11 +27,16 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_WRITER(camera, PxrUsdTranslators_CameraWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(camera, UsdGeomCamera);
-
 
 PxrUsdTranslators_CameraWriter::PxrUsdTranslators_CameraWriter(
         const MFnDependencyNode& depNodeFn,

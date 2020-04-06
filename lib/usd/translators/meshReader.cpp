@@ -15,8 +15,12 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
-#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <maya/MFnBlendShapeDeformer.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/mesh.h>
+
+#include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorGprim.h>
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
 #include <mayaUsd/fileio/translators/translatorMesh.h>
@@ -25,11 +29,6 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/utils/util.h>
-
-#include <maya/MFnBlendShapeDeformer.h>
-
-#include <pxr/pxr.h>
-#include <pxr/usd/usdGeom/mesh.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

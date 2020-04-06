@@ -16,14 +16,14 @@
 #ifndef PXRUSDTRANSLATORS_STROKE_WRITER_H
 #define PXRUSDTRANSLATORS_STROKE_WRITER_H
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-
 #include <maya/MFnDependencyNode.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

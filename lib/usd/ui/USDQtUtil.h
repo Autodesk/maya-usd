@@ -13,12 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #pragma once
 
-#include <mayaUsdUI/ui/api.h>
-#include <mayaUsdUI/ui/views/IMayaMQtUtil.h>
+#include <mayaUsd/mayaUsd.h>
 
-#include <mayaUsd/base/api.h>
+#include <mayaUsdUI/ui/api.h>
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
 
 MAYAUSD_NS_DEF {
 
