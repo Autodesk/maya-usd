@@ -33,5 +33,5 @@ mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR utils)
 # install
 # -----------------------------------------------------------------------------
 install(FILES ${headers}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/utils/
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/utils/
 )

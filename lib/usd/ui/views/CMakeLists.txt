@@ -1,35 +1,39 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${PROJECT_NAME} 
+target_sources(${PROJECT_NAME}
     PRIVATE
-        hdImagingShape.cpp
-        pointBasedDeformerNode.cpp
-        proxyShapeBase.cpp
-        proxyShapePlugin.cpp
-        stageData.cpp
-        stageNode.cpp
-        usdPrimProvider.cpp
+        TreeItem.cpp
+        ItemDelegate.cpp
+        TreeModel.cpp
+        USDImportDialog.cpp
+        USDQtUtil.cpp
+        USDImportDialog.ui
 )
 
 set(headers
-    hdImagingShape.h
-    pointBasedDeformerNode.h
-    proxyShapeBase.h
-    proxyShapePlugin.h
-    stageData.h
-    stageNode.h
-    usdPrimProvider.h
+    IMayaMQtUtil.h
+    ItemDelegate.h
+    IUSDImportView.h
+    TreeItem.h
+    TreeModel.h
+    USDImportDialog.h
+    USDQtUtil.h
 )
 
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR nodes)
+mayaUsd_promoteHeaderList( 
+    HEADERS
+        ${headers}
+    BASEDIR
+        ${PROJECT_NAME}/ui/views
+)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
 install(FILES ${headers}
-     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/nodes/
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ui/views
 )

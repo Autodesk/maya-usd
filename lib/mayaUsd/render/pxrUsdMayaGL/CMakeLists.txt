@@ -47,5 +47,5 @@ mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/pxrUsdMayaGL)
 # install
 # -----------------------------------------------------------------------------
 install(FILES ${headers}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/render/pxrUsdMayaGL
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/pxrUsdMayaGL
 )

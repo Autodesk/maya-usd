@@ -18,12 +18,22 @@ target_sources(${TARGET_NAME}
         viewCommand.cpp
 )
 
+set(headers
+    defaultLightDelegate.h
+    pluginDebugCodes.h
+    renderGlobals.h
+    renderOverride.h
+    renderOverrideUtils.h
+    tokens.h
+    utils.h
+    viewCommand.h
+)
+
 # -----------------------------------------------------------------------------
 # compile definitions
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME}
     PRIVATE 
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
         # M3dView needs this (technically, MNativeWindowHdl.h)
         # private atm because M3dView is only used in .cpp right now
         # gcc will NOT set this automatically
@@ -33,31 +43,22 @@ target_compile_definitions(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# include directories
-# -----------------------------------------------------------------------------
-target_include_directories(${TARGET_NAME} 
-    PRIVATE 
-        "${CMAKE_CURRENT_SOURCE_DIR}/.."
-        ${MAYA_INCLUDE_DIRS}
-        ${CMAKE_BINARY_DIR}/usd
-        ${CMAKE_BINARY_DIR}/include
-        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
-)
-
-# -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME} 
     PRIVATE 
         hdMaya 
-        usdShade
-        ${MAYA_LIBRARIES}
 )
 
 # -----------------------------------------------------------------------------
 # properties
 # -----------------------------------------------------------------------------
 maya_set_plugin_properties(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# promote headers
+# -----------------------------------------------------------------------------
+mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/mayaToHydra)
 
 # -----------------------------------------------------------------------------
 # run-time search paths

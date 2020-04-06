@@ -25,7 +25,6 @@ target_sources(${PROJECT_NAME}
         UsdUndoDuplicateCommand.cpp
         UsdUndoRenameCommand.cpp
         Utils.cpp
-        private/Utils.cpp
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
@@ -95,8 +94,13 @@ mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR ufe)
 # install
 # -----------------------------------------------------------------------------
 install(FILES ${headers}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/ufe
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ufe
 )
+
+# -----------------------------------------------------------------------------
+# subdirectories
+# -----------------------------------------------------------------------------
+add_subdirectory(private)
 
 # -----------------------------------------------------------------------------
 # target (UFE Python Bindings)
@@ -127,14 +131,6 @@ target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
         MFB_PACKAGE_NAME=${PROJECT_NAME}
         MFB_ALT_PACKAGE_NAME=${PROJECT_NAME}
         MFB_PACKAGE_MODULE=ufe
-)
-
-# -----------------------------------------------------------------------------
-# include directories
-# -----------------------------------------------------------------------------
-target_include_directories(${UFE_PYTHON_TARGET_NAME}
-    PRIVATE
-        ${CMAKE_BINARY_DIR}/include
 )
 
 # -----------------------------------------------------------------------------

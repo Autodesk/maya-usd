@@ -3,33 +3,29 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        hdImagingShape.cpp
-        pointBasedDeformerNode.cpp
-        proxyShapeBase.cpp
-        proxyShapePlugin.cpp
-        stageData.cpp
-        stageNode.cpp
-        usdPrimProvider.cpp
+        chaser.cpp
+        chaserRegistry.cpp
+
 )
 
 set(headers
-    hdImagingShape.h
-    pointBasedDeformerNode.h
-    proxyShapeBase.h
-    proxyShapePlugin.h
-    stageData.h
-    stageNode.h
-    usdPrimProvider.h
+    chaser.h
+    chaserRegistry.h
 )
 
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR nodes)
+mayaUsd_promoteHeaderList(
+    HEADERS 
+        ${headers} 
+    BASEDIR 
+        ${PROJECT_NAME}/fileio/chaser
+)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
 install(FILES ${headers}
-     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/nodes/
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/fileio/chaser
 )

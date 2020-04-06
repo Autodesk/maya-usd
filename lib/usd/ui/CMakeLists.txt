@@ -27,34 +27,8 @@ add_library(${PROJECT_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        cmds/USDImportDialogCmd.cpp
-        factories/TreeModelFactory.cpp
         images/ui.qrc
-        views/ItemDelegate.cpp
-        views/TreeItem.cpp
-        views/TreeModel.cpp
-        views/USDImportDialog.cpp
-        views/USDImportDialog.ui
-        views/USDQtUtil.cpp
 )
-
-# -----------------------------------------------------------------------------
-# promoted headers
-# -----------------------------------------------------------------------------
-set(mayaUsdUI_headers
-    api.h
-    cmds/USDImportDialogCmd.h
-    factories/TreeModelFactory.h
-    views/IMayaMQtUtil.h
-    views/IUSDImportView.h
-    views/ItemDelegate.h
-    views/TreeItem.h
-    views/TreeModel.h
-    views/USDImportDialog.h
-    views/USDQtUtil.h
-)
-
-mayaUsd_promoteHeaderList(SUBDIR "ui" HEADERS ${mayaUsdUI_headers})
 
 # -----------------------------------------------------------------------------
 # compile definitions
@@ -66,25 +40,12 @@ target_compile_definitions(${PROJECT_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# include directories
-# -----------------------------------------------------------------------------
-target_include_directories(${PROJECT_NAME}
-    PRIVATE
-        ${MAYA_INCLUDE_DIRS}
-        ${PXR_INCLUDE_DIRS}
-        ${CMAKE_BINARY_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-# -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        usd
+    PUBLIC
         mayaUsd
-        ${MAYA_OpenMaya_LIBRARY}
-        ${MAYA_OpenMayaUI_LIBRARY}
+    PRIVATE
         Qt5::Core
         Qt5::Gui
         Qt5::Widgets
@@ -111,6 +72,19 @@ if(IS_MACOSX OR IS_LINUX)
 endif()
 
 # -----------------------------------------------------------------------------
+# promoted headers
+# -----------------------------------------------------------------------------
+set(headers
+    api.h
+)
+
+mayaUsd_promoteHeaderList( 
+    HEADERS
+        ${headers}
+    BASEDIR
+        ${PROJECT_NAME}/ui
+)
+# -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
 install(
@@ -128,8 +102,8 @@ if(IS_WINDOWS)
     )
 endif()
 
-install(FILES ${mayaUsdUI_headers}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/ui
+install(FILES ${headers}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ui
 )
 
 # -----------------------------------------------------------------------------
@@ -139,3 +113,10 @@ if (BUILD_TESTS)
     # A simple executable used to test the import dialog.
     add_subdirectory(demo)
 endif()
+
+# -----------------------------------------------------------------------------
+# subdirectories
+# -----------------------------------------------------------------------------
+add_subdirectory(cmds)
+add_subdirectory(factories)
+add_subdirectory(views)

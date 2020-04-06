@@ -46,6 +46,41 @@ target_sources(${TARGET_NAME}
         xformReader.cpp
 )
 
+set(headers
+    cameraReader.h
+    cameraWriter.h
+    fileTextureWriter.h
+    instancerWriter.h
+    jointWriter.h
+    lightReader.h
+    lightWriter.h
+    locatorWriter.h
+    materialReader.h
+    mayaReferenceReader.h
+    mayaReferenceUpdater.h
+    meshReader.h
+    meshWriter.h
+    meshWriter_Primvars.h
+    meshWriter_Skin.h
+    meshWriter_Subdiv.h
+    nurbsCurveWriter.h
+    nurbsCurvesReader.h
+    nurbsPatchReader.h
+    nurbsSurfaceWriter.h
+    particleWriter.h
+    scopeReader.h
+    strokeWriter.h
+    skelReader.h
+    xformReader.h
+)
+
+# -----------------------------------------------------------------------------
+# promoted headers
+# -----------------------------------------------------------------------------
+mayaUsd_promoteHeaderList(HEADERS ${headers}
+                          BASEDIR ${TARGET_NAME}
+)
+
 # -----------------------------------------------------------------------------
 # compile definitions
 # -----------------------------------------------------------------------------
@@ -58,7 +93,7 @@ target_compile_definitions(${TARGET_NAME}
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
-    PUBLIC
+    PRIVATE
         ${MAYA_INCLUDE_DIRS}
         ${CMAKE_BINARY_DIR}
 )
