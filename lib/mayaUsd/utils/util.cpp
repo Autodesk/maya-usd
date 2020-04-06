@@ -71,7 +71,7 @@
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/metrics.h>
 
-#include "colorSpace.h"
+#include <mayaUsd/utils/colorSpace.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

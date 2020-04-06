@@ -18,21 +18,22 @@
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/log.h>
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#define UFE_ENABLE_ASSERTS
-#include <ufe/ufeAssert.h>
-#else
-#include <cassert>
-#endif
 
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/base/tf/token.h>
 
+#include <mayaUsd/ufe/Utils.h>
+
 #include "private/InPathChange.h"
 
-#include <mayaUsd/ufe/Utils.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#define UFE_ENABLE_ASSERTS
+#include <ufe/ufeAssert.h>
+#else
+#include <cassert>
+#endif
 
 MAYAUSD_NS_DEF {
 namespace ufe {

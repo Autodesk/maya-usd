@@ -17,6 +17,10 @@
 
 #include <maya/MGlobal.h>
 
+#include <pxr/imaging/glf/contextCaps.h>
+
+#include "tokens.h"
+
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
@@ -27,10 +31,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 using HdRendererPluginRegistry = HdxRendererPluginRegistry;
 PXR_NAMESPACE_CLOSE_SCOPE
 #endif
-
-#include <pxr/imaging/glf/contextCaps.h>
-
-#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

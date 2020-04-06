@@ -19,9 +19,9 @@
 #include <ufe/sceneNotification.h>
 #include <ufe/log.h>
 
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <mayaUsd/ufe/Utils.h>
 

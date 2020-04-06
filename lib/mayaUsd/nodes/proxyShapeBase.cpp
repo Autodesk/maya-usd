@@ -74,16 +74,16 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/stageCache.h>
 
-#if defined(WANT_UFE_BUILD)
-#include <ufe/path.h>
-#endif
-
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/utilFileSystem.h>
+
+#if defined(WANT_UFE_BUILD)
+#include <ufe/path.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 

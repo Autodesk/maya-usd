@@ -42,10 +42,10 @@
 #include "tokens.h"
 
 #if defined(WANT_UFE_BUILD)
-#include <ufe/sceneItem.h>
-#include <ufe/runTimeMgr.h>
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
+#include <ufe/runTimeMgr.h>
+#include <ufe/sceneItem.h>
 #include <ufe/selectionNotification.h>
 #endif
 

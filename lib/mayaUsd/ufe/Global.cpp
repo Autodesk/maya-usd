@@ -21,24 +21,25 @@
 #include <ufe/hierarchyHandler.h>
 #include <ufe/runTimeMgr.h>
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
-// Note: must come after include of ufe files so we have the define.
-#include "UsdAttributesHandler.h"
-#include "UsdObject3dHandler.h"
-#if UFE_PREVIEW_VERSION_NUM >= 2009
-#include "UsdContextOpsHandler.h"
-#endif
-#else
-#include "UfeVersionCompat.h"
-#endif
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
+#include <mayaUsd/ufe/StagesSubject.h>
+#include <mayaUsd/ufe/UsdHierarchyHandler.h>
+#include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
+#include <mayaUsd/ufe/UsdTransform3dHandler.h>
 
 #include "private/InPathChange.h"
-#include "ProxyShapeHandler.h"
-#include "ProxyShapeHierarchyHandler.h"
-#include "StagesSubject.h"
-#include "UsdHierarchyHandler.h"
-#include "UsdSceneItemOpsHandler.h"
-#include "UsdTransform3dHandler.h"
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+// Note: must come after include of ufe files so we have the define.
+#include <mayaUsd/ufe/UsdAttributesHandler.h>
+#include <mayaUsd/ufe/UsdObject3dHandler.h>
+#if UFE_PREVIEW_VERSION_NUM >= 2009
+#include <mayaUsd/ufe/UsdContextOpsHandler.h>
+#endif
+#else
+#include <mayaUsd/ufe/UfeVersionCompat.h>
+#endif
 
 namespace {
 	int gRegistrationCount = 0;
