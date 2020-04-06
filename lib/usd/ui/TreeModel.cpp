@@ -13,16 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "TreeModel.h"
-#include "TreeItem.h"
-#include "ItemDelegate.h"
-#include "IMayaMQtUtil.h"
+
+#include <functional>
 
 #include <QtWidgets/QTreeView>
 #include <QtCore/QSortFilterProxyModel>
 
-#include <functional>
+#include <mayaUsdUI/ui/TreeItem.h>
+#include <mayaUsdUI/ui/ItemDelegate.h>
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
 
 MAYAUSD_NS_DEF {
 

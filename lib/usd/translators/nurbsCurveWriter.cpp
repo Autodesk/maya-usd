@@ -13,31 +13,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "nurbsCurveWriter.h"
 
-#include "../../fileio/utils/adaptor.h"
-#include "../../fileio/primWriter.h"
-#include "../../fileio/primWriterRegistry.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/gf/vec2d.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/curves.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+#include <numeric>
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnNurbsCurve.h>
 #include <maya/MPointArray.h>
 
-#include <numeric>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec2d.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/curves.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PXRUSDMAYA_REGISTER_WRITER(nurbsCurve, PxrUsdTranslators_NurbsCurveWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsCurve, UsdGeomNurbsCurves);

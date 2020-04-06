@@ -13,16 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #pragma once
 
-#include <mayaUsd/ui/api.h>
-
-#include <QtWidgets/QStyledItemDelegate>
 #include <QtCore/QList>
 #include <QtCore/QStringList>
+#include <QtWidgets/QStyledItemDelegate>
 
-#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usd/prim.h>
+
+#include <mayaUsd/mayaUsd.h>
+
+#include <mayaUsdUI/ui/api.h>
 
 class QLabel;
 class QComboBox;

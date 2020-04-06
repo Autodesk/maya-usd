@@ -13,18 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "TreeModelFactory.h"
 
 #include <cctype>
-#include <type_traits>
 #include <memory>
-
-#include "TreeModelFactory.h"
-#include "views/TreeItem.h"
-#include "views/TreeModel.h"
-#include "views/IMayaMQtUtil.h"
+#include <type_traits>
 
 #include <QtCore/QObject>
 #include <QtGui/QStandardItemModel>
+
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
+#include <mayaUsdUI/ui/TreeItem.h>
+#include <mayaUsdUI/ui/TreeModel.h>
 
 MAYAUSD_NS_DEF {
 

@@ -18,19 +18,17 @@
 
 /// \file pxrUsdTranslators/fileTextureWriter.h
 
-#include "pxr/pxr.h"
-#include "../../fileio/shaderWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Shader writer for exporting Maya's "file" texture shading node to USD.
 class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter

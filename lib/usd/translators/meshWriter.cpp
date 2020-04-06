@@ -13,29 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "meshWriter.h"
 
-#include "../../fileio/utils/adaptor.h"
-#include "../../fileio/utils/meshUtil.h"
-#include "../../fileio/primWriter.h"
-#include "../../fileio/primWriterRegistry.h"
-#include "../../utils/util.h"
-#include "../../fileio/utils/writeUtil.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdf/types.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/pointBased.h"
-#include "pxr/usd/usdGeom/primvar.h"
-#include "pxr/usd/usdUtils/pipeline.h"
+#include <set>
+#include <string>
+#include <vector>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
@@ -46,17 +28,32 @@
 #include <maya/MStringArray.h>
 #include <maya/MUintArray.h>
 
-#include <set>
-#include <string>
-#include <vector>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/pointBased.h>
+#include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/meshUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 PXRUSDMAYA_REGISTER_WRITER(mesh, PxrUsdTranslators_MeshWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mesh, UsdGeomMesh);
-
 
 namespace {
 

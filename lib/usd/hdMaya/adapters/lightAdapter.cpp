@@ -15,24 +15,23 @@
 //
 #include "lightAdapter.h"
 
+#include <iostream>
+
+#include <maya/MColor.h>
+#include <maya/MFnLight.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
+#include <maya/MPoint.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
 
-#include <maya/MColor.h>
-#include <maya/MFnLight.h>
-#include <maya/MPlug.h>
-#include <maya/MPlugArray.h>
-#include <maya/MPoint.h>
-
-#include <maya/MNodeMessage.h>
-
-#include "adapterDebugCodes.h"
-#include "constantShadowMatrix.h"
-#include "mayaAttrs.h"
-
-#include <iostream>
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/constantShadowMatrix.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,24 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "ItemDelegate.h"
-#include "TreeModel.h"
-#include "TreeItem.h"
 
-#include <QtWidgets/QComboBox>
-#include <QtWidgets/QLabel>
-#include <QtGui/QPainter>
-#include <QtWidgets/QVBoxLayout>
-#include <QtWidgets/QHBoxLayout>
+#include <cassert>
+
 #include <QtCore/QSortFilterProxyModel>
-
-#include <mayaUsd/fileio/importData.h>
+#include <QtGui/QPainter>
+#include <QtWidgets/QComboBox>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QVBoxLayout>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/variantSets.h>
 
-#include <cassert>
+#include <mayaUsd/fileio/importData.h>
+
+#include <mayaUsdUI/ui/TreeItem.h>
+#include <mayaUsdUI/ui/TreeModel.h>
 
 MAYAUSD_NS_DEF {
 

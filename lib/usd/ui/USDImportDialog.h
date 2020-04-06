@@ -13,9 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
 
-#include <mayaUsd/ui/api.h>
+#pragma once
 
 #include <memory>
 
@@ -24,8 +23,11 @@
 
 #include <pxr/usd/usd/stage.h>
 
-#include "IUSDImportView.h"
-#include "TreeModel.h"
+#include <mayaUsd/mayaUsd.h>
+
+#include <mayaUsdUI/ui/api.h>
+#include <mayaUsdUI/ui/IUSDImportView.h>
+#include <mayaUsdUI/ui/TreeModel.h>
 
 namespace Ui {
 	class ImportDialog;

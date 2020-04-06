@@ -13,17 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #pragma once
-
-#include "TreeItem.h"
-
-#include <mayaUsd/ui/api.h>
 
 #include <QtGui/QStandardItemModel>
 
-#include <mayaUsd/fileio/importData.h>
-
 #include <pxr/usd/usd/stagePopulationMask.h>
+
+#include <mayaUsd/fileio/importData.h>
+#include <mayaUsd/mayaUsd.h>
+
+#include <mayaUsdUI/ui/api.h>
+#include <mayaUsdUI/ui/TreeItem.h>
 
 class QTreeView;
 

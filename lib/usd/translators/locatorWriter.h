@@ -18,18 +18,15 @@
 
 /// \file pxrUsdTranslators/locatorWriter.h
 
-#include "pxr/pxr.h"
-
-#include "../../fileio/primWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
-
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// A simple USD prim writer for Maya locator shape nodes.
 ///

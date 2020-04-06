@@ -27,6 +27,15 @@ add_library(${PROJECT_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        ItemDelegate.cpp
+        TreeItem.cpp
+        TreeModel.cpp
+        TreeModelFactory.cpp
+        USDImportDialog.cpp
+        USDImportDialogCmd.cpp
+        USDQtUtil.cpp
+
+        USDImportDialog.ui
         images/ui.qrc
 )
 
@@ -76,6 +85,15 @@ endif()
 # -----------------------------------------------------------------------------
 set(headers
     api.h
+    IMayaMQtUtil.h
+    ItemDelegate.h
+    IUSDImportView.h
+    TreeItem.h
+    TreeModel.h
+    TreeModelFactory.h
+    USDImportDialog.h
+    USDImportDialogCmd.h
+    USDQtUtil.h
 )
 
 mayaUsd_promoteHeaderList( 
@@ -84,6 +102,7 @@ mayaUsd_promoteHeaderList(
     BASEDIR
         ${PROJECT_NAME}/ui
 )
+
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
@@ -113,10 +132,3 @@ if (BUILD_TESTS)
     # A simple executable used to test the import dialog.
     add_subdirectory(demo)
 endif()
-
-# -----------------------------------------------------------------------------
-# subdirectories
-# -----------------------------------------------------------------------------
-add_subdirectory(cmds)
-add_subdirectory(factories)
-add_subdirectory(views)
