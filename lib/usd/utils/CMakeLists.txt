@@ -140,8 +140,6 @@ set_target_properties(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}
 )
 
-add_subdirectory(tests)
-
 #install python init files
 foreach(INPUT_FILE ${PY_INIT_FILES})
   string(REPLACE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_INSTALL_PREFIX}/lib/python/${TARGET_NAME} OUTPUT_FILE ${INPUT_FILE})

@@ -291,22 +291,35 @@ bool MayaTransformAPI::_initializeMayaTransformProfile(const std::vector<UsdGeom
 MayaTransformAPI::MayaTransformAPI(UsdPrim prim, bool convertMatrixOpToComponentOps)
   : m_prim()
 {
-  bool reset = false;
-  std::vector<UsdGeomXformOp> ops = UsdGeomXformable(prim).GetOrderedXformOps(&reset);
-  if(initializeMayaTransformProfile(ops))
+  if(prim)
   {
-    // only assign if we can process the data
-    m_prim = prim;
-  }
-
-  // if the prim is not valid, check to see if we have a transform Op.
-  if(convertMatrixOpToComponentOps && !m_prim)
-  {
-    if(ops.size() == 1 && ops[0].GetOpType() == UsdGeomXformOp::TypeTransform)
+    bool reset = false;
+    std::vector<UsdGeomXformOp> ops = UsdGeomXformable(prim).GetOrderedXformOps(&reset);
+    if(initializeMayaTransformProfile(ops))
     {
+      // only assign if we can process the data
       m_prim = prim;
-      this->convertMatrixOpToComponentOps(ops[0]);
     }
+    else
+    {
+      TF_WARN("Prim at path '%s' does not match maya of common transform APIs. "
+              "This transform will be read only",
+              prim.GetPath().GetText());
+    }
+
+    // if the prim is not valid, check to see if we have a transform Op.
+    if(convertMatrixOpToComponentOps && !m_prim)
+    {
+      if(ops.size() == 1 && ops[0].GetOpType() == UsdGeomXformOp::TypeTransform)
+      {
+        m_prim = prim;
+        this->convertMatrixOpToComponentOps(ops[0]);
+      }
+    }
+  }
+  else
+  {
+    throw std::runtime_error("Invalid prim passed to MayaTransformAPI constructor");
   }
 }
 
@@ -1039,7 +1052,6 @@ GfVec3d MayaTransformAPI::_extractTranslateFromMatrix(const UsdTimeCode time) co
   }
   return GfVec3d(0.0);
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 } // MayaUsdUtils

@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include <fstream>
-#include "../MayaTransformAPI.h"
+#include "mayaUsdUtils/MayaTransformAPI.h"
 #include <pxr/usd/usdGeom/xform.h>
 
 const char* const fullXformDef = 
@@ -565,7 +565,7 @@ TEST(MayaTransformAPI, rotate)
 const char* getDataPath(const char* const str)
 {
   static char buffer[512];
-  sprintf(buffer, "%s/%s.usda", AL_EXTRAS_TEST_DATA, str);
+  sprintf(buffer, "%s/%s.usda", USDUTILS_TEST_DATA, str);
   return buffer;
 }
 
