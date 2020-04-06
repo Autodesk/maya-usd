@@ -1,5 +1,5 @@
 mayaUsd_add_test(TestAdditionalTranslators
     PYTHON_MODULE testTranslators
     ENV
-        "PXR_PLUGINPATH_NAME=$ENV{PXR_PLUGINPATH_NAME}"
+        "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
 )
