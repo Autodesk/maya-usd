@@ -13,11 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "bboxGeom.h"
 
-#include "pxr/base/arch/threads.h"
-#include "pxr/base/tf/diagnostic.h"
+#include <pxr/base/arch/threads.h>
+#include <pxr/base/tf/diagnostic.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

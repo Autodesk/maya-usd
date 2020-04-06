@@ -15,16 +15,14 @@
 //
 // Some header #define's Bool as int, which breaks stuff in sdf/types.h.
 // Include it first to sidestep the problem. :-/
-#include "pxr/pxr.h"
-#include "pxr/usd/sdf/types.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/types.h>
 
 // Make sure to include glew first before any header that might include
 // gl.h
-#include "pxr/imaging/glf/glew.h"
+#include <pxr/imaging/glf/glew.h>
 
-#include "./hdRenderer.h"
-#include "../px_vp20/utils.h"
-#include "../px_vp20/utils_legacy.h"
+#include <memory>
 
 #include <maya/M3dView.h>
 #include <maya/MColor.h>
@@ -39,11 +37,11 @@
 #include <maya/MStateManager.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <memory>
-
+#include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/render/px_vp20/utils_legacy.h>
+#include <mayaUsd/render/pxrUsdMayaGL/hdRenderer.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 void
 UsdMayaGLHdRenderer::CheckRendererSetup(

@@ -13,45 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "writeJob.h"
 
-#include "jobArgs.h"
-#include "modelKindProcessor.h"
-#include "../primWriter.h"
-#include "../primWriterRegistry.h"
-#include "../shading/shadingModeExporterContext.h"
-#include "../transformWriter.h"
-#include "../translators/translatorMaterial.h"
-#include "../../utils/util.h"
-
-#include "../chaser/chaser.h"
-#include "../chaser/chaserRegistry.h"
-
-#include "pxr/base/tf/fileUtils.h"
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/hashset.h"
-#include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/tf/stl.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/kind/registry.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/primSpec.h"
-// Needed for directly removing a UsdVariant via Sdf
-//   Remove when UsdVariantSet::RemoveVariant() is exposed
-//   XXX [bug 75864]
-#include "pxr/usd/sdf/variantSetSpec.h"
-#include "pxr/usd/sdf/variantSpec.h"
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usd/editContext.h"
-#include "pxr/usd/usd/primRange.h"
-#include "pxr/usd/usd/usdcFileFormat.h"
-#include "pxr/usd/usdGeom/metrics.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdUtils/pipeline.h"
-#include "pxr/usd/usdUtils/dependencies.h"
+#include <limits>
+#include <map>
+#include <unordered_set>
 
 #include <maya/MAnimControl.h>
 #include <maya/MComputation.h>
@@ -65,19 +31,50 @@
 #include <maya/MStatus.h>
 #include <maya/MUuid.h>
 
-#include <limits>
-#include <map>
-#include <unordered_set>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/fileUtils.h>
+#include <pxr/base/tf/hash.h>
+#include <pxr/base/tf/hashset.h>
+#include <pxr/base/tf/pathUtils.h>
+#include <pxr/base/tf/stl.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/primSpec.h>
+// Needed for directly removing a UsdVariant via Sdf
+//   Remove when UsdVariantSet::RemoveVariant() is exposed
+//   XXX [bug 75864]
+#include <pxr/usd/sdf/variantSetSpec.h>
+#include <pxr/usd/sdf/variantSpec.h>
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/usdcFileFormat.h>
+#include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdUtils/pipeline.h>
+#include <pxr/usd/usdUtils/dependencies.h>
+
+#include <mayaUsd/fileio/chaser/chaser.h>
+#include <mayaUsd/fileio/chaser/chaserRegistry.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/jobs/modelKindProcessor.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 UsdMaya_WriteJob::UsdMaya_WriteJob(const UsdMayaJobExportArgs& iArgs)
     : mJobCtx(iArgs),
       _modelKindProcessor(new UsdMaya_ModelKindProcessor(iArgs))
 {
 }
-
 
 UsdMaya_WriteJob::~UsdMaya_WriteJob()
 {

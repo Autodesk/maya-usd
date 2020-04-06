@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "UsdSceneItemOps.h"
-#include "UsdUndoDeleteCommand.h"
-#include "UsdUndoDuplicateCommand.h"
-#include "UsdUndoRenameCommand.h"
-#include "Utils.h"
+
+#include <mayaUsd/ufe/UsdUndoDeleteCommand.h>
+#include <mayaUsd/ufe/UsdUndoDuplicateCommand.h>
+#include <mayaUsd/ufe/UsdUndoRenameCommand.h>
+#include <mayaUsd/ufe/Utils.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

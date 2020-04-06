@@ -13,26 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include "pxr/imaging/glf/glew.h" // This header must absolutely come first.
-
-#include "./batchRenderer.h"
-
-#include "../../nodes/proxyShapeBase.h"
-
-#include "pxr/base/gf/rotation.h"
-#include "pxr/base/gf/frustum.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/range1d.h"
-#include "pxr/base/gf/ray.h"
-#include "pxr/base/gf/vec3d.h"
-
-#include "pxr/base/tf/registryManager.h"
-
-#include "pxr/imaging/glf/drawTarget.h"
-#include "pxr/imaging/glf/glContext.h"
+#include <pxr/imaging/glf/glew.h> // This header must absolutely come first.
 
 #include <maya/MFnDagNode.h>
+
+#include <pxr/base/gf/frustum.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/range1d.h>
+#include <pxr/base/gf/ray.h>
+#include <pxr/base/gf/rotation.h>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/imaging/glf/drawTarget.h>
+#include <pxr/imaging/glf/glContext.h>
+
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

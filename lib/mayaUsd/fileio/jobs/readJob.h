@@ -16,23 +16,20 @@
 #ifndef PXRUSDMAYA_READ_JOB_H
 #define PXRUSDMAYA_READ_JOB_H
 
-/// \file usdMaya/readJob.h
-
-#include "jobArgs.h"
-#include "../primReaderContext.h"
-#include "../importData.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/primRange.h"
+#include <map>
+#include <string>
+#include <vector>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>
 
-#include <map>
-#include <string>
-#include <vector>
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/primRange.h>
+
+#include <mayaUsd/fileio/importData.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

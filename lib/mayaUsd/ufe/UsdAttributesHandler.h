@@ -15,11 +15,10 @@
 //
 #pragma once
 
-#include "../base/api.h"
-
-#include "UsdAttributes.h"
-
 #include <ufe/attributesHandler.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdAttributes.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

@@ -13,12 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "StagesSubject.h"
-#include "Utils.h"
-#include "UsdStageMap.h"
-#include "ProxyShapeHandler.h"
-#include "private/InPathChange.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/attributes.h>
@@ -33,7 +28,10 @@
 #if UFE_PREVIEW_VERSION_NUM >= 2010
 #include <ufe/object3dNotification.h>
 #endif
+#include <unordered_map>
 #endif
+
+#include <vector>
 
 #include <maya/MSceneMessage.h>
 #include <maya/MMessage.h>
@@ -41,11 +39,13 @@
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
 
-#include <vector>
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
+#include <mayaUsd/ufe/Utils.h>
+
+#include "private/InPathChange.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <unordered_map>
-
 namespace {
 
 // The attribute change notification guard is not meant to be nested, but

@@ -13,18 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "Global.h"
-#include "ProxyShapeHandler.h"
-#include "StagesSubject.h"
-#include "private/InPathChange.h"
-#include "UsdHierarchyHandler.h"
-#include "UsdTransform3dHandler.h"
-#include "UsdSceneItemOpsHandler.h"
 
-#include <ufe/runTimeMgr.h>
+#include <string>
+#include <cassert>
+
 #include <ufe/hierarchyHandler.h>
-#include <ufe/ProxyShapeHierarchyHandler.h>
+#include <ufe/runTimeMgr.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // Note: must come after include of ufe files so we have the define.
@@ -37,8 +32,13 @@
 #include "UfeVersionCompat.h"
 #endif
 
-#include <string>
-#include <cassert>
+#include "private/InPathChange.h"
+#include "ProxyShapeHandler.h"
+#include "ProxyShapeHierarchyHandler.h"
+#include "StagesSubject.h"
+#include "UsdHierarchyHandler.h"
+#include "UsdSceneItemOpsHandler.h"
+#include "UsdTransform3dHandler.h"
 
 namespace {
 	int gRegistrationCount = 0;

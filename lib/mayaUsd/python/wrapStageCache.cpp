@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include <mayaUsd/utils/stageCache.h>
-
 #include <boost/python/args.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python.hpp>
 
-#include "pxr/base/tf/pyResultConversions.h"
+#include <pxr/pxr.h>
+#include <pxr/base/tf/pyResultConversions.h>
+
+#include <mayaUsd/utils/stageCache.h>
 
 using namespace std;
 using namespace boost::python;

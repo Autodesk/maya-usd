@@ -14,27 +14,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "basisCurves.h"
-#include "bboxGeom.h"
-#include "debugCodes.h"
-#include "draw_item.h"
-#include "material.h"
-#include "instancer.h"
-#include "render_delegate.h"
-#include "tokens.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/vt/value.h"
-
-#include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/tokens.h"
 
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
+
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/matrix4f.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/imaging/hd/repr.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/imaging/hd/tokens.h>
+
+#include "bboxGeom.h"
+#include "debugCodes.h"
+#include "draw_item.h"
+#include "instancer.h"
+#include "material.h"
+#include "render_delegate.h"
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

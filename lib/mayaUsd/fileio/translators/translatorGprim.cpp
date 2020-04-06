@@ -15,12 +15,11 @@
 //
 #include "translatorGprim.h"
 
-#include "../../utils/util.h"
-
 #include <maya/MFnDagNode.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <mayaUsd/utils/util.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 void
 UsdMayaTranslatorGprim::Read(

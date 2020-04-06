@@ -18,15 +18,13 @@
 #ifndef HD_VP2_INSTANCER
 #define HD_VP2_INSTANCER
 
-#include "pxr/pxr.h"
-
-#include "pxr/imaging/hd/instancer.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
-
-#include "pxr/base/tf/hashmap.h"
-#include "pxr/base/tf/token.h"
-
 #include <mutex>
+
+#include <pxr/pxr.h>
+#include <pxr/base/tf/hashmap.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/instancer.h>
+#include <pxr/imaging/hd/vtBufferSource.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

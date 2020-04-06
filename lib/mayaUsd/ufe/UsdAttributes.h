@@ -15,16 +15,15 @@
 //
 #pragma once
 
-#include "../base/api.h"
-
-#include "UsdSceneItem.h"
-#include "UsdAttribute.h"
+#include <unordered_map>
 
 #include <ufe/attributes.h>
 
 #include <pxr/usd/usd/prim.h>
 
-#include <unordered_map>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/UsdAttribute.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

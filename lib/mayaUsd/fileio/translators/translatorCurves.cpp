@@ -15,11 +15,6 @@
 //
 #include "translatorCurves.h"
 
-#include "translatorUtil.h"
-
-#include "pxr/usd/usdGeom/basisCurves.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
-
 #include <maya/MDoubleArray.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnBlendShapeDeformer.h>
@@ -31,9 +26,12 @@
 #include <maya/MTime.h>
 #include <maya/MTimeArray.h>
 
+#include <pxr/usd/usdGeom/basisCurves.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
+
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
-
-
 
 /* static */
 bool

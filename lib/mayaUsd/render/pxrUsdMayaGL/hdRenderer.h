@@ -18,14 +18,8 @@
 
 /// \file pxrUsdMayaGL/hdRenderer.h
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
+#include <memory>
+#include <vector>
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -36,12 +30,16 @@
 #include <maya/MFrameContext.h>
 #include <maya/MSelectInfo.h>
 
-#include <memory>
-#include <vector>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usdImaging/usdImagingGL/engine.h>
 
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Simple implementation of a Hydra renderer for a Maya shape.
 ///

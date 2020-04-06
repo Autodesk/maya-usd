@@ -15,7 +15,7 @@
 //
 #include "proxyShapeNotice.h"
 
-#include "pxr/base/tf/instantiateType.h"
+#include <pxr/base/tf/instantiateType.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

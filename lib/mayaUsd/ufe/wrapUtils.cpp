@@ -13,17 +13,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include <boost/python.hpp>
-
-#include "UsdSceneItem.h"
-#include "Utils.h"
-#include "Global.h"
 
 #include <ufe/runTimeMgr.h>
 #include <ufe/rtid.h>
 
 #include <pxr/base/tf/stringUtils.h>
+
+#include "Global.h"
+#include "UsdSceneItem.h"
+#include "Utils.h"
 
 using namespace MayaUsd;
 using namespace boost::python;

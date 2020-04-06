@@ -19,10 +19,10 @@
 #include <maya/MGlobal.h>
 #include <maya/MSyntax.h>
 
-#include "../../usd/hdMaya/delegates/delegateRegistry.h"
-#include "renderOverride.h"
+#include <hdMaya/delegates/delegateRegistry.h>
 
 #include "renderGlobals.h"
+#include "renderOverride.h"
 #include "renderOverride.h"
 #include "utils.h"
 

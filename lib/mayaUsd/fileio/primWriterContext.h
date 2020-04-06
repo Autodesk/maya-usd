@@ -16,17 +16,13 @@
 #ifndef PXRUSDMAYA_PRIMWRITERCONTEXT_H
 #define PXRUSDMAYA_PRIMWRITERCONTEXT_H
 
-/// \file usdMaya/primWriterContext.h
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
 
-#include "../base/api.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class UsdMayaPrimReaderContext
 /// \brief This class provides an interface for writer plugins to communicate

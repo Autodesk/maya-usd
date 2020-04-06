@@ -13,15 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "UsdHierarchy.h"
-#include "UsdUndoCreateGroupCommand.h"
-#include "private/Utils.h"
-#include "Utils.h"
-#include "private/InPathChange.h"
 
-#include <ufe/sceneNotification.h>
+#include <cassert>
+#include <stdexcept>
+
 #include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
@@ -30,8 +28,11 @@
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/base/tf/stringUtils.h>
 
-#include <cassert>
-#include <stdexcept>
+#include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
+#include <mayaUsd/ufe/Utils.h>
+
+#include "private/InPathChange.h"
+#include "private/Utils.h"
 
 namespace {
 	UsdPrimSiblingRange filteredChildren( const UsdPrim& prim )

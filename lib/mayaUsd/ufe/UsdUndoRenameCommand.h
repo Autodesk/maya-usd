@@ -15,16 +15,15 @@
 //
 #pragma once
 
-#include "../base/api.h"
-
-#include "UsdSceneItem.h"
-
 #include <ufe/path.h>
 #include <ufe/pathComponent.h>
 #include <ufe/undoableCommand.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

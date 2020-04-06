@@ -18,21 +18,7 @@ target_sources(${PROJECT_NAME}
 )
 
 set(headers
-    basisCurves.h
-    bboxGeom.h
-    debugCodes.h
-    draw_item.h
-    instancer.h
-    material.h
-    mesh.h
     proxyRenderDelegate.h
-    render_delegate.h
-    render_param.h
-    render_pass.h
-    resource_registry.h
-    sampler.h
-    task_commit.h
-    tokens.h
 )
 
 # -----------------------------------------------------------------------------
@@ -43,6 +29,6 @@ mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/vp2RenderDelegate)
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES proxyRenderDelegate.h
+install(FILES ${headers}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/vp2RenderDelegate
 )

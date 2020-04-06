@@ -13,28 +13,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "instancedNodeWriter.h"
-
-#include "primWriter.h"
-#include "../utils/util.h"
-#include "writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/references.h"
-#include "pxr/usd/usd/timeCode.h"
-
-#include <maya/MDagPath.h>
-#include <maya/MDagPathArray.h>
-
-#include <maya/MFnDependencyNode.h>
 
 #include <string>
 #include <vector>
 
+#include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
+#include <maya/MFnDependencyNode.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/references.h>
+#include <pxr/usd/usd/timeCode.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Assuming that \p instance1 and \p instance2 are instances of one another,
 /// replaces the prefix \p instance1 in \p dagPath with \p instance2.

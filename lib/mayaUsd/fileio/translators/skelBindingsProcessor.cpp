@@ -15,12 +15,12 @@
 //
 #include "skelBindingsProcessor.h"
 
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdSkel/bindingAPI.h"
-#include "pxr/usd/usdSkel/root.h"
-#include "pxr/usd/usdUtils/authoring.h"
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdSkel/bindingAPI.h>
+#include <pxr/usd/usdSkel/root.h>
+#include <pxr/usd/usdUtils/authoring.h>
 
-#include "translatorUtil.h"
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -13,9 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "UsdContextOps.h"
-#include "Utils.h"
+
+#include <cassert>
+
+#include <maya/MGlobal.h>
 
 #include <ufe/attributes.h>
 #include <ufe/attribute.h>
@@ -24,9 +26,7 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include <maya/MGlobal.h>
-
-#include <cassert>
+#include <mayaUsd/ufe/Utils.h>
 
 namespace {
 

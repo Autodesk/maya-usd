@@ -15,14 +15,6 @@
 //
 #include "translatorNurbsPatch.h"
 
-#include "../primReaderArgs.h"
-#include "../primReaderContext.h"
-#include "translatorGprim.h"
-#include "translatorMaterial.h"
-#include "translatorUtil.h"
-
-#include "pxr/usd/usdGeom/nurbsPatch.h"
-
 #include <maya/MDoubleArray.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnBlendShapeDeformer.h>
@@ -38,9 +30,15 @@
 #include <maya/MTimeArray.h>
 #include <maya/MTrimBoundaryArray.h>
 
+#include <pxr/usd/usdGeom/nurbsPatch.h>
+
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/translators/translatorGprim.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
-
-
 
 /* static */
 bool 

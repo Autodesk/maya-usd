@@ -15,23 +15,23 @@
 //
 #include "proxyShapePlugin.h"
 
-#include "../render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h"
-#include "../render/pxrUsdMayaGL/hdImagingShapeUI.h"
-#include "../render/pxrUsdMayaGL/proxyDrawOverride.h"
-#include "../render/pxrUsdMayaGL/proxyShapeUI.h"
-#include "../render/vp2RenderDelegate/proxyRenderDelegate.h"
-#include "../render/vp2ShaderFragments/shaderFragments.h"
-
-#include "stageData.h"
-#include "hdImagingShape.h"
-#include "proxyShapeBase.h"
-
-#include "pxr/base/tf/envSetting.h"
+#include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h>
+#include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeUI.h>
+#include <mayaUsd/render/pxrUsdMayaGL/proxyDrawOverride.h>
+#include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
 #include <maya/MStatus.h>
 #include <maya/MGlobal.h>
 #include <maya/MFnPlugin.h>
 #include <maya/MDrawRegistry.h>
+
+#include <pxr/base/tf/envSetting.h>
+
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/stageData.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

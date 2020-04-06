@@ -15,9 +15,8 @@
 //
 #include "renderGlobals.h"
 
-#include <pxr/imaging/hd/renderDelegate.h>
-#include <pxr/imaging/hd/rendererPlugin.h>
-#include <pxr/imaging/hd/rendererPluginRegistry.h>
+#include <functional>
+#include <sstream>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -28,10 +27,11 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
-#include "utils.h"
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
+#include <pxr/imaging/hd/rendererPluginRegistry.h>
 
-#include <functional>
-#include <sstream>
+#include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -15,23 +15,22 @@
 //
 #include "registryHelper.h"
 
-#include "base/debugCodes.h"
-
-#include "pxr/base/js/converter.h"
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
-#include "pxr/base/tf/scriptModuleLoader.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stl.h"
-#include "pxr/base/tf/stringUtils.h"
-
-#include <maya/MGlobal.h>
-
 #include <map>
 #include <vector>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <maya/MGlobal.h>
 
+#include <pxr/base/js/converter.h>
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/scriptModuleLoader.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stl.h>
+#include <pxr/base/tf/stringUtils.h>
+
+#include <mayaUsd/base/debugCodes.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, 
     (mayaPlugin)

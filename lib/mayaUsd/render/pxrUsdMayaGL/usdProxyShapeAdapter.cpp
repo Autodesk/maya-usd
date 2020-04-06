@@ -13,33 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./usdProxyShapeAdapter.h"
+#include "usdProxyShapeAdapter.h"
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "./batchRenderer.h"
-#include "./debugCodes.h"
-#include "./renderParams.h"
-#include "./shapeAdapter.h"
-#include "../../nodes/proxyShapeBase.h"
+#include <string>
 
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/trace/trace.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
+#include <boost/functional/hash.hpp>
 
 #include <maya/M3dView.h>
 #include <maya/MColor.h>
@@ -54,10 +32,31 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <boost/functional/hash.hpp>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/trace/trace.h>
+#include <pxr/imaging/hd/enums.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/repr.h>
+#include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/tokens.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include <string>
-
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

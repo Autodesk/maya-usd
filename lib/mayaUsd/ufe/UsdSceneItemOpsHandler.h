@@ -15,11 +15,10 @@
 //
 #pragma once
 
-#include "../base/api.h"
-
-#include "UsdSceneItemOps.h"
-
 #include <ufe/sceneItemOpsHandler.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItemOps.h>
 
 //PXR_NAMESPACE_USING_DIRECTIVE
 

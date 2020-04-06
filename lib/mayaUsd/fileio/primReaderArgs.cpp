@@ -17,7 +17,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 UsdMayaPrimReaderArgs::UsdMayaPrimReaderArgs(
         const UsdPrim& prim,
         const UsdMayaJobImportArgs& jobArgs)

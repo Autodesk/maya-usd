@@ -13,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "ProxyShapeHierarchy.h"
-#include "Utils.h"
+
+#include <stdexcept>
 
 #include <ufe/log.h>
 #include <ufe/pathComponent.h>
@@ -24,7 +24,7 @@
 
 #include <pxr/usd/usd/stage.h>
 
-#include <stdexcept>
+#include <mayaUsd/ufe/Utils.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

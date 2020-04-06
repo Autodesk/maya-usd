@@ -16,29 +16,23 @@
 #ifndef PXRUSDMAYA_JOB_ARGS_H
 #define PXRUSDMAYA_JOB_ARGS_H
 
-/// \file usdMaya/jobArgs.h
-
-#include "../../base/api.h"
-#include "../../utils/util.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-
-#include "pxr/usd/sdf/path.h"
-
-#include <maya/MString.h>
-
 #include <map>
 #include <ostream>
 #include <set>
 #include <string>
 #include <vector>
 
+#include <pxr/pxr.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+
+#include <maya/MString.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 #define PXRUSDMAYA_TRANSLATOR_TOKENS \
     ((UsdFileExtensionDefault, "usd")) \

@@ -16,26 +16,21 @@
 #ifndef PXRUSDMAYA_WRITE_JOB_CONTEXT_H
 #define PXRUSDMAYA_WRITE_JOB_CONTEXT_H
 
-/// \file usdMaya/writeJobContext.h
-
-#include "../base/api.h"
-#include "jobs/jobArgs.h"
-#include "primWriter.h"
-#include "primWriterRegistry.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/sdf/path.h"
+#include <memory>
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObjectHandle.h>
 
-#include <memory>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class UsdMaya_SkelBindingsProcessor;
 class UsdMaya_WriteJob;

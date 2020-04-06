@@ -17,7 +17,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 UsdMayaPrimWriterContext::UsdMayaPrimWriterContext(
         const UsdTimeCode& timeCode,
         const SdfPath& authorPath, 

@@ -15,26 +15,9 @@
 //
 #include "translatorMaterial.h"
 
-#include "../primReaderContext.h"
-#include "../shading/shadingModeExporter.h"
-#include "../shading/shadingModeImporter.h"
-#include "../shading/shadingModeRegistry.h"
-#include "../../utils/util.h"
-#include "../writeJobContext.h"
-
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/types.h"
-#include "pxr/usd/sdf/assetPath.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/subset.h"
-#include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/materialBindingAPI.h"
+#include <set>
+#include <string>
+#include <vector>
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
@@ -45,13 +28,28 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
-#include <set>
-#include <string>
-#include <vector>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/iterator.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/gprim.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/subset.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
 
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeImporter.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /* static */
 MObject

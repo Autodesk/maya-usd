@@ -13,29 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-/// \file usdMaya/userTaggedAttribute.h
-
 #ifndef PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
 #define PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
-
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-
-#include "pxr/base/tf/iterator.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/tf/staticTokens.h"
-
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
 
 #include <map>
 #include <string>
 #include <vector>
 
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/tf/iterator.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 #define PXRUSDMAYA_ATTR_TOKENS \
     ((USDAttrTypePrimvar, "primvar")) \

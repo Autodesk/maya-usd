@@ -16,9 +16,9 @@
 #ifndef MTOH_CMD_H
 #define MTOH_CMD_H
 
-#include <pxr/pxr.h>
-
 #include <maya/MPxCommand.h>
+
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

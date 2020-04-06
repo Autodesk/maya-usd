@@ -13,10 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "UsdUndoRenameCommand.h"
-#include "Utils.h"
-#include "private/InPathChange.h"
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
@@ -32,6 +29,10 @@
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/base/tf/token.h>
+
+#include "private/InPathChange.h"
+
+#include <mayaUsd/ufe/Utils.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

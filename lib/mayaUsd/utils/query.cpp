@@ -15,15 +15,7 @@
 //
 #include "query.h"
 
-#include "../nodes/usdPrimProvider.h"
-#include "util.h"
-
-#include "pxr/base/arch/systemInfo.h"
-
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ar/resolverContext.h"
-#include "pxr/usd/ar/resolverContextBinder.h"
-#include "pxr/usd/usd/prim.h"
+#include <string>
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
@@ -31,11 +23,16 @@
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
 
-#include <string>
+#include <pxr/base/arch/systemInfo.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolverContext.h>
+#include <pxr/usd/ar/resolverContextBinder.h>
+#include <pxr/usd/usd/prim.h>
+
+#include <mayaUsd/nodes/usdPrimProvider.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
 
 UsdPrim
 UsdMayaQuery::GetPrim(const std::string& shapeName)

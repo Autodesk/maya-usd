@@ -13,11 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "UsdUndoCreateGroupCommand.h"
 
-#include <ufe/scene.h>
 #include <ufe/hierarchy.h>
+#include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
 #include <pxr/usd/usd/prim.h>

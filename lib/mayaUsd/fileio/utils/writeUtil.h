@@ -13,25 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-/// \file usdMaya/writeUtil.h
-
 #ifndef PXRUSDMAYA_WRITEUTIL_H
 #define PXRUSDMAYA_WRITEUTIL_H
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "userTaggedAttribute.h"
-
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/types.h"
-#include "pxr/usd/sdf/valueTypeName.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/imageable.h"
-#include "pxr/usd/usdGeom/pointInstancer.h"
-#include "pxr/usd/usdGeom/primvar.h"
+#include <string>
 
 #include <maya/MFnArrayAttrsData.h>
 #include <maya/MFnDependencyNode.h>
@@ -39,7 +24,19 @@
 #include <maya/MPlug.h>
 #include <maya/MString.h>
 
-#include <string>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/imageable.h>
+#include <pxr/usd/usdGeom/pointInstancer.h>
+#include <pxr/usd/usdGeom/primvar.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

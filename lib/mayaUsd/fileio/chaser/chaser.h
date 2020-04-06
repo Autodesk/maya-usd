@@ -16,19 +16,14 @@
 #ifndef PXRUSDMAYA_CHASER_H
 #define PXRUSDMAYA_CHASER_H
 
-/// \file usdMaya/chaser.h
+#include <pxr/pxr.h>
+#include <pxr/base/tf/declarePtrs.h>
+#include <pxr/base/tf/refPtr.h>
+#include <pxr/usd/usd/timeCode.h>
 
-#include "../../base/api.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/tf/refPtr.h"
-
-#include "pxr/usd/usd/timeCode.h"
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DECLARE_REF_PTRS(UsdMayaChaser);
 

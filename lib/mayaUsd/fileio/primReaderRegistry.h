@@ -16,19 +16,15 @@
 #ifndef PXRUSDMAYA_PRIMREADERREGISTRY_H
 #define PXRUSDMAYA_PRIMREADERREGISTRY_H
 
-/// \file usdMaya/primReaderRegistry.h
+#include <pxr/pxr.h>
+#include <pxr/base/tf/registryManager.h> 
 
-#include "../base/api.h"
-#include "primReader.h"
-#include "primReaderArgs.h"
-#include "primReaderContext.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/base/tf/registryManager.h" 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReader.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class UsdMayaPrimReaderRegistry
 /// \brief Provides functionality to register and lookup usd Maya reader

@@ -15,12 +15,11 @@
 //
 #include "primWriterArgs.h"
 
-#include "utils/writeUtil.h"
-
 #include <maya/MFnDependencyNode.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaPrimWriterArgs::UsdMayaPrimWriterArgs(
         const MDagPath& dagPath,

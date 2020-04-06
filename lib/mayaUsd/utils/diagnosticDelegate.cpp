@@ -13,17 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./diagnosticDelegate.h"
+#include "diagnosticDelegate.h"
 
-#include "../base/debugCodes.h"
-
-#include "pxr/base/arch/threads.h"
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/stackTrace.h"
+#include <iostream>
 
 #include <maya/MGlobal.h>
 
-#include <iostream>
+#include <pxr/base/arch/threads.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/stackTrace.h>
+
+#include <mayaUsd/base/debugCodes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

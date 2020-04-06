@@ -15,11 +15,10 @@
 //
 #pragma once
 
-#include "../base/api.h"
-
-#include "UsdTransform3d.h"
-
 #include <ufe/transform3dHandler.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdTransform3d.h>
 
 MAYAUSD_NS_DEF {
 namespace ufe {

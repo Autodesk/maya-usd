@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include "utils.h"
-#include "tokens.h"
 
 #include <maya/MGlobal.h>
 
@@ -30,6 +29,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #endif
 
 #include <pxr/imaging/glf/contextCaps.h>
+
+#include "tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

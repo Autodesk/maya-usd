@@ -16,22 +16,6 @@
 // Modifications copyright (C) 2020 Autodesk
 //
 #include "meshUtil.h"
-#include "roundTripUtil.h"
-#include "readUtil.h"
-#include "adaptor.h"
-
-#include "../../base/debugCodes.h"
-#include "../../utils/util.h"
-#include "../../utils/colorSpace.h"
-
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdUtils/pipeline.h"
 
 #include <maya/MFloatVector.h>
 #include <maya/MFloatVectorArray.h>
@@ -50,8 +34,22 @@
 #include <maya/MStatus.h>
 #include <maya/MUintArray.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/fileio/utils/roundTripUtil.h>
+#include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/util.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaMeshColorSetTokens,
     PXRUSDMAYA_MESH_COLOR_SET_TOKENS);

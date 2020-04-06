@@ -16,20 +16,16 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_GPRIM_H
 #define PXRUSDMAYA_TRANSLATOR_GPRIM_H
 
-/// \file translatorGprim.h
-
-#include "../../base/api.h"
-#include "../primReaderContext.h"
-#include "../primWriterContext.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/usdGeom/gprim.h"
-
 #include <maya/MObject.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/gprim.h>
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primWriterContext.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Provides helper functions for reading UsdGeomGprim.
 struct UsdMayaTranslatorGprim

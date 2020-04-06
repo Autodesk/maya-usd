@@ -15,38 +15,35 @@
 //
 #include "shadingModeExporter.h"
 
-#include "../jobs/jobArgs.h"
-#include "shadingModeExporterContext.h"
-#include "../../utils/util.h"
-#include "../writeJobContext.h"
-
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/collectionAPI.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdShade/material.h"
-#include "pxr/usd/usdShade/materialBindingAPI.h"
-#include "pxr/usd/usdUtils/authoring.h"
-
-#include <maya/MItDependencyNodes.h>
-#include <maya/MObject.h>
-
 #include <string>
 #include <utility>
 #include <vector>
 
+#include <maya/MItDependencyNodes.h>
+#include <maya/MObject.h>
+
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/collectionAPI.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdShade/material.h>
+#include <pxr/usd/usdShade/materialBindingAPI.h>
+#include <pxr/usd/usdUtils/authoring.h>
+
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((materialNamespace, "material:"))
 );
-
 
 UsdMayaShadingModeExporter::UsdMayaShadingModeExporter()
 {

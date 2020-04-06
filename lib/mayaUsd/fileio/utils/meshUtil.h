@@ -15,24 +15,23 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
-
 #ifndef PXRUSDMAYA_MESH_UTIL_H
 #define PXRUSDMAYA_MESH_UTIL_H
 
-#include "../../base/api.h"
-
-#include "pxr/pxr.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/mesh.h"
-
 #include <maya/MDagPath.h>
-#include <maya/MObject.h>
 #include <maya/MFnMesh.h>
+#include <maya/MObject.h>
 #include <maya/MString.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/mesh.h>
+
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

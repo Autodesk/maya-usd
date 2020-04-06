@@ -13,16 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "userTaggedAttribute.h"
 
-#include "../../utils/util.h"
-
-#include "pxr/base/js/json.h"
-#include "pxr/base/js/value.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/usdGeom/tokens.h"
+#include <set>
+#include <string>
+#include <vector>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
@@ -30,13 +25,16 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <set>
-#include <string>
-#include <vector>
+#include <pxr/pxr.h>
+#include <pxr/base/js/json.h>
+#include <pxr/base/js/value.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PUBLIC_TOKENS(
     UsdMayaUserTaggedAttributeTokens,

@@ -18,12 +18,10 @@
 
 /// \file pxrUsdMayaGL/debugCodes.h
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
-
+#include <pxr/pxr.h>
+#include <pxr/base/tf/debug.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEBUG_CODES(
     PXRUSDMAYAGL_BATCHED_DRAWING,
@@ -33,8 +31,6 @@ TF_DEBUG_CODES(
     PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE
 );
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

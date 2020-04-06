@@ -16,22 +16,17 @@
 #ifndef PXRUSDMAYA_SHADER_WRITER_H
 #define PXRUSDMAYA_SHADER_WRITER_H
 
-/// \file usdMaya/shaderWriter.h
-
-#include "pxr/pxr.h"
-#include "../base/api.h"
-
-#include "primWriter.h"
-
-#include "writeJobContext.h"
-
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
+#include <memory>
 
 #include <maya/MFnDependencyNode.h>
 
-#include <memory>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,19 +16,17 @@
 
 /// \file glslProgram.h
 
-
 #ifndef __PX_VP20_GLSL_PROGRAM_H__
 #define __PX_VP20_GLSL_PROGRAM_H__
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "pxr/imaging/garch/gl.h"
-
 #include <string>
 
+#include <pxr/pxr.h>
+#include <pxr/imaging/garch/gl.h>
+
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class PxrMayaGLSLProgram
 ///

@@ -15,7 +15,7 @@
 //
 #include "colorSpace.h"
 
-#include "pxr/base/tf/envSetting.h"
+#include <pxr/base/tf/envSetting.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

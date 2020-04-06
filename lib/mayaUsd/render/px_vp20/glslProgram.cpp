@@ -15,19 +15,17 @@
 //
 
 // glew must be included before any other GL header.
-#include "pxr/imaging/glf/glew.h"
+#include <pxr/imaging/glf/glew.h>
 
-#include "./glslProgram.h"
-
-#include "pxr/pxr.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/imaging/garch/gl.h"
+#include "glslProgram.h"
 
 #include <string>
 
+#include <pxr/pxr.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/imaging/garch/gl.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PxrMayaGLSLProgram::PxrMayaGLSLProgram() : mProgramId(0)
 {

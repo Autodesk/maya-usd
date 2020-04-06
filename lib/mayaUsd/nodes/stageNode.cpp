@@ -15,19 +15,7 @@
 //
 #include "stageNode.h"
 
-#include "../utils/stageCache.h"
-#include "stageData.h"
-
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/stageCacheContext.h"
+#include <string>
 
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
@@ -42,11 +30,20 @@
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 
-#include <string>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/stageCacheContext.h>
 
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/stageCache.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaStageNodeTokens,
                         PXRUSDMAYA_STAGE_NODE_TOKENS);

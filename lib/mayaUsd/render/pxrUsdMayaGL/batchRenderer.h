@@ -17,52 +17,50 @@
 #define PXRUSDMAYAGL_BATCH_RENDERER_H
 
 /// \file pxrUsdMayaGL/batchRenderer.h
-
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-#include "./renderParams.h"
-#include "./sceneDelegate.h"
-#include "./shapeAdapter.h"
-#include "./softSelectHelper.h"
-#include "../../utils/diagnosticDelegate.h"
-#include "../../listeners/notice.h"
-#include "../../utils/util.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec2i.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4d.h"
-#include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/weakBase.h"
-#if USD_VERSION_NUM > 2002
-#include "pxr/imaging/hd/driver.h"
-#endif
-#include "pxr/imaging/hd/engine.h"
-#include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdx/selectionTracker.h"
-#include "pxr/imaging/hdx/pickTask.h"
-#include "pxr/usd/sdf/path.h"
+#include <memory>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
 #include <maya/M3dView.h>
 #include <maya/MDrawContext.h>
 #include <maya/MDrawRequest.h>
-#include <maya/MObjectHandle.h>
 #include <maya/MMessage.h>
+#include <maya/MObjectHandle.h>
 #include <maya/MSelectInfo.h>
 #include <maya/MSelectionContext.h>
 #include <maya/MTypes.h>
 #include <maya/MUserData.h>
 
-#include <memory>
-#include <utility>
-#include <unordered_map>
-#include <unordered_set>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec2i.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4d.h>
+#include <pxr/base/tf/singleton.h>
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/imaging/hd/engine.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hdSt/renderDelegate.h>
+#include <pxr/imaging/hdx/pickTask.h>
+#include <pxr/imaging/hdx/selectionTracker.h>
+#include <pxr/usd/sdf/path.h>
 
+#if USD_VERSION_NUM > 2002
+#include <pxr/imaging/hd/driver.h>
+#endif
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/sceneDelegate.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
+#include <mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// UsdMayaGLBatchRenderer is a singleton that shapes can use to get consistent
 /// batched drawing via Hydra in Maya, regardless of legacy viewport or

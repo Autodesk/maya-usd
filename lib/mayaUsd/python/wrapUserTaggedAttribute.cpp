@@ -13,30 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
+#include <string>
+#include <vector>
 
-#include <mayaUsd/utils/util.h>
-
-#include "pxr/base/tf/pyContainerConversions.h"
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyStaticTokens.h"
-#include "pxr/base/tf/token.h"
+#include <boost/python.hpp>
+#include <boost/python/def.hpp>
 
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/pyContainerConversions.h>
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/pyStaticTokens.h>
+#include <pxr/base/tf/token.h>
 
-#include <string>
-#include <vector>
-
+#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
 
 namespace {
 

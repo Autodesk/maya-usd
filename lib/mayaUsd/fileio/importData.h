@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include "../base/api.h"
+#include <map>
+#include <string>
 
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/sdf/types.h>
 
-#include <map>
-#include <string>
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

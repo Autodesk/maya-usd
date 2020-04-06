@@ -13,19 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include "pxr/pxr.h"
-#include "./softSelectHelper.h"
-
-#include "pxr/base/tf/stl.h"
+#include "softSelectHelper.h"
 
 #include <maya/MGlobal.h>
 #include <maya/MItSelectionList.h>
 #include <maya/MRichSelection.h>
 #include <maya/MSelectionList.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/pxr.h>
+#include <pxr/base/tf/stl.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaGLSoftSelectHelper::UsdMayaGLSoftSelectHelper()
     : _populated(false)

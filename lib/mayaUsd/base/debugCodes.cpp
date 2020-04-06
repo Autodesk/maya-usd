@@ -15,10 +15,9 @@
 //
 #include "debugCodes.h"
 
-#include "pxr/base/tf/registryManager.h"
+#include <pxr/base/tf/registryManager.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
@@ -33,4 +32,3 @@ TF_REGISTRY_FUNCTION(TfDebug)
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

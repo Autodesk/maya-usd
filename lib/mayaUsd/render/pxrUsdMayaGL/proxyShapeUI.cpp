@@ -13,25 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "./proxyShapeUI.h"
-
-#include "./batchRenderer.h"
-#include "./renderParams.h"
-#include "./usdProxyShapeAdapter.h"
-#include "../../nodes/proxyShapeBase.h"
-
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/trace/trace.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
+#include "proxyShapeUI.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
-#include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
+#include <maya/MDGMessage.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
@@ -46,9 +33,20 @@
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/trace/trace.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
+
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /* static */
 void*

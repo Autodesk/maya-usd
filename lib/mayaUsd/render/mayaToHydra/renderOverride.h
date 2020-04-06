@@ -16,9 +16,18 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
-#include <pxr/imaging/glf/glew.h>
-#include <pxr/pxr.h>
+#include <atomic>
+#include <chrono>
+#include <memory>
+#include <mutex>
 
+#include <maya/MCallbackIdArray.h>
+#include <maya/MMessage.h>
+#include <maya/MString.h>
+#include <maya/MViewport2Renderer.h>
+
+#include <pxr/pxr.h>
+#include <pxr/imaging/glf/glew.h>
 #include <pxr/base/tf/singleton.h>
 
 #if USD_VERSION_NUM > 2002
@@ -39,26 +48,16 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #endif
 #include <pxr/imaging/hdx/taskController.h>
 
-#include <maya/MCallbackIdArray.h>
-#include <maya/MMessage.h>
-#include <maya/MString.h>
-#include <maya/MViewport2Renderer.h>
+#if WANT_UFE_BUILD
+#include <ufe/observer.h>
+#endif // WANT_UFE_BUILD
 
-#include "../../usd/hdMaya/delegates/delegate.h"
-#include "../../usd/hdMaya/delegates/params.h"
+#include <hdMaya/delegates/delegate.h>
+#include <hdMaya/delegates/params.h>
 
 #include "defaultLightDelegate.h"
 #include "renderGlobals.h"
 #include "utils.h"
-
-#include <atomic>
-#include <chrono>
-#include <memory>
-#include <mutex>
-
-#if WANT_UFE_BUILD
-#include <ufe/observer.h>
-#endif // WANT_UFE_BUILD
 
 PXR_NAMESPACE_OPEN_SCOPE
 

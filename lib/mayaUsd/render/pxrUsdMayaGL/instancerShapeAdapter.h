@@ -17,23 +17,20 @@
 #define PXRUSDMAYAGL_INSTANCER_SHAPE_ADAPTER_H
 
 /// \file pxrUsdMayaGL/instancerShapeAdapter.h
-
-#include "../../base/api.h"
-#include "./shapeAdapter.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
+#include <memory>
 
 #include <maya/M3dView.h>
 
-#include <memory>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Class to manage translation of native Maya instancers into
 /// UsdGeomPointInstancers for imaging with Hydra.

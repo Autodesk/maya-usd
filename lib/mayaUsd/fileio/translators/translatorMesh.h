@@ -18,24 +18,20 @@
 
 #pragma once
 
-#include "../../base/api.h"
-
-#include "pxr/pxr.h"
-#include "pxr/usd/usdGeom/mesh.h"
+#include <mayaUsd/base/api.h>
 
 #include <maya/MObject.h>
 #include <maya/MString.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/mesh.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {
 
-//
-// \class MayaUsd::TranslatorMeshRead
-//
-// This class is used to translate a UsdGeomMesh prim 
-// using schema mesh utilities into a Maya mesh.
-//
+/// Provides helper functions for translating UsdGeomMesh prims into Maya
+/// meshes.
 class MAYAUSD_CORE_PUBLIC TranslatorMeshRead
 {
 public:

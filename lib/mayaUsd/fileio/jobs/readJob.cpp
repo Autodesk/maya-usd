@@ -15,29 +15,11 @@
 //
 #include "readJob.h"
 
-#include "../primReaderRegistry.h"
-#include "../../utils/stageCache.h"
-#include "../../nodes/stageNode.h"
-#include "../translators/translatorMaterial.h"
-#include "../translators/translatorXformable.h"
-#include "../../utils/util.h"
-
-#include "pxr/base/tf/token.h"
-
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/primFlags.h"
-#include "pxr/usd/usd/primRange.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/stageCacheContext.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usdGeom/metrics.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
-#include "pxr/usd/usdUtils/pipeline.h"
-#include "pxr/usd/usdUtils/stageCache.h"
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include <maya/MAnimControl.h>
 #include <maya/MDagModifier.h>
@@ -49,12 +31,28 @@
 #include <maya/MStatus.h>
 #include <maya/MTime.h>
 
-#include <map>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/primFlags.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/stageCacheContext.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
+#include <pxr/usd/usdUtils/pipeline.h>
+#include <pxr/usd/usdUtils/stageCache.h>
 
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/nodes/stageNode.h>
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

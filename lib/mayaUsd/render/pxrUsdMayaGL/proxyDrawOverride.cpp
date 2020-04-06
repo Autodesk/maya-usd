@@ -13,21 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "./proxyDrawOverride.h"
-
-#include "./batchRenderer.h"
-#include "./renderParams.h"
-#include "./usdProxyShapeAdapter.h"
-
-#include "../px_vp20/utils.h"
-
-#include "../../nodes/proxyShapeBase.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/trace/trace.h"
+#include "proxyDrawOverride.h"
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -46,9 +32,19 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/trace/trace.h>
+
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 const MString UsdMayaProxyDrawOverride::drawDbClassification(
     TfStringPrintf("drawdb/geometry/pxrUsdMayaGL/%s",

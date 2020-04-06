@@ -16,15 +16,6 @@
 #ifndef PXRUSDMAYA_HD_IMAGING_SHAPE_H
 #define PXRUSDMAYA_HD_IMAGING_SHAPE_H
 
-/// \file usdMaya/hdImagingShape.h
-
-#include "pxr/pxr.h"
-
-#include "../base/api.h"
-#include "../utils/util.h"
-
-#include "pxr/base/tf/staticTokens.h"
-
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
@@ -37,9 +28,13 @@
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/tf/staticTokens.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 #define PXRUSDMAYA_HD_IMAGING_SHAPE_TOKENS \
     ((MayaTypeName, "pxrHdImagingShape"))

@@ -15,7 +15,7 @@
 //
 #include "undoHelperCommand.h"
 
-#include "pxr/base/tf/errorMark.h"
+#include <pxr/base/tf/errorMark.h>
 
 #include <maya/MSyntax.h>
 

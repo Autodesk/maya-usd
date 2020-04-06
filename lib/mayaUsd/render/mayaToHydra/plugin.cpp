@@ -13,23 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <maya/MFnPlugin.h>
-
-#include "renderGlobals.h"
-#include "renderOverride.h"
-#include "viewCommand.h"
-
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <maya/MFnPlugin.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/envSetting.h>
 
-#include "../../usd/hdMaya/adapters/adapter.h"
+#include <hdMaya/adapters/adapter.h>
+
+#include "renderGlobals.h"
+#include "renderOverride.h"
+#include "viewCommand.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     MStatus ret = MS::kSuccess;

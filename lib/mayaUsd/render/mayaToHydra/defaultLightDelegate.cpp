@@ -15,14 +15,13 @@
 //
 #include "defaultLightDelegate.h"
 
-#include "../../usd/hdMaya/delegates/delegateDebugCodes.h"
-
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
-
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
+
+#include <hdMaya/delegates/delegateDebugCodes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

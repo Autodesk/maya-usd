@@ -15,27 +15,25 @@
 //
 #include "stageCache.h"
 
-#include "../listeners/notice.h"
-
-#include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/primSpec.h"
-#include "pxr/usd/sdf/relationshipSpec.h"
-#include "pxr/usd/usd/stageCache.h"
-#include "pxr/usd/usdGeom/tokens.h"
-
-#include <maya/MFileIO.h>
-#include <maya/MSceneMessage.h>
-
 #include <map>
 #include <memory>
 #include <mutex>
 #include <sstream>
 #include <string>
 
+#include <maya/MFileIO.h>
+#include <maya/MSceneMessage.h>
+
+#include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/sdf/relationshipSpec.h>
+#include <pxr/usd/usd/stageCache.h>
+#include <pxr/usd/usdGeom/tokens.h>
+
+#include <mayaUsd/listeners/notice.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 namespace {
 

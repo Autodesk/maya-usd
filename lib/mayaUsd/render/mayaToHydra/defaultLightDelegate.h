@@ -17,16 +17,13 @@
 #define MTOH_DEFAULT_LIGHT_DELEGATE_H
 
 #include <pxr/pxr.h>
-
 #include <pxr/imaging/glf/simpleLight.h>
 #include <pxr/imaging/hd/renderIndex.h>
-
 #include <pxr/usd/sdf/path.h>
-
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include "../../usd/hdMaya/delegates/delegateCtx.h"
+#include <hdMaya/delegates/delegateCtx.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -15,15 +15,14 @@
 //
 #include "chaserRegistry.h"
 
-#include "../../base/debugCodes.h"
-#include "../registryHelper.h"
-
-#include "pxr/base/tf/instantiateSingleton.h"
-
 #include <map>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/base/tf/instantiateSingleton.h>
 
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/fileio/registryHelper.h>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaChaserRegistry::FactoryContext::FactoryContext(
         const UsdStagePtr& stage,

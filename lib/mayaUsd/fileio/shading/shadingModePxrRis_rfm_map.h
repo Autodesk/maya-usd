@@ -19,13 +19,11 @@
 // We use this table both for export and for import when RIS mode is active.
 // XXX This should probably live in a xml or json file that can be easily updated without recompile
 
-#include "pxr/pxr.h"
-
-#include "pxr/base/tf/token.h"
-
 #include <utility>
 #include <vector>
 
+#include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

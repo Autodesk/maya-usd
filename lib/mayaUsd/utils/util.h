@@ -16,23 +16,12 @@
 #ifndef PXRUSDMAYA_UTIL_H
 #define PXRUSDMAYA_UTIL_H
 
-/// \file usdMaya/util.h
-
-#include "pxr/pxr.h"
-#include "../base/api.h"
-
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/tf/refPtr.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/dictionary.h"
-#include "pxr/base/vt/types.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/timeCode.h"
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MBoundingBox.h>
@@ -50,16 +39,23 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <map>
-#include <set>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/declarePtrs.h>
+#include <pxr/base/tf/refPtr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/timeCode.h>
 
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// General utilities for working with the Maya API.
 namespace UsdMayaUtil

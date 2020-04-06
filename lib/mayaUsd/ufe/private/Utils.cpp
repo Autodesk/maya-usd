@@ -13,16 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "Utils.h"
+
+#include <memory>
+#include <string>
 
 #include <ufe/log.h>
 
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usd/usdGeom/xformable.h>
-
-#include <string>
-#include <memory>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

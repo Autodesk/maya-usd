@@ -15,13 +15,25 @@
 //
 #include "renderOverride.h"
 
-#include <pxr/base/gf/matrix4d.h>
+#include <atomic>
+#include <chrono>
+#include <exception>
 
+#include <maya/M3dView.h>
+#include <maya/MDagPath.h>
+#include <maya/MDrawContext.h>
+#include <maya/MEventMessage.h>
+#include <maya/MGlobal.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MSceneMessage.h>
+#include <maya/MSelectionList.h>
+#include <maya/MTimerMessage.h>
+#include <maya/MUiMessage.h>
+
+#include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/vt/value.h>
-
 #include <pxr/imaging/glf/contextCaps.h>
-
 #include <pxr/imaging/hd/rprim.h>
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
@@ -38,38 +50,23 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include <pxr/imaging/hgi/tokens.h>
 #endif
 
-#include <maya/M3dView.h>
-#include <maya/MDagPath.h>
-#include <maya/MDrawContext.h>
-#include <maya/MEventMessage.h>
-#include <maya/MGlobal.h>
-#include <maya/MNodeMessage.h>
-#include <maya/MSceneMessage.h>
-#include <maya/MSelectionList.h>
-#include <maya/MTimerMessage.h>
-#include <maya/MUiMessage.h>
-
-#include <atomic>
-#include <chrono>
-#include <exception>
-
-#include "mayaUsd/render/px_vp20/utils.h"
-#include "../../usd/hdMaya/delegates/delegateRegistry.h"
-#include "../../usd/hdMaya/delegates/sceneDelegate.h"
-
-#include "../../usd/hdMaya/utils.h"
-
-#include "pluginDebugCodes.h"
-#include "renderOverrideUtils.h"
-#include "tokens.h"
-#include "utils.h"
-
 #if WANT_UFE_BUILD
 #include <maya/MFileIO.h>
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selectionNotification.h>
 #endif // WANT_UFE_BUILD
+
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <hdMaya/delegates/sceneDelegate.h>
+#include <hdMaya/utils.h>
+
+#include <mayaUsd/render/px_vp20/utils.h>
+
+#include "pluginDebugCodes.h"
+#include "renderOverrideUtils.h"
+#include "tokens.h"
+#include "utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

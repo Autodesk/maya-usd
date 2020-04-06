@@ -18,29 +18,28 @@
 
 /// \file pxrUsdMayaGL/sceneDelegate.h
 
-#include "pxr/pxr.h"
-
-#include "../../base/api.h"
-#include "./renderParams.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/vec4d.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/hashmap.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/imaging/glf/simpleLightingContext.h"
-#include "pxr/imaging/hd/renderIndex.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/task.h"
-#include "pxr/usd/sdf/path.h"
-
-#include <maya/MDrawContext.h>
-
 #include <memory>
 #include <unordered_map>
 
+#include <maya/MDrawContext.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec4d.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/hashmap.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/imaging/glf/simpleLightingContext.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/imaging/hd/task.h>
+#include <pxr/usd/sdf/path.h>
+
+#include <mayaUsd/base/api.h>
+
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

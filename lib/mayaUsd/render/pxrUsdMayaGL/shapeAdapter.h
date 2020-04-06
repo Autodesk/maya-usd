@@ -18,23 +18,20 @@
 
 /// \file pxrUsdMayaGL/shapeAdapter.h
 
-#include "pxr/pxr.h"
+#include <memory>
 
-#include "../../base/api.h"
-#include "./renderParams.h"
-#include "./userData.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/rprimCollection.h"
-#include "pxr/usd/sdf/path.h"
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/repr.h>
+#include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/usd/sdf/path.h>
 
 // XXX: On Linux, some Maya headers (notably M3dView.h) end up indirectly
 //      including X11/Xlib.h, which #define's "Bool" as int. This can cause
 //      compilation issues if sdf/types.h is included afterwards, so to fix
 //      this, we ensure that it gets included first.
-#include "pxr/usd/sdf/types.h"
+#include <pxr/usd/sdf/types.h>
 
 #include <maya/M3dView.h>
 #undef Always // Defined in /usr/lib/X11/X.h (eventually included by M3dView.h) - breaks pxr/usd/lib/usdUtils/registeredVariantSet.h
@@ -46,8 +43,9 @@
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MUserData.h>
 
-#include <memory>
-
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

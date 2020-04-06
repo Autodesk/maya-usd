@@ -13,14 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef HD_VP2_RESOURCE_REGISTRY
 #define HD_VP2_RESOURCE_REGISTRY
 
-#include "task_commit.h"
-
 #include <tbb/concurrent_queue.h>
 #include <tbb/tbb_allocator.h>
+
+#include "task_commit.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

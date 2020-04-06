@@ -1,22 +1,30 @@
-// ===========================================================================
-// Copyright 2019 Autodesk, Inc. All rights reserved.
 //
-// Use of this software is subject to the terms of the Autodesk license
-// agreement provided at the time of installation or download, or which
-// otherwise accompanies this software in either electronic or hard copy form.
-// ===========================================================================
-
+// Copyright 2019 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 #include "UsdObject3d.h"
-#include "Utils.h"
 
-#include "ufe/attributes.h"
-#include "ufe/types.h"
+#include <ufe/attributes.h>
+#include <ufe/types.h>
+
+#include <stdexcept>
 
 #include <pxr/usd/usdGeom/bboxCache.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include <stdexcept>
+#include <mayaUsd/ufe/Utils.h>
 
 namespace {
 Ufe::Vector3d toVector3d(const GfVec3d& v)

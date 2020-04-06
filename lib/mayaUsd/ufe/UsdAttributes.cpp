@@ -13,14 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "UsdAttributes.h"
 
 #include <ufe/ufeAssert.h>
 
 #include <pxr/base/tf/token.h>
-#include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/usd/schemaRegistry.h>
 
 // Note: normally we would use this using directive, but here we cannot because
 //		 one of our classes is called UsdAttribute which is exactly the same as

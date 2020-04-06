@@ -13,16 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef HD_VP2_RENDER_PARAM
 #define HD_VP2_RENDER_PARAM
 
-#include "pxr/pxr.h"
-
-#include "pxr/imaging/hd/renderDelegate.h"
-#include "pxr/usd/usd/timeCode.h"
-
 #include <maya/MPxSubSceneOverride.h>
+
+#include <pxr/pxr.h>
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/usd/usd/timeCode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

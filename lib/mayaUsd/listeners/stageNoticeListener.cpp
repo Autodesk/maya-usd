@@ -15,15 +15,12 @@
 //
 #include "stageNoticeListener.h"
 
-#include "pxr/base/tf/notice.h"
-#include "pxr/base/tf/weakBase.h"
-
-#include "pxr/usd/usd/notice.h"
-#include "pxr/usd/usd/stage.h"
-
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/usd/usd/notice.h>
+#include <pxr/usd/usd/stage.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 UsdMayaStageNoticeListener::UsdMayaStageNoticeListener() : TfWeakBase()
 {

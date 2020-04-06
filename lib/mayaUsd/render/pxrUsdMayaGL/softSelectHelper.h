@@ -18,21 +18,19 @@
 
 /// \file pxrUsdMayaGL/softSelectHelper.h
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-
-#include "pxr/base/tf/hash.h"
+#include <unordered_map>
 
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MRampAttribute.h>
 #include <maya/MString.h>
 
-#include <unordered_map>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/hash.h>
 
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class UsdMayaGLSoftSelectHelper
 /// \brief Helper class to store soft ("rich") selection state while

@@ -15,20 +15,17 @@
 //
 #include "stageData.h"
 
-#include "pxr/base/gf/bbox3d.h"
-#include "pxr/base/tf/staticTokens.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/stage.h"
-
 #include <maya/MGlobal.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 
+#include <pxr/base/gf/bbox3d.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/stage.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PUBLIC_TOKENS(MayaUsdStageDataTokens,
                         PXRMAYAUSD_STAGE_DATA_TOKENS);

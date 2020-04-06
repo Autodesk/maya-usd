@@ -18,20 +18,19 @@
 
 /// \file pxrUsdMayaGL/instancerImager.h
 
-#include "../../base/api.h"
-#include "./instancerShapeAdapter.h"
-
-#include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/weakBase.h"
-
-#include "../../listeners/notice.h"
-#include "../../utils/util.h"
+#include <functional>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MDagMessage.h>
 #include <maya/MApiNamespace.h>
 
-#include <functional>
+#include <pxr/base/tf/singleton.h>
+#include <pxr/base/tf/weakBase.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/render/pxrUsdMayaGL/instancerShapeAdapter.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -15,22 +15,19 @@
 //
 #include "shadingModeImporter.h"
 
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-
 #include <maya/MFnSet.h>
 #include <maya/MObject.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingModeImporterTokens,
     PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS);

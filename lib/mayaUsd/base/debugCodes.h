@@ -16,11 +16,10 @@
 #ifndef PXRUSDMAYA_DEBUGCODES_H
 #define PXRUSDMAYA_DEBUGCODES_H
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
+#include <pxr/pxr.h>
+#include <pxr/base/tf/debug.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEBUG_CODES(
     PXRUSDMAYA_REGISTRY,
@@ -28,7 +27,6 @@ TF_DEBUG_CODES(
     PXRUSDMAYA_TRANSLATORS,
     USDMAYA_PROXYSHAPEBASE
 );
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

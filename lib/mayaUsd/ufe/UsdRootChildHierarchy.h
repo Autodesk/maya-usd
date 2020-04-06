@@ -15,9 +15,8 @@
 //
 #pragma once
 
-#include "../base/api.h"
-
-#include "UsdHierarchy.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdHierarchy.h>
 
 //PXR_NAMESPACE_USING_DIRECTIVE
 

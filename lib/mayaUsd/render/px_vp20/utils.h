@@ -18,14 +18,8 @@
 
 /// \file px_vp20/utils.h
 
-#include "pxr/pxr.h"
-#include "../../base/api.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/imaging/garch/gl.h"
-#include "pxr/imaging/glf/simpleLightingContext.h"
+#include <array>
+#include <ostream>
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -34,12 +28,16 @@
 #include <maya/MMatrix.h>
 #include <maya/MSelectionContext.h>
 
-#include <array>
-#include <ostream>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/matrix4f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/imaging/garch/gl.h>
+#include <pxr/imaging/glf/simpleLightingContext.h>
 
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class px_vp20Utils
 {

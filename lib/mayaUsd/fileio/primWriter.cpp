@@ -13,28 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "primWriter.h"
 
-#include "utils/adaptor.h"
-#include "jobs/jobArgs.h"
-#include "translators/translatorGprim.h"
-#include "../utils//util.h"
-#include "writeJobContext.h"
-#include "utils/writeUtil.h"
-
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdGeom/imageable.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdUtils/sparseValueWriter.h"
+#include <string>
+#include <typeinfo>
+#include <vector>
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
@@ -43,13 +26,28 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <string>
-#include <typeinfo>
-#include <vector>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/gprim.h>
+#include <pxr/usd/usdGeom/imageable.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/translators/translatorGprim.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(
     UsdGeomTokens->purpose, "USD_purpose");

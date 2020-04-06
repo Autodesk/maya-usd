@@ -17,16 +17,16 @@
 #ifndef PXRUSDMAYA_MAYAPRIMUPDATER_H
 #define PXRUSDMAYA_MAYAPRIMUPDATER_H
 
-#include "../base/api.h"
-#include "primUpdaterContext.h"
-#include "../utils/util.h"
-
-#include "pxr/pxr.h"
-#include "pxr/usd/sdf/path.h"
-
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primUpdaterContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -16,18 +16,13 @@
 #ifndef PXRUSDMAYA_ROUND_TRIP_UTIL_H
 #define PXRUSDMAYA_ROUND_TRIP_UTIL_H
 
-/// \file usdMaya/roundTripUtil.h
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/primvar.h>
 
-#include "../../base/api.h"
-
-#include "pxr/pxr.h"
-
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/primvar.h"
-
+#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// This holds some utility functions for dealing with data from Maya to Usd
 /// and back.
