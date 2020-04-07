@@ -37,6 +37,9 @@
 #if UFE_PREVIEW_VERSION_NUM >= 2009
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #endif
+#if UFE_PREVIEW_VERSION_NUM >= 2011
+#include <ufe/pathString.h>
+#endif
 #else
 #include <mayaUsd/ufe/UfeVersionCompat.h>
 #endif
@@ -120,6 +123,11 @@ MStatus initialize()
 		return MS::kFailure;
 
 	g_StagesSubject = StagesSubject::create();
+
+    // Register for UFE string to path service using path component separator '/'
+#if UFE_PREVIEW_VERSION_NUM >= 2011
+    UFE_V2(Ufe::PathString::registerPathComponentSeparator(g_USDRtid, '/');)
+#endif
 
 	return MS::kSuccess;
 }
