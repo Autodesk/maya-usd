@@ -34,7 +34,6 @@
 #include <hdMaya/adapters/proxyAdapter.h>
 #include <hdMaya/debugCodes.h>
 #include <hdMaya/delegates/delegateRegistry.h>
-
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
 #if WANT_UFE_BUILD

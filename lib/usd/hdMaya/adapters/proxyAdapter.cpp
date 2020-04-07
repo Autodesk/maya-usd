@@ -22,7 +22,6 @@
 #include <hdMaya/debugCodes.h>
 #include <hdMaya/delegates/proxyDelegate.h>
 #include <hdMaya/delegates/sceneDelegate.h>
-
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
 #if WANT_UFE_BUILD
