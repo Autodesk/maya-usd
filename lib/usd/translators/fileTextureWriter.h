@@ -16,7 +16,7 @@
 #ifndef PXRUSDTRANSLATORS_FILE_TEXTURE_WRITER_H
 #define PXRUSDTRANSLATORS_FILE_TEXTURE_WRITER_H
 
-/// \file pxrUsdTranslators/fileTextureWriter.h
+/// \file
 
 #include <maya/MFnDependencyNode.h>
 

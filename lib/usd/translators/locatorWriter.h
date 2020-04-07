@@ -16,7 +16,7 @@
 #ifndef PXRUSDTRANSLATORS_LOCATOR_WRITER_H
 #define PXRUSDTRANSLATORS_LOCATOR_WRITER_H
 
-/// \file pxrUsdTranslators/locatorWriter.h
+/// \file
 
 #include <maya/MFnDependencyNode.h>
 

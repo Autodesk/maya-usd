@@ -16,7 +16,7 @@
 #ifndef PXRUSDTRANSLATORS_INSTANCER_WRITER_H
 #define PXRUSDTRANSLATORS_INSTANCER_WRITER_H
 
-/// \file pxrUsdTranslators/instancerWriter.h
+/// \file
 
 #include <vector>
 

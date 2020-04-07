@@ -35,15 +35,15 @@
 #include <pxr/usdImaging/usdImaging/tokens.h>
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
-#if USD_VERSION_NUM >= 1911
-#include <pxr/imaging/hdSt/textureResourceHandle.h>
-#endif
-
 #include <hdMaya/adapters/adapterRegistry.h>
 #include <hdMaya/adapters/materialNetworkConverter.h>
 #include <hdMaya/adapters/mayaAttrs.h>
 #include <hdMaya/adapters/tokens.h>
 #include <hdMaya/utils.h>
+
+#if USD_VERSION_NUM >= 1911
+#include <pxr/imaging/hdSt/textureResourceHandle.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 

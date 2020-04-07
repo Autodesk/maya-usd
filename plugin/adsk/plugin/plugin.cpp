@@ -23,15 +23,6 @@
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 
-#include <mayaUsd/utils/undoHelperCommand.h>
-#if defined(WANT_QT_BUILD)
-#include <mayaUsdUI/ui/USDImportDialogCmd.h>
-#endif
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/ufe/Global.h>
-#endif
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
@@ -43,6 +34,15 @@
 #include "exportTranslator.h"
 #include "importTranslator.h"
 #include "ProxyShape.h"
+
+#include <mayaUsd/utils/undoHelperCommand.h>
+#if defined(WANT_QT_BUILD)
+#include <mayaUsdUI/ui/USDImportDialogCmd.h>
+#endif
+
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

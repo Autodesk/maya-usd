@@ -26,11 +26,11 @@
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <hdMaya/delegates/delegate.h>
+
 #if WANT_UFE_BUILD
 #include <ufe/selection.h>
 #endif // WANT_UFE_BUILD
-
-#include <hdMaya/delegates/delegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

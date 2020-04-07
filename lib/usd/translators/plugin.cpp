@@ -18,7 +18,7 @@
 
 #include <pxr/pxr.h>
 
-#include <mayaUsd_Translators/api.h>
+#include "api.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -16,7 +16,7 @@
 #ifndef PXRUSDTRANSLATORS_MESH_WRITER_H
 #define PXRUSDTRANSLATORS_MESH_WRITER_H
 
-/// \file pxrUsdTranslators/meshWriter.h
+/// \file
 
 #include <set>
 #include <string>
