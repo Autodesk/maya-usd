@@ -46,42 +46,6 @@ target_sources(${TARGET_NAME}
         xformReader.cpp
 )
 
-set(headers
-    api.h
-    cameraReader.h
-    cameraWriter.h
-    fileTextureWriter.h
-    instancerWriter.h
-    jointWriter.h
-    lightReader.h
-    lightWriter.h
-    locatorWriter.h
-    materialReader.h
-    mayaReferenceReader.h
-    mayaReferenceUpdater.h
-    meshReader.h
-    meshWriter.h
-    meshWriter_Primvars.h
-    meshWriter_Skin.h
-    meshWriter_Subdiv.h
-    nurbsCurvesReader.h
-    nurbsCurveWriter.h
-    nurbsPatchReader.h
-    nurbsSurfaceWriter.h
-    particleWriter.h
-    scopeReader.h
-    skelReader.h
-    strokeWriter.h
-    xformReader.h
-)
-
-# -----------------------------------------------------------------------------
-# promoted headers
-# -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers}
-                          BASEDIR ${TARGET_NAME}
-)
-
 # -----------------------------------------------------------------------------
 # compile definitions
 # -----------------------------------------------------------------------------

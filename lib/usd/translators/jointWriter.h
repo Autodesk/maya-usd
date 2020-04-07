@@ -16,7 +16,7 @@
 #ifndef PXRUSDTRANSLATORS_JOINT_WRITER_H
 #define PXRUSDTRANSLATORS_JOINT_WRITER_H
 
-/// \file pxrUsdTranslators/jointWriter.h
+/// \file
 
 #include <maya/MFnDependencyNode.h>
 

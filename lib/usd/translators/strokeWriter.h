@@ -16,6 +16,8 @@
 #ifndef PXRUSDTRANSLATORS_STROKE_WRITER_H
 #define PXRUSDTRANSLATORS_STROKE_WRITER_H
 
+/// \file
+
 #include <maya/MFnDependencyNode.h>
 
 #include <pxr/pxr.h>

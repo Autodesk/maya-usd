@@ -16,8 +16,6 @@
 #ifndef PXRUSDTRANSLATORS_MAYAREFERENCE_UPDATER_H
 #define PXRUSDTRANSLATORS_MAYAREFERENCE_UPDATER_H
 
-/// \file pxrUsdTranslators/mayaReferenceUpdater.h
-
 #include <maya/MFnDependencyNode.h>
 
 #include <pxr/pxr.h>

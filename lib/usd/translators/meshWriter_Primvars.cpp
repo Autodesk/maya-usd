@@ -31,7 +31,7 @@
 #include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/util.h>
 
-#include <mayaUsd_Translators/meshWriter.h>
+#include "meshWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

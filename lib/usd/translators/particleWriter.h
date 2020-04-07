@@ -16,7 +16,8 @@
 #ifndef PXRUSDTRANSLATORS_PARTICLE_WRITER_H
 #define PXRUSDTRANSLATORS_PARTICLE_WRITER_H
 
-/// \file pxrUsdTranslators/particleWriter.h
+/// \file
+
 #include <mayaUsd/fileio/transformWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 

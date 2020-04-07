@@ -19,7 +19,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/mesh.h>
 
-#include <mayaUsd_Translators/meshWriter.h>
+#include "meshWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

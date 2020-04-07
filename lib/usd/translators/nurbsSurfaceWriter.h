@@ -16,7 +16,7 @@
 #ifndef PXRUSDTRANSLATORS_NURBS_SURFACE_WRITER_H
 #define PXRUSDTRANSLATORS_NURBS_SURFACE_WRITER_H
 
-/// \file pxrUsdTranslators/nurbsSurfaceWriter.h
+/// \file
 
 #include <maya/MFnDependencyNode.h>
 

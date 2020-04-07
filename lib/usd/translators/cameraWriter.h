@@ -16,7 +16,7 @@
 #ifndef PXRUSDTRANSLATORS_CAMERA_WRITER_H
 #define PXRUSDTRANSLATORS_CAMERA_WRITER_H
 
-/// \file pxrUsdTranslators/cameraWriter.h
+/// \file
 
 #include <maya/MFnDependencyNode.h>
 

@@ -16,7 +16,7 @@
 #ifndef PXRUSDTRANSLATORS_NURBS_CURVE_WRITER_H
 #define PXRUSDTRANSLATORS_NURBS_CURVE_WRITER_H
 
-/// \file pxrUsdTranslators/nurbsCurveWriter.h
+/// \file
 
 #include <maya/MFnDependencyNode.h>
 
