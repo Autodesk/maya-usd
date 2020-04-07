@@ -49,15 +49,6 @@ list(APPEND shaderFragments_xmls
     plugInfo.json
 )
 
-set(headers
-    shaderFragments.h
-)
-
-# -----------------------------------------------------------------------------
-# promote headers
-# -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/vp2ShaderFragments)
-
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------

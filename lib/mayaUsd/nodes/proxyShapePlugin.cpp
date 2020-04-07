@@ -20,7 +20,6 @@
 #include <mayaUsd/render/pxrUsdMayaGL/proxyDrawOverride.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
-#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
 #include <maya/MStatus.h>
 #include <maya/MGlobal.h>
@@ -32,6 +31,8 @@
 #include <mayaUsd/nodes/hdImagingShape.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+
+#include "render/vp2ShaderFragments/shaderFragments.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
