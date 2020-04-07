@@ -71,6 +71,11 @@
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/usd/sdf/path.h>
 
+#include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/render/px_vp20/utils_legacy.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
+
 #if USD_VERSION_NUM > 2002
 #include <pxr/imaging/hgi/hgi.h>
 #include <pxr/imaging/hgi/tokens.h>
@@ -79,11 +84,6 @@
 #if USD_VERSION_NUM < 1911
 #include <pxr/usd/usdGeom/tokens.h>
 #endif
-
-#include <mayaUsd/render/px_vp20/utils.h>
-#include <mayaUsd/render/px_vp20/utils_legacy.h>
-#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
-#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

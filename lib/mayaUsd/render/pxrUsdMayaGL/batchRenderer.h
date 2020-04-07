@@ -47,10 +47,6 @@
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/usd/sdf/path.h>
 
-#if USD_VERSION_NUM > 2002
-#include <pxr/imaging/hd/driver.h>
-#endif
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
@@ -59,6 +55,10 @@
 #include <mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h>
 #include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/util.h>
+
+#if USD_VERSION_NUM > 2002
+#include <pxr/imaging/hd/driver.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 

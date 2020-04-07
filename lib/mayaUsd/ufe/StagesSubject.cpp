@@ -15,6 +15,20 @@
 //
 #include "StagesSubject.h"
 
+#include <vector>
+
+#include <maya/MSceneMessage.h>
+#include <maya/MMessage.h>
+
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdGeom/xformOp.h>
+
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/UsdStageMap.h>
+#include <mayaUsd/ufe/Utils.h>
+
+#include "private/InPathChange.h"
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/attributes.h>
 #endif
@@ -30,20 +44,6 @@
 #endif
 #include <unordered_map>
 #endif
-
-#include <vector>
-
-#include <maya/MSceneMessage.h>
-#include <maya/MMessage.h>
-
-#include <pxr/usd/usdGeom/tokens.h>
-#include <pxr/usd/usdGeom/xformOp.h>
-
-#include <mayaUsd/ufe/ProxyShapeHandler.h>
-#include <mayaUsd/ufe/UsdStageMap.h>
-#include <mayaUsd/ufe/Utils.h>
-
-#include "private/InPathChange.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 namespace {

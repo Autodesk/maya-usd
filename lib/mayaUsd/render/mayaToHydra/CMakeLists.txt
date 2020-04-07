@@ -18,17 +18,6 @@ target_sources(${TARGET_NAME}
         viewCommand.cpp
 )
 
-set(headers
-    defaultLightDelegate.h
-    pluginDebugCodes.h
-    renderGlobals.h
-    renderOverride.h
-    renderOverrideUtils.h
-    tokens.h
-    utils.h
-    viewCommand.h
-)
-
 # -----------------------------------------------------------------------------
 # compile definitions
 # -----------------------------------------------------------------------------
@@ -54,11 +43,6 @@ target_link_libraries(${TARGET_NAME}
 # properties
 # -----------------------------------------------------------------------------
 maya_set_plugin_properties(${TARGET_NAME})
-
-# -----------------------------------------------------------------------------
-# promote headers
-# -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/mayaToHydra)
 
 # -----------------------------------------------------------------------------
 # run-time search paths

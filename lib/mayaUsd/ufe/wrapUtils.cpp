@@ -20,9 +20,9 @@
 
 #include <pxr/base/tf/stringUtils.h>
 
-#include "Global.h"
-#include "UsdSceneItem.h"
-#include "Utils.h"
+#include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/Utils.h>
 
 using namespace MayaUsd;
 using namespace boost::python;
