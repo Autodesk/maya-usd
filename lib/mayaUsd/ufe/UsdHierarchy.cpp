@@ -28,11 +28,14 @@
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/base/tf/stringUtils.h>
 
-#include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 
 #include "private/InPathChange.h"
 #include "private/Utils.h"
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
+#endif
 
 namespace {
 	UsdPrimSiblingRange filteredChildren( const UsdPrim& prim )
