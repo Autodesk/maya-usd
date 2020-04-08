@@ -82,7 +82,6 @@ target_link_libraries(${TARGET_NAME}
         usdUtils
         vt
         ${MAYA_LIBRARIES}
-        OpenMayaFX
         mayaUsd
         mayaUsd_Schemas
 )
