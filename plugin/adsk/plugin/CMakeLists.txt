@@ -51,9 +51,20 @@ target_include_directories(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME}
     PRIVATE
-        $<$<BOOL:${Qt5_FOUND}>:mayaUsdUI>
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
+
+if (${Qt5_FOUND})
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsdUI
+    )
+else()
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsd
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # properties
