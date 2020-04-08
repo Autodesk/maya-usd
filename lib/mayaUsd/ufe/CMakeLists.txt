@@ -70,18 +70,18 @@ set(headers
     UsdUndoRenameCommand.h
     Utils.h
     UfeVersionCompat.h
+    UsdAttribute.h
+    UsdAttributes.h
+    UsdContextOps.h
+    UsdObject3d.h
+    UsdUndoCreateGroupCommand.h
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND headers
-        UsdAttribute.h
-        UsdAttributes.h
         UsdAttributesHandler.h
-        UsdContextOps.h
         UsdContextOpsHandler.h
-        UsdObject3d.h
         UsdObject3dHandler.h
-        UsdUndoCreateGroupCommand.h
     )
 endif()
 
