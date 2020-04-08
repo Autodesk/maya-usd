@@ -24,6 +24,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+// Even though the new/open callback here looks generic
+// and anyone interested in it can listen to it, it only
+// gets installed/removed by the plugin and should be ref
+// counted so that we can call "InstallListener" for each
+// plugin that gets loaded but then only actually remove
+// the MSceneMessage callback when the last plugin is 
+// unloaded and calls "RemoveListener" 
+//
+static int _newOrOpenRegistrationCount = 0;
+
+
 static
 void
 _OnMayaNewOrOpenSceneCallback(void* /*clientData*/)
@@ -53,6 +64,10 @@ UsdMayaSceneResetNotice::UsdMayaSceneResetNotice()
 void
 UsdMayaSceneResetNotice::InstallListener()
 {
+    if (_newOrOpenRegistrationCount++ > 0) {
+        return;
+    }
+
     // Send scene reset notices when changing scenes (either by switching
     // to a new empty scene or by opening a different scene). We do not listen
     // for kSceneUpdate messages since those are also emitted after a SaveAs
@@ -79,6 +94,10 @@ UsdMayaSceneResetNotice::InstallListener()
 void
 UsdMayaSceneResetNotice::RemoveListener()
 {
+    if (_newOrOpenRegistrationCount-- > 1) {
+        return;
+    }
+
     if (_afterNewCallbackId != 0) {
         MMessage::removeCallback(_afterNewCallbackId);
     }
