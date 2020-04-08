@@ -24,6 +24,15 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(IS_MACOSX TRUE)
 endif()
 
+# compiler type
+if (CMAKE_COMPILER_IS_GNUCXX)
+    set(IS_GNU TRUE)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    set(IS_CLANG TRUE)
+elseif(MSVC)
+    set(IS_MSVC TRUE)
+endif()
+
 # Appends a path to an environment variable.
 # Note: if you want to append multiple paths either call this multiple
 #       times, or send in the paths with the proper platform separator.

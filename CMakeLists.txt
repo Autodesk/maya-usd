@@ -26,6 +26,7 @@ option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
 option(BUILD_TESTS "Build tests." ON)
+option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 
 #------------------------------------------------------------------------------
@@ -46,13 +47,12 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64")
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
 )
 
 # Use RUNPATH instead of RPATH for all shared libs and executables on Linux
 if(IS_LINUX)
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
 endif()
 
 #------------------------------------------------------------------------------
@@ -128,20 +128,7 @@ endif()
 #------------------------------------------------------------------------------
 # compiler configuration
 #------------------------------------------------------------------------------
-# CXXDefaults will set a variety of variables for the project.
-# Consume them here. This is an effort to keep the most common
-# build files readable.
-include(CXXDefaults)
-add_definitions(${_PXR_CXX_DEFINITIONS} -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
-set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-
-if(NOT WIN32)
-    set(CMAKE_CXX_FLAGS
-        -msse3
-        "${CMAKE_CXX_FLAGS} ${_PXR_CXX_FLAGS}"
-    )
-endif()
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+include(cmake/compiler_config.cmake)
 
 #------------------------------------------------------------------------------
 # test

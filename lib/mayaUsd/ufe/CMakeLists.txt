@@ -124,7 +124,7 @@ target_sources(${UFE_PYTHON_TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
     PRIVATE
@@ -132,6 +132,8 @@ target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
         MFB_ALT_PACKAGE_NAME=${PROJECT_NAME}
         MFB_PACKAGE_MODULE=ufe
 )
+
+mayaUsd_compile_config(${UFE_PYTHON_TARGET_NAME})
 
 # -----------------------------------------------------------------------------
 # link libraries

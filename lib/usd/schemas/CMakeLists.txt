@@ -21,6 +21,11 @@ set(headers
 )
 
 # -----------------------------------------------------------------------------
+# compiler configuration
+# -----------------------------------------------------------------------------
+mayaUsd_compile_config(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
 mayaUsd_promoteHeaderList(HEADERS ${headers}
@@ -154,7 +159,7 @@ target_sources(${TARGET_PYTHON_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_PYTHON_NAME}
     PRIVATE
@@ -162,6 +167,8 @@ target_compile_definitions(${TARGET_PYTHON_NAME}
         MFB_ALT_PACKAGE_NAME=${SCHEMAS_LIBRARY_NAME}
         MFB_PACKAGE_MODULE=mayaUsd.schemas
 )
+
+mayaUsd_compile_config(${TARGET_PYTHON_NAME})
 
 # -----------------------------------------------------------------------------
 # properties

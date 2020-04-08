@@ -51,6 +51,27 @@ set(AL_USDMAYA_LOCATION_NAME
     "Name of the environment variable used to store AL_USDMaya installation location"
 )
 
+#------------------------------------------------------------------------------
+# compiler configuration
+#------------------------------------------------------------------------------
+# CXXDefaults will set a variety of variables for the project.
+# Consume them here. This is an effort to keep the most common
+# build files readable.
+list(APPEND CMAKE_MODULE_PATH
+    ${PROJECT_SOURCE_DIR}/../pxr/cmake/defaults
+)
+include(CXXDefaults)
+add_definitions(${_PXR_CXX_DEFINITIONS} -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
+set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+
+if(NOT WIN32)
+    set(CMAKE_CXX_FLAGS
+        -msse3
+        "${CMAKE_CXX_FLAGS} ${_PXR_CXX_FLAGS}"
+    )
+endif()
+string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+
 # Build all the utils
 set(EVENTS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/utils)
 set(MAYAUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/mayautils)
