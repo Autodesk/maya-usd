@@ -132,6 +132,8 @@ sys.exit(maya.cmds.AL_maya_test_UnitTestHarness())
 
 mayaUsd_add_test(${TARGET_NAME}
     PYTHON_COMMAND "${pycode}"
+    ENV
+        "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

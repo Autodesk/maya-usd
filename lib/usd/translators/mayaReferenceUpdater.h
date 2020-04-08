@@ -16,14 +16,11 @@
 #ifndef PXRUSDTRANSLATORS_MAYAREFERENCE_UPDATER_H
 #define PXRUSDTRANSLATORS_MAYAREFERENCE_UPDATER_H
 
-/// \file pxrUsdTranslators/mayaReferenceUpdater.h
-
-#include "pxr/pxr.h"
-
-#include "../../fileio/primUpdater.h"
-
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/pxr.h>
+
+#include <mayaUsd/fileio/primUpdater.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

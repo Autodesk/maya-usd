@@ -16,16 +16,14 @@
 #ifndef HDMAYA_DELEGATE_BASE_H
 #define HDMAYA_DELEGATE_BASE_H
 
-#include <pxr/pxr.h>
-
-#include <pxr/imaging/hd/renderIndex.h>
-#include <pxr/imaging/hd/sceneDelegate.h>
-
-#include <pxr/usd/sdf/path.h>
-
 #include <maya/MDagPath.h>
 
-#include "delegate.h"
+#include <pxr/pxr.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/usd/sdf/path.h>
+
+#include <hdMaya/delegates/delegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -43,8 +43,6 @@ target_compile_definitions(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
     PRIVATE
-        ${CMAKE_BINARY_DIR}/include
-        ${PXR_INCLUDE_DIRS}
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
@@ -53,20 +51,20 @@ target_include_directories(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME}
     PRIVATE
-        ar 
-        gf
-        kind
-        plug
-        sdf
-        tf
-        usd
-        usdGeom
-        usdUtils
-        mayaUsd
-        $<$<BOOL:${Qt5_FOUND}>:mayaUsdUI>
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
-        ${MAYA_LIBRARIES}
 )
+
+if (${Qt5_FOUND})
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsdUI
+    )
+else()
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsd
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # properties

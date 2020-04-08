@@ -16,34 +16,31 @@
 #ifndef PXRUSDTRANSLATORS_MESH_WRITER_H
 #define PXRUSDTRANSLATORS_MESH_WRITER_H
 
-/// \file pxrUsdTranslators/meshWriter.h
+/// \file
 
-#include "pxr/pxr.h"
-
-#include "../../fileio/primWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/primvar.h"
+#include <set>
+#include <string>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
 #include <maya/MString.h>
 
-#include <set>
-#include <string>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/gprim.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/primvar.h>
 
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Exports Maya mesh objects (MFnMesh)as UsdGeomMesh prims, taking into account
 /// subd/poly, skinning, reference objects, UVs, and color sets.

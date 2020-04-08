@@ -13,13 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #ifndef HDMAYA_AL_DEBUG_CODES_H
 #define HDMAYA_AL_DEBUG_CODES_H
 
-#include <pxr/pxr.h>
-
 #include <pxr/base/tf/debug.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
