@@ -16,27 +16,24 @@
 #ifndef PXRUSDTRANSLATORS_PARTICLE_WRITER_H
 #define PXRUSDTRANSLATORS_PARTICLE_WRITER_H
 
-/// \file pxrUsdTranslators/particleWriter.h
+/// \file
 
-#include "pxr/pxr.h"
-
-#include "../../fileio/transformWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/points.h"
-
-#include <maya/MFnDependencyNode.h>
-#include <maya/MString.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <utility>
 #include <vector>
 
+#include <maya/MFnDependencyNode.h>
+#include <maya/MString.h>
+
+#include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/points.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class PxrUsdTranslators_ParticleWriter : public UsdMayaTransformWriter
 {

@@ -13,12 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include "mayaAttrs.h"
+#include <maya/MNodeClass.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
-#include <maya/MNodeClass.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 #define SET_NODE_CLASS(nodeTypeName)     \
     using namespace nodeTypeName;        \

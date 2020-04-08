@@ -1,15 +1,14 @@
 #ifndef HDMAYA_AL_PROXY_ADAPTER_H
 #define HDMAYA_AL_PROXY_ADAPTER_H
 
-#include "../delegates/proxyUsdImagingDelegate.h"
-#include "shapeAdapter.h"
-
 #include <pxr/pxr.h>
 #include <pxr/base/tf/weakBase.h>
-
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include "../../../listeners/proxyShapeNotice.h"
+#include <mayaUsd/listeners/proxyShapeNotice.h>
+
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/proxyUsdImagingDelegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

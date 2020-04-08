@@ -58,7 +58,7 @@ target_compile_definitions(${TARGET_NAME}
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
-    PUBLIC
+    PRIVATE
         ${MAYA_INCLUDE_DIRS}
         ${CMAKE_BINARY_DIR}
 )

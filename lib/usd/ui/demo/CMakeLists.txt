@@ -28,19 +28,12 @@ target_sources(${PROJECT_NAME}
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
-target_include_directories(${PROJECT_NAME}
-    PRIVATE
-        ${CMAKE_BINARY_DIR}/include
-)
 
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        # For now including this so we get boost path added.
-        usd
-        mayaUsd
         mayaUsdUI
         Qt5::Core
         Qt5::Gui

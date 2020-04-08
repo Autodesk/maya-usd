@@ -13,15 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
-#include "../../fileio/primReaderRegistry.h"
-#include "../../fileio/translators/translatorCurves.h"
-
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/translators/translatorCurves.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PXRUSDMAYA_DEFINE_READER(UsdGeomNurbsCurves, args, context)
 {

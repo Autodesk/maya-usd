@@ -13,19 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/pxr.h>
+#include <memory>
 
+#include <maya/MFnPointLight.h>
+
+#include <pxr/pxr.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 #include <pxr/usd/usdLux/tokens.h>
 
-#include <maya/MFnPointLight.h>
-
-#include "adapterDebugCodes.h"
-#include "adapterRegistry.h"
-#include "lightAdapter.h"
-
-#include <memory>
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/lightAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

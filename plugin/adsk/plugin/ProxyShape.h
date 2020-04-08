@@ -15,11 +15,12 @@
 //
 #pragma once
 
-#include "base/api.h"
+#include <pxr/pxr.h>
 
+#include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
-#include "pxr/pxr.h"
+#include "base/api.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
