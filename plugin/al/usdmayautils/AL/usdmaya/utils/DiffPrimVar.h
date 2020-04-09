@@ -45,6 +45,7 @@ enum DiffComponents
   kCreaseLengths = 1 << 8, ///< the edge crease lengths
   kCornerIndices = 1 << 9, ///< the vertex creases have changed
   kCornerSharpness = 1 << 10, ///< the vertex crease weights have changed
+  kExtent = 1 << 11, ///< the point extents have changed
   kAllComponents = 0xFFFFFFFF
 };
 

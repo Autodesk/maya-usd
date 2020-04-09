@@ -127,6 +127,11 @@ UsdPrim NurbsCurve::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const S
     AL::usdmaya::utils::copyNurbsCurveBindPoseData(fnCurve, nurbs, params.m_timeCode);
   }
 
+  if(params.getBool(GeometryExportOptions::kMeshExtents))
+  {
+    AL::usdmaya::utils::copyExtent(fnCurve, nurbs.GetExtentAttr(), params.m_timeCode);
+  }
+
   return nurbs.GetPrim();
 }
 
@@ -207,6 +212,10 @@ void NurbsCurve::writeEdits(UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& 
   if(diff_curves & AL::usdmaya::utils::kCurvePoints)
   {
     AL::usdmaya::utils::copyPoints(fnCurve, nurbsCurvesPrim.GetPointsAttr());
+  }
+  if(diff_curves & AL::usdmaya::utils::kCurveExtent)
+  {
+    AL::usdmaya::utils::copyExtent(fnCurve, nurbsCurvesPrim.GetExtentAttr());
   }
   if(diff_curves & AL::usdmaya::utils::kCurveVertexCounts)
   {

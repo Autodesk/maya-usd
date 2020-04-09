@@ -95,6 +95,11 @@ MObject createNurbStage(bool useSingleWidth=false)
   nurb.GetKnotsAttr().Set(knots);
   nurb.GetPointsAttr().Set(points);
   nurb.GetRangesAttr().Set(ranges);
+
+  VtArray<GfVec3f> extent(2);
+  UsdGeomPointBased::ComputeExtent(points, &extent);
+  nurb.GetExtentAttr().Set(extent);
+
   VtArray<int> order;
   order.push_back(4);
   nurb.GetOrderAttr().Set(order);
