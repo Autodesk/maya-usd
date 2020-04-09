@@ -103,7 +103,8 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
     return ufe::ufePathToPrim(path);
 }
 
-BOOST_PYTHON_MODULE(ufe)
+void
+wrapUtils()
 {
     def("getPrimFromRawItem", getPrimFromRawItem);
     
