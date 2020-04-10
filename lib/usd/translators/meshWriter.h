@@ -61,7 +61,6 @@ protected:
     bool writeMeshAttrs(const UsdTimeCode& usdTime, UsdGeomMesh& primSchema);
 
 private:
-    bool isMeshValid();
     void assignSubDivTagsToUSDPrim(MFnMesh& meshFn, UsdGeomMesh& primSchema);
 
     /// Writes skeleton skinning data for the mesh if it has skin clusters.

@@ -44,8 +44,10 @@
 
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/translators/translatorMesh.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/meshReadUtils.h>
+#include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
@@ -54,62 +56,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_WRITER(mesh, PxrUsdTranslators_MeshWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mesh, UsdGeomMesh);
-
-namespace {
-
-void
-_exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
-{
-    MStatus status = MS::kSuccess;
-    MFnDependencyNode dNode(obj, &status);
-    if (!status) {
-        return;
-    }
-
-    MPlug referencePlug = dNode.findPlug("referenceObject", &status);
-    if (!status || referencePlug.isNull()) {
-        return;
-    }
-
-    MPlugArray conns;
-    referencePlug.connectedTo(conns, true, false);
-    if (conns.length() == 0) {
-        return;
-    }
-
-    MObject referenceObject = conns[0].node();
-    if (!referenceObject.hasFn(MFn::kMesh)) {
-        return;
-    }
-
-    MFnMesh referenceMesh(referenceObject, &status);
-    if (!status) {
-        return;
-    }
-
-    const float* mayaRawPoints = referenceMesh.getRawPoints(&status);
-    const int numVertices = referenceMesh.numVertices();
-    VtArray<GfVec3f> points(numVertices);
-    for (int i = 0; i < numVertices; ++i) {
-        const int floatIndex = i * 3;
-        points[i].Set(mayaRawPoints[floatIndex],
-                        mayaRawPoints[floatIndex + 1],
-                        mayaRawPoints[floatIndex + 2]);
-    }
-
-    UsdGeomPrimvar primVar = primSchema.CreatePrimvar(
-        UsdUtilsGetPrefName(),
-        SdfValueTypeNames->Point3fArray,
-        UsdGeomTokens->varying);
-
-    if (!primVar) {
-        return;
-    }
-
-    primVar.GetAttr().Set(VtValue(points));
-}
-
-} // anonymous namespace
 
 const GfVec2f PxrUsdTranslators_MeshWriter::_DefaultUV = GfVec2f(0.f);
 
@@ -124,34 +70,21 @@ const GfVec4f PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGBA = GfVec4f(
     PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGB[2],
     PxrUsdTranslators_MeshWriter::_ColorSetDefaultAlpha);
 
-
 PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
         const MFnDependencyNode& depNodeFn,
         const SdfPath& usdPath,
         UsdMayaWriteJobContext& jobCtx) :
     UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    if (!TF_VERIFY(GetDagPath().isValid())) {
-        return;
-    }
-
-    if (!isMeshValid()) {
-        return;
-    }
-
-    UsdGeomMesh primSchema = UsdGeomMesh::Define(GetUsdStage(), GetUsdPath());
-    if (!TF_VERIFY(
-            primSchema,
-            "Could not define UsdGeomMesh at path '%s'\n",
-            GetUsdPath().GetText())) {
-        return;
-    }
-
-    _usdPrim = primSchema.GetPrim();
+    MayaUsd::TranslatorMeshWrite meshWriter( depNodeFn,
+                                             GetUsdStage(),
+                                             GetUsdPath(),
+                                             GetDagPath());
+    _usdPrim = meshWriter.usdMesh().GetPrim();
     if (!TF_VERIFY(
             _usdPrim,
             "Could not get UsdPrim for UsdGeomMesh at path '%s'\n",
-            primSchema.GetPath().GetText())) {
+            meshWriter.usdMesh().GetPath().GetText())) {
         return;
     }
 }
@@ -182,7 +115,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 
     // Exporting reference object only once
     if (usdTime.IsDefault() && _GetExportArgs().exportReferenceObjects) {
-        _exportReferenceMesh(primSchema, GetMayaObject());
+        UsdMayaMeshUtil::exportReferenceMesh(primSchema, GetMayaObject());
     }
 
     // Write UsdSkel skeletal skinning data first, since this function will
@@ -518,35 +451,6 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                             false);
     }
 
-    return true;
-}
-
-bool
-PxrUsdTranslators_MeshWriter::isMeshValid()
-{
-    MStatus status = MS::kSuccess;
-
-    // Sanity checks
-    MFnMesh lMesh(GetDagPath(), &status);
-    if (!status) {
-        TF_RUNTIME_ERROR(
-                "MFnMesh() failed for mesh at DAG path: %s",
-                GetDagPath().fullPathName().asChar());
-        return false;
-    }
-
-    unsigned int numVertices = lMesh.numVertices();
-    unsigned int numPolygons = lMesh.numPolygons();
-    if (numVertices < 3 && numVertices > 0)
-    {
-        TF_RUNTIME_ERROR(
-                "%s is not a valid mesh, because it only has %u points,",
-                lMesh.fullPathName().asChar(), numVertices);
-    }
-    if (numPolygons == 0)
-    {
-        TF_WARN("%s has no polygons.", lMesh.fullPathName().asChar());
-    }
     return true;
 }
 

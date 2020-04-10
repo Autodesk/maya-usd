@@ -28,7 +28,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 
-#include <mayaUsd/fileio/utils/meshReadUtils.h>
+#include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/utils/util.h>
 
 using namespace boost::python;
