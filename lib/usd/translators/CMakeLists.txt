@@ -34,7 +34,6 @@ target_sources(${TARGET_NAME}
         meshWriter.cpp
         meshWriter_Primvars.cpp
         meshWriter_Skin.cpp
-        meshWriter_Subdiv.cpp
         nurbsCurveWriter.cpp
         nurbsCurvesReader.cpp
         nurbsPatchReader.cpp

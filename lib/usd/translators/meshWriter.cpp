@@ -242,7 +242,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                           sdFVLinearInterpolation);
         }
 
-        assignSubDivTagsToUSDPrim(finalMesh, primSchema);
+        UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(finalMesh, primSchema, *_GetSparseValueWriter());
     }
 
     // Holes - we treat InvisibleFaces as holes

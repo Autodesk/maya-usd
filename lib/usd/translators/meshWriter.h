@@ -61,8 +61,6 @@ protected:
     bool writeMeshAttrs(const UsdTimeCode& usdTime, UsdGeomMesh& primSchema);
 
 private:
-    void assignSubDivTagsToUSDPrim(MFnMesh& meshFn, UsdGeomMesh& primSchema);
-
     /// Writes skeleton skinning data for the mesh if it has skin clusters.
     /// This method will internally determine, based on the job export args,
     /// whether the prim has skinning data and whether it is eligible for
