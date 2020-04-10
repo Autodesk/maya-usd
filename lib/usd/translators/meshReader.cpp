@@ -25,7 +25,7 @@
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
 #include <mayaUsd/fileio/translators/translatorMesh.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/utils/meshUtil.h>
+#include <mayaUsd/fileio/utils/meshReadUtils.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/utils/util.h>

@@ -15,8 +15,8 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
-#ifndef PXRUSDMAYA_MESH_UTIL_H
-#define PXRUSDMAYA_MESH_UTIL_H
+#ifndef PXRUSDMAYA_MESH_READ_UTILS_H
+#define PXRUSDMAYA_MESH_READ_UTILS_H
 
 #include <maya/MDagPath.h>
 #include <maya/MFnMesh.h>
@@ -51,39 +51,38 @@ namespace UsdMayaMeshUtil
     /// Gets the internal emit-normals tag on the Maya \p mesh, placing it in
     /// \p value. Returns true if the tag exists on the mesh, and false if not.
     MAYAUSD_CORE_PUBLIC
-    bool GetEmitNormalsTag(const MFnMesh &mesh, bool* value);
+    bool getEmitNormalsTag(const MFnMesh &mesh, bool* value);
 
     /// Sets the internal emit-normals tag on the Maya \p mesh.
     /// This value indicates to the exporter whether it should write out the
     /// normals for the mesh to USD.
     MAYAUSD_CORE_PUBLIC
-    void SetEmitNormalsTag(MFnMesh &meshFn, const bool emitNormals);
+    void setEmitNormalsTag(MFnMesh &meshFn, const bool emitNormals);
 
     /// Helper method for getting Maya mesh normals as a VtVec3fArray.
     MAYAUSD_CORE_PUBLIC
-    bool GetMeshNormals(
-        const MFnMesh& mesh,
-        VtArray<GfVec3f>* normalsArray,
-        TfToken* interpolation);
+    bool getMeshNormals(const MFnMesh& mesh,
+                        VtArray<GfVec3f>* normalsArray, 
+                        TfToken* interpolation);
 
     /// Gets the subdivision scheme tagged for the Maya mesh by consulting the
     /// adaptor for \c UsdGeomMesh.subdivisionSurface, and then falling back to
     /// the RenderMan for Maya attribute.
     MAYAUSD_CORE_PUBLIC
-    TfToken GetSubdivScheme(const MFnMesh &mesh);
+    TfToken getSubdivScheme(const MFnMesh &mesh);
 
     /// Gets the subdivision interpolate boundary tagged for the Maya mesh by
     /// consulting the adaptor for \c UsdGeomMesh.interpolateBoundary, and then
     /// falling back to the RenderMan for Maya attribute.
     MAYAUSD_CORE_PUBLIC
-    TfToken GetSubdivInterpBoundary(const MFnMesh &mesh);
+    TfToken getSubdivInterpBoundary(const MFnMesh &mesh);
 
     /// Gets the subdivision face-varying linear interpolation tagged for the
     /// Maya mesh by consulting the adaptor for
     /// \c UsdGeomMesh.faceVaryingLinearInterpolation, and then falling back to
     /// the OpenSubdiv2-style tagging.
     MAYAUSD_CORE_PUBLIC
-    TfToken GetSubdivFVLinearInterpolation(const MFnMesh& mesh);
+    TfToken getSubdivFVLinearInterpolation(const MFnMesh& mesh);
 
     MAYAUSD_CORE_PUBLIC
     void assignPrimvarsToMesh(const UsdGeomMesh&, const MObject&, const TfToken::Set&);
