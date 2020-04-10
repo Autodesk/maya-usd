@@ -73,6 +73,15 @@ namespace UsdMayaMeshUtil
     MAYAUSD_CORE_PUBLIC
     void assignSubDivTagsToUSDPrim(MFnMesh&, UsdGeomMesh&, UsdUtilsSparseValueWriter&);
 
+    MAYAUSD_CORE_PUBLIC
+    void writeVertexData(const MFnMesh&, UsdGeomMesh&, const UsdTimeCode&, UsdUtilsSparseValueWriter&);
+
+    MAYAUSD_CORE_PUBLIC
+    void writeFaceVertexIndicesData(const MFnMesh&, UsdGeomMesh&, const UsdTimeCode&, UsdUtilsSparseValueWriter&);
+
+    MAYAUSD_CORE_PUBLIC
+    void writeInvisibleFacesData(const MFnMesh&, UsdGeomMesh&, UsdUtilsSparseValueWriter&);
+
 } // namespace UsdMayaMeshUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
