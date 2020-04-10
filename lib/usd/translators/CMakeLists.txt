@@ -24,6 +24,7 @@ target_sources(${TARGET_NAME}
         fileTextureWriter.cpp
         instancerWriter.cpp
         jointWriter.cpp
+        jointWriteUtils.cpp
         lightReader.cpp
         lightWriter.cpp
         locatorWriter.cpp
@@ -33,16 +34,26 @@ target_sources(${TARGET_NAME}
         meshReader.cpp
         meshWriter.cpp
         meshWriter_Primvars.cpp
-        meshWriter_Skin.cpp
-        nurbsCurveWriter.cpp
         nurbsCurvesReader.cpp
+        nurbsCurveWriter.cpp
         nurbsPatchReader.cpp
         nurbsSurfaceWriter.cpp
         particleWriter.cpp
         scopeReader.cpp
-        strokeWriter.cpp
         skelReader.cpp
+        strokeWriter.cpp
         xformReader.cpp
+)
+
+set(headers
+    jointWriteUtils.h
+)
+
+# -----------------------------------------------------------------------------
+# promoted headers
+# -----------------------------------------------------------------------------
+mayaUsd_promoteHeaderList(HEADERS ${headers}
+                          BASEDIR ${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
@@ -140,3 +151,6 @@ if(IS_WINDOWS)
     )
 endif()
  
+install(FILES ${headers}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${TARGET_NAME}
+)
