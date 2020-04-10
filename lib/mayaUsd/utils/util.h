@@ -556,6 +556,41 @@ MString convert(const TfToken& token);
 MAYAUSD_CORE_PUBLIC
 std::string convert(const MString&);
 
+MAYAUSD_CORE_PUBLIC
+MDagPath getDagPath(const MFnDependencyNode& depNodeFn, const bool reportError = true);
+
+MAYAUSD_CORE_PUBLIC
+MDagPathMap<SdfPath> getDagPathMap(const MFnDependencyNode& depNodeFn, const SdfPath& usdPath);
+
+MAYAUSD_CORE_PUBLIC
+VtIntArray shiftIndices(const VtIntArray& array, int shift);
+
+template <typename T>
+VtValue PushFirstValue(VtArray<T> arr, const T& value)
+{
+    arr.resize(arr.size() + 1);
+    std::move_backward(arr.begin(), arr.end() - 1, arr.end());
+    arr[0] = value;
+    return VtValue(arr);
+}
+
+MAYAUSD_CORE_PUBLIC
+VtValue pushFirstValue(const VtValue& arr, const VtValue& defaultValue);
+
+template <typename T>
+VtValue PopFirstValue(VtArray<T> arr)
+{
+    std::move(arr.begin() + 1, arr.end(), arr.begin());
+    arr.pop_back();
+    return VtValue(arr);
+}
+
+MAYAUSD_CORE_PUBLIC
+VtValue popFirstValue(const VtValue& arr);
+
+MAYAUSD_CORE_PUBLIC
+bool containsUnauthoredValues(const VtIntArray& indices);
+
 } // namespace UsdMayaUtil
 
 

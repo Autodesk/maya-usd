@@ -2029,3 +2029,115 @@ UsdMayaUtil::convert(const std::string& str)
 {
     return MString(str.data(), static_cast<int>(str.size()));
 }
+
+MDagPath 
+UsdMayaUtil::getDagPath(const MFnDependencyNode& depNodeFn, const bool reportError)
+{
+    try {
+        const MFnDagNode& dagNodeFn =
+            dynamic_cast<const MFnDagNode&>(depNodeFn);
+
+        MStatus status;
+        const MDagPath dagPath = dagNodeFn.dagPath(&status);
+        if (status == MS::kSuccess) {
+            const bool dagPathIsValid = dagPath.isValid(&status);
+            if (status == MS::kSuccess && dagPathIsValid) {
+                return dagPath;
+            }
+        }
+
+        if (reportError) {
+            TF_CODING_ERROR(
+                "Invalid MDagPath for MFnDagNode '%s'. Verify that it was "
+                "constructed using an MDagPath.",
+                dagNodeFn.fullPathName().asChar());
+        }
+    }
+    catch (const std::bad_cast& /* e */) {
+        // This is not a DAG node, so it can't have a DAG path.
+    }
+
+    return MDagPath();
+}
+
+UsdMayaUtil::MDagPathMap<SdfPath> 
+UsdMayaUtil::getDagPathMap(const MFnDependencyNode& depNodeFn, const SdfPath& usdPath)
+{
+    const MDagPath dagPath = UsdMayaUtil::getDagPath(depNodeFn, /* reportError = */ false);
+    if (dagPath.isValid()) {
+        return UsdMayaUtil::MDagPathMap<SdfPath>({{dagPath, usdPath}});
+    }
+
+    return UsdMayaUtil::MDagPathMap<SdfPath>({});
+}
+
+VtIntArray
+UsdMayaUtil::shiftIndices(const VtIntArray& array, int shift)
+{
+    VtIntArray output(array.size());
+    for (size_t i = 0; i < array.size(); ++i) {
+        output[i] = std::max(0, array[i] + shift);
+    }
+    return output;
+}
+
+VtValue
+UsdMayaUtil::pushFirstValue(const VtValue& arr, const VtValue& defaultValue)
+{
+    if (arr.IsHolding<VtArray<float>>() &&
+            defaultValue.IsHolding<float>()) {
+        return UsdMayaUtil::PushFirstValue(
+                arr.UncheckedGet<VtArray<float>>(),
+                defaultValue.UncheckedGet<float>());
+    }
+    else if (arr.IsHolding<VtArray<GfVec2f>>() &&
+            defaultValue.IsHolding<GfVec2f>()) {
+        return UsdMayaUtil::PushFirstValue(
+                arr.UncheckedGet<VtArray<GfVec2f>>(),
+                defaultValue.UncheckedGet<GfVec2f>());
+    }
+    else if (arr.IsHolding<VtArray<GfVec3f>>() &&
+            defaultValue.IsHolding<GfVec3f>()) {
+        return UsdMayaUtil::PushFirstValue(
+                arr.UncheckedGet<VtArray<GfVec3f>>(),
+                defaultValue.UncheckedGet<GfVec3f>());
+    }
+    else if (arr.IsHolding<VtArray<GfVec4f>>() &&
+            defaultValue.IsHolding<GfVec4f>()) {
+        return UsdMayaUtil::PushFirstValue(
+                arr.UncheckedGet<VtArray<GfVec4f>>(),
+                defaultValue.UncheckedGet<GfVec4f>());
+    }
+
+    TF_CODING_ERROR("Unsupported type");
+    return VtValue();
+};
+
+VtValue
+UsdMayaUtil::popFirstValue(const VtValue& arr) 
+{
+    if (arr.IsHolding<VtArray<float>>()) {
+        return UsdMayaUtil::PopFirstValue(arr.UncheckedGet<VtArray<float>>());
+    }
+    else if (arr.IsHolding<VtArray<GfVec2f>>()) {
+        return UsdMayaUtil::PopFirstValue(arr.UncheckedGet<VtArray<GfVec2f>>());
+    }
+    else if (arr.IsHolding<VtArray<GfVec3f>>()) {
+        return UsdMayaUtil::PopFirstValue(arr.UncheckedGet<VtArray<GfVec3f>>());
+    }
+    else if (arr.IsHolding<VtArray<GfVec4f>>()) {
+        return UsdMayaUtil::PopFirstValue(arr.UncheckedGet<VtArray<GfVec4f>>());
+    }
+
+    TF_CODING_ERROR("Unsupported type");
+    return VtValue();
+};
+
+bool 
+UsdMayaUtil::containsUnauthoredValues(const VtIntArray& indices)
+{
+    return std::any_of(
+            indices.begin(),
+            indices.end(),
+            [](const int& i) { return i < 0; });
+}

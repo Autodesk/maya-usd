@@ -57,8 +57,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_REGISTER_WRITER(mesh, PxrUsdTranslators_MeshWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mesh, UsdGeomMesh);
 
-const GfVec2f PxrUsdTranslators_MeshWriter::_DefaultUV = GfVec2f(0.f);
-
 const GfVec3f PxrUsdTranslators_MeshWriter::_ShaderDefaultRGB = GfVec3f(0.5);
 const float PxrUsdTranslators_MeshWriter::_ShaderDefaultAlpha = 0.0;
 
@@ -225,39 +223,8 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     }
 
     // == Write UVSets as Vec2f Primvars
-    MStringArray uvSetNames;
     if (_GetExportArgs().exportMeshUVs) {
-        status = finalMesh.getUVSetNames(uvSetNames);
-    }
-    for (unsigned int i = 0; i < uvSetNames.length(); ++i) {
-        VtArray<GfVec2f> uvValues;
-        TfToken interpolation;
-        VtArray<int> assignmentIndices;
-
-        if (!_GetMeshUVSetData(
-                finalMesh.object(),
-                uvSetNames[i],
-                &uvValues,
-                &interpolation,
-                &assignmentIndices)) {
-            continue;
-        }
-
-        // XXX:bug 118447
-        // We should be able to configure the UV map name that triggers this
-        // behavior, and the name to which it exports.
-        // The UV Set "map1" is renamed st. This is a Pixar/USD convention.
-        TfToken setName(uvSetNames[i].asChar());
-        if (setName == "map1") {
-            setName = UsdUtilsGetPrimaryUVSetName();
-        }
-
-        _createUVPrimVar(primSchema,
-                         setName,
-                         usdTime,
-                         uvValues,
-                         interpolation,
-                         assignmentIndices);
+        UsdMayaMeshUtil::writeUVSetsAsVec2fPrimvars(finalMesh, primSchema, usdTime, *_GetSparseValueWriter());
     }
 
     // == Gather ColorSets

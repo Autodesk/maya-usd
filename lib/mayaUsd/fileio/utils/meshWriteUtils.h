@@ -82,6 +82,12 @@ namespace UsdMayaMeshUtil
     MAYAUSD_CORE_PUBLIC
     void writeInvisibleFacesData(const MFnMesh&, UsdGeomMesh&, UsdUtilsSparseValueWriter&);
 
+    MAYAUSD_CORE_PUBLIC
+    bool getMeshUVSetData(const MFnMesh&, const MString&, VtArray<GfVec2f>*, TfToken*, VtArray<int>*);
+
+    MAYAUSD_CORE_PUBLIC
+    bool writeUVSetsAsVec2fPrimvars(const MFnMesh&, UsdGeomMesh&, const UsdTimeCode&, UsdUtilsSparseValueWriter&);
+
 } // namespace UsdMayaMeshUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE
