@@ -33,6 +33,7 @@
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -159,7 +160,7 @@ PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     // Gprim
     VtVec3fArray extent(2);
     UsdGeomCurves::ComputeExtent(points, curveWidths, &extent);
-    _SetAttribute(primSchema.CreateExtentAttr(), &extent, usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), &extent, *_GetSparseValueWriter(), usdTime);
 
     // find the number of segments: (vertexCount - order + 1) per curve
     // varying interpolation is number of segments + number of curves
@@ -189,13 +190,13 @@ PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
 
     // Curve
     // not animatable
-    _SetAttribute(primSchema.GetOrderAttr(), curveOrder);
-    _SetAttribute(primSchema.GetCurveVertexCountsAttr(), &curveVertexCounts);
-    _SetAttribute(primSchema.GetWidthsAttr(), &curveWidths);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetOrderAttr(), curveOrder, *_GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetCurveVertexCountsAttr(), &curveVertexCounts, *_GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetWidthsAttr(), &curveWidths, *_GetSparseValueWriter());
 
-    _SetAttribute(primSchema.GetKnotsAttr(), &curveKnots); // not animatable
-    _SetAttribute(primSchema.GetRangesAttr(), &ranges); // not animatable
-    _SetAttribute(primSchema.GetPointsAttr(), &points, usdTime); // CVs
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetKnotsAttr(), &curveKnots, *_GetSparseValueWriter()); // not animatable
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetRangesAttr(), &ranges, *_GetSparseValueWriter()); // not animatable
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), &points, *_GetSparseValueWriter(), usdTime); // CVs
 
     // TODO: Handle periodic and non-periodic cases
 

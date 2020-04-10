@@ -330,6 +330,16 @@ struct UsdMayaWriteUtil
         return valueWriter.SetAttribute(attr, VtValue::Take(*value), time);
     }
 
+    template <typename T>
+    static bool SetAttribute(const UsdAttribute& usdAttr,
+                             const T& value,
+                             const UsdTimeCode& usdTime,
+                             UsdUtilsSparseValueWriter *valueWriter)
+    {
+        return valueWriter ?
+               valueWriter->SetAttribute(usdAttr, VtValue(value), usdTime) :
+               usdAttr.Set(value, usdTime);
+    }
 };
 
 

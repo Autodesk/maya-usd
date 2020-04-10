@@ -219,10 +219,10 @@ UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
                     UsdGeomTokens->inherited :
                     UsdGeomTokens->invisible);
 
-            _SetAttribute(
-                imageable.CreateVisibilityAttr(VtValue(), true),
-                visibilityTok,
-                usdTime);
+            UsdMayaWriteUtil::SetAttribute(imageable.CreateVisibilityAttr(VtValue(), true),
+                                           visibilityTok,
+                                           usdTime,
+                                           &_valueWriter);
         }
     }
 

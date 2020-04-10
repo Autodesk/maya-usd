@@ -449,18 +449,6 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
     return usdAttr;
 }
 
-template <typename T>
-static bool
-_SetAttribute(const UsdAttribute& usdAttr,
-              const T &value,
-              const UsdTimeCode &usdTime,
-              UsdUtilsSparseValueWriter *valueWriter)
-{
-    return valueWriter ?
-           valueWriter->SetAttribute(usdAttr, VtValue(value), usdTime) :
-           usdAttr.Set(value, usdTime);
-}
-
 /// Converts a vec from display to linear color if its role is color.
 template <typename T>
 static
@@ -877,7 +865,7 @@ UsdMayaWriteUtil::SetUsdAttr(
         return false;
     }
 
-    return _SetAttribute(usdAttr, val, usdTime, valueWriter);
+    return SetAttribute(usdAttr, val, usdTime, valueWriter);
 }
 
 // This method inspects the JSON blob stored in the
@@ -1038,7 +1026,7 @@ UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                                     /*custom*/ false,
                                     attrDef->GetVariability());
                         const UsdTimeCode usdTime = UsdTimeCode::Default();
-                        _SetAttribute(attr, value, usdTime, valueWriter);
+                        SetAttribute(attr, value, usdTime, valueWriter);
                     }
                 }
             }
@@ -1081,7 +1069,7 @@ UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
                     attrDef->GetTypeName(),
                     /*custom*/ false,
                     attrDef->GetVariability());
-            if (_SetAttribute(attr, value, usdTime, valueWriter)) {
+            if (SetAttribute(attr, value, usdTime, valueWriter)) {
                 count++;
             }
         }
@@ -1192,7 +1180,7 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](double x) {
                 return (int64_t) x;
             });
-        _SetAttribute(instancer.CreateIdsAttr(), indicesOrIds, usdTime,
+        SetAttribute(instancer.CreateIdsAttr(), indicesOrIds, usdTime,
                 valueWriter);
     }
     else {
@@ -1222,13 +1210,13 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                     return (int) numPrototypes - 1;
                 }
             });
-        _SetAttribute(instancer.CreateProtoIndicesAttr(), vtArray,
+        SetAttribute(instancer.CreateProtoIndicesAttr(), vtArray,
                       usdTime, valueWriter);
     }
     else {
         VtArray<int> vtArray;
         vtArray.assign(numInstances, 0);
-        _SetAttribute(instancer.CreateProtoIndicesAttr(),
+        SetAttribute(instancer.CreateProtoIndicesAttr(),
                       vtArray, usdTime, valueWriter);
     }
 
@@ -1244,13 +1232,13 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](const MVector& v) {
                 return GfVec3f(v.x, v.y, v.z);
             });
-        _SetAttribute(instancer.CreatePositionsAttr(), vtArray, usdTime,
+        SetAttribute(instancer.CreatePositionsAttr(), vtArray, usdTime,
                       valueWriter);
     }
     else {
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(0.0f));
-        _SetAttribute(instancer.CreatePositionsAttr(),
+        SetAttribute(instancer.CreatePositionsAttr(),
                       vtArray, usdTime, valueWriter);
     }
 
@@ -1269,13 +1257,13 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                         * GfRotation(GfVec3d::ZAxis(), v.z);
                 return GfQuath(rot.GetQuat());
             });
-        _SetAttribute(instancer.CreateOrientationsAttr(),
+        SetAttribute(instancer.CreateOrientationsAttr(),
                       vtArray, usdTime, valueWriter);
     }
     else {
         VtQuathArray vtArray;
         vtArray.assign(numInstances, GfQuath(0.0f));
-        _SetAttribute(instancer.CreateOrientationsAttr(),
+        SetAttribute(instancer.CreateOrientationsAttr(),
                       vtArray, usdTime, valueWriter);
     }
 
@@ -1291,13 +1279,13 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](const MVector& v) {
                 return GfVec3f(v.x, v.y, v.z);
             });
-        _SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
+        SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
                       valueWriter);
     }
     else {
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(1.0));
-        _SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
+        SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
                       valueWriter);
     }
 
@@ -1319,7 +1307,7 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                 }
             }
         }
-        _SetAttribute(instancer.CreateInvisibleIdsAttr(), invisibleIds, usdTime,
+        SetAttribute(instancer.CreateInvisibleIdsAttr(), invisibleIds, usdTime,
                       valueWriter);
     }
 
