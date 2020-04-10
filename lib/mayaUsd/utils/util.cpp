@@ -2029,3 +2029,44 @@ UsdMayaUtil::convert(const std::string& str)
 {
     return MString(str.data(), static_cast<int>(str.size()));
 }
+
+MDagPath 
+UsdMayaUtil::getDagPath(const MFnDependencyNode& depNodeFn, const bool reportError)
+{
+    try {
+        const MFnDagNode& dagNodeFn =
+            dynamic_cast<const MFnDagNode&>(depNodeFn);
+
+        MStatus status;
+        const MDagPath dagPath = dagNodeFn.dagPath(&status);
+        if (status == MS::kSuccess) {
+            const bool dagPathIsValid = dagPath.isValid(&status);
+            if (status == MS::kSuccess && dagPathIsValid) {
+                return dagPath;
+            }
+        }
+
+        if (reportError) {
+            TF_CODING_ERROR(
+                "Invalid MDagPath for MFnDagNode '%s'. Verify that it was "
+                "constructed using an MDagPath.",
+                dagNodeFn.fullPathName().asChar());
+        }
+    }
+    catch (const std::bad_cast& /* e */) {
+        // This is not a DAG node, so it can't have a DAG path.
+    }
+
+    return MDagPath();
+}
+
+UsdMayaUtil::MDagPathMap<SdfPath> 
+UsdMayaUtil::getDagPathMap(const MFnDependencyNode& depNodeFn, const SdfPath& usdPath)
+{
+    const MDagPath dagPath = UsdMayaUtil::getDagPath(depNodeFn, /* reportError = */ false);
+    if (dagPath.isValid()) {
+        return UsdMayaUtil::MDagPathMap<SdfPath>({{dagPath, usdPath}});
+    }
+
+    return UsdMayaUtil::MDagPathMap<SdfPath>({});
+}
