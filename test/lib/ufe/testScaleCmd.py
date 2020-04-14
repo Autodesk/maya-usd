@@ -173,6 +173,11 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
 
     # Note: marking as expected failure for now as sometimes it passes and
     #       sometimes it fails with: AssertionError: 0.5 != 2.0 within 7 places
+    #
+    # The first test cases passes because the initial scale is the same as
+    # the default scale, but subsequent scales are applied to the default
+    # scale, and thus do not compound because of MAYA-96058.
+    #
     @unittest.expectedFailure
     def testScaleUSD(self):
         '''Scale USD object, read through the Transform3d interface.'''
@@ -209,7 +214,11 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         expected = ball35Scale()
 
         # MAYA-96058: unfortunately, scale command currently requires a scale
-        # manipulator to be created to update the UFE object.
+        # manipulator to be created to update the UFE object, but such a
+        # manipulator cannot be created in batch mode, thus the scale command
+        # will not work properly. This test is expected to fail until the
+        # underlying issue can be addressed.
+        #
         manipCtx = cmds.manipScaleContext()
         cmds.setToolTo(manipCtx)
 
