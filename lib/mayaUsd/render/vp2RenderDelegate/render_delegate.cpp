@@ -31,6 +31,8 @@
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hd/tokens.h>
 
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
+
 #include "basisCurves.h"
 #include "bboxGeom.h"
 #include "instancer.h"
@@ -125,9 +127,6 @@ namespace
         */
         void Initialize()
         {
-            if (_isInitialized)
-                return;
-
             MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
             const MHWRender::MShaderManager* shaderMgr =
                 renderer ? renderer->getShaderManager() : nullptr;
@@ -154,8 +153,6 @@ namespace
                 _3dFatPointShader->setParameter(_solidColorParameterName, white);
                 _3dFatPointShader->setParameter(_pointSizeParameterName, size);
             }
-
-            _isInitialized = true;
         }
 
         /*! \brief  Returns a fallback CPV shader instance when no material is bound.
@@ -284,8 +281,6 @@ namespace
         }
 
     private:
-        bool                    _isInitialized { false };  //!< Whether the shader cache is initialized
-
         //! Shader registry used by fallback shaders
         MShaderMap              _fallbackShaders[static_cast<size_t>(FallbackShaderType::kCount)];
         MShaderMap              _3dSolidShaders;
@@ -294,8 +289,6 @@ namespace
         MHWRender::MShaderInstance*  _3dFatPointShader { nullptr };  //!< 3d shader for points
         MHWRender::MShaderInstance*  _3dCPVSolidShader { nullptr };  //!< 3d CPV solid-color shader
     };
-
-    MShaderCache sShaderCache;  //!< Global shader cache to minimize the number of unique shaders.
 
     /*! \brief  Sampler state desc hash helper class, used by sampler state cache.
     */
@@ -361,7 +354,25 @@ namespace
     MSamplerStateCache sSamplerStates;  //!< Sampler state cache
     tbb::spin_rw_mutex sSamplerRWMutex; //!< Synchronization used to protect concurrent read from serial writes
 
+    MShaderCache sShaderCache;                      //!< Global shader cache to minimize the number of unique shaders.
     const HdVP2BBoxGeom* sSharedBBoxGeom = nullptr; //!< Shared geometry for all Rprims to display bounding box
+    std::once_flag sInitializeVP2ResourcesCalled;   //!< Whether or not InitializeVP2Resources() has been called.
+
+    void InitializeVP2Resources()
+    {
+        // Shader fragments can only be registered until VP2 has been initialized, thus the function
+        // cannot be called when loading plugin (which can happen before VP2 initialization for
+        // command-line render). The fragments will be deregistered when plugin is unloaded.
+        HdVP2ShaderFragments::registerFragments();
+
+        // The shader cache should be initialized after registering shader fragments.
+        sShaderCache.Initialize();
+
+        // HdVP2BBoxGeom can only be instantiated from main thread until VP2 has been initialized.
+        if (TF_VERIFY(sSharedBBoxGeom == nullptr)) {
+            sSharedBBoxGeom = new HdVP2BBoxGeom();
+        }
+    }
 
 } // namespace
 
@@ -385,20 +396,11 @@ HdVP2RenderDelegate::HdVP2RenderDelegate(ProxyRenderDelegate& drawScene) {
     std::lock_guard<std::mutex> guard(_renderDelegateMutex);
     if (_renderDelegateCounter.fetch_add(1) == 0) {
         _resourceRegistry.reset(new HdResourceRegistry());
-
-        // HdVP2BBoxGeom can only be instantiated during the lifetime of VP2
-        // renderer from main thread. HdVP2RenderDelegate is created from main
-        // thread currently, if we need to make its creation parallel in the
-        // future we should move this code out.
-        if (TF_VERIFY(sSharedBBoxGeom == nullptr)) {
-            sSharedBBoxGeom = new HdVP2BBoxGeom();
-        }
     }
 
-    _renderParam.reset(new HdVP2RenderParam(drawScene));
+    std::call_once(sInitializeVP2ResourcesCalled, InitializeVP2Resources);
 
-    // The shader cache should be initialized after mayaUsd loads shader fragments.
-    sShaderCache.Initialize();
+    _renderParam.reset(new HdVP2RenderParam(drawScene));
 }
 
 /*! \brief  Destructor.

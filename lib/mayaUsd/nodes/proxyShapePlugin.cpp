@@ -121,9 +121,6 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         CHECK_MSTATUS(status);
     }
 
-    status = HdVP2ShaderFragments::registerFragments();
-    CHECK_MSTATUS(status);
-
     return status;
 }
 
