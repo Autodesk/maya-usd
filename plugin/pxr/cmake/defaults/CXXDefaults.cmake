@@ -17,6 +17,15 @@ include(CXXHelpers)
 include(Version)
 include(Options)
 
+# Require C++11/C++14
+if(${MAYA_APP_VERSION} STRLESS_EQUAL "2019")
+    set(CMAKE_CXX_STANDARD 11)
+elseif(${MAYA_APP_VERSION} STRGREATER_EQUAL "2019")
+    set(CMAKE_CXX_STANDARD 14)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
