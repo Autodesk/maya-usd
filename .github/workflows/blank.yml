@@ -6,9 +6,9 @@ name: CI
 # events but only for the specified branch
 on:
   push:
-    branches: [ smithw-adsk/actions_demo ]
+    branches: [ dev ]
   pull_request:
-    branches: [ smithw-adsk/actions_demo ]
+    branches: [ dev ]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
