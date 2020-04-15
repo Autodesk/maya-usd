@@ -23,6 +23,7 @@
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 
+#include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
@@ -134,6 +135,8 @@ MStatus initializePlugin(MObject obj)
         }
     }
 
+    UsdMayaSceneResetNotice::InstallListener();
+
     return status;
 }
 
@@ -180,5 +183,7 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 #endif
 
+    UsdMayaSceneResetNotice::RemoveListener();
+    
     return status;
 }
