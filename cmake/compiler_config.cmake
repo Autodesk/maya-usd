@@ -50,7 +50,7 @@ set(msvc_definitions
 #------------------------------------------------------------------------------
 # compiler configuration
 #------------------------------------------------------------------------------
-# Don not use GNU extension 
+# Do not use GNU extension 
 # Use -std=c++11 instead of -std=gnu++11
 set(CMAKE_CXX_EXTENSIONS OFF)
 
