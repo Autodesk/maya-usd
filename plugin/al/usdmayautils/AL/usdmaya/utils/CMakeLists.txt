@@ -60,7 +60,7 @@ target_link_libraries(${USDMAYA_UTILS_LIBRARY_NAME}
   usdGeom
   usdUtils
   vt
-  ${Boost_PYTHON_LIBRARY}
+  Boost::python
   ${PYTHON_LIBRARIES}
   ${MAYA_Foundation_LIBRARY}
   ${MAYA_OpenMaya_LIBRARY}

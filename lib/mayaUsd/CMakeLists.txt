@@ -26,7 +26,7 @@ endif()
 if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     set(Boost_USE_DEBUG_PYTHON ON)
 endif()
-find_package(Boost COMPONENTS filesystem REQUIRED)
+find_package(Boost COMPONENTS filesystem system REQUIRED)
 
 # -----------------------------------------------------------------------------
 # compile definitions
