@@ -67,6 +67,9 @@
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/userTaggedAttribute.h>
 #include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/converter.h>
+
+using namespace MAYAUSD_NS;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -481,6 +484,17 @@ UsdMayaWriteUtil::GetVtValue(
         const SdfValueTypeName& typeName,
         const bool linearizeColors)
 {
+    SdfValueTypeName plugValueType = Converter::getUsdTypeName(attrPlug,false);
+    const auto* converter = Converter::find(plugValueType, attrPlug.isArray());
+    if(converter && plugValueType == typeName) {
+        ConverterArgs args;
+        args._doGammaCorrection = linearizeColors;
+        
+        VtValue ret;
+        converter->convert(attrPlug,ret,args);
+        return ret;
+    }
+    
     const TfType type = typeName.GetType();
     const TfToken role = typeName.GetRole();;
     return GetVtValue(attrPlug, type, role, linearizeColors);

@@ -45,7 +45,10 @@
 
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
+
+using namespace MAYAUSD_NS;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -414,6 +417,14 @@ bool UsdMayaReadUtil::SetMayaAttr(
         MPlug& attrPlug,
         const VtValue& newValue)
 {
+    SdfValueTypeName plugValueType = Converter::getUsdTypeName(attrPlug,false);
+    const auto* converter = Converter::find(plugValueType, attrPlug.isArray());
+    if(converter && newValue.GetType() == plugValueType.GetType()) {
+        ConverterArgs args;
+        converter->convert(newValue, attrPlug, args);
+        return true;
+    }
+    
     MDGModifier modifier;
     return SetMayaAttr(attrPlug, newValue, modifier);
 }
