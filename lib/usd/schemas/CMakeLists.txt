@@ -23,6 +23,13 @@ set(headers
 # -----------------------------------------------------------------------------
 # compiler configuration
 # -----------------------------------------------------------------------------
+target_compile_definitions(${TARGET_NAME}
+    PUBLIC
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+)
+
 mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------
