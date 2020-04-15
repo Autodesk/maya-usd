@@ -132,7 +132,7 @@ namespace
 
 bool HdVP2ShaderFragments::_registered = false;
 
-// Fragment registration should be done until VP2 has been initialized, to avoid any errors from
+// Fragment registration should be done after VP2 has been initialized, to avoid any errors from
 // headless configurations or command-line renders.
 MStatus HdVP2ShaderFragments::registerFragments()
 {
@@ -233,6 +233,8 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
+    _registered = true;
+
     return MS::kSuccess;
 }
 
@@ -276,6 +278,8 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
             return MS::kFailure;
         }
     }
+
+    _registered = false;
 
 #if MAYA_API_VERSION >= 201700
     // Clear the shader manager's effect cache as well so that any changes to
