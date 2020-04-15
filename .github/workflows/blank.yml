@@ -28,8 +28,9 @@ jobs:
 
     # Check if secret can be echo'd
     - name: Echo environment
-      env: # password as an environment variable
-      super_secret: ${{ secrets.SuperSecret }}
+      # password as an environment variable
+      env:
+        super_secret: ${{ secrets.SuperSecret }}
       run: echo secret="$super_secret"
 
     # Use curl to download a file
