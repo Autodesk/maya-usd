@@ -200,7 +200,7 @@ target_link_libraries(${LIBRARY_NAME}
     usdImagingGL
     vt
     Boost::python
-    Boost::thread
+    $<IF:$<BOOL:${IS_WINDOWS}>,Boost::thread,${Boost_THREAD_LIBRARY}>
     $<$<BOOL:${IS_WINDOWS}>:Boost::chrono>
     $<$<BOOL:${IS_WINDOWS}>:Boost::date_time>
     $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::filesystem>
