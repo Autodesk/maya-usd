@@ -44,9 +44,9 @@ jobs:
         json_url: ${{ secrets.MAYA_USD_JSON_URL }}
       run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
-            curl -v --user "smithw:$super_secret" -O "$json_url"
-          else
             curl -v --user "smithw:%super_secret%" -O "%json_url%"
+          else
+            curl -v --user "smithw:$super_secret" -O "$json_url"
           fi
 
     # Show file contents
