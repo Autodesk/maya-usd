@@ -37,8 +37,8 @@ jobs:
     # Use curl to download a file
     - name: Download a file
       env:
-        - super_secret: ${{ secrets.MAYA_USD_PASSWORD }}
-        - json_url:     ${{ secrets.MAYA_USD_JSON_URL }}
+        super_secret: ${{ secrets.MAYA_USD_PASSWORD }}
+        json_url:     ${{ secrets.MAYA_USD_JSON_URL }}
       shell: bash
       run: curl -v --user "smithw:$super_secret" -O "$json_url"
 
