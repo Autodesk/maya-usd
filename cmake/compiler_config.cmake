@@ -58,8 +58,7 @@ function(mayaUsd_compile_config TARGET)
     # required compiler feature
     target_compile_features(${TARGET} 
         PRIVATE
-            $<$<VERSION_LESS:MAYA_APP_VERSION,2019>:cxx_std_11>
-            $<$<VERSION_GREATER_EQUAL:MAYA_APP_VERSION,2019>:cxx_std_14>
+            $<IF:$<VERSION_GREATER_EQUAL:MAYA_APP_VERSION,2019>,cxx_std_14,cxx_std_11>
     )
     if(IS_GNU OR IS_CLANG)
         target_compile_options(${TARGET} 
