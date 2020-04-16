@@ -30,13 +30,15 @@ jobs:
     - name: Echo environment
       # password as an environment variable
       env:
-        super_secret: ${{ secrets.SuperSecret }}
+        super_secret: ${{ secrets.MAYA_USD_PASSWORD }}
       run: echo secret="$super_secret"
 
     # Use curl to download a file
     - name: Download a file
-      run: curl -v --user "smithw:$super_secret" -O https://up.autodesk.com/2019/MAYA/Autodesk_Maya_2019_2_Update_Short-Long-descriptions.json
+      env:
+        json_url: ${{ secrets.MAYA_USD_JSON_URL }}
+      run: curl -v --user "smithw:$super_secret" -O "$json_url"
 
-    # show file contents
-    - name: Download a file
+    # Show file contents
+    - name: Cat downloaded file
       run: cat Autodesk_Maya_2019_2_Update_Short-Long-descriptions.json
