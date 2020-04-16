@@ -44,7 +44,10 @@ target_sources(${PROJECT_NAME}
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
+        # These flags are needed for Maya
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
+
         MAYAUSD_UI_EXPORT
 )
 
