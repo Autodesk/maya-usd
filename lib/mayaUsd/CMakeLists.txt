@@ -34,7 +34,6 @@ find_package(Boost COMPONENTS filesystem REQUIRED)
 target_compile_definitions(${PROJECT_NAME}
     PUBLIC
         USD_VERSION_NUM=${USD_VERSION_NUM}
-        UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}
         PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
@@ -51,6 +50,13 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
         $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
 )
+
+if(DEFINED UFE_PREVIEW_VERSION_NUM)
+    target_compile_definitions(${PROJECT_NAME}
+        PUBLIC
+            UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}
+    )
+endif()
 
 # Some of the UFE classes are exporting STL classes which causes this warning.
 if(UFE_FOUND AND MSVC)
