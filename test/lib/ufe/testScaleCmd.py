@@ -26,7 +26,7 @@ import ufe
 import unittest
 
 from functools import partial
-    
+
 def transform3dScale(transform3d):
     matrix = om.MMatrix(transform3d.inclusiveMatrix().matrix)
     return om.MTransformationMatrix(matrix).scale(om.MSpace.kObject)
@@ -132,7 +132,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         self.rewindMemento()
         self.fforwardMemento()
 
-    def runMultiSelectTestScale(self, items, expected):
+    def runMultiSelectTestScale(self, items, expected, places=7):
         '''Engine method to run multiple selection scale test.'''
 
         # Save the initial positions to the memento list.
@@ -142,7 +142,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         for relativeScale in [[4, 5, 6], [0.5, 0.2, 0.1]]:
             cmds.scale(*relativeScale, relative=True)
             expected = multiSelectCombineScales(expected, relativeScale)
-            self.multiSelectSnapShotAndTest(items, expected)
+            self.multiSelectSnapShotAndTest(items, expected, places)
 
         # Test undo, redo.
         self.multiSelectRewindMemento(items)
@@ -171,14 +171,6 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestScale(expected)
 
-    # Note: marking as expected failure for now as sometimes it passes and
-    #       sometimes it fails with: AssertionError: 0.5 != 2.0 within 7 places
-    #
-    # The first test cases passes because the initial scale is the same as
-    # the default scale, but subsequent scales are applied to the default
-    # scale, and thus do not compound because of MAYA-96058.
-    #
-    @unittest.expectedFailure
     def testScaleUSD(self):
         '''Scale USD object, read through the Transform3d interface.'''
 
@@ -213,18 +205,9 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Save the initial position to the memento list.
         expected = ball35Scale()
 
-        # MAYA-96058: unfortunately, scale command currently requires a scale
-        # manipulator to be created to update the UFE object, but such a
-        # manipulator cannot be created in batch mode, thus the scale command
-        # will not work properly. This test is expected to fail until the
-        # underlying issue can be addressed.
-        #
-        manipCtx = cmds.manipScaleContext()
-        cmds.setToolTo(manipCtx)
-
         self.runTestScale(expected)
 
-    def _testMultiSelectScaleUSD(self):
+    def testMultiSelectScaleUSD(self):
         '''Scale multiple USD objects, read through Transform3d interface.'''
 
         # Select multiple balls to scale them.
@@ -251,7 +234,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         proxyShapeXformFn = om.MFnTransform(proxyShapeXformObj)
 
         def usdSceneItemScale(item):
-            prim = usdUtils.getPrimFromSceneItem(ball35Item)
+            prim = usdUtils.getPrimFromSceneItem(item)
             if not prim.HasAttribute('xformOp:scale'):
                 return proxyShapeXformFn.scale()
             else:
@@ -276,10 +259,4 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Save the initial positions to the memento list.
         expected = [usdSceneItemScale(ballItem) for ballItem in ballItems]
 
-        # MAYA-96058: unfortunately, scale command currently requires a scale
-        # manipulator to be created to update the UFE object.
-        manipCtx = cmds.manipScaleContext()
-        cmds.setToolTo(manipCtx)
-
-        #Temporarily disabling undo redo until we fix it for PR 94
-        self.runMultiSelectTestScale(ballItems, expected)
+        self.runMultiSelectTestScale(ballItems, expected, places=6)

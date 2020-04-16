@@ -175,19 +175,6 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestMove(expected)
 
-    # MAYA-96058: unfortunately, the move command currently requires a move
-    # manipulator to be created to update the UFE object, but such a
-    # manipulator cannot be created in batch mode, thus the move command will
-    # not work properly  
-    #
-    # This test is expected to fail until the underlying issue can be addressed
-    #
-    # The first test cases fails because the initial translation is not the same
-    # as the default translation, and since all translations are applied to the
-    # default translation, they do not compound because of MAYA-96058.
-    # test cases will fail.
-    #
-    @unittest.expectedFailure
     def testMoveUSD(self):
         '''Move USD object, read through the Transform3d interface.'''
 
@@ -223,8 +210,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestMove(expected)
 
-    # Not running because of expired prim problems.  PPT, 21-Dec-2018.
-    def _testMultiSelectMoveUSD(self):
+    def testMultiSelectMoveUSD(self):
         '''Move multiple USD objects, read through Transform3d interface.'''
 
         # Select multiple balls to move them.
@@ -277,5 +263,4 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Save the initial positions to the memento list.
         expected = [usdSceneItemTranslation(ballItem) for ballItem in ballItems]
 
-        #Temporarily disabling undo redo until we fix it for PR 94
         self.runMultiSelectTestMove(ballItems, expected)
