@@ -31,13 +31,23 @@ jobs:
       # password as an environment variable
       env:
         super_secret: ${{ secrets.MAYA_USD_PASSWORD }}
-      run: echo secret="$super_secret"
+      run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            echo secret="%super_secret%"
+          else
+            echo secret="$super_secret"
+          fi
 
     # Use curl to download a file
     - name: Download a file
       env:
         json_url: ${{ secrets.MAYA_USD_JSON_URL }}
-      run: curl -v --user "smithw:$super_secret" -O "$json_url"
+      run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            curl -v --user "smithw:$super_secret" -O "$json_url"
+          else
+            curl -v --user "smithw:%super_secret%" -O "%json_url%"
+          fi
 
     # Show file contents
     - name: Cat downloaded file
