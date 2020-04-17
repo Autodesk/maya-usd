@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,32 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef HD_VP2_SHADER_FRAGMENTS
-#define HD_VP2_SHADER_FRAGMENTS
+#include "pxr/pxr.h"
+#include "pxr/base/tf/registryManager.h"
+#include "pxr/base/tf/scriptModuleLoader.h"
+#include "pxr/base/tf/token.h"
 
-#include <pxr/pxr.h>
-
-#include <maya/MStatus.h>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/*! \brief  Registration/deregistration of HdVP2 shader fragments.
-    \class  HdVP2ShaderFragments
-*/
-class HdVP2ShaderFragments
-{
-public:
-    //! Register all HdVP2 fragments
-    static MStatus registerFragments();
-
-    //! Deregister all HdVP2 fragments
-    static MStatus deregisterFragments();
-
-private:
-    //! Whether or not fragments have been registered.
-    static bool _registered;
-};
+TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
+    // List of direct dependencies for this library.
+    const std::vector<TfToken> reqs = {
+        TfToken("mayaUsd"),
+        TfToken("sdf"),
+        TfToken("tf"),
+        TfToken("usd"),
+        TfToken("usdGeom"),
+        TfToken("vt")
+    };
+    TfScriptModuleLoader::GetInstance().
+        RegisterLibrary(TfToken("ufe"), TfToken("mayaUsd.ufe"), reqs);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // HD_VP2_SHADER_FRAGMENTS

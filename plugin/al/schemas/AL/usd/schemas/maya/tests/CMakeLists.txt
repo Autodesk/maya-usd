@@ -26,7 +26,7 @@ target_link_libraries(${TARGET_NAME}
     tf
     vt
     plug
-    ${Boost_PYTHON_LIBRARY}
+    Boost::python
 )
 
 # install
@@ -46,4 +46,6 @@ endif()
 
 mayaUsd_add_test(${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
+    ENV
+        "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
 )

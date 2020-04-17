@@ -27,8 +27,13 @@ option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 set(Boost_FIND_COMPONENTS
      python
      thread
-     filesystem
 )
+if(NEED_BOOST_FILESYSTEM)
+    list(APPEND Boost_FIND_COMPONENTS
+        filesystem
+        system
+    )
+endif()
 if(WIN32)
     list(APPEND Boost_FIND_COMPONENTS
         chrono

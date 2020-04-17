@@ -7,6 +7,7 @@ set(test_script_files
     testMatrices.py
     testMayaPickwalk.py
     testRotatePivot.py
+    testUfePythonImport.py
 )
 
 set(test_support_files
