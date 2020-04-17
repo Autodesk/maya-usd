@@ -24,7 +24,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-// Siple ref count for how many plugins have initialized the callback.
+// Simple ref count for how many plugins have initialized the callback.
 // Used to keep the listener around until the last plugin asks for it
 // to be removed.
 static int _newOrOpenRegistrationCount = 0;
