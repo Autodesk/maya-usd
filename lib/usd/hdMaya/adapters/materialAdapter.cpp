@@ -230,7 +230,7 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
          HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
         node.parameters.emplace(
 #if USD_VERSION_NUM >= 1911
-            it.param.name, it.param.fallbackValue);
+            it.name, it.fallbackValue);
 #else
             it.param.GetName(), it.param.GetFallbackValue());
 #endif

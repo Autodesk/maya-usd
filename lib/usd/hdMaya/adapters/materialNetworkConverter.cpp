@@ -493,7 +493,14 @@ HdMayaMaterialNodeConverter* HdMayaMaterialNodeConverter::GetNodeConverter(
 
 HdMayaShaderParam::HdMayaShaderParam(
     const TfToken& name, const VtValue& value, const SdfValueTypeName& type)
-    : param(HdMaterialParam::ParamTypeFallback, name, value), type(type) {}
+    :
+#if USD_VERSION_NUM >= 1911
+      name(name)
+    , fallbackValue(value)
+#else
+      param(HdMaterialParam::ParamTypeFallback, name, value)
+#endif
+    , type(type) {}
 
 HdMayaMaterialNetworkConverter::HdMayaMaterialNetworkConverter(
     HdMaterialNetwork& network, const SdfPath& prefix,
@@ -530,8 +537,8 @@ HdMaterialNode* HdMayaMaterialNetworkConverter::GetMaterial(
              HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             this->ConvertParameter(
 #if USD_VERSION_NUM >= 1911
-                node, *nodeConverter, material, param.param.name,
-                param.type, &param.param.fallbackValue);
+                node, *nodeConverter, material, param.name,
+                param.type, &param.fallbackValue);
 #else
                 node, *nodeConverter, material, param.param.GetName(),
                 param.type, &param.param.GetFallbackValue());
@@ -694,7 +701,7 @@ HdMayaMaterialNetworkConverter::GetPreviewShaderParams() {
                     [](const HdMayaShaderParam& a,
                        const HdMayaShaderParam& b) -> bool {
 #if USD_VERSION_NUM >= 1911
-                        return a.param.name < b.param.name;
+                        return a.name < b.name;
 #else
                         return a.param.GetName() < b.param.GetName();
 #endif

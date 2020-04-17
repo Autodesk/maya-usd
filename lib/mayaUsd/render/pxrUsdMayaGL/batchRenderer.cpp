@@ -1016,6 +1016,9 @@ int
 UsdMayaGLBatchRenderer::GetInstancerIndexForHit(
         const HdxPickHit& hit) const
 {
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 33
+    return hit.instanceIndex;
+#else
     int ret = -1;
     if (auto delegate = _renderIndex->GetSceneDelegateForRprim(hit.objectId)) {
         delegate->GetPathForInstanceIndex(
@@ -1024,6 +1027,7 @@ UsdMayaGLBatchRenderer::GetInstancerIndexForHit(
             &ret);
     }
     return ret;
+#endif
 }
 
 /* static */
