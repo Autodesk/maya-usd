@@ -45,6 +45,10 @@ set(msvc_definitions
     # Boost
     BOOST_ALL_DYN_LINK
     BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE
+
+    # Needed to prevent Python from adding a define for snprintf
+    # since it was added in Visual Studio 2015.
+    HAVE_SNPRINTF
 )
 
 #------------------------------------------------------------------------------

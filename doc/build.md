@@ -111,6 +111,7 @@ BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries. 
 BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
 BUILD_STRICT_MODE           | enforces all warnings as errors.                           | ON
+BUILD_SHARED_LIBS			| build libraries as shared or static.						 | ON
 CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON
 
 ##### Stages
