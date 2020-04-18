@@ -27,6 +27,7 @@ option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
+option(BUILD_SHARED_LIBS "Build shared libraries." ON)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 
 #------------------------------------------------------------------------------

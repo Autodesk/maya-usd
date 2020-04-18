@@ -56,10 +56,19 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 function(mayaUsd_compile_config TARGET)
     # required compiler feature
-    target_compile_features(${TARGET} 
-        PRIVATE
-            $<IF:$<VERSION_GREATER_EQUAL:MAYA_APP_VERSION,2019>,cxx_std_14,cxx_std_11>
-    )
+    # Require C++14 if we're either building for Maya 2019 or later, or if we're building against 
+    # USD 20.05 or later. Otherwise require C++11.
+    if ((MAYA_APP_VERSION VERSION_GREATER_EQUAL 2019) OR (USD_VERSION_NUM VERSION_GREATER_EQUAL 2005))
+        target_compile_features(${TARGET} 
+            PRIVATE
+                cxx_std_14
+        )
+    else()
+        target_compile_features(${TARGET} 
+            PRIVATE
+                cxx_std_11
+        )
+    endif()
     if(IS_GNU OR IS_CLANG)
         target_compile_options(${TARGET} 
             PRIVATE
