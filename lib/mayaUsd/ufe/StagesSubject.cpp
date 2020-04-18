@@ -270,7 +270,8 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		// We need to determine if the change is a Transform3d change.
 		// We must at least pick up xformOp:translate, xformOp:rotateXYZ, 
 		// and xformOp:scale.
-		if(UsdGeomXformOp::IsXformOp(changedPath.GetNameToken()))
+		const TfToken nameToken = changedPath.GetNameToken();
+		if(nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken))
 		{
 			Ufe::Transform3d::notify(ufePath);
 		}
