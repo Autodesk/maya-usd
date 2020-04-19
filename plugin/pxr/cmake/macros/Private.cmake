@@ -854,6 +854,10 @@ function(_pxr_python_module NAME)
         SHARED
         ${args_CPPFILES}
     )
+
+    # compiler configuration
+    mayaUsd_compile_config(${LIBRARY_NAME})
+
     add_dependencies(python ${LIBRARY_NAME})
     if(args_PYTHON_FILES)
         add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_pythonfiles)
@@ -1072,6 +1076,9 @@ function(_pxr_library NAME)
             ${args_PRIVATE_HEADERS}
         )
     endif()
+
+    # compiler configuration
+    mayaUsd_compile_config(${NAME})
 
     #
     # Compute names and paths.
