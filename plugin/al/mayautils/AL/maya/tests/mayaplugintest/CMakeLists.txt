@@ -23,6 +23,9 @@ elseif(IS_LINUX)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 endif()
 
+# compiler configuration
+mayaUsd_compile_config(${TARGET_NAME})
+
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         $<$<BOOL:${IS_MACOSX}>:OSMac_>

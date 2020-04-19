@@ -24,6 +24,9 @@ add_library(${TRANSLATORS_PACKAGE}
     DirectionalLight.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(${TRANSLATORS_PACKAGE})
+
 if(IS_MACOSX)
     set(_macDef OSMac_)
 endif()

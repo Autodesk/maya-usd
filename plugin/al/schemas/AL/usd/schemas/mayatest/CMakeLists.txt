@@ -60,6 +60,9 @@ add_library(AL_USDMayaSchemasTest
     ${CMAKE_CURRENT_BINARY_DIR}/tokens.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(AL_USDMayaSchemasTest)
+
 target_compile_definitions(AL_USDMayaSchemasTest
     PRIVATE
         AL_USDMAYASCHEMASTEST_EXPORTS
@@ -99,6 +102,9 @@ add_library(${PYTHON_LIBRARY_NAME}
     wrapTokens.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/wrapExamplePolyCubeNode.cpp
 )
+
+# compiler configuration
+mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
 
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE

@@ -61,6 +61,9 @@ add_library(AL_USDMayaSchemas
     ModuleDeps.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(AL_USDMayaSchemas)
+
 target_compile_definitions(AL_USDMayaSchemas
     PRIVATE
         AL_USDMAYASCHEMAS_EXPORTS
@@ -109,6 +112,9 @@ add_library(${PYTHON_LIBRARY_NAME}
     wrapTokens.cpp
     wrapFrameRange.cpp
 )
+
+# compiler configuration
+mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
 
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE

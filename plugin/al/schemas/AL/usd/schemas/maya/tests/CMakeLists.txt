@@ -4,6 +4,9 @@ find_package(GTest REQUIRED)
 
 add_executable(${TARGET_NAME})
 
+# compiler configuration
+mayaUsd_compile_config(${TARGET_NAME})
+
 target_sources(${TARGET_NAME}
     PRIVATE
         main.cpp

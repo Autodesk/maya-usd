@@ -18,6 +18,9 @@ target_sources(${MAYA_TEST_LIBRARY_NAME}
     testHarness.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(${MAYA_TEST_LIBRARY_NAME})
+
 target_compile_definitions(${MAYA_TEST_LIBRARY_NAME}
   PRIVATE
     $<$<BOOL:${IS_MACOSX}>:OSMac_>

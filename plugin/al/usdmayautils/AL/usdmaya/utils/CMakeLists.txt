@@ -37,13 +37,12 @@ add_library(${USDMAYA_UTILS_LIBRARY_NAME}
         ${usdmaya_utils_source}
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${USDMAYA_UTILS_LIBRARY_NAME})
 
 target_compile_definitions(${USDMAYA_UTILS_LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
         AL_USDMAYA_UTILS_EXPORT
 )
 

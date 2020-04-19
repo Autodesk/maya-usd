@@ -38,6 +38,9 @@ add_library(${USDTRANSACTION_LIBRARY_NAME}
     ${usdtransaction_source}
 )
 
+# compiler configuration
+mayaUsd_compile_config(${USDTRANSACTION_LIBRARY_NAME})
+
 target_compile_definitions(${USDTRANSACTION_LIBRARY_NAME}
     PRIVATE
         AL_USD_TRANSACTION_EXPORT
@@ -67,6 +70,9 @@ add_library(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
   SHARED
     ${usdtransaction_python_source}
 )
+
+# compiler configuration
+mayaUsd_compile_config(${USDTRANSACTION_PYTHON_LIBRARY_NAME})
 
 target_compile_definitions(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
   PRIVATE
