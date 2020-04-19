@@ -160,13 +160,12 @@ add_library(${LIBRARY_NAME}
         ${AL_usdmaya_nodes_source}
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${LIBRARY_NAME})
 
 target_compile_definitions(${LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
@@ -244,13 +243,12 @@ add_library(${PYTHON_LIBRARY_NAME}
     AL/usdmaya/fileio/translators/wrapTranslatorContext.cpp
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
 
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
         MFB_PACKAGE_NAME=${LIBRARY_NAME}
         MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
         MFB_PACKAGE_MODULE=usdmaya

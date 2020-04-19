@@ -6,6 +6,9 @@ set(USDTRANSACTION_PYTHON_TEST_NAME Python:AL_USDTransactionTests)
 
 add_executable(${USDTRANSACTION_TEST_EXECUTABLE_NAME})
 
+# compiler configuration
+mayaUsd_compile_config(${USDTRANSACTION_TEST_EXECUTABLE_NAME})
+
 target_sources(${USDTRANSACTION_TEST_EXECUTABLE_NAME}
   PRIVATE
     testMain.cpp
