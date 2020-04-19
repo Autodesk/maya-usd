@@ -926,6 +926,7 @@ function(_pxr_python_module NAME)
     target_compile_definitions(${LIBRARY_NAME}
         PRIVATE
             $<$<BOOL:${IS_MACOSX}>:OSMac_>
+            $<$<BOOL:${IS_LINUX}>:LINUX>
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pyModuleName}
@@ -1180,6 +1181,7 @@ function(_pxr_library NAME)
             ${apiPublic}
         PRIVATE
             $<$<BOOL:${IS_MACOSX}>:OSMac_>
+            $<$<BOOL:${IS_LINUX}>:LINUX>
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pythonModuleName}
