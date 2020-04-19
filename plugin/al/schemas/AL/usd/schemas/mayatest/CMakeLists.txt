@@ -66,6 +66,9 @@ mayaUsd_compile_config(AL_USDMayaSchemasTest)
 target_compile_definitions(AL_USDMayaSchemasTest
     PRIVATE
         AL_USDMAYASCHEMASTEST_EXPORTS
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
 
 target_include_directories(AL_USDMayaSchemasTest 
