@@ -14,7 +14,6 @@
 # limitations under the License.
 #
 include(CXXHelpers)
-include(Version)
 include(Options)
 
 # Require C++14 if we're either building for Maya 2019 or later, or if we're
