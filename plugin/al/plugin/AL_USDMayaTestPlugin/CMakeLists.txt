@@ -71,6 +71,7 @@ target_compile_definitions(${TARGET_NAME}
         AL_USDMAYATEST_PLUGIN_EXPORT
         AL_USDMAYA_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
 )
 
 target_include_directories(${TARGET_NAME}

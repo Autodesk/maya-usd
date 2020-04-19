@@ -29,6 +29,7 @@ mayaUsd_compile_config(${TARGET_NAME})
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
 )
 
 target_link_libraries(${TARGET_NAME}
