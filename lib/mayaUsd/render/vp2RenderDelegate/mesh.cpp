@@ -145,8 +145,8 @@ namespace {
                             *pointer = primvarData[index];
                         } else {
                             TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
-                                                    "primvar %s has %zu elements, while its topology "
-                                                    "references face vertex index %zu.\n",
+                                                    "primvar %s has %u elements, while its topology "
+                                                    "references face vertex index %u.\n",
                                                     rprimId.asChar(), primvarName.GetText(),
                                                     dataSize, index);
                         }
