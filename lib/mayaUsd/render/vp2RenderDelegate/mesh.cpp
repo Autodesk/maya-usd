@@ -142,13 +142,13 @@ namespace {
                             reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
                         unsigned int index = faceVertexIndices[v];
                         if (index < dataSize) {
-                            *pointer = primvarData[faceVertexIndices[v]];
+                            *pointer = primvarData[index];
                         } else {
-                            TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid face vertex index '%s': "
+                            TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
                                                     "primvar %s has %zu elements, while its topology "
-                                                    "references only upto element index %zu.\n",
+                                                    "references face vertex index %zu.\n",
                                                     rprimId.asChar(), primvarName.GetText(),
-                                                    primvarData.size(), numVertices);                            
+                                                    primvarData.size(), index);
                         }
                     }
                 }
