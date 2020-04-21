@@ -18,13 +18,15 @@ set(headers
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME} 
     PRIVATE 
         HDMAYA_EXPORT
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
+
+mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------
 # link libraries

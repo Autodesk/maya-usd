@@ -12,13 +12,15 @@ target_sources(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYA_USD_UTILS_EXPORT
 )
- 
+
+mayaUsd_compile_config(${TARGET_NAME})
+
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
