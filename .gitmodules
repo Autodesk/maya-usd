@@ -1,3 +1,0 @@
-[submodule ".github/workflows"]
-	path = .github/workflows
-	url = https://github.com/smithw-adsk/workflows.git
