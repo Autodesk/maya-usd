@@ -201,14 +201,15 @@ class PxrMayaHdShapeAdapter
 
         /// Get whether this shape adapter is for use with Viewport 2.0.
         ///
-        /// The shape adapter gets its viewport renderer affiliation from the
-        /// version of Sync() that is used to populate it.
+        /// The shape adapter's viewport renderer affiliation must be specified
+        /// when it is constructed.
         ///
         /// Returns true if the shape adapter should be used for batched
         /// drawing/selection in Viewport 2.0, or false if it should be used
         /// in the legacy viewport.
-        MAYAUSD_CORE_PUBLIC
-        virtual bool IsViewport2() const;
+        bool IsViewport2() const {
+            return _isViewport2;
+        }
 
     protected:
 
@@ -277,7 +278,7 @@ class PxrMayaHdShapeAdapter
 
         /// Construct a new uninitialized PxrMayaHdShapeAdapter.
         MAYAUSD_CORE_PUBLIC
-        PxrMayaHdShapeAdapter();
+        PxrMayaHdShapeAdapter(const bool isViewport2);
 
         MAYAUSD_CORE_PUBLIC
         virtual ~PxrMayaHdShapeAdapter();
@@ -293,7 +294,7 @@ class PxrMayaHdShapeAdapter
 
         GfMatrix4d _rootXform;
 
-        bool _isViewport2;
+        const bool _isViewport2;
 };
 
 

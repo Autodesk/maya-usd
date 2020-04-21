@@ -64,10 +64,11 @@ UsdMayaProxyDrawOverride::UsdMayaProxyDrawOverride(const MObject& obj) :
         MHWRender::MPxDrawOverride(obj,
                                    UsdMayaProxyDrawOverride::draw
 #if MAYA_API_VERSION >= 201651
-                                   , /* isAlwaysDirty = */ false)
+                                   , /* isAlwaysDirty = */ false),
 #else
-                                   )
+                                   ),
 #endif
+        _shapeAdapter(/* isViewport2 = */ true)
 {
 }
 

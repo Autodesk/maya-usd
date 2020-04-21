@@ -1577,9 +1577,9 @@ bool UsdMayaGL_InstancerImager_ContinueTrackingOnDisconnect(
 }
 
 UsdMayaGL_InstancerShapeAdapter*
-UsdMayaGL_InstancerImager_InstancerShapeAdapterFactory()
+UsdMayaGL_InstancerImager_InstancerShapeAdapterFactory(const bool isViewport2)
 {
-    return new UsdMayaGL_InstancerShapeAdapterWithSceneAssembly();
+    return new UsdMayaGL_InstancerShapeAdapterWithSceneAssembly(isViewport2);
 }
 
 TF_REGISTRY_FUNCTION(UsdMayaReferenceAssembly)
