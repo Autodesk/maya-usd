@@ -731,7 +731,14 @@ HdMayaMaterialNetworkConverter::GetPreviewMaterialParamVector() {
                 HdMayaMaterialNetworkConverter::GetPreviewShaderParams();
             _previewMaterialParamVector.reserve(shaderParams.size());
             for (const auto& it : shaderParams) {
+#if USD_VERSION_NUM >= 1911
+                _previewMaterialParamVector.emplace_back(
+                    HdMaterialParam::ParamTypeFallback,
+                    it.name,
+                    it.fallbackValue);
+#else
                 _previewMaterialParamVector.emplace_back(it.param);
+#endif
             }
             _previewMaterialParamVector_initialized = true;
         }

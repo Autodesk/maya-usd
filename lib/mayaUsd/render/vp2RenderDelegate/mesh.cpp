@@ -164,7 +164,8 @@ namespace {
                 }
 
                 if (channelOffset == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
-                    memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
+                    const void* source = static_cast<const void*>(primvarData.cdata());
+                    memcpy(vertexBuffer, source, sizeof(DEST_TYPE) * numVertices);
                 }
                 else {
                     for (size_t v = 0; v < numVertices; v++) {
@@ -244,7 +245,8 @@ namespace {
                     }
 
                     if (channelOffset == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
-                        memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
+                        const void* source = static_cast<const void*>(primvarData.cdata());
+                        memcpy(vertexBuffer, source, sizeof(DEST_TYPE) * numVertices);
                     }
                     else {
                         for (size_t v = 0; v < numVertices; v++) {

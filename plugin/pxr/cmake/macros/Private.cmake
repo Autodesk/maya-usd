@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-include(Version)
 
 # Copy headers to the build tree.  In the source tree we find headers in
 # paths like pxr/base/lib/tf but we #include using paths like pxr/base/tf,
