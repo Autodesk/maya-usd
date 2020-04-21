@@ -33,6 +33,12 @@
 #include <hdMaya/adapters/constantShadowMatrix.h>
 #include <hdMaya/adapters/mayaAttrs.h>
 
+#if HDX_API_VERSION < 7
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+#endif
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
@@ -272,10 +278,16 @@ void HdMayaLightAdapter::_CalculateShadowParams(
             : std::min(
                   GetDelegate()->GetParams().maximumShadowMapResolution,
                   dmapResolutionPlug.asInt());
+
     params.shadowMatrix =
+#if HDX_API_VERSION >= 7
+        std::make_shared<HdMayaConstantShadowMatrix>(
+            GetTransform() * _shadowProjectionMatrix);
+#else
         boost::static_pointer_cast<HdxShadowMatrixComputation>(
             boost::make_shared<HdMayaConstantShadowMatrix>(
                 GetTransform() * _shadowProjectionMatrix));
+#endif
     params.bias = dmapBiasPlug.isNull() ? -0.001 : -dmapBiasPlug.asFloat();
     params.blur = dmapFilterSizePlug.isNull()
                       ? 0.0
