@@ -854,6 +854,10 @@ function(_pxr_python_module NAME)
         SHARED
         ${args_CPPFILES}
     )
+
+    # compiler configuration
+    mayaUsd_compile_config(${LIBRARY_NAME})
+
     add_dependencies(python ${LIBRARY_NAME})
     if(args_PYTHON_FILES)
         add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_pythonfiles)
@@ -922,6 +926,7 @@ function(_pxr_python_module NAME)
     target_compile_definitions(${LIBRARY_NAME}
         PRIVATE
             $<$<BOOL:${IS_MACOSX}>:OSMac_>
+            $<$<BOOL:${IS_LINUX}>:LINUX>
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pyModuleName}
@@ -1073,6 +1078,9 @@ function(_pxr_library NAME)
         )
     endif()
 
+    # compiler configuration
+    mayaUsd_compile_config(${NAME})
+
     #
     # Compute names and paths.
     #
@@ -1173,6 +1181,7 @@ function(_pxr_library NAME)
             ${apiPublic}
         PRIVATE
             $<$<BOOL:${IS_MACOSX}>:OSMac_>
+            $<$<BOOL:${IS_LINUX}>:LINUX>
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pythonModuleName}
