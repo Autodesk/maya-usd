@@ -12,36 +12,16 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
+
   build:
     # The type of runners that the job will run on
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-#        os: [ubuntu-18.04, windows-2019, macos-10.15]
-        os: [ubuntu-18.04, windows-2019]
+        os: [ubuntu-18.04]
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
-
-    # Check if secret can be echo'd
-    - name: Echo environment
-      # password as an environment variable
-      env:
-        super_secret: ${{ secrets.MAYA_USD_PASSWORD }}
+    # Launch workflow for build and test
+    - name: Launch CI to build and test
       shell: bash
-      run: echo secret="$super_secret"
-
-    # Use curl to download a file
-    - name: Download a file
-      env:
-        super_secret: ${{ secrets.MAYA_USD_PASSWORD }}
-        json_url:     ${{ secrets.MAYA_USD_JSON_URL }}
-      shell: bash
-      run: curl -v --user "smithw:$super_secret" -O "$json_url"
-
-    # Show file contents
-    - name: Cat downloaded file
-      run: cat Autodesk_Maya_2019_2_Update_Short-Long-descriptions.json
+      run: |
+        curl -XPOST -u "${{secrets.WORKFLOW_USERNAME}}:${{secrets.WORKFLOW_TOKEN}}" -H "Accept: application/vnd.github.everest-preview+json"  -H "Content-Type: application/json" https://api.github.com/repos/smithw-adsk/workflows/dispatches --data '{"event_type": "build_application"}'
