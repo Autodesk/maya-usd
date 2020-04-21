@@ -148,7 +148,7 @@ namespace {
                                                     "primvar %s has %zu elements, while its topology "
                                                     "references face vertex index %zu.\n",
                                                     rprimId.asChar(), primvarName.GetText(),
-                                                    primvarData.size(), index);
+                                                    dataSize, index);
                         }
                     }
                 }
