@@ -24,17 +24,18 @@ add_library(${TRANSLATORS_PACKAGE}
     DirectionalLight.cpp
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${TRANSLATORS_PACKAGE})
 
-# HS OCT 2019, do we really need to define 
+# HS OCT 2019, do we really need to define
 # AL_MAYA_MACROS_EXPORT for this target?
 if(NOT IS_WINDOWS)
-    set_target_properties(${TRANSLATORS_PACKAGE}
-          PROPERTIES COMPILE_DEFINITIONS
-          "AL_MAYA_MACROS_EXPORT;${_macDef}"
-    )
+  target_compile_definitions(${TRANSLATORS_PACKAGE}
+      PRIVATE
+          AL_MAYA_MACROS_EXPORT
+          $<$<BOOL:${IS_MACOSX}>:OSMac_>
+          $<$<BOOL:${IS_LINUX}>:LINUX>
+  )
 endif()
 
 set(arg_PUBLIC_HEADER_FILES
