@@ -26,6 +26,5 @@ steps:
 - script: curl -v --user "$WORKFLOW_USERNAME:$WORKFLOW_PASSWORD" -O "$MAYA_USD_JSON_URL"
   displayName: 'Download a file'
 
-steps:
 - script: cat Autodesk_Maya_2019_2_Update_Short-Long-descriptions.json
   displayName: 'Cat downloaded file'
