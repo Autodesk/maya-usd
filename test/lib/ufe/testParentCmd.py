@@ -61,7 +61,8 @@ class ParentCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    def _testParentRelative(self):
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Parent functionality only available in Maya Preview Release 115 or later.') 
+    def testParentRelative(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
             "|world|mayaUsdProxy1|mayaUsdProxyShape1")
@@ -144,6 +145,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 0)
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Parent functionality only available in Maya Preview Release 115 or later.') 
     def testParentAbsolute(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(

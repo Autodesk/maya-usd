@@ -89,5 +89,13 @@ private:
     bool              fDoneOnce{false};
 }; // UsdTRSUndoableCommandBase
 
+// shared_ptr requires public ctor, dtor, so derive a class for it.
+template<class T>
+struct MakeSharedEnabler : public T {
+    MakeSharedEnabler(
+        const UsdSceneItem::Ptr& item, double x, double y, double z)
+        : T(item, x, y, z) {}
+};
+
 } // namespace ufe
 } // namespace MayaUsd

@@ -36,14 +36,8 @@ UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
     const UsdSceneItem::Ptr& item, double x, double y, double z
 )
 {
-    // shared_ptr requires public ctor, dtor, so derive a class for it.
-    struct MakeSharedEnabler : public UsdScaleUndoableCommand {
-        MakeSharedEnabler(
-            const UsdSceneItem::Ptr& item, double x, double y, double z)
-            : UsdScaleUndoableCommand(item, x, y, z) {}
-    };
-        
-	auto cmd = std::make_shared<MakeSharedEnabler>(item, x, y, z);
+	auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
+        item, x, y, z);
     cmd->initialize();
     return cmd;
 

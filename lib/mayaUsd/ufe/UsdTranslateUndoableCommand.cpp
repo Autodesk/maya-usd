@@ -36,14 +36,8 @@ UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
     const UsdSceneItem::Ptr& item, double x, double y, double z
 )
 {
-    // shared_ptr requires public ctor, dtor, so derive a class for it.
-    struct MakeSharedEnabler : public UsdTranslateUndoableCommand {
-        MakeSharedEnabler(
-            const UsdSceneItem::Ptr& item, double x, double y, double z)
-            : UsdTranslateUndoableCommand(item, x, y, z) {}
-    };
-        
-    auto cmd = std::make_shared<MakeSharedEnabler>(item, x, y, z);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(
+        item, x, y, z);
     cmd->initialize();
     return cmd;
 }

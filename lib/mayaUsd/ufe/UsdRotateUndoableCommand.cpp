@@ -47,14 +47,8 @@ UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
 UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
     const UsdSceneItem::Ptr& item, double x, double y, double z)
 {
-    // shared_ptr requires public ctor, dtor, so derive a class for it.
-    struct MakeSharedEnabler : public UsdRotateUndoableCommand {
-        MakeSharedEnabler(
-            const UsdSceneItem::Ptr& item, double x, double y, double z)
-            : UsdRotateUndoableCommand(item, x, y, z) {}
-    };
-
-	auto cmd = std::make_shared<MakeSharedEnabler>(item, x, y, z);
+	auto cmd = std::make_shared<MakeSharedEnabler<UsdRotateUndoableCommand>>(
+        item, x, y, z);
     cmd->initialize();
     return cmd;
 }
