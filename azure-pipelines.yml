@@ -20,8 +20,10 @@ pool:
   vmImage: $(imageName)
 
 steps:
-- script: echo WORKFLOW_USERNAME=$WORKFLOW_USERNAME
+- script: echo WORKFLOW_USERNAME=$env:ENV_WORKFLOW_USERNAME
   displayName: 'Echo environment'
+  env:
+    ENV_WORKFLOW_USERNAME: $($WORKFLOW_USERNAME)
 
 - script: curl -v --user $WORKFLOW_USERNAME:$WORKFLOW_PASSWORD -O $MAYA_USD_JSON_URL
   displayName: 'Download a file'
