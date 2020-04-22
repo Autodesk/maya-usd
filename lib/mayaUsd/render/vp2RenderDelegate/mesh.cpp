@@ -136,10 +136,20 @@ namespace {
             if (requiresUnsharedVertices) {
                 const VtIntArray& faceVertexIndices = topology.GetFaceVertexIndices();
                 if (numVertices == faceVertexIndices.size()) {
+                    unsigned int dataSize = primvarData.size();
                     for (size_t v = 0; v < numVertices; v++) {
                         SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
                             reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-                        *pointer = primvarData[faceVertexIndices[v]];
+                        unsigned int index = faceVertexIndices[v];
+                        if (index < dataSize) {
+                            *pointer = primvarData[index];
+                        } else {
+                            TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
+                                                    "primvar %s has %u elements, while its topology "
+                                                    "references face vertex index %u.\n",
+                                                    rprimId.asChar(), primvarName.GetText(),
+                                                    dataSize, index);
+                        }
                     }
                 }
                 else {
