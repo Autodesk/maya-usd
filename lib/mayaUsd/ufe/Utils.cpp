@@ -152,12 +152,8 @@ std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcNam
 	return dstName;
 }
 
-std::string uniqueChildName(const Ufe::SceneItem::Ptr& parent, const Ufe::Path& childPath)
+std::string uniqueChildName(const UsdSceneItem::Ptr& usdParent, const Ufe::Path& childPath)
 {
-	auto usdParent = std::dynamic_pointer_cast<UsdSceneItem>(parent);
-#if !defined(NDEBUG)
-	assert(usdParent);
-#endif
 	if (!usdParent) return std::string();
 
 	TfToken::HashSet childrenNames;

@@ -44,9 +44,6 @@ public:
 	// Ufe::Transform3dHandler overrides
 	Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
 
-private:
-	UsdTransform3d::Ptr fUsdTransform3d;
-
 }; // UsdTransform3dHandler
 
 } // namespace ufe

@@ -20,11 +20,8 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTransform3dHandler::UsdTransform3dHandler()
-	: Ufe::Transform3dHandler()
-{
-	fUsdTransform3d = UsdTransform3d::create();
-}
+UsdTransform3dHandler::UsdTransform3dHandler() : Ufe::Transform3dHandler()
+{}
 
 UsdTransform3dHandler::~UsdTransform3dHandler()
 {
@@ -46,8 +43,7 @@ Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::P
 #if !defined(NDEBUG)
 	assert(usdItem);
 #endif
-	fUsdTransform3d->setItem(usdItem);
-	return fUsdTransform3d;
+	return UsdTransform3d::create(usdItem);
 }
 
 } // namespace ufe

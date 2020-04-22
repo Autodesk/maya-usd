@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@
 #include <pxr/usd/usd/attribute.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,40 +32,45 @@ namespace ufe {
 //! \brief Absolute rotation command of the given prim.
 /*!
 	Ability to perform undo to restore the original rotation value.
-	As of 06/07/2018, redo is a no op as Maya re-does the operation for redo
  */
-class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand : public Ufe::RotateUndoableCommand
+class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand : public Ufe::RotateUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3f>
 {
 public:
 	typedef std::shared_ptr<UsdRotateUndoableCommand> Ptr;
 
-	UsdRotateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
-	~UsdRotateUndoableCommand() override;
-
-	// Delete the copy/move constructors assignment operators.
 	UsdRotateUndoableCommand(const UsdRotateUndoableCommand&) = delete;
 	UsdRotateUndoableCommand& operator=(const UsdRotateUndoableCommand&) = delete;
 	UsdRotateUndoableCommand(UsdRotateUndoableCommand&&) = delete;
 	UsdRotateUndoableCommand& operator=(UsdRotateUndoableCommand&&) = delete;
 
-	//! Create a UsdRotateUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdRotateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	//! Create a UsdRotateUndoableCommand from a UFE scene item.  The
+	//! command is not executed.
+	static UsdRotateUndoableCommand::Ptr create(
+        const UsdSceneItem::Ptr& item, double x, double y, double z);
 
-	// Ufe::RotateUndoableCommand overrides
+	// Ufe::RotateUndoableCommand overrides.  rotate() sets the command's
+	// rotation value and executes the command.
 	void undo() override;
 	void redo() override;
 	bool rotate(double x, double y, double z) override;
 
-private:
-	void perform();
+protected:
+
+    //! Construct a UsdRotateUndoableCommand.  The command is not executed.
+	UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	~UsdRotateUndoableCommand() override;
 
 private:
-	UsdPrim fPrim;
-	Ufe::Path fPath;
-	UsdAttribute fRotateAttrib;
-	GfVec3f fPrevRotateValue;
+
+    static TfToken rotXYZ;
+
+    TfToken attributeName() const override { return rotXYZ; }
+    void performImp(double x, double y, double z) override;
+    void addEmptyAttribute() override;
+    bool cannotInit() const override { return bool(fFailedInit); }
+
 	std::exception_ptr fFailedInit;
-	bool fNoRotateOp;
+
 }; // UsdRotateUndoableCommand
 
 } // namespace ufe

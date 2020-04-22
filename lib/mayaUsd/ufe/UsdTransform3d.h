@@ -35,6 +35,7 @@ public:
 	typedef std::shared_ptr<UsdTransform3d> Ptr;
 
 	UsdTransform3d();
+	UsdTransform3d(const UsdSceneItem::Ptr& item);
 	~UsdTransform3d() override = default;
 
 	// Delete the copy/move constructors assignment operators.
@@ -45,18 +46,30 @@ public:
 
 	//! Create a UsdTransform3d.
 	static UsdTransform3d::Ptr create();
+	static UsdTransform3d::Ptr create(const UsdSceneItem::Ptr& item);
 
 	void setItem(const UsdSceneItem::Ptr& item);
 
 	// Ufe::Transform3d overrides
 	const Ufe::Path& path() const override;
 	Ufe::SceneItem::Ptr sceneItem() const override;
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+	Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
+	Ufe::RotateUndoableCommand::Ptr rotateCmd(double x, double y, double z) override;
+	Ufe::ScaleUndoableCommand::Ptr scaleCmd(double x, double y, double z) override;
+    Ufe::Vector3d rotation() const override;
+    Ufe::Vector3d scale() const override;
+#endif
+#elif UFE_V1_FEATURES_AVAILABLE
 	Ufe::TranslateUndoableCommand::Ptr translateCmd() override;
+	Ufe::RotateUndoableCommand::Ptr rotateCmd() override;
+	Ufe::ScaleUndoableCommand::Ptr scaleCmd() override;
+#endif
+
 	void translate(double x, double y, double z) override;
 	Ufe::Vector3d translation() const override;
-	Ufe::RotateUndoableCommand::Ptr rotateCmd() override;
 	void rotate(double x, double y, double z) override;
-	Ufe::ScaleUndoableCommand::Ptr scaleCmd() override;
 	void scale(double x, double y, double z) override;
 	Ufe::TranslateUndoableCommand::Ptr rotatePivotTranslateCmd() override;
 	void rotatePivotTranslate(double x, double y, double z) override;

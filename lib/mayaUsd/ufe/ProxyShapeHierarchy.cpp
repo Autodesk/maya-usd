@@ -149,6 +149,18 @@ Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& c
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
+    const Ufe::SceneItem::Ptr& child,
+    const Ufe::SceneItem::Ptr& pos
+)
+{
+    // The proxy shape behaves as the USD pseudo-root, so we must implement
+    // insertChildCmd() in the near future.  PPT, 23-Mar-2020.
+	throw std::runtime_error("ProxyShapeHierarchy::insertChildCmd() not implemented");
+}
+#endif
+
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
 	throw std::runtime_error("ProxyShapeHierarchy::createGroup() not implemented");

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,44 +20,43 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdRotateUndoableCommand::UsdRotateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
-	: Ufe::RotateUndoableCommand(item)
-	, fPrim(prim)
-	, fPath(ufePath)
-	, fNoRotateOp(false)
+TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
+
+UsdRotateUndoableCommand::UsdRotateUndoableCommand(
+    const UsdSceneItem::Ptr& item, double x, double y, double z)
+	: Ufe::RotateUndoableCommand(item),
+      UsdTRSUndoableCommandBase(item, x, y, z)
 {
-	// Since we want to change xformOp:rotateXYZ, and we need to store the prevRotate for 
-	// undo purpose, we need to make sure we convert it to common API xformOps (In case we have 
-	// rotateX, rotateY or rotateZ ops)
+	// Since we want to change xformOp:rotateXYZ, and we need to store the
+	// prevRotate for undo purposes, we need to make sure we convert it to
+	// common API xformOps (In case we have rotateX, rotateY or rotateZ ops)
 	try {
-		convertToCompatibleCommonAPI(prim);
+		convertToCompatibleCommonAPI(prim());
 	}
 	catch (...) {
-		// Since Maya cannot catch this error at this moment, store it until we actually rotate
+		// Since Maya cannot catch this error at this moment, store it until we
+		// actually rotate.
 		fFailedInit = std::current_exception(); // capture
-		return;
 	}
-
-	// Prim does not have a rotateXYZ attribute
-	const TfToken xrot("xformOp:rotateXYZ");
-	if (!fPrim.HasAttribute(xrot))
-	{
-		rotateOp(fPrim, fPath, 0, 0, 0);	// Add an empty rotate
-		fNoRotateOp = true;
-	}
-
-	fRotateAttrib = fPrim.GetAttribute(xrot);
-	fRotateAttrib.Get<GfVec3f>(&fPrevRotateValue);
 }
 
 UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
-{
-}
+{}
 
 /*static*/
-UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
+    const UsdSceneItem::Ptr& item, double x, double y, double z)
 {
-	return std::make_shared<UsdRotateUndoableCommand>(prim, ufePath, item);
+    // shared_ptr requires public ctor, dtor, so derive a class for it.
+    struct MakeSharedEnabler : public UsdRotateUndoableCommand {
+        MakeSharedEnabler(
+            const UsdSceneItem::Ptr& item, double x, double y, double z)
+            : UsdRotateUndoableCommand(item, x, y, z) {}
+    };
+
+	auto cmd = std::make_shared<MakeSharedEnabler>(item, x, y, z);
+    cmd->initialize();
+    return cmd;
 }
 
 void UsdRotateUndoableCommand::undo()
@@ -65,22 +64,23 @@ void UsdRotateUndoableCommand::undo()
 	// Check if initialization went ok.
 	if (!fFailedInit)
 	{
-		fRotateAttrib.Set(fPrevRotateValue);
+        UsdTRSUndoableCommandBase::undoImp();
 	}
-	// Todo : We would want to remove the xformOp
-	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 }
 
 void UsdRotateUndoableCommand::redo()
 {
-	perform();
+    redoImp();
 }
 
-void UsdRotateUndoableCommand::perform()
+void UsdRotateUndoableCommand::addEmptyAttribute()
 {
-	// No-op, use rotate to move the object
-	// The Maya rotate command directly invokes our rotate() method in its
-	// redoIt(), which is invoked both for the inital rotate and the redo.
+    performImp(0, 0, 0);	// Add an empty rotate
+}
+
+void UsdRotateUndoableCommand::performImp(double x, double y, double z)
+{
+	rotateOp(prim(), path(), x, y, z);
 }
 
 //------------------------------------------------------------------------------
@@ -94,7 +94,7 @@ bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 	{
 		std::rethrow_exception(fFailedInit);
 	}
-	rotateOp(fPrim, fPath, x, y, z);
+	perform(x, y, z);
 	return true;
 }
 
