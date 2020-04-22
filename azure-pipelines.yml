@@ -22,9 +22,15 @@ pool:
 steps:
 - script: echo WORKFLOW_USERNAME="$WORKFLOW_USERNAME"
   displayName: 'Echo environment'
+  env:
+    WORKFLOW_USERNAME: $(System.WORKFLOW_USERNAME)
 
 - script: curl -v --user "$WORKFLOW_USERNAME:$WORKFLOW_PASSWORD" -O "$MAYA_USD_JSON_URL"
   displayName: 'Download a file'
+  env:
+    WORKFLOW_USERNAME: $(System.WORKFLOW_USERNAME)
+    WORKFLOW_PASSWORD: $(System.WORKFLOW_PASSWORD)
+    MAYA_USD_JSON_URL: $(System.MAYA_USD_JSON_URL)
 
 - script: cat Autodesk_Maya_2019_2_Update_Short-Long-descriptions.json
   displayName: 'Cat downloaded file'
