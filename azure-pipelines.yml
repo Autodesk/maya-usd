@@ -4,16 +4,28 @@
 # https://aka.ms/yaml
 
 trigger:
-- master
+- dev
+
+strategy:
+  matrix:
+    linux:
+      imageName: "ubuntu-16.04"
+#    mac:
+#      imageName: "macos-10.14"
+#    windows:
+#      imageName: "vs2017-win2016"
+#  maxParallel: 3
 
 pool:
-  vmImage: 'ubuntu-latest'
+  vmImage: $(imageName)
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+- script: echo WORKFLOW_USERNAME="$WORKFLOW_USERNAME"
+  displayName: 'Echo environment'
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+- script: curl -v --user "$WORKFLOW_USERNAME:$WORKFLOW_PASSWORD" -O "$MAYA_USD_JSON_URL"
+  displayName: 'Download a file'
+
+steps:
+- script: cat Autodesk_Maya_2019_2_Update_Short-Long-descriptions.json
+  displayName: 'Cat downloaded file'
