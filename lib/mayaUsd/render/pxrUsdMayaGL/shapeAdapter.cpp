@@ -538,7 +538,7 @@ PxrMayaHdShapeAdapter::_GetVisibility(
     return true;
 }
 
-PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter(const bool isViewport2) :
+PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter(bool isViewport2) :
         _isViewport2(isViewport2)
 {
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(

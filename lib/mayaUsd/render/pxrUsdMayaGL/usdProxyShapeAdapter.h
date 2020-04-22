@@ -111,7 +111,7 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         /// Note that only friends of this class are able to construct
         /// instances of this class.
         MAYAUSD_CORE_PUBLIC
-        PxrMayaHdUsdProxyShapeAdapter(const bool isViewport2);
+        PxrMayaHdUsdProxyShapeAdapter(bool isViewport2);
 
         MAYAUSD_CORE_PUBLIC
         ~PxrMayaHdUsdProxyShapeAdapter() override;

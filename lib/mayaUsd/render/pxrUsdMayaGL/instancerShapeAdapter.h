@@ -109,7 +109,7 @@ class UsdMayaGL_InstancerShapeAdapter : public PxrMayaHdShapeAdapter
         /// Note that only friends of this class are able to construct
         /// instances of this class.
         MAYAUSD_CORE_PUBLIC
-        UsdMayaGL_InstancerShapeAdapter(const bool isViewport2);
+        UsdMayaGL_InstancerShapeAdapter(bool isViewport2);
 
         // Derived class hook to allow derived classes to augment
         // _SyncInstancerPrototypes(), for each prototype.  The implementation

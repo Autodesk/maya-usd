@@ -442,7 +442,7 @@ void UsdMayaGL_InstancerImager::SetInstancerShapeAdapterFactory(
 }
 
 UsdMayaGL_InstancerShapeAdapter*
-UsdMayaGL_InstancerImager::CreateInstancerShapeAdapter(const bool isViewport2)
+UsdMayaGL_InstancerImager::CreateInstancerShapeAdapter(bool isViewport2)
 {
     if (!_instancerShapeAdapterFactory) {
         return new UsdMayaGL_InstancerShapeAdapter(isViewport2);

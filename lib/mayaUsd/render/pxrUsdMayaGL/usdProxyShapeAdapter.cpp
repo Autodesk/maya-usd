@@ -385,8 +385,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
     return true;
 }
 
-PxrMayaHdUsdProxyShapeAdapter::PxrMayaHdUsdProxyShapeAdapter(
-        const bool isViewport2) :
+PxrMayaHdUsdProxyShapeAdapter::PxrMayaHdUsdProxyShapeAdapter(bool isViewport2) :
     PxrMayaHdShapeAdapter(isViewport2)
 {
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(

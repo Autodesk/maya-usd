@@ -278,7 +278,7 @@ class PxrMayaHdShapeAdapter
 
         /// Construct a new uninitialized PxrMayaHdShapeAdapter.
         MAYAUSD_CORE_PUBLIC
-        PxrMayaHdShapeAdapter(const bool isViewport2);
+        PxrMayaHdShapeAdapter(bool isViewport2);
 
         MAYAUSD_CORE_PUBLIC
         virtual ~PxrMayaHdShapeAdapter();

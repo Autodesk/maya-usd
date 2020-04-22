@@ -1577,7 +1577,7 @@ bool UsdMayaGL_InstancerImager_ContinueTrackingOnDisconnect(
 }
 
 UsdMayaGL_InstancerShapeAdapter*
-UsdMayaGL_InstancerImager_InstancerShapeAdapterFactory(const bool isViewport2)
+UsdMayaGL_InstancerImager_InstancerShapeAdapterFactory(bool isViewport2)
 {
     return new UsdMayaGL_InstancerShapeAdapterWithSceneAssembly(isViewport2);
 }

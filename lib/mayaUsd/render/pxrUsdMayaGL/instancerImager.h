@@ -73,8 +73,7 @@ public:
 
     /// Factory function for creating instancer shape adapters.
     using InstancerShapeAdapterFactory =
-        std::function<UsdMayaGL_InstancerShapeAdapter*(
-            const bool /* isViewport2 */)>;
+        std::function<UsdMayaGL_InstancerShapeAdapter*(bool /* isViewport2 */)>;
 
     /// Set the factory function for creating instancer shape adapters.
     MAYAUSD_CORE_PUBLIC
@@ -179,8 +178,7 @@ private:
     /// no factory has been set, returns a UsdMayaGL_InstancerShapeAdapter base
     /// class object.  The caller must manage the lifescope of the returned
     /// object.
-    static UsdMayaGL_InstancerShapeAdapter* CreateInstancerShapeAdapter(
-            const bool isViewport2);
+    static UsdMayaGL_InstancerShapeAdapter* CreateInstancerShapeAdapter(bool isViewport2);
 
     UsdMayaGL_InstancerImager();
     ~UsdMayaGL_InstancerImager();
