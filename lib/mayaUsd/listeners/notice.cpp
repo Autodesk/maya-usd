@@ -91,7 +91,7 @@ UsdMayaSceneResetNotice::RemoveListener()
     if (_newOrOpenRegistrationCount-- > 1) {
         return;
     }
-    
+
     if (_afterNewCallbackId != 0) {
         MMessage::removeCallback(_afterNewCallbackId);
     }
