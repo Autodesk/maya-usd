@@ -16,6 +16,8 @@
 //
 #include "baseImportCommand.h"
 
+#include <utility>
+
 #include <pxr/pxr.h>
 #include <pxr/usd/ar/resolver.h>
 
@@ -26,6 +28,7 @@
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -116,7 +119,7 @@ MayaUSDImportCommand::doIt(const MArgList & args)
         // Get the value
         MString tmpVal;
         argData.getFlagArgument(kFileFlag, 0, tmpVal);
-        mFileName = tmpVal.asChar();
+        mFileName = UsdMayaUtil::convert(tmpVal);
 
         // Use the usd resolver for validation (but save the unresolved)
         if (ArGetResolver().Resolve(mFileName).empty()) {
@@ -141,19 +144,20 @@ MayaUSDImportCommand::doIt(const MArgList & args)
         // Get the value
         MString tmpVal;
         argData.getFlagArgument(kPrimPathFlag, 0, tmpVal);
-        mPrimPath = tmpVal.asChar();
+        mPrimPath = UsdMayaUtil::convert(tmpVal);
     }
 
     // Add variant (variantSet, variant).  Multi-use
     SdfVariantSelectionMap mVariants;
-    for (unsigned int i=0; i < argData.numberOfFlagUses(kVariantFlag); ++i)
+    unsigned int nbFlags = argData.numberOfFlagUses(kVariantFlag);
+    for (unsigned int i=0; i < nbFlags; ++i)
     {
         MArgList tmpArgList;
         status = argData.getFlagArgumentList(kVariantFlag, i, tmpArgList);
         // Get the value
         MString tmpKey = tmpArgList.asString(0, &status);
         MString tmpVal = tmpArgList.asString(1, &status);
-        mVariants.insert( std::pair<std::string, std::string>(tmpKey.asChar(), tmpVal.asChar()) );
+        mVariants.emplace(tmpKey.asChar(), tmpVal.asChar());
     }
 
     bool readAnimData = false;
@@ -168,6 +172,10 @@ MayaUSDImportCommand::doIt(const MArgList & args)
             double endTime = 1.0;
             argData.getFlagArgument(kFrameRangeFlag, 0, startTime);
             argData.getFlagArgument(kFrameRangeFlag, 1, endTime);
+            if (endTime < startTime) {
+                std::swap(startTime, endTime);
+            }
+
             timeInterval = GfInterval(startTime, endTime);
         }
         else {

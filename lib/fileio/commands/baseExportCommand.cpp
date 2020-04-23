@@ -283,7 +283,7 @@ try
         status = objSelList.getDagPath(i, dagPath);
         if (status == MS::kSuccess)
         {
-            dagPaths.insert(dagPath);
+            dagPaths.emplace(dagPath);
         }
     }
 
