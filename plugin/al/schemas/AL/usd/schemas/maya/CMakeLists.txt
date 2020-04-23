@@ -61,9 +61,15 @@ add_library(AL_USDMayaSchemas
     ModuleDeps.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(AL_USDMayaSchemas)
+
 target_compile_definitions(AL_USDMayaSchemas
     PRIVATE
         AL_USDMAYASCHEMAS_EXPORTS
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
 
 target_include_directories(AL_USDMayaSchemas 
@@ -110,8 +116,14 @@ add_library(${PYTHON_LIBRARY_NAME}
     wrapFrameRange.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
+
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         MFB_PACKAGE_NAME=AL_USDMayaSchemas
         MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemas
         MFB_PACKAGE_MODULE=AL.usd.schemas.maya

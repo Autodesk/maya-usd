@@ -216,7 +216,9 @@ UsdMayaProxyShapeUI::select(
     return true;
 }
 
-UsdMayaProxyShapeUI::UsdMayaProxyShapeUI() : MPxSurfaceShapeUI()
+UsdMayaProxyShapeUI::UsdMayaProxyShapeUI() :
+        MPxSurfaceShapeUI(),
+        _shapeAdapter(/* isViewport2 = */ false)
 {
     MStatus status;
     _onNodeRemovedCallbackId = MDGMessage::addNodeRemovedCallback(

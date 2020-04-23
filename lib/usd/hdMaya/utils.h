@@ -36,6 +36,7 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/textureResource.h>
+#include <pxr/imaging/hd/types.h>
 
 #include <hdMaya/api.h>
 #include <hdMaya/adapters/mayaAttrs.h>

@@ -122,7 +122,6 @@ PxrMayaHdShapeAdapter::Sync(
         const M3dView::DisplayStatus legacyDisplayStatus)
 {
     // Legacy viewport implementation.
-    _isViewport2 = false;
 
     UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
 
@@ -165,7 +164,6 @@ PxrMayaHdShapeAdapter::Sync(
         const MHWRender::DisplayStatus displayStatus)
 {
     // Viewport 2.0 implementation.
-    _isViewport2 = true;
 
     UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
 
@@ -405,13 +403,6 @@ PxrMayaHdShapeAdapter::GetDagPath() const
 }
 
 /* virtual */
-bool
-PxrMayaHdShapeAdapter::IsViewport2() const
-{
-    return _isViewport2;
-}
-
-/* virtual */
 TfToken
 PxrMayaHdShapeAdapter::_GetRprimCollectionName() const
 {
@@ -547,7 +538,8 @@ PxrMayaHdShapeAdapter::_GetVisibility(
     return true;
 }
 
-PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter()
+PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter(bool isViewport2) :
+        _isViewport2(isViewport2)
 {
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Constructing PxrMayaHdShapeAdapter: %p\n",

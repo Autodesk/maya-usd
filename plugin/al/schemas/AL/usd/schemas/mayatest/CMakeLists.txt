@@ -60,9 +60,15 @@ add_library(AL_USDMayaSchemasTest
     ${CMAKE_CURRENT_BINARY_DIR}/tokens.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(AL_USDMayaSchemasTest)
+
 target_compile_definitions(AL_USDMayaSchemasTest
     PRIVATE
         AL_USDMAYASCHEMASTEST_EXPORTS
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
 
 target_include_directories(AL_USDMayaSchemasTest 
@@ -100,8 +106,14 @@ add_library(${PYTHON_LIBRARY_NAME}
     ${CMAKE_CURRENT_BINARY_DIR}/wrapExamplePolyCubeNode.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
+
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         MFB_PACKAGE_NAME=AL_USDMayaSchemasTest
         MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemasTest
         MFB_PACKAGE_MODULE=AL.usd.schemas.mayatest

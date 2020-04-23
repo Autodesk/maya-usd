@@ -37,13 +37,16 @@ add_library(${USDMAYA_UTILS_LIBRARY_NAME}
         ${usdmaya_utils_source}
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${USDMAYA_UTILS_LIBRARY_NAME})
 
 target_compile_definitions(${USDMAYA_UTILS_LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         AL_USDMAYA_UTILS_EXPORT
 )
 

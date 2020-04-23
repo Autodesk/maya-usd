@@ -30,6 +30,9 @@ add_library(${PXR_TRANSLATORS_PACKAGE}
   plugin.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(${PXR_TRANSLATORS_PACKAGE})
+
 maya_set_plugin_properties(${PXR_TRANSLATORS_PACKAGE})
 
 # handle run-time search paths

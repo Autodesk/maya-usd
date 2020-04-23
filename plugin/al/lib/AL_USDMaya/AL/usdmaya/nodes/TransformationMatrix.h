@@ -489,6 +489,7 @@ public:
   void pushRotatePivotTranslateToPrim();
   void pushRotatePivotToPrim();
   void pushRotateToPrim();
+  void pushRotateQuatToPrim();
   void pushRotateAxisToPrim();
   void pushScalePivotTranslateToPrim();
   void pushScalePivotToPrim();
