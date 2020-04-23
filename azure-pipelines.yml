@@ -4,7 +4,14 @@
 # https://aka.ms/yaml
 
 trigger:
-- dev
+  branches:
+    include:
+    - dev
+
+pr:
+  branches:
+    include:
+    - dev
 
 strategy:
   matrix:
