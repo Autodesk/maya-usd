@@ -181,6 +181,18 @@ target_include_directories(
     $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
+set(Boost_LINK_LIBRARIES
+    ${Boost_PYTHON_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
+)
+if(WIN32)
+    list(APPEND Boost_LINK_LIBRARIES
+        ${Boost_CHRONO_LIBRARY}
+        ${Boost_DATE_TIME_LIBRARY}
+    )
+endif()
+
+
 target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
@@ -199,12 +211,7 @@ target_link_libraries(${LIBRARY_NAME}
     usdImaging
     usdImagingGL
     vt
-    Boost::python
-    $<IF:$<BOOL:${IS_WINDOWS}>,Boost::thread,${Boost_THREAD_LIBRARY}>
-    $<$<BOOL:${IS_WINDOWS}>:Boost::chrono>
-    $<$<BOOL:${IS_WINDOWS}>:Boost::date_time>
-    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::filesystem>
-    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::system>
+    ${Boost_LINK_LIBRARIES}
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
@@ -213,6 +220,17 @@ target_link_libraries(${LIBRARY_NAME}
     mayaUsd
     $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
+
+if(UFE_FOUND)
+    add_definitions(-DWANT_UFE_BUILD=1)
+    target_link_libraries(${LIBRARY_NAME} ${UFE_LIBRARY})
+endif()
+
+if(NEED_BOOST_FILESYSTEM)
+    target_link_libraries(${LIBRARY_NAME}
+                        ${Boost_FILESYSTEM_LIBRARY}
+                        ${Boost_SYSTEM_LIBRARY})
+endif()
 
 install(TARGETS ${LIBRARY_NAME}
     LIBRARY
