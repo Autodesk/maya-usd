@@ -13,28 +13,28 @@
 // limitations under the License.
 //
 
-proc setOptionVars (int $forceFactorySettings)
+proc setOptionVars(int $forceFactorySettings)
 {
-    if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_primPath`) {
-        optionVar -stringValue stageFromExistingLayer_primPath "";
+    if ($forceFactorySettings || !`optionVar -exists stageFromFile_primPath`) {
+        optionVar -stringValue stageFromFile_primPath "";
     }
 
-    if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_excludePrimPath`) {
-        optionVar -stringValue stageFromExistingLayer_excludePrimPath "";
+    if ($forceFactorySettings || !`optionVar -exists stageFromFile_excludePrimPath`) {
+        optionVar -stringValue stageFromFile_excludePrimPath "";
     }
 
-    if ($forceFactorySettings || !`optionVar -exists stageFromExistingLayer_loadPayloads`) {
-        optionVar -intValue stageFromExistingLayer_loadPayloads 1;
+    if ($forceFactorySettings || !`optionVar -exists stageFromFile_loadPayloads`) {
+        optionVar -intValue stageFromFile_loadPayloads 1;
     }
 }
 
-// stageFromExistingLayer_UISetup
-// creates the options of the stageFromExistingLayer dialog
-global proc string stageFromExistingLayer_UISetup(string $parent) {
+// stageFromFile_UISetup
+// creates the options of the stageFromFile dialog
+global proc string stageFromFile_UISetup(string $parent) {
     setParent $parent;
     string $layout = `scrollLayout -childResizable true`;
 
-    frameLayout -label "USD Layer Options" -collapsable false;
+    frameLayout -label "USD File Options" -collapsable false;
     textFieldGrp -l "Prim Path:" 
         -ann "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded." 
         -sbm "Loads the specified prim path" 
@@ -51,14 +51,14 @@ global proc string stageFromExistingLayer_UISetup(string $parent) {
     return $layout;
 }
 
-// stageFromExistingLayer_UIInit
-// init defaults values for the options of the stageFromExistingLayer dialog
-global proc stageFromExistingLayer_UIInit(string $parent, string $filterType) {
+// stageFromFile_UIInit
+// init defaults values for the options of the stageFromFile dialog
+global proc stageFromFile_UIInit(string $parent, string $filterType) {
     setOptionVars(false);
 
-    string $ppath = `optionVar -q stageFromExistingLayer_primPath`;
-    string $exppath = `optionVar -q stageFromExistingLayer_excludePrimPath`;
-    int $loadp = `optionVar -q stageFromExistingLayer_loadPayloads`;
+    string $ppath = `optionVar -q stageFromFile_primPath`;
+    string $exppath = `optionVar -q stageFromFile_excludePrimPath`;
+    int $loadp = `optionVar -q stageFromFile_loadPayloads`;
 
     setParent $parent;
     textFieldGrp -e -text $ppath primPathField;
@@ -66,15 +66,15 @@ global proc stageFromExistingLayer_UIInit(string $parent, string $filterType) {
     checkBoxGrp -e -value1 $loadp loadPayloadsCheckBox;
 }
 
-global proc stageFromExistingLayer_UICommit(string $parent) {
+global proc stageFromFile_UICommit(string $parent) {
     setParent $parent;
 
     // fetch values
-    optionVar -stringValue stageFromExistingLayer_primPath
+    optionVar -stringValue stageFromFile_primPath
         (`textFieldGrp -q -text  primPathField`);
-    optionVar -stringValue stageFromExistingLayer_excludePrimPath
+    optionVar -stringValue stageFromFile_excludePrimPath
         (`textFieldGrp -q -text  excludePrimPathField`);
-    optionVar -intValue stageFromExistingLayer_loadPayloads
+    optionVar -intValue stageFromFile_loadPayloads
         (`checkBoxGrp -q -value1 loadPayloadsCheckBox`);
 }
 
@@ -86,9 +86,9 @@ proc doCreateStage(string $fileName) {
     else
         $baseName = "UsdStage";
 
-    string $ppath = `optionVar -q stageFromExistingLayer_primPath`;
-    string $exppath = `optionVar -q stageFromExistingLayer_excludePrimPath`;
-    int $loadp = `optionVar -q stageFromExistingLayer_loadPayloads`;
+    string $ppath = `optionVar -q stageFromFile_primPath`;
+    string $exppath = `optionVar -q stageFromFile_excludePrimPath`;
+    int $loadp = `optionVar -q stageFromFile_loadPayloads`;
 
     string $shapeNode = `createNode "mayaUsdProxyShape" -skipSelect -name ($baseName+"Shape")`;
     setAttr -type "string" ($shapeNode+".filePath") $fileName;
@@ -99,31 +99,31 @@ proc doCreateStage(string $fileName) {
     select -r $shapeNode;
 }
 
-global proc createStagesFromExistingCallback(string $parent, int $doIt)
+global proc createStageFromExistingCallback(string $parent, int $doIt)
 {
-    stageFromExistingLayer_UICommit($parent);
+    stageFromFile_UICommit($parent);
 
     if ($doIt) {
-        mayaUsd_createStagesFromExistingLayer; 
-        addToRecentCommandQueue "mayaUsd_createStagesFromExistingLayer" 
-            "mayaUsdCreateStageFromExistingLayer";
+        mayaUsd_createStageFromFile; 
+        addToRecentCommandQueue "mayaUsd_createStageFromFile" 
+            "mayaUsdCreateStageFromFile";
     }
 }
 
-global proc createStagesFromExistingSetup(string $parent, int $forceFactorySettings)
+global proc createStageFromExistingSetup(string $parent, int $forceFactorySettings)
 {
     setOptionVars($forceFactorySettings);
 
-    stageFromExistingLayer_UIInit($parent, "");
+    stageFromFile_UIInit($parent, "");
 }
 
-global proc mayaUsd_createStagesFromExistingLayerOptions()
+global proc mayaUsd_createStageFromFileOptions()
 {
     global int $gOptionBoxTemplateFrameSpacing;
 
     setOptionVars(false);
 
-    string $commandName = "createStagesFromExisting";
+    string $commandName = "createStageFromExisting";
     string $callback = ($commandName + "Callback");
     string $setup = ($commandName + "Setup");
 
@@ -134,9 +134,9 @@ global proc mayaUsd_createStagesFromExistingLayerOptions()
 
     setUITemplate -pushTemplate DefaultTemplate;
 
-    string $parent = `formLayout createStagesFromExistingOptions`;
+    string $parent = `formLayout createStageFromExistingOptions`;
 
-    string $settingsFrame = stageFromExistingLayer_UISetup($parent);
+    string $settingsFrame = stageFromFile_UISetup($parent);
 
     formLayout -e
         -af $settingsFrame "top" $gOptionBoxTemplateFrameSpacing
@@ -146,7 +146,7 @@ global proc mayaUsd_createStagesFromExistingLayerOptions()
         $parent;
 
     string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
-    button -edit -label "Create Stages"
+    button -edit -label "Create Stage"
         -command ($callback + " " + $parent + " " + 1 + "; hideOptionBox;")
         $applyCloseBtn;
 
@@ -170,7 +170,7 @@ global proc mayaUsd_createStagesFromExistingLayerOptions()
         -command ($callback + " " + $parent + " " + 0)
         $saveBtn;
 
-    setOptionBoxTitle("Create USD Stage Options");
+    setOptionBoxTitle("Create USD Stage from File Options");
 
     setOptionBoxHelpTag( "" );
 
@@ -179,15 +179,15 @@ global proc mayaUsd_createStagesFromExistingLayerOptions()
     showOptionBox();
 }
 
-global proc mayaUsd_createStagesFromExistingLayer() {
+global proc mayaUsd_createStageFromFile() {
     string $result[] = `fileDialog2 
         -fileMode 1
-        -caption "Create USD Stage From Existing Layer"
+        -caption "Create USD Stage from File"
         -fileFilter "All USD Files (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz"
         -okCaption "Create"
-        -optionsUICreate "stageFromExistingLayer_UISetup"
-        -optionsUIInit "stageFromExistingLayer_UIInit"
-        -optionsUICommit "stageFromExistingLayer_UICommit"`;
+        -optionsUICreate "stageFromFile_UISetup"
+        -optionsUIInit "stageFromFile_UIInit"
+        -optionsUICommit "stageFromFile_UICommit"`;
 
     if (size($result) > 0) {
         doCreateStage($result[0]);

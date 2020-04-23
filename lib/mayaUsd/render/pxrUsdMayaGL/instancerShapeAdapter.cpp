@@ -402,7 +402,9 @@ void UsdMayaGL_InstancerShapeAdapter::SyncInstancerPerPrototypePostHook(
     prototypeRefs.ClearReferences();
 }
 
-UsdMayaGL_InstancerShapeAdapter::UsdMayaGL_InstancerShapeAdapter()
+UsdMayaGL_InstancerShapeAdapter::UsdMayaGL_InstancerShapeAdapter(
+        bool isViewport2) :
+    PxrMayaHdShapeAdapter(isViewport2)
 {
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Constructing UsdMayaGL_InstancerShapeAdapter: %p\n",

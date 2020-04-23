@@ -24,16 +24,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-// Even though the new/open callback here looks generic
-// and anyone interested in it can listen to it, it only
-// gets installed/removed by the plugin and should be ref
-// counted so that we can call "InstallListener" for each
-// plugin that gets loaded but then only actually remove
-// the MSceneMessage callback when the last plugin is 
-// unloaded and calls "RemoveListener" 
-//
+// Simple ref count for how many plugins have initialized the callback.
+// Used to keep the listener around until the last plugin asks for it
+// to be removed.
 static int _newOrOpenRegistrationCount = 0;
-
 
 static
 void

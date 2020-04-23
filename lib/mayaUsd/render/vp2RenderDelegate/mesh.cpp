@@ -136,10 +136,20 @@ namespace {
             if (requiresUnsharedVertices) {
                 const VtIntArray& faceVertexIndices = topology.GetFaceVertexIndices();
                 if (numVertices == faceVertexIndices.size()) {
+                    unsigned int dataSize = primvarData.size();
                     for (size_t v = 0; v < numVertices; v++) {
                         SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
                             reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-                        *pointer = primvarData[faceVertexIndices[v]];
+                        unsigned int index = faceVertexIndices[v];
+                        if (index < dataSize) {
+                            *pointer = primvarData[index];
+                        } else {
+                            TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
+                                                    "primvar %s has %u elements, while its topology "
+                                                    "references face vertex index %u.\n",
+                                                    rprimId.asChar(), primvarName.GetText(),
+                                                    dataSize, index);
+                        }
                     }
                 }
                 else {
@@ -164,7 +174,8 @@ namespace {
                 }
 
                 if (channelOffset == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
-                    memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
+                    const void* source = static_cast<const void*>(primvarData.cdata());
+                    memcpy(vertexBuffer, source, sizeof(DEST_TYPE) * numVertices);
                 }
                 else {
                     for (size_t v = 0; v < numVertices; v++) {
@@ -244,7 +255,8 @@ namespace {
                     }
 
                     if (channelOffset == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
-                        memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
+                        const void* source = static_cast<const void*>(primvarData.cdata());
+                        memcpy(vertexBuffer, source, sizeof(DEST_TYPE) * numVertices);
                     }
                     else {
                         for (size_t v = 0; v < numVertices; v++) {
@@ -628,7 +640,11 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
         return;
     }
 
+#if USD_VERSION_NUM > 2002
+    _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
+#else
     _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
+#endif
     HdReprSharedPtr repr = _reprs.back().second;
 
     // set dirty bit to say we need to sync a new repr

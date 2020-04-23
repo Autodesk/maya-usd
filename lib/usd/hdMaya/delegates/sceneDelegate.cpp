@@ -849,6 +849,12 @@ GfMatrix4d HdMayaSceneDelegate::GetInstancerTransform(
     return GfMatrix4d(1.0);
 }
 
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 33
+SdfPath HdMayaSceneDelegate::GetScenePrimPath(
+    const SdfPath& rprimPath, int instanceIndex) {
+    return rprimPath;
+}
+#else
 SdfPath HdMayaSceneDelegate::GetPathForInstanceIndex(
     const SdfPath& protoPrimPath, int instanceIndex, int* absoluteInstanceIndex,
     SdfPath* rprimPath, SdfPathVector* instanceContext) {
@@ -857,6 +863,7 @@ SdfPath HdMayaSceneDelegate::GetPathForInstanceIndex(
     }
     return {};
 }
+#endif
 
 bool HdMayaSceneDelegate::GetVisible(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)

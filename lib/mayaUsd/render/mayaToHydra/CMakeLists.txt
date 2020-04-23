@@ -19,7 +19,7 @@ target_sources(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME}
     PRIVATE 
@@ -30,6 +30,8 @@ target_compile_definitions(${TARGET_NAME}
         # Not sure if msvcc sets this automatically, but won't hurt to redefine
         $<$<BOOL:${IS_WINDOWS}>:_WIN32>
 )
+
+mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------
 # link libraries

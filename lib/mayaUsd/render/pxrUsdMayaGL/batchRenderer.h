@@ -22,6 +22,19 @@
 #include <unordered_set>
 #include <utility>
 
+// XXX: With Maya versions up through 2019 on Linux, M3dView.h ends up
+// indirectly including an X11 header that #define's "Bool" as int:
+//   - <maya/M3dView.h> includes <maya/MNativeWindowHdl.h>
+//   - <maya/MNativeWindowHdl.h> includes <X11/Intrinsic.h>
+//   - <X11/Intrinsic.h> includes <X11/Xlib.h>
+//   - <X11/Xlib.h> does: "#define Bool int"
+// This can cause compilation issues if <pxr/usd/sdf/types.h> is included
+// afterwards, so to fix this, we ensure that it gets included first.
+//
+// The X11 include appears to have been removed in Maya 2020+, so this should
+// no longer be an issue with later versions.
+#include <pxr/usd/sdf/types.h>
+
 #include <maya/M3dView.h>
 #include <maya/MDrawContext.h>
 #include <maya/MDrawRequest.h>
@@ -396,15 +409,6 @@ private:
     _ShapeAdapterHandleMap _shapeAdapterHandleMap;
 
     _ShapeAdapterHandleMap _legacyShapeAdapterHandleMap;
-
-    /// We detect and store whether Viewport 2.0 is using the legacy
-    /// viewport-based selection mechanism (i.e. whether the
-    /// MAYA_VP2_USE_VP1_SELECTION environment variable is enabled) when the
-    /// batch renderer is constructed. Then when a legacy selection is
-    /// performed, we consult this value and the viewport renderer of the
-    /// M3dView in which the selection is occurring to determine which bucket
-    /// map of shape adapters we should use to compute the selection.
-    bool _viewport2UsesLegacySelection;
 
     /// Gets the vector of prim filters to use for intersection testing.
     ///

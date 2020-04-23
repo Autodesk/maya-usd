@@ -22,17 +22,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/*! \brief  
+/*! \brief  Registration/deregistration of HdVP2 shader fragments.
     \class  HdVP2ShaderFragments
 */
 class HdVP2ShaderFragments
 {
 public:
-    // Loads all fragments into VP2
+    //! Register all HdVP2 fragments
     static MStatus registerFragments();
 
-    // Unload all fragments from VP2
+    //! Deregister all HdVP2 fragments
     static MStatus deregisterFragments();
+
+private:
+    //! Whether or not fragments have been registered.
+    static bool _registered;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

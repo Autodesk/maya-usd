@@ -131,7 +131,7 @@ void HdMayaProxyAdapter::PopulateSelectedPaths(
     // First, we check to see if the entire proxy shape is selected
     if (selectedDag.node() == proxyMObj) {
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 11
-        selectedSdfPaths.push_back(sdfPath::AbsoluteRootPath());
+        selectedSdfPaths.push_back(SdfPath::AbsoluteRootPath());
 #else
         selectedSdfPaths.push_back(_usdDelegate->GetDelegateID());
 #endif

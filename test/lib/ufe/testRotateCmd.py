@@ -180,6 +180,10 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
     # Note: marked as expected failure as sometimes it passes and sometimes it fails
     #       with something like:
     #       AssertionError: -0.5235987755982988 != -0.4220828456501826 within 7 places
+    # The first test cases passes because the initial rotation is the same as
+    # the default rotation, but subsequent rotations are applied to the default
+    # rotation, and thus do not compound because of MAYA-96058.
+    #
     @unittest.expectedFailure
     def testRotateUSD(self):
         '''Rotate USD object, read through the Transform3d interface.'''
@@ -217,7 +221,11 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
         expected = ball35Rotation()
 
         # MAYA-96058: unfortunately, rotate command currently requires a rotate
-        # manipulator to be created to update the UFE object.
+        # manipulator to be created to update the UFE object, but such a
+        # manipulator cannot be created in batch mode, thus the rotate command
+        # will not work properly. This test is expected to fail until the
+        # underlying issue can be addressed.
+        #
         manipCtx = cmds.manipRotateContext()
         cmds.setToolTo(manipCtx)
 

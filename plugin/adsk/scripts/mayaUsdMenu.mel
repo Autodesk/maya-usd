@@ -58,24 +58,24 @@ proc removeMenuCallback(string $menuName, string $cmd) {
 // initRuntimeCommands
 // create all the runtime commands we'll use and the user can map to hotkeys
 proc initRuntimeCommands() {
-    if (!`runTimeCommand -exists mayaUsdCreateStageFromExistingLayer`) {
+    if (!`runTimeCommand -exists mayaUsdCreateStageFromFile`) {
         runTimeCommand -default true
-            -label "Stage From Existing Layer..."
-            -annotation "Create a USD Stage from an existing USD layer"
+            -label "Stage From File..."
+            -annotation "Create a USD Stage from an existing USD file"
             -category   "Menu items.Maya USD"
-            -command    "mayaUsd_createStagesFromExistingLayer"
-            mayaUsdCreateStageFromExistingLayer;
+            -command    "mayaUsd_createStageFromFile"
+            mayaUsdCreateStageFromFile;
     }
 
-    if (!`runTimeCommand -exists mayaUsdCreateStageFromExistingLayerOptions`) {
+    if (!`runTimeCommand -exists mayaUsdCreateStageFromFileOptions`) {
         runTimeCommand -default true
-            -annotation "Create a USD Stage from an existing USD layer options"
+            -annotation "Create a USD Stage from an existing USD file options"
             -category   "Menu items.Maya USD"
-            -command    "mayaUsd_createStagesFromExistingLayerOptions"
-            mayaUsdCreateStageFromExistingLayerOptions;
+            -command    "mayaUsd_createStageFromFileOptions"
+            mayaUsdCreateStageFromFileOptions;
     }    
 
-    source "mayaUsd_createStagesFromExistingLayer.mel";
+    source "mayaUsd_createStageFromFile.mel";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,8 +103,8 @@ global proc mayaUsdMenu_createMenuCallback() {
                 -label "Universal Scene Description (USD)" 
                 -annotation "Create a USD stage" 
                 -version $mayaVersion`;
-            menuItem -runTimeCommand mayaUsdCreateStageFromExistingLayer;
-            menuItem -runTimeCommand mayaUsdCreateStageFromExistingLayerOptions -optionBox true;
+            menuItem -runTimeCommand mayaUsdCreateStageFromFile;
+            menuItem -runTimeCommand mayaUsdCreateStageFromFileOptions -optionBox true;
         } else {
             error "Could not create mayaUSD create menu";
         }

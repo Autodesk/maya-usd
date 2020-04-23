@@ -11,13 +11,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/macros
 )
 
-include(Options)
 include(Public)
-
 pxr_setup_python()
 
 #==============================================================================
-# Packages 
+# subdirectory
 #==============================================================================
 pxr_toplevel_prologue()
     add_subdirectory(maya)

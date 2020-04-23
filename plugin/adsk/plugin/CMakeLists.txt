@@ -29,7 +29,7 @@ target_sources(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compile configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
@@ -37,6 +37,8 @@ target_compile_definitions(${TARGET_NAME}
         $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
         $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
+
+mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------
 # include directories

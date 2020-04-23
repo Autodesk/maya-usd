@@ -27,10 +27,17 @@
 #include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/usd/sdf/path.h>
 
-// XXX: On Linux, some Maya headers (notably M3dView.h) end up indirectly
-//      including X11/Xlib.h, which #define's "Bool" as int. This can cause
-//      compilation issues if sdf/types.h is included afterwards, so to fix
-//      this, we ensure that it gets included first.
+// XXX: With Maya versions up through 2019 on Linux, M3dView.h ends up
+// indirectly including an X11 header that #define's "Bool" as int:
+//   - <maya/M3dView.h> includes <maya/MNativeWindowHdl.h>
+//   - <maya/MNativeWindowHdl.h> includes <X11/Intrinsic.h>
+//   - <X11/Intrinsic.h> includes <X11/Xlib.h>
+//   - <X11/Xlib.h> does: "#define Bool int"
+// This can cause compilation issues if <pxr/usd/sdf/types.h> is included
+// afterwards, so to fix this, we ensure that it gets included first.
+//
+// The X11 include appears to have been removed in Maya 2020+, so this should
+// no longer be an issue with later versions.
 #include <pxr/usd/sdf/types.h>
 
 #include <maya/M3dView.h>
@@ -194,14 +201,15 @@ class PxrMayaHdShapeAdapter
 
         /// Get whether this shape adapter is for use with Viewport 2.0.
         ///
-        /// The shape adapter gets its viewport renderer affiliation from the
-        /// version of Sync() that is used to populate it.
+        /// The shape adapter's viewport renderer affiliation must be specified
+        /// when it is constructed.
         ///
         /// Returns true if the shape adapter should be used for batched
         /// drawing/selection in Viewport 2.0, or false if it should be used
         /// in the legacy viewport.
-        MAYAUSD_CORE_PUBLIC
-        virtual bool IsViewport2() const;
+        bool IsViewport2() const {
+            return _isViewport2;
+        }
 
     protected:
 
@@ -270,7 +278,7 @@ class PxrMayaHdShapeAdapter
 
         /// Construct a new uninitialized PxrMayaHdShapeAdapter.
         MAYAUSD_CORE_PUBLIC
-        PxrMayaHdShapeAdapter();
+        PxrMayaHdShapeAdapter(bool isViewport2);
 
         MAYAUSD_CORE_PUBLIC
         virtual ~PxrMayaHdShapeAdapter();
@@ -286,7 +294,7 @@ class PxrMayaHdShapeAdapter
 
         GfMatrix4d _rootXform;
 
-        bool _isViewport2;
+        const bool _isViewport2;
 };
 
 

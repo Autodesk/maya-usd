@@ -74,6 +74,10 @@ _add_define("NOMINMAX")
 # (which doesn't exist on Windows)
 _add_define("YY_NO_UNISTD_H")
 
+# Needed to prevent Python from adding a define for snprintf
+# since it was added in Visual Studio 2015.
+_add_define(HAVE_SNPRINTF)
+
 # Forces all libraries that have separate source to be linked as
 # DLL's rather than static libraries on Microsoft Windows, unless
 # explicitly told otherwise.
