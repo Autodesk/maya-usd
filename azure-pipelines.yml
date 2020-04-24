@@ -7,7 +7,6 @@ trigger:
   branches:
     include:
     - dev
-
 pr:
   branches:
     include:
