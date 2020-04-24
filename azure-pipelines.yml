@@ -7,7 +7,7 @@
 resources:
   pipelines:
   - pipeline: workflows   # Name of the pipeline resource
-    source: maya-usd      # Name of the triggering pipeline
+    source: smithw-adsk.maya-usd      # Name of the triggering pipeline
 
     trigger:
       branches:
