@@ -3,16 +3,10 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-
-resources:
-  pipelines:
-  - pipeline: workflows   # Name of the pipeline resource
-    source: smithw-adsk.maya-usd      # Name of the triggering pipeline
-
-    trigger:
-      branches:
-        include:
-        - dev
+trigger:
+  branches:
+    include:
+    - dev
 
 pr:
   branches:
