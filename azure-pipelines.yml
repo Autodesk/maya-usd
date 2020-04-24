@@ -14,10 +14,10 @@ resources:
         include:
         - dev
 
-    pr:
-      branches:
-        include:
-        - dev
+pr:
+  branches:
+    include:
+    - dev
 
 strategy:
   matrix:
