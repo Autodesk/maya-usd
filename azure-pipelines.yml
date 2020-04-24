@@ -3,15 +3,21 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-trigger:
-  branches:
-    include:
-    - dev
 
-pr:
-  branches:
-    include:
-    - dev
+resources:
+  pipelines:
+  - pipeline: workflows   # Name of the pipeline resource
+    source: maya-usd      # Name of the triggering pipeline
+
+    trigger:
+      branches:
+        include:
+        - dev
+
+    pr:
+      branches:
+        include:
+        - dev
 
 strategy:
   matrix:
@@ -33,13 +39,3 @@ steps:
   env:
     ENV_WORKFLOW_USERNAME: $(WORKFLOW_USERNAME)
 
-- script: curl -v --user $(WORKFLOW_USERNAME):$(WORKFLOW_PASSWORD) -O $(MAYA_USD_JSON_URL)
-  displayName: 'Download a file'
-
-- script: cat Autodesk_Maya_2019_2_Update_Short-Long-descriptions.json
-  displayName: 'Cat downloaded file'
-
-- script: echo WORKFLOW_USERNAME=$ENV_WORKFLOW_USERNAME
-  displayName: 'Change workflow'
-  env:
-    ENV_WORKFLOW_USERNAME: $(WORKFLOW_USERNAME)
