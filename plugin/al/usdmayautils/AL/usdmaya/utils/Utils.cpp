@@ -125,7 +125,7 @@ MString mapUsdPrimToMayaNode(const SdfPath& primPath,
     std::replace(mayaElementPath.begin(), mayaElementPath.end(), '/','|');
   }
 
-  TF_DEBUG(ALUTILS_INFO).Msg("mapUsdPrimToMayaNode: Mapped the path for prim=%s to mayaObject=%s\n", primPath.GetText(), mayaElementPath.c_str());
+  TF_DEBUG(MAYAUSDUTILS_INFO).Msg("mapUsdPrimToMayaNode: Mapped the path for prim=%s to mayaObject=%s\n", primPath.GetText(), mayaElementPath.c_str());
 
   return AL::maya::utils::convert(mayaElementPath);
 }
