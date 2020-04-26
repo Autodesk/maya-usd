@@ -372,6 +372,7 @@ public:
 
   /// \brief  set the prim that this transformation matrix will read/write to.
   /// \param  prim the prim
+  /// \param  transformNode the owning transform node
   void setPrim(const UsdPrim& prim, Scope* transformNode) override;
 
   /// \brief  Returns the timecode to use when pushing the transform values to the USD prim. If readFromTimeline flag
@@ -488,12 +489,43 @@ public:
   void pushRotatePivotTranslateToPrim();
   void pushRotatePivotToPrim();
   void pushRotateToPrim();
+  void pushRotateQuatToPrim();
   void pushRotateAxisToPrim();
   void pushScalePivotTranslateToPrim();
   void pushScalePivotToPrim();
   void pushScaleToPrim();
   void pushShearToPrim();
   void pushTransformToPrim();
+
+  // Helper class.  Creating a variable of this class temporarily disables
+  // push to prim after saving its original state.  When the variable goes
+  // out of scope, the original push to prim state is restored by the
+  // destructor.
+  //
+  class Scoped_DisablePushToPrim
+  {
+  public:
+    Scoped_DisablePushToPrim(TransformationMatrix& tm) : m_transformationMatrix(tm)
+    {
+      m_IsPushToPrimEnabled = m_transformationMatrix.pushToPrimEnabled();
+      m_transformationMatrix.m_flags &= ~TransformationMatrix::kPushToPrimEnabled;
+    }
+
+    ~Scoped_DisablePushToPrim()
+    {
+      if(m_IsPushToPrimEnabled)
+      {
+        m_transformationMatrix.m_flags |= TransformationMatrix::kPushToPrimEnabled;
+      }
+    }
+
+  private:
+    // The TransformationMatrix whose push to prim state is being affected.
+    TransformationMatrix& m_transformationMatrix;
+
+    // Holder for the original value of push to prim state. 
+    bool m_IsPushToPrimEnabled;
+  };
 
 };
 

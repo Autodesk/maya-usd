@@ -1,0 +1,35 @@
+#usda 1.0
+(
+    defaultPrim = "hello"
+)
+
+def Xform "hello" (
+    variants = {
+        string excludeVariant = "include"
+    }
+    prepend variantSets = "excludeVariant"
+)
+{
+    variantSet "excludeVariant" = {
+        "exclude" {
+          def Xform "world" (
+    	      al_usdmaya_excludeFromProxyShape = true
+          )
+          {
+            def Camera "cam"
+            {
+            }
+          }
+        }
+
+        "include" {
+          def Xform "world"
+          {
+            def Camera "cam"
+            {
+            }
+          }
+        }
+
+    }
+}

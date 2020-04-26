@@ -11,13 +11,17 @@ Before building the project, consult the following table to ensure you use the r
 |        Required       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
 |    Operating System   |         Windows 10        | Catalina (10.15), Mojave (10.14), High Sierra (10.13)        |       CentOS 7              |
-|   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3),  Maya2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1), Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2), Maya 2019/2020 (gcc 6.3.1) |
+|   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3)<br>Maya 2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1)<br>Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2)<br>Maya 2019/2020 (gcc 6.3.1) |
 | Minimum Cmake Version |           3.13            |                             3.13                             |         3.13                |
 |         Python        |           2.7.15          |                            2.7.15                            |        2.7.15               |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              |      PyYAML, PySide, PyOpenGL, Jinja2             |
-|    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja(Recommended)                       |    Ninja(Recommended)       |
+|    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja (Recommended)                      |    Ninja (Recommended)      |
 |    Command processor  | Visual Studio X64 2015 or 2017 command prompt  |                     bash                |             bash            |
-| Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018,2019, 2020      | 
+| Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018, 2019, 2020     |
+
+|        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
+|:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
+|          Qt           | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 |
 
 ***NOTE:*** We haven't fully tested the plug-ins on ```Catalina``` and it is still at the experimental stage.
 
@@ -25,16 +29,15 @@ Before building the project, consult the following table to ensure you use the r
 
 #### 2. Download and Build Pixar USD 
 
-See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD . Pixar has recently removed support for building Maya USD libraries/plug-ins in their github repository and ```build_usd.py```. When building the maya-usd project, it is important the recommended ```Pixar USD``` and ```Animal Logic``` commitID or tag from the table below are used: 
+See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD . Pixar has recently removed support for building Maya USD libraries/plug-ins in their github repository and ```build_usd.py```. When building the maya-usd project, it is important the recommended ```Pixar USD``` commitID or tag from the table below are used: 
 
-|   Required    |      ![](images/pxr.png)          |         ![](images/al.png)            |
-|:------------: |:---------------:  |:-----------------:    |
-| CommitID/tag  | ceca736(>19.11)   | 631a2911(>0.34.0)     |
-
+|               |      ![](images/pxr.png)          |        
+|:------------: |:---------------:                  |
+|  CommitID/Tags | master: [v19.07](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.07) or [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) <br> dev: [6af4d8a](https://github.com/PixarAnimationStudios/USD/commit/6af4d8afd02682ee4365d1b7d60683e95acf12ac) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
-***NOTE:*** Make sure that you don't have older USD locations in your ```PATH``` and ```PYTHONPATH``` environment settings. ```PATH``` and ```PYTHONPATH``` are automatically adjusted inside the project to point to the correct USD location. See ```cmake/usd.cmake```.
+***NOTE:*** Make sure that you don't have an older USD locations in your ```PATH``` and ```PYTHONPATH``` environment settings. ```PATH``` and ```PYTHONPATH``` are automatically adjusted inside the project to point to the correct USD location. See ```cmake/usd.cmake```.
 
 #### 3. Universal Front End (UFE)
 
@@ -107,9 +110,9 @@ BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.        
 BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON
 BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
-WANT_USD_RELATIVE_PATH      | this flag is used for Autodesk's internal build only.      | OFF
+BUILD_STRICT_MODE           | enforces all warnings as errors.                           | ON
+BUILD_SHARED_LIBS			| build libraries as shared or static.						 | ON
 CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON
-CMAKE_WANT_QT_BUILD         | enables building with Qt (if found).                       | ON
 
 ##### Stages
 

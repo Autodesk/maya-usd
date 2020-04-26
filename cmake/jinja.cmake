@@ -1,15 +1,18 @@
-#-
-# =======================================================================
-# Copyright 2018 Autodesk, Inc. All rights reserved.
 #
-# This computer source code and related instructions and comments are the
-# unpublished confidential  and proprietary information of Autodesk, Inc.
-# and are protected under applicable copyright and trade secret law. They 
-# may not be disclosed to, copied  or used by any third party without the 
-# prior written consent of Autodesk, Inc.
-# =======================================================================
-#+
-
+# Copyright 2020 Autodesk
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 #------------------------------------------------------------------------------
 #
 # Gets the Jinja2 and the dependant MarkupSafe python libraries from
@@ -41,7 +44,7 @@ function(init_jinja)
             message(FATAL_ERROR "JINJA_LOCATION not set")
         endif()
 
-        set(JINJA_ROOT "${JINJA_LOCATION}")
+        set(JINJA_ROOT "${JINJA_LOCATION}/src")
 
         # Add Jinja2 to the python path so that usdGenSchemas can run properly.
         mayaUsd_append_path_to_env_var("PYTHONPATH" "${JINJA_ROOT}")

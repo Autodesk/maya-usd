@@ -15,8 +15,8 @@
 //
 #include "ProxyShape.h"
 
-#include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
 
 MAYAUSD_NS_DEF {
 

@@ -30,29 +30,31 @@ add_library(${PXR_TRANSLATORS_PACKAGE}
   plugin.cpp
 )
 
-MAYA_SET_PLUGIN_PROPERTIES(${PXR_TRANSLATORS_PACKAGE})
+# compiler configuration
+mayaUsd_compile_config(${PXR_TRANSLATORS_PACKAGE})
+
+maya_set_plugin_properties(${PXR_TRANSLATORS_PACKAGE})
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
     mayaUsd_init_rpath(rpath "plugin")
     mayaUsd_add_rpath(rpath "../lib")
 
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../../USD/lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-
+    if (IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+    endif()
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib")
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
     mayaUsd_install_rpath(rpath ${PXR_TRANSLATORS_PACKAGE})
-endif()
-
-if (IS_LINUX)
-  if(WANT_USD_RELATIVE_PATH)
-      mayaUsd_add_rpath(rpath "../../../../USD/lib64")
-  endif()
 endif()
 
 target_include_directories(
@@ -80,7 +82,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${AL_INSTALL_PREFIX}/plugin/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/plugin/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugin/plugInfo.json
+ DESTINATION ${AL_INSTALL_PREFIX}/plugin
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

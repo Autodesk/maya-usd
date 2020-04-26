@@ -13,26 +13,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "meshWriter.h"
-
-#include "../../utils/colorSpace.h"
-#include "../../fileio/utils/roundTripUtil.h"
-#include "../../utils/util.h"
-#include "../../fileio/utils/writeUtil.h"
-
-#include "pxr/base/gf/gamma.h"
-#include "pxr/base/gf/math.h"
-#include "pxr/base/gf/transform.h"
-#include "pxr/base/tf/staticTokens.h"
-
-#include "pxr/usd/usdGeom/mesh.h"
-
 #include <maya/MColor.h>
 #include <maya/MColorArray.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFnMesh.h>
 #include <maya/MItMeshFaceVertex.h>
 #include <maya/MItMeshVertex.h>
+
+#include <pxr/base/gf/gamma.h>
+#include <pxr/base/gf/math.h>
+#include <pxr/base/gf/transform.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/usd/usdGeom/mesh.h>
+
+#include <mayaUsd/fileio/utils/roundTripUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/util.h>
+
+#include "meshWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -1,72 +1,103 @@
-set(PLUGIN_PACKAGE mayaUsdPlugin)
+#
+# Copyright 2020 Autodesk
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+set(TARGET_NAME mayaUsdPlugin)
 
-if(CMAKE_WANT_UFE_BUILD)
-    find_package(UFE QUIET)
-    if(UFE_FOUND)
-        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
-        include_directories(${UFE_INCLUDE_DIR})
-        add_definitions(-DWANT_UFE_BUILD)
-    else()
-        message(STATUS "UFE not found. UFE features will be disabled.")
-    endif()
-endif()
+add_library(${TARGET_NAME} MODULE)
 
-add_library(${PLUGIN_PACKAGE} MODULE
-    plugin.cpp
-    importTranslator.cpp
-    ProxyShape.cpp
+# -----------------------------------------------------------------------------
+# sources
+# -----------------------------------------------------------------------------
+target_sources(${TARGET_NAME} 
+    PRIVATE
+        plugin.cpp
+        importTranslator.cpp
+        exportTranslator.cpp
+        ProxyShape.cpp
 )
 
-target_compile_definitions(${PLUGIN_PACKAGE}
+# -----------------------------------------------------------------------------
+# compile configuration
+# -----------------------------------------------------------------------------
+target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYAUSD_PLUGIN_EXPORT
         $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
-target_include_directories(${PLUGIN_PACKAGE}
+mayaUsd_compile_config(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# include directories
+# -----------------------------------------------------------------------------
+target_include_directories(${TARGET_NAME}
     PRIVATE
-        ${MAYAUSD_INCLUDE_DIR}
-        ${PXR_INCLUDE_DIRS}
+        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
-target_link_libraries(${PLUGIN_PACKAGE}
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${TARGET_NAME}
     PRIVATE
-        ${MAYA_LIBRARIES}
-        mayaUsd
-		ar 
-		gf 
-		kind
-		plug 
-		sdf 
-		tf
-		usd
-		usdGeom
-		usdUtils
-		$<$<BOOL:${Qt5_FOUND}>:mayaUsdUI>
+        $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
 
-MAYA_SET_PLUGIN_PROPERTIES(${PLUGIN_PACKAGE})
+if (${Qt5_FOUND})
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsdUI
+    )
+else()
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsd
+    )
+endif()
 
-# handle run-time search paths
+# -----------------------------------------------------------------------------
+# properties
+# -----------------------------------------------------------------------------
+maya_set_plugin_properties(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
+# run-time search paths
+# -----------------------------------------------------------------------------
 if(IS_MACOSX OR IS_LINUX) 
     mayaUsd_init_rpath(rpath "plugin")
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../../USD/lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
-    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
-    mayaUsd_install_rpath(rpath ${PLUGIN_PACKAGE})
-endif()
-
-if(IS_LINUX)
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../../USD/lib64")
+    if(IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
     endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+    endif()
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
+    mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
+# -----------------------------------------------------------------------------
+# install
+# -----------------------------------------------------------------------------
 install(TARGETS
-    ${PLUGIN_PACKAGE}
+    ${TARGET_NAME}
     LIBRARY
         DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
     RUNTIME
@@ -74,6 +105,5 @@ install(TARGETS
 )
 
 if(IS_WINDOWS)
-    install(FILES $<TARGET_PDB_FILE:${PLUGIN_PACKAGE}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
 endif()
-

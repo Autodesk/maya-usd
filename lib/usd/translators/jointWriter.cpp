@@ -13,29 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "jointWriter.h"
 
-#include "../../fileio/utils/adaptor.h"
-#include "../../fileio/primWriter.h"
-#include "../../fileio/primWriterRegistry.h"
-#include "../../fileio/translators/translatorSkel.h"
-#include "../../fileio/translators/translatorUtil.h"
-#include "../../utils/util.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdSkel/animation.h"
-#include "pxr/usd/usdSkel/bindingAPI.h"
-#include "pxr/usd/usdSkel/root.h"
-#include "pxr/usd/usdSkel/skeleton.h"
-#include "pxr/usd/usdSkel/utils.h"
-
-#include "pxr/usd/sdf/pathTable.h"
+#include <vector>
 
 #include <maya/MAnimUtil.h>
 #include <maya/MDagPath.h>
@@ -47,11 +27,28 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#include <vector>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/pathTable.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdSkel/animation.h>
+#include <pxr/usd/usdSkel/bindingAPI.h>
+#include <pxr/usd/usdSkel/root.h>
+#include <pxr/usd/usdSkel/skeleton.h>
+#include <pxr/usd/usdSkel/utils.h>
 
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/translators/translatorSkel.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PXRUSDMAYA_REGISTER_WRITER(joint, PxrUsdTranslators_JointWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(joint, UsdSkelSkeleton);

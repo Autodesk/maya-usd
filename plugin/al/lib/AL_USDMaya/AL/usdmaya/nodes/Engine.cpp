@@ -33,6 +33,7 @@
 
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/taskController.h"
+#include "pxr/usdImaging/usdImaging/delegate.h"
 
 namespace AL {
 namespace usdmaya {
@@ -90,12 +91,28 @@ bool Engine::TestIntersectionBatch(
   }
 
   for (const auto& hit : allHits) {
-    const SdfPath primPath = hit.objectId;
-    const SdfPath instancerPath = hit.instancerId;
-    const int instanceIndex = hit.instanceIndex;
+    SdfPath primPath = hit.objectId;
+    SdfPath instancerPath = hit.instancerId;
+    int instanceIndex = hit.instanceIndex;
+
+#if defined(USDIMAGINGGL_API_VERSION) && USDIMAGINGGL_API_VERSION >= 3
+    // See similar code in usdImagingGL/engine.cpp...
+    primPath = _delegate->GetScenePrimPath(primPath, instanceIndex);
+    instancerPath = _delegate->ConvertIndexPathToCachePath(instancerPath)
+        .GetAbsoluteRootOrPrimPath();
+#else
+    SdfPath resolvedPath =
+        GetPrimPathFromInstanceIndex(primPath, instanceIndex);
+    if (!resolvedPath.IsEmpty()) {
+        primPath = resolvedPath;
+    } else {
+        primPath = primPath.StripAllVariantSelections();
+    }
+#endif
 
     HitInfo& info = (*outHit)[pathTranslator(primPath, instancerPath,
                                              instanceIndex)];
+
     info.worldSpaceHitPoint = GfVec3d(hit.worldSpaceHitPoint[0],
                                       hit.worldSpaceHitPoint[1],
                                       hit.worldSpaceHitPoint[2]);

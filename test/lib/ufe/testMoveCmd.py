@@ -175,6 +175,19 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestMove(expected)
 
+    # MAYA-96058: unfortunately, the move command currently requires a move
+    # manipulator to be created to update the UFE object, but such a
+    # manipulator cannot be created in batch mode, thus the move command will
+    # not work properly  
+    #
+    # This test is expected to fail until the underlying issue can be addressed
+    #
+    # The first test cases fails because the initial translation is not the same
+    # as the default translation, and since all translations are applied to the
+    # default translation, they do not compound because of MAYA-96058.
+    # test cases will fail.
+    #
+    @unittest.expectedFailure
     def testMoveUSD(self):
         '''Move USD object, read through the Transform3d interface.'''
 

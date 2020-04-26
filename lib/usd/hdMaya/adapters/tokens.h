@@ -17,10 +17,9 @@
 #define HDMAYA_ADAPTER_TOKENS_H
 
 #include <pxr/pxr.h>
-
 #include <pxr/base/tf/staticTokens.h>
 
-#include "../api.h"
+#include <hdMaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

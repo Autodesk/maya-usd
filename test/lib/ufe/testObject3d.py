@@ -35,6 +35,18 @@ def nameToPlug(nodeName):
     selection.add(nodeName)
     return selection.getPlug(0)
 
+class TestObserver(ufe.Observer):
+    def __init__(self):
+        super(TestObserver, self).__init__()
+        self.changed = 0
+
+    def __call__(self, notification):
+        if isinstance(notification, ufe.VisibilityChanged):
+            self.changed += 1
+
+    def notifications(self):
+        return self.changed
+
 class Object3dTestCase(unittest.TestCase):
     '''Verify the Object3d UFE interface, for the USD runtime.
     '''
@@ -150,3 +162,60 @@ class Object3dTestCase(unittest.TestCase):
                                     expected[frame-1][0], places=6)
             assertVectorAlmostEqual(self, ufeBBox.max.vector,
                                     expected[frame-1][1], places=6)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2010', 'testVisibility only available in UFE PR2010 and greater')
+    def testVisibility(self):
+        '''Test the Object3d visibility methods.'''
+
+        # Open top_layer.ma scene in test-samples
+        mayaUtils.openTopLayerScene()
+
+        # Get a scene item for Ball_35.
+        ball35Path = ufe.Path([
+            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+
+        # Create an Object3d interface for it.
+        object3d = ufe.Object3d.object3d(ball35Item)
+
+        visObs = TestObserver()
+
+        # We start off with no visibility observers.
+        self.assertFalse(ufe.Object3d.hasObserver(visObs))
+        self.assertEqual(ufe.Object3d.nbObservers(), 0)
+
+        # Set the observer for visibility changes.
+        ufe.Object3d.addObserver(visObs)
+        self.assertTrue(ufe.Object3d.hasObserver(visObs))
+        self.assertEqual(ufe.Object3d.nbObservers(), 1)
+
+        # No notifications yet.
+        self.assertEqual(visObs.notifications(), 0)
+
+        # Initially it should be visible.
+        self.assertTrue(object3d.visibility())
+
+        # Make it invisible.
+        object3d.setVisibility(False)
+        self.assertFalse(object3d.visibility())
+
+        # We should have got 'one' notification.
+        # USD Attribute Notification doubling problem:
+        # Note: because we are using set on the usd attribute (just above)
+        #       directly we we receive TWO notifs in our transform3d observer.
+        #       See UsdAttribute.cpp function setUsdAttr() for details.
+        self.assertEqual(visObs.notifications(), 2)
+
+        # Make it visible.
+        object3d.setVisibility(True)
+        self.assertTrue(object3d.visibility())
+
+        # We should have got one more notification.
+        # Note: same double notif as above.
+        self.assertEqual(visObs.notifications(), 4)
+
+        # Remove the observer.
+        ufe.Object3d.removeObserver(visObs)
+        self.assertFalse(ufe.Object3d.hasObserver(visObs))
+        self.assertEqual(ufe.Object3d.nbObservers(), 0)

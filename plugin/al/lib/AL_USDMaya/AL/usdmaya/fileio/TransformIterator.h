@@ -37,14 +37,16 @@ public:
   /// \brief  ctor. Initialises the iterator to the root of the stage
   /// \param  stage the stage to iterate over
   /// \param  parentPath the DAG path of the proxy shape
+  /// \param  stopOnInstance if true, the iterator will not iterate through children of an instance
   AL_USDMAYA_PUBLIC
-  TransformIterator(UsdStageRefPtr stage, const MDagPath& parentPath = MDagPath());
+  TransformIterator(UsdStageRefPtr stage, const MDagPath& parentPath = MDagPath(), bool stopOnInstance = false);
 
   /// \brief  ctor. Initialises the iterator to the root of the stage
   /// \param  startPrim a prim in a stage where the iteration should start
   /// \param  startMayaPath the DAG path of the proxy shape
+  /// \param  stopOnInstance if true, the iterator will not iterate through children of an instance
   AL_USDMAYA_PUBLIC
-  TransformIterator(const UsdPrim& startPrim, const MDagPath& startMayaPath);
+  TransformIterator(const UsdPrim& startPrim, const MDagPath& startMayaPath, bool stopOnInstance = false);
 
   /// \brief  return true if the iteration is complete
   /// \return true when the iteration is complete
@@ -129,8 +131,8 @@ private:
   std::vector<StackRef> m_primStack;
   UsdStageRefPtr m_stage;
   MDagPath m_parentPath;
-
   TfHashSet<SdfPath, SdfPath::Hash> m_visitedMasterPrimPaths;
+  bool m_stopOnInstance;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -138,4 +140,3 @@ private:
 } // usdmaya
 } // AL
 //----------------------------------------------------------------------------------------------------------------------
-

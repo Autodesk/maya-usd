@@ -16,25 +16,23 @@
 //
 #include "importTranslator.h"
 
+#include <map>
+#include <string>
+
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
-
-#include "pxr/base/gf/interval.h"
-#include "pxr/base/vt/dictionary.h"
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 
-#include <map>
-#include <string>
-
+#include <pxr/base/gf/interval.h>
+#include <pxr/base/vt/dictionary.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /* static */
 void*
@@ -60,8 +58,17 @@ UsdMayaImportTranslator::reader(
         MPxFileTranslator::FileAccessMode  /*mode*/)
 {
     std::string fileName(file.fullName().asChar(), file.fullName().length());
-    std::string primPath("/");
     std::map<std::string, std::string> variants;
+
+    // If the input filename doesn't match the one in the importData we clear out
+    // the import data. This would happen if the user performed an import with
+    // the dialog and then manually with a different file name.
+    MayaUsd::ImportData& importData = MayaUsd::ImportData::instance();
+    if (fileName != importData.filename())
+    {
+        importData.clearData();
+        importData.setFilename(fileName);
+    }
 
     bool readAnimData = true;
     bool useCustomFrameRange = false;
@@ -89,6 +96,8 @@ UsdMayaImportTranslator::reader(
                 timeInterval.SetMin(theOption[1].asDouble());
             } else if (argName == "endTime") {
                 timeInterval.SetMax(theOption[1].asDouble());
+            } else if (argName == "primPath") {
+                importData.setRootPrimPath(theOption[1].asChar());
             } else {
                 userArgs[argName] =
                     UsdMayaUtil::ParseArgumentValue(
@@ -114,12 +123,15 @@ UsdMayaImportTranslator::reader(
             /* importWithProxyShapes = */ false,
             timeInterval);
 
-    MayaUsd::ImportData importData(fileName);
-    UsdMaya_ReadJob mUsdReadJob(
-        (fileName != MayaUsd::ImportData::cinstance().filename()) ? importData : MayaUsd::ImportData::cinstance(),
-        jobArgs);
+    UsdMaya_ReadJob mUsdReadJob(importData, jobArgs);
     std::vector<MDagPath> addedDagPaths;
     bool success = mUsdReadJob.Read(&addedDagPaths);
+
+    // After a successful import we clear the import data as we don't want to
+    // re-use it on a subsequent import.
+    if (success)
+        importData.clearData();
+
     return (success) ? MS::kSuccess : MS::kFailure;
 }
 
@@ -143,7 +155,8 @@ UsdMayaImportTranslator::identifyFile(
 
     if (fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() ||
         fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() ||
-        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()) {
+        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText() ||
+        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionPackage.GetText()) {
         retValue = kIsMyFileType;
     }
 

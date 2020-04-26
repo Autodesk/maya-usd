@@ -15,9 +15,11 @@
 //
 #pragma once
 #include <AL/usdmaya/ForwardDeclares.h>
+
+#include <mayaUsdUtils/ForwardDeclares.h>
+
 #include "maya/MSelectionList.h"
 #include "maya/MStringArray.h"
-#include "AL/usd/utils/ForwardDeclares.h"
 #include "AL/maya/utils/FileTranslatorOptions.h"
 #include "pxr/usd/usd/timeCode.h"
 
@@ -98,9 +100,9 @@ struct ExporterParams
     return MString();
   }
 
-  /// \brief  Given the text name of an option, returns the boolean value for that option.
-  /// \param  str the name of the option
-  /// \return the option value
+  /// \brief  Sets the value of the specified option, to the specified value
+  /// \param  str the name of the option to set
+  /// \param  value the option value
   void setBool(const char* const str, bool value)
   {
     if(m_parser)

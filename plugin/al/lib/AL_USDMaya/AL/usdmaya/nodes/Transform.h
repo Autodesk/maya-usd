@@ -160,14 +160,6 @@ private:
   /// \name Input Attributes
   //--------------------------------------------------------------------------------------------------------------------
 
-  /// \var    MPlug primPathPlug() const;
-  /// \brief  access the primPath attribute plug on this node instance.
-  ///         primPath - a Usd path of the prim being watched, e.g.  "/root/foo/pCube1"
-  /// \return the plug to the primPath attribute
-  /// \var    MPlug inStageDataPlug() const;
-  /// \brief  access the inStageData attribute plug on this node instance
-  ///         inStageData - connected from the output stage data of an AL::usdmaya::nodes::ProxyShape
-  /// \return the plug to the inStageData attribute
   /// \var    MPlug timePlug() const;
   /// \brief  access the time attribute plug on this node instance
   ///         time - (probably) connected from the output time of an AL::usdmaya::nodes::ProxyShape (but it doesn't have to be)

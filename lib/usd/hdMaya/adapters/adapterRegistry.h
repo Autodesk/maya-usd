@@ -16,17 +16,17 @@
 #ifndef HDMAYA_ADAPTER_REGISTRY_H
 #define HDMAYA_ADAPTER_REGISTRY_H
 
-#include <pxr/base/tf/singleton.h>
-#include <pxr/pxr.h>
+#include <unordered_map>
 
 #include <maya/MFn.h>
 
-#include "lightAdapter.h"
-#include "materialAdapter.h"
-#include "shapeAdapter.h"
-#include "../delegates/delegateCtx.h"
+#include <pxr/pxr.h>
+#include <pxr/base/tf/singleton.h>
 
-#include <unordered_map>
+#include <hdMaya/adapters/lightAdapter.h>
+#include <hdMaya/adapters/materialAdapter.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/delegateCtx.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

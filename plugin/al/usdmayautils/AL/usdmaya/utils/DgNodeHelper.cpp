@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usd/utils/ALHalf.h"
-#include "AL/usd/utils/SIMD.h"
 #include "AL/usdmaya/utils/DgNodeHelper.h"
-
 #include "AL/maya/utils/NodeHelper.h"
+
+#include <mayaUsdUtils/ALHalf.h>
+#include <mayaUsdUtils/SIMD.h>
 
 #include "maya/MDGModifier.h"
 #include "maya/MFloatArray.h"
@@ -278,7 +278,7 @@ MStatus DgNodeHelper::setHalfArray(MObject node, MObject attribute, const GfHalf
   for(size_t j = 0; j != count8; j += 8)
   {
     float f[8];
-    AL::usd::utils::half2float_8f(values + j, f);
+    MayaUsdUtils::half2float_8f(values + j, f);
     plug.elementByLogicalIndex(j + 0).setFloat(f[0]);
     plug.elementByLogicalIndex(j + 1).setFloat(f[1]);
     plug.elementByLogicalIndex(j + 2).setFloat(f[2]);
@@ -292,7 +292,7 @@ MStatus DgNodeHelper::setHalfArray(MObject node, MObject attribute, const GfHalf
   if(count & 0x4)
   {
     float f[4];
-    AL::usd::utils::half2float_4f(values + count8, f);
+    MayaUsdUtils::half2float_4f(values + count8, f);
     plug.elementByLogicalIndex(count8 + 0).setFloat(f[0]);
     plug.elementByLogicalIndex(count8 + 1).setFloat(f[1]);
     plug.elementByLogicalIndex(count8 + 2).setFloat(f[2]);
@@ -302,9 +302,9 @@ MStatus DgNodeHelper::setHalfArray(MObject node, MObject attribute, const GfHalf
 
   switch(count & 0x3)
   {
-  case 3: plug.elementByLogicalIndex(count8 + 2).setFloat(AL::usd::utils::half2float_1f(values[count8 + 2]));
-  case 2: plug.elementByLogicalIndex(count8 + 1).setFloat(AL::usd::utils::half2float_1f(values[count8 + 1]));
-  case 1: plug.elementByLogicalIndex(count8 + 0).setFloat(AL::usd::utils::half2float_1f(values[count8 + 0]));
+  case 3: plug.elementByLogicalIndex(count8 + 2).setFloat(MayaUsdUtils::half2float_1f(values[count8 + 2]));
+  case 2: plug.elementByLogicalIndex(count8 + 1).setFloat(MayaUsdUtils::half2float_1f(values[count8 + 1]));
+  case 1: plug.elementByLogicalIndex(count8 + 0).setFloat(MayaUsdUtils::half2float_1f(values[count8 + 0]));
   default:
     break;
   }
@@ -412,7 +412,7 @@ MStatus DgNodeHelper::setVec2Array(MObject node, MObject attribute, const GfHalf
   for(size_t i = 0, j = 0; i != count4; i += 4, j += 8)
   {
     float f[8];
-    AL::usd::utils::half2float_8f(values + j, f);
+    MayaUsdUtils::half2float_8f(values + j, f);
     auto v0 = plug.elementByLogicalIndex(i + 0);
     auto v1 = plug.elementByLogicalIndex(i + 1);
     auto v2 = plug.elementByLogicalIndex(i + 2);
@@ -430,7 +430,7 @@ MStatus DgNodeHelper::setVec2Array(MObject node, MObject attribute, const GfHalf
   if(count & 0x2)
   {
     float f[4];
-    AL::usd::utils::half2float_4f(values + count4 * 2, f);
+    MayaUsdUtils::half2float_4f(values + count4 * 2, f);
     auto v0 = plug.elementByLogicalIndex(count4 + 0);
     auto v1 = plug.elementByLogicalIndex(count4 + 1);
     v0.child(0).setFloat(f[0]);
@@ -443,8 +443,8 @@ MStatus DgNodeHelper::setVec2Array(MObject node, MObject attribute, const GfHalf
   if(count & 0x1)
   {
     auto v0 = plug.elementByLogicalIndex(count4);
-    v0.child(0).setFloat(AL::usd::utils::half2float_1f(values[count4 * 2]));
-    v0.child(1).setFloat(AL::usd::utils::half2float_1f(values[count4 * 2 + 1]));
+    v0.child(0).setFloat(MayaUsdUtils::half2float_1f(values[count4 * 2]));
+    v0.child(1).setFloat(MayaUsdUtils::half2float_1f(values[count4 * 2 + 1]));
   }
 
   return MS::kSuccess;
@@ -519,9 +519,9 @@ MStatus DgNodeHelper::setVec3Array(MObject node, MObject attribute, const GfHalf
   for(size_t i = 0, j = 0; i != count8; i += 8, j += 24)
   {
     float f[24];
-    AL::usd::utils::half2float_8f(values + j, f);
-    AL::usd::utils::half2float_8f(values + j + 8, f + 8);
-    AL::usd::utils::half2float_8f(values + j + 16, f + 16);
+    MayaUsdUtils::half2float_8f(values + j, f);
+    MayaUsdUtils::half2float_8f(values + j + 8, f + 8);
+    MayaUsdUtils::half2float_8f(values + j + 16, f + 16);
 
     for(int k = 0; k < 8; ++k)
     {
@@ -539,7 +539,7 @@ MStatus DgNodeHelper::setVec3Array(MObject node, MObject attribute, const GfHalf
     h[0] = values[j];
     h[1] = values[j + 1];
     h[2] = values[j + 2];
-    AL::usd::utils::half2float_4f(h, f);
+    MayaUsdUtils::half2float_4f(h, f);
     auto v = plug.elementByLogicalIndex(i);
     v.child(0).setFloat(f[0]);
     v.child(1).setFloat(f[1]);
@@ -604,7 +604,7 @@ MStatus DgNodeHelper::setVec4Array(MObject node, MObject attribute, const GfHalf
   for(size_t i = 0, j = 0; i != count2; i += 2, j += 8)
   {
     float f[8];
-    AL::usd::utils::half2float_8f(values + j, f);
+    MayaUsdUtils::half2float_8f(values + j, f);
     auto v0 = plug.elementByLogicalIndex(i);
     auto v1 = plug.elementByLogicalIndex(i + 1);
     v0.child(0).setFloat(f[0]);
@@ -619,7 +619,7 @@ MStatus DgNodeHelper::setVec4Array(MObject node, MObject attribute, const GfHalf
   if(count & 0x1)
   {
     float f[4];
-    AL::usd::utils::half2float_4f(values + count2 * 4, f);
+    MayaUsdUtils::half2float_4f(values + count2 * 4, f);
     auto v0 = plug.elementByLogicalIndex(count2);
     v0.child(0).setFloat(f[0]);
     v0.child(1).setFloat(f[1]);
@@ -1141,6 +1141,48 @@ MStatus DgNodeHelper::setVisAttrAnim(const MObject node, const MObject attr, con
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setClippingRangeAttrAnim(const MObject node, const MObject nearAttr, const MObject farAttr, const UsdAttribute & usdAttr, MObjectArray *newAnimCurves)
+{
+  if (!usdAttr.GetNumTimeSamples())
+  {
+    return MS::kFailure;
+  }
+
+  const char* const errorString = "DgNodeTranslator::setClippingRangeAttrAnim: Error adding keyframes";
+  MStatus status;
+
+  MPlug nearPlug(node, nearAttr);
+  MFnAnimCurve fnCurveNear;
+  status = prepareAnimCurve(nearPlug, fnCurveNear, newAnimCurves);
+  if(!status)return MS::kFailure;
+
+  MPlug farPlug(node, farAttr);
+  MFnAnimCurve fnCurveFar;
+  status = prepareAnimCurve(farPlug, fnCurveFar, newAnimCurves);
+  if(!status)return MS::kFailure;
+
+  std::vector<double> times;
+  usdAttr.GetTimeSamples(&times);
+
+  GfVec2f clippingRange;
+  for(auto const& timeValue: times)
+  {
+    if (!usdAttr.Get(&clippingRange, timeValue))
+    {
+      continue;
+    }
+    MTime tm(timeValue, MTime::kFilm);
+
+    fnCurveNear.addKey(tm, clippingRange[0], MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
+    fnCurveFar.addKey(tm, clippingRange[1], MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
+  }
+
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 MStatus DgNodeHelper::getBoolArray(const MObject& node, const MObject& attr, std::vector<bool>& values)
 {
   //
@@ -1500,7 +1542,7 @@ MStatus DgNodeHelper::getHalfArray(MObject node, MObject attribute, GfHalf* cons
     f[5] = plug.elementByLogicalIndex(i + 5).asFloat();
     f[6] = plug.elementByLogicalIndex(i + 6).asFloat();
     f[7] = plug.elementByLogicalIndex(i + 7).asFloat();
-    AL::usd::utils::float2half_8f(f, values + i);
+    MayaUsdUtils::float2half_8f(f, values + i);
   }
 
   if(count & 0x4)
@@ -1510,15 +1552,15 @@ MStatus DgNodeHelper::getHalfArray(MObject node, MObject attribute, GfHalf* cons
     f[1] = plug.elementByLogicalIndex(count8 + 1).asFloat();
     f[2] = plug.elementByLogicalIndex(count8 + 2).asFloat();
     f[3] = plug.elementByLogicalIndex(count8 + 3).asFloat();
-    AL::usd::utils::float2half_4f(f, values + count8);
+    MayaUsdUtils::float2half_4f(f, values + count8);
     count8 += 4;
   }
 
   switch(count & 0x3)
   {
-  case 3: values[count8 + 2] = AL::usd::utils::float2half_1f(plug.elementByLogicalIndex(count8 + 2).asFloat());
-  case 2: values[count8 + 1] = AL::usd::utils::float2half_1f(plug.elementByLogicalIndex(count8 + 1).asFloat());
-  case 1: values[count8 + 0] = AL::usd::utils::float2half_1f(plug.elementByLogicalIndex(count8 + 0).asFloat());
+  case 3: values[count8 + 2] = MayaUsdUtils::float2half_1f(plug.elementByLogicalIndex(count8 + 2).asFloat());
+  case 2: values[count8 + 1] = MayaUsdUtils::float2half_1f(plug.elementByLogicalIndex(count8 + 1).asFloat());
+  case 1: values[count8 + 0] = MayaUsdUtils::float2half_1f(plug.elementByLogicalIndex(count8 + 0).asFloat());
   default: break;
   }
   return MS::kSuccess;
@@ -1772,7 +1814,7 @@ MStatus DgNodeHelper::getVec2Array(MObject node, MObject attribute, GfHalf* cons
     f[5] = v2.child(1).asFloat();
     f[6] = v3.child(0).asFloat();
     f[7] = v3.child(1).asFloat();
-    AL::usd::utils::float2half_8f(f, values + j);
+    MayaUsdUtils::float2half_8f(f, values + j);
   }
 
   if(count & 0x2)
@@ -1784,15 +1826,15 @@ MStatus DgNodeHelper::getVec2Array(MObject node, MObject attribute, GfHalf* cons
     f[1] = v0.child(1).asFloat();
     f[2] = v1.child(0).asFloat();
     f[3] = v1.child(1).asFloat();
-    AL::usd::utils::float2half_4f(f, values + count4 * 2);
+    MayaUsdUtils::float2half_4f(f, values + count4 * 2);
     count4 += 2;
   }
 
   if(count & 0x1)
   {
     auto v = plug.elementByLogicalIndex(count4);
-    values[count4 * 2 + 0] = AL::usd::utils::float2half_1f(v.child(0).asFloat());
-    values[count4 * 2 + 1] = AL::usd::utils::float2half_1f(v.child(1).asFloat());
+    values[count4 * 2 + 0] = MayaUsdUtils::float2half_1f(v.child(0).asFloat());
+    values[count4 * 2 + 1] = MayaUsdUtils::float2half_1f(v.child(1).asFloat());
   }
 
   return MS::kSuccess;
@@ -2174,9 +2216,9 @@ MStatus DgNodeHelper::getVec3Array(MObject node, MObject attribute, GfHalf* cons
     r[21] = v7.child(0).asFloat();
     r[22] = v7.child(1).asFloat();
     r[23] = v7.child(2).asFloat();
-    AL::usd::utils::float2half_8f(r, values + j);
-    AL::usd::utils::float2half_8f(r + 8, values + j + 8);
-    AL::usd::utils::float2half_8f(r + 16, values + j + 16);
+    MayaUsdUtils::float2half_8f(r, values + j);
+    MayaUsdUtils::float2half_8f(r + 8, values + j + 8);
+    MayaUsdUtils::float2half_8f(r + 16, values + j + 16);
   }
 
   for(uint32_t i = count8, j = count8 * 3; i < count; ++i, j += 3)
@@ -2187,7 +2229,8 @@ MStatus DgNodeHelper::getVec3Array(MObject node, MObject attribute, GfHalf* cons
     v[0] = elem.child(0).asFloat();
     v[1] = elem.child(1).asFloat();
     v[2] = elem.child(2).asFloat();
-    AL::usd::utils::float2half_4f(v, h);
+    v[3] = 0;
+    MayaUsdUtils::float2half_4f(v, h);
     values[j + 0] = h[0];
     values[j + 1] = h[1];
     values[j + 2] = h[2];
@@ -2556,7 +2599,7 @@ MStatus DgNodeHelper::getVec4Array(MObject node, MObject attribute, GfHalf* cons
     f[5] = v1.child(1).asFloat();
     f[6] = v1.child(2).asFloat();
     f[7] = v1.child(3).asFloat();
-    AL::usd::utils::float2half_8f(f, values + j);
+    MayaUsdUtils::float2half_8f(f, values + j);
   }
   if(count & 0x1)
   {
@@ -2566,7 +2609,7 @@ MStatus DgNodeHelper::getVec4Array(MObject node, MObject attribute, GfHalf* cons
     f[1] = v0.child(1).asFloat();
     f[2] = v0.child(2).asFloat();
     f[3] = v0.child(3).asFloat();
-    AL::usd::utils::float2half_4f(f, values + count2 * 4);
+    MayaUsdUtils::float2half_4f(f, values + count2 * 4);
   }
 
   return MS::kSuccess;
@@ -3164,8 +3207,8 @@ MStatus DgNodeHelper::setVec2(MObject node, MObject attr, const GfHalf* const xy
 {
   const char* const errorString = "vec2h error";
   MPlug plug(node, attr);
-  AL_MAYA_CHECK_ERROR(plug.child(0).setValue(AL::usd::utils::float2half_1f(xy[0])), errorString);
-  AL_MAYA_CHECK_ERROR(plug.child(1).setValue(AL::usd::utils::float2half_1f(xy[1])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(0).setValue(MayaUsdUtils::float2half_1f(xy[0])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(1).setValue(MayaUsdUtils::float2half_1f(xy[1])), errorString);
   return MS::kSuccess;
 }
 
@@ -3206,9 +3249,9 @@ MStatus DgNodeHelper::setVec3(MObject node, MObject attr, const GfHalf* const xy
 {
   const char* const errorString = "vec3h error";
   MPlug plug(node, attr);
-  AL_MAYA_CHECK_ERROR(plug.child(0).setValue(AL::usd::utils::float2half_1f(xyz[0])), errorString);
-  AL_MAYA_CHECK_ERROR(plug.child(1).setValue(AL::usd::utils::float2half_1f(xyz[1])), errorString);
-  AL_MAYA_CHECK_ERROR(plug.child(2).setValue(AL::usd::utils::float2half_1f(xyz[2])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(0).setValue(MayaUsdUtils::float2half_1f(xyz[0])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(1).setValue(MayaUsdUtils::float2half_1f(xyz[1])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(2).setValue(MayaUsdUtils::float2half_1f(xyz[2])), errorString);
   return MS::kSuccess;
 }
 
@@ -3264,10 +3307,10 @@ MStatus DgNodeHelper::setVec4(MObject node, MObject attr, const GfHalf* const xy
 {
   const char* const errorString = "vec4h error";
   MPlug plug(node, attr);
-  AL_MAYA_CHECK_ERROR(plug.child(0).setValue(AL::usd::utils::float2half_1f(xyzw[0])), errorString);
-  AL_MAYA_CHECK_ERROR(plug.child(1).setValue(AL::usd::utils::float2half_1f(xyzw[1])), errorString);
-  AL_MAYA_CHECK_ERROR(plug.child(2).setValue(AL::usd::utils::float2half_1f(xyzw[2])), errorString);
-  AL_MAYA_CHECK_ERROR(plug.child(3).setValue(AL::usd::utils::float2half_1f(xyzw[3])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(0).setValue(MayaUsdUtils::float2half_1f(xyzw[0])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(1).setValue(MayaUsdUtils::float2half_1f(xyzw[1])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(2).setValue(MayaUsdUtils::float2half_1f(xyzw[2])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(3).setValue(MayaUsdUtils::float2half_1f(xyzw[3])), errorString);
   return MS::kSuccess;
 }
 
@@ -3300,10 +3343,10 @@ MStatus DgNodeHelper::setQuat(MObject node, MObject attr, const GfHalf* const xy
 {
   const char* const errorString = "quath error";
   MPlug plug(node, attr);
-  AL_MAYA_CHECK_ERROR(plug.child(0).setValue(AL::usd::utils::float2half_1f(xyzw[0])), errorString);
-  AL_MAYA_CHECK_ERROR(plug.child(1).setValue(AL::usd::utils::float2half_1f(xyzw[1])), errorString);
-  AL_MAYA_CHECK_ERROR(plug.child(2).setValue(AL::usd::utils::float2half_1f(xyzw[2])), errorString);
-  AL_MAYA_CHECK_ERROR(plug.child(3).setValue(AL::usd::utils::float2half_1f(xyzw[3])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(0).setValue(MayaUsdUtils::float2half_1f(xyzw[0])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(1).setValue(MayaUsdUtils::float2half_1f(xyzw[1])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(2).setValue(MayaUsdUtils::float2half_1f(xyzw[2])), errorString);
+  AL_MAYA_CHECK_ERROR(plug.child(3).setValue(MayaUsdUtils::float2half_1f(xyzw[3])), errorString);
   return MS::kSuccess;
 }
 
@@ -3962,8 +4005,8 @@ MStatus DgNodeHelper::getVec2(MObject node, MObject attr, GfHalf* xy)
 {
   float fxy[2];
   MStatus status = getVec2(node, attr, fxy);
-  xy[0] = AL::usd::utils::float2half_1f(fxy[0]);
-  xy[1] = AL::usd::utils::float2half_1f(fxy[1]);
+  xy[0] = MayaUsdUtils::float2half_1f(fxy[0]);
+  xy[1] = MayaUsdUtils::float2half_1f(fxy[1]);
   return status;
 }
 
@@ -4021,7 +4064,7 @@ MStatus DgNodeHelper::getVec3(MObject node, MObject attr, GfHalf* xyz)
   float fxyz[4];
   GfHalf xyzw[4];
   MStatus status = getVec3(node, attr, fxyz);
-  AL::usd::utils::float2half_4f(fxyz, xyzw);
+  MayaUsdUtils::float2half_4f(fxyz, xyzw);
   xyz[0] = xyzw[0];
   xyz[1] = xyzw[1];
   xyz[2] = xyzw[2];
@@ -4084,7 +4127,7 @@ MStatus DgNodeHelper::getVec4(MObject node, MObject attr, GfHalf* xyzw)
 {
   float fxyzw[4];
   MStatus status = getVec4(node, attr, fxyzw);
-  AL::usd::utils::float2half_4f(fxyzw, xyzw);
+  MayaUsdUtils::float2half_4f(fxyzw, xyzw);
   return status;
 }
 

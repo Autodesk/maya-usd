@@ -21,25 +21,19 @@ option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
 option(BUILD_USDMAYA_TRANSLATORS "Build optional translators." ON)
 option(SKIP_USDMAYA_TESTS "Build tests" OFF)
 
-if(CMAKE_WANT_UFE_BUILD)
-    find_package(UFE QUIET)
-    if(UFE_FOUND)
-        message(STATUS "Building with UFE ${UFE_VERSION} features enabled.")
-        include_directories(${UFE_INCLUDE_DIR})
-        add_definitions(-DWANT_UFE_BUILD)
-    else()
-        message(STATUS "UFE not found. UFE features will be disabled.")
-    endif()
-endif()
-
 # FindBoost is particularly buggy, and doesn't like custom boost locations.
 # Adding specific components forces calls to _Boost_find_library, which
 # is the rationale for listing them here.
 set(Boost_FIND_COMPONENTS
      python
      thread
-     filesystem
 )
+if(NEED_BOOST_FILESYSTEM)
+    list(APPEND Boost_FIND_COMPONENTS
+        filesystem
+        system
+    )
+endif()
 if(WIN32)
     list(APPEND Boost_FIND_COMPONENTS
         chrono
@@ -64,14 +58,12 @@ set(AL_USDMAYA_LOCATION_NAME
 
 # Build all the utils
 set(EVENTS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/utils)
-set(USDUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdutils)
 set(MAYAUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/mayautils)
 set(USDMAYAUTILS_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdmayautils)
 set(MAYATEST_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/mayatest)
 set(USDTRANSACTION_INCLUDE_LOCATION ${CMAKE_CURRENT_LIST_DIR}/usdtransaction)
 
 add_subdirectory(utils)
-add_subdirectory(usdutils)
 if(NOT SKIP_USDMAYA_TESTS)
   add_subdirectory(mayatest)
 endif() 
@@ -96,6 +88,3 @@ endif()
 get_property(LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_LIBRARY_LOCATION)
 get_property(PYTHON_LIBRARY_LOCATION GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION)
 configure_file(ALUsdMayaConfig.cmake.in ${PROJECT_BINARY_DIR}/ALUsdMayaConfig.cmake @ONLY)
-
-install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${AL_INSTALL_PREFIX} ... \")")
-install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${AL_INSTALL_PREFIX}\" )")

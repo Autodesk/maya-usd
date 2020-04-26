@@ -645,10 +645,10 @@ void randomNode(MObject node, const char* const attributeNames[], const uint32_t
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void randomAnimatedValue(MPlug plug, double startFrame, double endFrame)
+void randomAnimatedValue(MPlug plug, double startFrame, double endFrame, bool forceKeyframe)
 {
   // If value is not keyable, set it to be a random value
-  if (!plug.isKeyable())
+  if (!forceKeyframe && !plug.isKeyable())
   {
     randomPlug(plug);
     return;
@@ -685,7 +685,7 @@ void randomAnimatedValue(MPlug plug, double startFrame, double endFrame)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-void randomAnimatedNode(MObject node, const char* const attributeNames[], const uint32_t attributeCount, double startFrame, double endFrame)
+void randomAnimatedNode(MObject node, const char* const attributeNames[], const uint32_t attributeCount, double startFrame, double endFrame, bool forceKeyframe)
 {
   MStatus status;
   MFnDependencyNode fn(node);
@@ -705,15 +705,15 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
           case MFnNumericData::kDouble:
           case MFnNumericData::kBoolean:
           {
-            randomAnimatedValue(plug, startFrame, endFrame);
+            randomAnimatedValue(plug, startFrame, endFrame, forceKeyframe);
             break;
           }
           case MFnNumericData::k3Float:
           case MFnNumericData::k3Double:
           {
-            randomAnimatedValue(plug.child(0), startFrame, endFrame);
-            randomAnimatedValue(plug.child(1), startFrame, endFrame);
-            randomAnimatedValue(plug.child(2), startFrame, endFrame);
+            randomAnimatedValue(plug.child(0), startFrame, endFrame, forceKeyframe);
+            randomAnimatedValue(plug.child(1), startFrame, endFrame, forceKeyframe);
+            randomAnimatedValue(plug.child(2), startFrame, endFrame, forceKeyframe);
             break;
           }
           default:
@@ -727,15 +727,15 @@ void randomAnimatedNode(MObject node, const char* const attributeNames[], const 
       case MFn::kFloatLinearAttribute:
       case MFn::kDoubleLinearAttribute:
       {
-        randomAnimatedValue(plug, startFrame, endFrame);
+        randomAnimatedValue(plug, startFrame, endFrame, forceKeyframe);
         break;
       }
       case MFn::kAttribute3Double:
       case MFn::kAttribute3Float:
       {
-        randomAnimatedValue(plug.child(0), startFrame, endFrame);
-        randomAnimatedValue(plug.child(1), startFrame, endFrame);
-        randomAnimatedValue(plug.child(2), startFrame, endFrame);
+        randomAnimatedValue(plug.child(0), startFrame, endFrame, forceKeyframe);
+        randomAnimatedValue(plug.child(1), startFrame, endFrame, forceKeyframe);
+        randomAnimatedValue(plug.child(2), startFrame, endFrame, forceKeyframe);
         break;
       }
       case MFn::kEnumAttribute:

@@ -25,6 +25,9 @@ add_library(${EVENTS_LIBRARY_NAME}
         ${utils_source}
 )
 
+# compiler configuration
+mayaUsd_compile_config(${EVENTS_LIBRARY_NAME})
+
 target_compile_definitions(${EVENTS_LIBRARY_NAME}
     PRIVATE
         AL_EVENT_EXPORT

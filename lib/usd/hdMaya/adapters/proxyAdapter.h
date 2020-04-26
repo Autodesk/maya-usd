@@ -1,15 +1,14 @@
 #ifndef HDMAYA_AL_PROXY_ADAPTER_H
 #define HDMAYA_AL_PROXY_ADAPTER_H
 
-#include "../delegates/proxyUsdImagingDelegate.h"
-#include "shapeAdapter.h"
-
 #include <pxr/pxr.h>
 #include <pxr/base/tf/weakBase.h>
-
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include "../../../listeners/proxyShapeNotice.h"
+#include <mayaUsd/listeners/proxyShapeNotice.h>
+
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/proxyUsdImagingDelegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,6 +41,13 @@ public:
 
     MayaUsdProxyShapeBase* GetProxy() { return _proxy; }
 
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimId, int instanceIndex) {
+        return _usdDelegate->GetScenePrimPath(
+            rprimId, instanceIndex);
+    }
+#else
     SdfPath GetPathForInstanceIndex(
         const SdfPath& protoPrimPath, int instanceIndex,
         int* absoluteInstanceIndex, SdfPath* rprimPath = NULL,
@@ -50,6 +56,7 @@ public:
             protoPrimPath, instanceIndex, absoluteInstanceIndex, rprimPath,
             instanceContext);
     }
+#endif
 
     SdfPath ConvertIndexPathToCachePath(SdfPath const& indexPath) {
         return _usdDelegate->ConvertIndexPathToCachePath(indexPath);

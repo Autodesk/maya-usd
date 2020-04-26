@@ -67,6 +67,7 @@ public:
   /// \param  from the maya node to copy the data from
   /// \param  to the USD prim to copy the attributes to
   /// \param  params the exporter params to determine what should be exported
+  /// \param  path the dag path
   /// \return MS::kSuccess if ok
   AL_USDMAYA_PUBLIC
   static MStatus copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params, const MDagPath& path);

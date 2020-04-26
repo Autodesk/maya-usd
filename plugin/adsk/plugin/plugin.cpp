@@ -13,35 +13,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
-#include "base/api.h"
-#include "importTranslator.h"
-#include "ProxyShape.h"
-
-#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
-#include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/nodes/stageData.h>
-#include <mayaUsd/nodes/proxyShapePlugin.h>
-#include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
-
-#include <mayaUsd/utils/undoHelperCommand.h>
-#if defined(WANT_QT_BUILD)
-#include <mayaUsd/ui/cmds/USDImportDialogCmd.h>
-#endif
-
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/ufe/Global.h>
-#endif
+#include <sstream>
 
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
 #include <maya/MDrawRegistry.h>
 
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
 
-#include <sstream>
+#include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
+#include "base/api.h"
+#include "exportTranslator.h"
+#include "importTranslator.h"
+#include "ProxyShape.h"
+
+#include <mayaUsd/utils/undoHelperCommand.h>
+#if defined(WANT_QT_BUILD)
+#include <mayaUsdUI/ui/USDImportDialogCmd.h>
+#endif
+
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Global.h>
+#endif
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -60,6 +62,17 @@ MStatus initializePlugin(MObject obj)
         false);
     if (!status) {
         status.perror("mayaUsdPlugin: unable to register import translator.");
+    }
+
+    status = plugin.registerFileTranslator(
+        MayaUsd::UsdMayaExportTranslator::translatorName,
+        "",
+        MayaUsd::UsdMayaExportTranslator::creator,
+        "mayaUsdTranslatorExport", // options script name
+        const_cast<char*>(MayaUsd::UsdMayaExportTranslator::GetDefaultOptions().c_str()),
+        false);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register export translator.");
     }
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
@@ -95,11 +108,14 @@ MStatus initializePlugin(MObject obj)
     }
 #endif
 
+    MGlobal::executeCommand("source \"mayaUsdMenu.mel\"");
+    MGlobal::executeCommand("mayaUsdMenu_loadui");
+
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
     // automatically.  To be investigated.  A duplicate of this code is in the
     // Pixar plugin.cpp.
     const std::vector<std::string> translatorPluginNames{
-        "mayaUsd_Translators"};
+        "mayaUsd_Schemas", "mayaUsd_Translators"};
     const auto& plugRegistry = PlugRegistry::GetInstance();
     std::stringstream msg("mayaUsdPlugin: ");
     for (const auto& pluginName : translatorPluginNames) {
@@ -119,6 +135,8 @@ MStatus initializePlugin(MObject obj)
         }
     }
 
+    UsdMayaSceneResetNotice::InstallListener();
+
     return status;
 }
 
@@ -127,6 +145,8 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
     MStatus status;
+
+    MGlobal::executeCommand("mayaUsdMenu_unloadui");
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);
     if (!status) {
@@ -147,6 +167,11 @@ MStatus uninitializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to deregister import translator.");
     }
 
+    status = plugin.deregisterFileTranslator(MayaUsd::UsdMayaExportTranslator::translatorName);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to deregister export translator.");
+    }
+
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
     CHECK_MSTATUS(status);
 
@@ -158,5 +183,7 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 #endif
 
+    UsdMayaSceneResetNotice::RemoveListener();
+    
     return status;
 }

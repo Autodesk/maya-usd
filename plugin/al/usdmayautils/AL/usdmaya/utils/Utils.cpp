@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/utils/Utils.h"
-#include "AL/usd/utils/DebugCodes.h"
 #include "AL/maya/utils/Utils.h"
+
+#include <mayaUsdUtils/DebugCodes.h>
 
 #include "maya/MDagPath.h"
 #include "maya/MEulerRotation.h"

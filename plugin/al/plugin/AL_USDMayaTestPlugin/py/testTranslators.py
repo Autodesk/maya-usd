@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import os
 import unittest
 import tempfile
 
@@ -178,7 +179,6 @@ class DeleteParentNodeOnPostImport(usdmaya.TranslatorBase):
         return
 
 
-@unittest.skip("Temporary disabling this test. importObject methods don't seem to be called!  HS 2020, Jan 21th")
 class TestPythonTranslators(unittest.TestCase):
     
     def setUp(self):

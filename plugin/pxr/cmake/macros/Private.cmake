@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-include(Version)
 
 # Copy headers to the build tree.  In the source tree we find headers in
 # paths like pxr/base/lib/tf but we #include using paths like pxr/base/tf,
@@ -855,6 +854,10 @@ function(_pxr_python_module NAME)
         SHARED
         ${args_CPPFILES}
     )
+
+    # compiler configuration
+    mayaUsd_compile_config(${LIBRARY_NAME})
+
     add_dependencies(python ${LIBRARY_NAME})
     if(args_PYTHON_FILES)
         add_dependencies(${LIBRARY_NAME} ${LIBRARY_NAME}_pythonfiles)
@@ -893,20 +896,22 @@ function(_pxr_python_module NAME)
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     
     # Add path for usd core
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../../../USD/lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
 
     if(IS_LINUX)
-        if(WANT_USD_RELATIVE_PATH)
-            mayaUsd_add_rpath(rpath "../../../../../USD/lib64")
+        if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+            mayaUsd_add_rpath(rpath "../../../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
         elseif(DEFINED PXR_USD_LOCATION)
             mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib64")
         endif()
     endif()
-
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../../../../Maya.app/Contents/MacOS")
+    endif()
     mayaUsd_install_rpath(rpath ${LIBRARY_NAME})
 
     _get_folder("_python" folder)
@@ -916,11 +921,12 @@ function(_pxr_python_module NAME)
             FOLDER "${folder}"
     )
 
-    set_python_module_suffix(${LIBRARY_NAME})
+    set_python_module_property(${LIBRARY_NAME})
  
     target_compile_definitions(${LIBRARY_NAME}
         PRIVATE
             $<$<BOOL:${IS_MACOSX}>:OSMac_>
+            $<$<BOOL:${IS_LINUX}>:LINUX>
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pyModuleName}
@@ -1072,6 +1078,9 @@ function(_pxr_library NAME)
         )
     endif()
 
+    # compiler configuration
+    mayaUsd_compile_config(${NAME})
+
     #
     # Compute names and paths.
     #
@@ -1172,6 +1181,7 @@ function(_pxr_library NAME)
             ${apiPublic}
         PRIVATE
             $<$<BOOL:${IS_MACOSX}>:OSMac_>
+            $<$<BOOL:${IS_LINUX}>:LINUX>
             MFB_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_ALT_PACKAGE_NAME=${PXR_PACKAGE}
             MFB_PACKAGE_MODULE=${pythonModuleName}
@@ -1226,18 +1236,22 @@ function(_pxr_library NAME)
 	# only the mayaUsd shared library.
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
 
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../../../USD/lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
 
     if(IS_LINUX)
-        if(WANT_USD_RELATIVE_PATH)
-            mayaUsd_add_rpath(rpath "../../../../../USD/lib64")
+        if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+            mayaUsd_add_rpath(rpath "../../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
         elseif(DEFINED PXR_USD_LOCATION)
             mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib64")
         endif()
+    endif()
+
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../../Maya.app/Contents/MacOS")
     endif()
 
     mayaUsd_install_rpath(rpath ${NAME})

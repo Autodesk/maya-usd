@@ -1,4 +1,8 @@
-list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd gf plug tf)
+# MayaReference provides import translation for AL_usd_MayaReference.
+# As such, its AL_USDMAYA_DEFINE_TRANSLATOR does a
+# TfType::Find<AL_usd_MayaReference>, which requires AL_usd_MayaReference's
+# typeid.  We must therefore link against mayaUsd_Schemas.
+list(APPEND DEPENDANT_LIBRARIES AL_USDMaya AL_USDMayaSchemas mayaUsd mayaUsd_Schemas gf plug tf)
 
 set(DIRECTORY_PATH AL/usdmaya/fileio/translators)
 
@@ -20,17 +24,18 @@ add_library(${TRANSLATORS_PACKAGE}
     DirectionalLight.cpp
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${TRANSLATORS_PACKAGE})
 
-# HS OCT 2019, do we really need to define 
+# HS OCT 2019, do we really need to define
 # AL_MAYA_MACROS_EXPORT for this target?
 if(NOT IS_WINDOWS)
-    set_target_properties(${TRANSLATORS_PACKAGE}
-          PROPERTIES COMPILE_DEFINITIONS
-          "AL_MAYA_MACROS_EXPORT;${_macDef}"
-    )
+  target_compile_definitions(${TRANSLATORS_PACKAGE}
+      PRIVATE
+          AL_MAYA_MACROS_EXPORT
+          $<$<BOOL:${IS_MACOSX}>:OSMac_>
+          $<$<BOOL:${IS_LINUX}>:LINUX>
+  )
 endif()
 
 set(arg_PUBLIC_HEADER_FILES
@@ -70,21 +75,21 @@ target_include_directories(
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 
-    mayaUsd_init_rpath(rpath "plugin")
+    mayaUsd_init_rpath(rpath "lib")
     mayaUsd_add_rpath(rpath "../lib")
-    if(WANT_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../../USD/lib")
+    if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
+    if (IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+    endif()
+    if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+    endif()
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_install_rpath(rpath ${TRANSLATORS_PACKAGE})
-endif()
-
-if (IS_LINUX)
-  if(WANT_USD_RELATIVE_PATH)
-      mayaUsd_add_rpath(rpath "../../../../USD/lib64")
-  endif()
 endif()
 
 target_link_libraries(${TRANSLATORS_PACKAGE} ${DEPENDANT_LIBRARIES})
@@ -105,7 +110,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${AL_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
+ DESTINATION ${AL_INSTALL_PREFIX}/lib/usd
 )
 
 # install public headers

@@ -15,39 +15,35 @@
 //
 #include "materialAdapter.h"
 
-#include <pxr/base/tf/fileUtils.h>
-
-#include <pxr/imaging/hd/instanceRegistry.h>
-#include <pxr/imaging/hd/material.h>
-#include <pxr/imaging/hd/resourceRegistry.h>
-#include <pxr/imaging/hdSt/resourceRegistry.h>
-
-#include <pxr/imaging/glf/contextCaps.h>
-#include <pxr/imaging/glf/textureRegistry.h>
-#include <pxr/imaging/glf/udimTexture.h>
-#include <pxr/imaging/hdSt/textureResource.h>
-#include <pxr/imaging/hio/glslfx.h>
-#include <pxr/usdImaging/usdImaging/textureUtils.h>
-#include <pxr/usdImaging/usdImaging/tokens.h>
-#include <pxr/usdImaging/usdImagingGL/package.h>
-
-#if USD_VERSION_NUM >= 1911
-#include <pxr/imaging/hdSt/textureResourceHandle.h>
-#endif
-
-#include <pxr/usd/sdf/types.h>
-
-#include <pxr/usd/sdr/registry.h>
-
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#include "adapterRegistry.h"
-#include "materialNetworkConverter.h"
-#include "mayaAttrs.h"
-#include "tokens.h"
-#include "../utils.h"
+#include <pxr/base/tf/fileUtils.h>
+#include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/glf/textureRegistry.h>
+#include <pxr/imaging/glf/udimTexture.h>
+#include <pxr/imaging/hd/instanceRegistry.h>
+#include <pxr/imaging/hd/material.h>
+#include <pxr/imaging/hd/resourceRegistry.h>
+#include <pxr/imaging/hdSt/resourceRegistry.h>
+#include <pxr/imaging/hdSt/textureResource.h>
+#include <pxr/imaging/hio/glslfx.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usdImaging/usdImaging/textureUtils.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
+#include <pxr/usdImaging/usdImagingGL/package.h>
+
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/materialNetworkConverter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/tokens.h>
+#include <hdMaya/utils.h>
+
+#if USD_VERSION_NUM >= 1911
+#include <pxr/imaging/hdSt/textureResourceHandle.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -169,7 +165,7 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
             previewShaderParams.cbegin(), previewShaderParams.cend(), id,
             [](const HdMayaShaderParam& param, const TfToken& id){
 #if USD_VERSION_NUM >= 1911
-                return param.param.name < id;
+                return param.name < id;
 #else
                 return param.param.GetName() < id;
 #endif
@@ -189,7 +185,7 @@ const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
         return _emptyValue;
     }
 #if USD_VERSION_NUM >= 1911
-    return it->param.fallbackValue;
+    return it->fallbackValue;
 #else
     return it->param.GetFallbackValue();
 #endif
@@ -234,7 +230,7 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
          HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
         node.parameters.emplace(
 #if USD_VERSION_NUM >= 1911
-            it.param.name, it.param.fallbackValue);
+            it.name, it.fallbackValue);
 #else
             it.param.GetName(), it.param.GetFallbackValue());
 #endif
@@ -459,7 +455,7 @@ private:
              HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             auto textureType = HdTextureType::Uv;
 #if USD_VERSION_NUM >= 1911
-            auto remappedName = it.param.name;
+            auto remappedName = it.name;
 #else // USD_VERSION_NUM < 1911
             auto remappedName = it.param.GetName();
 #endif // USD_VERSION_NUM >= 1911
@@ -472,8 +468,8 @@ private:
             if (_RegisterTexture(node, remappedName, textureType)) {
                 ret.emplace_back(
 #if USD_VERSION_NUM >= 1911
-                    HdMaterialParam::ParamTypeTexture, it.param.name,
-                    it.param.fallbackValue,
+                    HdMaterialParam::ParamTypeTexture, it.name,
+                    it.fallbackValue,
 #else // USD_VERSION_NUM < 1911
                     HdMaterialParam::ParamTypeTexture, it.param.GetName(),
                     it.param.GetFallbackValue(),
@@ -487,12 +483,18 @@ private:
                         "connection path: %s\n",
 #if USD_VERSION_NUM >= 1911
                         ret.back().connection.GetText());
+            } else {
+                ret.emplace_back(
+                    HdMaterialParam::ParamTypeTexture,
+                    it.name,
+                    it.fallbackValue);
+            }
 #else // USD_VERSION_NUM < 1911
                         ret.back().GetConnection().GetText());
-#endif // USD_VERSION_NUM >= 1911
             } else {
                 ret.emplace_back(it.param);
             }
+#endif // USD_VERSION_NUM >= 1911
         }
 
         return ret;
@@ -525,8 +527,8 @@ private:
         if (attrConverter) {
             return attrConverter->GetValue(
 #if USD_VERSION_NUM >= 1911
-                node, previewIt->param.name, previewIt->type,
-                &previewIt->param.fallbackValue);
+                node, previewIt->name, previewIt->type,
+                &previewIt->fallbackValue);
 #else // USD_VERSION_NUM < 1911
                 node, previewIt->param.GetName(), previewIt->type,
                 &previewIt->param.GetFallbackValue());

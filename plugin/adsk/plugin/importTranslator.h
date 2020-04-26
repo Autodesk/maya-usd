@@ -17,17 +17,19 @@
 #ifndef PXRUSDMAYA_IMPORT_TRANSLATOR_H
 #define PXRUSDMAYA_IMPORT_TRANSLATOR_H
 
-#include "base/api.h"
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-
-#include "pxr/pxr.h"
+#include <string>
 
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <string>
+#include <pxr/pxr.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+
+#include "base/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

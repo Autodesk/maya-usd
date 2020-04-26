@@ -15,14 +15,14 @@
 //
 #include "delegateRegistry.h"
 
-#include "delegateDebugCodes.h"
+#include <mutex>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/tf/type.h>
 
-#include <mutex>
+#include <hdMaya/delegates/delegateDebugCodes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

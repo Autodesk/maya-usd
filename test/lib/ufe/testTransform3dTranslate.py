@@ -234,4 +234,8 @@ class Transform3dTranslateTestCase(unittest.TestCase):
             Gf.Vec3d(10, 20, 30))
 
         # Notified.
-        self.assertEqual(t3dObs.notifications(), 1)
+        # USD Attribute Notification doubling problem:
+        # Note: because we are using set on the usd attribute (just above)
+        #       directly we we receive TWO notifs in our transform3d observer.
+        #       See UsdAttribute.cpp function setUsdAttr() for details.
+        self.assertEqual(t3dObs.notifications(), 2)

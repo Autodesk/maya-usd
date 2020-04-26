@@ -252,7 +252,7 @@ void ProxyShape::printRefCounts() const
 //----------------------------------------------------------------------------------------------------------------------
 inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRef %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRef %" PRIu16 " %" PRIu16 " %" PRIu16 "\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: assert(m_selected); --m_selected; break;
@@ -263,14 +263,14 @@ inline bool ProxyShape::TransformReference::decRef(const TransformReason reason)
     break;
   }
 
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRefEnd %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::decRefEnd %" PRIu16 " %" PRIu16 " %" PRIu16 "\n", m_selected, m_refCount, m_required);
   return !m_required && !m_selected && !m_refCount;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRef %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRef %" PRIu16 " %" PRIu16 " %" PRIu16 "\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: ++m_selected; break;
@@ -279,13 +279,13 @@ inline void ProxyShape::TransformReference::incRef(const TransformReason reason)
   default: assert(0); break;
   }
 
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRefEnd %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::incRefEnd %" PRIu16 " %" PRIu16 " %" PRIu16 "\n", m_selected, m_refCount, m_required);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 inline void ProxyShape::TransformReference::checkIncRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkIncRef %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkIncRef %" PRIu16 " %" PRIu16 " %" PRIu16 "\n", m_selected, m_refCount, m_required);
   switch(reason)
   {
   case kSelection: ++m_selectedTemp; break;
@@ -296,7 +296,7 @@ inline void ProxyShape::TransformReference::checkIncRef(const TransformReason re
 //----------------------------------------------------------------------------------------------------------------------
 inline bool ProxyShape::TransformReference::checkRef(const TransformReason reason)
 {
-  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkRef %" PRIu64 " : %" PRIu64 " %" PRIu64 " %" PRIu64 "\n", m_selectedTemp, m_selected, m_refCount, m_required);
+  TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::TransformReference::checkRef %" PRIu16 " : %" PRIu16 " %" PRIu16 " %" PRIu16 "\n", m_selectedTemp, m_selected, m_refCount, m_required);
   uint32_t sl = m_selected;
   uint32_t rc = m_refCount;
   uint32_t rq = m_required;
@@ -664,6 +664,31 @@ MObject ProxyShape::makeUsdTransformChain(
 
   createMayaNode(usdPrim, node, parentNode, modifier, modifier2, outStage, outTime, pushToPrim, readAnimatedValues);
 
+  // build up new lock-prim list
+  TfToken lockPropertyToken;
+  if (usdPrim.GetMetadata<TfToken>(Metadata::locked, & lockPropertyToken))
+  {
+    if (lockPropertyToken == Metadata::lockTransform)
+    {
+      m_lockManager.setLocked(usdPrim.GetPath());
+    }
+    else
+    if (lockPropertyToken == Metadata::lockUnlocked)
+    {
+      m_lockManager.setUnlocked(usdPrim.GetPath());
+    }
+    else
+    if (lockPropertyToken == Metadata::lockInherited)
+    {
+      m_lockManager.setInherited(usdPrim.GetPath());
+    }
+  }
+  else
+  {
+    m_lockManager.setInherited(usdPrim.GetPath());
+  }
+
+
   if(resultingPath)
     *resultingPath = recordUsdPrimToMayaPath(usdPrim, node);
   else
@@ -766,7 +791,7 @@ void ProxyShape::removeUsdTransformChain_internal(
         modifier.reparentNode(object);
         modifier.deleteNode(object);
       }
-      m_currentLockedPrims.erase(primPath);
+      m_lockManager.setInherited(primPath);
     }
 
     parentPrim = parentPrim.GetParent();
@@ -785,6 +810,8 @@ void ProxyShape::removeUsdTransformChain(
   MObject parentTM = MObject::kNullObj;
   MObject object = MObject::kNullObj;
 
+  // ensure the transforms have been removed from the selectability and lock db's. 
+  m_lockManager.setInherited(path);
   while(!parentPrim.IsEmpty())
   {
     auto it = m_requiredPaths.find(parentPrim);
@@ -805,10 +832,11 @@ void ProxyShape::removeUsdTransformChain(
         {
           modifier.reparentNode(object);
           modifier.deleteNode(object);
+
+          m_lockManager.setInherited(parentPrim);
         }
       }
 
-      m_currentLockedPrims.erase(parentPrim);
       m_requiredPaths.erase(it);
       TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
     }
@@ -1002,6 +1030,7 @@ void ProxyShape::removeTransformRefs(const std::vector<std::pair<SdfPath, MObjec
         {
           TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::removeTransformRefs m_requiredPaths removed TransformReference: %s\n", it->first.GetText());
           m_requiredPaths.erase(it);
+          m_lockManager.setInherited(iter.first);
         }
       }
 
