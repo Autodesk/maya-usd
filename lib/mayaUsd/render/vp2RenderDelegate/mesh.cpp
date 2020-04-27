@@ -1612,6 +1612,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
     renderItem->castsShadows(true);
     renderItem->receivesShadows(true);
     renderItem->setShader(_delegate->GetFallbackShader(kOpaqueGray));
+    renderItem->setWantDiffuseColorMultiDrawConsolidation(true);
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 
     setWantConsolidation(*renderItem, true);
