@@ -20,6 +20,8 @@
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 #include "AL/usdmaya/fileio/TransformIterator.h"
 
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+
 namespace AL {
 namespace usdmaya {
 namespace nodes {
@@ -92,16 +94,15 @@ void ProxyShape::processChangedMetaData(const SdfPathVector& resyncedPaths, cons
         m_lockManager.setInherited(path);
       }
     }
-    m_lockManager.sort();
   }
-  else
+  bool excludedPrimsModified = false;
   {
     auto& unselectablePaths = m_selectabilityDB.m_unselectablePaths;
 
     // figure out whether selectability has changed.
     for(const SdfPath& path : resyncedPaths)
     {
-      UsdPrim syncPrimRoot = m_stage->GetPrimAtPath(path);
+      const UsdPrim syncPrimRoot = m_stage->GetPrimAtPath(path);
       if(!syncPrimRoot)
       {
         // TODO : Ensure elements have been removed from selectabilityDB, excludeGeom, and lock prims
@@ -138,16 +139,16 @@ void ProxyShape::processChangedMetaData(const SdfPathVector& resyncedPaths, cons
       // from the resync prim, traverse downwards through the child prims
       for(fileio::TransformIterator it(syncPrimRoot, parentTransform(), true); !it.done(); it.next())
       {
-        auto prim = it.prim();
-        auto path = prim.GetPath();
+        const auto prim = it.prim();
+        const auto path = prim.GetPath();
 
         // first check to see if the excluded geom has changed
         {
           bool excludeGeo = false;
           if(prim.GetMetadata(Metadata::excludeFromProxyShape, &excludeGeo) && excludeGeo)
           {
-            auto last = m_excludedTaggedGeometry.begin() + lastTaggedPrim;
-            auto it = std::lower_bound(m_excludedTaggedGeometry.begin(), last, path);
+            const auto last = m_excludedTaggedGeometry.begin() + lastTaggedPrim;
+            const auto it = std::lower_bound(m_excludedTaggedGeometry.begin(), last, path);
             if(it != last && *it == path)
             {
               // we already have an entry for this prim
@@ -155,16 +156,19 @@ void ProxyShape::processChangedMetaData(const SdfPathVector& resyncedPaths, cons
             else
             {
               // add to back of list
+              excludedPrimsModified = true;
               m_excludedTaggedGeometry.emplace_back(path);
             }
           }
           else
           {
+            //std::cout << " > excl2 " << prim.GetPath().GetString() << ' ' << excludeGeo << '\n';
             // if we aren't excluding the geom, but have an existing entry, remove it.
-            auto last = m_excludedTaggedGeometry.begin() + lastTaggedPrim;
-            auto it = std::lower_bound(m_excludedTaggedGeometry.begin(), last, path);
+            const auto last = m_excludedTaggedGeometry.begin() + lastTaggedPrim;
+            const auto it = std::lower_bound(m_excludedTaggedGeometry.begin(), last, path);
             if(it != last && *it == path)
             {
+              excludedPrimsModified = true;
               m_excludedTaggedGeometry.erase(it); 
               --lastTaggedPrim;
             }
@@ -231,6 +235,18 @@ void ProxyShape::processChangedMetaData(const SdfPathVector& resyncedPaths, cons
   // reconstruct the lock prims
   {
     constructLockPrims();
+  }
+
+  if(excludedPrimsModified)
+  {
+    if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) 
+    {
+      _IncreaseExcludePrimPathsVersion();
+    }
+    else
+    {
+      constructGLImagingEngine();
+    }
   }
 }
 
@@ -384,8 +400,10 @@ SdfPathVector ProxyShape::getExcludePrimPaths() const
 {
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::getExcludePrimPaths\n");
 
-  SdfPathVector paths = getPrimPathsFromCommaJoinedString(excludePrimPathsPlug().asString());
-  SdfPathVector temp = getPrimPathsFromCommaJoinedString(excludedTranslatedGeometryPlug().asString());
+  SdfPathVector paths = m_excludedTaggedGeometry;
+  SdfPathVector temp = getPrimPathsFromCommaJoinedString(excludePrimPathsPlug().asString());
+  paths.insert(paths.end(), temp.begin(), temp.end());
+  temp = getPrimPathsFromCommaJoinedString(excludedTranslatedGeometryPlug().asString());
   paths.insert(paths.end(), temp.begin(), temp.end());
   return paths;
 }

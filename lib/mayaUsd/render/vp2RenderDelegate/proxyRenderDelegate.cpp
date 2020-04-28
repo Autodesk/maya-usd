@@ -342,6 +342,22 @@ bool ProxyRenderDelegate::_Populate() {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Populate");
 
+        // if previously populated, destroy the old delegate to be able to populate the new excluded paths
+        if(_isPopulated)
+        {
+            delete _sceneDelegate; 
+            const std::string delegateName =
+                TfMakeValidIdentifier(
+                    TfStringPrintf(
+                        "Proxy_%s_%p",
+                        _proxyShape->name().asChar(),
+                        _proxyShape));
+            const SdfPath delegateID =
+                SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
+
+            _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);   
+        }
+
         // It might have been already populated, clear it if so.
         SdfPathVector excludePrimPaths = _proxyShapeData->ProxyShape()->getExcludePrimPaths();
         for (auto& excludePrim : excludePrimPaths) {
