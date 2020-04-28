@@ -24,6 +24,8 @@ set(msvc_flags
     /Zc:rvalueCast
     # enable multiprocessor builds.
     /MP
+    # enable exception handling.
+    /EHsc
     # disable warnings
     /wd4244
     /wd4267
