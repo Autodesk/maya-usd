@@ -256,8 +256,6 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
         _file.close()        
         cmds.file(rename=_file.name)
         cmds.file(save=True, force=True)
-        
-        self.assertFalse(cmds.ls(assemblies=True))
 
         # Re-open
         cmds.file(_file.name, open=True, force=True)
