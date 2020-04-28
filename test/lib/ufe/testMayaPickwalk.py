@@ -168,8 +168,12 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
         
         # Pickwalk on unsupported UFE items
         cmds.select("pCube1.e[6]")
-        self.snapShotAndTest((["pCube1.e[6]"], ["pCubeShape1"]))
-        self.assertTrue(next(iter(ufe.GlobalSelection.get())).isProperty())
+        if int(cmds.about(majorVersion=True)) <= 2020:
+            self.snapShotAndTest((["pCube1.e[6]"], ["pCubeShape1"]))
+            self.assertTrue(next(iter(ufe.GlobalSelection.get())).isProperty())
+        else:
+            self.snapShotAndTest((["pCube1.e[6]"], []))
+            self.assertTrue(ufe.GlobalSelection.get().empty())
         
         # TODO: HS 2019 : test fails.  MAYA-101373
 #        cmds.pickWalk(type="edgeloop", d="right")
