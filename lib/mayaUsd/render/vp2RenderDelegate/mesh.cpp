@@ -1616,6 +1616,9 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
     renderItem->castsShadows(true);
     renderItem->receivesShadows(true);
     renderItem->setShader(_delegate->GetFallbackShader(kOpaqueGray));
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setWantDiffuseColorMultiDrawConsolidation(true);
+#endif
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 
     setWantConsolidation(*renderItem, true);
