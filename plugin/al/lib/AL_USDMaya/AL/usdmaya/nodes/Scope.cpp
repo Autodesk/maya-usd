@@ -174,9 +174,21 @@ MBoundingBox Scope::boundingBox() const
   UsdPrim prim = transform()->prim();
   if(prim)
   {
+    // Get purpose draw states
+    bool drawRenderPurpose = false;
+    bool drawProxyPurpose = false;
+    bool drawGuidePurpose = false;
+    CHECK_MSTATUS(MPlug(getProxyShape(), ProxyShape::drawRenderPurposeAttr).getValue(drawRenderPurpose));
+    CHECK_MSTATUS(MPlug(getProxyShape(), ProxyShape::drawProxyPurposeAttr).getValue(drawProxyPurpose));
+    CHECK_MSTATUS(MPlug(getProxyShape(), ProxyShape::drawGuidePurposeAttr).getValue(drawGuidePurpose));
+    const TfToken purpose1 = UsdGeomTokens->default_;
+    const TfToken purpose2 = drawRenderPurpose ? UsdGeomTokens->render : TfToken();
+    const TfToken purpose3 = drawProxyPurpose ? UsdGeomTokens->proxy : TfToken();
+    const TfToken purpose4 = drawGuidePurpose ? UsdGeomTokens->guide : TfToken();
+  
+    // Compute bounding box
     UsdGeomImageable imageable(prim);
-    const TfToken token("default");
-    const GfBBox3d box = imageable.ComputeLocalBound(usdTime, token);
+    const GfBBox3d box = imageable.ComputeLocalBound(usdTime, purpose1, purpose2, purpose3, purpose4);
     const GfRange3d range = box.GetRange();
     const GfVec3d minMin = range.GetMin();
     const GfVec3d minMax = range.GetMax();
