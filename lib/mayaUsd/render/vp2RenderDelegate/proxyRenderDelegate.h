@@ -130,7 +130,8 @@ private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
     ProxyRenderDelegate& operator=(const ProxyRenderDelegate&) = delete;
 
-    void _InitRenderDelegate();
+    void _InitRenderDelegate(MSubSceneContainer& container);
+    void _ClearRenderDelegate();
     bool _Populate();
     void _UpdateSceneDelegate();
     void _Execute(const MHWRender::MFrameContext& frameContext);

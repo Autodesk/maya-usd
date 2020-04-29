@@ -200,10 +200,7 @@ ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
 
 //! \brief  Destructor
 ProxyRenderDelegate::~ProxyRenderDelegate() {
-    delete _sceneDelegate;
-    delete _taskController;
-    delete _renderIndex;
-    delete _renderDelegate;
+    _ClearRenderDelegate();
 
 #if !defined(WANT_UFE_BUILD)
     if (_mayaSelectionCallbackId != 0) {
@@ -229,18 +226,42 @@ bool ProxyRenderDelegate::requiresUpdate(const MSubSceneContainer& container, co
     return true;
 }
 
+void ProxyRenderDelegate::_ClearRenderDelegate()
+{
+    delete _sceneDelegate;
+    _sceneDelegate = nullptr;
+    delete _taskController;
+    _taskController = nullptr;
+    delete _renderIndex;
+    _renderIndex = nullptr;
+    delete _renderDelegate;
+    _renderDelegate = nullptr;
+}
+
 //! \brief  One time initialization of this drawing routine
-void ProxyRenderDelegate::_InitRenderDelegate() {
-    // No need to run all the checks if we got till the end
-    if (_isInitialized())
-        return;
+void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
 
     if (_proxyShape == nullptr)
         return;
 
-    if (!_usdStage) {
-        _usdStage = _proxyShape->getUsdStage();
+    UsdStageRefPtr newUsdStage = _proxyShape->getUsdStage();
+    if (_usdStage != newUsdStage)
+    {
+        _ClearRenderDelegate();
+
+        // delete everything so we stop drawing the old stage and draw the new one
+        _ClearRenderDelegate();
+        _dummyTasks.clear();
+
+        _isPopulated = false;
+        container.clear();
+
+        _usdStage = newUsdStage;
     }
+    
+    // No need to run all the checks if we got till the end
+    if (_isInitialized())
+        return;
 
     if (!_renderDelegate) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
@@ -297,8 +318,11 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         }
 #else
         // Without UFE, support basic selection highlight at proxy shape level.
-        _mayaSelectionCallbackId = MEventMessage::addEventCallback(
-            "SelectionChanged", SelectionChangedCB, this);
+        if (!_mayaSelectionCallbackId)
+        {
+            _mayaSelectionCallbackId = MEventMessage::addEventCallback(
+                "SelectionChanged", SelectionChangedCB, this);
+        }
 #endif
 
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
@@ -475,7 +499,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorD_L1, "ProxyRenderDelegate::update");
 
-    _InitRenderDelegate();
+    _InitRenderDelegate(container);
 
     // Give access to current time and subscene container to the rest of render delegate world via render param's.
     auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
