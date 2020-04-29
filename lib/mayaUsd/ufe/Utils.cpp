@@ -109,8 +109,6 @@ SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim)
 
 	SdfLayerHandle defLayer;
 	auto layerStack = prim.GetStage()->GetLayerStack();
-    auto stage = prim.GetStage();
-    auto primFromPath = stage->GetPrimAtPath(prim.GetPath());
 
 	for (auto layer : layerStack)
 	{
@@ -122,6 +120,38 @@ SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim)
 		}
 	}
 	return defLayer;
+}
+
+bool isTargetLayerHaveOpinion(const UsdPrim& prim)
+{
+    auto editTarget = prim.GetStage()->GetEditTarget();
+    auto layer = editTarget.GetLayer();
+    auto primSpec = layer->GetPrimAtPath(prim.GetPath());
+
+    // to know whether the target layer contains any opinions that 
+    // affect a particular prim, there must be a primSpec for that prim
+    if (!primSpec) {
+        return false;
+    }
+
+    return true;
+}
+
+SdfLayerHandle targetLayerWithOpion(const UsdPrim& prim)
+{
+    SdfLayerHandle targetLayer;
+    auto layerStack = prim.GetStage()->GetLayerStack();
+    for (auto layer : layerStack)
+    {
+        // to know whether the target layer contains any opinions that 
+        // affect a particular prim, there must be a primSpec for that prim
+        auto primSpec = layer->GetPrimAtPath(prim.GetPath());
+        if (primSpec) {
+            targetLayer = layer;
+            break;
+        }
+    }
+    return targetLayer;
 }
 
 UsdSceneItem::Ptr createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName)
