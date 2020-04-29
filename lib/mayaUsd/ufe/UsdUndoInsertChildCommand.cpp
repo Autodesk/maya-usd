@@ -50,7 +50,16 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     fStage      = childPrim.GetStage();
     fUfeSrcItem = child;
     fUsdSrcPath = childPrim.GetPath();
-    fUfeDstPath = parent->path() + childName;
+    // Create a new segment if parent and child are in different run-times.
+    auto cRtId = child->path().runTimeId();
+    if (parent->path().runTimeId() == cRtId) {
+        fUfeDstPath = parent->path() + childName;
+    }
+    else {
+        auto cSep = child->path().getSegments().back().separator();
+        fUfeDstPath = parent->path() + Ufe::PathSegment(
+            Ufe::PathComponent(childName), cRtId, cSep);
+    }
     fUsdDstPath = parent->prim().GetPath().AppendChild(TfToken(childName));
 
     fLayer = defPrimSpecLayer(childPrim);
