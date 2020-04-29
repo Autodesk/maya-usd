@@ -247,8 +247,6 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
     UsdStageRefPtr newUsdStage = _proxyShape->getUsdStage();
     if (_usdStage != newUsdStage)
     {
-        _ClearRenderDelegate();
-
         // delete everything so we stop drawing the old stage and draw the new one
         _ClearRenderDelegate();
         _dummyTasks.clear();
