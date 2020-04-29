@@ -145,13 +145,15 @@ private:
     MDagPath                      _proxyDagPath;          //!< DAG path of the proxy shape (assuming no DAG instancing)
 
     // USD & Hydra Objects
-    HdEngine            _engine;                    //!< Hydra engine responsible for running synchronization between scene delegate and VP2RenderDelegate
-    HdTaskSharedPtrVector _dummyTasks;              //!< Dummy task to bootstrap data preparation inside Hydra engine
-    UsdStageRefPtr      _usdStage;                  //!< USD stage pointer
-    HdRenderDelegate*   _renderDelegate{ nullptr }; //!< VP2RenderDelegate
-    HdRenderIndex*      _renderIndex{ nullptr };    //!< Flattened representation of client scene graph
-    HdxTaskController*  _taskController{ nullptr }; //!< Task controller necessary for execution with hydra engine (we don't really need it, but there doesn't seem to be a way to get synchronization running without it)
-    UsdImagingDelegate* _sceneDelegate{ nullptr };  //!< USD scene delegate
+    HdEngine                _engine;                    //!< Hydra engine responsible for running synchronization between scene delegate and VP2RenderDelegate
+    HdTaskSharedPtrVector   _dummyTasks;                //!< Dummy task to bootstrap data preparation inside Hydra engine
+    UsdStageRefPtr          _usdStage;                  //!< USD stage pointer
+
+    // Do not re-order these 4 member variables relative to one another. The order they are declared here is the reverse order of deletion, and the deletion order matters!
+    std::unique_ptr<HdRenderDelegate>  _renderDelegate; //!< VP2RenderDelegate
+    std::unique_ptr<HdRenderIndex> _renderIndex;        //!< Flattened representation of client scene graph
+    std::unique_ptr<HdxTaskController> _taskController; //!< Task controller necessary for execution with hydra engine (we don't really need it, but there doesn't seem to be a way to get synchronization running without it)
+    std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
 
     size_t              _excludePrimPathsVersion{ 0 }; //!< Last version of exluded prims used during render index populate
 

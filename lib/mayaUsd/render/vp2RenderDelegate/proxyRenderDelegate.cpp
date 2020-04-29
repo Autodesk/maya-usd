@@ -200,8 +200,6 @@ ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
 
 //! \brief  Destructor
 ProxyRenderDelegate::~ProxyRenderDelegate() {
-    _ClearRenderDelegate();
-
 #if !defined(WANT_UFE_BUILD)
     if (_mayaSelectionCallbackId != 0) {
         MMessage::removeCallback(_mayaSelectionCallbackId);
@@ -228,14 +226,14 @@ bool ProxyRenderDelegate::requiresUpdate(const MSubSceneContainer& container, co
 
 void ProxyRenderDelegate::_ClearRenderDelegate()
 {
-    delete _sceneDelegate;
-    _sceneDelegate = nullptr;
-    delete _taskController;
-    _taskController = nullptr;
-    delete _renderIndex;
-    _renderIndex = nullptr;
-    delete _renderDelegate;
-    _renderDelegate = nullptr;
+    // The order of deletion matters. Some orders cause crashes.
+    // This order matches the deletion order when a ProxyRenderDelegate is destroyed.
+    // Class member variables are destroyed in the reverse order in which they appear in the class declaration.
+
+    _sceneDelegate.reset(nullptr);
+    _taskController.reset(nullptr);
+    _renderIndex.reset(nullptr);
+    _renderDelegate.reset(nullptr);
 }
 
 //! \brief  One time initialization of this drawing routine
@@ -264,16 +262,16 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
     if (!_renderDelegate) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate VP2RenderDelegate");
-        _renderDelegate = new HdVP2RenderDelegate(*this);
+        _renderDelegate.reset(new HdVP2RenderDelegate(*this));
     }
 
     if (!_renderIndex) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate RenderIndex");
 #if USD_VERSION_NUM > 2002
-        _renderIndex = HdRenderIndex::New(_renderDelegate, HdDriverVector());
+        _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 #else
-        _renderIndex = HdRenderIndex::New(_renderDelegate);
+        _renderIndex.reset(HdRenderIndex::New(_renderDelegate));
 #endif
 
         // Add additional configurations after render index creation.
@@ -296,10 +294,10 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
         const SdfPath delegateID =
             SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
-        _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);
+        _sceneDelegate.reset(new UsdImagingDelegate(_renderIndex.get(), delegateID));
 
-        _taskController = new HdxTaskController(_renderIndex,
-            delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) );
+        _taskController.reset(new HdxTaskController(_renderIndex.get(),
+            delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) ));
 
         _defaultCollection.reset(new HdRprimCollection());
         _defaultCollection->SetName(HdTokens->geometry);
@@ -489,7 +487,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _taskController->SetCollection(*_defaultCollection);
     }
 
-    _engine.Execute(_renderIndex, &_dummyTasks);
+    _engine.Execute(_renderIndex.get(), &_dummyTasks);
 }
 
 //! \brief  Main update entry from subscene override.
@@ -697,7 +695,7 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
         HdRprimCollection collection(HdTokens->geometry, kSelectionReprSelector);
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
-        _engine.Execute(_renderIndex, &_dummyTasks);
+        _engine.Execute(_renderIndex.get(), &_dummyTasks);
         _taskController->SetCollection(*_defaultCollection);
     }
 }
