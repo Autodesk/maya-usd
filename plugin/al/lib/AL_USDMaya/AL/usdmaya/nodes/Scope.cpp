@@ -171,6 +171,9 @@ MBoundingBox Scope::boundingBox() const
     usdTime = UsdTimeCode(outTime.as(MTime::uiUnit()));
   }
 
+  // Compute Maya bounding box first. Some nodes can contain both Maya and USD boundable descendants.
+  MBoundingBox bbox = MPxTransform::boundingBox();
+  
   UsdPrim prim = transform()->prim();
   if(prim)
   {
@@ -185,23 +188,22 @@ MBoundingBox Scope::boundingBox() const
     const TfToken purpose2 = drawRenderPurpose ? UsdGeomTokens->render : TfToken();
     const TfToken purpose3 = drawProxyPurpose ? UsdGeomTokens->proxy : TfToken();
     const TfToken purpose4 = drawGuidePurpose ? UsdGeomTokens->guide : TfToken();
-  
+    
     // Compute bounding box
     UsdGeomImageable imageable(prim);
     const GfBBox3d box = imageable.ComputeLocalBound(usdTime, purpose1, purpose2, purpose3, purpose4);
     const GfRange3d range = box.GetRange();
-    const GfVec3d minMin = range.GetMin();
-    const GfVec3d minMax = range.GetMax();
-    const MVector minBound(minMin[0], minMin[1], minMin[2]);
-    const MVector maxBound(minMax[0], minMax[1], minMax[2]);
-    MBoundingBox bbox(minBound, maxBound);
+    const GfVec3d usdMin = range.IsEmpty() ? GfVec3d(0.0, 0.0, 0.0) : range.GetMin();
+    const GfVec3d usdMax = range.IsEmpty() ? GfVec3d(0.0, 0.0, 0.0) : range.GetMax();
+    bbox.expand(MPoint(usdMin[0], usdMin[1], usdMin[2]));
+    bbox.expand(MPoint(usdMax[0], usdMax[1], usdMax[2]));
     MMatrix mayaMx;
     const double* matrixArray = box.GetMatrix().GetArray();
     std::copy(matrixArray, matrixArray+16, mayaMx[0]);
     bbox.transformUsing(mayaMx);
-    return bbox;
   }
-  return MPxTransform::boundingBox();
+  
+  return bbox;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
