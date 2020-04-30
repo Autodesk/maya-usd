@@ -110,10 +110,6 @@ public:
         const MIntersection& intersection,
         MDagPath& dagPath) const override;
 
-    //! \brief  Return pointer to DG proxy shape node
-    MAYAUSD_CORE_PUBLIC
-    const MayaUsdProxyShapeBase* getProxyShape() const { return _proxyShapeData->ProxyShape(); }
-
     MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 
@@ -141,18 +137,22 @@ private:
     void _FilterSelection();
     void _UpdateSelectionStates();
 
-    // We need to track when output data on the proxy shape changes. For simple numeric types we cache the last value
-    // read from _proxyShape. For complicated types we keep a version number of the last value we read to make
-    // comparisons fast.
+    /*! \brief  Hold all data related to the proxy shape.
+
+        In addition to holding data read from the proxy shape, ProxyShapeData tracks when data read from the
+        proxy shape changes. For simple numeric types cache the last value read from _proxyShape & compare to
+        the current value. For complicated types we keep a version number of the last value we read to make 
+        fast comparisons.
+    */
     class ProxyShapeData
     {
-        const MayaUsdProxyShapeBase*    _proxyShape{ nullptr };     //!< DG proxy shape node
-        MDagPath                        _proxyDagPath;              //!< DAG path of the proxy shape (assuming no DAG instancing)
-        UsdStageRefPtr                  _usdStage;                  //!< USD stage pointer
-        size_t                          _excludePrimsVersion{ 0 };  //!< Last version of exluded prims used during render index populate
-        size_t                          _usdStageVersion{ 0 };      //!< Last version of stage used during render index populate
+        const MayaUsdProxyShapeBase* const  _proxyShape{ nullptr };     //!< DG proxy shape node
+        const MDagPath                      _proxyDagPath;              //!< DAG path of the proxy shape (assuming no DAG instancing)
+        UsdStageRefPtr                      _usdStage;                  //!< USD stage pointer
+        size_t                              _excludePrimsVersion{ 0 };  //!< Last version of exluded prims used during render index populate
+        size_t                              _usdStageVersion{ 0 };      //!< Last version of stage used during render index populate
     public:
-        ProxyShapeData(const MayaUsdProxyShapeBase* proxyShape, const MDagPath& proxyDatPath);
+        ProxyShapeData(const MayaUsdProxyShapeBase* proxyShape, const MDagPath& proxyDagPath);
         const MayaUsdProxyShapeBase* ProxyShape() const;
         const MDagPath& ProxyDagPath() const;
         UsdStageRefPtr UsdStage() const;

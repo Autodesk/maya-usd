@@ -736,20 +736,20 @@ ProxyRenderDelegate::ProxyShapeData::ProxyShapeData(const MayaUsdProxyShapeBase*
 {
     assert(_proxyShape);
 }
-const MayaUsdProxyShapeBase* ProxyRenderDelegate::ProxyShapeData::ProxyShape() const { return _proxyShape; }
-const MDagPath& ProxyRenderDelegate::ProxyShapeData::ProxyDagPath() const { return _proxyDagPath; }
-UsdStageRefPtr ProxyRenderDelegate::ProxyShapeData::UsdStage() const { return _usdStage; }
-void ProxyRenderDelegate::ProxyShapeData::UpdateUsdStage() { _usdStage = _proxyShape->getUsdStage(); }
-bool ProxyRenderDelegate::ProxyShapeData::IsUsdStageUpToDate() const {
+inline const MayaUsdProxyShapeBase* ProxyRenderDelegate::ProxyShapeData::ProxyShape() const { return _proxyShape; }
+inline const MDagPath& ProxyRenderDelegate::ProxyShapeData::ProxyDagPath() const { return _proxyDagPath; }
+inline UsdStageRefPtr ProxyRenderDelegate::ProxyShapeData::UsdStage() const { return _usdStage; }
+inline void ProxyRenderDelegate::ProxyShapeData::UpdateUsdStage() { _usdStage = _proxyShape->getUsdStage(); }
+inline bool ProxyRenderDelegate::ProxyShapeData::IsUsdStageUpToDate() const {
     return _proxyShape->getUsdStageVersion() == _usdStageVersion;
 }
-void ProxyRenderDelegate::ProxyShapeData::UsdStageUpdated() {
+inline void ProxyRenderDelegate::ProxyShapeData::UsdStageUpdated() {
     _usdStageVersion = _proxyShape->getUsdStageVersion();
 }
-bool ProxyRenderDelegate::ProxyShapeData::IsExcludePrimsUpToDate() const {
+inline bool ProxyRenderDelegate::ProxyShapeData::IsExcludePrimsUpToDate() const {
     return _proxyShape->getExcludePrimPathsVersion() == _excludePrimsVersion;
 }
-void ProxyRenderDelegate::ProxyShapeData::ExcludePrimsUpdated() {
+inline void ProxyRenderDelegate::ProxyShapeData::ExcludePrimsUpdated() {
     _excludePrimsVersion = _proxyShape->getExcludePrimPathsVersion();
 }
 
