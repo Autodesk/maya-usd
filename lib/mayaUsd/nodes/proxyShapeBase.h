@@ -181,6 +181,8 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         virtual UsdTimeCode     getTime() const;
         MAYAUSD_CORE_PUBLIC
         virtual UsdStageRefPtr  getUsdStage() const;
+        MAYAUSD_CORE_PUBLIC
+        size_t                  getUsdStageVersion() const;
 
         MAYAUSD_CORE_PUBLIC
         bool GetAllRenderAttributes(
@@ -191,6 +193,17 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
                 bool* drawRenderPurpose,
                 bool* drawProxyPurpose,
                 bool* drawGuidePurpose);
+
+        MAYAUSD_CORE_PUBLIC
+        MStatus preEvaluation(
+                const  MDGContext& context,
+                const MEvaluationNode& evaluationNode) override;
+
+        MAYAUSD_CORE_PUBLIC
+        MStatus postEvaluation(
+                const  MDGContext& context,
+                const MEvaluationNode& evaluationNode,
+                PostEvaluationType evalType) override;
 
         MAYAUSD_CORE_PUBLIC
         MStatus setDependentsDirty(
@@ -268,6 +281,9 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         void _IncreaseExcludePrimPathsVersion() { _excludePrimPathsVersion++; }
 
         MAYAUSD_CORE_PUBLIC
+        void _IncreaseUsdStageVersion() { _UsdStageVersion++; }
+
+        MAYAUSD_CORE_PUBLIC
         bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
 
     private:
@@ -294,6 +310,7 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
 
         std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
         size_t                              _excludePrimPathsVersion{ 1 };
+        size_t                              _UsdStageVersion{ 1 };
 
         static ClosestPointDelegate _sharedClosestPointDelegate;
 

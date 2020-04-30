@@ -230,10 +230,10 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
     // This order matches the deletion order when a ProxyRenderDelegate is destroyed.
     // Class member variables are destroyed in the reverse order in which they appear in the class declaration.
 
-    _sceneDelegate.reset(nullptr);
-    _taskController.reset(nullptr);
-    _renderIndex.reset(nullptr);
-    _renderDelegate.reset(nullptr);
+    _sceneDelegate.reset();
+    _taskController.reset();
+    _renderIndex.reset();
+    _renderDelegate.reset();
 }
 
 //! \brief  One time initialization of this drawing routine
@@ -242,17 +242,14 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
     if (_proxyShape == nullptr)
         return;
 
-    UsdStageRefPtr newUsdStage = _proxyShape->getUsdStage();
-    if (_usdStage != newUsdStage)
+    if (!_proxyShapeData.isUsdStageUpToDate(*_proxyShape))
     {
         // delete everything so we stop drawing the old stage and draw the new one
         _ClearRenderDelegate();
         _dummyTasks.clear();
-
-        _isPopulated = false;
         container.clear();
 
-        _usdStage = newUsdStage;
+        _usdStage = _proxyShape->getUsdStage();
     }
     
     // No need to run all the checks if we got till the end
@@ -271,7 +268,7 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
 #if USD_VERSION_NUM > 2002
         _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 #else
-        _renderIndex.reset(HdRenderIndex::New(_renderDelegate));
+        _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get()));
 #endif
 
         // Add additional configurations after render index creation.
@@ -340,7 +337,7 @@ bool ProxyRenderDelegate::_Populate() {
     if (!_isInitialized())
         return false;
 
-    if (_usdStage && (!_isPopulated || _proxyShape->getExcludePrimPathsVersion() != _excludePrimPathsVersion) ) {
+    if (_usdStage && (!_isPopulated || !_proxyShapeData.isUsdStageUpToDate(*_proxyShape) || !_proxyShapeData.isExcludePrimsUpToDate(*_proxyShape)) ) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Populate");
 
@@ -356,7 +353,8 @@ bool ProxyRenderDelegate::_Populate() {
         _sceneDelegate->Populate(_usdStage->GetPseudoRoot(),excludePrimPaths);
         
         _isPopulated = true;
-        _excludePrimPathsVersion = _proxyShape->getExcludePrimPathsVersion();
+        _proxyShapeData.usdStageUpdated(*_proxyShape);
+        _proxyShapeData.excludePrimsUpdated(*_proxyShape);
     }
 
     return _isPopulated;
@@ -728,6 +726,20 @@ ProxyRenderDelegate::GetPrimSelectionStatus(const SdfPath& path) const
 const MColor& ProxyRenderDelegate::GetWireframeColor() const
 {
     return _wireframeColor;
+}
+
+// ProxyShapeData
+bool ProxyRenderDelegate::ProxyShapeData::isUsdStageUpToDate(const MayaUsdProxyShapeBase& proxyShape) const {
+    return proxyShape.getUsdStageVersion() == _usdStageVersion;
+}
+void ProxyRenderDelegate::ProxyShapeData::usdStageUpdated(const MayaUsdProxyShapeBase& proxyShape) {
+    _usdStageVersion = proxyShape.getUsdStageVersion();
+}
+bool ProxyRenderDelegate::ProxyShapeData::isExcludePrimsUpToDate(const MayaUsdProxyShapeBase& proxyShape) const {
+    return proxyShape.getExcludePrimPathsVersion() == _excludePrimsVersion;
+}
+void ProxyRenderDelegate::ProxyShapeData::excludePrimsUpdated(const MayaUsdProxyShapeBase& proxyShape) {
+    _excludePrimsVersion = proxyShape.getExcludePrimPathsVersion();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

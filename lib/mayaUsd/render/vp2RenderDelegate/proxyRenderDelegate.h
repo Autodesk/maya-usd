@@ -147,7 +147,7 @@ private:
     // USD & Hydra Objects
     HdEngine                _engine;                    //!< Hydra engine responsible for running synchronization between scene delegate and VP2RenderDelegate
     HdTaskSharedPtrVector   _dummyTasks;                //!< Dummy task to bootstrap data preparation inside Hydra engine
-    UsdStageRefPtr          _usdStage;                  //!< USD stage pointer
+    UsdStageRefPtr          _usdStage;              //!< USD stage pointer
 
     // Do not re-order these 4 member variables relative to one another. The order they are declared here is the reverse order of deletion, and the deletion order matters!
     std::unique_ptr<HdRenderDelegate>  _renderDelegate; //!< VP2RenderDelegate
@@ -155,12 +155,25 @@ private:
     std::unique_ptr<HdxTaskController> _taskController; //!< Task controller necessary for execution with hydra engine (we don't really need it, but there doesn't seem to be a way to get synchronization running without it)
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
 
-    size_t              _excludePrimPathsVersion{ 0 }; //!< Last version of exluded prims used during render index populate
+    // We need to track when output data on the proxy shape changes. For simple numeric types we cache the last value
+    // read from _proxyShape. For complicated types we keep a version number of the last value we read to make
+    // comparisons fast.
+    class ProxyShapeData
+    {
+        size_t                  _excludePrimsVersion{ 0 }; //!< Last version of exluded prims used during render index populate
+        size_t                  _usdStageVersion{ 0 };       //!< Last version of stage used during render index populate
+    public:
+        bool isUsdStageUpToDate(const MayaUsdProxyShapeBase& proxyShape) const;
+        void usdStageUpdated(const MayaUsdProxyShapeBase& proxyShape);
+        bool isExcludePrimsUpToDate(const MayaUsdProxyShapeBase& proxyShape) const;
+        void excludePrimsUpdated(const MayaUsdProxyShapeBase& proxyShape);
+    };
+    ProxyShapeData          _proxyShapeData;
 
-    bool                _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
-    bool                _selectionChanged{ false }; //!< Whether there is any selection change or not
-    bool                _isProxySelected{ false };  //!< Whether the proxy shape is selected
-    MColor              _wireframeColor;            //!< Wireframe color assigned to the proxy shape
+    bool                    _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
+    bool                    _selectionChanged{ false }; //!< Whether there is any selection change or not
+    bool                    _isProxySelected{ false };  //!< Whether the proxy shape is selected
+    MColor                  _wireframeColor;            //!< Wireframe color assigned to the proxy shape
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;

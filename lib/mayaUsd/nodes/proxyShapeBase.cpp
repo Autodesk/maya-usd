@@ -48,6 +48,7 @@
 #include <maya/MString.h>
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
+#include <maya/MEvaluationNode.h>
 
 #include <pxr/base/gf/bbox3d.h>
 #include <pxr/base/gf/range3d.h>
@@ -746,6 +747,37 @@ MayaUsdProxyShapeBase::isStageValid() const
     return true;
 }
 
+MStatus
+MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode)
+{
+    if (evaluationNode.dirtyPlugExists(excludePrimPathsAttr)) {
+        _IncreaseExcludePrimPathsVersion();
+    }
+    else if (evaluationNode.dirtyPlugExists(outStageDataAttr) ||
+        // All the plugs that affect outStageDataAttr
+        evaluationNode.dirtyPlugExists(filePathAttr) ||
+        evaluationNode.dirtyPlugExists(primPathAttr) ||
+        evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
+        evaluationNode.dirtyPlugExists(inStageDataAttr) ||
+        evaluationNode.dirtyPlugExists(inStageDataCachedAttr)) {
+        _IncreaseUsdStageVersion();
+    }
+
+    return MStatus::kSuccess;
+}
+
+MStatus
+MayaUsdProxyShapeBase::postEvaluation(const  MDGContext& context, const MEvaluationNode& evaluationNode, PostEvaluationType evalType)
+{
+    // If/when the MPxDrawOverride for the proxy shape specifies
+    // isAlwaysDirty=false to improve performance, we must be sure to notify
+    // the Maya renderer that the geometry is dirty and needs to be redrawn
+    // when any plug on the proxy shape is dirtied.
+    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+
+    return MStatus::kSuccess;
+}
+
 /* virtual */
 MStatus
 MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
@@ -755,6 +787,20 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
     // the Maya renderer that the geometry is dirty and needs to be redrawn
     // when any plug on the proxy shape is dirtied.
     MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+
+    if (plug == excludePrimPathsAttr) {
+        _IncreaseExcludePrimPathsVersion();
+    }
+    else if (plug == outStageDataAttr ||
+        // All the plugs that affect outStageDataAttr
+        plug == filePathAttr ||
+        plug == primPathAttr ||
+        plug == loadPayloadsAttr ||
+        plug == inStageDataAttr ||
+        plug == inStageDataCachedAttr) {
+        _IncreaseUsdStageVersion();
+    }
+
     return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
 }
 
@@ -762,9 +808,6 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
 bool
 MayaUsdProxyShapeBase::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
 {
-    if (plug == excludePrimPathsAttr) {
-        _IncreaseExcludePrimPathsVersion();
-    }
     return MPxSurfaceShape::setInternalValue(plug, dataHandle);
 }
 
@@ -843,6 +886,11 @@ MayaUsdProxyShapeBase::getUsdStage() const
     else
         return {};
 
+}
+
+size_t
+MayaUsdProxyShapeBase::getUsdStageVersion() const {
+    return _UsdStageVersion;
 }
 
 SdfPathVector
