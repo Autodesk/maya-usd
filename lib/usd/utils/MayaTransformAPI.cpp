@@ -15,6 +15,7 @@
 //
 
 #include "mayaUsdUtils/MayaTransformAPI.h"
+#include <pxr/base/tf/token.h>
 
 namespace MayaUsdUtils {
 

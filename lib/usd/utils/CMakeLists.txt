@@ -112,6 +112,9 @@ add_library(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
     ${mayausdutils_python_source}
 )
 
+
+mayaUsd_compile_config(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME})
+
 target_compile_definitions(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
   PRIVATE
     MFB_PACKAGE_NAME=${TARGET_NAME}

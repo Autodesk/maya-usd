@@ -13,13 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "mayaUsdUtils/MayaTransformAPI.h"
 
 #include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/makePyConstructor.h>
 #include <pxr/base/tf/pyResultConversions.h>
 
 #include <boost/python.hpp>
+
+#include <mayaUsdUtils/MayaTransformAPI.h>
 
 using namespace boost::python;
 

@@ -1,12 +1,40 @@
-find_package(GTest REQUIRED)
+set(TARGET_NAME DiffCore)
 
-set(TARGET_NAME mayaUsdUtilsTests)
-set(TEST_NAME GTest:mayaUsdUtilsTests)
-set(PYTHON_TARGET_NAME Python:mayaUsdUtilsTests)
+add_executable(${TARGET_NAME})
 
-add_definitions(
-  -DUSDUTILS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
+# -----------------------------------------------------------------------------
+# sources
+# -----------------------------------------------------------------------------
+target_sources(${TARGET_NAME}
+    PRIVATE
+        main.cpp
+        test_DiffCore.cpp
 )
+
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${TARGET_NAME}
+    PRIVATE 
+        GTest::GTest
+        mayaUsdUtils
+)
+
+# -----------------------------------------------------------------------------
+# environment variables
+# -----------------------------------------------------------------------------
+add_definitions(
+  -DAL_EXTRAS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/data"
+)
+
+# -----------------------------------------------------------------------------
+# unit tests
+# -----------------------------------------------------------------------------
+mayaUsd_add_test(${TARGET_NAME}
+    COMMAND $<TARGET_FILE:${TARGET_NAME}>
+)
+
+set(TARGET_NAME MayaTransformAPI)
 
 add_executable(${TARGET_NAME})
 
@@ -17,23 +45,6 @@ target_sources(${TARGET_NAME}
     PRIVATE
         main.cpp
         test_MayaTransformAPI.cpp
-        test_DiffCore.cpp
-)
-
-# -----------------------------------------------------------------------------
-# compiler configuration
-# -----------------------------------------------------------------------------
-mayaUsd_compile_config(${TARGET_NAME})
-
-# -----------------------------------------------------------------------------
-# include directories
-# -----------------------------------------------------------------------------
-target_include_directories(${TARGET_NAME} 
-    PRIVATE 
-        ${MAYAUSDUTILS_INCLUDE_LOCATION}
-        ${USDUTILS_INCLUDE_LOCATION}
-        ${GTEST_INCLUDE_DIRS}
-        ${USD_INCLUDE_DIR}
 )
 
 # -----------------------------------------------------------------------------
@@ -42,31 +53,41 @@ target_include_directories(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME}
     PRIVATE 
         GTest::GTest
+        mayaUsdUtils
         tf
         sdf
-        ${boost_python_LIBRARIES}
-        ${PYTHON_LIBRARIES}
-        mayaUsdUtils
+        ${Boost_PYTHON_LIBRARY}
+        ${python_LIBRARIES}
 )
 
 # -----------------------------------------------------------------------------
+# environment variables
+# -----------------------------------------------------------------------------
+add_definitions(
+  -DUSDUTILS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
+)
+
+mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+                             DIRECTORY data)
+# -----------------------------------------------------------------------------
 # unit tests
 # -----------------------------------------------------------------------------
+
 mayaUsd_add_test(${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
 )
 
+# -----------------------------------------------------------------------------
+# python tests - using older approach as mayaUsd_add_test wants to use mayapy
+# -----------------------------------------------------------------------------
+
+set(USDUTILS_PYTHON_TEST_NAME Python:MayaTransformAPI)
 add_test(
-  NAME ${PYTHON_TARGET_NAME}
+  NAME ${USDUTILS_PYTHON_TEST_NAME}
   COMMAND
     python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
 )
-
-set_tests_properties(${PYTHON_TARGET_NAME}
+set_tests_properties(${USDUTILS_PYTHON_TEST_NAME}
   PROPERTIES
-    ENVIRONMENT PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/lib/usd/utils:${CMAKE_BINARY_DIR}/src:$ENV{PYTHONPATH} 
+    ENVIRONMENT PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/usdutils:${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/lib/usd/utils:$ENV{PYTHONPATH} 
 )
-
-if (TARGET all_tests)
-  add_dependencies(all_tests ${TARGET_NAME} ${USDUTILS_PYTHON_LIBRARY_NAME})
-endif()
