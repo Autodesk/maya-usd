@@ -109,6 +109,7 @@ target_link_libraries(${PROJECT_NAME}
         vt
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
         ${MAYA_LIBRARIES}
+        mayaUsdUtils
     PRIVATE
         Boost::filesystem
         Boost::system

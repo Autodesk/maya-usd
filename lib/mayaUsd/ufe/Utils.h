@@ -52,18 +52,6 @@ UsdPrim ufePathToPrim(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 bool isRootChild(const Ufe::Path& path);
 
-//! Return the highest-priority layer where the prim has a def primSpec.
-MAYAUSD_CORE_PUBLIC
-SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim);
-
-//! Check if the target layer has any opinions that affects a particular prim
-MAYAUSD_CORE_PUBLIC
-bool isTargetLayerHaveOpinion(const UsdPrim& prim);
-
-//! Return the target layer that has any opinions on a particular prim
-MAYAUSD_CORE_PUBLIC
-SdfLayerHandle targetLayerWithOpion(const UsdPrim& prim);
-
 MAYAUSD_CORE_PUBLIC
 UsdSceneItem::Ptr createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
 

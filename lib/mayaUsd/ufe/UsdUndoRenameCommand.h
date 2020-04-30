@@ -59,12 +59,14 @@ private:
 	bool renameRedo();
 	bool renameUndo();
 
-	UsdStageWeakPtr m_fStage;
-	SdfLayerHandle m_fLayer;
-    UsdSceneItem::Ptr m_fUfeSrcItem;
-	SdfPath m_fUsdSrcPath;
-	UsdSceneItem::Ptr m_fUfeDstItem;
-	SdfPath m_fUsdDstPath;
+	UsdStageWeakPtr _stage;
+	SdfLayerHandle _layer;
+
+    UsdSceneItem::Ptr _ufeSrcItem;
+	SdfPath _usdSrcPath;
+
+	UsdSceneItem::Ptr _ufeDstItem;
+	SdfPath _usdDstPath;
 
 }; // UsdUndoRenameCommand
 

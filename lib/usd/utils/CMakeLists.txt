@@ -9,6 +9,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         DebugCodes.cpp
         DiffCore.cpp
+        util.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -38,6 +39,7 @@ target_link_libraries(${TARGET_NAME}
     PUBLIC
         gf
         usd
+        sdf
 )
 
 # -----------------------------------------------------------------------------
@@ -50,6 +52,7 @@ set(headers
     DiffCore.h
     ForwardDeclares.h
     SIMD.h
+    util.h
 )
 
 mayaUsd_promoteHeaderList( 

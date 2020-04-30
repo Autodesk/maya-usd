@@ -101,59 +101,6 @@ bool isRootChild(const Ufe::Path& path)
 	return(segments[1].size() == 1);
 }
 
-SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim)
-{
-	// Iterate over the layer stack, starting at the highest-priority layer.
-	// The source layer is the one in which there exists a def primSpec, not
-	// an over.
-
-	SdfLayerHandle defLayer;
-	auto layerStack = prim.GetStage()->GetLayerStack();
-
-	for (auto layer : layerStack)
-	{
-		auto primSpec = layer->GetPrimAtPath(prim.GetPath());
-		if (primSpec && (primSpec->GetSpecifier() == SdfSpecifierDef))
-		{
-			defLayer = layer;
-			break;
-		}
-	}
-	return defLayer;
-}
-
-bool isTargetLayerHaveOpinion(const UsdPrim& prim)
-{
-    auto editTarget = prim.GetStage()->GetEditTarget();
-    auto layer = editTarget.GetLayer();
-    auto primSpec = layer->GetPrimAtPath(prim.GetPath());
-
-    // to know whether the target layer contains any opinions that 
-    // affect a particular prim, there must be a primSpec for that prim
-    if (!primSpec) {
-        return false;
-    }
-
-    return true;
-}
-
-SdfLayerHandle targetLayerWithOpion(const UsdPrim& prim)
-{
-    SdfLayerHandle targetLayer;
-    auto layerStack = prim.GetStage()->GetLayerStack();
-    for (auto layer : layerStack)
-    {
-        // to know whether the target layer contains any opinions that 
-        // affect a particular prim, there must be a primSpec for that prim
-        auto primSpec = layer->GetPrimAtPath(prim.GetPath());
-        if (primSpec) {
-            targetLayer = layer;
-            break;
-        }
-    }
-    return targetLayer;
-}
-
 UsdSceneItem::Ptr createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName)
 {
 	auto ufeSiblingPath = ufeSrcPath.sibling(Ufe::PathComponent(siblingName));
