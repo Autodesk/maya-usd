@@ -457,7 +457,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     } else
         _taskController->SetSelectionEnableOutline(false);
 #endif
-#if USD_VERSION_NUM >= 1911
+#if USD_VERSION_NUM > 1911
     _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
 #endif
 

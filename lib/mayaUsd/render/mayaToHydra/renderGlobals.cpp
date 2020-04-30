@@ -328,7 +328,7 @@ MObject MtohCreateRenderGlobals() {
         node, _tokens->mtohSelectionOutline,
         defGlobals.outlineSelectionWidth);
 #endif
-#if USD_VERSION_NUM >= 1911
+#if USD_VERSION_NUM > 1911
     _CreateBoolAttribute(
         node, _tokens->mtohColorQuantization,
         defGlobals.enableColorQuantization);
@@ -420,7 +420,7 @@ MtohRenderGlobals MtohGetRenderGlobals() {
         node, _tokens->mtohSelectionOutline,
         ret.outlineSelectionWidth);
 #endif
-#if USD_VERSION_NUM >= 1911
+#if USD_VERSION_NUM > 1911
     _GetAttribute(
         node, _tokens->mtohColorQuantization,
         ret.enableColorQuantization);
