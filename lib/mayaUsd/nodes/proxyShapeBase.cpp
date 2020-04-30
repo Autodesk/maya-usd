@@ -758,8 +758,7 @@ MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluatio
         evaluationNode.dirtyPlugExists(filePathAttr) ||
         evaluationNode.dirtyPlugExists(primPathAttr) ||
         evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
-        evaluationNode.dirtyPlugExists(inStageDataAttr) ||
-        evaluationNode.dirtyPlugExists(inStageDataCachedAttr)) {
+        evaluationNode.dirtyPlugExists(inStageDataAttr)) {
         _IncreaseUsdStageVersion();
     }
 
@@ -769,11 +768,11 @@ MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluatio
 MStatus
 MayaUsdProxyShapeBase::postEvaluation(const  MDGContext& context, const MEvaluationNode& evaluationNode, PostEvaluationType evalType)
 {
-    // If/when the MPxDrawOverride for the proxy shape specifies
-    // isAlwaysDirty=false to improve performance, we must be sure to notify
-    // the Maya renderer that the geometry is dirty and needs to be redrawn
-    // when any plug on the proxy shape is dirtied.
-    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+    // When a node is evaluated by evaluation manager setDependentsDirty is not called. The functionality in setDependentsDirty needs
+    // to be duplicated in preEvaluation or postEvaluation. I don't think we need the call to setGeometryDrawDirty() in
+    // setDependentsDirty, but there may be a workflow I'm not seeing that does require it. I'm leaving this here commented out as a
+    // reminder that we should either have both calls to setGeometryDrawDirty, or no calls to setGeometryDrawDirty.
+    // MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
 
     return MStatus::kSuccess;
 }
@@ -796,19 +795,11 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
         plug == filePathAttr ||
         plug == primPathAttr ||
         plug == loadPayloadsAttr ||
-        plug == inStageDataAttr ||
-        plug == inStageDataCachedAttr) {
+        plug == inStageDataAttr) {
         _IncreaseUsdStageVersion();
     }
 
     return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
-}
-
-/* virtual */
-bool
-MayaUsdProxyShapeBase::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
-{
-    return MPxSurfaceShape::setInternalValue(plug, dataHandle);
 }
 
 UsdPrim

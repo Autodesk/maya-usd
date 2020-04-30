@@ -283,9 +283,6 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         void _IncreaseUsdStageVersion() { _UsdStageVersion++; }
 
-        MAYAUSD_CORE_PUBLIC
-        bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;
-
     private:
         MayaUsdProxyShapeBase(const MayaUsdProxyShapeBase&);
         MayaUsdProxyShapeBase& operator=(const MayaUsdProxyShapeBase&);

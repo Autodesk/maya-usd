@@ -192,14 +192,17 @@ MHWRender::MPxSubSceneOverride* ProxyRenderDelegate::Creator(const MObject& obj)
 ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
 : MHWRender::MPxSubSceneOverride(obj)
 {
-    MDagPath::getAPathTo(obj, _proxyDagPath);
+    MDagPath proxyDagPath;
+    MDagPath::getAPathTo(obj, proxyDagPath);
 
     const MFnDependencyNode fnDepNode(obj);
-    _proxyShape = static_cast<MayaUsdProxyShapeBase*>(fnDepNode.userNode());
+    _proxyShapeData.reset(new ProxyShapeData(static_cast<MayaUsdProxyShapeBase*>(fnDepNode.userNode()), proxyDagPath));
 }
 
 //! \brief  Destructor
 ProxyRenderDelegate::~ProxyRenderDelegate() {
+    _ClearRenderDelegate();
+
 #if !defined(WANT_UFE_BUILD)
     if (_mayaSelectionCallbackId != 0) {
         MMessage::removeCallback(_mayaSelectionCallbackId);
@@ -227,8 +230,6 @@ bool ProxyRenderDelegate::requiresUpdate(const MSubSceneContainer& container, co
 void ProxyRenderDelegate::_ClearRenderDelegate()
 {
     // The order of deletion matters. Some orders cause crashes.
-    // This order matches the deletion order when a ProxyRenderDelegate is destroyed.
-    // Class member variables are destroyed in the reverse order in which they appear in the class declaration.
 
     _sceneDelegate.reset();
     _taskController.reset();
@@ -239,17 +240,17 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
 //! \brief  One time initialization of this drawing routine
 void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
 
-    if (_proxyShape == nullptr)
+    if (_proxyShapeData->ProxyShape() == nullptr)
         return;
 
-    if (!_proxyShapeData.isUsdStageUpToDate(*_proxyShape))
+    if (!_proxyShapeData->IsUsdStageUpToDate())
     {
         // delete everything so we stop drawing the old stage and draw the new one
         _ClearRenderDelegate();
         _dummyTasks.clear();
         container.clear();
 
-        _usdStage = _proxyShape->getUsdStage();
+        _proxyShapeData->UpdateUsdStage();
     }
     
     // No need to run all the checks if we got till the end
@@ -286,8 +287,8 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
             TfMakeValidIdentifier(
                 TfStringPrintf(
                     "Proxy_%s_%p",
-                    _proxyShape->name().asChar(),
-                    _proxyShape));
+                    _proxyShapeData->ProxyShape()->name().asChar(),
+                    _proxyShapeData->ProxyShape()));
         const SdfPath delegateID =
             SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
@@ -337,12 +338,12 @@ bool ProxyRenderDelegate::_Populate() {
     if (!_isInitialized())
         return false;
 
-    if (_usdStage && (!_isPopulated || !_proxyShapeData.isUsdStageUpToDate(*_proxyShape) || !_proxyShapeData.isExcludePrimsUpToDate(*_proxyShape)) ) {
+    if (_proxyShapeData->UsdStage() && (!_isPopulated || !_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate()) ) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Populate");
 
         // It might have been already populated, clear it if so.
-        SdfPathVector excludePrimPaths = _proxyShape->getExcludePrimPaths();
+        SdfPathVector excludePrimPaths = _proxyShapeData->ProxyShape()->getExcludePrimPaths();
         for (auto& excludePrim : excludePrimPaths) {
             SdfPath indexPath = _sceneDelegate->ConvertCachePathToIndexPath(excludePrim);
             if (_renderIndex->HasRprim(indexPath)) {
@@ -350,11 +351,11 @@ bool ProxyRenderDelegate::_Populate() {
             }
         }
         
-        _sceneDelegate->Populate(_usdStage->GetPseudoRoot(),excludePrimPaths);
+        _sceneDelegate->Populate(_proxyShapeData->UsdStage()->GetPseudoRoot(),excludePrimPaths);
         
         _isPopulated = true;
-        _proxyShapeData.usdStageUpdated(*_proxyShape);
-        _proxyShapeData.excludePrimsUpdated(*_proxyShape);
+        _proxyShapeData->UsdStageUpdated();
+        _proxyShapeData->ExcludePrimsUpdated();
     }
 
     return _isPopulated;
@@ -363,7 +364,7 @@ bool ProxyRenderDelegate::_Populate() {
 //! \brief  Synchronize USD scene delegate with Maya's proxy shape.
 void ProxyRenderDelegate::_UpdateSceneDelegate()
 {
-    if (!_proxyShape || !_sceneDelegate) {
+    if (!_proxyShapeData->ProxyShape() || !_sceneDelegate) {
         return;
     }
 
@@ -374,11 +375,11 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetTime");
 
-        const UsdTimeCode timeCode = _proxyShape->getTime();
+        const UsdTimeCode timeCode = _proxyShapeData->ProxyShape()->getTime();
         _sceneDelegate->SetTime(timeCode);
     }
 
-    const MMatrix inclusiveMatrix = _proxyDagPath.inclusiveMatrix();
+    const MMatrix inclusiveMatrix = _proxyShapeData->ProxyDagPath().inclusiveMatrix();
     const GfMatrix4d transform(inclusiveMatrix.matrix);
     constexpr double tolerance = 1e-9;
     if (!GfIsClose(transform, _sceneDelegate->GetRootTransform(), tolerance)) {
@@ -387,7 +388,7 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         _sceneDelegate->SetRootTransform(transform);
     }
 
-    const bool isVisible = _proxyDagPath.isVisible();
+    const bool isVisible = _proxyShapeData->ProxyDagPath().isVisible();
     if (isVisible != _sceneDelegate->GetRootVisibility()) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetRootVisibility");
@@ -399,7 +400,7 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         }
     }
 
-    const int refineLevel = _proxyShape->getComplexity();
+    const int refineLevel = _proxyShapeData->ProxyShape()->getComplexity();
     if (refineLevel != _sceneDelegate->GetRefineLevelFallback())
     {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
@@ -454,7 +455,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             MHWRender::MFrameContext::kBoundingBox |
             MHWRender::MFrameContext::kWireFrame))
         {
-            _wireframeColor = MHWRender::MGeometryUtilities::wireframeColor(_proxyDagPath);
+            _wireframeColor = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
         }
 
         // Update repr selector based on display style of the current viewport
@@ -524,11 +525,11 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     MDagPath& dagPath) const
 {
 #if defined(WANT_UFE_BUILD)
-    if (_proxyShape == nullptr) {
+    if (_proxyShapeData->ProxyShape() == nullptr) {
         return false;
     }
 
-    if (!_proxyShape->isUfeSelectionEnabled()) {
+    if (!_proxyShapeData->ProxyShape()->isUfeSelectionEnabled()) {
         return false;
     }
 
@@ -567,7 +568,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
-    const Ufe::SceneItem::Ptr& si = handler->createItem(_proxyShape->ufePath() + pathSegment);
+    const Ufe::SceneItem::Ptr& si = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
         TF_WARN("UFE runtime is not updated for the USD stage. Please save scene and reopen.");
         return false;
@@ -624,13 +625,13 @@ void ProxyRenderDelegate::SelectionChanged()
 void ProxyRenderDelegate::_FilterSelection()
 {
 #if defined(WANT_UFE_BUILD)
-    if (_proxyShape == nullptr) {
+    if (_proxyShapeData->ProxyShape() == nullptr) {
         return;
     }
 
     _selection.reset(new HdSelection);
 
-    const auto proxyPath = _proxyShape->ufePath();
+    const auto proxyPath = _proxyShapeData->ProxyShape()->ufePath();
     const auto globalSelection = Ufe::GlobalSelection::get();
 
     for (const Ufe::SceneItem::Ptr& item : *globalSelection) {
@@ -658,7 +659,7 @@ void ProxyRenderDelegate::_FilterSelection()
 */
 void ProxyRenderDelegate::_UpdateSelectionStates()
 {
-    auto status = MHWRender::MGeometryUtilities::displayStatus(_proxyDagPath);
+    auto status = MHWRender::MGeometryUtilities::displayStatus(_proxyShapeData->ProxyDagPath());
 
     const bool wasProxySelected = _isProxySelected;
     _isProxySelected =
@@ -729,17 +730,27 @@ const MColor& ProxyRenderDelegate::GetWireframeColor() const
 }
 
 // ProxyShapeData
-bool ProxyRenderDelegate::ProxyShapeData::isUsdStageUpToDate(const MayaUsdProxyShapeBase& proxyShape) const {
-    return proxyShape.getUsdStageVersion() == _usdStageVersion;
+ProxyRenderDelegate::ProxyShapeData::ProxyShapeData(const MayaUsdProxyShapeBase* proxyShape, const MDagPath& proxyDagPath)
+    : _proxyShape(proxyShape)
+    , _proxyDagPath(proxyDagPath)
+{
+    assert(_proxyShape);
 }
-void ProxyRenderDelegate::ProxyShapeData::usdStageUpdated(const MayaUsdProxyShapeBase& proxyShape) {
-    _usdStageVersion = proxyShape.getUsdStageVersion();
+const MayaUsdProxyShapeBase* ProxyRenderDelegate::ProxyShapeData::ProxyShape() const { return _proxyShape; }
+const MDagPath& ProxyRenderDelegate::ProxyShapeData::ProxyDagPath() const { return _proxyDagPath; }
+UsdStageRefPtr ProxyRenderDelegate::ProxyShapeData::UsdStage() const { return _usdStage; }
+void ProxyRenderDelegate::ProxyShapeData::UpdateUsdStage() { _usdStage = _proxyShape->getUsdStage(); }
+bool ProxyRenderDelegate::ProxyShapeData::IsUsdStageUpToDate() const {
+    return _proxyShape->getUsdStageVersion() == _usdStageVersion;
 }
-bool ProxyRenderDelegate::ProxyShapeData::isExcludePrimsUpToDate(const MayaUsdProxyShapeBase& proxyShape) const {
-    return proxyShape.getExcludePrimPathsVersion() == _excludePrimsVersion;
+void ProxyRenderDelegate::ProxyShapeData::UsdStageUpdated() {
+    _usdStageVersion = _proxyShape->getUsdStageVersion();
 }
-void ProxyRenderDelegate::ProxyShapeData::excludePrimsUpdated(const MayaUsdProxyShapeBase& proxyShape) {
-    _excludePrimsVersion = proxyShape.getExcludePrimPathsVersion();
+bool ProxyRenderDelegate::ProxyShapeData::IsExcludePrimsUpToDate() const {
+    return _proxyShape->getExcludePrimPathsVersion() == _excludePrimsVersion;
+}
+void ProxyRenderDelegate::ProxyShapeData::ExcludePrimsUpdated() {
+    _excludePrimsVersion = _proxyShape->getExcludePrimPathsVersion();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
