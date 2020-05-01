@@ -162,7 +162,6 @@ void ProxyShape::processChangedMetaData(const SdfPathVector& resyncedPaths, cons
           }
           else
           {
-            //std::cout << " > excl2 " << prim.GetPath().GetString() << ' ' << excludeGeo << '\n';
             // if we aren't excluding the geom, but have an existing entry, remove it.
             const auto last = m_excludedTaggedGeometry.begin() + lastTaggedPrim;
             const auto it = std::lower_bound(m_excludedTaggedGeometry.begin(), last, path);
