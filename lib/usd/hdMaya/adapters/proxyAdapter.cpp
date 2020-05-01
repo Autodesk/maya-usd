@@ -165,7 +165,7 @@ void HdMayaProxyAdapter::PreFrame() {
     _usdDelegate->PostSyncCleanup();
 }
 
-void HdMayaProxyAdapter::_OnStageSet(const UsdMayaProxyStageSetNotice& notice)
+void HdMayaProxyAdapter::_OnStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
     if(&notice.GetProxyShape() == _proxy)
     {

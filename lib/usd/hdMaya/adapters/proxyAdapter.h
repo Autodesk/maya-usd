@@ -68,7 +68,7 @@ public:
 
 private:
     /// Notice listener method for proxy stage set
-    void _OnStageSet(const UsdMayaProxyStageSetNotice& notice);
+    void _OnStageSet(const MayaUsdProxyStageSetNotice& notice);
 
     MayaUsdProxyShapeBase* _proxy{ nullptr };
     std::unique_ptr<HdMayaProxyUsdImagingDelegate> _usdDelegate;

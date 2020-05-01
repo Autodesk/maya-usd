@@ -26,6 +26,7 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include "private/InPathChange.h"
 
@@ -100,6 +101,7 @@ StagesSubject::StagesSubject()
 
 	TfWeakPtr<StagesSubject> me(this);
 	TfNotice::Register(me, &StagesSubject::onStageSet);
+	TfNotice::Register(me, &StagesSubject::onStageInvalidate);
 }
 
 StagesSubject::~StagesSubject()
@@ -170,13 +172,7 @@ void StagesSubject::afterOpen()
 	// frequent, we won't implement this for now.  PPT, 22-Dec-2017.
 	std::for_each(std::begin(fStageListeners), std::end(fStageListeners),
 		[](StageListenerMap::value_type element) { TfNotice::Revoke(element.second); } );
-
-	StagesSubject::Ptr me(this);
-	for (auto stage : ProxyShapeHandler::getAllStages())
-	{
-		fStageListeners[stage] = TfNotice::Register(
-			me, &StagesSubject::stageChanged, stage);
-	}
+	fStageListeners.clear();
 
 	// Set up our stage to proxy shape UFE path (and reverse)
 	// mapping.  We do this with the following steps:
@@ -184,15 +180,7 @@ void StagesSubject::afterOpen()
 	// - get their Dag paths.
 	// - convert the Dag paths to UFE paths.
 	// - get their stage.
-	g_StageMap.clear();
-	auto proxyShapeNames = ProxyShapeHandler::getAllNames();
-	for (const auto& psn : proxyShapeNames)
-	{
-		MDagPath dag = nameToDagPath(psn);
-		Ufe::Path ufePath = dagPathToUfe(dag);
-		auto stage = ProxyShapeHandler::dagPathToStage(psn);
-		g_StageMap.addItem(ufePath, stage);
-	}
+	g_StageMap.setDirty();
 }
 
 void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender)
@@ -277,9 +265,29 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 	}
 }
 
-void StagesSubject::onStageSet(const UsdMayaProxyStageSetNotice& notice)
+void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
+{
+	// We should have no listerners and stage map is dirty.
+	TF_VERIFY(g_StageMap.isDirty());
+	TF_VERIFY(fStageListeners.empty());
+
+	StagesSubject::Ptr me(this);
+	for (auto stage : ProxyShapeHandler::getAllStages())
+	{
+		fStageListeners[stage] = TfNotice::Register(
+			me, &StagesSubject::stageChanged, stage);
+	}
+}
+
+void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice)
 {
 	afterOpen();
+
+#if UFE_PREVIEW_VERSION_NUM >= 2014
+	Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(notice.GetProxyShape().ufePath());
+	auto notification = Ufe::SubtreeInvalidate(sceneItem);
+	Ufe::Scene::notifySubtreeInvalidate(notification);
+#endif
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE

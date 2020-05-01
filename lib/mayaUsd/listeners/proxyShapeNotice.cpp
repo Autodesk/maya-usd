@@ -19,17 +19,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_INSTANTIATE_TYPE(UsdMayaProxyStageSetNotice,
+TF_INSTANTIATE_TYPE(MayaUsdProxyStageSetNotice,
+                    TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(MayaUsdProxyStageInvalidateNotice,
                     TfType::CONCRETE, TF_1_PARENT(TfNotice));
 
-UsdMayaProxyStageSetNotice::UsdMayaProxyStageSetNotice(
+MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice(
         const MayaUsdProxyShapeBase& proxy)
         : _proxy(proxy)
 {
 }
 
 const MayaUsdProxyShapeBase&
-UsdMayaProxyStageSetNotice::GetProxyShape() const
+MayaUsdProxyStageBaseNotice::GetProxyShape() const
 {
     return _proxy;
 }

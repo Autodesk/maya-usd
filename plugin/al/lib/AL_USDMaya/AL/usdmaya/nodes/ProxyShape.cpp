@@ -1432,7 +1432,7 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
     return MS::kFailure;
   }
 
-  UsdMayaProxyStageSetNotice(*this).Send();
+  MayaUsdProxyStageSetNotice(*this).Send();
 
   return status;
 }

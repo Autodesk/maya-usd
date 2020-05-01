@@ -58,6 +58,15 @@ proc removeMenuCallback(string $menuName, string $cmd) {
 // initRuntimeCommands
 // create all the runtime commands we'll use and the user can map to hotkeys
 proc initRuntimeCommands() {
+    if (!`runTimeCommand -exists mayaUsdCreateStageWithNewLayer`) {
+        runTimeCommand -default true
+            -label "Stage with New Layer"
+            -annotation "Create a new, empty USD Stage"
+            -category "Menu items.Maya USD"
+            -command "python(\"import mayaUsd_createStageWithNewLayer; mayaUsd_createStageWithNewLayer.createStageWithNewLayer()\")"
+            mayaUsdCreateStageWithNewLayer;
+    }
+
     if (!`runTimeCommand -exists mayaUsdCreateStageFromFile`) {
         runTimeCommand -default true
             -label "Stage From File..."
@@ -103,6 +112,7 @@ global proc mayaUsdMenu_createMenuCallback() {
                 -label "Universal Scene Description (USD)" 
                 -annotation "Create a USD stage" 
                 -version $mayaVersion`;
+            menuItem -runTimeCommand mayaUsdCreateStageWithNewLayer;
             menuItem -runTimeCommand mayaUsdCreateStageFromFile;
             menuItem -runTimeCommand mayaUsdCreateStageFromFileOptions -optionBox true;
         } else {
