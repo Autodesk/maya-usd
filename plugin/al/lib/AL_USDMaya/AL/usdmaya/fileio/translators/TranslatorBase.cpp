@@ -141,7 +141,7 @@ TranslatorManufacture::RefPtr TranslatorManufacture::getTranslatorByAssetTypeMet
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorRefPtr TranslatorManufacture::getTranslatorBySchemaType(const TfToken type_name)
 {
-  if(TranslatorRefPtr py = getPythonTranslatorBySchemaType(type_name))
+  if(auto py = getPythonTranslatorBySchemaType(type_name))
   {
     return py;
   }
