@@ -26,12 +26,18 @@ endif()
 if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     set(Boost_USE_DEBUG_PYTHON ON)
 endif()
-find_package(Boost COMPONENTS filesystem REQUIRED)
+find_package(Boost COMPONENTS filesystem system REQUIRED)
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
-target_compile_definitions(${PROJECT_NAME} 
+target_compile_definitions(${PROJECT_NAME}
+    PUBLIC
+        USD_VERSION_NUM=${USD_VERSION_NUM}
+        PXR_PLUGINPATH_NAME=${PXR_OVERRIDE_PLUGINPATH_NAME}
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
     PRIVATE
         MAYAUSD_MACROS_EXPORT
         MAYAUSD_CORE_EXPORT
@@ -48,12 +54,22 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_WINDOWS}>:WIN32>
 )
 
+if(DEFINED UFE_PREVIEW_VERSION_NUM)
+    target_compile_definitions(${PROJECT_NAME}
+        PUBLIC
+            UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}
+    )
+endif()
+
 # Some of the UFE classes are exporting STL classes which causes this warning.
 if(UFE_FOUND AND MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4251")
-    string(REPLACE " " ";" REPLACED_FLAGS ${CMAKE_CXX_FLAGS})
-    target_compile_options(${PROJECT_NAME} INTERFACE ${REPLACED_FLAGS})
+    target_compile_options(${PROJECT_NAME}
+        PUBLIC
+            /wd4251
+    )
 endif()
+
+mayaUsd_compile_config(${PROJECT_NAME})
 
 # -----------------------------------------------------------------------------
 # include directories
@@ -162,4 +178,3 @@ if(BUILD_HDMAYA)
     add_subdirectory(render/mayaToHydra)
     add_dependencies(mtoh hdMaya)
 endif()
-
