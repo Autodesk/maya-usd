@@ -29,6 +29,10 @@ namespace MayaUsdUtils {
     MAYA_USD_UTILS_PUBLIC
     SdfLayerHandle defPrimSpecLayer(const UsdPrim&);
 
+    //! Return a list of layers in strength order that have opinions on a prim
+    MAYA_USD_UTILS_PUBLIC
+    std::vector<SdfLayerHandle> layersWithOpinion(const UsdPrim&);
+
     //! Check if a layer has any opinions that affects a particular prim
     MAYA_USD_UTILS_PUBLIC
     bool doesLayerHavePrimSpec(const UsdPrim&);

@@ -47,7 +47,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 	_stage = prim.GetStage();
 	_ufeSrcItem = srcItem;
 	_usdSrcPath = prim.GetPath();
-	
+
     // Every call to rename() (through execute(), undo() or redo()) removes
 	// a prim, which becomes expired.  Since USD UFE scene items contain a
 	// prim, we must recreate them after every call to rename.
@@ -58,14 +58,29 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 		throw std::runtime_error(err.c_str());
 	}
 
-    // check if a layer has any opinions that affects selected prim
+    // if the current layer doesn't have any opinions that affects selected prim
     if (!MayaUsdUtils::doesLayerHavePrimSpec(prim)) {
         auto possibleTargetLayer = MayaUsdUtils::strongestLayerWithPrimSpec(prim);
-        std::string err = TfStringPrintf("Unable to rename [%s] on current target layer, " 
+        std::string err = TfStringPrintf("Cannot rename [%s] defined on another layer. " 
                                          "Please set [%s] as the target layer to proceed", 
                                          prim.GetName().GetString(), 
                                          possibleTargetLayer->GetDisplayName());
         throw std::runtime_error(err.c_str());
+    }
+    else
+    {
+        auto layers = MayaUsdUtils::layersWithOpinion(prim);
+
+        if (layers.size() > 1) {
+            std::string layerNames;
+            for (auto layer : layers) {
+                layerNames.append("[" + layer->GetDisplayName() + "]" + ",");
+            }
+            layerNames.pop_back();
+            std::string err = TfStringPrintf("Cannot rename [%s] with definitions or opinions on other layers. "
+                                             "Opinions exist in %s", prim.GetName().GetString(), layerNames);
+            throw std::runtime_error(err.c_str());
+        }
     }
 }
 

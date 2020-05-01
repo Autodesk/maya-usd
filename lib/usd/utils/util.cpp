@@ -20,6 +20,8 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
+#include <vector>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MayaUsdUtils {
@@ -44,8 +46,23 @@ defPrimSpecLayer(const UsdPrim& prim)
     return defLayer;
 }
 
+std::vector<SdfLayerHandle>
+layersWithOpinion(const UsdPrim& prim)
+{
+    // get the list of PrimSpecs that provide opinions for this prim
+    // ordered from strongest to weakest opinion.
+    const auto& primStack = prim.GetPrimStack();
+
+    std::vector<SdfLayerHandle> layersWithOpion;
+    for (auto primSpec : primStack) {
+        layersWithOpion.emplace_back(primSpec->GetLayer());
+    }
+
+    return layersWithOpion;
+}
+
 bool
-MayaUsdUtils::doesLayerHavePrimSpec(const UsdPrim& prim)
+doesLayerHavePrimSpec(const UsdPrim& prim)
 {
     auto editTarget = prim.GetStage()->GetEditTarget();
     auto layer = editTarget.GetLayer();
@@ -61,7 +78,7 @@ MayaUsdUtils::doesLayerHavePrimSpec(const UsdPrim& prim)
 }
 
 SdfLayerHandle
-MayaUsdUtils::strongestLayerWithPrimSpec(const UsdPrim& prim)
+strongestLayerWithPrimSpec(const UsdPrim& prim)
 {
     SdfLayerHandle targetLayer;
     auto layerStack = prim.GetStage()->GetLayerStack();
