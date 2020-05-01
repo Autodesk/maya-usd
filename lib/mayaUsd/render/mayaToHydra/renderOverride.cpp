@@ -450,6 +450,17 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
     _taskController->SetEnableSelection(_globals.colorSelectionHighlight);
 
+#if USD_VERSION_NUM >= 2005
+    if (_globals.outlineSelectionWidth != 0.f) {
+        _taskController->SetSelectionOutlineRadius(_globals.outlineSelectionWidth);
+        _taskController->SetSelectionEnableOutline(true);
+    } else
+        _taskController->SetSelectionEnableOutline(false);
+#endif
+#if USD_VERSION_NUM > 1911
+    _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
+#endif
+
     // This is required for HdStorm to display transparency.
     // We should fix this upstream, so HdStorm can setup
     // all the required states.
