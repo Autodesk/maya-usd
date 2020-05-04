@@ -48,7 +48,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 	_ufeSrcItem = srcItem;
 	_usdSrcPath = prim.GetPath();
 
-    // Every call to rename() (through execute(), undo() or redo()) removes
+	// Every call to rename() (through execute(), undo() or redo()) removes
 	// a prim, which becomes expired.  Since USD UFE scene items contain a
 	// prim, we must recreate them after every call to rename.
 	_usdDstPath = prim.GetParent().GetPath().AppendChild(TfToken(newName.string()));
@@ -59,7 +59,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 	}
 
     // if the current layer doesn't have any opinions that affects selected prim
-    if (!MayaUsdUtils::doesLayerHavePrimSpec(prim)) {
+    if (!MayaUsdUtils::doesEditTargetLayerHavePrimSpec(prim)) {
         auto possibleTargetLayer = MayaUsdUtils::strongestLayerWithPrimSpec(prim);
         std::string err = TfStringPrintf("Cannot rename [%s] defined on another layer. " 
                                          "Please set [%s] as the target layer to proceed", 
@@ -69,16 +69,16 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
     }
     else
     {
-        auto layers = MayaUsdUtils::layersWithOpinion(prim);
+        auto layers = MayaUsdUtils::layersWithPrimSpec(prim);
 
         if (layers.size() > 1) {
-            std::string layerNames;
+            std::string layerDisplayNames;
             for (auto layer : layers) {
-                layerNames.append("[" + layer->GetDisplayName() + "]" + ",");
+                layerDisplayNames.append("[" + layer->GetDisplayName() + "]" + ",");
             }
-            layerNames.pop_back();
+            layerDisplayNames.pop_back();
             std::string err = TfStringPrintf("Cannot rename [%s] with definitions or opinions on other layers. "
-                                             "Opinions exist in %s", prim.GetName().GetString(), layerNames);
+                                             "Opinions exist in %s", prim.GetName().GetString(), layerDisplayNames);
             throw std::runtime_error(err.c_str());
         }
     }

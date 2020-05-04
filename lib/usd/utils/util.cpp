@@ -47,22 +47,22 @@ defPrimSpecLayer(const UsdPrim& prim)
 }
 
 std::vector<SdfLayerHandle>
-layersWithOpinion(const UsdPrim& prim)
+layersWithPrimSpec(const UsdPrim& prim)
 {
     // get the list of PrimSpecs that provide opinions for this prim
-    // ordered from strongest to weakest opinion.
+    // ordered from strongest to weakest.
     const auto& primStack = prim.GetPrimStack();
 
-    std::vector<SdfLayerHandle> layersWithOpion;
+    std::vector<SdfLayerHandle> layersWithPrimSpec;
     for (auto primSpec : primStack) {
-        layersWithOpion.emplace_back(primSpec->GetLayer());
+        layersWithPrimSpec.emplace_back(primSpec->GetLayer());
     }
 
-    return layersWithOpion;
+    return layersWithPrimSpec;
 }
 
 bool
-doesLayerHavePrimSpec(const UsdPrim& prim)
+doesEditTargetLayerHavePrimSpec(const UsdPrim& prim)
 {
     auto editTarget = prim.GetStage()->GetEditTarget();
     auto layer = editTarget.GetLayer();
