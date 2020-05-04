@@ -30,6 +30,8 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+#include <mayaUsdUtils/util.h>
+
 #include "private/InPathChange.h"
 #include "private/Utils.h"
 
@@ -134,7 +136,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 	auto usdSrcPath = prim.GetPath();
 	auto ufeDstPath = fItem->path() + childName;
 	auto usdDstPath = fPrim.GetPath().AppendChild(TfToken(childName));
-	SdfLayerHandle layer = defPrimSpecLayer(prim);
+	SdfLayerHandle layer = MayaUsdUtils::defPrimSpecLayer(prim);
 	if (!layer) {
 		std::string err = TfStringPrintf("No prim found at %s", usdSrcPath.GetString().c_str());
 		throw std::runtime_error(err.c_str());

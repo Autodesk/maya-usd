@@ -25,6 +25,8 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+#include <mayaUsdUtils/util.h>
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -73,7 +75,7 @@ void UsdUndoDuplicateCommand::primInfo(const UsdPrim& srcPrim, SdfPath& usdDstPa
 	// each layer in which there is an over or a def, until we reach the
 	// layer with a def primSpec.  This would preserve the visual appearance
 	// of the duplicate.  PPT, 12-Jun-2018.
-	srcLayer = defPrimSpecLayer(srcPrim);
+	srcLayer = MayaUsdUtils::defPrimSpecLayer(srcPrim);
 	if (!srcLayer) {
 		std::string err = TfStringPrintf("No prim found at %s", srcPrim.GetPath().GetString().c_str());
 		throw std::runtime_error(err.c_str());
