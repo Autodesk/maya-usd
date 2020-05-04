@@ -86,13 +86,10 @@ MStatus USDImportDialogCmd::applyToProxy(const MString& proxyPath)
 		return status;
 
 	MObject proxyShapeObj = proxyShapeDagPath.node(&status);
-	CHECK_MSTATUS_AND_RETURN(status, status);
-	if (status.error())
-		return status;
+	CHECK_MSTATUS_AND_RETURN_IT(status);
 
     MFnDependencyNode fn(proxyShapeObj, &status);
-	if (status.error())
-		return status;
+	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	if (fn.typeName() != MString("mayaUsdProxyShape"))
 		return MS::kInvalidParameter;
@@ -102,20 +99,17 @@ MStatus USDImportDialogCmd::applyToProxy(const MString& proxyPath)
 		return MS::kInvalidParameter;
 
 	MPlug primPath = fn.findPlug("primPath", &status);
-	if (status.error())
-		return status;
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
 	MPlug filePath = fn.findPlug("filePath", &status);
-	if (status.error())
-		return status;
+	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	ImportData& importData = ImportData::instance();
 	primPath.setValue(MString(importData.rootPrimPath().c_str()));
-	if (status.error())
-		return status;
+	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	filePath.setValue(MString(importData.filename().c_str()));
-	if (status.error())
-		return status;
+	CHECK_MSTATUS_AND_RETURN_IT(status);
 
 	auto rootPrim = proxyShape->usdPrim();
 	if (!rootPrim)
@@ -166,6 +160,7 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 		return MS::kSuccess;
 	}
 
+	// No command object is expected
 	if(argData.isFlagSet(kApplyToProxyFlag))
 	{
 		MStringArray proxyArray;
@@ -199,22 +194,20 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 		{
 			USDQtUtil usdQtUtil;
 			ImportData& importData = ImportData::instance();
-			std::unique_ptr<IUSDImportView> usdImportDialog(
-				new USDImportDialog(assetPath.asChar(), &importData,
-					                usdQtUtil, MQtUtil::mainWindow()));
-			if (!usdImportDialog->execute())
-				return MS::kFailure;
+			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(assetPath.asChar(), &importData, usdQtUtil, MQtUtil::mainWindow()));
+			if (usdImportDialog->execute())
+			{
+				// The user clicked 'Apply' so copy the info from the dialog to the import data instance.
+				importData.setFilename(usdImportDialog->filename());
+				importData.setStageInitialLoadSet(usdImportDialog->stageInitialLoadSet());
+				importData.setRootPrimPath(usdImportDialog->rootPrimPath());
+				// Don't set the stage pop mask until we solve how to use it together with
+				// the root prim path.
+				//importData.setStagePopulationMask(usdImportDialog->stagePopulationMask());
+				importData.setPrimVariantSelections(usdImportDialog->primVariantSelections());
 
-			// The user clicked 'Apply' so copy the info from the dialog to the import data instance.
-			importData.setFilename(usdImportDialog->filename());
-			importData.setStageInitialLoadSet(usdImportDialog->stageInitialLoadSet());
-			importData.setRootPrimPath(usdImportDialog->rootPrimPath());
-			// Don't set the stage pop mask until we solve how to use it together with
-			// the root prim path.
-			//importData.setStagePopulationMask(usdImportDialog->stagePopulationMask());
-			importData.setPrimVariantSelections(usdImportDialog->primVariantSelections());
-
-			setResult(assetPath);
+				setResult(assetPath);
+			}
 			return MS::kSuccess;
 		}
 	}
