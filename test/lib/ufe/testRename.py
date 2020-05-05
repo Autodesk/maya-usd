@@ -170,7 +170,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertNotIn('pCylinder1', propsChildrenNames)
         self.assertEqual(len(propsChildren), len(propsChildrenPre))
 
-    def testRenameRestriction(self):
+    def testRenameRestrictionSameLayerDef(self):
         '''Restrict renaming USD node. Cannot rename a prim defined on another layer.'''
 
         # select a USD object.
@@ -193,7 +193,7 @@ class RenameTestCase(unittest.TestCase):
             newName = 'Ball_35_Renamed'
             cmds.rename(newName)
 
-    def testRenameRestriction2(self):
+    def testRenameRestrictionOtherLayerOpinions(self):
         '''Restrict renaming USD node. Cannot rename a prim with definitions or opinions on other layers.'''
 
         # select a USD object.
