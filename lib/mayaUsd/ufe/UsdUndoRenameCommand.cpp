@@ -63,8 +63,8 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
         auto possibleTargetLayer = MayaUsdUtils::strongestLayerWithPrimSpec(prim);
         std::string err = TfStringPrintf("Cannot rename [%s] defined on another layer. " 
                                          "Please set [%s] as the target layer to proceed", 
-                                         prim.GetName().GetString(), 
-                                         possibleTargetLayer->GetDisplayName());
+                                         prim.GetName().GetString().c_str(),
+                                         possibleTargetLayer->GetDisplayName().c_str());
         throw std::runtime_error(err.c_str());
     }
     else
@@ -78,7 +78,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
             }
             layerDisplayNames.pop_back();
             std::string err = TfStringPrintf("Cannot rename [%s] with definitions or opinions on other layers. "
-                                             "Opinions exist in %s", prim.GetName().GetString(), layerDisplayNames);
+                                             "Opinions exist in %s", prim.GetName().GetString().c_str(), layerDisplayNames.c_str());
             throw std::runtime_error(err.c_str());
         }
     }
