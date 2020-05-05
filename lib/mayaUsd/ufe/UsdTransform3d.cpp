@@ -177,9 +177,9 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, doub
 {
 	return UsdScaleUndoableCommand::create(fItem, x, y, z);
 }
-#endif
 
-#if !defined(UFE_V2_FEATURES_AVAILABLE) && defined(UFE_V1_FEATURES_AVAILABLE)
+#else
+
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 {
 	return UsdTranslateUndoableCommand::create(fItem, 0, 0, 0);

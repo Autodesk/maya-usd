@@ -18,7 +18,7 @@ target_sources(${PROJECT_NAME}
         UsdSceneItemOps.cpp
         UsdSceneItemOpsHandler.cpp
         UsdStageMap.cpp
-		UsdTRSUndoableCommandBase.cpp
+        UsdTRSUndoableCommandBase.cpp
         UsdTransform3d.cpp
         UsdTransform3dHandler.cpp
         UsdTranslateUndoableCommand.cpp
@@ -65,7 +65,7 @@ set(headers
     UsdSceneItemOps.h
     UsdSceneItemOpsHandler.h
     UsdStageMap.h
-	UsdTRSUndoableCommandBase.h
+    UsdTRSUndoableCommandBase.h
     UsdTransform3d.h
     UsdTransform3dHandler.h
     UsdTranslateUndoableCommand.h
