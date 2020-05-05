@@ -4,6 +4,7 @@ list(APPEND scripts_src
     AEmayaUsdProxyShapeTemplate.mel
     mayaUsdMenu.mel
     mayaUsd_createStageFromFile.mel
+    mayaUsd_createStageFromAsset.mel
 )
 
 install(FILES ${scripts_src}

@@ -15,6 +15,9 @@
 //
 #include "USDImportDialogCmd.h"
 
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/usd/variantSets.h>
+
 #include <maya/MArgParser.h>
 #include <maya/MFileObject.h>
 #include <maya/MQtUtil.h>
@@ -22,12 +25,17 @@
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
+#include <maya/MDagPath.h>
+#include <maya/MSelectionList.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnStringData.h>
 
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
 #include <maya/MFnPlugin.h>
 
 #include <mayaUsd/fileio/importData.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <mayaUsdUI/ui/USDImportDialog.h>
 #include <mayaUsdUI/ui/USDQtUtil.h>
@@ -42,6 +50,8 @@ constexpr auto kPrimPathFlag = "-pp";
 constexpr auto kPrimPathFlagLong = "-primPath";
 constexpr auto kClearDataFlag = "-cd";
 constexpr auto kClearDataFlagLong = "-clearData";
+constexpr auto kApplyToProxyFlag = "-ap";
+constexpr auto kApplyToProxyFlagLong = "-applyToProxy";
 
 }
 
@@ -64,6 +74,63 @@ MStatus USDImportDialogCmd::finalize(MFnPlugin& plugin)
 void* USDImportDialogCmd::creator()
 {
 	return new USDImportDialogCmd();
+}
+
+MStatus USDImportDialogCmd::applyToProxy(const MString& proxyPath)
+{
+	MDagPath proxyShapeDagPath;
+	MSelectionList selection;
+	selection.add(proxyPath);
+	MStatus status = selection.getDagPath(0, proxyShapeDagPath);
+	if (status.error())
+		return status;
+
+	MObject proxyShapeObj = proxyShapeDagPath.node(&status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    MFnDependencyNode fn(proxyShapeObj, &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	if (fn.typeName() != MString("mayaUsdProxyShape"))
+		return MS::kInvalidParameter;
+
+    MayaUsdProxyShapeBase* proxyShape = dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+	if (!proxyShape)
+		return MS::kInvalidParameter;
+
+	MPlug primPath = fn.findPlug("primPath", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	MPlug filePath = fn.findPlug("filePath", &status);
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	ImportData& importData = ImportData::instance();
+	primPath.setValue(MString(importData.rootPrimPath().c_str()));
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	filePath.setValue(MString(importData.filename().c_str()));
+	CHECK_MSTATUS_AND_RETURN_IT(status);
+
+	auto rootPrim = proxyShape->usdPrim();
+	if (!rootPrim)
+		return MS::kNotFound;
+
+	auto stage = rootPrim.GetStage();
+	if (!stage)
+		return MS::kNotFound;
+
+	for (auto& primVariant : importData.primVariantSelections()) {
+		auto prim = stage->GetPrimAtPath(primVariant.first);
+		if (!prim || !prim.HasVariantSets())
+			return MS::kNotFound;
+
+		for (auto& variant : primVariant.second) {
+			auto variantSet = prim.GetVariantSet(variant.first);
+			if (variantSet)
+				variantSet.SetVariantSelection(variant.second);
+		}
+	}
+    return MS::kSuccess;
 }
 
 MStatus USDImportDialogCmd::doIt(const MArgList& args)
@@ -93,19 +160,41 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 		return MS::kSuccess;
 	}
 
+	// No command object is expected
+	if(argData.isFlagSet(kApplyToProxyFlag))
+	{
+		MStringArray proxyArray;
+		st = argData.getObjects(proxyArray);
+		if (!st || proxyArray.length() != 1)
+			return MS::kInvalidParameter;
+
+		return applyToProxy(proxyArray[0]);
+	}
+
 	MStringArray filenameArray;
 	st = argData.getObjects(filenameArray);
 	if (st && (filenameArray.length() > 0))
 	{
 		// We only use the first one.
 		MFileObject fo;
+		MString assetPath;
 		fo.setRawFullName(filenameArray[0]);
-		if (fo.exists())
+		bool validTarget = fo.exists();
+		if (!validTarget) {
+			// Give the default usd-asset-resolver a chance
+			if (const char* cStr = filenameArray[0].asChar()) {
+				validTarget = !ArGetResolver().Resolve(cStr).empty();
+				if (validTarget)
+					assetPath = filenameArray[0];
+			}
+		} else
+			assetPath = fo.resolvedFullName();
+
+		if (validTarget)
 		{
 			USDQtUtil usdQtUtil;
 			ImportData& importData = ImportData::instance();
-			MString usdFile = fo.resolvedFullName();
-			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(usdFile.asChar(), &importData, usdQtUtil, MQtUtil::mainWindow()));
+			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(assetPath.asChar(), &importData, usdQtUtil, MQtUtil::mainWindow()));
 			if (usdImportDialog->execute())
 			{
 				// The user clicked 'Apply' so copy the info from the dialog to the import data instance.
@@ -116,6 +205,8 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 				// the root prim path.
 				//importData.setStagePopulationMask(usdImportDialog->stagePopulationMask());
 				importData.setPrimVariantSelections(usdImportDialog->primVariantSelections());
+
+				setResult(assetPath);
 			}
 			return MS::kSuccess;
 		}
@@ -131,7 +222,8 @@ MSyntax USDImportDialogCmd::createSyntax()
 	syntax.enableEdit(false);
 	syntax.addFlag(kPrimPathFlag, kPrimPathFlagLong);
 	syntax.addFlag(kClearDataFlag, kClearDataFlagLong);
-	syntax.setObjectType(MSyntax::kStringObjects, 1, 1);
+	syntax.addFlag(kApplyToProxyFlag, kApplyToProxyFlagLong);
+	syntax.setObjectType(MSyntax::kStringObjects, 0, 1);
 	return syntax;
 }
 
