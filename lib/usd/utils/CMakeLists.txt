@@ -18,6 +18,9 @@ target_sources(${TARGET_NAME}
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYA_USD_UTILS_EXPORT
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
 
 mayaUsd_compile_config(${TARGET_NAME})
