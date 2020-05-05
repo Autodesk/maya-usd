@@ -126,4 +126,15 @@ def openTopLayerScene():
     # Open top_layer file which contains the USD scene
     filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "ballset", "StandaloneScene", "top_layer.ma" )
     cmds.file(filePath, force=True, open=True)
-    
+
+def openCylinderScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "cylinder", "usdCylinder.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def openTwoSpheresScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "twoSpheres", "twoSpheres.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def openSphereAnimatedRadiusScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
+    cmds.file(filePath, force=True, open=True)

@@ -98,29 +98,46 @@ class RenameTestCase(unittest.TestCase):
     def testRename(self):
         '''Rename USD node.'''
 
-        # Select a USD object.
-        ball35Path = ufe.Path([
-            mayaUtils.createUfePathSegment(
-                "|world|transform1|proxyShape1"),
-             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
-        ball35Item = ufe.Hierarchy.createItem(ball35Path)
-        ball35Hierarchy = ufe.Hierarchy.hierarchy(ball35Item)
-        propsItem = ball35Hierarchy.parent()
+        # open usdCylinder.ma scene in test-samples
+        mayaUtils.openCylinderScene()
+
+        # clear selection to start off
+        cmds.select(clear=True)
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|mayaUsdTransform|shape')
+        usdPathSegment = usdUtils.createUfePathSegment('/pCylinder1')
+        cylinderPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
+        cylinderHierarchy = ufe.Hierarchy.hierarchy(cylinderItem)
+        propsItem = cylinderHierarchy.parent()
 
         propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
         propsChildrenPre = propsHierarchy.children()
 
-        ufe.GlobalSelection.get().append(ball35Item)
+        ufe.GlobalSelection.get().append(cylinderItem)
 
-        newName = 'Ball_35_Renamed'
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # check GetLayerStack behavior
+        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        # rename
+        newName = 'pCylinder1_Renamed'
         cmds.rename(newName)
 
         # The renamed item is in the selection.
         snIter = iter(ufe.GlobalSelection.get())
-        ball35RenItem = next(snIter)
-        ball35RenName = str(ball35RenItem.path().back())
+        pCylinder1Item = next(snIter)
+        pCylinder1RenName = str(pCylinder1Item.path().back())
 
-        self.assertEqual(ball35RenName, newName)
+        self.assertEqual(pCylinder1RenName, newName)
 
         # MAYA-92350: should not need to re-bind hierarchy interface objects
         # with their item.
@@ -128,19 +145,19 @@ class RenameTestCase(unittest.TestCase):
         propsChildren = propsHierarchy.children()
 
         self.assertEqual(len(propsChildren), len(propsChildrenPre))
-        self.assertIn(ball35RenItem, propsChildren)
+        self.assertIn(pCylinder1Item, propsChildren)
 
         cmds.undo()
 
         def childrenNames(children):
-            return [str(child.path().back()) for child in children]
+           return [str(child.path().back()) for child in children]
 
         propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
         propsChildren = propsHierarchy.children()
         propsChildrenNames = childrenNames(propsChildren)
 
-        self.assertNotIn(ball35RenName, propsChildrenNames)
-        self.assertIn('Ball_35', propsChildrenNames)
+        self.assertNotIn(pCylinder1RenName, propsChildrenNames)
+        self.assertIn('pCylinder1', propsChildrenNames)
         self.assertEqual(len(propsChildren), len(propsChildrenPre))
 
         cmds.redo()
@@ -149,7 +166,52 @@ class RenameTestCase(unittest.TestCase):
         propsChildren = propsHierarchy.children()
         propsChildrenNames = childrenNames(propsChildren)
 
-        self.assertIn(ball35RenName, propsChildrenNames)
-        self.assertNotIn('Ball_35', propsChildrenNames)
+        self.assertIn(pCylinder1RenName, propsChildrenNames)
+        self.assertNotIn('pCylinder1', propsChildrenNames)
         self.assertEqual(len(propsChildren), len(propsChildrenPre))
 
+    def testRenameRestriction(self):
+        '''Restrict renaming USD node. Cannot rename a prim defined on another layer.'''
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|transform1|proxyShape1')
+        usdPathSegment = usdUtils.createUfePathSegment('/Room_set/Props/Ball_35')
+        ball35Path = ufe.Path([mayaPathSegment, usdPathSegment])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+
+        ufe.GlobalSelection.get().append(ball35Item)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # check GetLayerStack behavior
+        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # expect the exception happens
+        with self.assertRaises(RuntimeError):
+            newName = 'Ball_35_Renamed'
+            cmds.rename(newName)
+
+    def testRenameRestriction2(self):
+        '''Restrict renaming USD node. Cannot rename a prim with definitions or opinions on other layers.'''
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|transform1|proxyShape1')
+        usdPathSegment = usdUtils.createUfePathSegment('/Room_set/Props/Ball_35')
+        ball35Path = ufe.Path([mayaPathSegment, usdPathSegment])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+
+        ufe.GlobalSelection.get().append(ball35Item)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # set the edit target to Assembly_room_set.usda
+        stage.SetEditTarget(stage.GetLayerStack()[2])
+        self.assertEqual(stage.GetEditTarget().GetLayer().GetDisplayName(), "Assembly_room_set.usda")
+
+        # expect the exception happens
+        with self.assertRaises(RuntimeError):
+           newName = 'Ball_35_Renamed'
+           cmds.rename(newName)

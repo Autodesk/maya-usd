@@ -62,9 +62,8 @@ class Transform3dMatricesTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
 
-        # Read in a simple USD scene: a mesh cylinder at the origin.
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test-samples", "cylinder", "usdCylinder.ma" )
-        cmds.file(filePath, force=True, open=True)
+        # Open usdCylinder.ma scene in test-samples
+        mayaUtils.openCylinderScene()
 
     def assertMatrixAlmostEqual(self, ma, mb):
         for ra, rb in zip(ma, mb):

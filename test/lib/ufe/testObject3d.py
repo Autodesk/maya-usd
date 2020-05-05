@@ -121,11 +121,8 @@ class Object3dTestCase(unittest.TestCase):
     def testAnimatedBoundingBox(self):
         '''Test the Object3d bounding box interface for animated geometry.'''
 
-        # Load up a scene with a sphere that has an animated radius, with
-        # time connected to the proxy shape.
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test-samples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
-
-        cmds.file(filePath, force=True, open=True)
+        # Open sphereAnimatedRadiusProxyShape.ma scene in test-samples
+        mayaUtils.openSphereAnimatedRadiusScene()
 
         # The extents of the sphere are copied from the .usda file.
         expected = [
