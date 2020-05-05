@@ -34,6 +34,8 @@ class MAYAUSD_CORE_PUBLIC UsdUndoInsertChildCommand : public Ufe::UndoableComman
 public:
     typedef std::shared_ptr<UsdUndoInsertChildCommand> Ptr;
 
+    //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
+    //! pos argument is ignored, and only append is supported.
     UsdUndoInsertChildCommand(
         const UsdSceneItem::Ptr& parent,
         const UsdSceneItem::Ptr& child,
@@ -46,7 +48,8 @@ public:
     UsdUndoInsertChildCommand(UsdUndoInsertChildCommand&&) = delete;
     UsdUndoInsertChildCommand& operator=(UsdUndoInsertChildCommand&&) = delete;
 
-    //! Create a UsdUndoInsertChildCommand.
+    //! Create a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
+    //! pos argument is ignored, and only append is supported.
     static UsdUndoInsertChildCommand::Ptr create(
         const UsdSceneItem::Ptr& parent,
         const UsdSceneItem::Ptr& child,

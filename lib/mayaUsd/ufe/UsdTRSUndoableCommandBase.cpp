@@ -74,6 +74,9 @@ void UsdTRSUndoableCommandBase<V>::undoImp()
 template<class V>
 void UsdTRSUndoableCommandBase<V>::redoImp()
 {
+    // We must go through conversion to the common transform API by calling
+    // perform(), otherwise we get "Empty typeName" USD assertions for rotate
+    // and scale.  Once that is done, we can simply set the attribute directly.
     if (fDoneOnce) {
         attribute().Set(fNewValue);
         return;

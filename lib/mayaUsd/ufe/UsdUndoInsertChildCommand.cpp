@@ -39,7 +39,7 @@ namespace ufe {
 UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     const UsdSceneItem::Ptr& parent,
     const UsdSceneItem::Ptr& child,
-    const UsdSceneItem::Ptr& pos
+    const UsdSceneItem::Ptr& /* pos */
 ) : Ufe::UndoableCommand()
 {
     // First, check if we need to rename the child.

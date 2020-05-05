@@ -30,12 +30,21 @@ namespace ufe {
 
 //! \brief Base class for translate, rotate, scale undoable commands.
 //
-// UsdRotateUndoableCommand causes USD assertion when used with GfVec3d:
+// As of 9-Apr-2020, rotate and scale use GfVec3f and translate uses GfVec3d,
+// so this class is templated on the vector type.
 //
-// Coding Error: in _SetValueImpl at line 5619 of [...]/usd/pxr/usd/usd/stage.cpp -- Type mismatch for </pCylinder1/pCube1.xformOp:rotateXYZ>: expected 'GfVec3f', got 'GfVec3d'
-//
-// Therefore, this class is templated on GfVec3f or GfVec3d, so rotate can use
-// GfVec3f.  To be investigated.  PPT, 9-Apr-2020.
+// This class provides services to the translate, rotate, and scale
+// undoable commands.  It will:
+// - Create the attribute if it does not yet exist.
+// - Get the previous value and set it on undo.
+// - Keep track of the new value, in case it is set repeatedly (e.g. during
+//   interactive command use when manipulating, before the manipulation
+//   ends and the command is committed).
+// - Keep track of the scene item, in case its path changes (e.g. when the
+//   prim is renamed or reparented).  A command can be created before it's
+//   used, or the undo / redo stack can cause an item to be renamed or
+//   reparented.  In such a case, the prim in the command's scene item
+//   becomes stale, and the prim in the updated scene item should be used.
 //
 template<class V>
 class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase : public Ufe::Observer,
