@@ -48,22 +48,18 @@ public:
     UsdSceneItem::Ptr renamedItem() const;
 
 private:
-
-    // UsdUndoRenameCommand overrides
-    void undo() override;
-    void redo() override;
-
     bool renameRedo();
     bool renameUndo();
 
-    UsdStageWeakPtr _stage;
-    SdfLayerHandle _layer;
+    void undo() override;
+    void redo() override;
 
     UsdSceneItem::Ptr _ufeSrcItem;
-    SdfPath _usdSrcPath;
-
     UsdSceneItem::Ptr _ufeDstItem;
-    SdfPath _usdDstPath;
+
+    const UsdPrim& _prim;
+    UsdStageWeakPtr _stage;
+    std::string _newName;
 
 }; // UsdUndoRenameCommand
 

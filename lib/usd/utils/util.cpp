@@ -95,4 +95,10 @@ strongestLayerWithPrimSpec(const UsdPrim& prim)
     return targetLayer;
 }
 
+SdfPrimSpecHandle 
+getPrimSpecAtEditTarget(UsdStageWeakPtr stage, const UsdPrim& prim)
+{
+    return stage->GetEditTarget().GetPrimSpecForScenePath(prim.GetPath());
+}
+
 } // MayaUsdUtils
