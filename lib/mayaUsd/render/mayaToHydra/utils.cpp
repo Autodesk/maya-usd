@@ -56,6 +56,18 @@ global proc {{override}}OptionBox() {
     attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
     attrControlGrp -label "Highlight Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlight" -changeCommand $cc;
     attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;
+)mel"
+#if USD_VERSION_NUM >= 2005
+R"mel(
+    attrControlGrp -label "Highlight outline (in pixels, 0 to disable)" -attribute "defaultRenderGlobals.mtohSelectionOutline" -changeCommand $cc;
+)mel"
+#endif
+#if USD_VERSION_NUM > 1911
+R"mel(
+    attrControlGrp -label "Enable color quantization" -attribute "defaultRenderGlobals.mtohColorQuantization" -changeCommand $cc;
+)mel"
+#endif
+R"mel(
     setParent ..;
     setParent ..;
     {{override}}Options();

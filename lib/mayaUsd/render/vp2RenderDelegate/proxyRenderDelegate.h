@@ -110,10 +110,6 @@ public:
         const MIntersection& intersection,
         MDagPath& dagPath) const override;
 
-    //! \brief  Return pointer to DG proxy shape node
-    MAYAUSD_CORE_PUBLIC
-    const MayaUsdProxyShapeBase* getProxyShape() const { return _proxyShape; }
-
     MAYAUSD_CORE_PUBLIC
     void SelectionChanged();
 
@@ -130,7 +126,8 @@ private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
     ProxyRenderDelegate& operator=(const ProxyRenderDelegate&) = delete;
 
-    void _InitRenderDelegate();
+    void _InitRenderDelegate(MSubSceneContainer& container);
+    void _ClearRenderDelegate();
     bool _Populate();
     void _UpdateSceneDelegate();
     void _Execute(const MHWRender::MFrameContext& frameContext);
@@ -140,24 +137,46 @@ private:
     void _FilterSelection();
     void _UpdateSelectionStates();
 
-    const MayaUsdProxyShapeBase*  _proxyShape{ nullptr }; //!< DG proxy shape node
-    MDagPath                      _proxyDagPath;          //!< DAG path of the proxy shape (assuming no DAG instancing)
+    /*! \brief  Hold all data related to the proxy shape.
+
+        In addition to holding data read from the proxy shape, ProxyShapeData tracks when data read from the
+        proxy shape changes. For simple numeric types cache the last value read from _proxyShape & compare to
+        the current value. For complicated types we keep a version number of the last value we read to make 
+        fast comparisons.
+    */
+    class ProxyShapeData
+    {
+        const MayaUsdProxyShapeBase* const  _proxyShape{ nullptr };     //!< DG proxy shape node
+        const MDagPath                      _proxyDagPath;              //!< DAG path of the proxy shape (assuming no DAG instancing)
+        UsdStageRefPtr                      _usdStage;                  //!< USD stage pointer
+        size_t                              _excludePrimsVersion{ 0 };  //!< Last version of exluded prims used during render index populate
+        size_t                              _usdStageVersion{ 0 };      //!< Last version of stage used during render index populate
+    public:
+        ProxyShapeData(const MayaUsdProxyShapeBase* proxyShape, const MDagPath& proxyDagPath);
+        const MayaUsdProxyShapeBase* ProxyShape() const;
+        const MDagPath& ProxyDagPath() const;
+        UsdStageRefPtr UsdStage() const;
+        void UpdateUsdStage();
+        bool IsUsdStageUpToDate() const;
+        void UsdStageUpdated();
+        bool IsExcludePrimsUpToDate() const;
+        void ExcludePrimsUpdated();
+    };
+    std::unique_ptr<ProxyShapeData>          _proxyShapeData;
 
     // USD & Hydra Objects
-    HdEngine            _engine;                    //!< Hydra engine responsible for running synchronization between scene delegate and VP2RenderDelegate
-    HdTaskSharedPtrVector _dummyTasks;              //!< Dummy task to bootstrap data preparation inside Hydra engine
-    UsdStageRefPtr      _usdStage;                  //!< USD stage pointer
-    HdRenderDelegate*   _renderDelegate{ nullptr }; //!< VP2RenderDelegate
-    HdRenderIndex*      _renderIndex{ nullptr };    //!< Flattened representation of client scene graph
-    HdxTaskController*  _taskController{ nullptr }; //!< Task controller necessary for execution with hydra engine (we don't really need it, but there doesn't seem to be a way to get synchronization running without it)
-    UsdImagingDelegate* _sceneDelegate{ nullptr };  //!< USD scene delegate
+    HdEngine                _engine;                    //!< Hydra engine responsible for running synchronization between scene delegate and VP2RenderDelegate
+    HdTaskSharedPtrVector   _dummyTasks;                //!< Dummy task to bootstrap data preparation inside Hydra engine
+    
+    std::unique_ptr<HdRenderDelegate>  _renderDelegate; //!< VP2RenderDelegate
+    std::unique_ptr<HdRenderIndex> _renderIndex;        //!< Flattened representation of client scene graph
+    std::unique_ptr<HdxTaskController> _taskController; //!< Task controller necessary for execution with hydra engine (we don't really need it, but there doesn't seem to be a way to get synchronization running without it)
+    std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
 
-    size_t              _excludePrimPathsVersion{ 0 }; //!< Last version of exluded prims used during render index populate
-
-    bool                _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
-    bool                _selectionChanged{ false }; //!< Whether there is any selection change or not
-    bool                _isProxySelected{ false };  //!< Whether the proxy shape is selected
-    MColor              _wireframeColor;            //!< Wireframe color assigned to the proxy shape
+    bool                    _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
+    bool                    _selectionChanged{ false }; //!< Whether there is any selection change or not
+    bool                    _isProxySelected{ false };  //!< Whether the proxy shape is selected
+    MColor                  _wireframeColor;            //!< Wireframe color assigned to the proxy shape
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
