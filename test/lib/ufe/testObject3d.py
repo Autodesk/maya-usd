@@ -220,19 +220,14 @@ class Object3dTestCase(unittest.TestCase):
         self.assertFalse(object3d.visibility())
 
         # We should have got 'one' notification.
-        # USD Attribute Notification doubling problem:
-        # Note: because we are using set on the usd attribute (just above)
-        #       directly we we receive TWO notifs in our transform3d observer.
-        #       See UsdAttribute.cpp function setUsdAttr() for details.
-        self.assertEqual(visObs.notifications(), 2)
+        self.assertEqual(visObs.notifications(), 1)
 
         # Make it visible.
         object3d.setVisibility(True)
         self.assertTrue(object3d.visibility())
 
         # We should have got one more notification.
-        # Note: same double notif as above.
-        self.assertEqual(visObs.notifications(), 4)
+        self.assertEqual(visObs.notifications(), 2)
 
         # Remove the observer.
         ufe.Object3d.removeObserver(visObs)
