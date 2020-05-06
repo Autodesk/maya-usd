@@ -138,3 +138,7 @@ def openTwoSpheresScene():
 def openSphereAnimatedRadiusScene():
     filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
     cmds.file(filePath, force=True, open=True)
+
+def openTreeScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "tree", "tree.ma" )
+    cmds.file(filePath, force=True, open=True)
