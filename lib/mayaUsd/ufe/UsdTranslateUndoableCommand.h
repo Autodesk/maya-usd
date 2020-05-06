@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 #include <pxr/usd/usd/attribute.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -29,39 +30,42 @@ namespace ufe {
 //! \brief Translation command of the given prim.
 /*!
 	Ability to perform undo to restore the original translate value.
-	As of 06/07/2018, redo is a no op as Maya re-does the operation for redo
  */
-class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand : public Ufe::TranslateUndoableCommand
+class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand : public Ufe::TranslateUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3d>
 {
 public:
 	typedef std::shared_ptr<UsdTranslateUndoableCommand> Ptr;
 
-	UsdTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
-	~UsdTranslateUndoableCommand() override;
-
-	// Delete the copy/move constructors assignment operators.
 	UsdTranslateUndoableCommand(const UsdTranslateUndoableCommand&) = delete;
 	UsdTranslateUndoableCommand& operator=(const UsdTranslateUndoableCommand&) = delete;
 	UsdTranslateUndoableCommand(UsdTranslateUndoableCommand&&) = delete;
 	UsdTranslateUndoableCommand& operator=(UsdTranslateUndoableCommand&&) = delete;
 
-	//! Create a UsdTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	//! Create a UsdTranslateUndoableCommand from a UFE scene item.  The
+	//! command is not executed.
+	static UsdTranslateUndoableCommand::Ptr create(
+        const UsdSceneItem::Ptr& item, double x, double y, double z);
 
-	// Ufe::TranslateUndoableCommand overrides
+	// Ufe::TranslateUndoableCommand overrides.  translate() sets the command's
+	// translation value and executes the command.
 	void undo() override;
 	void redo() override;
 	bool translate(double x, double y, double z) override;
 
-private:
-	void perform();
+protected:
+
+    //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
+	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	~UsdTranslateUndoableCommand() override;
 
 private:
-	UsdPrim fPrim;
-	UsdAttribute fTranslateAttrib;
-	GfVec3d fPrevTranslateValue;
-	Ufe::Path fPath;
-	bool fNoTranslateOp;
+
+    static TfToken xlate;
+
+    TfToken attributeName() const override { return xlate; }
+    void performImp(double x, double y, double z) override;
+    void addEmptyAttribute() override;
+
 }; // UsdTranslateUndoableCommand
 
 } // namespace ufe

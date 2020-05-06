@@ -63,6 +63,13 @@ public:
 	Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+    Ufe::UndoableCommand::Ptr insertChildCmd(
+        const Ufe::SceneItem::Ptr& child,
+        const Ufe::SceneItem::Ptr& pos
+    ) override;
+#endif
+
 	Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;
 	Ufe::Group createGroupCmd(const Ufe::PathComponent& name) const override;
 #endif

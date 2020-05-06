@@ -17,57 +17,52 @@
 
 #include "private/Utils.h"
 
-#include <mayaUsd/ufe/Utils.h>
-
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdScaleUndoableCommand::UsdScaleUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
-	: Ufe::ScaleUndoableCommand(item)
-	, fPrim(prim)
-	, fPath(ufePath)
-	, fNoScaleOp(false)
-{
-	// Prim does not have a scale attribute
-	const TfToken xscale("xformOp:scale");
-	if (!fPrim.HasAttribute(xscale))
-	{
-		fNoScaleOp = true;
-		scaleOp(fPrim, fPath, 1, 1, 1);	// Add a neutral scale xformOp.
-	}
+TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 
-	fScaleAttrib = fPrim.GetAttribute(xscale);
-	fScaleAttrib.Get<GfVec3f>(&fPrevScaleValue);
-}
+UsdScaleUndoableCommand::UsdScaleUndoableCommand(
+    const UsdSceneItem::Ptr& item, double x, double y, double z
+) : Ufe::ScaleUndoableCommand(item),
+    UsdTRSUndoableCommandBase(item, x, y, z)
+{}
 
 UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
-{
-}
+{}
 
 /*static*/
-UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
+    const UsdSceneItem::Ptr& item, double x, double y, double z
+)
 {
-	return std::make_shared<UsdScaleUndoableCommand>(prim, ufePath, item);
+	auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
+        item, x, y, z);
+    cmd->initialize();
+    return cmd;
+
 }
 
 void UsdScaleUndoableCommand::undo()
 {
-	fScaleAttrib.Set(fPrevScaleValue);
-	// Todo : We would want to remove the xformOp
-	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
+    undoImp();
 }
 
 void UsdScaleUndoableCommand::redo()
 {
-	perform();
+	redoImp();
 }
 
-void UsdScaleUndoableCommand::perform()
+void UsdScaleUndoableCommand::addEmptyAttribute()
 {
-	// No-op, use scale to scale the object.
-	// The Maya scale command directly invokes our scale() method in its
-	// redoIt(), which is invoked both for the inital scale and the redo.
+    performImp(1, 1, 1);	// Add a neutral scale
 }
+
+void UsdScaleUndoableCommand::performImp(double x, double y, double z)
+{
+	scaleOp(prim(), path(), x, y, z);
+}
+
 
 //------------------------------------------------------------------------------
 // Ufe::ScaleUndoableCommand overrides
@@ -75,7 +70,7 @@ void UsdScaleUndoableCommand::perform()
 
 bool UsdScaleUndoableCommand::scale(double x, double y, double z)
 {
-	scaleOp(fPrim, fPath, x, y, z);
+	perform(x, y, z);
 	return true;
 }
 
