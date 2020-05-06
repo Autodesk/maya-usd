@@ -176,5 +176,4 @@ add_subdirectory(utils)
 
 if(BUILD_HDMAYA)
     add_subdirectory(render/mayaToHydra)
-    add_dependencies(mtoh hdMaya)
 endif()

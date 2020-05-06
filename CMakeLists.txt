@@ -166,10 +166,6 @@ if (BUILD_AL_PLUGIN)
     endif()
 
     add_subdirectory(plugin/al)
-
-    if(BUILD_USDMAYA_PXR_TRANSLATORS)
-        add_dependencies(AL_USDMayaPxrTranslators usdMaya)
-    endif()
 endif()
 
 if (BUILD_ADSK_PLUGIN)
