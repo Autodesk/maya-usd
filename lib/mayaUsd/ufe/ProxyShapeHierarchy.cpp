@@ -26,6 +26,12 @@
 
 #include <mayaUsd/ufe/Utils.h>
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+#include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
+#endif
+#endif
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -149,6 +155,21 @@ Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& c
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
+    const Ufe::SceneItem::Ptr& child,
+    const Ufe::SceneItem::Ptr& pos
+)
+{
+    // UsdUndoInsertChildCommand expects a UsdSceneItem which wraps a prim, so
+    // create one using the pseudo-root and our own path.
+    auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+
+    return UsdUndoInsertChildCommand::create(
+        usdItem, downcast(child), downcast(pos));
+}
+#endif
+
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
 	throw std::runtime_error("ProxyShapeHierarchy::createGroup() not implemented");

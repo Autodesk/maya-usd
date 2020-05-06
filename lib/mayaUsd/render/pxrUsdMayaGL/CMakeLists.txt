@@ -7,7 +7,6 @@ target_sources(${PROJECT_NAME}
         debugCodes.cpp
         hdImagingShapeDrawOverride.cpp
         hdImagingShapeUI.cpp
-        hdRenderer.cpp
         instancerImager.cpp
         instancerShapeAdapter.cpp
         proxyDrawOverride.cpp
@@ -25,7 +24,6 @@ set(headers
     debugCodes.h
     hdImagingShapeDrawOverride.h
     hdImagingShapeUI.h
-    hdRenderer.h
     instancerImager.h
     instancerShapeAdapter.h
     proxyDrawOverride.h
