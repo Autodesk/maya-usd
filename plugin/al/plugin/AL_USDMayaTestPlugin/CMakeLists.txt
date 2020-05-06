@@ -72,6 +72,7 @@ target_compile_definitions(${TARGET_NAME}
         AL_USDMAYA_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
         $<$<BOOL:${IS_LINUX}>:LINUX>
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
 target_include_directories(${TARGET_NAME}
