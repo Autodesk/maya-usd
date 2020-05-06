@@ -22,6 +22,9 @@
 #include <string>
 #include <unordered_map>
 
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MObjectHandle.h>
@@ -240,6 +243,12 @@ UsdTimeCode getTime(const Ufe::Path& path)
     TF_VERIFY(proxyShape);
 
     return proxyShape->getTime();
+}
+
+void sendRenameNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
+{
+	Ufe::ObjectRename notification(item, previousPath);
+	Ufe::Scene::notifyObjectPathChange(notification);
 }
 
 } // namespace ufe

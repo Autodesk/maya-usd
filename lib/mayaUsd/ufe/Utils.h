@@ -82,5 +82,9 @@ MDagPath nameToDagPath(const std::string& name);
 MAYAUSD_CORE_PUBLIC
 UsdTimeCode getTime(const Ufe::Path& path);
 
+//! Object renamed scene notification
+MAYAUSD_CORE_PUBLIC
+void sendRenameNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath);
+
 } // namespace ufe
 } // namespace MayaUsd
