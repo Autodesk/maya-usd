@@ -61,7 +61,7 @@ class ParentCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Parent functionality only available in Maya Preview Release 115 or later.') 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testParentRelative only available in UFE preview version 0.2.13 and greater')
     def testParentRelative(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
@@ -145,7 +145,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 0)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Parent functionality only available in Maya Preview Release 115 or later.') 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testParentAbsolute only available in UFE preview version 0.2.13 and greater')
     def testParentAbsolute(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
@@ -221,7 +221,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 0)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Parent functionality only available in Maya Preview Release 115 or later.') 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testParentAbsolute only available in UFE preview version 0.2.13 and greater')
     def testParentToProxyShape(self):
 
         # Load a file with a USD hierarchy at least 2-levels deep.
