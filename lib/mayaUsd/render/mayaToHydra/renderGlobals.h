@@ -39,6 +39,12 @@ struct MtohRenderGlobals {
     HdMayaParams delegateParams;
     GfVec4f colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
     TfToken selectionOverlay = MtohTokens->UseVp2;
+#if USD_VERSION_NUM >= 2005
+    float outlineSelectionWidth = 4.f;
+#endif
+#if USD_VERSION_NUM > 1911
+    float enableColorQuantization = false;
+#endif
     bool colorSelectionHighlight = true;
     bool wireframeSelectionHighlight = true;
     struct RenderParam {

@@ -38,6 +38,9 @@ public:
 	static MSyntax createSyntax();
 
 	MStatus doIt(const MArgList& args) override;
+
+private:
+    MStatus applyToProxy(const MString& proxyPath);
 };
 
 } // namespace MayaUsd
