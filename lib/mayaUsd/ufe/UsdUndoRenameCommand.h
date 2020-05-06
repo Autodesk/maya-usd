@@ -60,6 +60,7 @@ private:
     const UsdPrim& _prim;
     UsdStageWeakPtr _stage;
     std::string _newName;
+    std::string _oldName;
 
 }; // UsdUndoRenameCommand
 
