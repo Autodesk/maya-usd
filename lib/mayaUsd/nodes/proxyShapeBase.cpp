@@ -760,6 +760,7 @@ MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluatio
         evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
         evaluationNode.dirtyPlugExists(inStageDataAttr)) {
         _IncreaseUsdStageVersion();
+        UsdMayaStageCache::Clear();
     }
 
     return MStatus::kSuccess;
@@ -797,6 +798,7 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
         plug == loadPayloadsAttr ||
         plug == inStageDataAttr) {
         _IncreaseUsdStageVersion();
+        UsdMayaStageCache::Clear();
     }
 
     return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
