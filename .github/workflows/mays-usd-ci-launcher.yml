@@ -23,8 +23,16 @@ jobs:
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
 
+    - run: mkdir -p artifacts
+
+    - run: echo hello > artifacts/world.txt
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: world-artifact
+        path: artifacts/world.txt
+
     # Launch workflow for build and test
     - name: Launch CI to build and test
       shell: bash
-      run: |
-        curl -XPOST -u "${{ secrets.WORKFLOW_USERNAME}}:${{secrets.WORKFLOW_PASSWORD}}" -H "Accept: application/vnd.github.everest-preview+json"  -H "Content-Type: application/json" https://api.github.com/repos/smithw-adsk/workflows/dispatches --data '{"event_type": "build_application"}'
+      run: sleep 60s
