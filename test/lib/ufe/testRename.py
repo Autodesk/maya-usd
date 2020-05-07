@@ -112,6 +112,7 @@ class RenameTestCase(unittest.TestCase):
 
         ufe.GlobalSelection.get().append(ball35Item)
 
+        ball35ItemType = ball35Item.nodeType()
         newName = 'Ball_35_Renamed'
         cmds.rename(newName)
 
@@ -131,6 +132,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertIn(ball35RenItem, propsChildren)
 
         cmds.undo()
+        self.assertEqual(ball35ItemType, ufe.GlobalSelection.get().back().nodeType())
 
         def childrenNames(children):
             return [str(child.path().back()) for child in children]
@@ -144,6 +146,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertEqual(len(propsChildren), len(propsChildrenPre))
 
         cmds.redo()
+        self.assertEqual(ball35ItemType, ufe.GlobalSelection.get().back().nodeType())
 
         propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
         propsChildren = propsHierarchy.children()
