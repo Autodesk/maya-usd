@@ -35,4 +35,4 @@ jobs:
     # Launch workflow for build and test
     - name: Launch CI to build and test
       shell: bash
-      run: sleep 60s
+      run: sleep 60m
