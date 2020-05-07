@@ -130,13 +130,22 @@ class RenameTestCase(unittest.TestCase):
 
         # set primspec name
         primspec.name = "TreeBase_potato"
-
-        assert stage.GetPrimAtPath('/TreeBase_potato')
-        assert stage.GetPrimAtPath('/TreeBase_potato/leavesXform')
-
+ 
         # HS, 6-May-2020. defualtPrim in null?? This can't be null....
         # defualtPrim = stage.GetDefaultPrim()
         # self.assertEqual(defualtPrim.GetName(), 'TreeBase_potato')
+
+        # make sure we have a valid prims after the primspec rename 
+        assert stage.GetPrimAtPath('/TreeBase_potato')
+        assert stage.GetPrimAtPath('/TreeBase_potato/leavesXform')
+
+        # prim should be called TreeBase_potato
+        potatoPrim = stage.GetPrimAtPath('/TreeBase_potato')
+        self.assertEqual(potatoPrim.GetName(), 'TreeBase_potato')
+
+        # prim should be called leaves 
+        leavesPrimSpec = stage.GetObjectAtPath('/TreeBase_potato/leavesXform/leaves')
+        self.assertEqual(leavesPrimSpec.GetName(), 'leaves')
 
     def testRenameUndo(self):
         '''Rename USD node.'''
