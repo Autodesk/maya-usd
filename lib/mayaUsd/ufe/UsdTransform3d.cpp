@@ -60,15 +60,24 @@ namespace {
 	}
 }
 
-UsdTransform3d::UsdTransform3d()
-	: Transform3d()
+UsdTransform3d::UsdTransform3d() : Transform3d()
 {
 }
+
+UsdTransform3d::UsdTransform3d(const UsdSceneItem::Ptr& item)
+    : Transform3d(), fItem(item), fPrim(item->prim())
+{}
 
 /*static*/
 UsdTransform3d::Ptr UsdTransform3d::create()
 {
 	return std::make_shared<UsdTransform3d>();
+}
+
+/* static */
+UsdTransform3d::Ptr UsdTransform3d::create(const UsdSceneItem::Ptr& item)
+{
+    return std::make_shared<UsdTransform3d>(item);
 }
 
 void UsdTransform3d::setItem(const UsdSceneItem::Ptr& item)
@@ -91,11 +100,12 @@ Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const
 	return fItem;
 }
 
-Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double y, double z)
 {
-	auto translateCmd = UsdTranslateUndoableCommand::create(fPrim, fItem->path(), fItem);
-	return translateCmd;
+	return UsdTranslateUndoableCommand::create(fItem, x, y, z);
 }
+#endif
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
@@ -118,22 +128,73 @@ Ufe::Vector3d UsdTransform3d::translation() const
 	return Ufe::Vector3d(x, y, z);
 }
 
-Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+Ufe::Vector3d UsdTransform3d::rotation() const
 {
-	auto rotateCmd = UsdRotateUndoableCommand::create(fPrim, fItem->path(), fItem);
-	return rotateCmd;
+	double x{0}, y{0}, z{0};
+	const TfToken rotXYZ("xformOp:rotateXYZ");
+	if (fPrim.HasAttribute(rotXYZ))
+	{
+		// Initially, attribute can be created, but have no value.
+		GfVec3f v;
+		if (fPrim.GetAttribute(rotXYZ).Get<GfVec3f>(&v,getTime(path())))
+		{
+			x = v[0]; y = v[1]; z = v[2];
+		}
+	}
+	return Ufe::Vector3d(x, y, z);
 }
+
+Ufe::Vector3d UsdTransform3d::scale() const
+{
+	double x{0}, y{0}, z{0};
+	const TfToken scaleTok("xformOp:scale");
+	if (fPrim.HasAttribute(scaleTok))
+	{
+		// Initially, attribute can be created, but have no value.
+		GfVec3f v;
+		if (fPrim.GetAttribute(scaleTok).Get<GfVec3f>(&v,getTime(path())))
+		{
+			x = v[0]; y = v[1]; z = v[2];
+		}
+	}
+	return Ufe::Vector3d(x, y, z);
+}
+
+Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, double z)
+{
+	return UsdRotateUndoableCommand::create(fItem, x, y, z);
+}
+#endif
 
 void UsdTransform3d::rotate(double x, double y, double z)
 {
 	rotateOp(fPrim, fItem->path(), x, y, z);
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, double z)
+{
+	return UsdScaleUndoableCommand::create(fItem, x, y, z);
+}
+
+#else
+
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
+{
+	return UsdTranslateUndoableCommand::create(fItem, 0, 0, 0);
+}
+
+Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
+{
+	return UsdRotateUndoableCommand::create(fItem, 0, 0, 0);
+}
+
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 {
-	auto scaleCmd = UsdScaleUndoableCommand::create(fPrim, fItem->path(), fItem);
-	return scaleCmd;
+	return UsdScaleUndoableCommand::create(fItem, 1, 1, 1);
 }
+#endif
 
 void UsdTransform3d::scale(double x, double y, double z)
 {

@@ -20,6 +20,7 @@
 #include <pxr/usd/usd/attribute.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -29,39 +30,41 @@ namespace ufe {
 //! \brief Absolute scale command of the given prim.
 /*!
 	Ability to perform undo to restore the original scale value.
-	As of 06/07/2018, redo is a no op as Maya re-does the operation for redo
  */
-class MAYAUSD_CORE_PUBLIC UsdScaleUndoableCommand : public Ufe::ScaleUndoableCommand
+class MAYAUSD_CORE_PUBLIC UsdScaleUndoableCommand : public Ufe::ScaleUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3f>
 {
 public:
 	typedef std::shared_ptr<UsdScaleUndoableCommand> Ptr;
 
-	UsdScaleUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
-	~UsdScaleUndoableCommand() override;
-
-	// Delete the copy/move constructors assignment operators.
 	UsdScaleUndoableCommand(const UsdScaleUndoableCommand&) = delete;
 	UsdScaleUndoableCommand& operator=(const UsdScaleUndoableCommand&) = delete;
 	UsdScaleUndoableCommand(UsdScaleUndoableCommand&&) = delete;
 	UsdScaleUndoableCommand& operator=(UsdScaleUndoableCommand&&) = delete;
 
-	//! Create a UsdScaleUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdScaleUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	//! Create a UsdScaleUndoableCommand from a UFE scene item.  The command is
+    //! not executed.
+	static UsdScaleUndoableCommand::Ptr create(
+        const UsdSceneItem::Ptr& item, double x, double y, double z);
 
 	// Ufe::ScaleUndoableCommand overrides
 	void undo() override;
 	void redo() override;
 	bool scale(double x, double y, double z) override;
 
-private:
-	void perform();
+protected:
+
+    //! Construct a UsdScaleUndoableCommand.  The command is not executed.
+	UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	~UsdScaleUndoableCommand() override;
 
 private:
-	UsdPrim fPrim;
-	UsdAttribute fScaleAttrib;
-	GfVec3f fPrevScaleValue;
-	Ufe::Path fPath;
-	bool fNoScaleOp;
+
+    static TfToken scaleTok;
+
+    TfToken attributeName() const override { return scaleTok; }
+    void performImp(double x, double y, double z) override;
+    void addEmptyAttribute() override;
+
 }; // UsdScaleUndoableCommand
 
 } // namespace ufe

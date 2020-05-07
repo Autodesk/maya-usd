@@ -105,7 +105,7 @@ function(mayaUsd_add_rpath rpathRef target)
 		# determination below will fail.
         get_filename_component(target "${target}" REALPATH)
         # Make target relative to $ORIGIN (which is the first element in
-        # rpath when initialized with _pxr_mayaUsd_init_rpath()).
+        # rpath when initialized with mayaUsd_init_rpath()).
         list(GET ${rpathRef} 0 origin)
         file(RELATIVE_PATH
             target
