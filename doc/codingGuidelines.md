@@ -170,31 +170,31 @@ Private project’s header files should be `#include`'d using double quotes, and
 Headers should be included in the following order, with each section separated by a blank line and files sorted alphabetically:
 
 1. Related header
-2. C system headers
-3. C++ standard library headers
-4. Other external libraries’ headers
+2. All private headers
+3. All public headers from this repository (maya-usd)
+4. Pixar + USD headers
 5. Autodesk + Maya headers
-6. Pixar + USD headers
-7. All public headers from this repository (maya-usd)
-8. All private headers
+6. Other libraries’ headers
+7. C++ standard library headers
+8. C system headers
 9. Conditional includes
 
 ```cpp
 #include "exportTranslator.h"
+
+#include "private/util.h"
  
-#include <string>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
  
 #include <maya/MFileObject.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/jobs/writeJob.h>
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-
-#include "private/util.h"
+#include <string>
 
 #if defined(WANT_UFE_BUILD)
   #include <ufe/ufe.h>
