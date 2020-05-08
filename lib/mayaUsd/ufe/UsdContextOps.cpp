@@ -21,12 +21,14 @@
 
 #include <ufe/attributes.h>
 #include <ufe/attribute.h>
+#include <ufe/path.h>
 
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 namespace {
 
@@ -52,6 +54,58 @@ private:
     UsdVariantSet     fVarSet;
     const std::string fOldSelection;
     const std::string fNewSelection;
+};
+
+//! \brief Undoable command for add new prim
+class AddNewPrimUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    AddNewPrimUndoableCommand(const MayaUsd::ufe::UsdSceneItem::Ptr& usdSceneItem,
+                              const Ufe::ContextOps::ItemPath& itemPath)
+    : Ufe::UndoableCommand()
+    {
+        // First get the stage from the proxy shape.
+        auto ufePath = usdSceneItem->path();
+        auto segments = ufePath.getSegments();
+        auto dagSegment = segments[0];
+        _stage = MayaUsd::ufe::getStage(Ufe::Path(dagSegment));
+        if (_stage) {
+            // Rename the new prim for uniqueness, if needed.
+            Ufe::Path newUfePath = ufePath + itemPath[1];
+            auto newPrimName = uniqueChildName(usdSceneItem, newUfePath);
+
+            // Build (and store) the path for the new prim with the unique name.
+            PXR_NS::SdfPath usdItemPath = usdSceneItem->prim().GetPath();
+            _primPath = usdItemPath.AppendChild(PXR_NS::TfToken(newPrimName));
+
+            // The type of prim we were asked to create.
+            if (itemPath[1] == "Def")
+                _primToken = TfToken();     // create typeless prim
+            else
+                _primToken = TfToken(itemPath[1]);
+        }
+    }
+
+    void undo() override
+    {
+        if (_stage) {
+            _stage->RemovePrim(_primPath);
+        }
+    }
+
+    void redo() override
+    {
+        if (_stage) {
+            auto newPrim = _stage->DefinePrim(_primPath, _primToken);
+            if (!newPrim.IsValid())
+                TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetString());
+        }
+    }
+
+private:
+    PXR_NS::UsdStageWeakPtr _stage;
+    PXR_NS::SdfPath _primPath;
+    PXR_NS::TfToken _primToken;
 };
 
 }
@@ -100,23 +154,28 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
 {
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
-        // Top-level items.  Variant sets and visibility.
-        if (fPrim.HasVariantSets()) {
-            items.emplace_back(
-                "Variant Sets", "Variant Sets", Ufe::ContextItem::kHasChildren);
-        }
-        auto attributes = Ufe::Attributes::attributes(sceneItem());
-        if (attributes) {
-            auto visibility =
-                std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
-                    attributes->attribute(UsdGeomTokens->visibility));
-            if (visibility) {
-                auto current = visibility->get();
-                const std::string l = (current == UsdGeomTokens->invisible) ?
-                    std::string("Make Visible") : std::string("Make Invisible");
-                items.emplace_back("Toggle Visibility", l);
+        // Top-level items.  Variant sets and visibility. Do not add for gateway type node.
+        if (!fIsAGatewayType) {
+            if (fPrim.HasVariantSets()) {
+                items.emplace_back(
+                    "Variant Sets", "Variant Sets", Ufe::ContextItem::kHasChildren);
+            }
+            auto attributes = Ufe::Attributes::attributes(sceneItem());
+            if (attributes && attributes->hasAttribute(UsdGeomTokens->visibility)) {
+                auto visibility =
+                    std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
+                        attributes->attribute(UsdGeomTokens->visibility));
+                if (visibility) {
+                    auto current = visibility->get();
+                    const std::string l = (current == UsdGeomTokens->invisible) ?
+                        std::string("Make Visible") : std::string("Make Invisible");
+                    items.emplace_back("Toggle Visibility", l);
+                }
             }
         }
+        // Top level item - Add New Prim (for all context op types).
+        items.emplace_back(
+            "Add New Prim", "Add New Prim", Ufe::ContextItem::kHasChildren);
     }
     else {
         if (itemPath[0] == "Variant Sets") {
@@ -127,7 +186,6 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
             if (itemPath.size() == 1u) {
                 // Variant sets list.
                 for (auto i = varSetsNames.crbegin(); i != varSetsNames.crend(); ++i) {
-                    
                     items.emplace_back(*i, *i, Ufe::ContextItem::kHasChildren);
                 }
             }
@@ -148,6 +206,19 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
                 }
             } // Variants of a variant set
         } // Variant sets
+        else if (itemPath[0] == "Add New Prim") {
+            items.emplace_back("Def", "Def");  // typeless prim
+            items.emplace_back("Scope", "Scope");
+            items.emplace_back("Xform", "Xform");
+#if UFE_PREVIEW_VERSION_NUM >= 2015
+            items.emplace_back(Ufe::ContextItem::kSeparator);
+#endif
+            items.emplace_back("Capsule", "Capsule");
+            items.emplace_back("Cone", "Cone");
+            items.emplace_back("Cube", "Cube");
+            items.emplace_back("Cylinder", "Cylinder");
+            items.emplace_back("Sphere", "Sphere");
+        }
     } // Top-level items
 
     return items;
@@ -184,6 +255,17 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return visibility->setCmd(
             current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
     } // Visibility
+    else if (!itemPath.empty() && (itemPath[0] == "Add New Prim")) {
+        // Operation is to create a new prim of the type specified.
+        if (itemPath.size() != 2u) {
+            TF_CODING_ERROR("Wrong number of arguments");
+            return nullptr;
+        }
+
+        // At this point we know we have 2 arguments to execute the operation.
+        // itemPath[1] contains the new prim type to create.
+        return std::make_shared<AddNewPrimUndoableCommand>(fItem, itemPath);
+    }
 
     return nullptr;
 }

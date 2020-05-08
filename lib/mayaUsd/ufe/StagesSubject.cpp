@@ -236,6 +236,13 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 				Ufe::Scene::notifyObjectDelete(notification);
 			}
 		}
+#if UFE_PREVIEW_VERSION_NUM >= 2015
+		else if (!prim.IsValid())
+		{
+			auto notification = Ufe::ObjectDestroyed(ufePath);
+			Ufe::Scene::notifyObjectDelete(notification);
+		}
+#endif
 	}
 
 	for (const auto& changedPath : notice.GetChangedInfoOnlyPaths())

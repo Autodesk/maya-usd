@@ -57,6 +57,12 @@ public:
 	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
 
+	// When we are created from the ProxyShapeContextOpsHandler we do not have the proper
+	// Maya UFE scene item. So it won't return the correct node type. Therefore we set
+	// this flag directly.
+	void setIsAGatewayType(bool t) { fIsAGatewayType = t; }
+	bool isAGatewayType() const { return fIsAGatewayType; }
+
 	// Ufe::ContextOps overrides
 	Ufe::SceneItem::Ptr sceneItem() const override;
     Items getItems(const ItemPath& itemPath) const override;
@@ -65,6 +71,7 @@ public:
 private:
 	UsdSceneItem::Ptr fItem;
 	UsdPrim fPrim;
+	bool fIsAGatewayType{false};
 
 }; // UsdContextOps
 
