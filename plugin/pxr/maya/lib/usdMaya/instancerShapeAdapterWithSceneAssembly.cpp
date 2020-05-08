@@ -25,7 +25,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::UsdMayaGL_InstancerShapeAdapterWithSceneAssembly()
+UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::UsdMayaGL_InstancerShapeAdapterWithSceneAssembly(
+        bool isViewport2) :
+    UsdMayaGL_InstancerShapeAdapter(isViewport2)
 {
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Constructing UsdMayaGL_InstancerShapeAdapterWithSceneAssembly: %p\n",

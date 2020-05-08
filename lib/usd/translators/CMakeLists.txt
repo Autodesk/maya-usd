@@ -47,18 +47,20 @@ target_sources(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME} 
     PRIVATE
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
+mayaUsd_compile_config(${TARGET_NAME})
+
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
-    PUBLIC
+    PRIVATE
         ${MAYA_INCLUDE_DIRS}
         ${CMAKE_BINARY_DIR}
 )

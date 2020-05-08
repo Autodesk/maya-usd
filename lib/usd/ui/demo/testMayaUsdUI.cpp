@@ -13,19 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <iostream>
+#include <string>
 
+#include <QtCore/QProcessEnvironment>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QStyle>
-#include <QtCore/QProcessEnvironment>
-
-#include <mayaUsd/ui/views/IMayaMQtUtil.h>
-#include <mayaUsd/ui/views/USDImportDialog.h>
-#include <mayaUsd/fileio/importData.h>
 
 #include <pxr/usd/usd/stagePopulationMask.h>
 
-#include <iostream>
-#include <string>
+#include <mayaUsd/fileio/importData.h>
+
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
+#include <mayaUsdUI/ui/USDImportDialog.h>
 
 class TestUIQtUtil : public MayaUsd::IMayaMQtUtil
 {

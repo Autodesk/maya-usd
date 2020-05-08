@@ -18,7 +18,7 @@
 
 #include <pxr/pxr.h>
 
-#include "dagAdapter.h"
+#include <hdMaya/adapters/dagAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

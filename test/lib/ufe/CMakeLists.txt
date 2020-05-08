@@ -7,6 +7,7 @@ set(test_script_files
     testMatrices.py
     testMayaPickwalk.py
     testRotatePivot.py
+    testUfePythonImport.py
 )
 
 set(test_support_files
@@ -21,10 +22,11 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testDuplicateCmd.py
         testMoveCmd.py
         testObject3d.py
+        testRename.py
+		testParentCmd.py
         testRotateCmd.py
         testScaleCmd.py
         testTransform3dTranslate.py
-        testRename.py
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
         list(APPEND test_script_files

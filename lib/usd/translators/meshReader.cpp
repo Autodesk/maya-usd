@@ -15,21 +15,20 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
-#include "pxr/pxr.h"
-
-#include "../../fileio/primReaderRegistry.h"
-#include "../../fileio/translators/translatorGprim.h"
-#include "../../fileio/translators/translatorMaterial.h"
-#include "../../fileio/translators/translatorMesh.h"
-#include "../../fileio/translators/translatorUtil.h"
-#include "../../fileio/utils/meshUtil.h"
-#include "../../utils/util.h"
-#include "../../fileio/utils/readUtil.h"
-#include "../../nodes/stageNode.h"
-
 #include <maya/MFnBlendShapeDeformer.h>
 
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/mesh.h>
+
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/translators/translatorGprim.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/fileio/translators/translatorMesh.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/meshUtil.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/nodes/stageNode.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

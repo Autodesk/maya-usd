@@ -1733,7 +1733,7 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
       // Push new value to prim, but only if it's changing.
       if (!MPxTransformationMatrix::rotationValue.isEquivalent(m_rotationFromUsd))
       {
-        pushRotateToPrim();
+        pushRotateQuatToPrim();
       }
     }
   }
@@ -2023,6 +2023,36 @@ void TransformationMatrix::pushRotateToPrim()
 
       // only write back if data has changed significantly
       if(!tempRotate.isEquivalent(MPxTransformationMatrix::rotationValue))
+      {
+        internal_pushRotation(MPxTransformationMatrix::rotationValue, op);
+        m_rotationFromUsd = MPxTransformationMatrix::rotationValue;
+        m_rotationTweak = MEulerRotation(0, 0, 0);
+      }
+      return;
+    }
+  }
+  if(m_enableUsdWriteback)
+  {
+    pushTransformToPrim();
+  }
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushRotateQuatToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushRotateQuatToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kRotate)
+    {
+      UsdGeomXformOp& op = *it;
+      MEulerRotation tempRotate;
+      internal_readRotation(tempRotate, op);
+
+      // only write back if data has changed significantly
+      if(!tempRotate.asQuaternion().isEquivalent(MPxTransformationMatrix::rotationValue.asQuaternion()))
       {
         internal_pushRotation(MPxTransformationMatrix::rotationValue, op);
         m_rotationFromUsd = MPxTransformationMatrix::rotationValue;

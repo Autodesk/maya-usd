@@ -13,16 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-
-#include "api.h"
-
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
 
+#include <pxr/pxr.h>
+
+#include "api.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
 
 PXRUSDTRANSLATORS_API
 MStatus
