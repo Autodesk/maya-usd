@@ -27,8 +27,9 @@
 #if __F16C__
 #include <immintrin.h>
 #endif
-#include "pxr/base/gf/half.h"
-#include "pxr/base/gf/ilmbase_half.h"
+
+#include <pxr/base/gf/half.h>
+#include <pxr/base/gf/ilmbase_half.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

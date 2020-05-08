@@ -16,21 +16,19 @@
 //
 #include "exportTranslator.h"
 
-#include <string>
 #include <set>
 #include <sstream>
-
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/jobs/writeJob.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <string>
 
 #include <maya/MFileObject.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
-
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

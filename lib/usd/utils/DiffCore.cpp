@@ -14,9 +14,11 @@
 // limitations under the License.
 //
 #include "DiffCore.h"
-#include "SIMD.h"
+
 #include <cmath>
 #include <algorithm>
+
+#include <mayaUsdUtils/SIMD.h>
 
 namespace MayaUsdUtils {
 

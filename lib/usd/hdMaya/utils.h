@@ -19,12 +19,8 @@
 #ifndef HDMAYA_UTILS_H
 #define HDMAYA_UTILS_H
 
-#include <pxr/pxr.h>
-
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/tf/token.h>
-
-#include <pxr/imaging/hd/textureResource.h>
+#include <functional>
+#include <tuple>
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -36,11 +32,14 @@
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
-#include "api.h"
-#include "adapters/mayaAttrs.h"
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/textureResource.h>
+#include <pxr/imaging/hd/types.h>
 
-#include <functional>
-#include <tuple>
+#include <hdMaya/api.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

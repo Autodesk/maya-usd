@@ -34,7 +34,7 @@ class UsdMayaGL_InstancerShapeAdapterWithSceneAssembly : public UsdMayaGL_Instan
         ~UsdMayaGL_InstancerShapeAdapterWithSceneAssembly() override;
 
         /// Construct a new uninitialized UsdMayaGL_InstancerShapeAdapterWithSceneAssembly.
-        UsdMayaGL_InstancerShapeAdapterWithSceneAssembly();
+        UsdMayaGL_InstancerShapeAdapterWithSceneAssembly(bool isViewport2);
 
     private:
 

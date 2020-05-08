@@ -13,21 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-
-#include "meshWriter.h"
-#include "jointWriter.h"
-
-#include "../../fileio/translators/translatorSkel.h"
-#include "../../fileio/translators/translatorUtil.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdSkel/bindingAPI.h"
-#include "pxr/usd/usdSkel/root.h"
-#include "pxr/usd/usdSkel/utils.h"
+#include <ostream>
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -37,11 +23,22 @@
 #include <maya/MItDependencyGraph.h>
 #include <maya/MMatrix.h>
 
-#include <ostream>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdSkel/bindingAPI.h>
+#include <pxr/usd/usdSkel/root.h>
+#include <pxr/usd/usdSkel/utils.h>
 
+#include <mayaUsd/fileio/translators/translatorSkel.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+
+#include "jointWriter.h"
+#include "meshWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

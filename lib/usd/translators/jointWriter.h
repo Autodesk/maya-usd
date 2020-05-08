@@ -16,26 +16,23 @@
 #ifndef PXRUSDTRANSLATORS_JOINT_WRITER_H
 #define PXRUSDTRANSLATORS_JOINT_WRITER_H
 
-/// \file pxrUsdTranslators/jointWriter.h
-
-#include "pxr/pxr.h"
-
-#include "../../fileio/primWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdSkel/animation.h"
-#include "pxr/usd/usdSkel/animMapper.h"
-#include "pxr/usd/usdSkel/skeleton.h"
-#include "pxr/usd/usdSkel/topology.h"
+/// \file
 
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdSkel/animation.h>
+#include <pxr/usd/usdSkel/animMapper.h>
+#include <pxr/usd/usdSkel/skeleton.h>
+#include <pxr/usd/usdSkel/topology.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Exports joint hierarchies (the hierarchies of DAG nodes rooted at a joint)
 /// as a UsdSkelSkeleton, along with a UsdSkelAnimation if the joints are

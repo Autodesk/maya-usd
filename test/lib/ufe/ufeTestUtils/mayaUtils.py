@@ -23,11 +23,14 @@
 
 import maya.cmds as cmds
 import sys, os
+import re
 
 import ufe
 
 mayaRuntimeID = 1
 mayaSeparator = "|"
+
+prRe = re.compile('Preview Release ([0-9]+)')
 
 def loadPlugin(pluginName):
     """ 
@@ -127,3 +130,17 @@ def openTopLayerScene():
     filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "ballset", "StandaloneScene", "top_layer.ma" )
     cmds.file(filePath, force=True, open=True)
     
+def previewReleaseVersion():
+    '''Return the Maya Preview Release version.
+
+    If the version of Maya is not a Preview Release, returns sys.maxsize (a very
+    large number).  If the environment variable
+    MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE is defined, return its value instead.
+    '''
+
+    if 'MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE' in os.environ:
+        return int(os.environ['MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE'])
+
+    match = prRe.match(cmds.about(v=True))
+
+    return int(match.group(1)) if match else sys.maxsize

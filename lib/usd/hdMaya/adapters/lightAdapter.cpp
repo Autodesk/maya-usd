@@ -15,24 +15,29 @@
 //
 #include "lightAdapter.h"
 
+#include <iostream>
+
+#include <maya/MColor.h>
+#include <maya/MFnLight.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
+#include <maya/MPoint.h>
+
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
 
-#include <maya/MColor.h>
-#include <maya/MFnLight.h>
-#include <maya/MPlug.h>
-#include <maya/MPlugArray.h>
-#include <maya/MPoint.h>
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/constantShadowMatrix.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
-#include <maya/MNodeMessage.h>
+#if HDX_API_VERSION < 7
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+#endif
 
-#include "adapterDebugCodes.h"
-#include "constantShadowMatrix.h"
-#include "mayaAttrs.h"
-
-#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -273,10 +278,16 @@ void HdMayaLightAdapter::_CalculateShadowParams(
             : std::min(
                   GetDelegate()->GetParams().maximumShadowMapResolution,
                   dmapResolutionPlug.asInt());
+
     params.shadowMatrix =
+#if HDX_API_VERSION >= 7
+        std::make_shared<HdMayaConstantShadowMatrix>(
+            GetTransform() * _shadowProjectionMatrix);
+#else
         boost::static_pointer_cast<HdxShadowMatrixComputation>(
             boost::make_shared<HdMayaConstantShadowMatrix>(
                 GetTransform() * _shadowProjectionMatrix));
+#endif
     params.bias = dmapBiasPlug.isNull() ? -0.001 : -dmapBiasPlug.asFloat();
     params.blur = dmapFilterSizePlug.isNull()
                       ? 0.0

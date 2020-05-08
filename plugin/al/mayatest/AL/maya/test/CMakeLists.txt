@@ -18,9 +18,13 @@ target_sources(${MAYA_TEST_LIBRARY_NAME}
     testHarness.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(${MAYA_TEST_LIBRARY_NAME})
+
 target_compile_definitions(${MAYA_TEST_LIBRARY_NAME}
   PRIVATE
     $<$<BOOL:${IS_MACOSX}>:OSMac_>
+    $<$<BOOL:${IS_LINUX}>:LINUX>
     $<$<BOOL:${IS_WINDOWS}>:GTEST_LINKED_AS_SHARED_LIBRARY>
     AL_MAYA_TEST_EXPORT
 )

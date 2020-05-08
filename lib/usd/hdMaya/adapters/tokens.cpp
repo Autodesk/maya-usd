@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "tokens.h"
+#include <hdMaya/adapters/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

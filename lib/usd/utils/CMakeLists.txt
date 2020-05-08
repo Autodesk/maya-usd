@@ -12,21 +12,22 @@ target_sources(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYA_USD_UTILS_EXPORT
 )
- 
+
+mayaUsd_compile_config(${TARGET_NAME})
+
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME} 
-    PRIVATE
-        ${CMAKE_CURRENT_LIST_DIR}
-    INTERFACE
+    PUBLIC
         ${CMAKE_BINARY_DIR}/include
+    INTERFACE
         ${USD_INCLUDE_DIR}
 )
 

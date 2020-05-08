@@ -115,6 +115,8 @@ find_package_handle_standard_args(USD
         USD_LIBRARY_DIR
         USD_GENSCHEMA
         USD_CONFIG_FILE
+        USD_VERSION
+        USD_VERSION_NUM
     VERSION_VAR
         USD_VERSION
 )

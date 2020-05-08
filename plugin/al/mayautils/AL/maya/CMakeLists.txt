@@ -45,13 +45,13 @@ add_library(${MAYAUTILS_LIBRARY_NAME}
         ${maya_source}
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${MAYAUTILS_LIBRARY_NAME})
 
 target_compile_definitions(${MAYAUTILS_LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
         AL_MAYA_EVENTS_EXPORT
         AL_MAYA_UTILS_EXPORT
         AL_MAYA_MACROS_EXPORT
