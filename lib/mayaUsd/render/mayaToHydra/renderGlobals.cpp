@@ -177,10 +177,12 @@ void _CreateBoolAttribute(
     _CreateNumericAttribute<bool>(node, attrName, MFnNumericData::kBoolean, defValue);
 }
 
+#if USD_VERSION_NUM >= 2005
 void _CreateFloatAttribute(
     MFnDependencyNode& node, const TfToken& attrName, float defValue) {
     _CreateNumericAttribute<float>(node, attrName, MFnNumericData::kFloat, defValue);
 }
+#endif
 
 void _CreateStringAttribute(
     MFnDependencyNode& node, const TfToken& attrName,
