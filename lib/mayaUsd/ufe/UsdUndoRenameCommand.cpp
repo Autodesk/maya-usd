@@ -60,8 +60,23 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
     }
     else
     {
-        auto layers = MayaUsdUtils::layersWithPrimSpec(_prim);
+        // account for internal vs external references
+        if (_prim.HasAuthoredReferences()) {
+            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, _prim);
+            for (const SdfReference& ref : primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
+                // GetAssetPath returns the asset path to the root layer of the referenced layer
+                // this will be empty in the case of an internal reference.
+                if (ref.GetAssetPath().empty()) { 
+                    return;
+                }else{
+                   std::string err = TfStringPrintf("Unable to rename referenced object [%s]", 
+                                                    _prim.GetName().GetString().c_str());
+                   throw std::runtime_error(err.c_str());
+                }
+            }
+        }
 
+        auto layers = MayaUsdUtils::layersWithPrimSpec(_prim);
         if (layers.size() > 1) {
             std::string layerDisplayNames;
             for (auto layer : layers) {

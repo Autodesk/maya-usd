@@ -267,3 +267,39 @@ class RenameTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
            newName = 'Ball_35_Renamed'
            cmds.rename(newName)
+
+    def testRenameRestrictionExternalReference(self):
+        # open tree_ref.ma scene in test-samples
+        mayaUtils.openTreeRefScene()
+
+        # clear selection to start off
+        cmds.select(clear=True)
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|TreeRef_usd|TreeRef_usdShape')
+        usdPathSegment = usdUtils.createUfePathSegment('/TreeBase/leaf_ref_2')
+        treebasePath = ufe.Path([mayaPathSegment, usdPathSegment])
+        treebaseItem = ufe.Hierarchy.createItem(treebasePath)
+
+        ufe.GlobalSelection.get().append(treebaseItem)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        self.assertTrue(stage.GetRootLayer().GetPrimAtPath("/TreeBase"))
+
+        # create a leafRefPrim
+        leafRefPrim = usdUtils.getPrimFromSceneItem(treebaseItem)
+
+        # leafRefPrim should have an Authored References
+        self.assertTrue(leafRefPrim.HasAuthoredReferences())
+
+        # expect the exception to happen
+        with self.assertRaises(RuntimeError):
+           newName = 'leaf_ref_2_renaming'
+           cmds.rename(newName)
+
+
