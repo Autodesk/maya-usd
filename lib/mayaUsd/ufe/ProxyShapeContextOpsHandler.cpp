@@ -24,7 +24,7 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-ProxyShapeContextOpsHandler::ProxyShapeContextOpsHandler(Ufe::ContextOpsHandler::Ptr mayaContextOpsHandler)
+ProxyShapeContextOpsHandler::ProxyShapeContextOpsHandler(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler)
 	: Ufe::ContextOpsHandler()
 	, _mayaContextOpsHandler(mayaContextOpsHandler)
 {}
@@ -34,7 +34,7 @@ ProxyShapeContextOpsHandler::~ProxyShapeContextOpsHandler()
 }
 
 /*static*/
-ProxyShapeContextOpsHandler::Ptr ProxyShapeContextOpsHandler::create(Ufe::ContextOpsHandler::Ptr mayaContextOpsHandler)
+ProxyShapeContextOpsHandler::Ptr ProxyShapeContextOpsHandler::create(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler)
 {
 	return std::make_shared<ProxyShapeContextOpsHandler>(mayaContextOpsHandler);
 }

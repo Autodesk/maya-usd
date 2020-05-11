@@ -79,10 +79,8 @@ public:
             _primPath = usdItemPath.AppendChild(PXR_NS::TfToken(newPrimName));
 
             // The type of prim we were asked to create.
-            if (itemPath[1] == "Def")
-                _primToken = TfToken();     // create typeless prim
-            else
-                _primToken = TfToken(itemPath[1]);
+            // Note: "Def" means create typeless prim.
+            _primToken = (itemPath[1] == "Def") ? TfToken() : TfToken(itemPath[1]);
         }
     }
 
