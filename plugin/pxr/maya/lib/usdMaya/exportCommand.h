@@ -24,7 +24,7 @@
 
 #include <maya/MPxCommand.h>
 
-#include <mayaUsd/fileio/commands/baseExportCommand.h>
+#include <mayaUsd/commands/baseExportCommand.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

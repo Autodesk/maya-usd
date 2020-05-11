@@ -18,7 +18,7 @@
 
 #include "base/api.h"
 
-#include <mayaUsd/fileio/commands/baseImportCommand.h>
+#include <mayaUsd/commands/baseImportCommand.h>
 
 MAYAUSD_NS_DEF {
 

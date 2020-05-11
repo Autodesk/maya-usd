@@ -22,7 +22,7 @@
 
 #include "pxr/pxr.h"
 
-#include <mayaUsd/fileio/commands/baseImportCommand.h>
+#include <mayaUsd/commands/baseImportCommand.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
