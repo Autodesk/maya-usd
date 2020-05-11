@@ -71,6 +71,11 @@ public:
         _stage = MayaUsd::ufe::getStage(Ufe::Path(dagSegment));
         if (_stage) {
             // Rename the new prim for uniqueness, if needed.
+            // When we have a gateway type node, the prim we'll be adding will be
+            // in a different runtime (USD vs Maya). So technically just appending
+            // itemPath[1] isn't correct. But in this case it is only used by
+            // uniqueChildName() which just takes the back of the path for child
+            //  name, so it's fine.
             Ufe::Path newUfePath = ufePath + itemPath[1];
             auto newPrimName = uniqueChildName(usdSceneItem, newUfePath);
 
@@ -158,6 +163,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
                 items.emplace_back(
                     "Variant Sets", "Variant Sets", Ufe::ContextItem::kHasChildren);
             }
+            // If the item has a visibility attribute, add menu item to change visibility.
+            // Note: certain prim types such as shaders & materials don't support visibility.
             auto attributes = Ufe::Attributes::attributes(sceneItem());
             if (attributes && attributes->hasAttribute(UsdGeomTokens->visibility)) {
                 auto visibility =
