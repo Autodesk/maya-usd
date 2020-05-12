@@ -66,16 +66,22 @@ public:
 	UsdStageMap(UsdStageMap&&) = delete;
 	UsdStageMap& operator=(UsdStageMap&&) = delete;
 
-	//!Add the input Ufe path and USD Stage to the map.
-	void addItem(const Ufe::Path& path, UsdStageWeakPtr stage);
-
 	//! Get USD stage corresponding to argument Maya Dag path.
-	UsdStageWeakPtr stage(const Ufe::Path& path) const;
+	UsdStageWeakPtr stage(const Ufe::Path& path);
 
 	//! Return the ProxyShape node UFE path for the argument stage.
-	Ufe::Path path(UsdStageWeakPtr stage) const;
+	Ufe::Path path(UsdStageWeakPtr stage);
 
-	void clear();
+	//! Set the stage map as dirty. It will be cleared immediately, but
+	//! only repopulated when stage info is requested.
+	void setDirty();
+
+	//! Returns true if the stage map is dirty (meaning it needs to be filled in).
+	bool isDirty() const { return fDirty; }
+
+private:
+	void addItem(const Ufe::Path& path, UsdStageWeakPtr stage);
+	void rebuildIfDirty();
 
 private:
 	// We keep two maps for fast lookup when there are many proxy shapes.
@@ -83,6 +89,7 @@ private:
 	using StageToObject = TfHashMap<UsdStageWeakPtr, MObjectHandle, TfHash>;
 	ObjectToStage fObjectToStage;
 	StageToObject fStageToObject;
+	bool fDirty{true};
 
 }; // UsdStageMap
 
