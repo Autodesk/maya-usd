@@ -76,7 +76,10 @@ private:
 
 private:
 	// Notice listener method for proxy stage set
-	void onStageSet(const UsdMayaProxyStageSetNotice& notice);
+	void onStageSet(const MayaUsdProxyStageSetNotice& notice);
+
+	// Notice listener method for proxy stage invalidate.
+	void onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice);
 
 	// Map of per-stage listeners, indexed by stage.
 	typedef TfHashMap<UsdStageWeakPtr, TfNotice::Key, TfHash> StageListenerMap;

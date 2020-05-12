@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef USDMAYA_PROXYSTAGE_NOTICE_H
-#define USDMAYA_PROXYSTAGE_NOTICE_H
+#ifndef MAYAUSD_PROXYSTAGE_NOTICE_H
+#define MAYAUSD_PROXYSTAGE_NOTICE_H
 
 #include <maya/MObject.h>
 
@@ -27,11 +27,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 class MayaUsdProxyShapeBase;
 
 /// Notice sent when the ProxyShape loads a new stage
-class UsdMayaProxyStageSetNotice : public TfNotice
+class MayaUsdProxyStageBaseNotice : public TfNotice
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMayaProxyStageSetNotice(const MayaUsdProxyShapeBase& proxy);
+    MayaUsdProxyStageBaseNotice(const MayaUsdProxyShapeBase& proxy);
 
     /// Get proxy shape which had stage set
     MAYAUSD_CORE_PUBLIC
@@ -39,6 +39,18 @@ public:
 
 private:
     const MayaUsdProxyShapeBase& _proxy;
+};
+
+class MayaUsdProxyStageSetNotice : public MayaUsdProxyStageBaseNotice
+{
+public:
+    using MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice;
+};
+
+class MayaUsdProxyStageInvalidateNotice : public MayaUsdProxyStageBaseNotice
+{
+public:
+    using MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -4,6 +4,7 @@ list(APPEND scripts_src
     AEmayaUsdProxyShapeTemplate.mel
     mayaUsdMenu.mel
     mayaUsd_createStageFromFile.mel
+    mayaUsd_createStageWithNewLayer.py
     mayaUsd_createStageFromAsset.mel
 )
 

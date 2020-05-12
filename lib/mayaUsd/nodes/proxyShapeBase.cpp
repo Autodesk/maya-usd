@@ -496,6 +496,11 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
             usdStage->SetEditTarget(usdStage->GetSessionLayer());
         }
+        else if (!usdStage) {
+            // Create a new stage in memory with an anonymous root layer.
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
+            usdStage = UsdStage::CreateInMemory("", loadSet);
+        }
 
         if (usdStage) {
             primPath = usdStage->GetPseudoRoot().GetPath();
@@ -621,7 +626,7 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
                   this,
                   std::placeholders::_1));
 
-    UsdMayaProxyStageSetNotice(*this).Send();
+    MayaUsdProxyStageSetNotice(*this).Send();
 
     return MS::kSuccess;
 }
@@ -797,6 +802,7 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
         plug == loadPayloadsAttr ||
         plug == inStageDataAttr) {
         _IncreaseUsdStageVersion();
+        MayaUsdProxyStageInvalidateNotice(*this).Send();
     }
 
     return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
