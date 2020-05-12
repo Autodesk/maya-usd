@@ -66,9 +66,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
         if (prim.HasAuthoredReferences()) {
             auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
 
-            if(MayaUsdUtils::isInternalReference(primSpec)) {
-                return;
-            }else {
+            if(!MayaUsdUtils::isInternalReference(primSpec)) {
                 std::string err = TfStringPrintf("Unable to rename referenced object [%s]", 
                                                   prim.GetName().GetString().c_str());
                 throw std::runtime_error(err.c_str());
