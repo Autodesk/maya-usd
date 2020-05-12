@@ -171,6 +171,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestScale(expected)
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
     def testScaleUSD(self):
         '''Scale USD object, read through the Transform3d interface.'''
 
@@ -207,6 +208,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestScale(expected)
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
     def testMultiSelectScaleUSD(self):
         '''Scale multiple USD objects, read through Transform3d interface.'''
 
