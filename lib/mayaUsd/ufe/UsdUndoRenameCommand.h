@@ -57,10 +57,8 @@ private:
     UsdSceneItem::Ptr _ufeSrcItem;
     UsdSceneItem::Ptr _ufeDstItem;
 
-    const UsdPrim& _prim;
     UsdStageWeakPtr _stage;
     std::string _newName;
-    std::string _oldName;
 
 }; // UsdUndoRenameCommand
 

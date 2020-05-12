@@ -44,25 +44,25 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
     : Ufe::UndoableCommand()
     , _ufeSrcItem(srcItem)
     , _ufeDstItem(nullptr)
-    , _prim(srcItem->prim())
-    , _stage(_prim.GetStage())
+    , _stage(_ufeSrcItem->prim().GetStage())
     , _newName(newName.string())
-    , _oldName(_prim.GetName().GetString())
 {
+    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
+
     // if the current layer doesn't have any opinions that affects selected prim
-    if (!MayaUsdUtils::doesEditTargetLayerHavePrimSpec(_prim)) {
-        auto possibleTargetLayer = MayaUsdUtils::strongestLayerWithPrimSpec(_prim);
+    if (!MayaUsdUtils::doesEditTargetLayerHavePrimSpec(prim)) {
+        auto possibleTargetLayer = MayaUsdUtils::strongestLayerWithPrimSpec(prim);
         std::string err = TfStringPrintf("Cannot rename [%s] defined on another layer. " 
                                          "Please set [%s] as the target layer to proceed", 
-                                         _prim.GetName().GetString().c_str(),
+                                         prim.GetName().GetString().c_str(),
                                          possibleTargetLayer->GetDisplayName().c_str());
         throw std::runtime_error(err.c_str());
     }
     else
     {
         // account for internal vs external references
-        if (_prim.HasAuthoredReferences()) {
-            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, _prim);
+        if (prim.HasAuthoredReferences()) {
+            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
             for (const SdfReference& ref : primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
                 // GetAssetPath returns the asset path to the root layer of the referenced layer
                 // this will be empty in the case of an internal reference.
@@ -70,13 +70,13 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
                     return;
                 }else{
                    std::string err = TfStringPrintf("Unable to rename referenced object [%s]", 
-                                                    _prim.GetName().GetString().c_str());
+                                                    prim.GetName().GetString().c_str());
                    throw std::runtime_error(err.c_str());
                 }
             }
         }
 
-        auto layers = MayaUsdUtils::layersWithPrimSpec(_prim);
+        auto layers = MayaUsdUtils::layersWithPrimSpec(prim);
         if (layers.size() > 1) {
             std::string layerDisplayNames;
             for (auto layer : layers) {
@@ -84,7 +84,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
             }
             layerDisplayNames.pop_back();
             std::string err = TfStringPrintf("Cannot rename [%s] with definitions or opinions on other layers. "
-                                             "Opinions exist in %s", _prim.GetName().GetString().c_str(), layerDisplayNames.c_str());
+                                             "Opinions exist in %s", prim.GetName().GetString().c_str(), layerDisplayNames.c_str());
             throw std::runtime_error(err.c_str());
         }
     }
@@ -106,7 +106,9 @@ UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const
 
 bool UsdUndoRenameCommand::renameRedo()
 {
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, _prim);
+    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
+
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
     if(!primSpec) {
         return false;
     }
@@ -128,20 +130,22 @@ bool UsdUndoRenameCommand::renameRedo()
 
 bool UsdUndoRenameCommand::renameUndo()
 {
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, _ufeDstItem->prim());
+    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
+
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
     if(!primSpec) {
         return false;
     }
 
     // set prim's name
-    bool status = primSpec->SetName(_oldName);
+    bool status = primSpec->SetName(_ufeSrcItem->prim().GetName());
     if (!status) {
         return false;
     }
 
     // shouldn't have to again create a sibling sceneItem here since we already have a valid _ufeSrcItem
     // however, I get random crashes if I don't which needs furthur investigation.  HS, 6-May-2020.
-    _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _oldName);
+    _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
     sendRenameNotification(_ufeSrcItem, _ufeDstItem->path());
 
     _ufeDstItem = nullptr;
