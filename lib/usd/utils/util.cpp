@@ -111,6 +111,7 @@ isInternalReference(const SdfPrimSpecHandle& primSpec)
         // this will be empty in the case of an internal reference.
         if (ref.GetAssetPath().empty()) {
             isInternalRef = true;
+            break;
         }
     }
 
