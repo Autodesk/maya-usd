@@ -25,6 +25,7 @@ from ufeTestUtils import usdUtils, mayaUtils
 import ufe
 
 import unittest
+import os
 
 class ContextOpsTestCase(unittest.TestCase):
     '''Verify the ContextOps interface for the USD runtime.'''
@@ -155,7 +156,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.undo()
 
-
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrim only available in UFE preview version 0.2.15 and greater')
     def testAddNewPrim(self):
         # Create a ContextOps interface for the proxy shape.
         proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage|stageShape")])
