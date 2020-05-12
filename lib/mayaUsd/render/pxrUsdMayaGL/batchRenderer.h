@@ -264,12 +264,6 @@ public:
     static const HdxPickHit* GetNearestHit(
             const HdxPickHitVector* hitSet);
 
-    /// Returns the index within the point instancer for \c hit.
-    ///
-    /// Returns -1 if unable to get the instanceIndex.
-    MAYAUSD_CORE_PUBLIC
-    int GetInstancerIndexForHit(const HdxPickHit& hit) const;
-
     /// Returns whether soft selection for proxy shapes is currently enabled.
     MAYAUSD_CORE_PUBLIC
     inline bool GetObjectSoftSelectEnabled()
