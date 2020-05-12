@@ -35,6 +35,8 @@ namespace {
 // Ufe::ContextItem strings
 // - the "Item" describe the operation to be performed.
 // - the "Label" is used in the context menu (can be localized).
+static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
+static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor...";
 static constexpr char kUSDVariantSetsItem[] = "Variant Sets";
 static constexpr char kUSDVariantSetsLabel[] = "Variant Sets";
 static constexpr char kUSDToggleVisibilityItem[] = "Toggle Visibility";
@@ -184,6 +186,16 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
 {
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
+        // Top-level item - USD Layer editor (for all context op types).
+        int hasLayerEditorCmd{0};
+        MGlobal::executeCommand("runTimeCommand -exists UsdLayerEditor", hasLayerEditorCmd);
+        if (hasLayerEditorCmd) {
+            items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
+#if UFE_PREVIEW_VERSION_NUM >= 2015
+            items.emplace_back(Ufe::ContextItem::kSeparator);
+#endif
+        }
+
         // Top-level items.  Variant sets and visibility. Do not add for gateway type node.
         if (!fIsAGatewayType) {
             if (fPrim.HasVariantSets()) {
@@ -297,6 +309,11 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // At this point we know we have 2 arguments to execute the operation.
         // itemPath[1] contains the new prim type to create.
         return std::make_shared<AddNewPrimUndoableCommand>(fItem, itemPath);
+    }
+    else if (itemPath[0] == kUSDLayerEditorItem) {
+        // Just open the editor directly and return null so we don't have undo.
+        MGlobal::executeCommand("UsdLayerEditor");
+        return nullptr;
     }
 
     return nullptr;
