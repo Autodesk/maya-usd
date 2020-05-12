@@ -20,47 +20,34 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
-	: Ufe::TranslateUndoableCommand(item)
-	, fPrim(prim)
-	, fPath(ufePath)
-	, fNoPivotOp(false)
-{
-	// Prim does not have a pivot translate attribute
-	const TfToken xpivot("xformOp:translate:pivot");
-	if (!fPrim.HasAttribute(xpivot))
-	{
-		fNoPivotOp = true;
-		// Add an empty pivot translate.
-		rotatePivotTranslateOp(fPrim, fPath, 0, 0, 0);
-	}
-
-	fPivotAttrib = fPrim.GetAttribute(xpivot);
-	fPivotAttrib.Get<GfVec3f>(&fPrevPivotValue);
-}
+UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(
+    const UsdSceneItem::Ptr& item, GfVec3f rotPivot
+) : Ufe::TranslateUndoableCommand(item),
+    UsdTRSUndoableCommandBase(item, std::move(rotPivot), UsdGeomXformOp::Type::TypeTranslate)
+{}
 
 UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand()
-{
-}
+{}
 
 /*static*/
-UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(
+    const UsdSceneItem::Ptr& item, GfVec3f rotPivot
+)
 {
-	return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(prim, ufePath, item);
+	auto cmd = std::make_shared<MakeSharedEnabler<UsdRotatePivotTranslateUndoableCommand>>(
+        item, std::move(rotPivot));
+    cmd->initialize();
+    return cmd;
 }
 
 void UsdRotatePivotTranslateUndoableCommand::undo()
 {
-	fPivotAttrib.Set(fPrevPivotValue);
-	// Todo : We would want to remove the xformOp
-	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
+    UsdTRSUndoableCommandBase::undo();
 }
 
 void UsdRotatePivotTranslateUndoableCommand::redo()
 {
-	// No-op, use move to translate the rotate pivot of the object.
-	// The Maya move command directly invokes our translate() method in its
-	// redoIt(), which is invoked both for the inital move and the redo.
+    UsdTRSUndoableCommandBase::redo();
 }
 
 //------------------------------------------------------------------------------
@@ -69,7 +56,7 @@ void UsdRotatePivotTranslateUndoableCommand::redo()
 
 bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)
 {
-	rotatePivotTranslateOp(fPrim, fPath, x, y, z);
+	perform(x, y, z);
 	return true;
 }
 

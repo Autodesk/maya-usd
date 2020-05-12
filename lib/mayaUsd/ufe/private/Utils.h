@@ -44,31 +44,8 @@ const std::string kIllegalUSDPath = "Illegal USD run-time path %s.";
 			TF_WARN(kIllegalUSDPath.c_str(), PATH.string().c_str());
 #endif
 
-//------------------------------------------------------------------------------
-// Private helper functions
-//------------------------------------------------------------------------------
-
-//! Extended support for the xform operations.
-UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim);
-
 //! Apply restriction rules on the given prim
 void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName);
-
-//------------------------------------------------------------------------------
-// Operations: translate, rotate, scale, pivot
-//------------------------------------------------------------------------------
-
-//! Absolute translation of the given prim.
-void translateOp(const UsdPrim& prim, const Ufe::Path& path, double x, double y, double z);
-
-//! Absolute rotation (degrees) of the given prim.
-void rotateOp(const UsdPrim& prim, const Ufe::Path& path, double x, double y, double z);
-
-//! Absolute scale of the given prim.
-void scaleOp(const UsdPrim& prim, const Ufe::Path& path, double x, double y, double z);
-
-//! Absolute translation of the given prim's pivot point.
-void rotatePivotTranslateOp(const UsdPrim& prim, const Ufe::Path& path, double x, double y, double z);
 
 } // namespace ufe
 } // namespace MayaUsd

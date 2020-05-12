@@ -20,6 +20,7 @@
 #include <pxr/usd/usd/attribute.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -30,13 +31,10 @@ namespace ufe {
 /*!
 	Ability to perform undo to restore the original pivot value.
  */
-class MAYAUSD_CORE_PUBLIC UsdRotatePivotTranslateUndoableCommand : public Ufe::TranslateUndoableCommand
+class MAYAUSD_CORE_PUBLIC UsdRotatePivotTranslateUndoableCommand : public Ufe::TranslateUndoableCommand, public UsdTRSUndoableCommandBase
 {
 public:
 	typedef std::shared_ptr<UsdRotatePivotTranslateUndoableCommand> Ptr;
-
-	UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
-	~UsdRotatePivotTranslateUndoableCommand() override;
 
 	// Delete the copy/move constructors assignment operators.
 	UsdRotatePivotTranslateUndoableCommand(const UsdRotatePivotTranslateUndoableCommand&) = delete;
@@ -44,20 +42,16 @@ public:
 	UsdRotatePivotTranslateUndoableCommand(UsdRotatePivotTranslateUndoableCommand&&) = delete;
 	UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&) = delete;
 
+	UsdRotatePivotTranslateUndoableCommand(const UsdSceneItem::Ptr& item, GfVec3f rotPivot = {0,0,0});
+	~UsdRotatePivotTranslateUndoableCommand() override;
+
 	//! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdRotatePivotTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	static UsdRotatePivotTranslateUndoableCommand::Ptr create(const UsdSceneItem::Ptr& item, GfVec3f rotPivot = {0,0,0});
 
 	// Ufe::TranslateUndoableCommand overrides
 	void undo() override;
 	void redo() override;
 	bool translate(double x, double y, double z) override;
-
-private:
-	UsdPrim fPrim;
-	UsdAttribute fPivotAttrib;
-	GfVec3f fPrevPivotValue;
-	Ufe::Path fPath;
-	bool fNoPivotOp;
 
 }; // UsdRotatePivotTranslateUndoableCommand
 

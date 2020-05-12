@@ -19,6 +19,7 @@
 #include <ufe/transform3d.h>
 
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
@@ -83,9 +84,9 @@ public:
 	Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
 private:
+
 	UsdSceneItem::Ptr fItem;
 	UsdPrim fPrim;
-
 }; // UsdTransform3d
 
 } // namespace ufe

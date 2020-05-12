@@ -22,6 +22,7 @@
 
 #include <ufe/observer.h>
 #include <ufe/transform3dUndoableCommands.h>
+#include <mayaUsd/ufe/UsdTransform3d.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -46,22 +47,22 @@ namespace ufe {
 //   reparented.  In such a case, the prim in the command's scene item
 //   becomes stale, and the prim in the updated scene item should be used.
 //
-template<class V>
 class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase : public Ufe::Observer,
-        public std::enable_shared_from_this<UsdTRSUndoableCommandBase<V> >
+        public std::enable_shared_from_this<UsdTRSUndoableCommandBase>
 {
 protected:
 
-    UsdTRSUndoableCommandBase(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
-    ~UsdTRSUndoableCommandBase() = default;
+    UsdTRSUndoableCommandBase(const UsdSceneItem::Ptr& item,
+        GfVec3f vec, UsdGeomXformOp::Type opType);
 
-    // Initialize the command.
-    void initialize();
+    UsdTRSUndoableCommandBase(const UsdSceneItem::Ptr& item,
+        GfVec3d vec, UsdGeomXformOp::Type opType);
+
+    ~UsdTRSUndoableCommandBase();
 
     // Undo and redo implementations.
-    void undoImp();
-    void redoImp();
+    void undo();
+    void redo();
 
     // Set the new value of the command (for redo), and execute the command.
     void perform(double x, double y, double z);
@@ -72,38 +73,26 @@ protected:
     inline UsdPrim prim() const { return fItem->prim(); }
     inline Ufe::Path path() const { return fItem->path(); }
 
-    // Hooks to be implemented by the derived class: name of the attribute set
-    // by the command, implementation of perform(), and add empty attribute.
-    // Implementation of cannotInit() in this class returns false.
-    virtual TfToken attributeName() const = 0;
-    virtual void performImp(double x, double y, double z) = 0;
-    virtual void addEmptyAttribute() = 0;
-    virtual bool cannotInit() const;
+    bool initialize();
 
 private:
+    class ExtendedUndo;
 
     // Overridden from Ufe::Observer
     void operator()(const Ufe::Notification& notification) override;
 
     template<class N> void checkNotification(const N* notification);
 
-    inline UsdAttribute attribute() const {
-      return prim().GetAttribute(attributeName());
-    }
-
     UsdSceneItem::Ptr fItem;
-    V                 fPrevValue;
-    V                 fNewValue;
-    bool              fOpAdded{false};
-    bool              fDoneOnce{false};
+    std::unique_ptr<ExtendedUndo> fExtendedUndo;
 }; // UsdTRSUndoableCommandBase
 
 // shared_ptr requires public ctor, dtor, so derive a class for it.
 template<class T>
 struct MakeSharedEnabler : public T {
-    MakeSharedEnabler(
-        const UsdSceneItem::Ptr& item, double x, double y, double z)
-        : T(item, x, y, z) {}
+    template <typename V>
+    MakeSharedEnabler(const UsdSceneItem::Ptr& item, V vec)
+        : T(item, std::move(vec)) {}
 };
 
 } // namespace ufe

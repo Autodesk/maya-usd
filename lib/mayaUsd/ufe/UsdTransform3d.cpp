@@ -103,118 +103,81 @@ Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const
 #if UFE_PREVIEW_VERSION_NUM >= 2013
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double y, double z)
 {
-	return UsdTranslateUndoableCommand::create(fItem, x, y, z);
-}
-#endif
-
-void UsdTransform3d::translate(double x, double y, double z)
-{
-	translateOp(fPrim, fItem->path(), x, y, z);
+	return UsdTranslateUndoableCommand::create(fItem, GfVec3d(x,y,z));
 }
 
-Ufe::Vector3d UsdTransform3d::translation() const
-{
-	double x{0}, y{0}, z{0};
-	const TfToken xlate("xformOp:translate");
-	if (fPrim.HasAttribute(xlate))
-	{
-		// Initially, attribute can be created, but have no value.
-		GfVec3d v;
-		if (fPrim.GetAttribute(xlate).Get<GfVec3d>(&v,getTime(path())))
-		{
-			x = v[0]; y = v[1]; z = v[2];
-		}
-	}
-	return Ufe::Vector3d(x, y, z);
-}
-
-#if UFE_PREVIEW_VERSION_NUM >= 2013
 Ufe::Vector3d UsdTransform3d::rotation() const
 {
-	double x{0}, y{0}, z{0};
-	const TfToken rotXYZ("xformOp:rotateXYZ");
-	if (fPrim.HasAttribute(rotXYZ))
-	{
-		// Initially, attribute can be created, but have no value.
-		GfVec3f v;
-		if (fPrim.GetAttribute(rotXYZ).Get<GfVec3f>(&v,getTime(path())))
-		{
-			x = v[0]; y = v[1]; z = v[2];
-		}
-	}
-	return Ufe::Vector3d(x, y, z);
+	return Ufe::Vector3d(0,0,0);
 }
 
 Ufe::Vector3d UsdTransform3d::scale() const
 {
-	double x{0}, y{0}, z{0};
-	const TfToken scaleTok("xformOp:scale");
-	if (fPrim.HasAttribute(scaleTok))
-	{
-		// Initially, attribute can be created, but have no value.
-		GfVec3f v;
-		if (fPrim.GetAttribute(scaleTok).Get<GfVec3f>(&v,getTime(path())))
-		{
-			x = v[0]; y = v[1]; z = v[2];
-		}
-	}
-	return Ufe::Vector3d(x, y, z);
+	return Ufe::Vector3d(1,1,1);
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, double z)
 {
-	return UsdRotateUndoableCommand::create(fItem, x, y, z);
-}
-#endif
-
-void UsdTransform3d::rotate(double x, double y, double z)
-{
-	rotateOp(fPrim, fItem->path(), x, y, z);
+	return UsdRotateUndoableCommand::create(fItem, GfVec3f(x, y, z));
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2013
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, double z)
 {
-	return UsdScaleUndoableCommand::create(fItem, x, y, z);
+	return UsdScaleUndoableCommand::create(fItem, GfVec3f(x, y, z));
 }
 
-#else
+#else // UFE_PREVIEW_VERSION_NUM < 2013
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 {
-	return UsdTranslateUndoableCommand::create(fItem, 0, 0, 0);
+	return UsdTranslateUndoableCommand::create(fItem);
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 {
-	return UsdRotateUndoableCommand::create(fItem, 0, 0, 0);
+	return UsdRotateUndoableCommand::create(fItem);
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 {
-	return UsdScaleUndoableCommand::create(fItem, 1, 1, 1);
+	return UsdScaleUndoableCommand::create(fItem);
 }
+
 #endif
+
+void UsdTransform3d::translate(double x, double y, double z)
+{
+	UsdTranslateUndoableCommand(fItem, GfVec3d(x, y, z)).translate(x, y, z);
+}
+
+Ufe::Vector3d UsdTransform3d::translation() const
+{
+	return Ufe::Vector3d(0,0,0);
+}
+
+void UsdTransform3d::rotate(double x, double y, double z)
+{
+	UsdRotateUndoableCommand(fItem, GfVec3f(x,y,z)).rotate(x,y,z);
+}
 
 void UsdTransform3d::scale(double x, double y, double z)
 {
-	scaleOp(fPrim, fItem->path(), x, y, z);
+	UsdScaleUndoableCommand(fItem, GfVec3f(x,y,z)).scale(x,y,z);
 }
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 {
-	auto translateCmd = UsdRotatePivotTranslateUndoableCommand::create(fPrim, fItem->path(), fItem);
-	return translateCmd;
+	return UsdRotatePivotTranslateUndoableCommand::create(fItem);
 }
 
 void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)
 {
-	rotatePivotTranslateOp(fPrim, fItem->path(), x, y, z);
+	UsdRotatePivotTranslateUndoableCommand(fItem, GfVec3f(x,y,z)).translate(x,y,z);
 }
 
 Ufe::Vector3d UsdTransform3d::rotatePivot() const
 {
-	double x{0}, y{0}, z{0};
+	float x{0}, y{0}, z{0};
 	const TfToken xpivot("xformOp:translate:pivot");
 	if (fPrim.HasAttribute(xpivot))
 	{

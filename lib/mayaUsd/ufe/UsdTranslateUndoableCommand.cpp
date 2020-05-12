@@ -20,12 +20,10 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
-
 UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
+    const UsdSceneItem::Ptr& item, GfVec3d translate
 ) : Ufe::TranslateUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, x, y, z)
+    UsdTRSUndoableCommandBase(item, std::move(translate), UsdGeomXformOp::Type::TypeTranslate)
 {}
 
 UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
@@ -33,33 +31,23 @@ UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
 
 /*static*/
 UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
+    const UsdSceneItem::Ptr& item, GfVec3d translate
 )
 {
     auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(
-        item, x, y, z);
+        item, std::move(translate));
     cmd->initialize();
     return cmd;
 }
 
 void UsdTranslateUndoableCommand::undo()
 {
-    undoImp();
+    UsdTRSUndoableCommandBase::undo();
 }
 
 void UsdTranslateUndoableCommand::redo()
 {
-    redoImp();
-}
-
-void UsdTranslateUndoableCommand::addEmptyAttribute()
-{
-    performImp(0, 0, 0);    // Add an empty translate
-}
-
-void UsdTranslateUndoableCommand::performImp(double x, double y, double z)
-{
-    translateOp(prim(), path(), x, y, z);
+    UsdTRSUndoableCommandBase::redo();
 }
 
 //------------------------------------------------------------------------------

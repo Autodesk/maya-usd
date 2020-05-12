@@ -20,12 +20,10 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
-
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
+    const UsdSceneItem::Ptr& item, GfVec3f scale
 ) : Ufe::ScaleUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, x, y, z)
+    UsdTRSUndoableCommandBase(item, std::move(scale), UsdGeomXformOp::Type::TypeScale)
 {}
 
 UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
@@ -33,36 +31,23 @@ UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
 
 /*static*/
 UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-)
+    const UsdSceneItem::Ptr& item, GfVec3f scale)
 {
-	auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
-        item, x, y, z);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
+        item, std::move(scale));
     cmd->initialize();
     return cmd;
-
 }
 
 void UsdScaleUndoableCommand::undo()
 {
-    undoImp();
+    UsdTRSUndoableCommandBase::undo();
 }
 
 void UsdScaleUndoableCommand::redo()
 {
-	redoImp();
+    UsdTRSUndoableCommandBase::redo();
 }
-
-void UsdScaleUndoableCommand::addEmptyAttribute()
-{
-    performImp(1, 1, 1);	// Add a neutral scale
-}
-
-void UsdScaleUndoableCommand::performImp(double x, double y, double z)
-{
-	scaleOp(prim(), path(), x, y, z);
-}
-
 
 //------------------------------------------------------------------------------
 // Ufe::ScaleUndoableCommand overrides

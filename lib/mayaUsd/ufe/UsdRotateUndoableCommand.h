@@ -33,7 +33,7 @@ namespace ufe {
 /*!
 	Ability to perform undo to restore the original rotation value.
  */
-class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand : public Ufe::RotateUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3f>
+class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand : public Ufe::RotateUndoableCommand, public UsdTRSUndoableCommandBase
 {
 public:
 	typedef std::shared_ptr<UsdRotateUndoableCommand> Ptr;
@@ -43,33 +43,19 @@ public:
 	UsdRotateUndoableCommand(UsdRotateUndoableCommand&&) = delete;
 	UsdRotateUndoableCommand& operator=(UsdRotateUndoableCommand&&) = delete;
 
+    //! Construct a UsdRotateUndoableCommand.  The command is not executed.
+    UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, GfVec3f rotate = {0,0,0});
+    ~UsdRotateUndoableCommand() override;
+
 	//! Create a UsdRotateUndoableCommand from a UFE scene item.  The
 	//! command is not executed.
-	static UsdRotateUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+	static UsdRotateUndoableCommand::Ptr create(const UsdSceneItem::Ptr& item, GfVec3f rotate = {0,0,0});
 
 	// Ufe::RotateUndoableCommand overrides.  rotate() sets the command's
 	// rotation value and executes the command.
 	void undo() override;
 	void redo() override;
 	bool rotate(double x, double y, double z) override;
-
-protected:
-
-    //! Construct a UsdRotateUndoableCommand.  The command is not executed.
-	UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
-	~UsdRotateUndoableCommand() override;
-
-private:
-
-    static TfToken rotXYZ;
-
-    TfToken attributeName() const override { return rotXYZ; }
-    void performImp(double x, double y, double z) override;
-    void addEmptyAttribute() override;
-    bool cannotInit() const override { return bool(fFailedInit); }
-
-	std::exception_ptr fFailedInit;
 
 }; // UsdRotateUndoableCommand
 
