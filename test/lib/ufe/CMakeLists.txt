@@ -19,6 +19,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testGroupCmd.py
         testAttribute.py
         testAttributes.py
+        testComboCmd.py
         testDuplicateCmd.py
         testMoveCmd.py
         testObject3d.py
