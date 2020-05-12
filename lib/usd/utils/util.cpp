@@ -101,4 +101,20 @@ getPrimSpecAtEditTarget(UsdStageWeakPtr stage, const UsdPrim& prim)
     return stage->GetEditTarget().GetPrimSpecForScenePath(prim.GetPath());
 }
 
+bool
+isInternalReference(const SdfPrimSpecHandle& primSpec)
+{
+    bool isInternalRef{false};
+
+    for (const SdfReference& ref : primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
+        // GetAssetPath returns the asset path to the root layer of the referenced layer
+        // this will be empty in the case of an internal reference.
+        if (ref.GetAssetPath().empty()) {
+            isInternalRef = true;
+        }
+    }
+
+    return isInternalRef;
+}
+
 } // MayaUsdUtils

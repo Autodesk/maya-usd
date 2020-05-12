@@ -45,6 +45,10 @@ namespace MayaUsdUtils {
     MAYA_USD_UTILS_PUBLIC
     SdfPrimSpecHandle getPrimSpecAtEditTarget(UsdStageWeakPtr, const UsdPrim&);
 
+    //! Returns true if the prim spec has an internal reference.
+    MAYA_USD_UTILS_PUBLIC
+    bool isInternalReference(const SdfPrimSpecHandle&);
+
 } // namespace MayaUsdUtils
 
 #endif // MAYAUSDUTILS_UTIL_H
