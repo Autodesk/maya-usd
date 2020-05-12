@@ -22,7 +22,11 @@ import ufe
 
 import maya.cmds as cmds
 
-import maya.internal.ufeSupport.ufeSelectCmd as ufeSelectCmd
+try:
+    from maya.internal.ufeSupport import ufeSelectCmd
+except ImportError:
+    # Maya 2019 and 2020 don't have ufeSupport plugin, so use fallback.
+    from ufeScripts import ufeSelectCmd
 
 import unittest
 import os
