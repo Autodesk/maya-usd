@@ -20,7 +20,7 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
-#include <vector>
+#include <set>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -46,30 +46,30 @@ defPrimSpecLayer(const UsdPrim& prim)
     return defLayer;
 }
 
-std::vector<SdfLayerHandle>
-layersWithPrimSpec(const UsdPrim& prim)
+std::set<SdfLayerHandle>
+layersWithContribution(const UsdPrim& prim)
 {
-    // get the list of PrimSpecs that provide opinions for this prim
-    // ordered from strongest to weakest.
+    // get the list of all the specs that can 
+    // contribute to the final composed prim
     const auto& primStack = prim.GetPrimStack();
 
-    std::vector<SdfLayerHandle> layersWithPrimSpec;
+    std::set<SdfLayerHandle> layersWithContribution;
     for (auto primSpec : primStack) {
-        layersWithPrimSpec.emplace_back(primSpec->GetLayer());
+        layersWithContribution.insert(primSpec->GetLayer());
     }
 
-    return layersWithPrimSpec;
+    return layersWithContribution;
 }
 
 bool
-doesEditTargetLayerHavePrimSpec(const UsdPrim& prim)
+doesEditTargetLayerContribute(const UsdPrim& prim)
 {
     auto editTarget = prim.GetStage()->GetEditTarget();
     auto layer = editTarget.GetLayer();
     auto primSpec = layer->GetPrimAtPath(prim.GetPath());
 
-    // to know whether the target layer contains any opinions that 
-    // affect a particular prim, there must be a primSpec for that prim
+    // to know whether the target layer can contribute to the 
+    // final composed prim, there must be a primSpec for that prim
     if (!primSpec) {
         return false;
     }
@@ -78,14 +78,14 @@ doesEditTargetLayerHavePrimSpec(const UsdPrim& prim)
 }
 
 SdfLayerHandle
-strongestLayerWithPrimSpec(const UsdPrim& prim)
+strongestContributingLayer(const UsdPrim& prim)
 {
     SdfLayerHandle targetLayer;
     auto layerStack = prim.GetStage()->GetLayerStack();
     for (auto layer : layerStack)
     {
-        // to know whether the target layer contains any opinions that 
-        // affect a particular prim, there must be a primSpec for that prim
+        // to know whether the target layer can contribute to the 
+        // final composed prim, there must be a primSpec for that prim
         auto primSpec = layer->GetPrimAtPath(prim.GetPath());
         if (primSpec) {
             targetLayer = layer;

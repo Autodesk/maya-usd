@@ -49,13 +49,13 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    // if the current layer doesn't have any opinions that affects selected prim
-    if (!MayaUsdUtils::doesEditTargetLayerHavePrimSpec(prim)) {
-        auto possibleTargetLayer = MayaUsdUtils::strongestLayerWithPrimSpec(prim);
+    // if the current layer doesn't have any contributions
+    if (!MayaUsdUtils::doesEditTargetLayerContribute(prim)) {
+        auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
         std::string err = TfStringPrintf("Cannot rename [%s] defined on another layer. " 
                                          "Please set [%s] as the target layer to proceed", 
                                          prim.GetName().GetString().c_str(),
-                                         possibleTargetLayer->GetDisplayName().c_str());
+                                         strongestContributingLayer->GetDisplayName().c_str());
         throw std::runtime_error(err.c_str());
     }
     else
@@ -73,7 +73,8 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
             }
         }
 
-        auto layers = MayaUsdUtils::layersWithPrimSpec(prim);
+        auto layers = MayaUsdUtils::layersWithContribution(prim);
+        // if we have more than 2 layers that contributes to the final composed prim
         if (layers.size() > 1) {
             std::string layerDisplayNames;
             for (auto layer : layers) {
