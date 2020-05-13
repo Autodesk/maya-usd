@@ -42,36 +42,39 @@ namespace ufe {
 
 UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
     : Ufe::UndoableCommand()
+    , _ufeSrcItem(srcItem)
+    , _ufeDstItem(nullptr)
+    , _stage(_ufeSrcItem->prim().GetStage())
+    , _newName(newName.string())
 {
-    const UsdPrim& prim = srcItem->prim();
-    _stage = prim.GetStage();
-    _ufeSrcItem = srcItem;
-    _usdSrcPath = prim.GetPath();
+    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    // Every call to rename() (through execute(), undo() or redo()) removes
-    // a prim, which becomes expired.  Since USD UFE scene items contain a
-    // prim, we must recreate them after every call to rename.
-    _usdDstPath = prim.GetParent().GetPath().AppendChild(TfToken(newName.string()));
-
-    _layer = MayaUsdUtils::defPrimSpecLayer(prim);
-    if (!_layer) {
-        std::string err = TfStringPrintf("No prim found at %s", prim.GetPath().GetString().c_str());
-        throw std::runtime_error(err.c_str());
-    }
-
-    // if the current layer doesn't have any opinions that affects selected prim
-    if (!MayaUsdUtils::doesEditTargetLayerHavePrimSpec(prim)) {
-        auto possibleTargetLayer = MayaUsdUtils::strongestLayerWithPrimSpec(prim);
+    // if the current layer doesn't have any contributions
+    if (!MayaUsdUtils::doesEditTargetLayerContribute(prim)) {
+        auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
         std::string err = TfStringPrintf("Cannot rename [%s] defined on another layer. " 
                                          "Please set [%s] as the target layer to proceed", 
                                          prim.GetName().GetString().c_str(),
-                                         possibleTargetLayer->GetDisplayName().c_str());
+                                         strongestContributingLayer->GetDisplayName().c_str());
         throw std::runtime_error(err.c_str());
     }
     else
     {
-        auto layers = MayaUsdUtils::layersWithPrimSpec(prim);
+        // account for internal vs external references
+        // internal references (references without a file path specified) from the same file
+        // should be renamable.
+        if (prim.HasAuthoredReferences()) {
+            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
 
+            if(!MayaUsdUtils::isInternalReference(primSpec)) {
+                std::string err = TfStringPrintf("Unable to rename referenced object [%s]", 
+                                                  prim.GetName().GetString().c_str());
+                throw std::runtime_error(err.c_str());
+            }
+        }
+
+        auto layers = MayaUsdUtils::layersWithContribution(prim);
+        // if we have more than 2 layers that contributes to the final composed prim
         if (layers.size() > 1) {
             std::string layerDisplayNames;
             for (auto layer : layers) {
@@ -101,78 +104,52 @@ UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const
 
 bool UsdUndoRenameCommand::renameRedo()
 {
-    // Copy the source path using CopySpec, and remove the source.
+    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    // We use the source layer as the destination.  An alternate workflow
-    // would be the edit target layer be the destination:
-    // _layer = _stage->GetEditTarget().GetLayer()
-    bool status = SdfCopySpec(_layer, _usdSrcPath, _layer, _usdDstPath);
-    if (status) {
-        // remove all scene description for the given path and 
-        // its subtree in the current UsdEditTarget 
-        {
-            UsdEditContext ctx(_stage, _layer);
-            status = _stage->RemovePrim(_ufeSrcItem->prim().GetPath());
-        }
-
-        if (status) {
-            // The renamed scene item is a "sibling" of its original name.
-            _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _usdDstPath.GetElementString());
-
-            sendRenameNotification(_ufeDstItem, _ufeSrcItem->path());
-        }
-    }
-    else {
-        UFE_LOG(std::string("Warning: SdfCopySpec(") +
-                _usdSrcPath.GetString() + std::string(") failed."));
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
+    if(!primSpec) {
+        return false;
     }
 
-    return status;
+    // set prim's name
+    // XXX: SetName successfuly returns true but when you examine the _prim.GetName()
+    // after the rename, the prim name shows the original name HS, 6-May-2020.
+    bool status = primSpec->SetName(_newName);
+    if (!status) {
+        return false;
+    }
+
+    // the renamed scene item is a "sibling" of its original name.
+    _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
+    sendRenameNotification(_ufeDstItem, _ufeSrcItem->path());
+ 
+    return true;
 }
 
 bool UsdUndoRenameCommand::renameUndo()
 {
-    // Copy the source path using CopySpec, and remove the source.
-    bool status = SdfCopySpec(_layer, _usdDstPath, _layer, _usdSrcPath);
+    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
 
-    if (status) {
-        // remove all scene description for the given path and 
-        // its subtree in the current UsdEditTarget 
-        {
-            UsdEditContext ctx(_stage, _layer);
-            status = _stage->RemovePrim(_usdDstPath);
-        }
-
-        if (status) {
-            // create a new prim at _usdSrcPath
-            auto newPrim = _stage->DefinePrim(_usdSrcPath);
-            
-            #ifdef UFE_V2_FEATURES_AVAILABLE
-                UFE_ASSERT_MSG(newPrim, "Invalid prim cannot be inactivated.");
-            #else
-                assert(newPrim);
-            #endif
-
-            // I shouldn't have to again create a sibling sceneItem here since we already have a valid _ufeSrcItem
-            // however, I get random crashes if I don't which needs furthur investigation.  HS, 6-May-2020.
-            _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _usdSrcPath.GetElementString());
-
-            sendRenameNotification(_ufeSrcItem, _ufeDstItem->path());
-
-            _ufeDstItem = nullptr;
-        }
-    }
-    else {
-        UFE_LOG(std::string("Warning: SdfCopySpec(") +
-                _usdDstPath.GetString() + std::string(") failed."));
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
+    if(!primSpec) {
+        return false;
     }
 
-    return status;
+    // set prim's name
+    bool status = primSpec->SetName(_ufeSrcItem->prim().GetName());
+    if (!status) {
+        return false;
+    }
+
+    // shouldn't have to again create a sibling sceneItem here since we already have a valid _ufeSrcItem
+    // however, I get random crashes if I don't which needs furthur investigation.  HS, 6-May-2020.
+    _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
+    sendRenameNotification(_ufeSrcItem, _ufeDstItem->path());
+
+    _ufeDstItem = nullptr;
+
+    return true;
 }
-
-//------------------------------------------------------------------------------
-// UsdUndoRenameCommand overrides
-//------------------------------------------------------------------------------
 
 void UsdUndoRenameCommand::undo()
 {

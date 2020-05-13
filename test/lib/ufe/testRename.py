@@ -96,6 +96,58 @@ class RenameTestCase(unittest.TestCase):
         assertStageAndPrimAccess(mayaSegment, ball35PathStr, usdSegment)
 
     def testRename(self):
+        # open tree.ma scene in test-samples
+        mayaUtils.openTreeScene()
+
+        # clear selection to start off
+        cmds.select(clear=True)
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|Tree_usd|Tree_usdShape')
+        usdPathSegment = usdUtils.createUfePathSegment('/TreeBase')
+        treebasePath = ufe.Path([mayaPathSegment, usdPathSegment])
+        treebaseItem = ufe.Hierarchy.createItem(treebasePath)
+
+        ufe.GlobalSelection.get().append(treebaseItem)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        self.assertTrue(stage.GetRootLayer().GetPrimAtPath("/TreeBase"))
+
+        # get default prim
+        defualtPrim = stage.GetDefaultPrim()
+        self.assertEqual(defualtPrim.GetName(), 'TreeBase')
+
+        # TreeBase has two childern: leavesXform, trunk
+        assert len(defualtPrim.GetChildren()) == 2
+
+        # get prim spec for defualtPrim
+        primspec = stage.GetEditTarget().GetPrimSpecForScenePath(defualtPrim.GetPath());
+
+        # set primspec name
+        primspec.name = "TreeBase_potato"
+ 
+        # HS, 6-May-2020. defualtPrim in null?? This can't be null....
+        # defualtPrim = stage.GetDefaultPrim()
+        # self.assertEqual(defualtPrim.GetName(), 'TreeBase_potato')
+
+        # make sure we have a valid prims after the primspec rename 
+        assert stage.GetPrimAtPath('/TreeBase_potato')
+        assert stage.GetPrimAtPath('/TreeBase_potato/leavesXform')
+
+        # prim should be called TreeBase_potato
+        potatoPrim = stage.GetPrimAtPath('/TreeBase_potato')
+        self.assertEqual(potatoPrim.GetName(), 'TreeBase_potato')
+
+        # prim should be called leaves 
+        leavesPrimSpec = stage.GetObjectAtPath('/TreeBase_potato/leavesXform/leaves')
+        self.assertEqual(leavesPrimSpec.GetName(), 'leaves')
+
+    def testRenameUndo(self):
         '''Rename USD node.'''
 
         # open usdCylinder.ma scene in test-samples
@@ -215,3 +267,39 @@ class RenameTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
            newName = 'Ball_35_Renamed'
            cmds.rename(newName)
+
+    def testRenameRestrictionExternalReference(self):
+        # open tree_ref.ma scene in test-samples
+        mayaUtils.openTreeRefScene()
+
+        # clear selection to start off
+        cmds.select(clear=True)
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|TreeRef_usd|TreeRef_usdShape')
+        usdPathSegment = usdUtils.createUfePathSegment('/TreeBase/leaf_ref_2')
+        treebasePath = ufe.Path([mayaPathSegment, usdPathSegment])
+        treebaseItem = ufe.Hierarchy.createItem(treebasePath)
+
+        ufe.GlobalSelection.get().append(treebaseItem)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+        self.assertTrue(stage.GetRootLayer().GetPrimAtPath("/TreeBase"))
+
+        # create a leafRefPrim
+        leafRefPrim = usdUtils.getPrimFromSceneItem(treebaseItem)
+
+        # leafRefPrim should have an Authored References
+        self.assertTrue(leafRefPrim.HasAuthoredReferences())
+
+        # expect the exception to happen
+        with self.assertRaises(RuntimeError):
+           newName = 'leaf_ref_2_renaming'
+           cmds.rename(newName)
+
+

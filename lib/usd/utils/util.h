@@ -29,17 +29,25 @@ namespace MayaUsdUtils {
     MAYA_USD_UTILS_PUBLIC
     SdfLayerHandle defPrimSpecLayer(const UsdPrim&);
 
-    //! Return a list of layers in strength order that have opinions on the argument prim.
+    //! Return a list of layers in no strength order that can contribute to the argument prim.
     MAYA_USD_UTILS_PUBLIC
-    std::vector<SdfLayerHandle> layersWithPrimSpec(const UsdPrim&);
+    std::set<SdfLayerHandle> layersWithContribution(const UsdPrim&);
 
-    //! Check if a layer has any opinions that affects on the argument prim.
+    //! Check if a layer has any contributions towards the argument prim.
     MAYA_USD_UTILS_PUBLIC
-    bool doesEditTargetLayerHavePrimSpec(const UsdPrim&);
+    bool doesEditTargetLayerContribute(const UsdPrim&);
 
-    //! Return the strongest layer that has an opinion on the argument prim.
+    //! Return the strongest layer that can contribute to the argument prim.
     MAYA_USD_UTILS_PUBLIC
-    SdfLayerHandle strongestLayerWithPrimSpec(const UsdPrim&);
+    SdfLayerHandle strongestContributingLayer(const UsdPrim&);
+
+    //! Return a PrimSpec for the argument prim in the layer containing the stage's current edit target.
+    MAYA_USD_UTILS_PUBLIC
+    SdfPrimSpecHandle getPrimSpecAtEditTarget(UsdStageWeakPtr, const UsdPrim&);
+
+    //! Returns true if the prim spec has an internal reference.
+    MAYA_USD_UTILS_PUBLIC
+    bool isInternalReference(const SdfPrimSpecHandle&);
 
 } // namespace MayaUsdUtils
 
