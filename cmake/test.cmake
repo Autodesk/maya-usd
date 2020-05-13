@@ -154,6 +154,8 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/lib/usd")
     list(APPEND mayaUsd_varname_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin")
+    list(APPEND mayaUsd_varname_PYTHONPATH
+         "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
 
     # pxr
     list(APPEND mayaUsd_varname_PYTHONPATH

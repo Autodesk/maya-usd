@@ -192,6 +192,14 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 	auto stage = notice.GetStage();
 	for (const auto& changedPath : notice.GetResyncedPaths())
 	{
+		// When visibility is toggled for the first time or you add a xformop we enter
+		// here with a resync path. However the changedPath is not a prim path, so we
+		// don't care about it. In those cases, the changePath will contain something like:
+		//   "/<prim>.visibility"
+		//   "/<prim>.xformOp:translate"
+		if (!changedPath.IsPrimPath())
+			continue;
+
 		const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
 		// Assume proxy shapes (and thus stages) cannot be instanced.  We can
 		// therefore map the stage to a single UFE path.  Lifting this
@@ -199,8 +207,6 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		// each Maya Dag path instancing the proxy shape / stage.
 		Ufe::Path ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
 		auto prim = stage->GetPrimAtPath(changedPath);
-		// Changed paths could be xformOps.
-		// These are considered as invalid null prims
 		if (prim.IsValid() && !InPathChange::inPathChange())
 		{
 			auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
@@ -224,6 +230,13 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 				Ufe::Scene::notifyObjectDelete(notification);
 			}
 		}
+#if UFE_PREVIEW_VERSION_NUM >= 2015
+		else if (!prim.IsValid())
+		{
+			auto notification = Ufe::ObjectDestroyed(ufePath);
+			Ufe::Scene::notifyObjectDelete(notification);
+		}
+#endif
 	}
 
 	for (const auto& changedPath : notice.GetChangedInfoOnlyPaths())

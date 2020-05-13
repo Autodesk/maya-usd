@@ -47,6 +47,12 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
                 UsdContextOpsHandler.cpp
         )
     endif()
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2015)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                ProxyShapeContextOpsHandler.cpp
+        )
+    endif()
 endif()
 
 set(headers
@@ -78,6 +84,7 @@ set(headers
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND headers
+        ProxyShapeContextOpsHandler.h
         UsdAttribute.h
         UsdAttributes.h
         UsdAttributesHandler.h

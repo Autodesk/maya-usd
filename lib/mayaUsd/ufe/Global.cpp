@@ -37,6 +37,9 @@
 #if UFE_PREVIEW_VERSION_NUM >= 2009
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #endif
+#if UFE_PREVIEW_VERSION_NUM >= 2015
+#include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
+#endif
 #if UFE_PREVIEW_VERSION_NUM >= 2011
 #include <ufe/pathString.h>
 #endif
@@ -70,6 +73,12 @@ Ufe::Rtid g_USDRtid = 0;
 // Keep a reference to it to restore on finalization.
 Ufe::HierarchyHandler::Ptr g_MayaHierarchyHandler;
 
+#if UFE_PREVIEW_VERSION_NUM >= 2015
+// The normal Maya context ops handler, which we decorate for ProxyShape support.
+// Keep a reference to it to restore on finalization.
+Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
+#endif
+
 // Subject singleton for observation of all USD stages.
 StagesSubject::Ptr g_StagesSubject;
 
@@ -96,8 +105,14 @@ MStatus initialize()
 		return MS::kFailure;
 
 	g_MayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
-	auto proxyShapeHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
-	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, proxyShapeHandler);
+	auto proxyShapeHierHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
+	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, proxyShapeHierHandler);
+
+#if UFE_PREVIEW_VERSION_NUM >= 2015
+	g_MayaContextOpsHandler = Ufe::RunTimeMgr::instance().contextOpsHandler(g_MayaRtid);
+	auto proxyShapeContextOpsHandler = ProxyShapeContextOpsHandler::create(g_MayaContextOpsHandler);
+	Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, proxyShapeContextOpsHandler);
+#endif
 
 	auto usdHierHandler = UsdHierarchyHandler::create();
 	auto usdTrans3dHandler = UsdTransform3dHandler::create();
@@ -140,6 +155,12 @@ MStatus finalize()
 
 	// Restore the normal Maya hierarchy handler, and unregister.
 	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, g_MayaHierarchyHandler);
+#if UFE_PREVIEW_VERSION_NUM >= 2015
+	// Restore the normal Maya context ops handler (can be empty).
+	if (g_MayaContextOpsHandler)
+		Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, g_MayaContextOpsHandler);
+	g_MayaContextOpsHandler.reset();
+#endif
 	Ufe::RunTimeMgr::instance().unregister(g_USDRtid);
 	g_MayaHierarchyHandler.reset();
 
