@@ -974,24 +974,6 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomPrimFilter(
                              true, outResult);
 }
 
-int
-UsdMayaGLBatchRenderer::GetInstancerIndexForHit(
-        const HdxPickHit& hit) const
-{
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 33
-    return hit.instanceIndex;
-#else
-    int ret = -1;
-    if (auto delegate = _renderIndex->GetSceneDelegateForRprim(hit.objectId)) {
-        delegate->GetPathForInstanceIndex(
-            hit.objectId,
-            hit.instanceIndex,
-            &ret);
-    }
-    return ret;
-#endif
-}
-
 /* static */
 const HdxPickHit*
 UsdMayaGLBatchRenderer::GetNearestHit(
