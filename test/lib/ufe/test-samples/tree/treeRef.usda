@@ -41,7 +41,7 @@ def Xform "TreeBase"
     }
 
     def "leaf_ref_2" (
-         append references = @./tree_ref.usda@</TreeBase/leavesXform/greenLeaf>
+         append references = @./treeRef.usda@</TreeBase/leavesXform/greenLeaf>
     )
     {
         double3 xformOp:translate = (0.0, 4.5, 0)
