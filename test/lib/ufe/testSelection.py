@@ -93,10 +93,11 @@ class SelectTestCase(unittest.TestCase):
 
         # Item in the selection should be the last item in our list.
         self.assertEqual(len(globalSn), 1)
-        if ufe.VersionInfo.getMajorVersion() == 1:
-            self.assertEqual(next(iter(globalSn)), items[-1])
-        else:
-            self.assertEqual(globalSn.front(), items[-1])
+        def snFront(sn):
+            return next(iter(sn)) if \
+                ufe.VersionInfo.getMajorVersion() == 1 else sn.front()
+
+        self.assertEqual(snFront(globalSn), items[-1])
 
         # Check undo.  For this purpose, re-create the list of items in reverse
         # order.  Because we're already at the last item, we skip the last one
@@ -107,7 +108,7 @@ class SelectTestCase(unittest.TestCase):
         for i in rItems:
             cmds.undo()
             self.assertEqual(len(globalSn), 1)
-            self.assertEqual(globalSn.front(), i)
+            self.assertEqual(snFront(globalSn), i)
 
         # Check redo.
         fItems = items[1:]
@@ -116,4 +117,4 @@ class SelectTestCase(unittest.TestCase):
         for i in fItems:
             cmds.redo()
             self.assertEqual(len(globalSn), 1)
-            self.assertEqual(globalSn.front(), i)
+            self.assertEqual(snFront(globalSn), i)
