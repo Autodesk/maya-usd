@@ -79,7 +79,7 @@ createNode mayaUsdProxyShape -n "TreeRef_usdShape" -p "TreeRef_usd";
 	setAttr -k off ".v";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr ".fp" -type "string" "R:/Users/sabrih/Autodesk2019/maya/worktrees/master/Maya/src/Components/USD/maya-usd/test/lib/ufe/test-samples/tree/treeRef.usda";
+	setAttr ".fp" -type "string" "./treeRef.usda";
 	setAttr ".pp" -type "string" "";
 	setAttr ".epp" -type "string" "";
 createNode lightLinker -s -n "lightLinker1";

@@ -79,7 +79,7 @@ createNode mayaUsdProxyShape -n "Tree_usdShape" -p "Tree_usd";
 	setAttr -k off ".v";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr ".fp" -type "string" "C:/Users/sabrih/Desktop/USD-Assets/USD-Assets/tree.usda";
+	setAttr ".fp" -type "string" "./tree.usda";
 	setAttr ".pp" -type "string" "";
 	setAttr ".epp" -type "string" "";
 createNode lightLinker -s -n "lightLinker1";
