@@ -28,6 +28,8 @@
 #include <cassert>
 #endif
 
+#include <mayaUsdUtils/util.h>
+
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/sdf/copyUtils.h>
@@ -62,7 +64,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     }
     fUsdDstPath = parent->prim().GetPath().AppendChild(TfToken(childName));
 
-    fLayer = defPrimSpecLayer(childPrim);
+    fLayer = MayaUsdUtils::defPrimSpecLayer(childPrim);
     if (!fLayer) {
         std::string err = TfStringPrintf("No prim found at %s", childPrim.GetPath().GetString().c_str());
         throw std::runtime_error(err.c_str());
