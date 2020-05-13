@@ -18,7 +18,7 @@
 
 from ufeTestUtils import mayaUtils
 from ufeTestUtils import usdUtils
-from ufeTestUtils.testUtils import assertVectorAlmostEqual
+from ufeTestUtils.testUtils import assertVectorAlmostEqual, assertVectorEqual
 
 import ufe
 
@@ -100,6 +100,7 @@ class Object3dTestCase(unittest.TestCase):
         proxyShapePathSegment = mayaUtils.createUfePathSegment(
             proxyShapeMayaPath)
         
+        #######
         # Create a UFE scene item from the sphere prim.
         spherePathSegment = usdUtils.createUfePathSegment('/parent/sphere')
         spherePath = ufe.Path([proxyShapePathSegment, spherePathSegment])
@@ -115,6 +116,24 @@ class Object3dTestCase(unittest.TestCase):
         assertVectorAlmostEqual(self, ufeBBox.min.vector, [-1]*3)
         assertVectorAlmostEqual(self, ufeBBox.max.vector, [1]*3)
 
+        #######
+        # Create a UFE scene item from the parent Xform of the sphere prim.
+        parentPathSegment = usdUtils.createUfePathSegment('/parent')
+        parentPath = ufe.Path([proxyShapePathSegment, parentPathSegment])
+        parentItem = ufe.Hierarchy.createItem(parentPath)
+
+        # Get its Object3d interface.
+        parentObject3d = ufe.Object3d.object3d(parentItem)
+
+        # Get its bounding box.
+        parentUFEBBox = parentObject3d.boundingBox()
+
+        # Compare it to sphere's extents.
+        assertVectorEqual(self, ufeBBox.min.vector, parentUFEBBox.min.vector)
+        assertVectorEqual(self, ufeBBox.max.vector, parentUFEBBox.max.vector)
+
+
+        #######
         # Remove the test file.
         os.remove(usdFilePath)
 
@@ -198,19 +217,14 @@ class Object3dTestCase(unittest.TestCase):
         self.assertFalse(object3d.visibility())
 
         # We should have got 'one' notification.
-        # USD Attribute Notification doubling problem:
-        # Note: because we are using set on the usd attribute (just above)
-        #       directly we we receive TWO notifs in our transform3d observer.
-        #       See UsdAttribute.cpp function setUsdAttr() for details.
-        self.assertEqual(visObs.notifications(), 2)
+        self.assertEqual(visObs.notifications(), 1)
 
         # Make it visible.
         object3d.setVisibility(True)
         self.assertTrue(object3d.visibility())
 
         # We should have got one more notification.
-        # Note: same double notif as above.
-        self.assertEqual(visObs.notifications(), 4)
+        self.assertEqual(visObs.notifications(), 2)
 
         # Remove the observer.
         ufe.Object3d.removeObserver(visObs)

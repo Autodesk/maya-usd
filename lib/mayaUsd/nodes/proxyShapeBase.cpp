@@ -48,6 +48,7 @@
 #include <maya/MString.h>
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
+#include <maya/MEvaluationNode.h>
 
 #include <pxr/base/gf/bbox3d.h>
 #include <pxr/base/gf/range3d.h>
@@ -495,6 +496,11 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
             usdStage->SetEditTarget(usdStage->GetSessionLayer());
         }
+        else if (!usdStage) {
+            // Create a new stage in memory with an anonymous root layer.
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
+            usdStage = UsdStage::CreateInMemory("", loadSet);
+        }
 
         if (usdStage) {
             primPath = usdStage->GetPseudoRoot().GetPath();
@@ -620,7 +626,7 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
                   this,
                   std::placeholders::_1));
 
-    UsdMayaProxyStageSetNotice(*this).Send();
+    MayaUsdProxyStageSetNotice(*this).Send();
 
     return MS::kSuccess;
 }
@@ -746,6 +752,36 @@ MayaUsdProxyShapeBase::isStageValid() const
     return true;
 }
 
+MStatus
+MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode)
+{
+    if (evaluationNode.dirtyPlugExists(excludePrimPathsAttr)) {
+        _IncreaseExcludePrimPathsVersion();
+    }
+    else if (evaluationNode.dirtyPlugExists(outStageDataAttr) ||
+        // All the plugs that affect outStageDataAttr
+        evaluationNode.dirtyPlugExists(filePathAttr) ||
+        evaluationNode.dirtyPlugExists(primPathAttr) ||
+        evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
+        evaluationNode.dirtyPlugExists(inStageDataAttr)) {
+        _IncreaseUsdStageVersion();
+    }
+
+    return MStatus::kSuccess;
+}
+
+MStatus
+MayaUsdProxyShapeBase::postEvaluation(const  MDGContext& context, const MEvaluationNode& evaluationNode, PostEvaluationType evalType)
+{
+    // When a node is evaluated by evaluation manager setDependentsDirty is not called. The functionality in setDependentsDirty needs
+    // to be duplicated in preEvaluation or postEvaluation. I don't think we need the call to setGeometryDrawDirty() in
+    // setDependentsDirty, but there may be a workflow I'm not seeing that does require it. I'm leaving this here commented out as a
+    // reminder that we should either have both calls to setGeometryDrawDirty, or no calls to setGeometryDrawDirty.
+    // MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+
+    return MStatus::kSuccess;
+}
+
 /* virtual */
 MStatus
 MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
@@ -755,17 +791,21 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
     // the Maya renderer that the geometry is dirty and needs to be redrawn
     // when any plug on the proxy shape is dirtied.
     MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
-    return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
-}
 
-/* virtual */
-bool
-MayaUsdProxyShapeBase::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
-{
     if (plug == excludePrimPathsAttr) {
         _IncreaseExcludePrimPathsVersion();
     }
-    return MPxSurfaceShape::setInternalValue(plug, dataHandle);
+    else if (plug == outStageDataAttr ||
+        // All the plugs that affect outStageDataAttr
+        plug == filePathAttr ||
+        plug == primPathAttr ||
+        plug == loadPayloadsAttr ||
+        plug == inStageDataAttr) {
+        _IncreaseUsdStageVersion();
+        MayaUsdProxyStageInvalidateNotice(*this).Send();
+    }
+
+    return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
 }
 
 UsdPrim
@@ -843,6 +883,11 @@ MayaUsdProxyShapeBase::getUsdStage() const
     else
         return {};
 
+}
+
+size_t
+MayaUsdProxyShapeBase::getUsdStageVersion() const {
+    return _UsdStageVersion;
 }
 
 SdfPathVector

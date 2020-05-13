@@ -60,9 +60,9 @@ UsdSceneItem::Ptr createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std:
 MAYAUSD_CORE_PUBLIC
 std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcName);
 
-//! Return a unique child name. Parent must be a UsdSceneItem.
+//! Return a unique child name.
 MAYAUSD_CORE_PUBLIC
-std::string uniqueChildName(const Ufe::SceneItem::Ptr& parent, const Ufe::Path& childPath);
+std::string uniqueChildName(const UsdSceneItem::Ptr& parent, const Ufe::Path& childPath);
 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
@@ -85,6 +85,12 @@ UsdTimeCode getTime(const Ufe::Path& path);
 //! Object renamed scene notification
 MAYAUSD_CORE_PUBLIC
 void sendRenameNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath);
+
+//! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
+inline
+UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item) {
+    return std::dynamic_pointer_cast<UsdSceneItem>(item);
+}
 
 } // namespace ufe
 } // namespace MayaUsd

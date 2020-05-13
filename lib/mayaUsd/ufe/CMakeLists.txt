@@ -18,6 +18,7 @@ target_sources(${PROJECT_NAME}
         UsdSceneItemOps.cpp
         UsdSceneItemOpsHandler.cpp
         UsdStageMap.cpp
+        UsdTRSUndoableCommandBase.cpp
         UsdTransform3d.cpp
         UsdTransform3dHandler.cpp
         UsdTranslateUndoableCommand.cpp
@@ -37,12 +38,19 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdObject3d.cpp
             UsdObject3dHandler.cpp
             UsdUndoCreateGroupCommand.cpp
+            UsdUndoInsertChildCommand.cpp
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
         target_sources(${PROJECT_NAME}
             PRIVATE
                 UsdContextOps.cpp
                 UsdContextOpsHandler.cpp
+        )
+    endif()
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2015)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                ProxyShapeContextOpsHandler.cpp
         )
     endif()
 endif()
@@ -63,6 +71,7 @@ set(headers
     UsdSceneItemOps.h
     UsdSceneItemOpsHandler.h
     UsdStageMap.h
+    UsdTRSUndoableCommandBase.h
     UsdTransform3d.h
     UsdTransform3dHandler.h
     UsdTranslateUndoableCommand.h
@@ -75,6 +84,7 @@ set(headers
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND headers
+        ProxyShapeContextOpsHandler.h
         UsdAttribute.h
         UsdAttributes.h
         UsdAttributesHandler.h
@@ -83,6 +93,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdObject3d.h
         UsdObject3dHandler.h
         UsdUndoCreateGroupCommand.h
+        UsdUndoInsertChildCommand.h
     )
 endif()
 

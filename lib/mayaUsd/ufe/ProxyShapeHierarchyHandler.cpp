@@ -21,7 +21,7 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(Ufe::HierarchyHandler::Ptr mayaHierarchyHandler)
+ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
 	: Ufe::HierarchyHandler()
 	, fMayaHierarchyHandler(mayaHierarchyHandler)
 {}
@@ -31,7 +31,7 @@ ProxyShapeHierarchyHandler::~ProxyShapeHierarchyHandler()
 }
 
 /*static*/
-ProxyShapeHierarchyHandler::Ptr ProxyShapeHierarchyHandler::create(Ufe::HierarchyHandler::Ptr mayaHierarchyHandler)
+ProxyShapeHierarchyHandler::Ptr ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
 {
 	return std::make_shared<ProxyShapeHierarchyHandler>(mayaHierarchyHandler);
 }

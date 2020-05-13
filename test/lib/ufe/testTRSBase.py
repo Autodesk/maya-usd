@@ -36,7 +36,7 @@ class TRSTestCaseBase(unittest.TestCase):
         # the UFE or the run-time value to check against expected.
         assertVectorAlmostEqual(self, snapshot[1], expected)
             
-    def multiSelectSnapShotAndTest(self, items, expected):
+    def multiSelectSnapShotAndTest(self, items, expected, places=7):
         '''Take a snapshot of the state and append it to the memento list.
 
         The snapshot is compared to the expected results.
@@ -47,7 +47,7 @@ class TRSTestCaseBase(unittest.TestCase):
             # Since multiSelectSnapshotRunTimeUFE checks run-time to UFE
             # equality, we can use the UFE or the run-time value to
             # check against expected.
-            assertVectorAlmostEqual(self, itemSnapshot[1], itemExpected)
+            assertVectorAlmostEqual(self, itemSnapshot[1], itemExpected, places)
             
     def rewindMemento(self):
         '''Undo through all items in memento.

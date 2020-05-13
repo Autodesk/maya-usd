@@ -19,6 +19,7 @@
 
 #include <maya/MFnDagNode.h>
 
+#include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
 
 namespace {
@@ -92,8 +93,10 @@ void UsdStageMap::addItem(const Ufe::Path& path, UsdStageWeakPtr stage)
 	fStageToObject[stage] = proxyShape;
 }
 
-UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path) const
+UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path)
 {
+	rebuildIfDirty();
+
 	auto proxyShape = proxyShapeHandle(path);
 	if (!proxyShape.isValid()) {
 		return nullptr;
@@ -106,8 +109,10 @@ UsdStageWeakPtr UsdStageMap::stage(const Ufe::Path& path) const
 	return nullptr;
 }
 
-Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage) const
+Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage)
 {
+	rebuildIfDirty();
+
 	// A stage is bound to a single Dag proxy shape.
 	auto iter = fStageToObject.find(stage);
 	if (iter != std::end(fStageToObject))
@@ -115,10 +120,26 @@ Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage) const
 	return Ufe::Path();
 }
 
-void UsdStageMap::clear()
+void UsdStageMap::setDirty()
 {
 	fObjectToStage.clear();
 	fStageToObject.clear();
+	fDirty = true;
+}
+
+void UsdStageMap::rebuildIfDirty()
+{
+	if (!fDirty) return;
+
+	auto proxyShapeNames = ProxyShapeHandler::getAllNames();
+	for (const auto& psn : proxyShapeNames)
+	{
+		MDagPath dag = nameToDagPath(psn);
+		Ufe::Path ufePath = dagPathToUfe(dag);
+		auto stage = ProxyShapeHandler::dagPathToStage(psn);
+		addItem(ufePath, stage);
+	}
+	fDirty = false;
 }
 
 } // namespace ufe

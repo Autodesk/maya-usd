@@ -37,6 +37,9 @@
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+#include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
+#endif
 #endif
 
 namespace {
@@ -127,7 +130,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 #endif
 
 	// First, check if we need to rename the child.
-	std::string childName = uniqueChildName(sceneItem(), child->path());
+	std::string childName = uniqueChildName(fItem, child->path());
 
 	// Set up all paths to perform the reparent.
 	auto prim = usdChild->prim();
@@ -164,6 +167,17 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
+    const Ufe::SceneItem::Ptr& child,
+    const Ufe::SceneItem::Ptr& pos
+)
+{
+    return UsdUndoInsertChildCommand::create(
+        fItem, downcast(child), downcast(pos));
+}
+#endif
+
 // Create a transform.
 Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
@@ -176,7 +190,7 @@ Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) co
 
 	// Rename the new group for uniqueness, if needed.
 	Ufe::Path newPath = fItem->path() + name;
-	auto childName = uniqueChildName(sceneItem(), newPath);
+	auto childName = uniqueChildName(fItem, newPath);
 
 	// Next, get the stage corresponding to the new path.
 	auto segments = newPath.getSegments();

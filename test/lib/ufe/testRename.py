@@ -181,6 +181,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
         # rename
+        cylinderItemType = cylinderItem.nodeType()
         newName = 'pCylinder1_Renamed'
         cmds.rename(newName)
 
@@ -200,6 +201,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertIn(pCylinder1Item, propsChildren)
 
         cmds.undo()
+        self.assertEqual(cylinderItemType, ufe.GlobalSelection.get().back().nodeType())
 
         def childrenNames(children):
            return [str(child.path().back()) for child in children]
@@ -213,6 +215,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertEqual(len(propsChildren), len(propsChildrenPre))
 
         cmds.redo()
+        self.assertEqual(cylinderItemType, ufe.GlobalSelection.get().back().nodeType())
 
         propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
         propsChildren = propsHierarchy.children()
