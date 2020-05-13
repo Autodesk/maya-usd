@@ -174,7 +174,7 @@ Headers should be included in the following order, with each section separated b
 3. All public headers from this repository (maya-usd)
 4. Pixar + USD headers
 5. Autodesk + Maya headers
-6. Other libraries’ headers
+6. Other libraries' headers
 7. C++ standard library headers
 8. C system headers
 9. Conditional includes
