@@ -398,6 +398,18 @@ MStatus ProxyShape::setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray
   {
     MHWRender::MRenderer::setGeometryDrawDirty(thisMObject(), true);
   }
+
+  if (plugBeingDirtied == outStageData() ||
+    // All the plugs that affect outStageDataAttr
+    plugBeingDirtied == filePath() ||
+    plugBeingDirtied == primPath() ||
+    plugBeingDirtied == m_populationMaskIncludePaths ||
+    plugBeingDirtied == m_stageDataDirty ||
+    plugBeingDirtied == m_assetResolverConfig)
+  {
+    MayaUsdProxyStageInvalidateNotice(*this).Send();
+  }
+
   return MPxSurfaceShape::setDependentsDirty(plugBeingDirtied, plugs);
 }
 
@@ -1432,7 +1444,7 @@ MStatus ProxyShape::computeOutStageData(const MPlug& plug, MDataBlock& dataBlock
     return MS::kFailure;
   }
 
-  UsdMayaProxyStageSetNotice(*this).Send();
+  MayaUsdProxyStageSetNotice(*this).Send();
 
   return status;
 }
