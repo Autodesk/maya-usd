@@ -1287,9 +1287,6 @@ HdVP2BasisCurves::_UpdateDrawItem(
         // If available, something changed
         if (stateToCommit._shader != nullptr) {
             renderItem->setShader(stateToCommit._shader);
-#if MAYA_API_VERSION >= 20210000
-            renderItem->setWantDiffuseColorMultiDrawConsolidation(stateToCommit._isFallbackShader);
-#endif
             renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
         }
 
