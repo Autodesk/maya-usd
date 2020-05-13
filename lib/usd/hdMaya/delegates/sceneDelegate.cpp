@@ -849,7 +849,13 @@ GfMatrix4d HdMayaSceneDelegate::GetInstancerTransform(
     return GfMatrix4d(1.0);
 }
 
-#if defined(HD_API_VERSION) && HD_API_VERSION >= 33
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 34
+SdfPath HdMayaSceneDelegate::GetScenePrimPath(
+    const SdfPath& rprimPath, int instanceIndex,
+    HdInstancerContext *instancerContext) {
+    return rprimPath;
+}
+#elif defined(HD_API_VERSION) && HD_API_VERSION >= 33
 SdfPath HdMayaSceneDelegate::GetScenePrimPath(
     const SdfPath& rprimPath, int instanceIndex) {
     return rprimPath;

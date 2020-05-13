@@ -41,7 +41,14 @@ public:
 
     MayaUsdProxyShapeBase* GetProxy() { return _proxy; }
 
-#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimId, int instanceIndex,
+        HdInstancerContext *instancerContext) {
+        return _usdDelegate->GetScenePrimPath(
+            rprimId, instanceIndex, instancerContext);
+    }
+#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
     SdfPath GetScenePrimPath(
         const SdfPath& rprimId, int instanceIndex) {
         return _usdDelegate->GetScenePrimPath(
