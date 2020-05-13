@@ -33,7 +33,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          |        
 |:------------: |:---------------:                  |
-|  CommitID/Tags | master: [v19.07](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.07) or [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) <br> dev: [6af4d8a](https://github.com/PixarAnimationStudios/USD/commit/6af4d8afd02682ee4365d1b7d60683e95acf12ac) |
+|  CommitID/Tags | master: [v19.07](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.07) or [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) <br> dev: [095e616](https://github.com/PixarAnimationStudios/USD/commit/095e61600f36a5ac19bff71157d9bf641563e889) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
