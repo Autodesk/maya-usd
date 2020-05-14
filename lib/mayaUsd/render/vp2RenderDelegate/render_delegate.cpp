@@ -273,8 +273,7 @@ namespace
                     shader = shaderMgr->getFragmentShader(
                         _fallbackShaderNames[index], _structOutputName, true);
 #if MAYA_API_VERSION >= 20210000
-                    MString diffuseColorParamName("diffuseColor");
-                    shader->setWantMultiDrawConsolidation(diffuseColorParamName, true);
+                    shader->setWantMultiDrawConsolidation(_diffuseColorParameterName, true);
 #endif
                 }
             }
