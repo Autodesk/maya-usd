@@ -113,10 +113,12 @@ bool UsdUndoRenameCommand::renameRedo()
 
     // these two lines MUST be called before the set name
     // _stage->GetDefaultPrim() and prim after the rename can be invalid.
-    auto primNameStr = prim.GetPath().GetName();
-    auto stageDefPrimNameStr = _stage->GetDefaultPrim().GetPath().GetName();
+    auto primPath = prim.GetPath();
+    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
     // set prim's name
+    // XXX: SetName successfuly returns true but when you examine the _prim.GetName()
+    // after the rename, the prim name shows the original name HS, 6-May-2020.
     bool status = primSpec->SetName(_newName);
     if (!status) {
         return false;
@@ -129,7 +131,7 @@ bool UsdUndoRenameCommand::renameRedo()
     // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
     // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
     // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
-    if(primNameStr == stageDefPrimNameStr){
+    if(primPath == defaultPrimPath){
         _stage->SetDefaultPrim(_ufeDstItem->prim());
     }
 
@@ -147,8 +149,8 @@ bool UsdUndoRenameCommand::renameUndo()
 
     // these two lines MUST be called before the set name
     // _stage->GetDefaultPrim() and prim after the rename can be invalid.
-    auto primNameStr = prim.GetPath().GetName();
-    auto stageDefPrimNameStr = _stage->GetDefaultPrim().GetPath().GetName();
+    auto primPath = prim.GetPath();
+    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
     // set prim's name
     bool status = primSpec->SetName(_ufeSrcItem->prim().GetName());
@@ -164,7 +166,7 @@ bool UsdUndoRenameCommand::renameUndo()
     // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
     // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
     // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
-    if (primNameStr == stageDefPrimNameStr) {
+    if (primPath == defaultPrimPath) {
         _stage->SetDefaultPrim(_ufeSrcItem->prim());
     }
 
