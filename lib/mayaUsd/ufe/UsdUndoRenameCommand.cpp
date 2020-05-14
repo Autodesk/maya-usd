@@ -111,9 +111,12 @@ bool UsdUndoRenameCommand::renameRedo()
         return false;
     }
 
+    // these two lines MUST be called before the set name
+    // _stage->GetDefaultPrim() and prim after the rename can be invalid.
+    auto primNameStr = prim.GetPath().GetName();
+    auto stageDefPrimNameStr = _stage->GetDefaultPrim().GetPath().GetName();
+
     // set prim's name
-    // XXX: SetName successfuly returns true but when you examine the _prim.GetName()
-    // after the rename, the prim name shows the original name HS, 6-May-2020.
     bool status = primSpec->SetName(_newName);
     if (!status) {
         return false;
@@ -122,7 +125,14 @@ bool UsdUndoRenameCommand::renameRedo()
     // the renamed scene item is a "sibling" of its original name.
     _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
     sendRenameNotification(_ufeDstItem, _ufeSrcItem->path());
- 
+
+    // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
+    // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
+    // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
+    if(primNameStr == stageDefPrimNameStr){
+        _stage->SetDefaultPrim(_ufeDstItem->prim());
+    }
+
     return true;
 }
 
@@ -135,6 +145,11 @@ bool UsdUndoRenameCommand::renameUndo()
         return false;
     }
 
+    // these two lines MUST be called before the set name
+    // _stage->GetDefaultPrim() and prim after the rename can be invalid.
+    auto primNameStr = prim.GetPath().GetName();
+    auto stageDefPrimNameStr = _stage->GetDefaultPrim().GetPath().GetName();
+
     // set prim's name
     bool status = primSpec->SetName(_ufeSrcItem->prim().GetName());
     if (!status) {
@@ -145,6 +160,13 @@ bool UsdUndoRenameCommand::renameUndo()
     // however, I get random crashes if I don't which needs furthur investigation.  HS, 6-May-2020.
     _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
     sendRenameNotification(_ufeSrcItem, _ufeDstItem->path());
+
+    // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
+    // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
+    // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
+    if (primNameStr == stageDefPrimNameStr) {
+        _stage->SetDefaultPrim(_ufeSrcItem->prim());
+    }
 
     _ufeDstItem = nullptr;
 

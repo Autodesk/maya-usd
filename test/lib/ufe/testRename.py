@@ -130,10 +130,16 @@ class RenameTestCase(unittest.TestCase):
 
         # set primspec name
         primspec.name = "TreeBase_potato"
- 
-        # HS, 6-May-2020. defualtPrim in null?? This can't be null....
-        # defualtPrim = stage.GetDefaultPrim()
-        # self.assertEqual(defualtPrim.GetName(), 'TreeBase_potato')
+
+        # get the renamed prim
+        renamedPrim = stage.GetPrimAtPath('/TreeBase_potato')
+
+        # One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
+        stage.SetDefaultPrim(renamedPrim);
+
+        # get defualtPrim again
+        defualtPrim = stage.GetDefaultPrim()
+        self.assertEqual(defualtPrim.GetName(), 'TreeBase_potato')
 
         # make sure we have a valid prims after the primspec rename 
         assert stage.GetPrimAtPath('/TreeBase_potato')
