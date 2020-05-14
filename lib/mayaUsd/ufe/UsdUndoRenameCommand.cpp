@@ -64,7 +64,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
         // internal references (references without a file path specified) from the same file
         // should be renamable.
         if (prim.HasAuthoredReferences()) {
-            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
+            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
 
             if(!MayaUsdUtils::isInternalReference(primSpec)) {
                 std::string err = TfStringPrintf("Unable to rename referenced object [%s]", 
@@ -106,7 +106,7 @@ bool UsdUndoRenameCommand::renameRedo()
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     if(!primSpec) {
         return false;
     }
@@ -130,7 +130,7 @@ bool UsdUndoRenameCommand::renameUndo()
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
 
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     if(!primSpec) {
         return false;
     }
