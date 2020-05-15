@@ -108,9 +108,6 @@ namespace {
         //! If true, associate geometric buffers to the render item and trigger consolidation/instancing update
         bool _geometryDirty{ false };
 
-        //! Is _shader a fallback shader
-        bool _isFallbackShader { false };
-
         //! Construct valid commit state
         CommitState(HdVP2DrawItem& item) : _drawItemData(item.GetRenderItemData())
         {}
@@ -919,13 +916,11 @@ HdVP2BasisCurves::_UpdateDrawItem(
                         shader = _delegate->GetBasisCurvesLinearFallbackShader(clr);
                         primitiveType = MHWRender::MGeometry::kPatch;
                         primitiveStride = 2;
-                        stateToCommit._isFallbackShader = true;
                     }
                     else {
                         shader = _delegate->GetBasisCurvesCubicFallbackShader(clr);
                         primitiveType = MHWRender::MGeometry::kPatch;
                         primitiveStride = 4;
-                        stateToCommit._isFallbackShader = true;
                     }
 
                     if (shader != nullptr && shader != drawItemData._shader) {
@@ -1158,13 +1153,11 @@ HdVP2BasisCurves::_UpdateDrawItem(
                             shader = _delegate->GetBasisCurvesLinearFallbackShader(kSelectionHighlightColor);
                             primitiveType = MHWRender::MGeometry::kPatch;
                             primitiveStride = 2;
-                            stateToCommit._isFallbackShader = true;
                         }
                         else {
                             shader = _delegate->GetBasisCurvesCubicFallbackShader(kSelectionHighlightColor);
                             primitiveType = MHWRender::MGeometry::kPatch;
                             primitiveStride = 4;
-                            stateToCommit._isFallbackShader = true;
                         }
                     }
                 }
@@ -1287,9 +1280,6 @@ HdVP2BasisCurves::_UpdateDrawItem(
         // If available, something changed
         if (stateToCommit._shader != nullptr) {
             renderItem->setShader(stateToCommit._shader);
-#if MAYA_API_VERSION >= 20210000
-            renderItem->setWantDiffuseColorMultiDrawConsolidation(stateToCommit._isFallbackShader);
-#endif
             renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
         }
 
