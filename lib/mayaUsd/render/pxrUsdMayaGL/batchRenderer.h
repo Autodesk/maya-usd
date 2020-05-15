@@ -75,6 +75,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using HgiUniquePtr = std::unique_ptr<class Hgi>;
+
 /// UsdMayaGLBatchRenderer is a singleton that shapes can use to get consistent
 /// batched drawing via Hydra in Maya, regardless of legacy viewport or
 /// Viewport 2.0 usage.
@@ -454,7 +456,9 @@ private:
     /// render delegate *before* the render index, since class members are
     /// destructed in reverse declaration order.
 #if USD_VERSION_NUM > 2002
-    std::unique_ptr<class Hgi> _hgi;
+    /// Hgi and HdDriver should be constructed before HdEngine to ensure they
+    /// are destructed last. Hgi may be used during engine/delegate destruction.
+    HgiUniquePtr _hgi;
     HdDriver _hgiDriver;
 #endif
     HdEngine _hdEngine;

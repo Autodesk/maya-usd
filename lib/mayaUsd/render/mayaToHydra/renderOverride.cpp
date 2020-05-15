@@ -117,7 +117,11 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText()),
       _rendererDesc(desc),
 #if USD_VERSION_NUM > 2002
+#if USD_VERSION_NUM > 2005
+      _hgi(Hgi::CreatePlatformDefaultHgi()),
+#else
       _hgi(Hgi::GetPlatformDefaultHgi()),
+#endif
       _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())},
 #endif
       _selectionTracker(new HdxSelectionTracker),

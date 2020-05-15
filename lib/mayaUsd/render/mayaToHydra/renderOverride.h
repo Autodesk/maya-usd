@@ -61,6 +61,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+using HgiUniquePtr = std::unique_ptr<class Hgi>;
+
 class MtohRenderOverride : public MHWRender::MRenderOverride {
 public:
     MtohRenderOverride(const MtohRendererDescription& desc);
@@ -152,7 +154,9 @@ private:
     std::atomic<bool> _needsClear;
 
 #if USD_VERSION_NUM > 2002
-    std::unique_ptr<class Hgi> _hgi;
+    /// Hgi and HdDriver should be constructed before HdEngine to ensure they
+    /// are destructed last. Hgi may be used during engine/delegate destruction.
+    HgiUniquePtr _hgi;
     HdDriver _hgiDriver;
 #endif
     HdEngine _engine;
