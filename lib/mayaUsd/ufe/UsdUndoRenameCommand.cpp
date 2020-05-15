@@ -40,6 +40,17 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
+/*
+    HS, May 15, 2020
+
+    See usd-interest: Question around SdfPrimSepc's SetName routine
+
+    SdfPrimSpec::SetName() will rename any prim in the layer, but it does not allow you to reparent the prim, 
+    nor will it update any relationship or connection targets in the layer that targeted the prim or any of its 
+    decendants (they will all break unless you fix them up yourself.Renaming and reparenting prims destructively 
+    in composed scenes is pretty tricky stuff that cannot really practically be done with 100% guarantees.
+*/
+
 UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
     : Ufe::UndoableCommand()
     , _ufeSrcItem(srcItem)
