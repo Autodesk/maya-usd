@@ -40,6 +40,17 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
+/*
+    HS, May 15, 2020
+
+    See usd-interest: Question around SdfPrimSepc's SetName routine
+
+    SdfPrimSpec::SetName() will rename any prim in the layer, but it does not allow you to reparent the prim, 
+    nor will it update any relationship or connection targets in the layer that targeted the prim or any of its 
+    decendants (they will all break unless you fix them up yourself.Renaming and reparenting prims destructively 
+    in composed scenes is pretty tricky stuff that cannot really practically be done with 100% guarantees.
+*/
+
 UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
     : Ufe::UndoableCommand()
     , _ufeSrcItem(srcItem)
@@ -64,7 +75,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
         // internal references (references without a file path specified) from the same file
         // should be renamable.
         if (prim.HasAuthoredReferences()) {
-            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
+            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
 
             if(!MayaUsdUtils::isInternalReference(primSpec)) {
                 std::string err = TfStringPrintf("Unable to rename referenced object [%s]", 
@@ -106,10 +117,15 @@ bool UsdUndoRenameCommand::renameRedo()
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     if(!primSpec) {
         return false;
     }
+
+    // these two lines MUST be called before the set name
+    // _stage->GetDefaultPrim() and prim after the rename can be invalid.
+    auto primPath = prim.GetPath();
+    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
     // set prim's name
     // XXX: SetName successfuly returns true but when you examine the _prim.GetName()
@@ -122,7 +138,14 @@ bool UsdUndoRenameCommand::renameRedo()
     // the renamed scene item is a "sibling" of its original name.
     _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
     sendRenameNotification(_ufeDstItem, _ufeSrcItem->path());
- 
+
+    // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
+    // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
+    // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
+    if(primPath == defaultPrimPath){
+        _stage->SetDefaultPrim(_ufeDstItem->prim());
+    }
+
     return true;
 }
 
@@ -130,10 +153,15 @@ bool UsdUndoRenameCommand::renameUndo()
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
 
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_stage, prim);
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     if(!primSpec) {
         return false;
     }
+
+    // these two lines MUST be called before the set name
+    // _stage->GetDefaultPrim() and prim after the rename can be invalid.
+    auto primPath = prim.GetPath();
+    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
     // set prim's name
     bool status = primSpec->SetName(_ufeSrcItem->prim().GetName());
@@ -146,6 +174,13 @@ bool UsdUndoRenameCommand::renameUndo()
     _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
     sendRenameNotification(_ufeSrcItem, _ufeDstItem->path());
 
+    // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
+    // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
+    // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
+    if (primPath == defaultPrimPath) {
+        _stage->SetDefaultPrim(_ufeSrcItem->prim());
+    }
+
     _ufeDstItem = nullptr;
 
     return true;
@@ -153,8 +188,6 @@ bool UsdUndoRenameCommand::renameUndo()
 
 void UsdUndoRenameCommand::undo()
 {
-    // MAYA-92264: Pixar bug prevents undo from working.  Try again with USD
-    // version 0.8.5 or later.  PPT, 7-Jul-2018.
     try {
         InPathChange pc;
         if (!renameUndo()) {

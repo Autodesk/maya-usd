@@ -96,8 +96,9 @@ strongestContributingLayer(const UsdPrim& prim)
 }
 
 SdfPrimSpecHandle 
-getPrimSpecAtEditTarget(UsdStageWeakPtr stage, const UsdPrim& prim)
+getPrimSpecAtEditTarget(const UsdPrim& prim)
 {
+    auto stage = prim.GetStage();
     return stage->GetEditTarget().GetPrimSpecForScenePath(prim.GetPath());
 }
 

@@ -43,7 +43,7 @@ namespace MayaUsdUtils {
 
     //! Return a PrimSpec for the argument prim in the layer containing the stage's current edit target.
     MAYA_USD_UTILS_PUBLIC
-    SdfPrimSpecHandle getPrimSpecAtEditTarget(UsdStageWeakPtr, const UsdPrim&);
+    SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim&);
 
     //! Returns true if the prim spec has an internal reference.
     MAYA_USD_UTILS_PUBLIC
