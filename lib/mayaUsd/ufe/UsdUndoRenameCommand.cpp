@@ -188,8 +188,6 @@ bool UsdUndoRenameCommand::renameUndo()
 
 void UsdUndoRenameCommand::undo()
 {
-    // MAYA-92264: Pixar bug prevents undo from working.  Try again with USD
-    // version 0.8.5 or later.  PPT, 7-Jul-2018.
     try {
         InPathChange pc;
         if (!renameUndo()) {
