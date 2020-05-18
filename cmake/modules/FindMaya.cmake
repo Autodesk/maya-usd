@@ -279,6 +279,7 @@ find_package_handle_standard_args(Maya
         MAYA_INCLUDE_DIRS
         MAYA_LIBRARIES
         MAYA_API_VERSION
+        MAYA_APP_VERSION
     VERSION_VAR
         MAYA_APP_VERSION
 )
