@@ -5,7 +5,7 @@ USD for Maya is a project to create a Maya plugin, as well as reusable libraries
 Read more about Pixar's USD [here](http://openusd.org)
     
     
-## Windows / Linux / MacOS Releases - Maya 2020    
+## Windows / Linux / MacOS Official Binary Releases - Maya 2020    
 https://github.com/Autodesk/maya-usd/releases/    
     
     
