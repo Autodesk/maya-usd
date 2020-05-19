@@ -66,11 +66,7 @@ PxrMayaHdImagingShapeDrawOverride::~PxrMayaHdImagingShapeDrawOverride()
 MHWRender::DrawAPI
 PxrMayaHdImagingShapeDrawOverride::supportedDrawAPIs() const
 {
-#if MAYA_API_VERSION >= 201600
     return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile;
-#else
-    return MHWRender::kOpenGL;
-#endif
 }
 
 /* virtual */
@@ -167,11 +163,7 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
                 &status);
         if (status == MS::kSuccess) {
             const short selectionResolution =
-#if MAYA_API_VERSION >= 20180000
                 selectionResolutionPlug.asShort(&status);
-#else
-                selectionResolutionPlug.asShort(MDGContext::fsNormal, &status);
-#endif
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetSelectionResolution(
                     GfVec2i(selectionResolution));
@@ -184,11 +176,7 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
                 &status);
         if (status == MS::kSuccess) {
             const bool enableDepthSelection =
-#if MAYA_API_VERSION >= 20180000
                 enableDepthSelectionPlug.asBool(&status);
-#else
-                enableDepthSelectionPlug.asBool(MDGContext::fsNormal, &status);
-#endif
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetDepthSelectionEnabled(
                     enableDepthSelection);
@@ -229,17 +217,12 @@ PxrMayaHdImagingShapeDrawOverride::draw(
     UsdMayaGLBatchRenderer::GetInstance().Draw(context, data);
 }
 
-// Note that isAlwaysDirty became available as an MPxDrawOverride constructor
-// parameter beginning with Maya 2016 Extension 2.
 PxrMayaHdImagingShapeDrawOverride::PxrMayaHdImagingShapeDrawOverride(
         const MObject& obj) :
-    MHWRender::MPxDrawOverride(obj,
-                               PxrMayaHdImagingShapeDrawOverride::draw
-#if MAYA_API_VERSION >= 201651
-                               , /* isAlwaysDirty = */ false)
-#else
-                               )
-#endif
+    MHWRender::MPxDrawOverride(
+        obj,
+        PxrMayaHdImagingShapeDrawOverride::draw,
+        /* isAlwaysDirty = */ false)
 {
 }
 
