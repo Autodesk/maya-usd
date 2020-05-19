@@ -16,6 +16,9 @@
 # limitations under the License.
 #
 
+# Python 2 and 3: forward-compatible
+from builtins import range
+
 from ufeTestUtils import mayaUtils
 from ufeTestUtils import usdUtils
 from ufeTestUtils.testUtils import assertVectorAlmostEqual, assertVectorEqual
@@ -168,7 +171,7 @@ class Object3dTestCase(unittest.TestCase):
 
         # Loop over frames 1 to 10, and compare the values returned to the
         # expected values.
-        for frame in xrange(1,11):
+        for frame in range(1,11):
             cmds.currentTime(frame)
 
             ufeBBox = object3d.boundingBox()

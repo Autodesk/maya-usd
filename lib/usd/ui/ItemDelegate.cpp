@@ -176,7 +176,7 @@ TreeItem* ItemDelegate::getTreeItemForIndex(const QModelIndex& index) const
 
 void ItemDelegate::commitVariantSelection(VariantsEditorWidget* editor)
 {
-	emit commitData(editor);
+	Q_EMIT commitData(editor);
 }
 
 //------------------------------------------------------------------------------

@@ -101,7 +101,7 @@ void TreeModel::setParentsCheckState(const QModelIndex &child, TreeItem::CheckSt
 			item->setCheckState(state);
 			QVector<int> roles;
 			roles << Qt::DecorationRole;
-			emit dataChanged(parentIndex, parentIndex, roles);
+			Q_EMIT dataChanged(parentIndex, parentIndex, roles);
 			setParentsCheckState(parentIndex, state);
 		}
 	}
@@ -131,7 +131,7 @@ void TreeModel::setChildCheckState(const QModelIndex &parent, TreeItem::CheckSta
 	QModelIndex rMaxIndex = this->index(rMax, kTreeColumn_Load, parent);
 	QVector<int> roles;
 	roles << Qt::DecorationRole;
-	emit dataChanged(rMinIndex, rMaxIndex, roles);
+	Q_EMIT dataChanged(rMinIndex, rMaxIndex, roles);
 }
 
 void TreeModel::getRootPrimPath(std::string& rootPrimPath, const QModelIndex& parent)
@@ -270,7 +270,7 @@ void TreeModel::checkEnableItem(TreeItem* item)
 		QModelIndex modelIndex = indexFromItem(item);
 		QVector<int> roles;
 		roles << Qt::DecorationRole;
-		emit dataChanged(modelIndex, modelIndex, roles);
+		Q_EMIT dataChanged(modelIndex, modelIndex, roles);
 
 		// Then check-disable all the children of the clicked item.
 		setChildCheckState(modelIndex, TreeItem::CheckState::kChecked_Disabled);
