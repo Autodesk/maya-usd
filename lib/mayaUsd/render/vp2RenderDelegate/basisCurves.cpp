@@ -26,6 +26,7 @@
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/hd/version.h>
 
 #include "bboxGeom.h"
 #include "debugCodes.h"
@@ -1408,9 +1409,16 @@ HdDirtyBits HdVP2BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
     // Propagate dirty bits to all draw items.
     for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
         const HdReprSharedPtr& repr = pair.second;
+#if HD_API_VERSION < 35
         const HdRepr::DrawItems& items = repr->GetDrawItems();
         for (HdDrawItem* item : items) {
             if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+#else
+        const HdRepr::DrawItemUniquePtrVector &items = repr->GetDrawItems();
+        for (const HdRepr::DrawItemUniquePtr &item : items) {
+            if (HdVP2DrawItem * const drawItem =
+                        static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
                 drawItem->SetDirtyBits(bits);
             }
         }
@@ -1468,9 +1476,16 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
         _reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
     if (it != _reprs.end()) {
         const HdReprSharedPtr& repr = it->second;
+#if HD_API_VERSION < 35
         const HdRepr::DrawItems& items = repr->GetDrawItems();
         for (const HdDrawItem* item : items) {
             const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item);
+#else
+        const HdRepr::DrawItemUniquePtrVector &items = repr->GetDrawItems();
+        for (const HdRepr::DrawItemUniquePtr &item : items) {
+            const HdVP2DrawItem * const drawItem =
+                static_cast<const HdVP2DrawItem*>(item.get());
+#endif
             if (drawItem && (drawItem->GetDirtyBits() & DirtySelection)) {
                 *dirtyBits |= DirtySelectionHighlight;
                 break;
@@ -1498,8 +1513,12 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
             continue;
         }
 
+#if HD_API_VERSION < 35
         auto* drawItem = new HdVP2DrawItem(_delegate, &_sharedData);
-        repr->AddDrawItem(drawItem);
+#else
+        std::unique_ptr<HdVP2DrawItem> drawItem =
+            std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData);
+#endif
 
         const MString& renderItemName = drawItem->GetRenderItemName();
 
@@ -1541,6 +1560,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
                 }
             );
         }
+#if HD_API_VERSION < 35
+        repr->AddDrawItem(drawItem);
+#else
+        repr->AddDrawItem(std::move(drawItem));
+#endif
     }
 }
 
