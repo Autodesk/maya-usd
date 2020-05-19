@@ -235,13 +235,15 @@ shiboken2  5.12.1
 ```
 
 ##### dependencies on Linux DSOs when running tests
-Normally either runpath or rpath are used to reference dependencies such as the USD libraries.
+
+Normally either runpath or rpath are used on some DSOs in this library to specify explicit on other libraries (such as USD itself)
 
 If for some reason you don't want to use either of these options, and switch them off with:
 ```
 CMAKE_SKIP_RPATH=TRUE
 ```
-..you can inject LD_LIBRARY_PATH into any of the mayaUSD_add_test calls by setting the ADDITIONAL_LD_LIBRARY_PATH cmake variable to $ENV{LD_LIBRARY_PATH} or similar.
+To allow your tests to run, you can inject LD_LIBRARY_PATH into any of the mayaUSD_add_test calls by setting the ADDITIONAL_LD_LIBRARY_PATH cmake variable to $ENV{LD_LIBRARY_PATH} or similar.
+
 There is a related ADDITIONAL_PXR_PLUGINPATH_NAME cmake var which can be used if schemas are installed in a non-standard location
 
 
