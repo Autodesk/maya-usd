@@ -7,6 +7,7 @@ set(test_script_files
     testMatrices.py
     testMayaPickwalk.py
     testRotatePivot.py
+	testSelection.py
     testUfePythonImport.py
 )
 
@@ -19,6 +20,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testGroupCmd.py
         testAttribute.py
         testAttributes.py
+        testComboCmd.py
         testDuplicateCmd.py
         testMoveCmd.py
         testObject3d.py
