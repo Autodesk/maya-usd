@@ -38,10 +38,6 @@
 #include "maya/MPxSurfaceShape.h"
 #include "maya/MSelectionList.h"
 
-#if MAYA_API_VERSION < 201800
-#include "maya/MViewport2Renderer.h"
-#endif
-
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/prim.h"
@@ -957,11 +953,7 @@ private:
   bool getInternalValue(const MPlug& plug, MDataHandle& dataHandle) override;
   MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs) override;
   bool isBounded() const override;
-  #if MAYA_API_VERSION < 201700
-  MPxNode::SchedulingType schedulingType() const override { return kSerialize; }
-  #else
   MPxNode::SchedulingType schedulingType() const override { return kSerial; }
-  #endif
   MStatus preEvaluation(const MDGContext & context, const MEvaluationNode& evaluationNode) override;
   void CacheEmptyBoundingBox(MBoundingBox&) override;
   UsdTimeCode GetOutputTime(MDataBlock) const override;

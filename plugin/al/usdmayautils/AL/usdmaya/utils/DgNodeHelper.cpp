@@ -3726,11 +3726,7 @@ MStatus DgNodeHelper::getInt64(MObject node, MObject attr, int64_t& value)
     return MS::kFailure;
   }
   MStatus status;
-  #if MAYA_API_VERSION >= 201800
   value = plug.asInt64(&status);
-  #else
-  value = plug.asInt64(MDGContext::fsNormal, &status);
-  #endif
   return status;
 }
 

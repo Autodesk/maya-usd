@@ -79,10 +79,8 @@ ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
   : MHWRender::MPxDrawOverride(obj, draw, true)
 #elif MAYA_API_VERSION >= 20180600
   : MHWRender::MPxDrawOverride2(obj, draw, true)
-#elif MAYA_API_VERSION >= 201700
-  : MHWRender::MPxDrawOverride(obj, draw, true)
 #else
-  : MHWRender::MPxDrawOverride(obj, draw)
+  : MHWRender::MPxDrawOverride(obj, draw, true)
 #endif
 {
   TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::ProxyDrawOverride\n");
