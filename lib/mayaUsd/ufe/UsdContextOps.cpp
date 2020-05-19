@@ -180,30 +180,30 @@ public:
     AddReferenceUndoableCommand(
         const UsdPrim& prim,
         const std::string& filePath
-    ) : fPrim(prim),
-        fSdfRef(),
-        fFilePath(filePath)
+    ) : _prim(prim),
+        _sdfRef(),
+        _filePath(filePath)
     {}
 
     void undo() override { 
-        if (fPrim.IsValid()) {
-            UsdReferences primRefs = fPrim.GetReferences();
-            primRefs.RemoveReference(fSdfRef);
+        if (_prim.IsValid()) {
+            UsdReferences primRefs = _prim.GetReferences();
+            primRefs.RemoveReference(_sdfRef);
         }
     }
 
     void redo() override { 
-        if (fPrim.IsValid()) {
-            fSdfRef = SdfReference(fFilePath);
-            UsdReferences primRefs = fPrim.GetReferences();
-            primRefs.AddReference(fSdfRef);
+        if (_prim.IsValid()) {
+            _sdfRef = SdfReference(_filePath);
+            UsdReferences primRefs = _prim.GetReferences();
+            primRefs.AddReference(_sdfRef);
         }
     }
 
 private:
-    UsdPrim fPrim;
-    SdfReference fSdfRef;
-    const std::string fFilePath;
+    UsdPrim _prim;
+    SdfReference _sdfRef;
+    const std::string _filePath;
 };
 const std::string AddReferenceUndoableCommand::commandName("Add Reference...");
 
@@ -215,7 +215,7 @@ public:
 
     ClearAllReferencesUndoableCommand(
         const UsdPrim& prim
-    ) : fPrim(prim)
+    ) : _prim(prim)
     {}
 
     void undo() override { 
@@ -223,14 +223,14 @@ public:
     }
 
     void redo() override { 
-        if (fPrim.IsValid()) {
-            UsdReferences primRefs = fPrim.GetReferences();
+        if (_prim.IsValid()) {
+            UsdReferences primRefs = _prim.GetReferences();
             primRefs.ClearReferences();
         }
     }
 
 private:
-    UsdPrim fPrim;
+    UsdPrim _prim;
 };
 const std::string ClearAllReferencesUndoableCommand::commandName("Clear All References");
 const MString ClearAllReferencesUndoableCommand::cancelRemoval("No");
