@@ -16,9 +16,6 @@
 # limitations under the License.
 #
 
-# Python 2 and 3: forward-compatible
-from builtins import range
-
 from ufeTestUtils import mayaUtils
 from ufeTestUtils import usdUtils
 from ufeTestUtils.testUtils import assertVectorAlmostEqual, assertVectorEqual
