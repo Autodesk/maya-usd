@@ -19,9 +19,6 @@
 """
     Helper functions regarding Maya that will be used throughout the test.
 """
-
-from __future__ import print_function
-
 import maya.cmds as cmds
 import sys, os
 import re
