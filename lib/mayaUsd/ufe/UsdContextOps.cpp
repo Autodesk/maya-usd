@@ -23,9 +23,13 @@
 #include <ufe/attribute.h>
 #include <ufe/path.h>
 
+#include <pxr/usd/sdf/reference.h>
+#include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/usdGeom/tokens.h>
+
+#include <mayaUsd/utils/util.h>
 
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
@@ -140,6 +144,97 @@ private:
     PXR_NS::TfToken _primToken;
 };
 
+const char* selectUSDFileScript = R"(
+global proc string SelectUSDFileForAddReference()
+{
+    string $result[] = `fileDialog2 
+        -fileMode 1
+        -caption "Add Reference to USD Prim"
+        -fileFilter "USD Files (*.usd *.usda *.usdc);;*.usd;;*.usda;;*.usdc"`;
+
+    if (0 == size($result))
+        return "";
+    else
+        return $result[0];
+}
+SelectUSDFileForAddReference();
+)";
+
+const char* clearAllReferencesConfirmScript = R"(
+global proc string ClearAllUSDReferencesConfirm()
+{
+    return `confirmDialog -title "Remove All References" 
+        -message "Removing all references from USD prim.  Are you sure?"
+        -button "Yes" -button "No" -defaultButton "Yes"
+        -cancelButton "No" -dismissString "No"`;
+
+}
+ClearAllUSDReferencesConfirm();
+)";
+
+class AddReferenceUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    static const std::string commandName;
+
+    AddReferenceUndoableCommand(
+        const UsdPrim& prim,
+        const std::string& filePath
+    ) : _prim(prim),
+        _sdfRef(),
+        _filePath(filePath)
+    {}
+
+    void undo() override { 
+        if (_prim.IsValid()) {
+            UsdReferences primRefs = _prim.GetReferences();
+            primRefs.RemoveReference(_sdfRef);
+        }
+    }
+
+    void redo() override { 
+        if (_prim.IsValid()) {
+            _sdfRef = SdfReference(_filePath);
+            UsdReferences primRefs = _prim.GetReferences();
+            primRefs.AddReference(_sdfRef);
+        }
+    }
+
+private:
+    UsdPrim _prim;
+    SdfReference _sdfRef;
+    const std::string _filePath;
+};
+const std::string AddReferenceUndoableCommand::commandName("Add Reference...");
+
+class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand
+{
+public:
+    static const std::string commandName;
+    static const MString cancelRemoval;
+
+    ClearAllReferencesUndoableCommand(
+        const UsdPrim& prim
+    ) : _prim(prim)
+    {}
+
+    void undo() override { 
+
+    }
+
+    void redo() override { 
+        if (_prim.IsValid()) {
+            UsdReferences primRefs = _prim.GetReferences();
+            primRefs.ClearReferences();
+        }
+    }
+
+private:
+    UsdPrim _prim;
+};
+const std::string ClearAllReferencesUndoableCommand::commandName("Clear All References");
+const MString ClearAllReferencesUndoableCommand::cancelRemoval("No");
+
 }
 
 MAYAUSD_NS_DEF {
@@ -220,6 +315,11 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
         // Top level item - Add New Prim (for all context op types).
         items.emplace_back(
             kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
+
+        items.emplace_back(AddReferenceUndoableCommand::commandName,
+                            AddReferenceUndoableCommand::commandName);
+        items.emplace_back(ClearAllReferencesUndoableCommand::commandName,
+                            ClearAllReferencesUndoableCommand::commandName);
     }
     else {
         if (itemPath[0] == kUSDVariantSetsItem) {
@@ -314,6 +414,24 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // Just open the editor directly and return null so we don't have undo.
         MGlobal::executeCommand("UsdLayerEditor");
         return nullptr;
+    }
+    else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
+        MString fileRef = MGlobal::executeCommandStringResult(selectUSDFileScript);
+
+        std::string path = UsdMayaUtil::convert(fileRef);
+        if (path.empty())
+            return nullptr;
+
+        return std::make_shared<AddReferenceUndoableCommand>(
+            fPrim, path);        
+    }
+    else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
+        MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
+        if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)
+            return nullptr;
+
+        return std::make_shared<ClearAllReferencesUndoableCommand>(fPrim);
+        
     }
 
     return nullptr;
