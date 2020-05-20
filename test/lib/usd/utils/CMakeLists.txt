@@ -30,4 +30,6 @@ target_link_libraries(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 mayaUsd_add_test(${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
+    ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )

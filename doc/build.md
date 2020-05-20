@@ -235,6 +235,20 @@ setuptools 39.0.1
 shiboken2  5.12.1 
 ```
 
+##### dependencies on Linux DSOs when running tests
+
+Normally either runpath or rpath are used on some DSOs in this library to specify explicit on other libraries (such as USD itself)
+
+If for some reason you don't want to use either of these options, and switch them off with:
+```
+CMAKE_SKIP_RPATH=TRUE
+```
+To allow your tests to run, you can inject LD_LIBRARY_PATH into any of the mayaUSD_add_test calls by setting the ADDITIONAL_LD_LIBRARY_PATH cmake variable to $ENV{LD_LIBRARY_PATH} or similar.
+
+There is a related ADDITIONAL_PXR_PLUGINPATH_NAME cmake var which can be used if schemas are installed in a non-standard location
+
+
+
 # How to Load Plug-ins in Maya 
 
 The provided module file (*.mod) facilitates setting various environment variables for plugins and libraries. After the project is successfully built, ```mayaUsd.mod``` is installed inside the install directory. In order for Maya to discover this mod file, ```MAYA_MODULE_PATH``` environment variable needs to be set to point to the location where the mod file is installed.

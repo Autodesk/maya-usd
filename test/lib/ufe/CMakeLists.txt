@@ -60,6 +60,7 @@ foreach(script ${test_script_files})
         ENV
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/ufeTestPlugins"
             "UFE_PREVIEW_VERSION_NUM=${UFE_PREVIEW_VERSION_NUM}"
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 
     # Assign a ctest label to these tests for easy filtering.
