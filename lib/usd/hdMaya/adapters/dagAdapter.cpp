@@ -31,10 +31,6 @@
 #include <hdMaya/adapters/adapterDebugCodes.h>
 #include <hdMaya/adapters/mayaAttrs.h>
 
-#include <mayaUsd/utils/converter.h>
-
-using namespace MAYAUSD_NS;
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType) {
@@ -141,10 +137,10 @@ void HdMayaDagAdapter::_CalculateTransform() {
             _transform[0].SetIdentity();
             _transform[1].SetIdentity();
         } else {
-            TypedConverter<MMatrix,GfMatrix4d>::convert(_dagPath.inclusiveMatrix(),_transform[0]);
+            _transform[0] = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
             if (GetDelegate()->GetParams().enableMotionSamples) {
                 MDGContextGuard guard(MAnimControl::currentTime() + 1.0);
-                TypedConverter<MMatrix,GfMatrix4d>::convert(_dagPath.inclusiveMatrix(),_transform[1]);
+                _transform[1] = GetGfMatrixFromMaya(_dagPath.inclusiveMatrix());
             } else {
                 _transform[1] = _transform[0];
             }

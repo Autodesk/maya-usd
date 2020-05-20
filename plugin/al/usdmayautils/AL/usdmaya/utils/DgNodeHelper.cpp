@@ -34,11 +34,7 @@
 #include "maya/MMatrixArray.h"
 #include "maya/MObjectArray.h"
 
-#include <mayaUsd/utils/converter.h>
-
 #include <iostream>
-
-using namespace MAYAUSD_NS;
 
 namespace AL {
 namespace usdmaya {
@@ -4939,7 +4935,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim, Animati
         // if not, then we count on CreateAttribute codes below since that will return the USDAttribute if
         // already exists and hopefully the type conversions below will work.
       }
-        
+
       bool isArray = plug.isArray();
       switch(attribute.apiType())
       {
@@ -5645,17 +5641,9 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim, Animati
       case MFn::kFloatMatrixAttribute:
       case MFn::kMatrixAttribute:
         {
-          UsdAttribute usdAttr = prim.CreateAttribute(attributeName, !isArray ? SdfValueTypeNames->Matrix4d : SdfValueTypeNames->Matrix4dArray);
-          const auto* converter = Converter::find(plug, usdAttr);
-          if(converter) {
-            ConverterArgs args;
-            converter->convert(plug, usdAttr, args);
-            usdAttr.SetCustom(true);
-            break;
-          }
-            
           if(!isArray)
           {
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix4d);
             GfMatrix4d m;
             getMatrix4x4(node, attribute, (double*)&m);
             usdAttr.Set(m);
@@ -5663,6 +5651,7 @@ MStatus DgNodeHelper::copyDynamicAttributes(MObject node, UsdPrim& prim, Animati
           }
           else
           {
+            UsdAttribute usdAttr = prim.CreateAttribute(attributeName, SdfValueTypeNames->Matrix4dArray);
             VtArray<GfMatrix4d> value;
             value.resize(plug.numElements());
             getMatrix4x4Array(node, attribute, (double*)value.data(), value.size());
