@@ -52,10 +52,6 @@ UsdPrim ufePathToPrim(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 bool isRootChild(const Ufe::Path& path);
 
-//! Return the highest-priority layer where the prim has a def primSpec.
-MAYAUSD_CORE_PUBLIC
-SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim);
-
 MAYAUSD_CORE_PUBLIC
 UsdSceneItem::Ptr createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
 
@@ -85,6 +81,10 @@ MDagPath nameToDagPath(const std::string& name);
 //! along the path can transform Maya's time (e.g. with scale and offset).
 MAYAUSD_CORE_PUBLIC
 UsdTimeCode getTime(const Ufe::Path& path);
+
+//! Object renamed scene notification
+MAYAUSD_CORE_PUBLIC
+void sendRenameNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath);
 
 //! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
 inline

@@ -22,6 +22,9 @@
 #include <string>
 #include <unordered_map>
 
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MObjectHandle.h>
@@ -99,29 +102,6 @@ bool isRootChild(const Ufe::Path& path)
 	auto segments = path.getSegments();
 	TEST_USD_PATH(segments, path);
 	return(segments[1].size() == 1);
-}
-
-SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim)
-{
-	// Iterate over the layer stack, starting at the highest-priority layer.
-	// The source layer is the one in which there exists a def primSpec, not
-	// an over.
-
-	SdfLayerHandle defLayer;
-	auto layerStack = prim.GetStage()->GetLayerStack();
-    auto stage = prim.GetStage();
-    auto primFromPath = stage->GetPrimAtPath(prim.GetPath());
-
-	for (auto layer : layerStack)
-	{
-		auto primSpec = layer->GetPrimAtPath(prim.GetPath());
-		if (primSpec && (primSpec->GetSpecifier() == SdfSpecifierDef))
-		{
-			defLayer = layer;
-			break;
-		}
-	}
-	return defLayer;
 }
 
 UsdSceneItem::Ptr createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName)
@@ -259,6 +239,12 @@ UsdTimeCode getTime(const Ufe::Path& path)
     TF_VERIFY(proxyShape);
 
     return proxyShape->getTime();
+}
+
+void sendRenameNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
+{
+	Ufe::ObjectRename notification(item, previousPath);
+	Ufe::Scene::notifyObjectPathChange(notification);
 }
 
 } // namespace ufe
