@@ -168,7 +168,7 @@ class Object3dTestCase(unittest.TestCase):
 
         # Loop over frames 1 to 10, and compare the values returned to the
         # expected values.
-        for frame in xrange(1,11):
+        for frame in range(1,11):
             cmds.currentTime(frame)
 
             ufeBBox = object3d.boundingBox()

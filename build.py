@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from distutils.spawn import find_executable
 
 import argparse
@@ -21,19 +23,19 @@ verbosity = 1
 
 def Print(msg):
     if verbosity > 0:
-        print msg
+        print(msg)
 
 def PrintWarning(warning):
     if verbosity > 0:
-        print "WARNING:", warning
+        print("WARNING:", warning)
 
 def PrintStatus(status):
     if verbosity >= 1:
-        print "STATUS:", status
+        print("STATUS:", status)
 
 def PrintInfo(info):
     if verbosity >= 2:
-        print "INFO:", info
+        print("INFO:", info)
 
 def PrintCommandOutput(output):
     if verbosity >= 3:
@@ -43,7 +45,7 @@ def PrintError(error):
     if verbosity >= 3 and sys.exc_info()[1] is not None:
         import traceback
         traceback.print_exc()
-    print "ERROR:", error
+    print("ERROR:", error)
 
 ############################################################
 def Windows():
@@ -135,8 +137,9 @@ def Run(context, cmd):
         if context.redirectOutstreamFile:
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
+            encoding = sys.stdout.encoding or "UTF-8"
             while True:
-                l = p.stdout.readline()
+                l = p.stdout.readline().decode(encoding)
                 if l != "":
                     logfile.write(l)
                     PrintCommandOutput(l)
