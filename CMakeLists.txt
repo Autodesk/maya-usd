@@ -97,7 +97,7 @@ if (BUILD_USDMAYA_SCHEMAS)
     include(cmake/jinja.cmake)
 endif()
 
-find_package(Maya REQUIRED)
+find_package(Maya 2018 REQUIRED)
 find_package(USD REQUIRED)
 include(cmake/usd.cmake)
 include(${USD_CONFIG_FILE})

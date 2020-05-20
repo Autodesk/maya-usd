@@ -51,17 +51,9 @@ class testUsdExportPointInstancer(unittest.TestCase):
     def setUpClass(cls):
         standalone.initialize('usd')
 
-        # Choose the test file based on whether the MASH plugin is available.
-        try:
-            cmds.loadPlugin("MASH")
-            # Even though, ie, maya2016 Ext has MASH, the node attributes / etc
-            # changed enough to be incompatible with InstancerTestMash.ma; also,
-            # the .ma file has a "requires maya "2018" statement
-            cls.hasMash = cmds.about(apiVersion=1) >= 20180000
-        except:
-            cls.hasMash = False
+        cmds.loadPlugin("MASH")
 
-        scene = "InstancerTestMash.ma" if cls.hasMash else "InstancerTest.ma"
+        scene = "InstancerTestMash.ma"
         cmds.file(os.path.abspath(scene),
                   open=True,
                   force=True)
@@ -172,17 +164,13 @@ class testUsdExportPointInstancer(unittest.TestCase):
         """
         Tests that all of the MASH instancer prototypes made it to USD.
         """
-        if self.hasMash:
-            self._TestPrototypes("MASH1_Instancer")
+        self._TestPrototypes("MASH1_Instancer")
 
     def testMashPrototypes_NoIdsArray(self):
         """
         MASH instancers might not have an ids array if using dynamics.
         Make sure they still export OK.
         """
-        if not self.hasMash:
-            return
-
         instancerPrim = self.stage.GetPrimAtPath(
                 "/InstancerTest/MASH2_Instancer")
         self.assertTrue(instancerPrim)
@@ -293,8 +281,7 @@ class testUsdExportPointInstancer(unittest.TestCase):
         """
         Check that the MASH point transforms are correct.
         """
-        if self.hasMash:
-            self._TestTransforms("MASH1_Instancer")
+        self._TestTransforms("MASH1_Instancer")
 
     def _TestInstancePaths(self, instancerName):
         mayaInstancer = OMFX.MFnInstancer(self._GetDagPath(instancerName))
@@ -350,22 +337,20 @@ class testUsdExportPointInstancer(unittest.TestCase):
         Checks that the proto index assigned for each point is correct
         in the MASH instancer.
         """
-        if self.hasMash:
-            self._TestInstancePaths("MASH1_Instancer")
+        self._TestInstancePaths("MASH1_Instancer")
 
     def testMashVisibility(self):
         """
         Checks that invisibleIds is properly authored based on the visibility
         channel of the MASH instancer.
         """
-        if self.hasMash:
-            invisibleIds = UsdGeom.PointInstancer.Get(self.stage,
-                    "/InstancerTest/MASH3_Instancer").GetInvisibleIdsAttr()
-            self.assertItemsEqual(invisibleIds.Get(0.0), [4, 5, 6, 7, 8, 9])
-            self.assertItemsEqual(invisibleIds.Get(140.0), [7, 8, 9])
-            self.assertItemsEqual(invisibleIds.Get(270.0), [0, 1, 2, 3, 4])
-            self.assertItemsEqual(invisibleIds.Get(400.0),
-                    [0, 1, 2, 3, 4, 5, 6])
+        invisibleIds = UsdGeom.PointInstancer.Get(self.stage,
+                "/InstancerTest/MASH3_Instancer").GetInvisibleIdsAttr()
+        self.assertItemsEqual(invisibleIds.Get(0.0), [4, 5, 6, 7, 8, 9])
+        self.assertItemsEqual(invisibleIds.Get(140.0), [7, 8, 9])
+        self.assertItemsEqual(invisibleIds.Get(270.0), [0, 1, 2, 3, 4])
+        self.assertItemsEqual(invisibleIds.Get(400.0),
+                [0, 1, 2, 3, 4, 5, 6])
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

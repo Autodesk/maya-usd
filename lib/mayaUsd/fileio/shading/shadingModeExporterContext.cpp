@@ -162,12 +162,7 @@ _GetShaderFromShadingEngine(
         return MObject();
     }
 
-    MObject shaderObj =
-#if MAYA_API_VERSION >= 20180000
-        shaderPlug.asMObject(&status);
-#else
-        shaderPlug.asMObject(MDGContext::fsNormal, &status);
-#endif
+    MObject shaderObj = shaderPlug.asMObject(&status);
     if (status != MS::kSuccess || shaderObj.isNull()) {
         return MObject();
     }

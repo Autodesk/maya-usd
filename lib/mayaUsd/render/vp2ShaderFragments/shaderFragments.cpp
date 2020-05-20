@@ -281,7 +281,6 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
 
     _registered = false;
 
-#if MAYA_API_VERSION >= 201700
     // Clear the shader manager's effect cache as well so that any changes to
     // the fragments will get picked up if they are re-registered.
     const MHWRender::MShaderManager* shaderMgr =
@@ -294,7 +293,6 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
             return status;
         }
     }
-#endif
 
     return MS::kSuccess;
 }

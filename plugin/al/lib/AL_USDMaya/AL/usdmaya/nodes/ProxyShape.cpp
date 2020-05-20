@@ -443,7 +443,6 @@ bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRen
     attribs.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
   }
   else
-#if MAYA_API_VERSION >= 201600
   if(displayStyle & MHWRender::MFrameContext::kFlatShaded) {
     attribs.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
     if ((displayStatus == MHWRender::kActive) ||
@@ -453,7 +452,6 @@ bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRen
     }
   }
   else
-#endif
   if(displayStyle & MHWRender::MFrameContext::kGouraudShaded) {
     attribs.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     if ((displayStatus == MHWRender::kActive) ||
@@ -473,16 +471,12 @@ bool ProxyShape::getRenderAttris(UsdImagingGLRenderParams& attribs, const MHWRen
   // set the time for the scene
   attribs.frame = outTimePlug().asMTime().as(MTime::uiUnit());
 
-#if MAYA_API_VERSION >= 201603
   if(displayStyle & MHWRender::MFrameContext::kBackfaceCulling) {
     attribs.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
   }
   else {
     attribs.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
   }
-#else
-  attribs.cullStyle = Engine::CULL_STYLE_NOTHING;
-#endif
 
   const float complexities[] = {1.05f, 1.15f, 1.25f, 1.35f, 1.45f, 1.55f, 1.65f, 1.75f, 1.9f}; 
   attribs.complexity = complexities[complexityPlug().asInt()];

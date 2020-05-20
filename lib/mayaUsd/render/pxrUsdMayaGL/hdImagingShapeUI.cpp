@@ -86,11 +86,7 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
                 &status);
         if (status == MS::kSuccess) {
             const short selectionResolution =
-#if MAYA_API_VERSION >= 20180000
                 selectionResolutionPlug.asShort(&status);
-#else
-                selectionResolutionPlug.asShort(MDGContext::fsNormal, &status);
-#endif
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetSelectionResolution(
                     GfVec2i(selectionResolution));
@@ -103,11 +99,7 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
                 &status);
         if (status == MS::kSuccess) {
             const bool enableDepthSelection =
-#if MAYA_API_VERSION >= 20180000
                 enableDepthSelectionPlug.asBool(&status);
-#else
-                enableDepthSelectionPlug.asBool(MDGContext::fsNormal, &status);
-#endif
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetDepthSelectionEnabled(
                     enableDepthSelection);

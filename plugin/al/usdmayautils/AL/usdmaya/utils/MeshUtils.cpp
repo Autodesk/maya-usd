@@ -794,11 +794,7 @@ void MeshImportContext::applyColourSetData()
         continue;
 
       MStatus status;
-  #if MAYA_API_VERSION >= 201800
       colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, nullptr, &status);
-  #else
-      colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, &status);
-  #endif
       if (status)
       {
         status = fnMesh.setCurrentColorSetName(colourSetName);

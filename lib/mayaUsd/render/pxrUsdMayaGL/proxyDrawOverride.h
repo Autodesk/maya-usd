@@ -79,7 +79,6 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
                 const MHWRender::MFrameContext& frameContext,
                 MUserData* oldData) override;
 
-#if MAYA_API_VERSION >= 20180000
         MAYAUSD_CORE_PUBLIC
         bool wantUserSelection() const override;
 
@@ -89,7 +88,6 @@ class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
                 const MHWRender::MDrawContext& context,
                 MPoint& hitPoint,
                 const MUserData* data) override;
-#endif
 
         MAYAUSD_CORE_PUBLIC
         static void draw(
