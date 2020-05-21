@@ -32,6 +32,7 @@ endfunction()
 #                            MAYA_PLUG_IN_PATH
 #                            MAYA_SCRIPT_PATH
 #                            PXR_PLUGINPATH_NAME
+#                            LD_LIBRARY_PATH
 #                        Note that the format of these name/value pairs should
 #                        be the same as that used with
 #                        `set_property(TEST test_name APPEND PROPERTY ENVIRONMENT ...)`
@@ -129,6 +130,7 @@ finally:
         MAYA_PLUG_IN_PATH
         MAYA_SCRIPT_PATH
         PXR_PLUGINPATH_NAME
+        LD_LIBRARY_PATH
     )
 
     # Set initial empty values for all path vars

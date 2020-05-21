@@ -18,45 +18,6 @@
 #include <maya/MTypes.h>
 #include <string>
 
-#if MAYA_API_VERSION >= 201800
-
 // Maya 2018 introduced a namespace for the maya api... this also forward declares
 // the classes, and adds "using" directives
 #include <maya/MApiNamespace.h>
-
-#else  // MAYA_API_VERSION >= 201800
-
-// forward declare maya api types
-class MAngle;
-class MArgList;
-class MArgDatabase;
-class MBoundingBox;
-class MColor;
-class MDagPath;
-class MDagModifier;
-class MDataBlock;
-class MDistance;
-class MDGModifier;
-class MEulerRotation;
-class MFloatPoint;
-class MFloatVector;
-class MFloatMatrix;
-class MMatrix;
-class MFnDependencyNode;
-class MFnDagNode;
-class MFnMesh;
-class MFnTransform;
-class MMatrix;
-class MObject;
-class MPlug;
-class MPoint;
-class MPxData;
-class MStatus;
-class MString;
-class MSyntax;
-class MTime;
-class MVector;
-class MUserData;
-
-#endif // MAYA_API_VERSION >= 201800
-

@@ -146,11 +146,7 @@ UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
     // All DAG nodes are also DG nodes, so try it as a DG node first.
     const MFnDependencyNode depNodeFn(mayaNode, &status);
     if (status == MS::kSuccess) {
-#if MAYA_API_VERSION >= 20180000
         const MString depName = depNodeFn.absoluteName(&status);
-#else
-        const MString depName = depNodeFn.name(&status);
-#endif
         if (status == MS::kSuccess) {
             nodeName = depName;
         }
@@ -1794,12 +1790,7 @@ UsdMayaUtil::MDataHandleHolder::New(const MPlug& plug)
 {
     MStatus status;
 
-#if MAYA_API_VERSION >= 20180000
     MDataHandle dataHandle = plug.asMDataHandle(&status);
-#else
-    MDataHandle dataHandle = plug.asMDataHandle(MDGContext::fsNormal, &status);
-#endif
-
     if (!status.error()) {
         return TfCreateRefPtr(
                 new UsdMayaUtil::MDataHandleHolder(plug, dataHandle));
@@ -1936,48 +1927,6 @@ UsdMayaUtil::GetAllAncestorMayaNodeTypes(const std::string& ty)
                 ty.c_str());
         return std::vector<std::string>();
     }
-
-#if MAYA_API_VERSION < 20180000
-    // In older versions of Maya, the MEL command
-    // "nodeType -isTypeName -inherited" returns an empty array (but does not
-    // fail) for some built-in types.
-    // The buggy built-in cases from Maya 2016 have been hard-coded below with
-    // the appropriate ancestors list. (The cases below all work with 2018.)
-    if (inheritedTypes.length() == 0) {
-        if (ty == "file") {
-            return {"shadingDependNode", "texture2d", "file"};
-        }
-        else if (ty == "mesh") {
-            return {
-                "containerBase", "entity", "dagNode", "shape", "geometryShape",
-                "deformableShape", "controlPoint", "surfaceShape", "mesh"
-            };
-        }
-        else if (ty == "nurbsCurve") {
-            return {
-                "containerBase", "entity", "dagNode", "shape", "geometryShape",
-                "deformableShape", "controlPoint", "curveShape", "nurbsCurve"
-            };
-        }
-        else if (ty == "nurbsSurface") {
-            return {
-                "containerBase", "entity", "dagNode", "shape", "geometryShape",
-                "deformableShape", "controlPoint", "surfaceShape",
-                "nurbsSurface"
-            };
-        }
-        else if (ty == "time") {
-            return {"time"};
-        }
-        else {
-            TF_RUNTIME_ERROR(
-                    "Type '%s' exists, but MEL returned empty ancestor type "
-                    "information for it",
-                    ty.c_str());
-            return {ty}; // Best that we can do without ancestor type info.
-        }
-    }
-#endif
 
     std::vector<std::string> inheritedTypesVector;
     inheritedTypesVector.reserve(inheritedTypes.length());

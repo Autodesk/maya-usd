@@ -195,49 +195,20 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                     continue;
                 }
 
-                // Note that MPlug's source() and destinations() methods were
-                // added in Maya 2016 Extension 2.
                 if (isDestination) {
-#if MAYA_API_VERSION >= 201651
                     srcPlug = iterPlug.source(&status);
                     if (status != MS::kSuccess) {
                         continue;
                     }
-#else
-                    MPlugArray srcPlugs;
-                    iterPlug.connectedTo(
-                        srcPlugs,
-                        /* asDst = */ true,
-                        /* asSrc = */ false,
-                        &status);
-                    if (status != MS::kSuccess) {
-                        continue;
-                    }
-
-                    if (srcPlugs.length() > 0u) {
-                        srcPlug = srcPlugs[0u];
-                    }
-#endif
 
                     dstPlugs.append(iterPlug);
                 } else if (isSource) {
                     srcPlug = iterPlug;
 
-#if MAYA_API_VERSION >= 201651
                     if (!iterPlug.destinations(dstPlugs, &status) ||
                             status != MS::kSuccess) {
                         continue;
                     }
-#else
-                    iterPlug.connectedTo(
-                        dstPlugs,
-                        /* asDst = */ false,
-                        /* asSrc = */ true,
-                        &status);
-                    if (status != MS::kSuccess) {
-                        continue;
-                    }
-#endif
                 }
 
                 // Since we are traversing the shading graph in the upstream

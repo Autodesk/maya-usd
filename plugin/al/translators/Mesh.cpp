@@ -138,6 +138,10 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
     {
       context.copyVertexData(context.timeCode());
     }
+    if(params.getBool(GeometryExportOptions::kMeshExtents))
+    {
+      context.copyExtentData(context.timeCode());
+    }
     if(params.getBool(GeometryExportOptions::kMeshConnects))
     {
       context.copyFaceConnectsAndPolyCounts();
@@ -252,6 +256,7 @@ void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options
   if(context)
   {
     context.copyVertexData(t);
+    context.copyExtentData(t);
     context.copyNormalData(t);
     context.copyFaceConnectsAndPolyCounts();
     context.copyInvisibleHoles();

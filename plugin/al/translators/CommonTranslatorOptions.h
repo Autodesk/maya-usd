@@ -11,6 +11,7 @@ namespace GeometryExportOptions
 static constexpr const char* const kMeshes = "Meshes"; ///< export mesh geometry option name
 static constexpr const char* const kMeshConnects = "Mesh Face Connects"; ///< export mesh face connects
 static constexpr const char* const kMeshPoints = "Mesh Points"; ///< export mesh points
+static constexpr const char* const kMeshExtents = "Mesh Extents"; ///< export mesh extents
 static constexpr const char* const kMeshNormals = "Mesh Normals"; ///< export mesh normals
 static constexpr const char* const kMeshVertexCreases = "Mesh Vertex Creases"; ///< export mesh vertex creases
 static constexpr const char* const kMeshEdgeCreases = "Mesh Edge Creases"; ///< export mesh edge creases

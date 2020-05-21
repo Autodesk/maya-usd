@@ -39,6 +39,7 @@ target_sources(${TARGET_NAME}
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_ScopeMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
+        AL/usdmaya/nodes/test_VariantFallbacks.cpp
         AL/usdmaya/test_DiffGeom.cpp
         AL/usdmaya/test_DiffPrimVar.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
@@ -138,6 +139,7 @@ mayaUsd_add_test(${TARGET_NAME}
     PYTHON_COMMAND "${pycode}"
     ENV
         "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

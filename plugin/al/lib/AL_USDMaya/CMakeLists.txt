@@ -140,6 +140,7 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/proxy/LockManager.cpp
         AL/usdmaya/nodes/proxy/PrimFilter.cpp
         AL/usdmaya/nodes/proxy/ProxyShapeMetaData.cpp
+        AL/usdmaya/nodes/proxy/ProxyShapeVariantFallbacks.cpp
 )
 
 list(APPEND AL_usdmaya_public_headers
