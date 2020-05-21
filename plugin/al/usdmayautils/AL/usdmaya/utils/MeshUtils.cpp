@@ -2003,6 +2003,33 @@ void MeshExportContext::copyVertexData(UsdTimeCode time)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void MeshExportContext::copyExtentData(UsdTimeCode time)
+{
+  if(diffGeom & kExtent)
+  {
+    if(UsdAttribute extentAttr = mesh.GetExtentAttr())
+    {
+      MStatus status;
+      const float* pointsData = fnMesh.getRawPoints(&status);
+      if(status)
+      {
+        const uint32_t numVertices = fnMesh.numVertices();
+        VtArray<GfVec3f> points(numVertices);
+        memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+
+        VtArray<GfVec3f> extent(2);
+        UsdGeomPointBased::ComputeExtent(points, &extent);
+        extentAttr.Set(extent, time);
+      }
+      else
+      {
+        MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + fnMesh.fullPathName());
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void MeshExportContext::copyBindPoseData(UsdTimeCode time)
 {
   if(diffGeom & kPoints)

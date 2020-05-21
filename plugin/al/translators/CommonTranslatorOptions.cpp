@@ -34,6 +34,7 @@ void registerCommonTranslatorOptions()
     g_exportOptions->addBool(GeometryExportOptions::kMeshes, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshConnects, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshPoints, true);
+    g_exportOptions->addBool(GeometryExportOptions::kMeshExtents, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshNormals, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshVertexCreases, true);
     g_exportOptions->addBool(GeometryExportOptions::kMeshEdgeCreases, true);
