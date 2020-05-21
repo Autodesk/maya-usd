@@ -888,10 +888,11 @@ void HdVP2Mesh::_UpdateDrawItem(
                 adjacency->GetSharedAdjacencyBuilderComputation(&topology);
             adjacencyComputation->Resolve(); // IS the adjacency updated now?
 
-            // The topology doesn't have to reference all of the points, thus
-            // we compute the number of normals as required by the topology.
+            // Only the points referenced by the topology are used to compute
+            // smooth normals.
             normals = Hd_SmoothNormals::ComputeSmoothNormals(
-                adjacency.get(), topology.GetNumPoints(),
+                adjacency.get(),
+                _meshSharedData._points.size(),
                 _meshSharedData._points.cdata());
 
             interp = HdInterpolationVertex;
