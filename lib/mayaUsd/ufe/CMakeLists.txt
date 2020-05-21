@@ -154,6 +154,8 @@ mayaUsd_compile_config(${UFE_PYTHON_TARGET_NAME})
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${UFE_PYTHON_TARGET_NAME}
+    PRIVATE
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
     PUBLIC
         ${PROJECT_NAME}
 )
