@@ -318,10 +318,10 @@ namespace
         { data.setData(value[0], value[1], value[2]); }
         
         static void get(const MDataHandle& handle, Type& value)
-        { memcpy(&value, &handle.asFloat3(), sizeof(float3)); }
+        { memcpy(&value, &handle.asDouble3(), sizeof(double3)); }
         
         static void set(MDataHandle& handle, const Type& value)
-        { handle.set3Float(value[0],value[1],value[2]); }
+        { handle.set3Double(value[0],value[1],value[2]); }
     };
 
     template <> struct MakeMayaFnData<MString>  : public std::true_type
