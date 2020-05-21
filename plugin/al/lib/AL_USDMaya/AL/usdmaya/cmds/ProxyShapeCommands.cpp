@@ -1534,7 +1534,7 @@ MStatus TranslatePrim::redoIt()
 
     //check paths refer to valid prims for this stage
     auto stage = m_proxy->usdStage();
-    AL::usd::utils::UsdPrimVector updatePrims;
+    MayaUsdUtils::UsdPrimVector updatePrims;
 
     AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
     for(const SdfPath& path : m_updatePaths)
