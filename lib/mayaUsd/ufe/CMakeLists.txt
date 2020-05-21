@@ -143,6 +143,7 @@ target_sources(${UFE_PYTHON_TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
     PRIVATE
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
         MFB_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
         MFB_ALT_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
         MFB_PACKAGE_MODULE="${PROJECT_NAME}.${UFE_PYTHON_MODULE_NAME}"
@@ -154,8 +155,6 @@ mayaUsd_compile_config(${UFE_PYTHON_TARGET_NAME})
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${UFE_PYTHON_TARGET_NAME}
-    PRIVATE
-        $<$<BOOL:${IS_MACOSX}>:OSMac_>
     PUBLIC
         ${PROJECT_NAME}
 )
