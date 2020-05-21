@@ -481,7 +481,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         }
 
         if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
             SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
             if (sessionLayer) {
                 usdStage = UsdStage::Open(rootLayer,
@@ -498,7 +498,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         }
         else if (!usdStage) {
             // Create a new stage in memory with an anonymous root layer.
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
             usdStage = UsdStage::CreateInMemory("", loadSet);
         }
 
@@ -755,6 +755,8 @@ MayaUsdProxyShapeBase::isStageValid() const
 MStatus
 MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode)
 {
+    // Any logic here should have an equivalent implementation in MayaUsdProxyShapeBase::setDependentsDirty().
+
     if (evaluationNode.dirtyPlugExists(excludePrimPathsAttr)) {
         _IncreaseExcludePrimPathsVersion();
     }
@@ -765,6 +767,7 @@ MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluatio
         evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
         evaluationNode.dirtyPlugExists(inStageDataAttr)) {
         _IncreaseUsdStageVersion();
+        MayaUsdProxyStageInvalidateNotice(*this).Send();
     }
 
     return MStatus::kSuccess;
@@ -786,6 +789,8 @@ MayaUsdProxyShapeBase::postEvaluation(const  MDGContext& context, const MEvaluat
 MStatus
 MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
 {
+    // Any logic here should have an equivalent implementation in MayaUsdProxyShapeBase::preEvaluation() or postEvaluation().
+
     // If/when the MPxDrawOverride for the proxy shape specifies
     // isAlwaysDirty=false to improve performance, we must be sure to notify
     // the Maya renderer that the geometry is dirty and needs to be redrawn

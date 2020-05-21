@@ -34,7 +34,7 @@ public:
     /// 2 stage caches are maintained; 1 for stages that have been
     /// force-populated, and 1 for stages that have not been force-populated.
     MAYAUSD_CORE_PUBLIC
-    static UsdStageCache& Get(const bool forcePopulate=true);
+    static UsdStageCache& Get(const bool loadAll);
 
     /// Clear the cache
     MAYAUSD_CORE_PUBLIC
