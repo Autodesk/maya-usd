@@ -281,18 +281,7 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate SceneDelegate");
 
-        // Make sure the delegate name is a valid identifier, since it may
-        // include colons if the proxy node is in a Maya namespace.
-        const std::string delegateName =
-            TfMakeValidIdentifier(
-                TfStringPrintf(
-                    "Proxy_%s_%p",
-                    _proxyShapeData->ProxyShape()->name().asChar(),
-                    _proxyShapeData->ProxyShape()));
-        const SdfPath delegateID =
-            SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
-
-        _sceneDelegate.reset(new UsdImagingDelegate(_renderIndex.get(), delegateID));
+        const SdfPath delegateID =_ResetSceneDelegate();
 
         _taskController.reset(new HdxTaskController(_renderIndex.get(),
             delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) ));
@@ -345,17 +334,7 @@ bool ProxyRenderDelegate::_Populate() {
         // if previously populated, destroy the old delegate to be able to populate the new excluded paths
         if(_isPopulated)
         {
-            delete _sceneDelegate; 
-            const std::string delegateName =
-                TfMakeValidIdentifier(
-                    TfStringPrintf(
-                        "Proxy_%s_%p",
-                        _proxyShape->name().asChar(),
-                        _proxyShape));
-            const SdfPath delegateID =
-                SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
-
-            _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);   
+            _ResetSceneDelegate();
         }
 
         // It might have been already populated, clear it if so.
@@ -743,6 +722,24 @@ ProxyRenderDelegate::GetPrimSelectionStatus(const SdfPath& path) const
 const MColor& ProxyRenderDelegate::GetWireframeColor() const
 {
     return _wireframeColor;
+}
+
+SdfPath ProxyRenderDelegate::_ResetSceneDelegate()
+{
+    // Make sure the delegate name is a valid identifier, since it may
+    // include colons if the proxy node is in a Maya namespace.
+    const std::string delegateName =
+        TfMakeValidIdentifier(
+            TfStringPrintf(
+                "Proxy_%s_%p",
+                _proxyShapeData->ProxyShape()->name().asChar(),
+                _proxyShapeData->ProxyShape()));
+    const SdfPath delegateID =
+        SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
+
+    _sceneDelegate.reset(new UsdImagingDelegate(_renderIndex.get(), delegateID));
+
+    return delegateID;
 }
 
 // ProxyShapeData

@@ -129,6 +129,7 @@ private:
     void _InitRenderDelegate(MSubSceneContainer& container);
     void _ClearRenderDelegate();
     bool _Populate();
+    SdfPath _ResetSceneDelegate();
     void _UpdateSceneDelegate();
     void _Execute(const MHWRender::MFrameContext& frameContext);
 
