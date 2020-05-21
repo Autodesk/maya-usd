@@ -40,18 +40,12 @@ endif()
 # copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
 add_custom_target(${TARGET_NAME} ALL)
 
-mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-                             DIRECTORY test-samples)
-mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-                             DIRECTORY ufeScripts)
-mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-                             DIRECTORY ufeTestUtils)
-mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-                             DIRECTORY ufeTestPlugins)
-mayaUsd_copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-                         FILES ${test_script_files})
-mayaUsd_copyFiles(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-                         FILES ${test_support_files})
+# copy all the resources and python scripts to build directory
+mayaUsd_copyDirectory(${TARGET_NAME}
+    SOURCE ${CMAKE_CURRENT_SOURCE_DIR}
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+    EXCLUDE "*.txt"
+)
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
