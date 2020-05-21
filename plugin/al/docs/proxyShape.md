@@ -18,6 +18,30 @@ The only addition to default Hydra rendering AL_USDMaya currently adds is suppor
 ## The Node
 see [code docs](https://animallogic.github.io/AL_USDMaya/classAL_1_1usdmaya_1_1nodes_1_1ProxyShape.html) for documentation on the attributes of the node.
 
+**Additional note on variant fallbacks**
+
+Departments might have different variant fallbacks request for different workflow, they might add overrides of global variant fallbacks before loading a stage then restore the global fallbacks later, this information is not stored anywhere, thus will be lost if Maya scene saved and reopened, resulting in inconsistent stage hierarchy.
+
+ProxyShape provides an attribute ".variantFallbacks" to store the variant fallbacks:
++ Before stage is loaded, check if the attribute ".variantFallbacks" has variant fallbacks, use that to override global variant fallbacks if found;
++ If "stageCacheId" is specified when loading an existing stage (see [AL_usdmaya_ProxyShapeImport](proxyShape.md#Importing with AL_usdmaya_ProxyShapeImport)), check if the session layer has any "variant_fallbacks" metadata, save that data value to ".variantFallbacks" attribute if found.
+
+Both of the key and value types for "variant_fallbacks" should be string type, the value string is a serialised string form of JSON format.
+
+```
+# Python example:
+>>> variantFallbacks = {'geo': ['proxy', 'render']}
+>>> customLayerData = stage.GetSessionLayer().customLayerData
+>>> customLayerData['variant_fallbacks'] = json.dumps(variantFallbacks)
+>>> stage.GetSessionLayer().customLayerData = customLayerData
+>>> print(stage.GetSessionLayer().ExportToString())
+#sdf 1.4.32
+(
+    customLayerData = {
+        string variant_fallbacks = '{"geo": ["proxy", "render"]}'
+    }
+)
+```
 
 ## Importing with AL_usdmaya_ProxyShapeImport
 + loads the USD stage into memory

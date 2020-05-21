@@ -230,7 +230,12 @@ public:
   AL_USDMAYA_UTILS_PUBLIC
   void copyVertexData(UsdTimeCode timeCode);
 
-  /// \brief  copies the normal data from maya into the usd prim.
+  /// \brief  computes the maya geometry extent and writes to usd prim.
+  /// \param  timeCode the time code at which to extract the samples
+  AL_USDMAYA_UTILS_PUBLIC
+  void copyExtentData(UsdTimeCode timeCode);
+
+    /// \brief  copies the normal data from maya into the usd prim.
   /// \param  timeCode the time code at which to extract the samples
   /// \param  writeAsPrimvars if true the normals will be written as a primvar, if false it will be written into 
   ////        the normals atttribute. primvars support indexed normals, the normals attr does not. 

@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import json
 import os
 import tempfile
 import shutil
@@ -382,11 +383,53 @@ class TestProxyShapeAnonymousLayer(unittest.TestCase):
         self.assertEqual(pxr.UsdGeom.Sphere(sphere).GetRadiusAttr().Get(), 5.0)
 
 
+class TestProxyShapeVariantFallbacks(unittest.TestCase):
+    def setUp(self):
+        cmds.file(new=True, force=True)
+        cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
+
+    def tearDown(self):
+        pxr.UsdUtils.StageCache.Get().Clear()
+        cmds.file(force=True, new=True)
+        cmds.unloadPlugin("AL_USDMayaPlugin", force=True)
+
+    def _prepSessionLayer(self, customVariantFallbacks):
+        defaultGlobalVariantFallbacks = pxr.Usd.Stage.GetGlobalVariantFallbacks()
+        pxr.Usd.Stage.SetGlobalVariantFallbacks(customVariantFallbacks)
+        usdFile = '../test_data/variant_fallbacks.usda'
+
+        stage = pxr.Usd.Stage.Open(usdFile)
+        stageCacheId = pxr.UsdUtils.StageCache.Get().Insert(stage)
+        sessionLayer = stage.GetSessionLayer()
+        sessionLayer.customLayerData = {'variant_fallbacks': json.dumps(customVariantFallbacks)}
+        # restore default
+        pxr.Usd.Stage.SetGlobalVariantFallbacks(defaultGlobalVariantFallbacks)
+
+        # create the proxy node with stage cache id
+        proxyName = cmds.AL_usdmaya_ProxyShapeImport(stageId=stageCacheId.ToLongInt())[0]
+        proxyShape = AL.usdmaya.ProxyShape.getByName(proxyName)
+        return proxyShape, proxyName
+
+    def test_fromSessionLayer(self):
+        # this will create a C++ type of: std::vector<VtValue>
+        custom = {'geo': ['sphere']}
+        proxyShape, proxyName = self._prepSessionLayer(custom)
+
+        # the "sphere" variant prim should be loaded
+        prim = proxyShape.getUsdStage().GetPrimAtPath('/root/GEO/sphere1/sphereShape1')
+        self.assertTrue(prim.IsValid())
+
+        # the custom variant fallback should be saved to the attribute
+        savedAttrValue = cmds.getAttr(proxyName + '.variantFallbacks')
+        self.assertEqual(savedAttrValue, json.dumps(custom))
+
+
 if __name__ == "__main__":
 
     tests = [unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetUsdPrimFromMayaPath),
              unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetMayaPathFromUsdPrim),
              unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeAnonymousLayer),
+             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeVariantFallbacks)
               ]
     results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
     exitCode = int(not all([result.wasSuccessful() for result in results]))

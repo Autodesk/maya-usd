@@ -126,6 +126,7 @@ MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
 MObject ProxyShape::m_stageCacheId = MObject::kNullObj;
 MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
+MObject ProxyShape::m_variantFallbacks = MObject::kNullObj;
 MObject ProxyShape::m_visibleInReflections = MObject::kNullObj;
 MObject ProxyShape::m_visibleInRefractions = MObject::kNullObj;
 
@@ -589,6 +590,7 @@ MStatus ProxyShape::initialise()
     m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable | kInternal );
 
     m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
+    m_variantFallbacks = addStringAttr("variantFallbacks", "vfs", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
 
     AL_MAYA_CHECK_ERROR(attributeAffects(time(), m_outTime), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
@@ -598,6 +600,7 @@ MStatus ProxyShape::initialise()
     AL_MAYA_CHECK_ERROR(attributeAffects(m_populationMaskIncludePaths, outStageData()), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_stageDataDirty, outStageData()), errorString);
     AL_MAYA_CHECK_ERROR(attributeAffects(m_assetResolverConfig, outStageData()), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_variantFallbacks, outStageData()), errorString);
   }
   catch (const MStatus& status)
   {
@@ -1176,6 +1179,12 @@ void ProxyShape::loadStage()
       MGlobal::displayError(MString("ProxyShape::loadStage called with non-existent stageCacheId ") + stageId.ToString().c_str());
       stageId = UsdStageCache::Id();
     }
+
+    // Save variant fallbacks from session layer to Maya node attribute
+    if (m_stage)
+    {
+      saveVariantFallbacks(getVariantFallbacksFromLayer(m_stage->GetSessionLayer()), dataBlock);
+    }
   }
   else
   {
@@ -1313,6 +1322,11 @@ void ProxyShape::loadStage()
         }
         AL_END_PROFILE_SECTION();
 
+        AL_BEGIN_PROFILE_SECTION(UpdateGlobalVariantFallbacks);
+        PcpVariantFallbackMap defaultVariantFallbacks;
+        PcpVariantFallbackMap fallbacks(updateVariantFallbacks(defaultVariantFallbacks, dataBlock));
+        AL_END_PROFILE_SECTION();
+
         AL_BEGIN_PROFILE_SECTION(UsdStageOpen);
         {
           UsdStageCacheContext ctx(StageCache::Get());
@@ -1350,6 +1364,17 @@ void ProxyShape::loadStage()
           trackEditTargetLayer();
         }
         AL_END_PROFILE_SECTION();
+
+        AL_BEGIN_PROFILE_SECTION(ResetGlobalVariantFallbacks);
+        // reset only if the global variant fallbacks has been modified
+        if (!fallbacks.empty())
+        {
+          saveVariantFallbacks(convertVariantFallbacksToStr(fallbacks), dataBlock);
+          // restore default value
+          UsdStage::SetGlobalVariantFallbacks(defaultVariantFallbacks);
+        }
+        AL_END_PROFILE_SECTION();
+
       AL_END_PROFILE_SECTION();
     }
     else if (!fileString.empty())
@@ -1571,18 +1596,18 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
   // the datablock for us, but this would be too late for these subfunctions
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::setInternalValue %s\n", plug.name().asChar());
 
-  if(plug == filePath() || plug == m_assetResolverConfig || plug == m_stageCacheId)
+  if(plug == filePath() || plug == m_assetResolverConfig || plug == m_stageCacheId || plug == m_variantFallbacks)
   {
     m_filePathDirty = true;
     
     // can't use dataHandle.datablock(), as this is a temporary datahandle
     MDataBlock datablock = forceCache();
 
-    if (plug == filePath() || plug == m_assetResolverConfig)
+    if (plug == filePath() || plug == m_assetResolverConfig || plug == m_variantFallbacks)
     {
       AL_MAYA_CHECK_ERROR_RETURN_VAL(outputStringValue(datablock, plug, dataHandle.asString()),
                                      false,
-                                     "ProxyShape::setInternalValue - error setting filePath or assetResolverConfig");
+                                     "ProxyShape::setInternalValue - error setting filePath, assetResolverConfig or variantFallbacks");
     }
     else
     {
