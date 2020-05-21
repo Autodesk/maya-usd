@@ -890,6 +890,16 @@ MayaUsdProxyShapeBase::getUsdStageVersion() const {
     return _UsdStageVersion;
 }
 
+
+void MayaUsdProxyShapeBase::getDrawPurposeToggles(
+    bool* drawRenderPurpose,
+    bool* drawProxyPurpose,
+    bool* drawGuidePurpose) const
+{
+    MDataBlock dataBlock = const_cast<MayaUsdProxyShapeBase*>(this)->forceCache();
+    _GetDrawPurposeToggles(dataBlock, drawRenderPurpose, drawProxyPurpose, drawGuidePurpose);
+}
+
 SdfPathVector
 MayaUsdProxyShapeBase::getExcludePrimPaths() const
 {
