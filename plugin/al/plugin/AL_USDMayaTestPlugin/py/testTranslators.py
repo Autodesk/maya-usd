@@ -460,7 +460,7 @@ class TestPythonTranslators(unittest.TestCase):
         
         usdmaya.TranslatorBase.registerTranslator(UpdateableTranslator(), 'test')
         
-        stage = Usd.Stage.Open("../test_data/translator_update_postimport.usda")
+        stage = Usd.Stage.Open("../test_data/translator_update_post_import.usda")
         stageCache = UsdUtils.StageCache.Get()
         stageCache.Insert(stage)
         stageId = stageCache.GetId(stage)
