@@ -19,13 +19,16 @@
 import json
 import os
 import tempfile
+import shutil
 import unittest
 
 import AL
 
 import pxr
+from pxr import Usd, UsdUtils
 
 from maya import cmds
+from maya.api import OpenMaya as om2
 
 
 class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
@@ -315,7 +318,70 @@ class TestProxyShapeGetMayaPathFromUsdPrim(unittest.TestCase):
 
         # Cleanup
         os.remove(_file.name)
-        
+
+
+class TestProxyShapeAnonymousLayer(unittest.TestCase):
+    workingDir = None
+    fileName = 'foo.ma'
+    SC = pxr.UsdUtils.StageCache.Get()
+
+    def setUp(self):
+        unittest.TestCase.setUp(self)
+        self.workingDir = tempfile.mkdtemp()
+        cmds.file(new=True, save=False, force=True)
+        cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
+        self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
+
+        with pxr.Usd.StageCacheContext(self.SC):
+            stage = pxr.Usd.Stage.CreateInMemory()
+            with pxr.Usd.EditContext(stage, pxr.Usd.EditTarget(stage.GetRootLayer())):
+                pxr.UsdGeom.Xform.Define(stage, '/root/GEO/sphere_hrc').AddTranslateOp().Set((0.0, 1.0, 0.0))
+                pxr.UsdGeom.Sphere.Define(stage, '/root/GEO/sphere_hrc/sphere').GetRadiusAttr().Set(5.0)
+
+        cmds.AL_usdmaya_ProxyShapeImport(
+            stageId=self.SC.GetId(stage).ToLongInt(),
+            name='anonymousShape'
+        )
+        cmds.file(rename=self.serialisationPath())
+        cmds.file(type='mayaAscii')
+        cmds.file(save=True)
+        cmds.file(new=True, save=False, force=True)
+        self.SC.Clear()
+
+    def tearDown(self):
+        if os.path.isdir(self.workingDir):
+            shutil.rmtree(self.workingDir)
+
+        self.SC.Clear()
+        unittest.TestCase.tearDown(self)
+
+    def serialisationPath(self):
+        return os.path.join(self.workingDir, self.fileName)
+
+    def test_anonymousLayerRoundTrip(self):
+        cmds.file(self.serialisationPath(), open=True, save=False, force=True)
+        proxyShape = AL.usdmaya.ProxyShape.getByName('anonymousShape')
+        self.assertIsNotNone(proxyShape)
+        stage = proxyShape.getUsdStage()
+        self.assertIsInstance(stage, pxr.Usd.Stage)
+
+        hrc = stage.GetPrimAtPath('/root/GEO/sphere_hrc')
+        self.assertTrue(hrc.IsValid())
+        self.assertTrue(hrc.IsDefined())
+        self.assertTrue(hrc.IsA(pxr.UsdGeom.Xform))
+        hrcXformableApi = pxr.UsdGeom.XformCommonAPI(hrc)
+        t, r, s, p, _ = hrcXformableApi.GetXformVectors(pxr.Usd.TimeCode.Default())
+        self.assertEqual(tuple(t), (0.0, 1.0, 0.0))
+        self.assertEqual(tuple(r), (0.0, 0.0, 0.0))
+        self.assertEqual(tuple(s), (1.0, 1.0, 1.0))
+        self.assertEqual(tuple(p), (0.0, 0.0, 0.0))
+
+        sphere = stage.GetPrimAtPath('/root/GEO/sphere_hrc/sphere')
+        self.assertTrue(sphere.IsValid())
+        self.assertTrue(sphere.IsDefined())
+        self.assertTrue(sphere.IsA(pxr.UsdGeom.Sphere))
+        self.assertEqual(pxr.UsdGeom.Sphere(sphere).GetRadiusAttr().Get(), 5.0)
+
 
 class TestProxyShapeVariantFallbacks(unittest.TestCase):
     def setUp(self):
