@@ -50,6 +50,7 @@ mayaUsd_copyDirectory(${TARGET_NAME}
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_MODULE ${target}
         ENV
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/ufeTestPlugins"
