@@ -496,9 +496,8 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
             usdStage->SetEditTarget(usdStage->GetSessionLayer());
         }
-        else if (!usdStage) {
+        else {
             // Create a new stage in memory with an anonymous root layer.
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
             usdStage = UsdStage::CreateInMemory("", loadSet);
         }
 
