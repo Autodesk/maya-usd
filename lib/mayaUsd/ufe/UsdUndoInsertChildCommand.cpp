@@ -35,6 +35,18 @@
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/base/tf/token.h>
 
+namespace {
+// shared_ptr requires public ctor, dtor, so derive a class for it.
+template<class T>
+struct MakeSharedEnabler : public T {
+    MakeSharedEnabler(
+        const MayaUsd::ufe::UsdSceneItem::Ptr& parent,
+        const MayaUsd::ufe::UsdSceneItem::Ptr& child,
+        const MayaUsd::ufe::UsdSceneItem::Ptr& pos
+    ) : T(parent, child, pos) {}
+};
+}
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -82,7 +94,12 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
     const UsdSceneItem::Ptr& pos
 )
 {
-    return std::make_shared<UsdUndoInsertChildCommand>(parent, child, pos);
+    // Error if requested parent is currently a child of requested child.
+    if (parent->path().startsWith(child->path())) {
+        return nullptr;
+    }
+    return std::make_shared<MakeSharedEnabler<UsdUndoInsertChildCommand>>(
+        parent, child, pos);
 }
 
 bool UsdUndoInsertChildCommand::insertChildRedo()
