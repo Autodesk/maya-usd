@@ -33,7 +33,7 @@ class MayaUsdConverterTestCase(unittest.TestCase):
     """
 
     def createStage(self, layerName):
-        layer = Sdf.Layer.CreateAnonymous("Bool")
+        layer = Sdf.Layer.CreateAnonymous(layerName)
         stage = Usd.Stage.Open(layer.identifier)
         self.assertNotEqual(stage, None)
 
