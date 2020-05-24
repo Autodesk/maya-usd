@@ -55,6 +55,9 @@
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/converter.h>
+
+using namespace MAYAUSD_NS;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -228,7 +231,7 @@ private:
             }
 
             const SdfValueTypeName attrTypeName =
-                UsdMayaWriteUtil::GetUsdTypeName(attrPlug);
+                Converter::getUsdTypeName(attrPlug);
             if (!attrTypeName) {
                 continue;
             }

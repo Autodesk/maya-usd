@@ -46,6 +46,9 @@
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/converter.h>
+
+using namespace MAYAUSD_NS;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -72,39 +75,6 @@ UsdMayaReadUtil::FindOrCreateMayaAttr(
     MDGModifier modifier;
     return FindOrCreateMayaAttr(typeName, variability, depNode, attrName,
             attrNiceName, modifier);
-}
-
-// Whether a plug's attribute is a typed attribute with given type.
-static bool
-_HasAttrType(const MPlug& plug, MFnData::Type type)
-{
-    MObject object = plug.attribute();
-    if (!object.hasFn(MFn::kTypedAttribute)) {
-        return false;
-    }
-
-    MFnTypedAttribute attr(object);
-    return attr.attrType() == type;
-}
-
-// Whether a plug's attribute is a numeric attribute with given type.
-static bool
-_HasNumericType(const MPlug& plug, MFnNumericData::Type type)
-{
-    MObject object = plug.attribute();
-    if (!object.hasFn(MFn::kNumericAttribute)) {
-        return false;
-    }
-
-    MFnNumericAttribute attr(object);
-    return attr.unitType() == type;
-}
-
-static bool
-_HasEnumType(const MPlug& plug)
-{
-    MObject object = plug.attribute();
-    return object.hasFn(MFn::kEnumAttribute);
 }
 
 static MObject
@@ -143,7 +113,7 @@ _FindOrCreateMayaTypedAttr(
     }
     else {
         // Found -- verify.
-        if (_HasAttrType(plug, type)) {
+        if (Converter::hasAttrType(plug, type)) {
             return plug.attribute();
         }
         else {
@@ -186,8 +156,8 @@ _FindOrCreateMayaNumericAttr(
     }
     else {
         // Found -- verify.
-        if (_HasNumericType(plug, type)
-            || (type == MFnNumericData::kInt && _HasEnumType(plug)))
+        if (Converter::hasNumericType(plug, type)
+            || (type == MFnNumericData::kInt && Converter::hasEnumType(plug)))
         {
             return plug.attribute();
         }
@@ -426,20 +396,20 @@ bool UsdMayaReadUtil::SetMayaAttr(
     bool ok = false;
     if (newValue.IsHolding<TfToken>()) {
         TfToken token = newValue.Get<TfToken>();
-        if (_HasAttrType(attrPlug, MFnData::kString)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kString)) {
             modifier.newPlugValueString(attrPlug, token.GetText());
             ok = true;
         }
     }
     else if (newValue.IsHolding<std::string>()) {
-        if (_HasAttrType(attrPlug, MFnData::kString)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kString)) {
             std::string str = newValue.Get<std::string>();
             modifier.newPlugValueString(attrPlug, str.c_str());
             ok = true;
         }
     }
     else if (newValue.IsHolding<SdfAssetPath>()) {
-        if (_HasAttrType(attrPlug, MFnData::kString)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kString)) {
             SdfAssetPath assetPath = newValue.Get<SdfAssetPath>();
             modifier.newPlugValueString(attrPlug,
                     assetPath.GetAssetPath().c_str());
@@ -447,7 +417,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfMatrix4d>()) {
-        if (_HasAttrType(attrPlug, MFnData::kMatrix)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kMatrix)) {
             GfMatrix4d mat = newValue.Get<GfMatrix4d>();
             MMatrix mayaMat;
             for (size_t i = 0; i < 4; ++i) {
@@ -463,7 +433,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<SdfTokenListOp>()) {
-        if (_HasAttrType(attrPlug, MFnData::kStringArray)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kStringArray)) {
             TfTokenVector result;
             newValue.Get<SdfTokenListOp>().ApplyOperations(&result);
             MStringArray mayaArr;
@@ -478,7 +448,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<SdfStringListOp>()) {
-        if (_HasAttrType(attrPlug, MFnData::kStringArray)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kStringArray)) {
             std::vector<std::string> result;
             newValue.Get<SdfStringListOp>().ApplyOperations(&result);
             MStringArray mayaArr;
@@ -493,7 +463,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<VtTokenArray>()) {
-        if (_HasAttrType(attrPlug, MFnData::kStringArray)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kStringArray)) {
             VtTokenArray arr = newValue.Get<VtTokenArray>();
             MStringArray mayaArr;
             for (const TfToken& tok : arr) {
@@ -507,7 +477,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<VtStringArray>()) {
-        if (_HasAttrType(attrPlug, MFnData::kStringArray)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kStringArray)) {
             VtStringArray arr = newValue.Get<VtStringArray>();
             MStringArray mayaArr;
             for (const std::string& str : arr) {
@@ -521,7 +491,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<VtDoubleArray>()) {
-        if (_HasAttrType(attrPlug, MFnData::kDoubleArray)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kDoubleArray)) {
             VtDoubleArray arr = newValue.Get<VtDoubleArray>();
             MDoubleArray mayaArr(arr.data(), arr.size());
             MFnDoubleArrayData data;
@@ -532,7 +502,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<VtFloatArray>()) {
-        if (_HasAttrType(attrPlug, MFnData::kFloatArray)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kFloatArray)) {
             VtFloatArray arr = newValue.Get<VtFloatArray>();
             MFloatArray mayaArr(arr.data(), arr.size());
             MFnFloatArrayData data;
@@ -543,7 +513,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<VtIntArray>()) {
-        if (_HasAttrType(attrPlug, MFnData::kIntArray)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kIntArray)) {
             VtIntArray arr = newValue.Get<VtIntArray>();
             MIntArray mayaArr(arr.data(), arr.size());
             MFnIntArrayData data;
@@ -554,7 +524,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<VtVec3dArray>()) {
-        if (_HasAttrType(attrPlug, MFnData::kVectorArray)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kVectorArray)) {
             VtVec3dArray arr = newValue.Get<VtVec3dArray>();
             MVectorArray mayaArr;
             for (const GfVec3d& v : arr) {
@@ -566,7 +536,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-        else if (_HasAttrType(attrPlug, MFnData::kPointArray)) {
+        else if (Converter::hasAttrType(attrPlug, MFnData::kPointArray)) {
             VtVec3dArray arr = newValue.Get<VtVec3dArray>();
             MPointArray mayaArr;
             for (const GfVec3d& v : arr) {
@@ -580,7 +550,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<VtVec3fArray>()) {
-        if (_HasAttrType(attrPlug, MFnData::kVectorArray)) {
+        if (Converter::hasAttrType(attrPlug, MFnData::kVectorArray)) {
             VtVec3fArray arr = newValue.Get<VtVec3fArray>();
             MVectorArray mayaArr;
             for (const GfVec3d& v : arr) {
@@ -592,7 +562,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-        else if (_HasAttrType(attrPlug, MFnData::kPointArray)) {
+        else if (Converter::hasAttrType(attrPlug, MFnData::kPointArray)) {
             VtVec3fArray arr = newValue.Get<VtVec3fArray>();
             MPointArray mayaArr;
             for (const GfVec3d& v : arr) {
@@ -606,7 +576,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<bool>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::kBoolean)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::kBoolean)) {
             bool b = newValue.Get<bool>();
             modifier.newPlugValueBool(attrPlug, b);
             ok = true;
@@ -615,28 +585,28 @@ bool UsdMayaReadUtil::SetMayaAttr(
     else if (newValue.IsHolding<int>() ||
             newValue.IsHolding<float>() ||
             newValue.IsHolding<double>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::kInt)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::kInt)) {
             int i = VtValue::Cast<int>(newValue).Get<int>();
             modifier.newPlugValueInt(attrPlug, i);
             ok = true;
         }
-        else if (_HasNumericType(attrPlug, MFnNumericData::kFloat)) {
+        else if (Converter::hasNumericType(attrPlug, MFnNumericData::kFloat)) {
             float f = VtValue::Cast<float>(newValue).Get<float>();
             modifier.newPlugValueFloat(attrPlug, f);
             ok = true;
         }
-        else if (_HasNumericType(attrPlug, MFnNumericData::kDouble)) {
+        else if (Converter::hasNumericType(attrPlug, MFnNumericData::kDouble)) {
             double d = VtValue::Cast<double>(newValue).Get<double>();
             modifier.newPlugValueDouble(attrPlug, d);
             ok = true;
-        } else if (newValue.IsHolding<int>() && _HasEnumType(attrPlug)) {
+        } else if (newValue.IsHolding<int>() && Converter::hasEnumType(attrPlug)) {
             int i = VtValue::Cast<int>(newValue).Get<int>();
             modifier.newPlugValueInt(attrPlug, i);
             ok = true;
         }
     }
     else if (newValue.IsHolding<GfVec2i>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k2Int)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Int)) {
             GfVec2i v = newValue.Get<GfVec2i>();
             MFnNumericData data;
             MObject dataObj = data.create(MFnNumericData::k2Int);
@@ -646,7 +616,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfVec3i>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k3Int)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Int)) {
             GfVec3i v = newValue.Get<GfVec3i>();
             MFnNumericData data;
             MObject dataObj = data.create(MFnNumericData::k3Int);
@@ -656,7 +626,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfVec2f>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k2Float)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Float)) {
             GfVec2f v = newValue.Get<GfVec2f>();
             MFnNumericData data;
             MObject dataObj = data.create(MFnNumericData::k2Float);
@@ -666,7 +636,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfVec3f>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k3Float)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Float)) {
             GfVec3f v = _ConvertVec(attrPlug, newValue.Get<GfVec3f>());
             MFnNumericData data;
             MObject dataObj = data.create(MFnNumericData::k3Float);
@@ -676,7 +646,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfVec2d>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k2Double)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Double)) {
             GfVec2d v = newValue.Get<GfVec2d>();
             MFnNumericData data;
             MObject dataObj = data.create(MFnNumericData::k2Double);
@@ -686,7 +656,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfVec3d>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k3Double)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Double)) {
             GfVec3d v = _ConvertVec(attrPlug, newValue.Get<GfVec3d>());
             MFnNumericData data;
             MObject dataObj = data.create(MFnNumericData::k3Double);
@@ -696,7 +666,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfVec4d>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k4Double)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::k4Double)) {
             GfVec4d v = _ConvertVec(attrPlug, newValue.Get<GfVec4d>());
             MFnNumericData data;
             MObject dataObj = data.create(MFnNumericData::k4Double);
@@ -706,7 +676,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfQuatf>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k4Double)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::k4Double)) {
             GfQuatf q = newValue.Get<GfQuatf>();
             GfVec3f im = q.GetImaginary();
             MFnNumericData data;
@@ -717,7 +687,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         }
     }
     else if (newValue.IsHolding<GfQuatd>()) {
-        if (_HasNumericType(attrPlug, MFnNumericData::k4Double)) {
+        if (Converter::hasNumericType(attrPlug, MFnNumericData::k4Double)) {
             GfQuatd q = newValue.Get<GfQuatd>();
             GfVec3d im = q.GetImaginary();
             MFnNumericData data;

@@ -36,6 +36,7 @@
 #include <maya/MDGModifier.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -123,6 +124,7 @@ public:
     void convert(const VtValue& src, MDataHandle& dst, const ConverterArgs& args) const
     { _vtValueoHandle(src, dst, args); }
     
+    // Whether a plug's attribute is a typed attribute with given type.
     static bool hasAttrType(const MPlug& plug, MFnData::Type type)
     {
         MObject object = plug.attribute();
@@ -134,6 +136,7 @@ public:
         return attr.attrType() == type;
     }
 
+    // Whether a plug's attribute is a numeric attribute with given type.
     static bool hasNumericType(const MPlug& plug, MFnNumericData::Type type)
     {
         MObject object = plug.attribute();
@@ -145,9 +148,21 @@ public:
         return attr.unitType() == type;
     }
     
+    // Whether a plug's attribute is an enum type.
+    static bool hasEnumType(const MPlug& plug)
+    {
+        MObject object = plug.attribute();
+        return object.hasFn(MFn::kEnumAttribute);
+    }
+    
+    /// Get the SdfValueTypeName that corresponds to the given plug \p attrPlug.
+    /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
+    /// contain double data will return the appropriate float-based type.
+    /// Otherwise, the type returned will be the appropriate double-based type.
     static SdfValueTypeName getUsdTypeName(
         const MPlug& attrPlug,
-        const bool translateMayaDoubleToUsdSinglePrecision);
+        const bool translateMayaDoubleToUsdSinglePrecision =
+                       UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
 private:
     const SdfValueTypeName& _typeName;
