@@ -73,14 +73,14 @@ public:
     using VtValueToMDataHandleFn
         = std::add_pointer<void(const VtValue&, MDataHandle&, const ConverterArgs&)>::type;
     
-    Converter(const SdfValueTypeName& typeName, MPlugToUsdAttrFn plugToAttr,
+    Converter(const SdfValueTypeName& usdTypeName, MPlugToUsdAttrFn plugToAttr,
         UsdAttrToMPlugFn attrToPlug, UsdAttrToMDGModifierFn attrToModifier,
         MPlugToVtValueFn plugToVtValue, VtValueToMPlugFn vtValueToPlug,
         VtValueToMDGModifierFn vtValueToModifier,
         MDataHandleToUsdAttrFn handleToAttr,
         UsdAttrToMDataHandleFn attrToHandle,
         MDataHandleToVtValueFn handleToVtValue,
-        VtValueToMDataHandleFn vtValueoHandle) : _typeName(typeName),
+        VtValueToMDataHandleFn vtValueoHandle) : _usdTypeName(usdTypeName),
         _plugToAttr(plugToAttr), _attrToPlug(attrToPlug),
         _attrToModifier(attrToModifier), _plugToVtValue { plugToVtValue },
         _vtValueToPlug { vtValueToPlug }, _vtValueToModifier(vtValueToModifier),
@@ -94,11 +94,11 @@ public:
     static const Converter* find(const SdfValueTypeName& typeName, bool isArrayPlug);
     static const Converter* find(const MPlug& plug, const UsdAttribute& attr);
     
-    const SdfValueTypeName& type() const
-    { return _typeName; }
+    const SdfValueTypeName& usdType() const
+    { return _usdTypeName; }
     
     bool validate(const MPlug& plug, const UsdAttribute& usdAttr, const bool translateMayaDoubleToUsdSinglePrecision) const
-    { return (usdAttr.GetTypeName() == _typeName) && (getUsdTypeName(plug,translateMayaDoubleToUsdSinglePrecision) == _typeName); }
+    { return (usdAttr.GetTypeName() == _usdTypeName) && (getUsdTypeName(plug,translateMayaDoubleToUsdSinglePrecision) == _usdTypeName); }
     
     void convert(const MPlug& src, UsdAttribute& dst, const ConverterArgs& args) const
     { _plugToAttr(src,dst,args); }
@@ -165,7 +165,7 @@ public:
                        UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
 private:
-    const SdfValueTypeName& _typeName;
+    const SdfValueTypeName& _usdTypeName;
     
     // MPlug <--> UsdAttribute
     MPlugToUsdAttrFn _plugToAttr{nullptr};
