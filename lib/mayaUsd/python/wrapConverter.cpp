@@ -50,12 +50,11 @@ namespace
     static bool validate(
         const Converter& self,
         const std::string& attrName,
-        const UsdAttribute& usdAttr,
-        const bool translateMayaDoubleToUsdSinglePrecision)
+        const UsdAttribute& usdAttr)
     {
         MPlug plug;
         if(UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
-            return self.validate(plug, usdAttr, translateMayaDoubleToUsdSinglePrecision);
+            return self.validate(plug, usdAttr);
 
         return false;
     }

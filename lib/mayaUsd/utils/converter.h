@@ -147,8 +147,8 @@ public:
     { return _usdTypeName; }
     
     //! \brief  Validate if given pair of Maya's plug and Usd attribute is supported by this converter.
-    bool validate(const MPlug& plug, const UsdAttribute& usdAttr, const bool translateMayaDoubleToUsdSinglePrecision) const
-    { return (usdAttr.GetTypeName() == _usdTypeName) && (getUsdTypeName(plug,translateMayaDoubleToUsdSinglePrecision) == _usdTypeName); }
+    bool validate(const MPlug& plug, const UsdAttribute& usdAttr) const
+    { return (usdAttr.GetTypeName() == _usdTypeName) && (getUsdTypeName(plug,false) == _usdTypeName); }
     
     //! \brief  Read current value from given plug and set it on destination attribute. Use arguments to control converter behavior, like the time for setting value on attribute.
     void convert(const MPlug& src, UsdAttribute& dst, const ConverterArgs& args) const

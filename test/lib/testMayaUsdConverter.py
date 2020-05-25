@@ -133,10 +133,10 @@ class MayaUsdConverterTestCase(unittest.TestCase):
         resultVt1 = converter.convertVt(plug,args)
         self.assertEqual(resultVt1, Vt._test_Ident(value1))
         
-        self.assertEqual(converter.validate(plug,attr,False), True)
-        self.assertEqual(converter.validate(errPlug,errAttr,False), False)
-        self.assertEqual(converter.validate(plug,errAttr,False), False)
-        self.assertEqual(converter.validate(errPlug,attr,False), False)
+        self.assertEqual(converter.validate(plug,attr), True)
+        self.assertEqual(converter.validate(errPlug,errAttr), False)
+        self.assertEqual(converter.validate(plug,errAttr), False)
+        self.assertEqual(converter.validate(errPlug,attr), False)
         
         with self.assertRaises(Exception):
             converter.convert(plug, errAttr, args)
