@@ -476,16 +476,10 @@ UsdMayaWriteJobContext::CreatePrimWriter(
     SdfPath writePath = usdPath;
 
     try {
-        const MFnDagNode& dagNodeFn =
-            dynamic_cast<const MFnDagNode&>(depNodeFn);
+        const MDagPath dagPath =
+            UsdMayaUtil::getDagPath(depNodeFn, /* reportError = */ false);
 
-        MStatus status;
-        const MDagPath dagPath = dagNodeFn.dagPath(&status);
-        if (status != MS::kSuccess || !dagPath.isValid()) {
-            TF_CODING_ERROR(
-                "Invalid MDagPath for MFnDagNode '%s'. Verify that it was "
-                "constructed using an MDagPath.",
-                dagNodeFn.fullPathName().asChar());
+        if (!dagPath.isValid()) {
             return nullptr;
         }
 
@@ -498,6 +492,7 @@ UsdMayaWriteJobContext::CreatePrimWriter(
             writePath = ConvertDagToUsdPath(dagPath);
         }
 
+        const MFnDagNode dagNodeFn(dagPath);
         const bool instanced = dagNodeFn.isInstanced(/* indirect = */ false);
         if (mArgs.exportInstances && instanced && !forceUninstance) {
             // Deal with instances -- we use a special internal writer for them.
