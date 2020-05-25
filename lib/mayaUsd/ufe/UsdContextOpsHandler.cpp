@@ -20,9 +20,7 @@ namespace ufe {
 
 UsdContextOpsHandler::UsdContextOpsHandler()
 	: Ufe::ContextOpsHandler()
-{
-	fUsdContextOps = UsdContextOps::create();
-}
+{}
 
 UsdContextOpsHandler::~UsdContextOpsHandler()
 {
@@ -44,8 +42,7 @@ Ufe::ContextOps::Ptr UsdContextOpsHandler::contextOps(const Ufe::SceneItem::Ptr&
 #if !defined(NDEBUG)
 	assert(usdItem);
 #endif
-	fUsdContextOps->setItem(usdItem);
-	return fUsdContextOps;
+	return UsdContextOps::create(usdItem);
 }
 
 } // namespace ufe

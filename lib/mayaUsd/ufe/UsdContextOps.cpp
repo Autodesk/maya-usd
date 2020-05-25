@@ -240,8 +240,8 @@ const MString ClearAllReferencesUndoableCommand::cancelRemoval("No");
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdContextOps::UsdContextOps()
-	: Ufe::ContextOps()
+UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
+	: Ufe::ContextOps(), fItem(item), fPrim(item->prim())
 {
 }
 
@@ -250,9 +250,9 @@ UsdContextOps::~UsdContextOps()
 }
 
 /*static*/
-UsdContextOps::Ptr UsdContextOps::create()
+UsdContextOps::Ptr UsdContextOps::create(const UsdSceneItem::Ptr& item)
 {
-	return std::make_shared<UsdContextOps>();
+	return std::make_shared<UsdContextOps>(item);
 }
 
 void UsdContextOps::setItem(const UsdSceneItem::Ptr& item)

@@ -42,7 +42,7 @@ class MAYAUSD_CORE_PUBLIC UsdContextOps : public Ufe::ContextOps
 public:
 	typedef std::shared_ptr<UsdContextOps> Ptr;
 
-	UsdContextOps();
+	UsdContextOps(const UsdSceneItem::Ptr& item);
 	~UsdContextOps() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -52,7 +52,7 @@ public:
 	UsdContextOps& operator=(UsdContextOps&&) = delete;
 
 	//! Create a UsdContextOps.
-	static UsdContextOps::Ptr create();
+	static UsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
 
 	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
