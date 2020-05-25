@@ -15,6 +15,7 @@
 //
 #include "proxyRenderDelegate.h"
 
+#include <maya/M3dView.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MHWGeometryUtilities.h>
@@ -281,7 +282,7 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate SceneDelegate");
 
-        const SdfPath delegateID =_ResetSceneDelegate();
+        const SdfPath delegateID = _InitSceneDelegate();
 
         _taskController.reset(new HdxTaskController(_renderIndex.get(),
             delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) ));
@@ -319,6 +320,12 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
             }
         }
     }
+    else
+    if(!_proxyShapeData->IsExcludePrimsUpToDate())
+    {
+        _InitSceneDelegate();
+        _isPopulated = false;
+    }
 }
 
 //! \brief  Populate render index with prims coming from scene delegate.
@@ -327,15 +334,9 @@ bool ProxyRenderDelegate::_Populate() {
     if (!_isInitialized())
         return false;
 
-    if (_proxyShapeData->UsdStage() && (!_isPopulated || !_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate()) ) {
+    if (_proxyShapeData->UsdStage() && (!_isPopulated || !_proxyShapeData->IsUsdStageUpToDate()) ) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Populate");
-
-        // if previously populated, destroy the old delegate to be able to populate the new excluded paths
-        if(_isPopulated)
-        {
-            _ResetSceneDelegate();
-        }
 
         // It might have been already populated, clear it if so.
         SdfPathVector excludePrimPaths = _proxyShapeData->ProxyShape()->getExcludePrimPaths();
@@ -724,7 +725,7 @@ const MColor& ProxyRenderDelegate::GetWireframeColor() const
     return _wireframeColor;
 }
 
-SdfPath ProxyRenderDelegate::_ResetSceneDelegate()
+SdfPath ProxyRenderDelegate::_InitSceneDelegate()
 {
     // Make sure the delegate name is a valid identifier, since it may
     // include colons if the proxy node is in a Maya namespace.
