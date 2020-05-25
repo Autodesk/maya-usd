@@ -33,6 +33,9 @@ class MayaUsdConverterTestCase(unittest.TestCase):
     """
 
     def createStage(self, layerName):
+        """
+        Create in-memory stage
+        """
         layer = Sdf.Layer.CreateAnonymous(layerName)
         stage = Usd.Stage.Open(layer.identifier)
         self.assertNotEqual(stage, None)
@@ -40,6 +43,9 @@ class MayaUsdConverterTestCase(unittest.TestCase):
         return stage
 
     def createMPlugAndUsdAttribute(self, sdfValueType, nodeName, stage, primPath):
+        """
+        Create a plug and a usd attribute of given sdf value type on provided Maya's node and Usd prim path.
+        """
         plugAndAttrName = "my"+str(sdfValueType).replace('[]','Array');
         
         cmds.group(name=nodeName, empty=True)

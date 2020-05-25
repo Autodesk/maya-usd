@@ -65,6 +65,8 @@ MAYAUSD_NS_DEF {
 namespace
 {
     //---------------------------------------------------------------------------------
+    //! \brief Retrieve Maya's attribute numeric and unit data types
+    //! \return True on success, False otherwise.
     bool getMayaAttributeNumericTypedAndUnitDataTypes(
             const MPlug& attrPlug,
             MFnNumericData::Type& numericDataType,
@@ -104,21 +106,31 @@ namespace
     }
 
     //---------------------------------------------------------------------------------
+    //! \brief  Type tranformation class to optain at compile time array type for a given Maya's templated type.
     template <class T> struct MakeMayaArray {};
 
+    //! \brief  Type tranformation class to optain at compile time array type for a given Maya's templated type.
     template <> struct MakeMayaArray<MMatrix> { using Type = MMatrixArray; };
+    
+    //! \brief  Type tranformation class to optain at compile time array type for a given Maya's templated type.
     template <> struct MakeMayaArray<MString> { using Type = MStringArray; };
 
+    //! \brief  Helper type to save on typing.
     template< class T > using MakeMayaArrayT = typename MakeMayaArray<T>::Type;
 
     //---------------------------------------------------------------------------------
+    //! \brief  Type tranformation class to optain at compile time array type for a given Usd templated type.
     template <class T> struct MakeUsdArray { using Type = VtArray<T>; };
 
+    //! \brief  Helper type to save on typing.
     template< class T > using MakeUsdArrayT = typename MakeUsdArray<T>::Type;
 
     //---------------------------------------------------------------------------------
+    //! \brief  Type trait declaration for simple data types. Each specialized type will inherit from std::true_type
+    //!         to enable compile time code generation.
     template <class MAYA_Type> struct MakeMayaSimpleData : public std::false_type { };
     
+    //! \brief  Type trait for Maya's bool type providing get and set methods for data handle and plugs.
     template <> struct MakeMayaSimpleData<bool>  : public std::true_type
     {
         using Type=bool;
@@ -135,7 +147,8 @@ namespace
             dst.newPlugValueBool(plug,value);
         }
     };
-
+    
+    //! \brief  Type trait for Maya's int type providing get and set methods for data handle and plugs.
     template <> struct MakeMayaSimpleData<int>  : public std::true_type
     {
         using Type=int;
@@ -154,8 +167,11 @@ namespace
     };
 
     //---------------------------------------------------------------------------------
+    //! \brief  Type trait declaration for complex data types. Each specialized type will inherit from std::true_type
+    //!         to enable compile time code generation.
     template <class MAYA_Type> struct MakeMayaFnData : public std::false_type { };
 
+    //! \brief  Type trait for Maya's MMatrixArray type providing get and set methods for data handle and plugs.
     template <> struct MakeMayaFnData<MMatrixArray>  : public std::true_type
     {
         using Type=MMatrixArray;
@@ -189,6 +205,7 @@ namespace
         }
     };
 
+    //! \brief  Type trait for Maya's MIntArray type providing get and set methods for data handle and plugs.
     template <> struct MakeMayaFnData<MIntArray>  : public std::true_type
     {
         using Type=MIntArray;
@@ -222,6 +239,7 @@ namespace
         }
     };
 
+    //! \brief  Type trait for Maya's MPointArray type providing get and set methods for data handle and plugs.
     template <> struct MakeMayaFnData<MPointArray>  : public std::true_type
     {
         using Type=MPointArray;
@@ -255,6 +273,7 @@ namespace
         }
     };
 
+    //! \brief  Type trait for Maya's MMatrix type providing get and set methods for data handle and plugs.
     template <> struct MakeMayaFnData<MMatrix>  : public std::true_type
     {
         using Type=MMatrix;
@@ -278,6 +297,7 @@ namespace
         { handle.set(value); }
     };
 
+    //! \brief  Type trait for Maya's float3 type providing get and set methods for data handle and plugs.
     template <> struct MakeMayaFnData<float3>  : public std::true_type
     {
         using Type=float3;
@@ -301,6 +321,7 @@ namespace
         { handle.set3Float(value[0],value[1],value[2]); }
     };
 
+    //! \brief  Type trait for Maya's double3 type providing get and set methods for data handle and plugs.
     template <> struct MakeMayaFnData<double3>  : public std::true_type
     {
         using Type=double3;
@@ -324,6 +345,7 @@ namespace
         { handle.set3Double(value[0],value[1],value[2]); }
     };
 
+    //! \brief  Type trait for Maya's MString type providing get and set methods for data handle and plugs.
     template <> struct MakeMayaFnData<MString>  : public std::true_type
     {
         using Type=MString;
@@ -348,8 +370,10 @@ namespace
     };
 
     //---------------------------------------------------------------------------------
+    //! \brief  Helper classe to provide single a interface for data handles of simple and complex types.
     template <class MAYA_Type, class Enable=void> struct MDataHandleUtils{};
     
+    //! \brief  Specialization of helper classe to provide a single interface for data handles of simple types.
     template <class MAYA_Type>
     struct MDataHandleUtils<MAYA_Type, typename std::enable_if<MakeMayaSimpleData<MAYA_Type>::value>::type>
     {
@@ -371,6 +395,7 @@ namespace
         }
     };
 
+    //! \brief  Specialization of helper classe to provide a single interface for data handles of complex types.
     template <class MAYA_Type>
     struct MDataHandleUtils<MAYA_Type, typename std::enable_if<MakeMayaFnData<MAYA_Type>::value>::type>
     {
@@ -393,8 +418,10 @@ namespace
     };
 
     //---------------------------------------------------------------------------------
+    //! \brief  Helper classe to provide single a interface for plugs of simple and complex types.
     template <class MAYA_Type, class Enable=void> struct MPlugUtils {};
 
+    //! \brief  Specialization of helper classe to provide a single interface for plugs of simple types.
     template <class MAYA_Type>
     struct MPlugUtils<MAYA_Type, typename std::enable_if<MakeMayaSimpleData<MAYA_Type>::value>::type>
     {
@@ -416,6 +443,7 @@ namespace
         }
     };
 
+    //! \brief  Specialization of helper classe to provide a single interface for plugs of complex types.
     template <class MAYA_Type>
     struct MPlugUtils<MAYA_Type, typename std::enable_if<MakeMayaFnData<MAYA_Type>::value>::type>
     {
@@ -443,9 +471,11 @@ namespace
     };
 
     //---------------------------------------------------------------------------------
+    //! \brief  Helper classe to provide single a interface for modifying plugs of simple and complex types with DG modifier.
     template <class MAYA_Type, class Enable=void>
     struct MDGModifierUtils {};
 
+    //! \brief  Specialization of helper classe to provide a single interface for modifying plugs of simple types with DG modifier.
     template <class MAYA_Type>
     struct MDGModifierUtils<MAYA_Type, typename std::enable_if<MakeMayaSimpleData<MAYA_Type>::value>::type>
     {
@@ -457,6 +487,7 @@ namespace
         }
     };
 
+    //! \brief  Specialization of helper classe to provide a single interface for modifying plugs of complex types with DG modifier.
     template <class MAYA_Type>
     struct MDGModifierUtils<MAYA_Type, typename std::enable_if<MakeMayaFnData<MAYA_Type>::value>::type>
     {
@@ -472,6 +503,7 @@ namespace
         }
     };
 
+    //! \brief  Specialization for MString class which has a different way of setting new string value on a plug.
     template <>
     struct MDGModifierUtils<MString>
     {
@@ -482,8 +514,11 @@ namespace
     };
 
     //---------------------------------------------------------------------------------
+    //! \brief  Switch used to conditionally enable or disable gamma correction support at compile time for types
+    //!         supporting it.
     enum class NeedsGammaCorrection { kYes, kNo };
 
+    //! \brief  Utility class for conversion between data handles and Usd.
     template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection>
     struct MDataHandleConvert
     {
@@ -550,6 +585,7 @@ namespace
         }
     };
 
+    //! \brief  Utility class for conversion between plugs and Usd.
     template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection>
     struct MPlugConvert
     {
@@ -644,6 +680,7 @@ namespace
         }
     };
 
+    //! \brief  Utility class for conversion between array data handles and Usd.
     template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection>
     struct MArrayDataHandleConvert
     {
@@ -733,6 +770,7 @@ namespace
         }
     };
         
+    //! \brief  Utility class for conversion between array attribute plugs and Usd.
     template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection>
     struct MArrayPlugConvert
     {
@@ -826,7 +864,10 @@ namespace
     };
         
     //---------------------------------------------------------------------------------
+    //! \brief  Storage for generated instances of converters.
     using ConvertStorage = std::unordered_map<SdfValueTypeName, const Converter, SdfValueTypeNameHash>;
+    
+    //! \brief  Utility class responsible for generating all supported converters. This list excludes all array attribute types.
     struct GenerateConverters{
         template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection=NeedsGammaCorrection::kNo>
         static void createConverter(ConvertStorage& converters, const SdfValueTypeName& typeName)
@@ -867,6 +908,7 @@ namespace
         }
     };
 
+    //! \brief  Utility class responsible for generating all supported array attribute converters.
     struct GenerateArrayPlugConverters{
         template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection=NeedsGammaCorrection::kNo>
         static void createArrayConverter(ConvertStorage& converters, const SdfValueTypeName& typeName)
@@ -892,7 +934,9 @@ namespace
         }
     };
         
+    //! \brief  Global storage for non-array attribute converters
     ConvertStorage _converters = GenerateConverters::generate();
+    //! \brief  Global storage for array attribute converters
     ConvertStorage _convertersForArrayPlug = GenerateArrayPlugConverters::generate();
 }
 
