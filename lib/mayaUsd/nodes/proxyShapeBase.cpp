@@ -480,25 +480,32 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             loadSet = UsdStage::InitialLoadSet::LoadNone;
         }
 
-        if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+        {
+            // When opening or creating stages we must have an active UsdStageCache.
+            // The stage cache is the only one who holds a strong reference to the
+            // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
+            // more information.
             UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
-            SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
-            if (sessionLayer) {
-                usdStage = UsdStage::Open(rootLayer,
-                        sessionLayer,
-                        ArGetResolver().GetCurrentContext(),
-                        loadSet);
-            } else {
-                usdStage = UsdStage::Open(rootLayer,
-                        ArGetResolver().GetCurrentContext(),
-                        loadSet);
-            }
+            
+            if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+                SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+                if (sessionLayer) {
+                    usdStage = UsdStage::Open(rootLayer,
+                            sessionLayer,
+                            ArGetResolver().GetCurrentContext(),
+                            loadSet);
+                } else {
+                    usdStage = UsdStage::Open(rootLayer,
+                            ArGetResolver().GetCurrentContext(),
+                            loadSet);
+                }
 
-            usdStage->SetEditTarget(usdStage->GetSessionLayer());
-        }
-        else {
-            // Create a new stage in memory with an anonymous root layer.
-            usdStage = UsdStage::CreateInMemory("", loadSet);
+                usdStage->SetEditTarget(usdStage->GetSessionLayer());
+            }
+            else {
+                // Create a new stage in memory with an anonymous root layer.
+                usdStage = UsdStage::CreateInMemory("", loadSet);
+            }
         }
 
         if (usdStage) {
