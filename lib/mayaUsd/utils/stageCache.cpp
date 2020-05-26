@@ -61,13 +61,13 @@ struct _OnSceneResetListener : public TfWeakBase {
 
 /* static */
 UsdStageCache&
-UsdMayaStageCache::Get(const bool forcePopulate)
+UsdMayaStageCache::Get(const bool loadAll)
 {
-    static UsdStageCache theCacheForcePopulate;
-    static UsdStageCache theCache;
+    static UsdStageCache theCacheLoadAll;  // used when UsdStage::Open() will be called with UsdStage::InitialLoadSet::LoadAll
+    static UsdStageCache theCache;         // used when UsdStage::Open() will be called with UsdStage::InitialLoadSet::LoadNode
     static _OnSceneResetListener onSceneResetListener;
 
-    return forcePopulate ? theCacheForcePopulate : theCache;
+    return loadAll ? theCacheLoadAll : theCache;
 }
 
 /* static */

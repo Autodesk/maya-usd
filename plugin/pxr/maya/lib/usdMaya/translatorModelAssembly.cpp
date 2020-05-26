@@ -375,7 +375,8 @@ UsdMayaTranslatorModelAssembly::Read(
         return false;
     }
 
-    UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get());
+    const bool loadAll = true;
+    UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get(loadAll));
     UsdStageRefPtr usdStage = UsdStage::Open(assetIdentifier);
     if (!usdStage) {
         TF_RUNTIME_ERROR("Cannot open USD file %s", assetIdentifier.c_str());

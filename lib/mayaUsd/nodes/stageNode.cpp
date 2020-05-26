@@ -123,7 +123,8 @@ UsdMayaStageNode::compute(const MPlug& plug, MDataBlock& dataBlock)
         UsdStageRefPtr usdStage;
 
         if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(usdFile)) {
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
+            const bool loadAll = true;
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadAll));
             usdStage = UsdStage::Open(rootLayer,
                                       ArGetResolver().GetCurrentContext());
 
