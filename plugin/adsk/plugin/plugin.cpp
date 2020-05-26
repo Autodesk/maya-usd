@@ -109,7 +109,7 @@ MStatus initializePlugin(MObject obj)
 #endif
 
     plugin.registerUI("mayaUsd_pluginUICreation", "mayaUsd_pluginUIDeletion", 
-        "mayaUsd_pluginBatchLoad", "mayaUsd_pluginBatchUnoad");
+        "mayaUsd_pluginBatchLoad", "mayaUsd_pluginBatchUnload");
 
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
     // automatically.  To be investigated.  A duplicate of this code is in the

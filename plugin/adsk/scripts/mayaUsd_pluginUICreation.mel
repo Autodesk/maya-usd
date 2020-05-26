@@ -5,7 +5,11 @@ global proc mayaUsd_pluginUICreation()
     source "mayaUsdMenu.mel";
     mayaUsdMenu_loadui;
 
-    if (!`pluginInfo -q -loaded "ufeSupport"`) {
-        loadPlugin "ufeSupport";
+    int $mjv = `about -majorVersion`;
+
+    if (((2021 <= $mjv)) && (!`pluginInfo -q -loaded "ufeSupport"`)) {
+        if (catchQuiet(`loadPlugin "ufeSupport"`)) {
+            warning ("Error loading ufeSupport.py.");
+        }
     }
 }
