@@ -177,6 +177,62 @@ namespace
     }
 #endif
 
+// Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the rprimIds, I don't want to go all the way to draw items.
+struct _FilterParam {
+    const HdRprimCollection& collection;
+    const TfTokenVector&     renderTags;
+    const HdRenderIndex*     renderIndex;
+};
+
+bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam)
+{
+    const _FilterParam* filterParam = static_cast<const _FilterParam*>(predicateParam);
+
+    const HdRprimCollection& collection = filterParam->collection;
+    const TfTokenVector&     renderTags = filterParam->renderTags;
+    const HdRenderIndex*     renderIndex = filterParam->renderIndex;
+
+    //
+    // Render Tag Filter
+    //
+    bool passedRenderTagFilter = false;
+    if (renderTags.empty()) {
+        // An empty render tag set means everything passes the filter
+        // Primary user is tests, but some single task render delegates
+        // that don't support render tags yet also use it.
+        passedRenderTagFilter = true;
+    } else {
+        // As the number of tags is expected to be low (<10)
+        // use a simple linear search.
+        TfToken primRenderTag = renderIndex->GetRenderTag(rprimID);
+        size_t  numRenderTags = renderTags.size();
+        size_t  tagNum = 0;
+        while (!passedRenderTagFilter && tagNum < numRenderTags) {
+            if (renderTags[tagNum] == primRenderTag) {
+                passedRenderTagFilter = true;
+            }
+            ++tagNum;
+        }
+    }
+
+    //
+    // Material Tag Filter
+    //
+    bool passedMaterialTagFilter = false;
+
+    // Filter out rprims that do not match the collection's materialTag.
+    // E.g. We may want to gather only opaque or translucent prims.
+    // An empty materialTag on collection means: ignore material-tags.
+    // This is important for tasks such as the selection-task which wants
+    // to ignore materialTags and receive all prims in its collection.
+    TfToken const& collectionMatTag = collection.GetMaterialTag();
+    if (collectionMatTag.IsEmpty() || renderIndex->GetMaterialTag(rprimID) == collectionMatTag) {
+        passedMaterialTagFilter = true;
+    }
+
+    return (passedRenderTagFilter && passedMaterialTagFilter);
+}
+
 } // namespace
 
 //! \brief  Draw classification used during plugin load to register in VP2
@@ -733,6 +789,9 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         &renderPurposeChanged, &proxyPurposeChanged, &guidePurposeChanged);
     if (renderPurposeChanged || proxyPurposeChanged || guidePurposeChanged)
     {
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorD_L1, "Update Purpose");
+
         // Build the list of render tags which were added or removed (changed)
         // and the list of render tags which were removed.
         TfTokenVector changedRenderTags;
@@ -780,63 +839,6 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         }
         _taskController->SetRenderTags(renderTags);
     }
-}
-
-
-// Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the rprimIds, I don't want to go all the way to draw items.
-struct _FilterParam {
-    const HdRprimCollection& collection;
-    const TfTokenVector&     renderTags;
-    const HdRenderIndex*     renderIndex;
-};
-
-static bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam)
-{
-    const _FilterParam* filterParam = static_cast<const _FilterParam*>(predicateParam);
-
-    const HdRprimCollection& collection = filterParam->collection;
-    const TfTokenVector&     renderTags = filterParam->renderTags;
-    const HdRenderIndex*     renderIndex = filterParam->renderIndex;
-
-    //
-    // Render Tag Filter
-    //
-    bool passedRenderTagFilter = false;
-    if (renderTags.empty()) {
-        // An empty render tag set means everything passes the filter
-        // Primary user is tests, but some single task render delegates
-        // that don't support render tags yet also use it.
-        passedRenderTagFilter = true;
-    } else {
-        // As the number of tags is expected to be low (<10)
-        // use a simple linear search.
-        TfToken primRenderTag = renderIndex->GetRenderTag(rprimID);
-        size_t  numRenderTags = renderTags.size();
-        size_t  tagNum = 0;
-        while (!passedRenderTagFilter && tagNum < numRenderTags) {
-            if (renderTags[tagNum] == primRenderTag) {
-                passedRenderTagFilter = true;
-            }
-            ++tagNum;
-        }
-    }
-
-    //
-    // Material Tag Filter
-    //
-    bool passedMaterialTagFilter = false;
-
-    // Filter out rprims that do not match the collection's materialTag.
-    // E.g. We may want to gather only opaque or translucent prims.
-    // An empty materialTag on collection means: ignore material-tags.
-    // This is important for tasks such as the selection-task which wants
-    // to ignore materialTags and receive all prims in its collection.
-    TfToken const& collectionMatTag = collection.GetMaterialTag();
-    if (collectionMatTag.IsEmpty() || renderIndex->GetMaterialTag(rprimID) == collectionMatTag) {
-        passedMaterialTagFilter = true;
-    }
-
-    return (passedRenderTagFilter && passedMaterialTagFilter);
 }
 
 SdfPathVector ProxyRenderDelegate::_GetFilteredRprims(
