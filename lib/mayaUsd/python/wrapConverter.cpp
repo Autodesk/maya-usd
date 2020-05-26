@@ -14,11 +14,11 @@
 // limitations under the License.
 //
 
-#include <pxr/pxr.h>
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/pyConversions.h>
 
@@ -32,119 +32,110 @@ PXR_NAMESPACE_USING_DIRECTIVE;
 
 using namespace MAYAUSD_NS;
 
-namespace
+namespace {
+constexpr auto find1
+    = static_cast<const Converter* (*)(const SdfValueTypeName&, bool)>(&Converter::find);
+
+static const Converter* find2(const std::string& attrName, const UsdAttribute& usdAttr)
 {
-    constexpr auto find1 = static_cast<const Converter* (*)(const SdfValueTypeName&, bool)>(&Converter::find);
+    MPlug   plug;
+    MStatus status = UsdMayaUtil::GetPlugByName(attrName, plug);
+    CHECK_MSTATUS_AND_RETURN(status, nullptr);
 
-    static const Converter* find2(
-        const std::string& attrName,
-        const UsdAttribute& usdAttr)
-    {
-        MPlug plug;
-        MStatus status = UsdMayaUtil::GetPlugByName(attrName, plug);
-        CHECK_MSTATUS_AND_RETURN(status, nullptr);
+    return Converter::find(plug, usdAttr);
+}
 
-        return Converter::find(plug, usdAttr);
-    }
+static bool
+validate(const Converter& self, const std::string& attrName, const UsdAttribute& usdAttr)
+{
+    MPlug plug;
+    if (UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
+        return self.validate(plug, usdAttr);
 
-    static bool validate(
-        const Converter& self,
-        const std::string& attrName,
-        const UsdAttribute& usdAttr)
-    {
-        MPlug plug;
-        if(UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
-            return self.validate(plug, usdAttr);
+    return false;
+}
 
-        return false;
-    }
+static void convertMPlugToUsdAttr(
+    const Converter&     self,
+    const std::string&   attrName,
+    UsdAttribute&        usdAttr,
+    const ConverterArgs& args)
+{
+    MPlug plug;
+    if (UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
+        self.convert(plug, usdAttr, args);
+}
 
-    static void convertMPlugToUsdAttr(
-        const Converter& self,
-        const std::string& attrName,
-        UsdAttribute& usdAttr,
-        const ConverterArgs& args)
-    {
-        MPlug plug;
-        if(UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
-            self.convert(plug, usdAttr, args);
-    }
+static void convertUsdAttrToMPlug(
+    const Converter&     self,
+    const UsdAttribute&  usdAttr,
+    const std::string&   attrName,
+    const ConverterArgs& args)
+{
+    MPlug plug;
+    if (UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
+        self.convert(usdAttr, plug, args);
+}
 
-    static void convertUsdAttrToMPlug(
-        const Converter& self,
-        const UsdAttribute& usdAttr,
-        const std::string& attrName,
-        const ConverterArgs& args)
-    {
-        MPlug plug;
-        if(UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
-            self.convert(usdAttr, plug, args);
-    }
+static VtValue
+convertMPlugToVtValue(const Converter& self, const std::string& attrName, const ConverterArgs& args)
+{
+    VtValue value;
+    MPlug   plug;
+    if (UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
+        self.convert(plug, value, args);
 
-    static VtValue convertMPlugToVtValue(
-        const Converter& self,
-        const std::string& attrName,
-        const ConverterArgs& args)
-    {
-        VtValue value;
-        MPlug plug;
-        if(UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
-            self.convert(plug, value, args);
-        
-        return value;
-    }
+    return value;
+}
 
-    static void convertVtValueToMPlug(
-        const Converter& self,
-        const VtValue& value,
-        const std::string& attrName,
-        const ConverterArgs& args)
-    {
-        MPlug plug;
-        if(UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
-            self.convert(value, plug, args);
-    }
+static void convertVtValueToMPlug(
+    const Converter&     self,
+    const VtValue&       value,
+    const std::string&   attrName,
+    const ConverterArgs& args)
+{
+    MPlug plug;
+    if (UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
+        self.convert(value, plug, args);
+}
 
-    static void test_convertUsdAttrToMDGModifier(
-        const Converter& self,
-        const UsdAttribute& usdAttr,
-        const std::string& attrName,
-        const ConverterArgs& args)
-    {
-        MPlug plug;
-        if(UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
-        {
-            MDGModifier modifier;
-            self.convert(usdAttr, plug, modifier, args);
-            
-            modifier.doIt();
-        }
-    }
+static void test_convertUsdAttrToMDGModifier(
+    const Converter&     self,
+    const UsdAttribute&  usdAttr,
+    const std::string&   attrName,
+    const ConverterArgs& args)
+{
+    MPlug plug;
+    if (UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess) {
+        MDGModifier modifier;
+        self.convert(usdAttr, plug, modifier, args);
 
-    static void test_convertVtValueToMDGModifier(
-        const Converter& self,
-        const VtValue& value,
-        const std::string& attrName,
-        const ConverterArgs& args)
-    {
-        MPlug plug;
-        if(UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess)
-        {
-            MDGModifier modifier;
-            self.convert(value, plug, modifier, args);
-            
-            modifier.doIt();
-        }
+        modifier.doIt();
     }
 }
+
+static void test_convertVtValueToMDGModifier(
+    const Converter&     self,
+    const VtValue&       value,
+    const std::string&   attrName,
+    const ConverterArgs& args)
+{
+    MPlug plug;
+    if (UsdMayaUtil::GetPlugByName(attrName, plug) == MS::kSuccess) {
+        MDGModifier modifier;
+        self.convert(value, plug, modifier, args);
+
+        modifier.doIt();
+    }
+}
+} // namespace
 
 void wrapConverterArgs()
 {
     using This = ConverterArgs;
     class_<This>("ConverterArgs")
         .def_readwrite("timeCode", &This::_timeCode)
-        .def_readwrite("doGammaCorrection", &This::_doGammaCorrection)
-    ;
+        .def_readwrite("doGammaCorrection", &This::_doGammaCorrection);
 }
 
 void wrapConverter()
@@ -160,6 +151,5 @@ void wrapConverter()
         .def("convertVt", convertMPlugToVtValue)
         .def("convertVt", convertVtValueToMPlug)
         .def("test_convertAndSetWithModifier", test_convertUsdAttrToMDGModifier)
-        .def("test_convertVtAndSetWithModifier", test_convertVtValueToMDGModifier)
-    ;
+        .def("test_convertVtAndSetWithModifier", test_convertVtValueToMDGModifier);
 }
