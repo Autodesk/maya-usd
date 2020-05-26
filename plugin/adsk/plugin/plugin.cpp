@@ -108,8 +108,8 @@ MStatus initializePlugin(MObject obj)
     }
 #endif
 
-    MGlobal::executeCommand("source \"mayaUsdMenu.mel\"");
-    MGlobal::executeCommand("mayaUsdMenu_loadui");
+    plugin.registerUI("mayaUsd_pluginUICreation", "mayaUsd_pluginUIDeletion", 
+        "mayaUsd_pluginBatchLoad", "mayaUsd_pluginBatchUnoad");
 
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
     // automatically.  To be investigated.  A duplicate of this code is in the
@@ -145,8 +145,6 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
     MStatus status;
-
-    MGlobal::executeCommand("mayaUsdMenu_unloadui");
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);
     if (!status) {
