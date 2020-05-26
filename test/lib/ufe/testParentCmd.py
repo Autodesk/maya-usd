@@ -305,3 +305,58 @@ class ParentCmdTestCase(unittest.TestCase):
                 cmds.parent(
                     "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1",
                     "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1")
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testAlreadyChild only available in UFE preview version 0.2.13 and greater')
+    def testAlreadyChild(self):
+        '''Parenting an object to its current parent is a no-op.'''
+
+        with OpenFileCtx("simpleHierarchy.ma"):
+            shapeSegment = mayaUtils.createUfePathSegment(
+                "|world|mayaUsdProxy1|mayaUsdProxyShape1")
+            spherePath = ufe.Path(
+                [shapeSegment,
+                 usdUtils.createUfePathSegment("/pCylinder1/pCube1/pSphere1")])
+            sphereItem = ufe.Hierarchy.createItem(spherePath)
+            cylinderShapePath = ufe.Path(
+                [shapeSegment,
+                 usdUtils.createUfePathSegment("/pCylinder1/pCylinderShape1")])
+            cylinderShapeItem = ufe.Hierarchy.createItem(cylinderShapePath)
+            parentPath = ufe.Path(
+                [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1")])
+            parentItem = ufe.Hierarchy.createItem(parentPath)
+
+            parent = ufe.Hierarchy.hierarchy(parentItem)
+            childrenPre = parent.children()
+
+            # The sphere is not a child of the cylinder
+            self.assertNotIn("pSphere1", childrenNames(childrenPre))
+
+            # The cylinder shape is a child of the cylinder
+            self.assertIn("pCylinderShape1", childrenNames(childrenPre))
+
+            # Parent the sphere and the cylinder shape to the cylinder.  This
+            # is a no-op for the cylinder shape, as it's already a child of the
+            # cylinder, and the sphere is parented to the cylinder.
+            cmds.parent(ufe.PathString.string(spherePath),
+                        ufe.PathString.string(cylinderShapePath),
+                        ufe.PathString.string(parentPath))
+
+            children = parent.children()
+            self.assertEqual(len(childrenPre)+1, len(children))
+            self.assertIn("pSphere1", childrenNames(children))
+            self.assertIn("pCylinderShape1", childrenNames(children))
+
+            # Undo / redo
+            cmds.undo()
+
+            children = parent.children()
+            self.assertEqual(len(childrenPre), len(children))
+            self.assertNotIn("pSphere1", childrenNames(children))
+            self.assertIn("pCylinderShape1", childrenNames(children))
+
+            cmds.redo()
+
+            children = parent.children()
+            self.assertEqual(len(childrenPre)+1, len(children))
+            self.assertIn("pSphere1", childrenNames(children))
+            self.assertIn("pCylinderShape1", childrenNames(children))
