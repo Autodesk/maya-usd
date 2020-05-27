@@ -474,31 +474,36 @@ UsdMayaWriteJobContext::CreatePrimWriter(
         const bool forceUninstance)
 {
     SdfPath writePath = usdPath;
- 
+
     const MDagPath dagPath =
         UsdMayaUtil::getDagPath(depNodeFn, /* reportError = */ false);
-
     if (!dagPath.isValid()) {
-        return nullptr;
-    }
+        // This must be a DG node. usdPath must be supplied for DG nodes.
+        if (writePath.IsEmpty()) {
+            TF_CODING_ERROR(
+                "No usdPath supplied for DG node '%s'.",
+                UsdMayaUtil::GetMayaNodeName(depNodeFn.object()).c_str());
+            return nullptr;
+        }
+    } else {
+        if (dagPath.length() == 0u) {
+            // This is the world root node. It can't have a prim writer.
+            return nullptr;
+        }
 
-    if (dagPath.length() == 0u) {
-        // This is the world root node. It can't have a prim writer.
-        return nullptr;
-    }
+        if (writePath.IsEmpty()) {
+            writePath = ConvertDagToUsdPath(dagPath);
+        }
 
-    if (writePath.IsEmpty()) {
-        writePath = ConvertDagToUsdPath(dagPath);
-    }
-
-    const MFnDagNode dagNodeFn(dagPath);
-    const bool instanced = dagNodeFn.isInstanced(/* indirect = */ false);
-    if (mArgs.exportInstances && instanced && !forceUninstance) {
-        // Deal with instances -- we use a special internal writer for them.
-        return std::make_shared<UsdMaya_InstancedNodeWriter>(
-            dagNodeFn,
-            writePath,
-            *this);
+        const MFnDagNode dagNodeFn(dagPath);
+        const bool instanced = dagNodeFn.isInstanced(/* indirect = */ false);
+        if (mArgs.exportInstances && instanced && !forceUninstance) {
+            // Deal with instances -- we use a special internal writer for them.
+            return std::make_shared<UsdMaya_InstancedNodeWriter>(
+                dagNodeFn,
+                writePath,
+                *this);
+        }
     }
 
     // This is either a DG node or a non-instanced DAG node, so try to look up
