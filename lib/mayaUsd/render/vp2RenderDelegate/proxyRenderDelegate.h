@@ -169,7 +169,7 @@ private:
         void UsdStageUpdated();
         bool IsExcludePrimsUpToDate() const;
         void ExcludePrimsUpdated();
-        void UpdatePurpose(bool* drawRenderPurposeChanged, bool* drawProxyPurposeChanged, bool* _drawGuidePurposeChanged);
+        void UpdatePurpose(bool* drawRenderPurposeChanged, bool* drawProxyPurposeChanged, bool* drawGuidePurposeChanged);
         bool DrawRenderPurpose() const;
         bool DrawProxyPurpose() const;
         bool DrawGuidePurpose() const;

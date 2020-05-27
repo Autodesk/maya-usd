@@ -758,6 +758,8 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
     }
 }
 
+/*! \brief  Trigger rprim update for rprims whose visibility changed because of render tags change
+*/
 void ProxyRenderDelegate::_UpdateRenderTags()
 {
     // USD pulls the required render tags from the task list passed into execute.
@@ -784,7 +786,9 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     //     items.
     //  3: Update the render tags with the new final render tags so that the next
     //     real call to execute will update all the now visible items.
-    bool renderPurposeChanged, proxyPurposeChanged, guidePurposeChanged;
+    bool renderPurposeChanged = false;
+    bool proxyPurposeChanged = false;
+    bool guidePurposeChanged = false;
     _proxyShapeData->UpdatePurpose(
         &renderPurposeChanged, &proxyPurposeChanged, &guidePurposeChanged);
     if (renderPurposeChanged || proxyPurposeChanged || guidePurposeChanged)
@@ -813,9 +817,9 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         }
 
         // Mark all the rprims which have a render tag which changed dirty
-        SdfPathVector    rprimsToDirty = _GetFilteredRprims(*(_defaultCollection.get()), changedRenderTags);
+        SdfPathVector    rprimsToDirty = _GetFilteredRprims(*_defaultCollection, changedRenderTags);
         HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
-        for (auto id : rprimsToDirty) {
+        for (auto& id : rprimsToDirty) {
             changeTracker.MarkRprimDirty(id, HdChangeTracker::DirtyRenderTag);
         }
 
@@ -841,6 +845,7 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     }
 }
 
+//! \brief  List the rprims in collection that match renderTags
 SdfPathVector ProxyRenderDelegate::_GetFilteredRprims(
     HdRprimCollection const& collection,
     TfTokenVector const&     renderTags)
@@ -961,4 +966,4 @@ inline bool ProxyRenderDelegate::ProxyShapeData::DrawGuidePurpose() const
     return _drawGuidePurpose;
 }
 
-    PXR_NAMESPACE_CLOSE_SCOPE
+PXR_NAMESPACE_CLOSE_SCOPE

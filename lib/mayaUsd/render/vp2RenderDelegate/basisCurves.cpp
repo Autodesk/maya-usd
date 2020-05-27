@@ -627,11 +627,11 @@ void HdVP2BasisCurves::Sync(
         _sharedData.bounds.SetMatrix(delegate->GetTransform(id));
     }
 
-    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-    ProxyRenderDelegate& drawScene = param->GetDrawScene();
-
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id) || 
         *dirtyBits & HdChangeTracker::DirtyRenderTag) {
+
+        auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+        ProxyRenderDelegate& drawScene = param->GetDrawScene();
         _sharedData.visible = delegate->GetVisible(id)
             && drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()));
     }
