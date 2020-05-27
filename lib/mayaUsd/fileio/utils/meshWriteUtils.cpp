@@ -148,9 +148,9 @@ namespace
 } // anonymous namespace
 
 bool
-UsdMayaMeshUtil::getMeshNormals(const MFnMesh& mesh,
-                                VtArray<GfVec3f>* normalsArray,
-                                TfToken* interpolation)
+UsdMayaMeshWriteUtils::getMeshNormals(const MFnMesh& mesh,
+                                      VtArray<GfVec3f>* normalsArray,
+                                      TfToken* interpolation)
 {
     MStatus status{MS::kSuccess};
 
@@ -177,19 +177,15 @@ UsdMayaMeshUtil::getMeshNormals(const MFnMesh& mesh,
     normalsArray->resize(numFaceVertices);
     *interpolation = UsdGeomTokens->faceVarying;
 
-    MItMeshFaceVertex itFV(mesh.object());
-    unsigned int fvi = 0;
-    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
-        int normalId = itFV.normalId();
-        if (normalId < 0 ||
-                static_cast<size_t>(normalId) >= mayaNormals.length()) {
-            return false;
-        }
+    // get normal indices for all vertices of faces
+    MIntArray normalCounts, normalIndices;
+    mesh.getNormalIds(normalCounts, normalIndices);
 
-        MFloatVector normal = mayaNormals[normalId];
-        (*normalsArray)[fvi][0] = normal[0];
-        (*normalsArray)[fvi][1] = normal[1];
-        (*normalsArray)[fvi][2] = normal[2];
+    for (size_t i = 0; i < normalIndices.length(); ++i) {
+        MFloatVector normal = mayaNormals[normalIndices[i]];
+        (*normalsArray)[i][0] = normal[0];
+        (*normalsArray)[i][1] = normal[1];
+        (*normalsArray)[i][2] = normal[2];
     }
 
     return true;
@@ -200,7 +196,7 @@ UsdMayaMeshUtil::getMeshNormals(const MFnMesh& mesh,
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
 TfToken
-UsdMayaMeshUtil::getSubdivScheme(const MFnMesh& mesh)
+UsdMayaMeshWriteUtils::getSubdivScheme(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken schemeToken;
@@ -245,7 +241,7 @@ UsdMayaMeshUtil::getSubdivScheme(const MFnMesh& mesh)
 // We first look for the USD string attribute, and if not present we look for
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
-TfToken UsdMayaMeshUtil::getSubdivInterpBoundary(const MFnMesh& mesh)
+TfToken UsdMayaMeshWriteUtils::getSubdivInterpBoundary(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken interpBoundaryToken;
@@ -288,7 +284,7 @@ TfToken UsdMayaMeshUtil::getSubdivInterpBoundary(const MFnMesh& mesh)
     return interpBoundaryToken;
 }
 
-TfToken UsdMayaMeshUtil::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
+TfToken UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken sdFVLinearInterpolation;
@@ -323,7 +319,7 @@ TfToken UsdMayaMeshUtil::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
 }
 
 bool
-UsdMayaMeshUtil::isMeshValid(const MDagPath& dagPath)
+UsdMayaMeshWriteUtils::isMeshValid(const MDagPath& dagPath)
 {
     MStatus status{MS::kSuccess};
 
@@ -354,7 +350,7 @@ UsdMayaMeshUtil::isMeshValid(const MDagPath& dagPath)
 }
 
 void
-UsdMayaMeshUtil::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
+UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 {
     MStatus status{MS::kSuccess};
 
@@ -387,12 +383,8 @@ UsdMayaMeshUtil::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
     const float* mayaRawPoints = referenceMesh.getRawPoints(&status);
     const int numVertices = referenceMesh.numVertices();
     VtArray<GfVec3f> points(numVertices);
-    for (int i = 0; i < numVertices; ++i) {
-        const int floatIndex = i * 3;
-        points[i].Set(mayaRawPoints[floatIndex],
-                        mayaRawPoints[floatIndex + 1],
-                        mayaRawPoints[floatIndex + 2]);
-    }
+
+    memcpy(points.data(), mayaRawPoints, numVertices * sizeof(float) * 3);
 
     UsdGeomPrimvar primVar = primSchema.CreatePrimvar(
         UsdUtilsGetPrefName(),
@@ -407,9 +399,9 @@ UsdMayaMeshUtil::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 }
 
 void
-UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
-                                           UsdGeomMesh& primSchema,
-                                           UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
+                                                 UsdGeomMesh& primSchema,
+                                                 UsdUtilsSparseValueWriter& valueWriter)
 {
     // Vert Creasing
     MUintArray mayaCreaseVertIds;
@@ -443,12 +435,14 @@ UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
     }
     if (mayaCreaseEdgeIds.length() > 0u) {
         std::vector<int> subdCreaseIndices(mayaCreaseEdgeIds.length() * 2);
-        std::vector<float> subdCreaseSharpnesses(mayaCreaseEdgeIds.length());
-        for (unsigned int i = 0u; i < mayaCreaseEdgeIds.length(); ++i) {
+        // just construct directly from the array data
+        // by moving this out of the loop, you'll leverage SIMD ops here.
+        std::vector<float> subdCreaseSharpnesses(&mayaCreaseEdgeIds[0], &mayaCreaseEdgeIds[0] + mayaCreaseEdgeIds.length());
+        // avoid dso call by taking a copy of length. 
+        for (unsigned int i = 0u, n = mayaCreaseEdgeIds.length(); i < n; ++i) {
             meshFn.getEdgeVertices(mayaCreaseEdgeIds[i], edgeVerts);
             subdCreaseIndices[i * 2] = edgeVerts[0];
             subdCreaseIndices[i * 2 + 1] = edgeVerts[1];
-            subdCreaseSharpnesses[i] = mayaCreaseEdgeValues[i];
         }
 
         std::vector<int> numCreases;
@@ -479,10 +473,10 @@ UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
 }
 
 void
-UsdMayaMeshUtil::writeVertexData(const MFnMesh& meshFn,
-                                 UsdGeomMesh& primSchema,
-                                 const UsdTimeCode& usdTime,
-                                 UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::writePointsData(const MFnMesh& meshFn,
+                                       UsdGeomMesh& primSchema,
+                                       const UsdTimeCode& usdTime,
+                                       UsdUtilsSparseValueWriter& valueWriter)
 {
     MStatus status{MS::kSuccess};
 
@@ -508,10 +502,10 @@ UsdMayaMeshUtil::writeVertexData(const MFnMesh& meshFn,
 }
 
 void 
-UsdMayaMeshUtil::writeFaceVertexIndicesData(const MFnMesh& meshFn, 
-                                            UsdGeomMesh& primSchema, 
-                                            const UsdTimeCode& usdTime, 
-                                            UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(const MFnMesh& meshFn, 
+                                                  UsdGeomMesh& primSchema, 
+                                                  const UsdTimeCode& usdTime, 
+                                                  UsdUtilsSparseValueWriter& valueWriter)
 {
     const int numFaceVertices = meshFn.numFaceVertices();
     const int numPolygons = meshFn.numPolygons();
@@ -533,9 +527,9 @@ UsdMayaMeshUtil::writeFaceVertexIndicesData(const MFnMesh& meshFn,
 }
 
 void 
-UsdMayaMeshUtil::writeInvisibleFacesData(const MFnMesh& meshFn, 
-                                         UsdGeomMesh& primSchema, 
-                                         UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::writeInvisibleFacesData(const MFnMesh& meshFn, 
+                                               UsdGeomMesh& primSchema, 
+                                               UsdUtilsSparseValueWriter& valueWriter)
 {
     MUintArray mayaHoles = meshFn.getInvisibleFaces();
     const uint32_t count = mayaHoles.length();
