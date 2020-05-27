@@ -71,7 +71,7 @@ class DummyScopeClass{};
 } // anonymous namespace 
 
 
-void wrapMeshUtil()
+void wrapMeshWriteUtils()
 {
     scope s = class_<DummyScopeClass>("MeshUtil", no_init)
 
