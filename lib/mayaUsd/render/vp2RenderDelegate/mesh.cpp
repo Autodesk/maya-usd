@@ -1309,8 +1309,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    if (itemDirtyBits & HdChangeTracker::DirtyVisibility) {
-        drawItemData._enabled = drawItem->GetVisible();
+    if (itemDirtyBits & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag)) {
+        drawItemData._enabled
+            = drawItem->GetVisible() && drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()));
         stateToCommit._enabled = &drawItemData._enabled;
     }
 
