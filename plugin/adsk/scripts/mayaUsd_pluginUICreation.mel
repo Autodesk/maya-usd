@@ -1,0 +1,15 @@
+global proc mayaUsd_pluginUICreation()
+// Callback registered with the MFnPlugin for when the plugin is loaded.
+// Used to initialize any UI we create.
+{
+    source "mayaUsdMenu.mel";
+    mayaUsdMenu_loadui;
+
+    int $mjv = `about -majorVersion`;
+
+    if (((2021 <= $mjv)) && (!`pluginInfo -q -loaded "ufeSupport"`)) {
+        if (catchQuiet(`loadPlugin "ufeSupport"`)) {
+            warning ("Error loading ufeSupport.py.");
+        }
+    }
+}

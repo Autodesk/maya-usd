@@ -607,10 +607,9 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    // We don't create a repr for the selection token because it serves for
-    // selection state update only. Mark DirtySelection bit that will be
-    // automatically propagated to all draw items of the rprim.
-    if (reprToken == HdVP2ReprTokens->selection) {
+    // Update selection state on demand or when it is a new Rprim. DirtySelection
+    // will be propagated to all draw items, to trigger sync for each repr.
+    if (reprToken == HdVP2ReprTokens->selection || _reprs.empty()) {
         const HdVP2SelectionStatus selectionState =
             param->GetDrawScene().GetPrimSelectionStatus(GetId());
         if (_selectionState != selectionState) {
@@ -620,7 +619,11 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
         else if (_selectionState == kPartiallySelected) {
             *dirtyBits |= DirtySelection;
         }
-        return;
+
+        // We don't create a repr for the selection token because it serves for
+        // selection state update only. Return from here.
+        if (reprToken == HdVP2ReprTokens->selection)
+            return;
     }
 
     // If the repr has any draw item with the DirtySelection bit, mark the

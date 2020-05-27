@@ -1,0 +1,10 @@
+global proc mayaUsd_pluginUIDeletion()
+// Callback registered with the MFnPlugin for when the plugin is unloaded.
+// Used to remove any UI we create.
+{
+    // We do not bother unloading the ufeSupport plugin here, even though
+    // we do attempt to load it when this plugin gets loaded.  It is a utility
+    // plugin that we depend on, but so could others so we will leave it alone.
+
+    mayaUsdMenu_unloadui();
+}

@@ -104,6 +104,8 @@ class MayaUsdStageData : public MPxGeometryData
         // weak_ptr worked around this issue. Basically if we use a shared
         // pointer here, the only way to reload a scene, would be to restart
         // Maya."
+        //
+        // Logged as https://github.com/Autodesk/maya-usd/issues/528
 
         UsdStageWeakPtr stage;
         SdfPath primPath;

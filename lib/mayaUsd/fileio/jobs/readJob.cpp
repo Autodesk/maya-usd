@@ -101,16 +101,17 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
                                                                 varSelsVec);
 
     // Layer and Stage used to Read in the USD file
-    UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get());
     UsdStageRefPtr stage;
     if (mImportData.hasPopulationMask())
     {
+        // OpenMasked doesn't use the UsdStageCache, so don't create a UsdStageCacheContext
         stage = UsdStage::OpenMasked(rootLayer, sessionLayer,
                                      mImportData.stagePopulationMask(),
                                      mImportData.stageInitialLoadSet());
     }
     else
     {
+        UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get(mImportData.stageInitialLoadSet() == UsdStage::InitialLoadSet::LoadAll));
         stage = UsdStage::Open(rootLayer, sessionLayer,
                                mImportData.stageInitialLoadSet());
     }

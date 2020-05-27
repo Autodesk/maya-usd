@@ -480,26 +480,32 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             loadSet = UsdStage::InitialLoadSet::LoadNone;
         }
 
-        if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
-            SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
-            if (sessionLayer) {
-                usdStage = UsdStage::Open(rootLayer,
-                        sessionLayer,
-                        ArGetResolver().GetCurrentContext(),
-                        loadSet);
-            } else {
-                usdStage = UsdStage::Open(rootLayer,
-                        ArGetResolver().GetCurrentContext(),
-                        loadSet);
-            }
+        {
+            // When opening or creating stages we must have an active UsdStageCache.
+            // The stage cache is the only one who holds a strong reference to the
+            // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
+            // more information.
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
+            
+            if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+                SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+                if (sessionLayer) {
+                    usdStage = UsdStage::Open(rootLayer,
+                            sessionLayer,
+                            ArGetResolver().GetCurrentContext(),
+                            loadSet);
+                } else {
+                    usdStage = UsdStage::Open(rootLayer,
+                            ArGetResolver().GetCurrentContext(),
+                            loadSet);
+                }
 
-            usdStage->SetEditTarget(usdStage->GetSessionLayer());
-        }
-        else if (!usdStage) {
-            // Create a new stage in memory with an anonymous root layer.
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
-            usdStage = UsdStage::CreateInMemory("", loadSet);
+                usdStage->SetEditTarget(usdStage->GetSessionLayer());
+            }
+            else {
+                // Create a new stage in memory with an anonymous root layer.
+                usdStage = UsdStage::CreateInMemory("", loadSet);
+            }
         }
 
         if (usdStage) {
@@ -755,6 +761,8 @@ MayaUsdProxyShapeBase::isStageValid() const
 MStatus
 MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode)
 {
+    // Any logic here should have an equivalent implementation in MayaUsdProxyShapeBase::setDependentsDirty().
+
     if (evaluationNode.dirtyPlugExists(excludePrimPathsAttr)) {
         _IncreaseExcludePrimPathsVersion();
     }
@@ -765,6 +773,7 @@ MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluatio
         evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
         evaluationNode.dirtyPlugExists(inStageDataAttr)) {
         _IncreaseUsdStageVersion();
+        MayaUsdProxyStageInvalidateNotice(*this).Send();
     }
 
     return MStatus::kSuccess;
@@ -786,6 +795,8 @@ MayaUsdProxyShapeBase::postEvaluation(const  MDGContext& context, const MEvaluat
 MStatus
 MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
 {
+    // Any logic here should have an equivalent implementation in MayaUsdProxyShapeBase::preEvaluation() or postEvaluation().
+
     // If/when the MPxDrawOverride for the proxy shape specifies
     // isAlwaysDirty=false to improve performance, we must be sure to notify
     // the Maya renderer that the geometry is dirty and needs to be redrawn

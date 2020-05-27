@@ -16,7 +16,25 @@ Normally, the default Edit Target in USD will be the Root Layer of the scene, bu
 ###### Modifications for exisiting layers
 After doing in-memory edits to our USD scene changes(typically via Maya) we then translate our USD scene, which is a filepath to the root layer and the serialised content of all the modified in-memory layers that are tracked by the LayerManager, into our renderers scene description for rendering. 
 
-#### Commands 
+###### Serialised anonymous layers
+An anonymous root layer can be imported into the ProxyShape by passing the `stageId` into the AL_usdmaya_ProxyShapeImport command. This way the layer manager serialises changes that are made in the root layer without any backing `.usda` or `.usdc` file. As an example this follow script sets up a scene with a single sphere in an anonymous layer, and import that into a ProxyShape.
+
+```python
+from pxr import Usd, UsdUtils, UsdGeom
+from maya import cmds
+
+stageCache = UsdUtils.StageCache.Get()
+with Usd.StageCacheContext(stageCache):
+    stage = Usd.Stage.CreateInMemory()
+    with Usd.EditContext(stage, Usd.EditContext(stage.GetRootLayer())):
+        UsdGeom.Sphere.Define(stage, "/sphere").GetRadiusAttr().Set(1.0)
+
+cmds.AL_usdmaya_ProxyShapeImport(
+    stageId=stageCache.GetId(stage).ToLongInt(),
+    name='anonymousShape'
+```
+
+#### Commands
 There are a number of layer-related commands available, all are available via MEL, and some from the USD->Layers dropdow in the UI.
 + AL_usdmaya_LayerSave
 + AL_usdmaya_LayerCreateLayer

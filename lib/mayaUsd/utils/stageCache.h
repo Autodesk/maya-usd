@@ -31,10 +31,11 @@ class UsdMayaStageCache
 public:
 
     /// Return the singleton stage cache for use by all USD clients within Maya.
-    /// 2 stage caches are maintained; 1 for stages that have been
-    /// force-populated, and 1 for stages that have not been force-populated.
+    /// 2 stage caches are maintained; 1 for stages that have been opened with
+    /// UsdStage::InitialLoadSet::LoadAll, and 1 for stages that have been 
+    /// opened with UsdStage::InitialLoadSet::LoadNode.
     MAYAUSD_CORE_PUBLIC
-    static UsdStageCache& Get(const bool forcePopulate=true);
+    static UsdStageCache& Get(const bool loadAll);
 
     /// Clear the cache
     MAYAUSD_CORE_PUBLIC

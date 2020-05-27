@@ -312,14 +312,17 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
                 }
             }
         }
+
         // Top level item - Add New Prim (for all context op types).
         items.emplace_back(
             kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
 
-        items.emplace_back(AddReferenceUndoableCommand::commandName,
-                            AddReferenceUndoableCommand::commandName);
-        items.emplace_back(ClearAllReferencesUndoableCommand::commandName,
-                            ClearAllReferencesUndoableCommand::commandName);
+        if (!fIsAGatewayType) {
+            items.emplace_back(AddReferenceUndoableCommand::commandName,
+                                AddReferenceUndoableCommand::commandName);
+            items.emplace_back(ClearAllReferencesUndoableCommand::commandName,
+                                ClearAllReferencesUndoableCommand::commandName);            
+        }
     }
     else {
         if (itemPath[0] == kUSDVariantSetsItem) {
