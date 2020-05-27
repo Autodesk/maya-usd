@@ -29,7 +29,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapBlockSceneModificationContext.cpp
         wrapColorSpace.cpp
         wrapDiagnosticDelegate.cpp
-        wrapMeshUtil.cpp
+        wrapMeshWriteUtils.cpp
         wrapQuery.cpp
         wrapReadUtil.cpp
         wrapRoundTripUtil.cpp

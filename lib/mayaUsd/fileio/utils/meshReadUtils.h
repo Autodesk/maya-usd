@@ -46,7 +46,7 @@ TF_DECLARE_PUBLIC_TOKENS(UsdMayaMeshColorSetTokens,
     PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
 
 /// Utilities for dealing with USD and RenderMan for Maya mesh/subdiv tags.
-namespace UsdMayaMeshUtil
+namespace UsdMayaMeshReadUtils
 {
     /// Gets the internal emit-normals tag on the Maya \p mesh, placing it in
     /// \p value. Returns true if the tag exists on the mesh, and false if not.
@@ -85,7 +85,9 @@ namespace UsdMayaMeshUtil
     TfToken getSubdivFVLinearInterpolation(const MFnMesh& mesh);
 
     MAYAUSD_CORE_PUBLIC
-    void assignPrimvarsToMesh(const UsdGeomMesh&, const MObject&, const TfToken::Set&);
+    void assignPrimvarsToMesh(const UsdGeomMesh& mesh, 
+                              const MObject& meshObj, 
+                              const TfToken::Set& excludePrimvarSet);
 
     MAYAUSD_CORE_PUBLIC
     void assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj);
@@ -93,7 +95,7 @@ namespace UsdMayaMeshUtil
     MAYAUSD_CORE_PUBLIC
     MStatus assignSubDivTagsToMesh(const UsdGeomMesh&, MObject&, MFnMesh&);
 
-} // namespace UsdMayaMeshUtil
+} // namespace UsdMayaMeshReadUtils
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
