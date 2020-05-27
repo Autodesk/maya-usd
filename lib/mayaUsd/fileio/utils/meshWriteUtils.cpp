@@ -149,7 +149,7 @@ namespace
 
 bool
 UsdMayaMeshWriteUtils::getMeshNormals(const MFnMesh& mesh,
-                                      VtArray<GfVec3f>* normalsArray,
+                                      VtVec3fArray* normalsArray,
                                       TfToken* interpolation)
 {
     MStatus status{MS::kSuccess};
@@ -382,7 +382,7 @@ UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 
     const float* mayaRawPoints = referenceMesh.getRawPoints(&status);
     const int numVertices = referenceMesh.numVertices();
-    VtArray<GfVec3f> points(numVertices);
+    VtVec3fArray points(numVertices);
 
     memcpy(points.data(), mayaRawPoints, numVertices * sizeof(float) * 3);
 
@@ -481,14 +481,14 @@ UsdMayaMeshWriteUtils::writePointsData(const MFnMesh& meshFn,
     MStatus status{MS::kSuccess};
 
     const uint32_t numVertices = meshFn.numVertices();
-    VtArray<GfVec3f> points(numVertices);
+    VtVec3fArray points(numVertices);
     const float* pointsData = meshFn.getRawPoints(&status);
     if(status)
     {
         // use memcpy() to copy the data. HS April 09, 2020
         memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
-        VtArray<GfVec3f> extent(2);
+        VtVec3fArray extent(2);
         // Compute the extent using the raw points
         UsdGeomPointBased::ComputeExtent(points, &extent);
 
@@ -510,8 +510,8 @@ UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(const MFnMesh& meshFn,
     const int numFaceVertices = meshFn.numFaceVertices();
     const int numPolygons = meshFn.numPolygons();
 
-    VtArray<int> faceVertexCounts(numPolygons);
-    VtArray<int> faceVertexIndices(numFaceVertices);
+    VtIntArray faceVertexCounts(numPolygons);
+    VtIntArray faceVertexIndices(numFaceVertices);
     MIntArray mayaFaceVertexIndices; // used in loop below
     unsigned int curFaceVertexIndex = 0;
     for (int i = 0; i < numPolygons; i++) {
@@ -535,7 +535,7 @@ UsdMayaMeshWriteUtils::writeInvisibleFacesData(const MFnMesh& meshFn,
     const uint32_t count = mayaHoles.length();
     if (count)
     {
-        VtArray<int32_t> subdHoles(count);
+        VtIntArray subdHoles(count);
         uint32_t* ptr = &mayaHoles[0];
         // use memcpy() to copy the data. HS April 20, 2019
         memcpy((int32_t*)subdHoles.data(), ptr, count * sizeof(uint32_t));

@@ -728,8 +728,8 @@ UsdMayaMeshUtil::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
     std::unordered_map<float,MSelectionList> elemsPerWeight;
 
     // Vert Creasing
-    VtArray<int>   subdCornerIndices;
-    VtArray<float> subdCornerSharpnesses;
+    VtIntArray   subdCornerIndices;
+    VtFloatArray subdCornerSharpnesses;
     mesh.GetCornerIndicesAttr().Get(&subdCornerIndices); // not animatable
     mesh.GetCornerSharpnessesAttr().Get(&subdCornerSharpnesses); // not animatable
     if (!subdCornerIndices.empty()) {
@@ -789,9 +789,9 @@ UsdMayaMeshUtil::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
     }
 
     // Edge Creasing
-    VtArray<int>   subdCreaseLengths;
-    VtArray<int>   subdCreaseIndices;
-    VtArray<float> subdCreaseSharpnesses;
+    VtIntArray   subdCreaseLengths;
+    VtIntArray   subdCreaseIndices;
+    VtFloatArray subdCreaseSharpnesses;
     mesh.GetCreaseLengthsAttr().Get(&subdCreaseLengths);
     mesh.GetCreaseIndicesAttr().Get(&subdCreaseIndices);
     mesh.GetCreaseSharpnessesAttr().Get(&subdCreaseSharpnesses);

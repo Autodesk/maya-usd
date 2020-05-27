@@ -44,7 +44,7 @@ namespace UsdMayaMeshWriteUtils
     /// Helper method for getting Maya mesh normals as a VtVec3fArray.
     MAYAUSD_CORE_PUBLIC
     bool getMeshNormals(const MFnMesh& mesh, 
-                        VtArray<GfVec3f>* normalsArray, 
+                        VtVec3fArray* normalsArray, 
                         TfToken* interpolation);
 
     /// Gets the subdivision scheme tagged for the Maya mesh by consulting the

@@ -1211,7 +1211,7 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                 "objectIndex", &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        VtArray<int> vtArray = _MapMayaToVtArray<MDoubleArray, double, int>(
+        VtIntArray vtArray = _MapMayaToVtArray<MDoubleArray, double, int>(
             objectIndex,
             [numPrototypes](double x) {
                 if (x < numPrototypes) {
@@ -1226,7 +1226,7 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                       usdTime, valueWriter);
     }
     else {
-        VtArray<int> vtArray;
+        VtIntArray vtArray;
         vtArray.assign(numInstances, 0);
         _SetAttribute(instancer.CreateProtoIndicesAttr(),
                       vtArray, usdTime, valueWriter);
