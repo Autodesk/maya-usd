@@ -148,19 +148,15 @@ UsdMayaMeshWriteUtils::getMeshNormals(const MFnMesh& mesh,
     normalsArray->resize(numFaceVertices);
     *interpolation = UsdGeomTokens->faceVarying;
 
-    MItMeshFaceVertex itFV(mesh.object());
-    unsigned int fvi = 0;
-    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
-        int normalId = itFV.normalId();
-        if (normalId < 0 ||
-                static_cast<size_t>(normalId) >= mayaNormals.length()) {
-            return false;
-        }
+    // get normal indices for all vertices of faces
+    MIntArray normalCounts, normalIndices;
+    mesh.getNormalIds(normalCounts, normalIndices);
 
-        MFloatVector normal = mayaNormals[normalId];
-        (*normalsArray)[fvi][0] = normal[0];
-        (*normalsArray)[fvi][1] = normal[1];
-        (*normalsArray)[fvi][2] = normal[2];
+    for (size_t i = 0; i < normalIndices.length(); ++i) {
+        MFloatVector normal = mayaNormals[normalIndices[i]];
+        (*normalsArray)[i][0] = normal[0];
+        (*normalsArray)[i][1] = normal[1];
+        (*normalsArray)[i][2] = normal[2];
     }
 
     return true;
@@ -358,12 +354,8 @@ UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
     const float* mayaRawPoints = referenceMesh.getRawPoints(&status);
     const int numVertices = referenceMesh.numVertices();
     VtArray<GfVec3f> points(numVertices);
-    for (int i = 0; i < numVertices; ++i) {
-        const int floatIndex = i * 3;
-        points[i].Set(mayaRawPoints[floatIndex],
-                        mayaRawPoints[floatIndex + 1],
-                        mayaRawPoints[floatIndex + 2]);
-    }
+
+    memcpy(points.data(), mayaRawPoints, numVertices * sizeof(float) * 3);
 
     UsdGeomPrimvar primVar = primSchema.CreatePrimvar(
         UsdUtilsGetPrefName(),
