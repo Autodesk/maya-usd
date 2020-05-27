@@ -1360,10 +1360,19 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     kSolidColorStr, stateToCommit._instanceColors);
             }
         }
+#if MAYA_API_VERSION >= 20210000
+        else if (newInstanceCount >= 1) {
+#else
+        // In Maya 2020 and before, GPU instancing and consolidation are two separate systems that
+        // cannot be used by a render item at the same time. In case of single instance, we keep
+        // the original render item to allow consolidation with other prims. In case of multiple
+        // instances, we need to disable consolidation to allow GPU instancing to be used.
+        else if (newInstanceCount == 1) {
+            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
+        }
         else if (newInstanceCount > 1) {
-            // Turn off consolidation to allow GPU instancing to be used for
-            // multiple instances.
             setWantConsolidation(*renderItem, false);
+#endif
             drawScene.setInstanceTransformArray(*renderItem,
                 stateToCommit._instanceTransforms);
 
@@ -1374,11 +1383,6 @@ HdVP2BasisCurves::_UpdateDrawItem(
             }
 
             stateToCommit._drawItemData._usingInstancedDraw = true;
-        }
-        else if (newInstanceCount == 1) {
-            // Special case for single instance prims. We will keep the original
-            // render item to allow consolidation.
-            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
         }
         else if (stateToCommit._worldMatrix != nullptr) {
             // Regular non-instanced prims. Consolidation has been turned on by
