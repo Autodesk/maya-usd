@@ -495,7 +495,7 @@ TranslatorMeshWrite::TranslatorMeshWrite(const MFnDependencyNode& depNodeFn,
         return;
     }
 
-    if (!UsdMayaMeshUtil::isMeshValid(dagPath)) {
+    if (!UsdMayaMeshWriteUtils::isMeshValid(dagPath)) {
         return;
     }
 

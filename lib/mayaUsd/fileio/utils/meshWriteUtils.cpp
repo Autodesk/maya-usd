@@ -119,9 +119,9 @@ namespace
 } // anonymous namespace
 
 bool
-UsdMayaMeshUtil::getMeshNormals(const MFnMesh& mesh,
-                                VtArray<GfVec3f>* normalsArray,
-                                TfToken* interpolation)
+UsdMayaMeshWriteUtils::getMeshNormals(const MFnMesh& mesh,
+                                      VtArray<GfVec3f>* normalsArray,
+                                      TfToken* interpolation)
 {
     MStatus status{MS::kSuccess};
 
@@ -171,7 +171,7 @@ UsdMayaMeshUtil::getMeshNormals(const MFnMesh& mesh,
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
 TfToken
-UsdMayaMeshUtil::getSubdivScheme(const MFnMesh& mesh)
+UsdMayaMeshWriteUtils::getSubdivScheme(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken schemeToken;
@@ -216,7 +216,7 @@ UsdMayaMeshUtil::getSubdivScheme(const MFnMesh& mesh)
 // We first look for the USD string attribute, and if not present we look for
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
-TfToken UsdMayaMeshUtil::getSubdivInterpBoundary(const MFnMesh& mesh)
+TfToken UsdMayaMeshWriteUtils::getSubdivInterpBoundary(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken interpBoundaryToken;
@@ -259,7 +259,7 @@ TfToken UsdMayaMeshUtil::getSubdivInterpBoundary(const MFnMesh& mesh)
     return interpBoundaryToken;
 }
 
-TfToken UsdMayaMeshUtil::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
+TfToken UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken sdFVLinearInterpolation;
@@ -294,7 +294,7 @@ TfToken UsdMayaMeshUtil::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
 }
 
 bool
-UsdMayaMeshUtil::isMeshValid(const MDagPath& dagPath)
+UsdMayaMeshWriteUtils::isMeshValid(const MDagPath& dagPath)
 {
     MStatus status{MS::kSuccess};
 
@@ -325,7 +325,7 @@ UsdMayaMeshUtil::isMeshValid(const MDagPath& dagPath)
 }
 
 void
-UsdMayaMeshUtil::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
+UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 {
     MStatus status{MS::kSuccess};
 

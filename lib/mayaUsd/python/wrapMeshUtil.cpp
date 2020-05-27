@@ -59,12 +59,12 @@ _GetMeshNormals(const std::string& meshDagPath)
         return make_tuple(normalsArray, interpolation);
     }
 
-    UsdMayaMeshUtil::getMeshNormals(meshObj, &normalsArray, &interpolation);
+    UsdMayaMeshWriteUtils::getMeshNormals(meshObj, &normalsArray, &interpolation);
 
     return make_tuple(normalsArray, interpolation);
 }
 
-// Dummy class for putting UsdMayaMeshUtil namespace functions in a Python
+// Dummy class for putting UsdMayaMeshWriteUtils namespace functions in a Python
 // MeshUtil namespace.
 class DummyScopeClass{};
 

@@ -38,11 +38,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdGeomMesh;
 
 // Utilities for dealing with writing USD from Maya mesh/subdiv tags.
-namespace UsdMayaMeshUtil
+namespace UsdMayaMeshWriteUtils
 {
     /// Helper method for getting Maya mesh normals as a VtVec3fArray.
     MAYAUSD_CORE_PUBLIC
-    bool getMeshNormals(const MFnMesh& mesh, VtArray<GfVec3f>* normalsArray, TfToken* interpolation);
+    bool getMeshNormals(const MFnMesh& mesh, 
+                        VtArray<GfVec3f>* normalsArray, 
+                        TfToken* interpolation);
 
     /// Gets the subdivision scheme tagged for the Maya mesh by consulting the
     /// adaptor for \c UsdGeomMesh.subdivisionSurface, and then falling back to
@@ -64,12 +66,12 @@ namespace UsdMayaMeshUtil
     TfToken getSubdivFVLinearInterpolation(const MFnMesh& mesh);
 
     MAYAUSD_CORE_PUBLIC
-    bool isMeshValid(const MDagPath&);
+    bool isMeshValid(const MDagPath& dagPath);
 
     MAYAUSD_CORE_PUBLIC
-    void exportReferenceMesh(UsdGeomMesh&, MObject);
+    void exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj);
 
-} // namespace UsdMayaMeshUtil
+} // namespace UsdMayaMeshWriteUtils
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
