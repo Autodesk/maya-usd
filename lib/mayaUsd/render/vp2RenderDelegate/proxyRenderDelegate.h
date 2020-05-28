@@ -186,7 +186,7 @@ private:
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
 
     bool                    _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
-    bool                    _selectionChanged{ false }; //!< Whether there is any selection change or not
+    bool                    _selectionChanged{ true };  //!< Whether there is any selection change or not
     bool                    _isProxySelected{ false };  //!< Whether the proxy shape is selected
     MColor                  _wireframeColor;            //!< Wireframe color assigned to the proxy shape
 
