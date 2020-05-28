@@ -115,7 +115,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 
     // Exporting reference object only once
     if (usdTime.IsDefault() && _GetExportArgs().exportReferenceObjects) {
-        UsdMayaMeshUtil::exportReferenceMesh(primSchema, GetMayaObject());
+        UsdMayaMeshWriteUtils::exportReferenceMesh(primSchema, GetMayaObject());
     }
 
     // Write UsdSkel skeletal skinning data first, since this function will
@@ -201,7 +201,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 
     // Read subdiv scheme tagging. If not set, we default to defaultMeshScheme
     // flag (this is specified by the job args but defaults to catmullClark).
-    TfToken sdScheme = UsdMayaMeshUtil::getSubdivScheme(finalMesh);
+    TfToken sdScheme = UsdMayaMeshWriteUtils::getSubdivScheme(finalMesh);
     if (sdScheme.IsEmpty()) {
         sdScheme = _GetExportArgs().defaultMeshScheme;
     }
@@ -210,12 +210,12 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     if (sdScheme == UsdGeomTokens->none) {
         // Polygonal mesh - export normals.
         bool emitNormals = true; // Default to emitting normals if no tagging.
-        UsdMayaMeshUtil::getEmitNormalsTag(finalMesh, &emitNormals);
+        UsdMayaMeshReadUtils::getEmitNormalsTag(finalMesh, &emitNormals);
         if (emitNormals) {
             VtArray<GfVec3f> meshNormals;
             TfToken normalInterp;
 
-            if (UsdMayaMeshUtil::getMeshNormals(
+            if (UsdMayaMeshWriteUtils::getMeshNormals(
                     geomMeshObj,
                     &meshNormals,
                     &normalInterp)) {
@@ -228,7 +228,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         }
     } else {
         // Subdivision surface - export subdiv-specific attributes.
-        TfToken sdInterpBound = UsdMayaMeshUtil::getSubdivInterpBoundary(
+        TfToken sdInterpBound = UsdMayaMeshWriteUtils::getSubdivInterpBoundary(
             finalMesh);
         if (!sdInterpBound.IsEmpty()) {
             _SetAttribute(primSchema.CreateInterpolateBoundaryAttr(),
@@ -236,7 +236,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         }
 
         TfToken sdFVLinearInterpolation =
-            UsdMayaMeshUtil::getSubdivFVLinearInterpolation(finalMesh);
+            UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(finalMesh);
         if (!sdFVLinearInterpolation.IsEmpty()) {
             _SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(),
                           sdFVLinearInterpolation);

@@ -566,7 +566,7 @@ namespace
 
 // This can be customized for specific pipelines.
 bool
-UsdMayaMeshUtil::getEmitNormalsTag(const MFnMesh& mesh, bool* value)
+UsdMayaMeshReadUtils::getEmitNormalsTag(const MFnMesh& mesh, bool* value)
 {
     MPlug plug = mesh.findPlug(MString(_meshTokens->USD_EmitNormals.GetText()));
     if (!plug.isNull()) {
@@ -578,7 +578,7 @@ UsdMayaMeshUtil::getEmitNormalsTag(const MFnMesh& mesh, bool* value)
 }
 
 void
-UsdMayaMeshUtil::setEmitNormalsTag(
+UsdMayaMeshReadUtils::setEmitNormalsTag(
         MFnMesh& meshFn,
         const bool emitNormals)
 {
@@ -596,7 +596,7 @@ UsdMayaMeshUtil::setEmitNormalsTag(
 }
 
 void
-UsdMayaMeshUtil::assignPrimvarsToMesh(const UsdGeomMesh& mesh, 
+UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh, 
                                       const MObject& meshObj,
                                       const TfToken::Set& excludePrimvarSet)
 {
@@ -676,7 +676,7 @@ UsdMayaMeshUtil::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
 }
 
 void 
-UsdMayaMeshUtil::assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj)
+UsdMayaMeshReadUtils::assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj)
 {
     if(meshObj.apiType() != MFn::kMesh){
         return;
@@ -702,7 +702,7 @@ UsdMayaMeshUtil::assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& me
 }
 
 MStatus
-UsdMayaMeshUtil::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
+UsdMayaMeshReadUtils::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
                                          MObject& meshObj,
                                          MFnMesh& meshFn )
 {

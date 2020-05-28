@@ -556,10 +556,14 @@ MString convert(const TfToken& token);
 MAYAUSD_CORE_PUBLIC
 std::string convert(const MString&);
 
+MAYAUSD_CORE_PUBLIC
+MDagPath getDagPath(const MFnDependencyNode& depNodeFn, const bool reportError = true);
+
+MAYAUSD_CORE_PUBLIC
+MDagPathMap<SdfPath> getDagPathMap(const MFnDependencyNode& depNodeFn, const SdfPath& usdPath);
+
 } // namespace UsdMayaUtil
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

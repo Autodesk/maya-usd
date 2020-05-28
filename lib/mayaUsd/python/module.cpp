@@ -24,7 +24,7 @@ TF_WRAP_MODULE {
     TF_WRAP(BlockSceneModificationContext);
     TF_WRAP(ColorSpace);
     TF_WRAP(DiagnosticDelegate);
-    TF_WRAP(MeshUtil);
+    TF_WRAP(MeshWriteUtils);
     TF_WRAP(Query);
     TF_WRAP(ReadUtil);
     TF_WRAP(RoundTripUtil);

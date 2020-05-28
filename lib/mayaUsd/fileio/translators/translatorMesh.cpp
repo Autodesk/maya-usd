@@ -212,11 +212,11 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     if (mesh.GetSubdivisionSchemeAttr().Get(&subdScheme) && subdScheme == UsdGeomTokens->none) {
          if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices()) &&
                  mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying) {
-             UsdMayaMeshUtil::setEmitNormalsTag(meshFn, true);
+             UsdMayaMeshReadUtils::setEmitNormalsTag(meshFn, true);
          }
     } 
     else {
-        stat = UsdMayaMeshUtil::assignSubDivTagsToMesh(mesh, m_meshObj, meshFn);
+        stat = UsdMayaMeshReadUtils::assignSubDivTagsToMesh(mesh, m_meshObj, meshFn);
     }
 
     // Copy UsdGeomMesh schema attrs into Maya if they're authored.
@@ -495,7 +495,7 @@ TranslatorMeshWrite::TranslatorMeshWrite(const MFnDependencyNode& depNodeFn,
         return;
     }
 
-    if (!UsdMayaMeshUtil::isMeshValid(dagPath)) {
+    if (!UsdMayaMeshWriteUtils::isMeshValid(dagPath)) {
         return;
     }
 
