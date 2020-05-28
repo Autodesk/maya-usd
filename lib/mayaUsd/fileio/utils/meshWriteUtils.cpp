@@ -36,6 +36,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/pointBased.h>
 #include <pxr/usd/usdGeom/primvar.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
@@ -148,7 +149,7 @@ namespace
 
 bool
 UsdMayaMeshWriteUtils::getMeshNormals(const MFnMesh& mesh,
-                                      VtArray<GfVec3f>* normalsArray,
+                                      VtVec3fArray* normalsArray,
                                       TfToken* interpolation)
 {
     MStatus status{MS::kSuccess};
@@ -381,7 +382,7 @@ UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 
     const float* mayaRawPoints = referenceMesh.getRawPoints(&status);
     const int numVertices = referenceMesh.numVertices();
-    VtArray<GfVec3f> points(numVertices);
+    VtVec3fArray points(numVertices);
 
     memcpy(points.data(), mayaRawPoints, numVertices * sizeof(float) * 3);
 
@@ -398,9 +399,9 @@ UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 }
 
 void
-UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
-                                           UsdGeomMesh& primSchema,
-                                           UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
+                                                 UsdGeomMesh& primSchema,
+                                                 UsdUtilsSparseValueWriter& valueWriter)
 {
     // Vert Creasing
     MUintArray mayaCreaseVertIds;
@@ -468,6 +469,77 @@ UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
                 creaseSharpnessesVt.begin());
             UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseSharpnessesAttr(), &creaseSharpnessesVt, valueWriter);
         }
+    }
+}
+
+void
+UsdMayaMeshWriteUtils::writePointsData(const MFnMesh& meshFn,
+                                       UsdGeomMesh& primSchema,
+                                       const UsdTimeCode& usdTime,
+                                       UsdUtilsSparseValueWriter& valueWriter)
+{
+    MStatus status{MS::kSuccess};
+
+    const uint32_t numVertices = meshFn.numVertices();
+    VtVec3fArray points(numVertices);
+    const float* pointsData = meshFn.getRawPoints(&status);
+
+    if(!status) {
+        MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + meshFn.fullPathName());
+        return;
+    }
+
+    // use memcpy() to copy the data. HS April 09, 2020
+    memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+
+    VtVec3fArray extent(2);
+    // Compute the extent using the raw points
+    UsdGeomPointBased::ComputeExtent(points, &extent);
+
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), &points, valueWriter, usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), &extent, valueWriter,usdTime);
+}
+
+void 
+UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(const MFnMesh& meshFn, 
+                                                  UsdGeomMesh& primSchema, 
+                                                  const UsdTimeCode& usdTime, 
+                                                  UsdUtilsSparseValueWriter& valueWriter)
+{
+    const int numFaceVertices = meshFn.numFaceVertices();
+    const int numPolygons = meshFn.numPolygons();
+
+    VtIntArray faceVertexCounts(numPolygons);
+    VtIntArray faceVertexIndices(numFaceVertices);
+    MIntArray mayaFaceVertexIndices; // used in loop below
+    unsigned int curFaceVertexIndex = 0;
+    for (int i = 0; i < numPolygons; i++) {
+        meshFn.getPolygonVertices(i, mayaFaceVertexIndices);
+        faceVertexCounts[i] = mayaFaceVertexIndices.length();
+        for (unsigned int j=0; j < mayaFaceVertexIndices.length(); j++) {
+            faceVertexIndices[ curFaceVertexIndex ] = mayaFaceVertexIndices[j]; // push_back
+            curFaceVertexIndex++;
+        }
+    }
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetFaceVertexCountsAttr(), &faceVertexCounts, valueWriter, usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetFaceVertexIndicesAttr(), &faceVertexIndices, valueWriter, usdTime);
+}
+
+void 
+UsdMayaMeshWriteUtils::writeInvisibleFacesData(const MFnMesh& meshFn, 
+                                               UsdGeomMesh& primSchema, 
+                                               UsdUtilsSparseValueWriter& valueWriter)
+{
+    MUintArray mayaHoles = meshFn.getInvisibleFaces();
+    const uint32_t count = mayaHoles.length();
+    if (count)
+    {
+        VtIntArray subdHoles(count);
+        uint32_t* ptr = &mayaHoles[0];
+        // use memcpy() to copy the data. HS April 20, 2019
+        memcpy((int32_t*)subdHoles.data(), ptr, count * sizeof(uint32_t));
+        // not animatable in Maya, so we'll set default only
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetHoleIndicesAttr(), &subdHoles, valueWriter);
     }
 }
 

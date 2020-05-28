@@ -160,44 +160,12 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         return true;
     }
 
-    unsigned int numVertices = geomMesh.numVertices();
-    unsigned int numPolygons = geomMesh.numPolygons();
-
     // Set mesh attrs ==========
-    // Get points
-    // TODO: Use memcpy()
-    const float* mayaRawPoints = geomMesh.getRawPoints(&status);
-    VtArray<GfVec3f> points(numVertices);
-    for (unsigned int i = 0; i < numVertices; i++) {
-        unsigned int floatIndex = i*3;
-        points[i].Set(mayaRawPoints[floatIndex],
-                      mayaRawPoints[floatIndex+1],
-                      mayaRawPoints[floatIndex+2]);
-    }
+    // Write points
+    UsdMayaMeshWriteUtils::writePointsData(geomMesh, primSchema, usdTime, *_GetSparseValueWriter());
 
-    VtArray<GfVec3f> extent(2);
-    // Compute the extent using the raw points
-    UsdGeomPointBased::ComputeExtent(points, &extent);
-
-    _SetAttribute(primSchema.GetPointsAttr(), &points, usdTime);
-    _SetAttribute(primSchema.CreateExtentAttr(), &extent, usdTime);
-
-    // Get faceVertexIndices
-    unsigned int numFaceVertices = geomMesh.numFaceVertices(&status);
-    VtArray<int>     faceVertexCounts(numPolygons);
-    VtArray<int>     faceVertexIndices(numFaceVertices);
-    MIntArray mayaFaceVertexIndices; // used in loop below
-    unsigned int curFaceVertexIndex = 0;
-    for (unsigned int i = 0; i < numPolygons; i++) {
-        geomMesh.getPolygonVertices(i, mayaFaceVertexIndices);
-        faceVertexCounts[i] = mayaFaceVertexIndices.length();
-        for (unsigned int j=0; j < mayaFaceVertexIndices.length(); j++) {
-            faceVertexIndices[ curFaceVertexIndex ] = mayaFaceVertexIndices[j]; // push_back
-            curFaceVertexIndex++;
-        }
-    }
-    _SetAttribute(primSchema.GetFaceVertexCountsAttr(), &faceVertexCounts, usdTime);
-    _SetAttribute(primSchema.GetFaceVertexIndicesAttr(), &faceVertexIndices, usdTime);
+    // Write faceVertexIndices
+    UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(geomMesh, primSchema, usdTime, *_GetSparseValueWriter());
 
     // Read subdiv scheme tagging. If not set, we default to defaultMeshScheme
     // flag (this is specified by the job args but defaults to catmullClark).
@@ -242,7 +210,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                           sdFVLinearInterpolation);
         }
 
-        UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(finalMesh, primSchema, *_GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(finalMesh, primSchema, *_GetSparseValueWriter());
     }
 
     // Holes - we treat InvisibleFaces as holes

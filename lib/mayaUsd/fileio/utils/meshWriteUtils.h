@@ -44,7 +44,7 @@ namespace UsdMayaMeshWriteUtils
     /// Helper method for getting Maya mesh normals as a VtVec3fArray.
     MAYAUSD_CORE_PUBLIC
     bool getMeshNormals(const MFnMesh& mesh, 
-                        VtArray<GfVec3f>* normalsArray, 
+                        VtVec3fArray* normalsArray, 
                         TfToken* interpolation);
 
     /// Gets the subdivision scheme tagged for the Maya mesh by consulting the
@@ -73,9 +73,30 @@ namespace UsdMayaMeshWriteUtils
     void exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj);
 
     MAYAUSD_CORE_PUBLIC
-    void assignSubDivTagsToUSDPrim(MFnMesh& meshFn, 
-                                   UsdGeomMesh& primSchema, 
+    void assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
+                                   UsdGeomMesh& primSchema,
                                    UsdUtilsSparseValueWriter& valueWriter);
+
+    void assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
+                                   UsdGeomMesh& primSchema,
+                                   UsdUtilsSparseValueWriter& valueWriter);
+
+    MAYAUSD_CORE_PUBLIC
+    void writePointsData(const MFnMesh& meshFn,
+                         UsdGeomMesh& primSchema,
+                         const UsdTimeCode& usdTime,
+                         UsdUtilsSparseValueWriter& valueWriter);
+
+    MAYAUSD_CORE_PUBLIC
+    void writeFaceVertexIndicesData(const MFnMesh& meshFn,
+                                    UsdGeomMesh& primSchema,
+                                    const UsdTimeCode& usdTime,
+                                    UsdUtilsSparseValueWriter& valueWriter);
+
+    MAYAUSD_CORE_PUBLIC
+    void writeInvisibleFacesData(const MFnMesh& meshFn,
+                                 UsdGeomMesh& primSchema,
+                                 UsdUtilsSparseValueWriter& valueWriter);
 
 } // namespace UsdMayaMeshWriteUtils
 
