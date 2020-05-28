@@ -68,7 +68,7 @@ namespace
 {
     /// Default value to use when collecting UVs from a UV set and a component
     /// has no authored value.
-    const GfVec2f DefaultUV = GfVec2f(0.f);
+    const GfVec2f UnauthoredUV = GfVec2f(0.f);
 
     // XXX: Note that this function is not exposed publicly since the USD schema
     // has been updated to conform to OpenSubdiv 3. We still look for this attribute
@@ -237,7 +237,7 @@ namespace
         setPrimvar(primVar, 
                    assignmentIndices,
                    VtValue(data),
-                   VtValue(DefaultUV),
+                   VtValue(UnauthoredUV),
                    usdTime,
                    valueWriter);
     }
@@ -736,8 +736,7 @@ UsdMayaMeshUtil::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, UsdGeomMesh& 
             continue;
         }
 
-        // XXX:bug 118447
-        // We should be able to configure the UV map name that triggers this
+        // XXX: We should be able to configure the UV map name that triggers this
         // behavior, and the name to which it exports.
         // The UV Set "map1" is renamed st. This is a Pixar/USD convention.
         TfToken setName(uvSetNames[i].asChar());
