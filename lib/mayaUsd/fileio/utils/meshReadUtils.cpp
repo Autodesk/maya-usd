@@ -15,7 +15,7 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
-#include "meshUtil.h"
+#include "meshReadUtils.h"
 
 #include <maya/MFloatVector.h>
 #include <maya/MFloatVectorArray.h>
@@ -566,7 +566,7 @@ namespace
 
 // This can be customized for specific pipelines.
 bool
-UsdMayaMeshUtil::GetEmitNormalsTag(const MFnMesh& mesh, bool* value)
+UsdMayaMeshReadUtils::getEmitNormalsTag(const MFnMesh& mesh, bool* value)
 {
     MPlug plug = mesh.findPlug(MString(_meshTokens->USD_EmitNormals.GetText()));
     if (!plug.isNull()) {
@@ -578,7 +578,7 @@ UsdMayaMeshUtil::GetEmitNormalsTag(const MFnMesh& mesh, bool* value)
 }
 
 void
-UsdMayaMeshUtil::SetEmitNormalsTag(
+UsdMayaMeshReadUtils::setEmitNormalsTag(
         MFnMesh& meshFn,
         const bool emitNormals)
 {
@@ -596,7 +596,7 @@ UsdMayaMeshUtil::SetEmitNormalsTag(
 }
 
 bool
-UsdMayaMeshUtil::GetMeshNormals(
+UsdMayaMeshReadUtils::getMeshNormals(
         const MFnMesh& mesh,
         VtArray<GfVec3f>* normalsArray,
         TfToken* interpolation)
@@ -649,7 +649,7 @@ UsdMayaMeshUtil::GetMeshNormals(
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
 TfToken
-UsdMayaMeshUtil::GetSubdivScheme(const MFnMesh& mesh)
+UsdMayaMeshReadUtils::getSubdivScheme(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken schemeToken;
@@ -694,7 +694,7 @@ UsdMayaMeshUtil::GetSubdivScheme(const MFnMesh& mesh)
 // We first look for the USD string attribute, and if not present we look for
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
-TfToken UsdMayaMeshUtil::GetSubdivInterpBoundary(const MFnMesh& mesh)
+TfToken UsdMayaMeshReadUtils::getSubdivInterpBoundary(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken interpBoundaryToken;
@@ -788,7 +788,7 @@ _GetOsd2FVInterpBoundary(const MFnMesh& mesh)
     return sdFVInterpBound;
 }
 
-TfToken UsdMayaMeshUtil::GetSubdivFVLinearInterpolation(const MFnMesh& mesh)
+TfToken UsdMayaMeshReadUtils::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken sdFVLinearInterpolation;
@@ -823,7 +823,7 @@ TfToken UsdMayaMeshUtil::GetSubdivFVLinearInterpolation(const MFnMesh& mesh)
 }
 
 void
-UsdMayaMeshUtil::assignPrimvarsToMesh(const UsdGeomMesh& mesh, 
+UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh, 
                                       const MObject& meshObj,
                                       const TfToken::Set& excludePrimvarSet)
 {
@@ -903,7 +903,7 @@ UsdMayaMeshUtil::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
 }
 
 void 
-UsdMayaMeshUtil::assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj)
+UsdMayaMeshReadUtils::assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj)
 {
     if(meshObj.apiType() != MFn::kMesh){
         return;
@@ -929,7 +929,7 @@ UsdMayaMeshUtil::assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& me
 }
 
 MStatus
-UsdMayaMeshUtil::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
+UsdMayaMeshReadUtils::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
                                          MObject& meshObj,
                                          MFnMesh& meshFn )
 {

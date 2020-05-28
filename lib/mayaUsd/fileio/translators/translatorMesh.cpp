@@ -38,7 +38,7 @@
 #include <maya/MPointArray.h>
 #include <maya/MString.h>
 
-#include <mayaUsd/fileio/utils/meshUtil.h>
+#include <mayaUsd/fileio/utils/meshReadUtils.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/pointBasedDeformerNode.h>
 #include <mayaUsd/nodes/stageNode.h>
@@ -211,11 +211,11 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     if (mesh.GetSubdivisionSchemeAttr().Get(&subdScheme) && subdScheme == UsdGeomTokens->none) {
          if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices()) &&
                  mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying) {
-             UsdMayaMeshUtil::SetEmitNormalsTag(meshFn, true);
+             UsdMayaMeshReadUtils::setEmitNormalsTag(meshFn, true);
          }
     } 
     else {
-        stat = UsdMayaMeshUtil::assignSubDivTagsToMesh(mesh, m_meshObj, meshFn);
+        stat = UsdMayaMeshReadUtils::assignSubDivTagsToMesh(mesh, m_meshObj, meshFn);
     }
 
     // Copy UsdGeomMesh schema attrs into Maya if they're authored.

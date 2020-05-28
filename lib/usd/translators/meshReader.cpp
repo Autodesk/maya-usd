@@ -25,7 +25,7 @@
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
 #include <mayaUsd/fileio/translators/translatorMesh.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/utils/meshUtil.h>
+#include <mayaUsd/fileio/utils/meshReadUtils.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/utils/util.h>
@@ -139,11 +139,11 @@ MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
     assignMaterial(mesh, _GetArgs(), meshRead.meshObject(), context);
 
     // assign primvars to mesh
-    UsdMayaMeshUtil::assignPrimvarsToMesh( mesh, 
+    UsdMayaMeshReadUtils::assignPrimvarsToMesh( mesh, 
                                            meshRead.meshObject(),
                                            _GetArgs().GetExcludePrimvarNames());
     // assign invisible faces
-    UsdMayaMeshUtil::assignInvisibleFaces(mesh, meshRead.meshObject());
+    UsdMayaMeshReadUtils::assignInvisibleFaces(mesh, meshRead.meshObject());
 
     return true;
 }

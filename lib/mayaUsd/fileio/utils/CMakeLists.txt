@@ -4,7 +4,7 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         adaptor.cpp
-        meshUtil.cpp
+        meshReadUtils.cpp
         readUtil.cpp
         roundTripUtil.cpp
         shadingUtil.cpp
@@ -15,7 +15,7 @@ target_sources(${PROJECT_NAME}
 
 set(headers
     adaptor.h
-    meshUtil.h
+    meshReadUtils.h
     readUtil.h
     roundTripUtil.h
     shadingUtil.h
