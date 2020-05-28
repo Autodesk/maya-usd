@@ -224,7 +224,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 
     // == Write UVSets as Vec2f Primvars
     if (_GetExportArgs().exportMeshUVs) {
-        UsdMayaMeshUtil::writeUVSetsAsVec2fPrimvars(finalMesh, primSchema, usdTime, *_GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(finalMesh, primSchema, usdTime, *_GetSparseValueWriter());
     }
 
     // == Gather ColorSets

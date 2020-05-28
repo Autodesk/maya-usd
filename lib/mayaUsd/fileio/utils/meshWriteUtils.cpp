@@ -641,11 +641,11 @@ UsdMayaMeshWriteUtils::writeInvisibleFacesData(const MFnMesh& meshFn,
 }
 
 bool
-UsdMayaMeshUtil::getMeshUVSetData(const MFnMesh& mesh,
-                                  const MString& uvSetName,
-                                  VtArray<GfVec2f>* uvArray,
-                                  TfToken* interpolation,
-                                  VtArray<int>* assignmentIndices)
+UsdMayaMeshWriteUtils::getMeshUVSetData(const MFnMesh& mesh,
+                                        const MString& uvSetName,
+                                        VtVec2fArray* uvArray,
+                                        TfToken* interpolation,
+                                        VtIntArray* assignmentIndices)
 {
     MStatus status{MS::kSuccess};
 
@@ -704,7 +704,10 @@ UsdMayaMeshUtil::getMeshUVSetData(const MFnMesh& mesh,
 }
 
 bool 
-UsdMayaMeshUtil::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, UsdGeomMesh& primSchema, const UsdTimeCode& usdTime, UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, 
+                                                  UsdGeomMesh& primSchema, 
+                                                  const UsdTimeCode& usdTime, 
+                                                  UsdUtilsSparseValueWriter& valueWriter)
 {
     MStatus status{MS::kSuccess};
 
@@ -717,15 +720,15 @@ UsdMayaMeshUtil::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, UsdGeomMesh& 
     }
 
     for (unsigned int i = 0; i < uvSetNames.length(); ++i) {
-        VtArray<GfVec2f> uvValues;
+        VtVec2fArray uvValues;
         TfToken interpolation;
-        VtArray<int> assignmentIndices;
+        VtIntArray assignmentIndices;
 
-        if (!UsdMayaMeshUtil::getMeshUVSetData( meshFn,
-                                                uvSetNames[i],
-                                                &uvValues,
-                                                &interpolation,
-                                                &assignmentIndices)) {
+        if (!UsdMayaMeshWriteUtils::getMeshUVSetData( meshFn,
+                                                      uvSetNames[i],
+                                                      &uvValues,
+                                                      &interpolation,
+                                                      &assignmentIndices)) {
             continue;
         }
 

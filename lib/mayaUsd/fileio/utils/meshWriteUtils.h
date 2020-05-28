@@ -98,6 +98,19 @@ namespace UsdMayaMeshWriteUtils
                                  UsdGeomMesh& primSchema,
                                  UsdUtilsSparseValueWriter& valueWriter);
 
+    MAYAUSD_CORE_PUBLIC
+    bool getMeshUVSetData(const MFnMesh& mesh,
+                          const MString& uvSetName,
+                          VtVec2fArray* uvArray,
+                          TfToken* interpolation,
+                          VtIntArray* assignmentIndices);
+
+    MAYAUSD_CORE_PUBLIC
+    bool writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn,
+                                    UsdGeomMesh& primSchema,
+                                    const UsdTimeCode& usdTime,
+                                    UsdUtilsSparseValueWriter& valueWriter);
+
 } // namespace UsdMayaMeshWriteUtils
 
 PXR_NAMESPACE_CLOSE_SCOPE
