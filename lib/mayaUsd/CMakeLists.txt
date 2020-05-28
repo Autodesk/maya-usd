@@ -165,6 +165,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
 # -----------------------------------------------------------------------------
 add_subdirectory(ae)
 add_subdirectory(base)
+add_subdirectory(commands)
 add_subdirectory(fileio)
 add_subdirectory(listeners)
 add_subdirectory(nodes)
