@@ -72,13 +72,6 @@ private:
     /// This should only be called once at the default time.
     MObject writeSkinningData(UsdGeomMesh& primSchema);
 
-    bool _GetMeshUVSetData(
-            const MObject& meshObj,
-            const MString& uvSetName,
-            VtArray<GfVec2f>* uvArray,
-            TfToken* interpolation,
-            VtArray<int>* assignmentIndices);
-
     bool _GetMeshColorSetData(
             const MObject& meshObj,
             const MString& colorSet,
@@ -120,14 +113,6 @@ private:
             const TfToken& interpolation,
             const VtArray<int>& assignmentIndices,
             bool clamped);
-
-    bool _createUVPrimVar(
-            UsdGeomGprim& primSchema,
-            const TfToken& name,
-            const UsdTimeCode& usdTime,
-            const VtArray<GfVec2f>& data,
-            const TfToken& interpolation,
-            const VtArray<int>& assignmentIndices);
 
     /// Adds displayColor and displayOpacity primvars using the given color,
     /// alpha, and assignment data if the \p primSchema does not already have
@@ -171,10 +156,6 @@ private:
     /// XXX In theory you could have an animated input mesh before the
     /// skinCluster is applied but we don't support that right now.
     bool _IsMeshAnimated() const;
-
-    /// Default value to use when collecting UVs from a UV set and a component
-    /// has no authored value.
-    static const GfVec2f _DefaultUV;
 
     /// Default values to use when collecting colors based on shader values
     /// and an object or component has no assigned shader.

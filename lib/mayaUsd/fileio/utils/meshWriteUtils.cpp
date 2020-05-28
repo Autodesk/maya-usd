@@ -66,6 +66,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 namespace
 {
+    /// Default value to use when collecting UVs from a UV set and a component
+    /// has no authored value.
+    const GfVec2f UnauthoredUV = GfVec2f(0.f);
+
     // XXX: Note that this function is not exposed publicly since the USD schema
     // has been updated to conform to OpenSubdiv 3. We still look for this attribute
     // on Maya nodes specifying this value from OpenSubdiv 2, but we translate the
@@ -143,6 +147,99 @@ namespace
                 creaseSharpnesses->push_back(sharpness);
             }
         }
+    }
+
+    void
+    setPrimvar( const UsdGeomPrimvar& primvar,
+                const VtIntArray& indices,
+                const VtValue& values,
+                const VtValue& defaultValue,
+                const UsdTimeCode& usdTime,
+                UsdUtilsSparseValueWriter& valueWriter)
+    {
+        // Simple case of non-indexed primvars.
+        if (indices.empty()) {
+            UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), values, valueWriter, usdTime);
+            return;
+        }
+
+        // The mesh writer writes primvars only at default time or at time samples,
+        // but never both. We depend on that fact here to do different things
+        // depending on whether you ever export the default-time data or not.
+        if (usdTime.IsDefault()) {
+            // If we are only exporting the default values, then we know
+            // definitively whether we need to pad the values array with the
+            // unassigned value or not.
+            if (UsdMayaUtil::containsUnauthoredValues(indices)) {
+                primvar.SetUnauthoredValuesIndex(0);
+
+                const VtValue paddedValues = UsdMayaUtil::pushFirstValue(values, defaultValue);
+                if (!paddedValues.IsEmpty()) {
+                    UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), paddedValues, valueWriter, usdTime);
+                    UsdMayaWriteUtil::SetAttribute(primvar.CreateIndicesAttr(), UsdMayaUtil::shiftIndices(indices, 1), valueWriter, usdTime);
+                }
+                else {
+                    TF_CODING_ERROR("Unable to pad values array for <%s>",
+                            primvar.GetAttr().GetPath().GetText());
+                }
+            }
+            else {
+                UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), values, valueWriter, usdTime);
+                UsdMayaWriteUtil::SetAttribute(primvar.CreateIndicesAttr(), indices, valueWriter, usdTime);
+            }
+        }
+        else {
+            // If we are exporting animation, then we don't know definitively
+            // whether we need to set the unauthoredValuesIndex.
+            // In order to keep the primvar valid throughout the entire export
+            // process, _always_ pad the values array with the unassigned value,
+            // then go back and clean it up during the post-export.
+            if (primvar.GetUnauthoredValuesIndex() != 0 && UsdMayaUtil::containsUnauthoredValues(indices)) {
+                primvar.SetUnauthoredValuesIndex(0);
+            }
+
+            const VtValue paddedValues = UsdMayaUtil::pushFirstValue(values, defaultValue);
+            if (!paddedValues.IsEmpty()) {
+                UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), paddedValues, valueWriter, usdTime);
+                UsdMayaWriteUtil::SetAttribute(primvar.CreateIndicesAttr(), UsdMayaUtil::shiftIndices(indices, 1), valueWriter, usdTime);
+            }
+            else {
+                TF_CODING_ERROR("Unable to pad values array for <%s>",
+                        primvar.GetAttr().GetPath().GetText());
+            }
+        }
+    }
+
+    void 
+    createUVPrimVar( UsdGeomGprim &primSchema,
+                     const TfToken& name,
+                     const UsdTimeCode& usdTime,
+                     const VtArray<GfVec2f>& data,
+                     const TfToken& interpolation,
+                     const VtArray<int>& assignmentIndices,
+                     UsdUtilsSparseValueWriter& valueWriter)
+    {
+        const unsigned int numValues = data.size();
+        if (numValues == 0) {
+            return;
+        }
+
+        TfToken interp = interpolation;
+        if (numValues == 1 && interp == UsdGeomTokens->constant) {
+            interp = TfToken();
+        }
+
+        SdfValueTypeName uvValueType = (UsdMayaWriteUtil::WriteUVAsFloat2())?
+            (SdfValueTypeNames->Float2Array) : (SdfValueTypeNames->TexCoord2fArray); 
+
+        UsdGeomPrimvar primVar = primSchema.CreatePrimvar(name, uvValueType, interp);
+
+        setPrimvar(primVar, 
+                   assignmentIndices,
+                   VtValue(data),
+                   VtValue(UnauthoredUV),
+                   usdTime,
+                   valueWriter);
     }
 
 } // anonymous namespace
@@ -541,6 +638,116 @@ UsdMayaMeshWriteUtils::writeInvisibleFacesData(const MFnMesh& meshFn,
         // not animatable in Maya, so we'll set default only
         UsdMayaWriteUtil::SetAttribute(primSchema.GetHoleIndicesAttr(), &subdHoles, valueWriter);
     }
+}
+
+bool
+UsdMayaMeshUtil::getMeshUVSetData(const MFnMesh& mesh,
+                                  const MString& uvSetName,
+                                  VtArray<GfVec2f>* uvArray,
+                                  TfToken* interpolation,
+                                  VtArray<int>* assignmentIndices)
+{
+    MStatus status{MS::kSuccess};
+
+    // Sanity check first to make sure this UV set even has assigned values
+    // before we attempt to do anything with the data.
+    MIntArray uvCounts, uvIds;
+    status = mesh.getAssignedUVs(uvCounts, uvIds, &uvSetName);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+    if (uvCounts.length() == 0 || uvIds.length() == 0) {
+        return false;
+    }
+
+    // using itFV.getUV() does not always give us the right answer, so
+    // instead, we have to use itFV.getUVIndex() and use that to index into the
+    // UV set.
+    MFloatArray uArray;
+    MFloatArray vArray;
+    mesh.getUVs(uArray, vArray, &uvSetName);
+    if (uArray.length() != vArray.length()) {
+        return false;
+    }
+
+    // We'll populate the assignment indices for every face vertex, but we'll
+    // only push values into the data if the face vertex has a value. All face
+    // vertices are initially unassigned/unauthored.
+    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
+    uvArray->clear();
+    assignmentIndices->assign((size_t)numFaceVertices, -1);
+    *interpolation = UsdGeomTokens->faceVarying;
+
+    MItMeshFaceVertex itFV(mesh.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
+        if (!itFV.hasUVs(uvSetName)) {
+            // No UVs for this faceVertex, so leave it unassigned.
+            continue;
+        }
+
+        int uvIndex;
+        itFV.getUVIndex(uvIndex, &uvSetName);
+        if (uvIndex < 0 || static_cast<size_t>(uvIndex) >= uArray.length()) {
+            return false;
+        }
+
+        GfVec2f value(uArray[uvIndex], vArray[uvIndex]);
+        uvArray->push_back(value);
+        (*assignmentIndices)[fvi] = uvArray->size() - 1;
+    }
+
+    UsdMayaUtil::MergeEquivalentIndexedValues(uvArray, assignmentIndices);
+    UsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh, interpolation, assignmentIndices);
+
+    return true;
+}
+
+bool 
+UsdMayaMeshUtil::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, UsdGeomMesh& primSchema, const UsdTimeCode& usdTime, UsdUtilsSparseValueWriter& valueWriter)
+{
+    MStatus status{MS::kSuccess};
+
+    MStringArray uvSetNames;
+
+    status = meshFn.getUVSetNames(uvSetNames);
+
+    if(!status) {
+        return false;
+    }
+
+    for (unsigned int i = 0; i < uvSetNames.length(); ++i) {
+        VtArray<GfVec2f> uvValues;
+        TfToken interpolation;
+        VtArray<int> assignmentIndices;
+
+        if (!UsdMayaMeshUtil::getMeshUVSetData( meshFn,
+                                                uvSetNames[i],
+                                                &uvValues,
+                                                &interpolation,
+                                                &assignmentIndices)) {
+            continue;
+        }
+
+        // XXX: We should be able to configure the UV map name that triggers this
+        // behavior, and the name to which it exports.
+        // The UV Set "map1" is renamed st. This is a Pixar/USD convention.
+        TfToken setName(uvSetNames[i].asChar());
+        if (setName == "map1") {
+            setName = UsdUtilsGetPrimaryUVSetName();
+        }
+
+        // create UV PrimVar
+        createUVPrimVar(primSchema,
+                        setName,
+                        usdTime,
+                        uvValues,
+                        interpolation,
+                        assignmentIndices,
+                        valueWriter);
+    }
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

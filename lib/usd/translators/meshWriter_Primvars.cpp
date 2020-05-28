@@ -35,73 +35,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-bool
-PxrUsdTranslators_MeshWriter::_GetMeshUVSetData(
-        const MObject& meshObj,
-        const MString& uvSetName,
-        VtArray<GfVec2f>* uvArray,
-        TfToken* interpolation,
-        VtArray<int>* assignmentIndices)
-{
-    MStatus status;
-    MFnMesh mesh(meshObj);
-
-    // Sanity check first to make sure this UV set even has assigned values
-    // before we attempt to do anything with the data.
-    MIntArray uvCounts, uvIds;
-    status = mesh.getAssignedUVs(uvCounts, uvIds, &uvSetName);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-    if (uvCounts.length() == 0 || uvIds.length() == 0) {
-        return false;
-    }
-
-    // using itFV.getUV() does not always give us the right answer, so
-    // instead, we have to use itFV.getUVIndex() and use that to index into the
-    // UV set.
-    MFloatArray uArray;
-    MFloatArray vArray;
-    mesh.getUVs(uArray, vArray, &uvSetName);
-    if (uArray.length() != vArray.length()) {
-        return false;
-    }
-
-    // We'll populate the assignment indices for every face vertex, but we'll
-    // only push values into the data if the face vertex has a value. All face
-    // vertices are initially unassigned/unauthored.
-    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
-    uvArray->clear();
-    assignmentIndices->assign((size_t)numFaceVertices, -1);
-    *interpolation = UsdGeomTokens->faceVarying;
-
-    MItMeshFaceVertex itFV(meshObj);
-    unsigned int fvi = 0;
-    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
-        if (!itFV.hasUVs(uvSetName)) {
-            // No UVs for this faceVertex, so leave it unassigned.
-            continue;
-        }
-
-        int uvIndex;
-        itFV.getUVIndex(uvIndex, &uvSetName);
-        if (uvIndex < 0 || static_cast<size_t>(uvIndex) >= uArray.length()) {
-            return false;
-        }
-
-        GfVec2f value(uArray[uvIndex], vArray[uvIndex]);
-        uvArray->push_back(value);
-        (*assignmentIndices)[fvi] = uvArray->size() - 1;
-    }
-
-    UsdMayaUtil::MergeEquivalentIndexedValues(uvArray,
-                                                 assignmentIndices);
-    UsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
-                                                      interpolation,
-                                                      assignmentIndices);
-
-    return true;
-}
 
 // This function condenses distinct indices that point to the same color values
 // (the combination of RGB AND Alpha) to all point to the same index for that
@@ -464,38 +397,6 @@ bool PxrUsdTranslators_MeshWriter::_createRGBAPrimVar(
     if (clamped) {
         UsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
     }
-
-    return true;
-}
-
-bool PxrUsdTranslators_MeshWriter::_createUVPrimVar(
-        UsdGeomGprim &primSchema,
-        const TfToken& name,
-        const UsdTimeCode& usdTime,
-        const VtArray<GfVec2f>& data,
-        const TfToken& interpolation,
-        const VtArray<int>& assignmentIndices)
-{
-    unsigned int numValues = data.size();
-    if (numValues == 0) {
-        return false;
-    }
-
-    TfToken interp = interpolation;
-    if (numValues == 1 && interp == UsdGeomTokens->constant) {
-        interp = TfToken();
-    }
-
-    SdfValueTypeName uvValueType = (UsdMayaWriteUtil::WriteUVAsFloat2())?
-        (SdfValueTypeNames->Float2Array) : (SdfValueTypeNames->TexCoord2fArray); 
-    UsdGeomPrimvar primVar = 
-        primSchema.CreatePrimvar(name, uvValueType, interp);
-    _SetPrimvar(
-            primVar,
-            assignmentIndices,
-            VtValue(data),
-            VtValue(PxrUsdTranslators_MeshWriter::_DefaultUV),
-            usdTime);
 
     return true;
 }
