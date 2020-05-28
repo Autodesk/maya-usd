@@ -183,6 +183,12 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         virtual UsdStageRefPtr  getUsdStage() const;
         MAYAUSD_CORE_PUBLIC
         size_t                  getUsdStageVersion() const;
+        MAYAUSD_CORE_PUBLIC
+        void getDrawPurposeToggles(
+            bool*      drawRenderPurpose,
+            bool*      drawProxyPurpose,
+            bool*      drawGuidePurpose) const;
+
 
         MAYAUSD_CORE_PUBLIC
         bool GetAllRenderAttributes(

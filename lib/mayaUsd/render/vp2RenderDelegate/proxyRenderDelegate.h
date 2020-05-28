@@ -122,6 +122,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     HdVP2SelectionStatus GetPrimSelectionStatus(const SdfPath& path) const;
 
+    MAYAUSD_CORE_PUBLIC
+    bool DrawRenderTag(const TfToken& renderTag) const;
+
 private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
     ProxyRenderDelegate& operator=(const ProxyRenderDelegate&) = delete;
@@ -136,6 +139,8 @@ private:
 
     void _FilterSelection();
     void _UpdateSelectionStates();
+    void _UpdateRenderTags();
+    SdfPathVector _GetFilteredRprims(HdRprimCollection const& collection, TfTokenVector const& renderTags);
 
     /*! \brief  Hold all data related to the proxy shape.
 
@@ -146,11 +151,14 @@ private:
     */
     class ProxyShapeData
     {
-        const MayaUsdProxyShapeBase* const  _proxyShape{ nullptr };     //!< DG proxy shape node
-        const MDagPath                      _proxyDagPath;              //!< DAG path of the proxy shape (assuming no DAG instancing)
-        UsdStageRefPtr                      _usdStage;                  //!< USD stage pointer
-        size_t                              _excludePrimsVersion{ 0 };  //!< Last version of exluded prims used during render index populate
-        size_t                              _usdStageVersion{ 0 };      //!< Last version of stage used during render index populate
+        const MayaUsdProxyShapeBase* const  _proxyShape{ nullptr };         //!< DG proxy shape node
+        const MDagPath                      _proxyDagPath;                  //!< DAG path of the proxy shape (assuming no DAG instancing)
+        UsdStageRefPtr                      _usdStage;                      //!< USD stage pointer
+        size_t                              _excludePrimsVersion{ 0 };      //!< Last version of exluded prims used during render index populate
+        size_t                              _usdStageVersion{ 0 };          //!< Last version of stage used during render index populate
+        bool                                _drawRenderPurpose { false };   //!< Should the render delegate draw rprims with the "render" purpose
+        bool                                _drawProxyPurpose { false };    //!< Should the render delegate draw rprims with the "proxy" purpose
+        bool                                _drawGuidePurpose { false };    //!< Should the render delegate draw rprims with the "guide" purpose
     public:
         ProxyShapeData(const MayaUsdProxyShapeBase* proxyShape, const MDagPath& proxyDagPath);
         const MayaUsdProxyShapeBase* ProxyShape() const;
@@ -161,6 +169,10 @@ private:
         void UsdStageUpdated();
         bool IsExcludePrimsUpToDate() const;
         void ExcludePrimsUpdated();
+        void UpdatePurpose(bool* drawRenderPurposeChanged, bool* drawProxyPurposeChanged, bool* drawGuidePurposeChanged);
+        bool DrawRenderPurpose() const;
+        bool DrawProxyPurpose() const;
+        bool DrawGuidePurpose() const;
     };
     std::unique_ptr<ProxyShapeData>          _proxyShapeData;
 
