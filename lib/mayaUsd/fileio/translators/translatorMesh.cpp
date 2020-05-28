@@ -39,6 +39,7 @@
 #include <maya/MString.h>
 
 #include <mayaUsd/fileio/utils/meshReadUtils.h>
+#include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/pointBasedDeformerNode.h>
 #include <mayaUsd/nodes/stageNode.h>
@@ -485,6 +486,33 @@ TranslatorMeshRead::shapePath() const
     return m_shapePath;
 }
 
+TranslatorMeshWrite::TranslatorMeshWrite(const MFnDependencyNode& depNodeFn,
+                                         const UsdStageRefPtr& stage,
+                                         const SdfPath& usdPath,
+                                         const MDagPath& dagPath)
+{
+    if (!TF_VERIFY(dagPath.isValid())) {
+        return;
+    }
+
+    if (!UsdMayaMeshWriteUtils::isMeshValid(dagPath)) {
+        return;
+    }
+
+    m_usdMesh = UsdGeomMesh::Define(stage, usdPath);
+    if (!TF_VERIFY(
+            m_usdMesh,
+            "Could not define UsdGeomMesh at path '%s'\n",
+            usdPath.GetText())) {
+        return;
+    }
+}
+
+UsdGeomMesh 
+TranslatorMeshWrite::usdMesh() const
+{
+    return m_usdMesh;
+}
 
 } // namespace MayaUsd
 

@@ -74,4 +74,25 @@ private:
     SdfPath m_shapePath;
 };
 
+class MAYAUSD_CORE_PUBLIC TranslatorMeshWrite
+{
+public:
+    TranslatorMeshWrite(const MFnDependencyNode&,
+                        const UsdStageRefPtr&,
+                        const SdfPath&,
+                        const MDagPath&);
+
+    ~TranslatorMeshWrite() = default;
+
+    TranslatorMeshWrite(const TranslatorMeshWrite&) = delete;
+    TranslatorMeshWrite& operator=(const TranslatorMeshWrite&) = delete;
+    TranslatorMeshWrite(TranslatorMeshWrite&&) = delete;
+    TranslatorMeshWrite& operator=(TranslatorMeshWrite&&) = delete;
+
+    UsdGeomMesh usdMesh() const;
+
+private:
+    UsdGeomMesh m_usdMesh;
+};
+
 } // namespace MayaUsd

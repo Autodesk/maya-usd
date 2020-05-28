@@ -28,7 +28,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 
-#include <mayaUsd/fileio/utils/meshReadUtils.h>
+#include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/utils/util.h>
 
 using namespace boost::python;
@@ -59,12 +59,12 @@ _GetMeshNormals(const std::string& meshDagPath)
         return make_tuple(normalsArray, interpolation);
     }
 
-    UsdMayaMeshReadUtils::getMeshNormals(meshObj, &normalsArray, &interpolation);
+    UsdMayaMeshWriteUtils::getMeshNormals(meshObj, &normalsArray, &interpolation);
 
     return make_tuple(normalsArray, interpolation);
 }
 
-// Dummy class for putting UsdMayaMeshReadUtils namespace functions in a Python
+// Dummy class for putting UsdMayaMeshWriteUtils namespace functions in a Python
 // MeshUtil namespace.
 class DummyScopeClass{};
 
