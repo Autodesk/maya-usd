@@ -34,6 +34,7 @@
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/utils/userTaggedAttribute.h>
@@ -300,6 +301,34 @@ struct UsdMayaWriteUtil
             const double stride = 1.0);
 
     /// \}
+
+    /// Sets the value of \p attr to \p value at \p time with value
+    /// compression. When this method is used to write attribute values,
+    /// any redundant authoring of the default value or of time-samples
+    /// are avoided (by using the utility class UsdUtilsSparseValueWriter).
+    template <typename T>
+    static bool SetAttribute( const UsdAttribute& attr,
+                              const T& value,
+                              UsdUtilsSparseValueWriter& valueWriter,
+                              const UsdTimeCode time = UsdTimeCode::Default()) 
+    {
+        VtValue val(value);
+        return valueWriter.SetAttribute(attr, &val, time);
+    }
+
+    /// \overload
+    /// This overload takes the value by pointer and hence avoids a copy
+    /// of the value.
+    /// However, it swaps out the value held in \p value for efficiency,
+    /// leaving it in default-constructed state (value-initialized).
+    template <typename T>
+    static bool SetAttribute( const UsdAttribute& attr,
+                              T* value,
+                              UsdUtilsSparseValueWriter& valueWriter,
+                              const UsdTimeCode time = UsdTimeCode::Default()) 
+    {
+        return valueWriter.SetAttribute(attr, VtValue::Take(*value), time);
+    }
 
 };
 

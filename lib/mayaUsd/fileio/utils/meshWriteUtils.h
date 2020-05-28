@@ -32,6 +32,7 @@
 #include <pxr/base/vt/array.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,6 +71,11 @@ namespace UsdMayaMeshWriteUtils
 
     MAYAUSD_CORE_PUBLIC
     void exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj);
+
+    MAYAUSD_CORE_PUBLIC
+    void assignSubDivTagsToUSDPrim(MFnMesh& meshFn, 
+                                   UsdGeomMesh& primSchema, 
+                                   UsdUtilsSparseValueWriter& valueWriter);
 
 } // namespace UsdMayaMeshWriteUtils
 

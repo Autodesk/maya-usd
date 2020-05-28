@@ -116,6 +116,34 @@ namespace
         return sdFVInterpBound;
     }
 
+    void
+    compressCreases( const std::vector<int>& inCreaseIndices,
+                     const std::vector<float>& inCreaseSharpnesses,
+                     std::vector<int>* creaseLengths,
+                     std::vector<int>* creaseIndices,
+                     std::vector<float>* creaseSharpnesses)
+    {
+        // Process vertex pairs.
+        for (size_t i = 0; i < inCreaseSharpnesses.size(); i++) {
+            const float sharpness = inCreaseSharpnesses[i];
+            const int v0 = inCreaseIndices[i*2+0];
+            const int v1 = inCreaseIndices[i*2+1];
+            // Check if this edge represents a continuation of the last crease.
+            if (!creaseIndices->empty() && v0 == creaseIndices->back()
+                && sharpness == creaseSharpnesses->back()) {
+                // Extend the last crease.
+                creaseIndices->push_back(v1);
+                creaseLengths->back()++;
+            } else {
+                // Start a new crease.
+                creaseIndices->push_back(v0);
+                creaseIndices->push_back(v1);
+                creaseLengths->push_back(2);
+                creaseSharpnesses->push_back(sharpness);
+            }
+        }
+    }
+
 } // anonymous namespace
 
 bool
@@ -367,6 +395,80 @@ UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
     }
 
     primVar.GetAttr().Set(VtValue(points));
+}
+
+void
+UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
+                                           UsdGeomMesh& primSchema,
+                                           UsdUtilsSparseValueWriter& valueWriter)
+{
+    // Vert Creasing
+    MUintArray mayaCreaseVertIds;
+    MDoubleArray mayaCreaseVertValues;
+    meshFn.getCreaseVertices(mayaCreaseVertIds, mayaCreaseVertValues);
+    if (!TF_VERIFY(mayaCreaseVertIds.length() == mayaCreaseVertValues.length())) {
+        return;
+    }
+    if (mayaCreaseVertIds.length() > 0u) {
+        VtIntArray subdCornerIndices(mayaCreaseVertIds.length());
+        VtFloatArray subdCornerSharpnesses(mayaCreaseVertIds.length());
+        for (unsigned int i = 0u; i < mayaCreaseVertIds.length(); ++i) {
+            subdCornerIndices[i] = mayaCreaseVertIds[i];
+            subdCornerSharpnesses[i] = mayaCreaseVertValues[i];
+        }
+
+        // not animatable
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetCornerIndicesAttr(), &subdCornerIndices, valueWriter);
+
+        // not animatable
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetCornerSharpnessesAttr(), &subdCornerSharpnesses, valueWriter);
+    }
+
+    // Edge Creasing
+    int edgeVerts[2];
+    MUintArray mayaCreaseEdgeIds;
+    MDoubleArray mayaCreaseEdgeValues;
+    meshFn.getCreaseEdges(mayaCreaseEdgeIds, mayaCreaseEdgeValues);
+    if (!TF_VERIFY(mayaCreaseEdgeIds.length() == mayaCreaseEdgeValues.length())) {
+        return;
+    }
+    if (mayaCreaseEdgeIds.length() > 0u) {
+        std::vector<int> subdCreaseIndices(mayaCreaseEdgeIds.length() * 2);
+        // just construct directly from the array data
+        // by moving this out of the loop, you'll leverage SIMD ops here.
+        std::vector<float> subdCreaseSharpnesses(&mayaCreaseEdgeIds[0], &mayaCreaseEdgeIds[0] + mayaCreaseEdgeIds.length());
+        // avoid dso call by taking a copy of length. 
+        for (unsigned int i = 0u, n = mayaCreaseEdgeIds.length(); i < n; ++i) {
+            meshFn.getEdgeVertices(mayaCreaseEdgeIds[i], edgeVerts);
+            subdCreaseIndices[i * 2] = edgeVerts[0];
+            subdCreaseIndices[i * 2 + 1] = edgeVerts[1];
+        }
+
+        std::vector<int> numCreases;
+        std::vector<int> creases;
+        std::vector<float> creaseSharpnesses;
+        compressCreases(subdCreaseIndices, subdCreaseSharpnesses,
+                &numCreases, &creases, &creaseSharpnesses);
+
+        if (!creases.empty()) {
+            VtIntArray creaseIndicesVt(creases.size());
+            std::copy(creases.begin(), creases.end(), creaseIndicesVt.begin());
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseIndicesAttr(), &creaseIndicesVt, valueWriter);
+        }
+        if (!numCreases.empty()) {
+            VtIntArray creaseLengthsVt(numCreases.size());
+            std::copy(numCreases.begin(), numCreases.end(), creaseLengthsVt.begin());
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseLengthsAttr(), &creaseLengthsVt, valueWriter);
+        }
+        if (!creaseSharpnesses.empty()) {
+            VtFloatArray creaseSharpnessesVt(creaseSharpnesses.size());
+            std::copy(
+                creaseSharpnesses.begin(),
+                creaseSharpnesses.end(),
+                creaseSharpnessesVt.begin());
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseSharpnessesAttr(), &creaseSharpnessesVt, valueWriter);
+        }
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
