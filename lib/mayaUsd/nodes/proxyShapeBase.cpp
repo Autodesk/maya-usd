@@ -372,6 +372,7 @@ void
 MayaUsdProxyShapeBase::postConstructor()
 {
     setRenderable(true);
+    MayaUsdProxyStageInvalidateNotice(*this).Send();
 }
 
 /* virtual */
