@@ -106,18 +106,18 @@ MAYAUSD_NS_DEF
     }
 
     //---------------------------------------------------------------------------------
-    //! \brief  Type tranformation class to optain at compile time array type for a given Maya's
+    //! \brief  Type tranformation class to obtain at compile time array type for a given Maya
     //! templated type.
     template <class T> struct MakeMayaArray {
     };
 
-    //! \brief  Type tranformation class to optain at compile time array type for a given Maya's
+    //! \brief  Type tranformation class to obtain at compile time array type for a given Maya
     //! templated type.
     template <> struct MakeMayaArray<MMatrix> {
         using Type = MMatrixArray;
     };
 
-    //! \brief  Type tranformation class to optain at compile time array type for a given Maya's
+    //! \brief  Type tranformation class to obtain at compile time array type for a given Maya
     //! templated type.
     template <> struct MakeMayaArray<MString> {
         using Type = MStringArray;
@@ -127,7 +127,7 @@ MAYAUSD_NS_DEF
     template <class T> using MakeMayaArrayT = typename MakeMayaArray<T>::Type;
 
     //---------------------------------------------------------------------------------
-    //! \brief  Type tranformation class to optain at compile time array type for a given Usd
+    //! \brief  Type tranformation class to obtain at compile time array type for a given Usd
     //! templated type.
     template <class T> struct MakeUsdArray {
         using Type = VtArray<T>;

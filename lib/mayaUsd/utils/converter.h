@@ -141,7 +141,7 @@ MAYAUSD_NS_DEF
             , _handleToAttr(handleToAttr)
             , _attrToHandle(attrToHandle)
             , _handleToVtValue { handleToVtValue }
-            , _vtValueoHandle { vtValueoHandle }
+            , _vtValueToHandle { vtValueoHandle }
         {
         }
 
@@ -235,7 +235,7 @@ MAYAUSD_NS_DEF
         //! arguments to control converter behavior.
         void convert(const VtValue& src, MDataHandle& dst, const ConverterArgs& args) const
         {
-            _vtValueoHandle(src, dst, args);
+            _vtValueToHandle(src, dst, args);
         }
 
         //! \brief  Return whether a plug's attribute is a typed attribute with given type.
@@ -314,7 +314,7 @@ MAYAUSD_NS_DEF
         //! Pointer to a function responsible for converting data handle value to VtValue.
         MDataHandleToVtValueFn _handleToVtValue { nullptr };
         //! Pointer to a function responsible for converting VtValue to a given data handle.
-        VtValueToMDataHandleFn _vtValueoHandle { nullptr };
+        VtValueToMDataHandleFn _vtValueToHandle { nullptr };
     };
 
     //! \brief  Declaration of base typed converter struct. Each supported type will specialize this
