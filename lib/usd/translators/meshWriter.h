@@ -44,14 +44,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// Exports Maya mesh objects (MFnMesh)as UsdGeomMesh prims, taking into account
 /// subd/poly, skinning, reference objects, UVs, and color sets.
-class PxrUsdTranslators_MeshWriter final : public UsdMayaPrimWriter
+class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
 {
 public:
     PxrUsdTranslators_MeshWriter(const MFnDependencyNode& depNodeFn,
                                  const SdfPath& usdPath,
                                  UsdMayaWriteJobContext& jobCtx);
-
-    ~PxrUsdTranslators_MeshWriter() override {};
 
     void Write(const UsdTimeCode& usdTime) override;
     bool ExportsGprims() const override;
