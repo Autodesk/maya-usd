@@ -243,7 +243,7 @@ namespace
                      const UsdTimeCode& usdTime,
                      const VtArray<GfVec2f>& data,
                      const TfToken& interpolation,
-                     const VtArray<int>& assignmentIndices,
+                     const VtIntArray& assignmentIndices,
                      UsdUtilsSparseValueWriter& valueWriter)
     {
         const unsigned int numValues = data.size();
@@ -273,9 +273,9 @@ namespace
     // (the combination of RGB AND Alpha) to all point to the same index for that
     // value. This will potentially shrink the data arrays.
     void
-    MergeEquivalentColorSetValues(VtArray<GfVec3f>* colorSetRGBData,
-                                  VtArray<float>* colorSetAlphaData,
-                                  VtArray<int>* colorSetAssignmentIndices)
+    MergeEquivalentColorSetValues(VtVec3fArray* colorSetRGBData,
+                                  VtFloatArray* colorSetAlphaData,
+                                  VtIntArray* colorSetAssignmentIndices)
     {
         if (!colorSetRGBData || !colorSetAlphaData || !colorSetAssignmentIndices) {
             return;
@@ -304,7 +304,7 @@ namespace
             colorsWithAlphasData[i][3] = alpha;
         }
 
-        VtArray<int> mergedIndices(*colorSetAssignmentIndices);
+        VtIntArray mergedIndices(*colorSetAssignmentIndices);
         UsdMayaUtil::MergeEquivalentIndexedValues(&colorsWithAlphasData, &mergedIndices);
 
         // If we reduced the number of values by merging, copy the results back,
@@ -879,7 +879,7 @@ UsdMayaMeshWriteUtils::writeNormalsData(const MFnMesh& meshFn,
                                         const UsdTimeCode& usdTime, 
                                         UsdUtilsSparseValueWriter& valueWriter)
 {
-    VtArray<GfVec3f> meshNormals;
+    VtVec3fArray meshNormals;
     TfToken normalInterp;
 
     if (UsdMayaMeshWriteUtils::getMeshNormals(meshFn, &meshNormals,&normalInterp)) {
@@ -894,10 +894,10 @@ bool
 UsdMayaMeshWriteUtils::addDisplayPrimvars(UsdGeomGprim &primSchema,
                                           const UsdTimeCode& usdTime,
                                           const MFnMesh::MColorRepresentation colorRep,
-                                          const VtArray<GfVec3f>& RGBData,
-                                          const VtArray<float>& AlphaData,
+                                          const VtVec3fArray& RGBData,
+                                          const VtFloatArray& AlphaData,
                                           const TfToken& interpolation,
-                                          const VtArray<int>& assignmentIndices,
+                                          const VtIntArray& assignmentIndices,
                                           const bool clamped,
                                           const bool authored,
                                           UsdUtilsSparseValueWriter& valueWriter)
@@ -974,9 +974,9 @@ bool
 UsdMayaMeshWriteUtils::createRGBPrimVar(UsdGeomGprim &primSchema,
                                         const TfToken& name,
                                         const UsdTimeCode& usdTime,
-                                        const VtArray<GfVec3f>& data,
+                                        const VtVec3fArray& data,
                                         const TfToken& interpolation,
-                                        const VtArray<int>& assignmentIndices,
+                                        const VtIntArray& assignmentIndices,
                                         bool clamped,
                                         UsdUtilsSparseValueWriter& valueWriter)
 {
@@ -1011,10 +1011,10 @@ bool
 UsdMayaMeshWriteUtils::createRGBAPrimVar(UsdGeomGprim &primSchema,
                                          const TfToken& name,
                                          const UsdTimeCode& usdTime,
-                                         const VtArray<GfVec3f>& rgbData,
-                                         const VtArray<float>& alphaData,
+                                         const VtVec3fArray& rgbData,
+                                         const VtFloatArray& alphaData,
                                          const TfToken& interpolation,
-                                         const VtArray<int>& assignmentIndices,
+                                         const VtIntArray& assignmentIndices,
                                          bool clamped,
                                          UsdUtilsSparseValueWriter& valueWriter)
 {
@@ -1057,9 +1057,9 @@ bool
 UsdMayaMeshWriteUtils::createAlphaPrimVar(UsdGeomGprim &primSchema,
                                           const TfToken& name,
                                           const UsdTimeCode& usdTime,
-                                          const VtArray<float>& data,
+                                          const VtFloatArray& data,
                                           const TfToken& interpolation,
-                                          const VtArray<int>& assignmentIndices,
+                                          const VtIntArray& assignmentIndices,
                                           bool clamped,
                                           UsdUtilsSparseValueWriter& valueWriter)
 {
@@ -1095,13 +1095,13 @@ bool
 UsdMayaMeshWriteUtils::getMeshColorSetData(MFnMesh& mesh,
                                            const MString& colorSet,
                                            bool isDisplayColor,
-                                           const VtArray<GfVec3f>& shadersRGBData,
-                                           const VtArray<float>& shadersAlphaData,
-                                           const VtArray<int>& shadersAssignmentIndices,
-                                           VtArray<GfVec3f>* colorSetRGBData,
-                                           VtArray<float>* colorSetAlphaData,
+                                           const VtVec3fArray& shadersRGBData,
+                                           const VtFloatArray& shadersAlphaData,
+                                           const VtIntArray& shadersAssignmentIndices,
+                                           VtVec3fArray* colorSetRGBData,
+                                           VtFloatArray* colorSetAlphaData,
                                            TfToken* interpolation,
-                                           VtArray<int>* colorSetAssignmentIndices,
+                                           VtIntArray* colorSetAssignmentIndices,
                                            MFnMesh::MColorRepresentation* colorSetRep,
                                            bool* clamped)
 {

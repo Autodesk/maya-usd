@@ -131,10 +131,10 @@ namespace UsdMayaMeshWriteUtils
     bool addDisplayPrimvars(UsdGeomGprim& primSchema,
                             const UsdTimeCode& usdTime,
                             const MFnMesh::MColorRepresentation colorRep,
-                            const VtArray<GfVec3f>& RGBData,
-                            const VtArray<float>& AlphaData,
+                            const VtVec3fArray& RGBData,
+                            const VtFloatArray& AlphaData,
                             const TfToken& interpolation,
-                            const VtArray<int>& assignmentIndices, 
+                            const VtIntArray& assignmentIndices, 
                             const bool clamped,
                             const bool authored, 
                             UsdUtilsSparseValueWriter& valueWriter);
@@ -143,9 +143,9 @@ namespace UsdMayaMeshWriteUtils
     bool createRGBPrimVar(UsdGeomGprim& primSchema,
                           const TfToken& name,
                           const UsdTimeCode& usdTime,
-                          const VtArray<GfVec3f>& data,
+                          const VtVec3fArray& data,
                           const TfToken& interpolation,
-                          const VtArray<int>& assignmentIndices,
+                          const VtIntArray& assignmentIndices,
                           bool clamped,
                           UsdUtilsSparseValueWriter& valueWriter);
 
@@ -153,10 +153,10 @@ namespace UsdMayaMeshWriteUtils
     bool createRGBAPrimVar(UsdGeomGprim& primSchema,
                            const TfToken& name,
                            const UsdTimeCode& usdTime,
-                           const VtArray<GfVec3f>& rgbData,
-                           const VtArray<float>& alphaData,
+                           const VtVec3fArray& rgbData,
+                           const VtFloatArray& alphaData,
                            const TfToken& interpolation,
-                           const VtArray<int>& assignmentIndices,
+                           const VtIntArray& assignmentIndices,
                            bool clamped, 
                            UsdUtilsSparseValueWriter& valueWriter);
 
@@ -164,9 +164,9 @@ namespace UsdMayaMeshWriteUtils
     bool createAlphaPrimVar(UsdGeomGprim& primSchema,
                             const TfToken& name,
                             const UsdTimeCode& usdTime,
-                            const VtArray<float>& data,
+                            const VtFloatArray& data,
                             const TfToken& interpolation,
-                            const VtArray<int>& assignmentIndices,
+                            const VtIntArray& assignmentIndices,
                             bool clamped,
                             UsdUtilsSparseValueWriter& valueWriter);
 
@@ -181,13 +181,13 @@ namespace UsdMayaMeshWriteUtils
     bool getMeshColorSetData( MFnMesh& mesh,
                               const MString& colorSet,
                               bool isDisplayColor,
-                              const VtArray<GfVec3f>& shadersRGBData,
-                              const VtArray<float>& shadersAlphaData,
-                              const VtArray<int>& shadersAssignmentIndices,
-                              VtArray<GfVec3f>* colorSetRGBData,
-                              VtArray<float>* colorSetAlphaData,
+                              const VtVec3fArray& shadersRGBData,
+                              const VtFloatArray& shadersAlphaData,
+                              const VtIntArray& shadersAssignmentIndices,
+                              VtVec3fArray* colorSetRGBData,
+                              VtFloatArray* colorSetAlphaData,
                               TfToken* interpolation,
-                              VtArray<int>* colorSetAssignmentIndices,
+                              VtIntArray* colorSetAssignmentIndices,
                               MFnMesh::MColorRepresentation* colorSetRep,
                               bool* clamped);
 
