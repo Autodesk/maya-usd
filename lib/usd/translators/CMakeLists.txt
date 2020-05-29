@@ -24,7 +24,6 @@ target_sources(${TARGET_NAME}
         fileTextureWriter.cpp
         instancerWriter.cpp
         jointWriter.cpp
-        jointWriteUtils.cpp
         lightReader.cpp
         lightWriter.cpp
         locatorWriter.cpp
@@ -43,17 +42,6 @@ target_sources(${TARGET_NAME}
         skelReader.cpp
         strokeWriter.cpp
         xformReader.cpp
-)
-
-set(headers
-    jointWriteUtils.h
-)
-
-# -----------------------------------------------------------------------------
-# promoted headers
-# -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers}
-                          BASEDIR ${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------

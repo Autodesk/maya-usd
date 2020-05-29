@@ -40,19 +40,19 @@
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/pointBased.h>
 #include <pxr/usd/usdGeom/primvar.h>
-#include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usd/usdSkel/root.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMesh.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/jointWriteUtils.h>
 #include <mayaUsd/fileio/utils/meshReadUtils.h>
 #include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsd_Translators/jointWriteUtils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -125,21 +125,21 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         UsdMayaMeshUtil::exportReferenceMesh(primSchema, GetMayaObject());
     }
 
-    // Write UsdSkel skeletal skinning data first, since this function will
+    // Write UsdSkel skeletal skinning data first, since this will
     // determine whether we use the "input" or "final" mesh when exporting
     // mesh geometry. This should only be run once at default time.
     if (usdTime.IsDefault()) {
         const TfToken& exportSkin = _GetExportArgs().exportSkin;
         if (exportSkin != UsdMayaJobExportArgsTokens->auto_ &&
             exportSkin != UsdMayaJobExportArgsTokens->explicit_) {
-        
+
             _skelInputMesh = MObject();
-        
+
         }else if (exportSkin == UsdMayaJobExportArgsTokens->explicit_ &&
                   !UsdSkelRoot::Find(primSchema.GetPrim())) {
-        
+
             _skelInputMesh = MObject();
-        
+
         }else {
 
             SdfPath skelPath;
@@ -150,14 +150,16 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                                                                  _GetExportArgs().stripNamespaces, 
                                                                 *_GetSparseValueWriter());
 
-            // Add all skel primvars to the exclude set.
-            // We don't want later processing to stomp on any of our data.
-            _excludeColorSets.insert({_tokens->skelJointIndices,
-                                      _tokens->skelJointWeights,
-                                      _tokens->skelGeomBindTransform});
+            if(!_skelInputMesh.isNull()) {
+                // Add all skel primvars to the exclude set.
+                // We don't want later processing to stomp on any of our data.
+                _excludeColorSets.insert({_tokens->skelJointIndices,
+                                          _tokens->skelJointWeights,
+                                          _tokens->skelGeomBindTransform});
 
-            // Mark the bindings for post processing.
-            _writeJobCtx.MarkSkelBindings(primSchema.GetPrim().GetPath(), skelPath, exportSkin);
+                // Mark the bindings for post processing.
+                _writeJobCtx.MarkSkelBindings(primSchema.GetPrim().GetPath(), skelPath, exportSkin);
+            }
         }
     }
 

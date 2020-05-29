@@ -45,10 +45,9 @@
 #include <mayaUsd/fileio/translators/translatorSkel.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/jointWriteUtils.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
-
-#include <mayaUsd_Translators/jointWriteUtils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
