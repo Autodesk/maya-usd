@@ -58,20 +58,6 @@ public:
     bool ExportsGprims() const override;
     bool ShouldPruneChildren() const override;
 
-    /// Gets the joint name tokens for the given dag paths, assuming a joint
-    /// hierarchy with the given root joint.
-    static VtTokenArray GetJointNames(
-            const std::vector<MDagPath>& joints,
-            const MDagPath& rootJoint,
-            bool stripNamespaces);
-
-    /// Gets the expected path where a skeleton will be exported for
-    /// the given root joint. The skeleton both binds a skeleton and
-    /// holds root transformations of the joint hierarchy.
-    static SdfPath GetSkeletonPath(
-            const MDagPath& rootJoint,
-            bool stripNamespaces);
-
 private:
     bool _WriteRestState();
 

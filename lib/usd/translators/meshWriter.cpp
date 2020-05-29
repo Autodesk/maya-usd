@@ -40,12 +40,14 @@
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/pointBased.h>
 #include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdSkel/root.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMesh.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/jointWriteUtils.h>
 #include <mayaUsd/fileio/utils/meshReadUtils.h>
 #include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
@@ -67,6 +69,13 @@ const GfVec4f PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGBA = GfVec4f(
     PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGB[1],
     PxrUsdTranslators_MeshWriter::_ColorSetDefaultRGB[2],
     PxrUsdTranslators_MeshWriter::_ColorSetDefaultAlpha);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((skelJointIndices, "skel:jointIndices"))
+    ((skelJointWeights, "skel:jointWeights"))
+    ((skelGeomBindTransform, "skel:geomBindTransform"))
+);
 
 PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
         const MFnDependencyNode& depNodeFn,
@@ -109,18 +118,49 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         const UsdTimeCode& usdTime,
         UsdGeomMesh& primSchema)
 {
-    MStatus status = MS::kSuccess;
+    MStatus status{MS::kSuccess};
 
     // Exporting reference object only once
     if (usdTime.IsDefault() && _GetExportArgs().exportReferenceObjects) {
         UsdMayaMeshWriteUtils::exportReferenceMesh(primSchema, GetMayaObject());
     }
 
-    // Write UsdSkel skeletal skinning data first, since this function will
+    // Write UsdSkel skeletal skinning data first, since this will
     // determine whether we use the "input" or "final" mesh when exporting
     // mesh geometry. This should only be run once at default time.
     if (usdTime.IsDefault()) {
-        _skelInputMesh = writeSkinningData(primSchema);
+        const TfToken& exportSkin = _GetExportArgs().exportSkin;
+        if (exportSkin != UsdMayaJobExportArgsTokens->auto_ &&
+            exportSkin != UsdMayaJobExportArgsTokens->explicit_) {
+
+            _skelInputMesh = MObject();
+
+        }else if (exportSkin == UsdMayaJobExportArgsTokens->explicit_ &&
+                  !UsdSkelRoot::Find(primSchema.GetPrim())) {
+
+            _skelInputMesh = MObject();
+
+        }else {
+
+            SdfPath skelPath;
+            _skelInputMesh = UsdMayaJointUtil::writeSkinningData(primSchema,
+                                                                 GetUsdPath(),
+                                                                 GetDagPath(),
+                                                                 skelPath,
+                                                                 _GetExportArgs().stripNamespaces, 
+                                                                *_GetSparseValueWriter());
+
+            if(!_skelInputMesh.isNull()) {
+                // Add all skel primvars to the exclude set.
+                // We don't want later processing to stomp on any of our data.
+                _excludeColorSets.insert({_tokens->skelJointIndices,
+                                          _tokens->skelJointWeights,
+                                          _tokens->skelGeomBindTransform});
+
+                // Mark the bindings for post processing.
+                _writeJobCtx.MarkSkelBindings(primSchema.GetPrim().GetPath(), skelPath, exportSkin);
+            }
+        }
     }
 
     // This is the mesh that "lives" at the end of this dag node. We should
