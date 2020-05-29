@@ -39,11 +39,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdGeomMesh;
 
 // Utilities for dealing with writing USD from Maya mesh/subdiv tags.
-namespace UsdMayaMeshUtil
+namespace UsdMayaMeshWriteUtils
 {
     /// Helper method for getting Maya mesh normals as a VtVec3fArray.
     MAYAUSD_CORE_PUBLIC
-    bool getMeshNormals(const MFnMesh& mesh, VtArray<GfVec3f>* normalsArray, TfToken* interpolation);
+    bool getMeshNormals(const MFnMesh& mesh, 
+                        VtVec3fArray* normalsArray, 
+                        TfToken* interpolation);
 
     /// Gets the subdivision scheme tagged for the Maya mesh by consulting the
     /// adaptor for \c UsdGeomMesh.subdivisionSurface, and then falling back to
@@ -65,57 +67,108 @@ namespace UsdMayaMeshUtil
     TfToken getSubdivFVLinearInterpolation(const MFnMesh& mesh);
 
     MAYAUSD_CORE_PUBLIC
-    bool isMeshValid(const MDagPath&);
+    bool isMeshValid(const MDagPath& dagPath);
 
     MAYAUSD_CORE_PUBLIC
-    void exportReferenceMesh(UsdGeomMesh&, MObject);
+    void exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj);
 
     MAYAUSD_CORE_PUBLIC
-    void assignSubDivTagsToUSDPrim(MFnMesh&, UsdGeomMesh&, UsdUtilsSparseValueWriter&);
+    void assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
+                                   UsdGeomMesh& primSchema,
+                                   UsdUtilsSparseValueWriter& valueWriter);
+
+    void assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
+                                   UsdGeomMesh& primSchema,
+                                   UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    void writeSubdivInterpBound(MFnMesh&, UsdGeomMesh&, UsdUtilsSparseValueWriter&);
+    void writePointsData(const MFnMesh& meshFn,
+                         UsdGeomMesh& primSchema,
+                         const UsdTimeCode& usdTime,
+                         UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    void writeSubdivFVLinearInterpolation(MFnMesh&, UsdGeomMesh&, UsdUtilsSparseValueWriter&);
+    void writeFaceVertexIndicesData(const MFnMesh& meshFn,
+                                    UsdGeomMesh& primSchema,
+                                    const UsdTimeCode& usdTime,
+                                    UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    void writeVertexData(const MFnMesh&, UsdGeomMesh&, const UsdTimeCode&, UsdUtilsSparseValueWriter&);
+    void writeInvisibleFacesData(const MFnMesh& meshFn,
+                                 UsdGeomMesh& primSchema,
+                                 UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    void writeFaceVertexIndicesData(const MFnMesh&, UsdGeomMesh&, const UsdTimeCode&, UsdUtilsSparseValueWriter&);
+    bool getMeshUVSetData(const MFnMesh& mesh,
+                          const MString& uvSetName,
+                          VtVec2fArray* uvArray,
+                          TfToken* interpolation,
+                          VtIntArray* assignmentIndices);
 
     MAYAUSD_CORE_PUBLIC
-    void writeInvisibleFacesData(const MFnMesh&, UsdGeomMesh&, UsdUtilsSparseValueWriter&);
+    bool writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn,
+                                    UsdGeomMesh& primSchema,
+                                    const UsdTimeCode& usdTime,
+                                    UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    void writeNormalsData(const MFnMesh&, UsdGeomMesh&, const UsdTimeCode&, UsdUtilsSparseValueWriter&);
+    void writeSubdivInterpBound(MFnMesh& mesh,
+                                UsdGeomMesh& primSchema,
+                                UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    bool getMeshUVSetData(const MFnMesh&, const MString&, VtArray<GfVec2f>*, TfToken*, VtArray<int>*);
+    void writeSubdivFVLinearInterpolation(MFnMesh& meshFn, 
+                                          UsdGeomMesh& primSchema, 
+                                          UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    bool writeUVSetsAsVec2fPrimvars(const MFnMesh&, UsdGeomMesh&, const UsdTimeCode&, UsdUtilsSparseValueWriter&);
+    void writeNormalsData(const MFnMesh& meshFn,
+                          UsdGeomMesh& primSchema,
+                          const UsdTimeCode& usdTime,
+                          UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    bool addDisplayPrimvars(UsdGeomGprim&, const UsdTimeCode&, const MFnMesh::MColorRepresentation,
-                            const VtArray<GfVec3f>&, const VtArray<float>&, const TfToken&,
-                            const VtArray<int>&, const bool, const bool, UsdUtilsSparseValueWriter&);
+    bool addDisplayPrimvars(UsdGeomGprim& primSchema,
+                            const UsdTimeCode& usdTime,
+                            const MFnMesh::MColorRepresentation colorRep,
+                            const VtArray<GfVec3f>& RGBData,
+                            const VtArray<float>& AlphaData,
+                            const TfToken& interpolation,
+                            const VtArray<int>& assignmentIndices, 
+                            const bool clamped,
+                            const bool authored, 
+                            UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    bool createRGBPrimVar(UsdGeomGprim&, const TfToken&, const UsdTimeCode&,
-                          const VtArray<GfVec3f>&, const TfToken&, const VtArray<int>&,
-                          bool, UsdUtilsSparseValueWriter&);
+    bool createRGBPrimVar(UsdGeomGprim& primSchema,
+                          const TfToken& name,
+                          const UsdTimeCode& usdTime,
+                          const VtArray<GfVec3f>& data,
+                          const TfToken& interpolation,
+                          const VtArray<int>& assignmentIndices,
+                          bool clamped,
+                          UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    bool createRGBAPrimVar(UsdGeomGprim&, const TfToken&, const UsdTimeCode&,
-                           const VtArray<GfVec3f>&, const VtArray<float>&, 
-                           const TfToken&,const VtArray<int>&,bool, UsdUtilsSparseValueWriter&);
+    bool createRGBAPrimVar(UsdGeomGprim& primSchema,
+                           const TfToken& name,
+                           const UsdTimeCode& usdTime,
+                           const VtArray<GfVec3f>& rgbData,
+                           const VtArray<float>& alphaData,
+                           const TfToken& interpolation,
+                           const VtArray<int>& assignmentIndices,
+                           bool clamped, 
+                           UsdUtilsSparseValueWriter& valueWriter);
 
     MAYAUSD_CORE_PUBLIC
-    bool createAlphaPrimVar(UsdGeomGprim&, const TfToken&, const UsdTimeCode&,
-                            const VtArray<float>&, const TfToken&,const VtArray<int>&,
-                            bool, UsdUtilsSparseValueWriter&);
+    bool createAlphaPrimVar(UsdGeomGprim& primSchema,
+                            const TfToken& name,
+                            const UsdTimeCode& usdTime,
+                            const VtArray<float>& data,
+                            const TfToken& interpolation,
+                            const VtArray<int>& assignmentIndices,
+                            bool clamped,
+                            UsdUtilsSparseValueWriter& valueWriter);
 
     /// Collect values from the color set named \p colorSet.
     /// If \p isDisplayColor is true and this color set represents displayColor,
@@ -125,11 +178,20 @@ namespace UsdMayaMeshUtil
     /// vertex, uniform, or constant interpolation if possible.
     /// Unauthored/unpainted values will be given the index -1.
     MAYAUSD_CORE_PUBLIC
-    bool getMeshColorSetData( MFnMesh&, const MString&, bool, const VtArray<GfVec3f>&, const VtArray<float>&,
-                              const VtArray<int>&, VtArray<GfVec3f>*, VtArray<float>*, TfToken*, VtArray<int>*,
-                              MFnMesh::MColorRepresentation*, bool*);
+    bool getMeshColorSetData( MFnMesh& mesh,
+                              const MString& colorSet,
+                              bool isDisplayColor,
+                              const VtArray<GfVec3f>& shadersRGBData,
+                              const VtArray<float>& shadersAlphaData,
+                              const VtArray<int>& shadersAssignmentIndices,
+                              VtArray<GfVec3f>* colorSetRGBData,
+                              VtArray<float>* colorSetAlphaData,
+                              TfToken* interpolation,
+                              VtArray<int>* colorSetAssignmentIndices,
+                              MFnMesh::MColorRepresentation* colorSetRep,
+                              bool* clamped);
 
-} // namespace UsdMayaMeshUtil
+} // namespace UsdMayaMeshWriteUtils
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

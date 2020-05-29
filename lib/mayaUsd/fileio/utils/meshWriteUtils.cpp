@@ -342,9 +342,9 @@ namespace
 } // anonymous namespace
 
 bool
-UsdMayaMeshUtil::getMeshNormals(const MFnMesh& mesh,
-                                VtArray<GfVec3f>* normalsArray,
-                                TfToken* interpolation)
+UsdMayaMeshWriteUtils::getMeshNormals(const MFnMesh& mesh,
+                                      VtVec3fArray* normalsArray,
+                                      TfToken* interpolation)
 {
     MStatus status{MS::kSuccess};
 
@@ -371,19 +371,15 @@ UsdMayaMeshUtil::getMeshNormals(const MFnMesh& mesh,
     normalsArray->resize(numFaceVertices);
     *interpolation = UsdGeomTokens->faceVarying;
 
-    MItMeshFaceVertex itFV(mesh.object());
-    unsigned int fvi = 0;
-    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
-        int normalId = itFV.normalId();
-        if (normalId < 0 ||
-                static_cast<size_t>(normalId) >= mayaNormals.length()) {
-            return false;
-        }
+    // get normal indices for all vertices of faces
+    MIntArray normalCounts, normalIndices;
+    mesh.getNormalIds(normalCounts, normalIndices);
 
-        MFloatVector normal = mayaNormals[normalId];
-        (*normalsArray)[fvi][0] = normal[0];
-        (*normalsArray)[fvi][1] = normal[1];
-        (*normalsArray)[fvi][2] = normal[2];
+    for (size_t i = 0; i < normalIndices.length(); ++i) {
+        MFloatVector normal = mayaNormals[normalIndices[i]];
+        (*normalsArray)[i][0] = normal[0];
+        (*normalsArray)[i][1] = normal[1];
+        (*normalsArray)[i][2] = normal[2];
     }
 
     return true;
@@ -394,7 +390,7 @@ UsdMayaMeshUtil::getMeshNormals(const MFnMesh& mesh,
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
 TfToken
-UsdMayaMeshUtil::getSubdivScheme(const MFnMesh& mesh)
+UsdMayaMeshWriteUtils::getSubdivScheme(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken schemeToken;
@@ -439,7 +435,7 @@ UsdMayaMeshUtil::getSubdivScheme(const MFnMesh& mesh)
 // We first look for the USD string attribute, and if not present we look for
 // the RenderMan for Maya int attribute.
 // XXX Maybe we should come up with a OSD centric nomenclature ??
-TfToken UsdMayaMeshUtil::getSubdivInterpBoundary(const MFnMesh& mesh)
+TfToken UsdMayaMeshWriteUtils::getSubdivInterpBoundary(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken interpBoundaryToken;
@@ -482,7 +478,7 @@ TfToken UsdMayaMeshUtil::getSubdivInterpBoundary(const MFnMesh& mesh)
     return interpBoundaryToken;
 }
 
-TfToken UsdMayaMeshUtil::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
+TfToken UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
 {
     // Try grabbing the value via the adaptor first.
     TfToken sdFVLinearInterpolation;
@@ -517,7 +513,7 @@ TfToken UsdMayaMeshUtil::getSubdivFVLinearInterpolation(const MFnMesh& mesh)
 }
 
 bool
-UsdMayaMeshUtil::isMeshValid(const MDagPath& dagPath)
+UsdMayaMeshWriteUtils::isMeshValid(const MDagPath& dagPath)
 {
     MStatus status{MS::kSuccess};
 
@@ -548,7 +544,7 @@ UsdMayaMeshUtil::isMeshValid(const MDagPath& dagPath)
 }
 
 void
-UsdMayaMeshUtil::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
+UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 {
     MStatus status{MS::kSuccess};
 
@@ -580,13 +576,9 @@ UsdMayaMeshUtil::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 
     const float* mayaRawPoints = referenceMesh.getRawPoints(&status);
     const int numVertices = referenceMesh.numVertices();
-    VtArray<GfVec3f> points(numVertices);
-    for (int i = 0; i < numVertices; ++i) {
-        const int floatIndex = i * 3;
-        points[i].Set(mayaRawPoints[floatIndex],
-                        mayaRawPoints[floatIndex + 1],
-                        mayaRawPoints[floatIndex + 2]);
-    }
+    VtVec3fArray points(numVertices);
+
+    memcpy(points.data(), mayaRawPoints, numVertices * sizeof(float) * 3);
 
     UsdGeomPrimvar primVar = primSchema.CreatePrimvar(
         UsdUtilsGetPrefName(),
@@ -601,9 +593,9 @@ UsdMayaMeshUtil::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 }
 
 void
-UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
-                                           UsdGeomMesh& primSchema,
-                                           UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
+                                                 UsdGeomMesh& primSchema,
+                                                 UsdUtilsSparseValueWriter& valueWriter)
 {
     // Vert Creasing
     MUintArray mayaCreaseVertIds;
@@ -637,12 +629,14 @@ UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
     }
     if (mayaCreaseEdgeIds.length() > 0u) {
         std::vector<int> subdCreaseIndices(mayaCreaseEdgeIds.length() * 2);
-        std::vector<float> subdCreaseSharpnesses(mayaCreaseEdgeIds.length());
-        for (unsigned int i = 0u; i < mayaCreaseEdgeIds.length(); ++i) {
+        // just construct directly from the array data
+        // by moving this out of the loop, you'll leverage SIMD ops here.
+        std::vector<float> subdCreaseSharpnesses(&mayaCreaseEdgeIds[0], &mayaCreaseEdgeIds[0] + mayaCreaseEdgeIds.length());
+        // avoid dso call by taking a copy of length. 
+        for (unsigned int i = 0u, n = mayaCreaseEdgeIds.length(); i < n; ++i) {
             meshFn.getEdgeVertices(mayaCreaseEdgeIds[i], edgeVerts);
             subdCreaseIndices[i * 2] = edgeVerts[0];
             subdCreaseIndices[i * 2 + 1] = edgeVerts[1];
-            subdCreaseSharpnesses[i] = mayaCreaseEdgeValues[i];
         }
 
         std::vector<int> numCreases;
@@ -672,64 +666,45 @@ UsdMayaMeshUtil::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
     }
 }
 
-void 
-UsdMayaMeshUtil::writeSubdivInterpBound(MFnMesh& meshFn, UsdGeomMesh& primSchema, UsdUtilsSparseValueWriter& valueWriter)
-{
-    TfToken sdInterpBound = UsdMayaMeshUtil::getSubdivInterpBoundary(meshFn);
-    if (!sdInterpBound.IsEmpty()) {
-        UsdMayaWriteUtil::SetAttribute(primSchema.CreateInterpolateBoundaryAttr(), sdInterpBound, valueWriter);
-    }
-}
-
-void 
-UsdMayaMeshUtil::writeSubdivFVLinearInterpolation(MFnMesh& meshFn, UsdGeomMesh& primSchema, UsdUtilsSparseValueWriter& valueWriter)
-{
-    TfToken sdFVLinearInterpolation = UsdMayaMeshUtil::getSubdivFVLinearInterpolation(meshFn);
-    if (!sdFVLinearInterpolation.IsEmpty()) {
-        UsdMayaWriteUtil::SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(), sdFVLinearInterpolation, valueWriter);
-    }
-}
-
 void
-UsdMayaMeshUtil::writeVertexData(const MFnMesh& meshFn,
-                                 UsdGeomMesh& primSchema,
-                                 const UsdTimeCode& usdTime,
-                                 UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::writePointsData(const MFnMesh& meshFn,
+                                       UsdGeomMesh& primSchema,
+                                       const UsdTimeCode& usdTime,
+                                       UsdUtilsSparseValueWriter& valueWriter)
 {
     MStatus status{MS::kSuccess};
 
     const uint32_t numVertices = meshFn.numVertices();
-    VtArray<GfVec3f> points(numVertices);
+    VtVec3fArray points(numVertices);
     const float* pointsData = meshFn.getRawPoints(&status);
-    if(status)
-    {
-        // use memcpy() to copy the data. HS April 09, 2020
-        memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
-        VtArray<GfVec3f> extent(2);
-        // Compute the extent using the raw points
-        UsdGeomPointBased::ComputeExtent(points, &extent);
-
-        UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), &points, valueWriter, usdTime);
-        UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), &extent, valueWriter,usdTime);
-    }
-    else
-    {
+    if(!status) {
         MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + meshFn.fullPathName());
+        return;
     }
+
+    // use memcpy() to copy the data. HS April 09, 2020
+    memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+
+    VtVec3fArray extent(2);
+    // Compute the extent using the raw points
+    UsdGeomPointBased::ComputeExtent(points, &extent);
+
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), &points, valueWriter, usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), &extent, valueWriter,usdTime);
 }
 
 void 
-UsdMayaMeshUtil::writeFaceVertexIndicesData(const MFnMesh& meshFn, 
-                                            UsdGeomMesh& primSchema, 
-                                            const UsdTimeCode& usdTime, 
-                                            UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(const MFnMesh& meshFn, 
+                                                  UsdGeomMesh& primSchema, 
+                                                  const UsdTimeCode& usdTime, 
+                                                  UsdUtilsSparseValueWriter& valueWriter)
 {
     const int numFaceVertices = meshFn.numFaceVertices();
     const int numPolygons = meshFn.numPolygons();
 
-    VtArray<int> faceVertexCounts(numPolygons);
-    VtArray<int> faceVertexIndices(numFaceVertices);
+    VtIntArray faceVertexCounts(numPolygons);
+    VtIntArray faceVertexIndices(numFaceVertices);
     MIntArray mayaFaceVertexIndices; // used in loop below
     unsigned int curFaceVertexIndex = 0;
     for (int i = 0; i < numPolygons; i++) {
@@ -745,46 +720,29 @@ UsdMayaMeshUtil::writeFaceVertexIndicesData(const MFnMesh& meshFn,
 }
 
 void 
-UsdMayaMeshUtil::writeInvisibleFacesData(const MFnMesh& meshFn, 
-                                         UsdGeomMesh& primSchema, 
-                                         UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::writeInvisibleFacesData(const MFnMesh& meshFn, 
+                                               UsdGeomMesh& primSchema, 
+                                               UsdUtilsSparseValueWriter& valueWriter)
 {
     MUintArray mayaHoles = meshFn.getInvisibleFaces();
     const uint32_t count = mayaHoles.length();
     if (count)
     {
-        VtArray<int32_t> subdHoles(count);
+        VtIntArray subdHoles(count);
         uint32_t* ptr = &mayaHoles[0];
-        // use memcpy() to copy the date HS November 20, 2019
+        // use memcpy() to copy the data. HS April 20, 2019
         memcpy((int32_t*)subdHoles.data(), ptr, count * sizeof(uint32_t));
         // not animatable in Maya, so we'll set default only
         UsdMayaWriteUtil::SetAttribute(primSchema.GetHoleIndicesAttr(), &subdHoles, valueWriter);
     }
 }
 
-void 
-UsdMayaMeshUtil::writeNormalsData(const MFnMesh& meshFn, 
-                                  UsdGeomMesh& primSchema, 
-                                  const UsdTimeCode& usdTime, 
-                                  UsdUtilsSparseValueWriter& valueWriter)
-{
-    VtArray<GfVec3f> meshNormals;
-    TfToken normalInterp;
-
-    if (UsdMayaMeshUtil::getMeshNormals(meshFn, &meshNormals,&normalInterp)) {
-
-        UsdMayaWriteUtil::SetAttribute(primSchema.GetNormalsAttr(), &meshNormals, valueWriter, usdTime);
-
-        primSchema.SetNormalsInterpolation(normalInterp);
-    }
-}
-
 bool
-UsdMayaMeshUtil::getMeshUVSetData(const MFnMesh& mesh,
-                                  const MString& uvSetName,
-                                  VtArray<GfVec2f>* uvArray,
-                                  TfToken* interpolation,
-                                  VtArray<int>* assignmentIndices)
+UsdMayaMeshWriteUtils::getMeshUVSetData(const MFnMesh& mesh,
+                                        const MString& uvSetName,
+                                        VtVec2fArray* uvArray,
+                                        TfToken* interpolation,
+                                        VtIntArray* assignmentIndices)
 {
     MStatus status{MS::kSuccess};
 
@@ -843,7 +801,10 @@ UsdMayaMeshUtil::getMeshUVSetData(const MFnMesh& mesh,
 }
 
 bool 
-UsdMayaMeshUtil::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, UsdGeomMesh& primSchema, const UsdTimeCode& usdTime, UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, 
+                                                  UsdGeomMesh& primSchema, 
+                                                  const UsdTimeCode& usdTime, 
+                                                  UsdUtilsSparseValueWriter& valueWriter)
 {
     MStatus status{MS::kSuccess};
 
@@ -856,20 +817,19 @@ UsdMayaMeshUtil::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, UsdGeomMesh& 
     }
 
     for (unsigned int i = 0; i < uvSetNames.length(); ++i) {
-        VtArray<GfVec2f> uvValues;
+        VtVec2fArray uvValues;
         TfToken interpolation;
-        VtArray<int> assignmentIndices;
+        VtIntArray assignmentIndices;
 
-        if (!UsdMayaMeshUtil::getMeshUVSetData( meshFn,
-                                                uvSetNames[i],
-                                                &uvValues,
-                                                &interpolation,
-                                                &assignmentIndices)) {
+        if (!UsdMayaMeshWriteUtils::getMeshUVSetData( meshFn,
+                                                      uvSetNames[i],
+                                                      &uvValues,
+                                                      &interpolation,
+                                                      &assignmentIndices)) {
             continue;
         }
 
-        // XXX:bug 118447
-        // We should be able to configure the UV map name that triggers this
+        // XXX: We should be able to configure the UV map name that triggers this
         // behavior, and the name to which it exports.
         // The UV Set "map1" is renamed st. This is a Pixar/USD convention.
         TfToken setName(uvSetNames[i].asChar());
@@ -890,17 +850,57 @@ UsdMayaMeshUtil::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, UsdGeomMesh& 
     return true;
 }
 
+void 
+UsdMayaMeshWriteUtils::writeSubdivInterpBound(MFnMesh& meshFn, 
+                                              UsdGeomMesh& primSchema, 
+                                              UsdUtilsSparseValueWriter& valueWriter)
+{
+    TfToken sdInterpBound = UsdMayaMeshWriteUtils::getSubdivInterpBoundary(meshFn);
+    if (!sdInterpBound.IsEmpty()) {
+        UsdMayaWriteUtil::SetAttribute(primSchema.CreateInterpolateBoundaryAttr(), sdInterpBound, valueWriter);
+    }
+}
+
+void 
+UsdMayaMeshWriteUtils::writeSubdivFVLinearInterpolation(MFnMesh& meshFn, 
+                                                        UsdGeomMesh& primSchema, 
+                                                        UsdUtilsSparseValueWriter& valueWriter)
+{
+    TfToken sdFVLinearInterpolation = UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(meshFn);
+    if (!sdFVLinearInterpolation.IsEmpty()) {
+        UsdMayaWriteUtil::SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(), 
+                                       sdFVLinearInterpolation, valueWriter);
+    }
+}
+
+void 
+UsdMayaMeshWriteUtils::writeNormalsData(const MFnMesh& meshFn, 
+                                        UsdGeomMesh& primSchema, 
+                                        const UsdTimeCode& usdTime, 
+                                        UsdUtilsSparseValueWriter& valueWriter)
+{
+    VtArray<GfVec3f> meshNormals;
+    TfToken normalInterp;
+
+    if (UsdMayaMeshWriteUtils::getMeshNormals(meshFn, &meshNormals,&normalInterp)) {
+
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetNormalsAttr(), &meshNormals, valueWriter, usdTime);
+
+        primSchema.SetNormalsInterpolation(normalInterp);
+    }
+}
+
 bool 
-UsdMayaMeshUtil::addDisplayPrimvars( UsdGeomGprim &primSchema,
-                                     const UsdTimeCode& usdTime,
-                                     const MFnMesh::MColorRepresentation colorRep,
-                                     const VtArray<GfVec3f>& RGBData,
-                                     const VtArray<float>& AlphaData,
-                                     const TfToken& interpolation,
-                                     const VtArray<int>& assignmentIndices,
-                                     const bool clamped,
-                                     const bool authored,
-                                     UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::addDisplayPrimvars(UsdGeomGprim &primSchema,
+                                          const UsdTimeCode& usdTime,
+                                          const MFnMesh::MColorRepresentation colorRep,
+                                          const VtArray<GfVec3f>& RGBData,
+                                          const VtArray<float>& AlphaData,
+                                          const TfToken& interpolation,
+                                          const VtArray<int>& assignmentIndices,
+                                          const bool clamped,
+                                          const bool authored,
+                                          UsdUtilsSparseValueWriter& valueWriter)
 {
     // We are appending the default value to the primvar in the post export function
     // so if the dataset is empty and the assignment indices are not, we still
@@ -971,14 +971,14 @@ UsdMayaMeshUtil::addDisplayPrimvars( UsdGeomGprim &primSchema,
 }
 
 bool 
-UsdMayaMeshUtil::createRGBPrimVar(UsdGeomGprim &primSchema,
-                                  const TfToken& name,
-                                  const UsdTimeCode& usdTime,
-                                  const VtArray<GfVec3f>& data,
-                                  const TfToken& interpolation,
-                                  const VtArray<int>& assignmentIndices,
-                                  bool clamped,
-                                  UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::createRGBPrimVar(UsdGeomGprim &primSchema,
+                                        const TfToken& name,
+                                        const UsdTimeCode& usdTime,
+                                        const VtArray<GfVec3f>& data,
+                                        const TfToken& interpolation,
+                                        const VtArray<int>& assignmentIndices,
+                                        bool clamped,
+                                        UsdUtilsSparseValueWriter& valueWriter)
 {
     const unsigned int numValues = data.size();
     if (numValues == 0) {
@@ -1008,15 +1008,15 @@ UsdMayaMeshUtil::createRGBPrimVar(UsdGeomGprim &primSchema,
 }
 
 bool 
-UsdMayaMeshUtil::createRGBAPrimVar(UsdGeomGprim &primSchema,
-                                   const TfToken& name,
-                                   const UsdTimeCode& usdTime,
-                                   const VtArray<GfVec3f>& rgbData,
-                                   const VtArray<float>& alphaData,
-                                   const TfToken& interpolation,
-                                   const VtArray<int>& assignmentIndices,
-                                   bool clamped,
-                                   UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::createRGBAPrimVar(UsdGeomGprim &primSchema,
+                                         const TfToken& name,
+                                         const UsdTimeCode& usdTime,
+                                         const VtArray<GfVec3f>& rgbData,
+                                         const VtArray<float>& alphaData,
+                                         const TfToken& interpolation,
+                                         const VtArray<int>& assignmentIndices,
+                                         bool clamped,
+                                         UsdUtilsSparseValueWriter& valueWriter)
 {
     const unsigned int numValues = rgbData.size();
     if (numValues == 0 || numValues != alphaData.size()) {
@@ -1054,14 +1054,14 @@ UsdMayaMeshUtil::createRGBAPrimVar(UsdGeomGprim &primSchema,
 }
 
 bool 
-UsdMayaMeshUtil::createAlphaPrimVar(UsdGeomGprim &primSchema,
-                                    const TfToken& name,
-                                    const UsdTimeCode& usdTime,
-                                    const VtArray<float>& data,
-                                    const TfToken& interpolation,
-                                    const VtArray<int>& assignmentIndices,
-                                    bool clamped,
-                                    UsdUtilsSparseValueWriter& valueWriter)
+UsdMayaMeshWriteUtils::createAlphaPrimVar(UsdGeomGprim &primSchema,
+                                          const TfToken& name,
+                                          const UsdTimeCode& usdTime,
+                                          const VtArray<float>& data,
+                                          const TfToken& interpolation,
+                                          const VtArray<int>& assignmentIndices,
+                                          bool clamped,
+                                          UsdUtilsSparseValueWriter& valueWriter)
 {
     const unsigned int numValues = data.size();
     if (numValues == 0) {
@@ -1092,18 +1092,18 @@ UsdMayaMeshUtil::createAlphaPrimVar(UsdGeomGprim &primSchema,
 }
 
 bool 
-UsdMayaMeshUtil::getMeshColorSetData(MFnMesh& mesh,
-                                     const MString& colorSet,
-                                     bool isDisplayColor,
-                                     const VtArray<GfVec3f>& shadersRGBData,
-                                     const VtArray<float>& shadersAlphaData,
-                                     const VtArray<int>& shadersAssignmentIndices,
-                                     VtArray<GfVec3f>* colorSetRGBData,
-                                     VtArray<float>* colorSetAlphaData,
-                                     TfToken* interpolation,
-                                     VtArray<int>* colorSetAssignmentIndices,
-                                     MFnMesh::MColorRepresentation* colorSetRep,
-                                     bool* clamped)
+UsdMayaMeshWriteUtils::getMeshColorSetData(MFnMesh& mesh,
+                                           const MString& colorSet,
+                                           bool isDisplayColor,
+                                           const VtArray<GfVec3f>& shadersRGBData,
+                                           const VtArray<float>& shadersAlphaData,
+                                           const VtArray<int>& shadersAssignmentIndices,
+                                           VtArray<GfVec3f>* colorSetRGBData,
+                                           VtArray<float>* colorSetAlphaData,
+                                           TfToken* interpolation,
+                                           VtArray<int>* colorSetAssignmentIndices,
+                                           MFnMesh::MColorRepresentation* colorSetRep,
+                                           bool* clamped)
 {
     // If there are no colors, return immediately as failure.
     if (mesh.numColors(colorSet) == 0) {
