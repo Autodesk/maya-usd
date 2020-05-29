@@ -61,6 +61,8 @@ using HdVP2TextureUniquePtr = std::unique_ptr<
 struct HdVP2TextureInfo
 {
     HdVP2TextureUniquePtr  _texture;          //!< Unique pointer of the texture
+    float                  _stScale[2];       //!< UV scale for tiled textures
+    float                  _stOffset[2];      //!< UV offset for tiled textures
     bool                   _isColorSpaceSRGB; //!< Whether sRGB linearization is needed
 };
 
