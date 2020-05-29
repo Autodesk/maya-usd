@@ -32,7 +32,6 @@ target_sources(${TARGET_NAME}
         mayaReferenceUpdater.cpp
         meshReader.cpp
         meshWriter.cpp
-        meshWriter_Primvars.cpp
         nurbsCurvesReader.cpp
         nurbsCurveWriter.cpp
         nurbsPatchReader.cpp

@@ -70,6 +70,20 @@ namespace
     /// has no authored value.
     const GfVec2f UnauthoredUV = GfVec2f(0.f);
 
+    /// Default values to use when collecting colors based on shader values
+    /// and an object or component has no assigned shader.
+    const GfVec3f UnauthoredShaderRGB = GfVec3f(0.5f);
+    const float UnauthoredShaderAlpha = 0.0f;
+
+    /// Default values to use when collecting colors from a color set and a
+    /// component has no authored value.
+    const GfVec3f UnauthoredColorSetRGB = GfVec3f(1.0f);
+    const float UnauthoredColorAlpha = 1.0f;
+    const GfVec4f UnauthoredColorSetRGBA = GfVec4f(UnauthoredColorSetRGB[0],
+                                                   UnauthoredColorSetRGB[1],
+                                                   UnauthoredColorSetRGB[2],
+                                                   UnauthoredColorAlpha);
+
     // XXX: Note that this function is not exposed publicly since the USD schema
     // has been updated to conform to OpenSubdiv 3. We still look for this attribute
     // on Maya nodes specifying this value from OpenSubdiv 2, but we translate the
@@ -149,6 +163,19 @@ namespace
         }
     }
 
+    /// Sets the primvar \p primvar at time \p usdTime using the given
+    /// \p indices (can be empty) and \p values.
+    /// The \p defaultValue is used to pad the \p values array in case
+    /// \p indices contains unassigned indices (i.e. indices < 0) that need a
+    /// corresponding value in the array.
+    ///
+    /// When authoring values at a non-default time, setPrimvar() might
+    /// unnecessarily pad \p values with \p defaultValue in order to guarantee
+    /// that the primvar remains valid during the export process. In that case,
+    /// the expected value of UsdGeomPrimvar::ComputeFlattened() is still
+    /// correct (there is just some memory wasted).
+    /// In order to cleanup any extra values and reclaim the wasted memory, call
+    /// cleanupPrimvars() at the end of the export process.
     void
     setPrimvar( const UsdGeomPrimvar& primvar,
                 const VtIntArray& indices,
@@ -216,7 +243,7 @@ namespace
                      const UsdTimeCode& usdTime,
                      const VtArray<GfVec2f>& data,
                      const TfToken& interpolation,
-                     const VtArray<int>& assignmentIndices,
+                     const VtIntArray& assignmentIndices,
                      UsdUtilsSparseValueWriter& valueWriter)
     {
         const unsigned int numValues = data.size();
@@ -240,6 +267,76 @@ namespace
                    VtValue(UnauthoredUV),
                    usdTime,
                    valueWriter);
+    }
+
+    // This function condenses distinct indices that point to the same color values
+    // (the combination of RGB AND Alpha) to all point to the same index for that
+    // value. This will potentially shrink the data arrays.
+    void
+    MergeEquivalentColorSetValues(VtVec3fArray* colorSetRGBData,
+                                  VtFloatArray* colorSetAlphaData,
+                                  VtIntArray* colorSetAssignmentIndices)
+    {
+        if (!colorSetRGBData || !colorSetAlphaData || !colorSetAssignmentIndices) {
+            return;
+        }
+
+        const size_t numValues = colorSetRGBData->size();
+        if (numValues == 0) {
+            return;
+        }
+
+        if (colorSetAlphaData->size() != numValues) {
+            TF_CODING_ERROR("Unequal sizes for color (%zu) and alpha (%zu)",
+                            colorSetRGBData->size(), colorSetAlphaData->size());
+        }
+
+        // We first combine the separate color and alpha arrays into one GfVec4f
+        // array.
+        VtArray<GfVec4f> colorsWithAlphasData(numValues);
+        for (size_t i = 0; i < numValues; ++i) {
+            const GfVec3f color = (*colorSetRGBData)[i];
+            const float alpha = (*colorSetAlphaData)[i];
+
+            colorsWithAlphasData[i][0] = color[0];
+            colorsWithAlphasData[i][1] = color[1];
+            colorsWithAlphasData[i][2] = color[2];
+            colorsWithAlphasData[i][3] = alpha;
+        }
+
+        VtIntArray mergedIndices(*colorSetAssignmentIndices);
+        UsdMayaUtil::MergeEquivalentIndexedValues(&colorsWithAlphasData, &mergedIndices);
+
+        // If we reduced the number of values by merging, copy the results back,
+        // separating the values back out into colors and alphas.
+        const size_t newSize = colorsWithAlphasData.size();
+        if (newSize < numValues) {
+            colorSetRGBData->resize(newSize);
+            colorSetAlphaData->resize(newSize);
+
+            for (size_t i = 0; i < newSize; ++i) {
+                const GfVec4f colorWithAlpha = colorsWithAlphasData[i];
+
+                (*colorSetRGBData)[i][0] = colorWithAlpha[0];
+                (*colorSetRGBData)[i][1] = colorWithAlpha[1];
+                (*colorSetRGBData)[i][2] = colorWithAlpha[2];
+                (*colorSetAlphaData)[i] = colorWithAlpha[3];
+            }
+            (*colorSetAssignmentIndices) = mergedIndices;
+        }
+    }
+
+    GfVec3f
+    LinearColorFromColorSet(const MColor& mayaColor, bool shouldConvertToLinear)
+    {
+        // we assume all color sets except displayColor are in linear space.
+        // if we got a color from colorSetData and we're a displayColor, we
+        // need to convert it to linear.
+        GfVec3f c(mayaColor[0], mayaColor[1], mayaColor[2]);
+        if (shouldConvertToLinear) {
+            return UsdMayaColorSpace::ConvertMayaToLinear(c);
+        }
+        return c;
     }
 
 } // anonymous namespace
@@ -749,6 +846,410 @@ UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn,
                         assignmentIndices,
                         valueWriter);
     }
+
+    return true;
+}
+
+void 
+UsdMayaMeshWriteUtils::writeSubdivInterpBound(MFnMesh& meshFn, 
+                                              UsdGeomMesh& primSchema, 
+                                              UsdUtilsSparseValueWriter& valueWriter)
+{
+    TfToken sdInterpBound = UsdMayaMeshWriteUtils::getSubdivInterpBoundary(meshFn);
+    if (!sdInterpBound.IsEmpty()) {
+        UsdMayaWriteUtil::SetAttribute(primSchema.CreateInterpolateBoundaryAttr(), sdInterpBound, valueWriter);
+    }
+}
+
+void 
+UsdMayaMeshWriteUtils::writeSubdivFVLinearInterpolation(MFnMesh& meshFn, 
+                                                        UsdGeomMesh& primSchema, 
+                                                        UsdUtilsSparseValueWriter& valueWriter)
+{
+    TfToken sdFVLinearInterpolation = UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(meshFn);
+    if (!sdFVLinearInterpolation.IsEmpty()) {
+        UsdMayaWriteUtil::SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(), 
+                                       sdFVLinearInterpolation, valueWriter);
+    }
+}
+
+void 
+UsdMayaMeshWriteUtils::writeNormalsData(const MFnMesh& meshFn, 
+                                        UsdGeomMesh& primSchema, 
+                                        const UsdTimeCode& usdTime, 
+                                        UsdUtilsSparseValueWriter& valueWriter)
+{
+    VtVec3fArray meshNormals;
+    TfToken normalInterp;
+
+    if (UsdMayaMeshWriteUtils::getMeshNormals(meshFn, &meshNormals,&normalInterp)) {
+
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetNormalsAttr(), &meshNormals, valueWriter, usdTime);
+
+        primSchema.SetNormalsInterpolation(normalInterp);
+    }
+}
+
+bool 
+UsdMayaMeshWriteUtils::addDisplayPrimvars(UsdGeomGprim &primSchema,
+                                          const UsdTimeCode& usdTime,
+                                          const MFnMesh::MColorRepresentation colorRep,
+                                          const VtVec3fArray& RGBData,
+                                          const VtFloatArray& AlphaData,
+                                          const TfToken& interpolation,
+                                          const VtIntArray& assignmentIndices,
+                                          const bool clamped,
+                                          const bool authored,
+                                          UsdUtilsSparseValueWriter& valueWriter)
+{
+    // We are appending the default value to the primvar in the post export function
+    // so if the dataset is empty and the assignment indices are not, we still
+    // have to set an empty array.
+    // If we already have an authored value, don't try to write a new one.
+    UsdAttribute colorAttr = primSchema.GetDisplayColorAttr();
+    if (!colorAttr.HasAuthoredValue() && (!RGBData.empty() || !assignmentIndices.empty())) {
+        UsdGeomPrimvar displayColor = primSchema.CreateDisplayColorPrimvar();
+        if (interpolation != displayColor.GetInterpolation()) {
+            displayColor.SetInterpolation(interpolation);
+        }
+
+        setPrimvar(displayColor,
+                   assignmentIndices,
+                   VtValue(RGBData),
+                   VtValue(UnauthoredShaderRGB),
+                   usdTime,
+                   valueWriter);
+
+        bool authRGB = authored;
+        if (colorRep == MFnMesh::kAlpha) {
+            authRGB = false;
+        }
+        if (authRGB) {
+            if (clamped) {
+                UsdMayaRoundTripUtil::MarkPrimvarAsClamped(displayColor);
+            }
+        }
+        else {
+            UsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(colorAttr);
+        }
+    }
+
+    UsdAttribute alphaAttr = primSchema.GetDisplayOpacityAttr();
+    if (!alphaAttr.HasAuthoredValue() && (!AlphaData.empty() || !assignmentIndices.empty())) {
+        // we consider a single alpha value that is 1.0 to be the "default"
+        // value.  We only want to write values that are not the "default".
+        bool hasDefaultAlpha = AlphaData.size() == 1 && GfIsClose(AlphaData[0], 1.0, 1e-9);
+        if (!hasDefaultAlpha) {
+            UsdGeomPrimvar displayOpacity = primSchema.CreateDisplayOpacityPrimvar();
+            if (interpolation != displayOpacity.GetInterpolation()) {
+                displayOpacity.SetInterpolation(interpolation);
+            }
+
+            setPrimvar(displayOpacity,
+                       assignmentIndices,
+                       VtValue(AlphaData),
+                       VtValue(UnauthoredShaderAlpha),
+                       usdTime,
+                       valueWriter);
+
+            bool authAlpha = authored;
+            if (colorRep == MFnMesh::kRGB) {
+                authAlpha = false;
+            }
+            if (authAlpha) {
+                if (clamped) {
+                    UsdMayaRoundTripUtil::MarkPrimvarAsClamped(displayOpacity);
+                }
+            }
+            else {
+                UsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(alphaAttr);
+            }
+        }
+    }
+
+    return true;
+}
+
+bool 
+UsdMayaMeshWriteUtils::createRGBPrimVar(UsdGeomGprim &primSchema,
+                                        const TfToken& name,
+                                        const UsdTimeCode& usdTime,
+                                        const VtVec3fArray& data,
+                                        const TfToken& interpolation,
+                                        const VtIntArray& assignmentIndices,
+                                        bool clamped,
+                                        UsdUtilsSparseValueWriter& valueWriter)
+{
+    const unsigned int numValues = data.size();
+    if (numValues == 0) {
+        return false;
+    }
+
+    TfToken interp = interpolation;
+    if (numValues == 1 && interp == UsdGeomTokens->constant) {
+        interp = TfToken();
+    }
+
+    UsdGeomPrimvar primVar = primSchema.CreatePrimvar(name,
+                                                      SdfValueTypeNames->Color3fArray,
+                                                      interp);
+
+    setPrimvar(primVar,
+               assignmentIndices,
+               VtValue(data),
+               VtValue(UnauthoredColorSetRGB),
+               usdTime, valueWriter);
+
+    if (clamped) {
+        UsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
+    }
+
+    return true;
+}
+
+bool 
+UsdMayaMeshWriteUtils::createRGBAPrimVar(UsdGeomGprim &primSchema,
+                                         const TfToken& name,
+                                         const UsdTimeCode& usdTime,
+                                         const VtVec3fArray& rgbData,
+                                         const VtFloatArray& alphaData,
+                                         const TfToken& interpolation,
+                                         const VtIntArray& assignmentIndices,
+                                         bool clamped,
+                                         UsdUtilsSparseValueWriter& valueWriter)
+{
+    const unsigned int numValues = rgbData.size();
+    if (numValues == 0 || numValues != alphaData.size()) {
+        return false;
+    }
+
+    TfToken interp = interpolation;
+    if (numValues == 1 && interp == UsdGeomTokens->constant) {
+        interp = TfToken();
+    }
+
+    UsdGeomPrimvar primVar =
+        primSchema.CreatePrimvar(name,
+                                 SdfValueTypeNames->Color4fArray,
+                                 interp);
+
+    VtArray<GfVec4f> rgbaData(numValues);
+    for (size_t i = 0; i < rgbaData.size(); ++i) {
+        rgbaData[i] = GfVec4f(rgbData[i][0], rgbData[i][1], rgbData[i][2],
+                              alphaData[i]);
+    }
+
+    setPrimvar(primVar,
+               assignmentIndices,
+               VtValue(rgbaData),
+               VtValue(UnauthoredColorSetRGBA),
+               usdTime,
+               valueWriter);
+
+    if (clamped) {
+        UsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
+    }
+
+    return true;
+}
+
+bool 
+UsdMayaMeshWriteUtils::createAlphaPrimVar(UsdGeomGprim &primSchema,
+                                          const TfToken& name,
+                                          const UsdTimeCode& usdTime,
+                                          const VtFloatArray& data,
+                                          const TfToken& interpolation,
+                                          const VtIntArray& assignmentIndices,
+                                          bool clamped,
+                                          UsdUtilsSparseValueWriter& valueWriter)
+{
+    const unsigned int numValues = data.size();
+    if (numValues == 0) {
+        return false;
+    }
+
+    TfToken interp = interpolation;
+    if (numValues == 1 && interp == UsdGeomTokens->constant) {
+        interp = TfToken();
+    }
+
+    UsdGeomPrimvar primVar =
+        primSchema.CreatePrimvar(name,
+                                 SdfValueTypeNames->FloatArray,
+                                 interp);
+    setPrimvar(primVar,
+               assignmentIndices,
+               VtValue(data),
+               VtValue(UnauthoredColorAlpha),
+               usdTime,
+               valueWriter);
+
+    if (clamped) {
+        UsdMayaRoundTripUtil::MarkPrimvarAsClamped(primVar);
+    }
+
+    return true;
+}
+
+bool 
+UsdMayaMeshWriteUtils::getMeshColorSetData(MFnMesh& mesh,
+                                           const MString& colorSet,
+                                           bool isDisplayColor,
+                                           const VtVec3fArray& shadersRGBData,
+                                           const VtFloatArray& shadersAlphaData,
+                                           const VtIntArray& shadersAssignmentIndices,
+                                           VtVec3fArray* colorSetRGBData,
+                                           VtFloatArray* colorSetAlphaData,
+                                           TfToken* interpolation,
+                                           VtIntArray* colorSetAssignmentIndices,
+                                           MFnMesh::MColorRepresentation* colorSetRep,
+                                           bool* clamped)
+{
+    // If there are no colors, return immediately as failure.
+    if (mesh.numColors(colorSet) == 0) {
+        return false;
+    }
+
+    MColorArray colorSetData;
+    const MColor unsetColor(-FLT_MAX, -FLT_MAX, -FLT_MAX, -FLT_MAX);
+    if (mesh.getFaceVertexColors(colorSetData, &colorSet, &unsetColor)
+            == MS::kFailure) {
+        return false;
+    }
+
+    if (colorSetData.length() == 0) {
+        return false;
+    }
+
+    // Get the color set representation and clamping.
+    *colorSetRep = mesh.getColorRepresentation(colorSet);
+    *clamped = mesh.isColorClamped(colorSet);
+
+    // We'll populate the assignment indices for every face vertex, but we'll
+    // only push values into the data if the face vertex has a value. All face
+    // vertices are initially unassigned/unauthored.
+    colorSetRGBData->clear();
+    colorSetAlphaData->clear();
+    colorSetAssignmentIndices->assign((size_t)colorSetData.length(), -1);
+    *interpolation = UsdGeomTokens->faceVarying;
+
+    // Loop over every face vertex to populate the value arrays.
+    MItMeshFaceVertex itFV(mesh.object());
+    unsigned int fvi = 0;
+    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
+        // If this is a displayColor color set, we may need to fallback on the
+        // bound shader colors/alphas for this face in some cases. In
+        // particular, if the color set is alpha-only, we fallback on the
+        // shader values for the color. If the color set is RGB-only, we
+        // fallback on the shader values for alpha only. If there's no authored
+        // color for this face vertex, we use both the color AND alpha values
+        // from the shader.
+        bool useShaderColorFallback = false;
+        bool useShaderAlphaFallback = false;
+        if (isDisplayColor) {
+            if (colorSetData[fvi] == unsetColor) {
+                useShaderColorFallback = true;
+                useShaderAlphaFallback = true;
+            } else if (*colorSetRep == MFnMesh::kAlpha) {
+                // The color set does not provide color, so fallback on shaders.
+                useShaderColorFallback = true;
+            } else if (*colorSetRep == MFnMesh::kRGB) {
+                // The color set does not provide alpha, so fallback on shaders.
+                useShaderAlphaFallback = true;
+            }
+        }
+
+        // If we're exporting displayColor and we use the value from the color
+        // set, we need to convert it to linear.
+        bool convertDisplayColorToLinear = isDisplayColor;
+
+        // Shader values for the mesh could be constant
+        // (shadersAssignmentIndices is empty) or uniform.
+        int faceIndex = itFV.faceId();
+        if (useShaderColorFallback) {
+            // There was no color value in the color set to use, so we use the
+            // shader color, or the default color if there is no shader color.
+            // This color will already be in linear space, so don't convert it
+            // again.
+            convertDisplayColorToLinear = false;
+
+            int valueIndex = -1;
+            if (shadersAssignmentIndices.empty()) {
+                if (shadersRGBData.size() == 1) {
+                    valueIndex = 0;
+                }
+            } else if (faceIndex >= 0 && 
+                static_cast<size_t>(faceIndex) < shadersAssignmentIndices.size()) {
+
+                int tmpIndex = shadersAssignmentIndices[faceIndex];
+                if (tmpIndex >= 0 && 
+                    static_cast<size_t>(tmpIndex) < shadersRGBData.size()) {
+                    valueIndex = tmpIndex;
+                }
+            }
+            if (valueIndex >= 0) {
+                colorSetData[fvi][0] = shadersRGBData[valueIndex][0];
+                colorSetData[fvi][1] = shadersRGBData[valueIndex][1];
+                colorSetData[fvi][2] = shadersRGBData[valueIndex][2];
+            } else {
+                // No shader color to fallback on. Use the default shader color.
+                colorSetData[fvi][0] = UnauthoredShaderRGB[0];
+                colorSetData[fvi][1] = UnauthoredShaderRGB[1];
+                colorSetData[fvi][2] = UnauthoredShaderRGB[2];
+            }
+        }
+        if (useShaderAlphaFallback) {
+            int valueIndex = -1;
+            if (shadersAssignmentIndices.empty()) {
+                if (shadersAlphaData.size() == 1) {
+                    valueIndex = 0;
+                }
+            } else if (faceIndex >= 0 && 
+                static_cast<size_t>(faceIndex) < shadersAssignmentIndices.size()) {
+                int tmpIndex = shadersAssignmentIndices[faceIndex];
+                if (tmpIndex >= 0 && 
+                    static_cast<size_t>(tmpIndex) < shadersAlphaData.size()) {
+                    valueIndex = tmpIndex;
+                }
+            }
+            if (valueIndex >= 0) {
+                colorSetData[fvi][3] = shadersAlphaData[valueIndex];
+            } else {
+                // No shader alpha to fallback on. Use the default shader alpha.
+                colorSetData[fvi][3] = UnauthoredShaderAlpha;
+            }
+        }
+
+        // If we have a color/alpha value, add it to the data to be returned.
+        if (colorSetData[fvi] != unsetColor) {
+            GfVec3f rgbValue = UnauthoredColorSetRGB;
+            float alphaValue = UnauthoredColorAlpha;
+
+            if (useShaderColorFallback              || 
+                    (*colorSetRep == MFnMesh::kRGB) || 
+                    (*colorSetRep == MFnMesh::kRGBA)) {
+                rgbValue = LinearColorFromColorSet(colorSetData[fvi],
+                                                   convertDisplayColorToLinear);
+            }
+            if (useShaderAlphaFallback                || 
+                    (*colorSetRep == MFnMesh::kAlpha) || 
+                    (*colorSetRep == MFnMesh::kRGBA)) {
+                alphaValue = colorSetData[fvi][3];
+            }
+
+            colorSetRGBData->push_back(rgbValue);
+            colorSetAlphaData->push_back(alphaValue);
+            (*colorSetAssignmentIndices)[fvi] = colorSetRGBData->size() - 1;
+        }
+    }
+
+    MergeEquivalentColorSetValues(colorSetRGBData,
+                                  colorSetAlphaData,
+                                  colorSetAssignmentIndices);
+
+    UsdMayaUtil::CompressFaceVaryingPrimvarIndices(mesh,
+                                                   interpolation,
+                                                   colorSetAssignmentIndices);
 
     return true;
 }
