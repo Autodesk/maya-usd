@@ -405,7 +405,7 @@ void
 PxrUsdTranslators_MeshWriter::cleanupPrimvars()
 {
     if (!isMeshAnimated()) {
-        // Based on how SetPrimvar() works, the cleanup phase doesn't apply to
+        // Based on how setPrimvar() works, the cleanup phase doesn't apply to
         // non-animated meshes.
         return;
     }

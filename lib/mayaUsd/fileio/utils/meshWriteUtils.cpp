@@ -175,7 +175,7 @@ namespace
     /// the expected value of UsdGeomPrimvar::ComputeFlattened() is still
     /// correct (there is just some memory wasted).
     /// In order to cleanup any extra values and reclaim the wasted memory, call
-    /// CleanupPrimvars() at the end of the export process.
+    /// cleanupPrimvars() at the end of the export process.
     void
     setPrimvar( const UsdGeomPrimvar& primvar,
                 const VtIntArray& indices,
