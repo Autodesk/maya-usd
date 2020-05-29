@@ -68,21 +68,21 @@ namespace
 {
     /// Default value to use when collecting UVs from a UV set and a component
     /// has no authored value.
-    const GfVec2f DefaultUV = GfVec2f(0.f);
+    const GfVec2f UnauthoredUV = GfVec2f(0.f);
 
     /// Default values to use when collecting colors based on shader values
     /// and an object or component has no assigned shader.
-    const GfVec3f ShaderDefaultRGB = GfVec3f(0.5f);
-    const float ShaderDefaultAlpha = 0.0f;
+    const GfVec3f UnauthoredShaderRGB = GfVec3f(0.5f);
+    const float UnauthoredShaderAlpha = 0.0f;
 
     /// Default values to use when collecting colors from a color set and a
     /// component has no authored value.
-    const GfVec3f ColorSetDefaultRGB = GfVec3f(1.0f);
-    const float ColorSetDefaultAlpha = 1.0f;
-    const GfVec4f ColorSetDefaultRGBA = GfVec4f( ColorSetDefaultRGB[0],
-                                                 ColorSetDefaultRGB[1],
-                                                 ColorSetDefaultRGB[2],
-                                                 ColorSetDefaultAlpha);
+    const GfVec3f UnauthoredColorSetRGB = GfVec3f(1.0f);
+    const float UnauthoredColorAlpha = 1.0f;
+    const GfVec4f UnauthoredColorSetRGBA = GfVec4f(UnauthoredColorSetRGB[0],
+                                                   UnauthoredColorSetRGB[1],
+                                                   UnauthoredColorSetRGB[2],
+                                                   UnauthoredColorAlpha);
 
     // XXX: Note that this function is not exposed publicly since the USD schema
     // has been updated to conform to OpenSubdiv 3. We still look for this attribute
@@ -264,7 +264,7 @@ namespace
         setPrimvar(primVar, 
                    assignmentIndices,
                    VtValue(data),
-                   VtValue(DefaultUV),
+                   VtValue(UnauthoredUV),
                    usdTime,
                    valueWriter);
     }
@@ -916,7 +916,7 @@ UsdMayaMeshWriteUtils::addDisplayPrimvars(UsdGeomGprim &primSchema,
         setPrimvar(displayColor,
                    assignmentIndices,
                    VtValue(RGBData),
-                   VtValue(ShaderDefaultRGB),
+                   VtValue(UnauthoredShaderRGB),
                    usdTime,
                    valueWriter);
 
@@ -948,7 +948,7 @@ UsdMayaMeshWriteUtils::addDisplayPrimvars(UsdGeomGprim &primSchema,
             setPrimvar(displayOpacity,
                        assignmentIndices,
                        VtValue(AlphaData),
-                       VtValue(ShaderDefaultAlpha),
+                       VtValue(UnauthoredShaderAlpha),
                        usdTime,
                        valueWriter);
 
@@ -997,7 +997,7 @@ UsdMayaMeshWriteUtils::createRGBPrimVar(UsdGeomGprim &primSchema,
     setPrimvar(primVar,
                assignmentIndices,
                VtValue(data),
-               VtValue(ColorSetDefaultRGB),
+               VtValue(UnauthoredColorSetRGB),
                usdTime, valueWriter);
 
     if (clamped) {
@@ -1042,7 +1042,7 @@ UsdMayaMeshWriteUtils::createRGBAPrimVar(UsdGeomGprim &primSchema,
     setPrimvar(primVar,
                assignmentIndices,
                VtValue(rgbaData),
-               VtValue(ColorSetDefaultRGBA),
+               VtValue(UnauthoredColorSetRGBA),
                usdTime,
                valueWriter);
 
@@ -1080,7 +1080,7 @@ UsdMayaMeshWriteUtils::createAlphaPrimVar(UsdGeomGprim &primSchema,
     setPrimvar(primVar,
                assignmentIndices,
                VtValue(data),
-               VtValue(ColorSetDefaultAlpha),
+               VtValue(UnauthoredColorAlpha),
                usdTime,
                valueWriter);
 
@@ -1193,9 +1193,9 @@ UsdMayaMeshWriteUtils::getMeshColorSetData(MFnMesh& mesh,
                 colorSetData[fvi][2] = shadersRGBData[valueIndex][2];
             } else {
                 // No shader color to fallback on. Use the default shader color.
-                colorSetData[fvi][0] = ShaderDefaultRGB[0];
-                colorSetData[fvi][1] = ShaderDefaultRGB[1];
-                colorSetData[fvi][2] = ShaderDefaultRGB[2];
+                colorSetData[fvi][0] = UnauthoredShaderRGB[0];
+                colorSetData[fvi][1] = UnauthoredShaderRGB[1];
+                colorSetData[fvi][2] = UnauthoredShaderRGB[2];
             }
         }
         if (useShaderAlphaFallback) {
@@ -1216,14 +1216,14 @@ UsdMayaMeshWriteUtils::getMeshColorSetData(MFnMesh& mesh,
                 colorSetData[fvi][3] = shadersAlphaData[valueIndex];
             } else {
                 // No shader alpha to fallback on. Use the default shader alpha.
-                colorSetData[fvi][3] = ShaderDefaultAlpha;
+                colorSetData[fvi][3] = UnauthoredShaderAlpha;
             }
         }
 
         // If we have a color/alpha value, add it to the data to be returned.
         if (colorSetData[fvi] != unsetColor) {
-            GfVec3f rgbValue = ColorSetDefaultRGB;
-            float alphaValue = ColorSetDefaultAlpha;
+            GfVec3f rgbValue = UnauthoredColorSetRGB;
+            float alphaValue = UnauthoredColorAlpha;
 
             if (useShaderColorFallback              || 
                     (*colorSetRep == MFnMesh::kRGB) || 
