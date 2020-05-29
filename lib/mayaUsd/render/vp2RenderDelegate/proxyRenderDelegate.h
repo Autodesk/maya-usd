@@ -197,10 +197,10 @@ private:
     HdSelectionSharedPtr               _selection;
 
 #if defined(WANT_UFE_BUILD)
-    //! Observer for UFE global selection change
-    Ufe::Observer::Ptr  _ufeSelectionObserver;
+    //! Observer to listen to UFE changes
+    Ufe::Observer::Ptr  _observer;
 #else
-    //! Support proxy selection highlight when UFE is not available.
+    //! Minimum support for proxy selection when UFE is not available.
     MCallbackId         _mayaSelectionCallbackId{ 0 };
 #endif
 

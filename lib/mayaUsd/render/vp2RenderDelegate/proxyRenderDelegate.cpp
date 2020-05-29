@@ -142,10 +142,10 @@ namespace
     }
 
 #if defined(WANT_UFE_BUILD)
-    class UfeSelectionObserver : public Ufe::Observer
+    class UfeObserver : public Ufe::Observer
     {
     public:
-        UfeSelectionObserver(ProxyRenderDelegate& proxyRenderDelegate)
+        UfeObserver(ProxyRenderDelegate& proxyRenderDelegate)
             : Ufe::Observer()
             , _proxyRenderDelegate(proxyRenderDelegate)
         {
@@ -361,15 +361,15 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
         _selection.reset(new HdSelection);
 
 #if defined(WANT_UFE_BUILD)
-        if (!_ufeSelectionObserver) {
-            _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
+        if (!_observer) {
+            _observer = std::make_shared<UfeObserver>(*this);
 
             auto globalSelection = Ufe::GlobalSelection::get();
             if (globalSelection) {
-                globalSelection->addObserver(_ufeSelectionObserver);
+                globalSelection->addObserver(_observer);
             }
 
-            Ufe::Scene::instance().addObjectAddObserver(_ufeSelectionObserver);
+            Ufe::Scene::instance().addObjectAddObserver(_observer);
         }
 #else
         // Without UFE, support basic selection highlight at proxy shape level.
