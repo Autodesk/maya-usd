@@ -37,14 +37,17 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/imaging/glf/image.h>
+#if USD_VERSION_NUM >= 2002
 #include <pxr/imaging/glf/udimTexture.h>
+#endif
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/usd/ar/packageUtils.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdHydra/tokens.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
+#if USD_VERSION_NUM >= 2002
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
-
+#endif
 #include "debugCodes.h"
 #include "render_delegate.h"
 
@@ -296,6 +299,7 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
 MHWRender::MTexture* _LoadUdimTexture(
     const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
 {
+#if USD_VERSION_NUM >= 2002
     /*
         For this method to work path needs to be an absolute file path, not an asset path.
         That means that this function depends on the changes in 4e426565 to materialAdapther.cpp
@@ -370,6 +374,9 @@ MHWRender::MTexture* _LoadUdimTexture(
     }
 
     return texture;
+#else
+    #return nullptr;
+#endif
 }
 
 //! Load texture from the specified path
@@ -379,9 +386,11 @@ MHWRender::MTexture* _LoadTexture(
 {
     isColorSpaceSRGB = false;
 
+#if USD_VERSION_NUM >= 2002
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
     if (GlfIsSupportedUdimTexture(path))
         return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
+#endif
 
     // set a default uv scale of (1.0, 1.0) and an offset of (0.0f, 0.0f);
     uvScaleOffset.append(1.0f);
