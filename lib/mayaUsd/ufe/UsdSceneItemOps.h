@@ -34,7 +34,7 @@ class MAYAUSD_CORE_PUBLIC UsdSceneItemOps : public Ufe::SceneItemOps
 public:
 	typedef std::shared_ptr<UsdSceneItemOps> Ptr;
 
-	UsdSceneItemOps();
+	UsdSceneItemOps(const UsdSceneItem::Ptr& item);
 	~UsdSceneItemOps() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -44,7 +44,7 @@ public:
 	UsdSceneItemOps& operator=(UsdSceneItemOps&&) = delete;
 
 	//! Create a UsdSceneItemOps.
-	static UsdSceneItemOps::Ptr create();
+	static UsdSceneItemOps::Ptr create(const UsdSceneItem::Ptr& item);
 
 	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;

@@ -34,7 +34,7 @@ class MAYAUSD_CORE_PUBLIC UsdHierarchy : public Ufe::Hierarchy
 public:
 	typedef std::shared_ptr<UsdHierarchy> Ptr;
 
-	UsdHierarchy();
+	UsdHierarchy(const UsdSceneItem::Ptr& item);
 	~UsdHierarchy() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -44,9 +44,9 @@ public:
 	UsdHierarchy& operator=(UsdHierarchy&&) = delete;
 
 	//! Create a UsdHierarchy.
-	static UsdHierarchy::Ptr create();
+	static UsdHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
 
-	void setItem(UsdSceneItem::Ptr item);
+	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
 
 	UsdSceneItem::Ptr usdSceneItem() const;

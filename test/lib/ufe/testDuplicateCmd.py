@@ -109,11 +109,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         ball35DupItem = next(snIter)
         ball35DupName = str(ball35DupItem.path().back())
 
-        # MAYA-92350: should not need to re-bind hierarchy interface objects
-        # with their item.
-        worldHierarchy = ufe.Hierarchy.hierarchy(worldItem)
         worldChildren = worldHierarchy.children()
-        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
         propsChildren = propsHierarchy.children()
 
         self.assertEqual(len(worldChildren)-len(worldChildrenPre), 1)
@@ -149,11 +145,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         sphereDupItem = next(snIter)
         ball35DupItem = next(snIter)
 
-        # MAYA-92350: should not need to re-bind hierarchy interface objects
-        # with their item.
-        worldHierarchy = ufe.Hierarchy.hierarchy(worldItem)
         worldChildren = worldHierarchy.children()
-        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
         propsChildren = propsHierarchy.children()
 
         self.assertEqual(len(worldChildren)-len(worldChildrenPre), 1)

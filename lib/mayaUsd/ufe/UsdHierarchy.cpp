@@ -61,8 +61,8 @@ namespace {
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdHierarchy::UsdHierarchy()
-	: Ufe::Hierarchy()
+UsdHierarchy::UsdHierarchy(const UsdSceneItem::Ptr& item)
+	: Ufe::Hierarchy(), fItem(item), fPrim(item->prim())
 {
 }
 
@@ -71,12 +71,12 @@ UsdHierarchy::~UsdHierarchy()
 }
 
 /*static*/
-UsdHierarchy::Ptr UsdHierarchy::create()
+UsdHierarchy::Ptr UsdHierarchy::create(const UsdSceneItem::Ptr& item)
 {
-	return std::make_shared<UsdHierarchy>();
+	return std::make_shared<UsdHierarchy>(item);
 }
 
-void UsdHierarchy::setItem(UsdSceneItem::Ptr item)
+void UsdHierarchy::setItem(const UsdSceneItem::Ptr& item)
 {
 	fPrim = item->prim();
 	fItem = item;
