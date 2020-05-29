@@ -68,11 +68,11 @@ private:
     bool isMeshAnimated() const;
 
     /// Input mesh before any skeletal deformations, cached between iterations.
-    MObject m_skelInputMesh;
+    MObject _skelInputMesh;
 
     /// Set of color sets that should be excluded.
     /// Intermediate processes may alter this set prior to writeMeshAttrs().
-    std::set<std::string> m_excludeColorSets;
+    std::set<std::string> _excludeColorSets;
 };
 
 
