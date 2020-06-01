@@ -412,7 +412,7 @@ MHWRender::MTexture* _LoadUdimTexture(
 
     return texture;
 #else
-    #return nullptr;
+    return nullptr;
 #endif
 }
 
