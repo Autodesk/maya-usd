@@ -306,7 +306,7 @@ class ParentCmdTestCase(unittest.TestCase):
                     "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1",
                     "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testAlreadyChild only available in UFE preview version 0.2.13 and greater')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2016', 'testAlreadyChild only available in UFE preview version 0.2.16 and greater')
     def testAlreadyChild(self):
         '''Parenting an object to its current parent is a no-op.'''
 
