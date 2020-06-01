@@ -701,6 +701,10 @@ MAYAUSD_NS_DEF
         }
     };
 
+// Missing attribute method for MDataHandle prior to Maya 2020. For now disable all
+// array converters to avoid complicating interface and error handling. If needed,
+// we should be able to back-port the change to an update.
+#if MAYA_API_VERSION >= 20200000
     //! \brief  Utility class for conversion between array data handles and Usd.
     template <class MAYA_Type, class USD_Type, NeedsGammaCorrection ColorCorrection>
     struct MArrayDataHandleConvert {
@@ -873,6 +877,7 @@ MAYAUSD_NS_DEF
             }
         }
     };
+#endif
 
     //---------------------------------------------------------------------------------
     //! \brief  Storage for generated instances of converters.
@@ -949,6 +954,7 @@ MAYAUSD_NS_DEF
 
     //! \brief  Utility class responsible for generating all supported array attribute converters.
     struct GenerateArrayPlugConverters {
+#if MAYA_API_VERSION >= 20200000
         template <
             class MAYA_Type,
             class USD_Type,
@@ -998,6 +1004,13 @@ MAYAUSD_NS_DEF
             createArrayConverter<MMatrix, GfMatrix4d>(converters, SdfValueTypeNames->Matrix4dArray);
             return converters;
         }
+#else
+        static ConvertStorage generate()
+        {
+            ConvertStorage converters;
+            return converters;
+        }
+#endif
     };
 
     //! \brief  Global storage for non-array attribute converters
