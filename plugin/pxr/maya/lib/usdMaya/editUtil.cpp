@@ -18,13 +18,13 @@
 #include "usdMaya/referenceAssembly.h"
 #include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/stringUtils.h"
+#include <pxr/base/tf/stringUtils.h>
 
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/xformable.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 #include <maya/MEdit.h>
 #include <maya/MFnAssembly.h>

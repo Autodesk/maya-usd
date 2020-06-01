@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h"
+#include <pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h>
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
-#include "pxr/base/tf/staticTokens.h"
+#include <pxr/base/tf/staticTokens.h>
 
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShadingNodeOverride.h>

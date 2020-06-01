@@ -22,21 +22,21 @@
 #include "usdMaya/translatorModelAssembly.h"
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
 
-#include "pxr/usd/kind/registry.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/primRange.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdGeom/gprim.h"
-#include "pxr/usd/usdUtils/pipeline.h"
-#include "pxr/usd/usdUtils/stageCache.h"
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/gprim.h>
+#include <pxr/usd/usdUtils/pipeline.h>
+#include <pxr/usd/usdUtils/stageCache.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MFnDependencyNode.h>

@@ -20,7 +20,7 @@
 
 #include "usdMaya/api.h"
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
 #include <maya/MPxCommand.h>
 
