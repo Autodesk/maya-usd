@@ -16,8 +16,8 @@
 
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
-#include "pxr/base/js/json.h"
-#include "pxr/usd/pcp/types.h"
+#include <pxr/base/js/json.h>
+#include <pxr/usd/pcp/types.h>
 
 namespace AL {
 namespace usdmaya {

@@ -25,7 +25,7 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/StageCache.h"
 
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/stage.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

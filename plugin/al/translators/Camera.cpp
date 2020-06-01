@@ -15,7 +15,7 @@
 //
 
 #include "Camera.h"
-#include "pxr/usd/usdGeom/camera.h"
+#include <pxr/usd/usdGeom/camera.h>
 
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"

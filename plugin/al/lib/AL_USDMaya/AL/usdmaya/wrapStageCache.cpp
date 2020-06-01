@@ -19,7 +19,7 @@
 #include <boost/python/def.hpp>
 #include <boost/python.hpp>
 
-#include "pxr/base/tf/pyResultConversions.h"
+#include <pxr/base/tf/pyResultConversions.h>
 
 //using namespace std;
 //using namespace boost::python;

@@ -29,11 +29,11 @@
 #include <maya/MFileIO.h>
 #include <maya/MStringArray.h>
 
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/sdf/types.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 
 #include <fstream>

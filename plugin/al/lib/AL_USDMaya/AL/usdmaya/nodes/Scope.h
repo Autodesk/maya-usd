@@ -22,7 +22,7 @@
 #include <maya/MPxTransformationMatrix.h>
 #include "AL/usdmaya/nodes/BasicTransformationMatrix.h"
 
-#include "pxr/usd/usdGeom/scope.h"
+#include <pxr/usd/usdGeom/scope.h>
 
 namespace AL {
 namespace usdmaya {

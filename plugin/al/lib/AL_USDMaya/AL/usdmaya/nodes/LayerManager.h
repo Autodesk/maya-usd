@@ -22,7 +22,7 @@
 
 #include <maya/MPxNode.h>
 
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/stage.h>
 
 #include <map>
 #include <set>

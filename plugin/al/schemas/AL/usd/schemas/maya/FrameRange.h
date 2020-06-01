@@ -18,21 +18,21 @@
 
 /// \file AL_USDMayaSchemas/FrameRange.h
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "./api.h"
-#include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/typed.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 #include "./tokens.h"
 
-#include "pxr/base/vt/value.h"
+#include <pxr/base/vt/value.h>
 
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/matrix4d.h"
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/matrix4d.h>
 
-#include "pxr/base/tf/token.h"
-#include "pxr/base/tf/type.h"
+#include <pxr/base/tf/token.h>
+#include <pxr/base/tf/type.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

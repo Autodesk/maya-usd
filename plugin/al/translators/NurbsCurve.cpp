@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#include "pxr/usd/usdGeom/nurbsCurves.h"
-#include "pxr/usd/usdGeom/xform.h"
+#include <pxr/usd/usdGeom/nurbsCurves.h>
+#include <pxr/usd/usdGeom/xform.h>
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFnDoubleArrayData.h>

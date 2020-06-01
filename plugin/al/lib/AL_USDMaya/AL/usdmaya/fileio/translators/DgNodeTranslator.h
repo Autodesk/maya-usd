@@ -31,8 +31,8 @@
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 
-#include "pxr/base/gf/half.h"
-#include "pxr/usd/usd/attribute.h"
+#include <pxr/base/gf/half.h>
+#include <pxr/usd/usd/attribute.h>
 
 #include <string>
 #include <vector>

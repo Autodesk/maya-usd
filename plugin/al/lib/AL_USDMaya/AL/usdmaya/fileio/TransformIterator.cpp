@@ -18,7 +18,7 @@
 
 #include <maya/MFnDagNode.h>
 
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/stage.h>
 
 #include <iostream>
 

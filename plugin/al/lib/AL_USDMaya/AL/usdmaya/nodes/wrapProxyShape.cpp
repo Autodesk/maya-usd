@@ -34,9 +34,9 @@
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
 
-#include "pxr/base/tf/pyEnum.h"
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/refPtr.h"
+#include <pxr/base/tf/pyEnum.h>
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/refPtr.h>
 
 #include <memory>
 

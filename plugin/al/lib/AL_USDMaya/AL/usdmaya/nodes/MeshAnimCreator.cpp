@@ -25,7 +25,7 @@
 #include <maya/MFnMeshData.h>
 #include <maya/MTime.h>
 
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/mesh.h>
 
 #include <mayaUsd/nodes/stageData.h>
 

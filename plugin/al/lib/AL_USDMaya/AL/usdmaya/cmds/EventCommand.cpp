@@ -15,7 +15,7 @@
 //
 #include "AL/usdmaya/cmds/EventCommand.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MArgList.h>

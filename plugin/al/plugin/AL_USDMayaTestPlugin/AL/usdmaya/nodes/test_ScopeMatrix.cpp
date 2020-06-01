@@ -15,7 +15,7 @@
 //
 
 
-#include "pxr/usd/usdGeom/xform.h"
+#include <pxr/usd/usdGeom/xform.h>
 
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"

@@ -27,9 +27,9 @@
 #include <maya/MStatus.h>
 #include <maya/MTypes.h>
 
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/xformable.h>
 
 using AL::usdmaya::nodes::ProxyShape;
 using AL::usdmaya::nodes::Transform;

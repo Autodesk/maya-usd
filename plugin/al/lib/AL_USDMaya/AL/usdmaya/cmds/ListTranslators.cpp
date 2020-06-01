@@ -15,9 +15,9 @@
 //
 #include "AL/usdmaya/cmds/ListTranslators.h"
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/plug/registry.h"
+#include <pxr/pxr.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/plug/registry.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MGlobal.h>

@@ -23,11 +23,11 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MPxNode.h>
 
-#include "pxr/base/tf/token.h"
+#include <pxr/base/tf/token.h>
 
 /*
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MNodeMessage.h>
 #include "AL/maya/utils/MayaHelperMacros.h"

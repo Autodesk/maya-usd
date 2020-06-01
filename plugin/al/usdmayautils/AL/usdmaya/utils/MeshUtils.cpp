@@ -22,7 +22,7 @@
 #include <mayaUsdUtils/DebugCodes.h>
 #include <mayaUsdUtils/DiffCore.h>
 
-#include "pxr/usd/usdUtils/pipeline.h"
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MItMeshPolygon.h>
 #include <maya/MGlobal.h>

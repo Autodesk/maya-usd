@@ -18,7 +18,7 @@
 #include "AL/maya/utils/NodeHelper.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MPxNode.h>
 #include <maya/MNodeMessage.h>

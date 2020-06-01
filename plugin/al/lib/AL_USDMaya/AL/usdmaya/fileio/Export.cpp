@@ -34,10 +34,10 @@
 #include <maya/MPlugArray.h>
 #include <maya/MSyntax.h>
 
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
-#include "pxr/usd/usd/primRange.h"
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
+#include <pxr/usd/usd/primRange.h>
 
 namespace AL {
 namespace usdmaya {
