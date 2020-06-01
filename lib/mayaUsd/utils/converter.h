@@ -54,7 +54,7 @@ MAYAUSD_NS_DEF
         bool _doGammaCorrection { true };
     };
 
-    /*! \brief Performant converter, providing several interfaces to translated between Maya and Usd
+    /*! \brief Performant converter, providing several interfaces to translate between Maya and Usd
        data types.
 
         Instances of converter class are initialized once for all supported types. To use the
@@ -94,7 +94,6 @@ MAYAUSD_NS_DEF
         \note See the list of currently implemented data converters in converter.cpp file
     */
     class MAYAUSD_CORE_PUBLIC Converter final {
-    public:
         using MPlugToUsdAttrFn
             = std::add_pointer<void(const MPlug&, UsdAttribute&, const ConverterArgs&)>::type;
         using UsdAttrToMPlugFn
@@ -147,7 +146,7 @@ MAYAUSD_NS_DEF
 
         //! \brief  Default constructor makes no sense for this class
         Converter() = delete;
-
+    public:
         //! \brief  Nothing special to do in the destructor.
         ~Converter() = default;
 
@@ -280,6 +279,8 @@ MAYAUSD_NS_DEF
             const bool   translateMayaDoubleToUsdSinglePrecision
             = UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
+        struct GenerateConverters;
+        struct GenerateArrayPlugConverters;
     private:
         //! Usd type this converter is operating with.
         const SdfValueTypeName& _usdTypeName;

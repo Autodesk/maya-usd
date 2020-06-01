@@ -163,8 +163,7 @@ UsdMayaWriteUtil::GetOrCreateUsdAttr(
     }
 
     const SdfValueTypeName& typeName =
-        Converter::getUsdTypeName(attrPlug,
-                                            translateMayaDoubleToUsdSinglePrecision);
+        Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         usdAttr = usdPrim.CreateAttribute(usdAttrNameToken, typeName, custom);
     }

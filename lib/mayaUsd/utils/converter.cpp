@@ -29,6 +29,7 @@
 
 #include <unordered_map>
 
+// clang-format off
 /* Converter supported types
 
 | SdfValueTypeName | USD C++ Type          | Maya Type                                                      | Maya C++ Type           | Helper TypeTrait   |
@@ -59,6 +60,7 @@ Useful links when adding new types to the converter:
  https://github.com/PixarAnimationStudios/USD/blob/be1a80f8cb91133ac75e1fc2a2e1832cd10d91c8/pxr/usd/usd/doxygen/datatypes.dox#L35
  https://github.com/PixarAnimationStudios/USD/blob/be1a80f8cb91133ac75e1fc2a2e1832cd10d91c8/pxr/usd/sdf/types.h#L479
 */
+// clang-format on
 
 MAYAUSD_NS_DEF
 {
@@ -883,10 +885,11 @@ MAYAUSD_NS_DEF
     //! \brief  Storage for generated instances of converters.
     using ConvertStorage
         = std::unordered_map<SdfValueTypeName, const Converter, SdfValueTypeNameHash>;
+    } // namespace
 
     //! \brief  Utility class responsible for generating all supported converters. This list
     //! excludes all array attribute types.
-    struct GenerateConverters {
+    struct Converter::GenerateConverters {
         template <
             class MAYA_Type,
             class USD_Type,
@@ -953,7 +956,7 @@ MAYAUSD_NS_DEF
     };
 
     //! \brief  Utility class responsible for generating all supported array attribute converters.
-    struct GenerateArrayPlugConverters {
+    struct Converter::GenerateArrayPlugConverters {
 #if MAYA_API_VERSION >= 20200000
         template <
             class MAYA_Type,
@@ -1013,10 +1016,11 @@ MAYAUSD_NS_DEF
 #endif
     };
 
+    namespace {
     //! \brief  Global storage for non-array attribute converters
-    ConvertStorage _converters = GenerateConverters::generate();
+    ConvertStorage _converters = Converter::GenerateConverters::generate();
     //! \brief  Global storage for array attribute converters
-    ConvertStorage _convertersForArrayPlug = GenerateArrayPlugConverters::generate();
+    ConvertStorage _convertersForArrayPlug = Converter::GenerateArrayPlugConverters::generate();
     } // namespace
 
     const Converter* Converter::find(const SdfValueTypeName& typeName, bool isArrayPlug)

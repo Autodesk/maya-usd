@@ -38,7 +38,7 @@ class MayaUsdConverterTestCase(unittest.TestCase):
         """
         layer = Sdf.Layer.CreateAnonymous(layerName)
         stage = Usd.Stage.Open(layer.identifier)
-        self.assertNotEqual(stage, None)
+        self.assertTrue(stage)
 
         return stage
 
@@ -58,7 +58,7 @@ class MayaUsdConverterTestCase(unittest.TestCase):
         self.assertEqual(cmds.attributeQuery(plugAndAttrName, n=nodeName, nn=True), plugAndAttrName)
         
         p = stage.OverridePrim(primPath)
-        self.assertNotEqual(p, None)
+        self.assertTrue(p)
         
         attr = p.CreateAttribute(plugAndAttrName, sdfValueType)
         
@@ -133,10 +133,10 @@ class MayaUsdConverterTestCase(unittest.TestCase):
         resultVt1 = converter.convertVt(plug,args)
         self.assertEqual(resultVt1, Vt._test_Ident(value1))
         
-        self.assertEqual(converter.validate(plug,attr), True)
-        self.assertEqual(converter.validate(errPlug,errAttr), False)
-        self.assertEqual(converter.validate(plug,errAttr), False)
-        self.assertEqual(converter.validate(errPlug,attr), False)
+        self.assertTrue(converter.validate(plug,attr))
+        self.assertFalse(converter.validate(errPlug,errAttr))
+        self.assertFalse(converter.validate(plug,errAttr))
+        self.assertFalse(converter.validate(errPlug,attr))
         
         with self.assertRaises(Exception):
             converter.convert(plug, errAttr, args)
