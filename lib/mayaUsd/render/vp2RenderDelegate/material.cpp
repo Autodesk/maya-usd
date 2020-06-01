@@ -329,17 +329,61 @@ MHWRender::MTexture* _LoadUdimTexture(
         return nullptr;
     }
 
+    // HdSt sets the tile limit to the max number of textures in an array of 2d textures. OpenGL says
+    // the minimum number of layers in 2048 so I'll use that.
+    int tileLimit = 2048;
+    std::vector<std::tuple<int, TfToken>> tiles = UsdImaging_GetUdimTiles(path, tileLimit);
+    if (tiles.size() == 0)
+    {
+        TF_WARN("Unable to find UDIM tiles for %s", path.c_str());
+        return nullptr;
+    }
+
+    // I don't think there is a downside to setting a very high limit.
+    // Maya will clamp the texture size to the VP2 texture clamp resolution and the hardware's
+    // max texture size. And Maya doesn't make the tiled texture unnecessarily large. When I 
+    // try loading two 1k textures I end up with a tiled texture that is 2k x 1k.
+    unsigned int maxWidth = 0;
+    unsigned int maxHeight = 0;
+    renderer->GPUmaximumOutputTargetSize(maxWidth, maxHeight);
+
+    // Open the first image and get it's resolution. Assuming that all the tiles have the same
+    // resolution, warn the user if Maya's tiled texture implementation is going to result in
+    // a loss of texture data.
+    {
+        GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tiles[0]).GetString());
+        if (!TF_VERIFY(image)) {
+            return nullptr;
+        }
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+        unsigned int tileWidth = image->GetWidth();
+        unsigned int tileHeight = image->GetHeight();
+
+        int maxTileId = std::get<0>(tiles.back());
+        int maxU = maxTileId % 10;
+        int maxV = (maxTileId - maxU) / 10;
+        if ((tileWidth * maxU > maxWidth) || (tileHeight * maxV > maxHeight))
+            TF_WARN("UDIM texture %s creates a tiled texture larger than the maximum texture size. Some"
+                "resolution will be lost.", path.c_str());
+    }
+
     MString textureName(path.c_str()); // used for caching, using the string with <UDIM> in it is fine
     MStringArray tilePaths;
     MFloatArray tilePositions;
-    // HdSt sets the tile limit to the max number of textures in an array of 2d textures. We don't
-    // want to set it too high because UsdImaging_GetUdimTiles will search for every one on disk.
-    int tileLimit = 100;
-    std::vector<std::tuple<int, TfToken>> tiles = UsdImaging_GetUdimTiles(path, tileLimit);
-    
     for(auto& tile : tiles)
     {
         tilePaths.append(MString(std::get<1>(tile).GetText()));
+
+        GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tile).GetString());
+        if (!TF_VERIFY(image)) {
+            return nullptr;
+        }
+        if (isColorSpaceSRGB != image->IsColorSpaceSRGB())
+        {
+            TF_WARN("UDIM texture %s color space doesn't match %s color space",
+                std::get<1>(tile).GetText(), std::get<1>(tiles[0]).GetText());
+        }
+
         // The image labeled 1001 will have id 0, 1002 will have id 1, 1011 will have id 10.
         // image 1001 starts with UV (0.0f, 0.0f), 1002 is (1.0f, 0.0f) and 1011 is (0.0f, 1.0f)
         int tileId = std::get<0>(tile);
@@ -350,13 +394,6 @@ MHWRender::MTexture* _LoadUdimTexture(
     }
 
     MColor undefinedColor(0.0f, 1.0f, 0.0f, 1.0f);
-    // 16384x16384 is the max 2d texture resolution on my NVidia K5000, I think some cards do
-    // support 32k x 32k. I don't think there is a downside to setting a very high limit.
-    // Maya will clamp the texture size to the VP2 texture clamp resolution and the hardware's
-    // max texture size. And Maya doesn't make the tiled texture unnecessarily large. When I 
-    // try loading two 1k textures I end up with a tiled texture that is 2k x 1k.
-    unsigned int maxWidth = 32768;
-    unsigned int maxHeight = 32768;
     MStringArray failedTilePaths;
     MHWRender::MTexture* texture = textureMgr->acquireTiledTexture(
         textureName,
@@ -382,7 +419,8 @@ MHWRender::MTexture* _LoadUdimTexture(
 //! Load texture from the specified path
 MHWRender::MTexture* _LoadTexture(
     const std::string& path,
-    bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
+    bool& isColorSpaceSRGB,
+    MFloatArray& uvScaleOffset)
 {
     isColorSpaceSRGB = false;
 
@@ -885,13 +923,11 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                     }
                     if (status) {
                         paramName = nodeName + "stScale";
-                        const float* val = &(info._stScale[0]);
-                        status = _surfaceShader->setParameter(paramName, val);
+                        status = _surfaceShader->setParameter(paramName, info._stScale.data());
                     }
                     if (status) {
                         paramName = nodeName + "stOffset";
-                        const float* val = &(info._stOffset[0]);
-                        status = _surfaceShader->setParameter(paramName, val);
+                        status = _surfaceShader->setParameter(paramName, info._stOffset.data());
                     }
                 }
             }
@@ -939,10 +975,8 @@ HdVP2Material::_AcquireTexture(const std::string& path)
     HdVP2TextureInfo& info = _textureMap[path];
     info._texture.reset(texture);
     info._isColorSpaceSRGB = isSRGB;
-    info._stScale[0] = uvScaleOffset[0]; // The first 2 elements are the scale, the 2nd two elements are the offset.
-    info._stScale[1] = uvScaleOffset[1];
-    info._stOffset[0] = uvScaleOffset[2];
-    info._stOffset[1] = uvScaleOffset[3];
+    info._stScale.Set(uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale, the 2nd two elements are the offset.
+    info._stOffset.Set(uvScaleOffset[2], uvScaleOffset[3]);
     return info;
 }
 

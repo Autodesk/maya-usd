@@ -22,6 +22,7 @@
 
 #include <pxr/pxr.h>
 #include <pxr/imaging/hd/material.h>
+#include<pxr/base/gf/vec2f.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -61,8 +62,8 @@ using HdVP2TextureUniquePtr = std::unique_ptr<
 struct HdVP2TextureInfo
 {
     HdVP2TextureUniquePtr  _texture;          //!< Unique pointer of the texture
-    float                  _stScale[2];       //!< UV scale for tiled textures
-    float                  _stOffset[2];      //!< UV offset for tiled textures
+    GfVec2f                _stScale;       //!< UV scale for tiled textures
+    GfVec2f                _stOffset;      //!< UV offset for tiled textures
     bool                   _isColorSpaceSRGB; //!< Whether sRGB linearization is needed
 };
 
