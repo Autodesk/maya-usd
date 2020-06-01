@@ -23,10 +23,7 @@ namespace ufe {
 
 UsdHierarchyHandler::UsdHierarchyHandler()
 	: Ufe::HierarchyHandler()
-{
-	fUsdRootChildHierarchy = UsdRootChildHierarchy::create();
-	fUsdHierarchy = UsdHierarchy::create();
-}
+{}
 
 UsdHierarchyHandler::~UsdHierarchyHandler()
 {
@@ -45,16 +42,8 @@ UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()
 Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
 	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-	if(isRootChild(usdItem->path()))
-	{
-		fUsdRootChildHierarchy->setItem(usdItem);
-		return fUsdRootChildHierarchy;
-	}
-	else
-	{
-		fUsdHierarchy->setItem(usdItem);
-		return fUsdHierarchy;
-	}
+	return isRootChild(usdItem->path()) ?
+        UsdRootChildHierarchy::create(usdItem) : UsdHierarchy::create(usdItem);
 }
 
 Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const

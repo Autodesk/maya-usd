@@ -15,6 +15,9 @@
 //
 #include <sstream>
 
+#include "adskExportCommand.h"
+#include "adskImportCommand.h"
+
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
 #include <maya/MDrawRegistry.h>
@@ -23,6 +26,7 @@
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 
+#include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
@@ -74,6 +78,22 @@ MStatus initializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to register export translator.");
     }
 
+    status = plugin.registerCommand(
+        MayaUsd::ADSKMayaUSDExportCommand::commandName,
+        MayaUsd::ADSKMayaUSDExportCommand::creator,
+        MayaUsd::ADSKMayaUSDExportCommand::createSyntax);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register export command.");
+    }
+
+    status = plugin.registerCommand(
+        MayaUsd::ADSKMayaUSDImportCommand::commandName,
+        MayaUsd::ADSKMayaUSDImportCommand::creator,
+        MayaUsd::ADSKMayaUSDImportCommand::createSyntax);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register import command.");
+    }
+
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
 
@@ -107,8 +127,8 @@ MStatus initializePlugin(MObject obj)
     }
 #endif
 
-    MGlobal::executeCommand("source \"mayaUsdMenu.mel\"");
-    MGlobal::executeCommand("mayaUsdMenu_loadui");
+    plugin.registerUI("mayaUsd_pluginUICreation", "mayaUsd_pluginUIDeletion", 
+        "mayaUsd_pluginBatchLoad", "mayaUsd_pluginBatchUnload");
 
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
     // automatically.  To be investigated.  A duplicate of this code is in the
@@ -134,6 +154,8 @@ MStatus initializePlugin(MObject obj)
         }
     }
 
+    UsdMayaSceneResetNotice::InstallListener();
+
     return status;
 }
 
@@ -142,8 +164,6 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
     MStatus status;
-
-    MGlobal::executeCommand("mayaUsdMenu_unloadui");
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);
     if (!status) {
@@ -169,6 +189,16 @@ MStatus uninitializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to deregister export translator.");
     }
 
+    status = plugin.deregisterCommand(MayaUsd::ADSKMayaUSDExportCommand::commandName);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to deregister export command.");
+    }
+
+    status = plugin.deregisterCommand(MayaUsd::ADSKMayaUSDImportCommand::commandName);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to deregister import command.");
+    }
+
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
     CHECK_MSTATUS(status);
 
@@ -180,5 +210,7 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 #endif
 
+    UsdMayaSceneResetNotice::RemoveListener();
+    
     return status;
 }

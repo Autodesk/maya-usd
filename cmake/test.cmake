@@ -15,6 +15,7 @@ endfunction()
 #   PYTHON_COMMAND     - Python code to execute; should call sys.exit
 #                        with an appropriate exitcode to indicate success
 #                        or failure.
+#   WORKING_DIRECTORY  - Directory from which the test executable will be called.
 #   COMMAND            - Command line to execute as a test
 #   NO_STANDALONE_INIT - Only allowable with PYTHON_MODULE or
 #                        PYTHON_COMMAND. With those modes, this
@@ -32,6 +33,7 @@ endfunction()
 #                            MAYA_PLUG_IN_PATH
 #                            MAYA_SCRIPT_PATH
 #                            PXR_PLUGINPATH_NAME
+#                            LD_LIBRARY_PATH
 #                        Note that the format of these name/value pairs should
 #                        be the same as that used with
 #                        `set_property(TEST test_name APPEND PROPERTY ENVIRONMENT ...)`
@@ -48,9 +50,9 @@ function(mayaUsd_add_test test_name)
     # -----------------
 
     cmake_parse_arguments(PREFIX
-        "NO_STANDALONE_INIT"            # options
-        "PYTHON_MODULE;PYTHON_COMMAND"  # one_value keywords
-        "COMMAND;ENV"                   # multi_value keywords
+        "NO_STANDALONE_INIT"                              # options
+        "PYTHON_MODULE;PYTHON_COMMAND;WORKING_DIRECTORY"  # one_value keywords
+        "COMMAND;ENV"                                     # multi_value keywords
         ${ARGN}
     )
 
@@ -71,6 +73,13 @@ function(mayaUsd_add_test test_name)
                                           OR PREFIX_PYTHON_COMMAND))
         message(FATAL_ERROR "mayaUsd_add_test: NO_STANDALONE_INIT may only be "
             "used with PYTHON_MODULE or PYTHON_COMMAND")
+    endif()
+
+    # set the working_dir
+    if(PREFIX_WORKING_DIRECTORY)
+        set(working_dir ${PREFIX_WORKING_DIRECTORY})
+    else()
+        set(working_dir ${CMAKE_CURRENT_SOURCE_DIR})
     endif()
 
     # --------------
@@ -115,7 +124,7 @@ finally:
 
     add_test(
         NAME "${test_name}"
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        WORKING_DIRECTORY ${working_dir}
         COMMAND ${command}
     )
 
@@ -129,6 +138,7 @@ finally:
         MAYA_PLUG_IN_PATH
         MAYA_SCRIPT_PATH
         PXR_PLUGINPATH_NAME
+        LD_LIBRARY_PATH
     )
 
     # Set initial empty values for all path vars
@@ -154,6 +164,8 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/lib/usd")
     list(APPEND mayaUsd_varname_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin")
+    list(APPEND mayaUsd_varname_PYTHONPATH
+         "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
 
     # pxr
     list(APPEND mayaUsd_varname_PYTHONPATH

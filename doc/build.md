@@ -33,7 +33,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          |        
 |:------------: |:---------------:                  |
-|  CommitID/Tags | master: [v19.07](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.07) or [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) <br> dev: [893c8e4](https://github.com/PixarAnimationStudios/USD/commit/893c8e4cc4d45fb3e7364369d7767602de411120) | 
+|  CommitID/Tags | master: [v19.07](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.07) or [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) <br> dev: [095e616](https://github.com/PixarAnimationStudios/USD/commit/095e61600f36a5ac19bff71157d9bf641563e889) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
@@ -110,6 +110,9 @@ BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.        
 BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON
 BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
+BUILD_STRICT_MODE           | enforces all warnings as errors.                           | ON
+BUILD_WITH_PYTHON_3			| build with python 3.										 | OFF
+BUILD_SHARED_LIBS			| build libraries as shared or static.						 | ON
 CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON
 
 ##### Stages
@@ -231,6 +234,20 @@ PyYAML     3.13
 setuptools 39.0.1 
 shiboken2  5.12.1 
 ```
+
+##### dependencies on Linux DSOs when running tests
+
+Normally either runpath or rpath are used on some DSOs in this library to specify explicit on other libraries (such as USD itself)
+
+If for some reason you don't want to use either of these options, and switch them off with:
+```
+CMAKE_SKIP_RPATH=TRUE
+```
+To allow your tests to run, you can inject LD_LIBRARY_PATH into any of the mayaUSD_add_test calls by setting the ADDITIONAL_LD_LIBRARY_PATH cmake variable to $ENV{LD_LIBRARY_PATH} or similar.
+
+There is a related ADDITIONAL_PXR_PLUGINPATH_NAME cmake var which can be used if schemas are installed in a non-standard location
+
+
 
 # How to Load Plug-ins in Maya 
 

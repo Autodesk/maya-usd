@@ -136,10 +136,20 @@ namespace {
             if (requiresUnsharedVertices) {
                 const VtIntArray& faceVertexIndices = topology.GetFaceVertexIndices();
                 if (numVertices == faceVertexIndices.size()) {
+                    unsigned int dataSize = primvarData.size();
                     for (size_t v = 0; v < numVertices; v++) {
                         SRC_TYPE* pointer = reinterpret_cast<SRC_TYPE*>(
                             reinterpret_cast<float*>(&vertexBuffer[v]) + channelOffset);
-                        *pointer = primvarData[faceVertexIndices[v]];
+                        unsigned int index = faceVertexIndices[v];
+                        if (index < dataSize) {
+                            *pointer = primvarData[index];
+                        } else {
+                            TF_DEBUG(HDVP2_DEBUG_MESH).Msg("Invalid Hydra prim '%s': "
+                                                    "primvar %s has %u elements, while its topology "
+                                                    "references face vertex index %u.\n",
+                                                    rprimId.asChar(), primvarName.GetText(),
+                                                    dataSize, index);
+                        }
                     }
                 }
                 else {
@@ -164,7 +174,8 @@ namespace {
                 }
 
                 if (channelOffset == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
-                    memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
+                    const void* source = static_cast<const void*>(primvarData.cdata());
+                    memcpy(vertexBuffer, source, sizeof(DEST_TYPE) * numVertices);
                 }
                 else {
                     for (size_t v = 0; v < numVertices; v++) {
@@ -244,7 +255,8 @@ namespace {
                     }
 
                     if (channelOffset == 0 && sizeof(DEST_TYPE) == sizeof(SRC_TYPE)) {
-                        memcpy(vertexBuffer, primvarData.cdata(), sizeof(DEST_TYPE) * numVertices);
+                        const void* source = static_cast<const void*>(primvarData.cdata());
+                        memcpy(vertexBuffer, source, sizeof(DEST_TYPE) * numVertices);
                     }
                     else {
                         for (size_t v = 0; v < numVertices; v++) {
@@ -595,10 +607,9 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    // We don't create a repr for the selection token because it serves for
-    // selection state update only. Mark DirtySelection bit that will be
-    // automatically propagated to all draw items of the rprim.
-    if (reprToken == HdVP2ReprTokens->selection) {
+    // Update selection state on demand or when it is a new Rprim. DirtySelection
+    // will be propagated to all draw items, to trigger sync for each repr.
+    if (reprToken == HdVP2ReprTokens->selection || _reprs.empty()) {
         const HdVP2SelectionStatus selectionState =
             param->GetDrawScene().GetPrimSelectionStatus(GetId());
         if (_selectionState != selectionState) {
@@ -608,7 +619,11 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
         else if (_selectionState == kPartiallySelected) {
             *dirtyBits |= DirtySelection;
         }
-        return;
+
+        // We don't create a repr for the selection token because it serves for
+        // selection state update only. Return from here.
+        if (reprToken == HdVP2ReprTokens->selection)
+            return;
     }
 
     // If the repr has any draw item with the DirtySelection bit, mark the
@@ -628,7 +643,11 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
         return;
     }
 
+#if USD_VERSION_NUM > 2002
+    _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
+#else
     _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
+#endif
     HdReprSharedPtr repr = _reprs.back().second;
 
     // set dirty bit to say we need to sync a new repr
@@ -872,10 +891,11 @@ void HdVP2Mesh::_UpdateDrawItem(
                 adjacency->GetSharedAdjacencyBuilderComputation(&topology);
             adjacencyComputation->Resolve(); // IS the adjacency updated now?
 
-            // The topology doesn't have to reference all of the points, thus
-            // we compute the number of normals as required by the topology.
+            // Only the points referenced by the topology are used to compute
+            // smooth normals.
             normals = Hd_SmoothNormals::ComputeSmoothNormals(
-                adjacency.get(), topology.GetNumPoints(),
+                adjacency.get(),
+                _meshSharedData._points.size(),
                 _meshSharedData._points.cdata());
 
             interp = HdInterpolationVertex;
@@ -1289,8 +1309,9 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    if (itemDirtyBits & HdChangeTracker::DirtyVisibility) {
-        drawItemData._enabled = drawItem->GetVisible();
+    if (itemDirtyBits & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag)) {
+        drawItemData._enabled
+            = drawItem->GetVisible() && drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()));
         stateToCommit._enabled = &drawItemData._enabled;
     }
 
@@ -1442,10 +1463,19 @@ void HdVP2Mesh::_UpdateDrawItem(
                     kSolidColorStr, stateToCommit._instanceColors);
             }
         }
+#if MAYA_API_VERSION >= 20210000
+        else if (newInstanceCount >= 1) {
+#else
+        // In Maya 2020 and before, GPU instancing and consolidation are two separate systems that
+        // cannot be used by a render item at the same time. In case of single instance, we keep
+        // the original render item to allow consolidation with other prims. In case of multiple
+        // instances, we need to disable consolidation to allow GPU instancing to be used.
+        else if (newInstanceCount == 1) {
+            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
+        }
         else if (newInstanceCount > 1) {
-            // Turn off consolidation to allow GPU instancing to be used for
-            // multiple instances.
             setWantConsolidation(*renderItem, false);
+#endif
             drawScene.setInstanceTransformArray(*renderItem,
                 stateToCommit._instanceTransforms);
 
@@ -1456,11 +1486,6 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
 
             stateToCommit._drawItemData._usingInstancedDraw = true;
-        }
-        else if (newInstanceCount == 1) {
-            // Special case for single instance prims. We will keep the original
-            // render item to allow consolidation.
-            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
         }
         else if (stateToCommit._worldMatrix != nullptr) {
             // Regular non-instanced prims. Consolidation has been turned on by

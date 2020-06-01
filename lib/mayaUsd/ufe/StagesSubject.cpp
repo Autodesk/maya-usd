@@ -26,6 +26,7 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include "private/InPathChange.h"
 
@@ -100,6 +101,7 @@ StagesSubject::StagesSubject()
 
 	TfWeakPtr<StagesSubject> me(this);
 	TfNotice::Register(me, &StagesSubject::onStageSet);
+	TfNotice::Register(me, &StagesSubject::onStageInvalidate);
 }
 
 StagesSubject::~StagesSubject()
@@ -170,13 +172,7 @@ void StagesSubject::afterOpen()
 	// frequent, we won't implement this for now.  PPT, 22-Dec-2017.
 	std::for_each(std::begin(fStageListeners), std::end(fStageListeners),
 		[](StageListenerMap::value_type element) { TfNotice::Revoke(element.second); } );
-
-	StagesSubject::Ptr me(this);
-	for (auto stage : ProxyShapeHandler::getAllStages())
-	{
-		fStageListeners[stage] = TfNotice::Register(
-			me, &StagesSubject::stageChanged, stage);
-	}
+	fStageListeners.clear();
 
 	// Set up our stage to proxy shape UFE path (and reverse)
 	// mapping.  We do this with the following steps:
@@ -184,15 +180,7 @@ void StagesSubject::afterOpen()
 	// - get their Dag paths.
 	// - convert the Dag paths to UFE paths.
 	// - get their stage.
-	g_StageMap.clear();
-	auto proxyShapeNames = ProxyShapeHandler::getAllNames();
-	for (const auto& psn : proxyShapeNames)
-	{
-		MDagPath dag = nameToDagPath(psn);
-		Ufe::Path ufePath = dagPathToUfe(dag);
-		auto stage = ProxyShapeHandler::dagPathToStage(psn);
-		g_StageMap.addItem(ufePath, stage);
-	}
+	g_StageMap.setDirty();
 }
 
 void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender)
@@ -204,6 +192,14 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 	auto stage = notice.GetStage();
 	for (const auto& changedPath : notice.GetResyncedPaths())
 	{
+		// When visibility is toggled for the first time or you add a xformop we enter
+		// here with a resync path. However the changedPath is not a prim path, so we
+		// don't care about it. In those cases, the changePath will contain something like:
+		//   "/<prim>.visibility"
+		//   "/<prim>.xformOp:translate"
+		if (!changedPath.IsPrimPath())
+			continue;
+
 		const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
 		// Assume proxy shapes (and thus stages) cannot be instanced.  We can
 		// therefore map the stage to a single UFE path.  Lifting this
@@ -211,8 +207,6 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		// each Maya Dag path instancing the proxy shape / stage.
 		Ufe::Path ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
 		auto prim = stage->GetPrimAtPath(changedPath);
-		// Changed paths could be xformOps.
-		// These are considered as invalid null prims
 		if (prim.IsValid() && !InPathChange::inPathChange())
 		{
 			auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
@@ -236,6 +230,13 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 				Ufe::Scene::notifyObjectDelete(notification);
 			}
 		}
+#if UFE_PREVIEW_VERSION_NUM >= 2015
+		else if (!prim.IsValid())
+		{
+			auto notification = Ufe::ObjectDestroyed(ufePath);
+			Ufe::Scene::notifyObjectDelete(notification);
+		}
+#endif
 	}
 
 	for (const auto& changedPath : notice.GetChangedInfoOnlyPaths())
@@ -270,16 +271,37 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		// We need to determine if the change is a Transform3d change.
 		// We must at least pick up xformOp:translate, xformOp:rotateXYZ, 
 		// and xformOp:scale.
-		if(UsdGeomXformOp::IsXformOp(changedPath.GetNameToken()))
+		const TfToken nameToken = changedPath.GetNameToken();
+		if(nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken))
 		{
 			Ufe::Transform3d::notify(ufePath);
 		}
 	}
 }
 
-void StagesSubject::onStageSet(const UsdMayaProxyStageSetNotice& notice)
+void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
+{
+	// We should have no listerners and stage map is dirty.
+	TF_VERIFY(g_StageMap.isDirty());
+	TF_VERIFY(fStageListeners.empty());
+
+	StagesSubject::Ptr me(this);
+	for (auto stage : ProxyShapeHandler::getAllStages())
+	{
+		fStageListeners[stage] = TfNotice::Register(
+			me, &StagesSubject::stageChanged, stage);
+	}
+}
+
+void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice)
 {
 	afterOpen();
+
+#if UFE_PREVIEW_VERSION_NUM >= 2014
+	Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(notice.GetProxyShape().ufePath());
+	auto notification = Ufe::SubtreeInvalidate(sceneItem);
+	Ufe::Scene::notifySubtreeInvalidate(notification);
+#endif
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE

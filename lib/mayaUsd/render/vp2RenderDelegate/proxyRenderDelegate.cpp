@@ -33,6 +33,7 @@
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/primGather.h>
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
@@ -176,6 +177,62 @@ namespace
     }
 #endif
 
+// Copied from renderIndex.cpp, the code that does HdRenderIndex::GetDrawItems. But I just want the rprimIds, I don't want to go all the way to draw items.
+struct _FilterParam {
+    const HdRprimCollection& collection;
+    const TfTokenVector&     renderTags;
+    const HdRenderIndex*     renderIndex;
+};
+
+bool _DrawItemFilterPredicate(const SdfPath& rprimID, const void* predicateParam)
+{
+    const _FilterParam* filterParam = static_cast<const _FilterParam*>(predicateParam);
+
+    const HdRprimCollection& collection = filterParam->collection;
+    const TfTokenVector&     renderTags = filterParam->renderTags;
+    const HdRenderIndex*     renderIndex = filterParam->renderIndex;
+
+    //
+    // Render Tag Filter
+    //
+    bool passedRenderTagFilter = false;
+    if (renderTags.empty()) {
+        // An empty render tag set means everything passes the filter
+        // Primary user is tests, but some single task render delegates
+        // that don't support render tags yet also use it.
+        passedRenderTagFilter = true;
+    } else {
+        // As the number of tags is expected to be low (<10)
+        // use a simple linear search.
+        TfToken primRenderTag = renderIndex->GetRenderTag(rprimID);
+        size_t  numRenderTags = renderTags.size();
+        size_t  tagNum = 0;
+        while (!passedRenderTagFilter && tagNum < numRenderTags) {
+            if (renderTags[tagNum] == primRenderTag) {
+                passedRenderTagFilter = true;
+            }
+            ++tagNum;
+        }
+    }
+
+    //
+    // Material Tag Filter
+    //
+    bool passedMaterialTagFilter = false;
+
+    // Filter out rprims that do not match the collection's materialTag.
+    // E.g. We may want to gather only opaque or translucent prims.
+    // An empty materialTag on collection means: ignore material-tags.
+    // This is important for tasks such as the selection-task which wants
+    // to ignore materialTags and receive all prims in its collection.
+    TfToken const& collectionMatTag = collection.GetMaterialTag();
+    if (collectionMatTag.IsEmpty() || renderIndex->GetMaterialTag(rprimID) == collectionMatTag) {
+        passedMaterialTagFilter = true;
+    }
+
+    return (passedRenderTagFilter && passedMaterialTagFilter);
+}
+
 } // namespace
 
 //! \brief  Draw classification used during plugin load to register in VP2
@@ -192,18 +249,16 @@ MHWRender::MPxSubSceneOverride* ProxyRenderDelegate::Creator(const MObject& obj)
 ProxyRenderDelegate::ProxyRenderDelegate(const MObject& obj)
 : MHWRender::MPxSubSceneOverride(obj)
 {
-    MDagPath::getAPathTo(obj, _proxyDagPath);
+    MDagPath proxyDagPath;
+    MDagPath::getAPathTo(obj, proxyDagPath);
 
     const MFnDependencyNode fnDepNode(obj);
-    _proxyShape = static_cast<MayaUsdProxyShapeBase*>(fnDepNode.userNode());
+    _proxyShapeData.reset(new ProxyShapeData(static_cast<MayaUsdProxyShapeBase*>(fnDepNode.userNode()), proxyDagPath));
 }
 
 //! \brief  Destructor
 ProxyRenderDelegate::~ProxyRenderDelegate() {
-    delete _sceneDelegate;
-    delete _taskController;
-    delete _renderIndex;
-    delete _renderDelegate;
+    _ClearRenderDelegate();
 
 #if !defined(WANT_UFE_BUILD)
     if (_mayaSelectionCallbackId != 0) {
@@ -229,32 +284,49 @@ bool ProxyRenderDelegate::requiresUpdate(const MSubSceneContainer& container, co
     return true;
 }
 
+void ProxyRenderDelegate::_ClearRenderDelegate()
+{
+    // The order of deletion matters. Some orders cause crashes.
+
+    _sceneDelegate.reset();
+    _taskController.reset();
+    _renderIndex.reset();
+    _renderDelegate.reset();
+}
+
 //! \brief  One time initialization of this drawing routine
-void ProxyRenderDelegate::_InitRenderDelegate() {
+void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
+
+    if (_proxyShapeData->ProxyShape() == nullptr)
+        return;
+
+    if (!_proxyShapeData->IsUsdStageUpToDate())
+    {
+        // delete everything so we stop drawing the old stage and draw the new one
+        _ClearRenderDelegate();
+        _dummyTasks.clear();
+        container.clear();
+
+        _proxyShapeData->UpdateUsdStage();
+    }
+    
     // No need to run all the checks if we got till the end
     if (_isInitialized())
         return;
 
-    if (_proxyShape == nullptr)
-        return;
-
-    if (!_usdStage) {
-        _usdStage = _proxyShape->getUsdStage();
-    }
-
     if (!_renderDelegate) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate VP2RenderDelegate");
-        _renderDelegate = new HdVP2RenderDelegate(*this);
+        _renderDelegate.reset(new HdVP2RenderDelegate(*this));
     }
 
     if (!_renderIndex) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Allocate RenderIndex");
 #if USD_VERSION_NUM > 2002
-        _renderIndex = HdRenderIndex::New(_renderDelegate, HdDriverVector());
+        _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get(), HdDriverVector()));
 #else
-        _renderIndex = HdRenderIndex::New(_renderDelegate);
+        _renderIndex.reset(HdRenderIndex::New(_renderDelegate.get()));
 #endif
 
         // Add additional configurations after render index creation.
@@ -272,15 +344,15 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
             TfMakeValidIdentifier(
                 TfStringPrintf(
                     "Proxy_%s_%p",
-                    _proxyShape->name().asChar(),
-                    _proxyShape));
+                    _proxyShapeData->ProxyShape()->name().asChar(),
+                    _proxyShapeData->ProxyShape()));
         const SdfPath delegateID =
             SdfPath::AbsoluteRootPath().AppendChild(TfToken(delegateName));
 
-        _sceneDelegate = new UsdImagingDelegate(_renderIndex, delegateID);
+        _sceneDelegate.reset(new UsdImagingDelegate(_renderIndex.get(), delegateID));
 
-        _taskController = new HdxTaskController(_renderIndex,
-            delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) );
+        _taskController.reset(new HdxTaskController(_renderIndex.get(),
+            delegateID.AppendChild(TfToken(TfStringPrintf("_UsdImaging_VP2_%p", this))) ));
 
         _defaultCollection.reset(new HdRprimCollection());
         _defaultCollection->SetName(HdTokens->geometry);
@@ -297,8 +369,11 @@ void ProxyRenderDelegate::_InitRenderDelegate() {
         }
 #else
         // Without UFE, support basic selection highlight at proxy shape level.
-        _mayaSelectionCallbackId = MEventMessage::addEventCallback(
-            "SelectionChanged", SelectionChangedCB, this);
+        if (!_mayaSelectionCallbackId)
+        {
+            _mayaSelectionCallbackId = MEventMessage::addEventCallback(
+                "SelectionChanged", SelectionChangedCB, this);
+        }
 #endif
 
         // We don't really need any HdTask because VP2RenderDelegate uses Hydra
@@ -320,12 +395,12 @@ bool ProxyRenderDelegate::_Populate() {
     if (!_isInitialized())
         return false;
 
-    if (_usdStage && (!_isPopulated || _proxyShape->getExcludePrimPathsVersion() != _excludePrimPathsVersion) ) {
+    if (_proxyShapeData->UsdStage() && (!_isPopulated || !_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate()) ) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Populate");
 
         // It might have been already populated, clear it if so.
-        SdfPathVector excludePrimPaths = _proxyShape->getExcludePrimPaths();
+        SdfPathVector excludePrimPaths = _proxyShapeData->ProxyShape()->getExcludePrimPaths();
         for (auto& excludePrim : excludePrimPaths) {
             SdfPath indexPath = _sceneDelegate->ConvertCachePathToIndexPath(excludePrim);
             if (_renderIndex->HasRprim(indexPath)) {
@@ -333,10 +408,11 @@ bool ProxyRenderDelegate::_Populate() {
             }
         }
         
-        _sceneDelegate->Populate(_usdStage->GetPseudoRoot(),excludePrimPaths);
+        _sceneDelegate->Populate(_proxyShapeData->UsdStage()->GetPseudoRoot(),excludePrimPaths);
         
         _isPopulated = true;
-        _excludePrimPathsVersion = _proxyShape->getExcludePrimPathsVersion();
+        _proxyShapeData->UsdStageUpdated();
+        _proxyShapeData->ExcludePrimsUpdated();
     }
 
     return _isPopulated;
@@ -345,7 +421,7 @@ bool ProxyRenderDelegate::_Populate() {
 //! \brief  Synchronize USD scene delegate with Maya's proxy shape.
 void ProxyRenderDelegate::_UpdateSceneDelegate()
 {
-    if (!_proxyShape || !_sceneDelegate) {
+    if (!_proxyShapeData->ProxyShape() || !_sceneDelegate) {
         return;
     }
 
@@ -356,11 +432,11 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetTime");
 
-        const UsdTimeCode timeCode = _proxyShape->getTime();
+        const UsdTimeCode timeCode = _proxyShapeData->ProxyShape()->getTime();
         _sceneDelegate->SetTime(timeCode);
     }
 
-    const MMatrix inclusiveMatrix = _proxyDagPath.inclusiveMatrix();
+    const MMatrix inclusiveMatrix = _proxyShapeData->ProxyDagPath().inclusiveMatrix();
     const GfMatrix4d transform(inclusiveMatrix.matrix);
     constexpr double tolerance = 1e-9;
     if (!GfIsClose(transform, _sceneDelegate->GetRootTransform(), tolerance)) {
@@ -369,7 +445,7 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         _sceneDelegate->SetRootTransform(transform);
     }
 
-    const bool isVisible = _proxyDagPath.isVisible();
+    const bool isVisible = _proxyShapeData->ProxyDagPath().isVisible();
     if (isVisible != _sceneDelegate->GetRootVisibility()) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L1, "SetRootVisibility");
@@ -381,7 +457,7 @@ void ProxyRenderDelegate::_UpdateSceneDelegate()
         }
     }
 
-    const int refineLevel = _proxyShape->getComplexity();
+    const int refineLevel = _proxyShapeData->ProxyShape()->getComplexity();
     if (refineLevel != _sceneDelegate->GetRefineLevelFallback())
     {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
@@ -396,6 +472,8 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
 {
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L1, "Execute");
+
+    _UpdateRenderTags();
 
     // If update for selection is enabled, the draw data for the "points" repr
     // won't be prepared until point snapping is activated; otherwise the draw
@@ -436,7 +514,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
             MHWRender::MFrameContext::kBoundingBox |
             MHWRender::MFrameContext::kWireFrame))
         {
-            _wireframeColor = MHWRender::MGeometryUtilities::wireframeColor(_proxyDagPath);
+            _wireframeColor = MHWRender::MGeometryUtilities::wireframeColor(_proxyShapeData->ProxyDagPath());
         }
 
         // Update repr selector based on display style of the current viewport
@@ -467,7 +545,7 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
         _taskController->SetCollection(*_defaultCollection);
     }
 
-    _engine.Execute(_renderIndex, &_dummyTasks);
+    _engine.Execute(_renderIndex.get(), &_dummyTasks);
 }
 
 //! \brief  Main update entry from subscene override.
@@ -475,7 +553,7 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorD_L1, "ProxyRenderDelegate::update");
 
-    _InitRenderDelegate();
+    _InitRenderDelegate(container);
 
     // Give access to current time and subscene container to the rest of render delegate world via render param's.
     auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());
@@ -506,11 +584,11 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     MDagPath& dagPath) const
 {
 #if defined(WANT_UFE_BUILD)
-    if (_proxyShape == nullptr) {
+    if (_proxyShapeData->ProxyShape() == nullptr) {
         return false;
     }
 
-    if (!_proxyShape->isUfeSelectionEnabled()) {
+    if (!_proxyShapeData->ProxyShape()->isUfeSelectionEnabled()) {
         return false;
     }
 
@@ -537,15 +615,19 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // therefore drawInstID is usdInstID plus 1 considering VP2 defines the
     // instance ID of the first instance as 1.
     const int drawInstID = intersection.instanceID();
+    const int usdInstID = drawInstID - 1;
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+    rprimId = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID);
+#else
     if (drawInstID > 0) {
-        const int usdInstID = drawInstID - 1;
         rprimId = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
     }
+#endif
 
     const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
-    const Ufe::SceneItem::Ptr& si = handler->createItem(_proxyShape->ufePath() + pathSegment);
+    const Ufe::SceneItem::Ptr& si = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
         TF_WARN("UFE runtime is not updated for the USD stage. Please save scene and reopen.");
         return false;
@@ -602,13 +684,13 @@ void ProxyRenderDelegate::SelectionChanged()
 void ProxyRenderDelegate::_FilterSelection()
 {
 #if defined(WANT_UFE_BUILD)
-    if (_proxyShape == nullptr) {
+    if (_proxyShapeData->ProxyShape() == nullptr) {
         return;
     }
 
     _selection.reset(new HdSelection);
 
-    const auto proxyPath = _proxyShape->ufePath();
+    const auto proxyPath = _proxyShapeData->ProxyShape()->ufePath();
     const auto globalSelection = Ufe::GlobalSelection::get();
 
     for (const Ufe::SceneItem::Ptr& item : *globalSelection) {
@@ -636,7 +718,7 @@ void ProxyRenderDelegate::_FilterSelection()
 */
 void ProxyRenderDelegate::_UpdateSelectionStates()
 {
-    auto status = MHWRender::MGeometryUtilities::displayStatus(_proxyDagPath);
+    auto status = MHWRender::MGeometryUtilities::displayStatus(_proxyShapeData->ProxyDagPath());
 
     const bool wasProxySelected = _isProxySelected;
     _isProxySelected =
@@ -671,9 +753,113 @@ void ProxyRenderDelegate::_UpdateSelectionStates()
         HdRprimCollection collection(HdTokens->geometry, kSelectionReprSelector);
         collection.SetRootPaths(rootPaths);
         _taskController->SetCollection(collection);
-        _engine.Execute(_renderIndex, &_dummyTasks);
+        _engine.Execute(_renderIndex.get(), &_dummyTasks);
         _taskController->SetCollection(*_defaultCollection);
     }
+}
+
+/*! \brief  Trigger rprim update for rprims whose visibility changed because of render tags change
+*/
+void ProxyRenderDelegate::_UpdateRenderTags()
+{
+    // USD pulls the required render tags from the task list passed into execute.
+    // Only rprims which are dirty & which match the current set of render tags
+    // will get a Sync call.
+    // Render tags are harder for us to handle than HdSt because we have our own
+    // cached version of the scene in MPxSubSceneOverride. HdSt draws using
+    // HdRenderIndex::GetDrawItems(), and that returns only items that pass the
+    // render tag filter. There is no need for HdSt to do any update on items that
+    // are being hidden, because the render pass level filtering will prevent
+    // them from drawing.
+    // The Vp2RenderDelegate implements render tags using MRenderItem::Enable(),
+    // which means we do need to update individual MRenderItems when the render
+    // tags change.
+    // When we change the desired render tags on the proxyShape we'll be adding
+    // and/or removing some tags, so we can have existing MRenderItems that need
+    // to be hidden, or hidden items that need to be shown.
+    // This function needs to do three things:
+    //  1: Make sure every rprim with a render tag whose visibility changed gets
+    //     marked dirty. This will ensure the upcoming execute call will update
+    //     the visibility of the MRenderItems in MPxSubSceneOverride.
+    //  2: Make a special call to Execute() with only the render tags which have
+    //     been removed. We need this extra call to hide the previously shown
+    //     items.
+    //  3: Update the render tags with the new final render tags so that the next
+    //     real call to execute will update all the now visible items.
+    bool renderPurposeChanged = false;
+    bool proxyPurposeChanged = false;
+    bool guidePurposeChanged = false;
+    _proxyShapeData->UpdatePurpose(
+        &renderPurposeChanged, &proxyPurposeChanged, &guidePurposeChanged);
+    if (renderPurposeChanged || proxyPurposeChanged || guidePurposeChanged)
+    {
+        MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorD_L1, "Update Purpose");
+
+        // Build the list of render tags which were added or removed (changed)
+        // and the list of render tags which were removed.
+        TfTokenVector changedRenderTags;
+        TfTokenVector removedRenderTags;
+        if (renderPurposeChanged) {
+            changedRenderTags.push_back(HdRenderTagTokens->render);
+            if (!_proxyShapeData->DrawRenderPurpose())
+                removedRenderTags.push_back(HdRenderTagTokens->render);
+        }
+        if (proxyPurposeChanged) {
+            changedRenderTags.push_back(HdRenderTagTokens->proxy);
+            if (!_proxyShapeData->DrawProxyPurpose())
+                removedRenderTags.push_back(HdRenderTagTokens->proxy);
+        }
+        if (guidePurposeChanged) {
+            changedRenderTags.push_back(HdRenderTagTokens->guide);
+            if (!_proxyShapeData->DrawGuidePurpose())
+                removedRenderTags.push_back(HdRenderTagTokens->guide);
+        }
+
+        // Mark all the rprims which have a render tag which changed dirty
+        SdfPathVector    rprimsToDirty = _GetFilteredRprims(*_defaultCollection, changedRenderTags);
+        HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+        for (auto& id : rprimsToDirty) {
+            changeTracker.MarkRprimDirty(id, HdChangeTracker::DirtyRenderTag);
+        }
+
+        // Make a special pass over the removed render tags so that the objects
+        // can hide themselves.
+        _taskController->SetRenderTags(removedRenderTags);
+        _engine.Execute(_renderIndex.get(), &_dummyTasks);
+
+        // Set the new render tags correctly.The regular execute will cause
+        // any newly visible rprims will update and mark themselves visible.
+        TfTokenVector renderTags
+            = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
+        if (_proxyShapeData->DrawRenderPurpose()) {
+            renderTags.push_back(HdRenderTagTokens->render);
+        }
+        if (_proxyShapeData->DrawProxyPurpose()) {
+            renderTags.push_back(HdRenderTagTokens->proxy);
+        }
+        if (_proxyShapeData->DrawGuidePurpose()) {
+            renderTags.push_back(HdRenderTagTokens->guide);
+        }
+        _taskController->SetRenderTags(renderTags);
+    }
+}
+
+//! \brief  List the rprims in collection that match renderTags
+SdfPathVector ProxyRenderDelegate::_GetFilteredRprims(
+    HdRprimCollection const& collection,
+    TfTokenVector const&     renderTags)
+{
+    SdfPathVector rprimIds;
+    const SdfPathVector& paths = _renderIndex->GetRprimIds();
+    const SdfPathVector& includePaths = collection.GetRootPaths();
+    const SdfPathVector& excludePaths = collection.GetExcludePaths();
+    _FilterParam         filterParam = { collection, renderTags, _renderIndex.get() };
+    HdPrimGather         gather;
+    gather.PredicatedFilter(
+        paths, includePaths, excludePaths, _DrawItemFilterPredicate, &filterParam, &rprimIds);
+
+    return rprimIds;
 }
 
 //! \brief  Query the selection state of a given prim.
@@ -704,6 +890,80 @@ ProxyRenderDelegate::GetPrimSelectionStatus(const SdfPath& path) const
 const MColor& ProxyRenderDelegate::GetWireframeColor() const
 {
     return _wireframeColor;
+}
+
+bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
+{
+    if (renderTag == HdRenderTagTokens->geometry) {
+        return true;
+    } else if (renderTag == HdRenderTagTokens->render) {
+        return _proxyShapeData->DrawRenderPurpose();
+    } else if (renderTag == HdRenderTagTokens->guide) {
+        return _proxyShapeData->DrawGuidePurpose();
+    } else if (renderTag == HdRenderTagTokens->proxy) {
+        return _proxyShapeData->DrawProxyPurpose();
+    } else if (renderTag == HdRenderTagTokens->hidden) {
+        return false;
+    } else {
+        TF_WARN("Unknown render tag");
+        return true;
+    }
+}
+
+// ProxyShapeData
+ProxyRenderDelegate::ProxyShapeData::ProxyShapeData(const MayaUsdProxyShapeBase* proxyShape, const MDagPath& proxyDagPath)
+    : _proxyShape(proxyShape)
+    , _proxyDagPath(proxyDagPath)
+{
+    assert(_proxyShape);
+}
+inline const MayaUsdProxyShapeBase* ProxyRenderDelegate::ProxyShapeData::ProxyShape() const { return _proxyShape; }
+inline const MDagPath& ProxyRenderDelegate::ProxyShapeData::ProxyDagPath() const { return _proxyDagPath; }
+inline UsdStageRefPtr ProxyRenderDelegate::ProxyShapeData::UsdStage() const { return _usdStage; }
+inline void ProxyRenderDelegate::ProxyShapeData::UpdateUsdStage() { _usdStage = _proxyShape->getUsdStage(); }
+inline bool ProxyRenderDelegate::ProxyShapeData::IsUsdStageUpToDate() const {
+    return _proxyShape->getUsdStageVersion() == _usdStageVersion;
+}
+inline void ProxyRenderDelegate::ProxyShapeData::UsdStageUpdated() {
+    _usdStageVersion = _proxyShape->getUsdStageVersion();
+}
+inline bool ProxyRenderDelegate::ProxyShapeData::IsExcludePrimsUpToDate() const {
+    return _proxyShape->getExcludePrimPathsVersion() == _excludePrimsVersion;
+}
+inline void ProxyRenderDelegate::ProxyShapeData::ExcludePrimsUpdated() {
+    _excludePrimsVersion = _proxyShape->getExcludePrimPathsVersion();
+}
+inline void ProxyRenderDelegate::ProxyShapeData::UpdatePurpose(
+    bool* drawRenderPurposeChanged,
+    bool* drawProxyPurposeChanged,
+    bool* drawGuidePurposeChanged)
+{
+    bool drawRenderPurpose, drawProxyPurpose, drawGuidePurpose;
+
+    ProxyShape()->getDrawPurposeToggles(&drawRenderPurpose, &drawProxyPurpose, &drawGuidePurpose);
+    if (drawRenderPurposeChanged)
+        *drawRenderPurposeChanged = (drawRenderPurpose != _drawRenderPurpose);
+    if (drawProxyPurposeChanged)
+        *drawProxyPurposeChanged = (drawProxyPurpose != _drawProxyPurpose);
+    if (drawGuidePurposeChanged)
+        *drawGuidePurposeChanged = (drawGuidePurpose != _drawGuidePurpose);
+
+    _drawRenderPurpose = drawRenderPurpose;
+    _drawProxyPurpose = drawProxyPurpose;
+    _drawGuidePurpose = drawGuidePurpose;
+}
+
+inline bool ProxyRenderDelegate::ProxyShapeData::DrawRenderPurpose() const
+{
+    return _drawRenderPurpose;
+}
+inline bool ProxyRenderDelegate::ProxyShapeData::DrawProxyPurpose() const
+{
+    return _drawProxyPurpose;
+}
+inline bool ProxyRenderDelegate::ProxyShapeData::DrawGuidePurpose() const
+{
+    return _drawGuidePurpose;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

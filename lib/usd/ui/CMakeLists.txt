@@ -40,13 +40,22 @@ target_sources(${PROJECT_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
+        # These flags are needed for Maya
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
+
         MAYAUSD_UI_EXPORT
 )
+
+# QT_NO_KEYWORDS prevents Qt from defining the foreach, signals, slots and emit macros.
+# this avoids overlap between Qt macros and boost, and enforces using Q_ macros.
+set_target_properties(Qt5::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+
+mayaUsd_compile_config(${PROJECT_NAME})
 
 # -----------------------------------------------------------------------------
 # link libraries

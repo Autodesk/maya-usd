@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,56 +17,49 @@
 
 #include "private/Utils.h"
 
-#include <mayaUsd/ufe/Utils.h>
-
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
-	: Ufe::TranslateUndoableCommand(item)
-	, fPrim(prim)
-	, fPath(ufePath)
-	, fNoTranslateOp(false)
-{
-	// Prim does not have a translate attribute
-	const TfToken xlate("xformOp:translate");
-	if (!fPrim.HasAttribute(xlate))
-	{
-		fNoTranslateOp = true;
-		translateOp(fPrim, fPath, 0, 0, 0);	// Add an empty translate
-	}
+TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
 
-	fTranslateAttrib = fPrim.GetAttribute(xlate);
-	fTranslateAttrib.Get<GfVec3d>(&fPrevTranslateValue);
-}
+UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
+    const UsdSceneItem::Ptr& item, double x, double y, double z
+) : Ufe::TranslateUndoableCommand(item),
+    UsdTRSUndoableCommandBase(item, x, y, z)
+{}
 
 UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
-{
-}
+{}
 
 /*static*/
-UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
+    const UsdSceneItem::Ptr& item, double x, double y, double z
+)
 {
-	return std::make_shared<UsdTranslateUndoableCommand>(prim, ufePath, item);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(
+        item, x, y, z);
+    cmd->initialize();
+    return cmd;
 }
 
 void UsdTranslateUndoableCommand::undo()
 {
-	fTranslateAttrib.Set(fPrevTranslateValue);
-	// Todo : We would want to remove the xformOp
-	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
+    undoImp();
 }
 
 void UsdTranslateUndoableCommand::redo()
 {
-	perform();
+    redoImp();
 }
 
-void UsdTranslateUndoableCommand::perform()
+void UsdTranslateUndoableCommand::addEmptyAttribute()
 {
-	// No-op, use translate to move the object.
-	// The Maya move command directly invokes our translate() method in its
-	// redoIt(), which is invoked both for the inital move and the redo.
+    performImp(0, 0, 0);    // Add an empty translate
+}
+
+void UsdTranslateUndoableCommand::performImp(double x, double y, double z)
+{
+    translateOp(prim(), path(), x, y, z);
 }
 
 //------------------------------------------------------------------------------
@@ -75,8 +68,8 @@ void UsdTranslateUndoableCommand::perform()
 
 bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
 {
-	translateOp(fPrim, fPath, x, y, z);
-	return true;
+    perform(x, y, z);
+    return true;
 }
 
 } // namespace ufe

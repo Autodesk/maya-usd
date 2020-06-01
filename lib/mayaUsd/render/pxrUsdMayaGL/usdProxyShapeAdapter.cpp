@@ -273,13 +273,10 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
             _rprimCollection.GetName());
     }
 
-    // The kBackfaceCulling display style was introduced in Maya 2016 SP2.
     HdCullStyle cullStyle = HdCullStyleNothing;
-#if MAYA_API_VERSION >= 201603
     if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
         cullStyle = HdCullStyleBackUnlessDoubleSided;
     }
-#endif
 
     _delegate->SetCullStyleFallback(cullStyle);
 
@@ -385,7 +382,8 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
     return true;
 }
 
-PxrMayaHdUsdProxyShapeAdapter::PxrMayaHdUsdProxyShapeAdapter()
+PxrMayaHdUsdProxyShapeAdapter::PxrMayaHdUsdProxyShapeAdapter(bool isViewport2) :
+    PxrMayaHdShapeAdapter(isViewport2)
 {
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Constructing PxrMayaHdUsdProxyShapeAdapter: %p\n",

@@ -45,6 +45,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (mtohColorSelectionHighlightColorA)
     (mtohWireframeSelectionHighlight)
     (mtohSelectionOverlay)
+    (mtohColorQuantization)
+    (mtohSelectionOutline)
     (mtohEnableMotionSamples)
     );
 // clang-format on
@@ -113,6 +115,22 @@ void _CreateNumericAttribute(
     node.addAttribute(creator());
 }
 
+template <typename T>
+void _CreateNumericAttribute(
+    MFnDependencyNode& node, const TfToken& attrName, MFnNumericData::Type type,
+    typename std::enable_if<std::is_pod<T>::value, T>::type defValue) {
+    _CreateNumericAttribute(
+        node, attrName, type,
+        [&]() -> MObject {
+            MFnNumericAttribute nAttr;
+            const auto o = nAttr.create(
+                        attrName.GetText(), attrName.GetText(),
+                        type);
+            nAttr.setDefault(defValue);
+            return o;
+        });
+}
+
 void _CreateColorAttribute(
     MFnDependencyNode& node, const TfToken& attrName, const TfToken& attrAName,
     const GfVec4f& defValue) {
@@ -156,17 +174,15 @@ void _CreateColorAttribute(
 
 void _CreateBoolAttribute(
     MFnDependencyNode& node, const TfToken& attrName, bool defValue) {
-    _CreateNumericAttribute(
-        node, attrName, MFnNumericData::kBoolean,
-        [&attrName, &defValue]() -> MObject {
-    MFnNumericAttribute nAttr;
-    const auto o = nAttr.create(
-                attrName.GetText(), attrName.GetText(),
-                MFnNumericData::kBoolean);
-    nAttr.setDefault(defValue);
-    return o;
-        });
+    _CreateNumericAttribute<bool>(node, attrName, MFnNumericData::kBoolean, defValue);
 }
+
+#if USD_VERSION_NUM >= 2005
+void _CreateFloatAttribute(
+    MFnDependencyNode& node, const TfToken& attrName, float defValue) {
+    _CreateNumericAttribute<float>(node, attrName, MFnNumericData::kFloat, defValue);
+}
+#endif
 
 void _CreateStringAttribute(
     MFnDependencyNode& node, const TfToken& attrName,
@@ -309,6 +325,16 @@ MObject MtohCreateRenderGlobals() {
         node, _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
         defGlobals.colorSelectionHighlightColor);
+#if USD_VERSION_NUM >= 2005
+    _CreateFloatAttribute(
+        node, _tokens->mtohSelectionOutline,
+        defGlobals.outlineSelectionWidth);
+#endif
+#if USD_VERSION_NUM > 1911
+    _CreateBoolAttribute(
+        node, _tokens->mtohColorQuantization,
+        defGlobals.enableColorQuantization);
+#endif
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
@@ -391,6 +417,16 @@ MtohRenderGlobals MtohGetRenderGlobals() {
         node, _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
         ret.colorSelectionHighlightColor);
+#if USD_VERSION_NUM >= 2005
+    _GetAttribute(
+        node, _tokens->mtohSelectionOutline,
+        ret.outlineSelectionWidth);
+#endif
+#if USD_VERSION_NUM > 1911
+    _GetAttribute(
+        node, _tokens->mtohColorQuantization,
+        ret.enableColorQuantization);
+#endif
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {

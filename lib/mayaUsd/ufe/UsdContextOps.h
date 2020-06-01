@@ -42,7 +42,7 @@ class MAYAUSD_CORE_PUBLIC UsdContextOps : public Ufe::ContextOps
 public:
 	typedef std::shared_ptr<UsdContextOps> Ptr;
 
-	UsdContextOps();
+	UsdContextOps(const UsdSceneItem::Ptr& item);
 	~UsdContextOps() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -52,10 +52,16 @@ public:
 	UsdContextOps& operator=(UsdContextOps&&) = delete;
 
 	//! Create a UsdContextOps.
-	static UsdContextOps::Ptr create();
+	static UsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
 
 	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
+
+	// When we are created from the ProxyShapeContextOpsHandler we do not have the proper
+	// Maya UFE scene item. So it won't return the correct node type. Therefore we set
+	// this flag directly.
+	void setIsAGatewayType(bool t) { fIsAGatewayType = t; }
+	bool isAGatewayType() const { return fIsAGatewayType; }
 
 	// Ufe::ContextOps overrides
 	Ufe::SceneItem::Ptr sceneItem() const override;
@@ -65,6 +71,7 @@ public:
 private:
 	UsdSceneItem::Ptr fItem;
 	UsdPrim fPrim;
+	bool fIsAGatewayType{false};
 
 }; // UsdContextOps
 

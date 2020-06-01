@@ -52,7 +52,6 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
-#include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/tf/singleton.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -428,9 +427,6 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _selectionResolution(256),
         _enableDepthSelection(false)
 {
-    _viewport2UsesLegacySelection = TfGetenvBool("MAYA_VP2_USE_VP1_SELECTION",
-                                                 false);
-
     _rootId = SdfPath::AbsoluteRootPath().AppendChild(
         _tokens->BatchRendererRootName);
     _legacyViewportPrefix = _rootId.AppendChild(_tokens->LegacyViewport);
@@ -765,13 +761,6 @@ UsdMayaGLBatchRenderer::TestIntersection(
         MSelectInfo& selectInfo)
 {
     // Legacy viewport implementation.
-    //
-    // HOWEVER... we may actually be performing a selection for Viewport 2.0 if
-    // the MAYA_VP2_USE_VP1_SELECTION environment variable is set. If the
-    // view's renderer is Viewport 2.0 AND it is using the legacy
-    // viewport-based selection method, we compute the selection against the
-    // Viewport 2.0 shape adapter buckets rather than the legacy buckets, since
-    // we want to compute selection against what's actually being rendered.
 
     TRACE_FUNCTION();
 
@@ -780,46 +769,19 @@ UsdMayaGLBatchRenderer::TestIntersection(
         MProfiler::kColorE_L3,
         "Batch Renderer Testing Intersection (Legacy Viewport)");
 
-    M3dView view = selectInfo.view();
-
-    bool useViewport2Buckets = false;
-    SdfPath shapeAdapterDelegateId = shapeAdapter->GetDelegateID();
-
-    MStatus status;
-    const M3dView::RendererName rendererName = view.getRendererName(&status);
-    if (status == MS::kSuccess &&
-            rendererName == M3dView::kViewport2Renderer &&
-            _viewport2UsesLegacySelection) {
-        useViewport2Buckets = true;
-
-        // We also have to "re-write" the shape adapter's delegateId path.
-        // Since we're looking for intersections with Viewport 2.0 delegates,
-        // we need to look for selection results using a Viewport 2.0-prefixed
-        // path. Note that this assumes that the rest of the path after the
-        // prefix is identical between the two viewport renderers.
-        shapeAdapterDelegateId =
-            shapeAdapterDelegateId.ReplacePrefix(_legacyViewportPrefix,
-                                                 _viewport2Prefix);
-    }
-
-    _ShapeAdapterBucketsMap& bucketsMap = useViewport2Buckets ?
-        _shapeAdapterBuckets :
-        _legacyShapeAdapterBuckets;
-
     // Guard against the user clicking in the viewer before the renderer is
     // setup, or with no shape adapters registered.
-    if (!_renderIndex || bucketsMap.empty()) {
+    if (!_renderIndex || _legacyShapeAdapterBuckets.empty()) {
         _selectResults.clear();
         return nullptr;
     }
 
+    M3dView view = selectInfo.view();
+
     if (_UpdateIsSelectionPending(false)) {
         if (TfDebug::IsEnabled(PXRUSDMAYAGL_BATCHED_SELECTION)) {
             TF_DEBUG(PXRUSDMAYAGL_BATCHED_SELECTION).Msg(
-                "Computing batched selection for %s\n",
-                useViewport2Buckets ?
-                    "Viewport 2.0 using legacy viewport selection" :
-                    "legacy viewport");
+                "Computing batched selection for legacy viewport\n");
         }
 
         GfMatrix4d viewMatrix;
@@ -829,7 +791,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
             viewMatrix,
             projectionMatrix);
 
-        _ComputeSelection(bucketsMap,
+        _ComputeSelection(_legacyShapeAdapterBuckets,
                           &view,
                           viewMatrix,
                           projectionMatrix,
@@ -837,7 +799,7 @@ UsdMayaGLBatchRenderer::TestIntersection(
     }
 
     const HdxPickHitVector* const hitSet =
-        TfMapLookupPtr(_selectResults, shapeAdapterDelegateId);
+        TfMapLookupPtr(_selectResults, shapeAdapter->GetDelegateID());
     if (!hitSet || hitSet->empty()) {
         if (_selectResults.empty()) {
             // If nothing was selected previously AND nothing is selected now,
@@ -1010,20 +972,6 @@ UsdMayaGLBatchRenderer::TestIntersectionCustomPrimFilter(
                              primFilter.renderTags,
                              viewMatrix, projectionMatrix,
                              true, outResult);
-}
-
-int
-UsdMayaGLBatchRenderer::GetInstancerIndexForHit(
-        const HdxPickHit& hit) const
-{
-    int ret = -1;
-    if (auto delegate = _renderIndex->GetSceneDelegateForRprim(hit.objectId)) {
-        delegate->GetPathForInstanceIndex(
-            hit.objectId,
-            hit.instanceIndex,
-            &ret);
-    }
-    return ret;
 }
 
 /* static */

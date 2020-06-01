@@ -25,6 +25,7 @@ from ufeTestUtils import usdUtils, mayaUtils
 import ufe
 
 import unittest
+import os
 
 class ContextOpsTestCase(unittest.TestCase):
     '''Verify the ContextOps interface for the USD runtime.'''
@@ -44,6 +45,10 @@ class ContextOpsTestCase(unittest.TestCase):
         # Open top_layer.ma scene in test-samples
         mayaUtils.openTopLayerScene()
 
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
         # Clear selection to start off.
         ufe.GlobalSelection.get().clear()
         
@@ -59,13 +64,23 @@ class ContextOpsTestCase(unittest.TestCase):
         self.contextOps = ufe.ContextOps.contextOps(self.ball35Item)
 
     def testGetItems(self):
-        # The top-level context items are visibility (for all prims) and
-        # variant sets, for those prims that have them (such as Ball_35).
+        # The top-level context items are:
+        # - visibility (for all prims with visibility attribute)
+        # - variant sets, for those prims that have them (such as Ball_35)
+        # - add new prim (for all prims)
         contextItems = self.contextOps.getItems([])
         contextItemStrings = [c.item for c in contextItems]
 
+        attrs = ufe.Attributes.attributes(self.contextOps.sceneItem())
+        self.assertIsNotNone(attrs)
+        hasVisibility = attrs.hasAttribute(UsdGeom.Tokens.visibility)
+
         self.assertIn('Variant Sets', contextItemStrings)
-        self.assertIn('Toggle Visibility', contextItemStrings)
+        if hasVisibility:
+            self.assertIn('Toggle Visibility', contextItemStrings)
+        else:
+            self.assertNotIn('Toggle Visibility', contextItemStrings)
+        self.assertIn('Add New Prim', contextItemStrings)
 
         # Ball_35 has a single variant set, which has children.
         contextItems = self.contextOps.getItems(['Variant Sets'])
@@ -140,3 +155,66 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(shadingVariant(), 'Cue')
 
         cmds.undo()
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrim only available in UFE preview version 0.2.15 and greater')
+    def testAddNewPrim(self):
+        # Create a ContextOps interface for the proxy shape.
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage|stageShape")])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        # Add a new prim.
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The proxy shape should now have a single UFE child item.
+        proxyShapehier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 1)
+
+        # Add a new prim to the prim we just added.
+        cmds.pickWalk(d='down')
+
+        # Get the scene item from the UFE selection.
+        snIter = iter(ufe.GlobalSelection.get())
+        xformItem = next(snIter)
+
+        # Create a ContextOps interface for it.
+        contextOps = ufe.ContextOps.contextOps(xformItem)
+
+        # Add a new prim.
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The xform prim should now have a single UFE child item.
+        xformHier = ufe.Hierarchy.hierarchy(xformItem)
+        self.assertTrue(xformHier.hasChildren())
+        self.assertEqual(len(xformHier.children()), 1)
+
+        # Add another prim
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The xform prim should now have two UFE child items.
+        self.assertTrue(xformHier.hasChildren())
+        self.assertEqual(len(xformHier.children()), 2)
+
+        # Undo will remove the new prim, meaning one less child.
+        cmds.undo()
+        self.assertTrue(xformHier.hasChildren())
+        self.assertEqual(len(xformHier.children()), 1)
+
+        # Undo again will remove the first added prim, meaning no children.
+        cmds.undo()
+        self.assertFalse(xformHier.hasChildren())
+
+        cmds.redo()
+        self.assertTrue(xformHier.hasChildren())
+        self.assertEqual(len(xformHier.children()), 1)
+
+        cmds.redo()
+        self.assertTrue(xformHier.hasChildren())
+        self.assertEqual(len(xformHier.children()), 2)

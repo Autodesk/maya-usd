@@ -69,12 +69,8 @@ _ToMFrameContextDisplayStyle(const M3dView::DisplayStyle legacyDisplayStyle)
             displayStyle |= MHWRender::MFrameContext::DisplayStyle::kBoundingBox;
             break;
         case M3dView::kFlatShaded:
-// MHWRender::MFrameContext::DisplayStyle::kFlatShaded is missing in Maya 2015
-// and earlier. For those versions of Maya, fall through to kGouraudShaded.
-#if MAYA_API_VERSION >= 201600
             displayStyle |= MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
             break;
-#endif
         case M3dView::kGouraudShaded:
             displayStyle |= MHWRender::MFrameContext::DisplayStyle::kGouraudShaded;
             break;
@@ -122,7 +118,6 @@ PxrMayaHdShapeAdapter::Sync(
         const M3dView::DisplayStatus legacyDisplayStatus)
 {
     // Legacy viewport implementation.
-    _isViewport2 = false;
 
     UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
 
@@ -165,7 +160,6 @@ PxrMayaHdShapeAdapter::Sync(
         const MHWRender::DisplayStatus displayStatus)
 {
     // Viewport 2.0 implementation.
-    _isViewport2 = true;
 
     UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
 
@@ -291,13 +285,8 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayState(
     const bool wireframeStyle =
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame;
 
-    // The kFlatShaded display style was introduced in Maya 2016.
     const bool flatShadedStyle =
-#if MAYA_API_VERSION >= 201600
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
-#else
-        false;
-#endif
 
     if (flatShadedStyle) {
         if (!shadeActiveOnlyStyle || isActive) {
@@ -405,13 +394,6 @@ PxrMayaHdShapeAdapter::GetDagPath() const
 }
 
 /* virtual */
-bool
-PxrMayaHdShapeAdapter::IsViewport2() const
-{
-    return _isViewport2;
-}
-
-/* virtual */
 TfToken
 PxrMayaHdShapeAdapter::_GetRprimCollectionName() const
 {
@@ -507,11 +489,9 @@ PxrMayaHdShapeAdapter::_GetVisibility(
     // If a view was provided, check to see whether it is being filtered, and
     // get its isolated objects if so.
     MSelectionList isolatedObjects;
-#if MAYA_API_VERSION >= 201700
     if (view && view->viewIsFiltered()) {
         view->filteredObjectList(isolatedObjects);
     }
-#endif
 
     // If non-empty, isolatedObjects contains the "root" isolated objects, so
     // we'll need to check to see if one of our ancestors was isolated. (The
@@ -547,7 +527,8 @@ PxrMayaHdShapeAdapter::_GetVisibility(
     return true;
 }
 
-PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter()
+PxrMayaHdShapeAdapter::PxrMayaHdShapeAdapter(bool isViewport2) :
+        _isViewport2(isViewport2)
 {
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Constructing PxrMayaHdShapeAdapter: %p\n",

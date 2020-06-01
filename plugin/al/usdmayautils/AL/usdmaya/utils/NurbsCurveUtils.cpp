@@ -67,6 +67,24 @@ void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr, Us
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+void copyExtent(const MFnNurbsCurve& fnCurve, const UsdAttribute& extentAttr, UsdTimeCode time)
+{
+  MPointArray controlVertices;
+  fnCurve.getCVs(controlVertices);
+  const unsigned int cvCount = controlVertices.length();
+  VtArray<GfVec3f> dataPoints(cvCount);
+
+  float* const usdPoints = (float* const)dataPoints.cdata();
+  const double* const mayaCVs = (const double* const)&controlVertices[0];
+
+  convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, usdPoints, cvCount);
+
+  VtArray<GfVec3f> mayaExtent(2);
+  UsdGeomPointBased::ComputeExtent(dataPoints, &mayaExtent);
+  extentAttr.Set(mayaExtent, time);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 void copyCurveVertexCounts(const MFnNurbsCurve& fnCurve, const UsdAttribute& countsAttr, UsdTimeCode time)
 {
   VtArray<int32_t> dataCurveVertexCounts(1, fnCurve.numCVs());
@@ -334,6 +352,27 @@ uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, U
       result |= kCurvePoints;
     }
   }
+  if (exportMask & kCurveExtent)
+  {
+    MPointArray controlVertices;
+    fnCurve.getCVs(controlVertices);
+
+    const unsigned int cvCount = controlVertices.length();
+    VtArray<GfVec3f> points(cvCount);
+    float* const dataPoints = (float* const)points.cdata();
+    const double* const mayaCVs = (const double* const)&controlVertices[0];
+    convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, dataPoints, cvCount);
+
+    VtArray<GfVec3f> mayaExtent(2);
+    UsdGeomPointBased::ComputeExtent(points, &mayaExtent);
+
+    VtArray<GfVec3f> usdExtent(2);
+    usdCurves.GetExtentAttr().Get(&usdExtent, timeCode);
+
+    if (usdExtent != mayaExtent)
+      result |= kCurveExtent;
+  }
+
   if (exportMask & kCurveVertexCounts)
   {
     int numCVs = fnCurve.numCVs();

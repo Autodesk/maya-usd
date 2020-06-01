@@ -179,10 +179,19 @@ protected:
     GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) override;
 
     HDMAYA_API
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 34
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimPath, int instanceIndex,
+        HdInstancerContext *instancerContext) override;
+#elif defined(HD_API_VERSION) && HD_API_VERSION >= 33
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimPath, int instanceIndex) override;
+#else
     SdfPath GetPathForInstanceIndex(
         const SdfPath& protoPrimPath, int instanceIndex,
         int* absoluteInstanceIndex, SdfPath* rprimPath,
         SdfPathVector* instanceContext) override;
+#endif
 
 #if USD_VERSION_NUM <= 1911
 

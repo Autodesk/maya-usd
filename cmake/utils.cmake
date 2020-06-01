@@ -24,6 +24,15 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(IS_MACOSX TRUE)
 endif()
 
+# compiler type
+if (CMAKE_COMPILER_IS_GNUCXX)
+    set(IS_GNU TRUE)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    set(IS_CLANG TRUE)
+elseif(MSVC)
+    set(IS_MSVC TRUE)
+endif()
+
 # Appends a path to an environment variable.
 # Note: if you want to append multiple paths either call this multiple
 #       times, or send in the paths with the proper platform separator.
@@ -91,12 +100,12 @@ endfunction()
 # and add a relative path from the origin to the target.
 function(mayaUsd_add_rpath rpathRef target)
     if(IS_ABSOLUTE "${target}")
-	    # init_rpath calls get_filename_component([...] REALPATH), which does
-		# symlink resolution, so we must do the same, otherwise relative path
-		# determination below will fail.
+        # init_rpath calls get_filename_component([...] REALPATH), which does
+        # symlink resolution, so we must do the same, otherwise relative path
+        # determination below will fail.
         get_filename_component(target "${target}" REALPATH)
         # Make target relative to $ORIGIN (which is the first element in
-        # rpath when initialized with _pxr_mayaUsd_init_rpath()).
+        # rpath when initialized with mayaUsd_init_rpath()).
         list(GET ${rpathRef} 0 origin)
         file(RELATIVE_PATH
             target
@@ -247,52 +256,72 @@ endfunction()
 
 #
 # mayaUsd_copyDirectory( <target>
+#                        [SOURCE <directory>]
 #                        [DESTINATION <destination>]
-#                        [DIRECTORY <directory>])
+#                        [EXCLUDE <exclude_files>]
+#                        [GLOB <pattern>]
 #
+#   SOURCE        - directory to be copied.
 #   DESTINATION   - destination where directory will be copied into.
-#   DIRECTORY     - directory to be copied.
+#   EXCLUDE       - exclude files from copy.
+#   GLOB          - glob files with pattern (e.g *.cpp, *.py)
 #
 function(mayaUsd_copyDirectory target)
     cmake_parse_arguments(PREFIX
-        ""             # options
-        "DESTINATION"  # one_value keywords
-        "DIRECTORY"    # multi_value keywords
+        ""
+        "SOURCE;DESTINATION" # one value-keyword
+        "EXCLUDE;GLOB"       # multi_value keywords
         ${ARGN}
     )
 
-    if(PREFIX_DESTINATION)
-        set(destination ${PREFIX_DESTINATION})
+    # source
+    if(NOT PREFIX_SOURCE)
+        set(PREFIX_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}")
     endif()
+    get_filename_component(PREFIX_SOURCE "${PREFIX_SOURCE}" ABSOLUTE)
+
+    # destination
     if(NOT PREFIX_DESTINATION)
-        message(FATAL_ERROR "DESTINATION keyword is not specified.")
+        set(PREFIX_DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+    endif()
+    get_filename_component(PREFIX_DESTINATION "${PREFIX_DESTINATION}" ABSOLUTE)
+
+    # exclude
+    if(NOT PREFIX_EXCLUDE)
+        unset(PREFIX_EXCLUDE)
+    endif()
+    unset(exclude_files)
+    foreach(pattern ${PREFIX_EXCLUDE})
+        list(APPEND exclude_files "${PREFIX_SOURCE}/${pattern}")
+    endforeach()
+
+    # glob
+    if(NOT PREFIX_GLOB)
+        set(PREFIX_GLOB "*")
+    endif()
+    unset(glob_files)
+    foreach(pattern ${PREFIX_GLOB})
+        list(APPEND glob_files "${PREFIX_SOURCE}/${pattern}")
+    endforeach()
+    file(GLOB_RECURSE files RELATIVE "${PREFIX_SOURCE}" ${glob_files})
+
+    if(NOT "${exclude_files}" STREQUAL "")
+        file(GLOB_RECURSE excludes RELATIVE "${PREFIX_SOURCE}" ${exclude_files})
+        if(excludes)
+            list(REMOVE_ITEM files ${excludes})
+        endif()
     endif()
 
-     if(PREFIX_DIRECTORY)
-        set(directory ${PREFIX_DIRECTORY})
-        get_filename_component(directory "${directory}" ABSOLUTE)
-        get_filename_component(dir_name "${directory}" NAME)
-    endif()
-    if(NOT PREFIX_DIRECTORY)
-        message(FATAL_ERROR "DIRECTORY keyword is not specified.")
-    endif()
-
-    # figure out files in directories by traversing all the subdirectories
-    # relative to directory
-    file(GLOB_RECURSE srcFiles RELATIVE ${directory} ${directory}/*)
-
-    foreach(file ${srcFiles})
-        get_filename_component(input_file "${dir_name}/${file}" ABSOLUTE)
-        get_filename_component(output_file "${destination}/${dir_name}/${file}" ABSOLUTE)
-
-        add_custom_command(
-            TARGET ${target}
+    # do the actual copy
+    foreach(file ${files})
+        set(input_file "${PREFIX_SOURCE}/${file}")
+        set(output_file "${PREFIX_DESTINATION}/${file}")
+        add_custom_command(TARGET ${target}
             PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${input_file} ${output_file}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${input_file} ${output_file}
+            COMMENT "Copying ${file} to ${PREFIX_DESTINATION}"
             DEPENDS "${input_file}"
         )
-
     endforeach()
 endfunction()
 

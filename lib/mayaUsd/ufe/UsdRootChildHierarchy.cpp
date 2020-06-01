@@ -28,8 +28,8 @@ namespace ufe {
 extern Ufe::Rtid g_MayaRtid;
 const char* const kNotGatewayNodePath = "Tail of path %s is not a gateway node.";
 
-UsdRootChildHierarchy::UsdRootChildHierarchy()
-	: UsdHierarchy()
+UsdRootChildHierarchy::UsdRootChildHierarchy(const UsdSceneItem::Ptr& item)
+	: UsdHierarchy(item)
 {
 }
 
@@ -38,9 +38,9 @@ UsdRootChildHierarchy::~UsdRootChildHierarchy()
 }
 
 /*static*/
-UsdRootChildHierarchy::Ptr UsdRootChildHierarchy::create()
+UsdRootChildHierarchy::Ptr UsdRootChildHierarchy::create(const UsdSceneItem::Ptr& item)
 {
-	return std::make_shared<UsdRootChildHierarchy>();
+	return std::make_shared<UsdRootChildHierarchy>(item);
 }
 
 //------------------------------------------------------------------------------

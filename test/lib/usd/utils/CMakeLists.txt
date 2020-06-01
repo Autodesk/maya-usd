@@ -12,6 +12,11 @@ target_sources(${TARGET_NAME}
 )
 
 # -----------------------------------------------------------------------------
+# compiler configuration
+# -----------------------------------------------------------------------------
+mayaUsd_compile_config(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME}
@@ -25,4 +30,6 @@ target_link_libraries(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 mayaUsd_add_test(${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
+    ENV
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )

@@ -8,7 +8,7 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
     install(FILES __init__.py DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes)
 
     # Maya Attribute Editor python template files
-    foreach(_SUBDIR base camera material mesh scope shader xform)
+    foreach(_SUBDIR base camera capsule cone cube cylinder material mesh scope shader sphere xform)
         install(FILES __init__.py ${_SUBDIR}/ae_template.py
             DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/ufe_ae/usd/nodes/${_SUBDIR}
         )

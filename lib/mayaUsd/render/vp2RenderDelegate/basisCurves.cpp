@@ -627,8 +627,13 @@ void HdVP2BasisCurves::Sync(
         _sharedData.bounds.SetMatrix(delegate->GetTransform(id));
     }
 
-    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
-        _sharedData.visible = delegate->GetVisible(id);
+    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id) || 
+        *dirtyBits & HdChangeTracker::DirtyRenderTag) {
+
+        auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+        ProxyRenderDelegate& drawScene = param->GetDrawScene();
+        _sharedData.visible = delegate->GetVisible(id)
+            && drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()));
     }
 
     *dirtyBits = HdChangeTracker::Clean;
@@ -1355,10 +1360,19 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     kSolidColorStr, stateToCommit._instanceColors);
             }
         }
+#if MAYA_API_VERSION >= 20210000
+        else if (newInstanceCount >= 1) {
+#else
+        // In Maya 2020 and before, GPU instancing and consolidation are two separate systems that
+        // cannot be used by a render item at the same time. In case of single instance, we keep
+        // the original render item to allow consolidation with other prims. In case of multiple
+        // instances, we need to disable consolidation to allow GPU instancing to be used.
+        else if (newInstanceCount == 1) {
+            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
+        }
         else if (newInstanceCount > 1) {
-            // Turn off consolidation to allow GPU instancing to be used for
-            // multiple instances.
             setWantConsolidation(*renderItem, false);
+#endif
             drawScene.setInstanceTransformArray(*renderItem,
                 stateToCommit._instanceTransforms);
 
@@ -1369,11 +1383,6 @@ HdVP2BasisCurves::_UpdateDrawItem(
             }
 
             stateToCommit._drawItemData._usingInstancedDraw = true;
-        }
-        else if (newInstanceCount == 1) {
-            // Special case for single instance prims. We will keep the original
-            // render item to allow consolidation.
-            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
         }
         else if (stateToCommit._worldMatrix != nullptr) {
             // Regular non-instanced prims. Consolidation has been turned on by
@@ -1438,10 +1447,9 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
     if (ARCH_UNLIKELY(!subSceneContainer))
         return;
 
-    // We don't create a repr for the selection token because it serves for
-    // selection state update only. Mark DirtySelection bit that will be
-    // automatically propagated to all draw items of the rprim.
-    if (reprToken == HdVP2ReprTokens->selection) {
+    // Update selection state on demand or when it is a new Rprim. DirtySelection
+    // will be propagated to all draw items, to trigger sync for each repr.
+    if (reprToken == HdVP2ReprTokens->selection || _reprs.empty()) {
         const HdVP2SelectionStatus selectionState =
             param->GetDrawScene().GetPrimSelectionStatus(GetId());
         if (_selectionState != selectionState) {
@@ -1451,7 +1459,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
         else if (_selectionState == kPartiallySelected) {
             *dirtyBits |= DirtySelection;
         }
-        return;
+
+        // We don't create a repr for the selection token because it serves for
+        // selection state update only. Return from here.
+        if (reprToken == HdVP2ReprTokens->selection)
+            return;
     }
 
     // If the repr has any draw item with the DirtySelection bit, mark the
@@ -1472,7 +1484,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
     }
 
     // add new repr
+#if USD_VERSION_NUM > 2002
+    _reprs.emplace_back(reprToken, std::make_shared<HdRepr>());
+#else
     _reprs.emplace_back(reprToken, boost::make_shared<HdRepr>());
+#endif
     HdReprSharedPtr repr = _reprs.back().second;
 
     // set dirty bit to say we need to sync a new repr

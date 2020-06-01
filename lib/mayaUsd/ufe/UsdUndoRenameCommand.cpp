@@ -15,16 +15,18 @@
 //
 #include "UsdUndoRenameCommand.h"
 
-#include <ufe/scene.h>
-#include <ufe/sceneNotification.h>
 #include <ufe/log.h>
 
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/editContext.h>
-#include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <mayaUsd/ufe/Utils.h>
+
+#include <mayaUsdUtils/util.h>
 
 #include "private/InPathChange.h"
 
@@ -38,132 +40,170 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
+/*
+    HS, May 15, 2020
+
+    See usd-interest: Question around SdfPrimSepc's SetName routine
+
+    SdfPrimSpec::SetName() will rename any prim in the layer, but it does not allow you to reparent the prim, 
+    nor will it update any relationship or connection targets in the layer that targeted the prim or any of its 
+    decendants (they will all break unless you fix them up yourself.Renaming and reparenting prims destructively 
+    in composed scenes is pretty tricky stuff that cannot really practically be done with 100% guarantees.
+*/
+
 UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
-	: Ufe::UndoableCommand()
+    : Ufe::UndoableCommand()
+    , _ufeSrcItem(srcItem)
+    , _ufeDstItem(nullptr)
+    , _stage(_ufeSrcItem->prim().GetStage())
+    , _newName(newName.string())
 {
-	const UsdPrim& prim = srcItem->prim();
-	fStage = prim.GetStage();
-	fUfeSrcItem = srcItem;
-	fUsdSrcPath = prim.GetPath();
-	// Every call to rename() (through execute(), undo() or redo()) removes
-	// a prim, which becomes expired.  Since USD UFE scene items contain a
-	// prim, we must recreate them after every call to rename.
-	fUsdDstPath = prim.GetParent().GetPath().AppendChild(TfToken(newName.string()));
-	fLayer = defPrimSpecLayer(prim);
-	if (!fLayer) {
-		std::string err = TfStringPrintf("No prim found at %s", prim.GetPath().GetString().c_str());
-		throw std::runtime_error(err.c_str());
-	}
+    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
+
+    // if the current layer doesn't have any contributions
+    if (!MayaUsdUtils::doesEditTargetLayerContribute(prim)) {
+        auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
+        std::string err = TfStringPrintf("Cannot rename [%s] defined on another layer. " 
+                                         "Please set [%s] as the target layer to proceed", 
+                                         prim.GetName().GetString().c_str(),
+                                         strongestContributingLayer->GetDisplayName().c_str());
+        throw std::runtime_error(err.c_str());
+    }
+    else
+    {
+        // account for internal vs external references
+        // internal references (references without a file path specified) from the same file
+        // should be renamable.
+        if (prim.HasAuthoredReferences()) {
+            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+
+            if(!MayaUsdUtils::isInternalReference(primSpec)) {
+                std::string err = TfStringPrintf("Unable to rename referenced object [%s]", 
+                                                  prim.GetName().GetString().c_str());
+                throw std::runtime_error(err.c_str());
+            }
+        }
+
+        auto layers = MayaUsdUtils::layersWithContribution(prim);
+        // if we have more than 2 layers that contributes to the final composed prim
+        if (layers.size() > 1) {
+            std::string layerDisplayNames;
+            for (auto layer : layers) {
+                layerDisplayNames.append("[" + layer->GetDisplayName() + "]" + ",");
+            }
+            layerDisplayNames.pop_back();
+            std::string err = TfStringPrintf("Cannot rename [%s] with definitions or opinions on other layers. "
+                                             "Opinions exist in %s", prim.GetName().GetString().c_str(), layerDisplayNames.c_str());
+            throw std::runtime_error(err.c_str());
+        }
+    }
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand()
 {
 }
 
-/*static*/
 UsdUndoRenameCommand::Ptr UsdUndoRenameCommand::create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
 {
-	return std::make_shared<UsdUndoRenameCommand>(srcItem, newName);
+    return std::make_shared<UsdUndoRenameCommand>(srcItem, newName);
 }
 
 UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const
 {
-	return fUfeDstItem;
+    return _ufeDstItem;
 }
 
 bool UsdUndoRenameCommand::renameRedo()
 {
-    // Copy the source path using CopySpec, and inactivate the source.
+    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-	// We use the source layer as the destination.  An alternate workflow
-	// would be the edit target layer be the destination:
-	// layer = self.fStage.GetEditTarget().GetLayer()
-	bool status = SdfCopySpec(fLayer, fUsdSrcPath, fLayer, fUsdDstPath);
-	if (status)
-	{
-        auto srcPrim = fStage->GetPrimAtPath(fUsdSrcPath);
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        UFE_ASSERT_MSG(srcPrim, "Invalid prim cannot be inactivated.");
-#else
-        assert(srcPrim);
-#endif
-        status = srcPrim.SetActive(false);
-
-        if (status) {
-            // The renamed scene item is a "sibling" of its original name.
-            auto ufeSrcPath = fUfeSrcItem->path();
-            fUfeDstItem = createSiblingSceneItem(
-                ufeSrcPath, fUsdDstPath.GetElementString());
-
-            Ufe::ObjectRename notification(fUfeDstItem, ufeSrcPath);
-            Ufe::Scene::notifyObjectPathChange(notification);
-        }
-    }
-    else {
-        UFE_LOG(std::string("Warning: SdfCopySpec(") +
-                fUsdSrcPath.GetString() + std::string(") failed."));
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    if(!primSpec) {
+        return false;
     }
 
-	return status;
+    // these two lines MUST be called before the set name
+    // _stage->GetDefaultPrim() and prim after the rename can be invalid.
+    auto primPath = prim.GetPath();
+    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
+
+    // set prim's name
+    // XXX: SetName successfuly returns true but when you examine the _prim.GetName()
+    // after the rename, the prim name shows the original name HS, 6-May-2020.
+    bool status = primSpec->SetName(_newName);
+    if (!status) {
+        return false;
+    }
+
+    // the renamed scene item is a "sibling" of its original name.
+    _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
+    sendRenameNotification(_ufeDstItem, _ufeSrcItem->path());
+
+    // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
+    // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
+    // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
+    if(primPath == defaultPrimPath){
+        _stage->SetDefaultPrim(_ufeDstItem->prim());
+    }
+
+    return true;
 }
 
 bool UsdUndoRenameCommand::renameUndo()
 {
-    bool status{false};
-    {
-        // Regardless of where the edit target is currently set, switch to the
-        // layer where we copied the source prim into the destination, then
-        // restore the edit target.
-        UsdEditContext ctx(fStage, fLayer);
-        status = fStage->RemovePrim(fUsdDstPath);
-    }
-    if (status) {
-        auto srcPrim = fStage->GetPrimAtPath(fUsdSrcPath);
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        UFE_ASSERT_MSG(srcPrim, "Invalid prim cannot be activated.");
-#else
-        assert(srcPrim);
-#endif
-        status = srcPrim.SetActive(true);
+    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
 
-        if (status) {
-            Ufe::ObjectRename notification(fUfeSrcItem, fUfeDstItem->path());
-            Ufe::Scene::notifyObjectPathChange(notification);
-            fUfeDstItem = nullptr;
-        }
-	}
-    else {
-        UFE_LOG(std::string("Warning: RemovePrim(") +
-                fUsdDstPath.GetString() + std::string(") failed."));
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    if(!primSpec) {
+        return false;
     }
 
-	return status;
+    // these two lines MUST be called before the set name
+    // _stage->GetDefaultPrim() and prim after the rename can be invalid.
+    auto primPath = prim.GetPath();
+    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
+
+    // set prim's name
+    bool status = primSpec->SetName(_ufeSrcItem->prim().GetName());
+    if (!status) {
+        return false;
+    }
+
+    // shouldn't have to again create a sibling sceneItem here since we already have a valid _ufeSrcItem
+    // however, I get random crashes if I don't which needs furthur investigation.  HS, 6-May-2020.
+    _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
+    sendRenameNotification(_ufeSrcItem, _ufeDstItem->path());
+
+    // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
+    // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
+    // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
+    if (primPath == defaultPrimPath) {
+        _stage->SetDefaultPrim(_ufeSrcItem->prim());
+    }
+
+    _ufeDstItem = nullptr;
+
+    return true;
 }
-
-//------------------------------------------------------------------------------
-// UsdUndoRenameCommand overrides
-//------------------------------------------------------------------------------
 
 void UsdUndoRenameCommand::undo()
 {
-	// MAYA-92264: Pixar bug prevents undo from working.  Try again with USD
-	// version 0.8.5 or later.  PPT, 7-Jul-2018.
-	try {
+    try {
         InPathChange pc;
-		if (!renameUndo()) {
+        if (!renameUndo()) {
             UFE_LOG("rename undo failed");
         }
-	}
-	catch (const std::exception& e) {
-		UFE_LOG(e.what());
-		throw;	// re-throw the same exception
-	}
+    }
+    catch (const std::exception& e) {
+        UFE_LOG(e.what());
+        throw;  // re-throw the same exception
+    }
 }
 
 void UsdUndoRenameCommand::redo()
 {
     InPathChange pc;
-	if (!renameRedo()) {
+    if (!renameRedo()) {
         UFE_LOG("rename redo failed");
     }
 }

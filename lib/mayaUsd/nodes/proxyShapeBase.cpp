@@ -48,6 +48,7 @@
 #include <maya/MString.h>
 #include <maya/MTime.h>
 #include <maya/MViewport2Renderer.h>
+#include <maya/MEvaluationNode.h>
 
 #include <pxr/base/gf/bbox3d.h>
 #include <pxr/base/gf/range3d.h>
@@ -479,21 +480,32 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             loadSet = UsdStage::InitialLoadSet::LoadNone;
         }
 
-        if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
-            SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
-            if (sessionLayer) {
-                usdStage = UsdStage::Open(rootLayer,
-                        sessionLayer,
-                        ArGetResolver().GetCurrentContext(),
-                        loadSet);
-            } else {
-                usdStage = UsdStage::Open(rootLayer,
-                        ArGetResolver().GetCurrentContext(),
-                        loadSet);
-            }
+        {
+            // When opening or creating stages we must have an active UsdStageCache.
+            // The stage cache is the only one who holds a strong reference to the
+            // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
+            // more information.
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
+            
+            if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+                SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+                if (sessionLayer) {
+                    usdStage = UsdStage::Open(rootLayer,
+                            sessionLayer,
+                            ArGetResolver().GetCurrentContext(),
+                            loadSet);
+                } else {
+                    usdStage = UsdStage::Open(rootLayer,
+                            ArGetResolver().GetCurrentContext(),
+                            loadSet);
+                }
 
-            usdStage->SetEditTarget(usdStage->GetSessionLayer());
+                usdStage->SetEditTarget(usdStage->GetSessionLayer());
+            }
+            else {
+                // Create a new stage in memory with an anonymous root layer.
+                usdStage = UsdStage::CreateInMemory("", loadSet);
+            }
         }
 
         if (usdStage) {
@@ -620,7 +632,7 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
                   this,
                   std::placeholders::_1));
 
-    UsdMayaProxyStageSetNotice(*this).Send();
+    MayaUsdProxyStageSetNotice(*this).Send();
 
     return MS::kSuccess;
 }
@@ -746,26 +758,65 @@ MayaUsdProxyShapeBase::isStageValid() const
     return true;
 }
 
+MStatus
+MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode)
+{
+    // Any logic here should have an equivalent implementation in MayaUsdProxyShapeBase::setDependentsDirty().
+
+    if (evaluationNode.dirtyPlugExists(excludePrimPathsAttr)) {
+        _IncreaseExcludePrimPathsVersion();
+    }
+    else if (evaluationNode.dirtyPlugExists(outStageDataAttr) ||
+        // All the plugs that affect outStageDataAttr
+        evaluationNode.dirtyPlugExists(filePathAttr) ||
+        evaluationNode.dirtyPlugExists(primPathAttr) ||
+        evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
+        evaluationNode.dirtyPlugExists(inStageDataAttr)) {
+        _IncreaseUsdStageVersion();
+        MayaUsdProxyStageInvalidateNotice(*this).Send();
+    }
+
+    return MStatus::kSuccess;
+}
+
+MStatus
+MayaUsdProxyShapeBase::postEvaluation(const  MDGContext& context, const MEvaluationNode& evaluationNode, PostEvaluationType evalType)
+{
+    // When a node is evaluated by evaluation manager setDependentsDirty is not called. The functionality in setDependentsDirty needs
+    // to be duplicated in preEvaluation or postEvaluation. I don't think we need the call to setGeometryDrawDirty() in
+    // setDependentsDirty, but there may be a workflow I'm not seeing that does require it. I'm leaving this here commented out as a
+    // reminder that we should either have both calls to setGeometryDrawDirty, or no calls to setGeometryDrawDirty.
+    // MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+
+    return MStatus::kSuccess;
+}
+
 /* virtual */
 MStatus
 MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
 {
+    // Any logic here should have an equivalent implementation in MayaUsdProxyShapeBase::preEvaluation() or postEvaluation().
+
     // If/when the MPxDrawOverride for the proxy shape specifies
     // isAlwaysDirty=false to improve performance, we must be sure to notify
     // the Maya renderer that the geometry is dirty and needs to be redrawn
     // when any plug on the proxy shape is dirtied.
     MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
-    return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
-}
 
-/* virtual */
-bool
-MayaUsdProxyShapeBase::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
-{
     if (plug == excludePrimPathsAttr) {
         _IncreaseExcludePrimPathsVersion();
     }
-    return MPxSurfaceShape::setInternalValue(plug, dataHandle);
+    else if (plug == outStageDataAttr ||
+        // All the plugs that affect outStageDataAttr
+        plug == filePathAttr ||
+        plug == primPathAttr ||
+        plug == loadPayloadsAttr ||
+        plug == inStageDataAttr) {
+        _IncreaseUsdStageVersion();
+        MayaUsdProxyStageInvalidateNotice(*this).Send();
+    }
+
+    return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
 }
 
 UsdPrim
@@ -843,6 +894,21 @@ MayaUsdProxyShapeBase::getUsdStage() const
     else
         return {};
 
+}
+
+size_t
+MayaUsdProxyShapeBase::getUsdStageVersion() const {
+    return _UsdStageVersion;
+}
+
+
+void MayaUsdProxyShapeBase::getDrawPurposeToggles(
+    bool* drawRenderPurpose,
+    bool* drawProxyPurpose,
+    bool* drawGuidePurpose) const
+{
+    MDataBlock dataBlock = const_cast<MayaUsdProxyShapeBase*>(this)->forceCache();
+    _GetDrawPurposeToggles(dataBlock, drawRenderPurpose, drawProxyPurpose, drawGuidePurpose);
 }
 
 SdfPathVector

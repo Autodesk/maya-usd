@@ -130,22 +130,24 @@ namespace
     }
 }
 
-// Fragment registration
+bool HdVP2ShaderFragments::_registered = false;
+
+// Fragment registration should be done after VP2 has been initialized, to avoid any errors from
+// headless configurations or command-line renders.
 MStatus HdVP2ShaderFragments::registerFragments()
 {
-    // We do not force the renderer to initialize in case we're running in a
-    // headless context. If we cannot get a handle to the renderer or the
-    // fragment manager, we assume that's the case and simply return success.
-    MHWRender::MRenderer* theRenderer =
-        MHWRender::MRenderer::theRenderer(/* initializeRenderer = */ false);
-    if (!theRenderer) {
+    if (_registered)
         return MS::kSuccess;
+
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (!theRenderer) {
+        return MS::kFailure;
     }
 
     MHWRender::MFragmentManager* fragmentManager =
         theRenderer->getFragmentManager();
     if (!fragmentManager) {
-        return MS::kSuccess;
+        return MS::kFailure;
     }
 
     std::string language;
@@ -231,26 +233,26 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
+    _registered = true;
+
     return MS::kSuccess;
 }
 
 // Fragment deregistration
 MStatus HdVP2ShaderFragments::deregisterFragments()
 {
-    // Similar to registration, we do not force the renderer to initialize in
-    // case we're running in a headless context. If we cannot get a handle to
-    // the renderer or the fragment manager, we assume that's the case and
-    // simply return success.
-    MHWRender::MRenderer* theRenderer =
-        MHWRender::MRenderer::theRenderer(/* initializeRenderer = */ false);
-    if (!theRenderer) {
+    if (!_registered)
         return MS::kSuccess;
+
+    MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
+    if (!theRenderer) {
+        return MS::kFailure;
     }
 
     MHWRender::MFragmentManager* fragmentManager =
         theRenderer->getFragmentManager();
     if (!fragmentManager) {
-        return MS::kSuccess;
+        return MS::kFailure;
     }
 
     // De-register all fragment graphs.
@@ -277,7 +279,8 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
         }
     }
 
-#if MAYA_API_VERSION >= 201700
+    _registered = false;
+
     // Clear the shader manager's effect cache as well so that any changes to
     // the fragments will get picked up if they are re-registered.
     const MHWRender::MShaderManager* shaderMgr =
@@ -290,7 +293,6 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
             return status;
         }
     }
-#endif
 
     return MS::kSuccess;
 }

@@ -33,7 +33,7 @@ void wrapStageCache()
     class_<UsdMayaStageCache>("StageCache")
 
         .def("Get", &UsdMayaStageCache::Get,
-             (args("forcePopulate") = true),
+             args("loadAll"),
              return_value_policy<reference_existing_object>())
         .staticmethod("Get")
         .def("Clear", &UsdMayaStageCache::Clear)

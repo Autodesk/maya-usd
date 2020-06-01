@@ -264,12 +264,6 @@ public:
     static const HdxPickHit* GetNearestHit(
             const HdxPickHitVector* hitSet);
 
-    /// Returns the index within the point instancer for \c hit.
-    ///
-    /// Returns -1 if unable to get the instanceIndex.
-    MAYAUSD_CORE_PUBLIC
-    int GetInstancerIndexForHit(const HdxPickHit& hit) const;
-
     /// Returns whether soft selection for proxy shapes is currently enabled.
     MAYAUSD_CORE_PUBLIC
     inline bool GetObjectSoftSelectEnabled()
@@ -409,15 +403,6 @@ private:
     _ShapeAdapterHandleMap _shapeAdapterHandleMap;
 
     _ShapeAdapterHandleMap _legacyShapeAdapterHandleMap;
-
-    /// We detect and store whether Viewport 2.0 is using the legacy
-    /// viewport-based selection mechanism (i.e. whether the
-    /// MAYA_VP2_USE_VP1_SELECTION environment variable is enabled) when the
-    /// batch renderer is constructed. Then when a legacy selection is
-    /// performed, we consult this value and the viewport renderer of the
-    /// M3dView in which the selection is occurring to determine which bucket
-    /// map of shape adapters we should use to compute the selection.
-    bool _viewport2UsesLegacySelection;
 
     /// Gets the vector of prim filters to use for intersection testing.
     ///

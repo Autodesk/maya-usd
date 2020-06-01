@@ -2,6 +2,9 @@
 
 
 def "TestVariantSwitch"(
+  variants = {
+    string MeshVariants = "ShowMeshA"
+  }
   add variantSets = ["MeshVariants"]
 )
 {

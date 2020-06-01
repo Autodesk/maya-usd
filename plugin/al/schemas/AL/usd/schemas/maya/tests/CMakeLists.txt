@@ -4,6 +4,9 @@ find_package(GTest REQUIRED)
 
 add_executable(${TARGET_NAME})
 
+# compiler configuration
+mayaUsd_compile_config(${TARGET_NAME})
+
 target_sources(${TARGET_NAME}
     PRIVATE
         main.cpp
@@ -26,7 +29,7 @@ target_link_libraries(${TARGET_NAME}
     tf
     vt
     plug
-    ${Boost_PYTHON_LIBRARY}
+    Boost::python
 )
 
 # install
@@ -48,4 +51,5 @@ mayaUsd_add_test(${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
     ENV
         "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )

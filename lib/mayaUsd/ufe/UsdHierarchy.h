@@ -34,7 +34,7 @@ class MAYAUSD_CORE_PUBLIC UsdHierarchy : public Ufe::Hierarchy
 public:
 	typedef std::shared_ptr<UsdHierarchy> Ptr;
 
-	UsdHierarchy();
+	UsdHierarchy(const UsdSceneItem::Ptr& item);
 	~UsdHierarchy() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -44,9 +44,9 @@ public:
 	UsdHierarchy& operator=(UsdHierarchy&&) = delete;
 
 	//! Create a UsdHierarchy.
-	static UsdHierarchy::Ptr create();
+	static UsdHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
 
-	void setItem(UsdSceneItem::Ptr item);
+	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
 
 	UsdSceneItem::Ptr usdSceneItem() const;
@@ -59,6 +59,13 @@ public:
 	Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2013
+    Ufe::UndoableCommand::Ptr insertChildCmd(
+        const Ufe::SceneItem::Ptr& child,
+        const Ufe::SceneItem::Ptr& pos
+    ) override;
+#endif
+
 	Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;
 	Ufe::Group createGroupCmd(const Ufe::PathComponent& name) const override;
 #endif

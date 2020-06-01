@@ -33,7 +33,7 @@ class MAYAUSD_CORE_PUBLIC UsdRootChildHierarchy : public UsdHierarchy
 public:
 	typedef std::shared_ptr<UsdRootChildHierarchy> Ptr;
 
-	UsdRootChildHierarchy();
+	UsdRootChildHierarchy(const UsdSceneItem::Ptr& item);
 	~UsdRootChildHierarchy() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -43,7 +43,7 @@ public:
 	UsdRootChildHierarchy& operator=(UsdRootChildHierarchy&&) = delete;
 
 	//! Create a UsdRootChildHierarchy.
-	static UsdRootChildHierarchy::Ptr create();
+	static UsdRootChildHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
 
 	// Ufe::Hierarchy overrides
 	Ufe::SceneItem::Ptr parent() const override;

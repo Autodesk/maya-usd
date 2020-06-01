@@ -131,7 +131,7 @@ void HdMayaProxyAdapter::PopulateSelectedPaths(
     // First, we check to see if the entire proxy shape is selected
     if (selectedDag.node() == proxyMObj) {
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 11
-        selectedSdfPaths.push_back(sdfPath::AbsoluteRootPath());
+        selectedSdfPaths.push_back(SdfPath::AbsoluteRootPath());
 #else
         selectedSdfPaths.push_back(_usdDelegate->GetDelegateID());
 #endif
@@ -143,13 +143,13 @@ void HdMayaProxyAdapter::PopulateSelectedPaths(
 }
 
 void HdMayaProxyAdapter::CreateUsdImagingDelegate() {
-    // Why do this release when we do a reset right below? Because we want
+    // Why do this reset when we do another right below? Because we want
     // to make sure we delete the old delegate before creating a new one
     // (the reset statement below will first create a new one, THEN delete
     // the old one). Why do we care? In case they have the same _renderIndex
     // - if so, the delete may clear out items from the renderIndex that the
     // constructor potentially adds
-    _usdDelegate.release();
+    _usdDelegate.reset();
     _usdDelegate.reset(new HdMayaProxyUsdImagingDelegate(
         &GetDelegate()->GetRenderIndex(),
         _id.AppendChild(TfToken(TfStringPrintf(
@@ -165,7 +165,7 @@ void HdMayaProxyAdapter::PreFrame() {
     _usdDelegate->PostSyncCleanup();
 }
 
-void HdMayaProxyAdapter::_OnStageSet(const UsdMayaProxyStageSetNotice& notice)
+void HdMayaProxyAdapter::_OnStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
     if(&notice.GetProxyShape() == _proxy)
     {

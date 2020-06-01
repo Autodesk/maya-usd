@@ -19,9 +19,6 @@
 #include <ufe/pathComponent.h>
 #include <ufe/undoableCommand.h>
 
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/prim.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
@@ -34,37 +31,34 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdUndoRenameCommand : public Ufe::UndoableCommand
 {
 public:
-	typedef std::shared_ptr<UsdUndoRenameCommand> Ptr;
+    typedef std::shared_ptr<UsdUndoRenameCommand> Ptr;
 
-	UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
-	~UsdUndoRenameCommand() override;
+    UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
+    ~UsdUndoRenameCommand() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdUndoRenameCommand(const UsdUndoRenameCommand&) = delete;
-	UsdUndoRenameCommand& operator=(const UsdUndoRenameCommand&) = delete;
-	UsdUndoRenameCommand(UsdUndoRenameCommand&&) = delete;
-	UsdUndoRenameCommand& operator=(UsdUndoRenameCommand&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdUndoRenameCommand(const UsdUndoRenameCommand&) = delete;
+    UsdUndoRenameCommand& operator=(const UsdUndoRenameCommand&) = delete;
+    UsdUndoRenameCommand(UsdUndoRenameCommand&&) = delete;
+    UsdUndoRenameCommand& operator=(UsdUndoRenameCommand&&) = delete;
 
-	//! Create a UsdUndoRenameCommand from a USD scene item and UFE pathcomponent.
-	static UsdUndoRenameCommand::Ptr create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
+    //! Create a UsdUndoRenameCommand from a USD scene item and UFE pathcomponent.
+    static UsdUndoRenameCommand::Ptr create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
 
-	UsdSceneItem::Ptr renamedItem() const;
+    UsdSceneItem::Ptr renamedItem() const;
 
 private:
+    bool renameRedo();
+    bool renameUndo();
 
-	// UsdUndoRenameCommand overrides
-	void undo() override;
-	void redo() override;
+    void undo() override;
+    void redo() override;
 
-	bool renameRedo();
-	bool renameUndo();
+    UsdSceneItem::Ptr _ufeSrcItem;
+    UsdSceneItem::Ptr _ufeDstItem;
 
-	UsdStageWeakPtr fStage;
-	SdfLayerHandle fLayer;
-    UsdSceneItem::Ptr fUfeSrcItem;
-	SdfPath fUsdSrcPath;
-	UsdSceneItem::Ptr fUfeDstItem;
-	SdfPath fUsdDstPath;
+    UsdStageWeakPtr _stage;
+    std::string _newName;
 
 }; // UsdUndoRenameCommand
 

@@ -176,11 +176,7 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestRotate(rotation)
 
-
-    # Note: marked as expected failure as sometimes it passes and sometimes it fails
-    #       with something like:
-    #       AssertionError: -0.5235987755982988 != -0.4220828456501826 within 7 places
-    @unittest.expectedFailure
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
     def testRotateUSD(self):
         '''Rotate USD object, read through the Transform3d interface.'''
 
@@ -216,15 +212,10 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Save the initial position to the memento list.
         expected = ball35Rotation()
 
-        # MAYA-96058: unfortunately, rotate command currently requires a rotate
-        # manipulator to be created to update the UFE object.
-        manipCtx = cmds.manipRotateContext()
-        cmds.setToolTo(manipCtx)
-
-        #Temporarily disabling undo redo until we fix it for PR 94
         self.runTestRotate(expected)
 
-    def _testMultiSelectRotateUSD(self):
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
+    def testMultiSelectRotateUSD(self):
         '''Rotate multiple USD objects, read through Transform3d interface.'''
 
         # Select multiple balls to rotate them.
@@ -276,11 +267,5 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Save the initial positions to the memento list.
         expected = [usdSceneItemRotation(ballItem) for ballItem in ballItems]
 
-        # MAYA-96058: unfortunately, rotate command currently requires a rotate
-        # manipulator to be created to update the UFE object.
-        manipCtx = cmds.manipRotateContext()
-        cmds.setToolTo(manipCtx)
-
-        #Temporarily disabling undo redo until we fix it for PR 94
         self.runMultiSelectTestRotate(ballItems, expected)
         

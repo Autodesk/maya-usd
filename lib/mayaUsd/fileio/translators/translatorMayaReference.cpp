@@ -427,11 +427,7 @@ UsdMayaTranslatorMayaReference::update(const UsdPrim& prim, MObject parent)
         command = MString("referenceQuery -f -withoutCopyNumber \"") + fnReference.name() + "\"";
         MGlobal::executeCommand(command, filepath);
         TF_DEBUG(PXRUSDMAYA_TRANSLATORS).Msg("MayaReferenceLogic::update referenceNode=%s prim=%s execute \"%s\"=%s\n",
-#if MAYA_API_VERSION < 201700
-            fnReference.name().asChar(),
-#else
             fnReference.absoluteName().asChar(),
-#endif
             prim.GetPath().GetText(),
             command.asChar(),
             filepath.asChar());

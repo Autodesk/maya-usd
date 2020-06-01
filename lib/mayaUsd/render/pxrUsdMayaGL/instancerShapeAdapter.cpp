@@ -299,13 +299,10 @@ UsdMayaGL_InstancerShapeAdapter::_Sync(
             _rprimCollection.GetName());
     }
 
-    // The kBackfaceCulling display style was introduced in Maya 2016 SP2.
     HdCullStyle cullStyle = HdCullStyleNothing;
-#if MAYA_API_VERSION >= 201603
     if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
         cullStyle = HdCullStyleBackUnlessDoubleSided;
     }
-#endif
 
     _delegate->SetCullStyleFallback(cullStyle);
 
@@ -402,7 +399,9 @@ void UsdMayaGL_InstancerShapeAdapter::SyncInstancerPerPrototypePostHook(
     prototypeRefs.ClearReferences();
 }
 
-UsdMayaGL_InstancerShapeAdapter::UsdMayaGL_InstancerShapeAdapter()
+UsdMayaGL_InstancerShapeAdapter::UsdMayaGL_InstancerShapeAdapter(
+        bool isViewport2) :
+    PxrMayaHdShapeAdapter(isViewport2)
 {
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Constructing UsdMayaGL_InstancerShapeAdapter: %p\n",

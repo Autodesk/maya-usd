@@ -39,6 +39,7 @@ target_sources(${TARGET_NAME}
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_ScopeMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
+        AL/usdmaya/nodes/test_VariantFallbacks.cpp
         AL/usdmaya/test_DiffGeom.cpp
         AL/usdmaya/test_DiffPrimVar.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
@@ -62,12 +63,16 @@ elseif(IS_LINUX)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 endif()
 
+# compiler configuration
+mayaUsd_compile_config(${TARGET_NAME})
+
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         AL_USDMAYA_UNITTEST
         AL_USDMAYATEST_PLUGIN_EXPORT
         AL_USDMAYA_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
 )
 
 target_include_directories(${TARGET_NAME}
@@ -134,6 +139,7 @@ mayaUsd_add_test(${TARGET_NAME}
     PYTHON_COMMAND "${pycode}"
     ENV
         "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 
 if(NOT SKIP_USDMAYA_TESTS)

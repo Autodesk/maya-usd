@@ -31,6 +31,8 @@
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hd/tokens.h>
 
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
+
 #include "basisCurves.h"
 #include "bboxGeom.h"
 #include "instancer.h"
@@ -270,6 +272,9 @@ namespace
                 if (TF_VERIFY(shaderMgr)) {
                     shader = shaderMgr->getFragmentShader(
                         _fallbackShaderNames[index], _structOutputName, true);
+#if MAYA_API_VERSION >= 20210000
+                    shader->setWantMultiDrawConsolidation(_diffuseColorParameterName, true);
+#endif
                 }
             }
 
@@ -397,7 +402,12 @@ HdVP2RenderDelegate::HdVP2RenderDelegate(ProxyRenderDelegate& drawScene) {
 
     _renderParam.reset(new HdVP2RenderParam(drawScene));
 
-    // The shader cache should be initialized after mayaUsd loads shader fragments.
+    // Shader fragments can only be registered after VP2 initialization, thus the function cannot
+    // be called when loading plugin (which can happen before VP2 initialization in the case of
+    // command-line rendering). The fragments will be deregistered when plugin is unloaded.
+    HdVP2ShaderFragments::registerFragments();
+
+    // The shader cache should be initialized after registration of shader fragments.
     sShaderCache.Initialize();
 }
 

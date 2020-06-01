@@ -23,9 +23,13 @@ elseif(IS_LINUX)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 endif()
 
+# compiler configuration
+mayaUsd_compile_config(${TARGET_NAME})
+
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
 )
 
 target_link_libraries(${TARGET_NAME}
@@ -91,4 +95,5 @@ mayaUsd_add_test(${TARGET_NAME}
     ENV
         "MAYA_PLUG_IN_PATH=${MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH}"
         "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )

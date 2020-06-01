@@ -45,10 +45,6 @@ public:
 
 	// Ufe::ContextOpsHandler overrides
 	Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
-
-private:
-	UsdContextOps::Ptr fUsdContextOps;
-
 }; // UsdContextOpsHandler
 
 } // namespace ufe

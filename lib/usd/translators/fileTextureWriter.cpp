@@ -192,12 +192,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
 
-    const MString fileTextureName =
-#if MAYA_API_VERSION >= 20180000
-        fileTextureNamePlug.asString(&status);
-#else
-        fileTextureNamePlug.asString(MDGContext::fsNormal, &status);
-#endif
+    const MString fileTextureName = fileTextureNamePlug.asString(&status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -225,12 +220,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 
     if (UsdMayaUtil::IsAuthored(colorGainPlug)) {
         for (size_t i = 0u; i < GfVec3f::dimension; ++i) {
-            scale[i] =
-#if MAYA_API_VERSION >= 20180000
-                colorGainPlug.child(i).asFloat(&status);
-#else
-                colorGainPlug.child(i).asFloat(MDGContext::fsNormal, &status);
-#endif
+            scale[i] = colorGainPlug.child(i).asFloat(&status);
             if (status != MS::kSuccess) {
                 return;
             }
@@ -250,12 +240,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     if (UsdMayaUtil::IsAuthored(alphaGainPlug)) {
-        scale[3u] =
-#if MAYA_API_VERSION >= 20180000
-            alphaGainPlug.asFloat(&status);
-#else
-            alphaGainPlug.asFloat(MDGContext::fsNormal, &status);
-#endif
+        scale[3u] = alphaGainPlug.asFloat(&status);
         if (status != MS::kSuccess) {
             return;
         }
@@ -286,12 +271,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 
     if (UsdMayaUtil::IsAuthored(colorOffsetPlug)) {
         for (size_t i = 0u; i < GfVec3f::dimension; ++i) {
-            bias[i] =
-#if MAYA_API_VERSION >= 20180000
-                colorOffsetPlug.child(i).asFloat(&status);
-#else
-                colorOffsetPlug.child(i).asFloat(MDGContext::fsNormal, &status);
-#endif
+            bias[i] = colorOffsetPlug.child(i).asFloat(&status);
             if (status != MS::kSuccess) {
                 return;
             }
@@ -311,12 +291,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     if (UsdMayaUtil::IsAuthored(alphaOffsetPlug)) {
-        bias[3u] =
-#if MAYA_API_VERSION >= 20180000
-            alphaOffsetPlug.asFloat(&status);
-#else
-            alphaOffsetPlug.asFloat(MDGContext::fsNormal, &status);
-#endif
+        bias[3u] = alphaOffsetPlug.asFloat(&status);
         if (status != MS::kSuccess) {
             return;
         }
@@ -347,12 +322,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     // value.
     GfVec4f fallback(0.0f, 0.0f, 0.0f, 1.0f);
     for (size_t i = 0u; i < GfVec3f::dimension; ++i) {
-        fallback[i] =
-#if MAYA_API_VERSION >= 20180000
-            defaultColorPlug.child(i).asFloat(&status);
-#else
-            defaultColorPlug.child(i).asFloat(MDGContext::fsNormal, &status);
-#endif
+        fallback[i] = defaultColorPlug.child(i).asFloat(&status);
         if (status != MS::kSuccess) {
             return;
         }
@@ -373,12 +343,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     if (UsdMayaUtil::IsAuthored(wrapUPlug)) {
-        const bool wrapU =
-#if MAYA_API_VERSION >= 20180000
-            wrapUPlug.asBool(&status);
-#else
-            wrapUPlug.asBool(MDGContext::fsNormal, &status);
-#endif
+        const bool wrapU = wrapUPlug.asBool(&status);
         if (status != MS::kSuccess) {
             return;
         }
@@ -400,12 +365,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     if (UsdMayaUtil::IsAuthored(wrapVPlug)) {
-        const bool wrapV =
-#if MAYA_API_VERSION >= 20180000
-            wrapVPlug.asBool(&status);
-#else
-            wrapVPlug.asBool(MDGContext::fsNormal, &status);
-#endif
+        const bool wrapV = wrapVPlug.asBool(&status);
         if (status != MS::kSuccess) {
             return;
         }

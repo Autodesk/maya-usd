@@ -91,10 +91,9 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // Would be nice to know if the object extents are animated or not, so
     // we can bypass time computation and simply use UsdTimeCode::Default()
     // as the time.
-    TfTokenVector purposes{UsdGeomTokens->default_};
-    UsdGeomBBoxCache bboxCache(getTime(sceneItem()->path()), purposes);
-    auto bbox = bboxCache.ComputeLocalBound(fPrim);
-    auto range = bbox.GetRange();
+
+    auto bbox = UsdGeomImageable(fPrim).ComputeUntransformedBound(getTime(sceneItem()->path()), UsdGeomTokens->default_);
+    auto range = bbox.ComputeAlignedRange();
     auto min = range.GetMin();
     auto max = range.GetMax();
 	return Ufe::BBox3d(toVector3d(min), toVector3d(max));

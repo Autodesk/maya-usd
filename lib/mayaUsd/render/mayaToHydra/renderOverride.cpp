@@ -450,6 +450,17 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
     _taskController->SetEnableSelection(_globals.colorSelectionHighlight);
 
+#if USD_VERSION_NUM >= 2005
+    if (_globals.outlineSelectionWidth != 0.f) {
+        _taskController->SetSelectionOutlineRadius(_globals.outlineSelectionWidth);
+        _taskController->SetSelectionEnableOutline(true);
+    } else
+        _taskController->SetSelectionEnableOutline(false);
+#endif
+#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
+    _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
+#endif
+
     // This is required for HdStorm to display transparency.
     // We should fix this upstream, so HdStorm can setup
     // all the required states.
@@ -613,7 +624,11 @@ void MtohRenderOverride::_SelectionChanged() {
     MSelectionList sel;
     if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
     SdfPathVector selectedPaths;
+#if USD_VERSION_NUM > 2002
+    auto selection = std::make_shared<HdSelection>();
+#else
     auto selection = boost::make_shared<HdSelection>();
+#endif // USD_VERSION_NUM > 2002
 
 #if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection =

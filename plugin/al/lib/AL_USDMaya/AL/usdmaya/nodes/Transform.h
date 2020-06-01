@@ -136,7 +136,6 @@ private:
   MPxTransformationMatrix* createTransformationMatrix() override;
   MStatus compute(const MPlug &plug, MDataBlock &datablock) override;
   void postConstructor() override;
-  MBoundingBox boundingBox() const override;
   MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
   MStatus connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
   bool setInternalValue(const MPlug& plug, const MDataHandle& dataHandle) override;

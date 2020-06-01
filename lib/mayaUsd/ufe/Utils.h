@@ -52,10 +52,6 @@ UsdPrim ufePathToPrim(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 bool isRootChild(const Ufe::Path& path);
 
-//! Return the highest-priority layer where the prim has a def primSpec.
-MAYAUSD_CORE_PUBLIC
-SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim);
-
 MAYAUSD_CORE_PUBLIC
 UsdSceneItem::Ptr createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
 
@@ -64,9 +60,9 @@ UsdSceneItem::Ptr createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std:
 MAYAUSD_CORE_PUBLIC
 std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcName);
 
-//! Return a unique child name. Parent must be a UsdSceneItem.
+//! Return a unique child name.
 MAYAUSD_CORE_PUBLIC
-std::string uniqueChildName(const Ufe::SceneItem::Ptr& parent, const Ufe::Path& childPath);
+std::string uniqueChildName(const UsdSceneItem::Ptr& parent, const Ufe::Path& childPath);
 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
@@ -85,6 +81,16 @@ MDagPath nameToDagPath(const std::string& name);
 //! along the path can transform Maya's time (e.g. with scale and offset).
 MAYAUSD_CORE_PUBLIC
 UsdTimeCode getTime(const Ufe::Path& path);
+
+//! Object renamed scene notification
+MAYAUSD_CORE_PUBLIC
+void sendRenameNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath);
+
+//! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
+inline
+UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item) {
+    return std::dynamic_pointer_cast<UsdSceneItem>(item);
+}
 
 } // namespace ufe
 } // namespace MayaUsd

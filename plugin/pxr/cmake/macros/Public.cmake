@@ -262,6 +262,9 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
                 FOLDER "${folder}"
         )
 
+        # compiler configuration
+        mayaUsd_compile_config(${LIBRARY_NAME})
+
         # Find libraries under the install prefix, which has the core USD
         # libraries.
         mayaUsd_init_rpath(rpath "tests/lib")
@@ -820,6 +823,9 @@ function(pxr_monolithic_epilogue)
         COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_BINARY_DIR}/usd_m.cpp"
     )
     add_library(usd_m STATIC "${CMAKE_CURRENT_BINARY_DIR}/usd_m.cpp" ${objects})
+
+    # compiler configuration
+    mayaUsd_compile_config(usd_m)
 
     _get_folder("" folder)
     set_target_properties(usd_m

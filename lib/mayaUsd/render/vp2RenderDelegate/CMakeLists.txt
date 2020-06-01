@@ -32,3 +32,6 @@ mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/vp2RenderDelegate)
 install(FILES ${headers}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/vp2RenderDelegate
 )
+
+set(PYTHON_INSTALL_PREFIX ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME})
+install(FILES analyticMayaUsdPerformance.py DESTINATION ${PYTHON_INSTALL_PREFIX})

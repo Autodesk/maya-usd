@@ -23,8 +23,8 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdSceneItemOps::UsdSceneItemOps()
-	: Ufe::SceneItemOps()
+UsdSceneItemOps::UsdSceneItemOps(const UsdSceneItem::Ptr& item)
+	: Ufe::SceneItemOps(), fItem(item), fPrim(item->prim())
 {
 }
 
@@ -33,9 +33,9 @@ UsdSceneItemOps::~UsdSceneItemOps()
 }
 
 /*static*/
-UsdSceneItemOps::Ptr UsdSceneItemOps::create()
+UsdSceneItemOps::Ptr UsdSceneItemOps::create(const UsdSceneItem::Ptr& item)
 {
-	return std::make_shared<UsdSceneItemOps>();
+	return std::make_shared<UsdSceneItemOps>(item);
 }
 
 void UsdSceneItemOps::setItem(const UsdSceneItem::Ptr& item)

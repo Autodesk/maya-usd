@@ -9,16 +9,22 @@ target_sources(${TARGET_NAME}
     PRIVATE
         DebugCodes.cpp
         DiffCore.cpp
+        util.cpp
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYA_USD_UTILS_EXPORT
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
- 
+
+mayaUsd_compile_config(${TARGET_NAME})
+
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
@@ -36,6 +42,7 @@ target_link_libraries(${TARGET_NAME}
     PUBLIC
         gf
         usd
+        sdf
 )
 
 # -----------------------------------------------------------------------------
@@ -48,6 +55,7 @@ set(headers
     DiffCore.h
     ForwardDeclares.h
     SIMD.h
+    util.h
 )
 
 mayaUsd_promoteHeaderList( 

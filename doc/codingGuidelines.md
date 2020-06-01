@@ -148,44 +148,53 @@ In general, macros should be avoided (see [Modern C++](https://docs.google.com/d
 * Comments for users of classes and functions must be written in headers files. Comments in definition files are meant for contributors and maintainers.
 
 ### Include directive
+For source files (.cpp) with an associated header file (.h) that resides in the same directory, it should be `#include`'d with double quotes and no path.  This formatting should be followed regardless of with whether the associated header is public or private. For example:
+```cpp
+// In foobar.cpp
+#include "foobar.h"
+```
+
 All included public header files from outside and inside the project should be `#include`’d using angle brackets. For example:
 ```cpp
 #include <pxr/base/tf/stringUtils.h>
 #include <mayaUsd/nodes/stageData.h>
 ```
 
-Private project’s header files should be `#include`'d using the file name when in the same folder. Private headers may live in sub-directories, but they should never be included using "._" or ".._" as part of a relative paths. For example:
+Private project’s header files should be `#include`'d using double quotes, and a relative path. Private headers may live in the same directory or sub-directories, but they should never be included using "._" or ".._" as part of a relative path. For example:
 ```cpp
-#include “privateUtils.h"
-#include “pvt/helperFunctions.h"
+#include "privateUtils.h"
+#include "pvt/helperFunctions.h"
 ```
 
 ### Include order
 Headers should be included in the following order, with each section separated by a blank line and files sorted alphabetically:
 
 1. Related header
-2. C system headers
-3. C++ standard library headers
-4. Other libraries’ headers
+2. All private headers
+3. All public headers from this repository (maya-usd)
+4. Pixar + USD headers
 5. Autodesk + Maya headers
-6. Pixar + USD headers
-7. Your project’s headers
-8. Conditional includes
+6. Other libraries' headers
+7. C++ standard library headers
+8. C system headers
+9. Conditional includes
 
 ```cpp
-#include “exportTranslator.h"
+#include "exportTranslator.h"
+
+#include "private/util.h"
  
-#include <string>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
  
 #include <maya/MFileObject.h>
 #include <maya/MGlobal.h>
 #include <maya/MSelectionList.h>
 #include <maya/MString.h>
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/jobs/writeJob.h>
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <string>
 
 #if defined(WANT_UFE_BUILD)
   #include <ufe/ufe.h>
@@ -227,3 +236,111 @@ Our goal is to develop [maya-usd](https://github.com/autodesk/maya-usd) followin
 * `nullptr` keyword
 * …
 
+# Coding guidelines for Python
+We are adopting the [PEP-8](https://www.python.org/dev/peps/pep-0008) style for Python Code with the following modification:
+* Mixed-case for variable and function names are allowed 
+
+[Pylint](https://www.pylint.org/) is recommended for automation.
+
+
+# Coding guidelines for CMake 
+## Modern CMake
+1. Target Build and Usage requirements should be very clear.
+* build requirements ( everything that is needed to build the target )
+* usage requirements ( everything that is needed to use this target as a dependency of another target)
+2. Always use target_xxx() and make sure to add the PUBLIC/PRIVATE/INTERFACE keywords as appropriate. 
+* target_sources
+* target_compile_definitions
+* target_compile_options
+* target_include_directories
+* target_link_libraries
+* ...
+
+Keyword meanings:
+* **PRIVATE**: requirement should apply to just this target.
+* **PUBLIC**: requirement should apply to this target and anything that links to it.
+* **INTERFACE**: requirement should apply just to things that link to it.
+
+3. Don't use Macros that affect all targets (e.g add_definitions, link_libraries, include_directories).
+4. Prefer functions over macros whenever reasonable.
+5. Treat warnings as errors.
+6. Use cmake_parse_arguments as the recommended way for parsing the arguments given to the macro or function.
+7. Don't use file(GLOB).
+8. Be explicit by calling set_target_properties when it's appropriate.
+9. Links against Boost or GTest using imported targets rather than variables:
+e.g Boost::filesystem, Boost::system, GTest::GTest
+
+## Compiler features/flags/definitions
+1. Setting or appending compiler flags/definitions via CMAKE_CXX_FLAGS is NOT allowed.
+2. Any front-end flags (e.g. -Wno-xxx, cxx_std_xx) should be added to cmake/compiler_config.cmake
+3. All current targets, as well as newly added targets, must use mayaUsd_compile_config function in order to get the project-wide flags/definitions. These flags/definitions are added privately via target_compile_features, target_compile_options, target_compile_definitions. Individual targets are still allowed to call target_compile_definitions, target_compile_features individually for any additional flags/definitions by providing appropriate PUBLIC/INTERFACE/PRIVATE keywords. For example:
+```cmake
+# -----------------------------------------------------------------------------
+# compiler configuration
+# -----------------------------------------------------------------------------
+add_library(${UFE_PYTHON_TARGET_NAME} SHARED)
+target_compile_definitions(${UFE_PYTHON_TARGET_NAME}
+   PRIVATE
+       MFB_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
+       MFB_ALT_PACKAGE_NAME=${UFE_PYTHON_MODULE_NAME}
+       MFB_PACKAGE_MODULE="${PROJECT_NAME}.${UFE_PYTHON_MODULE_NAME}"
+)
+mayaUsd_compile_config(${UFE_PYTHON_TARGET_NAME})
+```
+
+## Dynamic linking and Run-time Search Path
+Use provided mayaUsd_xxx_rpath() utility functions to handle run-time search path for both MacOSX and Linux.
+
+## Unit Test
+1. Use provided mayaUsd_add_test() function for adding either Gtest or Python tests.
+2. Don't add find_package(GTest REQUIRED) in every CMake file with unit tests.  Gtest setup is handled automatically for you.
+3. For targets that need to link against google test library. Simply add GTest::GTest to target_link_libraries. You don't need to add any Gtest include directory this is done automatically for you.
+
+## Naming Conventions
+ 1. CMake commands are case-insensitive. Use lower_case for CMake functions and macros, Use upper_case for CMake variables
+ ```cmake
+# e.g cmake functions
+add_subdirectory(schemas)
+target_compile_definitions(....)
+
+# e.g cmake variables
+${CMAKE_CXX_COMPILER_ID}
+${CMAKE_SYSTEM_NAME}
+${CMAKE_INSTALL_PREFIX}
+```
+
+ 2. Use upper_case for Option names
+```cmake
+# e.g for options names
+option(BUILD_USDMAYA_SCHEMAS "Build optional schemas." ON)
+option(BUILD_TESTS "Build tests." ON)
+option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+```
+
+3.  Use upper_case for Custom variables
+```cmake
+# e.g for options names
+set(QT_VERSION "5.6")
+ 
+set(HEADERS
+    jobArgs.h
+    modelKindProcessor.h
+    readJob.h
+    writeJob.h
+)
+ 
+set(RESOURCES_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/lib/usd/${TARGET_NAME}/resources)
+ 
+set(USDTRANSACTION_PYTHON_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/python/AL/usd/transaction)
+```
+
+4. Respect third-party variables ( don't change them )
+```cmake
+# e.g boost
+set(BOOST_ROOT ${pxr_usd_location})
+set(Boost_USE_DEBUG_PYTHON ON)
+```
+
+5. Avoid adding the optional name in endfunction/endmacro([]).
+> Although there is no official guideline for Modern CMake practices, the following resources provide ample information on how to adopt these practices:
+> [Modern cmake](https://cliutils.gitlab.io/modern-cmake/), [Effective Modern CMake](https://gist.github.com/mbinna/c61dbb39bca0e4fb7d1f73b0d66a4fd1)

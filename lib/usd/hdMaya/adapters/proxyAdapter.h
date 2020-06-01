@@ -41,6 +41,20 @@ public:
 
     MayaUsdProxyShapeBase* GetProxy() { return _proxy; }
 
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimId, int instanceIndex,
+        HdInstancerContext *instancerContext) {
+        return _usdDelegate->GetScenePrimPath(
+            rprimId, instanceIndex, instancerContext);
+    }
+#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimId, int instanceIndex) {
+        return _usdDelegate->GetScenePrimPath(
+            rprimId, instanceIndex);
+    }
+#else
     SdfPath GetPathForInstanceIndex(
         const SdfPath& protoPrimPath, int instanceIndex,
         int* absoluteInstanceIndex, SdfPath* rprimPath = NULL,
@@ -49,6 +63,7 @@ public:
             protoPrimPath, instanceIndex, absoluteInstanceIndex, rprimPath,
             instanceContext);
     }
+#endif
 
     SdfPath ConvertIndexPathToCachePath(SdfPath const& indexPath) {
         return _usdDelegate->ConvertIndexPathToCachePath(indexPath);
@@ -60,7 +75,7 @@ public:
 
 private:
     /// Notice listener method for proxy stage set
-    void _OnStageSet(const UsdMayaProxyStageSetNotice& notice);
+    void _OnStageSet(const MayaUsdProxyStageSetNotice& notice);
 
     MayaUsdProxyShapeBase* _proxy{ nullptr };
     std::unique_ptr<HdMayaProxyUsdImagingDelegate> _usdDelegate;

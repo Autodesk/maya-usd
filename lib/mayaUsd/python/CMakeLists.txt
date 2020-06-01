@@ -50,6 +50,8 @@ target_compile_definitions(${PYTHON_TARGET_NAME}
         MFB_PACKAGE_MODULE=${PROJECT_NAME}
 )
 
+mayaUsd_compile_config(${PYTHON_TARGET_NAME})
+
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
