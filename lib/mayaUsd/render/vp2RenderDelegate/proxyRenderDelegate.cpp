@@ -365,7 +365,7 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
             _observer = std::make_shared<UfeObserver>(*this);
 
             auto globalSelection = Ufe::GlobalSelection::get();
-            if (globalSelection) {
+            if (TF_VERIFY(globalSelection)) {
                 globalSelection->addObserver(_observer);
             }
 
