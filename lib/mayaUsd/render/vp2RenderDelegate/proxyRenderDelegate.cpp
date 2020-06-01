@@ -46,7 +46,9 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/runTimeMgr.h>
+#include <ufe/scene.h>
 #include <ufe/sceneItem.h>
+#include <ufe/sceneNotification.h>
 #include <ufe/selectionNotification.h>
 #endif
 
@@ -140,10 +142,10 @@ namespace
     }
 
 #if defined(WANT_UFE_BUILD)
-    class UfeSelectionObserver : public Ufe::Observer
+    class UfeObserver : public Ufe::Observer
     {
     public:
-        UfeSelectionObserver(ProxyRenderDelegate& proxyRenderDelegate)
+        UfeObserver(ProxyRenderDelegate& proxyRenderDelegate)
             : Ufe::Observer()
             , _proxyRenderDelegate(proxyRenderDelegate)
         {
@@ -157,9 +159,8 @@ namespace
                 return;
             }
 
-            auto selectionChanged =
-                dynamic_cast<const Ufe::SelectionChanged*>(&notification);
-            if (selectionChanged != nullptr) {
+            if (dynamic_cast<const Ufe::SelectionChanged*>(&notification) ||
+                dynamic_cast<const Ufe::ObjectAdd*>(&notification)) {
                 _proxyRenderDelegate.SelectionChanged();
             }
         }
@@ -360,12 +361,15 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
         _selection.reset(new HdSelection);
 
 #if defined(WANT_UFE_BUILD)
-        if (!_ufeSelectionObserver) {
+        if (!_observer) {
+            _observer = std::make_shared<UfeObserver>(*this);
+
             auto globalSelection = Ufe::GlobalSelection::get();
-            if (globalSelection) {
-                _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
-                globalSelection->addObserver(_ufeSelectionObserver);
+            if (TF_VERIFY(globalSelection)) {
+                globalSelection->addObserver(_observer);
             }
+
+            Ufe::Scene::instance().addObjectAddObserver(_observer);
         }
 #else
         // Without UFE, support basic selection highlight at proxy shape level.
@@ -879,11 +883,11 @@ ProxyRenderDelegate::GetPrimSelectionStatus(const SdfPath& path) const
     }
 
     const HdSelection::PrimSelectionState* state = GetPrimSelectionState(path);
-    if (state && state->fullySelected) {
-        return kFullySelected;
+    if (state) {
+        return state->fullySelected ? kFullySelected : kPartiallySelected;
     }
 
-    return state ? kPartiallySelected : kUnselected;
+    return kUnselected;
 }
 
 //! \brief  Query the wireframe color assigned to the proxy shape.
