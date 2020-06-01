@@ -421,7 +421,11 @@ UsdMayaGLBatchRenderer::UsdMayaGLBatchRenderer() :
         _softSelectOptionsCallbackId(0),
         _selectResultsKey(GfMatrix4d(0.0), GfMatrix4d(0.0), false),
 #if USD_VERSION_NUM > 2002
+#if USD_VERSION_NUM > 2005
+        _hgi(Hgi::CreatePlatformDefaultHgi()),
+#else
         _hgi(Hgi::GetPlatformDefaultHgi()),
+#endif
         _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())},
 #endif
         _selectionResolution(256),
