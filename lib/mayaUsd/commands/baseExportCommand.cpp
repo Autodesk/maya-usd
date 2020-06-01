@@ -172,7 +172,7 @@ void* MayaUSDExportCommand::creator()
 }
 
 /* virtual */
-std::unique_ptr<UsdMaya_WriteJob> MayaUSDExportCommand::initializeWriteJob(const pxr::UsdMayaJobExportArgs & args)
+std::unique_ptr<UsdMaya_WriteJob> MayaUSDExportCommand::initializeWriteJob(const PXR_NS::UsdMayaJobExportArgs & args)
 {
     return std::unique_ptr<UsdMaya_WriteJob>(new UsdMaya_WriteJob(args));
 }

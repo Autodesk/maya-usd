@@ -19,6 +19,8 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <pxr/pxr.h>
+
 #include <memory>
 
 #include <maya/MPxCommand.h>
@@ -97,7 +99,7 @@ class MAYAUSD_CORE_PUBLIC MayaUSDExportCommand : public MPxCommand
     static void* creator();
 
   protected:
-    virtual std::unique_ptr<pxr::UsdMaya_WriteJob> initializeWriteJob(const pxr::UsdMayaJobExportArgs &);
+    virtual std::unique_ptr<PXR_NS::UsdMaya_WriteJob> initializeWriteJob(const PXR_NS::UsdMayaJobExportArgs &);
 
 };
 
