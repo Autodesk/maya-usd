@@ -1413,12 +1413,11 @@ HdDirtyBits HdVP2BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
     // Propagate dirty bits to all draw items.
     for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
         const HdReprSharedPtr& repr = pair.second;
+        const auto& items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
-        const HdRepr::DrawItems& items = repr->GetDrawItems();
         for (HdDrawItem* item : items) {
             if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
 #else
-        const HdRepr::DrawItemUniquePtrVector &items = repr->GetDrawItems();
         for (const HdRepr::DrawItemUniquePtr &item : items) {
             if (HdVP2DrawItem * const drawItem =
                         static_cast<HdVP2DrawItem*>(item.get())) {
@@ -1480,12 +1479,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
         _reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
     if (it != _reprs.end()) {
         const HdReprSharedPtr& repr = it->second;
+        const auto& items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
-        const HdRepr::DrawItems& items = repr->GetDrawItems();
         for (const HdDrawItem* item : items) {
             const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item);
 #else
-        const HdRepr::DrawItemUniquePtrVector &items = repr->GetDrawItems();
         for (const HdRepr::DrawItemUniquePtr &item : items) {
             const HdVP2DrawItem * const drawItem =
                 static_cast<const HdVP2DrawItem*>(item.get());
