@@ -66,7 +66,8 @@ private:
     bool insertChildUndo();
 
     UsdStageWeakPtr fStage;
-    SdfLayerHandle fLayer;
+    SdfLayerHandle fChildLayer;
+    SdfLayerHandle fParentLayer;
     UsdSceneItem::Ptr fUfeSrcItem;
     SdfPath fUsdSrcPath;
     UsdSceneItem::Ptr fUfeDstItem;
