@@ -67,6 +67,9 @@
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/userTaggedAttribute.h>
 #include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/converter.h>
+
+using namespace MAYAUSD_NS;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -127,188 +130,6 @@ UsdMayaWriteUtil::WriteUVAsFloat2()
     return writeUVAsFloat2;
 }
 
-SdfValueTypeName
-UsdMayaWriteUtil::GetUsdTypeName(
-        const MPlug& attrPlug,
-        const bool translateMayaDoubleToUsdSinglePrecision)
-{
-    // The various types of Maya attributes that can be created are spread
-    // across a handful of MFn function sets. Some are a straightforward
-    // translation such as MFnEnumAttributes or MFnMatrixAttributes, but others
-    // are interesting mixes of function sets. For example, an attribute created
-    // with addAttr and 'double' as the type results in an MFnNumericAttribute
-    // while 'double2' as the type results in an MFnTypedAttribute that has
-    // MFnData::Type kNumeric.
-
-    MObject attrObj(attrPlug.attribute());
-    if (attrObj.isNull()) {
-        return SdfValueTypeName();
-    }
-
-    if (attrObj.hasFn(MFn::kEnumAttribute)) {
-        return SdfValueTypeNames->Int;
-    }
-
-    MFnNumericData::Type numericDataType;
-    MFnData::Type typedDataType;
-    MFnUnitAttribute::Type unitDataType;
-
-    _GetMayaAttributeNumericTypedAndUnitDataTypes(attrPlug,
-                                                  numericDataType,
-                                                  typedDataType,
-                                                  unitDataType);
-
-    if (attrObj.hasFn(MFn::kMatrixAttribute)) {
-        // Using type "fltMatrix" with addAttr results in an MFnMatrixAttribute
-        // while using type "matrix" results in an MFnTypedAttribute with type
-        // kMatrix, but the data is extracted the same way for both.
-        typedDataType = MFnData::kMatrix;
-    }
-
-    // Deal with the MFnTypedAttribute attributes first. If it is numeric, it
-    // will fall through to the numericDataType switch below.
-    switch (typedDataType) {
-        case MFnData::kString:
-            // If the attribute is marked as a filename, then return Asset
-            if (MFnAttribute(attrObj).isUsedAsFilename()) {
-                return SdfValueTypeNames->Asset;
-            } else {
-                return SdfValueTypeNames->String;
-            }
-            break;
-        case MFnData::kMatrix:
-            // This must be a Matrix4d even if
-            // translateMayaDoubleToUsdSinglePrecision is true, since Matrix4f
-            // is not supported in Sdf.
-            return SdfValueTypeNames->Matrix4d;
-            break;
-        case MFnData::kStringArray:
-            return SdfValueTypeNames->StringArray;
-            break;
-        case MFnData::kDoubleArray:
-            if (translateMayaDoubleToUsdSinglePrecision) {
-                return SdfValueTypeNames->FloatArray;
-            } else {
-                return SdfValueTypeNames->DoubleArray;
-            }
-            break;
-        case MFnData::kFloatArray:
-            return SdfValueTypeNames->FloatArray;
-            break;
-        case MFnData::kIntArray:
-            return SdfValueTypeNames->IntArray;
-            break;
-        case MFnData::kPointArray:
-            // Sdf does not have a 4-float point type, so we'll divide out W
-            // and export the points as 3 floats.
-            if (translateMayaDoubleToUsdSinglePrecision) {
-                return SdfValueTypeNames->Point3fArray;
-            } else {
-                return SdfValueTypeNames->Point3dArray;
-            }
-            break;
-        case MFnData::kVectorArray:
-            if (translateMayaDoubleToUsdSinglePrecision) {
-                return SdfValueTypeNames->Vector3fArray;
-            } else {
-                return SdfValueTypeNames->Vector3dArray;
-            }
-            break;
-        default:
-            break;
-    }
-
-    switch (numericDataType) {
-        case MFnNumericData::kBoolean:
-            return SdfValueTypeNames->Bool;
-            break;
-        case MFnNumericData::kByte:
-        case MFnNumericData::kChar:
-        case MFnNumericData::kShort:
-        // Maya treats longs the same as ints, since long is not
-        // platform-consistent. The Maya constants MFnNumericData::kInt and
-        // MFnNumericData::kLong have the same value. The same is true of
-        // k2Int/k2Long and k3Int/k3Long.
-        case MFnNumericData::kInt:
-            return SdfValueTypeNames->Int;
-            break;
-        case MFnNumericData::k2Short:
-        case MFnNumericData::k2Int:
-            return SdfValueTypeNames->Int2;
-            break;
-        case MFnNumericData::k3Short:
-        case MFnNumericData::k3Int:
-            return SdfValueTypeNames->Int3;
-            break;
-        case MFnNumericData::kFloat:
-            return SdfValueTypeNames->Float;
-            break;
-        case MFnNumericData::k2Float:
-            return SdfValueTypeNames->Float2;
-            break;
-        case MFnNumericData::k3Float:
-            if (MFnAttribute(attrObj).isUsedAsColor()) {
-                return SdfValueTypeNames->Color3f;
-            } else {
-                return SdfValueTypeNames->Float3;
-            }
-            break;
-        case MFnNumericData::kDouble:
-            if (translateMayaDoubleToUsdSinglePrecision) {
-                return SdfValueTypeNames->Float;
-            } else {
-                return SdfValueTypeNames->Double;
-            }
-            break;
-        case MFnNumericData::k2Double:
-            if (translateMayaDoubleToUsdSinglePrecision) {
-                return SdfValueTypeNames->Float2;
-            } else {
-                return SdfValueTypeNames->Double2;
-            }
-            break;
-        case MFnNumericData::k3Double:
-            if (MFnAttribute(attrObj).isUsedAsColor()) {
-                if (translateMayaDoubleToUsdSinglePrecision) {
-                    return SdfValueTypeNames->Color3f;
-                } else {
-                    return SdfValueTypeNames->Color3d;
-                }
-            } else {
-                if (translateMayaDoubleToUsdSinglePrecision) {
-                    return SdfValueTypeNames->Float3;
-                } else {
-                    return SdfValueTypeNames->Double3;
-                }
-            }
-            break;
-        case MFnNumericData::k4Double:
-            if (translateMayaDoubleToUsdSinglePrecision) {
-                return SdfValueTypeNames->Float4;
-            } else {
-                return SdfValueTypeNames->Double4;
-            }
-            break;
-        default:
-            break;
-    }
-
-    switch (unitDataType) {
-        case MFnUnitAttribute::kAngle:
-        case MFnUnitAttribute::kDistance:
-            if (translateMayaDoubleToUsdSinglePrecision) {
-                return SdfValueTypeNames->Float;
-            } else {
-                return SdfValueTypeNames->Double;
-            }
-            break;
-        default:
-            break;
-    }
-
-    return SdfValueTypeName();
-}
-
 /* static */
 UsdAttribute
 UsdMayaWriteUtil::GetOrCreateUsdAttr(
@@ -342,8 +163,7 @@ UsdMayaWriteUtil::GetOrCreateUsdAttr(
     }
 
     const SdfValueTypeName& typeName =
-        UsdMayaWriteUtil::GetUsdTypeName(attrPlug,
-                                            translateMayaDoubleToUsdSinglePrecision);
+        Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         usdAttr = usdPrim.CreateAttribute(usdAttrNameToken, typeName, custom);
     }
@@ -384,8 +204,7 @@ UsdGeomPrimvar UsdMayaWriteUtil::GetOrCreatePrimvar(
     }
 
     const SdfValueTypeName& typeName =
-        UsdMayaWriteUtil::GetUsdTypeName(attrPlug,
-                                            translateMayaDoubleToUsdSinglePrecision);
+        Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         primvar = imageable.CreatePrimvar(primvarNameToken,
                                           typeName,
@@ -436,8 +255,7 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
     }
 
     const SdfValueTypeName& typeName =
-        UsdMayaWriteUtil::GetUsdTypeName(attrPlug,
-                                            translateMayaDoubleToUsdSinglePrecision);
+        Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         riStatements = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
                 UsdRiStatementsAPI>(usdPrim);
@@ -492,8 +310,8 @@ UsdMayaWriteUtil::GetVtValue(
         const TfToken& role,
         const bool linearizeColors)
 {
-    // We perform a similar set of type-infererence acrobatics here as we do up
-    // above in GetUsdTypeName(). See the comments there for more detail on a
+    // We perform a similar set of type-infererence acrobatics here as we do
+    // in Converter::getUsdTypeName(). See the comments there for more detail on a
     // few type-related oddities.
 
     MObject attrObj(attrPlug.attribute());

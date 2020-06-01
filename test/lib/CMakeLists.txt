@@ -2,6 +2,7 @@ set(TARGET_NAME MAYAUSD_TEST)
 
 # Unit test scripts.
 set(test_script_files
+    testMayaUsdConverter.py
     testMayaUsdPythonImport.py
 )
 
