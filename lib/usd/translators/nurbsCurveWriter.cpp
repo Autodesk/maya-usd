@@ -160,7 +160,7 @@ PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
     // Gprim
     VtVec3fArray extent(2);
     UsdGeomCurves::ComputeExtent(points, curveWidths, &extent);
-    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), &extent, *_GetSparseValueWriter(), usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), &extent, _GetSparseValueWriter(), usdTime);
 
     // find the number of segments: (vertexCount - order + 1) per curve
     // varying interpolation is number of segments + number of curves
@@ -190,13 +190,13 @@ PxrUsdTranslators_NurbsCurveWriter::writeNurbsCurveAttrs(
 
     // Curve
     // not animatable
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetOrderAttr(), curveOrder, *_GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetCurveVertexCountsAttr(), &curveVertexCounts, *_GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetWidthsAttr(), &curveWidths, *_GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetOrderAttr(), curveOrder, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetCurveVertexCountsAttr(), &curveVertexCounts, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetWidthsAttr(), &curveWidths, _GetSparseValueWriter());
 
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetKnotsAttr(), &curveKnots, *_GetSparseValueWriter()); // not animatable
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetRangesAttr(), &ranges, *_GetSparseValueWriter()); // not animatable
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), &points, *_GetSparseValueWriter(), usdTime); // CVs
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetKnotsAttr(), &curveKnots, _GetSparseValueWriter()); // not animatable
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetRangesAttr(), &ranges, _GetSparseValueWriter()); // not animatable
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), &points, _GetSparseValueWriter(), usdTime); // CVs
 
     // TODO: Handle periodic and non-periodic cases
 

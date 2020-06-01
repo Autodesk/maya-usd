@@ -221,8 +221,8 @@ UsdMayaPrimWriter::Write(const UsdTimeCode& usdTime)
 
             UsdMayaWriteUtil::SetAttribute(imageable.CreateVisibilityAttr(VtValue(), true),
                                            visibilityTok,
-                                           usdTime,
-                                           &_valueWriter);
+                                           _GetSparseValueWriter(),
+                                           usdTime);
         }
     }
 

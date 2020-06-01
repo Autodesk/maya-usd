@@ -487,7 +487,7 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
 
     // Mark the bindings for post processing.
 
-    UsdMayaWriteUtil::SetAttribute(_skel.GetJointsAttr(), skelJointNames, *_GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(_skel.GetJointsAttr(), skelJointNames, _GetSparseValueWriter());
 
     SdfPath skelPath = _skel.GetPrim().GetPath();
     _writeJobCtx.MarkSkelBindings(
@@ -495,12 +495,12 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
 
     VtMatrix4dArray bindXforms =
         _GetJointWorldBindTransforms(_topology, _joints);
-    UsdMayaWriteUtil::SetAttribute(_skel.GetBindTransformsAttr(), bindXforms, *_GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(_skel.GetBindTransformsAttr(), bindXforms, _GetSparseValueWriter());
 
     VtMatrix4dArray restXforms;
     if (_GetJointLocalRestTransformsFromDagPose(
             skelPath, GetDagPath(), _joints, &restXforms)) {
-        UsdMayaWriteUtil::SetAttribute(_skel.GetRestTransformsAttr(), restXforms, *_GetSparseValueWriter());
+        UsdMayaWriteUtil::SetAttribute(_skel.GetRestTransformsAttr(), restXforms, _GetSparseValueWriter());
     }
 
     VtTokenArray animJointNames;
@@ -528,7 +528,7 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
             _skelToAnimMapper =
                 UsdSkelAnimMapper(skelJointNames, animJointNames);
 
-            UsdMayaWriteUtil::SetAttribute(_skelAnim.GetJointsAttr(), animJointNames, *_GetSparseValueWriter());
+            UsdMayaWriteUtil::SetAttribute(_skelAnim.GetJointsAttr(), animJointNames, _GetSparseValueWriter());
 
             binding.CreateAnimationSourceRel().SetTargets({animPath});
         } else {
@@ -555,7 +555,7 @@ PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
         // We have a joint which provides the transform of the Skeleton,
         // instead of the transform of a joint in the hierarchy.
         GfMatrix4d localXf = _GetJointLocalTransform(_skelXformPath);
-        UsdMayaWriteUtil::SetAttribute(_skelXformAttr, localXf, usdTime, _GetSparseValueWriter());
+        UsdMayaWriteUtil::SetAttribute(_skelXformAttr, localXf, _GetSparseValueWriter(), usdTime);
     }
 
     // Time-varying step: write the packed joint animation transforms once per
@@ -597,11 +597,11 @@ PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
                     // In the future, we may want to RLE-compress the data in
                     // PostExport to remove redundant time samples.
                     UsdMayaWriteUtil::SetAttribute(_skelAnim.GetTranslationsAttr(),
-                                  &translations, *_GetSparseValueWriter(), usdTime);
+                                  &translations, _GetSparseValueWriter(), usdTime);
                     UsdMayaWriteUtil::SetAttribute(_skelAnim.GetRotationsAttr(),
-                                  &rotations, *_GetSparseValueWriter(), usdTime);
+                                  &rotations, _GetSparseValueWriter(), usdTime);
                     UsdMayaWriteUtil::SetAttribute(_skelAnim.GetScalesAttr(),
-                                  &scales, *_GetSparseValueWriter(), usdTime);
+                                  &scales, _GetSparseValueWriter(), usdTime);
                 }
             }
         }

@@ -400,11 +400,11 @@ UsdMayaJointUtil::getRootJoint(const std::vector<MDagPath>& jointDagPaths)
 
 MObject 
 UsdMayaJointUtil::writeSkinningData(UsdGeomMesh& primSchema,
-                                   const SdfPath& usdPath, 
-                                   const MDagPath& dagPath,
-                                   SdfPath& skelPath,
-                                   const bool stripNamespaces, 
-                                   UsdUtilsSparseValueWriter& valueWriter)
+                                    const SdfPath& usdPath, 
+                                    const MDagPath& dagPath,
+                                    SdfPath& skelPath,
+                                    const bool stripNamespaces, 
+                                    UsdUtilsSparseValueWriter* valueWriter)
 {
     // Figure out if we even have a skin cluster in the first place.
     MObject skinClusterObj = UsdMayaJointUtil::getSkinCluster(dagPath);
@@ -451,8 +451,8 @@ UsdMayaJointUtil::writeSkinningData(UsdGeomMesh& primSchema,
         UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(primSchema.GetPrim());
 
     if (UsdMayaJointUtil::writeJointInfluences(skinCluster, inMesh, bindingAPI)){
-        UsdMayaJointUtil::writeJointOrder(rootJoint, 
-                                          jointDagPaths, 
+        UsdMayaJointUtil::writeJointOrder(rootJoint,
+                                          jointDagPaths,
                                           bindingAPI,
                                           stripNamespaces);
     }

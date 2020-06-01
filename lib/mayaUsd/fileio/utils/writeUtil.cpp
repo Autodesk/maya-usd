@@ -865,7 +865,7 @@ UsdMayaWriteUtil::SetUsdAttr(
         return false;
     }
 
-    return SetAttribute(usdAttr, val, usdTime, valueWriter);
+    return SetAttribute(usdAttr, val, valueWriter, usdTime);
 }
 
 // This method inspects the JSON blob stored in the
@@ -1026,7 +1026,7 @@ UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                                     /*custom*/ false,
                                     attrDef->GetVariability());
                         const UsdTimeCode usdTime = UsdTimeCode::Default();
-                        SetAttribute(attr, value, usdTime, valueWriter);
+                        SetAttribute(attr, value, valueWriter, usdTime);
                     }
                 }
             }
@@ -1069,7 +1069,7 @@ UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
                     attrDef->GetTypeName(),
                     /*custom*/ false,
                     attrDef->GetVariability());
-            if (SetAttribute(attr, value, usdTime, valueWriter)) {
+            if (SetAttribute(attr, value, valueWriter, usdTime)) {
                 count++;
             }
         }
@@ -1180,8 +1180,8 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](double x) {
                 return (int64_t) x;
             });
-        SetAttribute(instancer.CreateIdsAttr(), indicesOrIds, usdTime,
-                valueWriter);
+        SetAttribute(instancer.CreateIdsAttr(), indicesOrIds,
+                valueWriter, usdTime);
     }
     else {
         // Skip writing the id's, but still generate the indicesOrIds array.
@@ -1211,13 +1211,13 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                 }
             });
         SetAttribute(instancer.CreateProtoIndicesAttr(), vtArray,
-                      usdTime, valueWriter);
+                       valueWriter, usdTime);
     }
     else {
         VtArray<int> vtArray;
         vtArray.assign(numInstances, 0);
         SetAttribute(instancer.CreateProtoIndicesAttr(),
-                      vtArray, usdTime, valueWriter);
+                      vtArray, valueWriter, usdTime);
     }
 
     if (inputPointsData.checkArrayExist("position", type) &&
@@ -1232,14 +1232,14 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](const MVector& v) {
                 return GfVec3f(v.x, v.y, v.z);
             });
-        SetAttribute(instancer.CreatePositionsAttr(), vtArray, usdTime,
-                      valueWriter);
+        SetAttribute(instancer.CreatePositionsAttr(), vtArray,
+                        valueWriter,usdTime);
     }
     else {
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(0.0f));
         SetAttribute(instancer.CreatePositionsAttr(),
-                      vtArray, usdTime, valueWriter);
+                      vtArray, valueWriter, usdTime);
     }
 
     if (inputPointsData.checkArrayExist("rotation", type) &&
@@ -1258,13 +1258,13 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                 return GfQuath(rot.GetQuat());
             });
         SetAttribute(instancer.CreateOrientationsAttr(),
-                      vtArray, usdTime, valueWriter);
+                      vtArray, valueWriter, usdTime);
     }
     else {
         VtQuathArray vtArray;
         vtArray.assign(numInstances, GfQuath(0.0f));
         SetAttribute(instancer.CreateOrientationsAttr(),
-                      vtArray, usdTime, valueWriter);
+                      vtArray, valueWriter, usdTime);
     }
 
     if (inputPointsData.checkArrayExist("scale", type) &&
@@ -1279,14 +1279,14 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](const MVector& v) {
                 return GfVec3f(v.x, v.y, v.z);
             });
-        SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
-                      valueWriter);
+        SetAttribute(instancer.CreateScalesAttr(), vtArray,
+                      valueWriter, usdTime);
     }
     else {
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(1.0));
-        SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
-                      valueWriter);
+        SetAttribute(instancer.CreateScalesAttr(), vtArray,
+                      valueWriter, usdTime);
     }
 
     // Note: Maya stores visibility as an array of doubles, one corresponding
@@ -1307,8 +1307,8 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                 }
             }
         }
-        SetAttribute(instancer.CreateInvisibleIdsAttr(), invisibleIds, usdTime,
-                      valueWriter);
+        SetAttribute(instancer.CreateInvisibleIdsAttr(), invisibleIds,
+                      valueWriter, usdTime);
     }
 
     return true;
