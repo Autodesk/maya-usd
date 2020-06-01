@@ -186,7 +186,7 @@ namespace
     {
         // Simple case of non-indexed primvars.
         if (indices.empty()) {
-            UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), values, valueWriter, usdTime);
+            UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), values, usdTime, valueWriter);
             return;
         }
 
@@ -202,8 +202,8 @@ namespace
 
                 const VtValue paddedValues = UsdMayaUtil::pushFirstValue(values, defaultValue);
                 if (!paddedValues.IsEmpty()) {
-                    UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), paddedValues, valueWriter, usdTime);
-                    UsdMayaWriteUtil::SetAttribute(primvar.CreateIndicesAttr(), UsdMayaUtil::shiftIndices(indices, 1), valueWriter, usdTime);
+                    UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), paddedValues, usdTime, valueWriter);
+                    UsdMayaWriteUtil::SetAttribute(primvar.CreateIndicesAttr(), UsdMayaUtil::shiftIndices(indices, 1), usdTime, valueWriter);
                 }
                 else {
                     TF_CODING_ERROR("Unable to pad values array for <%s>",
@@ -211,8 +211,8 @@ namespace
                 }
             }
             else {
-                UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), values, valueWriter, usdTime);
-                UsdMayaWriteUtil::SetAttribute(primvar.CreateIndicesAttr(), indices, valueWriter, usdTime);
+                UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), values, usdTime, valueWriter);
+                UsdMayaWriteUtil::SetAttribute(primvar.CreateIndicesAttr(), indices, usdTime, valueWriter);
             }
         }
         else {
@@ -227,8 +227,8 @@ namespace
 
             const VtValue paddedValues = UsdMayaUtil::pushFirstValue(values, defaultValue);
             if (!paddedValues.IsEmpty()) {
-                UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), paddedValues, valueWriter, usdTime);
-                UsdMayaWriteUtil::SetAttribute(primvar.CreateIndicesAttr(), UsdMayaUtil::shiftIndices(indices, 1), valueWriter, usdTime);
+                UsdMayaWriteUtil::SetAttribute(primvar.GetAttr(), paddedValues, usdTime, valueWriter);
+                UsdMayaWriteUtil::SetAttribute(primvar.CreateIndicesAttr(), UsdMayaUtil::shiftIndices(indices, 1), usdTime, valueWriter);
             }
             else {
                 TF_CODING_ERROR("Unable to pad values array for <%s>",
@@ -613,10 +613,12 @@ UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
         }
 
         // not animatable
-        UsdMayaWriteUtil::SetAttribute(primSchema.GetCornerIndicesAttr(), &subdCornerIndices, valueWriter);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetCornerIndicesAttr(), 
+                                      &subdCornerIndices, UsdTimeCode::Default(), valueWriter);
 
         // not animatable
-        UsdMayaWriteUtil::SetAttribute(primSchema.GetCornerSharpnessesAttr(), &subdCornerSharpnesses, valueWriter);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetCornerSharpnessesAttr(), 
+                                       &subdCornerSharpnesses, UsdTimeCode::Default(), valueWriter);
     }
 
     // Edge Creasing
@@ -648,12 +650,12 @@ UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
         if (!creases.empty()) {
             VtIntArray creaseIndicesVt(creases.size());
             std::copy(creases.begin(), creases.end(), creaseIndicesVt.begin());
-            UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseIndicesAttr(), &creaseIndicesVt, valueWriter);
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseIndicesAttr(), &creaseIndicesVt, UsdTimeCode::Default(), valueWriter);
         }
         if (!numCreases.empty()) {
             VtIntArray creaseLengthsVt(numCreases.size());
             std::copy(numCreases.begin(), numCreases.end(), creaseLengthsVt.begin());
-            UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseLengthsAttr(), &creaseLengthsVt, valueWriter);
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseLengthsAttr(), &creaseLengthsVt, UsdTimeCode::Default(), valueWriter);
         }
         if (!creaseSharpnesses.empty()) {
             VtFloatArray creaseSharpnessesVt(creaseSharpnesses.size());
@@ -661,7 +663,7 @@ UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
                 creaseSharpnesses.begin(),
                 creaseSharpnesses.end(),
                 creaseSharpnessesVt.begin());
-            UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseSharpnessesAttr(), &creaseSharpnessesVt, valueWriter);
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetCreaseSharpnessesAttr(), &creaseSharpnessesVt, UsdTimeCode::Default(), valueWriter);
         }
     }
 }
@@ -690,8 +692,8 @@ UsdMayaMeshWriteUtils::writePointsData(const MFnMesh& meshFn,
     // Compute the extent using the raw points
     UsdGeomPointBased::ComputeExtent(points, &extent);
 
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), &points, valueWriter, usdTime);
-    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), &extent, valueWriter,usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), &points, usdTime, valueWriter);
+    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), &extent, usdTime, valueWriter);
 }
 
 void 
@@ -715,8 +717,8 @@ UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(const MFnMesh& meshFn,
             curFaceVertexIndex++;
         }
     }
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetFaceVertexCountsAttr(), &faceVertexCounts, valueWriter, usdTime);
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetFaceVertexIndicesAttr(), &faceVertexIndices, valueWriter, usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetFaceVertexCountsAttr(), &faceVertexCounts, usdTime, valueWriter);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetFaceVertexIndicesAttr(), &faceVertexIndices, usdTime, valueWriter);
 }
 
 void 
@@ -733,7 +735,7 @@ UsdMayaMeshWriteUtils::writeInvisibleFacesData(const MFnMesh& meshFn,
         // use memcpy() to copy the data. HS April 20, 2019
         memcpy((int32_t*)subdHoles.data(), ptr, count * sizeof(uint32_t));
         // not animatable in Maya, so we'll set default only
-        UsdMayaWriteUtil::SetAttribute(primSchema.GetHoleIndicesAttr(), &subdHoles, valueWriter);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetHoleIndicesAttr(), &subdHoles, UsdTimeCode::Default(), valueWriter);
     }
 }
 
@@ -857,7 +859,8 @@ UsdMayaMeshWriteUtils::writeSubdivInterpBound(MFnMesh& meshFn,
 {
     TfToken sdInterpBound = UsdMayaMeshWriteUtils::getSubdivInterpBoundary(meshFn);
     if (!sdInterpBound.IsEmpty()) {
-        UsdMayaWriteUtil::SetAttribute(primSchema.CreateInterpolateBoundaryAttr(), sdInterpBound, valueWriter);
+        UsdMayaWriteUtil::SetAttribute(primSchema.CreateInterpolateBoundaryAttr(), 
+                                       sdInterpBound, UsdTimeCode::Default(), valueWriter);
     }
 }
 
@@ -869,7 +872,7 @@ UsdMayaMeshWriteUtils::writeSubdivFVLinearInterpolation(MFnMesh& meshFn,
     TfToken sdFVLinearInterpolation = UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(meshFn);
     if (!sdFVLinearInterpolation.IsEmpty()) {
         UsdMayaWriteUtil::SetAttribute(primSchema.CreateFaceVaryingLinearInterpolationAttr(), 
-                                       sdFVLinearInterpolation, valueWriter);
+                                       sdFVLinearInterpolation, UsdTimeCode::Default(), valueWriter);
     }
 }
 
@@ -884,7 +887,7 @@ UsdMayaMeshWriteUtils::writeNormalsData(const MFnMesh& meshFn,
 
     if (UsdMayaMeshWriteUtils::getMeshNormals(meshFn, &meshNormals,&normalInterp)) {
 
-        UsdMayaWriteUtil::SetAttribute(primSchema.GetNormalsAttr(), &meshNormals, valueWriter, usdTime);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetNormalsAttr(), &meshNormals, usdTime, valueWriter);
 
         primSchema.SetNormalsInterpolation(normalInterp);
     }

@@ -459,7 +459,8 @@ UsdMayaJointUtil::writeSkinningData(UsdGeomMesh& primSchema,
 
     GfMatrix4d geomBindTransform;
     if (UsdMayaJointUtil::getGeomBindTransform(skinCluster,&geomBindTransform)) {
-        UsdMayaWriteUtil::SetAttribute(bindingAPI.CreateGeomBindTransformAttr(), &geomBindTransform, valueWriter);
+        UsdMayaWriteUtil::SetAttribute(bindingAPI.CreateGeomBindTransformAttr(), 
+                                       &geomBindTransform, UsdTimeCode::Default(), valueWriter);
     }
 
     UsdMayaJointUtil::warnForPostDeformationTransform(usdPath, dagPath, skinCluster);

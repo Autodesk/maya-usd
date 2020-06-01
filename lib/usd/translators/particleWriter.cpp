@@ -351,14 +351,14 @@ PxrUsdTranslators_ParticleWriter::writeParams(
     radii->resize(minSize);
     masses->resize(minSize);
 
-    UsdMayaWriteUtil::SetAttribute(points.GetPointsAttr(), positions.get(), _GetSparseValueWriter(), usdTime);
-    UsdMayaWriteUtil::SetAttribute(points.GetVelocitiesAttr(), velocities.get(), _GetSparseValueWriter(), usdTime);
-    UsdMayaWriteUtil::SetAttribute(points.GetIdsAttr(), ids.get(), _GetSparseValueWriter(), usdTime);
+    UsdMayaWriteUtil::SetAttribute(points.GetPointsAttr(), positions.get(), usdTime, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(points.GetVelocitiesAttr(), velocities.get(), usdTime, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(points.GetIdsAttr(), ids.get(), usdTime, _GetSparseValueWriter());
 
     // radius -> width conversion
     for (auto& r : *radii) { r = r * 2.0f; }
     
-    UsdMayaWriteUtil::SetAttribute(points.GetWidthsAttr(), radii.get(), _GetSparseValueWriter(), usdTime);
+    UsdMayaWriteUtil::SetAttribute(points.GetWidthsAttr(), radii.get(), usdTime, _GetSparseValueWriter());
 
     _addAttr(points, _massName, SdfValueTypeNames->FloatArray, *masses, usdTime,
              _GetSparseValueWriter());

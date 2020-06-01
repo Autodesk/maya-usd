@@ -102,7 +102,7 @@ PxrUsdTranslators_CameraWriter::writeCameraAttrs(
     if (camFn.isOrtho()) {
         UsdMayaWriteUtil::SetAttribute(primSchema.GetProjectionAttr(),
                                        UsdGeomTokens->orthographic,
-                                       _GetSparseValueWriter(), usdTime);
+                                       usdTime, _GetSparseValueWriter());
 
         // Contrary to the documentation, Maya actually stores the orthographic
         // width in centimeters (Maya's internal unit system), not inches.
@@ -112,14 +112,14 @@ PxrUsdTranslators_CameraWriter::writeCameraAttrs(
         // camera in Maya, and aspect ratio, lens squeeze ratio, and film
         // offset have no effect.
         UsdMayaWriteUtil::SetAttribute(primSchema.GetHorizontalApertureAttr(),
-                      static_cast<float>(orthoWidth), _GetSparseValueWriter(), usdTime);
+                      static_cast<float>(orthoWidth), usdTime, _GetSparseValueWriter());
 
         UsdMayaWriteUtil::SetAttribute(primSchema.GetVerticalApertureAttr(),
                       static_cast<float>(orthoWidth),
-                       _GetSparseValueWriter(), usdTime);
+                       usdTime, _GetSparseValueWriter());
     } else {
         UsdMayaWriteUtil::SetAttribute(primSchema.GetProjectionAttr(),
-                      UsdGeomTokens->perspective, _GetSparseValueWriter(), usdTime);
+                      UsdGeomTokens->perspective, usdTime, _GetSparseValueWriter());
 
         // Lens squeeze ratio applies horizontally only.
         const double horizontalAperture = UsdMayaUtil::ConvertInchesToMM(
@@ -135,35 +135,35 @@ PxrUsdTranslators_CameraWriter::writeCameraAttrs(
             (camFn.shakeEnabled() ? camFn.verticalFilmOffset() + camFn.verticalShake() : camFn.verticalFilmOffset()));
 
         UsdMayaWriteUtil::SetAttribute(primSchema.GetHorizontalApertureAttr(),
-                      static_cast<float>(horizontalAperture), _GetSparseValueWriter(), usdTime);
+                      static_cast<float>(horizontalAperture), usdTime, _GetSparseValueWriter());
 
         UsdMayaWriteUtil::SetAttribute(primSchema.GetVerticalApertureAttr(),
-                      static_cast<float>(verticalAperture), _GetSparseValueWriter(), usdTime);
+                      static_cast<float>(verticalAperture), usdTime, _GetSparseValueWriter());
 
         UsdMayaWriteUtil::SetAttribute(primSchema.GetHorizontalApertureOffsetAttr(),
-                      static_cast<float>(horizontalApertureOffset), _GetSparseValueWriter(), usdTime);
+                      static_cast<float>(horizontalApertureOffset), usdTime, _GetSparseValueWriter());
 
         UsdMayaWriteUtil::SetAttribute(primSchema.GetVerticalApertureOffsetAttr(),
-                      static_cast<float>(verticalApertureOffset), _GetSparseValueWriter(),usdTime);
+                      static_cast<float>(verticalApertureOffset), usdTime, _GetSparseValueWriter());
     }
 
     // Set the lens parameters.
     UsdMayaWriteUtil::SetAttribute(primSchema.GetFocalLengthAttr(),
-                  static_cast<float>(camFn.focalLength()), _GetSparseValueWriter(), usdTime);
+                  static_cast<float>(camFn.focalLength()), usdTime, _GetSparseValueWriter());
 
     // Always export focus distance and fStop regardless of what
     // camFn.isDepthOfField() says. Downstream tools can choose to ignore or
     // override them.
     UsdMayaWriteUtil::SetAttribute(primSchema.GetFocusDistanceAttr(),
-                  static_cast<float>(camFn.focusDistance()), _GetSparseValueWriter(), usdTime);
+                  static_cast<float>(camFn.focusDistance()), usdTime, _GetSparseValueWriter());
 
     UsdMayaWriteUtil::SetAttribute(primSchema.GetFStopAttr(),
-                  static_cast<float>(camFn.fStop()), _GetSparseValueWriter(), usdTime);
+                  static_cast<float>(camFn.fStop()), usdTime, _GetSparseValueWriter());
 
     // Set the clipping planes.
     GfVec2f clippingRange(camFn.nearClippingPlane(), camFn.farClippingPlane());
     UsdMayaWriteUtil::SetAttribute(primSchema.GetClippingRangeAttr(), clippingRange,
-                                    _GetSparseValueWriter(), usdTime);
+                                    usdTime, _GetSparseValueWriter());
 
     return true;
 }

@@ -313,8 +313,8 @@ struct UsdMayaWriteUtil
     static bool SetAttribute(
             const UsdAttribute& attr,
             const T& value,
-            UsdUtilsSparseValueWriter* valueWriter = nullptr,
-            const UsdTimeCode time = UsdTimeCode::Default())
+            const UsdTimeCode time = UsdTimeCode::Default(),
+            UsdUtilsSparseValueWriter* valueWriter = nullptr)
     {
         return valueWriter ?
             valueWriter->SetAttribute(attr, VtValue(value), time) :
@@ -330,8 +330,8 @@ struct UsdMayaWriteUtil
     static bool SetAttribute(
             const UsdAttribute& attr,
             T* value,
-            UsdUtilsSparseValueWriter* valueWriter = nullptr,
-            const UsdTimeCode time = UsdTimeCode::Default())
+            const UsdTimeCode time = UsdTimeCode::Default(),
+            UsdUtilsSparseValueWriter* valueWriter = nullptr)
     {
         return valueWriter ?
             valueWriter->SetAttribute(attr, VtValue::Take(*value), time) :
