@@ -204,8 +204,7 @@ UsdGeomPrimvar UsdMayaWriteUtil::GetOrCreatePrimvar(
     }
 
     const SdfValueTypeName& typeName =
-        Converter::getUsdTypeName(attrPlug,
-                                            translateMayaDoubleToUsdSinglePrecision);
+        Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         primvar = imageable.CreatePrimvar(primvarNameToken,
                                           typeName,
@@ -256,8 +255,7 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
     }
 
     const SdfValueTypeName& typeName =
-        Converter::getUsdTypeName(attrPlug,
-                                            translateMayaDoubleToUsdSinglePrecision);
+        Converter::getUsdTypeName(attrPlug, translateMayaDoubleToUsdSinglePrecision);
     if (typeName) {
         riStatements = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
                 UsdRiStatementsAPI>(usdPrim);
