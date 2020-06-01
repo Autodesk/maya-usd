@@ -19,21 +19,21 @@
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
-#include "maya/MObject.h"
-#include "maya/MStatus.h"
-#include "maya/MAngle.h"
-#include "maya/MDagPath.h"
-#include "maya/MDoubleArray.h"
-#include "maya/MPlug.h"
-#include "maya/MFnTransform.h"
-#include "maya/MDGModifier.h"
-#include "maya/MNodeClass.h"
-#include "maya/MGlobal.h"
-#include "maya/MMatrix.h"
-#include "maya/MEulerRotation.h"
-#include "maya/MVector.h"
-#include "maya/MFileIO.h"
-#include "maya/MItDag.h"
+#include <maya/MObject.h>
+#include <maya/MStatus.h>
+#include <maya/MAngle.h>
+#include <maya/MDagPath.h>
+#include <maya/MDoubleArray.h>
+#include <maya/MPlug.h>
+#include <maya/MFnTransform.h>
+#include <maya/MDGModifier.h>
+#include <maya/MNodeClass.h>
+#include <maya/MGlobal.h>
+#include <maya/MMatrix.h>
+#include <maya/MEulerRotation.h>
+#include <maya/MVector.h>
+#include <maya/MFileIO.h>
+#include <maya/MItDag.h>
 
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/xform.h"

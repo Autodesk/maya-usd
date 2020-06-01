@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #pragma once
-#include "maya/MPxCommand.h"
+#include <maya/MPxCommand.h>
 #include "AL/maya/test/Api.h"
 
 

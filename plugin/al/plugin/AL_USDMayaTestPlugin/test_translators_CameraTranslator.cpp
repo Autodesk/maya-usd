@@ -23,9 +23,9 @@
 #include "AL/usdmaya/StageCache.h"
 
 
-#include "maya/MFileIO.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MDagModifier.h"
+#include <maya/MFileIO.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MDagModifier.h>
 
 #include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdGeom/camera.h"

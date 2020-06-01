@@ -22,9 +22,9 @@
 #include "AL/usdmaya/utils/AttributeType.h"
 #include "AL/usdmaya/utils/Utils.h"
 
-#include "maya/MFileIO.h"
-#include "maya/MViewport2Renderer.h"
-#include "maya/MFnTransform.h"
+#include <maya/MFileIO.h>
+#include <maya/MViewport2Renderer.h>
+#include <maya/MFnTransform.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -15,7 +15,7 @@
 //
 #include "test_usdmaya.h"
 
-#include "maya/MFileIO.h"
+#include <maya/MFileIO.h>
 
 #include "AL/maya/utils/NodeHelper.h"
 #include "AL/usdmaya/fileio/ImportParams.h"

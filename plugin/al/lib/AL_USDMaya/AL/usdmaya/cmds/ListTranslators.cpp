@@ -19,10 +19,10 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/plug/registry.h"
 
-#include "maya/MArgDatabase.h"
-#include "maya/MGlobal.h"
-#include "maya/MSyntax.h"
-#include "maya/MStringArray.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MGlobal.h>
+#include <maya/MSyntax.h>
+#include <maya/MStringArray.h>
 
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 

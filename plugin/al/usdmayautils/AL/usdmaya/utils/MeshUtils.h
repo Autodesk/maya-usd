@@ -20,12 +20,12 @@
 
 #include "pxr/usd/usdGeom/mesh.h"
 
-#include "maya/MFloatPointArray.h"
-#include "maya/MFnMesh.h"
-#include "maya/MItMeshVertex.h"
-#include "maya/MIntArray.h"
-#include "maya/MUintArray.h"
-#include "maya/MPlug.h"
+#include <maya/MFloatPointArray.h>
+#include <maya/MFnMesh.h>
+#include <maya/MItMeshVertex.h>
+#include <maya/MIntArray.h>
+#include <maya/MUintArray.h>
+#include <maya/MPlug.h>
 
 #include "AL/maya/utils/MayaHelperMacros.h"
 

@@ -1,8 +1,8 @@
 #include "AL/usd/schemas/maya/FrameRange.h"
 #include "AL/usdmaya/DebugCodes.h"
 
-#include "maya/MStatus.h"
-#include "maya/MAnimControl.h"
+#include <maya/MStatus.h>
+#include <maya/MAnimControl.h>
 
 #include "FrameRange.h"
 

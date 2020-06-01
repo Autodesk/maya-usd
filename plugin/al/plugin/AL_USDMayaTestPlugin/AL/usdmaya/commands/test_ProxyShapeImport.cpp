@@ -24,12 +24,12 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include "maya/MFnTransform.h"
-#include "maya/MSelectionList.h"
-#include "maya/MGlobal.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MFileIO.h"
-#include "maya/MUuid.h"
+#include <maya/MFnTransform.h>
+#include <maya/MSelectionList.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MFileIO.h>
+#include <maya/MUuid.h>
 
 #include <functional>
 

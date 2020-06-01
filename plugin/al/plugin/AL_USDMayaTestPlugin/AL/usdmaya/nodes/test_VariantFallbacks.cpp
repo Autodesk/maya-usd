@@ -20,11 +20,11 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUtils/stageCache.h"
 
-#include "maya/MSelectionList.h"
-#include "maya/MGlobal.h"
-#include "maya/MDagPath.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MFileIO.h"
+#include <maya/MSelectionList.h>
+#include <maya/MGlobal.h>
+#include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFileIO.h>
 
 namespace
 {

@@ -16,7 +16,7 @@
 #pragma once
 #include "AL/maya/utils/ForwardDeclares.h"
 
-#include "maya/MPxCommand.h"
+#include <maya/MPxCommand.h>
 
 namespace AL {
 namespace maya {

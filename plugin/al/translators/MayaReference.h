@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "maya/MFnReference.h"
+#include <maya/MFnReference.h>
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/utils/ForwardDeclares.h"
 
