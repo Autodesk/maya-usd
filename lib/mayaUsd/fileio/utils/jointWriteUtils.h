@@ -162,8 +162,12 @@ namespace UsdMayaJointUtil
     /// returns a null MObject.
     /// This should only be called once at the default time.
     MAYAUSD_CORE_PUBLIC
-    MObject writeSkinningData(UsdGeomMesh&, const SdfPath&, const MDagPath&, SdfPath&, const bool, UsdUtilsSparseValueWriter&);
-
+    MObject writeSkinningData(UsdGeomMesh& primSchema,
+                                    const SdfPath& usdPath, 
+                                    const MDagPath& dagPath,
+                                    SdfPath& skelPath,
+                                    const bool stripNamespaces, 
+                                    UsdUtilsSparseValueWriter* valueWriter);
 } // namespace UsdMayaJointUtil
 
 

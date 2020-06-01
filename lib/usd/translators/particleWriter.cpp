@@ -44,6 +44,7 @@
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/transformWriter.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -350,12 +351,14 @@ PxrUsdTranslators_ParticleWriter::writeParams(
     radii->resize(minSize);
     masses->resize(minSize);
 
-    _SetAttribute(points.GetPointsAttr(), positions.get(), usdTime);
-    _SetAttribute(points.GetVelocitiesAttr(), velocities.get(), usdTime);
-    _SetAttribute(points.GetIdsAttr(), ids.get(), usdTime);
+    UsdMayaWriteUtil::SetAttribute(points.GetPointsAttr(), positions.get(), _GetSparseValueWriter(), usdTime);
+    UsdMayaWriteUtil::SetAttribute(points.GetVelocitiesAttr(), velocities.get(), _GetSparseValueWriter(), usdTime);
+    UsdMayaWriteUtil::SetAttribute(points.GetIdsAttr(), ids.get(), _GetSparseValueWriter(), usdTime);
+
     // radius -> width conversion
     for (auto& r : *radii) { r = r * 2.0f; }
-    _SetAttribute(points.GetWidthsAttr(), radii.get(), usdTime);
+    
+    UsdMayaWriteUtil::SetAttribute(points.GetWidthsAttr(), radii.get(), _GetSparseValueWriter(), usdTime);
 
     _addAttr(points, _massName, SdfValueTypeNames->FloatArray, *masses, usdTime,
              _GetSparseValueWriter());

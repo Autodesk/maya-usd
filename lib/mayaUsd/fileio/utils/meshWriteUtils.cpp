@@ -182,7 +182,7 @@ namespace
                 const VtValue& values,
                 const VtValue& defaultValue,
                 const UsdTimeCode& usdTime,
-                UsdUtilsSparseValueWriter& valueWriter)
+                UsdUtilsSparseValueWriter* valueWriter)
     {
         // Simple case of non-indexed primvars.
         if (indices.empty()) {
@@ -244,7 +244,7 @@ namespace
                      const VtArray<GfVec2f>& data,
                      const TfToken& interpolation,
                      const VtIntArray& assignmentIndices,
-                     UsdUtilsSparseValueWriter& valueWriter)
+                     UsdUtilsSparseValueWriter* valueWriter)
     {
         const unsigned int numValues = data.size();
         if (numValues == 0) {
@@ -595,7 +595,7 @@ UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
 void
 UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
                                                  UsdGeomMesh& primSchema,
-                                                 UsdUtilsSparseValueWriter& valueWriter)
+                                                 UsdUtilsSparseValueWriter* valueWriter)
 {
     // Vert Creasing
     MUintArray mayaCreaseVertIds;
@@ -670,7 +670,7 @@ void
 UsdMayaMeshWriteUtils::writePointsData(const MFnMesh& meshFn,
                                        UsdGeomMesh& primSchema,
                                        const UsdTimeCode& usdTime,
-                                       UsdUtilsSparseValueWriter& valueWriter)
+                                       UsdUtilsSparseValueWriter* valueWriter)
 {
     MStatus status{MS::kSuccess};
 
@@ -698,7 +698,7 @@ void
 UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(const MFnMesh& meshFn, 
                                                   UsdGeomMesh& primSchema, 
                                                   const UsdTimeCode& usdTime, 
-                                                  UsdUtilsSparseValueWriter& valueWriter)
+                                                  UsdUtilsSparseValueWriter* valueWriter)
 {
     const int numFaceVertices = meshFn.numFaceVertices();
     const int numPolygons = meshFn.numPolygons();
@@ -722,7 +722,7 @@ UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(const MFnMesh& meshFn,
 void 
 UsdMayaMeshWriteUtils::writeInvisibleFacesData(const MFnMesh& meshFn, 
                                                UsdGeomMesh& primSchema, 
-                                               UsdUtilsSparseValueWriter& valueWriter)
+                                               UsdUtilsSparseValueWriter* valueWriter)
 {
     MUintArray mayaHoles = meshFn.getInvisibleFaces();
     const uint32_t count = mayaHoles.length();
@@ -804,7 +804,7 @@ bool
 UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn, 
                                                   UsdGeomMesh& primSchema, 
                                                   const UsdTimeCode& usdTime, 
-                                                  UsdUtilsSparseValueWriter& valueWriter)
+                                                  UsdUtilsSparseValueWriter* valueWriter)
 {
     MStatus status{MS::kSuccess};
 
@@ -853,7 +853,7 @@ UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn,
 void 
 UsdMayaMeshWriteUtils::writeSubdivInterpBound(MFnMesh& meshFn, 
                                               UsdGeomMesh& primSchema, 
-                                              UsdUtilsSparseValueWriter& valueWriter)
+                                              UsdUtilsSparseValueWriter* valueWriter)
 {
     TfToken sdInterpBound = UsdMayaMeshWriteUtils::getSubdivInterpBoundary(meshFn);
     if (!sdInterpBound.IsEmpty()) {
@@ -864,7 +864,7 @@ UsdMayaMeshWriteUtils::writeSubdivInterpBound(MFnMesh& meshFn,
 void 
 UsdMayaMeshWriteUtils::writeSubdivFVLinearInterpolation(MFnMesh& meshFn, 
                                                         UsdGeomMesh& primSchema, 
-                                                        UsdUtilsSparseValueWriter& valueWriter)
+                                                        UsdUtilsSparseValueWriter* valueWriter)
 {
     TfToken sdFVLinearInterpolation = UsdMayaMeshWriteUtils::getSubdivFVLinearInterpolation(meshFn);
     if (!sdFVLinearInterpolation.IsEmpty()) {
@@ -877,7 +877,7 @@ void
 UsdMayaMeshWriteUtils::writeNormalsData(const MFnMesh& meshFn, 
                                         UsdGeomMesh& primSchema, 
                                         const UsdTimeCode& usdTime, 
-                                        UsdUtilsSparseValueWriter& valueWriter)
+                                        UsdUtilsSparseValueWriter* valueWriter)
 {
     VtVec3fArray meshNormals;
     TfToken normalInterp;
@@ -900,7 +900,7 @@ UsdMayaMeshWriteUtils::addDisplayPrimvars(UsdGeomGprim &primSchema,
                                           const VtIntArray& assignmentIndices,
                                           const bool clamped,
                                           const bool authored,
-                                          UsdUtilsSparseValueWriter& valueWriter)
+                                          UsdUtilsSparseValueWriter* valueWriter)
 {
     // We are appending the default value to the primvar in the post export function
     // so if the dataset is empty and the assignment indices are not, we still
@@ -978,7 +978,7 @@ UsdMayaMeshWriteUtils::createRGBPrimVar(UsdGeomGprim &primSchema,
                                         const TfToken& interpolation,
                                         const VtIntArray& assignmentIndices,
                                         bool clamped,
-                                        UsdUtilsSparseValueWriter& valueWriter)
+                                        UsdUtilsSparseValueWriter* valueWriter)
 {
     const unsigned int numValues = data.size();
     if (numValues == 0) {
@@ -1016,7 +1016,7 @@ UsdMayaMeshWriteUtils::createRGBAPrimVar(UsdGeomGprim &primSchema,
                                          const TfToken& interpolation,
                                          const VtIntArray& assignmentIndices,
                                          bool clamped,
-                                         UsdUtilsSparseValueWriter& valueWriter)
+                                         UsdUtilsSparseValueWriter* valueWriter)
 {
     const unsigned int numValues = rgbData.size();
     if (numValues == 0 || numValues != alphaData.size()) {
@@ -1061,7 +1061,7 @@ UsdMayaMeshWriteUtils::createAlphaPrimVar(UsdGeomGprim &primSchema,
                                           const TfToken& interpolation,
                                           const VtIntArray& assignmentIndices,
                                           bool clamped,
-                                          UsdUtilsSparseValueWriter& valueWriter)
+                                          UsdUtilsSparseValueWriter* valueWriter)
 {
     const unsigned int numValues = data.size();
     if (numValues == 0) {

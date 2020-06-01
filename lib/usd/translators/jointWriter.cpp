@@ -46,6 +46,7 @@
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/adaptor.h>
 #include <mayaUsd/fileio/utils/jointWriteUtils.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -485,7 +486,7 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
 
     // Mark the bindings for post processing.
 
-    _SetAttribute(_skel.GetJointsAttr(), skelJointNames);
+    UsdMayaWriteUtil::SetAttribute(_skel.GetJointsAttr(), skelJointNames, _GetSparseValueWriter());
 
     SdfPath skelPath = _skel.GetPrim().GetPath();
     _writeJobCtx.MarkSkelBindings(
@@ -493,12 +494,12 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
 
     VtMatrix4dArray bindXforms =
         _GetJointWorldBindTransforms(_topology, _joints);
-    _SetAttribute(_skel.GetBindTransformsAttr(), bindXforms);
+    UsdMayaWriteUtil::SetAttribute(_skel.GetBindTransformsAttr(), bindXforms, _GetSparseValueWriter());
 
     VtMatrix4dArray restXforms;
     if (_GetJointLocalRestTransformsFromDagPose(
             skelPath, GetDagPath(), _joints, &restXforms)) {
-        _SetAttribute(_skel.GetRestTransformsAttr(), restXforms);
+        UsdMayaWriteUtil::SetAttribute(_skel.GetRestTransformsAttr(), restXforms, _GetSparseValueWriter());
     }
 
     VtTokenArray animJointNames;
@@ -526,7 +527,7 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
             _skelToAnimMapper =
                 UsdSkelAnimMapper(skelJointNames, animJointNames);
 
-            _SetAttribute(_skelAnim.GetJointsAttr(), animJointNames);
+            UsdMayaWriteUtil::SetAttribute(_skelAnim.GetJointsAttr(), animJointNames, _GetSparseValueWriter());
 
             binding.CreateAnimationSourceRel().SetTargets({animPath});
         } else {
@@ -553,7 +554,7 @@ PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
         // We have a joint which provides the transform of the Skeleton,
         // instead of the transform of a joint in the hierarchy.
         GfMatrix4d localXf = _GetJointLocalTransform(_skelXformPath);
-        _SetAttribute(_skelXformAttr, localXf, usdTime);
+        UsdMayaWriteUtil::SetAttribute(_skelXformAttr, localXf, _GetSparseValueWriter(), usdTime);
     }
 
     // Time-varying step: write the packed joint animation transforms once per
@@ -594,12 +595,12 @@ PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
                     // separate anim components.
                     // In the future, we may want to RLE-compress the data in
                     // PostExport to remove redundant time samples.
-                    _SetAttribute(_skelAnim.GetTranslationsAttr(),
-                                  &translations, usdTime);
-                    _SetAttribute(_skelAnim.GetRotationsAttr(),
-                                  &rotations, usdTime);
-                    _SetAttribute(_skelAnim.GetScalesAttr(),
-                                  &scales, usdTime);
+                    UsdMayaWriteUtil::SetAttribute(_skelAnim.GetTranslationsAttr(),
+                                  &translations, _GetSparseValueWriter(), usdTime);
+                    UsdMayaWriteUtil::SetAttribute(_skelAnim.GetRotationsAttr(),
+                                  &rotations, _GetSparseValueWriter(), usdTime);
+                    UsdMayaWriteUtil::SetAttribute(_skelAnim.GetScalesAttr(),
+                                  &scales, _GetSparseValueWriter(), usdTime);
                 }
             }
         }

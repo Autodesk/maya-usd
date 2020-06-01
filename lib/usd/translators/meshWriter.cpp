@@ -134,7 +134,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
                                                                  GetDagPath(),
                                                                  skelPath,
                                                                  _GetExportArgs().stripNamespaces, 
-                                                                *_GetSparseValueWriter());
+                                                                 _GetSparseValueWriter());
 
             if(!_skelInputMesh.isNull()) {
                 // Add all skel primvars to the exclude set.
@@ -186,10 +186,10 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
 
     // Set mesh attrs ==========
     // Write points
-    UsdMayaMeshWriteUtils::writePointsData(geomMesh, primSchema, usdTime, *_GetSparseValueWriter());
+    UsdMayaMeshWriteUtils::writePointsData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
 
     // Write faceVertexIndices
-    UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(geomMesh, primSchema, usdTime, *_GetSparseValueWriter());
+    UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
 
     // Read subdiv scheme tagging. If not set, we default to defaultMeshScheme
     // flag (this is specified by the job args but defaults to catmullClark).
@@ -204,23 +204,23 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
         bool emitNormals = true; // Default to emitting normals if no tagging.
         UsdMayaMeshReadUtils::getEmitNormalsTag(finalMesh, &emitNormals);
         if (emitNormals) {
-            UsdMayaMeshWriteUtils::writeNormalsData(geomMesh, primSchema, usdTime, *_GetSparseValueWriter());
+            UsdMayaMeshWriteUtils::writeNormalsData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
         }
     } else {
         // Subdivision surface - export subdiv-specific attributes.
-        UsdMayaMeshWriteUtils::writeSubdivInterpBound(finalMesh, primSchema, *_GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::writeSubdivInterpBound(finalMesh, primSchema, _GetSparseValueWriter());
 
-        UsdMayaMeshWriteUtils::writeSubdivFVLinearInterpolation(finalMesh, primSchema, *_GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::writeSubdivFVLinearInterpolation(finalMesh, primSchema, _GetSparseValueWriter());
 
-        UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(finalMesh, primSchema, *_GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(finalMesh, primSchema, _GetSparseValueWriter());
     }
 
     // Holes - we treat InvisibleFaces as holes
-    UsdMayaMeshWriteUtils::writeInvisibleFacesData(finalMesh, primSchema, *_GetSparseValueWriter());
+    UsdMayaMeshWriteUtils::writeInvisibleFacesData(finalMesh, primSchema, _GetSparseValueWriter());
 
     // == Write UVSets as Vec2f Primvars
     if (_GetExportArgs().exportMeshUVs) {
-        UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(finalMesh, primSchema, usdTime, *_GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(finalMesh, primSchema, usdTime, _GetSparseValueWriter());
     }
 
     // == Gather ColorSets
@@ -313,7 +313,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
                                                 assignmentIndices,
                                                 clamped,
                                                 true,
-                                                *_GetSparseValueWriter());
+                                                _GetSparseValueWriter());
         } else {
             const std::string sanitizedName = UsdMayaUtil::SanitizeColorSetName(colorSetName);
             // if our sanitized name is different than our current one and the
@@ -336,7 +336,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
                                                     interpolation,
                                                     assignmentIndices,
                                                     clamped,
-                                                    *_GetSparseValueWriter());
+                                                    _GetSparseValueWriter());
             } else if (colorSetRep == MFnMesh::kRGB) {
                 UsdMayaMeshWriteUtils::createRGBPrimVar(primSchema,
                                                   colorSetNameToken,
@@ -345,7 +345,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
                                                   interpolation,
                                                   assignmentIndices,
                                                   clamped,
-                                                  *_GetSparseValueWriter());
+                                                  _GetSparseValueWriter());
             } else if (colorSetRep == MFnMesh::kRGBA) {
                 UsdMayaMeshWriteUtils::createRGBAPrimVar(primSchema,
                                                    colorSetNameToken,
@@ -355,7 +355,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
                                                    interpolation,
                                                    assignmentIndices,
                                                    clamped,
-                                                   *_GetSparseValueWriter());
+                                                   _GetSparseValueWriter());
             }
         }
     }
@@ -381,7 +381,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
                                             shadersAssignmentIndices,
                                             false,
                                             false,
-                                            *_GetSparseValueWriter());
+                                            _GetSparseValueWriter());
     }
 
     return true;

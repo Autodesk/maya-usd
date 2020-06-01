@@ -302,18 +302,23 @@ struct UsdMayaWriteUtil
 
     /// \}
 
-    /// Sets the value of \p attr to \p value at \p time with value
-    /// compression. When this method is used to write attribute values,
+    /// Sets the value of \p attr to \p value at \p time with optional value
+    /// compression.
+    ///
+    /// When this method is used to write attribute values,
     /// any redundant authoring of the default value or of time-samples
-    /// are avoided (by using the utility class UsdUtilsSparseValueWriter).
+    /// are avoided by using the utility class UsdUtilsSparseValueWriter,
+    /// if provided.
     template <typename T>
-    static bool SetAttribute( const UsdAttribute& attr,
-                              const T& value,
-                              UsdUtilsSparseValueWriter& valueWriter,
-                              const UsdTimeCode time = UsdTimeCode::Default()) 
+    static bool SetAttribute(
+            const UsdAttribute& attr,
+            const T& value,
+            UsdUtilsSparseValueWriter* valueWriter = nullptr,
+            const UsdTimeCode time = UsdTimeCode::Default())
     {
-        VtValue val(value);
-        return valueWriter.SetAttribute(attr, &val, time);
+        return valueWriter ?
+            valueWriter->SetAttribute(attr, VtValue(value), time) :
+            attr.Set(value, time);
     }
 
     /// \overload
@@ -322,14 +327,16 @@ struct UsdMayaWriteUtil
     /// However, it swaps out the value held in \p value for efficiency,
     /// leaving it in default-constructed state (value-initialized).
     template <typename T>
-    static bool SetAttribute( const UsdAttribute& attr,
-                              T* value,
-                              UsdUtilsSparseValueWriter& valueWriter,
-                              const UsdTimeCode time = UsdTimeCode::Default()) 
+    static bool SetAttribute(
+            const UsdAttribute& attr,
+            T* value,
+            UsdUtilsSparseValueWriter* valueWriter = nullptr,
+            const UsdTimeCode time = UsdTimeCode::Default())
     {
-        return valueWriter.SetAttribute(attr, VtValue::Take(*value), time);
+        return valueWriter ?
+            valueWriter->SetAttribute(attr, VtValue::Take(*value), time) :
+            attr.Set(*value, time);
     }
-
 };
 
 
