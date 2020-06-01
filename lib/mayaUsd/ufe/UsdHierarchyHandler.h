@@ -54,11 +54,6 @@ public:
 	// UsdHierarchyHandler overrides
 	Ufe::Hierarchy::Ptr hierarchy(const Ufe::SceneItem::Ptr& item) const override;
 	Ufe::SceneItem::Ptr createItem(const Ufe::Path& path) const override;
-
-private:
-	UsdRootChildHierarchy::Ptr fUsdRootChildHierarchy;
-	UsdHierarchy::Ptr fUsdHierarchy;
-
 }; // UsdHierarchyHandler
 
 } // namespace ufe

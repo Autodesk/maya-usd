@@ -53,16 +53,6 @@ struct UsdMayaWriteUtil
     MAYAUSD_CORE_PUBLIC
     static bool WriteUVAsFloat2();
 
-    /// Get the SdfValueTypeName that corresponds to the given plug \p attrPlug.
-    /// If \p translateMayaDoubleToUsdSinglePrecision is true, Maya plugs that
-    /// contain double data will return the appropriate float-based type.
-    /// Otherwise, the type returned will be the appropriate double-based type.
-    MAYAUSD_CORE_PUBLIC
-    static SdfValueTypeName GetUsdTypeName(
-            const MPlug& attrPlug,
-            const bool translateMayaDoubleToUsdSinglePrecision =
-                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
-
     /// Given an \p attrPlug, try to create a USD attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
     ///

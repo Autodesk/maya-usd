@@ -3,37 +3,23 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        blockSceneModificationContext.cpp
-        colorSpace.cpp
-        converter.cpp
-        diagnosticDelegate.cpp
-        query.cpp
-        stageCache.cpp
-        undoHelperCommand
-        util.cpp
-        utilFileSystem.cpp
+        baseExportCommand.cpp
+        baseImportCommand.cpp
 )
 
 set(headers
-    blockSceneModificationContext.h
-    colorSpace.h
-    converter.h
-    diagnosticDelegate.h
-    query.h
-    stageCache.h
-    undoHelperCommand.h
-    util.h
-    utilFileSystem.h
+        baseExportCommand.h
+        baseImportCommand.h
 )
 
 # -----------------------------------------------------------------------------
-# promote headers
+# promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR utils)
+mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR commands)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
 install(FILES ${headers}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/utils/
+     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/commands/
 )

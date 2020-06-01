@@ -132,16 +132,16 @@ initializePlugin(MObject obj)
 
     status = plugin.registerCommand(
         "usdExport",
-        UsdMayaExportCommand::creator,
-        UsdMayaExportCommand::createSyntax);
+        PxrMayaUSDExportCommand::creator,
+        PxrMayaUSDExportCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdExport");
     }
 
     status = plugin.registerCommand(
         "usdImport",
-        UsdMayaImportCommand::creator,
-        UsdMayaImportCommand::createSyntax);
+        PxrMayaUSDImportCommand::creator,
+        PxrMayaUSDImportCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdImport");
     }

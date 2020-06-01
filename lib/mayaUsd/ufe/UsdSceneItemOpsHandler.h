@@ -45,10 +45,6 @@ public:
 
 	// Ufe::SceneItemOpsHandler overrides
 	Ufe::SceneItemOps::Ptr sceneItemOps(const Ufe::SceneItem::Ptr& item) const override;
-
-private:
-	UsdSceneItemOps::Ptr fUsdSceneItemOps;
-
 }; // UsdSceneItemOpsHandler
 
 } // namespace ufe

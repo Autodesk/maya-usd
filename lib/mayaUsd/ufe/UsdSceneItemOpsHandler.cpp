@@ -20,9 +20,7 @@ namespace ufe {
 
 UsdSceneItemOpsHandler::UsdSceneItemOpsHandler()
 	: Ufe::SceneItemOpsHandler()
-{
-	fUsdSceneItemOps = UsdSceneItemOps::create();
-}
+{}
 
 UsdSceneItemOpsHandler::~UsdSceneItemOpsHandler()
 {
@@ -44,8 +42,7 @@ Ufe::SceneItemOps::Ptr UsdSceneItemOpsHandler::sceneItemOps(const Ufe::SceneItem
 #if !defined(NDEBUG)
 	assert(usdItem);
 #endif
-	fUsdSceneItemOps->setItem(usdItem);
-	return fUsdSceneItemOps;
+	return UsdSceneItemOps::create(usdItem);
 }
 
 } // namespace ufe

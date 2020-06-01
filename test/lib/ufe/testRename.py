@@ -198,9 +198,6 @@ class RenameTestCase(unittest.TestCase):
 
         self.assertEqual(pCylinder1RenName, newName)
 
-        # MAYA-92350: should not need to re-bind hierarchy interface objects
-        # with their item.
-        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
         propsChildren = propsHierarchy.children()
 
         self.assertEqual(len(propsChildren), len(propsChildrenPre))

@@ -68,9 +68,6 @@ class GroupCmdTestCase(unittest.TestCase):
         group = propsHierarchy.createGroupCmd(ufe.PathComponent("newGroup"))
 
         self.assertIsNotNone(group.item)
-        # MAYA-92350: must re-create hierarchy interface object.  Fix ASAP.
-        # PPT, 19-Nov-2018.
-        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
         propsChildrenPost = propsHierarchy.children()
         self.assertEqual(len(propsChildrenPre)+1, len(propsChildrenPost))
         childrenPaths = set([child.path() for child in propsChildrenPost])
@@ -79,9 +76,6 @@ class GroupCmdTestCase(unittest.TestCase):
         # Undo
         group.undoableCommand.undo()
 
-        # MAYA-92350: must re-create hierarchy interface object.  Fix ASAP.
-        # PPT, 19-Nov-2018.
-        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
         propsChildrenPostUndo = propsHierarchy.children()
         self.assertEqual(len(propsChildrenPre), len(propsChildrenPostUndo))
         childrenPaths = set([child.path() for child in propsChildrenPostUndo])
