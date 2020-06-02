@@ -11,7 +11,7 @@ jobs:
 
   build:
 
-    timeout-minutes: 120
+    timeout-minutes: 180
 
     # The type of runners that the job will run on.
     # In this case only a linux system is required.
