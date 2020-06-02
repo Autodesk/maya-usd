@@ -164,7 +164,7 @@ class testUsdExportRfMLight(unittest.TestCase):
         self.assertEqual(translateOp.GetOpName(), 'xformOp:translate')
         self.assertEqual(translateOp.GetOpType(), UsdGeom.XformOp.TypeTranslate)
 
-        for frame in xrange(int(self.START_TIMECODE), int(self.END_TIMECODE + 1.0)):
+        for frame in range(int(self.START_TIMECODE), int(self.END_TIMECODE + 1.0)):
             expectedTranslation = Gf.Vec3d(2.0, float(frame), 2.0)
             self.assertTrue(
                 Gf.IsClose(translateOp.Get(frame), expectedTranslation, 1e-6))

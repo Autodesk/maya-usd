@@ -172,7 +172,7 @@ class testUsdImportRfMLight(unittest.TestCase):
 
         animCurveFn = OpenMayaAnim.MFnAnimCurve(animObjs[0])
 
-        for frame in xrange(int(self.START_TIMECODE), int(self.END_TIMECODE + 1.0)):
+        for frame in range(int(self.START_TIMECODE), int(self.END_TIMECODE + 1.0)):
             value = animCurveFn.evaluate(OpenMaya.MTime(frame))
             self.assertTrue(Gf.IsClose(float(frame), value, 1e-6))
 

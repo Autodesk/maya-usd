@@ -134,7 +134,7 @@ def _GenerateFragmentXML(xmlTemplate, outputXmlFilePath, shaderCode=None,
             existingContent = xmlFile.read()
             if existingContent == xmlContent:
                 if verbose:
-                    print '\tunchanged %s' % outputXmlFilePath
+                    print('\tunchanged %s' % outputXmlFilePath)
                 return
 
     # Otherwise attempt to write to file.
@@ -142,12 +142,12 @@ def _GenerateFragmentXML(xmlTemplate, outputXmlFilePath, shaderCode=None,
         with open(outputXmlFilePath, 'w') as xmlFile:
             xmlFile.write(xmlContent)
             if verbose:
-                print '\t    wrote %s' % outputXmlFilePath
+                print('\t    wrote %s' % outputXmlFilePath)
     except IOError as ioe:
-        print '\t', ioe
-        print 'Diff:'
-        print '\n'.join(difflib.unified_diff(existingContent.split('\n'),
-            xmlContent.split('\n')))
+        print('\t', ioe)
+        print('Diff:')
+        print('\n'.join(difflib.unified_diff(existingContent.split('\n'),
+            xmlContent.split('\n'))))
 
 
 def _GenerateLightingContributionsShaderCode(glslfxParser):
@@ -198,7 +198,7 @@ def _ValidateXML(xmlFilePath, xmlSchemaFilePath):
     try:
         from lxml import etree
     except ImportError:
-        print "Could not import lxml.etree. NOT validating XML against schema"
+        print("Could not import lxml.etree. NOT validating XML against schema")
         return
 
     xmlTree = etree.parse(xmlFilePath)
@@ -209,8 +209,8 @@ def _ValidateXML(xmlFilePath, xmlSchemaFilePath):
     try:
         xmlSchema.assertValid(xmlTree)
     except etree.DocumentInvalid:
-        print "ERROR: XML file '%s' failed validation for schema '%s'" % (
-            xmlFilePath, xmlSchemaFilePath)
+        print("ERROR: XML file '%s' failed validation for schema '%s'" % (
+            xmlFilePath, xmlSchemaFilePath))
         raise
 
 

@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from future.utils import iteritems
+
 from pxr import UsdMaya
 
 from pxr import Tf

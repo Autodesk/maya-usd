@@ -88,7 +88,7 @@ class testUsdImportNestedAssemblyAnimation(unittest.TestCase):
         expectedNumKeys = len(expectedKeyframeTimes)
         self.assertEqual(animCurveFn.numKeys(), expectedNumKeys)
 
-        for keyNumber in xrange(expectedNumKeys):
+        for keyNumber in range(expectedNumKeys):
             expectedTime = expectedKeyframeTimes[keyNumber]
             expectedValue = expectedKeyframeValues[keyNumber]
 

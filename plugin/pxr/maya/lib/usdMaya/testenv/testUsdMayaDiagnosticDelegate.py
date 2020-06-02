@@ -23,8 +23,8 @@ from maya import cmds
 from maya import standalone
 from maya import OpenMaya as OM
 
+import sys
 import unittest
-
 
 class testUsdMayaDiagnosticDelegate(unittest.TestCase):
     @classmethod
@@ -112,10 +112,10 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
             Tf.Warn("spooky warning")
             Tf.Status("informative status")
 
-            for i in xrange(5):
+            for i in range(5):
                 Tf.Status("repeated status %d" % i)
 
-            for i in xrange(3):
+            for i in range(3):
                 Tf.Warn("spam warning %d" % i)
 
             try:
@@ -124,6 +124,9 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
                 pass
         log = self._StopRecording()
 
+        # assertCountEqual in python 3 is equivalent to assertItemsEqual
+        if sys.version_info[0] >= 3:
+            self.assertItemsEqual = self.assertCountEqual
         # Note: we use assertItemsEqual because coalescing may re-order the
         # diagnostic messages.
         self.assertItemsEqual(log, [
@@ -144,10 +147,13 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
 
             cmds.unloadPlugin('pxrUsd', force=True)
 
-            for i in xrange(5):
+            for i in range(5):
                 Tf.Status("no delegate, this will be lost %d" % i)
         log = self._StopRecording()
 
+        # assertCountEqual in python 3 is equivalent to assertItemsEqual
+        if sys.version_info[0] >= 3:
+            self.assertItemsEqual = self.assertCountEqual
         # Note: we use assertItemsEqual because coalescing may re-order the
         # diagnostic messages.
         self.assertItemsEqual(log, [

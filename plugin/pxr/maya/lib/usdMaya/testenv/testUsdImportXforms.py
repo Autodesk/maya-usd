@@ -15,6 +15,9 @@
 # limitations under the License.
 #
 
+from future.utils import iteritems
+from builtins import zip
+
 from pxr import Gf
 
 from maya import cmds
@@ -122,8 +125,7 @@ class testUsdImportXforms(unittest.TestCase):
             attrVals = {}
             allNodes.append(node)
             allExpected[node] = attrVals
-            for enabled, (attr, (valMin, valMax)) in itertools.izip(enabledArray,
-                                                                    ATTRS.iteritems()):
+            for enabled, (attr, (valMin, valMax)) in zip(enabledArray, iteritems(ATTRS)):
                 if not enabled:
                     if attr in ('rotateOrder', 'rotateX', 'rotateY', 'rotateZ'):
                         attrVals[attr] = 0
@@ -156,13 +158,13 @@ class testUsdImportXforms(unittest.TestCase):
         # Now import, and make sure it round-trips as expected
         cmds.file(new=1, f=1)
         cmds.usdImport(file=usdPath)
-        for node, attrVals in allExpected.iteritems():
+        for node, attrVals in iteritems(allExpected):
             # if only one (or less) of the three rotates is non-zero, then
             # the rotate order doesn't matter...
             nonZeroRotates = [attrVals['rotate' + dir] != 0 for dir in 'XYZ']
             skipRotateOrder = sum(int(x) for x in nonZeroRotates) <= 1 
             
-            for attr, expectedVal in attrVals.iteritems():
+            for attr, expectedVal in iteritems(attrVals):
                 if attr == 'rotateOrder' and skipRotateOrder:
                     continue
                 attrName = "{}.{}".format(node, attr)
@@ -180,7 +182,7 @@ class testUsdImportXforms(unittest.TestCase):
                                 attrName, expected, actual, abs(expected - actual)),
                             delta=1e-4)
                     except Exception:
-                        print "full failed xform:"
+                        print("full failed xform:")
                         pprint.pprint(attrVals)
                         raise
                     
@@ -206,7 +208,7 @@ class testUsdImportXforms(unittest.TestCase):
         expectedScale = (.5, .5, .5)
         expectedTranslation = (1.0, 2.0, 3.0)
         
-        for rotOrderName, expectedRotation in expectedRotates.iteritems():
+        for rotOrderName, expectedRotation in iteritems(expectedRotates):
             mayaTransform = self._GetMayaTransform(rotOrderName)
             transformationMatrix = mayaTransform.transformation()
     
@@ -256,7 +258,7 @@ class testUsdImportXforms(unittest.TestCase):
             mayaPath = _usdToMayaPath(usdPath)
             mayaMatrix = Gf.Matrix4d(*cmds.xform(mayaPath, query=True, matrix=True, worldSpace=True))
 
-            print 'testing matrix at', usdPath
+            print('testing matrix at', usdPath)
             self.assertTrue(Gf.IsClose(
                 usdMatrix.ExtractTranslation(), 
                 mayaMatrix.ExtractTranslation(), 

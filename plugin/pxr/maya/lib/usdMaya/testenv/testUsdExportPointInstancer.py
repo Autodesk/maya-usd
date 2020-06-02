@@ -16,6 +16,7 @@
 #
 
 import os
+import sys
 import unittest
 
 from pxr import Gf
@@ -117,7 +118,7 @@ class testUsdExportPointInstancer(unittest.TestCase):
                 paths, matrices, particlePathStartIndices, pathIndices)
 
         # Check that the Maya instanced objects are what we think they are.
-        pathStrings = [paths[i].fullPathName() for i in xrange(paths.length())]
+        pathStrings = [paths[i].fullPathName() for i in range(paths.length())]
         self.assertEqual(pathStrings, [
             # 0 (logical 0) - Cube
             "|dummyGroup|pCube1|pCubeShape1",
@@ -182,7 +183,7 @@ class testUsdExportPointInstancer(unittest.TestCase):
     def _MayaToGfMatrix(self, mayaMatrix):
         scriptUtil = OM.MScriptUtil()
         values = [[scriptUtil.getDouble4ArrayItem(mayaMatrix.matrix, r, c)
-                for c in xrange(4)] for r in xrange(4)]
+                for c in range(4)] for r in range(4)]
         return Gf.Matrix4d(values)
 
     def _GetWorldSpacePosition(self, path):
@@ -192,8 +193,8 @@ class testUsdExportPointInstancer(unittest.TestCase):
         """
         Asserts that mat1 and mat2 are element-wise close within EPSILON.
         """
-        for i in xrange(4):
-            for j in xrange(4):
+        for i in range(4):
+            for j in range(4):
                 self.assertTrue(abs(mat1[i][j] - mat2[i][j]) < self.EPSILON,
                         "%s\n%s" % (mat1, mat2))
 
@@ -261,11 +262,11 @@ class testUsdExportPointInstancer(unittest.TestCase):
                     for protoIndex in usdProtoIndices]
             mayaGfMatrices = [
                     mayaWorldPositions[i] * self._MayaToGfMatrix(matrices[i])
-                    for i in xrange(matrices.length())]
+                    for i in range(matrices.length())]
             usdGfMatrices = [
                     usdInstanceTransforms[i]
-                    for i in xrange(len(usdInstanceTransforms))]
-            for i in xrange(len(usdGfMatrices)):
+                    for i in range(len(usdInstanceTransforms))]
+            for i in range(len(usdGfMatrices)):
                 self._AssertXformMatrices(
                         mayaGfMatrices[i], usdGfMatrices[i])
 
@@ -310,7 +311,7 @@ class testUsdExportPointInstancer(unittest.TestCase):
                 2: [3],    # the reference prototype only has one shape
             }
 
-            for i in xrange(len(usdProtoIndices)):
+            for i in range(len(usdProtoIndices)):
                 usdProtoIndex = usdProtoIndices[i]
                 expectedMayaIndices = usdIndicesToMayaIndices[usdProtoIndex]
 
@@ -320,7 +321,7 @@ class testUsdExportPointInstancer(unittest.TestCase):
                 self.assertEqual(mayaIndicesEnd - mayaIndicesStart,
                         len(expectedMayaIndices))
                 actualPathIndices = [pathIndices[i]
-                        for i in xrange(mayaIndicesStart, mayaIndicesEnd)]
+                        for i in range(mayaIndicesStart, mayaIndicesEnd)]
                 self.assertEqual(actualPathIndices, expectedMayaIndices)
 
             time += 1.0
@@ -340,6 +341,10 @@ class testUsdExportPointInstancer(unittest.TestCase):
         self._TestInstancePaths("MASH1_Instancer")
 
     def testMashVisibility(self):
+
+        # assertCountEqual in python 3 is equivalent to assertItemsEqual
+        if sys.version_info[0] >= 3:
+            self.assertItemsEqual = self.assertCountEqual
         """
         Checks that invisibleIds is properly authored based on the visibility
         channel of the MASH instancer.

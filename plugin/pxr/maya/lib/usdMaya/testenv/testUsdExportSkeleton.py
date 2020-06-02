@@ -96,7 +96,7 @@ class testUsdExportSkeleton(unittest.TestCase):
         # problems, since they are not members of the dagPose. As a result,
         # no dag pose is exported. Need to come up with a way to handle this
         # correctly in export.
-        print "Expect warnings about invalid restTransforms"
+        print("Expect warnings about invalid restTransforms")
         usdFile = os.path.abspath('UsdExportSkeleton.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                        shadingMode='none', frameRange=frameRange,
@@ -117,7 +117,7 @@ class testUsdExportSkeleton(unittest.TestCase):
 
         xfCache = UsdGeom.XformCache()
 
-        for frame in xrange(*frameRange):
+        for frame in range(*frameRange):
             cmds.currentTime(frame, edit=True)
             xfCache.SetTime(frame)
 

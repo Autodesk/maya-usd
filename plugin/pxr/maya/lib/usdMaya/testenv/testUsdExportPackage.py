@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-
 import os
 import unittest
 
@@ -23,7 +22,6 @@ from maya import cmds
 from maya import standalone
 
 from pxr import Usd, UsdGeom
-
 
 class testUsdExportPackage(unittest.TestCase):
 
