@@ -118,23 +118,6 @@ public:
             const PathEditMap& assemEdits,
             const UsdPrim& proxyRootPrim,
             std::vector<std::string>* failedEdits);
-
-    PXRUSDMAYA_API
-    static void GetAvarEdits(
-            const PathEditMap& assemEdits,
-            PathAvarMap* avarMap);
-
-private:
-    static void _ApplyEditToAvar(
-            const EditOp op,
-            const EditSet set,
-            const double value,
-            AvarValueMap* valueMap);
-
-    static void _ApplyEditToAvars(
-            const AssemblyEdit& assemEdit,
-            AvarValueMap* valueMap);
-
 };
 
 
