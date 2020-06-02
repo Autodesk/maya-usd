@@ -430,12 +430,6 @@ MHWRender::MTexture* _LoadTexture(
         return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
 #endif
 
-    // set a default uv scale of (1.0, 1.0) and an offset of (0.0f, 0.0f);
-    uvScaleOffset.append(1.0f);
-    uvScaleOffset.append(1.0f);
-    uvScaleOffset.append(0.0f);
-    uvScaleOffset.append(0.0f);
-
     MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
     MHWRender::MTextureManager* const textureMgr =
         renderer ? renderer->getTextureManager() : nullptr;
@@ -975,8 +969,16 @@ HdVP2Material::_AcquireTexture(const std::string& path)
     HdVP2TextureInfo& info = _textureMap[path];
     info._texture.reset(texture);
     info._isColorSpaceSRGB = isSRGB;
-    info._stScale.Set(uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale, the 2nd two elements are the offset.
-    info._stOffset.Set(uvScaleOffset[2], uvScaleOffset[3]);
+    if (uvScaleOffset.length() > 0) {
+        TF_VERIFY(uvScaleOffset.length() == 4);
+        info._stScale.Set(uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
+        info._stOffset.Set(uvScaleOffset[2], uvScaleOffset[3]);// The next two elements are the offset
+    }
+    else {
+        // set a default uv scale of (1.0, 1.0) and an offset of (0.0f, 0.0f);
+        info._stScale.Set(1.0f, 1.0f);
+        info._stOffset.Set(0.0f, 0.0f);
+    }
     return info;
 }
 
