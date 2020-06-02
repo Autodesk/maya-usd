@@ -44,6 +44,7 @@ class MAYAUSD_CORE_PUBLIC MayaUSDExportCommand : public MPxCommand
     //
     // The list of short forms of flags defined as Arg Tokens:
     static constexpr auto kDefaultMeshSchemeFlag = "dms";
+    static constexpr auto kDefaultUSDFormatFlag = "duf";
     static constexpr auto kExportColorSetsFlag = "cls";
     static constexpr auto kExportUVsFlag = "uvs";
     static constexpr auto kEulerFilterFlag = "ef";

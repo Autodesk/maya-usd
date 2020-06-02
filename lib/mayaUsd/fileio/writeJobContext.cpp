@@ -388,7 +388,9 @@ UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
             layer = existingLayer;
         }
         else {
-            layer = SdfLayer::CreateNew(filename);
+            SdfLayer::FileFormatArguments args;
+            args["format"] = mArgs.defaultUSDFormat.GetString();            
+            layer = SdfLayer::CreateNew(filename, "",  args);
         }
         if (!layer) {
             TF_RUNTIME_ERROR(
