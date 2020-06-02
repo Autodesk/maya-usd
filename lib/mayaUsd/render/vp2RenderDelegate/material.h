@@ -61,10 +61,10 @@ using HdVP2TextureUniquePtr = std::unique_ptr<
 */
 struct HdVP2TextureInfo
 {
-    HdVP2TextureUniquePtr  _texture;          //!< Unique pointer of the texture
-    GfVec2f                _stScale;       //!< UV scale for tiled textures
-    GfVec2f                _stOffset;      //!< UV offset for tiled textures
-    bool                   _isColorSpaceSRGB; //!< Whether sRGB linearization is needed
+    HdVP2TextureUniquePtr  _texture;                //!< Unique pointer of the texture
+    GfVec2f                _stScale{1.0f,1.0f};     //!< UV scale for tiled textures
+    GfVec2f                _stOffset{0.0f, 0.0f};   //!< UV offset for tiled textures
+    bool                   _isColorSpaceSRGB{false};//!< Whether sRGB linearization is needed
 };
 
 /*! \brief  An unordered string-indexed map to cache texture information.

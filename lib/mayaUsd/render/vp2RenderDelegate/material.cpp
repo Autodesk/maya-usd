@@ -422,8 +422,6 @@ MHWRender::MTexture* _LoadTexture(
     bool& isColorSpaceSRGB,
     MFloatArray& uvScaleOffset)
 {
-    isColorSpaceSRGB = false;
-
 #if USD_VERSION_NUM >= 2002
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
     if (GlfIsSupportedUdimTexture(path))
@@ -973,11 +971,6 @@ HdVP2Material::_AcquireTexture(const std::string& path)
         TF_VERIFY(uvScaleOffset.length() == 4);
         info._stScale.Set(uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
         info._stOffset.Set(uvScaleOffset[2], uvScaleOffset[3]);// The next two elements are the offset
-    }
-    else {
-        // set a default uv scale of (1.0, 1.0) and an offset of (0.0f, 0.0f);
-        info._stScale.Set(1.0f, 1.0f);
-        info._stOffset.Set(0.0f, 0.0f);
     }
     return info;
 }
