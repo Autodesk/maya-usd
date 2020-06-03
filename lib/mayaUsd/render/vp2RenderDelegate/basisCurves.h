@@ -66,6 +66,9 @@ struct HdVP2BasisCurvesSharedData
 
     //! The display style.
     HdDisplayStyle _displayStyle;
+
+    //! Render tag of the Rprim.
+    TfToken _renderTag;
 };
 
 /*! \brief  VP2 representation of basis curves.
