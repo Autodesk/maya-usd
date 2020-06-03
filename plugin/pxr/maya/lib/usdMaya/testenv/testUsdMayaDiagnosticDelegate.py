@@ -39,6 +39,9 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
         self.messageLog = []
         self.callback = None
         cmds.loadPlugin('pxrUsd', quiet=True)
+        # assertCountEqual in python 3 is equivalent to assertItemsEqual
+        if sys.version_info[0] >= 3:
+            self.assertItemsEqual = self.assertCountEqual
 
     def _OnCommandOutput(self, message, messageType, _):
         if (messageType == OM.MCommandMessage.kInfo
@@ -124,9 +127,6 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
                 pass
         log = self._StopRecording()
 
-        # assertCountEqual in python 3 is equivalent to assertItemsEqual
-        if sys.version_info[0] >= 3:
-            self.assertItemsEqual = self.assertCountEqual
         # Note: we use assertItemsEqual because coalescing may re-order the
         # diagnostic messages.
         self.assertItemsEqual(log, [
@@ -151,9 +151,6 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
                 Tf.Status("no delegate, this will be lost %d" % i)
         log = self._StopRecording()
 
-        # assertCountEqual in python 3 is equivalent to assertItemsEqual
-        if sys.version_info[0] >= 3:
-            self.assertItemsEqual = self.assertCountEqual
         # Note: we use assertItemsEqual because coalescing may re-order the
         # diagnostic messages.
         self.assertItemsEqual(log, [
