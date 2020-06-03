@@ -1332,19 +1332,16 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    auto drawItemVisible = [&]() {
-        return drawItem->GetVisible() && drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()));
-    };
-
     if (itemDirtyBits & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag)) {
-        drawItemData._enabled = drawItemVisible();
+        drawItemData._enabled
+            = drawItem->GetVisible() && drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()));
         stateToCommit._enabled = &drawItemData._enabled;
     }
 
     if (isDedicatedSelectionHighlightItem) {
         if (itemDirtyBits & DirtySelectionHighlight) {
             const bool enable =
-                (_selectionState != kUnselected) && drawItemVisible();
+                (_selectionState != kUnselected) && drawItem->GetVisible();
             if (drawItemData._enabled != enable) {
                 drawItemData._enabled = enable;
                 stateToCommit._enabled = &drawItemData._enabled;
@@ -1353,7 +1350,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
     else if (isBBoxItem) {
         if (itemDirtyBits & HdChangeTracker::DirtyExtent) {
-            const bool enable = !range.IsEmpty() && drawItemVisible();
+            const bool enable = !range.IsEmpty() && drawItem->GetVisible();
             if (drawItemData._enabled != enable) {
                 drawItemData._enabled = enable;
                 stateToCommit._enabled = &drawItemData._enabled;
