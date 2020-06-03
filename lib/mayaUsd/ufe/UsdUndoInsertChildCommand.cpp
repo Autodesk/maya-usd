@@ -35,6 +35,18 @@
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/base/tf/token.h>
 
+namespace {
+// shared_ptr requires public ctor, dtor, so derive a class for it.
+template<class T>
+struct MakeSharedEnabler : public T {
+    MakeSharedEnabler(
+        const MayaUsd::ufe::UsdSceneItem::Ptr& parent,
+        const MayaUsd::ufe::UsdSceneItem::Ptr& child,
+        const MayaUsd::ufe::UsdSceneItem::Ptr& pos
+    ) : T(parent, child, pos) {}
+};
+}
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -64,9 +76,21 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(
     }
     fUsdDstPath = parent->prim().GetPath().AppendChild(TfToken(childName));
 
-    fLayer = MayaUsdUtils::defPrimSpecLayer(childPrim);
-    if (!fLayer) {
-        std::string err = TfStringPrintf("No prim found at %s", childPrim.GetPath().GetString().c_str());
+    fChildLayer = MayaUsdUtils::defPrimSpecLayer(childPrim);
+    if (!fChildLayer) {
+        std::string err = TfStringPrintf("No child prim found at %s", childPrim.GetPath().GetString().c_str());
+        throw std::runtime_error(err.c_str());
+    }
+
+    auto parentPrim = parent->prim();
+    // If parent prim is the pseudo-root, no def primSpec will be found, so
+    // just use the edit target layer.
+    fParentLayer = parentPrim.IsPseudoRoot() ?
+        fStage->GetEditTarget().GetLayer() :
+        MayaUsdUtils::defPrimSpecLayer(parentPrim);
+
+    if (!fParentLayer) {
+        std::string err = TfStringPrintf("No parent prim found at %s", parentPrim.GetPath().GetString().c_str());
         throw std::runtime_error(err.c_str());
     }
 }
@@ -82,13 +106,18 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
     const UsdSceneItem::Ptr& pos
 )
 {
-    return std::make_shared<UsdUndoInsertChildCommand>(parent, child, pos);
+    // Error if requested parent is currently a child of requested child.
+    if (parent->path().startsWith(child->path())) {
+        return nullptr;
+    }
+    return std::make_shared<MakeSharedEnabler<UsdUndoInsertChildCommand>>(
+        parent, child, pos);
 }
 
 bool UsdUndoInsertChildCommand::insertChildRedo()
 {
     // See comments in UsdUndoRenameCommand.cpp.
-    bool status = SdfCopySpec(fLayer, fUsdSrcPath, fLayer, fUsdDstPath);
+    bool status = SdfCopySpec(fChildLayer, fUsdSrcPath, fParentLayer, fUsdDstPath);
     if (status)
     {
         auto srcPrim = fStage->GetPrimAtPath(fUsdSrcPath);
@@ -120,7 +149,7 @@ bool UsdUndoInsertChildCommand::insertChildUndo()
         // Regardless of where the edit target is currently set, switch to the
         // layer where we copied the source prim into the destination, then
         // restore the edit target.
-        UsdEditContext ctx(fStage, fLayer);
+        UsdEditContext ctx(fStage, fParentLayer);
         status = fStage->RemovePrim(fUsdDstPath);
     }
     if (status) {

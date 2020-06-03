@@ -34,13 +34,6 @@ class MAYAUSD_CORE_PUBLIC UsdUndoInsertChildCommand : public Ufe::UndoableComman
 public:
     typedef std::shared_ptr<UsdUndoInsertChildCommand> Ptr;
 
-    //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
-    //! pos argument is ignored, and only append is supported.
-    UsdUndoInsertChildCommand(
-        const UsdSceneItem::Ptr& parent,
-        const UsdSceneItem::Ptr& child,
-        const UsdSceneItem::Ptr& pos
-    );
     ~UsdUndoInsertChildCommand() override;
 
     UsdUndoInsertChildCommand(const UsdUndoInsertChildCommand&) = delete;
@@ -56,6 +49,15 @@ public:
         const UsdSceneItem::Ptr& pos
     );
 
+protected:
+    //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
+    //! pos argument is ignored, and only append is supported.
+    UsdUndoInsertChildCommand(
+        const UsdSceneItem::Ptr& parent,
+        const UsdSceneItem::Ptr& child,
+        const UsdSceneItem::Ptr& pos
+    );
+
 private:
     void undo() override;
     void redo() override;
@@ -64,7 +66,8 @@ private:
     bool insertChildUndo();
 
     UsdStageWeakPtr fStage;
-    SdfLayerHandle fLayer;
+    SdfLayerHandle fChildLayer;
+    SdfLayerHandle fParentLayer;
     UsdSceneItem::Ptr fUfeSrcItem;
     SdfPath fUsdSrcPath;
     UsdSceneItem::Ptr fUfeDstItem;

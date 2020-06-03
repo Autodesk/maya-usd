@@ -35,6 +35,18 @@ def matrixToList(m):
         mList = mList + i
     return mList
 
+class OpenFileCtx(object):
+    def __init__(self, fileName):
+        self._fileName = fileName
+
+    def __enter__(self):
+        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test-samples", "parentCmd", self._fileName)
+        cmds.file(filePath, force=True, open=True)
+
+    def __exit__(self, type, value, traceback):
+        # Close the file.
+        cmds.file(force=True, new=True)
+
 class ParentCmdTestCase(unittest.TestCase):
     '''Verify the Maya parent command on a USD scene.'''
 
@@ -221,69 +233,130 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 0)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testParentAbsolute only available in UFE preview version 0.2.13 and greater')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testParentToProxyShape only available in UFE preview version 0.2.13 and greater')
     def testParentToProxyShape(self):
 
         # Load a file with a USD hierarchy at least 2-levels deep.
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test-samples", "parentCmd", "simpleHierarchy.ma" )
-        cmds.file(filePath, force=True, open=True)
+        with OpenFileCtx("simpleHierarchy.ma"):
 
-        # Create scene items for the proxy shape and the sphere.
-        shapeSegment = mayaUtils.createUfePathSegment(
-            "|world|mayaUsdProxy1|mayaUsdProxyShape1")
-        shapePath = ufe.Path([shapeSegment])
-        shapeItem = ufe.Hierarchy.createItem(shapePath)
+            # Create scene items for the proxy shape and the sphere.
+            shapeSegment = mayaUtils.createUfePathSegment(
+                "|world|mayaUsdProxy1|mayaUsdProxyShape1")
+            shapePath = ufe.Path([shapeSegment])
+            shapeItem = ufe.Hierarchy.createItem(shapePath)
+    
+            spherePath = ufe.Path(
+                [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1/pCube1/pSphere1")])
+            sphereItem = ufe.Hierarchy.createItem(spherePath)
+    
+            # The sphere is not a child of the proxy shape.
+            shapeHier = ufe.Hierarchy.hierarchy(shapeItem)
+            shapeChildren = shapeHier.children()
+            self.assertNotIn("pSphere1", childrenNames(shapeChildren))
+    
+            # Get its world space transform.
+            sphereT3d = ufe.Transform3d.transform3d(sphereItem)
+            sphereWorld = sphereT3d.inclusiveMatrix()
+            sphereWorldListPre = matrixToList(sphereWorld)
+    
+            # Parent sphere to proxy shape in absolute mode (default), using UFE
+            # path strings.
+            cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1/pSphere1", "|mayaUsdProxy1|mayaUsdProxyShape1")
+    
+            # Confirm that the sphere is now a child of the proxy shape.
+            shapeChildren = shapeHier.children()
+            self.assertIn("pSphere1", childrenNames(shapeChildren))
+    
+            # Undo: the sphere is no longer a child of the proxy shape.
+            cmds.undo()
+    
+            shapeChildren = shapeHier.children()
+            self.assertNotIn("pSphere1", childrenNames(shapeChildren))
+    
+            # Redo: confirm that the sphere is again a child of the proxy shape.
+            cmds.redo()
+    
+            shapeChildren = shapeHier.children()
+            self.assertIn("pSphere1", childrenNames(shapeChildren))
+    
+            # Confirm that the sphere's world transform has not changed.  Must
+            # re-create the item, as its path has changed.
+            sphereChildPath = ufe.Path(
+                [shapeSegment, usdUtils.createUfePathSegment("/pSphere1")])
+            sphereChildItem = ufe.Hierarchy.createItem(sphereChildPath)
+            sphereChildT3d = ufe.Transform3d.transform3d(sphereChildItem)
+    
+            sphereWorld = sphereChildT3d.inclusiveMatrix()
+            assertVectorAlmostEqual(
+                self, sphereWorldListPre, matrixToList(sphereWorld), places=6)
+    
+            # Undo.
+            cmds.undo()
+    
+            shapeChildren = shapeHier.children()
+            self.assertNotIn("pSphere1", childrenNames(shapeChildren))
 
-        spherePath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1/pCube1/pSphere1")])
-        sphereItem = ufe.Hierarchy.createItem(spherePath)
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testIllegalChild only available in UFE preview version 0.2.13 and greater')
+    def testIllegalChild(self):
+        '''Parenting an object to a descendant must report an error.'''
 
-        # The sphere is not a child of the proxy shape.
-        shapeHier = ufe.Hierarchy.hierarchy(shapeItem)
-        shapeChildren = shapeHier.children()
-        self.assertNotIn("pSphere1", childrenNames(shapeChildren))
+        with OpenFileCtx("simpleHierarchy.ma"):
+            with self.assertRaises(RuntimeError):
+                cmds.parent(
+                    "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1",
+                    "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1")
 
-        # Get its world space transform.
-        sphereT3d = ufe.Transform3d.transform3d(sphereItem)
-        sphereWorld = sphereT3d.inclusiveMatrix()
-        sphereWorldListPre = matrixToList(sphereWorld)
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2016', 'testAlreadyChild only available in UFE preview version 0.2.16 and greater')
+    def testAlreadyChild(self):
+        '''Parenting an object to its current parent is a no-op.'''
 
-        # Parent sphere to proxy shape in absolute mode (default), using UFE
-        # path strings.
-        cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1/pSphere1", "|mayaUsdProxy1|mayaUsdProxyShape1")
+        with OpenFileCtx("simpleHierarchy.ma"):
+            shapeSegment = mayaUtils.createUfePathSegment(
+                "|world|mayaUsdProxy1|mayaUsdProxyShape1")
+            spherePath = ufe.Path(
+                [shapeSegment,
+                 usdUtils.createUfePathSegment("/pCylinder1/pCube1/pSphere1")])
+            sphereItem = ufe.Hierarchy.createItem(spherePath)
+            cylinderShapePath = ufe.Path(
+                [shapeSegment,
+                 usdUtils.createUfePathSegment("/pCylinder1/pCylinderShape1")])
+            cylinderShapeItem = ufe.Hierarchy.createItem(cylinderShapePath)
+            parentPath = ufe.Path(
+                [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1")])
+            parentItem = ufe.Hierarchy.createItem(parentPath)
 
-        # Confirm that the sphere is now a child of the proxy shape.
-        shapeChildren = shapeHier.children()
-        self.assertIn("pSphere1", childrenNames(shapeChildren))
+            parent = ufe.Hierarchy.hierarchy(parentItem)
+            childrenPre = parent.children()
 
-        # Undo: the sphere is no longer a child of the proxy shape.
-        cmds.undo()
+            # The sphere is not a child of the cylinder
+            self.assertNotIn("pSphere1", childrenNames(childrenPre))
 
-        shapeChildren = shapeHier.children()
-        self.assertNotIn("pSphere1", childrenNames(shapeChildren))
+            # The cylinder shape is a child of the cylinder
+            self.assertIn("pCylinderShape1", childrenNames(childrenPre))
 
-        # Redo: confirm that the sphere is again a child of the proxy shape.
-        cmds.redo()
+            # Parent the sphere and the cylinder shape to the cylinder.  This
+            # is a no-op for the cylinder shape, as it's already a child of the
+            # cylinder, and the sphere is parented to the cylinder.
+            cmds.parent(ufe.PathString.string(spherePath),
+                        ufe.PathString.string(cylinderShapePath),
+                        ufe.PathString.string(parentPath))
 
-        shapeChildren = shapeHier.children()
-        self.assertIn("pSphere1", childrenNames(shapeChildren))
+            children = parent.children()
+            self.assertEqual(len(childrenPre)+1, len(children))
+            self.assertIn("pSphere1", childrenNames(children))
+            self.assertIn("pCylinderShape1", childrenNames(children))
 
-        # Confirm that the sphere's world transform has not changed.  Must
-        # re-create the item, as its path has changed.
-        sphereChildPath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/pSphere1")])
-        sphereChildItem = ufe.Hierarchy.createItem(sphereChildPath)
-        sphereChildT3d = ufe.Transform3d.transform3d(sphereChildItem)
+            # Undo / redo
+            cmds.undo()
 
-        sphereWorld = sphereChildT3d.inclusiveMatrix()
-        assertVectorAlmostEqual(
-            self, sphereWorldListPre, matrixToList(sphereWorld), places=6)
+            children = parent.children()
+            self.assertEqual(len(childrenPre), len(children))
+            self.assertNotIn("pSphere1", childrenNames(children))
+            self.assertIn("pCylinderShape1", childrenNames(children))
 
-        # Undo.
-        cmds.undo()
+            cmds.redo()
 
-        shapeChildren = shapeHier.children()
-        self.assertNotIn("pSphere1", childrenNames(shapeChildren))
-
-        # Close the file.
-        cmds.file(force=True, new=True)
+            children = parent.children()
+            self.assertEqual(len(childrenPre)+1, len(children))
+            self.assertIn("pSphere1", childrenNames(children))
+            self.assertIn("pCylinderShape1", childrenNames(children))
