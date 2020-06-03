@@ -390,6 +390,17 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
                 break;
             }
         }
+
+        // Set the render tags to be all the tags. Vp2RenderDelegate implements
+        // render tags as a per-render item setting, so we always need to visit
+        // all the rprims to handle cases when an rprim changes from a displayed
+        // tag to a hidden tag.
+        TfTokenVector renderTags
+            = { HdRenderTagTokens->geometry,
+                HdRenderTagTokens->render,
+                HdRenderTagTokens->proxy,
+                HdRenderTagTokens->guide };
+        _taskController->SetRenderTags(renderTags);
     }
 }
 
@@ -776,20 +787,21 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // are being hidden, because the render pass level filtering will prevent
     // them from drawing.
     // The Vp2RenderDelegate implements render tags using MRenderItem::Enable(),
-    // which means we do need to update individual MRenderItems when the render
-    // tags change.
+    // which means we do need to update individual MRenderItems when the displayed
+    // render tags change, or when the render tag on an rprim changes.
+    //
+    // To handle an rprim's render tag value changing we need to be sure that
+    // the dummy render task we use to draw includes all render tags. If we
+    // leave any tags out then when an rprim changes from a visible tag to
+    // a hidden one that rprim will get marked dirty, but Sync will not be
+    // called because the rprim doesn't match the current render tags.
+    //
     // When we change the desired render tags on the proxyShape we'll be adding
     // and/or removing some tags, so we can have existing MRenderItems that need
-    // to be hidden, or hidden items that need to be shown.
-    // This function needs to do three things:
-    //  1: Make sure every rprim with a render tag whose visibility changed gets
-    //     marked dirty. This will ensure the upcoming execute call will update
-    //     the visibility of the MRenderItems in MPxSubSceneOverride.
-    //  2: Make a special call to Execute() with only the render tags which have
-    //     been removed. We need this extra call to hide the previously shown
-    //     items.
-    //  3: Update the render tags with the new final render tags so that the next
-    //     real call to execute will update all the now visible items.
+    // to be hidden, or hidden items that need to be shown. To do that we need
+    // to make sure every rprim with a render tag whose visibility changed gets
+    // marked dirty. This will ensure the upcoming execute call will update
+    // the visibility of the MRenderItems in MPxSubSceneOverride.
     bool renderPurposeChanged = false;
     bool proxyPurposeChanged = false;
     bool guidePurposeChanged = false;
@@ -826,26 +838,6 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         for (auto& id : rprimsToDirty) {
             changeTracker.MarkRprimDirty(id, HdChangeTracker::DirtyRenderTag);
         }
-
-        // Make a special pass over the removed render tags so that the objects
-        // can hide themselves.
-        _taskController->SetRenderTags(removedRenderTags);
-        _engine.Execute(_renderIndex.get(), &_dummyTasks);
-
-        // Set the new render tags correctly.The regular execute will cause
-        // any newly visible rprims will update and mark themselves visible.
-        TfTokenVector renderTags
-            = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
-        if (_proxyShapeData->DrawRenderPurpose()) {
-            renderTags.push_back(HdRenderTagTokens->render);
-        }
-        if (_proxyShapeData->DrawProxyPurpose()) {
-            renderTags.push_back(HdRenderTagTokens->proxy);
-        }
-        if (_proxyShapeData->DrawGuidePurpose()) {
-            renderTags.push_back(HdRenderTagTokens->guide);
-        }
-        _taskController->SetRenderTags(renderTags);
     }
 }
 
