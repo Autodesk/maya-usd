@@ -142,6 +142,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertNotIn(ball35DupName, propsChildrenNames)
 
         # MAYA-92264: because of USD bug, redo doesn't work.
+        """
         return
         cmds.redo()
 
@@ -161,3 +162,36 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         self.assertIn(sphereDupItem, worldChildren)
         self.assertIn(ball35DupItem, propsChildren)
+        """
+
+        # The duplicated items should not be assigned to the name of a
+        # deactivated USD item.
+
+        cmds.select(clear=True)
+
+        # Delete the even numbered props:
+        evenPropsChildrenPre = propsChildrenPre[0:35:2]
+        for propChild in evenPropsChildrenPre:
+            ufe.GlobalSelection.get().append(propChild)
+        cmds.delete()
+
+        worldHierarchy = ufe.Hierarchy.hierarchy(worldItem)
+        worldChildren = worldHierarchy.children()
+        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
+        propsChildren = propsHierarchy.children()
+        propsChildrenPostDel = propsHierarchy.children()
+
+        # Duplicate Ball_1, which should create Ball_36, not Ball_2
+        ufe.GlobalSelection.get().append(propsChildrenPostDel[0])
+
+        cmds.duplicate()
+
+        snIter = iter(ufe.GlobalSelection.get())
+        ballDupItem = next(snIter)
+        ballDupName = str(ballDupItem.path().back())
+
+        self.assertNotIn(ballDupItem, propsChildrenPostDel)
+        self.assertNotIn(ballDupName, propsChildrenNames)
+
+        cmds.undo() # undo duplication
+        cmds.undo() # undo deletion
