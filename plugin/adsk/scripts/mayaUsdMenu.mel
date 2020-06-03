@@ -108,7 +108,7 @@ global proc mayaUsdMenu_createMenuCallback() {
         // find the insertion point, after the Scene Management separator
         $sceneManagementDivider = findDividerByLabel($gMainCreateMenu, uiRes("m_ModCreateMenu.kCreateSceneMgt"));
         if ($sceneManagementDivider != "") {
-            $gMayaUsdCreateSubMenu = `menuItem -subMenu true -insertAfter $sceneManagementDivider 
+            $gMayaUsdCreateSubMenu = `menuItem -subMenu true -insertAfter $sceneManagementDivider -tearOff true
                 -label "Universal Scene Description (USD)" 
                 -annotation "Create a USD stage" 
                 -version $mayaVersion`;

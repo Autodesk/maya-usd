@@ -37,12 +37,17 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/imaging/glf/image.h>
+#if USD_VERSION_NUM >= 2002
+#include <pxr/imaging/glf/udimTexture.h>
+#endif
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/usd/ar/packageUtils.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdHydra/tokens.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
-
+#if USD_VERSION_NUM >= 2002
+#include <pxr/usdImaging/usdImaging/textureUtils.h>
+#endif
 #include "debugCodes.h"
 #include "render_delegate.h"
 
@@ -291,12 +296,137 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
     return desc;
 }
 
+MHWRender::MTexture* _LoadUdimTexture(
+    const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
+{
+#if USD_VERSION_NUM >= 2002
+    /*
+        For this method to work path needs to be an absolute file path, not an asset path.
+        That means that this function depends on the changes in 4e426565 to materialAdapther.cpp
+        to work. As of my writing this 4e426565 is not in the USD that MayaUSD normally builds
+        against so this code will fail, because UsdImaging_GetUdimTiles won't file the tiles
+        because we don't know where on disk to look for them.
+
+        https://github.com/PixarAnimationStudios/USD/commit/4e42656543f4e3a313ce31a81c27477d4dcb64b9
+    */
+
+    // test for a UDIM texture
+    if (!GlfIsSupportedUdimTexture(path))
+        return nullptr;
+    
+    /*
+        Maya's tiled texture support is implemented quite differently from Usd's UDIM support.
+        In Maya the texture tiles get combined into a single big texture, downscaling each tile
+        if necessary, and filling in empty regions of a non-square tile with the undefined color.
+
+        In USD the UDIM textures are stored in a texture array that the shader uses to draw.
+    */
+
+    MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
+    MHWRender::MTextureManager* const textureMgr =
+        renderer ? renderer->getTextureManager() : nullptr;
+    if (!TF_VERIFY(textureMgr)) {
+        return nullptr;
+    }
+
+    // HdSt sets the tile limit to the max number of textures in an array of 2d textures. OpenGL says
+    // the minimum number of layers in 2048 so I'll use that.
+    int tileLimit = 2048;
+    std::vector<std::tuple<int, TfToken>> tiles = UsdImaging_GetUdimTiles(path, tileLimit);
+    if (tiles.size() == 0)
+    {
+        TF_WARN("Unable to find UDIM tiles for %s", path.c_str());
+        return nullptr;
+    }
+
+    // I don't think there is a downside to setting a very high limit.
+    // Maya will clamp the texture size to the VP2 texture clamp resolution and the hardware's
+    // max texture size. And Maya doesn't make the tiled texture unnecessarily large. When I 
+    // try loading two 1k textures I end up with a tiled texture that is 2k x 1k.
+    unsigned int maxWidth = 0;
+    unsigned int maxHeight = 0;
+    renderer->GPUmaximumOutputTargetSize(maxWidth, maxHeight);
+
+    // Open the first image and get it's resolution. Assuming that all the tiles have the same
+    // resolution, warn the user if Maya's tiled texture implementation is going to result in
+    // a loss of texture data.
+    {
+        GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tiles[0]).GetString());
+        if (!TF_VERIFY(image)) {
+            return nullptr;
+        }
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+        unsigned int tileWidth = image->GetWidth();
+        unsigned int tileHeight = image->GetHeight();
+
+        int maxTileId = std::get<0>(tiles.back());
+        int maxU = maxTileId % 10;
+        int maxV = (maxTileId - maxU) / 10;
+        if ((tileWidth * maxU > maxWidth) || (tileHeight * maxV > maxHeight))
+            TF_WARN("UDIM texture %s creates a tiled texture larger than the maximum texture size. Some"
+                "resolution will be lost.", path.c_str());
+    }
+
+    MString textureName(path.c_str()); // used for caching, using the string with <UDIM> in it is fine
+    MStringArray tilePaths;
+    MFloatArray tilePositions;
+    for(auto& tile : tiles)
+    {
+        tilePaths.append(MString(std::get<1>(tile).GetText()));
+
+        GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tile).GetString());
+        if (!TF_VERIFY(image)) {
+            return nullptr;
+        }
+        if (isColorSpaceSRGB != image->IsColorSpaceSRGB())
+        {
+            TF_WARN("UDIM texture %s color space doesn't match %s color space",
+                std::get<1>(tile).GetText(), std::get<1>(tiles[0]).GetText());
+        }
+
+        // The image labeled 1001 will have id 0, 1002 will have id 1, 1011 will have id 10.
+        // image 1001 starts with UV (0.0f, 0.0f), 1002 is (1.0f, 0.0f) and 1011 is (0.0f, 1.0f)
+        int tileId = std::get<0>(tile);
+        float u = (float)(tileId % 10);
+        float v = (float)((tileId - u) / 10);
+        tilePositions.append(u);
+        tilePositions.append(v);
+    }
+
+    MColor undefinedColor(0.0f, 1.0f, 0.0f, 1.0f);
+    MStringArray failedTilePaths;
+    MHWRender::MTexture* texture = textureMgr->acquireTiledTexture(
+        textureName,
+        tilePaths,
+        tilePositions,
+        undefinedColor,
+        maxWidth, maxHeight,
+        failedTilePaths,
+        uvScaleOffset
+    );
+
+    for(unsigned int i=0; i<failedTilePaths.length(); i++)
+    {
+        TF_WARN("Failed to load <UDIM> texture tile %s", failedTilePaths[i].asChar());
+    }
+
+    return texture;
+#else
+    return nullptr;
+#endif
+}
+
 //! Load texture from the specified path
 MHWRender::MTexture* _LoadTexture(
     const std::string& path,
-    bool& isColorSpaceSRGB)
+    bool& isColorSpaceSRGB,
+    MFloatArray& uvScaleOffset)
 {
-    isColorSpaceSRGB = false;
+#if USD_VERSION_NUM >= 2002
+    // If it is a UDIM texture we need to modify the path before calling OpenForReading
+    if (GlfIsSupportedUdimTexture(path))
+        return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
+#endif
 
     MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
     MHWRender::MTextureManager* const textureMgr =
@@ -783,6 +913,14 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                         status = _surfaceShader->setParameter(paramName,
                             info._isColorSpaceSRGB);
                     }
+                    if (status) {
+                        paramName = nodeName + "stScale";
+                        status = _surfaceShader->setParameter(paramName, info._stScale.data());
+                    }
+                    if (status) {
+                        paramName = nodeName + "stOffset";
+                        status = _surfaceShader->setParameter(paramName, info._stOffset.data());
+                    }
                 }
             }
             else if (value.IsHolding<int>()) {
@@ -823,11 +961,17 @@ HdVP2Material::_AcquireTexture(const std::string& path)
     }
 
     bool isSRGB = false;
-    MHWRender::MTexture* texture = _LoadTexture(path, isSRGB);
+    MFloatArray          uvScaleOffset;
+    MHWRender::MTexture* texture = _LoadTexture(path, isSRGB, uvScaleOffset);
 
     HdVP2TextureInfo& info = _textureMap[path];
     info._texture.reset(texture);
     info._isColorSpaceSRGB = isSRGB;
+    if (uvScaleOffset.length() > 0) {
+        TF_VERIFY(uvScaleOffset.length() == 4);
+        info._stScale.Set(uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
+        info._stOffset.Set(uvScaleOffset[2], uvScaleOffset[3]);// The next two elements are the offset
+    }
     return info;
 }
 

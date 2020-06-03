@@ -180,6 +180,8 @@ global proc mayaUsd_createStageFromFileOptions()
 }
 
 global proc mayaUsd_createStageFromFile() {
+    setOptionVars(false);
+    
     string $result[] = `fileDialog2 
         -fileMode 1
         -caption "Create USD Stage from File"
