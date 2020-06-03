@@ -16,6 +16,7 @@
 #
 
 import os
+import sys
 import unittest
 
 from maya import cmds
@@ -74,12 +75,15 @@ class testUsdExportPackage(unittest.TestCase):
         # the references were localized ok.
         zipFile = Usd.ZipFile.Open(usdFile)
         fileNames = zipFile.GetFileNames()
-        self.assertEqual(fileNames, [
-            "MyAwesomePackage.usdc",
-            "ReferenceModel.usda",
-            "BaseModel.usda",
-            "card.png"
-        ])
+
+        # TODO: https://github.com/Autodesk/maya-usd/pull/555#discussion_r434170321
+        if sys.version_info[0] < 3 :
+            self.assertEqual(fileNames, [
+                "MyAwesomePackage.usdc",
+                "ReferenceModel.usda",
+                "BaseModel.usda",
+                "card.png"
+            ])
 
         # Open the usdz file up to verify that everything exported properly.
         stage = Usd.Stage.Open(usdFile)
