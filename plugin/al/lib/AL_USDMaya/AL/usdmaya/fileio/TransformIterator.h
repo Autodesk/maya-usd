@@ -16,7 +16,7 @@
 #pragma once
 
 #include "AL/usdmaya/Api.h"
-#include "maya/MDagPath.h"
+#include <maya/MDagPath.h>
 
 #include "pxr/usd/usd/prim.h"
 

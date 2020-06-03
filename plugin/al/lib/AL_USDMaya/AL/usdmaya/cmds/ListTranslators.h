@@ -18,7 +18,7 @@
 #include "../Api.h"
 
 #include "AL/maya/utils/MayaHelperMacros.h"
-#include "maya/MPxCommand.h"
+#include <maya/MPxCommand.h>
 
 namespace AL {
 namespace usdmaya {

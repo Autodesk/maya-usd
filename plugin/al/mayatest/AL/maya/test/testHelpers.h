@@ -17,12 +17,12 @@
 
 #include <gtest/gtest.h>
 
-#include "maya/MAngle.h"
-#include "maya/MDistance.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MPlug.h"
-#include "maya/MString.h"
-#include "maya/MTime.h"
+#include <maya/MAngle.h>
+#include <maya/MDistance.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
+#include <maya/MString.h>
+#include <maya/MTime.h>
 
 #include <cstdint>
 #include <iostream>

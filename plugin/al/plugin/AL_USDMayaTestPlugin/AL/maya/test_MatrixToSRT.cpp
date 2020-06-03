@@ -3,7 +3,7 @@
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/rotation.h"
-#include "maya/MEulerRotation.h"
+#include <maya/MEulerRotation.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

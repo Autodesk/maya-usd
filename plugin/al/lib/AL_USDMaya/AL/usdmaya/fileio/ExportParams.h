@@ -18,8 +18,8 @@
 
 #include <mayaUsdUtils/ForwardDeclares.h>
 
-#include "maya/MSelectionList.h"
-#include "maya/MStringArray.h"
+#include <maya/MSelectionList.h>
+#include <maya/MStringArray.h>
 #include "AL/maya/utils/FileTranslatorOptions.h"
 #include "pxr/usd/usd/timeCode.h"
 

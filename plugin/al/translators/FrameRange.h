@@ -17,7 +17,7 @@
 
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/utils/ForwardDeclares.h"
-#include "maya/MStatus.h"
+#include <maya/MStatus.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

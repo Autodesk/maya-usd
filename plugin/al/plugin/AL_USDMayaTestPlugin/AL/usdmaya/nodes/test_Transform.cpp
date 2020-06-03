@@ -18,14 +18,14 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/Scope.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
-#include "maya/MAnimControl.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MFnTransform.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MStatus.h"
-#include "maya/MTypes.h"
+#include <maya/MAnimControl.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnTransform.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MTypes.h>
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"

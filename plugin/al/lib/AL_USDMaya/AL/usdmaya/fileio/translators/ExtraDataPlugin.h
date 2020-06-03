@@ -18,7 +18,7 @@
 #include "../../Api.h"
 #include "AL/maya/utils/Api.h"
 
-#include "maya/MDagPath.h"
+#include <maya/MDagPath.h>
 
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/type.h"

@@ -17,10 +17,10 @@
 
 #include "Api.h"
 
-#include "maya/MDagPath.h"
-#include "maya/MPlug.h"
-#include "maya/MString.h"
-#include "maya/MFnDependencyNode.h"
+#include <maya/MDagPath.h>
+#include <maya/MPlug.h>
+#include <maya/MString.h>
+#include <maya/MFnDependencyNode.h>
 
 #include "AL/usdmaya/utils/AnimationTranslator.h"
 

@@ -22,9 +22,9 @@
 
 #include "pxr/usd/usdGeom/scope.h"
 
-#include "maya/MBoundingBox.h"
-#include "maya/MGlobal.h"
-#include "maya/MTime.h"
+#include <maya/MBoundingBox.h>
+#include <maya/MGlobal.h>
+#include <maya/MTime.h>
 
 namespace {
   // Simple RAII class to ensure boolean gets set to false when done.

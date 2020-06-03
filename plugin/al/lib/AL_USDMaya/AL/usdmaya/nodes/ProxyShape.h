@@ -31,12 +31,12 @@
 
 #include "AL/usd/transaction/Notice.h"
 
-#include "maya/MDagModifier.h"
-#include "maya/MDagPath.h"
-#include "maya/MGlobal.h"
-#include "maya/MNodeMessage.h"
-#include "maya/MPxSurfaceShape.h"
-#include "maya/MSelectionList.h"
+#include <maya/MDagModifier.h>
+#include <maya/MDagPath.h>
+#include <maya/MGlobal.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MPxSurfaceShape.h>
+#include <maya/MSelectionList.h>
 
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/usd/notice.h"

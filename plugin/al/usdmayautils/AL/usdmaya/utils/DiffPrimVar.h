@@ -19,7 +19,7 @@
 
 #include <mayaUsdUtils/ForwardDeclares.h>
 
-#include "maya/MFnMesh.h"
+#include <maya/MFnMesh.h>
 
 #include "pxr/usd/usdGeom/mesh.h"
 

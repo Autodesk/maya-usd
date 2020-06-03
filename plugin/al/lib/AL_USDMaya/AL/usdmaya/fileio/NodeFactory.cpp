@@ -21,9 +21,9 @@
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 
-#include "maya/MObject.h"
-#include "maya/MString.h"
-#include "maya/MFnDependencyNode.h"
+#include <maya/MObject.h>
+#include <maya/MString.h>
+#include <maya/MFnDependencyNode.h>
 #include "AL/usdmaya/utils/Utils.h"
 
 namespace AL {

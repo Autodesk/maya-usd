@@ -17,10 +17,10 @@
 
 #include "AL/maya/event/Api.h"
 
-#include "maya/MCommandMessage.h"
-#include "maya/MDagMessage.h"
-#include "maya/MPaintMessage.h"
-#include "maya/MSceneMessage.h"
+#include <maya/MCommandMessage.h>
+#include <maya/MDagMessage.h>
+#include <maya/MPaintMessage.h>
+#include <maya/MSceneMessage.h>
 
 #include "AL/event/EventHandler.h"
 

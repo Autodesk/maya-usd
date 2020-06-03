@@ -18,7 +18,7 @@
 
 #include "AL/usdmaya/utils/Api.h"
 #include "AL/maya/utils/ForwardDeclares.h"
-#include "maya/MString.h"
+#include <maya/MString.h>
 
 #include <mayaUsdUtils/ForwardDeclares.h>
 

@@ -21,13 +21,13 @@
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/Metadata.h"
 
-#include "maya/MFnTransform.h"
-#include "maya/MSelectionList.h"
-#include "maya/MGlobal.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MDagModifier.h"
-#include "maya/MFileIO.h"
-#include "maya/MStringArray.h"
+#include <maya/MFnTransform.h>
+#include <maya/MSelectionList.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MDagModifier.h>
+#include <maya/MFileIO.h>
+#include <maya/MStringArray.h>
 
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/sdf/types.h"

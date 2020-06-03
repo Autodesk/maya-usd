@@ -25,14 +25,14 @@
 #include "AL/maya/utils/Utils.h"
 #include "AL/maya/utils/MObjectMap.h"
 
-#include "maya/MAnimControl.h"
-#include "maya/MArgDatabase.h"
-#include "maya/MFnMesh.h"
-#include "maya/MFnTransform.h"
-#include "maya/MItDag.h"
-#include "maya/MNodeClass.h"
-#include "maya/MPlugArray.h"
-#include "maya/MSyntax.h"
+#include <maya/MAnimControl.h>
+#include <maya/MArgDatabase.h>
+#include <maya/MFnMesh.h>
+#include <maya/MFnTransform.h>
+#include <maya/MItDag.h>
+#include <maya/MNodeClass.h>
+#include <maya/MPlugArray.h>
+#include <maya/MSyntax.h>
 
 #include "pxr/usd/usdGeom/xform.h"
 #include "pxr/usd/usdGeom/mesh.h"

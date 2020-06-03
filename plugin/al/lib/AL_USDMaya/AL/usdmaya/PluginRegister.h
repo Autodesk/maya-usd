@@ -50,9 +50,9 @@
 #include "pxr/imaging/glf/contextCaps.h"
 #include "pxr/imaging/glf/glContext.h"
 
-#include "maya/MDrawRegistry.h"
-#include "maya/MGlobal.h"
-#include "maya/MStatus.h"
+#include <maya/MDrawRegistry.h>
+#include <maya/MGlobal.h>
+#include <maya/MStatus.h>
 
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 

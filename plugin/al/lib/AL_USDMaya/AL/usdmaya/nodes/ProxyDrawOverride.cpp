@@ -20,14 +20,14 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 
-#include "maya/M3dView.h"
-#include "maya/MDrawContext.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MTime.h"
+#include <maya/M3dView.h>
+#include <maya/MDrawContext.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MTime.h>
 
 #if MAYA_API_VERSION >= 20180600
-#include "maya/MPointArray.h"
-#include "maya/MSelectionContext.h"
+#include <maya/MPointArray.h>
+#include <maya/MSelectionContext.h>
 #endif
 
 #if defined(WANT_UFE_BUILD)

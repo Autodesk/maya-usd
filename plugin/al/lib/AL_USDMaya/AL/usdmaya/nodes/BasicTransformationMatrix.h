@@ -15,8 +15,8 @@
 //
 #pragma once
 
-#include "maya/MPxTransformationMatrix.h"
-#include "maya/MObjectHandle.h"
+#include <maya/MPxTransformationMatrix.h>
+#include <maya/MObjectHandle.h>
 
 #include "AL/usdmaya/Api.h"
 

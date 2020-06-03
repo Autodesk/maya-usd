@@ -21,8 +21,8 @@
 #include "AL/usdmaya/ForwardDeclares.h"
 #include "AL/usdmaya/nodes/Scope.h"
 
-#include "maya/MObjectHandle.h"
-#include "maya/MPxTransform.h"
+#include <maya/MObjectHandle.h>
+#include <maya/MPxTransform.h>
 
 namespace AL {
 namespace usdmaya {
