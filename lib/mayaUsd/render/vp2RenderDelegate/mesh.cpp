@@ -481,6 +481,10 @@ void HdVP2Mesh::Sync(
         _sharedData.visible = delegate->GetVisible(id);
     }
 
+    if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+        _meshSharedData._renderTag = delegate->GetRenderTag(id);
+    }
+
     *dirtyBits = HdChangeTracker::Clean;
 
     // Draw item update is controlled by its own dirty bits.
@@ -498,7 +502,8 @@ HdDirtyBits HdVP2Mesh::GetInitialDirtyBitsMask() const {
         HdChangeTracker::DirtyMaterialId |
         HdChangeTracker::DirtyPrimvar |
         HdChangeTracker::DirtyVisibility |
-        HdChangeTracker::DirtyInstanceIndex;
+        HdChangeTracker::DirtyInstanceIndex |
+        HdChangeTracker::DirtyRenderTag;
 }
 
 /*! \brief  Add additional dirty bits
@@ -1332,29 +1337,26 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
     }
 
-    if (itemDirtyBits & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag)) {
-        drawItemData._enabled
-            = drawItem->GetVisible() && drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()));
-        stateToCommit._enabled = &drawItemData._enabled;
-    }
+    // Determine if the render item should be enabled or not.
+    if (itemDirtyBits & (HdChangeTracker::DirtyVisibility |
+                         HdChangeTracker::DirtyRenderTag |
+                         HdChangeTracker::DirtyPoints |
+                         HdChangeTracker::DirtyExtent |
+                         DirtySelectionHighlight)) {
+        bool enable = drawItem->GetVisible() && !_meshSharedData._points.empty();
 
-    if (isDedicatedSelectionHighlightItem) {
-        if (itemDirtyBits & DirtySelectionHighlight) {
-            const bool enable =
-                (_selectionState != kUnselected) && drawItem->GetVisible();
-            if (drawItemData._enabled != enable) {
-                drawItemData._enabled = enable;
-                stateToCommit._enabled = &drawItemData._enabled;
-            }
+        if (isDedicatedSelectionHighlightItem) {
+            enable = enable && (_selectionState != kUnselected);
         }
-    }
-    else if (isBBoxItem) {
-        if (itemDirtyBits & HdChangeTracker::DirtyExtent) {
-            const bool enable = !range.IsEmpty() && drawItem->GetVisible();
-            if (drawItemData._enabled != enable) {
-                drawItemData._enabled = enable;
-                stateToCommit._enabled = &drawItemData._enabled;
-            }
+        else if (isBBoxItem) {
+            enable = enable && !range.IsEmpty();
+        }
+
+        enable = enable && drawScene.DrawRenderTag(_meshSharedData._renderTag);
+
+        if (drawItemData._enabled != enable) {
+            drawItemData._enabled = enable;
+            stateToCommit._enabled = &drawItemData._enabled;
         }
     }
 
