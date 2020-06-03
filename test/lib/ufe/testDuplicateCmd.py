@@ -47,7 +47,11 @@ class DuplicateCmdTestCase(unittest.TestCase):
     def setUpClass(cls):
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
+    @classmethod    
+    def childrenNames(children):
+        return [str(child.path().back()) for child in children]
+
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
         # Load plugins
@@ -142,8 +146,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertNotIn(ball35DupName, propsChildrenNames)
 
         # MAYA-92264: because of USD bug, redo doesn't work.
-        """
-        return
+        """return
         cmds.redo()
 
         snIter = iter(ufe.GlobalSelection.get())
@@ -163,12 +166,12 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertIn(sphereDupItem, worldChildren)
         self.assertIn(ball35DupItem, propsChildren)
         """
-
-        # The duplicated items should not be assigned to the name of a
+    
+        # The duplicated items should not be assigned to the name of a 
         # deactivated USD item.
-
+        
         cmds.select(clear=True)
-
+        
         # Delete the even numbered props:
         evenPropsChildrenPre = propsChildrenPre[0:35:2]
         for propChild in evenPropsChildrenPre:
@@ -181,9 +184,9 @@ class DuplicateCmdTestCase(unittest.TestCase):
         propsChildren = propsHierarchy.children()
         propsChildrenPostDel = propsHierarchy.children()
 
-        # Duplicate Ball_1, which should create Ball_36, not Ball_2
+        # Duplicate Ball_1
         ufe.GlobalSelection.get().append(propsChildrenPostDel[0])
-
+        
         cmds.duplicate()
 
         snIter = iter(ufe.GlobalSelection.get())
@@ -192,6 +195,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         self.assertNotIn(ballDupItem, propsChildrenPostDel)
         self.assertNotIn(ballDupName, propsChildrenNames)
-
+        self.assertEqual(ballDupName, "Ball_36")
+        
         cmds.undo() # undo duplication
-        cmds.undo() # undo deletion
+        cmds.undo() # undo deletion        
