@@ -89,6 +89,13 @@ class px_LegacyViewportUtils
             return displayStyle;
         }
 
+        /// Returns true if the given Maya display style indicates that a
+        /// bounding box should be rendered.
+        static bool ShouldRenderBoundingBox(
+                M3dView::DisplayStyle legacyDisplayStyle) {
+            return (legacyDisplayStyle == M3dView::kBoundingBox);
+        }
+
     private:
         px_LegacyViewportUtils() = delete;
         ~px_LegacyViewportUtils() = delete;

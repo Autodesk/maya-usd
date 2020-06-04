@@ -25,6 +25,7 @@
 #include <maya/MBoundingBox.h>
 #include <maya/MDrawContext.h>
 #include <maya/MHWGeometryUtilities.h>
+#include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
 #include <maya/MSelectionContext.h>
 
@@ -63,6 +64,14 @@ class px_vp20Utils
         static bool GetViewFromDrawContext(
                 const MHWRender::MDrawContext& context,
                 M3dView& view);
+
+        /// Returns true if the given Maya display style indicates that a
+        /// bounding box should be rendered.
+        static bool ShouldRenderBoundingBox(unsigned int displayStyle) {
+            const bool boundingBoxStyle =
+                displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox;
+            return boundingBoxStyle;
+        }
 
         /// Renders the given bounding box in the given \p color via OpenGL.
         MAYAUSD_CORE_PUBLIC
