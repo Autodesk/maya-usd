@@ -43,6 +43,7 @@
 #include <pxr/usd/sdf/path.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/render/px_vp20/utils_legacy.h>
 #include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
 #include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
 #include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
@@ -50,40 +51,6 @@
 #include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// Helper function that converts M3dView::DisplayStyle (legacy viewport) into
-// MHWRender::MFrameContext::DisplayStyle (Viewport 2.0).
-//
-// In the legacy viewport, the M3dView can be in exactly one displayStyle
-// whereas Viewport 2.0's displayStyle is a bitmask of potentially multiple
-// styles. To translate from the legacy viewport to Viewport 2.0, we simply
-// bitwise-OR the single legacy viewport displayStyle into an empty mask.
-static inline
-unsigned int
-_ToMFrameContextDisplayStyle(const M3dView::DisplayStyle legacyDisplayStyle)
-{
-    unsigned int displayStyle = 0u;
-
-    switch (legacyDisplayStyle) {
-        case M3dView::kBoundingBox:
-            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kBoundingBox;
-            break;
-        case M3dView::kFlatShaded:
-            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
-            break;
-        case M3dView::kGouraudShaded:
-            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kGouraudShaded;
-            break;
-        case M3dView::kWireFrame:
-            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kWireFrame;
-            break;
-        case M3dView::kPoints:
-            // Not supported.
-            break;
-    }
-
-    return displayStyle;
-}
 
 // Helper function that converts M3dView::DisplayStatus (legacy viewport) into
 // MHWRender::DisplayStatus (Viewport 2.0).
@@ -122,7 +89,8 @@ PxrMayaHdShapeAdapter::Sync(
     UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
 
     const unsigned int displayStyle =
-        _ToMFrameContextDisplayStyle(legacyDisplayStyle);
+        px_LegacyViewportUtils::GetMFrameContextDisplayStyle(
+            legacyDisplayStyle);
     const MHWRender::DisplayStatus displayStatus =
         _ToMHWRenderDisplayStatus(legacyDisplayStatus);
 
