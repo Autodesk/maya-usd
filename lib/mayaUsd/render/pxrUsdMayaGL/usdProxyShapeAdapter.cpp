@@ -222,13 +222,13 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     unsigned int reprDisplayStyle = displayStyle;
 
     MColor mayaWireframeColor;
-    const bool useWireframeColor =
+    _renderParams.useWireframe =
         _GetWireframeColor(
             displayStyle,
             displayStatus,
             _shapeDagPath,
             &mayaWireframeColor);
-    if (useWireframeColor) {
+    if (_renderParams.useWireframe) {
         _renderParams.wireframeColor = GfVec4f(mayaWireframeColor.r,
                                                mayaWireframeColor.g,
                                                mayaWireframeColor.b,
