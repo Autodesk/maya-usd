@@ -223,11 +223,9 @@ PxrMayaHdShapeAdapter::GetMayaUserData(
     return newData;
 }
 
-/* virtual */
 HdReprSelector
-PxrMayaHdShapeAdapter::GetReprSelectorForDisplayState(
-        const unsigned int displayStyle,
-        const MHWRender::DisplayStatus displayStatus) const
+PxrMayaHdShapeAdapter::GetReprSelectorForDisplayStyle(
+        unsigned int displayStyle) const
 {
     HdReprSelector reprSelector;
 
@@ -245,13 +243,17 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayState(
         return reprSelector;
     }
 
+    const MHWRender::DisplayStatus displayStatus =
+        MHWRender::MGeometryUtilities::displayStatus(_shapeDagPath);
+
     const bool isActive = _IsActiveDisplayStatus(displayStatus);
 
     const bool shadeActiveOnlyStyle =
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kShadeActiveOnly;
 
     const bool wireframeStyle =
-        displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame;
+        (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame) ||
+        _renderParams.useWireframe;
 
     const bool flatShadedStyle =
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded;

@@ -219,8 +219,6 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // Will only react if time actually changes.
     _delegate->SetTime(timeCode);
 
-    unsigned int reprDisplayStyle = displayStyle;
-
     MColor mayaWireframeColor;
     _renderParams.useWireframe =
         _GetWireframeColor(
@@ -233,24 +231,24 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
                                                mayaWireframeColor.g,
                                                mayaWireframeColor.b,
                                                mayaWireframeColor.a);
-
-        // Add in kWireFrame to the display style we'll use to determine the
-        // repr selector (e.g. so that we draw the wireframe over the shaded
-        // geometry for selected objects).
-        reprDisplayStyle |= MHWRender::MFrameContext::DisplayStyle::kWireFrame;
     }
 
-    HdReprSelector reprSelector =
-        GetReprSelectorForDisplayState(
-            reprDisplayStyle,
-            displayStatus);
+    // XXX: This is not technically correct. Since the display style can vary
+    // per viewport, this decision of whether or not to enable lighting should
+    // be delayed until when the repr for each viewport is known during batched
+    // drawing. For now, the incorrectly shaded wireframe is not too offensive
+    // though.
+    //
+    // If the repr selector specifies a wireframe-only repr, then disable
+    // lighting. The useWireframe property of the render params is used to
+    // determine the repr, so be sure to do this *after* that has been set.
+    const HdReprSelector reprSelector =
+        GetReprSelectorForDisplayStyle(displayStyle);
 
     _drawShape = reprSelector.AnyActiveRepr();
     _drawBoundingBox =
         (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
 
-    // If the repr selector specifies a wireframe-only repr, then disable
-    // lighting.
     if (reprSelector.Contains(HdReprTokens->wire) ||
             reprSelector.Contains(HdReprTokens->refinedWire)) {
         _renderParams.enableLighting = false;

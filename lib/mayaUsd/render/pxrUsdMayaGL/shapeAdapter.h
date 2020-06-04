@@ -143,7 +143,7 @@ class PxrMayaHdShapeAdapter
                 const MBoundingBox* boundingBox = nullptr);
 
         /// Gets the HdReprSelector that corresponds to the given Maya display
-        /// state.
+        /// style.
         ///
         /// \p displayStyle should be a bitwise combination of
         /// MHWRender::MFrameContext::DisplayStyle values, typically either
@@ -152,18 +152,17 @@ class PxrMayaHdShapeAdapter
         /// obtained using MHWRender::MFrameContext::getDisplayStyle() for
         /// Viewport 2.0.
         ///
-        /// \p displayStatus is typically either up-converted from
-        /// a M3dView::DisplayStatus value obtained using
-        /// MDrawInfo::displayStatus() for the legacy viewport, or obtained
-        /// using MHWRender::MGeometryUtilities::displayStatus() for Viewport
-        /// 2.0.
+        /// The HdReprSelector chosen is also dependent on the display status
+        /// (active/selected vs. inactive) which Maya is queried for, as well
+        /// as whether or not the render params specify that we are using the
+        /// shape's wireframe, which is influenced by both the display status
+        /// and whether or not the shape is involved in a soft selection.
         ///
         /// If there is no corresponding HdReprSelector for the given display
-        /// state, an empty HdReprSelector is returned.
+        /// style, an empty HdReprSelector is returned.
         MAYAUSD_CORE_PUBLIC
-        virtual HdReprSelector GetReprSelectorForDisplayState(
-                const unsigned int displayStyle,
-                const MHWRender::DisplayStatus displayStatus) const;
+        HdReprSelector GetReprSelectorForDisplayStyle(
+                unsigned int displayStyle) const;
 
         /// Get a set of render params from the shape adapter's current state.
         ///

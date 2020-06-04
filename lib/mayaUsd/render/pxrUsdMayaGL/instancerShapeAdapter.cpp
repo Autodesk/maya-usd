@@ -227,7 +227,7 @@ bool
 UsdMayaGL_InstancerShapeAdapter::_Sync(
         const MDagPath& shapeDagPath,
         const unsigned int displayStyle,
-        const MHWRender::DisplayStatus displayStatus)
+        const MHWRender::DisplayStatus /* displayStatus */)
 {
     MStatus status;
     UsdPrim usdPrim = _instancerStage->GetDefaultPrim();
@@ -262,10 +262,17 @@ UsdMayaGL_InstancerShapeAdapter::_Sync(
     // In contrast with the other shape adapters, this adapter ignores the
     // selection wireframe. The native instancer doesn't draw selection
     // wireframes, so we want to mimic that behavior for consistency.
-    HdReprSelector reprSelector =
-        GetReprSelectorForDisplayState(
-            displayStyle,
-            displayStatus);
+
+    // XXX: This is not technically correct. Since the display style can vary
+    // per viewport, this decision of whether or not to enable lighting should
+    // be delayed until when the repr for each viewport is known during batched
+    // drawing. For now, the incorrectly shaded wireframe is not too offensive
+    // though.
+    //
+    // If the repr selector specifies a wireframe-only repr, then disable
+    // lighting.
+    const HdReprSelector reprSelector =
+        GetReprSelectorForDisplayStyle(displayStyle);
 
     _drawShape = reprSelector.AnyActiveRepr();
 
@@ -275,8 +282,6 @@ UsdMayaGL_InstancerShapeAdapter::_Sync(
     // geometry, though; is there any way to "teach" it about our bounds?
     _drawBoundingBox = false;
 
-    // If the repr selector specifies a wireframe-only repr, then disable
-    // lighting.
     if (reprSelector.Contains(HdReprTokens->wire) ||
             reprSelector.Contains(HdReprTokens->refinedWire)) {
         _renderParams.enableLighting = false;
