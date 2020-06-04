@@ -208,24 +208,9 @@ UsdMayaProxyDrawOverride::prepareForDraw(
 
     UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
 
-    bool drawShape;
-    bool drawBoundingBox;
-    _shapeAdapter.GetRenderParams(&drawShape, &drawBoundingBox);
+    const MBoundingBox boundingBox = shape->boundingBox();
 
-    if (!drawBoundingBox && !drawShape) {
-        // We weren't asked to do anything.
-        return nullptr;
-    }
-
-    MBoundingBox boundingBox;
-    MBoundingBox* boundingBoxPtr = nullptr;
-    if (drawBoundingBox) {
-        // Only query for the bounding box if we're drawing it.
-        boundingBox = shape->boundingBox();
-        boundingBoxPtr = &boundingBox;
-    }
-
-    return _shapeAdapter.GetMayaUserData(oldData, boundingBoxPtr);
+    return _shapeAdapter.GetMayaUserData(oldData, &boundingBox);
 }
 
 /* virtual */
