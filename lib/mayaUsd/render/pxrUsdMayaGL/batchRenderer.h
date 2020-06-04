@@ -188,6 +188,16 @@ public:
             const MHWRender::MDrawContext& context,
             const MUserData* userData);
 
+    /// Render bounding box in the legacy viewport based on \p request
+    MAYAUSD_CORE_PUBLIC
+    void DrawBoundingBox(const MDrawRequest& request, M3dView& view);
+
+    /// Render bounding box in Viewport 2.0 based on \p userData
+    MAYAUSD_CORE_PUBLIC
+    void DrawBoundingBox(
+            const MHWRender::MDrawContext& context,
+            const MUserData* userData);
+
     /// Gets the resolution of the draw target used for computing selections.
     ///
     /// The resolution is specified as (width, height).

@@ -735,6 +735,93 @@ UsdMayaGLBatchRenderer::Draw(
     }
 }
 
+void
+UsdMayaGLBatchRenderer::DrawBoundingBox(
+        const MDrawRequest& request,
+        M3dView& view)
+{
+    // Legacy viewport implementation.
+
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer DrawBoundingBox() (Legacy Viewport)");
+
+    MDrawData drawData = request.drawData();
+
+    const PxrMayaHdUserData* hdUserData =
+        static_cast<const PxrMayaHdUserData*>(drawData.geometry());
+    if (!hdUserData || !hdUserData->boundingBox) {
+        return;
+    }
+
+    MMatrix modelViewMat;
+    view.modelViewMatrix(modelViewMat);
+
+    MMatrix projectionMat;
+    view.projectionMatrix(projectionMat);
+    const GfMatrix4d projectionMatrix(projectionMat.matrix);
+
+    // For the legacy viewport, apply a framebuffer gamma correction when
+    // drawing bounding boxes, just like we do when drawing geometry via Hydra.
+    glEnable(GL_FRAMEBUFFER_SRGB_EXT);
+
+    px_vp20Utils::RenderBoundingBox(
+        *(hdUserData->boundingBox),
+        *(hdUserData->wireframeColor),
+        modelViewMat,
+        projectionMat);
+
+    glDisable(GL_FRAMEBUFFER_SRGB_EXT);
+
+    // Clean up the user data.
+    delete hdUserData;
+}
+
+void
+UsdMayaGLBatchRenderer::DrawBoundingBox(
+        const MHWRender::MDrawContext& context,
+        const MUserData* userData)
+{
+    // Viewport 2.0 implementation.
+
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer DrawBoundingBox() (Viewport 2.0)");
+
+    const PxrMayaHdUserData* hdUserData =
+        dynamic_cast<const PxrMayaHdUserData*>(userData);
+    if (!hdUserData || !hdUserData->boundingBox) {
+        return;
+    }
+
+    const MHWRender::MRenderer* theRenderer =
+        MHWRender::MRenderer::theRenderer();
+    if (!theRenderer || !theRenderer->drawAPIIsOpenGL()) {
+        return;
+    }
+
+    MStatus status;
+
+    const MMatrix worldViewMat =
+        context.getMatrix(MHWRender::MFrameContext::kWorldViewMtx, &status);
+
+    const MMatrix projectionMat =
+        context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
+    const GfMatrix4d projectionMatrix(projectionMat.matrix);
+
+    px_vp20Utils::RenderBoundingBox(
+        *(hdUserData->boundingBox),
+        *(hdUserData->wireframeColor),
+        worldViewMat,
+        projectionMat);
+}
+
 GfVec2i
 UsdMayaGLBatchRenderer::GetSelectionResolution() const
 {
