@@ -77,6 +77,18 @@ _ToMHWRenderDisplayStatus(const M3dView::DisplayStatus legacyDisplayStatus)
     return MHWRender::DisplayStatus((int)legacyDisplayStatus);
 }
 
+static inline
+bool
+_IsActiveDisplayStatus(MHWRender::DisplayStatus displayStatus)
+{
+    return
+        (displayStatus == MHWRender::DisplayStatus::kActive) ||
+        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
+        (displayStatus == MHWRender::DisplayStatus::kLead);
+}
+
 /* virtual */
 bool
 PxrMayaHdShapeAdapter::Sync(
@@ -233,15 +245,10 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayState(
         return reprSelector;
     }
 
+    const bool isActive = _IsActiveDisplayStatus(displayStatus);
+
     const bool shadeActiveOnlyStyle =
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kShadeActiveOnly;
-
-    const bool isActive =
-        (displayStatus == MHWRender::DisplayStatus::kActive) ||
-        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
-        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
-        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
-        (displayStatus == MHWRender::DisplayStatus::kLead);
 
     const bool wireframeStyle =
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame;
@@ -403,12 +410,7 @@ PxrMayaHdShapeAdapter::_GetWireframeColor(
 
     const bool wireframeStyle = (displayStyle & wireframeDisplayStyles);
 
-    const bool isActive =
-        (displayStatus == MHWRender::DisplayStatus::kActive) ||
-        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
-        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
-        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
-        (displayStatus == MHWRender::DisplayStatus::kLead);
+    const bool isActive = _IsActiveDisplayStatus(displayStatus);
 
     if (wireframeStyle || isActive) {
         useWireframeColor = true;
