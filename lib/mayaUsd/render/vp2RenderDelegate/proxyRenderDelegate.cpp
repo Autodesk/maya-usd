@@ -390,17 +390,6 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
                 break;
             }
         }
-
-        // Set the render tags to be all the tags. Vp2RenderDelegate implements
-        // render tags as a per-render item setting, so we always need to visit
-        // all the rprims to handle cases when an rprim changes from a displayed
-        // tag to a hidden tag.
-        TfTokenVector renderTags
-            = { HdRenderTagTokens->geometry,
-                HdRenderTagTokens->render,
-                HdRenderTagTokens->proxy,
-                HdRenderTagTokens->guide };
-        _taskController->SetRenderTags(renderTags);
     }
 }
 
@@ -802,6 +791,7 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // to make sure every rprim with a render tag whose visibility changed gets
     // marked dirty. This will ensure the upcoming execute call will update
     // the visibility of the MRenderItems in MPxSubSceneOverride.
+    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
     bool renderPurposeChanged = false;
     bool proxyPurposeChanged = false;
     bool guidePurposeChanged = false;
@@ -815,29 +805,59 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         // Build the list of render tags which were added or removed (changed)
         // and the list of render tags which were removed.
         TfTokenVector changedRenderTags;
-        TfTokenVector removedRenderTags;
         if (renderPurposeChanged) {
             changedRenderTags.push_back(HdRenderTagTokens->render);
-            if (!_proxyShapeData->DrawRenderPurpose())
-                removedRenderTags.push_back(HdRenderTagTokens->render);
         }
         if (proxyPurposeChanged) {
             changedRenderTags.push_back(HdRenderTagTokens->proxy);
-            if (!_proxyShapeData->DrawProxyPurpose())
-                removedRenderTags.push_back(HdRenderTagTokens->proxy);
         }
         if (guidePurposeChanged) {
             changedRenderTags.push_back(HdRenderTagTokens->guide);
-            if (!_proxyShapeData->DrawGuidePurpose())
-                removedRenderTags.push_back(HdRenderTagTokens->guide);
         }
 
         // Mark all the rprims which have a render tag which changed dirty
         SdfPathVector    rprimsToDirty = _GetFilteredRprims(*_defaultCollection, changedRenderTags);
-        HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+        
         for (auto& id : rprimsToDirty) {
             changeTracker.MarkRprimDirty(id, HdChangeTracker::DirtyRenderTag);
         }
+    }
+
+    // When the render tag on an rprim changes we do a pass over all rprims to update
+    // their visibility. The frame after we do the pass over all the tags, set the tags back to
+    // the minimum set of tags.
+    if (!_taskRenderTagsValid) {
+        TfTokenVector renderTags
+            = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
+        if (_proxyShapeData->DrawRenderPurpose()) {
+            renderTags.push_back(HdRenderTagTokens->render);
+        }
+        if (_proxyShapeData->DrawProxyPurpose()) {
+            renderTags.push_back(HdRenderTagTokens->proxy);
+        }
+        if (_proxyShapeData->DrawGuidePurpose()) {
+            renderTags.push_back(HdRenderTagTokens->guide);
+        }
+        _taskController->SetRenderTags(renderTags);
+        _taskRenderTagsValid = true;
+    }
+
+    // Vp2RenderDelegate implements render tags as a per-render item setting.
+    // To handle cases when an rprim changes from a displayed tag to a hidden tag
+    // we need to visit all the rprims and set the enable flag correctly on
+    // all their render items. Do visit all the rprims we need to set the 
+    // render tags to be all the tags.
+    // When an rprim has it's renderTag changed the global render tag version
+    // id will change.
+    const int renderTagVersion = changeTracker.GetRenderTagVersion();
+    if (renderTagVersion != _renderTagVersion) {
+        TfTokenVector renderTags = { HdRenderTagTokens->geometry,
+                                     HdRenderTagTokens->render,
+                                     HdRenderTagTokens->proxy,
+                                     HdRenderTagTokens->guide };
+        _taskController->SetRenderTags(renderTags);
+        _taskRenderTagsValid = false;
+        _renderTagVersion = renderTagVersion;
     }
 }
 

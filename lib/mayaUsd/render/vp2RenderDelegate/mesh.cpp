@@ -365,6 +365,20 @@ void HdVP2Mesh::Sync(
         return;
     }
 
+    // We don't update the repr if it is hidden by the render tags (purpose)
+    // of the ProxyRenderDelegate. In additional, we need to hide any already
+    // existing render items because they should not be drawn.
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    if (!drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()))) {
+        _HideAllDrawItems(reprToken);
+        // clearing visibility here is wrong. It is a work around to handle purpose changing
+        // marking visibility dirty instead of render tag. See UsdImagingGprimAdapter::ProcessPropertyChange
+        // for where this happens.
+        *dirtyBits &= ~( HdChangeTracker::DirtyRenderTag | HdChangeTracker::DirtyVisibility );
+        return;
+    }
+
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L2, _rprimId.asChar(), "HdVP2Mesh::Sync");
 
@@ -1518,6 +1532,35 @@ void HdVP2Mesh::_UpdateDrawItem(
 
         oldInstanceCount = newInstanceCount;
     });
+}
+
+void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken) {
+    HdReprSharedPtr const& curRepr = _GetRepr(reprToken);
+    if (!curRepr) {
+        return;
+    }
+
+    _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
+
+    // For each relevant draw item, update dirty buffer sources.
+    int drawItemIndex = 0;
+    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
+        const HdMeshReprDesc& desc = reprDescs[descIdx];
+        if (desc.geomStyle == HdMeshGeomStyleInvalid) {
+            continue;
+        }
+
+        auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
+        if (!drawItem)
+            continue;
+        MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
+        if (!renderItem)
+            continue;
+
+        _delegate->GetVP2ResourceRegistry().EnqueueCommit([renderItem]() {
+            renderItem->enable(false);
+        });
+    }
 }
 
 /*! \brief  Update _primvarSourceMap, our local cache of raw primvar data.
