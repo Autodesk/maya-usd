@@ -21,9 +21,9 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
-    const UsdSceneItem::Ptr& item, GfVec3d translate
-) : Ufe::TranslateUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, std::move(translate), UsdGeomXformOp::Type::TypeTranslate)
+    const UsdTransform3d& item, const GfVec3d& translate
+) : Ufe::TranslateUndoableCommand(item.sceneItem()),
+    UsdTRSUndoableCommandBase(item, translate, UsdGeomXformOp::Type::TypeTranslate)
 {}
 
 UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
@@ -31,11 +31,11 @@ UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
 
 /*static*/
 UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, GfVec3d translate
+    const UsdTransform3d& item, const GfVec3d& translate
 )
 {
     auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(
-        item, std::move(translate));
+        item, translate);
     cmd->initialize();
     return cmd;
 }

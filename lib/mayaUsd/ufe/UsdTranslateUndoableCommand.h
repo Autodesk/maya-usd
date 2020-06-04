@@ -42,12 +42,12 @@ public:
 	UsdTranslateUndoableCommand& operator=(UsdTranslateUndoableCommand&&) = delete;
 
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
-	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, GfVec3d translate = {0,0,0});
+	UsdTranslateUndoableCommand(const UsdTransform3d& item, const GfVec3d& translate = {0,0,0});
 	~UsdTranslateUndoableCommand() override;
 
 	//! Create a UsdTranslateUndoableCommand from a UFE scene item.  The
 	//! command is not executed.
-	static UsdTranslateUndoableCommand::Ptr create(const UsdSceneItem::Ptr& item, GfVec3d translate = {0,0,0});
+	static UsdTranslateUndoableCommand::Ptr create(const UsdTransform3d& item, const GfVec3d& translate = {0,0,0});
 
 	// Ufe::TranslateUndoableCommand overrides.  translate() sets the command's
 	// translation value and executes the command.

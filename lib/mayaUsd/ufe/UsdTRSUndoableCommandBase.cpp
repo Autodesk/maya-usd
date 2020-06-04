@@ -16,13 +16,12 @@
 
 #include "UsdTRSUndoableCommandBase.h"
 #include "private/Utils.h"
+#include "Utils.h"
 
 #include <pxr/base/gf/rotation.h>
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
-
-#include <iostream>
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -40,11 +39,11 @@ std::string getOpSuffix()
 
 UsdGeomXformOp::Type getOpType(UsdGeomXformOp::Type opType)
 {
-    // os.environ['UFE_XFORM_OP_XFORM']='1' to create single xformOp:transform
-    const char* UFE_XFORM_OP_XFORM = ::getenv("UFE_XFORM_OP_XFORM");
+    // os.environ['UFE_XFORM_OP_VECTOR']='1' to create single for tr, rot, sc
+    const char* UFE_XFORM_OP_VECTOR = ::getenv("UFE_XFORM_OP_VECTOR");
 
-    return UFE_XFORM_OP_XFORM && UFE_XFORM_OP_XFORM[0] != '0' ?
-        UsdGeomXformOp::TypeTransform : opType;
+    return UFE_XFORM_OP_VECTOR && UFE_XFORM_OP_VECTOR[0] != '0' ?
+        opType : UsdGeomXformOp::TypeTransform;
 }
 
 std::string getOpName(UsdGeomXformOp::Type opType)
@@ -92,16 +91,18 @@ protected:
     {}
 
 public:
-    virtual bool doIt(UsdGeomXformable& xformable, VtValue& value)
+    virtual bool doIt(UsdGeomXformable& xformable, VtValue& value,
+        const UsdTimeCode& t)
     {
-        return fXformOp.Set(value);
+        return fXformOp.Set(value, t);
     }
     virtual const VtValue& initialValue() const {
         static const VtValue sValue;
         return sValue;
     }
 
-    virtual bool undoIt(UsdGeomXformable& xformable, const XformOpState& state) = 0;
+    virtual bool undoIt(UsdGeomXformable& xformable, const XformOpState& state,
+        const UsdTimeCode& t) = 0;
 
     operator const UsdGeomXformOp& () const { return fXformOp; }
 };
@@ -113,14 +114,16 @@ class XformOpUndo : public XformOpHandler
     VtValue fInitialValue;
 
 public:
-    XformOpUndo(UsdGeomXformOp op) : XformOpHandler(std::move(op))
+    XformOpUndo(UsdGeomXformOp op, const UsdTimeCode& t)
+        : XformOpHandler(std::move(op))
     {
-        fXformOp.GetAttr().Get(&fInitialValue);
+        fXformOp.GetAttr().Get(&fInitialValue, t);
     }
 
-    bool undoIt(UsdGeomXformable& xformable, const XformOpState& state) override
+    bool undoIt(UsdGeomXformable& xformable, const XformOpState& state,
+        const UsdTimeCode& t) override
     {
-        return fXformOp.Set(fInitialValue);
+        return fXformOp.Set(fInitialValue, t);
     }
 
     const VtValue& initialValue() const override
@@ -150,10 +153,11 @@ public:
         , fResetsXformStack(other.fResetsXformStack)
     {}
 
-    bool doIt(UsdGeomXformable& xformable, VtValue& value) override
+    bool doIt(UsdGeomXformable& xformable, VtValue& value,
+        const UsdTimeCode& t) override
     {
         // Set the op value
-        if (!XformOpHandler::doIt(xformable, value))
+        if (!XformOpHandler::doIt(xformable, value, t))
             return false;
 
         // If its already been added to the xform-stack, we're done
@@ -170,13 +174,13 @@ public:
         return xformable.SetXformOpOrder(xformStack, fResetsXformStack);
     }
 
-    bool undoIt(UsdGeomXformable& xformable, const XformOpState& state) override
+    bool undoIt(UsdGeomXformable& xformable, const XformOpState& state,
+        const UsdTimeCode& t) override
     {
         bool result1 = xformable.SetXformOpOrder(std::move(fXformStack), fResetsXformStack);
         bool result2 = xformable.GetPrim().RemoveProperty(state.fAttribute);
         return result1 && result2;
     }
-
 
     // Slightly odd pattern, but it's easier to use a XformStackUndo
     // as a builder for either XformOpUndo or XformStackUndo
@@ -188,8 +192,9 @@ public:
         fXformStack = xformable.GetOrderedXformOps(&fResetsXformStack);
     }
 
-    std::unique_ptr<XformOpHandler> insertOp(UsdGeomXformable& xformable,
-        const XformOpState& state, std::vector<UsdGeomXformOp>* prevOps)
+    std::pair<std::unique_ptr<XformOpHandler>,bool>
+    insertOp(UsdGeomXformable& xformable, const XformOpState& state,
+        const UsdTimeCode& t, std::vector<UsdGeomXformOp>* prevOps)
     {
         const std::string opSuffix = getOpSuffix();
 
@@ -213,7 +218,7 @@ public:
                 if (prevOps)
                     prevOps->assign(fXformStack.begin(), (ritr+1).base());
 
-                return std::unique_ptr<XformOpHandler>(new XformOpUndo(*ritr));
+                return { std::unique_ptr<XformOpHandler>(new XformOpUndo(*ritr, t)), false };
             }
 
             firstOp = ritr.base();
@@ -244,8 +249,13 @@ public:
         if (prevOps)
             prevOps->assign(fXformStack.begin(), fXformStack.begin()+fOpIndex);
 
-        return std::unique_ptr<XformOpHandler>(
-            new XformStackUndo(UsdGeomXformOp(std::move(attr), false, {}), std::move(*this)));
+        return { std::unique_ptr<XformOpHandler>(
+            new XformStackUndo(UsdGeomXformOp(std::move(attr), false, {}), std::move(*this))),
+            true };
+    }
+
+    const std::vector<UsdGeomXformOp>& xformOps() const {
+        return fXformStack;
     }
 };
 
@@ -256,6 +266,8 @@ class UsdTRSUndoableCommandBase::ExtendedUndo
     struct Decomposed {
         GfVec3d t, s;
         GfMatrix4d u;
+        GfMatrix4d inverse = GfMatrix4d(1);
+        Decomposed() : t(0,0,0), s(1,1,1), u(1) {}
         Decomposed(const GfMatrix4d& xform)
         {
             GfMatrix4d r, p;
@@ -265,56 +277,61 @@ class UsdTRSUndoableCommandBase::ExtendedUndo
 
     std::unique_ptr<XformOpState> fInitialState;
     std::unique_ptr<XformOpHandler> fHandler;
+    std::unique_ptr<GfMatrix4d> fInverse;
 
     VtValue fCurValue;
+    GfVec3d fVecOffset;
+    const UsdTimeCode fTime;
 
     // Used when setting to an 'xformOp:transform' op
     const UsdGeomXformOp::Type fOrigOpType;
     std::unique_ptr<Decomposed> fDecomposed;
 
-    // Workaround UFE sending rotation including ops previous to the one being edited
-#if UFE_PREVIEW_VERSION_NUM < 2013
-    std::unique_ptr<GfVec3d> fOffset;
-#endif
-
 
     bool initialize(UsdGeomXformable& xformable, const XformOpState& state)
     {
-#if UFE_PREVIEW_VERSION_NUM < 2013
         std::vector<UsdGeomXformOp> prevOps;
-        std::vector<UsdGeomXformOp> *prevOpPtr =
-            (fOrigOpType == UsdGeomXformOp::TypeRotateXYZ) ? &prevOps : nullptr;
-#else
-        std::vector<UsdGeomXformOp> *prevOpPtr = nullptr;
-#endif
 
-
+        bool append = false;
         XformStackUndo builder(xformable);
-        fHandler = builder.insertOp(xformable, state, prevOpPtr);
+        std::tie(fHandler, append) = builder.insertOp(xformable, state, fTime, &prevOps);
 
-        const VtValue& prevVal = fHandler->initialValue();
-        if (!prevVal.IsEmpty())
+        if (state.fOpType == UsdGeomXformOp::TypeTransform)
         {
-            // Do the decomposition now when setting to a GfMatrix4d
-            if (state.fOpType == UsdGeomXformOp::TypeTransform)
-                fDecomposed.reset(new Decomposed(prevVal.UncheckedGet<GfMatrix4d>()));
-
-            // Only needed for accumulation when fOrigOpType == UsdGeomXformOp::TypeTranslate
-            fCurValue = prevVal;
+            const VtValue& initialVal = fHandler->initialValue();
+            fDecomposed.reset(initialVal.IsEmpty() ? new Decomposed() :
+                new Decomposed(initialVal.UncheckedGet<GfMatrix4d>()));
         }
+        else
+            fDecomposed.reset();
 
+        bool resets;
+        GfMatrix4d transform;
 
-#if UFE_PREVIEW_VERSION_NUM < 2013
         if (!prevOps.empty())
         {
-            GfMatrix4d transform;
-            if (UsdGeomXformable::GetLocalTransformation(&transform, prevOps, UsdTimeCode::Default()))
-            {
-                fOffset.reset(new GfVec3d);
-                *fOffset = transform.DecomposeRotation(GfVec3d::XAxis(), GfVec3d::YAxis(), GfVec3d::ZAxis());
-            }
+            if (!xformable.GetLocalTransformation(&transform, &resets, prevOps, fTime))
+                return false;
         }
-#endif
+        else
+            transform = GfMatrix4d(1);
+
+        fVecOffset.Set(0,0,0);
+        fInverse.reset();
+
+        const bool isRotate = fOrigOpType >= UsdGeomXformOp::TypeRotateX && fOrigOpType <= UsdGeomXformOp::TypeRotateZYX;
+        if (isRotate)
+            fVecOffset -= transform.DecomposeRotation(GfVec3d::XAxis(), GfVec3d::YAxis(), GfVec3d::ZAxis());
+        else if (fOrigOpType == UsdGeomXformOp::TypeTranslate)
+        {
+            fVecOffset -= transform.Transform(GfVec3d(0,0,0));
+            transform.SetTranslateOnly(GfVec3d(0,0,0));
+            fInverse.reset(new GfMatrix4d(transform.GetInverse()));
+        }
+        else if (fOrigOpType == UsdGeomXformOp::TypeScale)
+            fVecOffset.Set(0,0,0);
+        else
+            return false;
 
         return static_cast<bool>(fHandler);
     }
@@ -322,61 +339,37 @@ class UsdTRSUndoableCommandBase::ExtendedUndo
     template <typename V>
     void setVector(V value)
     {
-        if (fOrigOpType == UsdGeomXformOp::TypeTranslate)
-            value += fCurValue.UncheckedGet<V>();
-
         fCurValue.UncheckedSwap<V>(value);
     }
 
     void setValue(GfVec3d value)
     {
-#if UFE_PREVIEW_VERSION_NUM < 2013
-        if (fOffset)
-            value -= *fOffset;
-#endif
+        value += fVecOffset;
+        if (fInverse)
+            value = fInverse->Transform(value);
 
         if (fCurValue.IsHolding<GfVec3f>())
-        {
-            setVector<GfVec3f>(GfVec3f(value));
-            return;
-        }
+            return setVector<GfVec3f>(GfVec3f(value));
 
         if (fCurValue.IsHolding<GfVec3d>())
-        {
-            setVector<GfVec3d>(value);
-            return;
-        }
+            return setVector<GfVec3d>(value);
 
         if (fCurValue.IsHolding<GfMatrix4d>())
         {
-            GfVec3d t, s;
-            GfMatrix4d u;
+            assert(fDecomposed && "Setting a matrix without a decomposition");
 
-            if (fDecomposed)
-            {
-                u = fDecomposed->u;
-                t = fDecomposed->t;
-                s = fDecomposed->s;
-            }
-            else
-            {
-                u = GfMatrix4d(1.0);
-                t = GfVec3d(0,0,0);
-                s = GfVec3d(1,1,1);
-            }
+            GfVec3d t = fDecomposed->t;
+            GfVec3d s = fDecomposed->s;
+            GfMatrix4d u = fDecomposed->u;
 
             if (fOrigOpType == UsdGeomXformOp::TypeTranslate)
-            {
-                t = value + fCurValue.UncheckedGet<GfMatrix4d>().ExtractTranslation();
-            }
+                t = value;
             else if (fOrigOpType == UsdGeomXformOp::TypeScale)
                 s = value;
             else
-            {
                 u.SetRotate(GfRotation(GfVec3d::XAxis(), value[0]) *
                             GfRotation(GfVec3d::YAxis(), value[1]) *
                             GfRotation(GfVec3d::ZAxis(), value[2]));
-            }
 
             fCurValue = (GfMatrix4d(GfVec4d(s[0], s[1], s[2], 1.0)) * u).SetTranslateOnly(t);
             return;
@@ -386,8 +379,10 @@ class UsdTRSUndoableCommandBase::ExtendedUndo
 public:
     template <typename T>
     ExtendedUndo(const UsdPrim& prim, T vec, UsdGeomXformOp::Type opType,
-        UsdGeomXformOp::Precision prec)
+        UsdGeomXformOp::Precision prec, const UsdTransform3d& item)
         : fInitialState(new XformOpState(opType, prec))
+        , fVecOffset(0,0,0)
+        , fTime(getTime(item.sceneItem()->path()))
         , fOrigOpType(opType)
     {
         if (fInitialState->fOpType == UsdGeomXformOp::TypeTransform)
@@ -407,13 +402,10 @@ public:
 
         fInitialState.reset(new XformOpState(*fHandler));
         fDecomposed.reset();
-#if UFE_PREVIEW_VERSION_NUM < 2013
-        fOffset.reset();
-#endif
 
         // Done with fHandler until reborn in doIt
         std::unique_ptr<XformOpHandler> oldHandler(fHandler.release());
-        return oldHandler->undoIt(xformable, *fInitialState);
+        return oldHandler->undoIt(xformable, *fInitialState, fTime);
     }
 
     bool doIt(UsdGeomXformable& xformable, const GfVec3d* value = nullptr)
@@ -429,23 +421,23 @@ public:
         if (value)
             setValue(*value);
 
-        return fHandler->doIt(xformable, fCurValue);
+        return fHandler->doIt(xformable, fCurValue, fTime);
     }
 };
 
 UsdTRSUndoableCommandBase::UsdTRSUndoableCommandBase(
-    const UsdSceneItem::Ptr& item, GfVec3f vec, UsdGeomXformOp::Type opType)
-    : fItem(item)
-    , fExtendedUndo(new ExtendedUndo(fItem->prim(), std::move(vec),
-        opType, UsdGeomXformOp::PrecisionFloat))
+    const UsdTransform3d& item, const GfVec3f& vec, UsdGeomXformOp::Type opType)
+    : fItem(std::static_pointer_cast<UsdSceneItem>(item.sceneItem()))
+    , fExtendedUndo(new ExtendedUndo(fItem->prim(), vec,
+        opType, UsdGeomXformOp::PrecisionFloat, item))
 {
 }
 
 UsdTRSUndoableCommandBase::UsdTRSUndoableCommandBase(
-    const UsdSceneItem::Ptr& item, GfVec3d vec, UsdGeomXformOp::Type opType)
-    : fItem(item)
-    , fExtendedUndo(new ExtendedUndo(fItem->prim(), std::move(vec),
-        opType, UsdGeomXformOp::PrecisionDouble))
+    const UsdTransform3d& item, const GfVec3d& vec, UsdGeomXformOp::Type opType)
+    : fItem(std::static_pointer_cast<UsdSceneItem>(item.sceneItem()))
+    , fExtendedUndo(new ExtendedUndo(fItem->prim(), vec,
+        opType, UsdGeomXformOp::PrecisionDouble, item))
 {
 }
 

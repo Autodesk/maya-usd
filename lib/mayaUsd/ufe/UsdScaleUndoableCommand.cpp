@@ -21,9 +21,9 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(
-    const UsdSceneItem::Ptr& item, GfVec3f scale
-) : Ufe::ScaleUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, std::move(scale), UsdGeomXformOp::Type::TypeScale)
+    const UsdTransform3d& item, const GfVec3f& scale
+) : Ufe::ScaleUndoableCommand(item.sceneItem()),
+    UsdTRSUndoableCommandBase(item, scale, UsdGeomXformOp::Type::TypeScale)
 {}
 
 UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
@@ -31,10 +31,10 @@ UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
 
 /*static*/
 UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, GfVec3f scale)
+    const UsdTransform3d& item, const GfVec3f& scale)
 {
     auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
-        item, std::move(scale));
+        item, scale);
     cmd->initialize();
     return cmd;
 }

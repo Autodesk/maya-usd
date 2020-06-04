@@ -42,12 +42,12 @@ public:
 	UsdScaleUndoableCommand& operator=(UsdScaleUndoableCommand&&) = delete;
 
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.
-    UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, GfVec3f rotate = {1,1,1});
+    UsdScaleUndoableCommand(const UsdTransform3d& item, const GfVec3f& scale = {1,1,1});
     ~UsdScaleUndoableCommand() override;
 
 	//! Create a UsdScaleUndoableCommand from a UFE scene item.  The command is
     //! not executed.
-	static UsdScaleUndoableCommand::Ptr create(const UsdSceneItem::Ptr& item, GfVec3f scale = {1,1,1});
+	static UsdScaleUndoableCommand::Ptr create(const UsdTransform3d& item, const GfVec3f& scale = {1,1,1});
 
 	// Ufe::ScaleUndoableCommand overrides
 	void undo() override;

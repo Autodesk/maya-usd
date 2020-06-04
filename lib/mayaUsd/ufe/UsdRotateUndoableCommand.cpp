@@ -20,10 +20,10 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdRotateUndoableCommand::UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item,
-    GfVec3f rotation)
-	: Ufe::RotateUndoableCommand(item)
-    , UsdTRSUndoableCommandBase(item, std::move(rotation), UsdGeomXformOp::Type::TypeRotateXYZ)
+UsdRotateUndoableCommand::UsdRotateUndoableCommand(const UsdTransform3d& item,
+    const GfVec3f& rotation)
+    : Ufe::RotateUndoableCommand(item.sceneItem())
+    , UsdTRSUndoableCommandBase(item, rotation, UsdGeomXformOp::Type::TypeRotateXYZ)
 {}
 
 UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
@@ -31,10 +31,10 @@ UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
 
 /*static*/
 UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, GfVec3f rotation)
+    const UsdTransform3d& item, const GfVec3f& rotation)
 {
     auto cmd = std::make_shared<MakeSharedEnabler<UsdRotateUndoableCommand>>(
-        item, std::move(rotation));
+        item, rotation);
     cmd->initialize();
     return cmd;
 }

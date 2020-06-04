@@ -21,9 +21,9 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(
-    const UsdSceneItem::Ptr& item, GfVec3f rotPivot
-) : Ufe::TranslateUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, std::move(rotPivot), UsdGeomXformOp::Type::TypeTranslate)
+    const UsdTransform3d& item, const GfVec3f& rotPivot
+) : Ufe::TranslateUndoableCommand(item.sceneItem()),
+    UsdTRSUndoableCommandBase(item, rotPivot, UsdGeomXformOp::Type::TypeTranslate)
 {}
 
 UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand()
@@ -31,11 +31,11 @@ UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand(
 
 /*static*/
 UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, GfVec3f rotPivot
+    const UsdTransform3d& item, const GfVec3f& rotPivot
 )
 {
 	auto cmd = std::make_shared<MakeSharedEnabler<UsdRotatePivotTranslateUndoableCommand>>(
-        item, std::move(rotPivot));
+        item, rotPivot);
     cmd->initialize();
     return cmd;
 }

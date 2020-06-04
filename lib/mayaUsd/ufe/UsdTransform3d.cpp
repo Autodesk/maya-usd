@@ -103,7 +103,7 @@ Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const
 #if UFE_PREVIEW_VERSION_NUM >= 2013
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double y, double z)
 {
-	return UsdTranslateUndoableCommand::create(fItem, GfVec3d(x,y,z));
+	return UsdTranslateUndoableCommand::create(*this, GfVec3d(x,y,z));
 }
 
 Ufe::Vector3d UsdTransform3d::rotation() const
@@ -118,29 +118,29 @@ Ufe::Vector3d UsdTransform3d::scale() const
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, double z)
 {
-	return UsdRotateUndoableCommand::create(fItem, GfVec3f(x, y, z));
+	return UsdRotateUndoableCommand::create(*this, GfVec3f(x, y, z));
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, double z)
 {
-	return UsdScaleUndoableCommand::create(fItem, GfVec3f(x, y, z));
+	return UsdScaleUndoableCommand::create(*this, GfVec3f(x, y, z));
 }
 
 #else // UFE_PREVIEW_VERSION_NUM < 2013
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 {
-	return UsdTranslateUndoableCommand::create(fItem);
+	return UsdTranslateUndoableCommand::create(*this);
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 {
-	return UsdRotateUndoableCommand::create(fItem);
+	return UsdRotateUndoableCommand::create(*this);
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 {
-	return UsdScaleUndoableCommand::create(fItem);
+	return UsdScaleUndoableCommand::create(*this);
 }
 
 #endif
@@ -167,7 +167,7 @@ void UsdTransform3d::scale(double x, double y, double z)
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 {
-	return UsdRotatePivotTranslateUndoableCommand::create(fItem);
+	return UsdRotatePivotTranslateUndoableCommand::create(*this);
 }
 
 void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)

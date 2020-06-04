@@ -52,11 +52,11 @@ class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase : public Ufe::Observer,
 {
 protected:
 
-    UsdTRSUndoableCommandBase(const UsdSceneItem::Ptr& item,
-        GfVec3f vec, UsdGeomXformOp::Type opType);
+    UsdTRSUndoableCommandBase(const UsdTransform3d& item,
+        const GfVec3f& vec, UsdGeomXformOp::Type opType);
 
-    UsdTRSUndoableCommandBase(const UsdSceneItem::Ptr& item,
-        GfVec3d vec, UsdGeomXformOp::Type opType);
+    UsdTRSUndoableCommandBase(const UsdTransform3d& item,
+        const GfVec3d& vec, UsdGeomXformOp::Type opType);
 
     ~UsdTRSUndoableCommandBase();
 
@@ -91,8 +91,8 @@ private:
 template<class T>
 struct MakeSharedEnabler : public T {
     template <typename V>
-    MakeSharedEnabler(const UsdSceneItem::Ptr& item, V vec)
-        : T(item, std::move(vec)) {}
+    MakeSharedEnabler(const UsdTransform3d& item, const V& vec)
+        : T(item, vec) {}
 };
 
 } // namespace ufe

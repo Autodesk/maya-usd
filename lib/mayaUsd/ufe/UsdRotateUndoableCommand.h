@@ -44,12 +44,12 @@ public:
 	UsdRotateUndoableCommand& operator=(UsdRotateUndoableCommand&&) = delete;
 
     //! Construct a UsdRotateUndoableCommand.  The command is not executed.
-    UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, GfVec3f rotate = {0,0,0});
+    UsdRotateUndoableCommand(const UsdTransform3d& item, const GfVec3f& rotate = {0,0,0});
     ~UsdRotateUndoableCommand() override;
 
 	//! Create a UsdRotateUndoableCommand from a UFE scene item.  The
 	//! command is not executed.
-	static UsdRotateUndoableCommand::Ptr create(const UsdSceneItem::Ptr& item, GfVec3f rotate = {0,0,0});
+	static UsdRotateUndoableCommand::Ptr create(const UsdTransform3d& item, const GfVec3f& rotate = {0,0,0});
 
 	// Ufe::RotateUndoableCommand overrides.  rotate() sets the command's
 	// rotation value and executes the command.

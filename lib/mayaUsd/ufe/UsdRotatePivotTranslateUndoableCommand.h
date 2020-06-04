@@ -42,11 +42,11 @@ public:
 	UsdRotatePivotTranslateUndoableCommand(UsdRotatePivotTranslateUndoableCommand&&) = delete;
 	UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&) = delete;
 
-	UsdRotatePivotTranslateUndoableCommand(const UsdSceneItem::Ptr& item, GfVec3f rotPivot = {0,0,0});
+	UsdRotatePivotTranslateUndoableCommand(const UsdTransform3d& item, const GfVec3f& rotPivot = {0,0,0});
 	~UsdRotatePivotTranslateUndoableCommand() override;
 
 	//! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdRotatePivotTranslateUndoableCommand::Ptr create(const UsdSceneItem::Ptr& item, GfVec3f rotPivot = {0,0,0});
+	static UsdRotatePivotTranslateUndoableCommand::Ptr create(const UsdTransform3d& item, const GfVec3f& rotPivot = {0,0,0});
 
 	// Ufe::TranslateUndoableCommand overrides
 	void undo() override;
