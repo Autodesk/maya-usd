@@ -51,6 +51,7 @@
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4d.h>
 #include <pxr/base/tf/singleton.h>
+#include <pxr/base/tf/token.h>
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
