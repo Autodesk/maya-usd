@@ -15,7 +15,7 @@
 //
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 
-#include "maya/MFnDagNode.h"
+#include <maya/MFnDagNode.h>
 
 #include "pxr/usd/usd/schemaBase.h"
 

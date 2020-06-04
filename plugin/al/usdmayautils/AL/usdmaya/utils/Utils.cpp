@@ -18,12 +18,12 @@
 
 #include <mayaUsdUtils/DebugCodes.h>
 
-#include "maya/MDagPath.h"
-#include "maya/MEulerRotation.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MMatrix.h"
-#include "maya/MVector.h"
+#include <maya/MDagPath.h>
+#include <maya/MEulerRotation.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MMatrix.h>
+#include <maya/MVector.h>
 
 #include <atomic>
 

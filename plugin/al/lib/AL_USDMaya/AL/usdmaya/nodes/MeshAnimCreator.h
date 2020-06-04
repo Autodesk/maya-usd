@@ -20,9 +20,9 @@
 
 #include "pxr/usd/usd/stage.h"
 
-#include "maya/MPxNode.h"
-#include "maya/MNodeMessage.h"
-#include "maya/MObjectHandle.h"
+#include <maya/MPxNode.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MObjectHandle.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

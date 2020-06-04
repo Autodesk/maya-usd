@@ -19,10 +19,10 @@
 
 #include "pxr/base/tf/debug.h"
 
-#include "maya/MSyntax.h"
-#include "maya/MGlobal.h"
-#include "maya/MArgDatabase.h"
-#include "maya/MStringArray.h"
+#include <maya/MSyntax.h>
+#include <maya/MGlobal.h>
+#include <maya/MArgDatabase.h>
+#include <maya/MStringArray.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

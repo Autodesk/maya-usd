@@ -19,6 +19,7 @@ from pxr import UsdMaya
 
 from pxr import Gf
 from pxr import Tf
+from pxr import Trace
 
 from maya import cmds
 from maya.api import OpenMayaUI as OMUI
@@ -191,15 +192,26 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         exit and stores the elapsed time in the class' metrics dictionary.
         """
         stopwatch = Tf.Stopwatch()
+        collector = Trace.Collector()
 
         try:
             stopwatch.Start()
+            collector.enabled = True
+            collector.BeginEvent(profileScopeName)
             yield
         finally:
+            collector.EndEvent(profileScopeName)
+            collector.enabled = False
             stopwatch.Stop()
             elapsedTime = stopwatch.seconds
             self._profileScopeMetrics[profileScopeName] = elapsedTime
-            Tf.Status("%s: %f" % (profileScopeName, elapsedTime))
+            Tf.Status('%s: %f' % (profileScopeName, elapsedTime))
+
+            traceFilePath = '%s/%s.trace' % (
+                self._testDir, profileScopeName)
+            Trace.Reporter.globalReporter.Report(traceFilePath)
+            collector.Clear()
+            Trace.Reporter.globalReporter.ClearTree()
 
     def _TestSelectCenterSingle(self):
         """

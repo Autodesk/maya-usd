@@ -22,14 +22,14 @@
 
 #include <mayaUsdUtils/DiffCore.h>
 
-#include "maya/MDoubleArray.h"
-#include "maya/MFloatArray.h"
-#include "maya/MFnDoubleArrayData.h"
-#include "maya/MFnFloatArrayData.h"
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MPointArray.h"
+#include <maya/MDoubleArray.h>
+#include <maya/MFloatArray.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnFloatArrayData.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MPointArray.h>
 
 #include "pxr/usd/usdUtils/pipeline.h"
 

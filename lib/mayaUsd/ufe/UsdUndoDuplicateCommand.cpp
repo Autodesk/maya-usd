@@ -59,7 +59,7 @@ void UsdUndoDuplicateCommand::primInfo(const UsdPrim& srcPrim, SdfPath& usdDstPa
 {
 	auto parent = srcPrim.GetParent();
 	TfToken::HashSet childrenNames;
-	for(auto child : parent.GetChildren())
+	for(auto child : parent.GetFilteredChildren(UsdPrimIsDefined && !UsdPrimIsAbstract))
 	{
 		childrenNames.insert(child.GetName());
 	}

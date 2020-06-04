@@ -17,21 +17,21 @@
 
 #include "AL/maya/utils/NodeHelper.h"
 
-#include "maya/MAngle.h"
-#include "maya/MDGModifier.h"
-#include "maya/MFloatPoint.h"
-#include "maya/MFloatVector.h"
-#include "maya/MFnAttribute.h"
-#include "maya/MFnData.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MFnMatrixData.h"
-#include "maya/MLibrary.h"
-#include "maya/MMatrix.h"
-#include "maya/MPoint.h"
-#include "maya/MStatus.h"
-#include "maya/MTime.h"
-#include "maya/MVector.h"
-#include "maya/MPlug.h"
+#include <maya/MAngle.h>
+#include <maya/MDGModifier.h>
+#include <maya/MFloatPoint.h>
+#include <maya/MFloatVector.h>
+#include <maya/MFnAttribute.h>
+#include <maya/MFnData.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnMatrixData.h>
+#include <maya/MLibrary.h>
+#include <maya/MMatrix.h>
+#include <maya/MPoint.h>
+#include <maya/MStatus.h>
+#include <maya/MTime.h>
+#include <maya/MVector.h>
+#include <maya/MPlug.h>
 
 #include <gtest/gtest.h>
 

@@ -628,13 +628,12 @@ void HdVP2BasisCurves::Sync(
         _sharedData.bounds.SetMatrix(delegate->GetTransform(id));
     }
 
-    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id) || 
-        *dirtyBits & HdChangeTracker::DirtyRenderTag) {
+    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
+        _sharedData.visible = delegate->GetVisible(id);
+    }
 
-        auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-        ProxyRenderDelegate& drawScene = param->GetDrawScene();
-        _sharedData.visible = delegate->GetVisible(id)
-            && drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()));
+    if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+        _curvesSharedData._renderTag = delegate->GetRenderTag(id);
     }
 
     *dirtyBits = HdChangeTracker::Clean;
@@ -1193,28 +1192,26 @@ HdVP2BasisCurves::_UpdateDrawItem(
         }
     }
 
-    if (itemDirtyBits & HdChangeTracker::DirtyVisibility) {
-        drawItemData._enabled = drawItem->GetVisible();
-        stateToCommit._enabled = &drawItemData._enabled;
-    }
+    // Determine if the render item should be enabled or not.
+    if (itemDirtyBits & (HdChangeTracker::DirtyVisibility |
+                         HdChangeTracker::DirtyRenderTag |
+                         HdChangeTracker::DirtyPoints |
+                         HdChangeTracker::DirtyExtent |
+                         DirtySelectionHighlight)) {
+        bool enable = drawItem->GetVisible() && !_curvesSharedData._points.empty();
 
-    if (isDedicatedSelectionHighlightItem) {
-        if (itemDirtyBits & DirtySelectionHighlight) {
-            const bool enable =
-                (_selectionState != kUnselected) && drawItem->GetVisible();
-            if (drawItemData._enabled != enable) {
-                drawItemData._enabled = enable;
-                stateToCommit._enabled = &drawItemData._enabled;
-            }
+        if (isDedicatedSelectionHighlightItem) {
+            enable = enable && (_selectionState != kUnselected);
         }
-    }
-    else if (drawMode == MHWRender::MGeometry::kBoundingBox) {
-        if (itemDirtyBits & HdChangeTracker::DirtyExtent) {
-            const bool enable = !range.IsEmpty() && drawItem->GetVisible();
-            if (drawItemData._enabled != enable) {
-                drawItemData._enabled = enable;
-                stateToCommit._enabled = &drawItemData._enabled;
-            }
+        else if (drawMode == MHWRender::MGeometry::kBoundingBox) {
+            enable = enable && !range.IsEmpty();
+        }
+
+        enable = enable && drawScene.DrawRenderTag(_curvesSharedData._renderTag);
+
+        if (drawItemData._enabled != enable) {
+            drawItemData._enabled = enable;
+            stateToCommit._enabled = &drawItemData._enabled;
         }
     }
 
@@ -1620,7 +1617,8 @@ HdDirtyBits HdVP2BasisCurves::GetInitialDirtyBitsMask() const
         HdChangeTracker::DirtyTransform |
         HdChangeTracker::DirtyVisibility |
         HdChangeTracker::DirtyWidths |
-        HdChangeTracker::DirtyComputationPrimvarDesc;
+        HdChangeTracker::DirtyComputationPrimvarDesc |
+        HdChangeTracker::DirtyRenderTag;
 
     return bits;
 }

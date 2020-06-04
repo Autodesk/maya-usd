@@ -17,18 +17,18 @@
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "test_usdmaya.h"
-#include "maya/MFnMesh.h"
-#include "maya/MSelectionList.h"
-#include "maya/MFileIO.h"
-#include "maya/MFloatArray.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MUintArray.h"
-#include "maya/MStringArray.h"
-#include "maya/MPointArray.h"
-#include "maya/MVectorArray.h"
-#include "maya/MFloatPointArray.h"
-#include "maya/MFloatVectorArray.h"
+#include <maya/MFnMesh.h>
+#include <maya/MSelectionList.h>
+#include <maya/MFileIO.h>
+#include <maya/MFloatArray.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MUintArray.h>
+#include <maya/MStringArray.h>
+#include <maya/MPointArray.h>
+#include <maya/MVectorArray.h>
+#include <maya/MFloatPointArray.h>
+#include <maya/MFloatVectorArray.h>
 #include <gtest/gtest.h>
 
 using namespace AL::maya;

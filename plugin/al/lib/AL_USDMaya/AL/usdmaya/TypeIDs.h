@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 #pragma once
-#include "maya/MTypeId.h"
+#include <maya/MTypeId.h>
 
 namespace AL {
 namespace usdmaya {

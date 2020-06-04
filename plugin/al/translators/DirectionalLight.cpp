@@ -22,10 +22,10 @@
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
-#include "maya/MAngle.h"
-#include "maya/MFnDirectionalLight.h"
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MNodeClass.h"
+#include <maya/MAngle.h>
+#include <maya/MFnDirectionalLight.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MNodeClass.h>
 
 namespace AL {
 namespace usdmaya {

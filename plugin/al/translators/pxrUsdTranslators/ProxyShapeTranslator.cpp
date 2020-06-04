@@ -21,7 +21,7 @@
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
-#include "maya/MTime.h"
+#include <maya/MTime.h>
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>

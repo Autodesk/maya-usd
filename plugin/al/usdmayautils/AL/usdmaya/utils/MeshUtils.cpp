@@ -24,8 +24,8 @@
 
 #include "pxr/usd/usdUtils/pipeline.h"
 
-#include "maya/MItMeshPolygon.h"
-#include "maya/MGlobal.h"
+#include <maya/MItMeshPolygon.h>
+#include <maya/MGlobal.h>
 
 #include <iostream>
 

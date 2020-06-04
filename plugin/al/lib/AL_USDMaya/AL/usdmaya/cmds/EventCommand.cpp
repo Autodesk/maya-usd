@@ -17,13 +17,13 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "pxr/pxr.h"
 
-#include "maya/MArgDatabase.h"
-#include "maya/MArgList.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MPxNode.h"
-#include "maya/MSelectionList.h"
-#include "maya/MSyntax.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MArgList.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MPxNode.h>
+#include <maya/MSelectionList.h>
+#include <maya/MSyntax.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -22,7 +22,7 @@
 
 #include <mayaUsd/nodes/stageData.h>
 
-#include "maya/MDagModifier.h"
+#include <maya/MDagModifier.h>
 
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/type.h"

@@ -38,7 +38,7 @@ public:
 
     MSceneFilterOption renderFilterOverride() override {
         return _drawSelectionOverlay
-                   ? kRenderUIItems
+                   ? kRenderPreSceneUIItems
                    : MHWRender::MSceneRender::renderFilterOverride();
     }
 
@@ -66,12 +66,17 @@ public:
         : MHWRender::MSceneRender(name) {}
 
     MUint64 getObjectTypeExclusions() override {
-        return ~MHWRender::MFrameContext::kExcludeManipulators;
+        // kExcludeHoldOuts is used so that camera-guides are rendered here.
+        return ~(kExcludeManipulators | kExcludeHoldOuts);
     }
 
     MHWRender::MClearOperation& clearOperation() override {
         mClearOperation.setMask(MHWRender::MClearOperation::kClearNone);
         return mClearOperation;
+    }
+
+    MSceneFilterOption renderFilterOverride() override {
+        return kRenderPostSceneUIItems;
     }
 };
 

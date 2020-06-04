@@ -17,11 +17,11 @@
 #include "AL/usdmaya/fileio/ExportTranslator.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 
-#include "maya/MAnimControl.h"
-#include "maya/MDagPath.h"
-#include "maya/MGlobal.h"
-#include "maya/MItDag.h"
-#include "maya/MSelectionList.h"
+#include <maya/MAnimControl.h>
+#include <maya/MDagPath.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDag.h>
+#include <maya/MSelectionList.h>
 
 #include <unordered_set>
 

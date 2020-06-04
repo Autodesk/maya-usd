@@ -22,7 +22,7 @@
 #include "pxr/usdImaging/usdImaging/version.h"
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
-#include "maya/MItDependencyNodes.h"
+#include <maya/MItDependencyNodes.h>
 
 namespace {
 

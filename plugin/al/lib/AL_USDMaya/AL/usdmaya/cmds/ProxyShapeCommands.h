@@ -17,9 +17,9 @@
 
 #include "../Api.h"
 
-#include "maya/MDagModifier.h"
-#include "maya/MObjectArray.h"
-#include "maya/MPxCommand.h"
+#include <maya/MDagModifier.h>
+#include <maya/MObjectArray.h>
+#include <maya/MPxCommand.h>
 
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"

@@ -21,14 +21,14 @@
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 
-#include "maya/MFnTransform.h"
-#include "maya/MSelectionList.h"
-#include "maya/MGlobal.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MDagModifier.h"
-#include "maya/MFileIO.h"
-#include "maya/MStringArray.h"
-#include "maya/MCommonSystemUtils.h"
+#include <maya/MFnTransform.h>
+#include <maya/MSelectionList.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MDagModifier.h>
+#include <maya/MFileIO.h>
+#include <maya/MStringArray.h>
+#include <maya/MCommonSystemUtils.h>
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/attribute.h"

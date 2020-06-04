@@ -17,9 +17,9 @@
 
 #include "AL/maya/utils/NodeHelper.h"
 
-#include "maya/MObjectHandle.h"
-#include "maya/MPxTransform.h"
-#include "maya/MPxTransformationMatrix.h"
+#include <maya/MObjectHandle.h>
+#include <maya/MPxTransform.h>
+#include <maya/MPxTransformationMatrix.h>
 #include "AL/usdmaya/nodes/BasicTransformationMatrix.h"
 
 #include "pxr/usd/usdGeom/scope.h"

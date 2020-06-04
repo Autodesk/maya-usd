@@ -23,7 +23,7 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
-#include "maya/MFnDagNode.h"
+#include <maya/MFnDagNode.h>
 
 namespace AL {
 namespace usdmaya {

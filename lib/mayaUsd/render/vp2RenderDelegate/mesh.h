@@ -59,8 +59,11 @@ struct HdVP2MeshSharedData {
     //! but a separate VtArray for easier access.
     VtVec3fArray _points;
 
-    //!< Position buffer of the Rprim to be shared among all its draw items.
+    //! Position buffer of the Rprim to be shared among all its draw items.
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer;
+
+    //! Render tag of the Rprim.
+    TfToken _renderTag;
 };
 
 /*! \brief  VP2 representation of poly-mesh object.

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "maya/MObject.h"
-#include "maya/MFnDependencyNode.h"
+#include <maya/MObject.h>
+#include <maya/MFnDependencyNode.h>
 
 #include "AL/maya/utils/Utils.h"
 
