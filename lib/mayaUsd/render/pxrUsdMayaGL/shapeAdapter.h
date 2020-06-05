@@ -66,7 +66,7 @@ class PxrMayaHdShapeAdapter
         /// Update the shape adapter's state from the shape with the given
         /// \p shapeDagPath and the legacy viewport display state.
         MAYAUSD_CORE_PUBLIC
-        virtual bool Sync(
+        bool Sync(
                 const MDagPath& shapeDagPath,
                 const M3dView::DisplayStyle legacyDisplayStyle,
                 const M3dView::DisplayStatus legacyDisplayStatus);
@@ -74,7 +74,7 @@ class PxrMayaHdShapeAdapter
         /// Update the shape adapter's state from the shape with the given
         /// \p shapeDagPath and the Viewport 2.0 display state.
         MAYAUSD_CORE_PUBLIC
-        virtual bool Sync(
+        bool Sync(
                 const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus);

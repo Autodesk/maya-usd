@@ -89,7 +89,6 @@ _IsActiveDisplayStatus(MHWRender::DisplayStatus displayStatus)
         (displayStatus == MHWRender::DisplayStatus::kLead);
 }
 
-/* virtual */
 bool
 PxrMayaHdShapeAdapter::Sync(
         const MDagPath& shapeDagPath,
@@ -132,7 +131,6 @@ PxrMayaHdShapeAdapter::Sync(
     return success;
 }
 
-/* virtual */
 bool
 PxrMayaHdShapeAdapter::Sync(
         const MDagPath& shapeDagPath,
