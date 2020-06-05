@@ -607,46 +607,26 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
 
     const PxrMayaHdUserData* hdUserData =
         static_cast<const PxrMayaHdUserData*>(drawData.geometry());
-    if (!hdUserData || (!hdUserData->drawShape && !hdUserData->boundingBox)) {
-        // Bail out as soon as possible if there's nothing to be drawn.
+    if (!hdUserData) {
         return;
     }
+
+    GfMatrix4d worldToViewMatrix;
+    _GetWorldToViewMatrix(view, &worldToViewMatrix);
 
     MMatrix projectionMat;
     view.projectionMatrix(projectionMat);
     const GfMatrix4d projectionMatrix(projectionMat.matrix);
 
-    if (hdUserData->boundingBox) {
-        MMatrix modelViewMat;
-        view.modelViewMatrix(modelViewMat);
+    GfVec4d viewport;
+    _GetViewport(view, &viewport);
 
-        // For the legacy viewport, apply a framebuffer gamma correction when
-        // drawing bounding boxes, just like we do when drawing geometry via
-        // Hydra.
-        glEnable(GL_FRAMEBUFFER_SRGB_EXT);
-
-        px_vp20Utils::RenderBoundingBox(*(hdUserData->boundingBox),
-                                        *(hdUserData->wireframeColor),
-                                        modelViewMat,
-                                        projectionMat);
-
-        glDisable(GL_FRAMEBUFFER_SRGB_EXT);
-    }
-
-    if (hdUserData->drawShape) {
-        GfMatrix4d worldToViewMatrix;
-        _GetWorldToViewMatrix(view, &worldToViewMatrix);
-
-        GfVec4d viewport;
-        _GetViewport(view, &viewport);
-
-        _RenderBatches(
-                /* vp2Context */ nullptr,
-                &view,
-                worldToViewMatrix,
-                projectionMatrix,
-                viewport);
-    }
+    _RenderBatches(
+            /* vp2Context */ nullptr,
+            &view,
+            worldToViewMatrix,
+            projectionMatrix,
+            viewport);
 
     // Clean up the user data.
     delete hdUserData;
@@ -668,8 +648,7 @@ UsdMayaGLBatchRenderer::Draw(
 
     const PxrMayaHdUserData* hdUserData =
         dynamic_cast<const PxrMayaHdUserData*>(userData);
-    if (!hdUserData || (!hdUserData->drawShape && !hdUserData->boundingBox)) {
-        // Bail out as soon as possible if there's nothing to be drawn.
+    if (!hdUserData) {
         return;
     }
 
@@ -679,59 +658,47 @@ UsdMayaGLBatchRenderer::Draw(
         return;
     }
 
+    // Check whether this draw call is for a selection pass. If it is, we do
+    // *not* actually perform any drawing, but instead just mark a selection as
+    // pending so we know to re-compute selection when the next pick attempt is
+    // made.
+    // Note that Draw() calls for contexts with the "selectionPass" semantic
+    // are only made from draw overrides that do *not* implement user selection
+    // (i.e. those that do not override, or return false from,
+    // wantUserSelection()). The draw override for pxrHdImagingShape will
+    // likely be the only one of these where that is the case.
+    const MHWRender::MPassContext& passContext = context.getPassContext();
+    const MStringArray& passSemantics = passContext.passSemantics();
+
+    for (unsigned int i = 0u; i < passSemantics.length(); ++i) {
+        if (passSemantics[i] == MHWRender::MPassContext::kSelectionPassSemantic) {
+            _UpdateIsSelectionPending(true);
+            return;
+        }
+    }
+
+    GfMatrix4d worldToViewMatrix;
+    _GetWorldToViewMatrix(context, &worldToViewMatrix);
+
     MStatus status;
 
     const MMatrix projectionMat =
         context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
     const GfMatrix4d projectionMatrix(projectionMat.matrix);
 
-    if (hdUserData->boundingBox) {
-        const MMatrix worldViewMat =
-            context.getMatrix(MHWRender::MFrameContext::kWorldViewMtx, &status);
+    GfVec4d viewport;
+    _GetViewport(context, &viewport);
 
-        px_vp20Utils::RenderBoundingBox(*(hdUserData->boundingBox),
-                                        *(hdUserData->wireframeColor),
-                                        worldViewMat,
-                                        projectionMat);
-    }
+    M3dView view;
+    const bool hasView =
+        px_vp20Utils::GetViewFromDrawContext(context, view);
 
-    if (hdUserData->drawShape) {
-        // Check whether this draw call is for a selection pass. If it is, we
-        // do *not* actually perform any drawing, but instead just mark a
-        // selection as pending so we know to re-compute selection when the
-        // next pick attempt is made.
-        // Note that Draw() calls for contexts with the "selectionPass"
-        // semantic are only made from draw overrides that do *not* implement
-        // user selection (i.e. those that do not override, or return false
-        // from, wantUserSelection()). The draw override for pxrHdImagingShape
-        // will likely be the only one of these where that is the case.
-        const MHWRender::MPassContext& passContext = context.getPassContext();
-        const MStringArray& passSemantics = passContext.passSemantics();
-
-        for (unsigned int i = 0u; i < passSemantics.length(); ++i) {
-            if (passSemantics[i] == MHWRender::MPassContext::kSelectionPassSemantic) {
-                _UpdateIsSelectionPending(true);
-                return;
-            }
-        }
-
-        GfMatrix4d worldToViewMatrix;
-        _GetWorldToViewMatrix(context, &worldToViewMatrix);
-
-        GfVec4d viewport;
-        _GetViewport(context, &viewport);
-
-        M3dView view;
-        const bool hasView =
-            px_vp20Utils::GetViewFromDrawContext(context, view);
-
-        _RenderBatches(
-                &context,
-                hasView ? &view : nullptr,
-                worldToViewMatrix,
-                projectionMatrix,
-                viewport);
-    }
+    _RenderBatches(
+            &context,
+            hasView ? &view : nullptr,
+            worldToViewMatrix,
+            projectionMatrix,
+            viewport);
 }
 
 void

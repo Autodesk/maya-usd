@@ -180,11 +180,11 @@ public:
             const MDagPath& dagPath,
             PxrMayaHdPrimFilter& primFilter);
 
-    /// Render batch or bounding box in the legacy viewport based on \p request
+    /// Render batch in the legacy viewport based on \p request
     MAYAUSD_CORE_PUBLIC
     void Draw(const MDrawRequest& request, M3dView& view);
 
-    /// Render batch or bounding box in Viewport 2.0 based on \p userData
+    /// Render batch in Viewport 2.0 based on \p userData
     MAYAUSD_CORE_PUBLIC
     void Draw(
             const MHWRender::MDrawContext& context,
