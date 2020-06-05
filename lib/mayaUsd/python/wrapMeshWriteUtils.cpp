@@ -65,7 +65,7 @@ _GetMeshNormals(const std::string& meshDagPath)
 }
 
 // Dummy class for putting UsdMayaMeshWriteUtils namespace functions in a Python
-// MeshUtil namespace.
+// MeshWriteUtils namespace.
 class DummyScopeClass{};
 
 } // anonymous namespace 
@@ -73,7 +73,7 @@ class DummyScopeClass{};
 
 void wrapMeshWriteUtils()
 {
-    scope s = class_<DummyScopeClass>("MeshUtil", no_init)
+    scope s = class_<DummyScopeClass>("MeshWriteUtils", no_init)
 
         .def("GetMeshNormals", &_GetMeshNormals)
             .staticmethod("GetMeshNormals")
