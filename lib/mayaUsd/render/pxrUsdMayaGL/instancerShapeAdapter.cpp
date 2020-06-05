@@ -309,7 +309,7 @@ UsdMayaGL_InstancerShapeAdapter::_Init(HdRenderIndex* renderIndex)
 void UsdMayaGL_InstancerShapeAdapter::SyncInstancerPerPrototypePostHook(
     const MPlug&              ,
     UsdPrim&                  prototypePrim,
-    std::vector<std::string>& 
+    std::vector<std::string>&
 )
 {
     UsdReferences prototypeRefs = prototypePrim.GetReferences();

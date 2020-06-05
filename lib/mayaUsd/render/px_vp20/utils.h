@@ -83,7 +83,7 @@ class px_vp20Utils
 
         /// Helper to draw multiple wireframe boxes, where \p cubeXforms is a
         /// list of transforms to apply to the unit cube centered around the
-        /// origin.  Those transforms will all be concatenated with the 
+        /// origin.  Those transforms will all be concatenated with the
         /// \p worldViewMat and \p projectionMat.
         MAYAUSD_CORE_PUBLIC
         static bool RenderWireCubes(

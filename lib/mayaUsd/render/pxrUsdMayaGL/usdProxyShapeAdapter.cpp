@@ -112,7 +112,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         MProfiler::kColorE_L2,
         "USD Proxy Shape Syncing Shape Adapter");
 
-    MayaUsdProxyShapeBase* usdProxyShape = 
+    MayaUsdProxyShapeBase* usdProxyShape =
             MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
     if (!usdProxyShape) {
         TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(

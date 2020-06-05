@@ -35,8 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 static PxrMayaHdPrimFilter _sharedPrimFilter = {
         nullptr,
         HdRprimCollection(
-                TfToken("UsdMayaGL_ClosestPointOnProxyShape"),
-                HdReprSelector(HdReprTokens->refined)
+            TfToken("UsdMayaGL_ClosestPointOnProxyShape"),
+            HdReprSelector(HdReprTokens->refined)
         ),
         TfTokenVector()  // Render Tags
 };

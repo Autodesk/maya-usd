@@ -80,7 +80,7 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         /// Gets whether the shape adapter's shape is visible.
         ///
         /// This should be called after a call to UpdateVisibility() to ensure
-        /// that the returned value is correct. 
+        /// that the returned value is correct.
         MAYAUSD_CORE_PUBLIC
         bool IsVisible() const override;
 

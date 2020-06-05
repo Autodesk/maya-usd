@@ -1097,11 +1097,11 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
             const TfTokenVector &renderTags = shapeAdapter->GetRenderTags();
 
             primFilters.push_back(
-                    PxrMayaHdPrimFilter {
-                        shapeAdapter,
-                        rprimCollection,
-                        renderTags
-                    });
+                PxrMayaHdPrimFilter {
+                    shapeAdapter,
+                    rprimCollection,
+                    renderTags
+                });
         }
     }
 
