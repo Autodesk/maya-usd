@@ -438,6 +438,7 @@ HdTaskSharedPtrVector
 PxrMayaHdSceneDelegate::GetRenderTasks(
         const size_t hash,
         const PxrMayaHdRenderParams& renderParams,
+        unsigned int /* displayStyle */,
         const PxrMayaHdPrimFilterVector& primFilters)
 {
     HdTaskSharedPtrVector taskList;

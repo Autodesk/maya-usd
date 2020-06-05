@@ -94,6 +94,7 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         HdTaskSharedPtrVector GetRenderTasks(
                 const size_t hash,
                 const PxrMayaHdRenderParams& renderParams,
+                unsigned int displayStyle,
                 const PxrMayaHdPrimFilterVector& primFilters);
 
         MAYAUSD_CORE_PUBLIC

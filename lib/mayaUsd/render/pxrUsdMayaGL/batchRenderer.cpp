@@ -1294,6 +1294,7 @@ UsdMayaGLBatchRenderer::_Render(
         const GfMatrix4d& worldToViewMatrix,
         const GfMatrix4d& projectionMatrix,
         const GfVec4d& viewport,
+        unsigned int displayStyle,
         const std::vector<_RenderItem>& items)
 {
     TRACE_FUNCTION();
@@ -1353,7 +1354,11 @@ UsdMayaGLBatchRenderer::_Render(
             primFilters.size());
 
         HdTaskSharedPtrVector renderTasks =
-            _taskDelegate->GetRenderTasks(paramsHash, params, primFilters);
+            _taskDelegate->GetRenderTasks(
+                paramsHash,
+                params,
+                displayStyle,
+                primFilters);
         tasks.insert(tasks.end(), renderTasks.begin(), renderTasks.end());
     }
 
@@ -1433,6 +1438,22 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     // re-populate it.
     _softSelectHelper.Reset();
 
+    // Assume shaded displayStyle, but we *should* be able to pull it from
+    // either the vp2Context for Viewport 2.0 or the M3dView for the legacy
+    // viewport.
+    unsigned int displayStyle =
+        MHWRender::MFrameContext::DisplayStyle::kGouraudShaded;
+
+    if (vp2Context) {
+        displayStyle = vp2Context->getDisplayStyle();
+    } else if (view3d) {
+        const M3dView::DisplayStyle legacyDisplayStyle =
+            view3d->displayStyle();
+        displayStyle =
+            px_LegacyViewportUtils::GetMFrameContextDisplayStyle(
+                legacyDisplayStyle);
+    }
+
     bool itemsVisible = false;
     std::vector<_RenderItem> items;
     for (const auto& iter : bucketsMap) {
@@ -1491,6 +1512,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     _Render(worldToViewMatrix,
             projectionMatrix,
             viewport,
+            displayStyle,
             items);
 
     // Viewport 2 may be rendering in multiple passes, and we want to make sure

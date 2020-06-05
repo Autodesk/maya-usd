@@ -318,6 +318,7 @@ private:
             const GfMatrix4d& worldToViewMatrix,
             const GfMatrix4d& projectionMatrix,
             const GfVec4d& viewport,
+            unsigned int displayStyle,
             const std::vector<_RenderItem>& items);
 
     /// Call to render all queued batches. May be called safely without
