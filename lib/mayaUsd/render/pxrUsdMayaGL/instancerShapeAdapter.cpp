@@ -276,12 +276,6 @@ UsdMayaGL_InstancerShapeAdapter::_Sync(
 
     _drawShape = reprSelector.AnyActiveRepr();
 
-    // We won't ever draw the bounding box here because the native Maya
-    // instancer already draws a bounding box, and we don't want to draw two.
-    // XXX: The native Maya instancer's bounding box will only cover the native
-    // geometry, though; is there any way to "teach" it about our bounds?
-    _drawBoundingBox = false;
-
     if (reprSelector.Contains(HdReprTokens->wire) ||
             reprSelector.Contains(HdReprTokens->refinedWire)) {
         _renderParams.enableLighting = false;

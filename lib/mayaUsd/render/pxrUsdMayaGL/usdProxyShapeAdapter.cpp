@@ -246,8 +246,6 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         GetReprSelectorForDisplayStyle(displayStyle);
 
     _drawShape = reprSelector.AnyActiveRepr();
-    _drawBoundingBox =
-        (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
 
     if (reprSelector.Contains(HdReprTokens->wire) ||
             reprSelector.Contains(HdReprTokens->refinedWire)) {

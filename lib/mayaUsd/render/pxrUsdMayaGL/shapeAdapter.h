@@ -282,7 +282,6 @@ class PxrMayaHdShapeAdapter
 
         PxrMayaHdRenderParams _renderParams;
         bool _drawShape;
-        bool _drawBoundingBox;
 
         HdRprimCollection _rprimCollection;
         TfTokenVector     _renderTags;
