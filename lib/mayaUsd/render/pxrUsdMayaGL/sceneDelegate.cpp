@@ -441,7 +441,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         const PxrMayaHdPrimFilterVector& primFilters)
 {
     HdTaskSharedPtrVector taskList;
-    HdRenderIndex &renderIndex = GetRenderIndex();
+    HdRenderIndex& renderIndex = GetRenderIndex();
 
     // Task List Consist of:
     //  Render Setup Task
@@ -502,7 +502,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
                                        key.hash,
                                        key.collectionName.GetText())));
 
-            GetRenderIndex().InsertTask<HdxRenderTask>(this, renderTaskId);
+            renderIndex.InsertTask<HdxRenderTask>(this, renderTaskId);
 
             // Note that the render task has no params of its own. All of the
             // render params are on the render setup task instead.
@@ -519,8 +519,8 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
 
             if (currentRenderTags != primFilter.renderTags) {
                 _SetValue(renderTaskId, HdTokens->renderTags, primFilter.renderTags);
-                GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-                        renderTaskId,
+                renderIndex.GetChangeTracker().MarkTaskDirty(
+                    renderTaskId,
                     HdChangeTracker::DirtyRenderTags);
             }
         }
@@ -530,7 +530,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         // Update the collections on the render task and mark them dirty.
         // XXX: Should only mark collection dirty if collection has changed
         _SetValue(renderTaskId, HdTokens->collection, primFilter.collection);
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+        renderIndex.GetChangeTracker().MarkTaskDirty(
             renderTaskId,
             HdChangeTracker::DirtyCollection);
     }
@@ -543,7 +543,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
                                    _tokens->selectionTask.GetText(),
                                    hash)));
 
-        GetRenderIndex().InsertTask<HdxSelectionTask>(this, selectionTaskId);
+        renderIndex.InsertTask<HdxSelectionTask>(this, selectionTaskId);
         HdxSelectionTaskParams selectionTaskParams;
         selectionTaskParams.enableSelection = true;
 
@@ -612,7 +612,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         // Store the updated render setup task params back in the cache and
         // mark them dirty.
         _SetValue(renderSetupTaskId, HdTokens->params, renderSetupTaskParams);
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+        renderIndex.GetChangeTracker().MarkTaskDirty(
             renderSetupTaskId,
             HdChangeTracker::DirtyParams);
     }
