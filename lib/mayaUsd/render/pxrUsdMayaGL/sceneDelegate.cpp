@@ -435,28 +435,6 @@ PxrMayaHdSceneDelegate::GetSetupTasks()
 }
 
 HdTaskSharedPtrVector
-PxrMayaHdSceneDelegate::GetPickingTasks(
-        const TfTokenVector& renderTags)
-{
-    // Update tasks render tags to match those specified in the parameter.
-    const TfTokenVector &currentRenderTags =
-        _GetValue<TfTokenVector>(_pickingTaskId, HdTokens->renderTags);
-
-    if (currentRenderTags != renderTags) {
-        _SetValue(_pickingTaskId, HdTokens->renderTags, renderTags);
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-            _pickingTaskId,
-            HdChangeTracker::DirtyRenderTags);
-    }
-
-    HdTaskSharedPtrVector tasks;
-
-    tasks.push_back(GetRenderIndex().GetTask(_pickingTaskId));
-
-    return tasks;
-}
-
-HdTaskSharedPtrVector
 PxrMayaHdSceneDelegate::GetRenderTasks(
         const size_t hash,
         const PxrMayaHdRenderParams& renderParams,
@@ -640,6 +618,28 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     }
 
     return taskList;
+}
+
+HdTaskSharedPtrVector
+PxrMayaHdSceneDelegate::GetPickingTasks(
+        const TfTokenVector& renderTags)
+{
+    // Update tasks render tags to match those specified in the parameter.
+    const TfTokenVector &currentRenderTags =
+        _GetValue<TfTokenVector>(_pickingTaskId, HdTokens->renderTags);
+
+    if (currentRenderTags != renderTags) {
+        _SetValue(_pickingTaskId, HdTokens->renderTags, renderTags);
+        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+            _pickingTaskId,
+            HdChangeTracker::DirtyRenderTags);
+    }
+
+    HdTaskSharedPtrVector tasks;
+
+    tasks.push_back(GetRenderIndex().GetTask(_pickingTaskId));
+
+    return tasks;
 }
 
 
