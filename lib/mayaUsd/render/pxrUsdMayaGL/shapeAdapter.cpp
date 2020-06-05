@@ -182,16 +182,9 @@ PxrMayaHdShapeAdapter::GetMayaUserData(
     // Viewport 2.0 implementation (also called by legacy viewport
     // implementation).
     //
-    // Our PxrMayaHdUserData can be used to signify whether we are requesting a
-    // shape to be rendered, a bounding box, both, or neither.
-    //
     // In the Viewport 2.0 prepareForDraw() usage, any MUserData object passed
     // into the function will be deleted by Maya. In the legacy viewport usage,
     // the object gets deleted at the end of a legacy viewport Draw() call.
-
-    if (!_drawShape && !boundingBox) {
-        return nullptr;
-    }
 
     PxrMayaHdUserData* newData = dynamic_cast<PxrMayaHdUserData*>(oldData);
     if (!newData) {
