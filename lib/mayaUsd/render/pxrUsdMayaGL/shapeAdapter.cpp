@@ -203,14 +203,6 @@ PxrMayaHdShapeAdapter::GetMayaUserData(
         newData = new PxrMayaHdUserData();
     }
 
-    // Internally, the shape adapter keeps track of whether its shape is being
-    // drawn for managing visibility, but otherwise most Hydra-imaged shapes
-    // should not be drawing themselves. The pxrHdImagingShape will take care
-    // of batching up the drawing of all of the shapes, so we specify in the
-    // Maya user data that the shape should *not* draw by default. The
-    // pxrHdImagingShape bypasses this and sets drawShape to true.
-    newData->drawShape = false;
-
     if (boundingBox) {
         newData->boundingBox.reset(new MBoundingBox(*boundingBox));
         newData->wireframeColor.reset(new GfVec4f(_renderParams.wireframeColor));
