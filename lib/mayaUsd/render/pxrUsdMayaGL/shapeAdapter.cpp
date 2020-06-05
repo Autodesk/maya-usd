@@ -288,46 +288,10 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayStyle(
 }
 
 /* virtual */
-const HdRprimCollection&
-PxrMayaHdShapeAdapter::GetRprimCollection() const
-{
-    return _rprimCollection;
-}
-
-/* virtual */
-const TfTokenVector&
-PxrMayaHdShapeAdapter::GetRenderTags() const
-{
-    return _renderTags;
-}
-
-
-/* virtual */
-const GfMatrix4d&
-PxrMayaHdShapeAdapter::GetRootXform() const
-{
-    return _rootXform;
-}
-
-/* virtual */
-void
-PxrMayaHdShapeAdapter::SetRootXform(const GfMatrix4d& transform)
-{
-    _rootXform = transform;
-}
-
-/* virtual */
 const SdfPath&
 PxrMayaHdShapeAdapter::GetDelegateID() const
 {
     return SdfPath::EmptyPath();
-}
-
-/* virtual */
-const MDagPath&
-PxrMayaHdShapeAdapter::GetDagPath() const
-{
-    return _shapeDagPath;
 }
 
 /* virtual */

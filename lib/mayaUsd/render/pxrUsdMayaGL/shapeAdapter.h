@@ -169,30 +169,38 @@ class PxrMayaHdShapeAdapter
             return _renderParams;
         }
 
-        MAYAUSD_CORE_PUBLIC
-        virtual const HdRprimCollection& GetRprimCollection() const;
+        const HdRprimCollection& GetRprimCollection() const {
+            return _rprimCollection;
+        }
 
-        /// Retrieves the render tags for this shape.  I.e. which
-        /// prim purposes should be drawn (such as geomerty, proxy, guides
-        /// and/or render).
-        /// This function just returns the _renderTags attribute and it
-        /// is expected each subclass update the attribute in _Sync() or
-        /// overrides this function if it needs special processing.
-        MAYAUSD_CORE_PUBLIC
-        virtual const TfTokenVector& GetRenderTags() const;
+        /// Retrieves the render tags for this shape (i.e. which prim purposes
+        /// should be drawn, such as geometry, proxy, guide and/or render).
+        ///
+        /// This function just returns the _renderTags attribute and it is
+        /// expected that subclasses update the attribute in _Sync().
+        const TfTokenVector& GetRenderTags() const {
+            return _renderTags;
+        }
 
+        const GfMatrix4d& GetRootXform() const {
+            return _rootXform;
+        }
 
-        MAYAUSD_CORE_PUBLIC
-        virtual const GfMatrix4d& GetRootXform() const;
-
-        MAYAUSD_CORE_PUBLIC
-        virtual void SetRootXform(const GfMatrix4d& transform);
+        /// Sets the root transform for the shape adapter.
+        ///
+        /// This function is virtual in case the shape adapter needs to update
+        /// other state in response to a change in the root transform (e.g.
+        /// updating an HdSceneDelegate).
+        virtual void SetRootXform(const GfMatrix4d& transform) {
+            _rootXform = transform;
+        }
 
         MAYAUSD_CORE_PUBLIC
         virtual const SdfPath& GetDelegateID() const;
 
-        MAYAUSD_CORE_PUBLIC
-        virtual const MDagPath& GetDagPath() const;
+        const MDagPath& GetDagPath() const {
+            return _shapeDagPath;
+        }
 
         /// Get whether this shape adapter is for use with Viewport 2.0.
         ///
