@@ -16,10 +16,10 @@
 #ifndef PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_SHADING_NODE_OVERRIDE_H
 #define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_SHADING_NODE_OVERRIDE_H
 
-/// \file pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h
+/// \file usdPreviewSurfaceShadingNodeOverride.h
+#include "api.h"
 
 #include <pxr/pxr.h>
-#include <pxrUsdPreviewSurface/api.h>
 
 #include <pxr/base/tf/staticTokens.h>
 
@@ -38,9 +38,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Float4ToFloatZFragmentName, "float4ToFloatZ")) \
     ((Float4ToFloatWFragmentName, "float4ToFloatW")) \
     ((LightingStructFragmentName, "lightingContributions")) \
-    ((LightingFragmentName, "usdPreviewSurfaceLighting")) \
-    ((CombinerFragmentName, "usdPreviewSurfaceCombiner")) \
-    ((SurfaceFragmentGraphName, "usdPreviewSurface"))
+    ((LightingFragmentName, "UsdPreviewSurfaceLighting")) \
+    ((CombinerFragmentName, "UsdPreviewSurfaceCombiner")) \
+    ((SurfaceFragmentGraphName, "UsdPreviewSurface"))
 
 TF_DECLARE_PUBLIC_TOKENS(
     PxrMayaUsdPreviewSurfaceShadingNodeTokens,

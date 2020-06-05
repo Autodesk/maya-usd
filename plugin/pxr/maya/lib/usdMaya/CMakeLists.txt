@@ -40,7 +40,6 @@ pxr_shared_library(${PXR_PACKAGE}
         exportTranslator
         importCommand
         importTranslator
-        listShadingModesCommand
         proxyShape
         referenceAssembly
 

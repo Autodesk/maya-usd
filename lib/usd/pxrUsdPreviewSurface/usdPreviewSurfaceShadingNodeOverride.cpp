@@ -13,11 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h>
+#include "usdPreviewSurfaceShadingNodeOverride.h"
 
 #include <pxr/pxr.h>
 
 #include <pxr/base/tf/staticTokens.h>
+
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShadingNodeOverride.h>
@@ -37,6 +39,11 @@ TF_DEFINE_PUBLIC_TOKENS(
 MHWRender::MPxSurfaceShadingNodeOverride*
 PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator(const MObject& obj)
 {
+    // Shader fragments can only be registered after VP2 initialization, thus the function cannot
+    // be called when loading plugin (which can happen before VP2 initialization in the case of
+    // command-line rendering). The fragments will be deregistered when plugin is unloaded.
+    HdVP2ShaderFragments::registerFragments();
+
     return new PxrMayaUsdPreviewSurfaceShadingNodeOverride(obj);
 }
 

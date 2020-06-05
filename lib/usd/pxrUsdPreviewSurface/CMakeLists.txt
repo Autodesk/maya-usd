@@ -1,4 +1,19 @@
-set(TARGET_NAME mayaUsd_Translators)
+#
+# Copyright 2020 Autodesk
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+set(TARGET_NAME mayaUsdPreviewSurface)
 
 set(install_destination 
     ${CMAKE_INSTALL_PREFIX}/lib/usd
@@ -19,32 +34,9 @@ add_library(${TARGET_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME} 
     PRIVATE
-        cameraReader.cpp
-        cameraWriter.cpp
-        fileTextureWriter.cpp
-        instancerWriter.cpp
-        jointWriter.cpp
-        lightReader.cpp
-        lightWriter.cpp
-        locatorWriter.cpp
-        materialReader.cpp
-        materialWriter.cpp
-        mayaReferenceReader.cpp
-        mayaReferenceUpdater.cpp
-        meshReader.cpp
-        meshWriter.cpp
-        meshWriter_Primvars.cpp
-        meshWriter_Skin.cpp
-        meshWriter_Subdiv.cpp
-        nurbsCurveWriter.cpp
-        nurbsCurvesReader.cpp
-        nurbsPatchReader.cpp
-        nurbsSurfaceWriter.cpp
-        particleWriter.cpp
-        scopeReader.cpp
-        strokeWriter.cpp
-        skelReader.cpp
-        xformReader.cpp
+        usdPreviewSurface.cpp
+        usdPreviewSurfaceShadingNodeOverride.cpp
+        usdPreviewSurfaceWriter.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -52,10 +44,19 @@ target_sources(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME} 
     PRIVATE
+        PXRUSDPREVIEWSURFACE_EXPORTS
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
 mayaUsd_compile_config(${TARGET_NAME})
+
+mayaUsd_promoteHeaderList( 
+    HEADERS
+        usdPreviewSurface.h
+        usdPreviewSurfaceShadingNodeOverride.h
+    BASEDIR
+        ${TARGET_NAME}
+)
 
 # -----------------------------------------------------------------------------
 # include directories
@@ -70,20 +71,14 @@ target_include_directories(${TARGET_NAME}
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME} 
-    PRIVATE 
+    PRIVATE
         arch
         gf
-        kind
+        plug
         sdf
         tf
-        usd
-        usdGeom
-        usdLux
-        usdRi
-        usdShade
-        usdSkel
-        usdUtils
         vt
+        usdShade
         ${MAYA_LIBRARIES}
         mayaUsd
         mayaUsd_Schemas
@@ -143,4 +138,8 @@ if(IS_WINDOWS)
         DESTINATION ${library_install_path} OPTIONAL
     )
 endif()
- 
+
+install(
+    FILES AEpxrUsdPreviewSurfaceTemplate.mel
+    DESTINATION plugin/adsk/scripts
+)

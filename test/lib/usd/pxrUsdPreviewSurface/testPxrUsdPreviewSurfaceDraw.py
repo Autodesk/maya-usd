@@ -29,8 +29,9 @@ class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cls._testDir = os.path.abspath('.')
-        
+        cls._testDir = os.path.join(os.path.abspath('.'),
+                                    "PxrUsdPreviewSurfaceDrawTest")
+
         cls._cameraName = 'MainCamera'
 
     def setUp(self):
@@ -43,8 +44,6 @@ class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
     def _WriteViewportImage(self, outputImageName, suffix):
         # Make sure the hardware renderer is available
         MAYA_RENDERER_NAME = 'mayaHardware2'
-        mayaRenderers = cmds.renderer(query=True, namesOfAvailableRenderers=True)
-        self.assertIn(MAYA_RENDERER_NAME, mayaRenderers)
 
         # Make it the current renderer.
         cmds.setAttr('defaultRenderGlobals.currentRenderer', MAYA_RENDERER_NAME,
@@ -55,9 +54,10 @@ class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
         cmds.setAttr('hardwareRenderingGlobals.renderMode', 4)
         # Specify the output image prefix. The path to it is built from the
         # workspace directory.
+        outPngName = os.path.join(os.getenv("TEST_OUTPUT_DIR"),
+                                  '%s_%s' % (outputImageName, suffix))
         cmds.setAttr('defaultRenderGlobals.imageFilePrefix',
-            '%s_%s' % (outputImageName, suffix),
-            type='string')
+            outPngName, type='string')
         # Apply the viewer's color transform to the rendered image, otherwise
         # it comes out too dark.
         cmds.setAttr("defaultColorMgtGlobals.outputTransformEnabled", 1)
@@ -91,6 +91,6 @@ if __name__ == '__main__':
     else:
         exitCode = 1
     # Maya running interactively often absorbs all the output. Comment out the
-    # following to prevent Naya from exiting and open the script editor to look
+    # following to prevent Maya from exiting and open the script editor to look
     # at failures.
     cmds.quit(abort=True, exitCode=exitCode)

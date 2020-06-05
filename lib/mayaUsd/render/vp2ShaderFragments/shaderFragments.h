@@ -18,6 +18,8 @@
 
 #include <pxr/pxr.h>
 
+#include <mayaUsd/base/api.h>
+
 #include <maya/MStatus.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -29,6 +31,7 @@ class HdVP2ShaderFragments
 {
 public:
     //! Register all HdVP2 fragments
+    MAYAUSD_CORE_PUBLIC
     static MStatus registerFragments();
 
     //! Deregister all HdVP2 fragments

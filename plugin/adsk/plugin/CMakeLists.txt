@@ -56,6 +56,7 @@ target_include_directories(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME}
     PRIVATE
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
+        mayaUsdPreviewSurface
 )
 
 if (${Qt5_FOUND})

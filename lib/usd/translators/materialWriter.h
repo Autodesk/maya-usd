@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,30 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_WRITER_H
-#define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_WRITER_H
+#ifndef PXRUSDTRANSLATORS_MATERIAL_WRITER_H
+#define PXRUSDTRANSLATORS_MATERIAL_WRITER_H
 
-/// \file pxrUsdPreviewSurface/usdPreviewSurfaceWriter.h
+/// \file
+
+#include <maya/MFnDependencyNode.h>
 
 #include <pxr/pxr.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-
-#include <mayaUsd/fileio/writeJobContext.h>
-
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include <maya/MFnDependencyNode.h>
-
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class PxrMayaUsdPreviewSurface_Writer : public UsdMayaShaderWriter
+/// Shader writer for exporting Maya's material shading nodes to USD.
+class PxrUsdTranslators_MaterialWriter : public UsdMayaShaderWriter
 {
     public:
-        PxrMayaUsdPreviewSurface_Writer(
+        PxrUsdTranslators_MaterialWriter(
                 const MFnDependencyNode& depNodeFn,
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx);
