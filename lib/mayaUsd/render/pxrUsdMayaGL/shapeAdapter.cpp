@@ -348,12 +348,13 @@ PxrMayaHdShapeAdapter::_GetRprimCollectionName() const
 /* static */
 bool
 PxrMayaHdShapeAdapter::_GetWireframeColor(
-        const unsigned int displayStyle,
-        const MHWRender::DisplayStatus displayStatus,
+        MHWRender::DisplayStatus displayStatus,
         const MDagPath& shapeDagPath,
-        MColor* mayaWireColor)
+        GfVec4f* wireframeColor)
 {
     bool useWireframeColor = false;
+
+    MColor mayaWireframeColor;
 
     // Dormant objects may be included in a soft selection.
     if (displayStatus == MHWRender::kDormant) {
@@ -361,27 +362,29 @@ PxrMayaHdShapeAdapter::_GetWireframeColor(
         if (batchRenderer.GetObjectSoftSelectEnabled()) {
             const UsdMayaGLSoftSelectHelper& softSelectHelper =
                 UsdMayaGLBatchRenderer::GetInstance().GetSoftSelectHelper();
-            useWireframeColor = softSelectHelper.GetFalloffColor(shapeDagPath,
-                                                                 mayaWireColor);
+            useWireframeColor =
+                softSelectHelper.GetFalloffColor(
+                    shapeDagPath,
+                    &mayaWireframeColor);
         }
     }
 
-    // If the object isn't included in a soft selection, just ask Maya for the
-    // wireframe color.
-    if (!useWireframeColor && mayaWireColor != nullptr) {
-        *mayaWireColor =
-            MHWRender::MGeometryUtilities::wireframeColor(shapeDagPath);
+    if (wireframeColor != nullptr) {
+        // The caller wants a color returned. If the object isn't included in a
+        // soft selection, just ask Maya for the wireframe color.
+        if (!useWireframeColor) {
+            mayaWireframeColor =
+                MHWRender::MGeometryUtilities::wireframeColor(shapeDagPath);
+        }
+
+        *wireframeColor = GfVec4f(
+            mayaWireframeColor.r,
+            mayaWireframeColor.g,
+            mayaWireframeColor.b,
+            mayaWireframeColor.a);
     }
 
-    constexpr unsigned int wireframeDisplayStyles = (
-        MHWRender::MFrameContext::DisplayStyle::kWireFrame |
-        MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
-
-    const bool wireframeStyle = (displayStyle & wireframeDisplayStyles);
-
-    const bool isActive = _IsActiveDisplayStatus(displayStatus);
-
-    if (wireframeStyle || isActive) {
+    if (_IsActiveDisplayStatus(displayStatus)) {
         useWireframeColor = true;
     }
 

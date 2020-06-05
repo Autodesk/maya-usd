@@ -20,7 +20,6 @@
 #include <boost/functional/hash.hpp>
 
 #include <maya/M3dView.h>
-#include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFrameContext.h>
@@ -34,7 +33,6 @@
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -219,19 +217,11 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // Will only react if time actually changes.
     _delegate->SetTime(timeCode);
 
-    MColor mayaWireframeColor;
     _renderParams.useWireframe =
         _GetWireframeColor(
-            displayStyle,
             displayStatus,
             _shapeDagPath,
-            &mayaWireframeColor);
-    if (_renderParams.useWireframe) {
-        _renderParams.wireframeColor = GfVec4f(mayaWireframeColor.r,
-                                               mayaWireframeColor.g,
-                                               mayaWireframeColor.b,
-                                               mayaWireframeColor.a);
-    }
+            &_renderParams.wireframeColor);
 
     // XXX: This is not technically correct. Since the display style can vary
     // per viewport, this decision of whether or not to enable lighting should

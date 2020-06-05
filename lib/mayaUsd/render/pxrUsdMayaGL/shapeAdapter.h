@@ -22,6 +22,7 @@
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
@@ -43,7 +44,6 @@
 #include <maya/M3dView.h>
 #undef Always // Defined in /usr/lib/X11/X.h (eventually included by M3dView.h) - breaks pxr/usd/lib/usdUtils/registeredVariantSet.h
 #include <maya/MBoundingBox.h>
-#include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MHWGeometryUtilities.h>
@@ -244,18 +244,26 @@ class PxrMayaHdShapeAdapter
         /// access the soft selection info.
         ///
         /// Returns true if the wireframe color should be used, that is if the
-        /// object and/or its component(s) are involved in a selection, or if
-        /// the displayStyle indicates that a wireframe style is being drawn
-        /// (either kWireFrame or kBoundingBox). Otherwise returns false.
+        /// object and/or its component(s) are involved in a selection.
+        /// Otherwise returns false.
         ///
-        /// The wireframe color will always be returned in \p mayaWireColor (if
-        /// it is not nullptr) in case the caller wants to use other criteria
-        /// for determining whether to use it.
+        /// Note that we do not factor in the viewport's displayStyle, which
+        /// may indicate that a wireframe style is being drawn (either
+        /// kWireFrame or kBoundingBox). The displayStyle can be changed
+        /// without triggering a re-Sync(), so we want to make sure that shape
+        /// adapters don't inadvertently "bake in" whether to use the wireframe
+        /// into their render params based on it. We only want to know whether
+        /// we need to use the wireframe for a reason *other* than the
+        /// displayStyle.
+        ///
+        /// The wireframe color will always be returned in \p wireframeColor
+        /// (if it is not nullptr) in case the caller wants to use other
+        /// criteria for determining whether to use it (e.g. for bounding
+        /// boxes).
         static bool _GetWireframeColor(
-                const unsigned int displayStyle,
-                const MHWRender::DisplayStatus displayStatus,
+                MHWRender::DisplayStatus displayStatus,
                 const MDagPath& shapeDagPath,
-                MColor* mayaWireColor);
+                GfVec4f* wireframeColor);
 
         /// Helper for computing the viewport visibility of the shape.
         ///
