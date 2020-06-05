@@ -15,13 +15,15 @@
 //
 #include "shapeAdapter.h"
 
+#include <string>
+
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawRequest.h>
-#include <maya/MFnDependencyNode.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFrameContext.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MObject.h>
@@ -285,26 +287,51 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayStyle(
     return reprSelector;
 }
 
-/* virtual */
-const SdfPath&
-PxrMayaHdShapeAdapter::GetDelegateID() const
+MStatus
+PxrMayaHdShapeAdapter::_SetDagPath(const MDagPath& dagPath)
 {
-    return SdfPath::EmptyPath();
-}
+    if (_shapeDagPath == dagPath) {
+        return MS::kSuccess;
+    }
 
-/* virtual */
-TfToken
-PxrMayaHdShapeAdapter::_GetRprimCollectionName() const
-{
+    _shapeDagPath = dagPath;
+
+    _shapeIdentifier = TfToken();
+    _delegateId = SdfPath();
+
     MStatus status;
-    const MObject shapeObj = _shapeDagPath.node(&status);
-    CHECK_MSTATUS_AND_RETURN(status, TfToken());
-    const MFnDependencyNode depNodeFn(shapeObj, &status);
-    CHECK_MSTATUS_AND_RETURN(status, TfToken());
-    const MUuid shapeUuid = depNodeFn.uuid(&status);
-    CHECK_MSTATUS_AND_RETURN(status, TfToken());
+    const bool dagPathIsValid = _shapeDagPath.isValid(&status);
+    if (status != MS::kSuccess || !dagPathIsValid) {
+        return status;
+    }
 
-    return TfToken(TfMakeValidIdentifier(shapeUuid.asString().asChar()));
+    const MFnDagNode dagNodeFn(_shapeDagPath, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    // We use the shape's UUID as a unique identifier for this shape adapter in
+    // the batch renderer's SdfPath hierarchy. Since MPxDrawOverrides may be
+    // constructed and destructed over the course of a node's lifetime (e.g. by
+    // doing 'ogs -reset'), we need an identifier tied to the node's lifetime
+    // rather than to the shape adapter's lifetime.
+    const MUuid shapeUuid = dagNodeFn.uuid(&status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    const std::string uuidString(
+        shapeUuid.asString().asChar(),
+        shapeUuid.asString().length());
+
+    _shapeIdentifier = TfToken(TfMakeValidIdentifier(uuidString));
+
+    const UsdMayaGLBatchRenderer& batchRenderer =
+        UsdMayaGLBatchRenderer::GetInstance();
+    HdRenderIndex* renderIndex = batchRenderer.GetRenderIndex();
+
+    const SdfPath delegatePrefix =
+        batchRenderer.GetDelegatePrefix(_isViewport2);
+
+    _delegateId = delegatePrefix.AppendChild(_shapeIdentifier);
+
+    return status;
 }
 
 /* static */

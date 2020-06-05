@@ -17,15 +17,11 @@
 
 #include <string>
 
-#include <boost/functional/hash.hpp>
-
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
-#include <maya/MFnDagNode.h>
 #include <maya/MFrameContext.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MMatrix.h>
-#include <maya/MObjectHandle.h>
 #include <maya/MProfiler.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MStatus.h>
@@ -104,17 +100,6 @@ PxrMayaHdUsdProxyShapeAdapter::SetRootXform(const GfMatrix4d& transform)
 }
 
 /* virtual */
-const SdfPath&
-PxrMayaHdUsdProxyShapeAdapter::GetDelegateID() const
-{
-    if (_delegate) {
-        return _delegate->GetDelegateID();
-    }
-
-    return SdfPath::EmptyPath();
-}
-
-/* virtual */
 bool
 PxrMayaHdUsdProxyShapeAdapter::_Sync(
         const MDagPath& shapeDagPath,
@@ -166,7 +151,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
             excludedPrimPaths != _excludedPrimPaths ||
             !_delegate ||
             renderIndex != &_delegate->GetRenderIndex()) {
-        _shapeDagPath = shapeDagPath;
+        _SetDagPath(shapeDagPath);
         _rootPrim = usdPrim;
         _excludedPrimPaths = excludedPrimPaths;
 
@@ -279,62 +264,23 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
         MProfiler::kColorE_L2,
         "USD Proxy Shape Initializing Shape Adapter");
 
-    if (!TF_VERIFY(renderIndex,
-                   "Cannot initialize shape adapter with invalid HdRenderIndex")) {
+    if (!TF_VERIFY(
+            renderIndex,
+            "Cannot initialize shape adapter with invalid HdRenderIndex")) {
         return false;
     }
 
-    const SdfPath delegatePrefix =
-        UsdMayaGLBatchRenderer::GetInstance().GetDelegatePrefix(_isViewport2);
-
-    // Create a simple "name" for this shape adapter to insert into the batch
-    // renderer's SdfPath hierarchy.
-    //
-    // XXX: For as long as we're using the MAYA_VP2_USE_VP1_SELECTION
-    // environment variable, we need to be able to pass responsibility back and
-    // forth between the MPxDrawOverride's shape adapter for drawing and the
-    // MPxSurfaceShapeUI's shape adapter for selection. This requires both
-    // shape adapters to have the same "name", which forces us to build it
-    // from data on the shape that will be common to both classes, as we do
-    // below. When we remove MAYA_VP2_USE_VP1_SELECTION and can trust that a
-    // single shape adapter handles both drawing and selection, we can do
-    // something even simpler instead like using the shape adapter's memory
-    // address as the "name".
-    size_t shapeHash(MObjectHandle(_shapeDagPath.transform()).hashCode());
-    boost::hash_combine(shapeHash, _rootPrim);
-    boost::hash_combine(shapeHash, _excludedPrimPaths);
-
-    // We prepend the Maya type name to the beginning of the delegate name to
-    // ensure that there are no name collisions between shape adapters of
-    // shapes with different Maya types.
-    const TfToken delegateName(
-        TfStringPrintf("%s_%zx",
-                       MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText(),
-                       shapeHash));
-
-    const SdfPath delegateId = delegatePrefix.AppendChild(delegateName);
-
-    if (_delegate &&
-            delegateId == GetDelegateID() &&
-            renderIndex == &_delegate->GetRenderIndex()) {
-        // The delegate's current ID matches the delegate ID we computed and
-        // the render index matches, so it must be up to date already.
-        return true;
-    }
-
-    const TfToken collectionName = _GetRprimCollectionName();
-
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Initializing PxrMayaHdUsdProxyShapeAdapter: %p\n"
-        "    shape DAG path : %s\n"
-        "    collection name: %s\n"
-        "    delegateId     : %s\n",
+        "    shape DAG path  : %s\n"
+        "    shape identifier: %s\n"
+        "    delegateId      : %s\n",
         this,
         _shapeDagPath.fullPathName().asChar(),
-        collectionName.GetText(),
-        delegateId.GetText());
+        _shapeIdentifier.GetText(),
+        _delegateId.GetText());
 
-    _delegate.reset(new UsdImagingDelegate(renderIndex, delegateId));
+    _delegate.reset(new UsdImagingDelegate(renderIndex, _delegateId));
     if (!TF_VERIFY(_delegate,
                   "Failed to create shape adapter delegate for shape %s",
                   _shapeDagPath.fullPathName().asChar())) {

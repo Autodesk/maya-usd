@@ -87,9 +87,6 @@ class PxrMayaHdUsdProxyShapeAdapter : public PxrMayaHdShapeAdapter
         MAYAUSD_CORE_PUBLIC
         void SetRootXform(const GfMatrix4d& transform) override;
 
-        MAYAUSD_CORE_PUBLIC
-        const SdfPath& GetDelegateID() const override;
-
     protected:
 
         /// Update the shape adapter's state from the shape with the given

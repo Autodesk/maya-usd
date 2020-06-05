@@ -195,8 +195,9 @@ class PxrMayaHdShapeAdapter
             _rootXform = transform;
         }
 
-        MAYAUSD_CORE_PUBLIC
-        virtual const SdfPath& GetDelegateID() const;
+        const SdfPath& GetDelegateID() const {
+            return _delegateId;
+        }
 
         const MDagPath& GetDagPath() const {
             return _shapeDagPath;
@@ -230,19 +231,21 @@ class PxrMayaHdShapeAdapter
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus) = 0;
 
-        /// Helper for computing the name of the shape's HdRprimCollection.
+        /// Sets the shape adapter's DAG path.
         ///
-        /// The batch renderer currently creates a render task for each shape's
+        /// This re-computes the "identifier" for the shape, which is used to
+        /// compute the name of the shape's HdRprimCollection. The batch
+        /// renderer currently creates a render task for each shape's
         /// HdRprimCollection, and those render tasks are identified by an
         /// SdfPath constructed using the collection's name. We therefore need
         /// the collection to have a name that is unique to the shape it
         /// represents and also sanitized for use in SdfPaths.
         ///
-        /// Returns a TfToken collection name that is unique to the shape and
-        /// is a valid SdfPath identifier, or an empty TfToken is there is an
-        /// error.
+        /// The identifier will be a TfToken that is unique to the shape and is
+        /// a valid SdfPath identifier, or an empty TfToken if there is an
+        /// error, which can be detected from the returned MStatus.
         MAYAUSD_CORE_PUBLIC
-        virtual TfToken _GetRprimCollectionName() const;
+        MStatus _SetDagPath(const MDagPath& dagPath);
 
         /// Helper for getting the wireframe color of the shape.
         ///
@@ -295,6 +298,8 @@ class PxrMayaHdShapeAdapter
         virtual ~PxrMayaHdShapeAdapter();
 
         MDagPath _shapeDagPath;
+        TfToken _shapeIdentifier;
+        SdfPath _delegateId;
 
         PxrMayaHdRenderParams _renderParams;
         bool _drawShape;

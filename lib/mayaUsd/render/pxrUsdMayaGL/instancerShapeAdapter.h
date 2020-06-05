@@ -83,9 +83,6 @@ class UsdMayaGL_InstancerShapeAdapter : public PxrMayaHdShapeAdapter
         void SetRootXform(const GfMatrix4d& transform) override;
 
         MAYAUSD_CORE_PUBLIC
-        const SdfPath& GetDelegateID() const override;
-
-        MAYAUSD_CORE_PUBLIC
             ~UsdMayaGL_InstancerShapeAdapter() override;
 
     protected:
