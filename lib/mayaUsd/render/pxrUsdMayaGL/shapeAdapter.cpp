@@ -209,7 +209,6 @@ PxrMayaHdShapeAdapter::GetMayaUserData(
     // of batching up the drawing of all of the shapes, so we specify in the
     // Maya user data that the shape should *not* draw by default. The
     // pxrHdImagingShape bypasses this and sets drawShape to true.
-    // We handle this similarly in GetRenderParams() below.
     newData->drawShape = false;
 
     if (boundingBox) {
@@ -294,30 +293,6 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayStyle(
     }
 
     return reprSelector;
-}
-
-/* virtual */
-PxrMayaHdRenderParams
-PxrMayaHdShapeAdapter::GetRenderParams(
-        bool* drawShape,
-        bool* drawBoundingBox) const
-{
-    if (drawShape) {
-        // Internally, the shape adapter keeps track of whether its shape is
-        // being drawn for managing visibility, but otherwise most Hydra-imaged
-        // shapes should not be drawing themselves. The pxrHdImagingShape will
-        // take care of batching up the drawing of all of the shapes, so for
-        // the purposes of render params, we set drawShape to false by default.
-        // The pxrHdImagingShape bypasses this and sets drawShape to true.
-        // We handle this similarly in GetMayaUserData() above.
-        *drawShape = false;
-    }
-
-    if (drawBoundingBox) {
-        *drawBoundingBox = _drawBoundingBox;
-    }
-
-    return _renderParams;
 }
 
 /* virtual */

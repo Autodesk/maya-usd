@@ -160,8 +160,7 @@ UsdMayaGLBatchRenderer::AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
         _shapeAdapterBuckets :
         _legacyShapeAdapterBuckets;
 
-    const PxrMayaHdRenderParams renderParams =
-        shapeAdapter->GetRenderParams(nullptr, nullptr);
+    const PxrMayaHdRenderParams& renderParams = shapeAdapter->GetRenderParams();
     const size_t renderParamsHash = renderParams.Hash();
 
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_BUCKETING).Msg(

@@ -164,14 +164,10 @@ class PxrMayaHdShapeAdapter
         HdReprSelector GetReprSelectorForDisplayStyle(
                 unsigned int displayStyle) const;
 
-        /// Get a set of render params from the shape adapter's current state.
-        ///
-        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
-        /// and/or bounding box rendering is indicated from the state.
-        MAYAUSD_CORE_PUBLIC
-        virtual PxrMayaHdRenderParams GetRenderParams(
-                bool* drawShape,
-                bool* drawBoundingBox) const;
+        /// Get the render params for the shape adapter's current state.
+        const PxrMayaHdRenderParams& GetRenderParams() const {
+            return _renderParams;
+        }
 
         MAYAUSD_CORE_PUBLIC
         virtual const HdRprimCollection& GetRprimCollection() const;
