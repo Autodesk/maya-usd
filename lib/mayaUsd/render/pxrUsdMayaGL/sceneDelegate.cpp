@@ -119,6 +119,7 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
     _simpleLightTaskId = _rootId.AppendChild(HdxPrimitiveTokens->simpleLightTask);
     _shadowTaskId = _rootId.AppendChild(HdxPrimitiveTokens->shadowTask);
     _pickingTaskId = _rootId.AppendChild(HdxPrimitiveTokens->pickTask);
+    _selectionTaskId = _rootId.AppendChild(_tokens->selectionTask);
     _cameraId = _rootId.AppendChild(HdPrimTypeTokens->camera);
 
     // camera
@@ -178,6 +179,22 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         // to special case first time vs others for comparing
         // to current render tags
         cache[HdTokens->renderTags] = VtValue(TfTokenVector());
+    }
+
+    // Selection task.
+    {
+        renderIndex->InsertTask<HdxSelectionTask>(this, _selectionTaskId);
+        _ValueCache& cache = _valueCacheMap[_selectionTaskId];
+        HdxSelectionTaskParams taskParams;
+        taskParams.enableSelection = true;
+
+        // Note that the selection color is a constant zero value. This is to
+        // mimic selection behavior in Maya where the wireframe color is what
+        // changes to indicate selection and not the object color.
+        taskParams.selectionColor = GfVec4f(0.0f);
+
+        cache[HdTokens->params] = VtValue(taskParams);
+        cache[HdTokens->collection] = VtValue();
     }
 }
 
@@ -536,31 +553,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
             HdChangeTracker::DirtyCollection);
     }
 
-    SdfPath selectionTaskId;
-    if (!TfMapLookup(_selectionTaskIdMap, hash, &selectionTaskId)) {
-        // Create a new selection task if one does not exist for this hash.
-        selectionTaskId = _rootId.AppendChild(
-            TfToken(TfStringPrintf("%s_%zx",
-                                   _tokens->selectionTask.GetText(),
-                                   hash)));
-
-        renderIndex.InsertTask<HdxSelectionTask>(this, selectionTaskId);
-        HdxSelectionTaskParams selectionTaskParams;
-        selectionTaskParams.enableSelection = true;
-
-        // Note that the selection color is a constant zero value. This is to
-        // mimic selection behavior in Maya where the wireframe color is what
-        // changes to indicate selection and not the object color. As a result,
-        // we don't need to dirty the selectionTaskParams below.
-        selectionTaskParams.selectionColor = GfVec4f(0.0f);
-
-        _ValueCache& cache = _valueCacheMap[selectionTaskId];
-        cache[HdTokens->params] = VtValue(selectionTaskParams);
-        cache[HdTokens->collection] = VtValue();
-
-        _selectionTaskIdMap[hash] = selectionTaskId;
-    }
-    taskList.emplace_back(renderIndex.GetTask(selectionTaskId));
+    taskList.emplace_back(renderIndex.GetTask(_selectionTaskId));
 
     //
     // (meta-XXX): The notes below are actively being addressed with an

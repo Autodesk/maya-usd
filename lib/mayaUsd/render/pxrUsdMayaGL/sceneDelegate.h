@@ -162,9 +162,9 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
        
         _RenderParamTaskIdMap _renderSetupTaskIdMap;
         _RenderTaskIdMap      _renderTaskIdMap;
-        _RenderParamTaskIdMap _selectionTaskIdMap;
 
 		SdfPath _pickingTaskId;
+        SdfPath _selectionTaskId;
 
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
         typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;
