@@ -579,19 +579,9 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     // With Hydra, changing the contents of a collection can be
     // an expensive operation as it causes draw batches to be rebuilt.
     //
-    // The Maya-Hydra Plugin is currently reusing the same collection
-    // name for all collections within a frame.
-    // (This stems from a time when collection name had a significant meaning
-    // rather than id'ing a collection).
-    //
     // The plugin should also track deltas to the contents of a collection
     // and set Hydra's dirty state when prims get added and removed from
     // the collection.
-    //
-    // Another possible change that can be made to this code is HdxRenderTask
-    // now takes an array of collections, so it is possible to support different
-    // reprs using the same task.  Therefore, this code should be modified to
-    // only add one task that is provided with the active set of collections.
     //
     // However, a further improvement to the code could be made using
     // UsdDelegate's fallback repr feature instead of using multiple
