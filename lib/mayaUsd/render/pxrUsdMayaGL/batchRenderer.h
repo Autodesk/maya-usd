@@ -93,8 +93,10 @@ using HgiUniquePtr = std::unique_ptr<class Hgi>;
 /// A user data object should also be created/obtained for the shape by calling
 /// the shape adapter's GetMayaUserData() method.
 ///
-/// In the draw stage, Draw() must be called for each draw request to complete
-/// the render.
+/// Typically, all Hydra-imaged shapes will be drawn automatically as a single
+/// batch by the pxrHdImagingShape. However, bounding boxes are not drawn by
+/// Hydra, so each draw override should invoke DrawBoundingBox() to do that if
+/// necessary.
 ///
 /// Draw/selection management objects should be sure to call
 /// RemoveShapeAdapter() (usually in the destructor) when they no longer wish
