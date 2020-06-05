@@ -297,7 +297,6 @@ class PxrMayaHdShapeAdapter
         MAYAUSD_CORE_PUBLIC
         virtual ~PxrMayaHdShapeAdapter();
 
-        MDagPath _shapeDagPath;
         TfToken _shapeIdentifier;
         SdfPath _delegateId;
 
@@ -310,6 +309,10 @@ class PxrMayaHdShapeAdapter
         GfMatrix4d _rootXform;
 
         const bool _isViewport2;
+
+    private:
+
+        MDagPath _shapeDagPath;
 };
 
 

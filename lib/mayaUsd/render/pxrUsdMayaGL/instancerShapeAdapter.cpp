@@ -72,7 +72,7 @@ bool
 UsdMayaGL_InstancerShapeAdapter::UpdateVisibility(const M3dView* view)
 {
     bool isVisible;
-    if (!_GetVisibility(_shapeDagPath, view, &isVisible)) {
+    if (!_GetVisibility(GetDagPath(), view, &isVisible)) {
         return false;
     }
 
@@ -224,7 +224,7 @@ UsdMayaGL_InstancerShapeAdapter::_Sync(
     // require us to re-initialize the shape adapter.
     HdRenderIndex* renderIndex =
         UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
-    if (!(shapeDagPath == _shapeDagPath) ||
+    if (!(shapeDagPath == GetDagPath()) ||
             !_delegate ||
             renderIndex != &_delegate->GetRenderIndex()) {
         _SetDagPath(shapeDagPath);
@@ -237,7 +237,7 @@ UsdMayaGL_InstancerShapeAdapter::_Sync(
     // Reset _renderParams to the defaults.
     _renderParams = PxrMayaHdRenderParams();
 
-    const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
+    const MMatrix transform = GetDagPath().inclusiveMatrix(&status);
     if (status == MS::kSuccess) {
         _rootXform = GfMatrix4d(transform.matrix);
         _delegate->SetRootTransform(_rootXform);
@@ -309,14 +309,14 @@ UsdMayaGL_InstancerShapeAdapter::_Init(HdRenderIndex* renderIndex)
         "    shape identifier: %s\n"
         "    delegateId      : %s\n",
         this,
-        _shapeDagPath.fullPathName().asChar(),
+        GetDagPath().fullPathName().asChar(),
         _shapeIdentifier.GetText(),
         _delegateId.GetText());
 
     _delegate.reset(new UsdImagingDelegate(renderIndex, _delegateId));
     if (!TF_VERIFY(_delegate,
                   "Failed to create shape adapter delegate for shape %s",
-                  _shapeDagPath.fullPathName().asChar())) {
+                  GetDagPath().fullPathName().asChar())) {
         return false;
     }
 

@@ -254,7 +254,7 @@ UsdMayaProxyDrawOverride::userSelect(
 
     const unsigned int displayStyle = context.getDisplayStyle();
     const MHWRender::DisplayStatus displayStatus =
-        MHWRender::MGeometryUtilities::displayStatus(_shapeAdapter._shapeDagPath);
+        MHWRender::MGeometryUtilities::displayStatus(_shapeAdapter.GetDagPath());
 
     // At this point, we expect the shape to have already been drawn and our
     // shape adapter to have been added to the batch renderer, but just in
@@ -263,7 +263,7 @@ UsdMayaProxyDrawOverride::userSelect(
     // must have already been done to have caused the shape to be drawn and
     // become eligible for selection.
     if (!_shapeAdapter.Sync(
-            _shapeAdapter._shapeDagPath, displayStyle, displayStatus)) {
+            _shapeAdapter.GetDagPath(), displayStyle, displayStatus)) {
         return false;
     }
 

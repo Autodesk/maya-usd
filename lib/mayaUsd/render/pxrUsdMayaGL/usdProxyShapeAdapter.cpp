@@ -69,7 +69,7 @@ PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
         // USD proxy shapes are being filtered from this view, so don't bother
         // checking any other visibility state.
         isVisible = false;
-    } else if (!_GetVisibility(_shapeDagPath, view, &isVisible)) {
+    } else if (!_GetVisibility(GetDagPath(), view, &isVisible)) {
         return false;
     }
 
@@ -146,7 +146,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // require us to re-initialize the shape adapter.
     HdRenderIndex* renderIndex =
         UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
-    if (!(shapeDagPath == _shapeDagPath) ||
+    if (!(shapeDagPath == GetDagPath()) ||
             usdPrim != _rootPrim ||
             excludedPrimPaths != _excludedPrimPaths ||
             !_delegate ||
@@ -191,7 +191,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
 #endif
 
     MStatus status;
-    const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
+    const MMatrix transform = GetDagPath().inclusiveMatrix(&status);
     if (status == MS::kSuccess) {
         _rootXform = GfMatrix4d(transform.matrix);
         _delegate->SetRootTransform(_rootXform);
@@ -205,7 +205,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     _renderParams.useWireframe =
         _GetWireframeColor(
             displayStatus,
-            _shapeDagPath,
+            GetDagPath(),
             &_renderParams.wireframeColor);
 
     // XXX: This is not technically correct. Since the display style can vary
@@ -276,14 +276,14 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
         "    shape identifier: %s\n"
         "    delegateId      : %s\n",
         this,
-        _shapeDagPath.fullPathName().asChar(),
+        GetDagPath().fullPathName().asChar(),
         _shapeIdentifier.GetText(),
         _delegateId.GetText());
 
     _delegate.reset(new UsdImagingDelegate(renderIndex, _delegateId));
     if (!TF_VERIFY(_delegate,
                   "Failed to create shape adapter delegate for shape %s",
-                  _shapeDagPath.fullPathName().asChar())) {
+                  GetDagPath().fullPathName().asChar())) {
         return false;
     }
 
