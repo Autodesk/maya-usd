@@ -31,7 +31,8 @@ UsdRotateUndoableCommand::UsdRotateUndoableCommand(
 	// prevRotate for undo purposes, we need to make sure we convert it to
 	// common API xformOps (In case we have rotateX, rotateY or rotateZ ops)
 	try {
-		convertToCompatibleCommonAPI(prim());
+        if(!UsdGeomXformCommonAPI(prim()))
+            convertToCompatibleCommonAPI(prim());
 	}
 	catch (...) {
 		// Since Maya cannot catch this error at this moment, store it until we
