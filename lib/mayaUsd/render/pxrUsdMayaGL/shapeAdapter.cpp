@@ -16,6 +16,7 @@
 #include "shapeAdapter.h"
 
 #include <string>
+#include <vector>
 
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
@@ -42,6 +43,8 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/hdx/tokens.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <mayaUsd/base/api.h>
@@ -299,6 +302,9 @@ PxrMayaHdShapeAdapter::_SetDagPath(const MDagPath& dagPath)
     _shapeIdentifier = TfToken();
     _delegateId = SdfPath();
 
+    _rprimCollectionMap.clear();
+    _renderTaskIdMap.clear();
+
     MStatus status;
     const bool dagPathIsValid = _shapeDagPath.isValid(&status);
     if (status != MS::kSuccess || !dagPathIsValid) {
@@ -330,6 +336,45 @@ PxrMayaHdShapeAdapter::_SetDagPath(const MDagPath& dagPath)
         batchRenderer.GetDelegatePrefix(_isViewport2);
 
     _delegateId = delegatePrefix.AppendChild(_shapeIdentifier);
+
+    // Create entries in the collection and render task ID maps for each repr
+    // we might use.
+    static const std::vector<HdReprSelector> allMayaReprs({
+        HdReprSelector(HdReprTokens->hull),
+        HdReprSelector(HdReprTokens->refined),
+        HdReprSelector(HdReprTokens->refinedWire),
+        HdReprSelector(HdReprTokens->refinedWireOnSurf),
+        HdReprSelector(HdReprTokens->wire),
+        HdReprSelector(HdReprTokens->wireOnSurf)
+    });
+
+    for (const HdReprSelector& reprSelector : allMayaReprs) {
+        const TfToken rprimCollectionName = TfToken(
+            TfStringPrintf("%s_%s",
+                _shapeIdentifier.GetText(),
+                reprSelector.GetText()));
+        _rprimCollectionMap.emplace(
+            std::make_pair(
+                reprSelector,
+                HdRprimCollection(
+                    rprimCollectionName,
+                    reprSelector,
+                    _delegateId)));
+
+        renderIndex->GetChangeTracker().AddCollection(rprimCollectionName);
+
+        // We only generate the render task ID here. We'll leave it to the
+        // batch renderer to lazily create the task in the render index when
+        // it is first needed.
+        const TfToken renderTaskName = TfToken(
+            TfStringPrintf("%s_%s",
+                HdxPrimitiveTokens->renderTask.GetText(),
+                rprimCollectionName.GetText()));
+        _renderTaskIdMap.emplace(
+            std::make_pair(
+                reprSelector,
+                _delegateId.AppendChild(renderTaskName)));
+    }
 
     return status;
 }

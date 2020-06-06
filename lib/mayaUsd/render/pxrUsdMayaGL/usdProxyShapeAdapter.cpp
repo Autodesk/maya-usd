@@ -37,7 +37,6 @@
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/repr.h>
-#include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
@@ -231,19 +230,6 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         _delegate->SetRootVisibility(_drawShape);
     }
 
-    if (_rprimCollection.GetReprSelector() != reprSelector) {
-        _rprimCollection.SetReprSelector(reprSelector);
-
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                "    Repr selector changed: %s\n"
-                "        Marking collection dirty: %s\n",
-                reprSelector.GetText(),
-                _rprimCollection.GetName().GetText());
-
-        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-            _rprimCollection.GetName());
-    }
-
     HdCullStyle cullStyle = HdCullStyleNothing;
     if (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBackfaceCulling) {
         cullStyle = HdCullStyleBackUnlessDoubleSided;
@@ -302,14 +288,6 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
     }
 
     _delegate->Populate(_rootPrim, _excludedPrimPaths, SdfPathVector());
-
-    if (collectionName != _rprimCollection.GetName()) {
-        _rprimCollection.SetName(collectionName);
-        renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
-    }
-
-    _rprimCollection.SetReprSelector(HdReprSelector(HdReprTokens->refined));
-    _rprimCollection.SetRootPath(delegateId);
 
     return true;
 }

@@ -19,6 +19,7 @@
 /// \file pxrUsdMayaGL/shapeAdapter.h
 
 #include <memory>
+#include <unordered_map>
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
@@ -169,8 +170,39 @@ class PxrMayaHdShapeAdapter
             return _renderParams;
         }
 
-        const HdRprimCollection& GetRprimCollection() const {
-            return _rprimCollection;
+        /// Get the rprim collection for the given repr.
+        ///
+        /// These collections are created when the shape adapter's MDagPath is
+        /// set to a valid Maya shape.
+        ///
+        /// Returns an empty collection if there is no collection for the given
+        /// repr.
+        const HdRprimCollection& GetRprimCollection(
+                const HdReprSelector& repr) const {
+            const auto& iter = _rprimCollectionMap.find(repr);
+            if (iter != _rprimCollectionMap.cend()) {
+                return iter->second;
+            }
+
+            static const HdRprimCollection emptyCollection;
+            return emptyCollection;
+        }
+
+        /// Get the ID of the render task for the collection of the given repr.
+        ///
+        /// These render task IDs are created when the shape adapter's MDagPath
+        /// is set to a valid Maya shape.
+        ///
+        /// Returns an empty SdfPath if there is no render task ID for the
+        /// given repr.
+        const SdfPath& GetRenderTaskId(const HdReprSelector& repr) const {
+            const auto& iter = _renderTaskIdMap.find(repr);
+            if (iter != _renderTaskIdMap.cend()) {
+                return iter->second;
+            }
+
+            static const SdfPath emptyTaskId;
+            return emptyTaskId;
         }
 
         /// Retrieves the render tags for this shape (i.e. which prim purposes
@@ -234,12 +266,12 @@ class PxrMayaHdShapeAdapter
         /// Sets the shape adapter's DAG path.
         ///
         /// This re-computes the "identifier" for the shape, which is used to
-        /// compute the name of the shape's HdRprimCollection. The batch
-        /// renderer currently creates a render task for each shape's
-        /// HdRprimCollection, and those render tasks are identified by an
+        /// compute the names of the shape's HdRprimCollections. The batch
+        /// renderer will create a render task for each of the shape's
+        /// HdRprimCollections, and those render tasks are identified by an
         /// SdfPath constructed using the collection's name. We therefore need
-        /// the collection to have a name that is unique to the shape it
-        /// represents and also sanitized for use in SdfPaths.
+        /// the collections to have names that are unique to the shape they
+        /// represent and also sanitized for use in SdfPaths.
         ///
         /// The identifier will be a TfToken that is unique to the shape and is
         /// a valid SdfPath identifier, or an empty TfToken if there is an
@@ -303,8 +335,33 @@ class PxrMayaHdShapeAdapter
         PxrMayaHdRenderParams _renderParams;
         bool _drawShape;
 
-        HdRprimCollection _rprimCollection;
-        TfTokenVector     _renderTags;
+        struct _ReprHashFunctor {
+            size_t operator()(const HdReprSelector& repr) const {
+                // Since we currently only use the refinedToken of
+                // HdReprSelector, we only need to consider that one token when
+                // hashing.
+                return repr[0u].Hash();
+            }
+        };
+
+        // Mapping of HdReprSelector to the rprim collection for that selector.
+        using _RprimCollectionMap =
+            std::unordered_map<
+                const HdReprSelector,
+                const HdRprimCollection,
+                _ReprHashFunctor>;
+        _RprimCollectionMap _rprimCollectionMap;
+
+        // Mapping of HdReprSelector to the ID of the render task for the
+        // collection for that selector.
+        using _RenderTaskIdMap =
+            std::unordered_map<
+                const HdReprSelector,
+                const SdfPath,
+                _ReprHashFunctor>;
+        _RenderTaskIdMap _renderTaskIdMap;
+
+        TfTokenVector _renderTags;
 
         GfMatrix4d _rootXform;
 

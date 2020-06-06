@@ -55,6 +55,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/render/px_vp20/utils.h>
 #include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -455,7 +456,7 @@ HdTaskSharedPtrVector
 PxrMayaHdSceneDelegate::GetRenderTasks(
         const size_t hash,
         const PxrMayaHdRenderParams& renderParams,
-        unsigned int /* displayStyle */,
+        unsigned int displayStyle,
         const PxrMayaHdPrimFilterVector& primFilters)
 {
     HdTaskSharedPtrVector taskList;
@@ -463,7 +464,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
 
     // Task List Consist of:
     //  Render Setup Task
-    //  Render Task Per Collection
+    //  Render Task Per Shape Adapter/Collection
     //  Selection Task
     taskList.reserve(2 + primFilters.size());
 
@@ -500,27 +501,40 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
 
     for (const PxrMayaHdPrimFilter& primFilter : primFilters) {
         SdfPath renderTaskId;
-        const HdRprimCollection& rprimCollection = primFilter.collection;
-        const TfTokenVector& renderTags = primFilter.renderTags;
+        HdRprimCollection rprimCollection;
+        TfTokenVector renderTags;
 
-        // The batch renderer manages the render task ID for this collection,
-        // so look up its ID by name.
-        const TfToken& collectionName = rprimCollection.GetName();
+        if (primFilter.shapeAdapter != nullptr) {
+            const HdReprSelector repr =
+                primFilter.shapeAdapter->GetReprSelectorForDisplayStyle(
+                    displayStyle);
 
-        if (!TfMapLookup(_renderTaskIdMap, collectionName, &renderTaskId)) {
-            // Create a new render task ID if one does not exist for this
-            // collection.
-            // Note that we expect the collection name to have already been
-            // sanitized for use in SdfPaths.
-            TF_VERIFY(TfIsValidIdentifier(collectionName.GetString()));
-            renderTaskId = _rootId.AppendChild(
-                TfToken(
-                    TfStringPrintf(
-                        "%s_%s",
-                        HdxPrimitiveTokens->renderTask.GetText(),
-                        collectionName.GetText())));
+            renderTaskId = primFilter.shapeAdapter->GetRenderTaskId(repr);
+            rprimCollection = primFilter.shapeAdapter->GetRprimCollection(repr);
+            renderTags = primFilter.shapeAdapter->GetRenderTags();
+        } else {
+            rprimCollection = primFilter.collection;
+            renderTags = primFilter.renderTags;
 
-            _renderTaskIdMap[collectionName] = renderTaskId;
+            // The batch renderer manages the render task ID for this
+            // collection, so look up its ID by name.
+            const TfToken& collectionName = rprimCollection.GetName();
+
+            if (!TfMapLookup(_renderTaskIdMap, collectionName, &renderTaskId)) {
+                // Create a new render task ID if one does not exist for this
+                // collection.
+                // Note that we expect the collection name to have already been
+                // sanitized for use in SdfPaths.
+                TF_VERIFY(TfIsValidIdentifier(collectionName.GetString()));
+                renderTaskId = _rootId.AppendChild(
+                    TfToken(
+                        TfStringPrintf(
+                            "%s_%s",
+                            HdxPrimitiveTokens->renderTask.GetText(),
+                            collectionName.GetText())));
+
+                _renderTaskIdMap[collectionName] = renderTaskId;
+            }
         }
 
         HdTaskSharedPtr renderTask = renderIndex.GetTask(renderTaskId);

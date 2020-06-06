@@ -362,7 +362,8 @@ UsdMayaGLBatchRenderer::PopulateCustomPrimFilter(
     // Only update the collection and mark it dirty if the root paths have
     // actually changed. This greatly affects performance.
     PxrMayaHdShapeAdapter* adapter = iter->second;
-    const SdfPathVector& roots = adapter->GetRprimCollection().GetRootPaths();
+    const HdReprSelector repr = collection.GetReprSelector();
+    const SdfPathVector& roots = adapter->GetRprimCollection(repr).GetRootPaths();
     if (collection.GetRootPaths() != roots) {
         collection.SetRootPaths(roots);
         changeTracker.MarkCollectionDirty(collection.GetName());
@@ -1083,14 +1084,20 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
                 continue;
             }
 
+            // XXX: The full viewport-based collections use the "refined" repr,
+            // so we use the same repr here if we're doing adapter-by-adapter
+            // depth selection. Ideally though, this would be whatever repr was
+            // most recently drawn for the viewport in which the selection is
+            // taking place.
+            const HdReprSelector repr(HdReprTokens->refined);
             const HdRprimCollection &rprimCollection =
-                    shapeAdapter->GetRprimCollection();
+                shapeAdapter->GetRprimCollection(repr);
 
             const TfTokenVector &renderTags = shapeAdapter->GetRenderTags();
 
             primFilters.push_back(
                     PxrMayaHdPrimFilter {
-                        nullptr,
+                        shapeAdapter,
                         rprimCollection,
                         renderTags
                     });
@@ -1456,6 +1463,12 @@ UsdMayaGLBatchRenderer::_RenderBatches(
                 legacyDisplayStyle);
     }
 
+    // Since we'll be populating the prim filters with shape adapters, we don't
+    // need to specify collections or render tags on them, so just use empty
+    // ones.
+    static const HdRprimCollection emptyCollection;
+    static const TfTokenVector emptyRenderTags;
+
     bool itemsVisible = false;
     std::vector<_RenderItem> items;
     for (const auto& iter : bucketsMap) {
@@ -1468,9 +1481,9 @@ UsdMayaGLBatchRenderer::_RenderBatches(
             itemsVisible |= shapeAdapter->IsVisible();
 
             primFilters.push_back(PxrMayaHdPrimFilter {
-                nullptr,
-                shapeAdapter->GetRprimCollection(),
-                shapeAdapter->GetRenderTags()
+                shapeAdapter,
+                emptyCollection,
+                emptyRenderTags
             });
         }
 
