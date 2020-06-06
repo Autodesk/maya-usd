@@ -509,6 +509,10 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
                 primFilter.shapeAdapter->GetReprSelectorForDisplayStyle(
                     displayStyle);
 
+            if (!repr.AnyActiveRepr()) {
+                continue;
+            }
+
             renderTaskId = primFilter.shapeAdapter->GetRenderTaskId(repr);
             rprimCollection = primFilter.shapeAdapter->GetRprimCollection(repr);
             renderTags = primFilter.shapeAdapter->GetRenderTags();

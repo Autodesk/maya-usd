@@ -218,16 +218,9 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // determine the repr, so be sure to do this *after* that has been set.
     const HdReprSelector reprSelector =
         GetReprSelectorForDisplayStyle(displayStyle);
-
-    _drawShape = reprSelector.AnyActiveRepr();
-
     if (reprSelector.Contains(HdReprTokens->wire) ||
             reprSelector.Contains(HdReprTokens->refinedWire)) {
         _renderParams.enableLighting = false;
-    }
-
-    if (_delegate->GetRootVisibility() != _drawShape) {
-        _delegate->SetRootVisibility(_drawShape);
     }
 
     HdCullStyle cullStyle = HdCullStyleNothing;

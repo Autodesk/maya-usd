@@ -333,7 +333,6 @@ class PxrMayaHdShapeAdapter
         SdfPath _delegateId;
 
         PxrMayaHdRenderParams _renderParams;
-        bool _drawShape;
 
         struct _ReprHashFunctor {
             size_t operator()(const HdReprSelector& repr) const {
