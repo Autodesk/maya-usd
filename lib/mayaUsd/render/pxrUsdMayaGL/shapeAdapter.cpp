@@ -44,6 +44,7 @@
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/hd/types.h>
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/usd/sdf/path.h>
 
@@ -377,6 +378,23 @@ PxrMayaHdShapeAdapter::_SetDagPath(const MDagPath& dagPath)
     }
 
     return status;
+}
+
+void
+PxrMayaHdShapeAdapter::_MarkRenderTasksDirty(HdDirtyBits dirtyBits)
+{
+    HdRenderIndex* renderIndex =
+        UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
+
+    for (const auto& iter : _renderTaskIdMap) {
+        // The render tasks represented by the IDs in this map are instantiated
+        // lazily, so check that the task exists before attempting to dirty it.
+        if (renderIndex->HasTask(iter.second)) {
+            renderIndex->GetChangeTracker().MarkTaskDirty(
+                iter.second,
+                dirtyBits);
+        }
+    }
 }
 
 /* static */

@@ -25,8 +25,10 @@
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/changeTracker.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/types.h>
 #include <pxr/usd/sdf/path.h>
 
 // XXX: With Maya versions up through 2019 on Linux, M3dView.h ends up
@@ -278,6 +280,16 @@ class PxrMayaHdShapeAdapter
         /// error, which can be detected from the returned MStatus.
         MAYAUSD_CORE_PUBLIC
         MStatus _SetDagPath(const MDagPath& dagPath);
+
+        /// Mark the render tasks for this shape dirty.
+        ///
+        /// The batch renderer currently creates a render task for each shape's
+        /// HdRprimCollection, but it has no knowledge of when the collection
+        /// is changed, for example. This method should be called to notify the
+        /// batch renderer when such a change is made.
+        MAYAUSD_CORE_PUBLIC
+        void _MarkRenderTasksDirty(
+                HdDirtyBits dirtyBits = HdChangeTracker::AllDirty);
 
         /// Helper for getting the wireframe color of the shape.
         ///
