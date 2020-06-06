@@ -134,32 +134,18 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
 
         SdfPath _shadowTaskId;
 
-        // XXX: While this is correct, that we are using
-        // hash in forming the task id, so the map is valid.
-        // It is possible for the hash to collide, so the id
-        // formed from the combination of hash and collection name is not
-        // necessarily unique.
-        struct _RenderTaskIdMapKey
-        {
-            size_t                hash;
-            TfToken               collectionName;
+        // Currently, there is a one-to-one mapping between rprim collections
+        // managed by shape adapters and Hydra render tasks. The shape adapters
+        // ensure that their collections have a unique name, so we index into
+        // the map of Hydra render tasks using that name to find the render
+        // task for that collection.
+        using _RenderTaskIdMap =
+            std::unordered_map<TfToken, SdfPath, TfToken::HashFunctor>;
 
-            struct HashFunctor {
-                size_t operator()(const  _RenderTaskIdMapKey& value) const;
-            };
+        // For render setup tasks, there is one task per unique set of render
+        // params, which are hashed to generate a key.
+        using _RenderParamTaskIdMap = std::unordered_map<size_t, SdfPath>;
 
-            bool operator==(const  _RenderTaskIdMapKey& other) const;
-        };
-
-        typedef std::unordered_map<
-                _RenderTaskIdMapKey,
-                SdfPath,
-                _RenderTaskIdMapKey::HashFunctor> _RenderTaskIdMap;
-
-        typedef std::unordered_map<size_t, SdfPath> _RenderParamTaskIdMap;
-
-
-       
         _RenderParamTaskIdMap _renderSetupTaskIdMap;
         _RenderTaskIdMap      _renderTaskIdMap;
 

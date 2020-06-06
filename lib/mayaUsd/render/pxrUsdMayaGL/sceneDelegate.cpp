@@ -498,59 +498,63 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     }
     taskList.emplace_back(renderIndex.GetTask(renderSetupTaskId));
 
-    size_t numPrimFilters = primFilters.size();
-    for (size_t primFilterNum = 0;
-                primFilterNum <  numPrimFilters;
-              ++primFilterNum)
-
-    {
-        const PxrMayaHdPrimFilter &primFilter = primFilters[primFilterNum];
-
-        _RenderTaskIdMapKey key = {hash, primFilter.collection.GetName()};
-
+    for (const PxrMayaHdPrimFilter& primFilter : primFilters) {
         SdfPath renderTaskId;
-        if (!TfMapLookup(_renderTaskIdMap, key, &renderTaskId)) {
-            // Create a new render task if one does not exist for this key.
+        const HdRprimCollection& rprimCollection = primFilter.collection;
+        const TfTokenVector& renderTags = primFilter.renderTags;
+
+        // The batch renderer manages the render task ID for this collection,
+        // so look up its ID by name.
+        const TfToken& collectionName = rprimCollection.GetName();
+
+        if (!TfMapLookup(_renderTaskIdMap, collectionName, &renderTaskId)) {
+            // Create a new render task ID if one does not exist for this
+            // collection.
             // Note that we expect the collection name to have already been
             // sanitized for use in SdfPaths.
-            TF_VERIFY(TfIsValidIdentifier(key.collectionName.GetString()));
+            TF_VERIFY(TfIsValidIdentifier(collectionName.GetString()));
             renderTaskId = _rootId.AppendChild(
-                TfToken(TfStringPrintf("%s_%zx_%s",
-                                       HdxPrimitiveTokens->renderTask.GetText(),
-                                       key.hash,
-                                       key.collectionName.GetText())));
+                TfToken(
+                    TfStringPrintf(
+                        "%s_%s",
+                        HdxPrimitiveTokens->renderTask.GetText(),
+                        collectionName.GetText())));
 
+            _renderTaskIdMap[collectionName] = renderTaskId;
+        }
+
+        HdTaskSharedPtr renderTask = renderIndex.GetTask(renderTaskId);
+        if (!renderTask) {
             renderIndex.InsertTask<HdxRenderTask>(this, renderTaskId);
+            renderTask = renderIndex.GetTask(renderTaskId);
+
+            _ValueCache& cache = _valueCacheMap[renderTaskId];
 
             // Note that the render task has no params of its own. All of the
             // render params are on the render setup task instead.
-            _ValueCache& cache = _valueCacheMap[renderTaskId];
             cache[HdTokens->params] = VtValue();
-            cache[HdTokens->collection] = VtValue(primFilter.collection);
-            cache[HdTokens->renderTags] = VtValue(primFilter.renderTags);
 
-            _renderTaskIdMap[key] = renderTaskId;
+            // Once the task is created, the batch renderer itself will not
+            // change the task's collection.
+            cache[HdTokens->collection] = VtValue(rprimCollection);
+
+            cache[HdTokens->renderTags] = VtValue(renderTags);
         } else {
             // Update task's render tags
-            const TfTokenVector &currentRenderTags =
+            const TfTokenVector& currentRenderTags =
                 _GetValue<TfTokenVector>(renderTaskId, HdTokens->renderTags);
 
-            if (currentRenderTags != primFilter.renderTags) {
-                _SetValue(renderTaskId, HdTokens->renderTags, primFilter.renderTags);
+            if (currentRenderTags != renderTags) {
+                _SetValue(renderTaskId, HdTokens->renderTags, renderTags);
                 renderIndex.GetChangeTracker().MarkTaskDirty(
                     renderTaskId,
                     HdChangeTracker::DirtyRenderTags);
             }
         }
 
-        taskList.emplace_back(renderIndex.GetTask(renderTaskId));
-
-        // Update the collections on the render task and mark them dirty.
-        // XXX: Should only mark collection dirty if collection has changed
-        _SetValue(renderTaskId, HdTokens->collection, primFilter.collection);
-        renderIndex.GetChangeTracker().MarkTaskDirty(
-            renderTaskId,
-            HdChangeTracker::DirtyCollection);
+        if (renderTask) {
+            taskList.emplace_back(renderTask);
+        }
     }
 
     taskList.emplace_back(renderIndex.GetTask(_selectionTaskId));
@@ -626,23 +630,5 @@ PxrMayaHdSceneDelegate::GetPickingTasks(
     return tasks;
 }
 
-
-size_t
-PxrMayaHdSceneDelegate::_RenderTaskIdMapKey::HashFunctor::operator ()(
-        const  _RenderTaskIdMapKey& value) const
-{
-    size_t hash = value.hash;
-    boost::hash_combine(hash, value.collectionName);
-
-    return hash;
-}
-
-bool
-PxrMayaHdSceneDelegate::_RenderTaskIdMapKey::operator ==(
-        const  _RenderTaskIdMapKey& other) const
-{
-    return ((this->hash           == other.hash) &&
-            (this->collectionName == other.collectionName));
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
