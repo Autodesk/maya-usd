@@ -1090,6 +1090,7 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
 
             primFilters.push_back(
                     PxrMayaHdPrimFilter {
+                        nullptr,
                         rprimCollection,
                         renderTags
                     });
@@ -1104,6 +1105,7 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
 
         primFilters.push_back(
             PxrMayaHdPrimFilter {
+                nullptr,
                 collection,
                 TfTokenVector{
 #if USD_VERSION_NUM >= 1911
@@ -1466,6 +1468,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
             itemsVisible |= shapeAdapter->IsVisible();
 
             primFilters.push_back(PxrMayaHdPrimFilter {
+                nullptr,
                 shapeAdapter->GetRprimCollection(),
                 shapeAdapter->GetRenderTags()
             });

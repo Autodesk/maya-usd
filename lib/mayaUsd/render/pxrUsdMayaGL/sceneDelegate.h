@@ -40,10 +40,21 @@
 #include <mayaUsd/base/api.h>
 
 #include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// Prim filters can be specified in one of two ways:
+///
+///     1. If a shape adapter is being used, it can be specified in the
+///        shapeAdapter field and all necessary data will be obtained by
+///        querying the shape adapter for it.
+///     2. If no shape adapter is being used, the shapeAdapter field should be
+///        set to nullptr, and a collection and set of render tags *must* be
+///        provided.
+///
 struct PxrMayaHdPrimFilter {
+    PxrMayaHdShapeAdapter* shapeAdapter;
     HdRprimCollection collection;
     TfTokenVector     renderTags;
 };
@@ -134,11 +145,14 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
 
         SdfPath _shadowTaskId;
 
-        // Currently, there is a one-to-one mapping between rprim collections
-        // managed by shape adapters and Hydra render tasks. The shape adapters
-        // ensure that their collections have a unique name, so we index into
-        // the map of Hydra render tasks using that name to find the render
-        // task for that collection.
+        // When prim filters are populated including a shape adapter, the
+        // adapter is responsible for providing the appropriate render task ID
+        // for a given repr. When no shape adapter is given, the batch renderer
+        // manages the render task ID and constructs it using the rprim
+        // collection name. The batch renderer will ultimately instantiate the
+        // render task itself for both cases.
+        // This type maps collection names to render task IDs for tasks in the
+        // latter case where the task ID is managed by the batch renderer.
         using _RenderTaskIdMap =
             std::unordered_map<TfToken, SdfPath, TfToken::HashFunctor>;
 
