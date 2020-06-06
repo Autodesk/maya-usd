@@ -31,7 +31,7 @@
 #include <maya/MPlug.h>
 #include <maya/MPointArray.h>
 
-#include "pxr/usd/usdUtils/pipeline.h"
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <iostream>
 

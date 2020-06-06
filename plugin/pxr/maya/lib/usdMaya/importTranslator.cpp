@@ -19,8 +19,8 @@
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
 
-#include "pxr/base/gf/interval.h"
-#include "pxr/base/vt/dictionary.h"
+#include <pxr/base/gf/interval.h>
+#include <pxr/base/vt/dictionary.h>
 
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>

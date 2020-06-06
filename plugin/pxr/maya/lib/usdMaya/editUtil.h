@@ -18,12 +18,12 @@
 
 /// \file usdMaya/editUtil.h
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "usdMaya/api.h"
 
-#include "pxr/base/vt/value.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <maya/MFnAssembly.h>
 #include <maya/MObject.h>

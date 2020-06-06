@@ -26,9 +26,9 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 namespace AL {
 namespace usdmaya {

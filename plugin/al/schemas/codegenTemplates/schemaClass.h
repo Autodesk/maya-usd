@@ -19,12 +19,12 @@
 /// \file {{ libraryName }}/{{ cls.GetHeaderFile() }}
 
 {% if useExportAPI %}
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "{{ libraryPath }}/api.h"
 {% endif %}
 #include "{{ cls.parentLibPath }}/{{ cls.GetParentHeaderFile() }}"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
 {% if cls.tokens -%}
 #include "{{ libraryPath }}/tokens.h"
 {% endif %}
@@ -32,14 +32,14 @@
 {{ cls.extraIncludes }}
 {% endif %}
 
-#include "pxr/base/vt/value.h"
+#include <pxr/base/vt/value.h>
 
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/matrix4d.h"
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/matrix4d.h>
 
-#include "pxr/base/tf/token.h"
-#include "pxr/base/tf/type.h"
+#include <pxr/base/tf/token.h>
+#include <pxr/base/tf/type.h>
 
 {% if useExportAPI %}
 {{ namespaceOpen }}

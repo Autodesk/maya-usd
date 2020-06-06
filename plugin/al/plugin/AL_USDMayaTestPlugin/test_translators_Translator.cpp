@@ -24,10 +24,10 @@
 
 #include <maya/MDagModifier.h>
 
-#include "pxr/base/tf/refPtr.h"
-#include "pxr/base/tf/type.h"
-#include "pxr/usd/usd/schemaBase.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/base/tf/refPtr.h>
+#include <pxr/base/tf/type.h>
+#include <pxr/usd/usd/schemaBase.h>
+#include <pxr/usd/usd/stage.h>
 
 using namespace AL::usdmaya::fileio::translators;
 

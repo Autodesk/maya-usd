@@ -17,7 +17,7 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/maya/utils/MenuBuilder.h"
 
-#include "pxr/base/tf/debug.h"
+#include <pxr/base/tf/debug.h>
 
 #include <maya/MSyntax.h>
 #include <maya/MGlobal.h>

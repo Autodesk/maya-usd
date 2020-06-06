@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 /*
-#include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/version.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
+#include <pxr/usdImaging/usdImaging/delegate.h>
+#include <pxr/usdImaging/usdImaging/version.h>
+#include <pxr/usdImaging/usdImagingGL/engine.h>
 
 */
 
@@ -53,14 +53,14 @@
 
 #include "AL/usd/transaction/TransactionManager.h"
 
-#include "pxr/usd/ar/resolver.h"
+#include <pxr/usd/ar/resolver.h>
 
-#include "pxr/usd/usdGeom/imageable.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stageCacheContext.h"
-#include "pxr/usd/usdUtils/stageCache.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
+#include <pxr/usd/usdGeom/imageable.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stageCacheContext.h>
+#include <pxr/usd/usdUtils/stageCache.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/stageData.h>

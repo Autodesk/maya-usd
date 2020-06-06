@@ -35,9 +35,9 @@
 #include <maya/MFileIO.h>
 #include <maya/MItDag.h>
 
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 #include "AL/usdmaya/utils/AttributeType.h"
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/utils/Utils.h"

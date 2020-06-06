@@ -26,7 +26,7 @@
 #include <maya/MTime.h>
 #include <maya/MObjectArray.h>
 
-#include "pxr/usd/usdGeom/xformOp.h"
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/usdmaya/utils/AttributeType.h"

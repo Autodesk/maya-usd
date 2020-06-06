@@ -19,10 +19,10 @@
 #include "AL/usdmaya/TypeIDs.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 
-#include "pxr/usd/sdf/textFileFormat.h"
-#include "pxr/usd/usd/usdaFileFormat.h"
-#include "pxr/usd/usd/usdcFileFormat.h"
-#include "pxr/usd/usd/usdFileFormat.h"
+#include <pxr/usd/sdf/textFileFormat.h>
+#include <pxr/usd/usd/usdaFileFormat.h>
+#include <pxr/usd/usd/usdcFileFormat.h>
+#include <pxr/usd/usd/usdFileFormat.h>
 
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MDGModifier.h>

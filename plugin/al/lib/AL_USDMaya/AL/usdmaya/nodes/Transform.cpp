@@ -20,7 +20,7 @@
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
-#include "pxr/usd/usdGeom/scope.h"
+#include <pxr/usd/usdGeom/scope.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MGlobal.h>

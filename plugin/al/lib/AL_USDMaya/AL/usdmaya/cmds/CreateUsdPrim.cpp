@@ -20,7 +20,7 @@
 #include <maya/MFnDagNode.h>
 #include <maya/MSyntax.h>
 
-#include "pxr/usd/usd/modelAPI.h"
+#include <pxr/usd/usd/modelAPI.h>
 
 namespace AL {
 namespace usdmaya {

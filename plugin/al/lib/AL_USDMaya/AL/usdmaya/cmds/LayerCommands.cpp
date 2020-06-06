@@ -21,8 +21,8 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
-#include "pxr/usd/sdf/listOp.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/sdf/listOp.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MFnDagNode.h>

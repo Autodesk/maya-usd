@@ -33,7 +33,7 @@
 
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"
-#include "pxr/base/arch/env.h"
+#include <pxr/base/arch/env.h>
 #include "ufe/hierarchyHandler.h"
 #include "ufe/sceneItem.h"
 #include "ufe/runTimeMgr.h"
@@ -42,8 +42,8 @@
 #include "ufe/log.h"
 #endif
 
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/kind/registry.h"
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/kind/registry.h>
 
 namespace AL {
 namespace usdmaya {

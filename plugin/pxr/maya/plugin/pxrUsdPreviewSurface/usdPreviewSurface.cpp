@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxrUsdPreviewSurface/usdPreviewSurface.h"
+#include <pxrUsdPreviewSurface/usdPreviewSurface.h>
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stringUtils.h"
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
 
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
