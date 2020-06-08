@@ -5,7 +5,7 @@
 
 #include "AL/usdmaya/TransformOperation.h"
 
-#include "pxr/usd/usdGeom/xform.h"
+#include <pxr/usd/usdGeom/xform.h>
 
 using AL::maya::test::buildTempPath;
 

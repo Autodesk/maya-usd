@@ -22,13 +22,13 @@
 #include "usdMaya/proxyShape.h"
 #include <mayaUsd/nodes/usdPrimProvider.h>
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
-#include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/staticTokens.h"
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/staticTokens.h>
 
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDGModifier.h>

@@ -17,7 +17,7 @@
 
 #include <maya/MFnDagNode.h>
 
-#include "pxr/usd/usd/schemaBase.h"
+#include <pxr/usd/usd/schemaBase.h>
 
 namespace AL {
 namespace usdmaya {

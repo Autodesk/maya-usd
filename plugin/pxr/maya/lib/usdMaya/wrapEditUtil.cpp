@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "usdMaya/editUtil.h"
 
 #include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyEnum.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/pyEnum.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <maya/MFnAssembly.h>
 #include <maya/MObject.h>

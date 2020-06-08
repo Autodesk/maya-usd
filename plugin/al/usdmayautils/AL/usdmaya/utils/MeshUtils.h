@@ -18,7 +18,7 @@
 
 #include "AL/usdmaya/utils/Api.h"
 
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/mesh.h>
 
 #include <maya/MFloatPointArray.h>
 #include <maya/MFnMesh.h>

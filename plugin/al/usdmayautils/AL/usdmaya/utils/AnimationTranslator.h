@@ -26,7 +26,7 @@
 
 #include "AL/maya/utils/Utils.h"
 
-#include "pxr/usd/usd/attribute.h"
+#include <pxr/usd/usd/attribute.h>
 PXR_NAMESPACE_USING_DIRECTIVE
 
 /// \brief  operator to compare MPlugs with < operator

@@ -26,18 +26,18 @@
 #include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
 #include "usdMaya/instancerShapeAdapterWithSceneAssembly.h"
 
-#include "pxr/base/tf/fileUtils.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/stringUtils.h"
+#include <pxr/base/tf/fileUtils.h>
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/stringUtils.h>
 
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/usd/editContext.h"
-#include "pxr/usd/usd/editTarget.h"
-#include "pxr/usd/usd/stageCacheContext.h"
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usdGeom/modelAPI.h"
-#include "pxr/usd/usdUtils/stageCache.h"
-#include "pxr/usd/usdUtils/pipeline.h"
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/editTarget.h>
+#include <pxr/usd/usd/stageCacheContext.h>
+#include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usdGeom/modelAPI.h>
+#include <pxr/usd/usdUtils/stageCache.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>

@@ -15,7 +15,7 @@
 //
 #include "AL/usdmaya/TransformOperation.h"
 
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 #include <string>
 #include <vector>

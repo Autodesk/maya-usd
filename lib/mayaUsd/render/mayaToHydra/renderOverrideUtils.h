@@ -29,7 +29,6 @@ public:
                    ? MHWRender::MSceneRender::getObjectTypeExclusions()
                    : ~(MHWRender::MFrameContext::kExcludeSelectHandles |
                        MHWRender::MFrameContext::kExcludeCameras |
-                       MHWRender::MFrameContext::kExcludeCVs |
                        MHWRender::MFrameContext::kExcludeDimensions |
                        MHWRender::MFrameContext::kExcludeLights |
                        MHWRender::MFrameContext::kExcludeLocators |
@@ -67,7 +66,9 @@ public:
 
     MUint64 getObjectTypeExclusions() override {
         // kExcludeHoldOuts is used so that camera-guides are rendered here.
-        return ~(kExcludeManipulators | kExcludeHoldOuts);
+        // kExcludeCVs | kExcludeNurbsCurves are here because HdMayaSceneRender::getObjectTypeExclusions return is dynamic
+        // XXX: Should curves be an mtoh setting as to whether to push them through to the delegate or Maya ?
+        return ~(kExcludeManipulators | kExcludeCVs | kExcludeNurbsCurves | kExcludeHoldOuts);
     }
 
     MHWRender::MClearOperation& clearOperation() override {

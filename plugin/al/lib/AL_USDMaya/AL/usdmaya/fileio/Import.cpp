@@ -29,7 +29,7 @@
 #include <maya/MSyntax.h>
 #include <maya/MTime.h>
 
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/stage.h>
 
 namespace AL {
 namespace usdmaya {

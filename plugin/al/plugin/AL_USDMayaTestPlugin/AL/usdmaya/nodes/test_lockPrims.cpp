@@ -22,9 +22,9 @@
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/maya/utils/Utils.h"
 
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/base/tf/stringUtils.h"
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usd/variantSets.h>
+#include <pxr/base/tf/stringUtils.h>
 
 #include <maya/MFnTransform.h>
 #include <maya/MSelectionList.h>

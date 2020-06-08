@@ -19,7 +19,7 @@
 
 #include <maya/MPxCommand.h>
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "AL/usdmaya/utils/ForwardDeclares.h"
 #include "AL/maya/utils/Api.h"
 #include "AL/maya/utils/MayaHelperMacros.h"

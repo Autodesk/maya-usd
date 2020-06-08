@@ -5,10 +5,10 @@
 
 #include <mayaUsd_Schemas/MayaReference.h>
 
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/base/plug/registry.h"
-#include "pxr/base/plug/plugin.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/plug/plugin.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 //TF_DECLARE_WEAK_PTRS(PlugPlugin);

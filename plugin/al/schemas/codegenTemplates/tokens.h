@@ -26,10 +26,10 @@
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 {% if useExportAPI %}
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "{{ libraryPath }}/api.h"
 {% endif %}
-#include "pxr/base/tf/staticTokens.h"
+#include <pxr/base/tf/staticTokens.h>
 
 {% if useExportAPI %}
 {{ namespaceOpen }}

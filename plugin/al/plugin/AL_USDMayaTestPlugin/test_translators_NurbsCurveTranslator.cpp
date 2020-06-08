@@ -31,9 +31,9 @@
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnFloatArrayData.h>
 
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;

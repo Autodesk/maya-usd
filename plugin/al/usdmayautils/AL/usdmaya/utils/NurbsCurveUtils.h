@@ -20,8 +20,8 @@
 
 #include <maya/MFnNurbsCurve.h>
 
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

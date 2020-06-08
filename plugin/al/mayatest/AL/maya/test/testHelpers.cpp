@@ -33,8 +33,8 @@
 
 #include <cstring>
 
-#include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/tf/pathUtils.h"
+#include <pxr/base/arch/fileSystem.h>
+#include <pxr/base/tf/pathUtils.h>
 
 #include <string>
 #include <algorithm>

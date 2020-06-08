@@ -33,8 +33,8 @@
 #include <maya/MTime.h>
 #include <maya/MFnEnumAttribute.h>
 
-#include "pxr/usd/usd/api.h"
-#include "pxr/usd/usdGeom/xform.h"
+#include <pxr/usd/usd/api.h>
+#include <pxr/usd/usdGeom/xform.h>
 
 #include "AL/usdmaya/TypeIDs.h"
 #include <mayaUsd/nodes/stageData.h>

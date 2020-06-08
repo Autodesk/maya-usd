@@ -21,7 +21,7 @@
 
 #include "AL/usdmaya/Api.h"
 
-#include "pxr/base/tf/token.h"
+#include <pxr/base/tf/token.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

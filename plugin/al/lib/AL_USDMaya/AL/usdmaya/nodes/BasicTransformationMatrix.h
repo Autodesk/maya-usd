@@ -20,8 +20,8 @@
 
 #include "AL/usdmaya/Api.h"
 
-#include "pxr/usd/usdGeom/scope.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usd/prim.h>
 
 
 PXR_NAMESPACE_USING_DIRECTIVE

@@ -18,10 +18,10 @@
 
 /// \file pxrUsdPreviewSurface/usdPreviewSurface.h
 
-#include "pxr/pxr.h"
-#include "pxrUsdPreviewSurface/api.h"
+#include <pxr/pxr.h>
+#include <pxrUsdPreviewSurface/api.h>
 
-#include "pxr/base/tf/staticTokens.h"
+#include <pxr/base/tf/staticTokens.h>
 
 #include <maya/MDataBlock.h>
 #include <maya/MObject.h>
