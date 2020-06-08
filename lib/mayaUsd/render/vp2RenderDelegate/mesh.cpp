@@ -1267,7 +1267,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     // The current instancer invalidation tracking makes it hard for
     // us to tell whether transforms will be dirty, so this code
     // pulls them every time something changes.
-    // If the mesh is instanced but have 0 instance transforms remember that
+    // If the mesh is instanced but has 0 instance transforms remember that
     // so the render item can be hidden.
     bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
@@ -1363,7 +1363,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                          HdChangeTracker::DirtyPoints |
                          HdChangeTracker::DirtyExtent |
                          DirtySelectionHighlight)) ||
-        instancerWithNoInstances) {
+                        !GetInstancerId().IsEmpty()) {
         bool enable = drawItem->GetVisible() && !_meshSharedData._points.empty() && !instancerWithNoInstances;
 
         if (isDedicatedSelectionHighlightItem) {
