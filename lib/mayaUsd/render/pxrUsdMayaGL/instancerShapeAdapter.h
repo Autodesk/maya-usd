@@ -123,9 +123,10 @@ class UsdMayaGL_InstancerShapeAdapter : public PxrMayaHdShapeAdapter
         /// Initialize the shape adapter using the given \p renderIndex.
         ///
         /// This method is called automatically during Sync() when the shape
-        /// adapter's "identity" changes. This happens when the delegateId or
-        /// the rprim collection name computed from the shape adapter's shape
-        /// is different than what is currently stored in the shape adapter.
+        /// adapter's "identity" changes. This can happen when the shape
+        /// managed by this adapter is changed by setting a new DAG path, or
+        /// otherwise when there is some other fundamental change to the shape
+        /// or to the delegate or render index.
         /// The shape adapter will then query the batch renderer for its render
         /// index and use that to re-create its delegate and re-add its rprim
         /// collection, if necessary.
