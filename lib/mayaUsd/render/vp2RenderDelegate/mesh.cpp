@@ -1358,11 +1358,11 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 
     // Determine if the render item should be enabled or not.
-    if (itemDirtyBits & (HdChangeTracker::DirtyVisibility |
+    if ((itemDirtyBits & (HdChangeTracker::DirtyVisibility |
                          HdChangeTracker::DirtyRenderTag |
                          HdChangeTracker::DirtyPoints |
                          HdChangeTracker::DirtyExtent |
-                         DirtySelectionHighlight) ||
+                         DirtySelectionHighlight)) ||
         instancerWithNoInstances) {
         bool enable = drawItem->GetVisible() && !_meshSharedData._points.empty() && !instancerWithNoInstances;
 
