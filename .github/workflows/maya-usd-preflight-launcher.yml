@@ -7,17 +7,13 @@ on:
     branches: [dev]
     types:    [assigned]
 
-env:
-  #ASSIGNEE: ecp-maya-devops-adsk
-  ASSIGNEE: smithw-adsk
-
 jobs:
 
   # Wait for remote build to start, report back
   build_start:
       timeout-minutes: 180
       runs-on: ubuntu-latest
-      if: contains(toJson(github.event.pull_request.assignee), ${{ ASSIGNEE }})
+      if: contains(toJson(github.event.pull_request.assignee), 'smithw-adsk')
       steps:
 
         # Build logs and results will be committed here when the remote build is complete
@@ -48,7 +44,7 @@ jobs:
       needs: build_start
       timeout-minutes: 180
       runs-on: ubuntu-latest
-      if: contains(toJson(github.event.pull_request.assignee), ${{ ASSIGNEE }})
+      if: contains(toJson(github.event.pull_request.assignee), 'smithw-adsk')
       steps:
 
         # Build logs and results will be committed here when the remote build is complete
