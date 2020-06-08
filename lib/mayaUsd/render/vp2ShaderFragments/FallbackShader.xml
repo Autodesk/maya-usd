@@ -65,7 +65,7 @@ limitations under the License.
         <float name="fogDensity" ref="mayaBlinnSurface.fogDensity" />
         <float4 name="fogColor" ref="mayaBlinnSurface.fogColor" />
         <float name="fogMultiplier" ref="mayaBlinnSurface.fogMultiplier" />
-        <float4 name="diffuseColor" ref="Float4ToFloat4.input" />
+        <float4 name="diffuseColor" ref="Float4ToFloat4.input" flags="multiDraw" />
     </properties>
     <values>
         <float3 name="Lw" value="0.000000,0.000000,0.000000"  />
