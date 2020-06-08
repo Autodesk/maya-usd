@@ -105,6 +105,8 @@ private:
         const HdMeshReprDesc& desc,
         bool requireSmoothNormals, bool requireFlatNormals);
 
+    void _HideAllDrawItems(const TfToken& reprToken);
+
     void _UpdatePrimvarSources(
         HdSceneDelegate* sceneDelegate,
         HdDirtyBits dirtyBits,
