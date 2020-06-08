@@ -1267,6 +1267,9 @@ void HdVP2Mesh::_UpdateDrawItem(
     // The current instancer invalidation tracking makes it hard for
     // us to tell whether transforms will be dirty, so this code
     // pulls them every time something changes.
+    // If the mesh is instanced but have 0 instance transforms remember that
+    // so the render item can be hidden.
+    bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
 
         // Retrieve instance transforms from the instancer.
@@ -1275,10 +1278,14 @@ void HdVP2Mesh::_UpdateDrawItem(
             ComputeInstanceTransforms(id);
 
         MMatrix instanceMatrix;
+        const unsigned int instanceCount = transforms.size();
 
-        if (isDedicatedSelectionHighlightItem) {
+        if (0 == instanceCount) {
+            instancerWithNoInstances = true;
+        }
+        else if (isDedicatedSelectionHighlightItem) {
             if (_selectionState == kFullySelected) {
-                stateToCommit._instanceTransforms.setLength(transforms.size());
+                stateToCommit._instanceTransforms.setLength(instanceCount);
                 for (size_t i = 0; i < transforms.size(); ++i) {
                     transforms[i].Get(instanceMatrix.matrix);
                     instanceMatrix = worldMatrix * instanceMatrix;
@@ -1296,7 +1303,6 @@ void HdVP2Mesh::_UpdateDrawItem(
             }
         }
         else {
-            const unsigned int instanceCount = transforms.size();
             stateToCommit._instanceTransforms.setLength(instanceCount);
             for (size_t i = 0; i < instanceCount; ++i) {
                 transforms[i].Get(instanceMatrix.matrix);
@@ -1356,8 +1362,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                          HdChangeTracker::DirtyRenderTag |
                          HdChangeTracker::DirtyPoints |
                          HdChangeTracker::DirtyExtent |
-                         DirtySelectionHighlight)) {
-        bool enable = drawItem->GetVisible() && !_meshSharedData._points.empty();
+                         DirtySelectionHighlight) ||
+        instancerWithNoInstances) {
+        bool enable = drawItem->GetVisible() && !_meshSharedData._points.empty() && !instancerWithNoInstances;
 
         if (isDedicatedSelectionHighlightItem) {
             enable = enable && (_selectionState != kUnselected);
