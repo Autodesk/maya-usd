@@ -29,7 +29,7 @@ jobs:
             path: transfer
 
         # Echo the file name - it's hard to find the run_id in the UI
-        - name: Echo the expected result file name
+        - name: Echo the expected start file name
           run: "echo ${{ github.run_id }}_${{ github.run_number }}_start.txt"
 
         # Wait for remote build to start
