@@ -17,7 +17,7 @@ jobs:
   build_start:
       timeout-minutes: 180
       runs-on: ubuntu-latest
-      if: contains(toJson(github.event.pull_request.assignee), ASSIGNEE)
+      if: contains(toJson(github.event.pull_request.assignee), ${{ ASSIGNEE }})
       steps:
 
         # Build logs and results will be committed here when the remote build is complete
@@ -48,7 +48,7 @@ jobs:
       needs: build_start
       timeout-minutes: 180
       runs-on: ubuntu-latest
-      if: contains(toJson(github.event.pull_request.assignee), ASSIGNEE)
+      if: contains(toJson(github.event.pull_request.assignee), ${{ ASSIGNEE }})
       steps:
 
         # Build logs and results will be committed here when the remote build is complete
