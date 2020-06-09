@@ -16,6 +16,7 @@
 #
 
 from maya import cmds
+from maya.app.general.mayaIsVP2Capable import mayaIsVP2Capable
 
 import os
 import unittest
@@ -73,6 +74,10 @@ class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
         rows with material assignments that ramp the attribute values through
         the typical ranges for those attributes.
         """
+        # Can run in batch, but requires a VP2-enabled VM:
+        if not mayaIsVP2Capable():
+            return
+
         self._testName = 'PxrUsdPreviewSurfaceDrawTest'
 
         mayaSceneFile = '%s.ma' % self._testName
