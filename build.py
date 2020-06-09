@@ -287,19 +287,15 @@ def RunCMake(context, extraArgs=None, stages=None):
 def RunCTest(context, extraArgs=None):
     buildDir = context.buildDir
     variant = BuildVariant(context)
-    #TODO we can't currently run tests in parallel, something to revisit.
-    numJobs = 1
 
     with CurrentWorkingDirectory(buildDir):
         Run(context,
             'ctest '
             '--output-on-failure ' 
             '--timeout 300 '
-            '-j {numJobs} '
             '-C {variant} '
             '{extraArgs} '
-            .format(numJobs=numJobs,
-                    variant=variant,
+            .format(variant=variant,
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
 
 def RunMakeZipArchive(context):
