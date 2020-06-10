@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "FrameRange.h"
+
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usd/typed.h>
 

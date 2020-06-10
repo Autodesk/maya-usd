@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "ModelAPI.h"
+
 #include <pxr/usd/usd/schemaBase.h>
 
 #include <pxr/usd/sdf/primSpec.h>
