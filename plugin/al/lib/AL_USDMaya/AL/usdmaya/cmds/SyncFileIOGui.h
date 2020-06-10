@@ -15,11 +15,11 @@
 //
 #pragma once
 
-#include "AL/usdmaya/Api.h"
+#include <AL/usdmaya/Api.h>
 
 #include <maya/MPxCommand.h>
 
-#include "AL/maya/utils/MayaHelperMacros.h"
+#include <AL/maya/utils/MayaHelperMacros.h>
 
 namespace AL {
 namespace usdmaya {

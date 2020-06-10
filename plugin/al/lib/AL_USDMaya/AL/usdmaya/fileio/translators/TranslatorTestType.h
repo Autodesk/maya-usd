@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "AL/usdmaya/Api.h"
+#include <AL/usdmaya/Api.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/typed.h>

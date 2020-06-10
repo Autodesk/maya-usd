@@ -15,11 +15,11 @@
 //
 #pragma once
 
-#include "AL/usdmaya/Api.h"
+#include <AL/usdmaya/Api.h>
 
-#include "AL/usdmaya/ForwardDeclares.h"
-#include "AL/maya/utils/Api.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
+#include <AL/usdmaya/ForwardDeclares.h>
+#include <AL/maya/utils/Api.h>
+#include <AL/maya/utils/MayaHelperMacros.h>
 #include <maya/MDGModifier.h>
 #include <maya/MPxCommand.h>
 

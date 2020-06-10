@@ -15,8 +15,8 @@
 //
 #pragma once
 
-#include "AL/usdmaya/Api.h"
-#include "AL/maya/utils/Api.h"
+#include <AL/usdmaya/Api.h>
+#include <AL/maya/utils/Api.h>
 
 #include <maya/MDagPath.h>
 
@@ -27,9 +27,9 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/attribute.h>
 
-#include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-#include "AL/usdmaya/fileio/translators/ExtraDataPlugin.h"
-#include "AL/usdmaya/fileio/ExportParams.h"
+#include <AL/usdmaya/fileio/translators/TranslatorContext.h>
+#include <AL/usdmaya/fileio/translators/ExtraDataPlugin.h>
+#include <AL/usdmaya/fileio/ExportParams.h>
 
 namespace AL {
 namespace usdmaya {

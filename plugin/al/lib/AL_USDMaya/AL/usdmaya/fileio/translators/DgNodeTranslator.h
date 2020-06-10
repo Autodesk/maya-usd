@@ -15,13 +15,13 @@
 //
 #pragma once
 
-#include "AL/usdmaya/Api.h"
+#include <AL/usdmaya/Api.h>
 
 #include <AL/usdmaya/ForwardDeclares.h>
-#include "AL/usdmaya/utils/AttributeType.h"
-#include "AL/usdmaya/utils/DgNodeHelper.h"
-#include "AL/usdmaya/utils/ForwardDeclares.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
+#include <AL/usdmaya/utils/AttributeType.h>
+#include <AL/usdmaya/utils/DgNodeHelper.h>
+#include <AL/usdmaya/utils/ForwardDeclares.h>
+#include <AL/maya/utils/MayaHelperMacros.h>
 
 #include <maya/MPlug.h>
 #include <maya/MAngle.h>

@@ -15,10 +15,10 @@
 //
 #pragma once
 
-#include "AL/usdmaya/Api.h"
+#include <AL/usdmaya/Api.h>
 
-#include "AL/maya/utils/FileTranslatorBase.h"
-#include "AL/maya/utils/PluginTranslatorOptions.h"
+#include <AL/maya/utils/FileTranslatorBase.h>
+#include <AL/maya/utils/PluginTranslatorOptions.h>
 
 namespace AL {
 namespace usdmaya {

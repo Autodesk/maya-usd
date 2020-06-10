@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "AL/usdmaya/Api.h"
+#include <AL/usdmaya/Api.h>
 
 #include <AL/usdmaya/ForwardDeclares.h>
 #include <maya/MPxData.h>
@@ -28,7 +28,7 @@
 #include <pxr/base/tf/refPtr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/base/tf/debug.h>
-#include "AL/usdmaya/DebugCodes.h"
+#include <AL/usdmaya/DebugCodes.h>
 
 #include <vector>
 #include <string>
