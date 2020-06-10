@@ -16,7 +16,6 @@
 #include "mesh.h"
 
 #include <numeric>
-#include <unordered_set>
 
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
