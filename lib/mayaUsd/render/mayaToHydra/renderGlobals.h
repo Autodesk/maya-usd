@@ -42,7 +42,7 @@ struct MtohRenderGlobals {
 #if USD_VERSION_NUM >= 2005
     float outlineSelectionWidth = 4.f;
 #endif
-#if USD_VERSION_NUM > 1911
+#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
     float enableColorQuantization = false;
 #endif
     bool colorSelectionHighlight = true;
