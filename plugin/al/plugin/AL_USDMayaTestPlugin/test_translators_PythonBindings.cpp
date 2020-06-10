@@ -44,7 +44,7 @@ TEST(translators_PythonBindings, import)
                       MString("/../py/examplecubetranslator.py\"");
 
   auto status = MGlobal::executePythonCommand(
-      MString {"execfile("} + pythonscript + ")\n"
+      MString {"from past.builtins import execfile; execfile("} + pythonscript + ")\n"
   );
   ASSERT_TRUE(status);
 
@@ -76,7 +76,7 @@ TEST(translators_PythonBindings, unknownType)
                       MString("/unknowntypetranslator.py\"");
 
   auto status = MGlobal::executePythonCommand(
-      MString {"execfile("} + pythonscript + ")\n"
+      MString {"from past.builtins import execfile; execfile("} + pythonscript + ")\n"
   );
   ASSERT_TRUE(status);
 
