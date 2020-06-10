@@ -16,11 +16,12 @@ jobs:
       if: contains(toJson(github.event.pull_request.assignee), 'smithw-adsk')
       steps:
 
-        # Build logs and results will be committed here when the remote build is complete
+        # Build start info will be committed here when the remote build is launched
         - name: Setup transfer repo
           uses: actions/checkout@v2
           with:
-            repository: ecp-maya-devops-adsk/log-transfer
+#            repository: ecp-maya-devops-adsk/log-transfer
+            repository: smithw-adsk/log-transfer
             ref: transfer
             path: transfer
 
@@ -34,7 +35,7 @@ jobs:
           run: "cd transfer ; while ! [ -f ${{ github.run_id }}_${{ github.run_number }}_start.txt ] ; do git pull --quiet ; sleep 10 ; done"
 
         # Show contents of start file
-        - name: Show contents of start file
+        - name: Show build start information
           shell: bash
           run: "cat transfer/${{ github.run_id }}_${{ github.run_number }}_start.txt"
 
@@ -51,7 +52,8 @@ jobs:
         - name: Setup transfer repo
           uses: actions/checkout@v2
           with:
-            repository: ecp-maya-devops-adsk/log-transfer
+#            repository: ecp-maya-devops-adsk/log-transfer
+            repository: smithw-adsk/log-transfer
             ref: transfer
             path: transfer
 
