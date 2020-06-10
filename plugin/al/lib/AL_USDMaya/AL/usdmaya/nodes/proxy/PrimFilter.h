@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "../../Api.h"
+#include "AL/usdmaya/Api.h"
 
 #include <vector>
 #include <pxr/usd/usd/prim.h>

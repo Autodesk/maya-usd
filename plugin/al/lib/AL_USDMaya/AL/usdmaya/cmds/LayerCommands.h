@@ -15,7 +15,7 @@
 //
 #pragma once
 
-#include "../Api.h"
+#include "AL/usdmaya/Api.h"
 
 #include "AL/usdmaya/ForwardDeclares.h"
 #include "AL/maya/utils/Api.h"
