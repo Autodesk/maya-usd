@@ -7,29 +7,26 @@ on:
     branches: [dev]
     types:    [assigned]
 
-env:
-  #assignee: ecp-maya-devops-adsk
-  assignee: smithw-adsk
-
 jobs:
 
   # Wait for remote build to start, report back
   build_start:
       timeout-minutes: 180
       runs-on: ubuntu-latest
-      if: contains(toJson(github.event.pull_request.assignee), env.assignee)
+      if: contains(toJson(github.event.pull_request.assignee), 'smithw-adsk')
       steps:
 
-        # Build logs and results will be committed here when the remote build is complete
+        # Build start info will be committed here when the remote build is launched
         - name: Setup transfer repo
           uses: actions/checkout@v2
           with:
-            repository: ecp-maya-devops-adsk/log-transfer
+#            repository: ecp-maya-devops-adsk/log-transfer
+            repository: smithw-adsk/log-transfer
             ref: transfer
             path: transfer
 
         # Echo the file name - it's hard to find the run_id in the UI
-        - name: Echo the expected result file name
+        - name: Echo the expected start file name
           run: "echo ${{ github.run_id }}_${{ github.run_number }}_start.txt"
 
         # Wait for remote build to start
@@ -38,7 +35,7 @@ jobs:
           run: "cd transfer ; while ! [ -f ${{ github.run_id }}_${{ github.run_number }}_start.txt ] ; do git pull --quiet ; sleep 10 ; done"
 
         # Show contents of start file
-        - name: Show contents of start file
+        - name: Show build start information
           shell: bash
           run: "cat transfer/${{ github.run_id }}_${{ github.run_number }}_start.txt"
 
@@ -48,14 +45,15 @@ jobs:
       needs: build_start
       timeout-minutes: 180
       runs-on: ubuntu-latest
-      if: contains(toJson(github.event.pull_request.assignee), env.assignee)
+      if: contains(toJson(github.event.pull_request.assignee), 'smithw-adsk')
       steps:
 
         # Build logs and results will be committed here when the remote build is complete
         - name: Setup transfer repo
           uses: actions/checkout@v2
           with:
-            repository: ecp-maya-devops-adsk/log-transfer
+#            repository: ecp-maya-devops-adsk/log-transfer
+            repository: smithw-adsk/log-transfer
             ref: transfer
             path: transfer
 
