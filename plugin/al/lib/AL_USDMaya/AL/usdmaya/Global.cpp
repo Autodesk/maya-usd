@@ -39,10 +39,10 @@
 #include "ufe/transform3dNotification.h"
 #endif
 
-#include "maya/MFnDagNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MSelectionList.h"
+#include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MSelectionList.h>
 
 #ifndef AL_USDMAYA_LOCATION_NAME
   #define AL_USDMAYA_LOCATION_NAME "AL_USDMAYA_LOCATION"

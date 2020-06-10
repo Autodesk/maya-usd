@@ -1,0 +1,51 @@
+name: Pre-flight build on pull request
+
+# Trigger the workflow on pull request (assigned) event for the branch
+# https://help.github.com/en/actions/reference/events-that-trigger-workflows
+on:
+  pull_request:
+    branches: [dev]
+    types:    [assigned]
+
+jobs:
+
+  build:
+      timeout-minutes: 180
+      runs-on: ubuntu-latest
+      if: contains(toJson(github.event.pull_request.assignee), 'ecp-maya-devops-adsk')
+      steps:
+
+        # Build logs and results will be committed here when the remote build is complete
+        - name: Setup transfer repo
+          uses: actions/checkout@v2
+          with:
+            repository: ecp-maya-devops-adsk/log-transfer
+            ref: transfer
+            path: transfer
+
+        # Echo the file name - it's hard to find the run_id in the UI
+        - name: Echo the expected result file name
+          run: "echo ${{ github.run_id }}_${{ github.run_number }}_result.txt"
+
+        # Wait for remote build to finish and commit results to git
+        - name: Wait until build results are available
+          shell: bash
+          run: "cd transfer ; while ! [ -f ${{ github.run_id }}_${{ github.run_number }}_result.txt ] ; do git pull --quiet ; sleep 10 ; done"
+
+        # List files related to this build
+        - name: List files in transfer directory
+          shell: bash
+          run: "ls -lap transfer/${{ github.run_id }}_${{ github.run_number }}_*"
+
+        # Upload files related to this build
+        - name: Upload files in transfer directory as artifacts
+          uses: actions/upload-artifact@v2
+          with:
+            name: build logs
+            path: "transfer/${{ github.run_id }}_${{ github.run_number }}_*"
+
+        # Grep the results file to show failures
+        - name: Exit with error if a build failed
+          # Default shell includes "-o pipefail" and "-e". Specify a different shell
+          shell: bash --noprofile --norc {0}
+          run: "if grep -i failed transfer/${{ github.run_id }}_${{ github.run_number }}_result.txt; then exit 1; else exit 0; fi"

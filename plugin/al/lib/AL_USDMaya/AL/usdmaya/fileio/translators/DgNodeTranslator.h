@@ -23,16 +23,16 @@
 #include "AL/usdmaya/utils/ForwardDeclares.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
 
-#include "maya/MPlug.h"
-#include "maya/MAngle.h"
-#include "maya/MDistance.h"
-#include "maya/MTime.h"
+#include <maya/MPlug.h>
+#include <maya/MAngle.h>
+#include <maya/MDistance.h>
+#include <maya/MTime.h>
 
-#include "maya/MGlobal.h"
-#include "maya/MStatus.h"
+#include <maya/MGlobal.h>
+#include <maya/MStatus.h>
 
-#include "pxr/base/gf/half.h"
-#include "pxr/usd/usd/attribute.h"
+#include <pxr/base/gf/half.h>
+#include <pxr/usd/usd/attribute.h>
 
 #include <string>
 #include <vector>

@@ -15,21 +15,21 @@
 //
 
 #include "Camera.h"
-#include "pxr/usd/usdGeom/camera.h"
+#include <pxr/usd/usdGeom/camera.h>
 
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
-#include "maya/MDagPath.h"
-#include "maya/MGlobal.h"
-#include "maya/MTime.h"
-#include "maya/MDistance.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnCamera.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MNodeClass.h"
-#include "maya/M3dView.h"
+#include <maya/MDagPath.h>
+#include <maya/MGlobal.h>
+#include <maya/MTime.h>
+#include <maya/MDistance.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnCamera.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MNodeClass.h>
+#include <maya/M3dView.h>
 
 namespace AL {
 namespace usdmaya {

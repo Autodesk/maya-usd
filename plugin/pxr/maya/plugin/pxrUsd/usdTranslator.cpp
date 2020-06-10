@@ -16,7 +16,7 @@
 #include "usdMaya/translatorModelAssembly.h"
 #include <mayaUsd/fileio/primWriterRegistry.h>
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -18,13 +18,13 @@
 #include "../../Api.h"
 #include "AL/maya/utils/Api.h"
 
-#include "maya/MDagPath.h"
+#include <maya/MDagPath.h>
 
-#include "pxr/base/tf/refBase.h"
-#include "pxr/base/tf/type.h"
-#include "pxr/base/tf/weakBase.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/base/tf/refBase.h>
+#include <pxr/base/tf/type.h>
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/usd/usd/prim.h>
 
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/ExportParams.h"

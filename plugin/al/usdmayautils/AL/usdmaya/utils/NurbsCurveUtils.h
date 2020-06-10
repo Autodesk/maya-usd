@@ -18,10 +18,10 @@
 
 #include "AL/usdmaya/utils/Api.h"
 
-#include "maya/MFnNurbsCurve.h"
+#include <maya/MFnNurbsCurve.h>
 
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

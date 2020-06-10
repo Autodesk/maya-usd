@@ -5,6 +5,7 @@ target_sources(${PROJECT_NAME}
     PRIVATE
         blockSceneModificationContext.cpp
         colorSpace.cpp
+        converter.cpp
         diagnosticDelegate.cpp
         query.cpp
         stageCache.cpp
@@ -16,6 +17,7 @@ target_sources(${PROJECT_NAME}
 set(headers
     blockSceneModificationContext.h
     colorSpace.h
+    converter.h
     diagnosticDelegate.h
     query.h
     stageCache.h

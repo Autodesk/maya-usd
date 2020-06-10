@@ -17,11 +17,11 @@
 #include <mayaUsdUtils/SIMD.h>
 #include <mayaUsdUtils/DiffCore.h>
 
-#include "maya/MDoubleArray.h"
-#include "maya/MFloatArray.h"
-#include "maya/MIntArray.h"
-#include "maya/MItMeshPolygon.h"
-#include "maya/MUintArray.h"
+#include <maya/MDoubleArray.h>
+#include <maya/MFloatArray.h>
+#include <maya/MIntArray.h>
+#include <maya/MItMeshPolygon.h>
+#include <maya/MUintArray.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

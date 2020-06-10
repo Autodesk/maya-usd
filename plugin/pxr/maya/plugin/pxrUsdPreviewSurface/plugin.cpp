@@ -13,17 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "pxrUsdPreviewSurface/api.h"
+#include <pxr/pxr.h>
+#include <pxrUsdPreviewSurface/api.h>
 
-#include "pxrUsdPreviewSurface/usdPreviewSurface.h"
-#include "pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h"
+#include <pxrUsdPreviewSurface/usdPreviewSurface.h>
+#include <pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h>
 
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/thisPlugin.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/thisPlugin.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
 
 #include <maya/MDrawRegistry.h>
 #include <maya/MFnPlugin.h>

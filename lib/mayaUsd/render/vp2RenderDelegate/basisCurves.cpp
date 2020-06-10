@@ -26,6 +26,7 @@
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/hd/version.h>
 
 #include "bboxGeom.h"
 #include "debugCodes.h"
@@ -627,13 +628,12 @@ void HdVP2BasisCurves::Sync(
         _sharedData.bounds.SetMatrix(delegate->GetTransform(id));
     }
 
-    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id) || 
-        *dirtyBits & HdChangeTracker::DirtyRenderTag) {
+    if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {
+        _sharedData.visible = delegate->GetVisible(id);
+    }
 
-        auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
-        ProxyRenderDelegate& drawScene = param->GetDrawScene();
-        _sharedData.visible = delegate->GetVisible(id)
-            && drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()));
+    if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+        _curvesSharedData._renderTag = delegate->GetRenderTag(id);
     }
 
     *dirtyBits = HdChangeTracker::Clean;
@@ -1075,6 +1075,9 @@ HdVP2BasisCurves::_UpdateDrawItem(
     // The current instancer invalidation tracking makes it hard for
     // us to tell whether transforms will be dirty, so this code
     // pulls them every time something changes.
+    // If the mesh is instanced but has 0 instance transforms remember that
+    // so the render item can be hidden.
+    bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
 
         // Retrieve instance transforms from the instancer.
@@ -1083,10 +1086,14 @@ HdVP2BasisCurves::_UpdateDrawItem(
             ComputeInstanceTransforms(id);
 
         MMatrix instanceMatrix;
+        const unsigned int instanceCount = transforms.size();
 
-        if (isDedicatedSelectionHighlightItem) {
+        if (0 == instanceCount) {
+            instancerWithNoInstances = true;
+        }
+        else if (isDedicatedSelectionHighlightItem) {
             if (_selectionState == kFullySelected) {
-                stateToCommit._instanceTransforms.setLength(transforms.size());
+                stateToCommit._instanceTransforms.setLength(instanceCount);
                 for (size_t i = 0; i < transforms.size(); ++i) {
                     transforms[i].Get(instanceMatrix.matrix);
                     instanceMatrix = worldMatrix * instanceMatrix;
@@ -1104,7 +1111,6 @@ HdVP2BasisCurves::_UpdateDrawItem(
             }
         }
         else {
-            const unsigned int instanceCount = transforms.size();
             stateToCommit._instanceTransforms.setLength(instanceCount);
             for (size_t i = 0; i < instanceCount; ++i) {
                 transforms[i].Get(instanceMatrix.matrix);
@@ -1192,28 +1198,27 @@ HdVP2BasisCurves::_UpdateDrawItem(
         }
     }
 
-    if (itemDirtyBits & HdChangeTracker::DirtyVisibility) {
-        drawItemData._enabled = drawItem->GetVisible();
-        stateToCommit._enabled = &drawItemData._enabled;
-    }
+    // Determine if the render item should be enabled or not.
+    if ((itemDirtyBits & (HdChangeTracker::DirtyVisibility |
+                         HdChangeTracker::DirtyRenderTag |
+                         HdChangeTracker::DirtyPoints |
+                         HdChangeTracker::DirtyExtent |
+                         DirtySelectionHighlight)) ||
+                         !GetInstancerId().IsEmpty()) {
+        bool enable = drawItem->GetVisible() && !_curvesSharedData._points.empty() && !instancerWithNoInstances;
 
-    if (isDedicatedSelectionHighlightItem) {
-        if (itemDirtyBits & DirtySelectionHighlight) {
-            const bool enable =
-                (_selectionState != kUnselected) && drawItem->GetVisible();
-            if (drawItemData._enabled != enable) {
-                drawItemData._enabled = enable;
-                stateToCommit._enabled = &drawItemData._enabled;
-            }
+        if (isDedicatedSelectionHighlightItem) {
+            enable = enable && (_selectionState != kUnselected);
         }
-    }
-    else if (drawMode == MHWRender::MGeometry::kBoundingBox) {
-        if (itemDirtyBits & HdChangeTracker::DirtyExtent) {
-            const bool enable = !range.IsEmpty() && drawItem->GetVisible();
-            if (drawItemData._enabled != enable) {
-                drawItemData._enabled = enable;
-                stateToCommit._enabled = &drawItemData._enabled;
-            }
+        else if (drawMode == MHWRender::MGeometry::kBoundingBox) {
+            enable = enable && !range.IsEmpty();
+        }
+
+        enable = enable && drawScene.DrawRenderTag(_curvesSharedData._renderTag);
+
+        if (drawItemData._enabled != enable) {
+            drawItemData._enabled = enable;
+            stateToCommit._enabled = &drawItemData._enabled;
         }
     }
 
@@ -1412,9 +1417,15 @@ HdDirtyBits HdVP2BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
     // Propagate dirty bits to all draw items.
     for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
         const HdReprSharedPtr& repr = pair.second;
-        const HdRepr::DrawItems& items = repr->GetDrawItems();
+        const auto& items = repr->GetDrawItems();
+#if HD_API_VERSION < 35
         for (HdDrawItem* item : items) {
             if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+#else
+        for (const HdRepr::DrawItemUniquePtr &item : items) {
+            if (HdVP2DrawItem * const drawItem =
+                        static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
                 drawItem->SetDirtyBits(bits);
             }
         }
@@ -1472,9 +1483,15 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
         _reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
     if (it != _reprs.end()) {
         const HdReprSharedPtr& repr = it->second;
-        const HdRepr::DrawItems& items = repr->GetDrawItems();
+        const auto& items = repr->GetDrawItems();
+#if HD_API_VERSION < 35
         for (const HdDrawItem* item : items) {
             const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item);
+#else
+        for (const HdRepr::DrawItemUniquePtr &item : items) {
+            const HdVP2DrawItem * const drawItem =
+                static_cast<const HdVP2DrawItem*>(item.get());
+#endif
             if (drawItem && (drawItem->GetDirtyBits() & DirtySelection)) {
                 *dirtyBits |= DirtySelectionHighlight;
                 break;
@@ -1502,8 +1519,12 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
             continue;
         }
 
+#if HD_API_VERSION < 35
         auto* drawItem = new HdVP2DrawItem(_delegate, &_sharedData);
-        repr->AddDrawItem(drawItem);
+#else
+        std::unique_ptr<HdVP2DrawItem> drawItem =
+            std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData);
+#endif
 
         const MString& renderItemName = drawItem->GetRenderItemName();
 
@@ -1545,6 +1566,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
                 }
             );
         }
+#if HD_API_VERSION < 35
+        repr->AddDrawItem(drawItem);
+#else
+        repr->AddDrawItem(std::move(drawItem));
+#endif
     }
 }
 
@@ -1598,7 +1624,8 @@ HdDirtyBits HdVP2BasisCurves::GetInitialDirtyBitsMask() const
         HdChangeTracker::DirtyTransform |
         HdChangeTracker::DirtyVisibility |
         HdChangeTracker::DirtyWidths |
-        HdChangeTracker::DirtyComputationPrimvarDesc;
+        HdChangeTracker::DirtyComputationPrimvarDesc |
+        HdChangeTracker::DirtyRenderTag;
 
     return bits;
 }

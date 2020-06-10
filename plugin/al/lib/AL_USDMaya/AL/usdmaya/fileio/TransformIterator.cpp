@@ -16,9 +16,9 @@
 #include "AL/usdmaya/fileio/TransformIterator.h"
 #include "AL/usdmaya/DebugCodes.h"
 
-#include "maya/MFnDagNode.h"
+#include <maya/MFnDagNode.h>
 
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/stage.h>
 
 #include <iostream>
 

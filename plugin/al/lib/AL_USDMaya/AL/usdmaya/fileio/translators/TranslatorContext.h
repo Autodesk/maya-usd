@@ -18,16 +18,16 @@
 #include "../../Api.h"
 
 #include <AL/usdmaya/ForwardDeclares.h>
-#include "maya/MPxData.h"
-#include "maya/MGlobal.h"
-#include "maya/MObject.h"
-#include "maya/MObjectHandle.h"
-#include "maya/MObjectArray.h"
-#include "maya/MDGModifier.h"
-#include "pxr/pxr.h"
-#include "pxr/base/tf/refPtr.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/base/tf/debug.h"
+#include <maya/MPxData.h>
+#include <maya/MGlobal.h>
+#include <maya/MObject.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MObjectArray.h>
+#include <maya/MDGModifier.h>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/refPtr.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/base/tf/debug.h>
 #include "AL/usdmaya/DebugCodes.h"
 
 #include <vector>

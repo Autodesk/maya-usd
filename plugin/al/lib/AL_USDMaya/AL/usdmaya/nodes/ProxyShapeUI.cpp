@@ -13,27 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "maya/MTypes.h"
+#include <maya/MTypes.h>
 
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
 
-#include "maya/MFnDagNode.h"
-#include "maya/MMatrix.h"
-#include "maya/MTime.h"
-#include "maya/MDrawInfo.h"
-#include "maya/MDrawRequest.h"
-#include "maya/MDrawRequestQueue.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MMatrix.h"
-#include "maya/MSelectInfo.h"
-#include "maya/MTime.h"
+#include <maya/MFnDagNode.h>
+#include <maya/MMatrix.h>
+#include <maya/MTime.h>
+#include <maya/MDrawInfo.h>
+#include <maya/MDrawRequest.h>
+#include <maya/MDrawRequestQueue.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MMatrix.h>
+#include <maya/MSelectInfo.h>
+#include <maya/MTime.h>
 
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"
-#include "pxr/base/arch/env.h"
+#include <pxr/base/arch/env.h>
 #include "ufe/hierarchyHandler.h"
 #include "ufe/sceneItem.h"
 #include "ufe/runTimeMgr.h"
@@ -42,8 +42,8 @@
 #include "ufe/log.h"
 #endif
 
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/kind/registry.h"
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/kind/registry.h>
 
 namespace AL {
 namespace usdmaya {

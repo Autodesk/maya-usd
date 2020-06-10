@@ -14,11 +14,11 @@
 // limitations under the License.
 //
 #pragma once
-#include "maya/MDagPath.h"
-#include "maya/MString.h"
-#include "maya/MObjectArray.h"
+#include <maya/MDagPath.h>
+#include <maya/MString.h>
+#include <maya/MObjectArray.h>
 
-#include "pxr/usd/sdf/layer.h"
+#include <pxr/usd/sdf/layer.h>
 #include "AL/maya/utils/FileTranslatorOptions.h"
 
 #include <mayaUsdUtils/ForwardDeclares.h>

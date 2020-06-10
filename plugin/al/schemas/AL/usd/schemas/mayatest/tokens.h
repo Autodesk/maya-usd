@@ -33,10 +33,10 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "./api.h"
-#include "pxr/base/tf/staticData.h"
-#include "pxr/base/tf/token.h"
+#include <pxr/base/tf/staticData.h>
+#include <pxr/base/tf/token.h>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

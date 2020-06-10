@@ -19,11 +19,11 @@
 #include "AL/usdmaya/TransformOperation.h"
 #include "AL/usdmaya/nodes/BasicTransformationMatrix.h"
 
-#include "maya/MPxTransformationMatrix.h"
-#include "maya/MPxTransform.h"
+#include <maya/MPxTransformationMatrix.h>
+#include <maya/MPxTransform.h>
 
-#include "pxr/usd/usdGeom/xformable.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 
 PXR_NAMESPACE_USING_DIRECTIVE

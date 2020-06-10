@@ -46,7 +46,9 @@
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/runTimeMgr.h>
+#include <ufe/scene.h>
 #include <ufe/sceneItem.h>
+#include <ufe/sceneNotification.h>
 #include <ufe/selectionNotification.h>
 #endif
 
@@ -140,10 +142,10 @@ namespace
     }
 
 #if defined(WANT_UFE_BUILD)
-    class UfeSelectionObserver : public Ufe::Observer
+    class UfeObserver : public Ufe::Observer
     {
     public:
-        UfeSelectionObserver(ProxyRenderDelegate& proxyRenderDelegate)
+        UfeObserver(ProxyRenderDelegate& proxyRenderDelegate)
             : Ufe::Observer()
             , _proxyRenderDelegate(proxyRenderDelegate)
         {
@@ -157,9 +159,8 @@ namespace
                 return;
             }
 
-            auto selectionChanged =
-                dynamic_cast<const Ufe::SelectionChanged*>(&notification);
-            if (selectionChanged != nullptr) {
+            if (dynamic_cast<const Ufe::SelectionChanged*>(&notification) ||
+                dynamic_cast<const Ufe::ObjectAdd*>(&notification)) {
                 _proxyRenderDelegate.SelectionChanged();
             }
         }
@@ -360,12 +361,15 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
         _selection.reset(new HdSelection);
 
 #if defined(WANT_UFE_BUILD)
-        if (!_ufeSelectionObserver) {
+        if (!_observer) {
+            _observer = std::make_shared<UfeObserver>(*this);
+
             auto globalSelection = Ufe::GlobalSelection::get();
-            if (globalSelection) {
-                _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
-                globalSelection->addObserver(_ufeSelectionObserver);
+            if (TF_VERIFY(globalSelection)) {
+                globalSelection->addObserver(_observer);
             }
+
+            Ufe::Scene::instance().addObjectAddObserver(_observer);
         }
 #else
         // Without UFE, support basic selection highlight at proxy shape level.
@@ -772,20 +776,22 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // are being hidden, because the render pass level filtering will prevent
     // them from drawing.
     // The Vp2RenderDelegate implements render tags using MRenderItem::Enable(),
-    // which means we do need to update individual MRenderItems when the render
-    // tags change.
+    // which means we do need to update individual MRenderItems when the displayed
+    // render tags change, or when the render tag on an rprim changes.
+    //
+    // To handle an rprim's render tag value changing we need to be sure that
+    // the dummy render task we use to draw includes all render tags. If we
+    // leave any tags out then when an rprim changes from a visible tag to
+    // a hidden one that rprim will get marked dirty, but Sync will not be
+    // called because the rprim doesn't match the current render tags.
+    //
     // When we change the desired render tags on the proxyShape we'll be adding
     // and/or removing some tags, so we can have existing MRenderItems that need
-    // to be hidden, or hidden items that need to be shown.
-    // This function needs to do three things:
-    //  1: Make sure every rprim with a render tag whose visibility changed gets
-    //     marked dirty. This will ensure the upcoming execute call will update
-    //     the visibility of the MRenderItems in MPxSubSceneOverride.
-    //  2: Make a special call to Execute() with only the render tags which have
-    //     been removed. We need this extra call to hide the previously shown
-    //     items.
-    //  3: Update the render tags with the new final render tags so that the next
-    //     real call to execute will update all the now visible items.
+    // to be hidden, or hidden items that need to be shown. To do that we need
+    // to make sure every rprim with a render tag whose visibility changed gets
+    // marked dirty. This will ensure the upcoming execute call will update
+    // the visibility of the MRenderItems in MPxSubSceneOverride.
+    HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
     bool renderPurposeChanged = false;
     bool proxyPurposeChanged = false;
     bool guidePurposeChanged = false;
@@ -799,37 +805,28 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         // Build the list of render tags which were added or removed (changed)
         // and the list of render tags which were removed.
         TfTokenVector changedRenderTags;
-        TfTokenVector removedRenderTags;
         if (renderPurposeChanged) {
             changedRenderTags.push_back(HdRenderTagTokens->render);
-            if (!_proxyShapeData->DrawRenderPurpose())
-                removedRenderTags.push_back(HdRenderTagTokens->render);
         }
         if (proxyPurposeChanged) {
             changedRenderTags.push_back(HdRenderTagTokens->proxy);
-            if (!_proxyShapeData->DrawProxyPurpose())
-                removedRenderTags.push_back(HdRenderTagTokens->proxy);
         }
         if (guidePurposeChanged) {
             changedRenderTags.push_back(HdRenderTagTokens->guide);
-            if (!_proxyShapeData->DrawGuidePurpose())
-                removedRenderTags.push_back(HdRenderTagTokens->guide);
         }
 
         // Mark all the rprims which have a render tag which changed dirty
         SdfPathVector    rprimsToDirty = _GetFilteredRprims(*_defaultCollection, changedRenderTags);
-        HdChangeTracker& changeTracker = _renderIndex->GetChangeTracker();
+        
         for (auto& id : rprimsToDirty) {
             changeTracker.MarkRprimDirty(id, HdChangeTracker::DirtyRenderTag);
         }
+    }
 
-        // Make a special pass over the removed render tags so that the objects
-        // can hide themselves.
-        _taskController->SetRenderTags(removedRenderTags);
-        _engine.Execute(_renderIndex.get(), &_dummyTasks);
-
-        // Set the new render tags correctly.The regular execute will cause
-        // any newly visible rprims will update and mark themselves visible.
+    // When the render tag on an rprim changes we do a pass over all rprims to update
+    // their visibility. The frame after we do the pass over all the tags, set the tags back to
+    // the minimum set of tags.
+    if (!_taskRenderTagsValid) {
         TfTokenVector renderTags
             = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
         if (_proxyShapeData->DrawRenderPurpose()) {
@@ -842,6 +839,25 @@ void ProxyRenderDelegate::_UpdateRenderTags()
             renderTags.push_back(HdRenderTagTokens->guide);
         }
         _taskController->SetRenderTags(renderTags);
+        _taskRenderTagsValid = true;
+    }
+
+    // Vp2RenderDelegate implements render tags as a per-render item setting.
+    // To handle cases when an rprim changes from a displayed tag to a hidden tag
+    // we need to visit all the rprims and set the enable flag correctly on
+    // all their render items. Do visit all the rprims we need to set the 
+    // render tags to be all the tags.
+    // When an rprim has it's renderTag changed the global render tag version
+    // id will change.
+    const int renderTagVersion = changeTracker.GetRenderTagVersion();
+    if (renderTagVersion != _renderTagVersion) {
+        TfTokenVector renderTags = { HdRenderTagTokens->geometry,
+                                     HdRenderTagTokens->render,
+                                     HdRenderTagTokens->proxy,
+                                     HdRenderTagTokens->guide };
+        _taskController->SetRenderTags(renderTags);
+        _taskRenderTagsValid = false;
+        _renderTagVersion = renderTagVersion;
     }
 }
 
@@ -879,11 +895,11 @@ ProxyRenderDelegate::GetPrimSelectionStatus(const SdfPath& path) const
     }
 
     const HdSelection::PrimSelectionState* state = GetPrimSelectionState(path);
-    if (state && state->fullySelected) {
-        return kFullySelected;
+    if (state) {
+        return state->fullySelected ? kFullySelected : kPartiallySelected;
     }
 
-    return state ? kPartiallySelected : kUnselected;
+    return kUnselected;
 }
 
 //! \brief  Query the wireframe color assigned to the proxy shape.

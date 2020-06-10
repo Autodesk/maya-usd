@@ -15,16 +15,16 @@
 // limitations under the License.
 //
 
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "maya/MFloatPointArray.h"
-#include "maya/MVectorArray.h"
-#include "maya/MIntArray.h"
-#include "maya/MFnMesh.h"
-#include "maya/MFnSet.h"
-#include "maya/MFileIO.h"
-#include "maya/MNodeClass.h"
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <maya/MFloatPointArray.h>
+#include <maya/MVectorArray.h>
+#include <maya/MIntArray.h>
+#include <maya/MFnMesh.h>
+#include <maya/MFnSet.h>
+#include <maya/MFileIO.h>
+#include <maya/MNodeClass.h>
 
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
@@ -35,7 +35,7 @@
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/Metadata.h"
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/mesh.h>
 
 #include "Mesh.h"
 #include "CommonTranslatorOptions.h"

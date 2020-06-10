@@ -68,7 +68,7 @@ function(mayaUsd_find_python_module module)
             set(${module}_FIND_REQUIRED TRUE)
         endif()
         execute_process(COMMAND "${Python_EXECUTABLE}" "-c"
-            "import re, ${module}; print re.compile('/__init__.py.*').sub('',${module}.__file__)"
+            "from __future__ import print_function; import re, ${module}; print(re.compile('/__init__.py.*').sub('',${module}.__file__))"
             RESULT_VARIABLE _${module}_status
             OUTPUT_VARIABLE _${module}_location
             ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)

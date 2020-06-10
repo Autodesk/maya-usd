@@ -23,6 +23,8 @@ limitations under the License.
         <texture2 name="file" />
         <sampler name="fileSampler" />
         <float2 name="st" />
+        <float2 name="stScale" />
+        <float2 name="stOffset" />
         <bool name="isColorSpaceSRGB" />
         <float4 name="fallback" />
         <float4 name="scale" />
@@ -30,6 +32,8 @@ limitations under the License.
     </properties>
     <values>
         <float2 name="st" value="0.0,0.0" />
+        <float2 name="stScale" value="1.0,1.0" />
+        <float2 name="stOffset" value="0.0,0.0" />
         <bool name="isColorSpaceSRGB" value="true" />
         <float4 name="fallback" value="0.0,0.0,0.0,1.0" />
         <float4 name="scale" value="1.0,1.0,1.0,1.0" />
@@ -46,12 +50,15 @@ limitations under the License.
 vec4 UsdUVTexture(
     sampler2D fileSampler,
     vec2 st,
+    vec2 stScale,
+    vec2 stOffset,
     bool isColorSpaceSRGB,
     vec4 fallback,
     vec4 scale,
     vec4 bias)
 {
-    vec2 stFlipped = st * vec2(1, -1) + vec2(0, 1);
+    vec2 stScaleOffset = (st + stOffset) * stScale;
+    vec2 stFlipped = stScaleOffset * vec2(1, -1) + vec2(0, 1);
     vec4 outColor = texture(fileSampler, stFlipped);
     if (isColorSpaceSRGB) {
         vec4 breakPnt = vec4(0.03928571566939354, 0.03928571566939354, 0.03928571566939354, 1.);
@@ -77,12 +84,15 @@ float4 UsdUVTexture(
     Texture2D file,
     sampler fileSampler,
     float2 st,
+    float2 stScale,
+    float2 stOffset,
     bool isColorSpaceSRGB,
     float4 fallback,
     float4 scale,
     float4 bias)
 {
-    float2 stFlipped = st * float2(1, -1) + float2(0, 1);
+    float2 stScaleOffset = (st + stOffset) * stScale;
+    float2 stFlipped = stScaleOffset * float2(1, -1) + float2(0, 1);
     float4 outColor = file.Sample(fileSampler, stFlipped);
     if (isColorSpaceSRGB) {
         float4 breakPnt = float4(0.03928571566939354, 0.03928571566939354, 0.03928571566939354, 1.);
@@ -108,12 +118,15 @@ float4 UsdUVTexture(
     texture2D file,
     sampler2D fileSampler,
     float2 st,
+    float2 stScale,
+    float2 stOffset,
     bool isColorSpaceSRGB,
     float4 fallback,
     float4 scale,
     float4 bias)
 {
-    float2 stFlipped = st * float2(1, -1) + float2(0, 1);
+    float2 stScaleOffset = (st + stOffset) * stScale;
+    float2 stFlipped = stScaleOffset * float2(1, -1) + float2(0, 1);
     float4 outColor = tex2D(fileSampler, stFlipped);
     if (isColorSpaceSRGB) {
         float4 breakPnt = float4(0.03928571566939354, 0.03928571566939354, 0.03928571566939354, 1.);

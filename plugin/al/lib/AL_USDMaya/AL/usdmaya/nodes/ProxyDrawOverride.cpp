@@ -13,26 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include <pxr/imaging/glf/glew.h>
 
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 
-#include "maya/M3dView.h"
-#include "maya/MDrawContext.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MTime.h"
+#include <maya/M3dView.h>
+#include <maya/MDrawContext.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MTime.h>
 
 #if MAYA_API_VERSION >= 20180600
-#include "maya/MPointArray.h"
-#include "maya/MSelectionContext.h"
+#include <maya/MPointArray.h>
+#include <maya/MSelectionContext.h>
 #endif
 
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"
-#include "pxr/base/arch/env.h"
+#include <pxr/base/arch/env.h>
 #include "ufe/sceneItem.h"
 #include "ufe/runTimeMgr.h"
 #include "ufe/globalSelection.h"

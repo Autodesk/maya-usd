@@ -19,9 +19,9 @@
 
 #include <mayaUsdUtils/ForwardDeclares.h>
 
-#include "maya/MFnMesh.h"
+#include <maya/MFnMesh.h>
 
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/mesh.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

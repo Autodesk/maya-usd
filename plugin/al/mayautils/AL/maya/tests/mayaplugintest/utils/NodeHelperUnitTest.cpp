@@ -15,14 +15,14 @@
 //
 #include "AL/maya/tests/mayaplugintest/utils/NodeHelperUnitTest.h"
 
-#include "maya/MMatrix.h"
-#include "maya/MVector.h"
-#include "maya/MFloatVector.h"
-#include "maya/MPoint.h"
-#include "maya/MFloatPoint.h"
-#include "maya/MColor.h"
-#include "maya/MString.h"
-#include "maya/MGlobal.h"
+#include <maya/MMatrix.h>
+#include <maya/MVector.h>
+#include <maya/MFloatVector.h>
+#include <maya/MPoint.h>
+#include <maya/MFloatPoint.h>
+#include <maya/MColor.h>
+#include <maya/MString.h>
+#include <maya/MGlobal.h>
 
 #include <iostream>
 

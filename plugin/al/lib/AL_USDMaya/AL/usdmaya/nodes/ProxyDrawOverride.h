@@ -17,10 +17,10 @@
 
 #include "AL/usdmaya/Api.h"
 
-#include "maya/MPxDrawOverride.h"
+#include <maya/MPxDrawOverride.h>
 
-#include "pxr/usdImaging/usdImaging/version.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
+#include <pxr/usdImaging/usdImaging/version.h>
+#include <pxr/usdImaging/usdImagingGL/engine.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

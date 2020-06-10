@@ -18,10 +18,10 @@
 
 /// \file pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h
 
-#include "pxr/pxr.h"
-#include "pxrUsdPreviewSurface/api.h"
+#include <pxr/pxr.h>
+#include <pxrUsdPreviewSurface/api.h>
 
-#include "pxr/base/tf/staticTokens.h"
+#include <pxr/base/tf/staticTokens.h>
 
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShadingNodeOverride.h>

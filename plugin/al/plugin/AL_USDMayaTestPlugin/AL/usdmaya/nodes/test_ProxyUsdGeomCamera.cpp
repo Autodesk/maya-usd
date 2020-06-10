@@ -15,26 +15,26 @@
 //
 #include "test_usdmaya.h"
 #include "AL/usdmaya/nodes/ProxyUsdGeomCamera.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MFnTransform.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MStatus.h"
-#include "maya/MTypes.h"
+#include <maya/MFileIO.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnTransform.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MTypes.h>
 
-#include "maya/MGlobal.h"
-#include "maya/MDataBlock.h"
-#include "maya/MDataHandle.h"
-#include "maya/MDistance.h"
-#include "maya/MFnPluginData.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MPlugArray.h"
-#include "maya/MTime.h"
-#include "maya/MFnEnumAttribute.h"
+#include <maya/MGlobal.h>
+#include <maya/MDataBlock.h>
+#include <maya/MDataHandle.h>
+#include <maya/MDistance.h>
+#include <maya/MFnPluginData.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MPlugArray.h>
+#include <maya/MTime.h>
+#include <maya/MFnEnumAttribute.h>
 
-#include "pxr/usd/usd/api.h"
-#include "pxr/usd/usdGeom/xform.h"
+#include <pxr/usd/usd/api.h>
+#include <pxr/usd/usdGeom/xform.h>
 
 #include "AL/usdmaya/TypeIDs.h"
 #include <mayaUsd/nodes/stageData.h>

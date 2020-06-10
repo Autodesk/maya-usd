@@ -1,7 +1,7 @@
 #include "CommonTranslatorOptions.h"
 #include "AL/maya/utils/PluginTranslatorOptions.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/type.h"
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/type.h>
 
 namespace AL {
 namespace usdmaya {

@@ -18,14 +18,14 @@
 
 /// \file pxrUsdPreviewSurface/usdPreviewSurfaceWriter.h
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 
 #include <mayaUsd/fileio/writeJobContext.h>
 
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MFnDependencyNode.h>
 

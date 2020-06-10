@@ -17,9 +17,9 @@
 
 #include "AL/maya/utils/Api.h"
 
-#include "maya/MColor.h"
-#include "maya/MFloatVector.h"
-#include "maya/MFnNumericAttribute.h"
+#include <maya/MColor.h>
+#include <maya/MFloatVector.h>
+#include <maya/MFnNumericAttribute.h>
 
 #include <deque>
 #include <vector>

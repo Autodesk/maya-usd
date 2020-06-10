@@ -15,11 +15,11 @@
 //
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "pxr/base/plug/registry.h"
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/type.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/type.h>
+#include <pxr/usd/usd/schemaBase.h>
 #include "AL/usdmaya/Metadata.h"
 
 namespace AL {

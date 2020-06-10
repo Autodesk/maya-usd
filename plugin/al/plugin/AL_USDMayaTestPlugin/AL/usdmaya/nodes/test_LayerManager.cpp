@@ -16,19 +16,19 @@
 #include "test_usdmaya.h"
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/StageCache.h"
-#include "maya/MDGModifier.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MFnMessageAttribute.h"
-#include "maya/MGlobal.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MSelectionList.h"
-#include "pxr/usd/sdf/attributeSpec.h"
-#include "pxr/usd/sdf/layer.h"
-#include "pxr/usd/usd/usdaFileFormat.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/tokens.h"
+#include <maya/MDGModifier.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnMessageAttribute.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MSelectionList.h>
+#include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/usdaFileFormat.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
 using AL::maya::test::buildTempPath;
 

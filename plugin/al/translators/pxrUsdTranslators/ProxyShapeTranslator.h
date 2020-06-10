@@ -17,7 +17,7 @@
 #ifndef AL_USDMAYA_PROXYSHAPETRANSLATOR_H
 #define AL_USDMAYA_PROXYSHAPETRANSLATOR_H
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "usdMaya/api.h"
 #include <mayaUsd/fileio/primWriterArgs.h>
 #include <mayaUsd/fileio/primWriterContext.h>

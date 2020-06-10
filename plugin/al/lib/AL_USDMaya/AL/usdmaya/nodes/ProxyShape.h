@@ -31,18 +31,18 @@
 
 #include "AL/usd/transaction/Notice.h"
 
-#include "maya/MDagModifier.h"
-#include "maya/MDagPath.h"
-#include "maya/MGlobal.h"
-#include "maya/MNodeMessage.h"
-#include "maya/MPxSurfaceShape.h"
-#include "maya/MSelectionList.h"
+#include <maya/MDagModifier.h>
+#include <maya/MDagPath.h>
+#include <maya/MGlobal.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MPxSurfaceShape.h>
+#include <maya/MSelectionList.h>
 
-#include "pxr/usd/sdf/notice.h"
-#include "pxr/usd/usd/notice.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usdImaging/usdImagingGL/renderParams.h"
+#include <pxr/usd/sdf/notice.h>
+#include <pxr/usd/usd/notice.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usdImaging/usdImagingGL/renderParams.h>
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 

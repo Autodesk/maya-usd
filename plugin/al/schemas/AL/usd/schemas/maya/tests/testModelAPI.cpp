@@ -6,8 +6,8 @@
 #include <AL/usd/schemas/maya/ModelAPI.h>
 #include <mayaUsd_Schemas/MayaReference.h>
 
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/stage.h>
 
 
 PXR_NAMESPACE_USING_DIRECTIVE

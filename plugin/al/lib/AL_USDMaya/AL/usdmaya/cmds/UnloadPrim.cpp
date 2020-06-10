@@ -21,14 +21,14 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
-#include "maya/MArgDatabase.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MSelectionList.h"
-#include "maya/MStringArray.h"
-#include "maya/MSyntax.h"
-#include "maya/MDagPath.h"
-#include "maya/MArgList.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MSelectionList.h>
+#include <maya/MStringArray.h>
+#include <maya/MSyntax.h>
+#include <maya/MDagPath.h>
+#include <maya/MArgList.h>
 
 #include <pxr/base/tf/type.h>
 #include <pxr/base/vt/dictionary.h>

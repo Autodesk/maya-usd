@@ -16,7 +16,7 @@
 #include "AL/usdmaya/StageCache.h"
 #include "AL/usdmaya/DebugCodes.h"
 
-#include "pxr/usd/usdUtils/stageCache.h"
+#include <pxr/usd/usdUtils/stageCache.h>
 #include "AL/maya/event/MayaEventManager.h"
 
 namespace AL {

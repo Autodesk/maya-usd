@@ -14,23 +14,23 @@
 // limitations under the License.
 //
 /*
-#include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/version.h"
-#include "pxr/usdImaging/usdImagingGL/engine.h"
+#include <pxr/usdImaging/usdImaging/delegate.h>
+#include <pxr/usdImaging/usdImaging/version.h>
+#include <pxr/usdImaging/usdImagingGL/engine.h>
 
 */
 
-#include "maya/MEvaluationNode.h"
-#include "maya/MEventMessage.h"
-#include "maya/MFileIO.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MFnPluginData.h"
-#include "maya/MFnReference.h"
-#include "maya/MGlobal.h"
-#include "maya/MHWGeometryUtilities.h"
-#include "maya/MNodeClass.h"
-#include "maya/MTime.h"
-#include "maya/MViewport2Renderer.h"
+#include <maya/MEvaluationNode.h>
+#include <maya/MEventMessage.h>
+#include <maya/MFileIO.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MFnPluginData.h>
+#include <maya/MFnReference.h>
+#include <maya/MGlobal.h>
+#include <maya/MHWGeometryUtilities.h>
+#include <maya/MNodeClass.h>
+#include <maya/MTime.h>
+#include <maya/MViewport2Renderer.h>
 
 #include "AL/maya/utils/Utils.h"
 
@@ -53,14 +53,14 @@
 
 #include "AL/usd/transaction/TransactionManager.h"
 
-#include "pxr/usd/ar/resolver.h"
+#include <pxr/usd/ar/resolver.h>
 
-#include "pxr/usd/usdGeom/imageable.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stageCacheContext.h"
-#include "pxr/usd/usdUtils/stageCache.h"
-#include "pxr/usdImaging/usdImaging/delegate.h"
+#include <pxr/usd/usdGeom/imageable.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stageCacheContext.h>
+#include <pxr/usd/usdUtils/stageCache.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/stageData.h>

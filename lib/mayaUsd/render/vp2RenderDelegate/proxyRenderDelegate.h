@@ -186,21 +186,26 @@ private:
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate; //!< USD scene delegate
 
     bool                    _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
-    bool                    _selectionChanged{ false }; //!< Whether there is any selection change or not
+    bool                    _selectionChanged{ true };  //!< Whether there is any selection change or not
     bool                    _isProxySelected{ false };  //!< Whether the proxy shape is selected
     MColor                  _wireframeColor;            //!< Wireframe color assigned to the proxy shape
 
     //! A collection of Rprims to prepare render data for specified reprs
     std::unique_ptr<HdRprimCollection> _defaultCollection;
 
+    //! The render tag version used the last time render tags were updated
+    int _renderTagVersion { 0 }; // initialized to 1 in HdChangeTracker, so we'll always have an
+                                 // invalid version the first update.
+    bool _taskRenderTagsValid { false }; //!< If false the render tags on the dummy render task are not the minimum set of tags.
+
     //! A collection of Rprims being selected
     HdSelectionSharedPtr               _selection;
 
 #if defined(WANT_UFE_BUILD)
-    //! Observer for UFE global selection change
-    Ufe::Observer::Ptr  _ufeSelectionObserver;
+    //! Observer to listen to UFE changes
+    Ufe::Observer::Ptr  _observer;
 #else
-    //! Support proxy selection highlight when UFE is not available.
+    //! Minimum support for proxy selection when UFE is not available.
     MCallbackId         _mayaSelectionCallbackId{ 0 };
 #endif
 

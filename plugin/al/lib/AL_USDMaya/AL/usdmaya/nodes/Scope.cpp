@@ -20,9 +20,9 @@
 
 #include <mayaUsd/nodes/stageData.h>
 
-#include "maya/MBoundingBox.h"
-#include "maya/MGlobal.h"
-#include "maya/MTime.h"
+#include <maya/MBoundingBox.h>
+#include <maya/MGlobal.h>
+#include <maya/MTime.h>
 
 
 namespace AL {

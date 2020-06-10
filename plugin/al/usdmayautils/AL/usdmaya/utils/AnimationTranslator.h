@@ -17,16 +17,16 @@
 
 #include "Api.h"
 
-#include "maya/MDagPath.h"
-#include "maya/MPlug.h"
-#include "maya/MString.h"
-#include "maya/MFnDependencyNode.h"
+#include <maya/MDagPath.h>
+#include <maya/MPlug.h>
+#include <maya/MString.h>
+#include <maya/MFnDependencyNode.h>
 
 #include "AL/usdmaya/utils/AnimationTranslator.h"
 
 #include "AL/maya/utils/Utils.h"
 
-#include "pxr/usd/usd/attribute.h"
+#include <pxr/usd/usd/attribute.h>
 PXR_NAMESPACE_USING_DIRECTIVE
 
 /// \brief  operator to compare MPlugs with < operator

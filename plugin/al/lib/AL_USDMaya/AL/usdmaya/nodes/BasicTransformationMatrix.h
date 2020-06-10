@@ -15,13 +15,13 @@
 //
 #pragma once
 
-#include "maya/MPxTransformationMatrix.h"
-#include "maya/MObjectHandle.h"
+#include <maya/MPxTransformationMatrix.h>
+#include <maya/MObjectHandle.h>
 
 #include "AL/usdmaya/Api.h"
 
-#include "pxr/usd/usdGeom/scope.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usd/prim.h>
 
 
 PXR_NAMESPACE_USING_DIRECTIVE

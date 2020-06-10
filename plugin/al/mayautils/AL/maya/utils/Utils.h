@@ -1,9 +1,9 @@
 #pragma once
 
 #include <string>
-#include "maya/MString.h"
-#include "maya/MDagPath.h"
-#include "maya/MUuid.h"
+#include <maya/MString.h>
+#include <maya/MDagPath.h>
+#include <maya/MUuid.h>
 
 #include "AL/maya/utils/Api.h"
 

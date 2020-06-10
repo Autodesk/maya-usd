@@ -21,19 +21,19 @@
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
-#include "maya/MDagModifier.h"
-#include "maya/MDoubleArray.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnNurbsCurve.h"
-#include "maya/MFnTransform.h"
-#include "maya/MPointArray.h"
-#include "maya/MFnDoubleArrayData.h"
-#include "maya/MFnFloatArrayData.h"
+#include <maya/MDagModifier.h>
+#include <maya/MDoubleArray.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnNurbsCurve.h>
+#include <maya/MFnTransform.h>
+#include <maya/MPointArray.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnFloatArrayData.h>
 
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;

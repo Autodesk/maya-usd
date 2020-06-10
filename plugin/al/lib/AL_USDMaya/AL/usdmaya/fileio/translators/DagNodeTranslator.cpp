@@ -15,20 +15,20 @@
 //
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
 
-#include "maya/MAngle.h"
-#include "maya/MDGModifier.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MFnSet.h"
-#include "maya/MGlobal.h"
-#include "maya/MObject.h"
-#include "maya/MPlug.h"
-#include "maya/MNodeClass.h"
-#include "maya/MSelectionList.h"
-#include "maya/MStatus.h"
+#include <maya/MAngle.h>
+#include <maya/MDGModifier.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnSet.h>
+#include <maya/MGlobal.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MNodeClass.h>
+#include <maya/MSelectionList.h>
+#include <maya/MStatus.h>
 
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 namespace AL {
 namespace usdmaya {
