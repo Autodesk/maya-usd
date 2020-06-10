@@ -25,8 +25,9 @@
 // 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-#include <pxr/pxr.h>
 #include "api.h"
+
+#include <pxr/pxr.h>
 #include <pxr/base/tf/staticData.h>
 #include <pxr/base/tf/token.h>
 #include <vector>
