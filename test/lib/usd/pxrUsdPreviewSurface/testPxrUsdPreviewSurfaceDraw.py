@@ -16,9 +16,9 @@
 #
 
 from maya import cmds
-from maya.app.general.mayaIsVP2Capable import mayaIsVP2Capable
 
 import os
+import PythonTests.harness as harness
 import unittest
 
 
@@ -67,6 +67,7 @@ class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
         cmds.ogsRender(camera=self._cameraName, currentFrame=True, width=1920,
             height=1080)
 
+    @harness.skipUnlessGUIandVP2capable
     def testDrawPxrUsdPreviewSurface(self):
         """
         Tests performing a Viewport 2.0 render of a collection of spheres
@@ -74,10 +75,6 @@ class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
         rows with material assignments that ramp the attribute values through
         the typical ranges for those attributes.
         """
-        # Can run in batch, but requires a VP2-enabled VM:
-        if not mayaIsVP2Capable():
-            return
-
         self._testName = 'PxrUsdPreviewSurfaceDrawTest'
 
         mayaSceneFile = '%s.ma' % self._testName
