@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./ModelAPI.h"
+#include "ModelAPI.h"
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usd/typed.h>
 #include <pxr/usd/usd/tokens.h>

@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./FrameRange.h"
+#include "FrameRange.h"
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usd/typed.h>
 
