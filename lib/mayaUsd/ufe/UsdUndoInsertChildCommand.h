@@ -18,9 +18,9 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-#include <ufe/undoableCommand.h>
-
 #include <pxr/usd/usd/prim.h>
+
+#include <ufe/undoableCommand.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
