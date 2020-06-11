@@ -823,12 +823,33 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         }
     }
 
+    // The renderTagsVersion increments when the render tags on an rprim changes, or when the
+    // global render tags are set. Check to see if the render tags version has changed since
+    // the last time we set the render tags so we know if there is a change to an individual
+    // rprim or not.
+    bool rprimRenderTagChanged = (_renderTagVersion == changeTracker.GetRenderTagVersion());
+
+    // Vp2RenderDelegate implements render tags as a per-render item setting.
+    // To handle cases when an rprim changes from a displayed tag to a hidden tag
+    // we need to visit all the rprims and set the enable flag correctly on
+    // all their render items. Do visit all the rprims we need to set the 
+    // render tags to be all the tags.
+    // When an rprim has it's renderTag changed the global render tag version
+    // id will change.
+    if (rprimRenderTagChanged)
+    {
+        TfTokenVector renderTags = { HdRenderTagTokens->geometry,
+                                     HdRenderTagTokens->render,
+                                     HdRenderTagTokens->proxy,
+                                     HdRenderTagTokens->guide };
+        _taskController->SetRenderTags(renderTags);
+        _taskRenderTagsValid = false;
+    }
     // When the render tag on an rprim changes we do a pass over all rprims to update
     // their visibility. The frame after we do the pass over all the tags, set the tags back to
     // the minimum set of tags.
-    if (!_taskRenderTagsValid) {
-        TfTokenVector renderTags
-            = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
+    else if (!_taskRenderTagsValid) {
+        TfTokenVector renderTags = { HdRenderTagTokens->geometry }; // always draw geometry render tag purpose.
         if (_proxyShapeData->DrawRenderPurpose()) {
             renderTags.push_back(HdRenderTagTokens->render);
         }
@@ -841,24 +862,7 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         _taskController->SetRenderTags(renderTags);
         _taskRenderTagsValid = true;
     }
-
-    // Vp2RenderDelegate implements render tags as a per-render item setting.
-    // To handle cases when an rprim changes from a displayed tag to a hidden tag
-    // we need to visit all the rprims and set the enable flag correctly on
-    // all their render items. Do visit all the rprims we need to set the 
-    // render tags to be all the tags.
-    // When an rprim has it's renderTag changed the global render tag version
-    // id will change.
-    const int renderTagVersion = changeTracker.GetRenderTagVersion();
-    if (renderTagVersion != _renderTagVersion) {
-        TfTokenVector renderTags = { HdRenderTagTokens->geometry,
-                                     HdRenderTagTokens->render,
-                                     HdRenderTagTokens->proxy,
-                                     HdRenderTagTokens->guide };
-        _taskController->SetRenderTags(renderTags);
-        _taskRenderTagsValid = false;
-        _renderTagVersion = renderTagVersion;
-    }
+    _renderTagVersion = changeTracker.GetRenderTagVersion();
 }
 
 //! \brief  List the rprims in collection that match renderTags
