@@ -21,10 +21,9 @@ mayaUsd_copyDirectory(${TARGET_NAME}
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
-    set(unittest_output_dir
-        ${CMAKE_CURRENT_BINARY_DIR}/test_output/${target})
     mayaUsd_add_test(${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_MODULE ${target}
     )
+    set_tests_properties(${target} PROPERTIES LABELS usdPreviewSurface)
 endforeach()
