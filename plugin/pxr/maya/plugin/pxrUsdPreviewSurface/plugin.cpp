@@ -15,15 +15,23 @@
 //
 #include "pxrUsdPreviewSurface/api.h"
 
-#include <maya/MGlobal.h>
+#include <mayaUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+
+#include <maya/MFnPlugin.h>
 #include <maya/MString.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDPREVIEWSURFACE_API
 MStatus
 initializePlugin(MObject obj)
 {
-    // The nodes were moved: load the plugin where they currently reside
-    MGlobal::executeCommand("loadPlugin -quiet mayaUsdPlugin");
+    MStatus status;
+    MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
+    
+    status = PxrMayaUsdPreviewSurfacePlugin::initialize(plugin);
+    CHECK_MSTATUS(status);
+
     return MS::kSuccess;
 }
 
@@ -31,5 +39,11 @@ PXRUSDPREVIEWSURFACE_API
 MStatus
 uninitializePlugin(MObject obj)
 {
+    MStatus status;
+    MFnPlugin plugin(obj);
+    
+    status = PxrMayaUsdPreviewSurfacePlugin::finalize(plugin);
+    CHECK_MSTATUS(status);
+
     return MS::kSuccess;
 }

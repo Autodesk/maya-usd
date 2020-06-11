@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "listShadingModesCommand.h"
+#include "baseListShadingModesCommand.h"
 
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -26,18 +26,12 @@
 
 #include <mutex>
 
-PXR_NAMESPACE_OPEN_SCOPE
+PXR_NAMESPACE_USING_DIRECTIVE
 
-UsdMayaListShadingModesCommand::UsdMayaListShadingModesCommand() {
-
-}
-
-UsdMayaListShadingModesCommand::~UsdMayaListShadingModesCommand() {
-
-}
+MAYAUSD_NS_DEF {
 
 MStatus
-UsdMayaListShadingModesCommand::doIt(const MArgList& args) {    
+MayaUSDListShadingModesCommand::doIt(const MArgList& args) {    
     MStatus status;
     MArgDatabase argData(syntax(), args, &status);
 
@@ -63,7 +57,7 @@ UsdMayaListShadingModesCommand::doIt(const MArgList& args) {
 }
 
 MSyntax
-UsdMayaListShadingModesCommand::createSyntax() {
+MayaUSDListShadingModesCommand::createSyntax() {
     MSyntax syntax;
     syntax.addFlag("-ex", "-export", MSyntax::kNoArg);
     syntax.addFlag("-im", "-import", MSyntax::kNoArg);
@@ -74,8 +68,8 @@ UsdMayaListShadingModesCommand::createSyntax() {
     return syntax;
 }
 
-void* UsdMayaListShadingModesCommand::creator() {
-    return new UsdMayaListShadingModesCommand();
+void* MayaUSDListShadingModesCommand::creator() {
+    return new MayaUSDListShadingModesCommand();
 }
 
-PXR_NAMESPACE_CLOSE_SCOPE
+} // MAYAUSD_NS_DEF

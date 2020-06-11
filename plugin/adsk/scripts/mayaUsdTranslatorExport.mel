@@ -221,7 +221,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         frameLayout -label "Materials" -collapsable true -collapse false;
             separator -style "none";
 
-            string $exporters[] = `usdListShadingModes -export`;
+            string $exporters[] = `mayaUSDListShadingModes -export`;
             optionMenuGrp -l "Shading Mode:" shadingModePopup;
             for ($modeName in $exporters) {
                 string $niceName = $modeName;

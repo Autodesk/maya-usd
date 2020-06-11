@@ -25,6 +25,7 @@ target_sources(${TARGET_NAME}
         plugin.cpp
         adskImportCommand.cpp
         adskExportCommand.cpp
+        adskListShadingModesCommand.cpp
         importTranslator.cpp
         exportTranslator.cpp
         ProxyShape.cpp

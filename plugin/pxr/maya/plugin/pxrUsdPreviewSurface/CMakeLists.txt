@@ -5,6 +5,7 @@ pxr_plugin(${PXR_PACKAGE}
 
     LIBRARIES
         arch
+        mayaUsdPreviewSurface
         ${MAYA_Foundation_LIBRARY}
         ${MAYA_OpenMaya_LIBRARY}
 

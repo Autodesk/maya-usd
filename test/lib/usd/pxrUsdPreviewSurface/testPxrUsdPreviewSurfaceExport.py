@@ -42,9 +42,7 @@ class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
         cmds.file(defaultExtensions=False)
     
         # Export to USD.
-        usdFilePath = os.path.abspath(
-                          os.path.join(os.getenv("TEST_OUTPUT_DIR"),
-                                       'PxrUsdPreviewSurfaceExportTest.usda'))
+        usdFilePath = os.path.abspath('PxrUsdPreviewSurfaceExportTest.usda')
 
         cmds.loadPlugin('mayaUsdPlugin', quiet=True)
         cmds.file(usdFilePath, force=True,

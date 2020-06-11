@@ -3,7 +3,6 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        listShadingModesCommand.cpp
         shadingModeDisplayColor.cpp
         shadingModeExporter.cpp
         shadingModeExporterContext.cpp
@@ -14,7 +13,6 @@ target_sources(${PROJECT_NAME}
 )
 
 set(headers
-    listShadingModesCommand.h
     shadingModeExporter.h
     shadingModeExporterContext.h
     shadingModeImporter.h

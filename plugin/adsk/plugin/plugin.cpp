@@ -17,6 +17,7 @@
 
 #include "adskExportCommand.h"
 #include "adskImportCommand.h"
+#include "adskListShadingModesCommand.h"
 
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
@@ -28,12 +29,13 @@
 
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/shading/listShadingModesCommand.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
+#include <mayaUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 #include "base/api.h"
 #include "exportTranslator.h"
@@ -49,12 +51,7 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
-#include <mayaUsdPreviewSurface/usdPreviewSurface.h>
-#include <mayaUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h>
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
-static const MString _RegistrantId("mayaUsdPlugin");
 
 MAYAUSD_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
@@ -120,11 +117,11 @@ MStatus initializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     status = plugin.registerCommand(
-        "usdListShadingModes",
-        UsdMayaListShadingModesCommand::creator,
-        UsdMayaListShadingModesCommand::createSyntax);
+        MayaUsd::ADSKMayaUSDListShadingModesCommand::commandName,
+        MayaUsd::ADSKMayaUSDListShadingModesCommand::creator,
+        MayaUsd::ADSKMayaUSDListShadingModesCommand::createSyntax);
     if (!status) {
-        status.perror("registerCommand usdListShadingModes");
+        status.perror("mayaUsdPlugin: unable to register list shading modes command.");
     }
 
     status = UsdMayaUndoHelperCommand::initialize(plugin);
@@ -141,20 +138,7 @@ MStatus initializePlugin(MObject obj)
     }
 #endif
 
-    status = plugin.registerNode(
-        PxrMayaUsdPreviewSurface::typeName,
-        PxrMayaUsdPreviewSurface::typeId,
-        PxrMayaUsdPreviewSurface::creator,
-        PxrMayaUsdPreviewSurface::initialize,
-        MPxNode::kDependNode,
-        &PxrMayaUsdPreviewSurface::fullClassification);
-    CHECK_MSTATUS(status);
-
-    status =
-        MHWRender::MDrawRegistry::registerSurfaceShadingNodeOverrideCreator(
-            PxrMayaUsdPreviewSurface::drawDbClassification,
-            _RegistrantId,
-            PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
+    status = PxrMayaUsdPreviewSurfacePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
 
     plugin.registerUI("mayaUsd_pluginUICreation", "mayaUsd_pluginUIDeletion", 
@@ -197,13 +181,7 @@ MStatus uninitializePlugin(MObject obj)
 
     MGlobal::executeCommand("mayaUsdMenu_unloadui");
 
-    status =
-        MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
-            PxrMayaUsdPreviewSurface::drawDbClassification,
-            _RegistrantId);
-    CHECK_MSTATUS(status);
-
-    status = plugin.deregisterNode(PxrMayaUsdPreviewSurface::typeId);
+    status = PxrMayaUsdPreviewSurfacePlugin::finalize(plugin);
     CHECK_MSTATUS(status);
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);
@@ -212,9 +190,9 @@ MStatus uninitializePlugin(MObject obj)
                           UsdMayaUndoHelperCommand::name()).c_str());
     }
 
-    status = plugin.deregisterCommand("usdListShadingModes");
+    status = plugin.deregisterCommand(MayaUsd::ADSKMayaUSDListShadingModesCommand::commandName);
     if (!status) {
-        status.perror("deregisterCommand usdListShadingModes");
+        status.perror("mayaUsdPlugin: unable to deregister list shading modes command.");
     }
 
 #if defined(WANT_QT_BUILD)

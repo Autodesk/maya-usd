@@ -29,12 +29,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_PUBLIC_TOKENS(
-    PxrMayaUsdPreviewSurfaceShadingNodeTokens,
-    PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_SHADING_NODE_OVERRIDE_TOKENS);
-
-
 /* static */
 MHWRender::MPxSurfaceShadingNodeOverride*
 PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator(const MObject& obj)
@@ -90,7 +84,7 @@ PxrMayaUsdPreviewSurfaceShadingNodeOverride::supportedDrawAPIs() const
 MString
 PxrMayaUsdPreviewSurfaceShadingNodeOverride::fragmentName() const
 {
-    return PxrMayaUsdPreviewSurfaceShadingNodeTokens->SurfaceFragmentGraphName.GetText();
+    return HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText();
 }
 
 /* virtual */

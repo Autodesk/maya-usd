@@ -55,8 +55,7 @@ class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
         cmds.setAttr('hardwareRenderingGlobals.renderMode', 4)
         # Specify the output image prefix. The path to it is built from the
         # workspace directory.
-        outPngName = os.path.join(os.getenv("TEST_OUTPUT_DIR"),
-                                  '%s_%s' % (outputImageName, suffix))
+        outPngName = os.path.join('%s_%s' % (outputImageName, suffix))
         cmds.setAttr('defaultRenderGlobals.imageFilePrefix',
             outPngName, type='string')
         # Apply the viewer's color transform to the rendered image, otherwise

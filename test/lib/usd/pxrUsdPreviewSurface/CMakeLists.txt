@@ -13,14 +13,18 @@ mayaUsd_copyFiles(${TARGET_NAME}
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
     FILES ${test_script_files})
 
+# copy test files to build directory
+mayaUsd_copyDirectory(${TARGET_NAME}
+    SOURCE ${CMAKE_CURRENT_SOURCE_DIR}
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+)
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
     set(unittest_output_dir
         ${CMAKE_CURRENT_BINARY_DIR}/test_output/${target})
     mayaUsd_add_test(${target}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_MODULE ${target}
-        ENV
-            "TEST_OUTPUT_DIR=${unittest_output_dir}"
     )
 endforeach()

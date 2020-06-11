@@ -27,6 +27,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(
+    HdVP2ShaderFragmentsTokens,
+    MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS);
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -64,8 +68,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPrimvarReader_float3)
     (UsdPrimvarReader_float4)
     (UsdPrimvarReader_vector)
-
-    (UsdPreviewSurface)
 );
 
 static const TfTokenVector _LanguageSpecificFragmentNames = {
@@ -108,7 +110,7 @@ static const TfTokenVector _FragmentGraphNames = {
     _tokens->BasisCurvesLinearFallbackShader,
     _tokens->FallbackCPVShader,
     _tokens->FallbackShader,
-    _tokens->UsdPreviewSurface
+    HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName
 };
 
 

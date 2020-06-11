@@ -24,6 +24,7 @@
 #include "usdMaya/exportTranslator.h"
 #include "usdMaya/importCommand.h"
 #include "usdMaya/importTranslator.h"
+#include "usdMaya/listShadingModesCommand.h"
 
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/nodes/pointBasedDeformerNode.h>
@@ -145,6 +146,14 @@ initializePlugin(MObject obj)
         status.perror("registerCommand usdImport");
     }
 
+    status = plugin.registerCommand(
+        "usdListShadingModes",
+        PxrMayaUSDListShadingModesCommand::creator,
+        PxrMayaUSDListShadingModesCommand::createSyntax);
+    if (!status) {
+        status.perror("registerCommand usdListShadingModes");
+    }
+
     status = UsdMayaUndoHelperCommand::initialize(plugin);
     if (!status) {
         status.perror(std::string("registerCommand ").append(
@@ -223,6 +232,11 @@ uninitializePlugin(MObject obj)
     status = plugin.deregisterCommand("usdExport");
     if (!status) {
         status.perror("deregisterCommand usdExport");
+    }
+
+    status = plugin.deregisterCommand("usdListShadingModes");
+    if (!status) {
+        status.perror("deregisterCommand usdListShadingModes");
     }
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);
