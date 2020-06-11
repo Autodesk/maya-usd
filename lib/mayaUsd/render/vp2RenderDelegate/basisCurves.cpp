@@ -1101,6 +1101,26 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 }
             }
             else if (auto state = drawScene.GetPrimSelectionState(id)) {
+#if USD_VERSION_NUM <= 2005
+                // In 20.05 and older GetPrimSelectionState may have duplicate entries
+                // in instanceIndices, which will cause Maya to draw that instance multiple
+                // times. Remove the duplicates here to avoid that problem.
+                std::vector<bool> selectedIndices;
+                selectedIndices.resize(instanceCount); // bool default ctor sets the value to false
+                for (const auto& indexArray : state->instanceIndices) {   
+                    for (const auto index : indexArray) {
+                        selectedIndices[index] = true;
+                    }
+                }
+                for (unsigned int index=0; index<instanceCount; index++)
+                {
+                    if (!selectedIndices[index])
+                        continue;
+                    transforms[index].Get(instanceMatrix.matrix);
+                    instanceMatrix = worldMatrix * instanceMatrix;
+                    stateToCommit._instanceTransforms.append(instanceMatrix);
+                }
+#else
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
                         transforms[index].Get(instanceMatrix.matrix);
@@ -1108,6 +1128,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
                         stateToCommit._instanceTransforms.append(instanceMatrix);
                     }
                 }
+#endif
             }
         }
         else {
