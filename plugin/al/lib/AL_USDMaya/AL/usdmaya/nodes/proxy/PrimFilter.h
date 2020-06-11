@@ -16,12 +16,12 @@
 #pragma once
 
 #include <AL/usdmaya/Api.h>
+#include <mayaUsdUtils/ForwardDeclares.h>
+
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <vector>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/sdf/path.h>
-
-#include <mayaUsdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

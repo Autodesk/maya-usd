@@ -16,16 +16,15 @@
 #pragma once
 
 #include <AL/usdmaya/Api.h>
+#include <AL/usdmaya/StageCache.h>
+#include <AL/usdmaya/fileio/ImportParams.h>
+#include <AL/usdmaya/nodes/ProxyShape.h>
+
+#include <pxr/usd/usd/stage.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MObjectArray.h>
 #include <maya/MPxCommand.h>
-
-#include <AL/usdmaya/fileio/ImportParams.h>
-#include <AL/usdmaya/nodes/ProxyShape.h>
-#include <AL/usdmaya/StageCache.h>
-
-#include <pxr/usd/usd/stage.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

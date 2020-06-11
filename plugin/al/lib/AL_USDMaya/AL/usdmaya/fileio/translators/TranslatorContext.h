@@ -16,23 +16,24 @@
 #pragma once
 
 #include <AL/usdmaya/Api.h>
-
+#include <AL/usdmaya/DebugCodes.h>
 #include <AL/usdmaya/ForwardDeclares.h>
-#include <maya/MPxData.h>
+#include <mayaUsdUtils/ForwardDeclares.h>
+
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/refPtr.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
+
+#include <maya/MDGModifier.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
-#include <maya/MObjectHandle.h>
 #include <maya/MObjectArray.h>
-#include <maya/MDGModifier.h>
-#include <pxr/pxr.h>
-#include <pxr/base/tf/refPtr.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/base/tf/debug.h>
-#include <AL/usdmaya/DebugCodes.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MPxData.h>
 
-#include <vector>
 #include <string>
-#include <mayaUsdUtils/ForwardDeclares.h>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

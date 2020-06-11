@@ -15,9 +15,8 @@
 //
 #pragma once
 
-#include <AL/usdmaya/Api.h>
-
 #include <AL/maya/utils/MayaHelperMacros.h>
+#include <AL/usdmaya/Api.h>
 
 #include <maya/MPxCommand.h>
 

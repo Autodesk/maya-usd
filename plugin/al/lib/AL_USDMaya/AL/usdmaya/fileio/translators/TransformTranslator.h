@@ -16,7 +16,6 @@
 #pragma once
 
 #include <AL/usdmaya/Api.h>
-
 #include <AL/usdmaya/ForwardDeclares.h>
 #include <AL/usdmaya/TransformOperation.h>
 #include <AL/usdmaya/fileio/translators/DagNodeTranslator.h>
