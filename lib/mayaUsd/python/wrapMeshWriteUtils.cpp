@@ -70,13 +70,16 @@ class DummyScopeClass{};
 
 } // anonymous namespace 
 
-
 void wrapMeshWriteUtils()
 {
+    // TODO: HS, June 11, 2020 This logics is not accurate. Revisit this later.
+    // There are no test cases around is not being consumed in any tests.
+    /*
     scope s = class_<DummyScopeClass>("MeshWriteUtils", no_init)
 
         .def("GetMeshNormals", &_GetMeshNormals)
             .staticmethod("GetMeshNormals")
 
         ;
+    */
 }
