@@ -41,7 +41,6 @@ class PxrMayaHdUserData : public MUserData
 {
     public:
 
-        bool drawShape;
         std::unique_ptr<MBoundingBox> boundingBox;
         std::unique_ptr<GfVec4f> wireframeColor;
 

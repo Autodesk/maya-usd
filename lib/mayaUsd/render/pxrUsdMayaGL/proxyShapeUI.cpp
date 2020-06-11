@@ -42,6 +42,7 @@
 #include <pxr/usd/usd/timeCode.h>
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/px_vp20/utils_legacy.h>
 #include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
 #include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
 #include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
@@ -85,26 +86,11 @@ UsdMayaProxyShapeUI::getDrawRequests(
 
     UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
 
-    bool drawShape;
-    bool drawBoundingBox;
-    _shapeAdapter.GetRenderParams(&drawShape, &drawBoundingBox);
-
-    if (!drawBoundingBox && !drawShape) {
-        // We weren't asked to do anything.
-        return;
-    }
-
-    MBoundingBox boundingBox;
-    MBoundingBox* boundingBoxPtr = nullptr;
-    if (drawBoundingBox) {
-        // Only query for the bounding box if we're drawing it.
-        boundingBox = shape->boundingBox();
-        boundingBoxPtr = &boundingBox;
-    }
+    const MBoundingBox boundingBox = shape->boundingBox();
 
     MDrawRequest request = drawInfo.getPrototype(*this);
 
-    _shapeAdapter.GetMayaUserData(this, request, boundingBoxPtr);
+    _shapeAdapter.GetMayaUserData(this, request, &boundingBox);
 
     // Add the request to the queue.
     requests.add(request);
@@ -121,17 +107,18 @@ UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
         MProfiler::kColorC_L1,
         "USD Proxy Shape draw() (Legacy Viewport)");
 
+    const M3dView::DisplayStyle legacyDisplayStyle = view.displayStyle();
+    if (!px_LegacyViewportUtils::ShouldRenderBoundingBox(legacyDisplayStyle)) {
+        return;
+    }
+
     if (!view.pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
         return;
     }
 
-    // Note that this Draw() call is only necessary when we're drawing the
-    // bounding box, since that is not yet handled by Hydra and is instead done
-    // internally by the batch renderer on a per-shape basis. Otherwise, the
-    // pxrHdImagingShape is what will invoke Hydra to draw the shape.
     view.beginGL();
 
-    UsdMayaGLBatchRenderer::GetInstance().Draw(request, view);
+    UsdMayaGLBatchRenderer::GetInstance().DrawBoundingBox(request, view);
 
     view.endGL();
 }

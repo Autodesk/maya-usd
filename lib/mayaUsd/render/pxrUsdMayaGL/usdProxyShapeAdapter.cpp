@@ -17,16 +17,11 @@
 
 #include <string>
 
-#include <boost/functional/hash.hpp>
-
 #include <maya/M3dView.h>
-#include <maya/MColor.h>
 #include <maya/MDagPath.h>
-#include <maya/MFnDagNode.h>
 #include <maya/MFrameContext.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MMatrix.h>
-#include <maya/MObjectHandle.h>
 #include <maya/MProfiler.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MStatus.h>
@@ -34,7 +29,6 @@
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -43,7 +37,6 @@
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/repr.h>
-#include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
@@ -75,7 +68,7 @@ PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
         // USD proxy shapes are being filtered from this view, so don't bother
         // checking any other visibility state.
         isVisible = false;
-    } else if (!_GetVisibility(_shapeDagPath, view, &isVisible)) {
+    } else if (!_GetVisibility(GetDagPath(), view, &isVisible)) {
         return false;
     }
 
@@ -106,17 +99,6 @@ PxrMayaHdUsdProxyShapeAdapter::SetRootXform(const GfMatrix4d& transform)
 }
 
 /* virtual */
-const SdfPath&
-PxrMayaHdUsdProxyShapeAdapter::GetDelegateID() const
-{
-    if (_delegate) {
-        return _delegate->GetDelegateID();
-    }
-
-    return SdfPath::EmptyPath();
-}
-
-/* virtual */
 bool
 PxrMayaHdUsdProxyShapeAdapter::_Sync(
         const MDagPath& shapeDagPath,
@@ -130,7 +112,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         MProfiler::kColorE_L2,
         "USD Proxy Shape Syncing Shape Adapter");
 
-    MayaUsdProxyShapeBase* usdProxyShape = 
+    MayaUsdProxyShapeBase* usdProxyShape =
             MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
     if (!usdProxyShape) {
         TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
@@ -163,12 +145,12 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // require us to re-initialize the shape adapter.
     HdRenderIndex* renderIndex =
         UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
-    if (!(shapeDagPath == _shapeDagPath) ||
+    if (!(shapeDagPath == GetDagPath()) ||
             usdPrim != _rootPrim ||
             excludedPrimPaths != _excludedPrimPaths ||
             !_delegate ||
             renderIndex != &_delegate->GetRenderIndex()) {
-        _shapeDagPath = shapeDagPath;
+        _SetDagPath(shapeDagPath);
         _rootPrim = usdPrim;
         _excludedPrimPaths = excludedPrimPaths;
 
@@ -208,7 +190,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
 #endif
 
     MStatus status;
-    const MMatrix transform = _shapeDagPath.inclusiveMatrix(&status);
+    const MMatrix transform = GetDagPath().inclusiveMatrix(&status);
     if (status == MS::kSuccess) {
         _rootXform = GfMatrix4d(transform.matrix);
         _delegate->SetRootTransform(_rootXform);
@@ -219,58 +201,26 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // Will only react if time actually changes.
     _delegate->SetTime(timeCode);
 
-    unsigned int reprDisplayStyle = displayStyle;
-
-    MColor mayaWireframeColor;
-    const bool useWireframeColor =
+    _renderParams.useWireframe =
         _GetWireframeColor(
-            displayStyle,
             displayStatus,
-            _shapeDagPath,
-            &mayaWireframeColor);
-    if (useWireframeColor) {
-        _renderParams.wireframeColor = GfVec4f(mayaWireframeColor.r,
-                                               mayaWireframeColor.g,
-                                               mayaWireframeColor.b,
-                                               mayaWireframeColor.a);
+            GetDagPath(),
+            &_renderParams.wireframeColor);
 
-        // Add in kWireFrame to the display style we'll use to determine the
-        // repr selector (e.g. so that we draw the wireframe over the shaded
-        // geometry for selected objects).
-        reprDisplayStyle |= MHWRender::MFrameContext::DisplayStyle::kWireFrame;
-    }
-
-    HdReprSelector reprSelector =
-        GetReprSelectorForDisplayState(
-            reprDisplayStyle,
-            displayStatus);
-
-    _drawShape = reprSelector.AnyActiveRepr();
-    _drawBoundingBox =
-        (displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
-
+    // XXX: This is not technically correct. Since the display style can vary
+    // per viewport, this decision of whether or not to enable lighting should
+    // be delayed until when the repr for each viewport is known during batched
+    // drawing. For now, the incorrectly shaded wireframe is not too offensive
+    // though.
+    //
     // If the repr selector specifies a wireframe-only repr, then disable
-    // lighting.
+    // lighting. The useWireframe property of the render params is used to
+    // determine the repr, so be sure to do this *after* that has been set.
+    const HdReprSelector reprSelector =
+        GetReprSelectorForDisplayStyle(displayStyle);
     if (reprSelector.Contains(HdReprTokens->wire) ||
             reprSelector.Contains(HdReprTokens->refinedWire)) {
         _renderParams.enableLighting = false;
-    }
-
-    if (_delegate->GetRootVisibility() != _drawShape) {
-        _delegate->SetRootVisibility(_drawShape);
-    }
-
-    if (_rprimCollection.GetReprSelector() != reprSelector) {
-        _rprimCollection.SetReprSelector(reprSelector);
-
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                "    Repr selector changed: %s\n"
-                "        Marking collection dirty: %s\n",
-                reprSelector.GetText(),
-                _rprimCollection.GetName().GetText());
-
-        _delegate->GetRenderIndex().GetChangeTracker().MarkCollectionDirty(
-            _rprimCollection.GetName());
     }
 
     HdCullStyle cullStyle = HdCullStyleNothing;
@@ -293,65 +243,26 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
         MProfiler::kColorE_L2,
         "USD Proxy Shape Initializing Shape Adapter");
 
-    if (!TF_VERIFY(renderIndex,
-                   "Cannot initialize shape adapter with invalid HdRenderIndex")) {
+    if (!TF_VERIFY(
+            renderIndex,
+            "Cannot initialize shape adapter with invalid HdRenderIndex")) {
         return false;
     }
 
-    const SdfPath delegatePrefix =
-        UsdMayaGLBatchRenderer::GetInstance().GetDelegatePrefix(_isViewport2);
-
-    // Create a simple "name" for this shape adapter to insert into the batch
-    // renderer's SdfPath hierarchy.
-    //
-    // XXX: For as long as we're using the MAYA_VP2_USE_VP1_SELECTION
-    // environment variable, we need to be able to pass responsibility back and
-    // forth between the MPxDrawOverride's shape adapter for drawing and the
-    // MPxSurfaceShapeUI's shape adapter for selection. This requires both
-    // shape adapters to have the same "name", which forces us to build it
-    // from data on the shape that will be common to both classes, as we do
-    // below. When we remove MAYA_VP2_USE_VP1_SELECTION and can trust that a
-    // single shape adapter handles both drawing and selection, we can do
-    // something even simpler instead like using the shape adapter's memory
-    // address as the "name".
-    size_t shapeHash(MObjectHandle(_shapeDagPath.transform()).hashCode());
-    boost::hash_combine(shapeHash, _rootPrim);
-    boost::hash_combine(shapeHash, _excludedPrimPaths);
-
-    // We prepend the Maya type name to the beginning of the delegate name to
-    // ensure that there are no name collisions between shape adapters of
-    // shapes with different Maya types.
-    const TfToken delegateName(
-        TfStringPrintf("%s_%zx",
-                       MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText(),
-                       shapeHash));
-
-    const SdfPath delegateId = delegatePrefix.AppendChild(delegateName);
-
-    if (_delegate &&
-            delegateId == GetDelegateID() &&
-            renderIndex == &_delegate->GetRenderIndex()) {
-        // The delegate's current ID matches the delegate ID we computed and
-        // the render index matches, so it must be up to date already.
-        return true;
-    }
-
-    const TfToken collectionName = _GetRprimCollectionName();
-
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
         "Initializing PxrMayaHdUsdProxyShapeAdapter: %p\n"
-        "    shape DAG path : %s\n"
-        "    collection name: %s\n"
-        "    delegateId     : %s\n",
+        "    shape DAG path  : %s\n"
+        "    shape identifier: %s\n"
+        "    delegateId      : %s\n",
         this,
-        _shapeDagPath.fullPathName().asChar(),
-        collectionName.GetText(),
-        delegateId.GetText());
+        GetDagPath().fullPathName().asChar(),
+        _shapeIdentifier.GetText(),
+        _delegateId.GetText());
 
-    _delegate.reset(new UsdImagingDelegate(renderIndex, delegateId));
+    _delegate.reset(new UsdImagingDelegate(renderIndex, _delegateId));
     if (!TF_VERIFY(_delegate,
                   "Failed to create shape adapter delegate for shape %s",
-                  _shapeDagPath.fullPathName().asChar())) {
+                  GetDagPath().fullPathName().asChar())) {
         return false;
     }
 
@@ -370,14 +281,6 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
     }
 
     _delegate->Populate(_rootPrim, _excludedPrimPaths, SdfPathVector());
-
-    if (collectionName != _rprimCollection.GetName()) {
-        _rprimCollection.SetName(collectionName);
-        renderIndex->GetChangeTracker().AddCollection(_rprimCollection.GetName());
-    }
-
-    _rprimCollection.SetReprSelector(HdReprSelector(HdReprTokens->refined));
-    _rprimCollection.SetRootPath(delegateId);
 
     return true;
 }

@@ -35,6 +35,7 @@
 #include <pxr/imaging/glf/simpleLight.h>
 #include <pxr/imaging/glf/simpleLightingContext.h>
 #include <pxr/imaging/hd/camera.h>
+#include <pxr/imaging/hd/changeTracker.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
@@ -55,6 +56,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/render/px_vp20/utils.h>
 #include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -62,7 +64,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (selectionTask)
-    (renderTags)
 );
 
 
@@ -120,6 +121,7 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
     _simpleLightTaskId = _rootId.AppendChild(HdxPrimitiveTokens->simpleLightTask);
     _shadowTaskId = _rootId.AppendChild(HdxPrimitiveTokens->shadowTask);
     _pickingTaskId = _rootId.AppendChild(HdxPrimitiveTokens->pickTask);
+    _selectionTaskId = _rootId.AppendChild(_tokens->selectionTask);
     _cameraId = _rootId.AppendChild(HdPrimTypeTokens->camera);
 
     // camera
@@ -163,7 +165,7 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         taskParams.camera = _cameraId;
         taskParams.viewport = _viewport;
         cache[HdTokens->params] = VtValue(taskParams);
-        cache[_tokens->renderTags] = VtValue(defaultShadowRenderTags);
+        cache[HdTokens->renderTags] = VtValue(defaultShadowRenderTags);
     }
 
     // Picking task.
@@ -178,7 +180,23 @@ PxrMayaHdSceneDelegate::PxrMayaHdSceneDelegate(
         // on first use, but this ensures we don't need
         // to special case first time vs others for comparing
         // to current render tags
-        cache[_tokens->renderTags] = VtValue(TfTokenVector());
+        cache[HdTokens->renderTags] = VtValue(TfTokenVector());
+    }
+
+    // Selection task.
+    {
+        renderIndex->InsertTask<HdxSelectionTask>(this, _selectionTaskId);
+        _ValueCache& cache = _valueCacheMap[_selectionTaskId];
+        HdxSelectionTaskParams taskParams;
+        taskParams.enableSelection = true;
+
+        // Note that the selection color is a constant zero value. This is to
+        // mimic selection behavior in Maya where the wireframe color is what
+        // changes to indicate selection and not the object color.
+        taskParams.selectionColor = GfVec4f(0.0f);
+
+        cache[HdTokens->params] = VtValue(taskParams);
+        cache[HdTokens->collection] = VtValue();
     }
 }
 
@@ -211,7 +229,7 @@ PxrMayaHdSceneDelegate::GetCameraParamValue(
 TfTokenVector
 PxrMayaHdSceneDelegate::GetTaskRenderTags(SdfPath const& taskId)
 {
-    VtValue value = Get(taskId, _tokens->renderTags);
+    VtValue value = Get(taskId, HdTokens->renderTags);
 
     return value.Get<TfTokenVector>();
 }
@@ -436,39 +454,18 @@ PxrMayaHdSceneDelegate::GetSetupTasks()
 }
 
 HdTaskSharedPtrVector
-PxrMayaHdSceneDelegate::GetPickingTasks(
-        const TfTokenVector& renderTags)
-{
-    // Update tasks render tags to match those specified in the parameter.
-    const TfTokenVector &currentRenderTags =
-        _GetValue<TfTokenVector>(_pickingTaskId, _tokens->renderTags);
-
-    if (currentRenderTags != renderTags) {
-        _SetValue(_pickingTaskId, _tokens->renderTags, renderTags);
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-            _pickingTaskId,
-            HdChangeTracker::DirtyRenderTags);
-    }
-
-    HdTaskSharedPtrVector tasks;
-
-    tasks.push_back(GetRenderIndex().GetTask(_pickingTaskId));
-
-    return tasks;
-}
-
-HdTaskSharedPtrVector
 PxrMayaHdSceneDelegate::GetRenderTasks(
         const size_t hash,
         const PxrMayaHdRenderParams& renderParams,
+        unsigned int displayStyle,
         const PxrMayaHdPrimFilterVector& primFilters)
 {
     HdTaskSharedPtrVector taskList;
-    HdRenderIndex &renderIndex = GetRenderIndex();
+    HdRenderIndex& renderIndex = GetRenderIndex();
 
     // Task List Consist of:
     //  Render Setup Task
-    //  Render Task Per Collection
+    //  Render Task Per Shape Adapter/Collection
     //  Selection Task
     taskList.reserve(2 + primFilters.size());
 
@@ -503,86 +500,83 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     }
     taskList.emplace_back(renderIndex.GetTask(renderSetupTaskId));
 
-    size_t numPrimFilters = primFilters.size();
-    for (size_t primFilterNum = 0;
-                primFilterNum <  numPrimFilters;
-              ++primFilterNum)
-
-    {
-        const PxrMayaHdPrimFilter &primFilter = primFilters[primFilterNum];
-
-        _RenderTaskIdMapKey key = {hash, primFilter.collection.GetName()};
-
+    for (const PxrMayaHdPrimFilter& primFilter : primFilters) {
         SdfPath renderTaskId;
-        if (!TfMapLookup(_renderTaskIdMap, key, &renderTaskId)) {
-            // Create a new render task if one does not exist for this key.
-            // Note that we expect the collection name to have already been
-            // sanitized for use in SdfPaths.
-            TF_VERIFY(TfIsValidIdentifier(key.collectionName.GetString()));
-            renderTaskId = _rootId.AppendChild(
-                TfToken(TfStringPrintf("%s_%zx_%s",
-                                       HdxPrimitiveTokens->renderTask.GetText(),
-                                       key.hash,
-                                       key.collectionName.GetText())));
+        HdRprimCollection rprimCollection;
+        TfTokenVector renderTags;
 
-            GetRenderIndex().InsertTask<HdxRenderTask>(this, renderTaskId);
+        if (primFilter.shapeAdapter != nullptr) {
+            const HdReprSelector repr =
+                primFilter.shapeAdapter->GetReprSelectorForDisplayStyle(
+                    displayStyle);
+
+            if (!repr.AnyActiveRepr()) {
+                continue;
+            }
+
+            renderTaskId = primFilter.shapeAdapter->GetRenderTaskId(repr);
+            rprimCollection = primFilter.shapeAdapter->GetRprimCollection(repr);
+            renderTags = primFilter.shapeAdapter->GetRenderTags();
+        } else {
+            rprimCollection = primFilter.collection;
+            renderTags = primFilter.renderTags;
+
+            // The batch renderer manages the render task ID for this
+            // collection, so look up its ID by name.
+            const TfToken& collectionName = rprimCollection.GetName();
+
+            if (!TfMapLookup(_renderTaskIdMap, collectionName, &renderTaskId)) {
+                // Create a new render task ID if one does not exist for this
+                // collection.
+                // Note that we expect the collection name to have already been
+                // sanitized for use in SdfPaths.
+                TF_VERIFY(TfIsValidIdentifier(collectionName.GetString()));
+                renderTaskId = _rootId.AppendChild(
+                    TfToken(
+                        TfStringPrintf(
+                            "%s_%s",
+                            HdxPrimitiveTokens->renderTask.GetText(),
+                            collectionName.GetText())));
+
+                _renderTaskIdMap[collectionName] = renderTaskId;
+            }
+        }
+
+        HdTaskSharedPtr renderTask = renderIndex.GetTask(renderTaskId);
+        if (!renderTask) {
+            renderIndex.InsertTask<HdxRenderTask>(this, renderTaskId);
+            renderTask = renderIndex.GetTask(renderTaskId);
+
+            _ValueCache& cache = _valueCacheMap[renderTaskId];
 
             // Note that the render task has no params of its own. All of the
             // render params are on the render setup task instead.
-            _ValueCache& cache = _valueCacheMap[renderTaskId];
             cache[HdTokens->params] = VtValue();
-            cache[HdTokens->collection] = VtValue(primFilter.collection);
-            cache[_tokens->renderTags] = VtValue(primFilter.renderTags);
 
-            _renderTaskIdMap[key] = renderTaskId;
+            // Once the task is created, the batch renderer itself will not
+            // change the task's collection.
+            cache[HdTokens->collection] = VtValue(rprimCollection);
+
+            cache[HdTokens->renderTags] = VtValue(renderTags);
         } else {
             // Update task's render tags
-            const TfTokenVector &currentRenderTags =
-                _GetValue<TfTokenVector>(renderTaskId, _tokens->renderTags);
+            const TfTokenVector& currentRenderTags =
+                _GetValue<TfTokenVector>(renderTaskId, HdTokens->renderTags);
 
-            if (currentRenderTags != primFilter.renderTags) {
-                _SetValue(renderTaskId, _tokens->renderTags, primFilter.renderTags);
-                GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-                        renderTaskId,
+            if (currentRenderTags != renderTags) {
+                _SetValue(renderTaskId, HdTokens->renderTags, renderTags);
+                renderIndex.GetChangeTracker().MarkTaskDirty(
+                    renderTaskId,
                     HdChangeTracker::DirtyRenderTags);
             }
         }
 
-        taskList.emplace_back(renderIndex.GetTask(renderTaskId));
-
-        // Update the collections on the render task and mark them dirty.
-        // XXX: Should only mark collection dirty if collection has changed
-        _SetValue(renderTaskId, HdTokens->collection, primFilter.collection);
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
-            renderTaskId,
-            HdChangeTracker::DirtyCollection);
+        if (renderTask) {
+            taskList.emplace_back(renderTask);
+        }
     }
 
-    SdfPath selectionTaskId;
-    if (!TfMapLookup(_selectionTaskIdMap, hash, &selectionTaskId)) {
-        // Create a new selection task if one does not exist for this hash.
-        selectionTaskId = _rootId.AppendChild(
-            TfToken(TfStringPrintf("%s_%zx",
-                                   _tokens->selectionTask.GetText(),
-                                   hash)));
-
-        GetRenderIndex().InsertTask<HdxSelectionTask>(this, selectionTaskId);
-        HdxSelectionTaskParams selectionTaskParams;
-        selectionTaskParams.enableSelection = true;
-
-        // Note that the selection color is a constant zero value. This is to
-        // mimic selection behavior in Maya where the wireframe color is what
-        // changes to indicate selection and not the object color. As a result,
-        // we don't need to dirty the selectionTaskParams below.
-        selectionTaskParams.selectionColor = GfVec4f(0.0f);
-
-        _ValueCache& cache = _valueCacheMap[selectionTaskId];
-        cache[HdTokens->params] = VtValue(selectionTaskParams);
-        cache[HdTokens->collection] = VtValue();
-
-        _selectionTaskIdMap[hash] = selectionTaskId;
-    }
-    taskList.emplace_back(renderIndex.GetTask(selectionTaskId));
+    taskList.emplace_back(renderIndex.GetTask(_selectionTaskId));
 
     //
     // (meta-XXX): The notes below are actively being addressed with an
@@ -601,19 +595,9 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     // With Hydra, changing the contents of a collection can be
     // an expensive operation as it causes draw batches to be rebuilt.
     //
-    // The Maya-Hydra Plugin is currently reusing the same collection
-    // name for all collections within a frame.
-    // (This stems from a time when collection name had a significant meaning
-    // rather than id'ing a collection).
-    //
     // The plugin should also track deltas to the contents of a collection
     // and set Hydra's dirty state when prims get added and removed from
     // the collection.
-    //
-    // Another possible change that can be made to this code is HdxRenderTask
-    // now takes an array of collections, so it is possible to support different
-    // reprs using the same task.  Therefore, this code should be modified to
-    // only add one task that is provided with the active set of collections.
     //
     // However, a further improvement to the code could be made using
     // UsdDelegate's fallback repr feature instead of using multiple
@@ -635,7 +619,7 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
         // Store the updated render setup task params back in the cache and
         // mark them dirty.
         _SetValue(renderSetupTaskId, HdTokens->params, renderSetupTaskParams);
-        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+        renderIndex.GetChangeTracker().MarkTaskDirty(
             renderSetupTaskId,
             HdChangeTracker::DirtyParams);
     }
@@ -643,23 +627,27 @@ PxrMayaHdSceneDelegate::GetRenderTasks(
     return taskList;
 }
 
-
-size_t
-PxrMayaHdSceneDelegate::_RenderTaskIdMapKey::HashFunctor::operator ()(
-        const  _RenderTaskIdMapKey& value) const
+HdTaskSharedPtrVector
+PxrMayaHdSceneDelegate::GetPickingTasks(
+        const TfTokenVector& renderTags)
 {
-    size_t hash = value.hash;
-    boost::hash_combine(hash, value.collectionName);
+    // Update tasks render tags to match those specified in the parameter.
+    const TfTokenVector &currentRenderTags =
+        _GetValue<TfTokenVector>(_pickingTaskId, HdTokens->renderTags);
 
-    return hash;
+    if (currentRenderTags != renderTags) {
+        _SetValue(_pickingTaskId, HdTokens->renderTags, renderTags);
+        GetRenderIndex().GetChangeTracker().MarkTaskDirty(
+            _pickingTaskId,
+            HdChangeTracker::DirtyRenderTags);
+    }
+
+    HdTaskSharedPtrVector tasks;
+
+    tasks.push_back(GetRenderIndex().GetTask(_pickingTaskId));
+
+    return tasks;
 }
 
-bool
-PxrMayaHdSceneDelegate::_RenderTaskIdMapKey::operator ==(
-        const  _RenderTaskIdMapKey& other) const
-{
-    return ((this->hash           == other.hash) &&
-            (this->collectionName == other.collectionName));
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
