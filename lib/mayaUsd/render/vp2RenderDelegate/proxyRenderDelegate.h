@@ -196,6 +196,9 @@ private:
     //! The render tag version used the last time render tags were updated
     int _renderTagVersion { 0 }; // initialized to 1 in HdChangeTracker, so we'll always have an
                                  // invalid version the first update.
+#if USD_VERSION_NUM <= 2005
+    int _visibilityVersion { 0 }; // initialized to 1 in HdChangeTracker.
+#endif
     bool _taskRenderTagsValid { false }; //!< If false the render tags on the dummy render task are not the minimum set of tags.
 
     //! A collection of Rprims being selected

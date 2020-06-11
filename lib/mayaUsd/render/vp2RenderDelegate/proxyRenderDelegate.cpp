@@ -827,7 +827,12 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // global render tags are set. Check to see if the render tags version has changed since
     // the last time we set the render tags so we know if there is a change to an individual
     // rprim or not.
-    bool rprimRenderTagChanged = (_renderTagVersion == changeTracker.GetRenderTagVersion());
+    bool rprimRenderTagChanged = (_renderTagVersion != changeTracker.GetRenderTagVersion());
+#if USD_VERSION_NUM <= 2005
+    // in v20.05 and earlier when the purpose of an rprim changes the visibility gets dirtied,
+    // and that doesn't update the render tag version.
+    rprimRenderTagChanged = rprimRenderTagChanged || ( _visibilityVersion != changeTracker.GetVisibilityChangeCount());
+#endif
 
     // Vp2RenderDelegate implements render tags as a per-render item setting.
     // To handle cases when an rprim changes from a displayed tag to a hidden tag
@@ -863,6 +868,9 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         _taskRenderTagsValid = true;
     }
     _renderTagVersion = changeTracker.GetRenderTagVersion();
+#if USD_VERSION_NUM <= 2005
+    _visibilityVersion = changeTracker.GetVisibilityChangeCount();
+#endif
 }
 
 //! \brief  List the rprims in collection that match renderTags
