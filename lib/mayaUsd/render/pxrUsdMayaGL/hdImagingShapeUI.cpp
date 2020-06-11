@@ -116,7 +116,6 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
     // renderer deletes the MUserData object at the end of a legacy viewport
     // Draw() call.
     PxrMayaHdUserData* userData = new PxrMayaHdUserData();
-    userData->drawShape = true;
 
     MDrawData drawData;
     getDrawData(userData, drawData);

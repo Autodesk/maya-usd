@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// While this class doesn't have anything particular to rendering, it is only
 /// used by the render and is therefore here.  We can move this to usdMaya if
 /// we'd like to use it outside of the rendering.
-class UsdMayaGLSoftSelectHelper 
+class UsdMayaGLSoftSelectHelper
 {
 public:
     MAYAUSD_CORE_PUBLIC
@@ -59,7 +59,7 @@ public:
     void Populate();
 
     /// \brief Returns true if \p dagPath is in the softSelection.  Also returns
-    /// the \p weight.  
+    /// the \p weight.
     ///
     /// NOTE: until MAYA-73448 (and MAYA-73513) is fixed, the \p weight value is
     /// arbitrary.

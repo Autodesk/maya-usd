@@ -25,6 +25,7 @@
 #include <maya/MBoundingBox.h>
 #include <maya/MDrawContext.h>
 #include <maya/MHWGeometryUtilities.h>
+#include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
 #include <maya/MSelectionContext.h>
 
@@ -64,6 +65,14 @@ class px_vp20Utils
                 const MHWRender::MDrawContext& context,
                 M3dView& view);
 
+        /// Returns true if the given Maya display style indicates that a
+        /// bounding box should be rendered.
+        static bool ShouldRenderBoundingBox(unsigned int displayStyle) {
+            const bool boundingBoxStyle =
+                displayStyle & MHWRender::MFrameContext::DisplayStyle::kBoundingBox;
+            return boundingBoxStyle;
+        }
+
         /// Renders the given bounding box in the given \p color via OpenGL.
         MAYAUSD_CORE_PUBLIC
         static bool RenderBoundingBox(
@@ -74,7 +83,7 @@ class px_vp20Utils
 
         /// Helper to draw multiple wireframe boxes, where \p cubeXforms is a
         /// list of transforms to apply to the unit cube centered around the
-        /// origin.  Those transforms will all be concatenated with the 
+        /// origin.  Those transforms will all be concatenated with the
         /// \p worldViewMat and \p projectionMat.
         MAYAUSD_CORE_PUBLIC
         static bool RenderWireCubes(
