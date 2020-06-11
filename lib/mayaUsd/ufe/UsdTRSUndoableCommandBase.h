@@ -15,8 +15,8 @@
 //
 #pragma once
 
-#include "../base/api.h"
-#include "UsdSceneItem.h"
+#include "mayaUsd/base/api.h"
+#include "mayaUsd/ufe/UsdSceneItem.h"
 
 #include <ufe/transform3dUndoableCommands.h>
 #include <ufe/observer.h>
