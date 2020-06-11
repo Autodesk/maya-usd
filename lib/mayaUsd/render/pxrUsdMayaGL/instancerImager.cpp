@@ -92,7 +92,7 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
 
         const MDagPath firstInstancePath =
                 MDagPath::getAPathTo(handle.object());
-    
+
         // Create the adapter if it doesn't exist yet.
         _InstancerEntry& entry = iter->second;
         if (vp2) {

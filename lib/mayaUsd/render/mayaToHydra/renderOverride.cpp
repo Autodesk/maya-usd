@@ -549,7 +549,7 @@ void MtohRenderOverride::_InitHydraResources() {
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
             newDelegate->SetLightsEnabled(!_hasDefaultLighting);
-            _delegates.push_back(newDelegate);
+            _delegates.emplace_back(std::move(newDelegate));
         }
     }
     if (_hasDefaultLighting) {

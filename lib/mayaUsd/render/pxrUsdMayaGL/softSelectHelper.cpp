@@ -53,7 +53,7 @@ UsdMayaGLSoftSelectHelper::Populate()
     _populated = true;
 }
 
-void 
+void
 UsdMayaGLSoftSelectHelper::_PopulateWeights()
 {
     // we don't want to fallback to the active selection if there is no sot

@@ -1267,6 +1267,9 @@ void HdVP2Mesh::_UpdateDrawItem(
     // The current instancer invalidation tracking makes it hard for
     // us to tell whether transforms will be dirty, so this code
     // pulls them every time something changes.
+    // If the mesh is instanced but has 0 instance transforms remember that
+    // so the render item can be hidden.
+    bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
 
         // Retrieve instance transforms from the instancer.
@@ -1275,10 +1278,14 @@ void HdVP2Mesh::_UpdateDrawItem(
             ComputeInstanceTransforms(id);
 
         MMatrix instanceMatrix;
+        const unsigned int instanceCount = transforms.size();
 
-        if (isDedicatedSelectionHighlightItem) {
+        if (0 == instanceCount) {
+            instancerWithNoInstances = true;
+        }
+        else if (isDedicatedSelectionHighlightItem) {
             if (_selectionState == kFullySelected) {
-                stateToCommit._instanceTransforms.setLength(transforms.size());
+                stateToCommit._instanceTransforms.setLength(instanceCount);
                 for (size_t i = 0; i < transforms.size(); ++i) {
                     transforms[i].Get(instanceMatrix.matrix);
                     instanceMatrix = worldMatrix * instanceMatrix;
@@ -1286,6 +1293,26 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             }
             else if (auto state = drawScene.GetPrimSelectionState(id)) {
+#if USD_VERSION_NUM <= 2005
+                // In 20.05 and older GetPrimSelectionState may have duplicate entries
+                // in instanceIndices, which will cause Maya to draw that instance multiple
+                // times. Remove the duplicates here to avoid that problem.
+                std::vector<bool> selectedIndices;
+                selectedIndices.resize(instanceCount); // bool default ctor sets the value to false
+                for (const auto& indexArray : state->instanceIndices) {   
+                    for (const auto index : indexArray) {
+                        selectedIndices[index] = true;
+                    }
+                }
+                for (unsigned int index=0; index<instanceCount; index++)
+                {
+                    if (!selectedIndices[index])
+                        continue;
+                    transforms[index].Get(instanceMatrix.matrix);
+                    instanceMatrix = worldMatrix * instanceMatrix;
+                    stateToCommit._instanceTransforms.append(instanceMatrix);
+                }
+#else
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
                         transforms[index].Get(instanceMatrix.matrix);
@@ -1293,10 +1320,10 @@ void HdVP2Mesh::_UpdateDrawItem(
                         stateToCommit._instanceTransforms.append(instanceMatrix);
                     }
                 }
+#endif
             }
         }
         else {
-            const unsigned int instanceCount = transforms.size();
             stateToCommit._instanceTransforms.setLength(instanceCount);
             for (size_t i = 0; i < instanceCount; ++i) {
                 transforms[i].Get(instanceMatrix.matrix);
@@ -1352,12 +1379,13 @@ void HdVP2Mesh::_UpdateDrawItem(
     }
 
     // Determine if the render item should be enabled or not.
-    if (itemDirtyBits & (HdChangeTracker::DirtyVisibility |
+    if ((itemDirtyBits & (HdChangeTracker::DirtyVisibility |
                          HdChangeTracker::DirtyRenderTag |
                          HdChangeTracker::DirtyPoints |
                          HdChangeTracker::DirtyExtent |
-                         DirtySelectionHighlight)) {
-        bool enable = drawItem->GetVisible() && !_meshSharedData._points.empty();
+                         DirtySelectionHighlight)) ||
+                        !GetInstancerId().IsEmpty()) {
+        bool enable = drawItem->GetVisible() && !_meshSharedData._points.empty() && !instancerWithNoInstances;
 
         if (isDedicatedSelectionHighlightItem) {
             enable = enable && (_selectionState != kUnselected);

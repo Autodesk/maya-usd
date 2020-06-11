@@ -51,6 +51,7 @@
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4d.h>
 #include <pxr/base/tf/singleton.h>
+#include <pxr/base/tf/token.h>
 #include <pxr/base/tf/weakBase.h>
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
@@ -93,8 +94,10 @@ using HgiUniquePtr = std::unique_ptr<class Hgi>;
 /// A user data object should also be created/obtained for the shape by calling
 /// the shape adapter's GetMayaUserData() method.
 ///
-/// In the draw stage, Draw() must be called for each draw request to complete
-/// the render.
+/// Typically, all Hydra-imaged shapes will be drawn automatically as a single
+/// batch by the pxrHdImagingShape. However, bounding boxes are not drawn by
+/// Hydra, so each draw override should invoke DrawBoundingBox() to do that if
+/// necessary.
 ///
 /// Draw/selection management objects should be sure to call
 /// RemoveShapeAdapter() (usually in the destructor) when they no longer wish
@@ -178,13 +181,23 @@ public:
             const MDagPath& dagPath,
             PxrMayaHdPrimFilter& primFilter);
 
-    /// Render batch or bounding box in the legacy viewport based on \p request
+    /// Render batch in the legacy viewport based on \p request
     MAYAUSD_CORE_PUBLIC
     void Draw(const MDrawRequest& request, M3dView& view);
 
-    /// Render batch or bounding box in Viewport 2.0 based on \p userData
+    /// Render batch in Viewport 2.0 based on \p userData
     MAYAUSD_CORE_PUBLIC
     void Draw(
+            const MHWRender::MDrawContext& context,
+            const MUserData* userData);
+
+    /// Render bounding box in the legacy viewport based on \p request
+    MAYAUSD_CORE_PUBLIC
+    void DrawBoundingBox(const MDrawRequest& request, M3dView& view);
+
+    /// Render bounding box in Viewport 2.0 based on \p userData
+    MAYAUSD_CORE_PUBLIC
+    void DrawBoundingBox(
             const MHWRender::MDrawContext& context,
             const MUserData* userData);
 
@@ -306,6 +319,7 @@ private:
             const GfMatrix4d& worldToViewMatrix,
             const GfMatrix4d& projectionMatrix,
             const GfVec4d& viewport,
+            unsigned int displayStyle,
             const std::vector<_RenderItem>& items);
 
     /// Call to render all queued batches. May be called safely without

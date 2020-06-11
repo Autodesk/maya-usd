@@ -193,8 +193,6 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
         newData = new PxrMayaHdUserData();
     }
 
-    newData->drawShape = true;
-
     return newData;
 }
 

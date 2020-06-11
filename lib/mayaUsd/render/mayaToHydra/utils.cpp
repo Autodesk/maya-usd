@@ -62,7 +62,7 @@ R"mel(
     attrControlGrp -label "Highlight outline (in pixels, 0 to disable)" -attribute "defaultRenderGlobals.mtohSelectionOutline" -changeCommand $cc;
 )mel"
 #endif
-#if USD_VERSION_NUM > 1911
+#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
 R"mel(
     attrControlGrp -label "Enable color quantization" -attribute "defaultRenderGlobals.mtohColorQuantization" -changeCommand $cc;
 )mel"

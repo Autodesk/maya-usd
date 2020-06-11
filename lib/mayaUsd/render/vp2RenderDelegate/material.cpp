@@ -296,10 +296,10 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
     return desc;
 }
 
+#if USD_VERSION_NUM >= 2002
 MHWRender::MTexture* _LoadUdimTexture(
     const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
 {
-#if USD_VERSION_NUM >= 2002
     /*
         For this method to work path needs to be an absolute file path, not an asset path.
         That means that this function depends on the changes in 4e426565 to materialAdapther.cpp
@@ -411,10 +411,8 @@ MHWRender::MTexture* _LoadUdimTexture(
     }
 
     return texture;
-#else
-    return nullptr;
-#endif
 }
+#endif
 
 //! Load texture from the specified path
 MHWRender::MTexture* _LoadTexture(

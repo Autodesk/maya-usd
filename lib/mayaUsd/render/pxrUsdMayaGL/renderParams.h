@@ -35,12 +35,14 @@ struct PxrMayaHdRenderParams
 
     // Color Params
     //
+    bool useWireframe = false;
     GfVec4f wireframeColor = GfVec4f(0.0f);
 
     /// Helper function to find a batch key for the render params
     size_t Hash() const
     {
         size_t hash = size_t(enableLighting);
+        boost::hash_combine(hash, useWireframe);
         boost::hash_combine(hash, wireframeColor);
 
         return hash;
