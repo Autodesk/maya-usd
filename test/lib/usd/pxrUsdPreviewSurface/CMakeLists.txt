@@ -9,14 +9,11 @@ set(test_script_files
 # copy tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
 add_custom_target(${TARGET_NAME} ALL)
 
-mayaUsd_copyFiles(${TARGET_NAME}
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-    FILES ${test_script_files})
-
 # copy test files to build directory
 mayaUsd_copyDirectory(${TARGET_NAME}
     SOURCE ${CMAKE_CURRENT_SOURCE_DIR}
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+    EXCLUDE "CMakeLists.txt"
 )
 
 foreach(script ${test_script_files})
