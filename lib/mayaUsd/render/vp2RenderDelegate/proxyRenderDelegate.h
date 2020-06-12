@@ -44,6 +44,17 @@
 #define MAYA_ENABLE_UPDATE_FOR_SELECTION
 #endif
 
+#define ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+/*  In USD v20.05 and earlier when the purpose of an rprim changes the visibility gets dirtied,
+    and that doesn't update the render tag version.
+    
+    Pixar is in the process of fixing this one as noted in:
+    https://groups.google.com/forum/#!topic/usd-interest/9pzFbtCEY-Y
+
+    Logged as:
+    https://github.com/PixarAnimationStudios/USD/issues/1243
+*/
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdRenderDelegate;
@@ -196,7 +207,7 @@ private:
     //! The render tag version used the last time render tags were updated
     unsigned int _renderTagVersion { 0 }; // initialized to 1 in HdChangeTracker, so we'll always have an
                                  // invalid version the first update.
-#if USD_VERSION_NUM <= 2005
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
     unsigned int _visibilityVersion { 0 }; // initialized to 1 in HdChangeTracker.
 #endif
     bool _taskRenderTagsValid { false }; //!< If false the render tags on the dummy render task are not the minimum set of tags.

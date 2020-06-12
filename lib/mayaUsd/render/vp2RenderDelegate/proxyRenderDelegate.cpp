@@ -828,9 +828,7 @@ void ProxyRenderDelegate::_UpdateRenderTags()
     // the last time we set the render tags so we know if there is a change to an individual
     // rprim or not.
     bool rprimRenderTagChanged = (_renderTagVersion != changeTracker.GetRenderTagVersion());
-#if USD_VERSION_NUM <= 2005
-    // in v20.05 and earlier when the purpose of an rprim changes the visibility gets dirtied,
-    // and that doesn't update the render tag version.
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
     rprimRenderTagChanged = rprimRenderTagChanged || ( _visibilityVersion != changeTracker.GetVisibilityChangeCount());
 #endif
 

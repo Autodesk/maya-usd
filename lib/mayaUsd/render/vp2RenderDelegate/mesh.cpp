@@ -373,8 +373,7 @@ void HdVP2Mesh::Sync(
     if (!drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()))) {
         _HideAllDrawItems(reprToken);
         *dirtyBits &= ~( HdChangeTracker::DirtyRenderTag
-#if USD_VERSION_NUM <= 2005
-        // Purpose changing marks visibility dirty instead of render tag.
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
          | HdChangeTracker::DirtyVisibility
 #endif
           );
@@ -498,8 +497,7 @@ void HdVP2Mesh::Sync(
     }
 
     if (*dirtyBits & (HdChangeTracker::DirtyRenderTag
-#if USD_VERSION_NUM <= 2005
-    //purpose changing sets DirtyVisibility instead of DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
         |HdChangeTracker::DirtyVisibility
 #endif
     )) {
@@ -1594,8 +1592,7 @@ void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken) {
         if (!renderItem)
             continue;
 
-        HdVP2DrawItem::RenderItemData& drawItemData(drawItem->GetRenderItemData());
-        drawItemData._enabled = false;
+        drawItem->GetRenderItemData()._enabled = false;
 
         _delegate->GetVP2ResourceRegistry().EnqueueCommit([renderItem]() {
             renderItem->enable(false);
