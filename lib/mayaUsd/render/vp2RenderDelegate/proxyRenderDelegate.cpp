@@ -866,7 +866,7 @@ void ProxyRenderDelegate::_UpdateRenderTags()
         _taskRenderTagsValid = true;
     }
     _renderTagVersion = changeTracker.GetRenderTagVersion();
-#if USD_VERSION_NUM <= 2005
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
     _visibilityVersion = changeTracker.GetVisibilityChangeCount();
 #endif
 }
