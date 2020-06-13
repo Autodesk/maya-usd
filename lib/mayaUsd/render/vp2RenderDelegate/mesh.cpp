@@ -372,10 +372,11 @@ void HdVP2Mesh::Sync(
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
     if (!drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()))) {
         _HideAllDrawItems(reprToken);
-        // clearing visibility here is wrong. It is a work around to handle purpose changing
-        // marking visibility dirty instead of render tag. See UsdImagingGprimAdapter::ProcessPropertyChange
-        // for where this happens.
-        *dirtyBits &= ~( HdChangeTracker::DirtyRenderTag | HdChangeTracker::DirtyVisibility );
+        *dirtyBits &= ~( HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+         | HdChangeTracker::DirtyVisibility
+#endif
+          );
         return;
     }
 
@@ -495,7 +496,11 @@ void HdVP2Mesh::Sync(
         _sharedData.visible = delegate->GetVisible(id);
     }
 
-    if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+    if (*dirtyBits & (HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+        |HdChangeTracker::DirtyVisibility
+#endif
+    )) {
         _meshSharedData._renderTag = delegate->GetRenderTag(id);
     }
 
@@ -1586,6 +1591,8 @@ void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken) {
         MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
         if (!renderItem)
             continue;
+
+        drawItem->GetRenderItemData()._enabled = false;
 
         _delegate->GetVP2ResourceRegistry().EnqueueCommit([renderItem]() {
             renderItem->enable(false);
