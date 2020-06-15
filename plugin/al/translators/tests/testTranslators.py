@@ -472,7 +472,7 @@ class TestTranslator(unittest.TestCase):
         spherePrimMesh = UsdGeom.Mesh.Get(d.stage, spherePrimPath)  
 
         # Test import,modify,teardown a bunch of times
-        for i in xrange(3):
+        for i in range(3):
             # Determine expected result
             expectedPoint = spherePrimMesh.GetPointsAttr().Get()[0] + offsetAmount
 

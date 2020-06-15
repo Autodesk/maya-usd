@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-#include "./Api.h"
+#include "Api.h"
 
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>

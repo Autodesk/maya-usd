@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-import _AL_USDMaya
+from . import _AL_USDMaya
 from pxr import Tf
 Tf.PrepareModule(_AL_USDMaya, locals())
 del _AL_USDMaya, Tf
