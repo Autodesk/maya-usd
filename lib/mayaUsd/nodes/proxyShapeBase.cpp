@@ -34,6 +34,7 @@
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnPluginData.h>
 #include <maya/MFnReference.h>
+#include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnUnitAttribute.h>
 #include <maya/MGlobal.h>
@@ -117,6 +118,8 @@ MObject MayaUsdProxyShapeBase::complexityAttr;
 MObject MayaUsdProxyShapeBase::inStageDataAttr;
 MObject MayaUsdProxyShapeBase::inStageDataCachedAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
+MObject MayaUsdProxyShapeBase::inStageCacheIdAttr;
+MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
 MObject MayaUsdProxyShapeBase::drawRenderPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawProxyPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
@@ -258,6 +261,21 @@ MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    MFnStringData stringDataFn;
+    const MObject defaultStringDataObj = stringDataFn.create("");
+
+    inStageCacheIdAttr = typedAttrFn.create(
+        "inStageCacheId", "cid", MFnData::kString, defaultStringDataObj, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(inStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    outStageCacheIdAttr = typedAttrFn.create(
+        "outStageCacheId", "oid", MFnData::kString, defaultStringDataObj, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     drawRenderPurposeAttr = numericAttrFn.create(
         "drawRenderPurpose",
         "drp",
@@ -304,23 +322,40 @@ MayaUsdProxyShapeBase::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(filePathAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(filePathAttr, outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(primPathAttr, inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(primPathAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(primPathAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(loadPayloadsAttr, inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(loadPayloadsAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(loadPayloadsAttr, outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(inStageDataAttr, inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(inStageDataAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(inStageDataAttr, outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    retValue = attributeAffects(inStageCacheIdAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(inStageCacheIdAttr, inStageDataCachedAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(inStageCacheIdAttr, outStageCacheIdAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(inStageDataCachedAttr, outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = attributeAffects(inStageDataCachedAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     return retValue;
@@ -402,6 +437,9 @@ MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     else if (plug == outStageDataAttr) {
         return computeOutStageData(dataBlock);
     }
+    else if (plug == outStageCacheIdAttr) {
+        return computeOutStageCacheId(dataBlock);
+    }
 
     return MS::kUnknownParameter;
 }
@@ -422,7 +460,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     // If inData has an incoming connection, then use it. Otherwise generate stage from the filepath
-    if (!inDataHandle.data().isNull() ) {
+    if (!inDataHandle.data().isNull()) {
         //
         // Propagate inData -> inDataCached
         //
@@ -433,79 +471,89 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         inDataCachedHandle.setClean();
         return MS::kSuccess;
-    }
-    else {
-        //
-        // Calculate from USD filepath and primPath and variantKey
-        //
-
-        // Get input attr values
-        const MString file = dataBlock.inputValue(filePathAttr, &retValue).asString();
+    } else {
+        // Check if we have a Stage from the Cache Id
+        const MDataHandle cacheIdHandle = dataBlock.inputValue(inStageCacheIdAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
+        const std::string cacheId = TfStringTrim(cacheIdHandle.asString().asChar());
+        UsdStageRefPtr    usdStage
+            = UsdUtilsStageCache::Get().Find(UsdStageCache::Id::FromString(cacheId));
+        SdfPath primPath;
+        if (!usdStage) {
+            //
+            // Calculate from USD filepath and primPath and variantKey
+            //
 
-        //
-        // let the usd stage cache deal with caching the usd stage data
-        //
-        std::string fileString = TfStringTrimRight(file.asChar());
+            // Get input attr values
+            const MString file = dataBlock.inputValue(filePathAttr, &retValue).asString();
+            CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-        TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage original USD file path is %s\n", fileString.c_str());
+            //
+            // let the usd stage cache deal with caching the usd stage data
+            //
+            std::string fileString = TfStringTrimRight(file.asChar());
 
-        boost::filesystem::path filestringPath(fileString);
-        if(filestringPath.is_absolute())
-        {
-            fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
-            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the USD file path to %s\n", fileString.c_str());
-        }
-        else
-        {
-            fileString = UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(thisMObject(), fileString);
-            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
-        }
+            TF_DEBUG(USDMAYA_PROXYSHAPEBASE)
+                .Msg(
+                    "ProxyShapeBase::reloadStage original USD file path is %s\n",
+                    fileString.c_str());
 
-        // Fall back on providing the path "as is" to USD
-        if (fileString.empty())
-        {
-            fileString.assign(file.asChar(), file.length());
-        }
-
-        TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::loadStage called for the usd file: %s\n", fileString.c_str());
-
-        // == Load the Stage
-        UsdStageRefPtr usdStage;
-        SdfPath        primPath;
-        auto           loadSet = UsdStage::InitialLoadSet::LoadAll;
-
-        MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
-        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-        if (!loadPayloadsHandle.asBool()) {
-            loadSet = UsdStage::InitialLoadSet::LoadNone;
-        }
-
-        {
-            // When opening or creating stages we must have an active UsdStageCache.
-            // The stage cache is the only one who holds a strong reference to the
-            // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
-            // more information.
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
-            
-            if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-                SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
-                if (sessionLayer) {
-                    usdStage = UsdStage::Open(rootLayer,
-                            sessionLayer,
-                            ArGetResolver().GetCurrentContext(),
-                            loadSet);
-                } else {
-                    usdStage = UsdStage::Open(rootLayer,
-                            ArGetResolver().GetCurrentContext(),
-                            loadSet);
-                }
-
-                usdStage->SetEditTarget(usdStage->GetSessionLayer());
+            boost::filesystem::path filestringPath(fileString);
+            if (filestringPath.is_absolute()) {
+                fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
+                TF_DEBUG(USDMAYA_PROXYSHAPEBASE)
+                    .Msg(
+                        "ProxyShapeBase::reloadStage resolved the USD file path to %s\n",
+                        fileString.c_str());
+            } else {
+                fileString = UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
+                    thisMObject(), fileString);
+                TF_DEBUG(USDMAYA_PROXYSHAPEBASE)
+                    .Msg(
+                        "ProxyShapeBase::reloadStage resolved the relative USD file path to %s\n",
+                        fileString.c_str());
             }
-            else {
-                // Create a new stage in memory with an anonymous root layer.
-                usdStage = UsdStage::CreateInMemory("", loadSet);
+
+            // Fall back on providing the path "as is" to USD
+            if (fileString.empty()) {
+                fileString.assign(file.asChar(), file.length());
+            }
+
+            TF_DEBUG(USDMAYA_PROXYSHAPEBASE)
+                .Msg("ProxyShapeBase::loadStage called for the usd file: %s\n", fileString.c_str());
+
+            // == Load the Stage
+            auto loadSet = UsdStage::InitialLoadSet::LoadAll;
+
+            MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
+            CHECK_MSTATUS_AND_RETURN_IT(retValue);
+            if (!loadPayloadsHandle.asBool()) {
+                loadSet = UsdStage::InitialLoadSet::LoadNone;
+            }
+
+            {
+                // When opening or creating stages we must have an active UsdStageCache.
+                // The stage cache is the only one who holds a strong reference to the
+                // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
+                // more information.
+                UsdStageCacheContext ctx(
+                    UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
+
+                if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+                    SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+                    if (sessionLayer) {
+                        usdStage = UsdStage::Open(
+                            rootLayer, sessionLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                    } else {
+                        usdStage = UsdStage::Open(
+                            rootLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                    }
+
+                    usdStage->SetEditTarget(usdStage->GetSessionLayer());
+                } else {
+                    // Create a new stage in memory with an anonymous root layer.
+                    usdStage = UsdStage::CreateInMemory("", loadSet);
+                }
             }
         }
 
@@ -515,12 +563,11 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         // Create the output outData ========
         MFnPluginData pluginDataFn;
-        MObject stageDataObj =
-            pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+        MObject       stageDataObj = pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-        MayaUsdStageData* stageData =
-            reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
+        MayaUsdStageData* stageData
+            = reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         // Set the outUsdStageData
@@ -530,8 +577,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         //
         // set the data on the output plug
         //
-        MDataHandle inDataCachedHandle =
-            dataBlock.outputValue(inStageDataCachedAttr, &retValue);
+        MDataHandle inDataCachedHandle = dataBlock.outputValue(inStageDataCachedAttr, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         inDataCachedHandle.set(stageData);
@@ -634,6 +680,53 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
                   std::placeholders::_1));
 
     MayaUsdProxyStageSetNotice(*this).Send();
+
+    return MS::kSuccess;
+}
+
+MStatus
+MayaUsdProxyShapeBase::computeOutStageCacheId(MDataBlock& dataBlock)
+{
+    MStatus retValue = MS::kSuccess;
+
+    TfReset(_boundingBoxCache);
+
+    // Reset the stage listener until we determine that everything is valid.
+    _stageNoticeListener.SetStage(UsdStageWeakPtr());
+    _stageNoticeListener.SetStageContentsChangedCallback(nullptr);
+
+    MDataHandle inDataCachedHandle = dataBlock.inputValue(inStageDataCachedAttr, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    UsdStageRefPtr usdStage;
+
+    MayaUsdStageData* inData = dynamic_cast<MayaUsdStageData*>(inDataCachedHandle.asPluginData());
+    if (inData) {
+        usdStage = inData->stage;
+    }
+
+    if (!usdStage) {
+        return MS::kFailure;
+    }
+
+    std::string cacheId = "";
+    auto        id = UsdUtilsStageCache::Get().Insert(usdStage);
+    if (id)
+        cacheId = id.ToString();
+
+    // Create the output stage data object.
+    MFnStringData cacheIdDataFn;
+    MObject       cacheIdDataObj = cacheIdDataFn.create(cacheId.c_str(), &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    MString cacheIdData = cacheIdDataFn.string(&retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    MDataHandle outCacheIdHandle = dataBlock.outputValue(outStageCacheIdAttr, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    outCacheIdHandle.set(cacheIdData);
+    outCacheIdHandle.setClean();
 
     return MS::kSuccess;
 }
@@ -772,7 +865,8 @@ MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluatio
         evaluationNode.dirtyPlugExists(filePathAttr) ||
         evaluationNode.dirtyPlugExists(primPathAttr) ||
         evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
-        evaluationNode.dirtyPlugExists(inStageDataAttr)) {
+        evaluationNode.dirtyPlugExists(inStageDataAttr) ||
+        evaluationNode.dirtyPlugExists(inStageCacheIdAttr)) {
         _IncreaseUsdStageVersion();
         MayaUsdProxyStageInvalidateNotice(*this).Send();
     }
@@ -812,7 +906,8 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
         plug == filePathAttr ||
         plug == primPathAttr ||
         plug == loadPayloadsAttr ||
-        plug == inStageDataAttr) {
+        plug == inStageDataAttr ||
+        plug == inStageCacheIdAttr) {
         _IncreaseUsdStageVersion();
         MayaUsdProxyStageInvalidateNotice(*this).Send();
     }

@@ -101,6 +101,10 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         static MObject inStageDataCachedAttr;
         MAYAUSD_CORE_PUBLIC
+        static MObject inStageCacheIdAttr;
+        MAYAUSD_CORE_PUBLIC
+        static MObject outStageCacheIdAttr;
+        MAYAUSD_CORE_PUBLIC
         static MObject outStageDataAttr;
         MAYAUSD_CORE_PUBLIC
         static MObject drawRenderPurposeAttr;
@@ -295,6 +299,7 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
 
         MStatus computeInStageDataCached(MDataBlock& dataBlock);
         MStatus computeOutStageData(MDataBlock& dataBlock);
+        MStatus computeOutStageCacheId(MDataBlock& dataBlock);
 
         SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
         int _GetComplexity(MDataBlock dataBlock) const;
