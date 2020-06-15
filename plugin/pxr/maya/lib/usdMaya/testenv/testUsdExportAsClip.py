@@ -31,7 +31,7 @@ class testUsdExportAsClip(unittest.TestCase):
 
         cmds.file(os.path.abspath('UsdExportAsClipTest.ma'), open=True,
             force=True)
-        print os.path.abspath('UsdExportAsClipTest.ma')
+        print(os.path.abspath('UsdExportAsClipTest.ma'))
 
         cmds.loadPlugin('pxrUsd', quiet=True)
 
@@ -55,9 +55,9 @@ class testUsdExportAsClip(unittest.TestCase):
             cube = stage.GetPrimAtPath(primPath)
             self.assertTrue(cube)
             attr = cube.GetAttribute(attrName)
-            return [attr.Get(time=tc) for tc in xrange(*frameRange)]
+            return [attr.Get(time=tc) for tc in range(*frameRange)]
 
-        for frame, x,y in zip(xrange(*frameRange),
+        for frame, x,y in zip(range(*frameRange),
                               getValues(canonicalStage),
                               getValues(testStage)):
             msg = ('different values found on frame: {frame}\n'
@@ -116,7 +116,7 @@ class testUsdExportAsClip(unittest.TestCase):
         canonicalUsdFile = os.path.abspath('canonical.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=canonicalUsdFile, frameRange=(1, 20))
 
-        print 'comparing: \nnormal: {}\nstitched: {}'.format(canonicalUsdFile, stitchedPath)
+        print('comparing: \nnormal: {}\nstitched: {}'.format(canonicalUsdFile, stitchedPath))
         canonicalStage = Usd.Stage.Open(canonicalUsdFile)
         clipsStage = Usd.Stage.Open(stitchedPath)
         # visible

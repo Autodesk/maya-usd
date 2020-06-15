@@ -95,7 +95,7 @@ class testUsdExportInstances(unittest.TestCase):
                 self.assertEqual(ref.primPath, i)
 
         # Test that the InstanceSources prim is last in the layer's root prims.
-        rootPrims = layer.rootPrims.keys()
+        rootPrims = list(layer.rootPrims.keys())
         self.assertEqual(rootPrims[-1], "InstanceSources")
 
     def testExportInstances_ModelHierarchyValidation(self):
