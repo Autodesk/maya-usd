@@ -1,9 +1,5 @@
 set(TARGET_NAME mayaUsd_Translators)
 
-set(install_destination 
-    ${CMAKE_INSTALL_PREFIX}/lib/usd
-)
-
 set(resources_install_path
     ${CMAKE_INSTALL_PREFIX}/lib/usd/${TARGET_NAME}/resources
 )
@@ -118,14 +114,6 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json"
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
     DESTINATION ${resources_install_path}
-)
-
-#install top level plugInfo.json that includes the configured plugInfo.json
-install(CODE
-    "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
-)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
-    DESTINATION ${install_destination}
 )
 
 install(

@@ -18,9 +18,8 @@
 from maya import cmds
 
 import os
-import PythonTests.harness as harness
 import unittest
-
+from maya.app.general.mayaIsVP2Capable import mayaIsVP2Capable
 
 class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
 
@@ -66,7 +65,8 @@ class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
         cmds.ogsRender(camera=self._cameraName, currentFrame=True, width=1920,
             height=1080)
 
-    @harness.skipUnlessGUIandVP2capable
+    @unittest.skipIf(cmds.about(batch=True) or not mayaIsVP2Capable(),
+                     "Requires a GUI and a valid VP2")
     def testDrawPxrUsdPreviewSurface(self):
         """
         Tests performing a Viewport 2.0 render of a collection of spheres

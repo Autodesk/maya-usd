@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "usdPreviewSurfaceWriter.h"
+
 #include "usdPreviewSurface.h"
 
 #include <mayaUsd/fileio/primWriterRegistry.h>

@@ -21,6 +21,8 @@
 
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
+#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShadingNodeOverride.h>
 #include <maya/MString.h>
@@ -36,7 +38,7 @@ PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator(const MObject& obj)
     // Shader fragments can only be registered after VP2 initialization, thus the function cannot
     // be called when loading plugin (which can happen before VP2 initialization in the case of
     // command-line rendering). The fragments will be deregistered when plugin is unloaded.
-    HdVP2ShaderFragments::registerFragments();
+    PxrMayaUsdPreviewSurfacePlugin::registerFragments();
 
     return new PxrMayaUsdPreviewSurfaceShadingNodeOverride(obj);
 }

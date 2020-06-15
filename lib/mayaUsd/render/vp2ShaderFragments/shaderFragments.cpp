@@ -132,14 +132,19 @@ namespace
     }
 }
 
-bool HdVP2ShaderFragments::_registered = false;
+namespace {
+int _registrationCount = 0;
+}
 
 // Fragment registration should be done after VP2 has been initialized, to avoid any errors from
 // headless configurations or command-line renders.
 MStatus HdVP2ShaderFragments::registerFragments()
 {
-    if (_registered)
+    // If we're already registered, do nothing.
+    if (_registrationCount > 0) {
+        _registrationCount++;
         return MS::kSuccess;
+    }
 
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (!theRenderer) {
@@ -235,7 +240,7 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
-    _registered = true;
+    _registrationCount++;
 
     return MS::kSuccess;
 }
@@ -243,8 +248,11 @@ MStatus HdVP2ShaderFragments::registerFragments()
 // Fragment deregistration
 MStatus HdVP2ShaderFragments::deregisterFragments()
 {
-    if (!_registered)
+    // If more than one plugin still has us registered, do nothing.
+    if (_registrationCount > 1) {
+        _registrationCount--;
         return MS::kSuccess;
+    }
 
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (!theRenderer) {
@@ -281,7 +289,7 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
         }
     }
 
-    _registered = false;
+    _registrationCount--;
 
     // Clear the shader manager's effect cache as well so that any changes to
     // the fragments will get picked up if they are re-registered.

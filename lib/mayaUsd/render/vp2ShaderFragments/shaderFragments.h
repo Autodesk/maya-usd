@@ -44,11 +44,8 @@ public:
     static MStatus registerFragments();
 
     //! Deregister all HdVP2 fragments
+    MAYAUSD_CORE_PUBLIC
     static MStatus deregisterFragments();
-
-private:
-    //! Whether or not fragments have been registered.
-    static bool _registered;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

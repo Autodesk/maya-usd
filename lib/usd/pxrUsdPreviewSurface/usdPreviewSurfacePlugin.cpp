@@ -18,6 +18,8 @@
 #include "usdPreviewSurface.h"
 #include "usdPreviewSurfaceShadingNodeOverride.h"
 
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
+
 #include <maya/MStatus.h>
 #include <maya/MGlobal.h>
 #include <maya/MFnPlugin.h>
@@ -31,13 +33,9 @@ namespace {
 const MString _RegistrantId("mayaUsd");
 int _registrationCount = 0;
 
-// Name of the plugin registering the proxy shape base class.
+// Name of the plugin registering the preview surface class.
 MString _registrantPluginName;
 
-bool _useVP2RenderDelegate = false;
-
-TF_DEFINE_ENV_SETTING(VP2_RENDER_DELEGATE_PROXY, false,
-    "Switch proxy shape rendering to VP2 render delegate.");
 }
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -81,12 +79,14 @@ PxrMayaUsdPreviewSurfacePlugin::finalize(MFnPlugin& plugin)
         return MS::kSuccess;
     }
 
+    deregisterFragments();
+
     // Maya requires deregistration to be done by the same plugin that
     // performed the registration.  If this isn't possible, warn and don't
     // deregister.
     if (plugin.name() != _registrantPluginName) {
         MGlobal::displayWarning(
-            "USD proxy shape base cannot be deregistered, registering plugin "
+            "USD preview surface base cannot be deregistered, registering plugin "
             + _registrantPluginName + " is unloaded.");
         return MS::kSuccess;
     }
@@ -100,6 +100,34 @@ PxrMayaUsdPreviewSurfacePlugin::finalize(MFnPlugin& plugin)
     status = plugin.deregisterNode(PxrMayaUsdPreviewSurface::typeId);
     CHECK_MSTATUS(status);
 
+    return status;
+}
+
+namespace {
+    bool _registered = false;
+}
+
+/* static */
+MStatus
+PxrMayaUsdPreviewSurfacePlugin::registerFragments() {
+    if (_registered) {
+        return MS::kSuccess;
+    }
+
+    MStatus status = HdVP2ShaderFragments::registerFragments();
+    _registered = true;
+    return status;
+}
+
+/* static */
+MStatus
+PxrMayaUsdPreviewSurfacePlugin::deregisterFragments() {
+    if (!_registered) {
+        return MS::kSuccess;
+    }
+
+    MStatus status = HdVP2ShaderFragments::deregisterFragments();
+    _registered = false;
     return status;
 }
 

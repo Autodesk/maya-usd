@@ -35,7 +35,7 @@
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
-#include <mayaUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 #include "base/api.h"
 #include "exportTranslator.h"
@@ -178,8 +178,6 @@ MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
     MStatus status;
-
-    MGlobal::executeCommand("mayaUsdMenu_unloadui");
 
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(plugin);
     CHECK_MSTATUS(status);

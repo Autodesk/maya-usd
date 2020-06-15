@@ -15,7 +15,7 @@
 //
 #include "pxrUsdPreviewSurface/api.h"
 
-#include <mayaUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 #include <maya/MFnPlugin.h>
 #include <maya/MString.h>

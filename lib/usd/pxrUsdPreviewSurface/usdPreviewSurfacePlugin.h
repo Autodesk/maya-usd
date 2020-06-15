@@ -43,6 +43,10 @@ class PxrMayaUsdPreviewSurfacePlugin
 
         PXRUSDPREVIEWSURFACE_API
         static MStatus finalize(MFnPlugin&);
+
+        static MStatus registerFragments();
+
+        static MStatus deregisterFragments();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

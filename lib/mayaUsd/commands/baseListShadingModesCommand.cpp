@@ -24,8 +24,6 @@
 #include <maya/MString.h>
 #include <maya/MSyntax.h>
 
-#include <mutex>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {
