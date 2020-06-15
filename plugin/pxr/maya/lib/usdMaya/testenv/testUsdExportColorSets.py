@@ -369,7 +369,7 @@ class testUsdExportColorSets(unittest.TestCase):
         else:
             # Every component has an assignment.
             if isFaceColor:
-                assignmentIndices = [i for i in xrange(self._colorSetSourceMesh.numPolygons())]
+                assignmentIndices = [i for i in range(self._colorSetSourceMesh.numPolygons())]
             elif isVertexColor:
                 # The assignments for vertex color are a little different
                 # due to MItMeshFaceVertex visiting components in faceVertex
@@ -377,7 +377,7 @@ class testUsdExportColorSets(unittest.TestCase):
                 # out of order. 
                 assignmentIndices = [0, 1, 3, 2, 5, 4, 7, 6]
             elif isFaceVertexColor:
-                assignmentIndices = [i for i in xrange(self._colorSetSourceMesh.numFaceVertices())]
+                assignmentIndices = [i for i in range(self._colorSetSourceMesh.numFaceVertices())]
 
         return assignmentIndices
 

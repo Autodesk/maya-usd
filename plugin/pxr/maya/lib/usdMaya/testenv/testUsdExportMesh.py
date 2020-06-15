@@ -41,8 +41,8 @@ class testUsdExportMesh(unittest.TestCase):
 
     def _AssertVec3fArrayAlmostEqual(self, arr1, arr2):
         self.assertEqual(len(arr1), len(arr2))
-        for i in xrange(len(arr1)):
-            for j in xrange(3):
+        for i in range(len(arr1)):
+            for j in range(3):
                 self.assertAlmostEqual(arr1[i][j], arr2[i][j], places=3)
 
     def testExportAsCatmullClark(self):

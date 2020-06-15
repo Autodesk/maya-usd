@@ -190,7 +190,6 @@ function(pxr_setup_python)
     install(
         FILES
           ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
-          ${CMAKE_CURRENT_BINARY_DIR}/__init__.pyc
         DESTINATION
           ${INSTALL_DIR_SUFFIX}/${installPrefix}
     )

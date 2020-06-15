@@ -84,7 +84,7 @@ class testUsdReferenceAssemblySelection(unittest.TestCase):
         oComp = OM.MObject()
 
         ret = []
-        for i in xrange(selection.length()):
+        for i in range(selection.length()):
             selection.getDagPath(i, pathDag, oComp)
             if not oComp.isNull():
                 continue
