@@ -248,12 +248,16 @@ MStatus HdVP2ShaderFragments::registerFragments()
 // Fragment deregistration
 MStatus HdVP2ShaderFragments::deregisterFragments()
 {
+    // If it was never registered, leave as-is:
+    if (!_registrationCount) {
+        return MS::kSuccess;
+    }
+
     // If more than one plugin still has us registered, do nothing.
     if (_registrationCount > 1) {
         _registrationCount--;
         return MS::kSuccess;
     }
-
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (!theRenderer) {
         return MS::kFailure;
