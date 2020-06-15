@@ -9,7 +9,45 @@ on:
 
 jobs:
 
-  build:
+  # Wait for remote build to start, report back
+  build_start:
+      timeout-minutes: 180
+      runs-on: ubuntu-latest
+      if: contains(toJson(github.event.pull_request.assignee), 'ecp-maya-devops-adsk')
+      steps:
+
+        # Build start info will be committed here when the remote build is launched
+        - name: Setup transfer repo
+          uses: actions/checkout@v2
+          with:
+            repository: ecp-maya-devops-adsk/log-transfer
+            ref: transfer
+            path: transfer
+
+        # Echo the file name - it's hard to find the run_id in the UI
+        - name: Echo the expected start file name
+          run: "echo ${{ github.run_id }}_${{ github.run_number }}_start.txt"
+
+        # Wait for remote build to start
+        - name: Wait until remote build starts
+          shell: bash
+          run: "cd transfer ; while ! [ -f ${{ github.run_id }}_${{ github.run_number }}_start.txt ] ; do git pull --quiet ; sleep 10 ; done"
+
+        # Show contents of start file
+        - name: Show build start information
+          shell: bash
+          run: "cat transfer/${{ github.run_id }}_${{ github.run_number }}_start.txt"
+
+        # Grep the start file to show failures
+        - name: Exit with error if a build failed to start
+          # Default shell includes "-o pipefail" and "-e". Specify a different shell
+          shell: bash --noprofile --norc {0}
+          run: "if grep -i failed transfer/${{ github.run_id }}_${{ github.run_number }}_start.txt; then exit 1; else exit 0; fi"
+
+
+  # Wait for remote build to finish, report back with results
+  build_run:
+      needs: build_start
       timeout-minutes: 180
       runs-on: ubuntu-latest
       if: contains(toJson(github.event.pull_request.assignee), 'ecp-maya-devops-adsk')
@@ -43,6 +81,11 @@ jobs:
           with:
             name: build logs
             path: "transfer/${{ github.run_id }}_${{ github.run_number }}_*"
+
+        # Show contents of result file
+        - name: Show build result information
+          shell: bash
+          run: "cat transfer/${{ github.run_id }}_${{ github.run_number }}_result.txt"
 
         # Grep the results file to show failures
         - name: Exit with error if a build failed
