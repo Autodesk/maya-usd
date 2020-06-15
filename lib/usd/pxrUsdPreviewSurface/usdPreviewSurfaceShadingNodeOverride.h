@@ -16,12 +16,10 @@
 #ifndef PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_SHADING_NODE_OVERRIDE_H
 #define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_SHADING_NODE_OVERRIDE_H
 
-/// \file pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h
+/// \file usdPreviewSurfaceShadingNodeOverride.h
+#include "api.h"
 
 #include <pxr/pxr.h>
-#include <pxrUsdPreviewSurface/api.h>
-
-#include <pxr/base/tf/staticTokens.h>
 
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShadingNodeOverride.h>
@@ -30,23 +28,6 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-#define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_SHADING_NODE_OVERRIDE_TOKENS \
-    ((Float4ToFloatXFragmentName, "float4ToFloatX")) \
-    ((Float4ToFloatYFragmentName, "float4ToFloatY")) \
-    ((Float4ToFloatZFragmentName, "float4ToFloatZ")) \
-    ((Float4ToFloatWFragmentName, "float4ToFloatW")) \
-    ((LightingStructFragmentName, "lightingContributions")) \
-    ((LightingFragmentName, "usdPreviewSurfaceLighting")) \
-    ((CombinerFragmentName, "usdPreviewSurfaceCombiner")) \
-    ((SurfaceFragmentGraphName, "usdPreviewSurface"))
-
-TF_DECLARE_PUBLIC_TOKENS(
-    PxrMayaUsdPreviewSurfaceShadingNodeTokens,
-    PXRUSDPREVIEWSURFACE_API,
-    PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_SHADING_NODE_OVERRIDE_TOKENS);
-
 
 class PxrMayaUsdPreviewSurfaceShadingNodeOverride :
         public MHWRender::MPxSurfaceShadingNodeOverride

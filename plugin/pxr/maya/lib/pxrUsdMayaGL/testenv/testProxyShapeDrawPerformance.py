@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from future.utils import iteritems
+
 from pxr import UsdMaya
 
 from pxr import Tf
@@ -48,7 +50,7 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         statsOutputLines = []
-        for profileScopeName, elapsedTime in cls._profileScopeMetrics.iteritems():
+        for profileScopeName, elapsedTime in iteritems(cls._profileScopeMetrics):
             statsDict = {
                 'profile': profileScopeName,
                 'metric': 'time',
@@ -143,7 +145,7 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
         profileScopeName = '%s Proxy Orbit Playback Time' % self._testName
 
         with self._ProfileScope(profileScopeName):
-            for frame in xrange(int(self.animStartTime), int(self.animEndTime + 1.0)):
+            for frame in range(int(self.animStartTime), int(self.animEndTime + 1.0)):
                 cmds.currentTime(frame, edit=True)
 
         playElapsedTime = self._profileScopeMetrics[profileScopeName]

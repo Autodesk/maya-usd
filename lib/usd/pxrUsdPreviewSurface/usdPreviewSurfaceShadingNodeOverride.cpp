@@ -13,11 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxrUsdPreviewSurface/usdPreviewSurfaceShadingNodeOverride.h>
+#include "usdPreviewSurfaceShadingNodeOverride.h"
 
 #include <pxr/pxr.h>
 
 #include <pxr/base/tf/staticTokens.h>
+
+#include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
+
+#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShadingNodeOverride.h>
@@ -27,16 +31,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_PUBLIC_TOKENS(
-    PxrMayaUsdPreviewSurfaceShadingNodeTokens,
-    PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_SHADING_NODE_OVERRIDE_TOKENS);
-
-
 /* static */
 MHWRender::MPxSurfaceShadingNodeOverride*
 PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator(const MObject& obj)
 {
+    // Shader fragments can only be registered after VP2 initialization, thus the function cannot
+    // be called when loading plugin (which can happen before VP2 initialization in the case of
+    // command-line rendering). The fragments will be deregistered when plugin is unloaded.
+    PxrMayaUsdPreviewSurfacePlugin::registerFragments();
+
     return new PxrMayaUsdPreviewSurfaceShadingNodeOverride(obj);
 }
 
@@ -83,7 +86,7 @@ PxrMayaUsdPreviewSurfaceShadingNodeOverride::supportedDrawAPIs() const
 MString
 PxrMayaUsdPreviewSurfaceShadingNodeOverride::fragmentName() const
 {
-    return PxrMayaUsdPreviewSurfaceShadingNodeTokens->SurfaceFragmentGraphName.GetText();
+    return HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText();
 }
 
 /* virtual */

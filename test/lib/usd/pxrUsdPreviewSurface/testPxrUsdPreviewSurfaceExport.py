@@ -22,7 +22,6 @@ from pxr import UsdShade
 from pxr import UsdUtils
 
 from maya import cmds
-from maya import standalone
 
 import os
 import unittest
@@ -32,23 +31,27 @@ class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
+        testDir = os.path.join(os.path.abspath('.'),
+                               "PxrUsdPreviewSurfaceExportTest")
 
-        cmds.file(os.path.abspath('PxrUsdPreviewSurfaceExportTest.ma'),
-            open=True, force=True)
+        cmds.workspace(testDir, o=True)
 
+        cmds.file('PxrUsdPreviewSurfaceExportTest.ma', open=True, force=True)
+
+        defaultExtSetting = cmds.file(q = True, defaultExtensions=True)
+        cmds.file(defaultExtensions=False)
+    
         # Export to USD.
         usdFilePath = os.path.abspath('PxrUsdPreviewSurfaceExportTest.usda')
 
-        cmds.loadPlugin('pxrUsd')
-        cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='useRegistry')
+        cmds.loadPlugin('mayaUsdPlugin', quiet=True)
+        cmds.file(usdFilePath, force=True,
+                  options="shadingMode=useRegistry;mergeTransformAndShape=1",
+                  typ="USD Export", pr=True, ea=True)
+
+        cmds.file(defaultExtensions=defaultExtSetting)
 
         cls.stage = Usd.Stage.Open(usdFilePath)
-
-    @classmethod
-    def tearDownClass(cls):
-        standalone.uninitialize()
 
     def testStagePrerequisites(self):
         self.assertTrue(self.stage)

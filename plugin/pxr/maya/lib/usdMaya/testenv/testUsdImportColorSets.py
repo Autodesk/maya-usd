@@ -91,11 +91,11 @@ class testUsdImportColorSets(unittest.TestCase):
 
         if interpolation == UsdGeom.Tokens.uniform:
             # Remove the face vertices that are part of odd-numbered faces.
-            for i in xrange(4, 8):
+            for i in range(4, 8):
                 sparseExpectedValues.pop(i)
-            for i in xrange(12, 16):
+            for i in range(12, 16):
                 sparseExpectedValues.pop(i)
-            for i in xrange(20, 24):
+            for i in range(20, 24):
                 sparseExpectedValues.pop(i)
         elif interpolation == UsdGeom.Tokens.vertex:
             # Remove the face vertices that are on odd-numbered mesh-level
@@ -114,7 +114,7 @@ class testUsdImportColorSets(unittest.TestCase):
             sparseExpectedValues.pop(19)
         elif interpolation == UsdGeom.Tokens.faceVarying:
             # Remove odd-numbered face vertices.
-            for i in xrange(1, 24, 2):
+            for i in range(1, 24, 2):
                 sparseExpectedValues.pop(i)
 
         return sparseExpectedValues
@@ -157,21 +157,21 @@ class testUsdImportColorSets(unittest.TestCase):
 
         colorSetName = 'ConstantColor_kAlpha'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = 0.5
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kAlpha,
             expectedValues, expectedNumValues=1)
 
         colorSetName = 'ConstantColor_kRGB'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = Gf.Vec3f(1.0, 0.0, 1.0)
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kRGB,
             expectedValues, expectedNumValues=1)
 
         colorSetName = 'ConstantColor_kRGBA'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = Gf.Vec4f(0.0, 1.0, 0.0, 0.5)
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kRGBA,
             expectedValues, expectedNumValues=1)
@@ -187,17 +187,17 @@ class testUsdImportColorSets(unittest.TestCase):
 
         colorSetName = 'FaceColor_Full_kAlpha'
         expectedValues = {}
-        for i in xrange(0, 4):
+        for i in range(0, 4):
             expectedValues[i] = 1.0
-        for i in xrange(4, 8):
+        for i in range(4, 8):
             expectedValues[i] = 0.9
-        for i in xrange(8, 12):
+        for i in range(8, 12):
             expectedValues[i] = 0.8
-        for i in xrange(12, 16):
+        for i in range(12, 16):
             expectedValues[i] = 0.7
-        for i in xrange(16, 20):
+        for i in range(16, 20):
             expectedValues[i] = 0.6
-        for i in xrange(20, 24):
+        for i in range(20, 24):
             expectedValues[i] = 0.5
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kAlpha,
             expectedValues, expectedNumValues=6)
@@ -210,17 +210,17 @@ class testUsdImportColorSets(unittest.TestCase):
 
         colorSetName = 'FaceColor_Full_kRGB'
         expectedValues = {}
-        for i in xrange(0, 4):
+        for i in range(0, 4):
             expectedValues[i] = Gf.Vec3f(1.0, 0.0, 0.0)
-        for i in xrange(4, 8):
+        for i in range(4, 8):
             expectedValues[i] = Gf.Vec3f(0.0, 1.0, 0.0)
-        for i in xrange(8, 12):
+        for i in range(8, 12):
             expectedValues[i] = Gf.Vec3f(0.0, 0.0, 1.0)
-        for i in xrange(12, 16):
+        for i in range(12, 16):
             expectedValues[i] = Gf.Vec3f(1.0, 1.0, 0.0)
-        for i in xrange(16, 20):
+        for i in range(16, 20):
             expectedValues[i] = Gf.Vec3f(1.0, 0.0, 1.0)
-        for i in xrange(20, 24):
+        for i in range(20, 24):
             expectedValues[i] = Gf.Vec3f(0.0, 1.0, 1.0)
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kRGB,
             expectedValues, expectedNumValues=6)
@@ -233,17 +233,17 @@ class testUsdImportColorSets(unittest.TestCase):
 
         colorSetName = 'FaceColor_Full_kRGBA'
         expectedValues = {}
-        for i in xrange(0, 4):
+        for i in range(0, 4):
             expectedValues[i] = Gf.Vec4f(1.0, 0.0, 0.0, 1.0)
-        for i in xrange(4, 8):
+        for i in range(4, 8):
             expectedValues[i] = Gf.Vec4f(0.0, 1.0, 0.0, 0.9)
-        for i in xrange(8, 12):
+        for i in range(8, 12):
             expectedValues[i] = Gf.Vec4f(0.0, 0.0, 1.0, 0.8)
-        for i in xrange(12, 16):
+        for i in range(12, 16):
             expectedValues[i] = Gf.Vec4f(1.0, 1.0, 0.0, 0.7)
-        for i in xrange(16, 20):
+        for i in range(16, 20):
             expectedValues[i] = Gf.Vec4f(1.0, 0.0, 1.0, 0.6)
-        for i in xrange(20, 24):
+        for i in range(20, 24):
             expectedValues[i] = Gf.Vec4f(0.0, 1.0, 1.0, 0.5)
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kRGBA,
             expectedValues, expectedNumValues=6)
@@ -497,7 +497,7 @@ class testUsdImportColorSets(unittest.TestCase):
 
         colorSetName = 'ConstantColorClamped_kRGBA'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = Gf.Vec4f(1.0, 1.0, 0.0, 0.5)
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kRGBA,
             expectedValues, expectedNumValues=1, expectedIsClamped=True)
@@ -519,7 +519,7 @@ class testUsdImportColorSets(unittest.TestCase):
 
         colorSetName = 'displayColor'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = Gf.Vec3f(1.0, 0.0, 1.0)
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kRGB,
             expectedValues, expectedNumValues=1)
@@ -545,7 +545,7 @@ class testUsdImportColorSets(unittest.TestCase):
         # It should still be an alpha-only color set.
         colorSetName = 'displayColor'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = 0.5
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kAlpha,
             expectedValues, expectedNumValues=1)
@@ -559,14 +559,14 @@ class testUsdImportColorSets(unittest.TestCase):
 
         colorSetName = 'displayColor'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = Gf.Vec3f(1.0, 0.0, 1.0)
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kRGB,
             expectedValues, expectedNumValues=1)
 
         colorSetName = 'displayOpacity'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = 0.5
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kAlpha,
             expectedValues, expectedNumValues=1)
@@ -584,7 +584,7 @@ class testUsdImportColorSets(unittest.TestCase):
         # becomes Gf.Vec3f(0.5) when converted to display space.
         colorSetName = 'displayColor'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = Gf.Vec3f(0.5, 0.5, 0.5)
         self._AssertColorSet(mayaCubeMesh, colorSetName, OpenMaya.MFnMesh.kRGB,
             expectedValues, expectedNumValues=1)

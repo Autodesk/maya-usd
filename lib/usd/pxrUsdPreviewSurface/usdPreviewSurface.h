@@ -16,10 +16,11 @@
 #ifndef PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_H
 #define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_H
 
-/// \file pxrUsdPreviewSurface/usdPreviewSurface.h
+/// \file usdPreviewSurface.h
+
+#include "api.h"
 
 #include <pxr/pxr.h>
-#include <pxrUsdPreviewSurface/api.h>
 
 #include <pxr/base/tf/staticTokens.h>
 

@@ -148,8 +148,8 @@ initializePlugin(MObject obj)
 
     status = plugin.registerCommand(
         "usdListShadingModes",
-        UsdMayaListShadingModesCommand::creator,
-        UsdMayaListShadingModesCommand::createSyntax);
+        PxrMayaUSDListShadingModesCommand::creator,
+        PxrMayaUSDListShadingModesCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdListShadingModes");
     }

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,31 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDMAYA_LIST_SHADING_MODES_COMMAND_H
-#define PXRUSDMAYA_LIST_SHADING_MODES_COMMAND_H
+#ifndef ADSK_MAYA_LIST_SHADING_MODES_COMMAND_H
+#define ADSK_MAYA_LIST_SHADING_MODES_COMMAND_H
 
-/// \file usdMaya/listShadingModesCommand.h
-
-#include "usdMaya/api.h"
-
-#include <pxr/pxr.h>
-
-#include <maya/MPxCommand.h>
+#include "base/api.h"
 
 #include <mayaUsd/commands/baseListShadingModesCommand.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+MAYAUSD_NS_DEF {
 
-
-class PxrMayaUSDListShadingModesCommand : public MayaUsd::MayaUSDListShadingModesCommand
+class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDListShadingModesCommand : public MayaUsd::MayaUSDListShadingModesCommand
 {
   public:
-   
-    PXRUSDMAYA_API
+
+    static const MString commandName;
+
     static void* creator();
 };
 
-
-PXR_NAMESPACE_CLOSE_SCOPE
+}
 
 #endif
