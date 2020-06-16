@@ -44,7 +44,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (mtohColorSelectionHighlightColor)
     (mtohColorSelectionHighlightColorA)
     (mtohWireframeSelectionHighlight)
-    (mtohSelectionOverlay)
     (mtohColorQuantization)
     (mtohSelectionOutline)
     (mtohEnableMotionSamples)
@@ -201,16 +200,6 @@ void _CreateStringAttribute(
         });
 }
 
-void _GetEnum(
-    const MFnDependencyNode& node, const TfToken& attrName, TfToken& out) {
-    const auto plug = node.findPlug(attrName.GetText(), true);
-    if (plug.isNull()) { return; }
-    MStatus status;
-    MFnEnumAttribute eAttr(plug.attribute(), &status);
-    if (!status) { return; }
-    out = TfToken(eAttr.fieldName(plug.asShort()).asChar());
-}
-
 template <typename T>
 void _GetFromPlug(const MPlug& plug, T& out) {
     assert(false);
@@ -312,9 +301,6 @@ MObject MtohCreateRenderGlobals() {
         });
     static const TfTokenVector selectionOverlays{MtohTokens->UseHdSt,
                                                  MtohTokens->UseVp2};
-    _CreateEnumAttribute(
-        node, _tokens->mtohSelectionOverlay, selectionOverlays,
-        defGlobals.selectionOverlay);
     _CreateBoolAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
         defGlobals.wireframeSelectionHighlight);
@@ -406,7 +392,6 @@ MtohRenderGlobals MtohGetRenderGlobals() {
     _GetAttribute(
         node, MtohTokens->mtohMaximumShadowMapResolution,
         ret.delegateParams.maximumShadowMapResolution);
-    _GetEnum(node, _tokens->mtohSelectionOverlay, ret.selectionOverlay);
     _GetAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
         ret.wireframeSelectionHighlight);
