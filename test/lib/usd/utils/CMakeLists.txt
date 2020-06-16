@@ -46,10 +46,14 @@ target_sources(${TARGET_NAME}
         main.cpp
         test_MayaTransformAPI.cpp
 )
-add_definitions(
-  -DUSDUTILS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
-)
 
+# -----------------------------------------------------------------------------
+# compile configuration
+# -----------------------------------------------------------------------------
+target_compile_definitions(${TARGET_NAME}
+    PRIVATE
+        USDUTILS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
+)
 mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                              DIRECTORY test_data)
 
@@ -57,6 +61,12 @@ mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
 # compiler configuration
 # -----------------------------------------------------------------------------
 mayaUsd_compile_config(${TARGET_NAME})
+
+#find_package(Boost COMPONENTS
+#            python # initialises Boost_PYTHON_LIBRARY
+#            thread # initialises Boost_THREAD_LIBRARY
+#            REQUIRED
+#)
 
 # -----------------------------------------------------------------------------
 # link libraries
@@ -67,7 +77,7 @@ target_link_libraries(${TARGET_NAME}
         mayaUsdUtils
         tf
         sdf
-        ${Boost_PYTHON_LIBRARY}
+        ${Boost_PYTHON_LIBRARY} #Boost::python
         ${python_LIBRARIES}
 )
 
