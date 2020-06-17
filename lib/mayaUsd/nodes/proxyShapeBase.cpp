@@ -261,18 +261,30 @@ MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    MFnStringData stringDataFn;
-    const MObject defaultStringDataObj = stringDataFn.create("");
-
-    inStageCacheIdAttr = typedAttrFn.create(
-        "inStageCacheId", "cid", MFnData::kString, defaultStringDataObj, &retValue);
+    inStageCacheIdAttr = numericAttrFn.create(
+        "stageCacheId",
+        "stcid",
+        MFnNumericData::kInt64,
+        -1,
+        &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setCached(true);
+    numericAttrFn.setConnectable(true);
+    numericAttrFn.setReadable(true);
+    numericAttrFn.setInternal(true);
+    numericAttrFn.setAffectsAppearance(true);
     retValue = addAttribute(inStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    outStageCacheIdAttr = typedAttrFn.create(
-        "outStageCacheId", "oid", MFnData::kString, defaultStringDataObj, &retValue);
+    outStageCacheIdAttr = numericAttrFn.create(
+        "outStageCacheId",
+        "ostcid",
+        MFnNumericData::kInt64,
+        -1,
+        &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    typedAttrFn.setStorable(false);
+    typedAttrFn.setWritable(false);
     retValue = addAttribute(outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
@@ -473,13 +485,14 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         return MS::kSuccess;
     } else {
         // Check if we have a Stage from the Cache Id
-        const MDataHandle cacheIdHandle = dataBlock.inputValue(inStageCacheIdAttr, &retValue);
+        const auto cacheIdNum = dataBlock.inputValue(inStageCacheIdAttr, &retValue).asInt64();
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
-        const std::string cacheId = TfStringTrim(cacheIdHandle.asString().asChar());
-        UsdStageRefPtr    usdStage
-            = UsdUtilsStageCache::Get().Find(UsdStageCache::Id::FromString(cacheId));
-        SdfPath primPath;
-        if (!usdStage) {
+        UsdStageRefPtr usdStage;
+        const auto     cacheId = UsdStageCache::Id::FromLongInt(cacheIdNum);
+        const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
+        if (stageCached) {
+            usdStage = UsdUtilsStageCache::Get().Find(cacheId);
+        } else {
             //
             // Calculate from USD filepath and primPath and variantKey
             //
@@ -557,6 +570,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
         }
 
+        SdfPath primPath;
         if (usdStage) {
             primPath = usdStage->GetPseudoRoot().GetPath();
         }
@@ -689,12 +703,6 @@ MayaUsdProxyShapeBase::computeOutStageCacheId(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
 
-    TfReset(_boundingBoxCache);
-
-    // Reset the stage listener until we determine that everything is valid.
-    _stageNoticeListener.SetStage(UsdStageWeakPtr());
-    _stageNoticeListener.SetStageContentsChangedCallback(nullptr);
-
     MDataHandle inDataCachedHandle = dataBlock.inputValue(inStageDataCachedAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
@@ -709,23 +717,15 @@ MayaUsdProxyShapeBase::computeOutStageCacheId(MDataBlock& dataBlock)
         return MS::kFailure;
     }
 
-    std::string cacheId = "";
-    auto        id = UsdUtilsStageCache::Get().Insert(usdStage);
+    int64_t cacheId = -1;
+    auto    id = UsdUtilsStageCache::Get().Insert(usdStage);
     if (id)
-        cacheId = id.ToString();
-
-    // Create the output stage data object.
-    MFnStringData cacheIdDataFn;
-    MObject       cacheIdDataObj = cacheIdDataFn.create(cacheId.c_str(), &retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
-    MString cacheIdData = cacheIdDataFn.string(&retValue);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+        cacheId = id.ToLongInt();
 
     MDataHandle outCacheIdHandle = dataBlock.outputValue(outStageCacheIdAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    outCacheIdHandle.set(cacheIdData);
+    outCacheIdHandle.set(cacheId);
     outCacheIdHandle.setClean();
 
     return MS::kSuccess;
