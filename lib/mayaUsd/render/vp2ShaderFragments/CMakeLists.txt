@@ -64,3 +64,7 @@ mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/vp2ShaderFragments)
 install(FILES ${shaderFragments_xmls}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
 )
+
+install(FILES ${headers}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/vp2ShaderFragments
+)

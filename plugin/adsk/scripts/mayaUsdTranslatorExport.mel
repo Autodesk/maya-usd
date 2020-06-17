@@ -218,6 +218,26 @@ global proc int mayaUsdTranslatorExport (string $parent,
             separator -style "none";
         setParent ..;
 
+        frameLayout -label "Materials" -collapsable true -collapse false;
+            separator -style "none";
+
+            string $exporters[] = `mayaUSDListShadingModes -export`;
+            optionMenuGrp -l "Shading Mode:" shadingModePopup;
+            for ($modeName in $exporters) {
+                string $niceName = $modeName;
+                if ($modeName == "displayColor") {
+                    $niceName = "Material Colors";
+                } else if ($modeName == "pxrRis") {
+                    $niceName = "RfM Shaders";
+                } else if ($modeName == "useRegistry") {
+                    $niceName = "Preview Surface Shaders";
+                }
+                menuItem -l $niceName -ann $modeName;
+            }
+
+            separator -style "none";
+        setParent ..;
+
         frameLayout -label "Advanced" -collapsable true -collapse true;
             separator -style "none";
 
@@ -266,6 +286,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], "frameSampleField");
                 } else if ($optionBreakDown[0] == "parentScope") {
                     mayaUsdTranslatorExport_SetTextField($optionBreakDown[1], "parentScopeField");
+                } else if ($optionBreakDown[0] == "shadingMode") {
+                    mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
                 } else if ($optionBreakDown[0] == "exportInstances") {
                     mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], "exportInstancesPopup");
                 } else if ($optionBreakDown[0] == "exportVisibility") {
@@ -292,6 +314,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");
         $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "frameSample", "frameSampleField");
         $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "parentScope", "parentScopeField");
+        $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromBoolPopup($currentOptions, "exportInstances", "exportInstancesPopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportVisibility", "exportVisibilityCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "mergeTransformAndShape", "mergeTransformAndShapeCheckBox");

@@ -13,31 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDMAYA_LIST_SHADING_MODES_COMMAND_H
-#define PXRUSDMAYA_LIST_SHADING_MODES_COMMAND_H
+#ifndef MAYA_LIST_SHADING_MODES_COMMAND_H
+#define MAYA_LIST_SHADING_MODES_COMMAND_H
 
-/// \file usdMaya/listShadingModesCommand.h
-
-#include "usdMaya/api.h"
+#include <mayaUsd/base/api.h>
 
 #include <pxr/pxr.h>
 
 #include <maya/MPxCommand.h>
 
-#include <mayaUsd/commands/baseListShadingModesCommand.h>
+MAYAUSD_NS_DEF {
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-
-class PxrMayaUSDListShadingModesCommand : public MayaUsd::MayaUSDListShadingModesCommand
+class MAYAUSD_CORE_PUBLIC MayaUSDListShadingModesCommand : public MPxCommand
 {
-  public:
-   
-    PXRUSDMAYA_API
+public:
+    MStatus doIt(const MArgList& args) override;
+    bool  isUndoable () const override { return false; };
+
+    static MSyntax  createSyntax();
     static void* creator();
 };
 
-
-PXR_NAMESPACE_CLOSE_SCOPE
+}
 
 #endif

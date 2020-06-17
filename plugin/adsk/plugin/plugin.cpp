@@ -17,6 +17,7 @@
 
 #include "adskExportCommand.h"
 #include "adskImportCommand.h"
+#include "adskListShadingModesCommand.h"
 
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
@@ -33,6 +34,8 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
+#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 #include "base/api.h"
 #include "exportTranslator.h"
@@ -113,6 +116,14 @@ MStatus initializePlugin(MObject obj)
         MayaUsdProxyShapePlugin::getProxyShapeClassification());
     CHECK_MSTATUS(status);
 
+    status = plugin.registerCommand(
+        MayaUsd::ADSKMayaUSDListShadingModesCommand::commandName,
+        MayaUsd::ADSKMayaUSDListShadingModesCommand::creator,
+        MayaUsd::ADSKMayaUSDListShadingModesCommand::createSyntax);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register list shading modes command.");
+    }
+
     status = UsdMayaUndoHelperCommand::initialize(plugin);
     if (!status) {
         status.perror(std::string("registerCommand ").append(
@@ -126,6 +137,9 @@ MStatus initializePlugin(MObject obj)
         status.perror(err);
     }
 #endif
+
+    status = PxrMayaUsdPreviewSurfacePlugin::initialize(plugin);
+    CHECK_MSTATUS(status);
 
     plugin.registerUI("mayaUsd_pluginUICreation", "mayaUsd_pluginUIDeletion", 
         "mayaUsd_pluginBatchLoad", "mayaUsd_pluginBatchUnload");
@@ -165,10 +179,18 @@ MStatus uninitializePlugin(MObject obj)
     MFnPlugin plugin(obj);
     MStatus status;
 
+    status = PxrMayaUsdPreviewSurfacePlugin::finalize(plugin);
+    CHECK_MSTATUS(status);
+
     status = UsdMayaUndoHelperCommand::finalize(plugin);
     if (!status) {
         status.perror(std::string("deregisterCommand ").append(
                           UsdMayaUndoHelperCommand::name()).c_str());
+    }
+
+    status = plugin.deregisterCommand(MayaUsd::ADSKMayaUSDListShadingModesCommand::commandName);
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to deregister list shading modes command.");
     }
 
 #if defined(WANT_QT_BUILD)

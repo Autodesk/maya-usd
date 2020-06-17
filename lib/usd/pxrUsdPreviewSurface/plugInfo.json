@@ -11,10 +11,9 @@
                     }
                 }
             },
-            "Name": "pxrUsdPreviewSurface",
-            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
-            "Root": "@PLUG_INFO_ROOT@",
-            "Type": "resource"
+            "LibraryPath": "../../../@CMAKE_SHARED_LIBRARY_PREFIX@@TARGET_NAME@@CMAKE_SHARED_LIBRARY_SUFFIX@",
+            "Name": "@TARGET_NAME@",
+            "Type": "library"
         }
     ]
 }
