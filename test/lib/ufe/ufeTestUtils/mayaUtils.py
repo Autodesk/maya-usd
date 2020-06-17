@@ -156,13 +156,23 @@ def openTreeRefScene():
 def previewReleaseVersion():
     '''Return the Maya Preview Release version.
 
-    If the version of Maya is not a Preview Release, returns sys.maxsize (a very
-    large number).  If the environment variable
+    If the version of Maya is 2019, returns 98.
+
+    If the version of Maya is 2020, returns 110.
+
+    If the version of Maya is current and is not a Preview Release, returns
+    sys.maxsize (a very large number).  If the environment variable
     MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE is defined, return its value instead.
     '''
 
     if 'MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE' in os.environ:
         return int(os.environ['MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE'])
+
+    majorVersion = int(cmds.about(majorVersion=True))
+    if majorVersion == 2019:
+        return 98
+    elif majorVersion == 2020:
+        return 110
 
     match = prRe.match(cmds.about(v=True))
 
