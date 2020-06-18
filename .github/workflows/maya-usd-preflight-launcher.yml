@@ -31,8 +31,8 @@ jobs:
         # Wait for remote build to start
         - name: Wait until remote build starts
           shell: bash
-          # 1080 = 180 minutes in 10 second increments. There will be overhead for the git pull command, so wait time will be more than 180 minutes
-          run: "cd transfer ; for (( i=0; i<1080; i++ )) ; do if [ -f ${{ github.run_id }}_${{ github.run_number }}_start.txt ] ; then break ; fi ; git pull --quiet ; sleep 10 ; false ; done || exit 1"
+          # 180 minutes wait time. There will be overhead for the git pull command, so actual wait time will be slightly more than 180 minutes
+          run: "cd transfer ; for (( i=0; i<180; i++ )) ; do if [ -f ${{ github.run_id }}_${{ github.run_number }}_start.txt ] ; then break ; fi ; git pull --quiet ; sleep 60 ; false ; done || exit 1"
 
         # Show contents of start file
         - name: Show build start information
@@ -52,8 +52,8 @@ jobs:
         # Wait for remote build to finish and commit results to git
         - name: Wait until build results are available
           shell: bash
-          # 1080 = 180 minutes in 10 second increments. There will be overhead for the git pull command, so wait time will be more than 180 minutes
-          run: "cd transfer ; for (( i=0; i<1080; i++ )) ; do if [ -f ${{ github.run_id }}_${{ github.run_number }}_result.txt ] ; then break ; fi ; git pull --quiet ; sleep 10 ; false ; done || exit 1"
+          # 180 minutes wait time. There will be overhead for the git pull command, so actual wait time will be slightly more than 180 minutes
+          run: "cd transfer ; for (( i=0; i<180; i++ )) ; do if [ -f ${{ github.run_id }}_${{ github.run_number }}_result.txt ] ; then break ; fi ; git pull --quiet ; sleep 60 ; false ; done || exit 1"
 
         # List files related to this build
         - name: List files in transfer directory
