@@ -17,6 +17,7 @@
 
 import os
 import unittest
+import shutil
 
 from pxr import Usd
 
@@ -36,7 +37,12 @@ class testUsdExportOverImport(unittest.TestCase):
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
 
-        cls.USD_FILE = os.path.join(inputPath, "UsdExportOverImportTest", "CubeModel.usda")
+        srcFile = os.path.join(inputPath, "UsdExportOverImportTest", "CubeModel.usda")
+
+        # Copy source file to working directory, as we'll be overwriting it.
+        shutil.copy(srcFile, os.getcwd())
+
+        cls.USD_FILE = os.path.join(os.getcwd(), 'CubeModel.usda')
 
     @classmethod
     def tearDownClass(cls):

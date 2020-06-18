@@ -1,4 +1,4 @@
 add_subdirectory(pxrUsdPreviewSurface)
 add_subdirectory(schemas)
 add_subdirectory(utils)
-add_subdirectory(importExport)
+add_subdirectory(translators)

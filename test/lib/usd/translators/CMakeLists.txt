@@ -64,12 +64,10 @@ foreach(script ${test_script_files})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        ENV
-            "MAYA_DISABLE_CIP=1"
     )
 
     # Assign a ctest label to these tests for easy filtering.
-    set_tests_properties(${target} PROPERTIES LABELS importExport)
+    set_tests_properties(${target} PROPERTIES LABELS translators)
 endforeach()
 
 # testUsdExportUVSets and testUsdImportUVSets are run twice, with float writing
@@ -79,34 +77,30 @@ mayaUsd_add_test(testUsdExportUVSets
     PYTHON_MODULE testUsdExportUVSets
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
-        "MAYA_DISABLE_CIP=1"
         "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
 )
-set_tests_properties(testUsdExportUVSets PROPERTIES LABELS importExport)
+set_tests_properties(testUsdExportUVSets PROPERTIES LABELS translators)
 
 mayaUsd_add_test(testUsdExportUVSetsFloat
     PYTHON_MODULE testUsdExportUVSets
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
-        "MAYA_DISABLE_CIP=1"
         "PIXMAYA_WRITE_UV_AS_FLOAT2=1"
 )
-set_tests_properties(testUsdExportUVSetsFloat PROPERTIES LABELS importExport)
+set_tests_properties(testUsdExportUVSetsFloat PROPERTIES LABELS translators)
 
 mayaUsd_add_test(testUsdImportUVSets
     PYTHON_MODULE testUsdImportUVSets
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
-        "MAYA_DISABLE_CIP=1"
         "PIXMAYA_READ_FLOAT2_AS_UV=0"
 )
-set_tests_properties(testUsdImportUVSets PROPERTIES LABELS importExport)
+set_tests_properties(testUsdImportUVSets PROPERTIES LABELS translators)
 
 mayaUsd_add_test(testUsdImportUVSetsFloat
     PYTHON_MODULE testUsdImportUVSets
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
-        "MAYA_DISABLE_CIP=1"
         "PIXMAYA_READ_FLOAT2_AS_UV=1"
 )
-set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS importExport)
+set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS translators)
