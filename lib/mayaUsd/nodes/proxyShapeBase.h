@@ -101,7 +101,7 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         static MObject inStageDataCachedAttr;
         MAYAUSD_CORE_PUBLIC
-        static MObject inStageCacheIdAttr;
+        static MObject stageCacheIdAttr;
         MAYAUSD_CORE_PUBLIC
         static MObject outStageCacheIdAttr;
         MAYAUSD_CORE_PUBLIC

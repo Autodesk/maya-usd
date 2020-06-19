@@ -290,6 +290,9 @@ public:
   /// display render guide - sets shape to display geometry of purpose "render". See <a href="https://github.com/PixarAnimationStudios/USD/blob/95eef7c9a6662a5362dfc312a186f50c58e27ecd/pxr/usd/lib/usdGeom/imageable.h#L165">imageable.h</a>
   AL_INHERIT_ATTRIBUTE(drawRenderPurpose);
 
+  /// Cache ID of the currently loaded stage)
+  AL_INHERIT_ATTRIBUTE(stageCacheId);
+
   /// Connection to any layer DG nodes
   AL_DECL_ATTRIBUTE(layers);
 
@@ -334,9 +337,6 @@ public:
 
   /// Excluded geometry that has been explicitly translated
   AL_DECL_ATTRIBUTE(excludedTranslatedGeometry);
-
-  /// Cache ID of the currently loaded stage)
-  AL_DECL_ATTRIBUTE(stageCacheId);
 
   /// A place to put a custom assetResolver Config string that's passed to the Resolver Context when stage is opened
   AL_DECL_ATTRIBUTE(assetResolverConfig);

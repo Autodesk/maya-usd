@@ -118,7 +118,7 @@ MObject MayaUsdProxyShapeBase::complexityAttr;
 MObject MayaUsdProxyShapeBase::inStageDataAttr;
 MObject MayaUsdProxyShapeBase::inStageDataCachedAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
-MObject MayaUsdProxyShapeBase::inStageCacheIdAttr;
+MObject MayaUsdProxyShapeBase::stageCacheIdAttr;
 MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
 MObject MayaUsdProxyShapeBase::drawRenderPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawProxyPurposeAttr;
@@ -261,10 +261,10 @@ MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    inStageCacheIdAttr = numericAttrFn.create(
+    stageCacheIdAttr = numericAttrFn.create(
         "stageCacheId",
         "stcid",
-        MFnNumericData::kInt64,
+        MFnNumericData::kInt,
         -1,
         &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -273,13 +273,13 @@ MayaUsdProxyShapeBase::initialize()
     numericAttrFn.setReadable(true);
     numericAttrFn.setInternal(true);
     numericAttrFn.setAffectsAppearance(true);
-    retValue = addAttribute(inStageCacheIdAttr);
+    retValue = addAttribute(stageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     outStageCacheIdAttr = numericAttrFn.create(
         "outStageCacheId",
         "ostcid",
-        MFnNumericData::kInt64,
+        MFnNumericData::kInt,
         -1,
         &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -358,11 +358,11 @@ MayaUsdProxyShapeBase::initialize()
     retValue = attributeAffects(inStageDataAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    retValue = attributeAffects(inStageCacheIdAttr, outStageDataAttr);
+    retValue = attributeAffects(stageCacheIdAttr, outStageDataAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(inStageCacheIdAttr, inStageDataCachedAttr);
+    retValue = attributeAffects(stageCacheIdAttr, inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = attributeAffects(inStageCacheIdAttr, outStageCacheIdAttr);
+    retValue = attributeAffects(stageCacheIdAttr, outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     retValue = attributeAffects(inStageDataCachedAttr, outStageDataAttr);
@@ -485,7 +485,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         return MS::kSuccess;
     } else {
         // Check if we have a Stage from the Cache Id
-        const auto cacheIdNum = dataBlock.inputValue(inStageCacheIdAttr, &retValue).asInt64();
+        const auto cacheIdNum = dataBlock.inputValue(stageCacheIdAttr, &retValue).asInt64();
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
         UsdStageRefPtr usdStage;
         const auto     cacheId = UsdStageCache::Id::FromLongInt(cacheIdNum);
@@ -717,7 +717,7 @@ MayaUsdProxyShapeBase::computeOutStageCacheId(MDataBlock& dataBlock)
         return MS::kFailure;
     }
 
-    int64_t cacheId = -1;
+    int cacheId = -1;
     auto    id = UsdUtilsStageCache::Get().Insert(usdStage);
     if (id)
         cacheId = id.ToLongInt();
@@ -866,7 +866,7 @@ MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluatio
         evaluationNode.dirtyPlugExists(primPathAttr) ||
         evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
         evaluationNode.dirtyPlugExists(inStageDataAttr) ||
-        evaluationNode.dirtyPlugExists(inStageCacheIdAttr)) {
+        evaluationNode.dirtyPlugExists(stageCacheIdAttr)) {
         _IncreaseUsdStageVersion();
         MayaUsdProxyStageInvalidateNotice(*this).Send();
     }
@@ -907,7 +907,7 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
         plug == primPathAttr ||
         plug == loadPayloadsAttr ||
         plug == inStageDataAttr ||
-        plug == inStageCacheIdAttr) {
+        plug == stageCacheIdAttr) {
         _IncreaseUsdStageVersion();
         MayaUsdProxyStageInvalidateNotice(*this).Send();
     }
