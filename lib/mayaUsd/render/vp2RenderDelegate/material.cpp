@@ -826,7 +826,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 
             if (outputNames.length() > 1) {
                 TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg("MShaderInstance doesn't support "
-                    "multiple connections between shaders on the current Maya version.");
+                    "multiple connections between shaders on the current Maya version.\n");
             }
         }
     }
