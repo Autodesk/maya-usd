@@ -71,7 +71,7 @@ target_link_libraries(${TARGET_NAME}
         mayaUsdUtils
         tf
         sdf
-        ${Boost_PYTHON_LIBRARY} #Boost::python
+        Boost::python
         ${python_LIBRARIES}
 )
 
