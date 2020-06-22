@@ -32,6 +32,8 @@
 #include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
+#include <pxr/usd/usd/usdaFileFormat.h>
+#include <pxr/usd/usd/usdcFileFormat.h>
 
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -253,9 +255,9 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
         defaultUSDFormat(
             _Token(userArgs,
                 UsdMayaJobExportArgsTokens->defaultUSDFormat,
-                UsdMayaTranslatorTokens->UsdFileExtensionCrate,
+                UsdUsdcFileFormatTokens->Id,
                 {
-                    UsdMayaTranslatorTokens->UsdFileExtensionASCII
+                    UsdUsdaFileFormatTokens->Id
                 })),                 
         eulerFilter(
             _Boolean(userArgs, UsdMayaJobExportArgsTokens->eulerFilter)),
@@ -453,7 +455,7 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = 
                 UsdGeomTokens->catmullClark.GetString();
         d[UsdMayaJobExportArgsTokens->defaultUSDFormat] = 
-                UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetString();
+                UsdUsdcFileFormatTokens->Id.GetString();
         d[UsdMayaJobExportArgsTokens->eulerFilter] = false;
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = false;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;

@@ -53,8 +53,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     (chaserArgs) \
     (compatibility) \
     (defaultCameras) \
-    (defaultUSDFormat) \
     (defaultMeshScheme) \
+    (defaultUSDFormat) \
     (eulerFilter) \
     (exportCollectionBasedBindings) \
     (exportColorSets) \
