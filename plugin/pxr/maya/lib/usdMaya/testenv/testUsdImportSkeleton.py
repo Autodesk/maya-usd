@@ -25,14 +25,14 @@ import maya.api.OpenMaya as OM
 
 def _MMatrixToGf(mx):
     gfmx = Gf.Matrix4d()
-    for i in xrange(4):
-        for j in xrange(4):
+    for i in range(4):
+        for j in range(4):
             gfmx[i][j] = mx[i*4+j]
     return gfmx
 
 
 def _GfMatrixToList(mx):
-    return [mx[i][j] for i in xrange(4) for j in xrange(4)]
+    return [mx[i][j] for i in range(4) for j in range(4)]
 
 
 def _GetDepNode(name):
@@ -45,7 +45,7 @@ def _ArraysAreClose(a, b, threshold=1e-5):
     if not len(a) == len(b):
         return False
 
-    for i in xrange(len(a)):
+    for i in range(len(a)):
         if not Gf.IsClose(a[i], b[i], threshold):
             return False
     return True

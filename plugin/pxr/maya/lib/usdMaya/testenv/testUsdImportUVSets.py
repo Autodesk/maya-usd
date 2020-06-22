@@ -194,7 +194,7 @@ class testUsdImportUVSets(unittest.TestCase):
         # ALL face vertices should have the same value.
         uvSetName = 'ConstantInterpSet'
         expectedValues = {}
-        for i in xrange(24):
+        for i in range(24):
             expectedValues[i] = Gf.Vec2f(0.25, 0.25)
         self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
             expectedNumValues=1)
@@ -202,17 +202,17 @@ class testUsdImportUVSets(unittest.TestCase):
         # All face vertices within the same face should have the same value.
         uvSetName = 'UniformInterpSet'
         expectedValues = {}
-        for i in xrange(0, 4):
+        for i in range(0, 4):
             expectedValues[i] = Gf.Vec2f(0.0, 0.0)
-        for i in xrange(4, 8):
+        for i in range(4, 8):
             expectedValues[i] = Gf.Vec2f(0.1, 0.1)
-        for i in xrange(8, 12):
+        for i in range(8, 12):
             expectedValues[i] = Gf.Vec2f(0.2, 0.2)
-        for i in xrange(12, 16):
+        for i in range(12, 16):
             expectedValues[i] = Gf.Vec2f(0.3, 0.3)
-        for i in xrange(16, 20):
+        for i in range(16, 20):
             expectedValues[i] = Gf.Vec2f(0.4, 0.4)
-        for i in xrange(20, 24):
+        for i in range(20, 24):
             expectedValues[i] = Gf.Vec2f(0.5, 0.5)
         self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
             expectedNumValues=6)
@@ -259,13 +259,13 @@ class testUsdImportUVSets(unittest.TestCase):
         # All six faces share the same range 0.0-1.0.
         uvSetName = 'AllFacesSharedSet'
         expectedValues = {}
-        for i in xrange(0, 24, 4):
+        for i in range(0, 24, 4):
             expectedValues[i] = Gf.Vec2f(0.0, 0.0)
-        for i in xrange(1, 24, 4):
+        for i in range(1, 24, 4):
             expectedValues[i] = Gf.Vec2f(1.0, 0.0)
-        for i in xrange(2, 24, 4):
+        for i in range(2, 24, 4):
             expectedValues[i] = Gf.Vec2f(1.0, 1.0)
-        for i in xrange(3, 24, 4):
+        for i in range(3, 24, 4):
             expectedValues[i] = Gf.Vec2f(0.0, 1.0)
         self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
             expectedNumValues=4)
@@ -273,21 +273,21 @@ class testUsdImportUVSets(unittest.TestCase):
         # The faces alternate between ranges 0.0-0.5 and 0.5-1.0.
         uvSetName = 'PairedFacesSet'
         expectedValues = {}
-        for i in xrange(0, 24, 8):
+        for i in range(0, 24, 8):
             expectedValues[i] = Gf.Vec2f(0.0, 0.0)
-        for i in xrange(1, 24, 8):
+        for i in range(1, 24, 8):
             expectedValues[i] = Gf.Vec2f(0.5, 0.0)
-        for i in xrange(2, 24, 8):
+        for i in range(2, 24, 8):
             expectedValues[i] = Gf.Vec2f(0.5, 0.5)
-        for i in xrange(3, 24, 8):
+        for i in range(3, 24, 8):
             expectedValues[i] = Gf.Vec2f(0.0, 0.5)
-        for i in xrange(4, 24, 8):
+        for i in range(4, 24, 8):
             expectedValues[i] = Gf.Vec2f(0.5, 0.5)
-        for i in xrange(5, 24, 8):
+        for i in range(5, 24, 8):
             expectedValues[i] = Gf.Vec2f(1.0, 0.5)
-        for i in xrange(6, 24, 8):
+        for i in range(6, 24, 8):
             expectedValues[i] = Gf.Vec2f(1.0, 1.0)
-        for i in xrange(7, 24, 8):
+        for i in range(7, 24, 8):
             expectedValues[i] = Gf.Vec2f(0.5, 1.0)
         self._AssertUVSet(mayaCubeMesh, uvSetName, expectedValues,
             expectedNumValues=7)

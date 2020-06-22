@@ -36,6 +36,13 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+// MRenderItem supports primitive type switch on these Maya versions.
+#if ((MAYA_API_VERSION >= 20200100) || \
+    ((MAYA_API_VERSION >= 20190300) && (MAYA_API_VERSION < 20200000)) || \
+    ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000)))
+#define MAYA_ALLOW_PRIMITIVE_TYPE_SWITCH
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {

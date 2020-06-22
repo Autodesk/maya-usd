@@ -13,101 +13,120 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-set(TARGET_NAME mayaUsdPlugin)
+set(TARGET_NAME basePxrUsdPreviewSurface)
 
-add_library(${TARGET_NAME} MODULE)
+set(resources_install_path
+    ${CMAKE_INSTALL_PREFIX}/lib/usd/${TARGET_NAME}/resources
+)
+
+set(library_install_path
+    ${CMAKE_INSTALL_PREFIX}/lib
+)
+
+add_library(${TARGET_NAME} SHARED)
 
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME} 
     PRIVATE
-        plugin.cpp
-        adskImportCommand.cpp
-        adskExportCommand.cpp
-        adskListShadingModesCommand.cpp
-        importTranslator.cpp
-        exportTranslator.cpp
-        ProxyShape.cpp
+        usdPreviewSurface.cpp
+        usdPreviewSurfacePlugin.cpp
+        usdPreviewSurfaceShadingNodeOverride.cpp
+        usdPreviewSurfaceWriter.cpp
 )
 
 # -----------------------------------------------------------------------------
-# compile configuration
+# compiler configuration
 # -----------------------------------------------------------------------------
-target_compile_definitions(${TARGET_NAME}
+target_compile_definitions(${TARGET_NAME} 
     PRIVATE
-        MAYAUSD_PLUGIN_EXPORT
-        $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
+        PXRUSDPREVIEWSURFACE_EXPORTS
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
 mayaUsd_compile_config(${TARGET_NAME})
+
+mayaUsd_promoteHeaderList( 
+    HEADERS
+        usdPreviewSurfacePlugin.h
+    BASEDIR
+        ${TARGET_NAME}
+)
 
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
     PRIVATE
-        $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
+        ${MAYA_INCLUDE_DIRS}
+        ${CMAKE_BINARY_DIR}
 )
 
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
-target_link_libraries(${TARGET_NAME}
+target_link_libraries(${TARGET_NAME} 
     PRIVATE
-        $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
-        basePxrUsdPreviewSurface
+        arch
+        gf
+        plug
+        sdf
+        tf
+        vt
+        usdShade
+        ${MAYA_LIBRARIES}
+        mayaUsd
 )
-
-if (${Qt5_FOUND})
-    target_link_libraries(${TARGET_NAME}
-        PRIVATE
-            mayaUsdUI
-    )
-else()
-    target_link_libraries(${TARGET_NAME}
-        PRIVATE
-            mayaUsd
-    )
-endif()
-
-# -----------------------------------------------------------------------------
-# properties
-# -----------------------------------------------------------------------------
-maya_set_plugin_properties(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------
 # run-time search paths
 # -----------------------------------------------------------------------------
-if(IS_MACOSX OR IS_LINUX) 
-    mayaUsd_init_rpath(rpath "plugin")
+if(IS_MACOSX OR IS_LINUX)
+    mayaUsd_init_rpath(rpath "lib")
+    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib")
     elseif(DEFINED PXR_USD_LOCATION)
         mayaUsd_add_rpath(rpath "${PXR_USD_LOCATION}/lib")
     endif()
     if(IS_LINUX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
+        mayaUsd_add_rpath(rpath "../${MAYAUSD_TO_USD_RELATIVE_PATH}/lib64")
     endif()
     if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
-        mayaUsd_add_rpath(rpath "../../../../../Maya.app/Contents/MacOS")
+        mayaUsd_add_rpath(rpath "../../../Maya.app/Contents/MacOS")
     endif()
-    mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
-# -----------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 # install
-# -----------------------------------------------------------------------------
-install(TARGETS
-    ${TARGET_NAME}
+#------------------------------------------------------------------------------
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json"
+               "${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json"
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
+    DESTINATION ${resources_install_path}
+)
+
+install(
+    TARGETS ${TARGET_NAME}
     LIBRARY
-        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+    DESTINATION ${library_install_path}
+    ARCHIVE
+    DESTINATION ${library_install_path}
     RUNTIME
-        DESTINATION ${INSTALL_DIR_SUFFIX}/plugin
+    DESTINATION ${library_install_path}
 )
 
 if(IS_WINDOWS)
-    install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> DESTINATION ${INSTALL_DIR_SUFFIX}/plugin OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 
+        DESTINATION ${library_install_path} OPTIONAL
+    )
 endif()
+
+install(
+    FILES AEpxrUsdPreviewSurfaceTemplate.mel
+    DESTINATION plugin/adsk/scripts
+)
