@@ -62,12 +62,6 @@ mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
 # -----------------------------------------------------------------------------
 mayaUsd_compile_config(${TARGET_NAME})
 
-#find_package(Boost COMPONENTS
-#            python # initialises Boost_PYTHON_LIBRARY
-#            thread # initialises Boost_THREAD_LIBRARY
-#            REQUIRED
-#)
-
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
@@ -93,8 +87,7 @@ mayaUsd_add_test(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 
 set(USDUTILS_PYTHON_TEST_NAME Python:MayaTransformAPI)
-add_test(
-  NAME ${USDUTILS_PYTHON_TEST_NAME}
+mayaUsd_add_test(${USDUTILS_PYTHON_TEST_NAME}
   COMMAND
     python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
 )
