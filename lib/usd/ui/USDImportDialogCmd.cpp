@@ -40,6 +40,10 @@
 #include <mayaUsdUI/ui/USDImportDialog.h>
 #include <mayaUsdUI/ui/USDQtUtil.h>
 
+#include <QtGui/QCursor>
+#include <QtWidgets/QApplication>
+
+
 MAYAUSD_NS_DEF {
 
 const MString USDImportDialogCmd::fsName("usdImportDialog");
@@ -194,7 +198,14 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 		{
 			USDQtUtil usdQtUtil;
 			ImportData& importData = ImportData::instance();
+
+			// Creating the View can pause Maya, usually only briefly but it's noticable, so we'll toggle the wait cursor to show that it's working.
+			QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
+
 			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(assetPath.asChar(), &importData, usdQtUtil, MQtUtil::mainWindow()));
+
+			QApplication::restoreOverrideCursor();
+
 			if (usdImportDialog->execute())
 			{
 				// The user clicked 'Apply' so copy the info from the dialog to the import data instance.

@@ -655,8 +655,9 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 
     const auto rend = mat.nodes.rend();
 
-    // Conditional compilation due to Maya API gaps.
-#if MAYA_API_VERSION >= 20200000
+    // MShaderInstance supports multiple connections between shaders on Maya 2018.7, 2019.3, 2020
+    // and above.
+#if (MAYA_API_VERSION >= 20190300) || ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000))
 
     // UsdImagingMaterialAdapter has walked the shader graph and emitted nodes
     // and relationships in topological order to avoid forward-references, thus
@@ -822,6 +823,11 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
         else {
             TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
                 "Failed to connect shader %s\n", node.path.GetText());
+
+            if (outputNames.length() > 1) {
+                TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg("MShaderInstance doesn't support "
+                    "multiple connections between shaders on the current Maya version.\n");
+            }
         }
     }
 
