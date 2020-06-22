@@ -18,17 +18,19 @@
 
 /// \file
 
-#include <maya/MFnDependencyNode.h>
-
 #include <pxr/pxr.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/timeCode.h>
 
 #include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+
+class MFnDependencyNode;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class SdfPath;
+class TfToken;
+class UsdMayaWriteJobContext;
+class UsdShadeShader;
+class UsdTimeCode;
 
 /// Shader writer for exporting Maya's material shading nodes to USD.
 class PxrUsdTranslators_MaterialWriter : public UsdMayaShaderWriter
@@ -39,12 +41,26 @@ class PxrUsdTranslators_MaterialWriter : public UsdMayaShaderWriter
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx);
 
-        void Write(const UsdTimeCode& usdTime) override;
-
         TfToken GetShadingAttributeNameForMayaAttrName(
                 const TfToken& mayaAttrName) override;
-};
 
+    protected:
+        bool AuthorShaderInputFromShadingNodeAttr(
+                const MFnDependencyNode& depNodeFn,
+                const TfToken& shadingNodeAttrName,
+                UsdShadeShader& shaderSchema,
+                const TfToken& shaderInputName,
+                const UsdTimeCode usdTime);
+
+        bool AuthorShaderInputFromScaledShadingNodeAttr(
+                const MFnDependencyNode& depNodeFn,
+                const TfToken& shadingNodeAttrName,
+                UsdShadeShader& shaderSchema,
+                const TfToken& shaderInputName,
+                const UsdTimeCode usdTime,
+                const TfToken& scalingAttrName);
+
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

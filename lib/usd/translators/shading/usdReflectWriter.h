@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,40 +13,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDTRANSLATORS_FILE_TEXTURE_WRITER_H
-#define PXRUSDTRANSLATORS_FILE_TEXTURE_WRITER_H
+#ifndef PXRUSDTRANSLATORS_REFLECT_WRITER_H
+#define PXRUSDTRANSLATORS_REFLECT_WRITER_H
 
 /// \file
 
-#include <maya/MFnDependencyNode.h>
-
 #include <pxr/pxr.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/timeCode.h>
 
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include "usdLambertWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Shader writer for exporting Maya's "file" texture shading node to USD.
-class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
+/// Shader writer for exporting Maya's Reflect shading nodes to USD.
+class PxrUsdTranslators_ReflectWriter : public PxrUsdTranslators_LambertWriter
 {
+    typedef PxrUsdTranslators_LambertWriter baseClass;
+
     public:
-        PxrUsdTranslators_FileTextureWriter(
+        PxrUsdTranslators_ReflectWriter(
                 const MFnDependencyNode& depNodeFn,
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx);
 
-        void Write(const UsdTimeCode& usdTime) override;
+        void WriteSpecular(const UsdTimeCode& usdTime) override;
 
         TfToken GetShadingAttributeNameForMayaAttrName(
                 const TfToken& mayaAttrName) override;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif
