@@ -91,7 +91,15 @@ mayaUsd_add_test(${USDUTILS_PYTHON_TEST_NAME}
   COMMAND
     python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+set(python_path 
+    ${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/usdutils
+    ${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/lib/usd/utils
+    $ENV{PYTHONPATH} 
+)
+separate_argument_list(python_path)
+
 set_tests_properties(${USDUTILS_PYTHON_TEST_NAME}
   PROPERTIES
-    ENVIRONMENT PYTHONPATH=${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/usdutils:${CMAKE_BINARY_DIR}/${INSTALL_DIR_SUFFIX}/lib/usd/utils:$ENV{PYTHONPATH} 
+    ENVIRONMENT PYTHONPATH=${python_path}
 )
