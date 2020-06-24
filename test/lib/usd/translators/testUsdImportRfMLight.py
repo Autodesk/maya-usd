@@ -26,6 +26,7 @@ from maya import OpenMayaAnim
 from maya import cmds
 from maya import standalone
 
+import fixturesUtils
 
 class testUsdImportRfMLight(unittest.TestCase):
 
@@ -34,14 +35,13 @@ class testUsdImportRfMLight(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
-
+        inputPath = fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
         cmds.file(new=True, force=True)
 
         cmds.loadPlugin('RenderMan_for_Maya', quiet=True)
 
         # Import from USD.
-        usdFilePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "UsdImportRfMLightTest", "RfMLightsTest.usda")
+        usdFilePath = os.path.join(inputPath, "UsdImportRfMLightTest", "RfMLightsTest.usda")
         cmds.usdImport(file=usdFilePath, shadingMode='pxrRis', readAnimData=True)
 
         cls._stage = Usd.Stage.Open(usdFilePath)

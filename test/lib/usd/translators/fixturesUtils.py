@@ -22,11 +22,12 @@ import shutil
 
 _exportTranslatorName = "USD Export"
 
-def _setUpClass(modulePathName):
+def _setUpClass(modulePathName, loadPlugin):
     '''Common code for setUpClass() and readOnlySetUpClass()'''
     standalone.initialize('usd')
 
-    cmds.loadPlugin('mayaUsdPlugin', quiet=True)
+    if loadPlugin:
+        cmds.loadPlugin('mayaUsdPlugin', quiet=True)
 
     # Monkey patch cmds so that usdExport and usdImport becomes aliases.
     cmds.usdExport = cmds.mayaUSDExport
@@ -38,7 +39,7 @@ def _setUpClass(modulePathName):
 def exportTranslatorName():
     return _exportTranslatorName
 
-def setUpClass(modulePathName, suffix=''):
+def setUpClass(modulePathName, suffix='', loadPlugin=True):
     '''Test class setup.
 
     This function:
@@ -48,7 +49,7 @@ def setUpClass(modulePathName, suffix=''):
     - Loads the plugin
     - Returns the original directory from the argument.
     '''
-    (testDir, testFile) = _setUpClass(modulePathName)
+    (testDir, testFile) = _setUpClass(modulePathName, loadPlugin)
     outputName = os.path.splitext(testFile)[0]+suffix+'Output'
 
     outputPath = os.path.join(testDir, outputName)
@@ -61,7 +62,7 @@ def setUpClass(modulePathName, suffix=''):
 
     return testDir
 
-def readOnlySetUpClass(modulePathName):
+def readOnlySetUpClass(modulePathName, loadPlugin=True):
     '''Test class import setup for tests that do not write to the file system.
 
     This function:
@@ -69,6 +70,6 @@ def readOnlySetUpClass(modulePathName):
     - Loads the plugin
     - Returns the original directory from the argument.
     '''
-    (testDir, testFile) = _setUpClass(modulePathName)
+    (testDir, testFile) = _setUpClass(modulePathName, loadPlugin)
 
     return testDir

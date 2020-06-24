@@ -57,7 +57,7 @@ class testUsdExportStripNamespaces(unittest.TestCase):
         #
         # Unfortunately, at time of writing, this is not happening correctly,
         # as the Python exception is generated, but the detailed error string
-        # is lost.  We are left with the the generic 'Maya command error'
+        # is lost.  We are left with the generic 'Maya command error'
         # string, which is far weaker.  PPT, 16-Jun-20.
         #
         # errorRegexp = "Multiple dag nodes map to the same prim path" \
