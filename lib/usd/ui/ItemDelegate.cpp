@@ -17,6 +17,7 @@
 
 #include <cassert>
 
+#include <QtCore/QEvent>
 #include <QtCore/QSortFilterProxyModel>
 #include <QtGui/QPainter>
 #include <QtWidgets/QComboBox>
@@ -257,6 +258,9 @@ QLayout* VariantsEditorWidget::createVariantSet(const ItemDelegate* itemDelegate
 
 	cb->addItems(varNames);
 	cb->setCurrentText(varSel);
+	cb->setFocusPolicy( Qt::StrongFocus );
+	cb->installEventFilter(this);
+
 	layout->addWidget(cb);
 	fVariantCombos.append(cb);
 
@@ -292,6 +296,18 @@ void VariantsEditorWidget::setVariantSelections(const QStringList& varSel)
 	{
 		fVariantCombos.at(i)->setCurrentText(varSel.at(i));
 	}
+}
+
+bool VariantsEditorWidget::eventFilter( QObject * o, QEvent * e ) 
+{
+	// Block wheel event scrolling when just hovering over the variants
+	if ( e->type() == QEvent::Wheel && qobject_cast<QComboBox*>( o ) )
+	{
+		e->ignore();
+		return true;
+	}
+
+	return QWidget::eventFilter( o, e );
 }
 
 } // namespace MayaUsd

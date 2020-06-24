@@ -102,6 +102,9 @@ public:
 	QStringList variantSelections() const;
 	void setVariantSelections(const QStringList& varSel);
 
+protected:
+	bool eventFilter(QObject *obj, QEvent *ev) override;
+
 private:
 	QLayout* createVariantSet(const ItemDelegate* itemDelegate, const QString& varName, QStringList& varNames);
 
