@@ -54,6 +54,7 @@ target_compile_definitions(${TARGET_NAME}
     PRIVATE
         USDUTILS_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
 )
+
 mayaUsd_copyDirectory(${TARGET_NAME} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
                              DIRECTORY test_data)
 
@@ -68,11 +69,10 @@ mayaUsd_compile_config(${TARGET_NAME})
 target_link_libraries(${TARGET_NAME}
     PRIVATE 
         GTest::GTest
+        ${PYTHON_LIBRARIES}
         mayaUsdUtils
         tf
-        sdf
         Boost::python
-        ${python_LIBRARIES}
 )
 
 # -----------------------------------------------------------------------------

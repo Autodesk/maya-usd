@@ -91,17 +91,27 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     )
 endif()
 
+add_library(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME} SHARED)
+
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-
-add_library(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME} SHARED)
-
 target_sources(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
 PRIVATE
   module.cpp
   wrapMayaTransformAPI.cpp
 )
+
+#------------------------------------------------------------------------------
+# modules and definitions
+#------------------------------------------------------------------------------
+if(NOT DEFINED BOOST_ROOT)
+    set(BOOST_ROOT ${PXR_USD_LOCATION})
+endif()
+if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
+    set(Boost_USE_DEBUG_PYTHON ON)
+endif()
+find_package(Boost COMPONENTS python REQUIRED)
 
 # -----------------------------------------------------------------------------
 # python init
@@ -127,14 +137,13 @@ target_compile_definitions(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
     MFB_ALT_PACKAGE_NAME=${TARGET_NAME}
     MFB_PACKAGE_MODULE=${TARGET_NAME}
 )
+mayaUsd_compile_config(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME})
 
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME} 
   PUBLIC
-    ${UTILS_INCLUDE_LOCATION} 
-    ${MAYAUSDUTILS_INCLUDE_LOCATION} 
     ${USD_INCLUDE_DIR}
     )
 
@@ -144,8 +153,9 @@ target_include_directories(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
 target_link_libraries(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
   PRIVATE
     ${TARGET_NAME}
-    ${python_LIBRARIES}
+    ${PYTHON_LIBRARIES}
     usdGeom
+    Boost::python
 )
 
 # -----------------------------------------------------------------------------
