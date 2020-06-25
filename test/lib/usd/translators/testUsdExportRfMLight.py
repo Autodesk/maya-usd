@@ -27,6 +27,7 @@ from pxr import UsdRi
 from maya import cmds
 from maya import standalone
 
+import fixturesUtils
 
 class testUsdExportRfMLight(unittest.TestCase):
 
@@ -35,9 +36,9 @@ class testUsdExportRfMLight(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
+        inputPath = fixturesUtils.setUpClass(__file__)
 
-        mayaFile = os.path.abspath('RfMLightsTest.ma')
+        mayaFile = os.path.join(inputPath, 'UsdExportRfMLightTest', 'RfMLightsTest.ma')
         cmds.file(mayaFile, open=True, force=True)
 
         # Export to USD.
