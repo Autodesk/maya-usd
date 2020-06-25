@@ -32,7 +32,7 @@ import ufe
 
 def GetUfeSelection():
     try:
-        return next(iter(ufe.GlobalSelection.get()))
+        return ufe.GlobalSelection.get().front()
     except:
         return None
 
@@ -62,7 +62,7 @@ def GetAccessPlugName(sdfPath):
     return plugNameValueAttr
 
 def IsUfeUsdPath(ufeObject):
-    segmentCount = len(ufeObject.path().segments)
+    segmentCount = ufeObject.path().nbSegments()
     if segmentCount < 2:
         return False
     
@@ -83,11 +83,6 @@ def CreateXformOps(ufeObject):
                 UsdGeom.XformCommonAPI.OpScale)
 
 def CreateAccessPlug(proxyDagPath, sdfPath, sdfValueType):
-    savedSelection = ufe.Selection()
-    savedSelection.replaceWith(ufe.GlobalSelection.get())
-
-    cmds.select(proxyDagPath);
-    
     plugNameValueAttr = GetAccessPlugName(sdfPath)
     plugNameValueAttrNiceName = str(sdfPath)
     
@@ -99,12 +94,7 @@ def CreateAccessPlug(proxyDagPath, sdfPath, sdfValueType):
         plugNameValueAttrNiceName
         )
 
-    ufe.GlobalSelection.get().replaceWith(savedSelection)
-
 def CreateWorldSpaceAccessPlug(proxyDagPath, sdfPath):
-    savedSelection = ufe.Selection()
-    savedSelection.replaceWith(ufe.GlobalSelection.get())
-    
     plugNameValueAttr = GetAccessPlugName(sdfPath)
     plugNameValueAttrNiceName = str(sdfPath)
     
@@ -128,8 +118,6 @@ def CreateWorldSpaceAccessPlug(proxyDagPath, sdfPath):
         
     # Set default value
     cmds.setAttr('{}.{}[0]'.format(proxyDagPath,plugNameValueAttr), [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0], type='matrix')
-    
-    ufe.GlobalSelection.get().replaceWith(savedSelection)
 
 def GetSdfValueType(ufeObject, usdAttrName):
     proxyDagPath, usdPrimPath = GetDagAndPrimFromUfe(ufeObject)
@@ -205,7 +193,7 @@ def KeyframeAccessPlug(ufeObject, usdAttrName):
     
 def ParentItems(ufeChildren, ufeParent):
     if not IsUfeUsdPath(ufeParent):
-        print("Last selected item needs to be USD parent")
+        print("This method implements parenting under USD prim. Please provide UFE-USD item for ufeParent")
         return
     
     parentDagPath, parentUsdPrimPath = GetDagAndPrimFromUfe(ufeParent)

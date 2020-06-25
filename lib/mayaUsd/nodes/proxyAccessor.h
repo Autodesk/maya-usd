@@ -114,7 +114,7 @@ MAYAUSD_NS_DEF
         /*! \brief  Insert extra plug level dependencies for accessor plugs
             \note   Call from MPxNode::setDependentsDirty()
          */
-        static MStatus addDependentsDirty(Owner& accessor, const MPlug& plug, MPlugArray& plugArray)
+        static MStatus addDependentsDirty(const Owner& accessor, const MPlug& plug, MPlugArray& plugArray)
         {
             if (accessor)
                 return accessor->addDependentsDirty(plug, plugArray);
@@ -126,7 +126,7 @@ MAYAUSD_NS_DEF
            Once completed, all output accessor plugs will be provided with data. \note   Call from
            MPxNode::compute()
          */
-        static MStatus compute(Owner& accessor, const MPlug& plug, MDataBlock& dataBlock)
+        static MStatus compute(const Owner& accessor, const MPlug& plug, MDataBlock& dataBlock)
         {
             if (accessor)
                 return accessor->compute(plug, dataBlock);
@@ -135,11 +135,11 @@ MAYAUSD_NS_DEF
         }
 
         /*! \brief  Proxy accessor is creating acceleration structure to avoid the discovery of
-         accessor plugs at each compute. This accelleration structure have to be invalidate when
+         accessor plugs at each compute. This accelleration structure has to be invalidate when
          stage changes.
         */
         static MStatus
-        stageChanged(Owner& accessor, const MObject& node, const UsdNotice::ObjectsChanged& notice)
+        stageChanged(const Owner& accessor, const MObject& node, const UsdNotice::ObjectsChanged& notice)
         {
             if (accessor && !accessor->inCompute())
                 return accessor->stageChanged(node, notice);
@@ -150,7 +150,7 @@ MAYAUSD_NS_DEF
         /*! \brief  Update USD state to match what is stored in evaluation cache (when cached
            playback is on) \note   Call from MPxNode::postEvaluation()
          */
-        static MStatus syncCache(Owner& accessor, const MObject& node, MDataBlock& dataBlock)
+        static MStatus syncCache(const Owner& accessor, const MObject& node, MDataBlock& dataBlock)
         {
             if (accessor && !accessor->inCompute())
                 return accessor->syncCache(node, dataBlock);
@@ -227,12 +227,13 @@ MAYAUSD_NS_DEF
                                //!< Needed when USD changes directly.
 
         MCallbackIdArray _callbackIds; //!< List of registered callbacks
-        Container _accessorInputItems; //!< Acceleration structure holding all input accessor plugs
-        Container
-             _accessorOutputItems; //!< Acceleration structure holding all output accessor plugs
-        bool _validAccessorItems {
-            false
-        }; //!< Flag to indicate if acceleration structure is valid or needs to be recreated
+        
+        //! \brief  Acceleration structure holding all input accessor plugs
+        Container _accessorInputItems;
+        //! \brief  Acceleration structure holding all output accessor plugs
+        Container _accessorOutputItems;
+        //! \brief  Flag to indicate if acceleration structure is valid or needs to be recreated
+        bool _validAccessorItems { false };
         bool _inCompute { false }; //!< Prevent nested compute
 
         //! \brief  Helper scoped object to prevent nested compute

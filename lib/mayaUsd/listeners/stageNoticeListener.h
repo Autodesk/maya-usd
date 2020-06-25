@@ -57,6 +57,8 @@ class UsdMayaStageNoticeListener : public TfWeakBase
         void SetStageContentsChangedCallback(
             const StageContentsChangedCallback& callback);
 
+        /// Sets the callback to be invoked when the listener receives a
+        /// ObjectsChanged notice.
         MAYAUSD_CORE_PUBLIC
         void SetStageObjectsChangedCallback(
             const StageObjectsChangedCallback& callback);

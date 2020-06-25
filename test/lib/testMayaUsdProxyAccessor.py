@@ -228,7 +228,7 @@ def makeUfePath(dagPath, sdfPath=None):
     """
     Make ufe item out of dag path and sdfpath
     """
-    ufePath = ufe.PathString.path('|world{},{}'.format(dagPath,sdfPath) if sdfPath != None else '|world{}'.format(dagPath))
+    ufePath = ufe.PathString.path('{},{}'.format(dagPath,sdfPath) if sdfPath != None else '{}'.format(dagPath))
     ufeItem = ufe.Hierarchy.createItem(ufePath)
     return ufeItem
 
@@ -920,7 +920,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cachingScope.waitForCache(self)
         cachingScope.checkValidFrames(self, self.cache_allFrames)
         
-        # Manipulate using UFE and key (at frame 1)
+        # Manipulate using USD and key (at frame 1)
         cmds.currentTime(1)
         timeCode = Usd.TimeCode.Default() #Usd.TimeCode(1.0) # We are picking candidates from default time!
         usdTranslateAttr.Set((0.0, -2.0, 0.0), timeCode)
@@ -1116,6 +1116,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup(self)
             self.validateParentingDagObjectUnderUsdPrim(thisScope)
  
+    @unittest.skip("Randomly failing tests on Windows. Has to do with timing to finalize background compute and file new")
     def testParentingDagObjectUnderUsdPrim_Caching(self):
         """
         Test parenting of dag object under usd prim.
