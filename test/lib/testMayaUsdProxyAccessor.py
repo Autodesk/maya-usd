@@ -385,9 +385,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeChildItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
         
         # Create accessor plugs
-        worldMatrixPlugA = pa.GetOrCreateAccessPlug(ufeParentItemA, '', Sdf.ValueTypeNames.Matrix4d )
-        worldMatrixPlugSphere = pa.GetOrCreateAccessPlug(ufeChildItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
-        translatePlugSphere = pa.GetOrCreateAccessPlug(ufeChildItemSphere, usdAttrName='xformOp:translate' )
+        worldMatrixPlugA = pa.getOrCreateAccessPlug(ufeParentItemA, '', Sdf.ValueTypeNames.Matrix4d )
+        worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeChildItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
+        translatePlugSphere = pa.getOrCreateAccessPlug(ufeChildItemSphere, usdAttrName='xformOp:translate' )
         
         cachingScope.waitForCache(self)
         cachingScope.checkValidFrames(self, self.cache_allFrames)
@@ -421,7 +421,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeParentItemA = makeUfePath(nodeDagPath,'/ParentA')
         
         # Create accessor plugs
-        worldMatrixPlugA = pa.GetOrCreateAccessPlug(ufeParentItemA, '', Sdf.ValueTypeNames.Matrix4d )
+        worldMatrixPlugA = pa.getOrCreateAccessPlug(ufeParentItemA, '', Sdf.ValueTypeNames.Matrix4d )
         
         cachingScope.waitForCache(self)
         cachingScope.checkValidFrames(self, self.cache_allFrames)
@@ -448,7 +448,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         
         # Get UFE items
         ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        worldMatrixPlugSphere = pa.GetOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
+        worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         
         cachingScope.waitForCache(self)
         cachingScope.checkValidFrames(self, self.cache_allFrames)
@@ -476,9 +476,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeItemCube = makeUfePath(nodeDagPath,'/ParentA/Cube')
         
         # Create accessor plugs
-        translatePlugParent = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
-        rotatePlugParent = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
-        worldMatrixPlugSphere = pa.GetOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d)
+        translatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
+        rotatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
+        worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d)
         
         # Instanciate interface object for UFE transform3d
         ufeTransform3dCube = ufe.Transform3d.transform3d(ufeItemCube)
@@ -531,7 +531,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeItemChild = makeUfePath(childNodeDagPath)
         
         # Parent
-        pa.ParentItems([ufeItemChild],ufeItemSphere)
+        pa.parentItems([ufeItemChild],ufeItemSphere)
         
         # Validate
         cachingScope.checkValidFrames(self, self.cache_empty)
@@ -565,9 +565,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeItemCube = makeUfePath(nodeDagPath,'/ParentA/Cube')
         ufeItemLocator = makeUfePath(locatorNodeDagPath)
         
-        translatePlugParent = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
-        rotatePlugParent = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
-        worldMatrixPlugSphere = pa.GetOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d)
+        translatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
+        rotatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
+        worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d)
         
         # Animate proxy shape transform
         transform = cmds.listRelatives(nodeDagPath,parent=True)[0]
@@ -581,7 +581,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.setKeyframe( '{}.{}'.format(nodeDagPath,rotatePlugParent), time=1.0, value=0.0 )
         cmds.setKeyframe( '{}.{}'.format(nodeDagPath,rotatePlugParent), time=100.0, value=90.0)
         
-        pa.ParentItems([ufeItemLocator],ufeItemSphere)
+        pa.parentItems([ufeItemLocator],ufeItemSphere)
         
         # Validate state before save
         cmds.currentTime(1)
@@ -628,8 +628,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         selectUfeItems(ufeItemParent)
         
         # Current limitation requires access plugs to be created before we start manipulating and keying
-        translatePlug = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
-        rotatePlug = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
+        translatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
+        rotatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
         cmds.currentTime(1) # trigger compute to fill the data
         
         cachingScope.waitForCache(self)
@@ -647,8 +647,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         self.validatePlugsEqual(nodeDagPath,
             [(translatePlug,(0.0, -2.0, 0.0)), (rotatePlug, (0.0, 90.0, 0.0))])
         
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
      
         # Double check that nothing changed after keying
         # Keying will create a new curve and connect the plug making
@@ -692,7 +692,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         
         # Get UFE items
         ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        worldMatrixPlugSphere = pa.GetOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
+        worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         
         cachingScope.waitForCache(self)
         cachingScope.checkValidFrames(self, self.cache_allFrames)
@@ -740,8 +740,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         selectUfeItems(ufeItemParent)
         
         # Current limitation requires access plugs to be created before we start manipulating and keying
-        translatePlug = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
-        rotatePlug = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
+        translatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
+        rotatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
         cmds.currentTime(1) # trigger compute to fill the data
         
         cachingScope.waitForCache(self)
@@ -759,8 +759,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         self.validatePlugsEqual(nodeDagPath,
             [(translatePlug,(0.0, -2.0, 0.0)), (rotatePlug, (0.0, 90.0, 0.0))])
         
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
      
         # Double check that nothing changed after keying
         # Keying will create a new curve and connect the plug making
@@ -776,8 +776,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.move(-20, -18, -20, relative=False)
         cmds.rotate(90, 0, 0, relative=False)
         
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
         
         cachingScope.checkValidFrames(self, self.cache_empty)
         cachingScope.waitForCache(self)
@@ -788,8 +788,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.move(10, -18, 10, relative=False)
         cmds.rotate(90, 45, 45, relative=False)
         
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
         
         cachingScope.checkValidFrames(self, self.cache_empty)
         cachingScope.waitForCache(self)
@@ -818,8 +818,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
         
         # Current limitation requires access plugs to be created before we start manipulating and keying
-        translatePlug = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
-        rotatePlug = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
+        translatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
+        rotatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
         cmds.currentTime(1) # trigger compute to fill the data
         
         cachingScope.waitForCache(self)
@@ -845,8 +845,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         self.validatePlugsEqual(nodeDagPath,
            [(translatePlug,(0.0, -2.0, 0.0)), (rotatePlug, (0.0, 90.0, 0.0))])
 
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
         # Double check that nothing changed after keying
         # Keying will create a new curve and connect the plug making
@@ -862,8 +862,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeTransform3d.translate(-20.0, -18.0, -20.0)
         ufeTransform3d.rotate(90.0, 0.0, 0.0)
 
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
         cachingScope.checkValidFrames(self, self.cache_empty)
         cachingScope.waitForCache(self)
@@ -874,8 +874,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeTransform3d.translate(-10.0, -18.0, -10.0)
         ufeTransform3d.rotate(90.0, 45.0, 45.0)
 
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
         cachingScope.checkValidFrames(self, self.cache_empty)
         cachingScope.waitForCache(self)
@@ -913,8 +913,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         self.assertTrue(usdRotateAttr.IsDefined())
         
         # Current limitation requires access plugs to be created before we start manipulating and keying
-        translatePlug = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
-        rotatePlug = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
+        translatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
+        rotatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
         cmds.currentTime(1) # trigger compute to fill the data
         
         cachingScope.waitForCache(self)
@@ -929,8 +929,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         # There is no key, so this should have invalidated the cache
         cachingScope.checkValidFrames(self, self.cache_empty)
 
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
         # Double check that nothing changed after keying
         # Keying will create a new curve and connect the plug making
@@ -947,8 +947,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         usdTranslateAttr.Set((-20.0, -18.0, -20.0), timeCode)
         usdRotateAttr.Set((90.0, 0.0, 0.0), timeCode)
 
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
         cachingScope.checkValidFrames(self, self.cache_empty)
         cachingScope.waitForCache(self)
@@ -960,8 +960,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         usdTranslateAttr.Set((-10.0, -18.0, -10.0), timeCode)
         usdRotateAttr.Set((90.0, 45.0, 45.0), timeCode)
 
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:translate')
-        pa.KeyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
+        pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
         cachingScope.checkValidFrames(self, self.cache_empty)
         cachingScope.waitForCache(self)
@@ -998,10 +998,10 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeItemSrcLocator = makeUfePath(srcLocatorDagPath)
         
         # Create accessor plugs
-        translatePlugParent = pa.GetOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
-        worldMatrixPlugSphere = pa.GetOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
+        translatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
+        worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         
-        pa.ConnectItems(ufeItemSrcLocator, ufeItemParent, [('translate','xformOp:translate')])
+        pa.connectItems(ufeItemSrcLocator, ufeItemParent, [('translate','xformOp:translate')])
         
         cachingScope.checkValidFrames(self, self.cache_empty)
         cachingScope.waitForCache(self)

@@ -30,13 +30,13 @@ import maya.cmds as cmds
 import maya.OpenMaya as om
 import ufe
 
-def GetUfeSelection():
+def getUfeSelection():
     try:
         return ufe.GlobalSelection.get().front()
     except:
         return None
 
-def GetDagAndPrimFromUfe(ufeObject):
+def getDagAndPrimFromUfe(ufeObject):
     if ufeObject == None:
         return None, None
         
@@ -53,15 +53,15 @@ def GetDagAndPrimFromUfe(ufeObject):
     
     return dagPath, primPath
 
-def GetSelectedDagAndPrim():    
-    return GetDagAndPrimFromUfe(GetUfeSelection())
+def getSelectedDagAndPrim():    
+    return getDagAndPrimFromUfe(getUfeSelection())
 
-def GetAccessPlugName(sdfPath):
+def getAccessPlugName(sdfPath):
     plugNameValueAttr = 'AccessValue_' + str(sdfPath.__hash__())
     
     return plugNameValueAttr
 
-def IsUfeUsdPath(ufeObject):
+def isUfeUsdPath(ufeObject):
     segmentCount = ufeObject.path().nbSegments()
     if segmentCount < 2:
         return False
@@ -69,8 +69,8 @@ def IsUfeUsdPath(ufeObject):
     lastSegment = ufeObject.path().segments[segmentCount-1]
     return Sdf.Path.IsValidPathString(str(lastSegment))
 
-def CreateXformOps(ufeObject):
-    selDag, selPrim = GetDagAndPrimFromUfe(ufeObject)
+def createXformOps(ufeObject):
+    selDag, selPrim = getDagAndPrimFromUfe(ufeObject)
     stage = mayaUsdLib.GetPrim(selDag).GetStage()
 
     primPath = Sdf.Path(selPrim)
@@ -82,8 +82,8 @@ def CreateXformOps(ufeObject):
                 UsdGeom.XformCommonAPI.OpRotate,
                 UsdGeom.XformCommonAPI.OpScale)
 
-def CreateAccessPlug(proxyDagPath, sdfPath, sdfValueType):
-    plugNameValueAttr = GetAccessPlugName(sdfPath)
+def createAccessPlug(proxyDagPath, sdfPath, sdfValueType):
+    plugNameValueAttr = getAccessPlugName(sdfPath)
     plugNameValueAttrNiceName = str(sdfPath)
     
     plug = mayaUsdLib.ReadUtil.FindOrCreateMayaAttr(
@@ -94,8 +94,8 @@ def CreateAccessPlug(proxyDagPath, sdfPath, sdfValueType):
         plugNameValueAttrNiceName
         )
 
-def CreateWorldSpaceAccessPlug(proxyDagPath, sdfPath):
-    plugNameValueAttr = GetAccessPlugName(sdfPath)
+def createWorldSpaceAccessPlug(proxyDagPath, sdfPath):
+    plugNameValueAttr = getAccessPlugName(sdfPath)
     plugNameValueAttrNiceName = str(sdfPath)
     
     cmds.addAttr(proxyDagPath,
@@ -119,8 +119,8 @@ def CreateWorldSpaceAccessPlug(proxyDagPath, sdfPath):
     # Set default value
     cmds.setAttr('{}.{}[0]'.format(proxyDagPath,plugNameValueAttr), [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0], type='matrix')
 
-def GetSdfValueType(ufeObject, usdAttrName):
-    proxyDagPath, usdPrimPath = GetDagAndPrimFromUfe(ufeObject)
+def getSdfValueType(ufeObject, usdAttrName):
+    proxyDagPath, usdPrimPath = getDagAndPrimFromUfe(ufeObject)
 
     stage = mayaUsdLib.GetPrim(proxyDagPath).GetStage()
 
@@ -133,8 +133,8 @@ def GetSdfValueType(ufeObject, usdAttrName):
     else:
         return None
 
-def GetAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeNames.Matrix4d):
-    selectedDagPath, selectedPrimPath = GetDagAndPrimFromUfe(ufeObject)
+def getAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeNames.Matrix4d):
+    selectedDagPath, selectedPrimPath = getDagAndPrimFromUfe(ufeObject)
 
     if selectedDagPath == None or selectedPrimPath == None:
         return None
@@ -143,9 +143,9 @@ def GetAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeNames.Matrix
 
     if not usdAttrName == "":
         sdfPath = sdfPath.AppendProperty(usdAttrName)
-        sdfValueType = GetSdfValueType(ufeObject,usdAttrName)
+        sdfValueType = getSdfValueType(ufeObject,usdAttrName)
     
-    plugNameValueAttr = GetAccessPlugName(sdfPath)
+    plugNameValueAttr = getAccessPlugName(sdfPath)
     
     exists = cmds.attributeQuery(plugNameValueAttr, node=selectedDagPath, exists=True)
     if not exists:
@@ -153,13 +153,13 @@ def GetAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeNames.Matrix
         
     return plugNameValueAttr
 
-def GetOrCreateAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeNames.Matrix4d):
+def getOrCreateAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeNames.Matrix4d):
     # Look for it first
-    plugNameValueAttr = GetAccessPlug(ufeObject,usdAttrName,sdfValueType)
+    plugNameValueAttr = getAccessPlug(ufeObject,usdAttrName,sdfValueType)
     
     # Create if doesn't exist
     if plugNameValueAttr == None:
-        selectedDagPath, selectedPrimPath = GetDagAndPrimFromUfe(ufeObject)
+        selectedDagPath, selectedPrimPath = getDagAndPrimFromUfe(ufeObject)
 
         if selectedDagPath == None or selectedPrimPath == None:
             return None
@@ -168,13 +168,13 @@ def GetOrCreateAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeName
         if not usdAttrName == "":
             sdfPath = sdfPath.AppendProperty(usdAttrName)
             
-        plugNameValueAttr = GetAccessPlugName(sdfPath)
+        plugNameValueAttr = getAccessPlugName(sdfPath)
     
         if not usdAttrName == "":
-            sdfValueType = GetSdfValueType(ufeObject,usdAttrName)
-            CreateAccessPlug(selectedDagPath, sdfPath, sdfValueType)
+            sdfValueType = getSdfValueType(ufeObject,usdAttrName)
+            createAccessPlug(selectedDagPath, sdfPath, sdfValueType)
         else:
-            CreateWorldSpaceAccessPlug(selectedDagPath, sdfPath)
+            createWorldSpaceAccessPlug(selectedDagPath, sdfPath)
         
         exists = cmds.attributeQuery(plugNameValueAttr, node=selectedDagPath, exists=True)
         if not exists:
@@ -182,43 +182,43 @@ def GetOrCreateAccessPlug(ufeObject, usdAttrName, sdfValueType=Sdf.ValueTypeName
     
     return plugNameValueAttr
 
-def KeyframeAccessPlug(ufeObject, usdAttrName):
-    proxyDagPath, usdPrimPath = GetDagAndPrimFromUfe(ufeObject)
-    plugNameValueAttr = GetOrCreateAccessPlug(ufeObject,usdAttrName)
+def keyframeAccessPlug(ufeObject, usdAttrName):
+    proxyDagPath, usdPrimPath = getDagAndPrimFromUfe(ufeObject)
+    plugNameValueAttr = getOrCreateAccessPlug(ufeObject,usdAttrName)
     
     if plugNameValueAttr == None:
         print("Error in keying. No attributes to key")
     else:
         result = cmds.setKeyframe(proxyDagPath, attribute=plugNameValueAttr)
     
-def ParentItems(ufeChildren, ufeParent):
-    if not IsUfeUsdPath(ufeParent):
+def parentItems(ufeChildren, ufeParent):
+    if not isUfeUsdPath(ufeParent):
         print("This method implements parenting under USD prim. Please provide UFE-USD item for ufeParent")
         return
     
-    parentDagPath, parentUsdPrimPath = GetDagAndPrimFromUfe(ufeParent)
-    parentValueAttr = GetOrCreateAccessPlug(ufeParent, '', Sdf.ValueTypeNames.Matrix4d )
+    parentDagPath, parentUsdPrimPath = getDagAndPrimFromUfe(ufeParent)
+    parentValueAttr = getOrCreateAccessPlug(ufeParent, '', Sdf.ValueTypeNames.Matrix4d )
     parentConnectionAttr = parentDagPath+'.'+parentValueAttr+'[0]'
     
     for ufeChild in ufeChildren:
-        if IsUfeUsdPath(ufeChild):
+        if isUfeUsdPath(ufeChild):
             print("Parenting of USD to USD is NOT implemented here")
             continue
          
-        childDagPath = GetDagAndPrimFromUfe(ufeChild)[0]
+        childDagPath = getDagAndPrimFromUfe(ufeChild)[0]
         
         print('Parenting "{}" to "{}{}"'.format(childDagPath, parentDagPath,parentUsdPrimPath))
         childConnectionAttr = childDagPath+'.offsetParentMatrix'
         cmds.connectAttr(parentConnectionAttr, childConnectionAttr)
 
-def Parent():
+def parent():
    ufeSelection = iter(ufe.GlobalSelection.get())
    ufeSelectionList = []
    for ufeItem in ufeSelection:
        ufeSelectionList.append(ufeItem)
 
    # clearing this selection so nobody will try to use it.
-   # next steps can result in new selection being made due to potential call to CreateAccessPlug
+   # next steps can result in new selection being made due to potential call to createAccessPlug
    ufeSelection = None
 
    if len(ufeSelectionList) < 2:
@@ -228,37 +228,37 @@ def Parent():
    ufeParent = ufeSelectionList[-1]
    ufeChildren = ufeSelectionList[:-1]
    
-   ParentItems(ufeChildren, ufeParent)
+   parentItems(ufeChildren, ufeParent)
 
-def ConnectItems(ufeObjectSrc, ufeObjectDst, attrToConnect):
-    connectMayaToUsd = IsUfeUsdPath(ufeObjectDst)
-    if connectMayaToUsd == IsUfeUsdPath(ufeObjectSrc):
+def connectItems(ufeObjectSrc, ufeObjectDst, attrToConnect):
+    connectMayaToUsd = isUfeUsdPath(ufeObjectDst)
+    if connectMayaToUsd == isUfeUsdPath(ufeObjectSrc):
         print('Must provide two objects with mixed paths (DAG and USD)')
         return
     
     if connectMayaToUsd:
         #source is Maya
         #destination is USD
-        CreateXformOps(ufeObjectDst)
-        srcDagPath = GetDagAndPrimFromUfe(ufeObjectSrc)[0]
-        dstDagPath, dstUsdPrimPath = GetDagAndPrimFromUfe(ufeObjectDst)
+        createXformOps(ufeObjectDst)
+        srcDagPath = getDagAndPrimFromUfe(ufeObjectSrc)[0]
+        dstDagPath, dstUsdPrimPath = getDagAndPrimFromUfe(ufeObjectDst)
         for mayaAttr, usdAttr in attrToConnect:
-            dstValueAttr = GetOrCreateAccessPlug(ufeObjectDst, usdAttr)
+            dstValueAttr = getOrCreateAccessPlug(ufeObjectDst, usdAttr)
             srcConnection = srcDagPath+'.'+mayaAttr
             dstConnection = dstDagPath+'.'+dstValueAttr
             cmds.connectAttr(srcConnection, dstConnection)
     else:
         #source is USD
         #destination is Maya
-        srcDagPath, srcUsdPrimPath = GetDagAndPrimFromUfe(ufeObjectSrc)
-        dstDagPath = GetDagAndPrimFromUfe(ufeObjectDst)[0]
+        srcDagPath, srcUsdPrimPath = getDagAndPrimFromUfe(ufeObjectSrc)
+        dstDagPath = getDagAndPrimFromUfe(ufeObjectDst)[0]
         for mayaAttr, usdAttr, valueType in attrToConnect:
-            srcValueAttr = GetOrCreateAccessPlug(ufeObjectSrc, usdAttr)
+            srcValueAttr = getOrCreateAccessPlug(ufeObjectSrc, usdAttr)
             srcConnection = srcDagPath+'.'+srcValueAttr
             dstConnection = dstDagPath+'.'+mayaAttr
             cmds.connectAttr(srcConnection, dstConnection)
             
-def Connect(attrToConnect=[('translate','xformOp:translate'), ('rotate','xformOp:rotateXYZ')]):
+def connect(attrToConnect=[('translate','xformOp:translate'), ('rotate','xformOp:rotateXYZ')]):
     ufeSelection = ufe.GlobalSelection.get()
     if len(ufeSelection) != 2:
         print('Must select exactly two objects to connect')
@@ -271,4 +271,4 @@ def Connect(attrToConnect=[('translate','xformOp:translate'), ('rotate','xformOp
 
     ufeSelectionIter = None
     
-    ConnectItems(ufeObjectSrc,ufeObjectDst,attrToConnect)
+    connectItems(ufeObjectSrc,ufeObjectDst,attrToConnect)
