@@ -155,7 +155,6 @@ target_link_libraries(${MAYAUSDUTILS_PYTHON_LIBRARY_NAME}
     ${TARGET_NAME}
     ${PYTHON_LIBRARIES}
     usdGeom
-    Boost::python
 )
 
 # -----------------------------------------------------------------------------

@@ -32,6 +32,7 @@ mayaUsd_add_test(${TARGET_NAME}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
     ENV
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+        "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
 )
 
 set(TARGET_NAME MayaTransformAPI)
@@ -90,6 +91,7 @@ target_link_libraries(${TARGET_NAME}
 # unit tests
 # -----------------------------------------------------------------------------
 mayaUsd_add_test(${TARGET_NAME}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     COMMAND $<TARGET_FILE:${TARGET_NAME}>
 )
 
@@ -99,8 +101,9 @@ mayaUsd_add_test(${TARGET_NAME}
 
 set(USDUTILS_PYTHON_TEST_NAME Python:MayaTransformAPI)
 mayaUsd_add_test(${USDUTILS_PYTHON_TEST_NAME}
-  COMMAND
-    python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMAND
+      python -m unittest discover -s ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
 set(python_path 

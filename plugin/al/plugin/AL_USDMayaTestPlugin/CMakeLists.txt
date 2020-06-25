@@ -135,6 +135,8 @@ maya.cmds.loadPlugin('AL_USDMayaTestPlugin')
 sys.exit(maya.cmds.AL_maya_test_UnitTestHarness())
 ")
 
+message("ADDITIONAL_PXR_PLUGINPATH_NAME = ${ADDITIONAL_PXR_PLUGINPATH_NAME}")
+
 mayaUsd_add_test(${TARGET_NAME}
     PYTHON_COMMAND "${pycode}"
     ENV
