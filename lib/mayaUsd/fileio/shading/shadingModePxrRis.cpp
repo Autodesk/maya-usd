@@ -17,16 +17,15 @@
 // Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
 #include "shadingModePxrRis_rfm_map.h"
 
-#include <vector>
-
-#include <maya/MFnAttribute.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MFnSet.h>
-#include <maya/MGlobal.h>
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/shading/shadingModeImporter.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/roundTripUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/converter.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -47,16 +46,16 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include <mayaUsd/fileio/shading/shadingModeExporter.h>
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/fileio/shading/shadingModeImporter.h>
+#include <maya/MFnAttribute.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnSet.h>
+#include <maya/MGlobal.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/utils/roundTripUtil.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/utils/converter.h>
-#include <mayaUsd/utils/util.h>
+#include <vector>
 
 using namespace MAYAUSD_NS;
 
