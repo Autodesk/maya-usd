@@ -37,12 +37,13 @@ public:
                               const std::string& name,
                               const std::string& type);
 
-	void undo() override;
-	void redo() override;
+    void undo() override;
+    void redo() override;
 
     const Ufe::Path& newUfePath() const;
-    
-	static UsdUndoAddNewPrimCommand::Ptr create(const UsdSceneItem::Ptr& usdSceneItem,
+    UsdPrim newPrim() const;
+
+    static UsdUndoAddNewPrimCommand::Ptr create(const UsdSceneItem::Ptr& usdSceneItem,
                               const std::string& name, const std::string& type);
 private:
     PXR_NS::UsdStageWeakPtr _stage;

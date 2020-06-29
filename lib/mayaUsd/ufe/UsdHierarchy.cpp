@@ -225,7 +225,7 @@ Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::Selection& selection, c
 
 	UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
 	if (cmd) {
-		cmd->redo();
+		cmd->execute();
 		createdItem = cmd->group();
 	}
 

@@ -27,19 +27,15 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
+#if UFE_PREVIEW_VERSION_NUM >= 2017
+
 //! \brief UsdUndoCreateGroupCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::UndoableCommand
+class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::CompositeUndoableCommand
 {
 public:
 	typedef std::shared_ptr<UsdUndoCreateGroupCommand> Ptr;
 
-#if UFE_PREVIEW_VERSION_NUM < 2017
-	UsdUndoCreateGroupCommand(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name);
-#else
-	typedef std::list<std::shared_ptr<Ufe::UndoableCommand>> UfeUndoCommands;
-
 	UsdUndoCreateGroupCommand(const UsdSceneItem::Ptr& parentItem, const Ufe::Selection& selection, const Ufe::PathComponent& name);
-#endif
 	~UsdUndoCreateGroupCommand() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -49,11 +45,39 @@ public:
 	UsdUndoCreateGroupCommand& operator=(UsdUndoCreateGroupCommand&&) = delete;
 
 	//! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
-#if UFE_PREVIEW_VERSION_NUM < 2017	
-	static UsdUndoCreateGroupCommand::Ptr create(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name);
-#else
 	static UsdUndoCreateGroupCommand::Ptr create(const UsdSceneItem::Ptr& parentItem, const Ufe::Selection& selection, const Ufe::PathComponent& name);
-#endif
+	Ufe::SceneItem::Ptr group() const;
+
+	// UsdUndoCreateGroupCommand overrides
+	void execute() override;
+
+private:
+	UsdSceneItem::Ptr _parentItem;
+	Ufe::PathComponent _name;
+	UsdSceneItem::Ptr _group;
+	Ufe::Selection _selection;
+
+}; // UsdUndoCreateGroupCommand
+
+#else
+
+//! \brief UsdUndoCreateGroupCommand
+class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::UndoableCommand
+{
+public:
+	typedef std::shared_ptr<UsdUndoCreateGroupCommand> Ptr;
+
+	UsdUndoCreateGroupCommand(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name);
+	~UsdUndoCreateGroupCommand() override;
+
+	// Delete the copy/move constructors assignment operators.
+	UsdUndoCreateGroupCommand(const UsdUndoCreateGroupCommand&) = delete;
+	UsdUndoCreateGroupCommand& operator=(const UsdUndoCreateGroupCommand&) = delete;
+	UsdUndoCreateGroupCommand(UsdUndoCreateGroupCommand&&) = delete;
+	UsdUndoCreateGroupCommand& operator=(UsdUndoCreateGroupCommand&&) = delete;
+
+	//! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
+	static UsdUndoCreateGroupCommand::Ptr create(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name);
 	Ufe::SceneItem::Ptr group() const;
 
 	// UsdUndoCreateGroupCommand overrides
@@ -64,13 +88,9 @@ private:
 	UsdSceneItem::Ptr _parentItem;
 	Ufe::PathComponent _name;
 	UsdSceneItem::Ptr _group;
-
-#if UFE_PREVIEW_VERSION_NUM >= 2017	
-	Ufe::Selection _selection;
-	UfeUndoCommands	_ufeUndoCommands;
-#endif
-
 }; // UsdUndoCreateGroupCommand
+
+#endif // UFE_PREVIEW_VERSION_NUM >= 2017
 
 } // namespace ufe
 } // namespace MayaUsd

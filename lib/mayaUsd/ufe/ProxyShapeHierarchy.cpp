@@ -190,12 +190,12 @@ Ufe::Group ProxyShapeHierarchy::createGroupCmd(const Ufe::PathComponent& name) c
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
-	Ufe::SceneItem::Ptr createdItem = nullptr;
+	Ufe::SceneItem::Ptr createdItem;
 
 	auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 	UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
 	if (cmd) {
-		cmd->redo();
+		cmd->execute();
 		createdItem = cmd->group();
 	}
 

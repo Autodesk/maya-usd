@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdS
     auto ufePath = usdSceneItem->path();
     auto segments = ufePath.getSegments();
     auto dagSegment = segments[0];
-    _stage = MayaUsd::ufe::getStage(Ufe::Path(dagSegment));
+    _stage = usdSceneItem->prim().GetStage();
     if (_stage) {
         // Append the parent path and the requested name into a full ufe path.
         _newUfePath = appendToPath(ufePath, name);
@@ -87,6 +87,15 @@ void UsdUndoAddNewPrimCommand::redo()
 const Ufe::Path& UsdUndoAddNewPrimCommand::newUfePath() const
 {
     return _newUfePath;
+}
+
+PXR_NS::UsdPrim UsdUndoAddNewPrimCommand::newPrim() const
+{
+    if (!_stage) {
+        return UsdPrim();
+    }
+    
+    return _stage->GetPrimAtPath(_primPath);
 }
 
 /*static*/
