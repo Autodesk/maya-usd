@@ -1,5 +1,6 @@
 from AL.usd import transaction
 from pxr import Usd, Sdf, Tf
+import sys
 import unittest
 
 class TestTransaction(unittest.TestCase):
@@ -13,6 +14,9 @@ class TestTransaction(unittest.TestCase):
         self._closed = 0
         self._changed = []
         self._resynced = []
+        # assertCountEqual in python 3 is equivalent to assertItemsEqual
+        if sys.version_info[0] >= 3:
+            self.assertItemsEqual = self.assertCountEqual
 
     def _openNoticeHandler(self, notice, stage):
         self.assertEqual(stage, self._stage)

@@ -27,6 +27,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PUBLIC_TOKENS(
+    HdVP2ShaderFragmentsTokens,
+    MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS);
+
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -64,8 +68,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPrimvarReader_float3)
     (UsdPrimvarReader_float4)
     (UsdPrimvarReader_vector)
-
-    (UsdPreviewSurface)
 );
 
 static const TfTokenVector _LanguageSpecificFragmentNames = {
@@ -108,7 +110,7 @@ static const TfTokenVector _FragmentGraphNames = {
     _tokens->BasisCurvesLinearFallbackShader,
     _tokens->FallbackCPVShader,
     _tokens->FallbackShader,
-    _tokens->UsdPreviewSurface
+    HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName
 };
 
 
@@ -130,14 +132,19 @@ namespace
     }
 }
 
-bool HdVP2ShaderFragments::_registered = false;
+namespace {
+int _registrationCount = 0;
+}
 
 // Fragment registration should be done after VP2 has been initialized, to avoid any errors from
 // headless configurations or command-line renders.
 MStatus HdVP2ShaderFragments::registerFragments()
 {
-    if (_registered)
+    // If we're already registered, do nothing.
+    if (_registrationCount > 0) {
+        _registrationCount++;
         return MS::kSuccess;
+    }
 
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (!theRenderer) {
@@ -233,7 +240,7 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
-    _registered = true;
+    _registrationCount++;
 
     return MS::kSuccess;
 }
@@ -241,9 +248,16 @@ MStatus HdVP2ShaderFragments::registerFragments()
 // Fragment deregistration
 MStatus HdVP2ShaderFragments::deregisterFragments()
 {
-    if (!_registered)
+    // If it was never registered, leave as-is:
+    if (!_registrationCount) {
         return MS::kSuccess;
+    }
 
+    // If more than one plugin still has us registered, do nothing.
+    if (_registrationCount > 1) {
+        _registrationCount--;
+        return MS::kSuccess;
+    }
     MHWRender::MRenderer* theRenderer = MHWRender::MRenderer::theRenderer();
     if (!theRenderer) {
         return MS::kFailure;
@@ -279,7 +293,7 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
         }
     }
 
-    _registered = false;
+    _registrationCount--;
 
     // Clear the shader manager's effect cache as well so that any changes to
     // the fragments will get picked up if they are re-registered.

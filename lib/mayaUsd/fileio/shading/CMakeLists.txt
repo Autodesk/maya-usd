@@ -16,7 +16,6 @@ set(headers
     shadingModeExporter.h
     shadingModeExporterContext.h
     shadingModeImporter.h
-    shadingModePxrRis_rfm_map.h
     shadingModeRegistry.h
 )
 

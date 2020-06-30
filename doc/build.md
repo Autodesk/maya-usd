@@ -13,7 +13,7 @@ Before building the project, consult the following table to ensure you use the r
 |    Operating System   |         Windows 10        | Catalina (10.15), Mojave (10.14), High Sierra (10.13)        |       CentOS 7              |
 |   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3)<br>Maya 2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1)<br>Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2)<br>Maya 2019/2020 (gcc 6.3.1) |
 | Minimum Cmake Version |           3.13            |                             3.13                             |         3.13                |
-|         Python        |           2.7.15          |                            2.7.15                            |        2.7.15               |
+|         Python        |       2.7.15 or 3.7.7     |                            2.7.15 or 3.7.7                   |        2.7.15 or 3.7.7      |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              |      PyYAML, PySide, PyOpenGL, Jinja2             |
 |    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja (Recommended)                      |    Ninja (Recommended)      |
 |    Command processor  | Visual Studio X64 2015 or 2017 command prompt  |                     bash                |             bash            |
@@ -185,6 +185,14 @@ Test project /Users/sabrih/Desktop/workspace/build/Debug/plugin/al
 8/8 Test #4: AL_USDMayaTestPlugin .............   Passed   27.43 sec
 100% tests passed, 0 tests failed out of 8
 ```
+
+***NOTE:*** As part of compatibility support for python 3 in maya-usd, there are number of python tests that require the use of python’s `future` module. While the `future` module is 
+available in our new preview releases of Maya, this package doesn't exist in the version of python in Maya 2018/2019/2020. Please follow the below steps in order to install the `future` package:
+
+ 1. Download get-py.py from https://bootstrap.pypa.io/get-pip.py 
+ 2. Open a command-line and navigate to `mayapy.exe` for Maya version which needs future package. Run:`mayapy.exe <path_to_downloaded_file>/get-pip.py` 
+ 3. Pip will be added to `<path_to_maya>Python/Scripts`
+ 4. Install the future package: `<path_to_maya>Python/Scripts/pip install future`
 
 # Additional Build Instruction
 

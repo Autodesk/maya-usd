@@ -15,11 +15,10 @@
 //
 #pragma once
 
-#include "../../Api.h"
-
+#include <AL/usdmaya/Api.h>
 #include <AL/usdmaya/ForwardDeclares.h>
-#include "AL/usdmaya/TransformOperation.h"
-#include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
+#include <AL/usdmaya/TransformOperation.h>
+#include <AL/usdmaya/fileio/translators/DagNodeTranslator.h>
 
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usdGeom/xform.h>

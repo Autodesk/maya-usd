@@ -372,10 +372,11 @@ void HdVP2Mesh::Sync(
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
     if (!drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()))) {
         _HideAllDrawItems(reprToken);
-        // clearing visibility here is wrong. It is a work around to handle purpose changing
-        // marking visibility dirty instead of render tag. See UsdImagingGprimAdapter::ProcessPropertyChange
-        // for where this happens.
-        *dirtyBits &= ~( HdChangeTracker::DirtyRenderTag | HdChangeTracker::DirtyVisibility );
+        *dirtyBits &= ~( HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+         | HdChangeTracker::DirtyVisibility
+#endif
+          );
         return;
     }
 
@@ -495,7 +496,11 @@ void HdVP2Mesh::Sync(
         _sharedData.visible = delegate->GetVisible(id);
     }
 
-    if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+    if (*dirtyBits & (HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+        |HdChangeTracker::DirtyVisibility
+#endif
+    )) {
         _meshSharedData._renderTag = delegate->GetRenderTag(id);
     }
 
@@ -1293,6 +1298,26 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             }
             else if (auto state = drawScene.GetPrimSelectionState(id)) {
+#if USD_VERSION_NUM <= 2005
+                // In 20.05 and older GetPrimSelectionState may have duplicate entries
+                // in instanceIndices, which will cause Maya to draw that instance multiple
+                // times. Remove the duplicates here to avoid that problem.
+                std::vector<bool> selectedIndices;
+                selectedIndices.resize(instanceCount); // bool default ctor sets the value to false
+                for (const auto& indexArray : state->instanceIndices) {   
+                    for (const auto index : indexArray) {
+                        selectedIndices[index] = true;
+                    }
+                }
+                for (unsigned int index=0; index<instanceCount; index++)
+                {
+                    if (!selectedIndices[index])
+                        continue;
+                    transforms[index].Get(instanceMatrix.matrix);
+                    instanceMatrix = worldMatrix * instanceMatrix;
+                    stateToCommit._instanceTransforms.append(instanceMatrix);
+                }
+#else
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
                         transforms[index].Get(instanceMatrix.matrix);
@@ -1300,6 +1325,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                         stateToCommit._instanceTransforms.append(instanceMatrix);
                     }
                 }
+#endif
             }
         }
         else {
@@ -1565,6 +1591,8 @@ void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken) {
         MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
         if (!renderItem)
             continue;
+
+        drawItem->GetRenderItemData()._enabled = false;
 
         _delegate->GetVP2ResourceRegistry().EnqueueCommit([renderItem]() {
             renderItem->enable(false);

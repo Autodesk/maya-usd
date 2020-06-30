@@ -115,7 +115,7 @@ def LoadReferenceAssemblies(parentNodes=None):
             isInterruptable=True, minValue=0, maxValue=numRefAssemblies,
             status='Loading USD reference assemblies...')
 
-    for i in xrange(numRefAssemblies):
+    for i in range(numRefAssemblies):
         refAssembly = refAssemblies[i]
 
         if mainProgressBar:

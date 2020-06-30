@@ -19,12 +19,16 @@
 /// \file pxrUsdMayaGL/shapeAdapter.h
 
 #include <memory>
+#include <unordered_map>
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/changeTracker.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/types.h>
 #include <pxr/usd/sdf/path.h>
 
 // XXX: With Maya versions up through 2019 on Linux, M3dView.h ends up
@@ -43,7 +47,6 @@
 #include <maya/M3dView.h>
 #undef Always // Defined in /usr/lib/X11/X.h (eventually included by M3dView.h) - breaks pxr/usd/lib/usdUtils/registeredVariantSet.h
 #include <maya/MBoundingBox.h>
-#include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MHWGeometryUtilities.h>
@@ -66,7 +69,7 @@ class PxrMayaHdShapeAdapter
         /// Update the shape adapter's state from the shape with the given
         /// \p shapeDagPath and the legacy viewport display state.
         MAYAUSD_CORE_PUBLIC
-        virtual bool Sync(
+        bool Sync(
                 const MDagPath& shapeDagPath,
                 const M3dView::DisplayStyle legacyDisplayStyle,
                 const M3dView::DisplayStatus legacyDisplayStatus);
@@ -74,7 +77,7 @@ class PxrMayaHdShapeAdapter
         /// Update the shape adapter's state from the shape with the given
         /// \p shapeDagPath and the Viewport 2.0 display state.
         MAYAUSD_CORE_PUBLIC
-        virtual bool Sync(
+        bool Sync(
                 const MDagPath& shapeDagPath,
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus);
@@ -143,7 +146,7 @@ class PxrMayaHdShapeAdapter
                 const MBoundingBox* boundingBox = nullptr);
 
         /// Gets the HdReprSelector that corresponds to the given Maya display
-        /// state.
+        /// style.
         ///
         /// \p displayStyle should be a bitwise combination of
         /// MHWRender::MFrameContext::DisplayStyle values, typically either
@@ -152,52 +155,87 @@ class PxrMayaHdShapeAdapter
         /// obtained using MHWRender::MFrameContext::getDisplayStyle() for
         /// Viewport 2.0.
         ///
-        /// \p displayStatus is typically either up-converted from
-        /// a M3dView::DisplayStatus value obtained using
-        /// MDrawInfo::displayStatus() for the legacy viewport, or obtained
-        /// using MHWRender::MGeometryUtilities::displayStatus() for Viewport
-        /// 2.0.
+        /// The HdReprSelector chosen is also dependent on the display status
+        /// (active/selected vs. inactive) which Maya is queried for, as well
+        /// as whether or not the render params specify that we are using the
+        /// shape's wireframe, which is influenced by both the display status
+        /// and whether or not the shape is involved in a soft selection.
         ///
         /// If there is no corresponding HdReprSelector for the given display
-        /// state, an empty HdReprSelector is returned.
+        /// style, an empty HdReprSelector is returned.
         MAYAUSD_CORE_PUBLIC
-        virtual HdReprSelector GetReprSelectorForDisplayState(
-                const unsigned int displayStyle,
-                const MHWRender::DisplayStatus displayStatus) const;
+        HdReprSelector GetReprSelectorForDisplayStyle(
+                unsigned int displayStyle) const;
 
-        /// Get a set of render params from the shape adapter's current state.
+        /// Get the render params for the shape adapter's current state.
+        const PxrMayaHdRenderParams& GetRenderParams() const {
+            return _renderParams;
+        }
+
+        /// Get the rprim collection for the given repr.
         ///
-        /// Sets \p drawShape and \p drawBoundingBox depending on whether shape
-        /// and/or bounding box rendering is indicated from the state.
-        MAYAUSD_CORE_PUBLIC
-        virtual PxrMayaHdRenderParams GetRenderParams(
-                bool* drawShape,
-                bool* drawBoundingBox) const;
+        /// These collections are created when the shape adapter's MDagPath is
+        /// set to a valid Maya shape.
+        ///
+        /// Returns an empty collection if there is no collection for the given
+        /// repr.
+        const HdRprimCollection& GetRprimCollection(
+                const HdReprSelector& repr) const {
+            const auto& iter = _rprimCollectionMap.find(repr);
+            if (iter != _rprimCollectionMap.cend()) {
+                return iter->second;
+            }
 
-        MAYAUSD_CORE_PUBLIC
-        virtual const HdRprimCollection& GetRprimCollection() const;
+            static const HdRprimCollection emptyCollection;
+            return emptyCollection;
+        }
 
-        /// Retrieves the render tags for this shape.  I.e. which
-        /// prim purposes should be drawn (such as geomerty, proxy, guides
-        /// and/or render).
-        /// This function just returns the _renderTags attribute and it
-        /// is expected each subclass update the attribute in _Sync() or
-        /// overrides this function if it needs special processing.
-        MAYAUSD_CORE_PUBLIC
-        virtual const TfTokenVector& GetRenderTags() const;
+        /// Get the ID of the render task for the collection of the given repr.
+        ///
+        /// These render task IDs are created when the shape adapter's MDagPath
+        /// is set to a valid Maya shape.
+        ///
+        /// Returns an empty SdfPath if there is no render task ID for the
+        /// given repr.
+        const SdfPath& GetRenderTaskId(const HdReprSelector& repr) const {
+            const auto& iter = _renderTaskIdMap.find(repr);
+            if (iter != _renderTaskIdMap.cend()) {
+                return iter->second;
+            }
 
+            static const SdfPath emptyTaskId;
+            return emptyTaskId;
+        }
 
-        MAYAUSD_CORE_PUBLIC
-        virtual const GfMatrix4d& GetRootXform() const;
+        /// Retrieves the render tags for this shape (i.e. which prim purposes
+        /// should be drawn, such as geometry, proxy, guide and/or render).
+        ///
+        /// This function just returns the _renderTags attribute and it is
+        /// expected that subclasses update the attribute in _Sync().
+        const TfTokenVector& GetRenderTags() const {
+            return _renderTags;
+        }
 
-        MAYAUSD_CORE_PUBLIC
-        virtual void SetRootXform(const GfMatrix4d& transform);
+        const GfMatrix4d& GetRootXform() const {
+            return _rootXform;
+        }
 
-        MAYAUSD_CORE_PUBLIC
-        virtual const SdfPath& GetDelegateID() const;
+        /// Sets the root transform for the shape adapter.
+        ///
+        /// This function is virtual in case the shape adapter needs to update
+        /// other state in response to a change in the root transform (e.g.
+        /// updating an HdSceneDelegate).
+        virtual void SetRootXform(const GfMatrix4d& transform) {
+            _rootXform = transform;
+        }
 
-        MAYAUSD_CORE_PUBLIC
-        virtual const MDagPath& GetDagPath() const;
+        const SdfPath& GetDelegateID() const {
+            return _delegateId;
+        }
+
+        const MDagPath& GetDagPath() const {
+            return _shapeDagPath;
+        }
 
         /// Get whether this shape adapter is for use with Viewport 2.0.
         ///
@@ -227,19 +265,31 @@ class PxrMayaHdShapeAdapter
                 const unsigned int displayStyle,
                 const MHWRender::DisplayStatus displayStatus) = 0;
 
-        /// Helper for computing the name of the shape's HdRprimCollection.
+        /// Sets the shape adapter's DAG path.
+        ///
+        /// This re-computes the "identifier" for the shape, which is used to
+        /// compute the names of the shape's HdRprimCollections. The batch
+        /// renderer will create a render task for each of the shape's
+        /// HdRprimCollections, and those render tasks are identified by an
+        /// SdfPath constructed using the collection's name. We therefore need
+        /// the collections to have names that are unique to the shape they
+        /// represent and also sanitized for use in SdfPaths.
+        ///
+        /// The identifier will be a TfToken that is unique to the shape and is
+        /// a valid SdfPath identifier, or an empty TfToken if there is an
+        /// error, which can be detected from the returned MStatus.
+        MAYAUSD_CORE_PUBLIC
+        MStatus _SetDagPath(const MDagPath& dagPath);
+
+        /// Mark the render tasks for this shape dirty.
         ///
         /// The batch renderer currently creates a render task for each shape's
-        /// HdRprimCollection, and those render tasks are identified by an
-        /// SdfPath constructed using the collection's name. We therefore need
-        /// the collection to have a name that is unique to the shape it
-        /// represents and also sanitized for use in SdfPaths.
-        ///
-        /// Returns a TfToken collection name that is unique to the shape and
-        /// is a valid SdfPath identifier, or an empty TfToken is there is an
-        /// error.
+        /// HdRprimCollection, but it has no knowledge of when the collection
+        /// is changed, for example. This method should be called to notify the
+        /// batch renderer when such a change is made.
         MAYAUSD_CORE_PUBLIC
-        virtual TfToken _GetRprimCollectionName() const;
+        void _MarkRenderTasksDirty(
+                HdDirtyBits dirtyBits = HdChangeTracker::AllDirty);
 
         /// Helper for getting the wireframe color of the shape.
         ///
@@ -249,18 +299,26 @@ class PxrMayaHdShapeAdapter
         /// access the soft selection info.
         ///
         /// Returns true if the wireframe color should be used, that is if the
-        /// object and/or its component(s) are involved in a selection, or if
-        /// the displayStyle indicates that a wireframe style is being drawn
-        /// (either kWireFrame or kBoundingBox). Otherwise returns false.
+        /// object and/or its component(s) are involved in a selection.
+        /// Otherwise returns false.
         ///
-        /// The wireframe color will always be returned in \p mayaWireColor (if
-        /// it is not nullptr) in case the caller wants to use other criteria
-        /// for determining whether to use it.
+        /// Note that we do not factor in the viewport's displayStyle, which
+        /// may indicate that a wireframe style is being drawn (either
+        /// kWireFrame or kBoundingBox). The displayStyle can be changed
+        /// without triggering a re-Sync(), so we want to make sure that shape
+        /// adapters don't inadvertently "bake in" whether to use the wireframe
+        /// into their render params based on it. We only want to know whether
+        /// we need to use the wireframe for a reason *other* than the
+        /// displayStyle.
+        ///
+        /// The wireframe color will always be returned in \p wireframeColor
+        /// (if it is not nullptr) in case the caller wants to use other
+        /// criteria for determining whether to use it (e.g. for bounding
+        /// boxes).
         static bool _GetWireframeColor(
-                const unsigned int displayStyle,
-                const MHWRender::DisplayStatus displayStatus,
+                MHWRender::DisplayStatus displayStatus,
                 const MDagPath& shapeDagPath,
-                MColor* mayaWireColor);
+                GfVec4f* wireframeColor);
 
         /// Helper for computing the viewport visibility of the shape.
         ///
@@ -283,18 +341,46 @@ class PxrMayaHdShapeAdapter
         MAYAUSD_CORE_PUBLIC
         virtual ~PxrMayaHdShapeAdapter();
 
-        MDagPath _shapeDagPath;
+        TfToken _shapeIdentifier;
+        SdfPath _delegateId;
 
         PxrMayaHdRenderParams _renderParams;
-        bool _drawShape;
-        bool _drawBoundingBox;
 
-        HdRprimCollection _rprimCollection;
-        TfTokenVector     _renderTags;
+        struct _ReprHashFunctor {
+            size_t operator()(const HdReprSelector& repr) const {
+                // Since we currently only use the refinedToken of
+                // HdReprSelector, we only need to consider that one token when
+                // hashing.
+                return repr[0u].Hash();
+            }
+        };
+
+        // Mapping of HdReprSelector to the rprim collection for that selector.
+        using _RprimCollectionMap =
+            std::unordered_map<
+                const HdReprSelector,
+                const HdRprimCollection,
+                _ReprHashFunctor>;
+        _RprimCollectionMap _rprimCollectionMap;
+
+        // Mapping of HdReprSelector to the ID of the render task for the
+        // collection for that selector.
+        using _RenderTaskIdMap =
+            std::unordered_map<
+                const HdReprSelector,
+                const SdfPath,
+                _ReprHashFunctor>;
+        _RenderTaskIdMap _renderTaskIdMap;
+
+        TfTokenVector _renderTags;
 
         GfMatrix4d _rootXform;
 
         const bool _isViewport2;
+
+    private:
+
+        MDagPath _shapeDagPath;
 };
 
 

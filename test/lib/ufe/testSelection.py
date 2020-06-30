@@ -57,7 +57,10 @@ class SelectTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    def testSelection(self):
+    def runTestSelection(self, selectCmd):
+        '''Run the replace selection test, using the argument command to
+        replace the selection with a single scene item.'''
+
         # Create multiple scene items.  We will alternate between selecting a
         # Maya item and a USD item, 3 items each data model, one item at a
         # time, so we select 6 different items, one at a time.
@@ -87,9 +90,7 @@ class SelectTestCase(unittest.TestCase):
 
         # Select all items in turn.
         for item in items:
-            sn = ufe.Selection()
-            sn.append(item)
-            ufeSelectCmd.replaceWith(sn)
+            selectCmd(item)
 
         # Item in the selection should be the last item in our list.
         self.assertEqual(len(globalSn), 1)
@@ -118,3 +119,26 @@ class SelectTestCase(unittest.TestCase):
             cmds.redo()
             self.assertEqual(len(globalSn), 1)
             self.assertEqual(snFront(globalSn), i)
+
+    def testUfeSelect(self):
+        def selectCmd(item):
+            sn = ufe.Selection()
+            sn.append(item)
+            ufeSelectCmd.replaceWith(sn)
+        self.runTestSelection(selectCmd)
+
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 116, 'Requires Maya fixes only available in Maya Preview Release 116 or later.') 
+    def testMayaSelect(self):
+        # At time of writing (17-May-2020), Maya select command does not
+        # accept UFE path strings.  Use Maya select for Maya scene items,
+        # and UFE select for non-Maya scene items.
+        def selectCmd(item):
+            if item.runTimeId() == 1:
+                # Single path segment.  Simply pop the |world head of path.
+                p = str(item.path().popHead())
+                cmds.select(p)
+            else:
+                sn = ufe.Selection()
+                sn.append(item)
+                ufeSelectCmd.replaceWith(sn)
+        self.runTestSelection(selectCmd)

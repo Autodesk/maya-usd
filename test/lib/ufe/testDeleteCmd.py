@@ -190,6 +190,8 @@ class DeleteCmdTestCase(unittest.TestCase):
         ball34PathString = ufe.PathString.string(ball34Path)
         self.assertEqual(
             ball34PathString,
+            "|transform1|proxyShape1,/Room_set/Props/Ball_34" if \
+            mayaUtils.previewReleaseVersion() >= 116 else \
             "|world|transform1|proxyShape1,/Room_set/Props/Ball_34")
 
         # Test that "|world" prefix is optional for multi-segment paths.

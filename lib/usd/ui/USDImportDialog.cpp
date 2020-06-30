@@ -67,7 +67,6 @@ USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* 
 	fProxyModel->setDynamicSortFilter(false);
 	fProxyModel->setFilterCaseSensitivity(Qt::CaseSensitivity::CaseInsensitive);
 	fUI->treeView->setModel(fProxyModel.get());
-	fUI->treeView->expandToDepth(3);
 	fUI->treeView->setTreePosition(TreeModel::kTreeColumn_Name);
 	fUI->treeView->setAlternatingRowColors(true);
 	fUI->treeView->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -84,6 +83,11 @@ USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* 
 
 	// Must be done AFTER we set our item delegate
 	fTreeModel->openPersistentEditors(fUI->treeView, QModelIndex());
+
+	// This request to expand the tree to a default depth of 3 should come after the creation  
+	// of the editors since it can trigger calls to things like sizeHint before we've put any of
+	// the variant set UI in place.
+	fUI->treeView->expandToDepth(3);
 
 	// Set some initial widths for the tree view columns.
 	const int kLoadWidth = mayaQtUtil.dpiScale(25);

@@ -239,21 +239,7 @@ find_program(MAYA_EXECUTABLE
         "Maya's executable path"
 )
 
-find_program(MAYA_PY_EXECUTABLE
-        mayapy
-    HINTS
-        "${MAYA_LOCATION}"
-        "$ENV{MAYA_LOCATION}"
-        "${MAYA_BASE_DIR}"
-    PATH_SUFFIXES
-        Maya.app/Contents/bin/
-        bin/
-    DOC
-        "Maya's Python executable path"
-)
-
 if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MTypes.h")
-
     # Tease the MAYA_API_VERSION numbers from the lib headers
     file(STRINGS ${MAYA_INCLUDE_DIR}/maya/MTypes.h TMP REGEX "#define MAYA_API_VERSION.*$")
     string(REGEX MATCHALL "[0-9]+" MAYA_API_VERSION ${TMP})
@@ -265,8 +251,41 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MTypes.h")
     else()
         string(SUBSTRING ${MAYA_API_VERSION} "0" "4" MAYA_APP_VERSION)
     endif()
-
 endif()
+
+# swtich between mayapy and mayapy2
+set(mayapy_exe mayapy)
+if(${MAYA_APP_VERSION} STRGREATER_EQUAL "2021")
+    # check to see if we have a mayapy2 executable
+    find_program(MAYA_PY_EXECUTABLE2
+            mayapy2
+        HINTS
+            "${MAYA_LOCATION}"
+            "$ENV{MAYA_LOCATION}"
+            "${MAYA_BASE_DIR}"
+        PATH_SUFFIXES
+            Maya.app/Contents/bin/
+            bin/
+        DOC
+            "Maya's Python executable path"
+    )
+    if(NOT BUILD_WITH_PYTHON_3 AND MAYA_PY_EXECUTABLE2)
+        set(mayapy_exe mayapy2)
+    endif()
+endif()
+
+find_program(MAYA_PY_EXECUTABLE
+        ${mayapy_exe}
+    HINTS
+        "${MAYA_LOCATION}"
+        "$ENV{MAYA_LOCATION}"
+        "${MAYA_BASE_DIR}"
+    PATH_SUFFIXES
+        Maya.app/Contents/bin/
+        bin/
+    DOC
+        "Maya's Python executable path"
+)
 
 # handle the QUIETLY and REQUIRED arguments and set MAYA_FOUND to TRUE if
 # all listed variables are TRUE

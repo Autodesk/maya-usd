@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from future.utils import iteritems
+
 from pxr import UsdMaya
 
 from pxr import Tf
@@ -46,7 +48,7 @@ class testProxyShapeDuplicatePerformance(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         statsOutputLines = []
-        for profileScopeName, elapsedTime in cls._profileScopeMetrics.iteritems():
+        for profileScopeName, elapsedTime in iteritems(cls._profileScopeMetrics):
             statsDict = {
                 'profile': profileScopeName,
                 'metric': 'time',

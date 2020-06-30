@@ -36,6 +36,13 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+// MRenderItem supports primitive type switch on these Maya versions.
+#if ((MAYA_API_VERSION >= 20200100) || \
+    ((MAYA_API_VERSION >= 20190300) && (MAYA_API_VERSION < 20200000)) || \
+    ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000)))
+#define MAYA_ALLOW_PRIMITIVE_TYPE_SWITCH
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -548,6 +555,21 @@ void HdVP2BasisCurves::Sync(
         return;
     }
 
+    // We don't update the repr if it is hidden by the render tags (purpose)
+    // of the ProxyRenderDelegate. In additional, we need to hide any already
+    // existing render items because they should not be drawn.
+    auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    ProxyRenderDelegate& drawScene = param->GetDrawScene();
+    if (!drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()))) {
+        _HideAllDrawItems(reprToken);
+        *dirtyBits &= ~( HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+         | HdChangeTracker::DirtyVisibility
+#endif
+          );
+        return;
+    }
+
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L2, _rprimId.asChar(), "HdVP2BasisCurves::Sync");
 
@@ -632,7 +654,11 @@ void HdVP2BasisCurves::Sync(
         _sharedData.visible = delegate->GetVisible(id);
     }
 
-    if (*dirtyBits & HdChangeTracker::DirtyRenderTag) {
+    if (*dirtyBits & (HdChangeTracker::DirtyRenderTag
+#ifdef ENABLE_RENDERTAG_VISIBILITY_WORKAROUND
+        |HdChangeTracker::DirtyVisibility
+#endif
+    )) {
         _curvesSharedData._renderTag = delegate->GetRenderTag(id);
     }
 
@@ -1101,6 +1127,26 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 }
             }
             else if (auto state = drawScene.GetPrimSelectionState(id)) {
+#if USD_VERSION_NUM <= 2005
+                // In 20.05 and older GetPrimSelectionState may have duplicate entries
+                // in instanceIndices, which will cause Maya to draw that instance multiple
+                // times. Remove the duplicates here to avoid that problem.
+                std::vector<bool> selectedIndices;
+                selectedIndices.resize(instanceCount); // bool default ctor sets the value to false
+                for (const auto& indexArray : state->instanceIndices) {   
+                    for (const auto index : indexArray) {
+                        selectedIndices[index] = true;
+                    }
+                }
+                for (unsigned int index=0; index<instanceCount; index++)
+                {
+                    if (!selectedIndices[index])
+                        continue;
+                    transforms[index].Get(instanceMatrix.matrix);
+                    instanceMatrix = worldMatrix * instanceMatrix;
+                    stateToCommit._instanceTransforms.append(instanceMatrix);
+                }
+#else
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
                         transforms[index].Get(instanceMatrix.matrix);
@@ -1108,6 +1154,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
                         stateToCommit._instanceTransforms.append(instanceMatrix);
                     }
                 }
+#endif
             }
         }
         else {
@@ -1628,6 +1675,37 @@ HdDirtyBits HdVP2BasisCurves::GetInitialDirtyBitsMask() const
         HdChangeTracker::DirtyRenderTag;
 
     return bits;
+}
+
+void HdVP2BasisCurves::_HideAllDrawItems(const TfToken& reprToken) {
+    HdReprSharedPtr const& curRepr = _GetRepr(reprToken);
+    if (!curRepr) {
+        return;
+    }
+
+    _BasisCurvesReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
+
+    // For each relevant draw item, update dirty buffer sources.
+    int drawItemIndex = 0;
+    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
+        const HdBasisCurvesReprDesc& desc = reprDescs[descIdx];
+        if (desc.geomStyle == HdBasisCurvesGeomStyleInvalid) {
+            continue;
+        }
+
+        auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
+        if (!drawItem)
+            continue;
+        MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
+        if (!renderItem)
+            continue;
+
+        drawItem->GetRenderItemData()._enabled = false;
+
+        _delegate->GetVP2ResourceRegistry().EnqueueCommit([renderItem]() {
+            renderItem->enable(false);
+        });
+    }
 }
 
 /*! \brief  Update _primvarSourceMap, our local cache of raw primvar data.

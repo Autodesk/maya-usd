@@ -47,6 +47,8 @@ def PrintError(error):
         traceback.print_exc()
     print("ERROR:", error)
 
+def Python3():
+    return sys.version_info.major == 3
 ############################################################
 def Windows():
     return platform.system() == "Windows"
@@ -285,19 +287,15 @@ def RunCMake(context, extraArgs=None, stages=None):
 def RunCTest(context, extraArgs=None):
     buildDir = context.buildDir
     variant = BuildVariant(context)
-    #TODO we can't currently run tests in parallel, something to revisit.
-    numJobs = 1
 
     with CurrentWorkingDirectory(buildDir):
         Run(context,
             'ctest '
             '--output-on-failure ' 
             '--timeout 300 '
-            '-j {numJobs} '
             '-C {variant} '
             '{extraArgs} '
-            .format(numJobs=numJobs,
-                    variant=variant,
+            .format(variant=variant,
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
 
 def RunMakeZipArchive(context):
@@ -560,6 +558,7 @@ if __name__ == "__main__":
       Build directory           {buildDir}
       Install directory         {instDir}
       Variant                   {buildVariant}
+      Python 3:                 {enablePython3}
       Python Debug              {debugPython}
       CMake generator           {cmakeGenerator}"""
 
@@ -590,6 +589,7 @@ if __name__ == "__main__":
         ctestArgs=context.ctestArgs,
         buildVariant=BuildVariant(context),
         debugPython=("On" if context.debugPython else "Off"),
+        enablePython3=("On" if Python3() else "Off"),
         cmakeGenerator=("Default" if not context.cmakeGenerator
                         else context.cmakeGenerator)
     )

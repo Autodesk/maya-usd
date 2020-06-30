@@ -62,6 +62,7 @@
 #include <pxr/base/vt/types.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/hd/changeTracker.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/imaging/hd/task.h>
@@ -160,8 +161,7 @@ UsdMayaGLBatchRenderer::AddShapeAdapter(PxrMayaHdShapeAdapter* shapeAdapter)
         _shapeAdapterBuckets :
         _legacyShapeAdapterBuckets;
 
-    const PxrMayaHdRenderParams renderParams =
-        shapeAdapter->GetRenderParams(nullptr, nullptr);
+    const PxrMayaHdRenderParams& renderParams = shapeAdapter->GetRenderParams();
     const size_t renderParamsHash = renderParams.Hash();
 
     TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_BUCKETING).Msg(
@@ -363,7 +363,8 @@ UsdMayaGLBatchRenderer::PopulateCustomPrimFilter(
     // Only update the collection and mark it dirty if the root paths have
     // actually changed. This greatly affects performance.
     PxrMayaHdShapeAdapter* adapter = iter->second;
-    const SdfPathVector& roots = adapter->GetRprimCollection().GetRootPaths();
+    const HdReprSelector repr = collection.GetReprSelector();
+    const SdfPathVector& roots = adapter->GetRprimCollection(repr).GetRootPaths();
     if (collection.GetRootPaths() != roots) {
         collection.SetRootPaths(roots);
         changeTracker.MarkCollectionDirty(collection.GetName());
@@ -608,46 +609,26 @@ UsdMayaGLBatchRenderer::Draw(const MDrawRequest& request, M3dView& view)
 
     const PxrMayaHdUserData* hdUserData =
         static_cast<const PxrMayaHdUserData*>(drawData.geometry());
-    if (!hdUserData || (!hdUserData->drawShape && !hdUserData->boundingBox)) {
-        // Bail out as soon as possible if there's nothing to be drawn.
+    if (!hdUserData) {
         return;
     }
+
+    GfMatrix4d worldToViewMatrix;
+    _GetWorldToViewMatrix(view, &worldToViewMatrix);
 
     MMatrix projectionMat;
     view.projectionMatrix(projectionMat);
     const GfMatrix4d projectionMatrix(projectionMat.matrix);
 
-    if (hdUserData->boundingBox) {
-        MMatrix modelViewMat;
-        view.modelViewMatrix(modelViewMat);
+    GfVec4d viewport;
+    _GetViewport(view, &viewport);
 
-        // For the legacy viewport, apply a framebuffer gamma correction when
-        // drawing bounding boxes, just like we do when drawing geometry via
-        // Hydra.
-        glEnable(GL_FRAMEBUFFER_SRGB_EXT);
-
-        px_vp20Utils::RenderBoundingBox(*(hdUserData->boundingBox),
-                                        *(hdUserData->wireframeColor),
-                                        modelViewMat,
-                                        projectionMat);
-
-        glDisable(GL_FRAMEBUFFER_SRGB_EXT);
-    }
-
-    if (hdUserData->drawShape) {
-        GfMatrix4d worldToViewMatrix;
-        _GetWorldToViewMatrix(view, &worldToViewMatrix);
-
-        GfVec4d viewport;
-        _GetViewport(view, &viewport);
-
-        _RenderBatches(
-                /* vp2Context */ nullptr,
-                &view,
-                worldToViewMatrix,
-                projectionMatrix,
-                viewport);
-    }
+    _RenderBatches(
+            /* vp2Context */ nullptr,
+            &view,
+            worldToViewMatrix,
+            projectionMatrix,
+            viewport);
 
     // Clean up the user data.
     delete hdUserData;
@@ -669,8 +650,121 @@ UsdMayaGLBatchRenderer::Draw(
 
     const PxrMayaHdUserData* hdUserData =
         dynamic_cast<const PxrMayaHdUserData*>(userData);
-    if (!hdUserData || (!hdUserData->drawShape && !hdUserData->boundingBox)) {
-        // Bail out as soon as possible if there's nothing to be drawn.
+    if (!hdUserData) {
+        return;
+    }
+
+    const MHWRender::MRenderer* theRenderer =
+        MHWRender::MRenderer::theRenderer();
+    if (!theRenderer || !theRenderer->drawAPIIsOpenGL()) {
+        return;
+    }
+
+    // Check whether this draw call is for a selection pass. If it is, we do
+    // *not* actually perform any drawing, but instead just mark a selection as
+    // pending so we know to re-compute selection when the next pick attempt is
+    // made.
+    // Note that Draw() calls for contexts with the "selectionPass" semantic
+    // are only made from draw overrides that do *not* implement user selection
+    // (i.e. those that do not override, or return false from,
+    // wantUserSelection()). The draw override for pxrHdImagingShape will
+    // likely be the only one of these where that is the case.
+    const MHWRender::MPassContext& passContext = context.getPassContext();
+    const MStringArray& passSemantics = passContext.passSemantics();
+
+    for (unsigned int i = 0u; i < passSemantics.length(); ++i) {
+        if (passSemantics[i] == MHWRender::MPassContext::kSelectionPassSemantic) {
+            _UpdateIsSelectionPending(true);
+            return;
+        }
+    }
+
+    GfMatrix4d worldToViewMatrix;
+    _GetWorldToViewMatrix(context, &worldToViewMatrix);
+
+    MStatus status;
+
+    const MMatrix projectionMat =
+        context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
+    const GfMatrix4d projectionMatrix(projectionMat.matrix);
+
+    GfVec4d viewport;
+    _GetViewport(context, &viewport);
+
+    M3dView view;
+    const bool hasView =
+        px_vp20Utils::GetViewFromDrawContext(context, view);
+
+    _RenderBatches(
+            &context,
+            hasView ? &view : nullptr,
+            worldToViewMatrix,
+            projectionMatrix,
+            viewport);
+}
+
+void
+UsdMayaGLBatchRenderer::DrawBoundingBox(
+        const MDrawRequest& request,
+        M3dView& view)
+{
+    // Legacy viewport implementation.
+
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer DrawBoundingBox() (Legacy Viewport)");
+
+    MDrawData drawData = request.drawData();
+
+    const PxrMayaHdUserData* hdUserData =
+        static_cast<const PxrMayaHdUserData*>(drawData.geometry());
+    if (!hdUserData || !hdUserData->boundingBox) {
+        return;
+    }
+
+    MMatrix modelViewMat;
+    view.modelViewMatrix(modelViewMat);
+
+    MMatrix projectionMat;
+    view.projectionMatrix(projectionMat);
+    const GfMatrix4d projectionMatrix(projectionMat.matrix);
+
+    // For the legacy viewport, apply a framebuffer gamma correction when
+    // drawing bounding boxes, just like we do when drawing geometry via Hydra.
+    glEnable(GL_FRAMEBUFFER_SRGB_EXT);
+
+    px_vp20Utils::RenderBoundingBox(
+        *(hdUserData->boundingBox),
+        *(hdUserData->wireframeColor),
+        modelViewMat,
+        projectionMat);
+
+    glDisable(GL_FRAMEBUFFER_SRGB_EXT);
+
+    // Clean up the user data.
+    delete hdUserData;
+}
+
+void
+UsdMayaGLBatchRenderer::DrawBoundingBox(
+        const MHWRender::MDrawContext& context,
+        const MUserData* userData)
+{
+    // Viewport 2.0 implementation.
+
+    TRACE_FUNCTION();
+
+    MProfilingScope profilingScope(
+        ProfilerCategory,
+        MProfiler::kColorC_L2,
+        "Batch Renderer DrawBoundingBox() (Viewport 2.0)");
+
+    const PxrMayaHdUserData* hdUserData =
+        dynamic_cast<const PxrMayaHdUserData*>(userData);
+    if (!hdUserData || !hdUserData->boundingBox) {
         return;
     }
 
@@ -682,57 +776,18 @@ UsdMayaGLBatchRenderer::Draw(
 
     MStatus status;
 
+    const MMatrix worldViewMat =
+        context.getMatrix(MHWRender::MFrameContext::kWorldViewMtx, &status);
+
     const MMatrix projectionMat =
         context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
     const GfMatrix4d projectionMatrix(projectionMat.matrix);
 
-    if (hdUserData->boundingBox) {
-        const MMatrix worldViewMat =
-            context.getMatrix(MHWRender::MFrameContext::kWorldViewMtx, &status);
-
-        px_vp20Utils::RenderBoundingBox(*(hdUserData->boundingBox),
-                                        *(hdUserData->wireframeColor),
-                                        worldViewMat,
-                                        projectionMat);
-    }
-
-    if (hdUserData->drawShape) {
-        // Check whether this draw call is for a selection pass. If it is, we
-        // do *not* actually perform any drawing, but instead just mark a
-        // selection as pending so we know to re-compute selection when the
-        // next pick attempt is made.
-        // Note that Draw() calls for contexts with the "selectionPass"
-        // semantic are only made from draw overrides that do *not* implement
-        // user selection (i.e. those that do not override, or return false
-        // from, wantUserSelection()). The draw override for pxrHdImagingShape
-        // will likely be the only one of these where that is the case.
-        const MHWRender::MPassContext& passContext = context.getPassContext();
-        const MStringArray& passSemantics = passContext.passSemantics();
-
-        for (unsigned int i = 0u; i < passSemantics.length(); ++i) {
-            if (passSemantics[i] == MHWRender::MPassContext::kSelectionPassSemantic) {
-                _UpdateIsSelectionPending(true);
-                return;
-            }
-        }
-
-        GfMatrix4d worldToViewMatrix;
-        _GetWorldToViewMatrix(context, &worldToViewMatrix);
-
-        GfVec4d viewport;
-        _GetViewport(context, &viewport);
-
-        M3dView view;
-        const bool hasView =
-            px_vp20Utils::GetViewFromDrawContext(context, view);
-
-        _RenderBatches(
-                &context,
-                hasView ? &view : nullptr,
-                worldToViewMatrix,
-                projectionMatrix,
-                viewport);
-    }
+    px_vp20Utils::RenderBoundingBox(
+        *(hdUserData->boundingBox),
+        *(hdUserData->wireframeColor),
+        worldViewMat,
+        projectionMat);
 }
 
 GfVec2i
@@ -1030,16 +1085,23 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
                 continue;
             }
 
+            // XXX: The full viewport-based collections use the "refined" repr,
+            // so we use the same repr here if we're doing adapter-by-adapter
+            // depth selection. Ideally though, this would be whatever repr was
+            // most recently drawn for the viewport in which the selection is
+            // taking place.
+            const HdReprSelector repr(HdReprTokens->refined);
             const HdRprimCollection &rprimCollection =
-                    shapeAdapter->GetRprimCollection();
+                shapeAdapter->GetRprimCollection(repr);
 
             const TfTokenVector &renderTags = shapeAdapter->GetRenderTags();
 
             primFilters.push_back(
-                    PxrMayaHdPrimFilter {
-                        rprimCollection,
-                        renderTags
-                    });
+                PxrMayaHdPrimFilter {
+                    shapeAdapter,
+                    rprimCollection,
+                    renderTags
+                });
         }
     }
 
@@ -1051,6 +1113,7 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
 
         primFilters.push_back(
             PxrMayaHdPrimFilter {
+                nullptr,
                 collection,
                 TfTokenVector{
 #if USD_VERSION_NUM >= 1911
@@ -1241,6 +1304,7 @@ UsdMayaGLBatchRenderer::_Render(
         const GfMatrix4d& worldToViewMatrix,
         const GfMatrix4d& projectionMatrix,
         const GfVec4d& viewport,
+        unsigned int displayStyle,
         const std::vector<_RenderItem>& items)
 {
     TRACE_FUNCTION();
@@ -1300,7 +1364,11 @@ UsdMayaGLBatchRenderer::_Render(
             primFilters.size());
 
         HdTaskSharedPtrVector renderTasks =
-            _taskDelegate->GetRenderTasks(paramsHash, params, primFilters);
+            _taskDelegate->GetRenderTasks(
+                paramsHash,
+                params,
+                displayStyle,
+                primFilters);
         tasks.insert(tasks.end(), renderTasks.begin(), renderTasks.end());
     }
 
@@ -1380,6 +1448,28 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     // re-populate it.
     _softSelectHelper.Reset();
 
+    // Assume shaded displayStyle, but we *should* be able to pull it from
+    // either the vp2Context for Viewport 2.0 or the M3dView for the legacy
+    // viewport.
+    unsigned int displayStyle =
+        MHWRender::MFrameContext::DisplayStyle::kGouraudShaded;
+
+    if (vp2Context) {
+        displayStyle = vp2Context->getDisplayStyle();
+    } else if (view3d) {
+        const M3dView::DisplayStyle legacyDisplayStyle =
+            view3d->displayStyle();
+        displayStyle =
+            px_LegacyViewportUtils::GetMFrameContextDisplayStyle(
+                legacyDisplayStyle);
+    }
+
+    // Since we'll be populating the prim filters with shape adapters, we don't
+    // need to specify collections or render tags on them, so just use empty
+    // ones.
+    static const HdRprimCollection emptyCollection;
+    static const TfTokenVector emptyRenderTags;
+
     bool itemsVisible = false;
     std::vector<_RenderItem> items;
     for (const auto& iter : bucketsMap) {
@@ -1392,8 +1482,9 @@ UsdMayaGLBatchRenderer::_RenderBatches(
             itemsVisible |= shapeAdapter->IsVisible();
 
             primFilters.push_back(PxrMayaHdPrimFilter {
-                shapeAdapter->GetRprimCollection(),
-                shapeAdapter->GetRenderTags()
+                shapeAdapter,
+                emptyCollection,
+                emptyRenderTags
             });
         }
 
@@ -1438,6 +1529,7 @@ UsdMayaGLBatchRenderer::_RenderBatches(
     _Render(worldToViewMatrix,
             projectionMatrix,
             viewport,
+            displayStyle,
             items);
 
     // Viewport 2 may be rendering in multiple passes, and we want to make sure

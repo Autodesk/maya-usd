@@ -297,7 +297,6 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/__i
 execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py)
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py
-        ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.pyc
     DESTINATION
         ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}
 )

@@ -23,8 +23,8 @@ from maya import cmds
 from maya import standalone
 from maya import OpenMaya as OM
 
+import sys
 import unittest
-
 
 class testUsdMayaDiagnosticDelegate(unittest.TestCase):
     @classmethod
@@ -39,6 +39,9 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
         self.messageLog = []
         self.callback = None
         cmds.loadPlugin('pxrUsd', quiet=True)
+        # assertCountEqual in python 3 is equivalent to assertItemsEqual
+        if sys.version_info[0] >= 3:
+            self.assertItemsEqual = self.assertCountEqual
 
     def _OnCommandOutput(self, message, messageType, _):
         if (messageType == OM.MCommandMessage.kInfo
@@ -112,10 +115,10 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
             Tf.Warn("spooky warning")
             Tf.Status("informative status")
 
-            for i in xrange(5):
+            for i in range(5):
                 Tf.Status("repeated status %d" % i)
 
-            for i in xrange(3):
+            for i in range(3):
                 Tf.Warn("spam warning %d" % i)
 
             try:
@@ -144,7 +147,7 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
 
             cmds.unloadPlugin('pxrUsd', force=True)
 
-            for i in xrange(5):
+            for i in range(5):
                 Tf.Status("no delegate, this will be lost %d" % i)
         log = self._StopRecording()
 

@@ -208,24 +208,9 @@ UsdMayaProxyDrawOverride::prepareForDraw(
 
     UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(&_shapeAdapter);
 
-    bool drawShape;
-    bool drawBoundingBox;
-    _shapeAdapter.GetRenderParams(&drawShape, &drawBoundingBox);
+    const MBoundingBox boundingBox = shape->boundingBox();
 
-    if (!drawBoundingBox && !drawShape) {
-        // We weren't asked to do anything.
-        return nullptr;
-    }
-
-    MBoundingBox boundingBox;
-    MBoundingBox* boundingBoxPtr = nullptr;
-    if (drawBoundingBox) {
-        // Only query for the bounding box if we're drawing it.
-        boundingBox = shape->boundingBox();
-        boundingBoxPtr = &boundingBox;
-    }
-
-    return _shapeAdapter.GetMayaUserData(oldData, boundingBoxPtr);
+    return _shapeAdapter.GetMayaUserData(oldData, &boundingBox);
 }
 
 /* virtual */
@@ -269,7 +254,7 @@ UsdMayaProxyDrawOverride::userSelect(
 
     const unsigned int displayStyle = context.getDisplayStyle();
     const MHWRender::DisplayStatus displayStatus =
-        MHWRender::MGeometryUtilities::displayStatus(_shapeAdapter._shapeDagPath);
+        MHWRender::MGeometryUtilities::displayStatus(_shapeAdapter.GetDagPath());
 
     // At this point, we expect the shape to have already been drawn and our
     // shape adapter to have been added to the batch renderer, but just in
@@ -278,7 +263,7 @@ UsdMayaProxyDrawOverride::userSelect(
     // must have already been done to have caused the shape to be drawn and
     // become eligible for selection.
     if (!_shapeAdapter.Sync(
-            _shapeAdapter._shapeDagPath, displayStyle, displayStatus)) {
+            _shapeAdapter.GetDagPath(), displayStyle, displayStatus)) {
         return false;
     }
 
@@ -314,11 +299,12 @@ UsdMayaProxyDrawOverride::draw(
         MProfiler::kColorC_L1,
         "USD Proxy Shape draw() (Viewport 2.0)");
 
-    // Note that this Draw() call is only necessary when we're drawing the
-    // bounding box, since that is not yet handled by Hydra and is instead done
-    // internally by the batch renderer on a per-shape basis. Otherwise, the
-    // pxrHdImagingShape is what will invoke Hydra to draw the shape.
-    UsdMayaGLBatchRenderer::GetInstance().Draw(context, data);
+    const unsigned int displayStyle = context.getDisplayStyle();
+    if (!px_vp20Utils::ShouldRenderBoundingBox(displayStyle)) {
+        return;
+    }
+
+    UsdMayaGLBatchRenderer::GetInstance().DrawBoundingBox(context, data);
 }
 
 

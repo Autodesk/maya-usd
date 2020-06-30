@@ -25,6 +25,7 @@ target_sources(${TARGET_NAME}
         plugin.cpp
         adskImportCommand.cpp
         adskExportCommand.cpp
+        adskListShadingModesCommand.cpp
         importTranslator.cpp
         exportTranslator.cpp
         ProxyShape.cpp
@@ -56,6 +57,7 @@ target_include_directories(${TARGET_NAME}
 target_link_libraries(${TARGET_NAME}
     PRIVATE
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
+        basePxrUsdPreviewSurface
 )
 
 if (${Qt5_FOUND})

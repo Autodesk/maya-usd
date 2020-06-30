@@ -107,8 +107,13 @@ def getMayaSelectionList():
             A list(str) containing all selected Maya items
     """
     # Remove the unicode of cmds.ls
-    return [x.encode('UTF8') for x in cmds.ls(sl=True)]
-    
+
+    # TODO: HS, June 10, 2020 investigate why x needs to be encoded
+    if sys.version_info[0] == 2:
+        return [x.encode('UTF8') for x in cmds.ls(sl=True)]
+    else:
+        return [x for x in cmds.ls(sl=True)]
+
 def openTopLayerScene():
     '''
         The test scene hierarchy is represented as :
@@ -151,13 +156,23 @@ def openTreeRefScene():
 def previewReleaseVersion():
     '''Return the Maya Preview Release version.
 
-    If the version of Maya is not a Preview Release, returns sys.maxsize (a very
-    large number).  If the environment variable
+    If the version of Maya is 2019, returns 98.
+
+    If the version of Maya is 2020, returns 110.
+
+    If the version of Maya is current and is not a Preview Release, returns
+    sys.maxsize (a very large number).  If the environment variable
     MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE is defined, return its value instead.
     '''
 
     if 'MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE' in os.environ:
         return int(os.environ['MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE'])
+
+    majorVersion = int(cmds.about(majorVersion=True))
+    if majorVersion == 2019:
+        return 98
+    elif majorVersion == 2020:
+        return 110
 
     match = prRe.match(cmds.about(v=True))
 

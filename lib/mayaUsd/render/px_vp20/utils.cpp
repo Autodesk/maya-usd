@@ -763,8 +763,8 @@ px_vp20Utils::RenderBoundingBox(
     bboxTransformMatrix.setScale(scales, MSpace::kTransform);
     return RenderWireCubes(
             { GfMatrix4f(bboxTransformMatrix.asMatrix().matrix) },
-            color, 
-            GfMatrix4d(worldViewMat.matrix), 
+            color,
+            GfMatrix4d(worldViewMat.matrix),
             GfMatrix4d(projectionMat.matrix));
 }
 
@@ -875,7 +875,7 @@ void main()
     // Populate the shader variables.
     GfMatrix4f vpMatrix(worldViewMat * projectionMat);
     GLuint vpMatrixLoc = glGetUniformLocation(renderBoundsProgramId, "vpMatrix");
-    glUniformMatrix4fv(vpMatrixLoc, 1, 
+    glUniformMatrix4fv(vpMatrixLoc, 1,
             GL_TRUE, // transpose
             vpMatrix.data());
 
@@ -891,12 +891,12 @@ void main()
     // since we're copying these directly from GfMatrix4f, we need to
     // transpose() them in the shader.
     const GLuint cubeXformLoc = glGetAttribLocation(renderBoundsProgramId, "cubeXformT");
-    glBufferData(GL_ARRAY_BUFFER, 
+    glBufferData(GL_ARRAY_BUFFER,
             sizeof(GfMatrix4f) * numCubes, cubeXforms.data(), GL_DYNAMIC_DRAW);
     for (size_t r = 0; r < 4; r++) {
         GLuint loc = cubeXformLoc + r;
         glEnableVertexAttribArray(loc);
-        glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, sizeof(GfMatrix4f), 
+        glVertexAttribPointer(loc, 4, GL_FLOAT, GL_FALSE, sizeof(GfMatrix4f),
                 (char*)(sizeof(float)*4*r));
         glVertexAttribDivisor(loc, 1);
     }

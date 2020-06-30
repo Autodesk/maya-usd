@@ -40,10 +40,21 @@
 #include <mayaUsd/base/api.h>
 
 #include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// Prim filters can be specified in one of two ways:
+///
+///     1. If a shape adapter is being used, it can be specified in the
+///        shapeAdapter field and all necessary data will be obtained by
+///        querying the shape adapter for it.
+///     2. If no shape adapter is being used, the shapeAdapter field should be
+///        set to nullptr, and a collection and set of render tags *must* be
+///        provided.
+///
 struct PxrMayaHdPrimFilter {
+    PxrMayaHdShapeAdapter* shapeAdapter;
     HdRprimCollection collection;
     TfTokenVector     renderTags;
 };
@@ -94,6 +105,7 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
         HdTaskSharedPtrVector GetRenderTasks(
                 const size_t hash,
                 const PxrMayaHdRenderParams& renderParams,
+                unsigned int displayStyle,
                 const PxrMayaHdPrimFilterVector& primFilters);
 
         MAYAUSD_CORE_PUBLIC
@@ -133,37 +145,26 @@ class PxrMayaHdSceneDelegate : public HdSceneDelegate
 
         SdfPath _shadowTaskId;
 
-        // XXX: While this is correct, that we are using
-        // hash in forming the task id, so the map is valid.
-        // It is possible for the hash to collide, so the id
-        // formed from the combination of hash and collection name is not
-        // necessarily unique.
-        struct _RenderTaskIdMapKey
-        {
-            size_t                hash;
-            TfToken               collectionName;
+        // When prim filters are populated including a shape adapter, the
+        // adapter is responsible for providing the appropriate render task ID
+        // for a given repr. When no shape adapter is given, the batch renderer
+        // manages the render task ID and constructs it using the rprim
+        // collection name. The batch renderer will ultimately instantiate the
+        // render task itself for both cases.
+        // This type maps collection names to render task IDs for tasks in the
+        // latter case where the task ID is managed by the batch renderer.
+        using _RenderTaskIdMap =
+            std::unordered_map<TfToken, SdfPath, TfToken::HashFunctor>;
 
-            struct HashFunctor {
-                size_t operator()(const  _RenderTaskIdMapKey& value) const;
-            };
+        // For render setup tasks, there is one task per unique set of render
+        // params, which are hashed to generate a key.
+        using _RenderParamTaskIdMap = std::unordered_map<size_t, SdfPath>;
 
-            bool operator==(const  _RenderTaskIdMapKey& other) const;
-        };
-
-        typedef std::unordered_map<
-                _RenderTaskIdMapKey,
-                SdfPath,
-                _RenderTaskIdMapKey::HashFunctor> _RenderTaskIdMap;
-
-        typedef std::unordered_map<size_t, SdfPath> _RenderParamTaskIdMap;
-
-
-       
         _RenderParamTaskIdMap _renderSetupTaskIdMap;
         _RenderTaskIdMap      _renderTaskIdMap;
-        _RenderParamTaskIdMap _selectionTaskIdMap;
 
-		SdfPath _pickingTaskId;
+        SdfPath _pickingTaskId;
+        SdfPath _selectionTaskId;
 
         typedef TfHashMap<TfToken, VtValue, TfToken::HashFunctor> _ValueCache;
         typedef TfHashMap<SdfPath, _ValueCache, SdfPath::Hash> _ValueCacheMap;

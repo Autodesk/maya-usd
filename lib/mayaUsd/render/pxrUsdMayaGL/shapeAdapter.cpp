@@ -15,13 +15,16 @@
 //
 #include "shapeAdapter.h"
 
+#include <string>
+#include <vector>
+
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawRequest.h>
-#include <maya/MFnDependencyNode.h>
+#include <maya/MFnDagNode.h>
 #include <maya/MFrameContext.h>
 #include <maya/MHWGeometryUtilities.h>
 #include <maya/MObject.h>
@@ -40,9 +43,13 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/hd/types.h>
+#include <pxr/imaging/hdx/tokens.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/render/px_vp20/utils_legacy.h>
 #include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
 #include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
 #include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
@@ -50,40 +57,6 @@
 #include <mayaUsd/render/pxrUsdMayaGL/userData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// Helper function that converts M3dView::DisplayStyle (legacy viewport) into
-// MHWRender::MFrameContext::DisplayStyle (Viewport 2.0).
-//
-// In the legacy viewport, the M3dView can be in exactly one displayStyle
-// whereas Viewport 2.0's displayStyle is a bitmask of potentially multiple
-// styles. To translate from the legacy viewport to Viewport 2.0, we simply
-// bitwise-OR the single legacy viewport displayStyle into an empty mask.
-static inline
-unsigned int
-_ToMFrameContextDisplayStyle(const M3dView::DisplayStyle legacyDisplayStyle)
-{
-    unsigned int displayStyle = 0u;
-
-    switch (legacyDisplayStyle) {
-        case M3dView::kBoundingBox:
-            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kBoundingBox;
-            break;
-        case M3dView::kFlatShaded:
-            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
-            break;
-        case M3dView::kGouraudShaded:
-            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kGouraudShaded;
-            break;
-        case M3dView::kWireFrame:
-            displayStyle |= MHWRender::MFrameContext::DisplayStyle::kWireFrame;
-            break;
-        case M3dView::kPoints:
-            // Not supported.
-            break;
-    }
-
-    return displayStyle;
-}
 
 // Helper function that converts M3dView::DisplayStatus (legacy viewport) into
 // MHWRender::DisplayStatus (Viewport 2.0).
@@ -110,7 +83,18 @@ _ToMHWRenderDisplayStatus(const M3dView::DisplayStatus legacyDisplayStatus)
     return MHWRender::DisplayStatus((int)legacyDisplayStatus);
 }
 
-/* virtual */
+static inline
+bool
+_IsActiveDisplayStatus(MHWRender::DisplayStatus displayStatus)
+{
+    return
+        (displayStatus == MHWRender::DisplayStatus::kActive) ||
+        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
+        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
+        (displayStatus == MHWRender::DisplayStatus::kLead);
+}
+
 bool
 PxrMayaHdShapeAdapter::Sync(
         const MDagPath& shapeDagPath,
@@ -122,7 +106,8 @@ PxrMayaHdShapeAdapter::Sync(
     UsdMayaGLBatchRenderer::GetInstance().StartBatchingFrameDiagnostics();
 
     const unsigned int displayStyle =
-        _ToMFrameContextDisplayStyle(legacyDisplayStyle);
+        px_LegacyViewportUtils::GetMFrameContextDisplayStyle(
+            legacyDisplayStyle);
     const MHWRender::DisplayStatus displayStatus =
         _ToMHWRenderDisplayStatus(legacyDisplayStatus);
 
@@ -152,7 +137,6 @@ PxrMayaHdShapeAdapter::Sync(
     return success;
 }
 
-/* virtual */
 bool
 PxrMayaHdShapeAdapter::Sync(
         const MDagPath& shapeDagPath,
@@ -214,30 +198,14 @@ PxrMayaHdShapeAdapter::GetMayaUserData(
     // Viewport 2.0 implementation (also called by legacy viewport
     // implementation).
     //
-    // Our PxrMayaHdUserData can be used to signify whether we are requesting a
-    // shape to be rendered, a bounding box, both, or neither.
-    //
     // In the Viewport 2.0 prepareForDraw() usage, any MUserData object passed
     // into the function will be deleted by Maya. In the legacy viewport usage,
     // the object gets deleted at the end of a legacy viewport Draw() call.
-
-    if (!_drawShape && !boundingBox) {
-        return nullptr;
-    }
 
     PxrMayaHdUserData* newData = dynamic_cast<PxrMayaHdUserData*>(oldData);
     if (!newData) {
         newData = new PxrMayaHdUserData();
     }
-
-    // Internally, the shape adapter keeps track of whether its shape is being
-    // drawn for managing visibility, but otherwise most Hydra-imaged shapes
-    // should not be drawing themselves. The pxrHdImagingShape will take care
-    // of batching up the drawing of all of the shapes, so we specify in the
-    // Maya user data that the shape should *not* draw by default. The
-    // pxrHdImagingShape bypasses this and sets drawShape to true.
-    // We handle this similarly in GetRenderParams() below.
-    newData->drawShape = false;
 
     if (boundingBox) {
         newData->boundingBox.reset(new MBoundingBox(*boundingBox));
@@ -250,11 +218,9 @@ PxrMayaHdShapeAdapter::GetMayaUserData(
     return newData;
 }
 
-/* virtual */
 HdReprSelector
-PxrMayaHdShapeAdapter::GetReprSelectorForDisplayState(
-        const unsigned int displayStyle,
-        const MHWRender::DisplayStatus displayStatus) const
+PxrMayaHdShapeAdapter::GetReprSelectorForDisplayStyle(
+        unsigned int displayStyle) const
 {
     HdReprSelector reprSelector;
 
@@ -272,18 +238,17 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayState(
         return reprSelector;
     }
 
+    const MHWRender::DisplayStatus displayStatus =
+        MHWRender::MGeometryUtilities::displayStatus(_shapeDagPath);
+
+    const bool isActive = _IsActiveDisplayStatus(displayStatus);
+
     const bool shadeActiveOnlyStyle =
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kShadeActiveOnly;
 
-    const bool isActive =
-        (displayStatus == MHWRender::DisplayStatus::kActive) ||
-        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
-        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
-        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
-        (displayStatus == MHWRender::DisplayStatus::kLead);
-
     const bool wireframeStyle =
-        displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame;
+        (displayStyle & MHWRender::MFrameContext::DisplayStyle::kWireFrame) ||
+        _renderParams.useWireframe;
 
     const bool flatShadedStyle =
         displayStyle & MHWRender::MFrameContext::DisplayStyle::kFlatShaded;
@@ -326,97 +291,122 @@ PxrMayaHdShapeAdapter::GetReprSelectorForDisplayState(
     return reprSelector;
 }
 
-/* virtual */
-PxrMayaHdRenderParams
-PxrMayaHdShapeAdapter::GetRenderParams(
-        bool* drawShape,
-        bool* drawBoundingBox) const
+MStatus
+PxrMayaHdShapeAdapter::_SetDagPath(const MDagPath& dagPath)
 {
-    if (drawShape) {
-        // Internally, the shape adapter keeps track of whether its shape is
-        // being drawn for managing visibility, but otherwise most Hydra-imaged
-        // shapes should not be drawing themselves. The pxrHdImagingShape will
-        // take care of batching up the drawing of all of the shapes, so for
-        // the purposes of render params, we set drawShape to false by default.
-        // The pxrHdImagingShape bypasses this and sets drawShape to true.
-        // We handle this similarly in GetMayaUserData() above.
-        *drawShape = false;
+    if (_shapeDagPath == dagPath) {
+        return MS::kSuccess;
     }
 
-    if (drawBoundingBox) {
-        *drawBoundingBox = _drawBoundingBox;
-    }
+    _shapeDagPath = dagPath;
 
-    return _renderParams;
-}
+    _shapeIdentifier = TfToken();
+    _delegateId = SdfPath();
 
-/* virtual */
-const HdRprimCollection&
-PxrMayaHdShapeAdapter::GetRprimCollection() const
-{
-    return _rprimCollection;
-}
+    _rprimCollectionMap.clear();
+    _renderTaskIdMap.clear();
 
-/* virtual */
-const TfTokenVector&
-PxrMayaHdShapeAdapter::GetRenderTags() const
-{
-    return _renderTags;
-}
-
-
-/* virtual */
-const GfMatrix4d&
-PxrMayaHdShapeAdapter::GetRootXform() const
-{
-    return _rootXform;
-}
-
-/* virtual */
-void
-PxrMayaHdShapeAdapter::SetRootXform(const GfMatrix4d& transform)
-{
-    _rootXform = transform;
-}
-
-/* virtual */
-const SdfPath&
-PxrMayaHdShapeAdapter::GetDelegateID() const
-{
-    return SdfPath::EmptyPath();
-}
-
-/* virtual */
-const MDagPath&
-PxrMayaHdShapeAdapter::GetDagPath() const
-{
-    return _shapeDagPath;
-}
-
-/* virtual */
-TfToken
-PxrMayaHdShapeAdapter::_GetRprimCollectionName() const
-{
     MStatus status;
-    const MObject shapeObj = _shapeDagPath.node(&status);
-    CHECK_MSTATUS_AND_RETURN(status, TfToken());
-    const MFnDependencyNode depNodeFn(shapeObj, &status);
-    CHECK_MSTATUS_AND_RETURN(status, TfToken());
-    const MUuid shapeUuid = depNodeFn.uuid(&status);
-    CHECK_MSTATUS_AND_RETURN(status, TfToken());
+    const bool dagPathIsValid = _shapeDagPath.isValid(&status);
+    if (status != MS::kSuccess || !dagPathIsValid) {
+        return status;
+    }
 
-    return TfToken(TfMakeValidIdentifier(shapeUuid.asString().asChar()));
+    const MFnDagNode dagNodeFn(_shapeDagPath, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    // We use the shape's UUID as a unique identifier for this shape adapter in
+    // the batch renderer's SdfPath hierarchy. Since MPxDrawOverrides may be
+    // constructed and destructed over the course of a node's lifetime (e.g. by
+    // doing 'ogs -reset'), we need an identifier tied to the node's lifetime
+    // rather than to the shape adapter's lifetime.
+    const MUuid shapeUuid = dagNodeFn.uuid(&status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    const std::string uuidString(
+        shapeUuid.asString().asChar(),
+        shapeUuid.asString().length());
+
+    _shapeIdentifier = TfToken(TfMakeValidIdentifier(uuidString));
+
+    const UsdMayaGLBatchRenderer& batchRenderer =
+        UsdMayaGLBatchRenderer::GetInstance();
+    HdRenderIndex* renderIndex = batchRenderer.GetRenderIndex();
+
+    const SdfPath delegatePrefix =
+        batchRenderer.GetDelegatePrefix(_isViewport2);
+
+    _delegateId = delegatePrefix.AppendChild(_shapeIdentifier);
+
+    // Create entries in the collection and render task ID maps for each repr
+    // we might use.
+    static const std::vector<HdReprSelector> allMayaReprs({
+        HdReprSelector(HdReprTokens->hull),
+        HdReprSelector(HdReprTokens->refined),
+        HdReprSelector(HdReprTokens->refinedWire),
+        HdReprSelector(HdReprTokens->refinedWireOnSurf),
+        HdReprSelector(HdReprTokens->wire),
+        HdReprSelector(HdReprTokens->wireOnSurf)
+    });
+
+    for (const HdReprSelector& reprSelector : allMayaReprs) {
+        const TfToken rprimCollectionName = TfToken(
+            TfStringPrintf("%s_%s",
+                _shapeIdentifier.GetText(),
+                reprSelector.GetText()));
+        _rprimCollectionMap.emplace(
+            std::make_pair(
+                reprSelector,
+                HdRprimCollection(
+                    rprimCollectionName,
+                    reprSelector,
+                    _delegateId)));
+
+        renderIndex->GetChangeTracker().AddCollection(rprimCollectionName);
+
+        // We only generate the render task ID here. We'll leave it to the
+        // batch renderer to lazily create the task in the render index when
+        // it is first needed.
+        const TfToken renderTaskName = TfToken(
+            TfStringPrintf("%s_%s",
+                HdxPrimitiveTokens->renderTask.GetText(),
+                rprimCollectionName.GetText()));
+        _renderTaskIdMap.emplace(
+            std::make_pair(
+                reprSelector,
+                _delegateId.AppendChild(renderTaskName)));
+    }
+
+    return status;
+}
+
+void
+PxrMayaHdShapeAdapter::_MarkRenderTasksDirty(HdDirtyBits dirtyBits)
+{
+    HdRenderIndex* renderIndex =
+        UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
+
+    for (const auto& iter : _renderTaskIdMap) {
+        // The render tasks represented by the IDs in this map are instantiated
+        // lazily, so check that the task exists before attempting to dirty it.
+        if (renderIndex->HasTask(iter.second)) {
+            renderIndex->GetChangeTracker().MarkTaskDirty(
+                iter.second,
+                dirtyBits);
+        }
+    }
 }
 
 /* static */
 bool
 PxrMayaHdShapeAdapter::_GetWireframeColor(
-        const unsigned int displayStyle,
-        const MHWRender::DisplayStatus displayStatus,
+        MHWRender::DisplayStatus displayStatus,
         const MDagPath& shapeDagPath,
-        MColor* mayaWireColor)
+        GfVec4f* wireframeColor)
 {
     bool useWireframeColor = false;
+
+    MColor mayaWireframeColor;
 
     // Dormant objects may be included in a soft selection.
     if (displayStatus == MHWRender::kDormant) {
@@ -424,32 +414,29 @@ PxrMayaHdShapeAdapter::_GetWireframeColor(
         if (batchRenderer.GetObjectSoftSelectEnabled()) {
             const UsdMayaGLSoftSelectHelper& softSelectHelper =
                 UsdMayaGLBatchRenderer::GetInstance().GetSoftSelectHelper();
-            useWireframeColor = softSelectHelper.GetFalloffColor(shapeDagPath,
-                                                                 mayaWireColor);
+            useWireframeColor =
+                softSelectHelper.GetFalloffColor(
+                    shapeDagPath,
+                    &mayaWireframeColor);
         }
     }
 
-    // If the object isn't included in a soft selection, just ask Maya for the
-    // wireframe color.
-    if (!useWireframeColor && mayaWireColor != nullptr) {
-        *mayaWireColor =
-            MHWRender::MGeometryUtilities::wireframeColor(shapeDagPath);
+    if (wireframeColor != nullptr) {
+        // The caller wants a color returned. If the object isn't included in a
+        // soft selection, just ask Maya for the wireframe color.
+        if (!useWireframeColor) {
+            mayaWireframeColor =
+                MHWRender::MGeometryUtilities::wireframeColor(shapeDagPath);
+        }
+
+        *wireframeColor = GfVec4f(
+            mayaWireframeColor.r,
+            mayaWireframeColor.g,
+            mayaWireframeColor.b,
+            mayaWireframeColor.a);
     }
 
-    constexpr unsigned int wireframeDisplayStyles = (
-        MHWRender::MFrameContext::DisplayStyle::kWireFrame |
-        MHWRender::MFrameContext::DisplayStyle::kBoundingBox);
-
-    const bool wireframeStyle = (displayStyle & wireframeDisplayStyles);
-
-    const bool isActive =
-        (displayStatus == MHWRender::DisplayStatus::kActive) ||
-        (displayStatus == MHWRender::DisplayStatus::kHilite) ||
-        (displayStatus == MHWRender::DisplayStatus::kActiveTemplate) ||
-        (displayStatus == MHWRender::DisplayStatus::kActiveComponent) ||
-        (displayStatus == MHWRender::DisplayStatus::kLead);
-
-    if (wireframeStyle || isActive) {
+    if (_IsActiveDisplayStatus(displayStatus)) {
         useWireframeColor = true;
     }
 
