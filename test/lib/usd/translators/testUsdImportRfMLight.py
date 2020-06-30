@@ -35,7 +35,7 @@ class testUsdImportRfMLight(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        inputPath = fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+        inputPath = fixturesUtils.readOnlySetUpClass(__file__)
         cmds.file(new=True, force=True)
 
         cmds.loadPlugin('RenderMan_for_Maya', quiet=True)
