@@ -25,7 +25,6 @@ foreach(script ${test_script_files})
     mayaUsd_add_test(${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_MODULE ${target}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         ENV
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
