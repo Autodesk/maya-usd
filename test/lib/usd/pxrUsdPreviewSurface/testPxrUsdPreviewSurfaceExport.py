@@ -22,6 +22,7 @@ from pxr import UsdShade
 from pxr import UsdUtils
 
 from maya import cmds
+from maya import standalone
 
 import os
 import unittest
@@ -31,6 +32,8 @@ class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        standalone.initialize('usd')
+
         testDir = os.path.join(os.path.abspath('.'),
                                "PxrUsdPreviewSurfaceExportTest")
 
@@ -52,6 +55,10 @@ class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
         cmds.file(defaultExtensions=defaultExtSetting)
 
         cls.stage = Usd.Stage.Open(usdFilePath)
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def testStagePrerequisites(self):
         self.assertTrue(self.stage)
