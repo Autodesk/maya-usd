@@ -349,7 +349,7 @@ public:
   //--------------------------------------------------------------------------------------------------------------------
 
   /// outTime = (time - timeOffset) * timeScalar
-  AL_DECL_ATTRIBUTE(outTime);
+  AL_INHERIT_ATTRIBUTE(outTime);
 
   /// Inject m_stage and m_path members into DG as a data attribute.
   AL_INHERIT_ATTRIBUTE(outStageData);
