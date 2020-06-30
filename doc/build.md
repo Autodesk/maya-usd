@@ -23,8 +23,6 @@ Before building the project, consult the following table to ensure you use the r
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
 |          Qt           | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 |
 
-***NOTE:*** We haven't fully tested the plug-ins on ```Catalina``` and it is still at the experimental stage.
-
 ***NOTE:*** Visit the online Maya developer help document under ***Setting up your build environment*** for additional compiler requirements on different platforms.
 
 #### 2. Download and Build Pixar USD 
