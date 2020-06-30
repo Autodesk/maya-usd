@@ -30,6 +30,10 @@
 #if UFE_PREVIEW_VERSION_NUM >= 2013
 #include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
 #endif
+
+#if UFE_PREVIEW_VERSION_NUM >= 2017
+#include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
+#endif
 #endif
 
 MAYAUSD_NS_DEF {
@@ -170,6 +174,8 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
 }
 #endif
 
+#if UFE_PREVIEW_VERSION_NUM < 2017
+
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
 	throw std::runtime_error("ProxyShapeHierarchy::createGroup() not implemented");
@@ -179,7 +185,33 @@ Ufe::Group ProxyShapeHierarchy::createGroupCmd(const Ufe::PathComponent& name) c
 {
 	throw std::runtime_error("ProxyShapeHierarchy::createGroupCmd not implemented");
 }
-#endif
+
+#else
+
+Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
+{
+	Ufe::SceneItem::Ptr createdItem;
+
+	auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+	UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
+	if (cmd) {
+		cmd->execute();
+		createdItem = cmd->group();
+	}
+
+	return createdItem;
+}
+
+Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
+{
+	auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
+
+	return UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
+}
+
+#endif // UFE_PREVIEW_VERSION_NUM
+
+#endif // UFE_V2_FEATURES_AVAILABLE
 
 } // namespace ufe
 } // namespace MayaUsd

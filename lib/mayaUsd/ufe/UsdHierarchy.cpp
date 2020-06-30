@@ -178,6 +178,7 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
 }
 #endif
 
+#if UFE_PREVIEW_VERSION_NUM < 2017
 // Create a transform.
 Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
 {
@@ -213,7 +214,32 @@ Ufe::Group UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
 	createGroupCmd->execute();
 	return Ufe::Group(createGroupCmd->group(), createGroupCmd);
 }
-#endif
+
+#else // UFE_PREVIEW_VERSION_NUM
+
+
+// Create a transform.
+Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
+{
+	Ufe::SceneItem::Ptr createdItem = nullptr;
+
+	UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
+	if (cmd) {
+		cmd->execute();
+		createdItem = cmd->group();
+	}
+
+	return createdItem;
+}
+
+Ufe::UndoableCommand::Ptr UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
+{
+	return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
+}
+
+#endif // UFE_PREVIEW_VERSION_NUM
+
+#endif // UFE_V2_FEATURES_AVAILABLE
 
 } // namespace ufe
 } // namespace MayaUsd
