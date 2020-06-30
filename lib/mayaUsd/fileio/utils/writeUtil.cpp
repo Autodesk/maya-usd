@@ -75,7 +75,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
     PIXMAYA_WRITE_UV_AS_FLOAT2,
-    true,
+    false,
     "Set to true to write uv sets as Float2Array types and set to false to "
     "write Texture Coordinate value types (TexCoord2h, TexCoord2f, "
     "TexCoord2d, TexCoord3h, TexCoord3f, TexCoord3d and their associated "
