@@ -13,45 +13,155 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <ostream>
+// Modifications copyright (C) 2020 Autodesk
+//
+#include "jointWriteUtils.h"
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
 #include <maya/MDoubleArray.h>
+#include <maya/MFnSet.h>
 #include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnSkinCluster.h>
+#include <maya/MGlobal.h>
+#include <maya/MIntArray.h>
+#include <maya/MItDag.h>
 #include <maya/MItDependencyGraph.h>
+#include <maya/MItMeshFaceVertex.h>
 #include <maya/MMatrix.h>
+#include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
+#include <maya/MStatus.h>
+#include <maya/MUintArray.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/mesh.h>
-#include <pxr/usd/usdSkel/bindingAPI.h>
-#include <pxr/usd/usdSkel/root.h>
-#include <pxr/usd/usdSkel/utils.h>
+#include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdSkel/animation.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
+#include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/translators/translatorSkel.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-
-#include "jointWriter.h"
-#include "meshWriter.h"
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((skelJointIndices, "skel:jointIndices"))
-    ((skelJointWeights, "skel:jointWeights"))
-    ((skelGeomBindTransform, "skel:geomBindTransform"))
+    (Animation)
+    (Skeleton)
 );
 
+SdfPath 
+UsdMayaJointUtil::getAnimationPath(const SdfPath& skelPath)
+{
+    return skelPath.AppendChild(_tokens->Animation);
+}
 
-/// Gets the closest upstream skin cluster for the mesh at the given dag path.
-/// Warns if there is more than one skin cluster.
+void 
+UsdMayaJointUtil::getJointHierarchyComponents(const MDagPath& dagPath, 
+                                              MDagPath* skelXformPath,
+                                              MDagPath* jointHierarchyRootPath,
+                                              std::vector<MDagPath>* joints)
+{
+    if(joints)
+        joints->clear();
+    *skelXformPath = MDagPath();
+
+    MItDag dagIter(MItDag::kDepthFirst, MFn::kJoint);
+    dagIter.reset(dagPath, MItDag::kDepthFirst, MFn::kJoint);
+
+    // The first joint may be the root of a Skeleton.
+    if (!dagIter.isDone()) {
+        MDagPath path;
+        dagIter.getPath(path);
+        if (UsdMayaTranslatorSkel::IsUsdSkeleton(path)) {
+            *skelXformPath = path;
+            dagIter.next();
+        }
+    }
+
+    // All remaining joints are treated as normal joints.
+    if (joints) {
+        while (!dagIter.isDone()) {
+            MDagPath path;
+            dagIter.getPath(path);
+            joints->push_back(path);
+            dagIter.next();
+        }
+    }
+
+    if(skelXformPath->isValid()) {
+        *jointHierarchyRootPath = *skelXformPath;
+    } else {
+        *jointHierarchyRootPath = dagPath;
+        jointHierarchyRootPath->pop();
+    }
+}
+
+VtTokenArray
+UsdMayaJointUtil::getJointNames(const std::vector<MDagPath>& joints,
+                                const MDagPath& rootDagPath,
+                                bool stripNamespaces)
+{
+    MDagPath skelXformPath, jointHierarchyRootPath;
+    getJointHierarchyComponents(rootDagPath, &skelXformPath, &jointHierarchyRootPath);
+
+    // Get paths relative to the root of the joint hierarchy or the scene root.
+    // Joints have to be transforms, so mergeTransformAndShape
+    // shouldn't matter here. (Besides, we're not actually using these
+    // to point to prims.)
+    SdfPath rootPath;
+    if (jointHierarchyRootPath.length() == 0) {
+        // Joint name relative to the scene root.
+        // Note that, in this case, the export will eventually error when trying
+        // to obtain the SkelRoot. But it's better that we not error here and
+        // only error inside the UsdMaya_SkelBindingsProcessor so that we
+        // consolidate the SkelRoot-related errors in one place.
+        rootPath = SdfPath::AbsoluteRootPath();
+    }
+    else {
+        // Joint name relative to joint root.
+        rootPath = UsdMayaUtil::MDagPathToUsdPath(
+                jointHierarchyRootPath,
+                /*mergeTransformAndShape*/ false,
+                stripNamespaces);
+    }
+
+    VtTokenArray result;
+    for (const MDagPath& joint : joints) {
+
+        SdfPath path = UsdMayaUtil::MDagPathToUsdPath(
+                joint, /*mergeTransformAndShape*/ false, stripNamespaces);
+        result.push_back(path.MakeRelativePath(rootPath).GetToken());
+    }
+    return result;
+}
+
+/// Gets the expected path where a skeleton will be exported for
+/// the given root joint. The skeleton both binds a skeleton and
+/// holds root transformations of the joint hierarchy.
+SdfPath 
+UsdMayaJointUtil::getSkeletonPath(const MDagPath& rootJoint, bool stripNamespaces)
+{
+    return UsdMayaUtil::MDagPathToUsdPath(
+        rootJoint, /*mergeTransformAndShape*/ false, stripNamespaces);
+}
+
 MObject
-_GetSkinCluster(const MDagPath& dagPath) {
+UsdMayaJointUtil::getSkinCluster(const MDagPath& dagPath) 
+{
     MObject currentDagObject = dagPath.node();
 
     MItDependencyGraph itDG(currentDagObject, MFn::kSkinClusterFilter,
@@ -74,25 +184,9 @@ _GetSkinCluster(const MDagPath& dagPath) {
     return skinClusterObj;
 }
 
-/// Finds the input (pre-skin) mesh for the given skin cluster.
-/// Warning, do not use MFnSkinCluster::getInputGeometry; it will give you
-/// the wrong results (or rather, not the ones we want here).
-/// Given the following (simplified) DG:
-///     pCubeShape1Orig.worldMesh[0] -> tweak1.inputGeometry
-///     tweak1.outputGeometry[0] -> skinCluster1.input[0].inputGeometry
-///     skinCluster1.outputGeometry[0] -> pCubeShape1.inMesh
-/// Requesting the input geometry for skinCluster1 will give you the mesh
-///     pCubeShape1Orig
-/// and not
-///     tweak1.outputGeometry
-/// as desired for this use case.
-/// For best results, read skinCluster1.input[0].inputGeometry directly.
-/// Note that the Maya documentation states "a skinCluster node can deform
-/// only a single geometry" [1] so we are free to ignore any input geometries
-/// after the first one.
-/// [1]: http://help.autodesk.com/view/MAYAUL/2018/ENU/?guid=__cpp_ref_class_m_fn_skin_cluster_html
 MObject
-_GetInputMesh(const MFnSkinCluster& skinCluster) {
+UsdMayaJointUtil::getInputMesh(const MFnSkinCluster& skinCluster) 
+{
     MStatus status;
     MPlug inputPlug = skinCluster.findPlug("input", true, &status);
     CHECK_MSTATUS_AND_RETURN(status, MObject());
@@ -117,50 +211,11 @@ _GetInputMesh(const MFnSkinCluster& skinCluster) {
     return inputGeometryObj;
 }
 
-/// Gets the unique root joint of the given joint dag paths, or an invalid
-/// MDagPath if there is no such unique joint (i.e. the joints form two
-/// separate joint hierarchies). Currently, we don't support skin bound to
-/// multiple joint hierarchies.
-static MDagPath
-_GetRootJoint(const std::vector<MDagPath>& jointDagPaths)
-{
-    MDagPath uniqueRoot;
-
-    for (const MDagPath& dagPath : jointDagPaths) {
-        // Find the roostmost joint in my ancestor chain.
-        // (It's OK if there are intermediary non-joints; just skip them.)
-        MDagPath curPath = dagPath;
-        MDagPath rootmostJoint = dagPath;
-        while (curPath.length() > 0) {
-            curPath.pop();
-            if (curPath.hasFn(MFn::kJoint)) {
-                rootmostJoint = curPath;
-            }
-        }
-
-        // All root joints must match.
-        if (uniqueRoot.isValid()) {
-            if (!(uniqueRoot == rootmostJoint)) {
-                return MDagPath();
-            }
-        }
-        else {
-            uniqueRoot = rootmostJoint;
-        }
-    }
-
-    return uniqueRoot;
-}
-
-/// Gets skin weights, and compresses them into the form expected by
-/// UsdSkelBindingAPI, which allows us to omit zero-weight influences from the
-/// joint weights list.
-static int
-_GetCompressedSkinWeights(
-    const MFnMesh& mesh,
-    const MFnSkinCluster& skinCluster,
-    VtIntArray* usdJointIndices,
-    VtFloatArray* usdJointWeights)
+int
+UsdMayaJointUtil::getCompressedSkinWeights( const MFnMesh& mesh,
+                                            const MFnSkinCluster& skinCluster,
+                                            VtIntArray* usdJointIndices,
+                                            VtFloatArray* usdJointWeights)
 {
     // Get the single output dag path from the skin cluster.
     // Note that we can't get the dag path from the mesh because it's the input
@@ -222,26 +277,10 @@ _GetCompressedSkinWeights(
     return maxInfluenceCount;
 }
 
-
-/// Check if a skinned primitive has an unsupported post-deformation
-/// transformation. These transformations aren't represented in UsdSkel.
-///
-/// When a SkinCluster deforms meshes, the results are transformed back into the
-/// space of the mesh. The output is then plugged up to the final mesh, which
-/// has its own transform. Usually this change in transformation -- from putting
-/// the deformation results back into the space of the source mesh, and then
-/// transforming the result by the output mesh -- share the same transformation,
-/// such that there's no overall change in transformation. This is not always
-/// the case. In particular, 'broken' rigs may have the transformations out of
-/// sync (the result of which being that the deformed meshes drift away from the
-/// skeleton that drives them).
-///
-/// We have no nice way of encoding a mesh-specific post-deformation transform
-/// in UsdSkel, and so can only try and warn the user.
-static void
-_WarnForPostDeformationTransform(const SdfPath& path,
-                                 const MDagPath& deformedMeshDag,
-                                 const MFnSkinCluster& skinCluster)
+void
+UsdMayaJointUtil::warnForPostDeformationTransform(const SdfPath& path,
+                                                  const MDagPath& deformedMeshDag,
+                                                  const MFnSkinCluster& skinCluster)
 {
     MStatus status;
 
@@ -264,11 +303,9 @@ _WarnForPostDeformationTransform(const SdfPath& path,
     }
 }
 
-
-/// Compute the geomBindTransform for a mesh using \p skinCluster.
-static bool
-_GetGeomBindTransform(const MFnSkinCluster& skinCluster,
-                      GfMatrix4d* geomBindXf)
+bool
+UsdMayaJointUtil::getGeomBindTransform(const MFnSkinCluster& skinCluster,
+                                       GfMatrix4d* geomBindXf)
 {
     MMatrix geomWorldRestXf;
     if (!UsdMayaUtil::getPlugMatrix(
@@ -285,18 +322,17 @@ _GetGeomBindTransform(const MFnSkinCluster& skinCluster,
 }
 
 
-/// Compute and write joint influences.
-static bool
-_WriteJointInfluences(const MFnSkinCluster& skinCluster,
-                      const MFnMesh& inMesh,
-                      const UsdSkelBindingAPI& binding)
+bool
+UsdMayaJointUtil::writeJointInfluences(const MFnSkinCluster& skinCluster,
+                                       const MFnMesh& inMesh,
+                                       const UsdSkelBindingAPI& binding)
 {
     // The data in the skinCluster is essentially already in the same format
     // as UsdSkel expects, but we're going to compress it by only outputting
     // the nonzero weights.
     VtIntArray jointIndices;
     VtFloatArray jointWeights;
-    int maxInfluenceCount = _GetCompressedSkinWeights(
+    int maxInfluenceCount = getCompressedSkinWeights(
         inMesh, skinCluster, &jointIndices, &jointWeights);
 
     if (maxInfluenceCount <= 0)
@@ -315,52 +351,73 @@ _WriteJointInfluences(const MFnSkinCluster& skinCluster,
     return true;
 }
 
-
-static bool
-_WriteJointOrder(const MDagPath& rootJoint,
-                 const std::vector<MDagPath>& jointDagPaths,
-                 const UsdSkelBindingAPI& binding,
-                 const bool stripNamespaces)
+bool
+UsdMayaJointUtil::writeJointOrder(const MDagPath& rootJoint,
+                                  const std::vector<MDagPath>& jointDagPaths,
+                                  const UsdSkelBindingAPI& binding,
+                                  const bool stripNamespaces)
 {
     // Get joint name tokens how PxrUsdTranslators_JointWriter would generate
     // them. We don't need to check that they actually exist.
-    VtTokenArray jointNames = PxrUsdTranslators_JointWriter::GetJointNames(
-        jointDagPaths, rootJoint, stripNamespaces);
+    VtTokenArray jointNames = UsdMayaJointUtil::getJointNames( jointDagPaths, 
+                                                               rootJoint, 
+                                                               stripNamespaces);
 
     binding.CreateJointsAttr().Set(jointNames);
     return true;
 }
 
-
-MObject
-PxrUsdTranslators_MeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
+MDagPath
+UsdMayaJointUtil::getRootJoint(const std::vector<MDagPath>& jointDagPaths)
 {
-    const TfToken& exportSkin = _GetExportArgs().exportSkin;
-    if (exportSkin != UsdMayaJobExportArgsTokens->auto_ &&
-        exportSkin != UsdMayaJobExportArgsTokens->explicit_) {
-        return MObject();
+    MDagPath uniqueRoot;
+
+    for (const MDagPath& dagPath : jointDagPaths) {
+        // Find the roostmost joint in my ancestor chain.
+        // (It's OK if there are intermediary non-joints; just skip them.)
+        MDagPath curPath = dagPath;
+        MDagPath rootmostJoint = dagPath;
+        while (curPath.length() > 0) {
+            curPath.pop();
+            if (curPath.hasFn(MFn::kJoint)) {
+                rootmostJoint = curPath;
+            }
+        }
+
+        // All root joints must match.
+        if (uniqueRoot.isValid()) {
+            if (!(uniqueRoot == rootmostJoint)) {
+                return MDagPath();
+            }
+        }
+        else {
+            uniqueRoot = rootmostJoint;
+        }
     }
 
+    return uniqueRoot;
+}
+
+MObject 
+UsdMayaJointUtil::writeSkinningData(UsdGeomMesh& primSchema,
+                                    const SdfPath& usdPath, 
+                                    const MDagPath& dagPath,
+                                    SdfPath& skelPath,
+                                    const bool stripNamespaces, 
+                                    UsdUtilsSparseValueWriter* valueWriter)
+{
     // Figure out if we even have a skin cluster in the first place.
-    MObject skinClusterObj = _GetSkinCluster(GetDagPath());
+    MObject skinClusterObj = UsdMayaJointUtil::getSkinCluster(dagPath);
     if (skinClusterObj.isNull()) {
         return MObject();
     }
     MFnSkinCluster skinCluster(skinClusterObj);
 
-    MObject inMeshObj = _GetInputMesh(skinCluster);
+    MObject inMeshObj = UsdMayaJointUtil::getInputMesh(skinCluster);
     if (inMeshObj.isNull()) {
         return MObject();
     }
     MFnMesh inMesh(inMeshObj);
-
-    // At this point, we know we have a skin cluster.
-    // If exportSkin=explicit and we're not under a SkelRoot, then silently skip
-    // (it's what the user asked for, after all).
-    if (exportSkin == UsdMayaJobExportArgsTokens->explicit_ &&
-            !UsdSkelRoot::Find(primSchema.GetPrim())) {
-        return MObject();
-    }
 
     // Get all influences and find the rootmost joint.
     MDagPathArray jointDagPathArr;
@@ -373,7 +430,7 @@ PxrUsdTranslators_MeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
         jointDagPaths[i] = jointDagPathArr[i];
     }
 
-    MDagPath rootJoint = _GetRootJoint(jointDagPaths);
+    MDagPath rootJoint = UsdMayaJointUtil::getRootJoint(jointDagPaths);
     if (!rootJoint.isValid()) {
         // No roots or multiple roots!
         // XXX: This is a somewhat arbitrary restriction due to the way that
@@ -390,40 +447,29 @@ PxrUsdTranslators_MeshWriter::writeSkinningData(UsdGeomMesh& primSchema)
     }
 
     // Write everything to USD once we know that we have OK data.
-    const UsdSkelBindingAPI bindingAPI = UsdMayaTranslatorUtil
-        ::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(primSchema.GetPrim());
+    const UsdSkelBindingAPI bindingAPI = 
+        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdSkelBindingAPI>(primSchema.GetPrim());
 
-    if (_WriteJointInfluences(skinCluster, inMesh, bindingAPI)) {
-        _WriteJointOrder(rootJoint, jointDagPaths, bindingAPI,
-                         _GetExportArgs().stripNamespaces);
+    if (UsdMayaJointUtil::writeJointInfluences(skinCluster, inMesh, bindingAPI)){
+        UsdMayaJointUtil::writeJointOrder(rootJoint,
+                                          jointDagPaths,
+                                          bindingAPI,
+                                          stripNamespaces);
     }
 
     GfMatrix4d geomBindTransform;
-    if (_GetGeomBindTransform(skinCluster,&geomBindTransform)) {
-        _SetAttribute(bindingAPI.CreateGeomBindTransformAttr(),
-                      &geomBindTransform);
+    if (UsdMayaJointUtil::getGeomBindTransform(skinCluster,&geomBindTransform)) {
+        UsdMayaWriteUtil::SetAttribute(bindingAPI.CreateGeomBindTransformAttr(), 
+                                       &geomBindTransform, UsdTimeCode::Default(), valueWriter);
     }
 
-    _WarnForPostDeformationTransform(GetUsdPath(), GetDagPath(), skinCluster);
+    UsdMayaJointUtil::warnForPostDeformationTransform(usdPath, dagPath, skinCluster);
 
-    const SdfPath skelPath =
-        PxrUsdTranslators_JointWriter::GetSkeletonPath(
-            rootJoint, _GetExportArgs().stripNamespaces);
+    skelPath = UsdMayaJointUtil::getSkeletonPath(rootJoint, stripNamespaces);
 
     // Export will create a Skeleton at the location corresponding to
     // the root joint. Configure this mesh to be bound to the same skel.
     bindingAPI.CreateSkeletonRel().SetTargets({skelPath});
-
-    // Add all skel primvars to the exclude set.
-    // We don't want later processing to stomp on any of our data.
-    _excludeColorSets.insert({_tokens->skelJointIndices,
-                              _tokens->skelJointWeights,
-                              _tokens->skelGeomBindTransform});
-
-    // Mark the bindings for post processing.
-    _writeJobCtx.MarkSkelBindings(
-        primSchema.GetPrim().GetPath(),
-        skelPath, exportSkin);
 
     return inMeshObj;
 }

@@ -15,7 +15,7 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
-#include "meshUtil.h"
+#include "meshReadUtils.h"
 
 #include <maya/MFloatVector.h>
 #include <maya/MFloatVectorArray.h>
@@ -566,7 +566,7 @@ namespace
 
 // This can be customized for specific pipelines.
 bool
-UsdMayaMeshUtil::GetEmitNormalsTag(const MFnMesh& mesh, bool* value)
+UsdMayaMeshReadUtils::getEmitNormalsTag(const MFnMesh& mesh, bool* value)
 {
     MPlug plug = mesh.findPlug(MString(_meshTokens->USD_EmitNormals.GetText()));
     if (!plug.isNull()) {
@@ -578,7 +578,7 @@ UsdMayaMeshUtil::GetEmitNormalsTag(const MFnMesh& mesh, bool* value)
 }
 
 void
-UsdMayaMeshUtil::SetEmitNormalsTag(
+UsdMayaMeshReadUtils::setEmitNormalsTag(
         MFnMesh& meshFn,
         const bool emitNormals)
 {
@@ -595,235 +595,8 @@ UsdMayaMeshUtil::SetEmitNormalsTag(
     }
 }
 
-bool
-UsdMayaMeshUtil::GetMeshNormals(
-        const MFnMesh& mesh,
-        VtArray<GfVec3f>* normalsArray,
-        TfToken* interpolation)
-{
-    MStatus status{MS::kSuccess};
-
-    // Sanity check first to make sure we can get this mesh's normals.
-    int numNormals = mesh.numNormals(&status);
-    if (status != MS::kSuccess || numNormals == 0) {
-        return false;
-    }
-
-    // Using itFV.getNormal() does not always give us the right answer, so
-    // instead we have to use itFV.normalId() and use that to index into the
-    // normals.
-    MFloatVectorArray mayaNormals;
-    status = mesh.getNormals(mayaNormals);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    const unsigned int numFaceVertices = mesh.numFaceVertices(&status);
-    if (status != MS::kSuccess) {
-        return false;
-    }
-
-    normalsArray->resize(numFaceVertices);
-    *interpolation = UsdGeomTokens->faceVarying;
-
-    MItMeshFaceVertex itFV(mesh.object());
-    unsigned int fvi = 0;
-    for (itFV.reset(); !itFV.isDone(); itFV.next(), ++fvi) {
-        int normalId = itFV.normalId();
-        if (normalId < 0 ||
-                static_cast<size_t>(normalId) >= mayaNormals.length()) {
-            return false;
-        }
-
-        MFloatVector normal = mayaNormals[normalId];
-        (*normalsArray)[fvi][0] = normal[0];
-        (*normalsArray)[fvi][1] = normal[1];
-        (*normalsArray)[fvi][2] = normal[2];
-    }
-
-    return true;
-}
-
-// This can be customized for specific pipelines.
-// We first look for the USD string attribute, and if not present we look for
-// the RenderMan for Maya int attribute.
-// XXX Maybe we should come up with a OSD centric nomenclature ??
-TfToken
-UsdMayaMeshUtil::GetSubdivScheme(const MFnMesh& mesh)
-{
-    // Try grabbing the value via the adaptor first.
-    TfToken schemeToken;
-    UsdMayaAdaptor(mesh.object())
-            .GetSchemaOrInheritedSchema<UsdGeomMesh>()
-            .GetAttribute(UsdGeomTokens->subdivisionScheme)
-            .Get<TfToken>(&schemeToken);
-
-    // Fall back to the RenderMan for Maya attribute.
-    if (schemeToken.IsEmpty()) {
-        MPlug plug = mesh.findPlug(MString("rman__torattr___subdivScheme"));
-        if (!plug.isNull()) {
-            switch (plug.asInt()) {
-                case 0:
-                    schemeToken = UsdGeomTokens->catmullClark;
-                    break;
-                case 1:
-                    schemeToken = UsdGeomTokens->loop;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    if (schemeToken.IsEmpty()) {
-        return TfToken();
-    } else if (schemeToken != UsdGeomTokens->none &&
-               schemeToken != UsdGeomTokens->catmullClark &&
-               schemeToken != UsdGeomTokens->loop &&
-               schemeToken != UsdGeomTokens->bilinear) {
-        TF_RUNTIME_ERROR(
-                "Unsupported subdivision scheme: %s on mesh: %s",
-                schemeToken.GetText(), mesh.fullPathName().asChar());
-        return TfToken();
-    }
-
-    return schemeToken;
-}
-
-// This can be customized for specific pipelines.
-// We first look for the USD string attribute, and if not present we look for
-// the RenderMan for Maya int attribute.
-// XXX Maybe we should come up with a OSD centric nomenclature ??
-TfToken UsdMayaMeshUtil::GetSubdivInterpBoundary(const MFnMesh& mesh)
-{
-    // Try grabbing the value via the adaptor first.
-    TfToken interpBoundaryToken;
-    UsdMayaAdaptor(mesh.object())
-            .GetSchemaOrInheritedSchema<UsdGeomMesh>()
-            .GetAttribute(UsdGeomTokens->interpolateBoundary)
-            .Get<TfToken>(&interpBoundaryToken);
-
-    // Fall back to the RenderMan for Maya attr.
-    if (interpBoundaryToken.IsEmpty()) {
-        MPlug plug = mesh.findPlug(MString("rman__torattr___subdivInterp"));
-        if (!plug.isNull()) {
-            switch (plug.asInt()) {
-                case 0:
-                    interpBoundaryToken = UsdGeomTokens->none;
-                    break;
-                case 1:
-                    interpBoundaryToken = UsdGeomTokens->edgeAndCorner;
-                    break;
-                case 2:
-                    interpBoundaryToken = UsdGeomTokens->edgeOnly;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    if (interpBoundaryToken.IsEmpty()) {
-        return TfToken();
-    } else if (interpBoundaryToken != UsdGeomTokens->none &&
-               interpBoundaryToken != UsdGeomTokens->edgeAndCorner &&
-               interpBoundaryToken != UsdGeomTokens->edgeOnly) {
-        TF_RUNTIME_ERROR(
-                "Unsupported interpolate boundary setting: %s on mesh: %s",
-                interpBoundaryToken.GetText(), mesh.fullPathName().asChar());
-        return TfToken();
-    }
-
-    return interpBoundaryToken;
-}
-
-// XXX: Note that this function is not exposed publicly since the USD schema
-// has been updated to conform to OpenSubdiv 3. We still look for this attribute
-// on Maya nodes specifying this value from OpenSubdiv 2, but we translate the
-// value to OpenSubdiv 3. This is to support legacy assets authored against
-// OpenSubdiv 2.
-static
-TfToken
-_GetOsd2FVInterpBoundary(const MFnMesh& mesh)
-{
-    TfToken sdFVInterpBound;
-
-    MPlug plug = mesh.findPlug(MString(
-            _meshTokens->USD_faceVaryingInterpolateBoundary.GetText()));
-    if (!plug.isNull()) {
-        sdFVInterpBound = TfToken(plug.asString().asChar());
-
-        // Translate OSD2 values to OSD3.
-        if (sdFVInterpBound == UsdGeomTokens->bilinear) {
-            sdFVInterpBound = UsdGeomTokens->all;
-        } else if (sdFVInterpBound == UsdGeomTokens->edgeAndCorner) {
-            sdFVInterpBound = UsdGeomTokens->cornersPlus1;
-        } else if (sdFVInterpBound == _meshTokens->alwaysSharp) {
-            sdFVInterpBound = UsdGeomTokens->boundaries;
-        } else if (sdFVInterpBound == UsdGeomTokens->edgeOnly) {
-            sdFVInterpBound = UsdGeomTokens->none;
-        }
-    } else {
-        plug = mesh.findPlug(MString("rman__torattr___subdivFacevaryingInterp"));
-        if (!plug.isNull()) {
-            switch(plug.asInt()) {
-                case 0:
-                    sdFVInterpBound = UsdGeomTokens->all;
-                    break;
-                case 1:
-                    sdFVInterpBound = UsdGeomTokens->cornersPlus1;
-                    break;
-                case 2:
-                    sdFVInterpBound = UsdGeomTokens->none;
-                    break;
-                case 3:
-                    sdFVInterpBound = UsdGeomTokens->boundaries;
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
-    return sdFVInterpBound;
-}
-
-TfToken UsdMayaMeshUtil::GetSubdivFVLinearInterpolation(const MFnMesh& mesh)
-{
-    // Try grabbing the value via the adaptor first.
-    TfToken sdFVLinearInterpolation;
-    UsdMayaAdaptor(mesh.object())
-            .GetSchemaOrInheritedSchema<UsdGeomMesh>()
-            .GetAttribute(UsdGeomTokens->faceVaryingLinearInterpolation)
-            .Get<TfToken>(&sdFVLinearInterpolation);
-
-    // If the OpenSubdiv 3-style face varying linear interpolation value
-    // wasn't specified, fall back to the old OpenSubdiv 2-style face
-    // varying interpolate boundary value if we have that.
-    if (sdFVLinearInterpolation.IsEmpty()) {
-        sdFVLinearInterpolation = _GetOsd2FVInterpBoundary(mesh);
-    }
-
-    if (!sdFVLinearInterpolation.IsEmpty() &&
-            sdFVLinearInterpolation != UsdGeomTokens->all &&
-            sdFVLinearInterpolation != UsdGeomTokens->none &&
-            sdFVLinearInterpolation != UsdGeomTokens->boundaries &&
-            sdFVLinearInterpolation != UsdGeomTokens->cornersOnly &&
-            sdFVLinearInterpolation != UsdGeomTokens->cornersPlus1 &&
-            sdFVLinearInterpolation != UsdGeomTokens->cornersPlus2) {
-        TF_RUNTIME_ERROR(
-                "Unsupported face-varying linear interpolation: %s "
-                "on mesh: %s",
-                sdFVLinearInterpolation.GetText(),
-                mesh.fullPathName().asChar());
-        return TfToken();
-    }
-
-    return sdFVLinearInterpolation;
-}
-
 void
-UsdMayaMeshUtil::assignPrimvarsToMesh(const UsdGeomMesh& mesh, 
+UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh, 
                                       const MObject& meshObj,
                                       const TfToken::Set& excludePrimvarSet)
 {
@@ -903,7 +676,7 @@ UsdMayaMeshUtil::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
 }
 
 void 
-UsdMayaMeshUtil::assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj)
+UsdMayaMeshReadUtils::assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj)
 {
     if(meshObj.apiType() != MFn::kMesh){
         return;
@@ -929,7 +702,7 @@ UsdMayaMeshUtil::assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& me
 }
 
 MStatus
-UsdMayaMeshUtil::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
+UsdMayaMeshReadUtils::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
                                          MObject& meshObj,
                                          MFnMesh& meshFn )
 {
@@ -955,8 +728,8 @@ UsdMayaMeshUtil::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
     std::unordered_map<float,MSelectionList> elemsPerWeight;
 
     // Vert Creasing
-    VtArray<int>   subdCornerIndices;
-    VtArray<float> subdCornerSharpnesses;
+    VtIntArray   subdCornerIndices;
+    VtFloatArray subdCornerSharpnesses;
     mesh.GetCornerIndicesAttr().Get(&subdCornerIndices); // not animatable
     mesh.GetCornerSharpnessesAttr().Get(&subdCornerSharpnesses); // not animatable
     if (!subdCornerIndices.empty()) {
@@ -1016,9 +789,9 @@ UsdMayaMeshUtil::assignSubDivTagsToMesh( const UsdGeomMesh& mesh,
     }
 
     // Edge Creasing
-    VtArray<int>   subdCreaseLengths;
-    VtArray<int>   subdCreaseIndices;
-    VtArray<float> subdCreaseSharpnesses;
+    VtIntArray   subdCreaseLengths;
+    VtIntArray   subdCreaseIndices;
+    VtFloatArray subdCreaseSharpnesses;
     mesh.GetCreaseLengthsAttr().Get(&subdCreaseLengths);
     mesh.GetCreaseIndicesAttr().Get(&subdCreaseIndices);
     mesh.GetCreaseSharpnessesAttr().Get(&subdCreaseSharpnesses);
