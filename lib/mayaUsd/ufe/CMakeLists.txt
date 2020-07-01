@@ -37,6 +37,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdAttributesHandler.cpp
             UsdObject3d.cpp
             UsdObject3dHandler.cpp
+            UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
     )
@@ -92,6 +93,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdContextOpsHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
+        UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
     )

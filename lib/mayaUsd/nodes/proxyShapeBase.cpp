@@ -21,10 +21,12 @@
 #include <vector>
 
 #include <maya/MBoundingBox.h>
+#include <maya/MEvaluationNode.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
 #include <maya/MDGContext.h>
+#include <maya/MDGContextGuard.h>
 #include <maya/MFileIO.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnDagNode.h>
@@ -86,6 +88,8 @@
 #include <ufe/path.h>
 #endif
 
+using MAYAUSD_NS_DEF;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens,
@@ -116,11 +120,12 @@ MObject MayaUsdProxyShapeBase::timeAttr;
 MObject MayaUsdProxyShapeBase::complexityAttr;
 MObject MayaUsdProxyShapeBase::inStageDataAttr;
 MObject MayaUsdProxyShapeBase::inStageDataCachedAttr;
-MObject MayaUsdProxyShapeBase::outStageDataAttr;
 MObject MayaUsdProxyShapeBase::drawRenderPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawProxyPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
-
+// Output attributes
+MObject MayaUsdProxyShapeBase::outTimeAttr;
+MObject MayaUsdProxyShapeBase::outStageDataAttr;
 
 /* static */
 void*
@@ -246,18 +251,6 @@ MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    outStageDataAttr = typedAttrFn.create(
-        "outStageData",
-        "od",
-        MayaUsdStageData::mayaTypeId,
-        MObject::kNullObj,
-        &retValue);
-    typedAttrFn.setStorable(false);
-    typedAttrFn.setWritable(false);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    retValue = addAttribute(outStageDataAttr);
-    CHECK_MSTATUS_AND_RETURN_IT(retValue);
-
     drawRenderPurposeAttr = numericAttrFn.create(
         "drawRenderPurpose",
         "drp",
@@ -297,9 +290,41 @@ MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(drawGuidePurposeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+    // outputs
+    outTimeAttr = unitAttrFn.create(
+        "outTime",
+        "otm",
+        MFnUnitAttribute::kTime,
+        0.0,
+        &retValue);
+    unitAttrFn.setCached(false);
+    unitAttrFn.setConnectable(true);
+    unitAttrFn.setReadable(true);
+    unitAttrFn.setStorable(false);
+    unitAttrFn.setWritable(false);
+    unitAttrFn.setAffectsAppearance(true);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(outTimeAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    outStageDataAttr = typedAttrFn.create(
+        "outStageData",
+        "od",
+        MayaUsdStageData::mayaTypeId,
+        MObject::kNullObj,
+        &retValue);
+    typedAttrFn.setStorable(false);
+    typedAttrFn.setWritable(false);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    retValue = addAttribute(outStageDataAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     //
     // add attribute dependencies
     //
+    retValue = attributeAffects(timeAttr, outTimeAttr);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
     retValue = attributeAffects(filePathAttr, inStageDataCachedAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = attributeAffects(filePathAttr, outStageDataAttr);
@@ -367,11 +392,18 @@ MayaUsdProxyShapeBase::GetObjectSoftSelectEnabled() const
     return false;
 }
 
+void
+MayaUsdProxyShapeBase::enableProxyAccessor()
+{
+    _usdAccessor = ProxyAccessor::createAndRegister(*this);
+}
+
 /* virtual */
 void
 MayaUsdProxyShapeBase::postConstructor()
 {
     setRenderable(true);
+
     MayaUsdProxyStageInvalidateNotice(*this).Send();
 }
 
@@ -379,6 +411,9 @@ MayaUsdProxyShapeBase::postConstructor()
 MStatus
 MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
+    if(plug == outTimeAttr || plug.isDynamic())
+        ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
+
     if (plug == excludePrimPathsAttr ||
             plug == timeAttr ||
             plug == complexityAttr ||
@@ -398,6 +433,9 @@ MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     }
     else if (plug == inStageDataCachedAttr) {
         return computeInStageDataCached(dataBlock);
+    }
+    else if (plug == outTimeAttr) {
+        return computeOutputTime(dataBlock);
     }
     else if (plug == outStageDataAttr) {
         return computeOutStageData(dataBlock);
@@ -432,6 +470,47 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         inDataCachedHandle.copy(inDataHandle);
 
         inDataCachedHandle.setClean();
+        return MS::kSuccess;
+    }
+    else if(!dataBlock.context().isNormal())
+    {
+        // Create the output outData ========
+        MFnPluginData pluginDataFn;
+        MObject stageDataObj =
+            pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+        MayaUsdStageData* outData =
+            reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
+        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+        
+        // When evaluating in background we should point to the same stage as in normal context
+        // This way we will share the stage between all evaluation context and avoid losing data
+        // in case of dirty stage, i.e. stage with new or modified layers.
+        MDGContext normalContext;
+        {
+            MDGContextGuard contextGuard(normalContext);
+            MDataBlock dataBlockForNormalContext = forceCache();
+            
+            MDataHandle inDataCachedHandleForNormalContext =
+            dataBlockForNormalContext.inputValue(inStageDataCachedAttr, &retValue);
+            CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+            MayaUsdStageData* inData =
+            dynamic_cast<MayaUsdStageData*>(inDataCachedHandleForNormalContext.asPluginData());
+
+            // Set the outUsdStageData
+            outData->stage = inData->stage;
+            outData->primPath = inData->primPath;
+        }
+        
+        // Retrieve data handle for stage data cache
+        MDataHandle outDataCachedHandle =
+            dataBlock.outputValue(inStageDataCachedAttr, &retValue);
+        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+        outDataCachedHandle.set(outData);
+        outDataCachedHandle.setClean();
         return MS::kSuccess;
     }
     else {
@@ -545,11 +624,16 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
 
-    TfReset(_boundingBoxCache);
+    const bool isNormalContext = dataBlock.context().isNormal();
+    if(isNormalContext)
+    {
+        TfReset(_boundingBoxCache);
 
-    // Reset the stage listener until we determine that everything is valid.
-    _stageNoticeListener.SetStage(UsdStageWeakPtr());
-    _stageNoticeListener.SetStageContentsChangedCallback(nullptr);
+        // Reset the stage listener until we determine that everything is valid.
+        _stageNoticeListener.SetStage(UsdStageWeakPtr());
+        _stageNoticeListener.SetStageContentsChangedCallback(nullptr);
+        _stageNoticeListener.SetStageObjectsChangedCallback(nullptr);
+    }
 
     MDataHandle inDataCachedHandle =
         dataBlock.inputValue(inStageDataCachedAttr, &retValue);
@@ -626,16 +710,41 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     outDataHandle.set(stageData);
     outDataHandle.setClean();
 
-    // Start listening for notices for the USD stage.
-    _stageNoticeListener.SetStage(usdStage);
-    _stageNoticeListener.SetStageContentsChangedCallback(
-        std::bind(&MayaUsdProxyShapeBase::_OnStageContentsChanged,
-                  this,
-                  std::placeholders::_1));
+    if(isNormalContext)
+    {
+        // Start listening for notices for the USD stage.
+        _stageNoticeListener.SetStage(usdStage);
+        _stageNoticeListener.SetStageContentsChangedCallback(
+            std::bind(&MayaUsdProxyShapeBase::_OnStageContentsChanged,
+                      this,
+                      std::placeholders::_1));
 
-    MayaUsdProxyStageSetNotice(*this).Send();
+        _stageNoticeListener.SetStageObjectsChangedCallback(
+            std::bind(&MayaUsdProxyShapeBase::_OnStageObjectsChanged,
+                this,
+                std::placeholders::_1));
+        
+        MayaUsdProxyStageSetNotice(*this).Send();
+    }
 
     return MS::kSuccess;
+}
+
+MStatus 
+MayaUsdProxyShapeBase::computeOutputTime(MDataBlock& dataBlock)
+{
+    MStatus retValue = MS::kSuccess;
+    MDataHandle inDataHandle = dataBlock.inputValue(timeAttr, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    
+    MTime inTime = inDataHandle.asTime();
+
+    MDataHandle outDataHandle = dataBlock.outputValue(outTimeAttr, &retValue);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    outDataHandle.set(inTime);
+    outDataHandle.setClean();
+
+    return retValue;
 }
 
 /* virtual */
@@ -763,21 +872,23 @@ MStatus
 MayaUsdProxyShapeBase::preEvaluation(const MDGContext& context, const MEvaluationNode& evaluationNode)
 {
     // Any logic here should have an equivalent implementation in MayaUsdProxyShapeBase::setDependentsDirty().
-
-    if (evaluationNode.dirtyPlugExists(excludePrimPathsAttr)) {
-        _IncreaseExcludePrimPathsVersion();
+    if (context.isNormal())
+    {
+        if (evaluationNode.dirtyPlugExists(excludePrimPathsAttr)) {
+            _IncreaseExcludePrimPathsVersion();
+        }
+        else if (evaluationNode.dirtyPlugExists(outStageDataAttr) ||
+            // All the plugs that affect outStageDataAttr
+            evaluationNode.dirtyPlugExists(filePathAttr) ||
+            evaluationNode.dirtyPlugExists(primPathAttr) ||
+            evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
+            evaluationNode.dirtyPlugExists(inStageDataAttr)) {
+            _IncreaseUsdStageVersion();
+            MayaUsdProxyStageInvalidateNotice(*this).Send();
+        }
     }
-    else if (evaluationNode.dirtyPlugExists(outStageDataAttr) ||
-        // All the plugs that affect outStageDataAttr
-        evaluationNode.dirtyPlugExists(filePathAttr) ||
-        evaluationNode.dirtyPlugExists(primPathAttr) ||
-        evaluationNode.dirtyPlugExists(loadPayloadsAttr) ||
-        evaluationNode.dirtyPlugExists(inStageDataAttr)) {
-        _IncreaseUsdStageVersion();
-        MayaUsdProxyStageInvalidateNotice(*this).Send();
-    }
 
-    return MStatus::kSuccess;
+    return MPxSurfaceShape::preEvaluation(context,evaluationNode);
 }
 
 MStatus
@@ -789,7 +900,12 @@ MayaUsdProxyShapeBase::postEvaluation(const  MDGContext& context, const MEvaluat
     // reminder that we should either have both calls to setGeometryDrawDirty, or no calls to setGeometryDrawDirty.
     // MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
 
-    return MStatus::kSuccess;
+    if(context.isNormal() && evalType == PostEvaluationEnum::kEvaluatedDirectly) {
+        MDataBlock dataBlock = forceCache();
+        ProxyAccessor::syncCache(_usdAccessor, thisMObject(), dataBlock);
+    }
+    
+    return MPxSurfaceShape::postEvaluation(context,evaluationNode,evalType);
 }
 
 /* virtual */
@@ -797,6 +913,8 @@ MStatus
 MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
 {
     // Any logic here should have an equivalent implementation in MayaUsdProxyShapeBase::preEvaluation() or postEvaluation().
+
+    MStatus retValue;
 
     // If/when the MPxDrawOverride for the proxy shape specifies
     // isAlwaysDirty=false to improve performance, we must be sure to notify
@@ -817,8 +935,45 @@ MayaUsdProxyShapeBase::setDependentsDirty(const MPlug& plug, MPlugArray& plugArr
         MayaUsdProxyStageInvalidateNotice(*this).Send();
     }
 
-    return MPxSurfaceShape::setDependentsDirty(plug, plugArray);
+    retValue = MPxSurfaceShape::setDependentsDirty(plug, plugArray);
+    CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+    // If accessor returns success when adding dirty plugs we have to get renderer to
+    // trigger compute. We achieve it by adding timeAttr to dirty plugArray. This will guarantee
+    // we don't render something that requires inputs evaluted by DG.
+    if(plug == timeAttr || plug.isDynamic())
+    {
+        if (ProxyAccessor::addDependentsDirty(_usdAccessor, plug, plugArray) == MS::kSuccess)
+        {
+            MPlug outTimePlug(thisMObject(), outTimeAttr);
+            plugArray.append(outTimePlug);
+        }
+    }
+
+    return retValue;
 }
+
+#if MAYA_API_VERSION >= 20210000
+/* virtual */
+void
+MayaUsdProxyShapeBase::getCacheSetup(const MEvaluationNode& evalNode, MNodeCacheDisablingInfo& disablingInfo, MNodeCacheSetupInfo& cacheSetupInfo, MObjectArray& monitoredAttributes) const
+{
+    MPxSurfaceShape::getCacheSetup(evalNode, disablingInfo, cacheSetupInfo, monitoredAttributes);
+    // We want this node to be cached by default (unless cache rules have been configured
+    // to exclude it.
+    cacheSetupInfo.setPreference(MNodeCacheSetupInfo::kWantToCacheByDefault, true);
+}
+
+/* virtual */
+void
+MayaUsdProxyShapeBase::configCache(const MEvaluationNode& evalNode, MCacheSchema& schema) const
+{
+    MPxSurfaceShape::configCache(evalNode,schema);
+    // Out time is not always a dirty plug, but time can be animated. This is why we will
+    // store input time and enable quick compute within proxy shape for out time
+    schema.add(timeAttr);
+}
+#endif
 
 UsdPrim
 MayaUsdProxyShapeBase::_GetUsdPrim(MDataBlock dataBlock) const
@@ -874,7 +1029,7 @@ MayaUsdProxyShapeBase::_GetTime(MDataBlock dataBlock) const
 {
     MStatus status;
 
-    return UsdTimeCode(dataBlock.inputValue(timeAttr, &status).asTime().value());
+    return UsdTimeCode(dataBlock.inputValue(outTimeAttr, &status).asTime().value());
 }
 
 UsdStageRefPtr
@@ -1076,7 +1231,13 @@ MayaUsdProxyShapeBase::_OnStageContentsChanged(
 {
     // If the USD stage this proxy represents changes without Maya's knowledge,
     // we need to inform Maya that the shape is dirty and needs to be redrawn.
-    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
+    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());   
+}
+
+void 
+MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)
+{
+    ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);
 }
 
 bool

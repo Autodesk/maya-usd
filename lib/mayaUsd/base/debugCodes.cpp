@@ -29,6 +29,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
             "Debugging of translators.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDMAYA_PROXYSHAPEBASE,
             "Base proxy shape evaluation");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(USDMAYA_PROXYACCESSOR,
+            "Debugging of the evaluation for mixed data models.");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -22,15 +22,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMayaStageNoticeListener::UsdMayaStageNoticeListener() : TfWeakBase()
-{
-}
-
 /* virtual */
 UsdMayaStageNoticeListener::~UsdMayaStageNoticeListener()
 {
     if (_stageContentsChangedKey.IsValid()) {
         TfNotice::Revoke(_stageContentsChangedKey);
+    }
+    if (_stageObjectsChangedKey.IsValid()) {
+        TfNotice::Revoke(_stageObjectsChangedKey);
     }
 }
 
@@ -47,6 +46,15 @@ UsdMayaStageNoticeListener::SetStageContentsChangedCallback(
         const StageContentsChangedCallback& callback)
 {
     _stageContentsChangedCallback = callback;
+
+    _UpdateStageContentsChangedRegistration();
+}
+
+void
+UsdMayaStageNoticeListener::SetStageObjectsChangedCallback(
+    const StageObjectsChangedCallback& callback)
+{
+    _stageObjectsChangedCallback = callback;
 
     _UpdateStageContentsChangedRegistration();
 }
@@ -69,6 +77,24 @@ UsdMayaStageNoticeListener::_UpdateStageContentsChangedRegistration()
             TfNotice::Revoke(_stageContentsChangedKey);
         }
     }
+
+    if (_stage && _stageObjectsChangedCallback) {
+        // Register for notices if we're not already listening.
+        if (!_stageObjectsChangedKey.IsValid()) {
+            _stageObjectsChangedKey =
+                TfNotice::Register(
+                    TfCreateWeakPtr(this),
+                    &UsdMayaStageNoticeListener::_OnStageObjectsChanged,
+                    _stage);
+        }
+    }
+    else {
+        // Either the stage or the callback is invalid, so stop listening for
+        // notices.
+        if (_stageObjectsChangedKey.IsValid()) {
+            TfNotice::Revoke(_stageObjectsChangedKey);
+        }
+    }
 }
 
 void
@@ -80,5 +106,13 @@ UsdMayaStageNoticeListener::_OnStageContentsChanged(
     }
 }
 
+void
+UsdMayaStageNoticeListener::_OnStageObjectsChanged(
+    const UsdNotice::ObjectsChanged& notice, const UsdStageWeakPtr& sender) const
+{
+    if (notice.GetStage() == _stage && _stageObjectsChangedCallback) {
+        _stageObjectsChangedCallback(notice);
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
