@@ -86,6 +86,8 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
+    MDGModifier modifier;
+    bool useModifier = false;
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
         auto mayaAttrName = GetMayaNameForUsdAttrName(input.GetFullName());
         if (mayaAttrName == TfToken()) {
@@ -93,8 +95,28 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
         }
         MPlug mayaAttr = depFn.findPlug(mayaAttrName.GetText(), true, &status);
         if (status == MS::kSuccess) {
-            UsdMayaReadUtil::SetMayaAttr(mayaAttr, input);
+            if (mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName
+                || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName
+                || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName) {
+                // These values are exported unscaled, so they also reimport unscaled:
+                VtValue val;
+                if (input.Get(&val) && val.IsHolding<GfVec3f>()) {
+                    GfVec3f color = val.UncheckedGet<GfVec3f>();
+                    // Use MDgModifier to skip color scaling done in SetMayaAttr
+                    MFnNumericData data;
+                    MObject        dataObj = data.create(MFnNumericData::k3Float);
+                    data.setData3Float(color[0], color[1], color[2]);
+                    modifier.newPlugValue(mayaAttr, dataObj);
+                    useModifier = true;
+                }
+            } else {
+                // This call always scales colors:
+                UsdMayaReadUtil::SetMayaAttr(mayaAttr, input);
+            }
         }
+    }
+    if (useModifier) {
+        modifier.doIt();
     }
 
     return true;

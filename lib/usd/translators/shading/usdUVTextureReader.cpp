@@ -70,8 +70,22 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outColorG)
     (outColorB)
     (place2dTexture)
+    (coverage)
+    (translateFrame)
+    (rotateFrame)
+    (mirrorU)
+    (mirrorV)
+    (stagger)
     (wrapU)
     (wrapV)
+    (repeatUV)
+    (offset)
+    (rotateUV)
+    (noiseUV)
+    (vertexUvOne)
+    (vertexUvTwo)
+    (vertexUvThree)
+    (vertexCameraOne)
 
     // UsdUVTexture Input Names
     (bias)
@@ -91,6 +105,25 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((BlueOutputName, "b"))
     ((AlphaOutputName, "a"))
 );
+
+static const TfTokenVector _Place2dTextureConnections = {
+    _tokens->coverage,
+    _tokens->translateFrame,
+    _tokens->rotateFrame,
+    _tokens->mirrorU,
+    _tokens->mirrorV,
+    _tokens->stagger,
+    _tokens->wrapU,
+    _tokens->wrapV,
+    _tokens->repeatUV,
+    _tokens->offset,
+    _tokens->rotateUV,
+    _tokens->noiseUV,
+    _tokens->vertexUvOne,
+    _tokens->vertexUvTwo,
+    _tokens->vertexUvThree,
+    _tokens->vertexCameraOne
+};
 
 PxrMayaUsdUVTexture_Reader::PxrMayaUsdUVTexture_Reader(const UsdMayaPrimReaderArgs& readArgs)
     : UsdMayaShaderReader(readArgs)
@@ -141,13 +174,12 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    // Connect it:
+    // Connect manually (fileTexturePlacementConnect is not available in batch):
     MString connectCmd;
-    connectCmd.format("fileTexturePlacementConnect \"^1s\" \"^2s\"", depFn.name(), uvDepFn.name());
-    MGlobal::displayWarning(connectCmd);
-    status = MGlobal::executeCommand(connectCmd);
-    if (status != MS::kSuccess) {
-        return false;
+    for (const TfToken& uvName : _Place2dTextureConnections) {
+        MPlug uvPlug = uvDepFn.findPlug(uvName.GetText(), true, &status);
+        MPlug filePlug = depFn.findPlug(uvName.GetText(), true, &status);
+        UsdMayaUtil::Connect(uvPlug, filePlug, false);
     }
 
     // File

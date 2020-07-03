@@ -4,6 +4,7 @@ set(TARGET_NAME MAYAUSD_NODES_TEST)
 set(test_script_files
     testPxrUsdPreviewSurfaceDraw.py
     testPxrUsdPreviewSurfaceExport.py
+    testPxrUsdPreviewSurfaceExportImportRoundtrip.py
 )
 
 # copy tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
