@@ -562,9 +562,10 @@ private:
                 continue;
             }
 
-            sourceOutputName = TfToken(
-                TfStringPrintf("%s%s", UsdShadeTokens->outputs, sourceOutputName.GetText())
-                    .c_str());
+            sourceOutputName
+                = TfToken(TfStringPrintf(
+                              "%s%s", UsdShadeTokens->outputs.GetText(), sourceOutputName.GetText())
+                              .c_str());
             auto  srcAttrName = sourceReader->GetMayaNameForUsdAttrName(sourceOutputName);
             MPlug srcAttr = sourceDepFn.findPlug(srcAttrName.GetText());
             if (srcAttr.isArray()) {
