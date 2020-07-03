@@ -257,7 +257,7 @@ PxrUsdTranslators_StandardSurfaceWriter::GetShadingAttributeNameForMayaAttrName(
     return TfToken(
                 TfStringPrintf(
                     "%s%s",
-                    UsdShadeTokens->inputs,
+                    UsdShadeTokens->inputs.GetText(),
                     usdPortName.GetText()).c_str());
 }
 

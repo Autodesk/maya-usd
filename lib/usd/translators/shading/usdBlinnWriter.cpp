@@ -142,8 +142,8 @@ PxrUsdTranslators_BlinnWriter::GetShadingAttributeNameForMayaAttrName(
         return TfToken(
                     TfStringPrintf(
                         "%s%s",
-                        UsdShadeTokens->inputs,
-                        _tokens->roughness).c_str());
+                        UsdShadeTokens->inputs.GetText(),
+                        _tokens->roughness.GetText()).c_str());
     } else {
         return baseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
     }

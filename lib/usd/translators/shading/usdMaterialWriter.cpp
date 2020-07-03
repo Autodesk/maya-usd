@@ -201,8 +201,8 @@ PxrUsdTranslators_MaterialWriter::GetShadingAttributeNameForMayaAttrName(
         return TfToken(
                     TfStringPrintf(
                         "%s%s",
-                        UsdShadeTokens->outputs,
-                        UsdShadeTokens->surface).c_str());
+                        UsdShadeTokens->outputs.GetText(),
+                        UsdShadeTokens->surface.GetText()).c_str());
     } else {
         TF_VERIFY(
             false,

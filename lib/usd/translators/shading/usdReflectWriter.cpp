@@ -81,8 +81,8 @@ PxrUsdTranslators_ReflectWriter::GetShadingAttributeNameForMayaAttrName(
         return TfToken(
                     TfStringPrintf(
                         "%s%s",
-                        UsdShadeTokens->inputs,
-                        _tokens->specularColor).c_str());
+                        UsdShadeTokens->inputs.GetText(),
+                        _tokens->specularColor.GetText()).c_str());
     } else {
         return baseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
     }

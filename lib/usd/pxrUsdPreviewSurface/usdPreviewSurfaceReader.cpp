@@ -53,15 +53,6 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrMayaUsdPreviewSurface_Reader)
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // XXX: We duplicate this token here rather than create a dependency on
-    // usdImaging in case the plugin is being built with imaging disabled.
-    // If/when it moves out of usdImaging to a place that is always available,
-    // it should be pulled from there instead.
-    (UsdPreviewSurface));
-
 PxrMayaUsdPreviewSurface_Reader::PxrMayaUsdPreviewSurface_Reader(
     const UsdMayaPrimReaderArgs& readArgs)
     : UsdMayaShaderReader(readArgs)
