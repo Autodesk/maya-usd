@@ -145,7 +145,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     MString connectCmd;
     connectCmd.format("fileTexturePlacementConnect \"^1s\" \"^2s\"", depFn.name(), uvDepFn.name());
     MGlobal::displayWarning(connectCmd);
-    status == MGlobal::executeCommand(connectCmd);
+    status = MGlobal::executeCommand(connectCmd);
     if (status != MS::kSuccess) {
         return false;
     }
