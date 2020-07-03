@@ -18,11 +18,11 @@
 
 /// \file
 
-#include <pxr/pxr.h>
-
 #include <mayaUsd/fileio/shaderWriter.h>
 
-class MFnDependencyNode;
+#include <pxr/pxr.h>
+
+#include <maya/MFnDependencyNode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
