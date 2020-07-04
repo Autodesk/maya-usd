@@ -15,6 +15,12 @@
 # limitations under the License.
 #
 
+from pxr import Gf
+from pxr import Sdf
+from pxr import Usd
+from pxr import UsdShade
+from pxr import UsdUtils
+
 import os
 import unittest
 
