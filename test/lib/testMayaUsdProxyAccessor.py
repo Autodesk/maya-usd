@@ -105,6 +105,8 @@ class CachingScope(object):
         self.auto_key_chars = cmds.autoKeyframe(q=True, characterOption=True)
         cmds.autoKeyframe(e=True, state=False)
 
+        self.waitForCache(None)
+
         return self
 
     def __init__(self):
@@ -159,7 +161,8 @@ class CachingScope(object):
         cmds.currentTime( cmds.currentTime(q=True) )
         cmds.currentTime( cmds.currentTime(q=True) )
         cache_is_ready = cmds.cacheEvaluator( waitForCache=wait_time )
-        unit_test.assertTrue( cache_is_ready )
+        if unit_test:
+            unit_test.assertTrue( cache_is_ready )
 
     @staticmethod
     def is_caching_scope():
@@ -1042,7 +1045,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup(self)
             self.validateOutput(thisScope)
 
-    @unittest.skip("Randomly failing tests. Has to do with timing to finalize background compute and file new")
     def testOutput_Caching(self):
         """
         Validate that accessor can output attributes and worldspace matrix from the stage
@@ -1063,7 +1065,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup(self)
             self.validateTransformedOutput(thisScope)
 
-    @unittest.skip("Randomly failing tests. Has to do with timing to finalize background compute and file new")
     def testTransformedOutput_Caching(self):
         """
         Validate that accessor will respect shape transform when writing world space outputs.
@@ -1086,7 +1087,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup(self)
             self.validateInput(thisScope)
   
-    @unittest.skip("Randomly failing tests. Has to do with timing to finalize background compute and file new")
     def testInput_Caching(self):
         """
         The that accessor can write data to the stage and it's propagated correctly to:
@@ -1109,7 +1109,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup(self)
             self.validateParentingDagObjectUnderUsdPrim(thisScope)
  
-    @unittest.skip("Randomly failing tests. Has to do with timing to finalize background compute and file new")
     def testParentingDagObjectUnderUsdPrim_Caching(self):
         """
         Test parenting of dag object under usd prim.
@@ -1130,7 +1129,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup(self)
             self.validatePassivelyAffectedReset(thisScope)
             
-    @unittest.skip("Randomly failing tests. Has to do with timing to finalize background compute and file new")
     def testPassiveManipulation_Caching(self):
         """
         Test manipulation of accessor plug which has incoming curve connection.
@@ -1151,7 +1149,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup(self)
             self.validateDagManipulation(thisScope)
             
-    @unittest.skip("Randomly failing tests. Has to do with timing to finalize background compute and file new")
     def testDagManipulation_Caching(self):
         """
         This helper method validate proper DAG invalidation during manipulation
@@ -1171,7 +1168,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup(self)
             self.validateKeyframeWithCommands(thisScope)
             
-    @unittest.skip("Randomly failing tests. Has to do with timing to finalize background compute and file new")
     def testKeyframeWithCommands_Caching(self):
         """
         Test keying with cached playback ENABLED
@@ -1212,7 +1208,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
            thisScope.verifyScopeSetup(self)
            self.validateOutputForInMemoryRootLayer(thisScope)
            
-    @unittest.skip("Randomly failing tests. Has to do with timing to finalize background compute and file new")
     def testOutputForInMemoryRootLayer_Cache(self):
         """
         Validate that accessor can output attributes and worldspace matrix from the stage.
@@ -1256,7 +1251,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup(self)
             self.validateDisconnect(thisScope)
 
-    @unittest.skip("Randomly failing tests. Has to do with timing to finalize background compute and file new")
     def testDisconnect_Caching(self):
         """
         Validate that accessor clears temporary data after disconnecting the input
