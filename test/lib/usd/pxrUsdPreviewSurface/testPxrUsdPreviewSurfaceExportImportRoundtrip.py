@@ -43,6 +43,7 @@ class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
+    @unittest.skip("Needs investigation on MacOS")
     def testPxrUsdPreviewSurfaceRoundtrip(self):
         """
         Tests that a pxrUsdPreviewSurface exports and imports correctly.
