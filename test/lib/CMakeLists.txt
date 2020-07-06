@@ -17,7 +17,8 @@ add_custom_target(${TARGET_NAME} ALL)
 
 mayaUsd_copyFiles(${TARGET_NAME}
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-    FILES ${test_script_files})
+    FILES ${test_script_files}
+)
 
 foreach(script ${test_script_files})
     mayaUsd_get_unittest_target(target ${script})
