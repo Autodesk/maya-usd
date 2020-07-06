@@ -612,28 +612,44 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // is used instead to extract Rprim id.
     const std::string renderItemName = renderItem.name().asChar();
     const auto pos = renderItemName.find_last_of(USD_UFE_SEPARATOR);
-    SdfPath rprimId(renderItemName.substr(0, pos));
+    const SdfPath rprimId(renderItemName.substr(0, pos));
 
-    // If the selection hit comes from an instanced render item, its instance
-    // transform matrices should have been sorted according to USD instance ID,
-    // therefore drawInstID is usdInstID plus 1 considering VP2 defines the
-    // instance ID of the first instance as 1.
+    // If drawInstID is positive, it means the selection hit comes from one instanced render item,
+    // in this case its instance transform matrices have been sorted w.r.t. USD instance ID, thus
+    // usdInstID is drawInstID minus 1 because VP2 instance IDs start from 1.  Otherwise the
+    // selection hit is from one regular render item, but the Rprim can be either plain or single
+    // instance, because we don't use instanced draw for single instance render items in order to
+    // improve draw performance in Maya 2020 and before.
     const int drawInstID = intersection.instanceID();
-    const int usdInstID = drawInstID - 1;
+
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
-    rprimId = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID);
+    const int usdInstID = drawInstID > 0 ? drawInstID - 1 : 0;
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID);
 #else
+    SdfPath indexPath;
     if (drawInstID > 0) {
-        rprimId = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
+        const int usdInstID = drawInstID - 1;
+        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
+    }
+    else {
+        indexPath = rprimId;
+    }
+
+    SdfPath usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
+
+    // Examine the USD path. If it is not a valid prim path, the selection hit is from a single
+    // instance Rprim and indexPath is actually its instancer Rprim id. In this case we should
+    // call GetPathForInstanceIndex() using 0 as the instance index.
+    if (!usdPath.IsPrimPath()) {
+        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, 0, nullptr);
+        usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
     }
 #endif
-
-    const SdfPath usdPath(_sceneDelegate->ConvertIndexPathToCachePath(rprimId));
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     const Ufe::SceneItem::Ptr& si = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
-        TF_WARN("UFE runtime is not updated for the USD stage. Please save scene and reopen.");
+        TF_WARN("Failed to create UFE scene item for Rprim '%s'", rprimId.GetText());
         return false;
     }
 
