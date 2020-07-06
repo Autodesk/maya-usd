@@ -73,13 +73,22 @@ global proc int mayaUsdTranslatorImport (string $parent,
 //            menuItem -label "Object space";
 //            menuItem -label "World space";
 //        optionMenuGrp -e -sl 1 mayaUsdTranslator_CoordSystemOptionMenu;
-//
-//        optionMenuGrp -label "Materials: " -cw 1 $cw1 mayaUsdTranslator_MaterialsOptionMenu;
-//            menuItem -label "None";
-//            menuItem -label "Display Colors";
-//            menuItem -label "USD Shade";
-//        optionMenuGrp -e -sl 2 mayaUsdTranslator_MaterialsOptionMenu;
-//
+
+        string $importers[] = `mayaUSDListShadingModes -import`;
+        optionMenuGrp -l "Materials:" -cw 1 $cw1 mayaUsdTranslator_MaterialsOptionMenu;
+        for ($modeName in $importers) {
+            string $niceName = $modeName;
+            if ($modeName == "displayColor") {
+                $niceName = "Display Colors";
+            } else if ($modeName == "pxrRis") {
+                $niceName = "RfM Shaders";
+            } else if ($modeName == "useRegistry") {
+                $niceName = "USD Shade";
+            }
+            menuItem -l $niceName -ann $modeName;
+        }
+        mayaUsdTranslatorImport_SetOptionMenuByAnnotation("useRegistry", "mayaUsdTranslator_MaterialsOptionMenu");
+
 //        checkBoxGrp -label "InstancedPrims: " -label1 "Convert to Instances" -cw 1 $cw1 mayaUsdTranslator_InstancedPrimsCheckBox;
 //
 //        optionMenuGrp -label "Include Metadata: " -cw 1 $cw1 mayaUsdTranslator_IncludeMetadataOptionMenu;
@@ -113,7 +122,9 @@ global proc int mayaUsdTranslatorImport (string $parent,
             tokenize($currentOptions, ";", $optionList);
             for ($index = 0; $index < size($optionList); $index++) {
                 tokenize($optionList[$index], "=", $optionBreakDown);
-                if ($optionBreakDown[0] == "readAnimData") {
+                if ($optionBreakDown[0] == "shadingMode") {
+                    mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "mayaUsdTranslator_MaterialsOptionMenu");
+                } else if ($optionBreakDown[0] == "readAnimData") {
                     mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_AnimDataCheckBox");
                 } else if ($optionBreakDown[0] == "startTime") {
                     int $startTime = $optionBreakDown[1];
@@ -131,6 +142,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
 
     } else if ($action == "query") {
         string $currentOptions = "";
+        $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "shadingMode", "mayaUsdTranslator_MaterialsOptionMenu");
         $currentOptions = mayaUsdTranslatorImport_AppendFromDialog($currentOptions, "primPath", "-primPath");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "readAnimData", "mayaUsdTranslator_AnimDataCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "useCustomFrameRange", "mayaUsdTranslator_CustomFrameRangeCheckBox");
@@ -189,6 +201,19 @@ global proc int mayaUsdTranslatorImport (string $parent,
     return $bResult;
 }
 
+global proc mayaUsdTranslatorImport_SetOptionMenuByAnnotation(
+        string $ann, string $widget) {
+    int $index = 1; // 1-based indexing.
+    for ($i in `optionMenuGrp -q -itemListLong $widget`) {
+        if (`menuItem -q -ann $i` == $ann) {
+            optionMenuGrp -e -select $index $widget;
+            return;
+        }
+
+        $index++;
+    }
+}
+
 global proc mayaUsdTranslatorImport_SetCheckBoxGrp(string $arg, string $widget)
 {
     checkBoxGrp -e -value1 ($arg != "0") $widget;
@@ -213,6 +238,14 @@ global proc string mayaUsdTranslatorImport_AppendFromCheckBoxGrp(string $current
     } else {
         return $currentOptions + ";" + $arg + "=0";
     }
+}
+
+global proc string mayaUsdTranslatorImport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
+    int $index = `optionMenuGrp -q -select $widget` - 1;
+    string $allItems[] = `optionMenuGrp -q -itemListLong $widget`;
+    string $item = $allItems[$index];
+    string $annotation = `menuItem -q -ann $item`;
+    return $currentOptions + ";" + $arg + "=" + $annotation;
 }
 
 global proc string mayaUsdTranslatorImport_AppendFromIntFieldGrp(string $currentOptions, string $arg, int $index, string $widget)

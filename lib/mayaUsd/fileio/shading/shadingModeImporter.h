@@ -130,6 +130,11 @@ public:
     MAYAUSD_CORE_PUBLIC
     void SetDisplacementShaderPlugName(const TfToken& displacementShaderPlugName);
 
+    /// Returns the primitive reader context for this shading mode import.
+    ///
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaPrimReaderContext* GetPrimReaderContext() const;
+
 private:
     const UsdShadeMaterial& _shadeMaterial;
     const UsdGeomGprim& _boundPrim;

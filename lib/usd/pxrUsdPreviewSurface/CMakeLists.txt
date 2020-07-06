@@ -32,6 +32,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         usdPreviewSurface.cpp
         usdPreviewSurfacePlugin.cpp
+        usdPreviewSurfaceReader.cpp
         usdPreviewSurfaceShadingNodeOverride.cpp
         usdPreviewSurfaceWriter.cpp
 )

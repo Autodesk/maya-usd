@@ -20,6 +20,8 @@ target_sources(${PROJECT_NAME}
         primWriterContext.cpp
         primWriterRegistry.cpp
         registryHelper.cpp
+        shaderReader.cpp
+        shaderReaderRegistry.cpp
         shaderWriter.cpp
         transformWriter.cpp
         writeJobContext.cpp
@@ -43,6 +45,8 @@ set(headers
     primWriterContext.h
     primWriterRegistry.h
     registryHelper.h
+    shaderReader.h
+    shaderReaderRegistry.h
     shaderWriter.h
     transformWriter.h
     writeJobContext.h
