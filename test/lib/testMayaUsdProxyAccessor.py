@@ -44,9 +44,10 @@ class NonCachingScope(object):
 
         return self
 
-    def __init__(self):
+    def __init__(self, unit_test):
         '''Initialize everything to be empty - only use the "with" syntax with this object'''
         self.em_mgr = None
+        self.unit_test = unit_test
 
     def __exit__(self,exit_type,value,traceback):
         '''Exit the scope, restoring all of the state information'''
@@ -54,21 +55,19 @@ class NonCachingScope(object):
             self.em_mgr.restore_state()
             self.em_mgr = None
 
-    @staticmethod
-    def verifyScopeSetup(unit_test):
+    def verifyScopeSetup(self):
         '''
         Meta-test to check that the scope was defined correctly
         :param unit_test: The test object from which this method was called
         '''
-        unit_test.assertTrue( cmds.evaluationManager( mode=True, query=True )[0] == 'parallel' )
+        self.unit_test.assertTrue( cmds.evaluationManager( mode=True, query=True )[0] == 'parallel' )
         if cmds.pluginInfo('cacheEvaluator', loaded=True, query=True):
-            unit_test.assertFalse( cmds.evaluator( query=True, en=True, name='cache' ) )
+            self.unit_test.assertFalse( cmds.evaluator( query=True, en=True, name='cache' ) )
 
-    def checkValidFrames(self, unit_test, expected_valid_frames, layers_mask = 0b01):
+    def checkValidFrames(self, expected_valid_frames, layers_mask = 0b01):
         return True
 
-    @staticmethod
-    def waitForCache(unit_test, wait_time=5):
+    def waitForCache(self, wait_time=5):
         return
 
     @staticmethod
@@ -105,16 +104,17 @@ class CachingScope(object):
         self.auto_key_chars = cmds.autoKeyframe(q=True, characterOption=True)
         cmds.autoKeyframe(e=True, state=False)
 
-        self.waitForCache(None)
+        self.waitForCache()
 
         return self
 
-    def __init__(self):
+    def __init__(self, unit_test):
         '''Initialize everything to be empty - only use the "with" syntax with this object'''
         self.em_mgr = None
         self.cache_mgr = None
         self.auto_key_state = None
         self.auto_key_chars = None
+        self.unit_test = unit_test
 
     def __exit__(self,exit_type,value,traceback):
         '''Exit the scope, restoring all of the state information'''
@@ -124,17 +124,16 @@ class CachingScope(object):
             self.em_mgr.restore_state()
         cmds.autoKeyframe(e=True, state=self.auto_key_state, characterOption=self.auto_key_chars)
 
-    @staticmethod
-    def verifyScopeSetup(unit_test):
+    def verifyScopeSetup(self):
         '''
         Meta-test to check that the scope was defined correctly
         :param unit_test: The test object from which this method was called
         '''
-        unit_test.assertTrue( cmds.evaluationManager( mode=True, query=True )[0] == 'parallel' )
-        unit_test.assertTrue( cmds.pluginInfo('cacheEvaluator', loaded=True, query=True) )
-        unit_test.assertTrue( cmds.evaluator( query=True, en=True, name='cache' ) )
+        self.unit_test.assertTrue( cmds.evaluationManager( mode=True, query=True )[0] == 'parallel' )
+        self.unit_test.assertTrue( cmds.pluginInfo('cacheEvaluator', loaded=True, query=True) )
+        self.unit_test.assertTrue( cmds.evaluator( query=True, en=True, name='cache' ) )
 
-    def checkValidFrames(self, unit_test, expected_valid_frames, layers_mask = 0b01):
+    def checkValidFrames(self, expected_valid_frames, layers_mask = 0b01):
         '''
         :param unit_test: The test object from which this method was called
         :param expected_valid_frames: The list of frames the text expected to be cached
@@ -144,15 +143,14 @@ class CachingScope(object):
         if len(expected_valid_frames) == len(current_valid_frames):
             for current, expected in zip(current_valid_frames,expected_valid_frames):
                 if current[0] != expected[0] or current[1] != expected[1]:
-                    unit_test.fail( "{} != {} (current,expected)".format( current_valid_frames, expected_valid_frames) )
+                    self.unit_test.fail( "{} != {} (current,expected)".format( current_valid_frames, expected_valid_frames) )
                     return False
 
             return True
-        unit_test.fail( "{} != {} (current,expected)".format( current_valid_frames, expected_valid_frames) )
+        self.unit_test.fail( "{} != {} (current,expected)".format( current_valid_frames, expected_valid_frames) )
         return False
 
-    @staticmethod
-    def waitForCache(unit_test, wait_time=5):
+    def waitForCache(self, wait_time=5):
         '''
         Fill the cache in the background, waiting for a maximum time
         :param unit_test: The test object from which this method was called
@@ -161,8 +159,7 @@ class CachingScope(object):
         cmds.currentTime( cmds.currentTime(q=True) )
         cmds.currentTime( cmds.currentTime(q=True) )
         cache_is_ready = cmds.cacheEvaluator( waitForCache=wait_time )
-        if unit_test:
-            unit_test.assertTrue( cache_is_ready )
+        self.unit_test.assertTrue( cache_is_ready )
 
     @staticmethod
     def is_caching_scope():
@@ -392,8 +389,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeChildItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         translatePlugSphere = pa.getOrCreateAccessPlug(ufeChildItemSphere, usdAttrName='xformOp:translate' )
         
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Validate output accessor plugs
         cmds.currentTime(1)
@@ -426,8 +423,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         # Create accessor plugs
         worldMatrixPlugA = pa.getOrCreateAccessPlug(ufeParentItemA, '', Sdf.ValueTypeNames.Matrix4d )
         
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Validate output accessor plugs
         cmds.currentTime(1)
@@ -453,8 +450,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
         worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Validate that DAG transformation is applied when reading world space matrix from USD
         cmds.currentTime(1)
@@ -496,9 +493,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         # Validate that input accessor plugs wrote the data to USD
         # Validate that output accessor plug has data driven by input accessor plug
         
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         cmds.currentTime(1)
         v1 = cmds.getAttr('{}.{}'.format(nodeDagPath,worldMatrixPlugSphere))
@@ -537,9 +534,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         pa.parentItems([ufeItemChild],ufeItemSphere)
         
         # Validate
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         cmds.currentTime(1)
         v1 = cmds.getAttr('{}.wm[0]'.format(childNodeDagPath))
@@ -635,15 +632,15 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         rotatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
         cmds.currentTime(1) # trigger compute to fill the data
         
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Manipulate using Maya and key (at frame 1)
         cmds.currentTime(1)
         cmds.move(0,-2,0, relative=True)
         cmds.rotate(0, 90, 0, relative=True, objectSpace=True, forceOrderXYZ=True)
 
-        cachingScope.checkValidFrames(self, self.cache_empty)
+        cachingScope.checkValidFrames(self.cache_empty)
 
         # Proxy accessor should pick up the manipulation and write it to output plugs
         # This is important to enable keying workflow
@@ -659,8 +656,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         self.validatePlugsEqual(nodeDagPath,
             [(translatePlug,(0.0, -2.0, 0.0)), (rotatePlug, (0.0, 90.0, 0.0))])
 
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
 
         # Manipulate again, but this time we don't key
         # Expected result is that after time change we should get back previously
@@ -672,7 +669,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         # above manipulation should only passively affect the data coming from connections.
         # Until we key, this should not invalidate the cache and values should be reset
         # with dirty propagation (caused by curve manipulation or times change)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         self.validatePlugsEqual(nodeDagPath,
             [(translatePlug,(20.0, 18.0, 20.0)), (rotatePlug, (45.0, 90.0, 0.0))])
@@ -682,7 +679,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             [(translatePlug,(0.0, -2.0, 0.0)), (rotatePlug, (0.0, 90.0, 0.0))])
 
         # This reset shouldn't invalidate the cache
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_allFrames)
 
     def validateDagManipulation(self,cachingScope):
         """
@@ -697,8 +694,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
         worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Validate that DAG transformation is applied when reading world space matrix from USD
         cmds.currentTime(1)
@@ -716,21 +713,21 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.move(0,-2,0, relative=True)
         
         # Move should have invalidated entire cache since we moved static object
-        cachingScope.checkValidFrames(self, self.cache_empty)
+        cachingScope.checkValidFrames(self.cache_empty)
         
         cmds.setKeyframe('{}.t'.format(transform))
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         cmds.currentTime(50)
         cmds.move(-2,0,0, relative=True)
         
         # We already have one key dropped, so we shouldn't invalidate cache on this move
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         cmds.setKeyframe('{}.t'.format(transform))
         # We just added a new key, now cache should be invalid
-        cachingScope.checkValidFrames(self, self.cache_empty)
+        cachingScope.checkValidFrames(self.cache_empty)
     
     def validateKeyframeWithCommands(self, cachingScope):
         """
@@ -747,15 +744,15 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         rotatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
         cmds.currentTime(1) # trigger compute to fill the data
         
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Manipulate using Maya and key (at frame 1)
         cmds.currentTime(1)
         cmds.move(0,-2,0, relative=True)
         cmds.rotate(0, 90, 0, relative=True, objectSpace=True, forceOrderXYZ=True)
 
-        cachingScope.checkValidFrames(self, self.cache_empty)
+        cachingScope.checkValidFrames(self.cache_empty)
 
         # Proxy accessor should pick up the manipulation and write it to output plugs
         # This is important to enable keying workflow
@@ -771,8 +768,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         self.validatePlugsEqual(nodeDagPath,
             [(translatePlug,(0.0, -2.0, 0.0)), (rotatePlug, (0.0, 90.0, 0.0))])
 
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
 
         # Manipulate and drop a key at frame 50
         cmds.currentTime(50)
@@ -782,9 +779,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
         
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Manipulate and drop a key at frame 100
         cmds.currentTime(100)
@@ -794,9 +791,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
         
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Last pass over keys to validate animation
         cmds.currentTime(1)
@@ -825,8 +822,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         rotatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
         cmds.currentTime(1) # trigger compute to fill the data
         
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Manipulate using UFE and key (at frame 1)
         cmds.currentTime(1)
@@ -841,7 +838,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeTransform3d.rotate(0.0, 90.0, 0.0)
 
         # There is no key, so this should have invalidated the cache
-        cachingScope.checkValidFrames(self, self.cache_empty)
+        cachingScope.checkValidFrames(self.cache_empty)
 
         # Proxy accessor should pick up the manipulation and write it to output plugs
         # This is important to enable keying workflow
@@ -857,8 +854,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         self.validatePlugsEqual(nodeDagPath,
            [(translatePlug,(0.0, -2.0, 0.0)), (rotatePlug, (0.0, 90.0, 0.0))])
 
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
 
         # Manipulate and drop a key at frame 50
         cmds.currentTime(50)
@@ -868,9 +865,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
 
         # Manipulate and drop a key at frame 100
         cmds.currentTime(100)
@@ -880,9 +877,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
 
         # Last pass over keys to validate animation
         cmds.currentTime(1)
@@ -920,8 +917,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         rotatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
         cmds.currentTime(1) # trigger compute to fill the data
         
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         # Manipulate using USD and key (at frame 1)
         cmds.currentTime(1)
@@ -930,7 +927,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         usdRotateAttr.Set((0.0, 90.0, 0.0), timeCode)
 
         # There is no key, so this should have invalidated the cache
-        cachingScope.checkValidFrames(self, self.cache_empty)
+        cachingScope.checkValidFrames(self.cache_empty)
 
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
@@ -941,8 +938,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         self.validatePlugsEqual(nodeDagPath,
            [(translatePlug,(0.0, -2.0, 0.0)), (rotatePlug, (0.0, 90.0, 0.0))])
 
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
 
         # Manipulate and drop a key at frame 50
         cmds.currentTime(50)
@@ -953,9 +950,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
 
         # Manipulate and drop a key at frame 100
         cmds.currentTime(100)
@@ -966,9 +963,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:translate')
         pa.keyframeAccessPlug(ufeItemParent, 'xformOp:rotateXYZ')
 
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
 
         # Last pass over keys to validate animation
         cmds.currentTime(1)
@@ -1006,9 +1003,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         
         pa.connectItems(ufeItemSrcLocator, ufeItemParent, [('translate','xformOp:translate')])
         
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         cmds.currentTime(1)
         v1 = cmds.getAttr('{}.{}'.format(nodeDagPath,worldMatrixPlugSphere))
@@ -1027,9 +1024,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         # Disconnect the attributes should clear temp opinions in session layers
         cmds.disconnectAttr('{}.t'.format(srcLocatorDagPath), '{}.{}'.format(nodeDagPath,translatePlugParent))
         
-        cachingScope.checkValidFrames(self, self.cache_empty)
-        cachingScope.waitForCache(self)
-        cachingScope.checkValidFrames(self, self.cache_allFrames)
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
         
         dumpSessionLayer = stage.GetSessionLayer().ExportToString()
         self.assertNotIn("double3 xformOp:translate.timeSamples = {\n",dumpSessionLayer)
@@ -1041,8 +1038,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateOutput(thisScope)
 
     def testOutput_Caching(self):
@@ -1051,8 +1048,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with CachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateOutput(thisScope)
 
     def testTransformedOutput_NoCaching(self):
@@ -1061,8 +1058,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateTransformedOutput(thisScope)
 
     def testTransformedOutput_Caching(self):
@@ -1071,8 +1068,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is ENABLED in this test.
         """
         cmds.file(new=True, force=True)
-        with CachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateTransformedOutput(thisScope)
     
     def testInput_NoCaching(self):
@@ -1083,8 +1080,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateInput(thisScope)
   
     def testInput_Caching(self):
@@ -1095,8 +1092,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is ENABLED in this test.
         """
         cmds.file(new=True, force=True)
-        with CachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateInput(thisScope)
         
     def testParentingDagObjectUnderUsdPrim_NoCaching(self):
@@ -1105,8 +1102,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateParentingDagObjectUnderUsdPrim(thisScope)
  
     def testParentingDagObjectUnderUsdPrim_Caching(self):
@@ -1115,8 +1112,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is ENABLED in this test.
         """
         cmds.file(new=True, force=True)
-        with CachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateParentingDagObjectUnderUsdPrim(thisScope)
  
     def testPassiveManipulation_NoCaching(self):
@@ -1125,8 +1122,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validatePassivelyAffectedReset(thisScope)
             
     def testPassiveManipulation_Caching(self):
@@ -1135,8 +1132,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is ENABLED in this test.
         """
         cmds.file(new=True, force=True)
-        with CachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validatePassivelyAffectedReset(thisScope)
 
     def testDagManipulation_NoCaching(self):
@@ -1145,8 +1142,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateDagManipulation(thisScope)
             
     def testDagManipulation_Caching(self):
@@ -1155,8 +1152,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is ENABLED in this test.
         """
         cmds.file(new=True, force=True)
-        with CachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateDagManipulation(thisScope)
 
     def testKeyframeWithCommands_NoCaching(self):
@@ -1164,8 +1161,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Test keying with cached playback disabled
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateKeyframeWithCommands(thisScope)
             
     def testKeyframeWithCommands_Caching(self):
@@ -1173,8 +1170,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Test keying with cached playback ENABLED
         """
         cmds.file(new=True, force=True)
-        with CachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateKeyframeWithCommands(thisScope)
             
     def testSerializationASCII_NoCache(self):
@@ -1183,8 +1180,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateSerialization('testSerializationASCII.ma', 'mayaAscii')
 
     def testSerializationBinary_NoCache(self):
@@ -1193,8 +1190,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateSerialization('testSerializationBinary.mb', 'mayaBinary')
    
     def testOutputForInMemoryRootLayer_NoCache(self):
@@ -1204,8 +1201,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
        Cached playback is disabled in this test.
        """
        cmds.file(new=True, force=True)
-       with NonCachingScope() as thisScope:
-           thisScope.verifyScopeSetup(self)
+       with NonCachingScope(self) as thisScope:
+           thisScope.verifyScopeSetup()
            self.validateOutputForInMemoryRootLayer(thisScope)
            
     def testOutputForInMemoryRootLayer_Cache(self):
@@ -1215,8 +1212,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is ENABLED in this test.
         """
         cmds.file(new=True, force=True)
-        with CachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateOutputForInMemoryRootLayer(thisScope)
             
     @unittest.skip("Need to investigate why this test is not failing when run in Maya with GUI")
@@ -1226,8 +1223,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateKeyframeWithUFE(thisScope)
 
     @unittest.skip("Need to investigate why directly setting values with USD doesn't work. Could be a bug in the test")
@@ -1237,8 +1234,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateKeyframeWithUSD(thisScope)
 
     def testDisconnect_NoCaching(self):
@@ -1247,8 +1244,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is disabled in this test.
         """
         cmds.file(new=True, force=True)
-        with NonCachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateDisconnect(thisScope)
 
     def testDisconnect_Caching(self):
@@ -1257,6 +1254,6 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Cached playback is ENABLED in this test.
         """
         cmds.file(new=True, force=True)
-        with CachingScope() as thisScope:
-            thisScope.verifyScopeSetup(self)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
             self.validateDisconnect(thisScope)
