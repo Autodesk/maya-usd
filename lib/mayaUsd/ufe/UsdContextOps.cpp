@@ -114,7 +114,7 @@ public:
             // itemPath[1] isn't correct. But in this case it is only used by
             // uniqueChildName() which just takes the back of the path for child
             //  name, so it's fine.
-            Ufe::Path newUfePath = ufePath + itemPath[1];
+            Ufe::Path newUfePath = ufePath + (itemPath[1] + std::to_string(1));
             auto newPrimName = uniqueChildName(usdSceneItem, newUfePath);
 
             // Build (and store) the path for the new prim with the unique name.
