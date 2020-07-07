@@ -339,13 +339,9 @@ class RenameTestCase(unittest.TestCase):
         newNameWithSpecialChars = '!@#%$@$=sph^e.re_*()<>}021|'
         cmds.rename(newNameWithSpecialChars)
 
-        # the renamed item is in the selection.
-        snIter = iter(ufe.GlobalSelection.get())
-        pSphereItem = next(snIter)
-        pSphereItemRenamed = str(pSphereItem.path().back())
-
         # get the prim
-        usdPrim = stage.GetPrimAtPath('/sphereXform/' + pSphereItemRenamed)
+        pSphereItem = ufe.GlobalSelection.get().front()
+        usdPrim = stage.GetPrimAtPath(str(pSphereItem.path().segments[1]))
         self.assertTrue(usdPrim)
 
         # get the primspec
