@@ -23,7 +23,7 @@ import ufe
 import mayaUsd.ufe
 
 import unittest
-import sys
+import re
 
 class RenameTestCase(unittest.TestCase):
     '''Test renaming a UFE scene item and its ancestors.
@@ -344,12 +344,6 @@ class RenameTestCase(unittest.TestCase):
         usdPrim = stage.GetPrimAtPath(str(pSphereItem.path().segments[1]))
         self.assertTrue(usdPrim)
 
-        # get the primspec
-        primspec = stage.GetEditTarget().GetPrimSpecForScenePath(usdPrim.GetPath());
-        self.assertTrue(primspec)
-
-        # rename
-        try:
-            primspec.name = pSphereItemRenamed
-        except:
-            print(sys.exc_info()[1])
+        # prim names are not allowed to have special characters except '_' 
+        regex = re.compile('[@!#$%^&*()<>?/\|}{~:]')
+        self.assertFalse(regex.search(usdPrim.GetName()))
