@@ -54,6 +54,7 @@
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMaya_ReadJob::UsdMaya_ReadJob(

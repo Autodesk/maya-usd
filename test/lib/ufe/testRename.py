@@ -23,6 +23,7 @@ import ufe
 import mayaUsd.ufe
 
 import unittest
+import re
 
 class RenameTestCase(unittest.TestCase):
     '''Test renaming a UFE scene item and its ancestors.
@@ -343,3 +344,42 @@ class RenameTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/TreeBase/leavesXform"), 
             stage.GetPrimAtPath("/TreeBase/leavesXform/leaves"),
             stage.GetPrimAtPath("/TreeBase/leavesXform1"),])
+
+    def testRenameSpecialCharacter(self):
+        # open twoSpheres.ma scene in test-samples
+        mayaUtils.openTwoSpheresScene()
+
+        # clear selection to start off
+        cmds.select(clear=True)
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|usdSphereParent|usdSphereParentShape')
+        usdPathSegment = usdUtils.createUfePathSegment('/sphereXform/sphere')
+        basePath = ufe.Path([mayaPathSegment, usdPathSegment])
+        usdSphereItem = ufe.Hierarchy.createItem(basePath)
+
+        ufe.GlobalSelection.get().append(usdSphereItem)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # check GetLayerStack behavior
+        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        # rename with special chars
+        newNameWithSpecialChars = '!@#%$@$=sph^e.re_*()<>}021|'
+        cmds.rename(newNameWithSpecialChars)
+
+        # get the prim
+        pSphereItem = ufe.GlobalSelection.get().front()
+        usdPrim = stage.GetPrimAtPath(str(pSphereItem.path().segments[1]))
+        self.assertTrue(usdPrim)
+
+        # prim names are not allowed to have special characters except '_' 
+        regex = re.compile('[@!#$%^&*()<>?/\|}{~:]')
+        self.assertFalse(regex.search(usdPrim.GetName()))

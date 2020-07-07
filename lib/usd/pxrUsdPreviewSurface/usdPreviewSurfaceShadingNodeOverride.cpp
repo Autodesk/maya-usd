@@ -86,7 +86,9 @@ PxrMayaUsdPreviewSurfaceShadingNodeOverride::supportedDrawAPIs() const
 MString
 PxrMayaUsdPreviewSurfaceShadingNodeOverride::fragmentName() const
 {
-    return HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName.GetText();
+    // This override uses the "Core" directly since the shading node does its
+    // own conversion from "opacity" to "transparency".
+    return HdVP2ShaderFragmentsTokens->CoreFragmentGraphName.GetText();
 }
 
 /* virtual */

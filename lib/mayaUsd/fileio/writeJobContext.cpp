@@ -46,6 +46,7 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usd/usdFileFormat.h>
 
 #include <mayaUsd/fileio/instancedNodeWriter.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
@@ -388,7 +389,9 @@ UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
             layer = existingLayer;
         }
         else {
-            layer = SdfLayer::CreateNew(filename);
+            SdfLayer::FileFormatArguments args;
+            args[UsdUsdFileFormatTokens->FormatArg] = mArgs.defaultUSDFormat.GetString();            
+            layer = SdfLayer::CreateNew(filename, "",  args);
         }
         if (!layer) {
             TF_RUNTIME_ERROR(

@@ -166,12 +166,20 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $instancesAnn = "Exports Maya instances as USD instanceable references.";
         string $subdMethodAnn = "Exports the selected subdivision method as a USD uniform attribute.";
         string $frameSamplesAnn = "Specifies the value(s) used to multi-sample time frames during animation export. Multiple values separated by a space (-0.1 0.2) are supported.";
+        string $defaultFormatAnn = "Select whether the .usd file is written out in binary or ASCII";
+        string $defaultFormatStatus = "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary), or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.";
 
         setParent $parent;
 
         columnLayout -adj true usdOptsCol;
 
         frameLayout -label "Output" -collapsable true -collapse false;
+            separator -style "none";
+
+            optionMenuGrp -l ".usd File Format:" -annotation $defaultFormatAnn -statusBarMessage $defaultFormatStatus defaultUSDFormatPopup;
+                menuItem -l "Binary" -ann "usdc";
+                menuItem -l "ASCII" -ann "usda";
+
             separator -style "none";
 
             textFieldGrp -l "Create USD Parent Scope:" -placeholderText "USD Prim Name" 
@@ -269,6 +277,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "exportColorSetsCheckBox");
                 } else if ($optionBreakDown[0] == "defaultMeshScheme") {
                     mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultMeshSchemePopup");
+                } else if ($optionBreakDown[0] == "defaultUSDFormat") {
+                    mayaUsdTranslatorExport_SetOptionMenuByAnnotation($optionBreakDown[1], "defaultUSDFormatPopup");                    
                 } else if ($optionBreakDown[0] == "animation") {
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "animationCheckBox");
                 } else if ($optionBreakDown[0] == "eulerFilter") {
@@ -308,6 +318,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportUVs", "exportUVsCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "exportColorSets", "exportColorSetsCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "defaultMeshScheme", "defaultMeshSchemePopup");
+        $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "defaultUSDFormat", "defaultUSDFormatPopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "eulerFilter", "eulerFilterCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFrameRange($currentOptions);

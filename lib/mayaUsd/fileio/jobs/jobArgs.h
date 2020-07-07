@@ -54,6 +54,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (compatibility) \
     (defaultCameras) \
     (defaultMeshScheme) \
+    (defaultUSDFormat) \
     (eulerFilter) \
     (exportCollectionBasedBindings) \
     (exportColorSets) \
@@ -122,6 +123,7 @@ struct UsdMayaJobExportArgs
 {
     const TfToken compatibility;
     const TfToken defaultMeshScheme;
+    const TfToken defaultUSDFormat;
     const bool eulerFilter;
     const bool excludeInvisible;
 
