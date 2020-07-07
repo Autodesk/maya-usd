@@ -15,9 +15,15 @@
 #
 function(init_usd)
     # Adjust PYTHONPATH, PATH
-    mayaUsd_append_path_to_env_var("PYTHONPATH" "${PXR_USD_LOCATION}/lib/python")
+    if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        set(USD_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/${MAYAUSD_TO_USD_RELATIVE_PATH}")
+    else()
+        set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
+    endif()
+
+    mayaUsd_append_path_to_env_var("PYTHONPATH" "${USD_INSTALL_LOCATION}/lib/python")
     if(WIN32)
-        mayaUsd_append_path_to_env_var("PATH" "${PXR_USD_LOCATION}/bin;${PXR_USD_LOCATION}/lib")
+        mayaUsd_append_path_to_env_var("PATH" "${USD_INSTALL_LOCATION}/bin;${USD_INSTALL_LOCATION}/lib")
     endif()
 endfunction()
 

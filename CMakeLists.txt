@@ -177,7 +177,16 @@ endif()
 #------------------------------------------------------------------------------
 # install
 #------------------------------------------------------------------------------
-configure_file(mayaUSD.mod.template ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+    set(USD_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/${MAYAUSD_TO_USD_RELATIVE_PATH}")
+else()
+    set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
+endif()
+if (IS_WINDOWS)
+    configure_file(mayaUSD_Win.mod.template ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+else()
+    configure_file(mayaUSD.mod.template ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+endif()
 install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod
     DESTINATION ${CMAKE_INSTALL_PREFIX}
 )
