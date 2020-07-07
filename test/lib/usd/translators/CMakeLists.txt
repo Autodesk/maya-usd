@@ -7,6 +7,7 @@ set(test_script_files
     testUsdExportConnected.py
     testUsdExportDisplayColor.py
     testUsdExportEulerFilter.py
+    testUsdExportFileFormat.py
     testUsdExportFilterTypes.py
     testUsdExportFrameOffset.py
     testUsdExportInstances.py

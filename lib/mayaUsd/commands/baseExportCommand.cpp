@@ -87,6 +87,9 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(kDefaultMeshSchemeFlag,
                    UsdMayaJobExportArgsTokens->defaultMeshScheme.GetText(),
                    MSyntax::kString);
+    syntax.addFlag(kDefaultUSDFormatFlag,
+                   UsdMayaJobExportArgsTokens->defaultUSDFormat.GetText(),
+                   MSyntax::kString);                   
     syntax.addFlag(kExportVisibilityFlag,
                    UsdMayaJobExportArgsTokens->exportVisibility.GetText(),
                    MSyntax::kBoolean);
