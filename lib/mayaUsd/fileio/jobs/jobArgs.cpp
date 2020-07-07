@@ -32,6 +32,8 @@
 #include <pxr/usd/sdf/schema.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/pipeline.h>
+#include <pxr/usd/usd/usdaFileFormat.h>
+#include <pxr/usd/usd/usdcFileFormat.h>
 
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -250,6 +252,13 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
                     UsdGeomTokens->bilinear,
                     UsdGeomTokens->none
                 })),
+        defaultUSDFormat(
+            _Token(userArgs,
+                UsdMayaJobExportArgsTokens->defaultUSDFormat,
+                UsdUsdcFileFormatTokens->Id,
+                {
+                    UsdUsdaFileFormatTokens->Id
+                })),                 
         eulerFilter(
             _Boolean(userArgs, UsdMayaJobExportArgsTokens->eulerFilter)),
         excludeInvisible(
@@ -356,6 +365,7 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
 {
     out << "compatibility: " << exportArgs.compatibility << std::endl
         << "defaultMeshScheme: " << exportArgs.defaultMeshScheme << std::endl
+        << "defaultUSDFormat: " << exportArgs.defaultUSDFormat << std::endl
         << "eulerFilter: " << TfStringify(exportArgs.eulerFilter) << std::endl
         << "excludeInvisible: " << TfStringify(exportArgs.excludeInvisible) << std::endl
         << "exportCollectionBasedBindings: " << TfStringify(exportArgs.exportCollectionBasedBindings) << std::endl
@@ -444,6 +454,8 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->defaultCameras] = false;
         d[UsdMayaJobExportArgsTokens->defaultMeshScheme] = 
                 UsdGeomTokens->catmullClark.GetString();
+        d[UsdMayaJobExportArgsTokens->defaultUSDFormat] = 
+                UsdUsdcFileFormatTokens->Id.GetString();
         d[UsdMayaJobExportArgsTokens->eulerFilter] = false;
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = false;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;
