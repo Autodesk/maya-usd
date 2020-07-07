@@ -71,6 +71,7 @@ USDImportDialog::USDImportDialog(const std::string& filename, const ImportData* 
 	fUI->treeView->setAlternatingRowColors(true);
 	fUI->treeView->setSelectionMode(QAbstractItemView::SingleSelection);
 	QObject::connect(fUI->treeView, SIGNAL(clicked(const QModelIndex&)), this, SLOT(onItemClicked(const QModelIndex&)));
+	QObject::connect(fUI->actionReset_File, SIGNAL(triggered(bool)), this, SLOT(onResetFileTriggered()));
 
 	QHeaderView* header = fUI->treeView->header();
 
@@ -169,6 +170,15 @@ void USDImportDialog::onItemClicked(const QModelIndex& index)
 			if (item->checkState() == TreeItem::CheckState::kChecked)
 				fUI->treeView->expand(index);
 		}
+	}
+}
+
+void USDImportDialog::onResetFileTriggered()
+{
+	if (fTreeModel)
+	{
+		fTreeModel->resetVariants();
+		fTreeModel->setRootPrimPath("/");
 	}
 }
 

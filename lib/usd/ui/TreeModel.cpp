@@ -20,6 +20,8 @@
 #include <QtWidgets/QTreeView>
 #include <QtCore/QSortFilterProxyModel>
 
+#include <pxr/usd/usd/variantSets.h>
+
 #include <mayaUsdUI/ui/TreeItem.h>
 #include <mayaUsdUI/ui/ItemDelegate.h>
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
@@ -49,6 +51,49 @@ TreeItem* findTreeItem(TreeModel* treeModel, const QModelIndex& parent, std::fun
 		}
 	}
 	return nullptr;
+}
+
+void resetVariantToPrimSelection(TreeItem* variantItem)
+{
+	if (variantItem) {
+		UsdPrim prim = variantItem->prim();
+		assert(prim.IsValid() && prim.HasVariantSets());
+
+		UsdVariantSets varSets = prim.GetVariantSets();
+
+		std::vector<std::string> usdVarSetNames;
+		varSets.GetNames(&usdVarSetNames);
+
+		QStringList qtVarNames;
+		for (auto it=usdVarSetNames.crbegin(); it != usdVarSetNames.crend(); it++)
+		{
+			UsdVariantSet varSet1 = varSets.GetVariantSet(*it);
+			qtVarNames.push_back(QString::fromStdString(varSet1.GetVariantSelection()));
+		}
+
+		variantItem->setData(qtVarNames, ItemDelegate::kVariantSelectionRole);
+	}
+}
+
+void resetAllVariants(TreeModel* treeModel, const QModelIndex& parent)
+{
+	for (int r=0; r<treeModel->rowCount(parent); ++r)
+	{
+		QModelIndex variantIndex = treeModel->index(r, TreeModel::kTreeColumn_Variants, parent);
+		TreeItem* variantItem = static_cast<TreeItem*>(treeModel->itemFromIndex(variantIndex));
+		assert(variantItem);
+
+		if (variantItem->variantSelectionModified()) 
+		{
+			resetVariantToPrimSelection(variantItem);
+		}
+
+		QModelIndex childIndex = treeModel->index(r, TreeModel::kTreeColumn_Load, parent);
+		if (treeModel->hasChildren(childIndex))
+		{
+			resetAllVariants(treeModel, childIndex);
+		}
+	}	
 }
 
 }
@@ -292,6 +337,11 @@ void TreeModel::onItemClicked(TreeItem* item)
 			checkEnableItem(item);
 		}
 	}
+}
+
+void TreeModel::resetVariants()
+{
+	resetAllVariants(this, QModelIndex());
 }
 
 } // namespace MayaUsd
