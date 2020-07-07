@@ -23,6 +23,7 @@ import ufe
 import mayaUsd.ufe
 
 import unittest
+import sys
 
 class RenameTestCase(unittest.TestCase):
     '''Test renaming a UFE scene item and its ancestors.
@@ -308,4 +309,51 @@ class RenameTestCase(unittest.TestCase):
            newName = 'leaf_ref_2_renaming'
            cmds.rename(newName)
 
+    def testRenameSpecialCharacter(self):
+        # open twoSpheres.ma scene in test-samples
+        mayaUtils.openTwoSpheresScene()
 
+        # clear selection to start off
+        cmds.select(clear=True)
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|usdSphereParent|usdSphereParentShape')
+        usdPathSegment = usdUtils.createUfePathSegment('/sphereXform/sphere')
+        basePath = ufe.Path([mayaPathSegment, usdPathSegment])
+        usdSphereItem = ufe.Hierarchy.createItem(basePath)
+
+        ufe.GlobalSelection.get().append(usdSphereItem)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # check GetLayerStack behavior
+        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        # rename with special chars
+        newNameWithSpecialChars = '!@#%$@$=sph^e.re_*()<>}021|'
+        cmds.rename(newNameWithSpecialChars)
+
+        # the renamed item is in the selection.
+        snIter = iter(ufe.GlobalSelection.get())
+        pSphereItem = next(snIter)
+        pSphereItemRenamed = str(pSphereItem.path().back())
+
+        # get the prim
+        usdPrim = stage.GetPrimAtPath('/sphereXform/' + pSphereItemRenamed)
+        self.assertTrue(usdPrim)
+
+        # get the primspec
+        primspec = stage.GetEditTarget().GetPrimSpecForScenePath(usdPrim.GetPath());
+        self.assertTrue(primspec)
+
+        # rename
+        try:
+            primspec.name = pSphereItemRenamed
+        except:
+            print(sys.exc_info()[1])
