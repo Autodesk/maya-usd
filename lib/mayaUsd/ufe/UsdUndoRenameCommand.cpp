@@ -127,6 +127,15 @@ bool UsdUndoRenameCommand::renameRedo()
     auto primPath = prim.GetPath();
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
+    // handle unique name for _newName
+    TfToken::HashSet childrenNames;
+    for (auto child : prim.GetParent().GetChildren()){
+        childrenNames.insert(child.GetName());
+    }
+    if (childrenNames.find(TfToken(_newName)) != childrenNames.end()){
+        _newName = uniqueName(childrenNames, _newName);
+    }
+
     // all special characters are replaced with `_`
     const std::string specialChars{"~!@#$%^&*()-=+,.?`':{}|<>[]/"};
     std::replace_if(_newName.begin(), _newName.end(), [&](auto c){
