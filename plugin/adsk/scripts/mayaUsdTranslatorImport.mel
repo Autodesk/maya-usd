@@ -45,6 +45,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
     int $bResult = 0;
     int $cw1 = 180;
     int $cw2 = 300;
+    int $bw = 125;
 
     if ($action == "post") {
         setParent $parent;
@@ -59,11 +60,11 @@ global proc int mayaUsdTranslatorImport (string $parent,
                     -sbm "Select a USD file and click Hierarchy View to open the Hierarchy View window. This window lets you toggle prim checkboxes and non-destructively switch between variants to build the scope of your import."
                     -ann "Select a USD file and click <strong>Hierarchy View</strong> to build the scope of your import and switch variants.<br><br><strong>Scope</strong>: A USD file consists of prims, the primary container object in USD. Prims can contain any scene element, like meshes, lights, cameras, etc. Use the checkboxes in the <strong>Hierarchy View</strong> to select and deselect prims to build the scope of your import.<br><br><strong>Variant</strong>: A variant is a single, named variation of a variant set. Each variant set is a package of alternatives that users can switch between non-destructively. A variant set has no limits to what it can store. Variants can be used to swap out a material or change the entire hierarchy of an asset. A single prim can have many variants and variant sets, but only one variant from each variant set can be selected for import into Maya."
                 ;
-                textField -ed false -nbg true -text "Please select a file to enable this option" -w $cw1 mayaUsdTranslator_SelectFileField;
-                button -label "Hierarchy View" -c "string $usdFile = currentFileDialogSelection(); usdImportDialog $usdFile;" mayaUsdTranslator_ViewHierBtn;
+                textField -ed false -nbg true -text "Please select a file to enable this option" -w $cw2 mayaUsdTranslator_SelectFileField;
+                button -label "Hierarchy View" -c "{string $usdFile = currentFileDialogSelection(); usdImportDialog $usdFile;}" mayaUsdTranslator_ViewHierBtn;
 
                 // Hide the button by default.
-                button -e -visible false mayaUsdTranslator_ViewHierBtn;
+                button -e -visible false -w 1 mayaUsdTranslator_ViewHierBtn;
             setParent ..;
         }
 //        checkBoxGrp -label "Load Payloads: " -cw 1 $cw1 mayaUsdTranslator_LoadPayloadsCheckBox;
@@ -179,16 +180,14 @@ global proc int mayaUsdTranslatorImport (string $parent,
             {
                 // Hide the field (and shrink it) and show the button (which will align with label).
                 textField -e -vis false -w 1 mayaUsdTranslator_SelectFileField;
+                button -e -visible true -w $bw mayaUsdTranslator_ViewHierBtn;
             }
             else
             {
                 // Show the field and hide the button.
-                textField -e -vis true -w $cw1 mayaUsdTranslator_SelectFileField;
+                textField -e -vis true -w $cw2 mayaUsdTranslator_SelectFileField;
+                button -e -visible false -w 1 mayaUsdTranslator_ViewHierBtn;
             }
-        }
-
-        if (`button -exists mayaUsdTranslator_ViewHierBtn`) {
-            button -e -visible $showBtn mayaUsdTranslator_ViewHierBtn;
         }
 
         $bResult = 1;

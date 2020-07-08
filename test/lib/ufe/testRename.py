@@ -23,6 +23,7 @@ import ufe
 import mayaUsd.ufe
 
 import unittest
+import re
 
 class RenameTestCase(unittest.TestCase):
     '''Test renaming a UFE scene item and its ancestors.
@@ -308,4 +309,77 @@ class RenameTestCase(unittest.TestCase):
            newName = 'leaf_ref_2_renaming'
            cmds.rename(newName)
 
+    def testRenameUniqueName(self):
+        # open tree.ma scene in test-samples
+        mayaUtils.openTreeScene()
 
+        # clear selection to start off
+        cmds.select(clear=True)
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|Tree_usd|Tree_usdShape')
+        usdPathSegment = usdUtils.createUfePathSegment('/TreeBase/trunk')
+        trunkPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        trunkItem = ufe.Hierarchy.createItem(trunkPath)
+
+        ufe.GlobalSelection.get().append(trunkItem)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        # rename `/TreeBase/trunk` to `/TreeBase/leavesXform`
+        cmds.rename("leavesXform")
+
+        # get the prim
+        item = ufe.GlobalSelection.get().front()
+        usdPrim = stage.GetPrimAtPath(str(item.path().segments[1]))
+        self.assertTrue(usdPrim)
+
+        # the new prim name is expected to be "leavesXform1"
+        assert ([x for x in stage.Traverse()] == [stage.GetPrimAtPath("/TreeBase"), 
+            stage.GetPrimAtPath("/TreeBase/leavesXform"), 
+            stage.GetPrimAtPath("/TreeBase/leavesXform/leaves"),
+            stage.GetPrimAtPath("/TreeBase/leavesXform1"),])
+
+    def testRenameSpecialCharacter(self):
+        # open twoSpheres.ma scene in test-samples
+        mayaUtils.openTwoSpheresScene()
+
+        # clear selection to start off
+        cmds.select(clear=True)
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|usdSphereParent|usdSphereParentShape')
+        usdPathSegment = usdUtils.createUfePathSegment('/sphereXform/sphere')
+        basePath = ufe.Path([mayaPathSegment, usdPathSegment])
+        usdSphereItem = ufe.Hierarchy.createItem(basePath)
+
+        ufe.GlobalSelection.get().append(usdSphereItem)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # check GetLayerStack behavior
+        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        # rename with special chars
+        newNameWithSpecialChars = '!@#%$@$=sph^e.re_*()<>}021|'
+        cmds.rename(newNameWithSpecialChars)
+
+        # get the prim
+        pSphereItem = ufe.GlobalSelection.get().front()
+        usdPrim = stage.GetPrimAtPath(str(pSphereItem.path().segments[1]))
+        self.assertTrue(usdPrim)
+
+        # prim names are not allowed to have special characters except '_' 
+        regex = re.compile('[@!#$%^&*()<>?/\|}{~:]')
+        self.assertFalse(regex.search(usdPrim.GetName()))

@@ -127,6 +127,21 @@ bool UsdUndoRenameCommand::renameRedo()
     auto primPath = prim.GetPath();
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
+    // handle unique name for _newName
+    TfToken::HashSet childrenNames;
+    for (auto child : prim.GetParent().GetChildren()){
+        childrenNames.insert(child.GetName());
+    }
+    if (childrenNames.find(TfToken(_newName)) != childrenNames.end()){
+        _newName = uniqueName(childrenNames, _newName);
+    }
+
+    // all special characters are replaced with `_`
+    const std::string specialChars{"~!@#$%^&*()-=+,.?`':{}|<>[]/"};
+    std::replace_if(_newName.begin(), _newName.end(), [&](auto c){
+        return std::string::npos != specialChars.find(c);
+    }, '_');
+
     // set prim's name
     // XXX: SetName successfuly returns true but when you examine the _prim.GetName()
     // after the rename, the prim name shows the original name HS, 6-May-2020.
