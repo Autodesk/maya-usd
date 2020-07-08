@@ -175,7 +175,7 @@ void USDImportDialog::onItemClicked(const QModelIndex& index)
 
 void USDImportDialog::onResetFileTriggered()
 {
-	if (fTreeModel)
+	if (nullptr != fTreeModel)
 	{
 		fTreeModel->resetVariants();
 		fTreeModel->setRootPrimPath("/");
