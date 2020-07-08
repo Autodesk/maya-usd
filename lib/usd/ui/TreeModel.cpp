@@ -55,24 +55,24 @@ TreeItem* findTreeItem(TreeModel* treeModel, const QModelIndex& parent, std::fun
 
 void resetVariantToPrimSelection(TreeItem* variantItem)
 {
-	if (variantItem) {
-		UsdPrim prim = variantItem->prim();
-		assert(prim.IsValid() && prim.HasVariantSets());
+	assert(variantItem);
 
-		UsdVariantSets varSets = prim.GetVariantSets();
+	UsdPrim prim = variantItem->prim();
+	assert(prim.IsValid() && prim.HasVariantSets());
 
-		std::vector<std::string> usdVarSetNames;
-		varSets.GetNames(&usdVarSetNames);
+	UsdVariantSets varSets = prim.GetVariantSets();
 
-		QStringList qtVarNames;
-		for (auto it=usdVarSetNames.crbegin(); it != usdVarSetNames.crend(); it++)
-		{
-			UsdVariantSet varSet1 = varSets.GetVariantSet(*it);
-			qtVarNames.push_back(QString::fromStdString(varSet1.GetVariantSelection()));
-		}
+	std::vector<std::string> usdVarSetNames;
+	varSets.GetNames(&usdVarSetNames);
 
-		variantItem->setData(qtVarNames, ItemDelegate::kVariantSelectionRole);
+	QStringList qtVarNames;
+	for (auto it=usdVarSetNames.crbegin(); it != usdVarSetNames.crend(); it++)
+	{
+		UsdVariantSet varSet1 = varSets.GetVariantSet(*it);
+		qtVarNames.push_back(QString::fromStdString(varSet1.GetVariantSelection()));
 	}
+
+	variantItem->setData(qtVarNames, ItemDelegate::kVariantSelectionRole);
 }
 
 void resetAllVariants(TreeModel* treeModel, const QModelIndex& parent)
@@ -81,9 +81,8 @@ void resetAllVariants(TreeModel* treeModel, const QModelIndex& parent)
 	{
 		QModelIndex variantIndex = treeModel->index(r, TreeModel::kTreeColumn_Variants, parent);
 		TreeItem* variantItem = static_cast<TreeItem*>(treeModel->itemFromIndex(variantIndex));
-		assert(variantItem);
 
-		if (variantItem->variantSelectionModified()) 
+		if (nullptr != variantItem && variantItem->variantSelectionModified()) 
 		{
 			resetVariantToPrimSelection(variantItem);
 		}
