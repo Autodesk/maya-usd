@@ -133,6 +133,31 @@ class testUsdExportMesh(unittest.TestCase):
             # make sure the other 2 values aren't both 0.
             self.assertNotAlmostEqual(abs(n[0]) + abs(n[2]), 0.0, delta=1e-4)
 
+    def testExportCreases(self):
+        usdFile = os.path.abspath('UsdExportMesh_creases.usda')
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
+            shadingMode='none')
+
+        stage = Usd.Stage.Open(usdFile)
+
+        m = UsdGeom.Mesh.Get(stage, '/UsdExportMeshTest/creased')
+        self.assertEqual(m.GetSubdivisionSchemeAttr().Get(), UsdGeom.Tokens.catmullClark)
+        self.assertFalse(m.GetSubdivisionSchemeAttr().IsAuthored())
+        self.assertTrue(not m.GetNormalsAttr().Get())
+
+        expectedCreaseIndices = Vt.IntArray([0, 1, 3, 2, 0, 3, 5, 4, 2, 5, 7, 6, 4, 7, 1, 0, 6])
+        creaseIndices = m.GetCreaseIndicesAttr().Get()
+        self.assertEqual(creaseIndices, expectedCreaseIndices)
+
+        expectedCreaseLengths = Vt.IntArray([5, 4, 4, 2, 2])
+        creaseLengths = m.GetCreaseLengthsAttr().Get()
+        self.assertEqual(creaseLengths, expectedCreaseLengths)
+
+        expectedCreaseSharpnesses = Vt.FloatArray([10, 10, 10, 10, 10])
+        creaseSharpnesses = m.GetCreaseSharpnessesAttr().Get()
+        self.assertAlmostEqual(creaseSharpnesses, expectedCreaseSharpnesses,
+            places=3)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
