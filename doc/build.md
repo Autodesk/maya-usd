@@ -188,9 +188,9 @@ Test project /Users/sabrih/Desktop/workspace/build/Debug/plugin/al
 available in our new preview releases of Maya, this package doesn't exist in the version of python in Maya 2018/2019/2020. Please follow the below steps in order to install the `future` package:
 
  1. Download get-py.py from https://bootstrap.pypa.io/get-pip.py 
- 2. Open a command-line and navigate to `mayapy.exe` for Maya version which needs future package. Run:`mayapy.exe <path_to_downloaded_file>/get-pip.py` 
- 3. Pip will be added to `<path_to_maya>Python/Scripts`
- 4. Install the future package: `<path_to_maya>Python/Scripts/pip install future`
+ 2. Open a command-line and navigate to `mayapy` executable for Maya version which needs future package.
+ 3. Install pip: `mayapy <path_to_downloaded_file>/get-pip.py` 
+ 3. Install the future package: `mayapy -m pip install future`
 
 # Additional Build Instruction
 
