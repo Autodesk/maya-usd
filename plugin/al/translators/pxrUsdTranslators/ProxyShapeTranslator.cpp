@@ -126,7 +126,11 @@ bool AL_USDMayaTranslatorProxyShape::Create(
             auto           timeOffsetPlug = proxyShape->timeOffsetPlug();
             auto           timeScalarPlug = proxyShape->timeScalarPlug();
             SdfLayerOffset offset(
-                timeOffsetPlug.asMTime().as(MTime::uiUnit()), timeScalarPlug.asDouble());
+                timeOffsetPlug.asMTime().as(MTime::uiUnit()),
+                // AL_USDMaya interprets the scalar such that 2.0 means
+                // fast-forward / play back twice as fast, while the usd spec
+                // interprets that as play in slow-motion / half-speed
+                1.0 / timeScalarPlug.asDouble());
 
             if (refPrimPathStr.empty()) {
                 refs.AddReference(refAssetPath, offset);
