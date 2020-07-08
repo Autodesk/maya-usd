@@ -16,11 +16,13 @@
 # limitations under the License.
 #
 
+import os
+
 import maya.cmds as cmds
 
 from pxr import Sdf
 
-from ufeTestUtils import usdUtils, mayaUtils
+from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
 import ufe
 
 import unittest
@@ -50,36 +52,66 @@ class GroupCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2017', 'testUsdGroup did not really test anything before UFE 2.17')
     def testUsdGroup(self):
         '''Creation of USD group objects.'''
 
-        # Get parent of new group.
-        propsPath = ufe.Path([
-            mayaUtils.createUfePathSegment(
-                "|world|transform1|proxyShape1"),
-             usdUtils.createUfePathSegment("/Room_set/Props")])
-        propsItem = ufe.Hierarchy.createItem(propsPath)
-        propsHierarchy = ufe.Hierarchy.hierarchy(propsItem)
-        propsChildrenPre = propsHierarchy.children()
+        ball25Path = ufe.Path([
+            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            usdUtils.createUfePathSegment("/Room_set/Props/Ball_25")])
+        ball25Item = ufe.Hierarchy.createItem(ball25Path)
 
-        groupPath = propsPath + "newGroup"
+        ball35Path = ufe.Path([
+            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
 
-        # Create new group.
-        group = propsHierarchy.createGroupCmd(ufe.PathComponent("newGroup"))
+        ufeSelectionList = ufe.Selection()
+        ufeSelectionList.append(ball25Item)
+        ufeSelectionList.append(ball35Item)
 
-        self.assertIsNotNone(group.item)
-        propsChildrenPost = propsHierarchy.children()
-        self.assertEqual(len(propsChildrenPre)+1, len(propsChildrenPost))
-        childrenPaths = set([child.path() for child in propsChildrenPost])
-        self.assertTrue(groupPath in childrenPaths)
+        parentPath = ufe.Path([
+            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            usdUtils.createUfePathSegment("/Room_set/Props")])
+        parentItem = ufe.Hierarchy.createItem(parentPath)
 
-        # Undo
-        group.undoableCommand.undo()
+        parentHierarchy = ufe.Hierarchy.hierarchy(parentItem)
+        
+        parentChildrenPre = parentHierarchy.children()
+        self.assertEqual(len(parentChildrenPre), 35)
 
-        propsChildrenPostUndo = propsHierarchy.children()
-        self.assertEqual(len(propsChildrenPre), len(propsChildrenPostUndo))
-        childrenPaths = set([child.path() for child in propsChildrenPostUndo])
-        self.assertFalse(groupPath in childrenPaths)
+        newGroupName = ufe.PathComponent("newGroup")
 
-        # MAYA-92264: redo doesn't work.
-        # group.undoableCommand.redo()
+        groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList, newGroupName)
+        groupCmd.execute()
+
+        parentChildrenPost = parentHierarchy.children()
+        self.assertEqual(len(parentChildrenPost), 34)
+
+        newGroupPath = parentPath + newGroupName
+
+        childPaths = set([child.path() for child in parentChildrenPost])
+        self.assertTrue(newGroupPath in childPaths)
+        self.assertTrue(ball25Path not in childPaths)
+        self.assertTrue(ball35Path not in childPaths)
+
+        groupCmd.undo()
+
+        parentChildrenUndo = parentHierarchy.children()
+        self.assertEqual(len(parentChildrenUndo), 35)
+
+        childPathsUndo = set([child.path() for child in parentChildrenUndo])
+        self.assertTrue(newGroupPath not in childPathsUndo)
+        self.assertTrue(ball25Path in childPathsUndo)
+        self.assertTrue(ball35Path in childPathsUndo)
+
+        groupCmd.redo()
+
+        parentChildrenRedo = parentHierarchy.children()
+        self.assertEqual(len(parentChildrenRedo), 34)
+
+        childPathsRedo = set([child.path() for child in parentChildrenRedo])
+        self.assertTrue(newGroupPath in childPathsRedo)
+        self.assertTrue(ball25Path not in childPathsRedo)
+        self.assertTrue(ball35Path not in childPathsRedo)
+
