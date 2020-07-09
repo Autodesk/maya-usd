@@ -71,19 +71,6 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
     }
     else
     {
-        // account for internal vs external references
-        // internal references (references without a file path specified) from the same file
-        // should be renamable.
-        if (prim.HasAuthoredReferences()) {
-            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-
-            if(!MayaUsdUtils::isInternalReference(primSpec)) {
-                std::string err = TfStringPrintf("Unable to rename referenced object [%s]", 
-                                                  prim.GetName().GetString().c_str());
-                throw std::runtime_error(err.c_str());
-            }
-        }
-
         auto layers = MayaUsdUtils::layersWithContribution(prim);
         // if we have more than 2 layers that contributes to the final composed prim
         if (layers.size() > 1) {

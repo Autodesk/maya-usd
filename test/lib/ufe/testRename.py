@@ -275,6 +275,7 @@ class RenameTestCase(unittest.TestCase):
            newName = 'Ball_35_Renamed'
            cmds.rename(newName)
 
+    @unittest.skip("Restriction around renaming external references has been removed.")
     def testRenameRestrictionExternalReference(self):
         # open tree_ref.ma scene in test-samples
         mayaUtils.openTreeRefScene()
