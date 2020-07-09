@@ -74,9 +74,6 @@ Ufe::Path dagPathToUfe(const MDagPath& dagPath);
 MAYAUSD_CORE_PUBLIC
 Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
 
-MAYAUSD_CORE_PUBLIC
-MDagPath nameToDagPath(const std::string& name);
-
 //! Get the time along the argument path.  A gateway node (i.e. proxy shape)
 //! along the path can transform Maya's time (e.g. with scale and offset).
 MAYAUSD_CORE_PUBLIC

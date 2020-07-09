@@ -26,7 +26,7 @@
 #include <ufe/sceneNotification.h>
 
 #include <maya/MGlobal.h>
-#include <maya/MSelectionList.h>
+
 #include <maya/MObjectHandle.h>
 #include <maya/MFnDependencyNode.h>
 
@@ -36,6 +36,7 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
+#include <mayaUsd/utils/util.h>
 
 #include "private/Utils.h"
 
@@ -191,16 +192,6 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath)
 	return Ufe::PathSegment("world" + fullPathName, g_MayaRtid, '|');
 }
 
-MDagPath nameToDagPath(const std::string& name)
-{
-	MSelectionList selection;
-	selection.add(MString(name.c_str()));
-	MDagPath dag;
-	MStatus status = selection.getDagPath(0, dag);
-	CHECK_MSTATUS(status);
-	return dag;
-}
-
 UsdTimeCode getTime(const Ufe::Path& path)
 {
     // Path should not be empty.
@@ -225,7 +216,7 @@ UsdTimeCode getTime(const Ufe::Path& path)
         // Not found in the cache, or no longer valid.  Get the proxy shape
         // MObject from its path, and put it in the cache.  Pop the head of the
         // UFE path to get rid of "|world", which is implicit in Maya.
-        auto proxyShapeDagPath = nameToDagPath(
+        auto proxyShapeDagPath = UsdMayaUtil::nameToDagPath(
             proxyShapePath.popHead().string());
         TF_VERIFY(proxyShapeDagPath.isValid());
         proxyShapeObj = proxyShapeDagPath.node();

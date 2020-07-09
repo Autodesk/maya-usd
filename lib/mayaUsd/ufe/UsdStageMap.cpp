@@ -21,6 +21,7 @@
 
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/util.h>
 
 namespace {
 
@@ -29,7 +30,7 @@ MObjectHandle proxyShapeHandle(const Ufe::Path& path)
 	// Get the MObjectHandle from the tail of the MDagPath.	 Remove the leading
 	// '|world' component.
 	auto noWorld = path.popHead().string();
-	auto dagPath = MayaUsd::ufe::nameToDagPath(noWorld);
+	auto dagPath = UsdMayaUtil::nameToDagPath(noWorld);
 	MObjectHandle handle(dagPath.node());
 	if (!handle.isValid()) {
 		TF_CODING_ERROR("'%s' is not a path to a proxy shape node.",
@@ -134,7 +135,7 @@ void UsdStageMap::rebuildIfDirty()
 	auto proxyShapeNames = ProxyShapeHandler::getAllNames();
 	for (const auto& psn : proxyShapeNames)
 	{
-		MDagPath dag = nameToDagPath(psn);
+		MDagPath dag = UsdMayaUtil::nameToDagPath(psn);
 		Ufe::Path ufePath = dagPathToUfe(dag);
 		auto stage = ProxyShapeHandler::dagPathToStage(psn);
 		addItem(ufePath, stage);
