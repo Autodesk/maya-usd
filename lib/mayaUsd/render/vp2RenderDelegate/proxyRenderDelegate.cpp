@@ -108,10 +108,11 @@ namespace
 
     //! \brief  Query the Kind to be selected from viewport.
     //! \return A Kind token (https://graphics.pixar.com/usd/docs/api/kind_page_front.html). If the
-    //!         token is empty, the exact prim that gets picked from viewport will be selected.
+    //!         token is empty or non-existing in the hierarchy, the exact prim that gets picked
+    //!         in the viewport will be selected.
     TfToken GetSelectionKind()
     {
-        static const MString kOptionVarName("usdSelectionKind");
+        static const MString kOptionVarName("UsdSelectionKind");
 
         if (MGlobal::optionVarExists(kOptionVarName)) {
             MString optionVarValue = MGlobal::optionVarStringValue(kOptionVarName);
