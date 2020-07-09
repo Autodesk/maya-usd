@@ -18,6 +18,7 @@
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <set>
@@ -117,6 +118,23 @@ isInternalReference(const SdfPrimSpecHandle& primSpec)
     }
 
     return isInternalRef;
+}
+
+bool 
+hasSpecs(const UsdPrim& prim)
+{
+    bool found{true};
+
+    UsdPrimCompositionQuery query(prim);
+
+    for (const auto& compQuaryArc : query.GetCompositionArcs()) {
+        if (!compQuaryArc.GetTargetNode().HasSpecs()) {
+            found = false; 
+            break;
+        }
+    }
+
+    return found;
 }
 
 } // MayaUsdUtils
