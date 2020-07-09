@@ -205,8 +205,10 @@ finally:
     else()
         set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
     endif()
+    # Inherit any existing PYTHONPATH, but keep it at the end.
     list(APPEND mayaUsd_varname_PYTHONPATH
-        "${USD_INSTALL_LOCATION}/lib/python")
+        "${USD_INSTALL_LOCATION}/lib/python"
+        $ENV{PYTHONPATH})
     if(IS_WINDOWS)
         list(APPEND mayaUsd_varname_PATH
             "${USD_INSTALL_LOCATION}/bin")
