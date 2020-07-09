@@ -80,6 +80,8 @@ public:
 
 	void onItemClicked(TreeItem* item);
 
+	void resetVariants();
+	
 private:
 	void uncheckEnableTree();
 	void checkEnableItem(TreeItem* item);

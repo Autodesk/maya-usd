@@ -69,6 +69,7 @@ public:
 
 private Q_SLOTS:
 	void onItemClicked(const QModelIndex&);
+	void onResetFileTriggered();
 
 protected:
 	// Reference to the Qt UI View of the dialog:
