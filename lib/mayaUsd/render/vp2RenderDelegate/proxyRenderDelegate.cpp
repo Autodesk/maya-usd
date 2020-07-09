@@ -25,6 +25,9 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/modelAPI.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/imaging/hdx/taskController.h>
@@ -72,6 +75,7 @@ namespace
     const HdReprSelector kSelectionReprSelector(HdVP2ReprTokens->selection);
 
 #if defined(WANT_UFE_BUILD)
+    //! \brief  Query the global selection list adjustment.
     MGlobal::ListAdjustment GetListAdjustment()
     {
         // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
@@ -100,6 +104,20 @@ namespace
         }
 
         return listAdjustment;
+    }
+
+    //! \brief  Query the Kind to be selected from viewport.
+    //! \return A Kind token (https://graphics.pixar.com/usd/docs/api/kind_page_front.html). If the
+    //!         token is empty, the exact prim that gets picked from viewport will be selected.
+    TfToken GetSelectionKind()
+    {
+        static const MString kOptionVarName("usdSelectionKind");
+
+        if (MGlobal::optionVarExists(kOptionVarName)) {
+            MString optionVarValue = MGlobal::optionVarStringValue(kOptionVarName);
+            return TfToken(optionVarValue.asChar());
+        }
+        return TfToken();
     }
 #endif // defined(WANT_UFE_BUILD)
 
@@ -489,8 +507,15 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     const bool inPointSnapping = pointSnappingActive();
 
 #if defined(WANT_UFE_BUILD)
-    // Query selection adjustment mode only if the update is triggered in a selection pass.
-    _globalListAdjustment = (inSelectionPass && !inPointSnapping) ? GetListAdjustment() : MGlobal::kReplaceList;
+    // Query selection adjustment and kind only if the update is triggered in a selection pass.
+    if (inSelectionPass && !inPointSnapping) {
+        _globalListAdjustment = GetListAdjustment();
+        _selectionKind = GetSelectionKind();
+    }
+    else {
+        _globalListAdjustment = MGlobal::kReplaceList;
+        _selectionKind = TfToken();
+    }
 #endif // defined(WANT_UFE_BUILD)
 
 #else // !defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
@@ -646,6 +671,31 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     }
 #endif
 
+    // If update for selection is enabled, we can query Maya selection list adjustment and USD kind
+    // once per selection update to avoid cost of executing MEL command or searching optionVar for
+    // each intersection.
+#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
+    const TfToken& selectionKind = _selectionKind;
+    const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
+#else
+    const TfToken selectionKind = GetSelectionKind();
+    const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
+#endif
+
+    // If selection kind is empty, the exact prim that gets picked from viewport should be selected
+    // thus no need to walk the scene hierarchy.
+    if (!selectionKind.IsEmpty()) {
+        UsdPrim prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
+        while (prim) {
+            TfToken kind;
+            if (UsdModelAPI(prim).GetKind(&kind) && KindRegistry::IsA(kind, selectionKind)) {
+                usdPath = prim.GetPath();
+                break;
+            }
+            prim = prim.GetParent();
+        }
+    }
+
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
     const Ufe::SceneItem::Ptr& si = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
     if (!si) {
@@ -655,15 +705,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 
     auto globalSelection = Ufe::GlobalSelection::get();
 
-    // If update for selection is enabled, we can query selection list adjustment
-    // mode once per selection update to avoid any potential performance hit due
-    // to MEL command execution.
-#if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    switch (_globalListAdjustment)
-#else
-    switch (GetListAdjustment())
-#endif
-    {
+    switch (listAdjustment) {
     case MGlobal::kReplaceList:
         // The list has been cleared before viewport selection runs, so we
         // can add the new hits directly. UFE selection list is a superset
@@ -678,8 +720,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         globalSelection->remove(si);
         break;
     case MGlobal::kXORWithList:
-        if (!globalSelection->remove(si))
-        {
+        if (!globalSelection->remove(si)) {
             globalSelection->append(si);
         }
         break;
