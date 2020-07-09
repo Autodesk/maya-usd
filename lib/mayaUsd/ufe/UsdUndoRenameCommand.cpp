@@ -60,8 +60,8 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    // eraly check to see if a particular node has any specs to contribute
-    // to the final composed prim.
+    // early check to see if a particular node has any specs to contribute
+    // to the final composed prim. e.g (a node in payload)
     if(!MayaUsdUtils::hasSpecs(prim)){
         std::string err = TfStringPrintf("Cannot rename [%s] because it doesn't have any specs to contribute to the composed prim.",
             prim.GetName().GetString().c_str());

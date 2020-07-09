@@ -127,8 +127,8 @@ hasSpecs(const UsdPrim& prim)
 
     UsdPrimCompositionQuery query(prim);
 
-    for (const auto& compQuaryArc : query.GetCompositionArcs()) {
-        if (!compQuaryArc.GetTargetNode().HasSpecs()) {
+    for (const auto& compQueryArc : query.GetCompositionArcs()) {
+        if (!compQueryArc.GetTargetNode().HasSpecs()) {
             found = false; 
             break;
         }
