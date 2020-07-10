@@ -2090,3 +2090,14 @@ UsdMayaUtil::containsUnauthoredValues(const VtIntArray& indices)
             indices.end(),
             [](const int& i) { return i < 0; });
 }
+
+MDagPath 
+UsdMayaUtil::nameToDagPath(const std::string& name)
+{
+    MSelectionList selection;
+    selection.add(MString(name.c_str()));
+    MDagPath dag;
+    MStatus status = selection.getDagPath(0, dag);
+    CHECK_MSTATUS(status);
+    return dag;
+}

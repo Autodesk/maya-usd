@@ -633,7 +633,7 @@ UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(MFnMesh& meshFn,
         std::vector<int> subdCreaseIndices(mayaCreaseEdgeIds.length() * 2);
         // just construct directly from the array data
         // by moving this out of the loop, you'll leverage SIMD ops here.
-        std::vector<float> subdCreaseSharpnesses(&mayaCreaseEdgeIds[0], &mayaCreaseEdgeIds[0] + mayaCreaseEdgeIds.length());
+        std::vector<float> subdCreaseSharpnesses(&mayaCreaseEdgeValues[0], &mayaCreaseEdgeValues[0] + mayaCreaseEdgeValues.length());
         // avoid dso call by taking a copy of length. 
         for (unsigned int i = 0u, n = mayaCreaseEdgeIds.length(); i < n; ++i) {
             meshFn.getEdgeVertices(mayaCreaseEdgeIds[i], edgeVerts);
