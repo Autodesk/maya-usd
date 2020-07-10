@@ -29,6 +29,7 @@
 #include <maya/MDataHandle.h>
 #include <maya/MDistance.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MSelectionList.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnNumericData.h>
@@ -590,6 +591,9 @@ VtValue popFirstValue(const VtValue& arr);
 
 MAYAUSD_CORE_PUBLIC
 bool containsUnauthoredValues(const VtIntArray& indices);
+
+MAYAUSD_CORE_PUBLIC
+MDagPath nameToDagPath(const std::string& name);
 
 } // namespace UsdMayaUtil
 
