@@ -17,6 +17,7 @@
 
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
+#include <ufe/selection.h>
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
@@ -66,8 +67,13 @@ public:
     ) override;
 #endif
 
+#if UFE_PREVIEW_VERSION_NUM < 2017
 	Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;
 	Ufe::Group createGroupCmd(const Ufe::PathComponent& name) const override;
+#else
+	Ufe::SceneItem::Ptr createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
+	Ufe::UndoableCommand::Ptr createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
+#endif
 #endif
 
 private:

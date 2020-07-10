@@ -34,6 +34,10 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#if UFE_PREVIEW_VERSION_NUM >= 2017
+#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+#endif
+
 namespace {
 
 // Ufe::ContextItem strings
@@ -89,6 +93,7 @@ private:
     const std::string fNewSelection;
 };
 
+#if UFE_PREVIEW_VERSION_NUM < 2017
 //! \brief Undoable command for add new prim
 class AddNewPrimUndoableCommand : public Ufe::UndoableCommand
 {
@@ -109,7 +114,7 @@ public:
             // itemPath[1] isn't correct. But in this case it is only used by
             // uniqueChildName() which just takes the back of the path for child
             //  name, so it's fine.
-            Ufe::Path newUfePath = ufePath + itemPath[1];
+            Ufe::Path newUfePath = ufePath + (itemPath[1] + std::to_string(1));
             auto newPrimName = uniqueChildName(usdSceneItem, newUfePath);
 
             // Build (and store) the path for the new prim with the unique name.
@@ -143,6 +148,7 @@ private:
     PXR_NS::SdfPath _primPath;
     PXR_NS::TfToken _primToken;
 };
+#endif
 
 const char* selectUSDFileScript = R"(
 global proc string SelectUSDFileForAddReference()
@@ -411,7 +417,11 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 
         // At this point we know we have 2 arguments to execute the operation.
         // itemPath[1] contains the new prim type to create.
+#if UFE_PREVIEW_VERSION_NUM < 2017
         return std::make_shared<AddNewPrimUndoableCommand>(fItem, itemPath);
+#else
+        return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
+#endif        
     }
     else if (itemPath[0] == kUSDLayerEditorItem) {
         // Just open the editor directly and return null so we don't have undo.

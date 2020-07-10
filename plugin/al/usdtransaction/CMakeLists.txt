@@ -34,7 +34,6 @@ foreach(INPUT_FILE ${PY_INIT_FILES})
   get_filename_component(OUTPUT_PATH ${OUTPUT_FILE} DIRECTORY)
   install(FILES
         ${INPUT_FILE}  # .py files
-        ${INPUT_FILE}c # .pyc files
       DESTINATION ${OUTPUT_PATH}
   )
 endforeach()

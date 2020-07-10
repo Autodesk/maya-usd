@@ -49,6 +49,10 @@ namespace MayaUsdUtils {
     MAYA_USD_UTILS_PUBLIC
     bool isInternalReference(const SdfPrimSpecHandle&);
 
+    //! Returns true if the target node has any specs to contribute to the composed prim.
+    MAYA_USD_UTILS_PUBLIC
+    bool hasSpecs(const UsdPrim&);
+
 } // namespace MayaUsdUtils
 
 #endif // MAYAUSDUTILS_UTIL_H

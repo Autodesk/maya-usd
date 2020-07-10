@@ -20,8 +20,8 @@ add_library(${PROJECT_NAME} SHARED)
 #------------------------------------------------------------------------------
 # modules and definitions
 #------------------------------------------------------------------------------
-if(NOT DEFINED BOOST_ROOT)
-    set(BOOST_ROOT ${PXR_USD_LOCATION})
+if(NOT DEFINED ENV{BOOST_ROOT})
+    set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
 endif()
 if(MAYAUSD_DEFINE_BOOST_DEBUG_PYTHON_FLAG)
     set(Boost_USE_DEBUG_PYTHON ON)

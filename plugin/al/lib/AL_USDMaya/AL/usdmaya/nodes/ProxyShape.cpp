@@ -107,7 +107,6 @@ MObject ProxyShape::m_populationMaskIncludePaths = MObject::kNullObj;
 MObject ProxyShape::m_excludedTranslatedGeometry = MObject::kNullObj;
 MObject ProxyShape::m_timeOffset = MObject::kNullObj;
 MObject ProxyShape::m_timeScalar = MObject::kNullObj;
-MObject ProxyShape::m_outTime = MObject::kNullObj;
 MObject ProxyShape::m_layers = MObject::kNullObj;
 MObject ProxyShape::m_serializedSessionLayer = MObject::kNullObj;
 MObject ProxyShape::m_sessionLayerName = MObject::kNullObj;
@@ -558,7 +557,7 @@ MStatus ProxyShape::initialise()
     inheritTimeAttr("time", kCached | kConnectable | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_timeOffset = addTimeAttr("timeOffset", "tmo", MTime(0.0), kCached | kConnectable | kReadable | kWritable | kStorable | kAffectsAppearance);
     m_timeScalar = addDoubleAttr("timeScalar", "tms", 1.0, kCached | kConnectable | kReadable | kWritable | kStorable | kAffectsAppearance);
-    m_outTime = addTimeAttr("outTime", "otm", MTime(0.0), kCached | kConnectable | kReadable | kAffectsAppearance);
+    inheritTimeAttr("outTime", kCached | kConnectable | kReadable | kAffectsAppearance);
     m_layers = addMessageAttr("layers", "lys", kWritable | kReadable | kConnectable | kHidden);
 
     addFrame("OpenGL Display");
@@ -590,9 +589,9 @@ MStatus ProxyShape::initialise()
     m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
     m_variantFallbacks = addStringAttr("variantFallbacks", "vfs", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
 
-    AL_MAYA_CHECK_ERROR(attributeAffects(time(), m_outTime), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, m_outTime), errorString);
-    AL_MAYA_CHECK_ERROR(attributeAffects(m_timeScalar, m_outTime), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(time(), outTime()), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_timeOffset, outTime()), errorString);
+    AL_MAYA_CHECK_ERROR(attributeAffects(m_timeScalar, outTime()), errorString);
     // file path and prim path affects on out stage data already done in base
     // class.
     AL_MAYA_CHECK_ERROR(attributeAffects(m_populationMaskIncludePaths, outStageData()), errorString);
@@ -1559,7 +1558,7 @@ MStatus ProxyShape::computeOutputTime(const MPlug& plug, MDataBlock& dataBlock, 
   MTime inTimeOffset = inputTimeValue(dataBlock, m_timeOffset);
   double inTimeScalar = inputDoubleValue(dataBlock, m_timeScalar);
   currentTime.setValue((inTime.as(MTime::uiUnit()) - inTimeOffset.as(MTime::uiUnit())) * inTimeScalar);
-  return outputTimeValue(dataBlock, m_outTime, currentTime);
+  return outputTimeValue(dataBlock, outTime(), currentTime);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -1569,14 +1568,14 @@ MStatus ProxyShape::compute(const MPlug& plug, MDataBlock& dataBlock)
   // When shape is computed Maya will request redraw by itself
   m_requestedRedraw = true;
   MTime currentTime;
-  if(plug == m_outTime)
+  if(plug == outTime())
   {
     return computeOutputTime(plug, dataBlock, currentTime);
   }
   else
   if(plug == outStageData())
   {
-    MStatus status = computeOutputTime(MPlug(plug.node(), m_outTime), dataBlock, currentTime);
+    MStatus status = computeOutputTime(MPlug(plug.node(), outTime()), dataBlock, currentTime);
     return status == MS::kSuccess ? computeOutStageData(plug, dataBlock) : status;
   }
   // Completely skip over parent class compute(), because it has inStageData
@@ -1695,7 +1694,7 @@ void ProxyShape::CacheEmptyBoundingBox(MBoundingBox& cachedBBox)
 //----------------------------------------------------------------------------------------------------------------------
 UsdTimeCode ProxyShape::GetOutputTime(MDataBlock dataBlock) const
 {
-  return UsdTimeCode(inputDoubleValue(dataBlock, m_outTime));
+  return UsdTimeCode(inputDoubleValue(dataBlock, outTime()));
 }
 
 //----------------------------------------------------------------------------------------------------------------------

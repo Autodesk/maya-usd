@@ -56,6 +56,8 @@ constexpr char USD_UFE_SEPARATOR = '/';
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/stageNoticeListener.h>
+#include <mayaUsd/nodes/proxyAccessor.h>
+#include <mayaUsd/nodes/proxyStageProvider.h>
 #include <mayaUsd/nodes/usdPrimProvider.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -68,6 +70,7 @@ TF_DECLARE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens,
                          MAYAUSD_PROXY_SHAPE_BASE_TOKENS);
 
 class MayaUsdProxyShapeBase : public MPxSurfaceShape,
+                              public ProxyStageProvider,
                               public UsdMayaUsdPrimProvider
 {
     public:
@@ -103,15 +106,19 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         static MObject stageCacheIdAttr;
         MAYAUSD_CORE_PUBLIC
-        static MObject outStageCacheIdAttr;
-        MAYAUSD_CORE_PUBLIC
-        static MObject outStageDataAttr;
-        MAYAUSD_CORE_PUBLIC
         static MObject drawRenderPurposeAttr;
         MAYAUSD_CORE_PUBLIC
         static MObject drawProxyPurposeAttr;
         MAYAUSD_CORE_PUBLIC
         static MObject drawGuidePurposeAttr;
+
+        // Output attributes
+        MAYAUSD_CORE_PUBLIC
+        static MObject outTimeAttr;
+        MAYAUSD_CORE_PUBLIC
+        static MObject outStageDataAttr;
+        MAYAUSD_CORE_PUBLIC
+        static MObject outStageCacheIdAttr;
 
         /// Delegate function for computing the closest point and surface normal
         /// on the proxy shape to a given ray.
@@ -181,10 +188,11 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
 
         MAYAUSD_CORE_PUBLIC
         int getComplexity() const;
+
         MAYAUSD_CORE_PUBLIC
-        virtual UsdTimeCode     getTime() const;
+        UsdTimeCode     getTime() const override;
         MAYAUSD_CORE_PUBLIC
-        virtual UsdStageRefPtr  getUsdStage() const;
+        UsdStageRefPtr  getUsdStage() const override;
         MAYAUSD_CORE_PUBLIC
         size_t                  getUsdStageVersion() const;
         MAYAUSD_CORE_PUBLIC
@@ -192,7 +200,6 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
             bool*      drawRenderPurpose,
             bool*      drawProxyPurpose,
             bool*      drawGuidePurpose) const;
-
 
         MAYAUSD_CORE_PUBLIC
         bool GetAllRenderAttributes(
@@ -215,6 +222,14 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
                 const MEvaluationNode& evaluationNode,
                 PostEvaluationType evalType) override;
 
+#if MAYA_API_VERSION >= 20210000
+        MAYAUSD_CORE_PUBLIC
+        void getCacheSetup(const MEvaluationNode& evalNode, MNodeCacheDisablingInfo& disablingInfo, MNodeCacheSetupInfo& cacheSetupInfo, MObjectArray& monitoredAttributes) const override;
+    
+        MAYAUSD_CORE_PUBLIC
+        void configCache(const MEvaluationNode& evalNode, MCacheSchema& schema) const override;
+#endif
+    
         MAYAUSD_CORE_PUBLIC
         MStatus setDependentsDirty(
                 const MPlug& plug,
@@ -260,6 +275,10 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         bool isStageValid() const;
 
+        //! \brief  Create and register proxy accessor on this proxy. Should be called from postConstructor.
+        MAYAUSD_CORE_PUBLIC
+        void enableProxyAccessor();
+    
         // Hook method for derived classes.  This class returns a nullptr.
         MAYAUSD_CORE_PUBLIC
         virtual SdfLayerRefPtr computeSessionLayer(MDataBlock&);
@@ -297,6 +316,7 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MayaUsdProxyShapeBase(const MayaUsdProxyShapeBase&);
         MayaUsdProxyShapeBase& operator=(const MayaUsdProxyShapeBase&);
 
+        MStatus computeOutputTime(MDataBlock& dataBlock);
         MStatus computeInStageDataCached(MDataBlock& dataBlock);
         MStatus computeOutStageData(MDataBlock& dataBlock);
         MStatus computeOutStageCacheId(MDataBlock& dataBlock);
@@ -313,12 +333,16 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
 
         void _OnStageContentsChanged(
                 const UsdNotice::StageContentsChanged& notice);
+        void _OnStageObjectsChanged(
+            const UsdNotice::ObjectsChanged& notice);
 
         UsdMayaStageNoticeListener _stageNoticeListener;
 
         std::map<UsdTimeCode, MBoundingBox> _boundingBoxCache;
         size_t                              _excludePrimPathsVersion{ 1 };
         size_t                              _UsdStageVersion{ 1 };
+
+        MAYAUSD_NS::ProxyAccessor::Owner    _usdAccessor;
 
         static ClosestPointDelegate _sharedClosestPointDelegate;
 

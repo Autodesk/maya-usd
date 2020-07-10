@@ -38,7 +38,8 @@
 #include <maya/MPointArray.h>
 #include <maya/MString.h>
 
-#include <mayaUsd/fileio/utils/meshUtil.h>
+#include <mayaUsd/fileio/utils/meshReadUtils.h>
+#include <mayaUsd/fileio/utils/meshWriteUtils.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/pointBasedDeformerNode.h>
 #include <mayaUsd/nodes/stageNode.h>
@@ -211,11 +212,11 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     if (mesh.GetSubdivisionSchemeAttr().Get(&subdScheme) && subdScheme == UsdGeomTokens->none) {
          if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices()) &&
                  mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying) {
-             UsdMayaMeshUtil::SetEmitNormalsTag(meshFn, true);
+             UsdMayaMeshReadUtils::setEmitNormalsTag(meshFn, true);
          }
     } 
     else {
-        stat = UsdMayaMeshUtil::assignSubDivTagsToMesh(mesh, m_meshObj, meshFn);
+        stat = UsdMayaMeshReadUtils::assignSubDivTagsToMesh(mesh, m_meshObj, meshFn);
     }
 
     // Copy UsdGeomMesh schema attrs into Maya if they're authored.
@@ -485,6 +486,33 @@ TranslatorMeshRead::shapePath() const
     return m_shapePath;
 }
 
+TranslatorMeshWrite::TranslatorMeshWrite(const MFnDependencyNode& depNodeFn,
+                                         const UsdStageRefPtr& stage,
+                                         const SdfPath& usdPath,
+                                         const MDagPath& dagPath)
+{
+    if (!TF_VERIFY(dagPath.isValid())) {
+        return;
+    }
+
+    if (!UsdMayaMeshWriteUtils::isMeshValid(dagPath)) {
+        return;
+    }
+
+    m_usdMesh = UsdGeomMesh::Define(stage, usdPath);
+    if (!TF_VERIFY(
+            m_usdMesh,
+            "Could not define UsdGeomMesh at path '%s'\n",
+            usdPath.GetText())) {
+        return;
+    }
+}
+
+UsdGeomMesh 
+TranslatorMeshWrite::usdMesh() const
+{
+    return m_usdMesh;
+}
 
 } // namespace MayaUsd
 

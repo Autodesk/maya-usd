@@ -153,6 +153,10 @@ def openTreeRefScene():
     filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "tree", "treeRef.ma" )
     cmds.file(filePath, force=True, open=True)
 
+def openAppleBiteScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "appleBite", "appleBite.ma" )
+    cmds.file(filePath, force=True, open=True)
+
 def previewReleaseVersion():
     '''Return the Maya Preview Release version.
 
@@ -177,4 +181,3 @@ def previewReleaseVersion():
     match = prRe.match(cmds.about(v=True))
 
     return int(match.group(1)) if match else sys.maxsize
-

@@ -75,7 +75,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
     PIXMAYA_WRITE_UV_AS_FLOAT2,
-    true,
+    false,
     "Set to true to write uv sets as Float2Array types and set to false to "
     "write Texture Coordinate value types (TexCoord2h, TexCoord2f, "
     "TexCoord2d, TexCoord3h, TexCoord3f, TexCoord3d and their associated "
@@ -265,18 +265,6 @@ UsdAttribute UsdMayaWriteUtil::GetOrCreateUsdRiAttribute(
     }
 
     return usdAttr;
-}
-
-template <typename T>
-static bool
-_SetAttribute(const UsdAttribute& usdAttr,
-              const T &value,
-              const UsdTimeCode &usdTime,
-              UsdUtilsSparseValueWriter *valueWriter)
-{
-    return valueWriter ?
-           valueWriter->SetAttribute(usdAttr, VtValue(value), usdTime) :
-           usdAttr.Set(value, usdTime);
 }
 
 /// Converts a vec from display to linear color if its role is color.
@@ -695,7 +683,7 @@ UsdMayaWriteUtil::SetUsdAttr(
         return false;
     }
 
-    return _SetAttribute(usdAttr, val, usdTime, valueWriter);
+    return SetAttribute(usdAttr, val, usdTime, valueWriter);
 }
 
 // This method inspects the JSON blob stored in the
@@ -856,7 +844,7 @@ UsdMayaWriteUtil::WriteAPISchemaAttributesToPrim(
                                     /*custom*/ false,
                                     attrDef->GetVariability());
                         const UsdTimeCode usdTime = UsdTimeCode::Default();
-                        _SetAttribute(attr, value, usdTime, valueWriter);
+                        SetAttribute(attr, value, usdTime, valueWriter);
                     }
                 }
             }
@@ -899,7 +887,7 @@ UsdMayaWriteUtil::WriteSchemaAttributesToPrim(
                     attrDef->GetTypeName(),
                     /*custom*/ false,
                     attrDef->GetVariability());
-            if (_SetAttribute(attr, value, usdTime, valueWriter)) {
+            if (SetAttribute(attr, value, usdTime, valueWriter)) {
                 count++;
             }
         }
@@ -1010,8 +998,7 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](double x) {
                 return (int64_t) x;
             });
-        _SetAttribute(instancer.CreateIdsAttr(), indicesOrIds, usdTime,
-                valueWriter);
+        SetAttribute(instancer.CreateIdsAttr(), indicesOrIds, usdTime, valueWriter);
     }
     else {
         // Skip writing the id's, but still generate the indicesOrIds array.
@@ -1029,7 +1016,7 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                 "objectIndex", &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        VtArray<int> vtArray = _MapMayaToVtArray<MDoubleArray, double, int>(
+        VtIntArray vtArray = _MapMayaToVtArray<MDoubleArray, double, int>(
             objectIndex,
             [numPrototypes](double x) {
                 if (x < numPrototypes) {
@@ -1040,13 +1027,12 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                     return (int) numPrototypes - 1;
                 }
             });
-        _SetAttribute(instancer.CreateProtoIndicesAttr(), vtArray,
-                      usdTime, valueWriter);
+        SetAttribute(instancer.CreateProtoIndicesAttr(), vtArray, usdTime, valueWriter);
     }
     else {
-        VtArray<int> vtArray;
+        VtIntArray vtArray;
         vtArray.assign(numInstances, 0);
-        _SetAttribute(instancer.CreateProtoIndicesAttr(),
+        SetAttribute(instancer.CreateProtoIndicesAttr(),
                       vtArray, usdTime, valueWriter);
     }
 
@@ -1062,14 +1048,12 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](const MVector& v) {
                 return GfVec3f(v.x, v.y, v.z);
             });
-        _SetAttribute(instancer.CreatePositionsAttr(), vtArray, usdTime,
-                      valueWriter);
+        SetAttribute(instancer.CreatePositionsAttr(), vtArray, usdTime, valueWriter);
     }
     else {
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(0.0f));
-        _SetAttribute(instancer.CreatePositionsAttr(),
-                      vtArray, usdTime, valueWriter);
+        SetAttribute(instancer.CreatePositionsAttr(), vtArray, usdTime, valueWriter);
     }
 
     if (inputPointsData.checkArrayExist("rotation", type) &&
@@ -1087,14 +1071,12 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                         * GfRotation(GfVec3d::ZAxis(), v.z);
                 return GfQuath(rot.GetQuat());
             });
-        _SetAttribute(instancer.CreateOrientationsAttr(),
-                      vtArray, usdTime, valueWriter);
+        SetAttribute(instancer.CreateOrientationsAttr(), vtArray, usdTime, valueWriter);
     }
     else {
         VtQuathArray vtArray;
         vtArray.assign(numInstances, GfQuath(0.0f));
-        _SetAttribute(instancer.CreateOrientationsAttr(),
-                      vtArray, usdTime, valueWriter);
+        SetAttribute(instancer.CreateOrientationsAttr(), vtArray, usdTime, valueWriter);
     }
 
     if (inputPointsData.checkArrayExist("scale", type) &&
@@ -1109,14 +1091,12 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
             [](const MVector& v) {
                 return GfVec3f(v.x, v.y, v.z);
             });
-        _SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
-                      valueWriter);
+        SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime, valueWriter);
     }
     else {
         VtVec3fArray vtArray;
         vtArray.assign(numInstances, GfVec3f(1.0));
-        _SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime,
-                      valueWriter);
+        SetAttribute(instancer.CreateScalesAttr(), vtArray, usdTime, valueWriter);
     }
 
     // Note: Maya stores visibility as an array of doubles, one corresponding
@@ -1137,8 +1117,7 @@ UsdMayaWriteUtil::WriteArrayAttrsToInstancer(
                 }
             }
         }
-        _SetAttribute(instancer.CreateInvisibleIdsAttr(), invisibleIds, usdTime,
-                      valueWriter);
+        SetAttribute(instancer.CreateInvisibleIdsAttr(), invisibleIds, usdTime, valueWriter);
     }
 
     return true;

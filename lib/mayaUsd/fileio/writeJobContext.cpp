@@ -46,6 +46,7 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/scope.h>
 #include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usd/usdFileFormat.h>
 
 #include <mayaUsd/fileio/instancedNodeWriter.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
@@ -388,7 +389,9 @@ UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
             layer = existingLayer;
         }
         else {
-            layer = SdfLayer::CreateNew(filename);
+            SdfLayer::FileFormatArguments args;
+            args[UsdUsdFileFormatTokens->FormatArg] = mArgs.defaultUSDFormat.GetString();            
+            layer = SdfLayer::CreateNew(filename, "",  args);
         }
         if (!layer) {
             TF_RUNTIME_ERROR(
@@ -475,20 +478,17 @@ UsdMayaWriteJobContext::CreatePrimWriter(
 {
     SdfPath writePath = usdPath;
 
-    try {
-        const MFnDagNode& dagNodeFn =
-            dynamic_cast<const MFnDagNode&>(depNodeFn);
-
-        MStatus status;
-        const MDagPath dagPath = dagNodeFn.dagPath(&status);
-        if (status != MS::kSuccess || !dagPath.isValid()) {
+    const MDagPath dagPath =
+        UsdMayaUtil::getDagPath(depNodeFn, /* reportError = */ false);
+    if (!dagPath.isValid()) {
+        // This must be a DG node. usdPath must be supplied for DG nodes.
+        if (writePath.IsEmpty()) {
             TF_CODING_ERROR(
-                "Invalid MDagPath for MFnDagNode '%s'. Verify that it was "
-                "constructed using an MDagPath.",
-                dagNodeFn.fullPathName().asChar());
+                "No usdPath supplied for DG node '%s'.",
+                UsdMayaUtil::GetMayaNodeName(depNodeFn.object()).c_str());
             return nullptr;
         }
-
+    } else {
         if (dagPath.length() == 0u) {
             // This is the world root node. It can't have a prim writer.
             return nullptr;
@@ -498,6 +498,7 @@ UsdMayaWriteJobContext::CreatePrimWriter(
             writePath = ConvertDagToUsdPath(dagPath);
         }
 
+        const MFnDagNode dagNodeFn(dagPath);
         const bool instanced = dagNodeFn.isInstanced(/* indirect = */ false);
         if (mArgs.exportInstances && instanced && !forceUninstance) {
             // Deal with instances -- we use a special internal writer for them.
@@ -505,16 +506,6 @@ UsdMayaWriteJobContext::CreatePrimWriter(
                 dagNodeFn,
                 writePath,
                 *this);
-        }
-    }
-    catch (const std::bad_cast& /* e */) {
-        // Since the cast failed, this must be a DG node. usdPath must be
-        // supplied for DG nodes.
-        if (writePath.IsEmpty()) {
-            TF_CODING_ERROR(
-                "No usdPath supplied for DG node '%s'.",
-                UsdMayaUtil::GetMayaNodeName(depNodeFn.object()).c_str());
-            return nullptr;
         }
     }
 
