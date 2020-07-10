@@ -14,7 +14,6 @@
 // limitations under the License.
 //
 #include <pxr/pxr.h>
-#include <pxrUsd/api.h>
 
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
@@ -45,6 +44,8 @@
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
+
+#include "api.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
