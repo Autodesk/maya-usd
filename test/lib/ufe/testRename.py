@@ -275,39 +275,30 @@ class RenameTestCase(unittest.TestCase):
            newName = 'Ball_35_Renamed'
            cmds.rename(newName)
 
-    def testRenameRestrictionExternalReference(self):
-        # open tree_ref.ma scene in test-samples
-        mayaUtils.openTreeRefScene()
+    def testRenameRestrictionHasSpecs(self):
+        '''Restrict renaming USD node. Cannot rename a node that doesn't contribute to the final composed prim'''
+
+        # open appleBite.ma scene in test-samples
+        mayaUtils.openAppleBiteScene()
 
         # clear selection to start off
         cmds.select(clear=True)
 
         # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|TreeRef_usd|TreeRef_usdShape')
-        usdPathSegment = usdUtils.createUfePathSegment('/TreeBase/leaf_ref_2')
-        treebasePath = ufe.Path([mayaPathSegment, usdPathSegment])
-        treebaseItem = ufe.Hierarchy.createItem(treebasePath)
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape')
+        usdPathSegment = usdUtils.createUfePathSegment('/apple/payload/geo')
+        geoPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        geoItem = ufe.Hierarchy.createItem(geoPath)
 
-        ufe.GlobalSelection.get().append(treebaseItem)
+        ufe.GlobalSelection.get().append(geoItem)
 
         # get the USD stage
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
-        # set the edit target to the root layer
-        stage.SetEditTarget(stage.GetRootLayer())
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
-        self.assertTrue(stage.GetRootLayer().GetPrimAtPath("/TreeBase"))
-
-        # create a leafRefPrim
-        leafRefPrim = usdUtils.getPrimFromSceneItem(treebaseItem)
-
-        # leafRefPrim should have an Authored References
-        self.assertTrue(leafRefPrim.HasAuthoredReferences())
-
-        # expect the exception to happen
+        # rename "/apple/payload/geo" to "/apple/payload/geo_renamed"
+        # expect the exception happens
         with self.assertRaises(RuntimeError):
-           newName = 'leaf_ref_2_renaming'
-           cmds.rename(newName)
+            cmds.rename("geo_renamed")
 
     def testRenameUniqueName(self):
         # open tree.ma scene in test-samples

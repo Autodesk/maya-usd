@@ -60,6 +60,14 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
+    // early check to see if a particular node has any specs to contribute
+    // to the final composed prim. e.g (a node in payload)
+    if(!MayaUsdUtils::hasSpecs(prim)){
+        std::string err = TfStringPrintf("Cannot rename [%s] because it doesn't have any specs to contribute to the composed prim.",
+            prim.GetName().GetString().c_str());
+        throw std::runtime_error(err.c_str());
+    }
+
     // if the current layer doesn't have any contributions
     if (!MayaUsdUtils::doesEditTargetLayerContribute(prim)) {
         auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
@@ -71,19 +79,6 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
     }
     else
     {
-        // account for internal vs external references
-        // internal references (references without a file path specified) from the same file
-        // should be renamable.
-        if (prim.HasAuthoredReferences()) {
-            auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-
-            if(!MayaUsdUtils::isInternalReference(primSpec)) {
-                std::string err = TfStringPrintf("Unable to rename referenced object [%s]", 
-                                                  prim.GetName().GetString().c_str());
-                throw std::runtime_error(err.c_str());
-            }
-        }
-
         auto layers = MayaUsdUtils::layersWithContribution(prim);
         // if we have more than 2 layers that contributes to the final composed prim
         if (layers.size() > 1) {
