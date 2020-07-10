@@ -207,14 +207,22 @@ finally:
     endif()
     # Inherit any existing PYTHONPATH, but keep it at the end.
     list(APPEND mayaUsd_varname_PYTHONPATH
-        "${USD_INSTALL_LOCATION}/lib/python"
-        $ENV{PYTHONPATH})
+        "${USD_INSTALL_LOCATION}/lib/python")
     if(IS_WINDOWS)
         list(APPEND mayaUsd_varname_PATH
             "${USD_INSTALL_LOCATION}/bin")
         list(APPEND mayaUsd_varname_PATH
             "${USD_INSTALL_LOCATION}/lib")
     endif()
+
+    # NOTE: this should come after any setting of PATH/PYTHONPATH so
+    #       that our entries will come first.
+    # Inherit any existing PATH/PYTHONPATH, but keep it at the end.
+    # This is needed (especially for PATH) because we will overwrite
+    # both with the values from our list and we need to keep any
+    # system entries.
+    list(APPEND mayaUsd_varname_PATH $ENV{PATH})
+    list(APPEND mayaUsd_varname_PYTHONPATH $ENV{PYTHONPATH})
 
     # convert the internally-processed envs from cmake list
     foreach(pathvar ${all_path_vars})
