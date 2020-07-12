@@ -4,7 +4,6 @@ pxr_plugin(${PXR_PACKAGE}
     MAYA_PLUGIN
 
     LIBRARIES
-        mayaUsd
         usdMaya
 
     INCLUDE_DIRS
