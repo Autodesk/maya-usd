@@ -16,14 +16,63 @@
 
 #include "util.h"
 
+#include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <set>
+#include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace
+{
+    std::map<std::string,std::string> 
+    getDict(const UsdPrimCompositionQueryArc& arc) {
+        std::string arcType;
+        switch (arc.GetArcType()) {
+            case PcpArcTypeRoot:
+                arcType = "PcpArcTypeRoot";
+                break;
+            case PcpArcTypeReference:
+                arcType = "PcpArcTypeReference";
+                break;
+            case PcpArcTypePayload:
+                arcType = "PcpArcTypePayload";
+                break;
+            case PcpArcTypeInherit:
+                arcType = "PcpArcTypeInherit";
+                break;
+            case PcpArcTypeSpecialize:
+                arcType = "PcpArcTypeSpecialize";
+                break;
+            case PcpArcTypeVariant:
+                arcType = "PcpArcTypeVariant";
+                break;
+            default:
+                break;
+        }
+
+        auto introducingLayer = arc.GetIntroducingLayer();
+        auto introducingNode = arc.GetIntroducingNode();
+
+        return {
+            {"arcType" , arcType},
+            {"hasSpecs", arc.HasSpecs() ? "True" : "False"},
+            {"introLayer", introducingLayer ? introducingLayer->GetRealPath() : ""},
+            {"introLayerStack", introducingNode ? introducingNode.GetLayerStack()->GetIdentifier().rootLayer->GetRealPath() : ""},
+            {"introPath", arc.GetIntroducingPrimPath().GetString()},
+            {"isAncestral", arc.IsAncestral() ? "True" : "False"},
+            {"isImplicit", arc.IsImplicit() ? "True" : "False"},
+            {"isIntroRootLayer", arc.IsIntroducedInRootLayerStack() ? "True" : "False"},
+            {"isIntroRootLayerPrim", arc.IsIntroducedInRootLayerPrimSpec() ? "True" : "False" },
+            {"nodeLayerStack", introducingNode ? introducingNode.GetLayerStack()->GetIdentifier().rootLayer->GetRealPath() : ""},
+            {"nodePath", arc.GetTargetNode().GetPath().GetString()},
+        };
+    }
+}
 
 namespace MayaUsdUtils {
 
@@ -135,6 +184,25 @@ hasSpecs(const UsdPrim& prim)
     }
 
     return found;
+}
+
+
+void
+printCompositionQuery(const UsdPrim& prim)
+{
+    UsdPrimCompositionQuery query(prim);
+    std::cout << "[\n";
+    // the composition arcs are always returned in order from strongest
+    // to weakest regardless of the filter.
+    for (const auto& arc : query.GetCompositionArcs()) {
+        const auto& arcDic = getDict(arc);
+        std::cout << "{\n";
+        std::for_each(arcDic.begin(), arcDic.end(), [&](const auto& it) {
+            std::cout << it.first << ": " << it.second << '\n';
+        });
+        std::cout << "}\n";
+    }
+    std::cout << "]\n\n";
 }
 
 } // MayaUsdUtils
