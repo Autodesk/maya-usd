@@ -29,7 +29,6 @@
 #include <maya/MDataHandle.h>
 #include <maya/MDistance.h>
 #include <maya/MFnDagNode.h>
-#include <maya/MSelectionList.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
 #include <maya/MFnNumericData.h>
@@ -39,6 +38,7 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+#include <maya/MSelectionList.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/vec2f.h>
@@ -66,7 +66,9 @@ struct _CmpDag
 {
     bool operator()(const MDagPath& lhs, const MDagPath& rhs) const
     {
-        return strcmp(lhs.fullPathName().asChar(), rhs.fullPathName().asChar()) < 0;
+        int pathCountDiff = lhs.pathCount() - rhs.pathCount();
+        return (0 != pathCountDiff) ? (pathCountDiff < 0) :
+                (strcmp(lhs.fullPathName().asChar(), rhs.fullPathName().asChar()) < 0);
     }
 };
 
@@ -594,6 +596,20 @@ bool containsUnauthoredValues(const VtIntArray& indices);
 
 MAYAUSD_CORE_PUBLIC
 MDagPath nameToDagPath(const std::string& name);
+
+/// Utility function used by the export translator and commands to filter out objects to export
+/// by hierarchy.  When an object is exported then all of its children are exported as well, so
+/// the children should be removed from the list before the set of objects ends up in the write
+/// job, where it would error out.
+/// If \p exportSelected is true then the active selection list will be used to fill \p dagPaths
+/// with the objects to be exported.
+/// If \p exportSelected is false and \p objectList is not empty then \p objectList will
+/// be used to fill \p dagPaths with the objects to be exported.
+/// If \p exportSelected is false and \p objectList is empty then all objects starting at
+/// the DAG root will be used to fill \p dagPaths with the objects to be exported.
+///
+MAYAUSD_CORE_PUBLIC
+void GetFilteredSelectionToExport(bool exportSelected, MSelectionList& objectList, UsdMayaUtil::MDagPathSet& dagPaths);
 
 } // namespace UsdMayaUtil
 
