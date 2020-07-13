@@ -29,6 +29,7 @@
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
+#include <maya/MConditionMessage.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/instantiateSingleton.h>
@@ -55,6 +56,7 @@ using HdRendererPluginRegistry = HdxRendererPluginRegistry;
 PXR_NAMESPACE_CLOSE_SCOPE
 #endif
 #include <pxr/imaging/hdx/tokens.h>
+#include <pxr/imaging/hdx/renderTask.h>
 
 #if USD_VERSION_NUM > 2002
 #include <pxr/imaging/hgi/hgi.h>
@@ -132,7 +134,6 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
             _rendererDesc.rendererName.GetText(),
             _rendererDesc.overrideName.GetText(),
             _rendererDesc.displayName.GetText());
-    _needsClear.store(false);
     HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
         [this]() { _needsClear.store(true); });
     _ID = SdfPath("/HdMayaViewportRenderer")
@@ -150,9 +151,14 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
         MString("SelectionChanged"), _SelectionChangedCallback, this, &status);
     if (status) { _callbacks.push_back(id); }
 
-    id = MTimerMessage::addTimerCallback(
-        1.0f / 10.0f, _TimerCallback, this, &status);
-    if (status) { _callbacks.push_back(id); }
+    // Setup the playblast watch.
+    // _playBlasting is forced to true here so we can just use _PlayblastingChanged below
+    //
+    _playBlasting = true;
+    MConditionMessage::addConditionCallback("playblasting",
+        &MtohRenderOverride::_PlayblastingChanged, this, &status);
+    MtohRenderOverride::_PlayblastingChanged(false, this);
+
 
     _defaultLight.SetSpecular(GfVec4f(0.0f));
     _defaultLight.SetAmbient(GfVec4f(0.0f));
@@ -181,6 +187,9 @@ MtohRenderOverride::~MtohRenderOverride() {
             _rendererDesc.rendererName.GetText(),
             _rendererDesc.overrideName.GetText(),
             _rendererDesc.displayName.GetText());
+
+    if (_timerCallback)
+        MMessage::removeCallback(_timerCallback);
 
     ClearHydraResources();
 
@@ -354,7 +363,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // }
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RENDER)
         .Msg("MtohRenderOverride::Render()\n");
-    auto renderFrame = [&]() {
+    auto renderFrame = [&](bool markTime = false) {
         const auto originX = 0;
         const auto originY = 0;
         int width = 0;
@@ -377,8 +386,48 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         _taskController->SetCameraViewport(viewport);
 #endif // USD_VERSION_NUM >= 1910
 
-        auto tasks = _taskController->GetRenderingTasks();
+        HdTaskSharedPtrVector tasks = _taskController->GetRenderingTasks();
+
+        // For playblasting, a glReadPixels is going to occur sometime after we return.
+        // But if we call Execute on all of the tasks, then z-buffer fighting may occur
+        // because every colorize/present task is going to be drawing a full-screen quad
+        // with 'unconverged' depth.
+        //
+        // To work arround this (for not Storm) we pull the first task, (render/synch)
+        // and continually execute it until the renderer signals converged, at which point
+        // we break and call HdEngine::Execute once more to copy the aovs into OpenGL
+        //
+        if (_playBlasting && !_isUsingHdSt && !tasks.empty()) {
+            // XXX: Is this better as user-configurable ?
+            constexpr auto msWait = std::chrono::duration<float, std::milli>(100);
+#if USD_VERSION_NUM >= 2005
+            std::shared_ptr<HdxRenderTask> renderTask = std::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
+#else
+            boost::shared_ptr<HdxRenderTask> renderTask = boost::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
+#endif
+            if (renderTask) {
+                HdTaskSharedPtrVector renderOnly = { renderTask };
+                _engine.Execute(_renderIndex, &renderOnly);
+
+                while (_playBlasting && !renderTask->IsConverged()) {
+                    std::this_thread::sleep_for(msWait);
+                    _engine.Execute(_renderIndex, &renderOnly);
+                }
+            } else {
+                TF_WARN("HdxProgressiveTask not found");
+            }
+        }
+
         _engine.Execute(_renderIndex, &tasks);
+
+        // HdTaskController will query al of the tasks it can for IsConverged.
+        // This includes HdRenderPass::IsConverged and HdRenderBuffer::IsConverged (via colorizer).
+        //
+        _isConverged = _taskController->IsConverged();
+        if (markTime) {
+            std::lock_guard<std::mutex> lock(_lastRenderTimeMutex);
+            _lastRenderTime = std::chrono::system_clock::now();
+        }
     };
 
     _UpdateRenderGlobals();
@@ -473,9 +522,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 #ifndef HDMAYA_OIT_ENABLED
         HdMayaSetRenderGLState state;
 #endif
-        renderFrame();
+        renderFrame(true);
     } else {
-        renderFrame();
+        renderFrame(true);
     }
 
     // This causes issues with the embree delegate and potentially others.
@@ -489,10 +538,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     }
 
     for (auto& it : _delegates) { it->PostFrame(); }
-
-    std::lock_guard<std::mutex> lock(_convergenceMutex);
-    _lastRenderTime = std::chrono::system_clock::now();
-    _isConverged = _taskController->IsConverged();
 
     return MStatus::kSuccess;
 }
@@ -749,12 +794,31 @@ void MtohRenderOverride::_ClearHydraCallback(void* data) {
     instance->ClearHydraResources();
 }
 
+void MtohRenderOverride::_PlayblastingChanged(bool playBlasting, void* userData) {
+    auto* instance = reinterpret_cast<MtohRenderOverride*>(userData);
+    if (std::atomic_exchange(&instance->_playBlasting, playBlasting) == playBlasting)
+        return;
+
+    MStatus status;
+    if (!playBlasting) {
+        assert(instance->_timerCallback == 0 && "Callback exists");
+        instance->_timerCallback = MTimerMessage::addTimerCallback(1.0f / 10.0f,
+            _TimerCallback, instance, &status);
+    }
+    else {
+        status = MMessage::removeCallback(instance->_timerCallback);
+        instance->_timerCallback= 0;
+    }
+    CHECK_MSTATUS(status);
+}
+
 void MtohRenderOverride::_TimerCallback(float, float, void* data) {
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
-    if (!TF_VERIFY(instance)) { return; }
-    std::lock_guard<std::mutex> lock(instance->_convergenceMutex);
-    if (!instance->_isConverged &&
-        (std::chrono::system_clock::now() - instance->_lastRenderTime) <
+    if (instance->_playBlasting || instance->_isConverged)
+        return;
+
+    std::lock_guard<std::mutex> lock(instance->_lastRenderTimeMutex);
+    if ((std::chrono::system_clock::now() - instance->_lastRenderTime) <
             std::chrono::seconds(5)) {
         MGlobal::executeCommandOnIdle("refresh -f");
     }
