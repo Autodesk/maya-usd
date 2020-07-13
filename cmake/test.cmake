@@ -92,8 +92,8 @@ function(mayaUsd_add_test test_name)
         set(PYTEST_CODE "
 import sys
 from unittest import main
-import ${module_name}
-main(module=${module_name})
+import ${MODULE_NAME}
+main(module=${MODULE_NAME})
 ")
     elseif(PREFIX_PYTHON_COMMAND)
         set(PYTEST_CODE "${PREFIX_PYTHON_COMMAND}")
@@ -104,13 +104,13 @@ main(module=${module_name})
     if(PYTEST_CODE)
         if(NOT PREFIX_NO_STANDALONE_INIT)
             # first, indent pycode
-            mayaUsd_indent(indented_pytest_code "${PYTEST_CODE}")
+            mayaUsd_indent(indented_PYTEST_CODE "${PYTEST_CODE}")
             # then wrap in try/finally, and call maya.standalone.[un]initialize()
             set(PYTEST_CODE "
 import maya.standalone
 maya.standalone.initialize(name='python')
 try:
-${indented_pytest_code}
+${indented_PYTEST_CODE}
 finally:
     maya.standalone.uninitialize()
 "
@@ -124,7 +124,7 @@ finally:
 
     add_test(
         NAME "${test_name}"
-        WORKING_DIRECTORY ${working_dir}
+        WORKING_DIRECTORY ${WORKING_DIR}
         COMMAND ${COMMAND}
     )
 
@@ -147,7 +147,7 @@ finally:
     endforeach()
 
     if(IS_WINDOWS)
-        list(APPEND mayaUsd_varname_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+        list(APPEND MAYAUSD_VARNAME_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
     endif()
 
     # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
@@ -156,45 +156,45 @@ finally:
     # Emulate what mayaUSD.mod would do
 
     # adsk
-    list(APPEND mayaUsd_varname_PATH
+    list(APPEND MAYAUSD_VARNAME_PATH
          "${CMAKE_INSTALL_PREFIX}/lib")
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/lib/python")
-    list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/lib/usd")
-    list(APPEND mayaUsd_varname_MAYA_PLUG_IN_PATH
+    list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin")
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
 
     # pxr
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/python")
-    list(APPEND mayaUsd_varname_PATH
+    list(APPEND MAYAUSD_VARNAME_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
-    list(APPEND mayaUsd_varname_MAYA_SCRIPT_PATH
+    list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources")
-    list(APPEND mayaUsd_varname_MAYA_PLUG_IN_PATH
+    list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin")
-    list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/usd")
 
     # al
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/python")
-    list(APPEND mayaUsd_varname_PATH
+    list(APPEND MAYAUSD_VARNAME_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
-    list(APPEND mayaUsd_varname_MAYA_PLUG_IN_PATH
+    list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
-    list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd")
-    list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
 
     if(IS_WINDOWS AND DEFINED ENV{PYTHONHOME})
         # If the environment contains a PYTHONHOME, also set the path to
         # that folder so that we can find the python DLLs.
-        list(APPEND mayaUsd_varname_PATH $ENV{PYTHONHOME})
+        list(APPEND MAYAUSD_VARNAME_PATH $ENV{PYTHONHOME})
     endif()
 
     # Adjust PATH and PYTHONPATH to include USD.
@@ -206,12 +206,12 @@ finally:
         set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
     endif()
     # Inherit any existing PYTHONPATH, but keep it at the end.
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
         "${USD_INSTALL_LOCATION}/lib/python")
     if(IS_WINDOWS)
-        list(APPEND mayaUsd_varname_PATH
+        list(APPEND MAYAUSD_VARNAME_PATH
             "${USD_INSTALL_LOCATION}/bin")
-        list(APPEND mayaUsd_varname_PATH
+        list(APPEND MAYAUSD_VARNAME_PATH
             "${USD_INSTALL_LOCATION}/lib")
     endif()
 
@@ -221,8 +221,8 @@ finally:
     # This is needed (especially for PATH) because we will overwrite
     # both with the values from our list and we need to keep any
     # system entries.
-    list(APPEND mayaUsd_varname_PATH $ENV{PATH})
-    list(APPEND mayaUsd_varname_PYTHONPATH $ENV{PYTHONPATH})
+    list(APPEND MAYAUSD_VARNAME_PATH $ENV{PATH})
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH $ENV{PYTHONPATH})
 
     # convert the internally-processed envs from cmake list
     foreach(pathvar ${ALL_PATH_VARS})

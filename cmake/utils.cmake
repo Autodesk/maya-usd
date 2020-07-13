@@ -44,11 +44,11 @@ function(mayaUsd_append_path_to_env_var envVar pathToAppend)
     file(TO_NATIVE_PATH "${pathToAppend}" nativePathToAppend)
     if(DEFINED ENV{${envVar}})
         if(IS_WINDOWS)
-            set(newPath "$ENV{${envVar}};${nativePathToAppend}")
+            set(NEWPATH "$ENV{${envVar}};${nativePathToAppend}")
         else()
-            set(newPath "$ENV{${envVar}}:${nativePathToAppend}")
+            set(NEWPATH "$ENV{${envVar}}:${nativePathToAppend}")
         endif()
-        set(ENV{${envVar}} "${newPath}")
+        set(ENV{${envVar}} "${NEWPATH}")
     else()
         set(ENV{${envVar}} "${nativePathToAppend}")
     endif()
@@ -129,7 +129,7 @@ function(mayaUsd_install_rpath rpathRef NAME)
     list(REMOVE_AT RPATH 0)
 
     # Canonicalize and uniquify paths.
-    set(final "")
+    set(FINAL "")
     foreach(path ${RPATH})
         # Replace $ORIGIN with @loader_path
         if(IS_MACOSX)
@@ -143,15 +143,15 @@ function(mayaUsd_install_rpath rpathRef NAME)
         string(REGEX REPLACE "/+$" "" path "${path}")
 
         # Ignore paths we already have.
-        if (NOT ";${final};" MATCHES ";${path};")
-            list(APPEND final "${path}")
+        if (NOT ";${FINAL};" MATCHES ";${path};")
+            list(APPEND FINAL "${path}")
         endif()
     endforeach()
 
     set_target_properties(${NAME}
         PROPERTIES
             INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "${final}"
+            INSTALL_RPATH "${FINAL}"
     )
 endfunction()
 
