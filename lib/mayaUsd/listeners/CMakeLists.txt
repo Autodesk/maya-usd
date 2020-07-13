@@ -8,7 +8,7 @@ target_sources(${PROJECT_NAME}
        stageNoticeListener.cpp
 )
 
-set(headers
+set(HEADERS
     notice.h
     proxyShapeNotice.h
     stageNoticeListener.h
@@ -17,11 +17,11 @@ set(headers
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR listeners)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR listeners)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/listeners/
 )

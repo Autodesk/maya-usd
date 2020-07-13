@@ -50,14 +50,14 @@ list(APPEND shaderFragments_xmls
     plugInfo.json
 )
 
-set(headers
+set(HEADERS
     shaderFragments.h
 )
 
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/vp2ShaderFragments)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR render/vp2ShaderFragments)
 
 # -----------------------------------------------------------------------------
 # install
@@ -66,6 +66,6 @@ install(FILES ${shaderFragments_xmls}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
 )
 
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/vp2ShaderFragments
 )

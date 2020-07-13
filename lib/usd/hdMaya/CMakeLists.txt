@@ -11,7 +11,7 @@ target_sources(${TARGET_NAME}
         utils.cpp
 )
 
-set(headers
+set(HEADERS
     api.h
     utils.h
     debugCodes.h
@@ -45,7 +45,7 @@ target_link_libraries(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 mayaUsd_promoteHeaderList( 
     HEADERS
-        ${headers}
+        ${HEADERS}
     BASEDIR
         ${TARGET_NAME}
 )
@@ -53,9 +53,9 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-set(libFileName ${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(LIBFILENAME ${CMAKE_SHARED_LIBRARY_PREFIX}${TARGET_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 set(PLUG_INFO_PATH "plugInfo.json")
-set(PLUG_INFO_LIBRARY_PATH "../../../${libFileName}")
+set(PLUG_INFO_LIBRARY_PATH "../../../${LIBFILENAME}")
 set(PLUG_INFO_RESOURCE_PATH "resources")
 
 configure_file(${PLUG_INFO_PATH} ${CMAKE_CURRENT_BINARY_DIR}/${PLUG_INFO_PATH})
@@ -73,7 +73,7 @@ install(FILES
             ${CMAKE_INSTALL_PREFIX}/lib/usd/hdMaya/resources
 )
 
-install(FILES ${headers}
+install(FILES ${HEADERS}
         DESTINATION 
             ${CMAKE_INSTALL_PREFIX}/include/hdMaya
 )

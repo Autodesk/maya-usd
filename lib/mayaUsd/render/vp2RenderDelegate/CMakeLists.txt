@@ -17,19 +17,19 @@ target_sources(${PROJECT_NAME}
         tokens.cpp
 )
 
-set(headers
+set(HEADERS
     proxyRenderDelegate.h
 )
 
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/vp2RenderDelegate)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR render/vp2RenderDelegate)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/vp2RenderDelegate
 )
 
