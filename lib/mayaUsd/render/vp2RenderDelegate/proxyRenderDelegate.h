@@ -226,6 +226,9 @@ private:
 #if defined(WANT_UFE_BUILD) && defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     //! Adjustment mode for global selection list: ADD, REMOVE, REPLACE, XOR
     MGlobal::ListAdjustment _globalListAdjustment;
+
+    //! Token of the Kind to be selected from viewport. If it empty, select the exact prims.
+    TfToken                 _selectionKind;
 #endif
 };
 

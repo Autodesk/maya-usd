@@ -197,9 +197,30 @@ finally:
         list(APPEND mayaUsd_varname_PATH $ENV{PYTHONHOME})
     endif()
 
-    # inherit PATH and PYTHONPATH from ENV to get USD entries
-    # these should come last (esp PYTHONPATH, in case another module is overriding
+    # Adjust PATH and PYTHONPATH to include USD.
+    # These should come last (esp PYTHONPATH, in case another module is overriding
     # with pkgutil)
+   if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+        set(USD_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/${MAYAUSD_TO_USD_RELATIVE_PATH}")
+    else()
+        set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
+    endif()
+    # Inherit any existing PYTHONPATH, but keep it at the end.
+    list(APPEND mayaUsd_varname_PYTHONPATH
+        "${USD_INSTALL_LOCATION}/lib/python")
+    if(IS_WINDOWS)
+        list(APPEND mayaUsd_varname_PATH
+            "${USD_INSTALL_LOCATION}/bin")
+        list(APPEND mayaUsd_varname_PATH
+            "${USD_INSTALL_LOCATION}/lib")
+    endif()
+
+    # NOTE: this should come after any setting of PATH/PYTHONPATH so
+    #       that our entries will come first.
+    # Inherit any existing PATH/PYTHONPATH, but keep it at the end.
+    # This is needed (especially for PATH) because we will overwrite
+    # both with the values from our list and we need to keep any
+    # system entries.
     list(APPEND mayaUsd_varname_PATH $ENV{PATH})
     list(APPEND mayaUsd_varname_PYTHONPATH $ENV{PYTHONPATH})
 

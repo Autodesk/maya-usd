@@ -133,6 +133,7 @@ private:
     // Callbacks
     static void _ClearHydraCallback(void* data);
     static void _TimerCallback(float, float, void* data);
+    static void _PlayblastingChanged(bool state, void*);
     static void _SelectionChangedCallback(void* data);
     static void _PanelDeletedCallback(const MString& panelName, void* data);
     static void _RendererChangedCallback(
@@ -146,12 +147,15 @@ private:
 
     std::vector<MHWRender::MRenderOperation*> _operations;
     std::vector<MCallbackId> _callbacks;
+    MCallbackId _timerCallback = 0;
     PanelCallbacksList _renderPanelCallbacks;
     MtohRenderGlobals _globals;
 
-    std::mutex _convergenceMutex;
+    std::mutex _lastRenderTimeMutex;
     std::chrono::system_clock::time_point _lastRenderTime;
-    std::atomic<bool> _needsClear;
+    std::atomic<bool> _playBlasting = {false};
+    std::atomic<bool> _isConverged = {false};
+    std::atomic<bool> _needsClear = {false};
 
 #if USD_VERSION_NUM > 2002
     /// Hgi and HdDriver should be constructed before HdEngine to ensure they
@@ -191,7 +195,6 @@ private:
     bool _hasDefaultLighting = false;
     bool _renderGlobalsHaveChanged = false;
     bool _selectionChanged = true;
-    bool _isConverged = false;
 
 #if WANT_UFE_BUILD
     UFE_NS::Observer::Ptr _ufeSelectionObserver;
