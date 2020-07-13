@@ -55,7 +55,7 @@ namespace MayaUsdUtils {
 
     //! Convenience function for printing the list of queried composition arcs in order. 
     MAYA_USD_UTILS_PUBLIC
-    void printCompositionQuery(const UsdPrim&);
+    void printCompositionQuery(const UsdPrim&, std::ostream&);
 
 } // namespace MayaUsdUtils
 

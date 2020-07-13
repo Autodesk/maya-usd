@@ -23,7 +23,6 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <set>
-#include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -186,23 +185,25 @@ hasSpecs(const UsdPrim& prim)
     return found;
 }
 
-
 void
-printCompositionQuery(const UsdPrim& prim)
+printCompositionQuery(const UsdPrim& prim, std::ostream& os)
 {
     UsdPrimCompositionQuery query(prim);
-    std::cout << "[\n";
-    // the composition arcs are always returned in order from strongest
+
+    os << "[\n";
+
+    // the composition arcs are always returned in order from strongest 
     // to weakest regardless of the filter.
     for (const auto& arc : query.GetCompositionArcs()) {
         const auto& arcDic = getDict(arc);
-        std::cout << "{\n";
-        std::for_each(arcDic.begin(), arcDic.end(), [&](const auto& it) {
-            std::cout << it.first << ": " << it.second << '\n';
+        os << "{\n";
+        std::for_each(arcDic.begin(),arcDic.end(), [&](const auto& it) {
+            os << it.first << ": " << it.second << '\n';
         });
-        std::cout << "}\n";
+        os << "}\n";
     }
-    std::cout << "]\n\n";
+
+    os << "]\n\n";
 }
 
 } // MayaUsdUtils
