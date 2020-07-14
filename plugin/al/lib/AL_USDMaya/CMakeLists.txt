@@ -182,6 +182,15 @@ target_include_directories(
     $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
+# There were bugs in both cmake and findboost with the boost version string. So in
+# order to support all boost and cmake versions, we check how the boost version is
+# defined and create our version comparison string.
+if(${Boost_VERSION} MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
+    set(boost_1_70_0_ver_string "1.70.0")
+else()
+    set(boost_1_70_0_ver_string "107000")
+endif()
+
 target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
@@ -201,7 +210,7 @@ target_link_libraries(${LIBRARY_NAME}
     usdImagingGL
     vt
     Boost::python
-    $<IF:$<BOOL:${IS_WINDOWS}>,Boost::thread,${Boost_THREAD_LIBRARY}>
+    $<IF:$<VERSION_GREATER_EQUAL:${Boost_VERSION},${boost_1_70_0_ver_string}>,Boost::thread,${Boost_THREAD_LIBRARY}>
     $<$<BOOL:${IS_WINDOWS}>:Boost::chrono>
     $<$<BOOL:${IS_WINDOWS}>:Boost::date_time>
     $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::filesystem>
