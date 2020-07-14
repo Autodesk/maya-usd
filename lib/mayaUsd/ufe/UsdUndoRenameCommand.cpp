@@ -37,6 +37,8 @@
 #include <cassert>
 #endif
 
+#include <cctype>
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -131,8 +133,13 @@ bool UsdUndoRenameCommand::renameRedo()
         _newName = uniqueName(childrenNames, _newName);
     }
 
+    // names are not allowed to start to digit numbers
+    if(std::isdigit(_newName.at(0))){
+        _newName = prim.GetName();
+    }
+
     // all special characters are replaced with `_`
-    const std::string specialChars{"~!@#$%^&*()-=+,.?`':{}|<>[]/"};
+    const std::string specialChars{"~!@#$%^&*()-=+,.?`':{}|<>[]/' '"};
     std::replace_if(_newName.begin(), _newName.end(), [&](auto c){
         return std::string::npos != specialChars.find(c);
     }, '_');
