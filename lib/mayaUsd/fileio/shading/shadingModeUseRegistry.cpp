@@ -494,7 +494,8 @@ private:
 
             UsdMayaJobImportArgs defaultJobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
                 UsdMayaJobImportArgs::GetDefaultDictionary());
-            UsdMayaPrimReaderArgs args(shaderSchema.GetPrim(), defaultJobArgs);
+            UsdPrim shaderPrim = shaderSchema.GetPrim();
+            UsdMayaPrimReaderArgs args(shaderPrim, defaultJobArgs);
 
             shaderReader = std::dynamic_pointer_cast<UsdMayaShaderReader>(factoryFn(args));
 
