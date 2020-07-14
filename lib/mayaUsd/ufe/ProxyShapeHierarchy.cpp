@@ -25,6 +25,7 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/Global.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #if UFE_PREVIEW_VERSION_NUM >= 2013
@@ -153,10 +154,12 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const
 	return fMayaHierarchy->parent();
 }
 
+#if UFE_PREVIEW_VERSION_NUM < 2018
 Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 {
 	throw std::runtime_error("ProxyShapeHierarchy::appendChild() not implemented");
 }
+#endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #if UFE_PREVIEW_VERSION_NUM >= 2013
@@ -210,6 +213,30 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(const Ufe::Selecti
 }
 
 #endif // UFE_PREVIEW_VERSION_NUM
+
+#if UFE_PREVIEW_VERSION_NUM >= 2018
+
+Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
+{
+    // Default parent for Maya nodes is "|world".
+    return createItem(Ufe::Path(Ufe::PathSegment(Ufe::PathComponent("world"), 
+                                                 getMayaRunTimeId(), '|')));
+}
+
+Ufe::SceneItem::Ptr ProxyShapeHierarchy::insertChild(
+        const Ufe::SceneItem::Ptr& ,
+        const Ufe::SceneItem::Ptr& 
+)
+{
+    // Should be possible to implement trivially when support for returning the
+    // result of the parent command (MAYA-105278) is implemented.  For now,
+    // Ufe::Hierarchy::insertChildCmd() returns a base class
+    // Ufe::UndoableCommand::Ptr object, from which we can't retrieve the added
+    // child.  PPT, 13-Jul-2020.
+    return nullptr;
+}
+
+#endif
 
 #endif // UFE_V2_FEATURES_AVAILABLE
 
