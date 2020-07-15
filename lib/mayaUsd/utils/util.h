@@ -36,9 +36,9 @@
 #include <maya/MObject.h>
 #include <maya/MObjectHandle.h>
 #include <maya/MPlug.h>
+#include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-#include <maya/MSelectionList.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/gf/vec2f.h>
@@ -601,12 +601,13 @@ MDagPath nameToDagPath(const std::string& name);
 /// by hierarchy.  When an object is exported then all of its children are exported as well, so
 /// the children should be removed from the list before the set of objects ends up in the write
 /// job, where it would error out.
-/// If \p exportSelected is true then the active selection list will be used to fill \p dagPaths
-/// with the objects to be exported.
+/// If \p exportSelected is true then the active selection list will be added to \p objectList
+/// and then used to fill \p dagPaths with the objects to be exported.
 /// If \p exportSelected is false and \p objectList is not empty then \p objectList will
 /// be used to fill \p dagPaths with the objects to be exported.
 /// If \p exportSelected is false and \p objectList is empty then all objects starting at
-/// the DAG root will be used to fill \p dagPaths with the objects to be exported.
+/// the DAG root will be added to \p objectList and then used to fill \p dagPaths with
+/// the objects to be exported.
 ///
 MAYAUSD_CORE_PUBLIC
 void GetFilteredSelectionToExport(bool exportSelected, MSelectionList& objectList, UsdMayaUtil::MDagPathSet& dagPaths);

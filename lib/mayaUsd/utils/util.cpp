@@ -2154,7 +2154,7 @@ UsdMayaUtil::GetFilteredSelectionToExport(bool exportSelected, MSelectionList& o
         filterInput = false;
     }
 
-    unsigned int nbObj = objectList.length(), i;
+    unsigned int nbObj = objectList.length();
     if (0 == nbObj) {
         return;
     }
@@ -2166,7 +2166,7 @@ UsdMayaUtil::GetFilteredSelectionToExport(bool exportSelected, MSelectionList& o
     // 2. For each input object we iterate up its hierarchy checking if any parent is in the set.
     // 3. If no parent is in the set then we can add it.
     UsdMayaUtil::MDagPathSet sortedInput;
-    for (i=0; i < nbObj; i++) {
+    for (unsigned int i=0; i < nbObj; i++) {
         MDagPath dagPath;
         status = objectList.getDagPath(i, dagPath);
         if (status == MS::kSuccess)

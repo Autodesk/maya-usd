@@ -271,7 +271,7 @@ try
     if (!exportSelected) {
         argData.getObjects(objSelList);
     }
-    GetFilteredSelectionToExport(exportSelected, objSelList, dagPaths);
+    UsdMayaUtil::GetFilteredSelectionToExport(exportSelected, objSelList, dagPaths);
 
     const std::vector<double> timeSamples = UsdMayaWriteUtil::GetTimeSamples(
             timeInterval, frameSamples, frameStride);

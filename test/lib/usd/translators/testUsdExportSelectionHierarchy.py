@@ -1,6 +1,6 @@
 #!/pxrpythonsubst
 #
-# Copyright 2016 Pixar
+# Copyright 2020 Autodesk
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ class testUsdExportSelectionHierarchy(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.inputPath = fixturesUtils   .setUpClass(__file__)
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
