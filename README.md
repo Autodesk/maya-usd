@@ -1,5 +1,5 @@
 # What is USD for Maya?
-# Bang
+# Bang2
 USD for Maya is a project to create a Maya plugin, as well as reusable libraries, that provide translation and editing capabilities for Pixar Animation Studios Universal Scene Description (USD).
 
 Read more about Pixar's USD [here](http://openusd.org)
