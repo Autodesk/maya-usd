@@ -98,6 +98,7 @@ TF_DEFINE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens,
 MayaUsdProxyShapeBase::ClosestPointDelegate
 MayaUsdProxyShapeBase::_sharedClosestPointDelegate = nullptr;
 
+const std::string kAnonymousLayerName{"anonymousLayer1"};
 
 // ========================================================
 
@@ -584,7 +585,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             }
             else {
                 // Create a new stage in memory with an anonymous root layer.
-                usdStage = UsdStage::CreateInMemory("", loadSet);
+                usdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
             }
         }
 
