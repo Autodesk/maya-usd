@@ -580,7 +580,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                             loadSet);
                 }
 
-                usdStage->SetEditTarget(usdStage->GetSessionLayer());
+                usdStage->SetEditTarget(usdStage->GetRootLayer());
             }
             else {
                 // Create a new stage in memory with an anonymous root layer.
