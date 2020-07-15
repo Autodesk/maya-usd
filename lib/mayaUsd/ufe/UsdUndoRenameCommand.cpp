@@ -139,7 +139,7 @@ bool UsdUndoRenameCommand::renameRedo()
     }
 
     // all special characters are replaced with `_`
-    const std::string specialChars{"~!@#$%^&*()-=+,.?`':{}|<>[]/' '"};
+    const std::string specialChars{"~!@#$%^&*()-=+,.?`':{}|<>[]/ "};
     std::replace_if(_newName.begin(), _newName.end(), [&](auto c){
         return std::string::npos != specialChars.find(c);
     }, '_');
