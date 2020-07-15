@@ -2,6 +2,25 @@ set(PXR_PACKAGE usdMaya)
 
 pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
+        ar
+        gf
+        js
+        kind
+        sdf
+        tf
+        usd
+        usdGeom
+        usdLux
+        usdRi
+        usdShade
+        usdSkel
+        usdUtils
+        vt
+        ${MAYA_Foundation_LIBRARY}
+        ${MAYA_OpenMaya_LIBRARY}
+        ${MAYA_OpenMayaAnim_LIBRARY}
+        ${MAYA_OpenMayaRender_LIBRARY}
+        ${MAYA_OpenMayaUI_LIBRARY}
         mayaUsd
 
     INCLUDE_DIRS
