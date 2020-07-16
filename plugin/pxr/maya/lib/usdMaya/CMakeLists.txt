@@ -4,16 +4,11 @@ pxr_shared_library(${PXR_PACKAGE}
     LIBRARIES
         ar
         gf
-        js
         kind
         sdf
         tf
         usd
         usdGeom
-        usdLux
-        usdRi
-        usdShade
-        usdSkel
         usdUtils
         vt
         ${MAYA_Foundation_LIBRARY}
