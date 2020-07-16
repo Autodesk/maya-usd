@@ -48,7 +48,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdS
     _stage = usdSceneItem->prim().GetStage();
     if (_stage) {
         // Append the parent path and the requested name into a full ufe path.
-        _newUfePath = appendToPath(ufePath, name + std::to_string(1));
+        _newUfePath = appendToPath(ufePath, name + 1);
 
         // Ensure the requested name is unique.
         auto newPrimName = uniqueChildName(usdSceneItem, _newUfePath);
