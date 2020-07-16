@@ -92,8 +92,8 @@ function(mayaUsd_init_rpath rpathRef origin)
     endif()
     # mayaUsd_add_rpath uses REALPATH, so we must make sure we always
     # do so here too, to get the right relative path
-    get_filename_component(origin "${origin}" REALPATH)
-    set(${rpathRef} "${origin}" PARENT_SCOPE)
+    get_filename_component(ORIGIN "${ORIGIN}" REALPATH)
+    set(${rpathRef} "${ORIGIN}" PARENT_SCOPE)
 endfunction()
 
 # Add a relative target path to the rpath.  If target is absolute compute
@@ -204,7 +204,7 @@ function(mayaUsd_promoteHeaderList)
         else()
             file(READ ${DSTFILE} oldContent)
             if (NOT "${CONTENT}" STREQUAL "${oldContent}")
-                message(STATUS "Promoting ${srcfile}")
+                message(STATUS "Promoting ${SRCFILE}")
                 file(WRITE ${DSTFILE} "${CONTENT}")
             endif()
         endif()

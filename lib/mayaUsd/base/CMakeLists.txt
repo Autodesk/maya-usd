@@ -12,7 +12,7 @@ set(HEADERS
 )
 
 # -----------------------------------------------------------------------------
-# promoted HEADERS
+# promoted headers
 # -----------------------------------------------------------------------------
 set(SRCFILE ${CMAKE_CURRENT_SOURCE_DIR}/mayaUsd.h.src)
 set(DSTFILE ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)

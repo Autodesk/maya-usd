@@ -75,7 +75,7 @@ function(mayaUsd_add_test test_name)
             "used with PYTHON_MODULE or PYTHON_COMMAND")
     endif()
 
-    # set the WORKING_DIR
+    # set the working_dir
     if(PREFIX_WORKING_DIRECTORY)
         set(WORKING_DIR ${PREFIX_WORKING_DIRECTORY})
     else()
@@ -98,7 +98,7 @@ main(module=${MODULE_NAME})
     elseif(PREFIX_PYTHON_COMMAND)
         set(PYTEST_CODE "${PREFIX_PYTHON_COMMAND}")
     else()
-        set(COMMAND ${PREFIX_COMMAND})
+        set(COMMAND_CALL ${PREFIX_COMMAND})
     endif()
 
     if(PYTEST_CODE)
@@ -118,14 +118,14 @@ finally:
         endif()
 
         string(REPLACE ";" "\;" PYTEST_CODE "${PYTEST_CODE}")
-        set(COMMAND ${MAYA_PY_EXECUTABLE} -c "${PYTEST_CODE}")
+        set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} -c "${PYTEST_CODE}")
 
     endif()
 
     add_test(
         NAME "${test_name}"
         WORKING_DIRECTORY ${WORKING_DIR}
-        COMMAND ${COMMAND}
+        COMMAND ${COMMAND_CALL}
     )
 
     # -----------------
