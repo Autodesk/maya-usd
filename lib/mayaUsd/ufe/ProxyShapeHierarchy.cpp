@@ -218,9 +218,8 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(const Ufe::Selecti
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 {
-    // Default parent for Maya nodes is "|world".
-    return createItem(Ufe::Path(Ufe::PathSegment(Ufe::PathComponent("world"), 
-                                                 getMayaRunTimeId(), '|')));
+    // Maya shape nodes cannot be unparented.
+    return nullptr;
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::insertChild(

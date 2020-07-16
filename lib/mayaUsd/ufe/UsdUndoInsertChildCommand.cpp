@@ -106,6 +106,10 @@ UsdUndoInsertChildCommand::Ptr UsdUndoInsertChildCommand::create(
     const UsdSceneItem::Ptr& pos
 )
 {
+    if (!parent || !child) {
+        return nullptr;
+    }
+
     // Error if requested parent is currently a child of requested child.
     if (parent->path().startsWith(child->path())) {
         return nullptr;
