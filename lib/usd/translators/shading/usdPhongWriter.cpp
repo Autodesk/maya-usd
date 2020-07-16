@@ -15,9 +15,10 @@
 //
 #include "usdReflectWriter.h"
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MPlug.h>
-#include <maya/MStatus.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -28,53 +29,49 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 #include <cmath>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdTranslators_PhongWriter : public PxrUsdTranslators_ReflectWriter
-{
-    typedef PxrUsdTranslators_ReflectWriter baseClass;
+class PxrUsdTranslators_PhongWriter : public PxrUsdTranslators_ReflectWriter {
+    typedef PxrUsdTranslators_ReflectWriter BaseClass;
 
-    public:
-        PxrUsdTranslators_PhongWriter(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrUsdTranslators_PhongWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        void Write(const UsdTimeCode& usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 };
 
-PXRUSDMAYA_REGISTER_WRITER(
-    phong,
-    PxrUsdTranslators_PhongWriter);
+PXRUSDMAYA_REGISTER_WRITER(phong, PxrUsdTranslators_PhongWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
     (cosinePower)
-
-    // UsdPreviewSurface
-    (roughness)
 );
 
 PxrUsdTranslators_PhongWriter::PxrUsdTranslators_PhongWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx)
-    : PxrUsdTranslators_ReflectWriter(depNodeFn, usdPath, jobCtx) {}
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : PxrUsdTranslators_ReflectWriter(depNodeFn, usdPath, jobCtx)
+{
+}
 
 /* virtual */
-void
-PxrUsdTranslators_PhongWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_PhongWriter::Write(const UsdTimeCode& usdTime)
 {
-    baseClass::Write(usdTime);
+    BaseClass::Write(usdTime);
 
     MStatus status;
 
@@ -91,26 +88,21 @@ PxrUsdTranslators_PhongWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    MPlug cosinePowerPlug =
-        depNodeFn.findPlug(
-            depNodeFn.attribute(_tokens->cosinePower.GetText()),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    MPlug cosinePowerPlug = depNodeFn.findPlug(
+        depNodeFn.attribute(_tokens->cosinePower.GetText()),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status == MS::kSuccess) {
-        VtValue cosinePower =
-            UsdMayaWriteUtil::GetVtValue(
-                cosinePowerPlug,
-                SdfValueTypeNames->Float,
-                /* linearizeColors = */ false);
+        float cosinePower = cosinePowerPlug.asFloat();
 
         // In the maya UI, cosinePower goes from 2.0 to 100.0
         // this does not map directly to specular roughness
-        float roughnessFloat =
-            std::sqrt(1.0f / (0.454f * cosinePower.Get<float>() + 3.357f));
+        float roughnessFloat = std::sqrt(1.0f / (0.454f * cosinePower + 3.357f));
 
-        shaderSchema.CreateInput(
-            _tokens->roughness,
-            SdfValueTypeNames->Float).Set(roughnessFloat, usdTime);
+        shaderSchema
+            .CreateInput(
+                PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, SdfValueTypeNames->Float)
+            .Set(roughnessFloat, usdTime);
     }
 }
 

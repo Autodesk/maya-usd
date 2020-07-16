@@ -15,8 +15,9 @@
 //
 #include "usdReflectWriter.h"
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MStatus.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -25,34 +26,33 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MStatus.h>
+
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 #include <cmath>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdTranslators_BlinnWriter : public PxrUsdTranslators_ReflectWriter
-{
-    typedef PxrUsdTranslators_ReflectWriter baseClass;
+class PxrUsdTranslators_BlinnWriter : public PxrUsdTranslators_ReflectWriter {
+    typedef PxrUsdTranslators_ReflectWriter BaseClass;
 
-    public:
-        PxrUsdTranslators_BlinnWriter(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrUsdTranslators_BlinnWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        void Write(const UsdTimeCode& usdTime) override;
-        void WriteSpecular(const UsdTimeCode& usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 
-        TfToken GetShadingAttributeNameForMayaAttrName(
-                const TfToken& mayaAttrName) override;
+    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
+
+protected:
+    void WriteSpecular(const UsdTimeCode& usdTime) override;
 };
 
-PXRUSDMAYA_REGISTER_WRITER(
-    blinn,
-    PxrUsdTranslators_BlinnWriter);
+PXRUSDMAYA_REGISTER_WRITER(blinn, PxrUsdTranslators_BlinnWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -61,23 +61,20 @@ TF_DEFINE_PRIVATE_TOKENS(
     (eccentricity)
     (specularColor)
     (specularRollOff)
-
-    // UsdPreviewSurface
-    (roughness)
-    (useSpecularWorkflow)
 );
 
 PxrUsdTranslators_BlinnWriter::PxrUsdTranslators_BlinnWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx)
-    : PxrUsdTranslators_ReflectWriter(depNodeFn, usdPath, jobCtx) {}
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : PxrUsdTranslators_ReflectWriter(depNodeFn, usdPath, jobCtx)
+{
+}
 
 /* virtual */
-void
-PxrUsdTranslators_BlinnWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_BlinnWriter::Write(const UsdTimeCode& usdTime)
 {
-    baseClass::Write(usdTime);
+    BaseClass::Write(usdTime);
 
     MStatus status;
 
@@ -98,15 +95,14 @@ PxrUsdTranslators_BlinnWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->eccentricity,
         shaderSchema,
-        _tokens->roughness,
+        PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName,
         usdTime);
 }
 
 /* virtual */
-void
-PxrUsdTranslators_BlinnWriter::WriteSpecular(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_BlinnWriter::WriteSpecular(const UsdTimeCode& usdTime)
 {
-    MStatus status;
+    MStatus                 status;
     const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
     if (status != MS::kSuccess) {
         return;
@@ -122,32 +118,24 @@ PxrUsdTranslators_BlinnWriter::WriteSpecular(const UsdTimeCode& usdTime)
         usdTime,
         _tokens->specularRollOff);
 
-    shaderSchema.CreateInput(
-        _tokens->useSpecularWorkflow,
-        SdfValueTypeNames->Int).Set(1, usdTime);
+    shaderSchema
+        .CreateInput(
+            PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
+        .Set(1, usdTime);
 
     // Not calling base class. Completely different specular implementation.
 }
 
 /* virtual */
 TfToken
-PxrUsdTranslators_BlinnWriter::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+PxrUsdTranslators_BlinnWriter::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
-    if (!_usdPrim) {
-        return TfToken();
-    }
-
     if (mayaAttrName == _tokens->eccentricity) {
-        return TfToken(
-                    TfStringPrintf(
-                        "%s%s",
-                        UsdShadeTokens->inputs.GetText(),
-                        _tokens->roughness.GetText()).c_str());
-    } else {
-        return baseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
+        return UsdShadeUtils::GetFullName(
+            PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, UsdShadeAttributeType::Input);
     }
-
+    
+    return BaseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

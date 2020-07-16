@@ -1,5 +1,4 @@
 //
-// Copyright 2018 Pixar
 // Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,8 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class TfToken;
 class UsdMayaPrimReaderArgs;
 
-/// Base class for USD prim readers that export Maya shading nodes as USD
-/// shader prims.
+/// Base class for USD prim readers that import USD shader prims as Maya shading nodes.
 class UsdMayaShaderReader : public UsdMayaPrimReader {
 public:
     MAYAUSD_CORE_PUBLIC
@@ -48,16 +46,7 @@ public:
     /// return the corresponding attribute names for the USD attributes
     /// that should be considered for connections.
     MAYAUSD_CORE_PUBLIC
-    virtual TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName);
-
-    /// Get the Maya object created by this shader reader
-    ///
-    MAYAUSD_CORE_PUBLIC
-    MObject GetMayaObject() { return _mayaObject; }
-
-protected:
-
-    MObject _mayaObject;
+    virtual TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const;
 };
 
 typedef std::shared_ptr<UsdMayaShaderReader> UsdMayaShaderReaderSharedPtr;

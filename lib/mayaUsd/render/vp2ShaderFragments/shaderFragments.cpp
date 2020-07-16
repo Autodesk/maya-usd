@@ -249,7 +249,7 @@ MStatus HdVP2ShaderFragments::registerFragments()
 MStatus HdVP2ShaderFragments::deregisterFragments()
 {
     // If it was never registered, leave as-is:
-    if (!_registrationCount) {
+    if (_registrationCount == 0) {
         return MS::kSuccess;
     }
 

@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -34,38 +34,35 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (UsdMaya)(ShaderReader));
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (UsdMaya)
+    (ShaderReader)
+);
 
-typedef std::map<std::string, UsdMayaShaderReaderRegistry::ReaderFactoryFn> _Registry;
-static _Registry                                                            _reg;
+typedef TfHashMap<TfToken, UsdMayaShaderReaderRegistry::ReaderFactoryFn, TfToken::HashFunctor>
+                 _Registry;
+static _Registry _reg;
 
 /* static */
 void UsdMayaShaderReaderRegistry::Register(
-    const std::string&                           usdInfoId,
+    TfToken                                      usdInfoId,
     UsdMayaShaderReaderRegistry::ReaderFactoryFn fn)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY)
-        .Msg("Registering UsdMayaShaderReader for info:id %s.\n", usdInfoId.c_str());
+        .Msg("Registering UsdMayaShaderReader for info:id %s.\n", usdInfoId.GetText());
 
     std::pair<_Registry::iterator, bool> insertStatus = _reg.insert(std::make_pair(usdInfoId, fn));
     if (insertStatus.second) {
         UsdMaya_RegistryHelper::AddUnloader([usdInfoId]() { _reg.erase(usdInfoId); });
     } else {
-        TF_CODING_ERROR("Multiple readers for id %s", usdInfoId.c_str());
+        TF_CODING_ERROR("Multiple readers for id %s", usdInfoId.GetText());
     }
 }
 
 /* static */
-void UsdMayaShaderReaderRegistry::RegisterRaw(
-    const std::string&                    usdInfoId,
-    UsdMayaShaderReaderRegistry::ReaderFn fn)
-{
-    Register(usdInfoId, UsdMaya_FunctorPrimReader::CreateFactory(fn));
-}
-
-/* static */
 UsdMayaShaderReaderRegistry::ReaderFactoryFn
-UsdMayaShaderReaderRegistry::Find(const std::string& usdInfoId)
+UsdMayaShaderReaderRegistry::Find(const TfToken& usdInfoId)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShaderReaderRegistry>();
 
@@ -83,7 +80,7 @@ UsdMayaShaderReaderRegistry::Find(const std::string& usdInfoId)
         TF_DEBUG(PXRUSDMAYA_REGISTRY)
             .Msg(
                 "No usdMaya reader plugin for info:id %s. No maya plugin found.\n",
-                usdInfoId.c_str());
+                usdInfoId.GetText());
         _reg[usdInfoId] = nullptr;
     }
 

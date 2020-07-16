@@ -15,14 +15,16 @@
 //
 #include "usdReflectWriter.h"
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MStatus.h>
-
 #include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
+
+#include <maya/MFnDependencyNode.h>
+#include <maya/MStatus.h>
+
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -31,22 +33,20 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Maya material nodes attribute names
     (specularColor)
-
-    // UsdPreviewSurface
-    (useSpecularWorkflow)
 );
 
 PxrUsdTranslators_ReflectWriter::PxrUsdTranslators_ReflectWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx)
-    : PxrUsdTranslators_LambertWriter(depNodeFn, usdPath, jobCtx) {}
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : PxrUsdTranslators_LambertWriter(depNodeFn, usdPath, jobCtx)
+{
+}
 
 /* virtual */
-void
-PxrUsdTranslators_ReflectWriter::WriteSpecular(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_ReflectWriter::WriteSpecular(const UsdTimeCode& usdTime)
 {
-    MStatus status;
+    MStatus                 status;
     const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
     if (status != MS::kSuccess) {
         return;
@@ -58,34 +58,27 @@ PxrUsdTranslators_ReflectWriter::WriteSpecular(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->specularColor,
         shaderSchema,
-        _tokens->specularColor,
+        PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName,
         usdTime);
 
-    shaderSchema.CreateInput(
-        _tokens->useSpecularWorkflow,
-        SdfValueTypeNames->Int).Set(1, usdTime);
+    shaderSchema
+        .CreateInput(
+            PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
+        .Set(1, usdTime);
 
     // Not calling base class since it is not reflective.
 }
 
 /* virtual */
 TfToken
-PxrUsdTranslators_ReflectWriter::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+PxrUsdTranslators_ReflectWriter::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
-    if (!_usdPrim) {
-        return TfToken();
+    if (mayaAttrName == _tokens->specularColor) {
+        return UsdShadeUtils::GetFullName(
+            PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName, UsdShadeAttributeType::Input);
     }
 
-    if (mayaAttrName == _tokens->specularColor) {
-        return TfToken(
-                    TfStringPrintf(
-                        "%s%s",
-                        UsdShadeTokens->inputs.GetText(),
-                        _tokens->specularColor.GetText()).c_str());
-    } else {
-        return baseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
-    }
+    return BaseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

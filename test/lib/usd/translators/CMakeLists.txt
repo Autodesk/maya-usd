@@ -46,6 +46,7 @@ set(test_script_files
     testUsdImportSessionLayer.py
     testUsdImportShadingModeDisplayColor.py
     testUsdImportShadingModePxrRis.py
+    testUsdExportImportRoundtripPreviewSurface.py
     testUsdImportSkeleton.py
     testUsdImportXforms.py
 )

@@ -15,8 +15,10 @@
 //
 #include "usdMaterialWriter.h"
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MStatus.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -27,35 +29,30 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MStatus.h>
+
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 #include <cmath>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdTranslators_StandardSurfaceWriter
-    : public PxrUsdTranslators_MaterialWriter
-{
-    typedef PxrUsdTranslators_MaterialWriter baseClass;
+class PxrUsdTranslators_StandardSurfaceWriter : public PxrUsdTranslators_MaterialWriter {
+    typedef PxrUsdTranslators_MaterialWriter BaseClass;
 
-    public:
-        PxrUsdTranslators_StandardSurfaceWriter(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrUsdTranslators_StandardSurfaceWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        void Write(const UsdTimeCode& usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 
-        TfToken GetShadingAttributeNameForMayaAttrName(
-                const TfToken& mayaAttrName) override;
+    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 };
 
-PXRUSDMAYA_REGISTER_WRITER(
-    standardSurface,
-    PxrUsdTranslators_StandardSurfaceWriter);
+PXRUSDMAYA_REGISTER_WRITER(standardSurface, PxrUsdTranslators_StandardSurfaceWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -67,38 +64,27 @@ TF_DEFINE_PRIVATE_TOKENS(
     (emissionColor)
     (metalness)
     (specular)
+    (specularColor)
     (specularIOR)
     (specularRoughness)
     (coat)
     (coatRoughness)
     (transmission)
     (normalCamera)
-
-    // UsdPreviewSurface
-    (diffuseColor)
-    (emissiveColor)
-    (metallic)
-    (ior)
-    (useSpecularWorkflow)
-    (specularColor)
-    (roughness)
-    (clearcoat)
-    (clearcoatRoughness)
-    (opacity)
-    (normal)
 );
 
 PxrUsdTranslators_StandardSurfaceWriter::PxrUsdTranslators_StandardSurfaceWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx)
-    : baseClass(depNodeFn, usdPath, jobCtx) {}
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : BaseClass(depNodeFn, usdPath, jobCtx)
+{
+}
 
 /* virtual */
-void
-PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
 {
-    baseClass::Write(usdTime);
+    BaseClass::Write(usdTime);
 
     MStatus status;
 
@@ -119,7 +105,7 @@ PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->baseColor,
         shaderSchema,
-        _tokens->diffuseColor,
+        PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName,
         usdTime,
         _tokens->base);
 
@@ -128,37 +114,37 @@ PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->emissionColor,
         shaderSchema,
-        _tokens->emissiveColor,
+        PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName,
         usdTime,
         _tokens->emission);
 
-    MPlug metalnessPlug =
-        depNodeFn.findPlug(
-            depNodeFn.attribute(_tokens->metalness.GetText()),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    MPlug metalnessPlug = depNodeFn.findPlug(
+        depNodeFn.attribute(_tokens->metalness.GetText()),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(metalnessPlug)) {
         AuthorShaderInputFromShadingNodeAttr(
             depNodeFn,
             _tokens->metalness,
             shaderSchema,
-            _tokens->metallic,
+            PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName,
             usdTime);
 
         // IOR value from Gold USDPreviewSurface preset
-        shaderSchema.CreateInput(
-            _tokens->ior,
-            SdfValueTypeNames->Float).Set(50.0f, usdTime);
+        shaderSchema
+            .CreateInput(PxrMayaUsdPreviewSurfaceTokens->IorAttrName, SdfValueTypeNames->Float)
+            .Set(50.0f, usdTime);
     } else {
-        shaderSchema.CreateInput(
-            _tokens->useSpecularWorkflow,
-            SdfValueTypeNames->Int).Set(1, usdTime);
+        shaderSchema
+            .CreateInput(
+                PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
+            .Set(1, usdTime);
 
         AuthorShaderInputFromScaledShadingNodeAttr(
             depNodeFn,
             _tokens->specularColor,
             shaderSchema,
-            _tokens->specularColor,
+            PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName,
             usdTime,
             _tokens->specular);
 
@@ -166,7 +152,7 @@ PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
             depNodeFn,
             _tokens->specularIOR,
             shaderSchema,
-            _tokens->ior,
+            PxrMayaUsdPreviewSurfaceTokens->IorAttrName,
             usdTime);
     }
 
@@ -174,41 +160,35 @@ PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->specularRoughness,
         shaderSchema,
-        _tokens->roughness,
+        PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName,
         usdTime);
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
         _tokens->coat,
         shaderSchema,
-        _tokens->clearcoat,
+        PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName,
         usdTime);
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
         _tokens->coatRoughness,
         shaderSchema,
-        _tokens->clearcoatRoughness,
+        PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName,
         usdTime);
 
-    MPlug transmissionPlug =
-        depNodeFn.findPlug(
-            depNodeFn.attribute(_tokens->transmission.GetText()),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    MPlug transmissionPlug = depNodeFn.findPlug(
+        depNodeFn.attribute(_tokens->transmission.GetText()),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(transmissionPlug)) {
         // Need a solution if the transmission is textured, but in the
         // meantime, we go 1 - transmission.
-        VtValue value =
-            UsdMayaWriteUtil::GetVtValue(
-                transmissionPlug,
-                SdfValueTypeNames->Float,
-                /* linearizeColors = */ false);
+        float transmissionValue = transmissionPlug.asFloat();
 
-        shaderSchema.CreateInput(
-            _tokens->opacity,
-            SdfValueTypeNames->Float).Set(1.0f - value.Get<float>(),
-                                            usdTime);
+        shaderSchema
+            .CreateInput(PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName, SdfValueTypeNames->Float)
+            .Set(1.0f - transmissionValue, usdTime);
     }
 
     // Exported, but unsupported in hdStorm.
@@ -216,49 +196,39 @@ PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->normalCamera,
         shaderSchema,
-        _tokens->normal,
+        PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
         usdTime);
-
 }
 
 /* virtual */
-TfToken
-PxrUsdTranslators_StandardSurfaceWriter::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+TfToken PxrUsdTranslators_StandardSurfaceWriter::GetShadingAttributeNameForMayaAttrName(
+    const TfToken& mayaAttrName)
 {
-    if (!_usdPrim) {
-        return TfToken();
-    }
-
-    TfToken usdPortName;
+    TfToken usdAttrName;
 
     if (mayaAttrName == _tokens->baseColor) {
-        usdPortName =_tokens->diffuseColor;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName;
     } else if (mayaAttrName == _tokens->emissionColor) {
-        usdPortName =_tokens->emissiveColor;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName;
     } else if (mayaAttrName == _tokens->metalness) {
-        usdPortName =_tokens->metallic;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName;
     } else if (mayaAttrName == _tokens->specularColor) {
-        usdPortName =_tokens->specularColor;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName;
     } else if (mayaAttrName == _tokens->specularIOR) {
-        usdPortName =_tokens->ior;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->IorAttrName;
     } else if (mayaAttrName == _tokens->specularRoughness) {
-        usdPortName =_tokens->roughness;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName;
     } else if (mayaAttrName == _tokens->coat) {
-        usdPortName =_tokens->clearcoat;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName;
     } else if (mayaAttrName == _tokens->coatRoughness) {
-        usdPortName =_tokens->clearcoatRoughness;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName;
     } else if (mayaAttrName == _tokens->normalCamera) {
-        usdPortName =_tokens->normal;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->NormalAttrName;
     } else {
-        return baseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
+        return BaseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
     }
 
-    return TfToken(
-                TfStringPrintf(
-                    "%s%s",
-                    UsdShadeTokens->inputs.GetText(),
-                    usdPortName.GetText()).c_str());
+    return UsdShadeUtils::GetFullName(usdAttrName, UsdShadeAttributeType::Input);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

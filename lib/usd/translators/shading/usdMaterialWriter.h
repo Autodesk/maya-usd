@@ -45,6 +45,10 @@ class PxrUsdTranslators_MaterialWriter : public UsdMayaShaderWriter
                 const TfToken& mayaAttrName) override;
 
     protected:
+        /// Adds the schema attribute \p shaderInputName to the schema \p shaderSchema if the
+        /// Maya attribute \p shadingNodeAttrName in dependency node \p depNodeFn has been modified
+        /// or has an incoming connection at \p usdTime.
+        ///
         bool AuthorShaderInputFromShadingNodeAttr(
                 const MFnDependencyNode& depNodeFn,
                 const TfToken& shadingNodeAttrName,
@@ -52,6 +56,9 @@ class PxrUsdTranslators_MaterialWriter : public UsdMayaShaderWriter
                 const TfToken& shaderInputName,
                 const UsdTimeCode usdTime);
 
+        /// Same as AuthorShaderInputFromShadingNodeAttr, but allows scaling the value using a float
+        /// value found in the attribute \p scalingAttrName of the dependency node \p depNodeFn.
+        ///
         bool AuthorShaderInputFromScaledShadingNodeAttr(
                 const MFnDependencyNode& depNodeFn,
                 const TfToken& shadingNodeAttrName,

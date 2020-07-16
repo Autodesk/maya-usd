@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,9 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \brief Provides functionality to register and lookup USD shader reader
 /// plugins for Maya nodes.
 ///
-/// Use PXRUSDMAYA_DEFINE_SHADER_READER(usdInfoId, args, ctx) to define a new
-/// reader function, or use
-/// PXRUSDMAYA_REGISTER_SHADER_READER(usdInfoId, readerClass) to register a
+/// Use PXRUSDMAYA_REGISTER_SHADER_READER(usdInfoId, readerClass) to register a
 /// reader class with the registry.
 ///
 /// In order for the core system to discover the plugin, you need a
@@ -86,25 +84,14 @@ struct UsdMayaShaderReaderRegistry {
     /// }
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static void Register(const std::string& usdInfoId, ReaderFactoryFn fn);
-
-    /// \brief Wraps \p fn in a ReaderFactoryFn and registers the wrapped
-    /// function as a prim reader provider.
-    /// This is a helper method for the macro PXRUSDMAYA_DEFINE_SHADER_READER;
-    /// you probably want to use PXRUSDMAYA_DEFINE_SHADER_READER directly
-    /// instead.
-    MAYAUSD_CORE_PUBLIC
-    static void RegisterRaw(const std::string& usdInfoId, ReaderFn fn);
+    static void Register(TfToken usdInfoId, ReaderFactoryFn fn);
 
     /// \brief Finds a reader if one exists for \p usdInfoId.
     ///
     /// If there is no reader plugin for \p usdInfoId, returns nullptr.
     MAYAUSD_CORE_PUBLIC
-    static ReaderFactoryFn Find(const std::string& usdInfoId);
+    static ReaderFactoryFn Find(const TfToken& usdInfoId);
 };
-
-// Note, TF_REGISTRY_FUNCTION_WITH_TAG needs a type to register with so we
-// create a dummy struct in the macro.
 
 /// \brief Registers a pre-existing reader class for the given USD info:id;
 /// the reader class should be a subclass of UsdMayaShaderReader with a
@@ -113,21 +100,21 @@ struct UsdMayaShaderReaderRegistry {
 ///
 /// Example:
 /// \code{.cpp}
-/// class MyReader : public UsdMayaPrimReader {
+/// class MyReader : public UsdMayaShaderReader {
 ///     MyReader(
-///             const MFnDependencyNode& depNodeFn,
-///             const SdfPath& usdPath,
-///             UsdMayaReadeJobContext& jobCtx) {
+///             const UsdMayaPrimReaderArgs& readerArgs) {
 ///         // ...
 ///     }
 /// };
-/// PXRUSDMAYA_REGISTER_WRITER(myCustomMayaNode, MyReader);
+/// PXRUSDMAYA_REGISTER_SHADER_READER(myCustomInfoId, MyReader);
 /// \endcode
 #define PXRUSDMAYA_REGISTER_SHADER_READER(usdInfoId, readerClass)                         \
     TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShaderReaderRegistry, usdInfoId##_##readerClass) \
     {                                                                                     \
+        static_assert(std::is_base_of<UsdMayaShaderReader, readerClass>::value,           \
+            #readerClass " must derive from UsdMayaShaderReader");                        \
         UsdMayaShaderReaderRegistry::Register(                                            \
-            #usdInfoId, [](const UsdMayaPrimReaderArgs& readerArgs) {                     \
+            TfToken(#usdInfoId), [](const UsdMayaPrimReaderArgs& readerArgs) {            \
                 return std::make_shared<readerClass>(readerArgs);                         \
             });                                                                           \
     }

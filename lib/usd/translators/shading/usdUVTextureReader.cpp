@@ -1,5 +1,4 @@
 //
-// Copyright 2018 Pixar
 // Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,11 +19,11 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
-#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -33,7 +32,6 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include <maya/MDGModifier.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObject.h>
@@ -48,7 +46,7 @@ public:
 
     bool Read(UsdMayaPrimReaderContext* context) override;
 
-    TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) override;
+    TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 };
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdUVTexture, PxrMayaUsdUVTexture_Reader)
@@ -107,22 +105,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 static const TfTokenVector _Place2dTextureConnections = {
-    _tokens->coverage,
-    _tokens->translateFrame,
-    _tokens->rotateFrame,
-    _tokens->mirrorU,
-    _tokens->mirrorV,
-    _tokens->stagger,
-    _tokens->wrapU,
-    _tokens->wrapV,
-    _tokens->repeatUV,
-    _tokens->offset,
-    _tokens->rotateUV,
-    _tokens->noiseUV,
-    _tokens->vertexUvOne,
-    _tokens->vertexUvTwo,
-    _tokens->vertexUvThree,
-    _tokens->vertexCameraOne
+    _tokens->coverage,    _tokens->translateFrame, _tokens->rotateFrame,   _tokens->mirrorU,
+    _tokens->mirrorV,     _tokens->stagger,        _tokens->wrapU,         _tokens->wrapV,
+    _tokens->repeatUV,    _tokens->offset,         _tokens->rotateUV,      _tokens->noiseUV,
+    _tokens->vertexUvOne, _tokens->vertexUvTwo,    _tokens->vertexUvThree, _tokens->vertexCameraOne
 };
 
 PxrMayaUsdUVTexture_Reader::PxrMayaUsdUVTexture_Reader(const UsdMayaPrimReaderArgs& readArgs)
@@ -140,21 +126,24 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     }
 
     MStatus           status;
+    MObject           mayaObject;
     MFnDependencyNode depFn;
     if (!(UsdMayaTranslatorUtil::CreateShaderNode(
               MString(prim.GetName().GetText()),
               _tokens->file.GetText(),
               UsdMayaShadingNodeType::Texture,
               &status,
-              &_mayaObject)
-          && depFn.setObject(_mayaObject))) {
+              &mayaObject)
+          && depFn.setObject(mayaObject))) {
         // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
             "Could not create node of type '%s' for shader '%s'.\n",
             _tokens->file.GetText(),
-            prim.GetName().GetText());
+            prim.GetPath().GetText());
         return false;
     }
+
+    context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
     // Create place2dTexture:
     MObject           uvObj;
@@ -170,7 +159,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         TF_RUNTIME_ERROR(
             "Could not create node of type '%s' for shader '%s'.\n",
             _tokens->place2dTexture.GetText(),
-            prim.GetName().GetText());
+            prim.GetPath().GetText());
         return false;
     }
 
@@ -190,7 +179,6 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     }
 
     VtValue     val;
-    MDGModifier modifier;
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the
     // UsdUVTexture's scale input.
@@ -200,13 +188,9 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             GfVec4f scale = val.UncheckedGet<GfVec4f>();
             mayaAttr = depFn.findPlug(_tokens->colorGain.GetText(), true, &status);
             if (status == MS::kSuccess) {
-                // Use MDgModifier to skip color scaling done in SetMayaAttr
-                MFnNumericData data;
-                MObject        dataObj = data.create(MFnNumericData::k3Float);
-                data.setData3Float(scale[0], scale[1], scale[2]);
-                modifier.newPlugValue(mayaAttr, dataObj);
+                val = GfVec3f(scale[0], scale[1], scale[2]);
+                UsdMayaReadUtil::SetMayaAttr(mayaAttr, val, /*unlinearizeColors*/ false);
             }
-            // The alpha is not scaled
             mayaAttr = depFn.findPlug(_tokens->alphaGain.GetText(), true, &status);
             if (status == MS::kSuccess) {
                 val = scale[3];
@@ -223,11 +207,8 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             GfVec4f bias = val.UncheckedGet<GfVec4f>();
             mayaAttr = depFn.findPlug(_tokens->colorOffset.GetText(), true, &status);
             if (status == MS::kSuccess) {
-                // Use MDgModifier to skip color scaling done in SetMayaAttr
-                MFnNumericData data;
-                MObject        dataObj = data.create(MFnNumericData::k3Float);
-                data.setData3Float(bias[0], bias[1], bias[2]);
-                modifier.newPlugValue(mayaAttr, dataObj);
+                val = GfVec3f(bias[0], bias[1], bias[2]);
+                UsdMayaReadUtil::SetMayaAttr(mayaAttr, val, /*unlinearizeColors*/ false);
             }
             mayaAttr = depFn.findPlug(_tokens->alphaOffset.GetText(), true, &status);
             if (status == MS::kSuccess) {
@@ -244,11 +225,8 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     if (usdInput && status == MS::kSuccess) {
         if (usdInput.Get(&val) && val.IsHolding<GfVec4f>()) {
             GfVec4f fallback = val.UncheckedGet<GfVec4f>();
-            // Use MDgModifier to skip color scaling done in SetMayaAttr
-            MFnNumericData data;
-            MObject        dataObj = data.create(MFnNumericData::k3Float);
-            data.setData3Float(fallback[0], fallback[1], fallback[2]);
-            modifier.newPlugValue(mayaAttr, dataObj);
+            val = GfVec3f(fallback[0], fallback[1], fallback[2]);
+            UsdMayaReadUtil::SetMayaAttr(mayaAttr, val, /*unlinearizeColors*/ false);
         }
     }
 
@@ -274,22 +252,17 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         }
     }
 
-    modifier.doIt();
-
     return true;
 }
 
 /* virtual */
-TfToken PxrMayaUsdUVTexture_Reader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName)
+TfToken PxrMayaUsdUVTexture_Reader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
-    if (_mayaObject.isNull()) {
-        return TfToken();
-    }
+    TfToken usdOutputName;
+    UsdShadeAttributeType attrType;
+    std::tie(usdOutputName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 
-    const auto& usdName(usdAttrName.GetString());
-    if (TfStringStartsWith(usdName, UsdShadeTokens->outputs)) {
-        TfToken usdOutputName = TfToken(usdName.substr(UsdShadeTokens->outputs.GetString().size()));
-
+    if (attrType == UsdShadeAttributeType::Output) {
         if (usdOutputName == _tokens->RGBOutputName) {
             return _tokens->outColor;
         } else if (usdOutputName == _tokens->RedOutputName) {

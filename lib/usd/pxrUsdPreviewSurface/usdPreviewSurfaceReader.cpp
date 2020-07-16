@@ -1,5 +1,4 @@
 //
-// Copyright 2018 Pixar
 // Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,11 +21,11 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
-#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -48,7 +47,7 @@ public:
 
     bool Read(UsdMayaPrimReaderContext* context) override;
 
-    TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) override;
+    TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 };
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrMayaUsdPreviewSurface_Reader)
@@ -62,58 +61,45 @@ PxrMayaUsdPreviewSurface_Reader::PxrMayaUsdPreviewSurface_Reader(
 /* virtual */
 bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
 {
-    const auto&    prim = _GetArgs().GetUsdPrim();
+    const UsdPrim&    prim = _GetArgs().GetUsdPrim();
     UsdShadeShader shaderSchema = UsdShadeShader(prim);
     if (!shaderSchema) {
         return false;
     }
 
     MStatus           status;
+    MObject           mayaObject;
     MFnDependencyNode depFn;
     if (!(UsdMayaTranslatorUtil::CreateShaderNode(
               MString(prim.GetName().GetText()),
               PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText(),
               UsdMayaShadingNodeType::Shader,
               &status,
-              &_mayaObject)
-          && depFn.setObject(_mayaObject))) {
+              &mayaObject)
+          && depFn.setObject(mayaObject))) {
         // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
             "Could not create node of type '%s' for shader '%s'. "
             "Probably missing a loadPlugin.\n",
             PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText(),
-            prim.GetName().GetText());
+            prim.GetPath().GetText());
         return false;
     }
+
+    context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
     MDGModifier modifier;
     bool useModifier = false;
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
-        auto mayaAttrName = GetMayaNameForUsdAttrName(input.GetFullName());
-        if (mayaAttrName == TfToken()) {
+        TfToken baseName = GetMayaNameForUsdAttrName(input.GetFullName());
+        if (baseName.IsEmpty()) {
             continue;
         }
-        MPlug mayaAttr = depFn.findPlug(mayaAttrName.GetText(), true, &status);
-        if (status == MS::kSuccess) {
-            if (mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName
-                || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName
-                || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName) {
-                // These values are exported unscaled, so they also reimport unscaled:
-                VtValue val;
-                if (input.Get(&val) && val.IsHolding<GfVec3f>()) {
-                    GfVec3f color = val.UncheckedGet<GfVec3f>();
-                    // Use MDgModifier to skip color scaling done in SetMayaAttr
-                    MFnNumericData data;
-                    MObject        dataObj = data.create(MFnNumericData::k3Float);
-                    data.setData3Float(color[0], color[1], color[2]);
-                    modifier.newPlugValue(mayaAttr, dataObj);
-                    useModifier = true;
-                }
-            } else {
-                // This call always scales colors:
-                UsdMayaReadUtil::SetMayaAttr(mayaAttr, input);
-            }
+        MPlug mayaAttr = depFn.findPlug(baseName.GetText(), true, &status);
+        if (status != MS::kSuccess) {
+            continue;
         }
+        UsdMayaReadUtil::SetMayaAttr(mayaAttr, input, /*unlinearizeColors*/ false);
     }
     if (useModifier) {
         modifier.doIt();
@@ -123,35 +109,30 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
 }
 
 /* virtual */
-TfToken PxrMayaUsdPreviewSurface_Reader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName)
+TfToken PxrMayaUsdPreviewSurface_Reader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
-    if (_mayaObject.isNull()) {
-        return TfToken();
-    }
+    TfToken baseName;
+    UsdShadeAttributeType attrType;
+    std::tie(baseName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 
-    const auto& usdName(usdAttrName.GetString());
-    if (TfStringStartsWith(usdName, UsdShadeTokens->inputs)) {
-        TfToken mayaAttrName = TfToken(usdName.substr(UsdShadeTokens->inputs.GetString().size()));
-        if (mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->DisplacementAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->IorAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->NormalAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OcclusionAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName
-            || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName) {
-            return mayaAttrName;
+    if (attrType == UsdShadeAttributeType::Input) {
+        if (baseName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->DisplacementAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->IorAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->NormalAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->OcclusionAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName) {
+            return baseName;
         }
-    } else if (TfStringStartsWith(usdName, UsdShadeTokens->outputs)) {
-        TfToken mayaAttrName = TfToken(usdName.substr(UsdShadeTokens->outputs.GetString().size()));
-        if (mayaAttrName == UsdShadeTokens->surface) {
-            return PxrMayaUsdPreviewSurfaceTokens->OutColorAttrName;
-        }
+    } else if (attrType == UsdShadeAttributeType::Output && baseName == UsdShadeTokens->surface) {
+        return PxrMayaUsdPreviewSurfaceTokens->OutColorAttrName;
     }
 
     return TfToken();

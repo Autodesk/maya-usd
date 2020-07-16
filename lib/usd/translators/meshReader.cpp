@@ -42,8 +42,8 @@ namespace
     {
         // If a material is bound, create (or reuse if already present) and assign it
         // If no binding is present, assign the mesh to the default shader
-        const TfToken& shadingMode = args.GetShadingMode();
-        return UsdMayaTranslatorMaterial::AssignMaterial(shadingMode,
+        const UsdMayaJobImportArgs& jobArguments = args.GetJobArguments();  
+        return UsdMayaTranslatorMaterial::AssignMaterial(jobArguments,
                                                          mesh,
                                                          meshObj,
                                                          context);

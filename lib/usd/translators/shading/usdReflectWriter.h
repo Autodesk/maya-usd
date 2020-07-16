@@ -24,10 +24,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Shader writer for exporting Maya's Reflect shading nodes to USD.
+/// Shader writer for exporting the reflective part of a Maya shading node to USD.
+/// Will be used by Blinn, Phong, and PhongE to export common specular attributes.
 class PxrUsdTranslators_ReflectWriter : public PxrUsdTranslators_LambertWriter
 {
-    typedef PxrUsdTranslators_LambertWriter baseClass;
+    typedef PxrUsdTranslators_LambertWriter BaseClass;
 
     public:
         PxrUsdTranslators_ReflectWriter(
@@ -35,10 +36,11 @@ class PxrUsdTranslators_ReflectWriter : public PxrUsdTranslators_LambertWriter
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx);
 
-        void WriteSpecular(const UsdTimeCode& usdTime) override;
-
         TfToken GetShadingAttributeNameForMayaAttrName(
                 const TfToken& mayaAttrName) override;
+
+    protected:
+        void WriteSpecular(const UsdTimeCode& usdTime) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
