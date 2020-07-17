@@ -49,6 +49,9 @@
 #include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/util.h>
 
+#include <algorithm>
+#include <cctype>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaMeshColorSetTokens,
@@ -657,6 +660,38 @@ UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
                    typeName == SdfValueTypeNames->Color3fArray ||
                    typeName == SdfValueTypeNames->Float4Array ||
                    typeName == SdfValueTypeNames->Color4fArray) {
+            if (typeName == SdfValueTypeNames->FloatArray
+                && name != UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName) {
+                // Could be anything, forcing us to guess...
+                std::string lowerCaseName(name.GetString());
+                std::transform(
+                    lowerCaseName.begin(),
+                    lowerCaseName.end(),
+                    lowerCaseName.begin(),
+                    [](unsigned char c) { return std::tolower(c); });
+                if (lowerCaseName.find("color") == std::string::npos
+                    && lowerCaseName.find("alpha") == std::string::npos
+                    && lowerCaseName.find("opacity") == std::string::npos) {
+                    // Does not look like an alpha channel
+                    continue;
+                }
+            }
+
+            if (typeName == SdfValueTypeNames->Float3Array
+                || typeName == SdfValueTypeNames->Float4Array) {
+                // Could be anything, forcing us to guess...
+                std::string lowerCaseName(name.GetString());
+                std::transform(
+                    lowerCaseName.begin(),
+                    lowerCaseName.end(),
+                    lowerCaseName.begin(),
+                    [](unsigned char c) { return std::tolower(c); });
+                if (lowerCaseName.find("color") == std::string::npos) {
+                    // Does not look like a color set
+                    continue;
+                }
+            }
+
           if (!assignColorSetPrimvarToMesh(mesh, primvar, meshFn)) {
               TF_WARN("Unable to retrieve and assign data for color set <%s> "
                       "on mesh <%s>",
