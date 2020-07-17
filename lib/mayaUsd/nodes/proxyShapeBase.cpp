@@ -99,6 +99,7 @@ TF_DEFINE_PUBLIC_TOKENS(MayaUsdProxyShapeBaseTokens,
 MayaUsdProxyShapeBase::ClosestPointDelegate
 MayaUsdProxyShapeBase::_sharedClosestPointDelegate = nullptr;
 
+const std::string kAnonymousLayerName{"anonymousLayer1"};
 
 // ========================================================
 
@@ -575,77 +576,77 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             usdStage = UsdUtilsStageCache::Get().Find(cacheId);
         } 
 		else {
-	        //
-	        // Calculate from USD filepath and primPath and variantKey
-	        //
+            //
+            // Calculate from USD filepath and primPath and variantKey
+            //
 
-	        // Get input attr values
-	        const MString file = dataBlock.inputValue(filePathAttr, &retValue).asString();
-	        CHECK_MSTATUS_AND_RETURN_IT(retValue);
+            // Get input attr values
+            const MString file = dataBlock.inputValue(filePathAttr, &retValue).asString();
+            CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-	        //
-	        // let the usd stage cache deal with caching the usd stage data
-	        //
-	        std::string fileString = TfStringTrimRight(file.asChar());
+            //
+            // let the usd stage cache deal with caching the usd stage data
+            //
+            std::string fileString = TfStringTrimRight(file.asChar());
 
-	        TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage original USD file path is %s\n", fileString.c_str());
+            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage original USD file path is %s\n", fileString.c_str());
 
-	        boost::filesystem::path filestringPath(fileString);
-	        if(filestringPath.is_absolute())
-	        {
-	            fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
-	            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the USD file path to %s\n", fileString.c_str());
-	        }
-	        else
-	        {
-	            fileString = UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(thisMObject(), fileString);
-	            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
-	        }
+            boost::filesystem::path filestringPath(fileString);
+            if(filestringPath.is_absolute())
+            {
+                fileString = UsdMayaUtilFileSystem::resolvePath(fileString);
+                TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the USD file path to %s\n", fileString.c_str());
+            }
+            else
+            {
+                fileString = UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(thisMObject(), fileString);
+                TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::reloadStage resolved the relative USD file path to %s\n", fileString.c_str());
+            }
 
-	        // Fall back on providing the path "as is" to USD
-	        if (fileString.empty())
-	        {
-	            fileString.assign(file.asChar(), file.length());
-	        }
+            // Fall back on providing the path "as is" to USD
+            if (fileString.empty())
+            {
+                fileString.assign(file.asChar(), file.length());
+            }
 
-	        TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::loadStage called for the usd file: %s\n", fileString.c_str());
+            TF_DEBUG(USDMAYA_PROXYSHAPEBASE).Msg("ProxyShapeBase::loadStage called for the usd file: %s\n", fileString.c_str());
 
-	        // == Load the Stage
-	        auto           loadSet = UsdStage::InitialLoadSet::LoadAll;
+            // == Load the Stage
+            auto           loadSet = UsdStage::InitialLoadSet::LoadAll;
 
-	        MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
-	        CHECK_MSTATUS_AND_RETURN_IT(retValue);
-	        if (!loadPayloadsHandle.asBool()) {
-	            loadSet = UsdStage::InitialLoadSet::LoadNone;
-	        }
+            MDataHandle loadPayloadsHandle = dataBlock.inputValue(loadPayloadsAttr, &retValue);
+            CHECK_MSTATUS_AND_RETURN_IT(retValue);
+            if (!loadPayloadsHandle.asBool()) {
+                loadSet = UsdStage::InitialLoadSet::LoadNone;
+            }
 
-	        {
-	            // When opening or creating stages we must have an active UsdStageCache.
-	            // The stage cache is the only one who holds a strong reference to the
-	            // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
-	            // more information.
-	            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
-	            
-	            if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-	                SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
-	                if (sessionLayer) {
-	                    usdStage = UsdStage::Open(rootLayer,
-	                            sessionLayer,
-	                            ArGetResolver().GetCurrentContext(),
-	                            loadSet);
-	                } else {
-	                    usdStage = UsdStage::Open(rootLayer,
-	                            ArGetResolver().GetCurrentContext(),
-	                            loadSet);
-	                }
+            {
+                // When opening or creating stages we must have an active UsdStageCache.
+                // The stage cache is the only one who holds a strong reference to the
+                // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
+                // more information.
+                UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
+                
+                if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+                    SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+                    if (sessionLayer) {
+                        usdStage = UsdStage::Open(rootLayer,
+                                sessionLayer,
+                                ArGetResolver().GetCurrentContext(),
+                                loadSet);
+                    } else {
+                        usdStage = UsdStage::Open(rootLayer,
+                                ArGetResolver().GetCurrentContext(),
+                                loadSet);
+                    }
 
-	                usdStage->SetEditTarget(usdStage->GetSessionLayer());
-	            }
-	            else {
-	                // Create a new stage in memory with an anonymous root layer.
-	                usdStage = UsdStage::CreateInMemory("", loadSet);
-	            }
-	        }
+                    usdStage->SetEditTarget(usdStage->GetSessionLayer());
+                }
+                else {
+                    // Create a new stage in memory with an anonymous root layer.
+                    usdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
+                }
+            }
 	    }
 		SdfPath primPath;
         if (usdStage) {

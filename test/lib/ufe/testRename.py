@@ -374,3 +374,9 @@ class RenameTestCase(unittest.TestCase):
         # prim names are not allowed to have special characters except '_' 
         regex = re.compile('[@!#$%^&*()<>?/\|}{~:]')
         self.assertFalse(regex.search(usdPrim.GetName()))
+
+        # prim names are not allowed to start with digits 
+        newNameStartingWithDigit = '09123Potato'
+        cmds.rename(newNameStartingWithDigit)
+
+        self.assertFalse(usdPrim.GetName()[0].isdigit())

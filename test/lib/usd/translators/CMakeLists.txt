@@ -29,6 +29,7 @@ set(test_script_files
     ## XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdExportRfMLight.py
     testUsdExportSelection.py
+    testUsdExportSelectionHierarchy.py
     testUsdExportShadingInstanced.py
     testUsdExportShadingModeDisplayColor.py
     testUsdExportShadingModePxrRis.py
