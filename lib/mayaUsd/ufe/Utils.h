@@ -79,9 +79,13 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
 MAYAUSD_CORE_PUBLIC
 UsdTimeCode getTime(const Ufe::Path& path);
 
-//! Object renamed scene notification
-MAYAUSD_CORE_PUBLIC
-void sendRenameNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath);
+//! Send notification for data model changes 
+template <class T>
+void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
+{
+    T notification(item, previousPath);
+    Ufe::Scene::notifyObjectPathChange(notification);
+}
 
 //! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
 inline
