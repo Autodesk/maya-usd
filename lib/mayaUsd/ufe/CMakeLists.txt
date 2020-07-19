@@ -56,7 +56,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     endif()
 endif()
 
-set(headers
+set(HEADERS
     Global.h
     ProxyShapeHandler.h
     ProxyShapeHierarchy.h
@@ -84,7 +84,7 @@ set(headers
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND headers
+    list(APPEND HEADERS
         ProxyShapeContextOpsHandler.h
         UsdAttribute.h
         UsdAttributes.h
@@ -102,12 +102,12 @@ endif()
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR ufe)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR ufe)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ufe
 )
 

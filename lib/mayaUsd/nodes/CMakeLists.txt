@@ -13,7 +13,7 @@ target_sources(${PROJECT_NAME}
         usdPrimProvider.cpp
 )
 
-set(headers
+set(HEADERS
     hdImagingShape.h
     pointBasedDeformerNode.h
     proxyAccessor.h
@@ -28,12 +28,12 @@ set(headers
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR nodes)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR nodes)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/nodes/
 )
 

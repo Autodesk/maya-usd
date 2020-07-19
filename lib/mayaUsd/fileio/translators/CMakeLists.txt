@@ -19,7 +19,7 @@ target_sources(${PROJECT_NAME}
         translatorXformable_decompose.cpp
 )
 
-set(headers
+set(HEADERS
     skelBindingsProcessor.h
     translatorCamera.h
     translatorCurves.h
@@ -40,7 +40,7 @@ set(headers
 # -----------------------------------------------------------------------------
 mayaUsd_promoteHeaderList(
     HEADERS 
-        ${headers} 
+        ${HEADERS} 
     BASEDIR 
         ${PROJECT_NAME}/fileio/translators
 )
@@ -48,6 +48,6 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/fileio/translators
 )

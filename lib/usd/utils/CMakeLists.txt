@@ -48,7 +48,7 @@ target_link_libraries(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-set(headers
+set(HEADERS
     ALHalf.h
     Api.h
     DebugCodes.h
@@ -60,7 +60,7 @@ set(headers
 
 mayaUsd_promoteHeaderList( 
     HEADERS
-        ${headers}
+        ${HEADERS}
     BASEDIR
         ${TARGET_NAME}
 )
@@ -75,7 +75,7 @@ install(TARGETS ${TARGET_NAME}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib
 )
 
-install(FILES ${headers}
+install(FILES ${HEADERS}
         DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${TARGET_NAME}
 )
 

@@ -1,6 +1,6 @@
 set(TARGET_NAME IMPORT_EXPORT_TEST)
 
-set(test_script_files
+set(TEST_SCRIPT_FILES
     testUsdExportAsClip.py
     testUsdExportCamera.py
     testUsdExportColorSets.py
@@ -61,7 +61,7 @@ mayaUsd_copyDirectory(${TARGET_NAME}
     EXCLUDE "*.txt"
 )
 
-foreach(script ${test_script_files})
+foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}

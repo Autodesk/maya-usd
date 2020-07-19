@@ -6,7 +6,7 @@ target_sources(${PROJECT_NAME}
         debugCodes.cpp
 )
 
-set(headers
+set(HEADERS
     api.h
     debugCodes.h
 )
@@ -14,19 +14,19 @@ set(headers
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/mayaUsd.h.src)
-set(dstFile ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
+set(SRCFILE ${CMAKE_CURRENT_SOURCE_DIR}/mayaUsd.h.src)
+set(DSTFILE ${CMAKE_BINARY_DIR}/include/mayaUsd/mayaUsd.h)
 if (NOT EXISTS ${dstFile})
-    message(STATUS "promoting: " ${srcFile})
+    message(STATUS "promoting: " ${SRCFILE})
 endif()
-configure_file(${srcFile} ${dstFile})
+configure_file(${SRCFILE} ${DSTFILE})
 
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR base)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR base)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/base
 )
 

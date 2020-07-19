@@ -92,7 +92,7 @@ endif()
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-set(headers
+set(HEADERS
     api.h
     IMayaMQtUtil.h
     ItemDelegate.h
@@ -107,7 +107,7 @@ set(headers
 
 mayaUsd_promoteHeaderList( 
     HEADERS
-        ${headers}
+        ${HEADERS}
     BASEDIR
         ${PROJECT_NAME}/ui
 )
@@ -130,7 +130,7 @@ if(IS_WINDOWS)
     )
 endif()
 
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ui
 )
 

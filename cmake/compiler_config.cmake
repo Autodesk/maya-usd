@@ -1,7 +1,7 @@
 #------------------------------------------------------------------------------
 # compiler flags/definitions
 #------------------------------------------------------------------------------
-set(gnu_clang_flags
+set(GNU_CLANG_FLAGS
     # we want to be as strict as possible
     -Wall
     $<$<BOOL:${BUILD_STRICT_MODE}>:-Werror>
@@ -13,7 +13,7 @@ set(gnu_clang_flags
     -Wno-unused-local-typedefs
 )
 
-set(msvc_flags
+set(MSVC_FLAGS
     # we want to be as strict as possible
     /W3
     $<$<BOOL:${BUILD_STRICT_MODE}>:/WX>
@@ -36,7 +36,7 @@ set(msvc_flags
     /wd4180
 )
 
-set(msvc_definitions
+set(MSVC_DEFINITIONS
     # Make sure WinDef.h does not define min and max macros which
     # will conflict with std::min() and std::max().
     NOMINMAX
@@ -78,16 +78,16 @@ function(mayaUsd_compile_config TARGET)
     if(IS_GNU OR IS_CLANG)
         target_compile_options(${TARGET} 
             PRIVATE
-                ${gnu_clang_flags}
+                ${GNU_CLANG_FLAGS}
         )
     elseif(IS_MSVC)
         target_compile_options(${TARGET} 
             PRIVATE
-                ${msvc_flags}
+                ${MSVC_FLAGS}
         )
         target_compile_definitions(${TARGET} 
             PRIVATE
-                ${msvc_definitions}
+                ${MSVC_DEFINITIONS}
         )
     endif()
 endfunction()
