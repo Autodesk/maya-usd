@@ -130,8 +130,8 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
 
         if (status) {
             fUfeDstItem = UsdSceneItem::create(fUfeDstPath, ufePathToPrim(fUfeDstPath));
-            Ufe::ObjectReparent notification(fUfeDstItem, fUfeSrcItem->path());
-            Ufe::Scene::notifyObjectPathChange(notification);
+
+            sendNotification<Ufe::ObjectReparent>(fUfeDstItem, fUfeSrcItem->path());
         }
     }
     else {
@@ -162,8 +162,9 @@ bool UsdUndoInsertChildCommand::insertChildUndo()
         status = srcPrim.SetActive(true);
 
         if (status) {
-            Ufe::ObjectReparent notification(fUfeSrcItem, fUfeDstItem->path());
-            Ufe::Scene::notifyObjectPathChange(notification);
+
+            sendNotification<Ufe::ObjectReparent>(fUfeSrcItem, fUfeDstItem->path());
+
             fUfeDstItem = nullptr;
         }
     }

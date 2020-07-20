@@ -17,6 +17,8 @@
 #include "private/Utils.h"
 
 #include <ufe/log.h>
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/copyUtils.h>
@@ -124,7 +126,8 @@ bool UsdUndoRenameCommand::renameRedo()
 
     // the renamed scene item is a "sibling" of its original name.
     _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
-    sendRenameNotification(_ufeDstItem, _ufeSrcItem->path());
+
+    sendNotification<Ufe::ObjectRename>(_ufeDstItem, _ufeSrcItem->path());
 
     // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
     // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
@@ -159,7 +162,8 @@ bool UsdUndoRenameCommand::renameUndo()
     // shouldn't have to again create a sibling sceneItem here since we already have a valid _ufeSrcItem
     // however, I get random crashes if I don't which needs furthur investigation.  HS, 6-May-2020.
     _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
-    sendRenameNotification(_ufeSrcItem, _ufeDstItem->path());
+
+    sendNotification<Ufe::ObjectRename>(_ufeSrcItem, _ufeDstItem->path());
 
     // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
     // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
