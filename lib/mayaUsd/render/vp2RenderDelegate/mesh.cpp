@@ -49,10 +49,9 @@ namespace {
         HdTokens->normals
     };
 
-    const MColor kSelectionHighlightColor(0.056f, 1.0f, 0.366f, 1.0f); //!< Selection highlight color
-    const MColor kOpaqueBlue(0.0f, 0.0f, 1.0f, 1.0f);                  //!< Opaque blue
-    const MColor kOpaqueGray(.18f, .18f, .18f, 1.0f);                  //!< Opaque gray
-    const unsigned int kNumColorChannels = 4;                          //!< The number of color channels
+    const MColor kOpaqueBlue(0.0f, 0.0f, 1.0f, 1.0f);               //!< Opaque blue
+    const MColor kOpaqueGray(.18f, .18f, .18f, 1.0f);               //!< Opaque gray
+    const unsigned int kNumColorChannels = 4;                       //!< The number of color channels
 
     const MString kPositionsStr("positions");                       //!< Cached string for efficiency
     const MString kNormalsStr("normals");                           //!< Cached string for efficiency
@@ -513,8 +512,10 @@ void HdVP2Mesh::Sync(
 /*! \brief  Returns the minimal set of dirty bits to place in the
             change tracker for use in the first sync of this prim.
 */
-HdDirtyBits HdVP2Mesh::GetInitialDirtyBitsMask() const {
-    return HdChangeTracker::InitRepr |
+HdDirtyBits HdVP2Mesh::GetInitialDirtyBitsMask() const
+{
+    constexpr HdDirtyBits bits =
+        HdChangeTracker::InitRepr |
         HdChangeTracker::DirtyPoints |
         HdChangeTracker::DirtyTopology |
         HdChangeTracker::DirtyTransform |
@@ -522,7 +523,10 @@ HdDirtyBits HdVP2Mesh::GetInitialDirtyBitsMask() const {
         HdChangeTracker::DirtyPrimvar |
         HdChangeTracker::DirtyVisibility |
         HdChangeTracker::DirtyInstanceIndex |
-        HdChangeTracker::DirtyRenderTag;
+        HdChangeTracker::DirtyRenderTag |
+        DirtySelectionHighlight;
+
+    return bits;
 }
 
 /*! \brief  Add additional dirty bits
@@ -641,13 +645,13 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits) {
     // Update selection state on demand or when it is a new Rprim. DirtySelection
     // will be propagated to all draw items, to trigger sync for each repr.
     if (reprToken == HdVP2ReprTokens->selection || _reprs.empty()) {
-        const HdVP2SelectionStatus selectionState =
-            param->GetDrawScene().GetPrimSelectionStatus(GetId());
-        if (_selectionState != selectionState) {
-            _selectionState = selectionState;
+        const HdVP2SelectionStatus selectionStatus =
+            param->GetDrawScene().GetSelectionStatus(GetId());
+        if (_selectionStatus != selectionStatus) {
+            _selectionStatus = selectionStatus;
             *dirtyBits |= DirtySelection;
         }
-        else if (_selectionState == kPartiallySelected) {
+        else if (_selectionStatus == kPartiallySelected) {
             *dirtyBits |= DirtySelection;
         }
 
@@ -843,12 +847,12 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     // We don't need to update the dedicated selection highlight item when there
     // is no selection highlight change and the mesh is not selected. Draw item
-    // has its own dirty bits, so update will be doner when it shows in viewport.
+    // has its own dirty bits, so update will be done when it shows in viewport.
     const bool isDedicatedSelectionHighlightItem =
         drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight);
     if (isDedicatedSelectionHighlightItem &&
         ((itemDirtyBits & DirtySelectionHighlight) == 0) &&
-        (_selectionState == kUnselected)) {
+        (_selectionStatus == kUnselected)) {
         return;
     }
 
@@ -1288,112 +1292,101 @@ void HdVP2Mesh::_UpdateDrawItem(
         if (0 == instanceCount) {
             instancerWithNoInstances = true;
         }
-        else if (isDedicatedSelectionHighlightItem) {
-            if (_selectionState == kFullySelected) {
-                stateToCommit._instanceTransforms.setLength(instanceCount);
-                for (size_t i = 0; i < transforms.size(); ++i) {
-                    transforms[i].Get(instanceMatrix.matrix);
-                    instanceMatrix = worldMatrix * instanceMatrix;
-                    stateToCommit._instanceTransforms[i] = instanceMatrix;
-                }
+        else if (!drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            stateToCommit._instanceTransforms.setLength(instanceCount);
+            for (unsigned int i = 0; i < instanceCount; ++i) {
+                transforms[i].Get(instanceMatrix.matrix);
+                stateToCommit._instanceTransforms[i] = worldMatrix * instanceMatrix;
             }
-            else if (auto state = drawScene.GetPrimSelectionState(id)) {
-#if USD_VERSION_NUM <= 2005
-                // In 20.05 and older GetPrimSelectionState may have duplicate entries
-                // in instanceIndices, which will cause Maya to draw that instance multiple
-                // times. Remove the duplicates here to avoid that problem.
-                std::vector<bool> selectedIndices;
-                selectedIndices.resize(instanceCount); // bool default ctor sets the value to false
-                for (const auto& indexArray : state->instanceIndices) {   
-                    for (const auto index : indexArray) {
-                        selectedIndices[index] = true;
-                    }
+        }
+        else if (_selectionStatus == kFullyLead || _selectionStatus == kFullyActive) {
+            const bool lead = (_selectionStatus == kFullyLead);
+            const MColor& color = drawScene.GetSelectionHighlightColor(lead);
+            unsigned int offset = 0;
+
+            stateToCommit._instanceTransforms.setLength(instanceCount);
+            stateToCommit._instanceColors.setLength(instanceCount * kNumColorChannels);
+
+            for (unsigned int i = 0; i < instanceCount; ++i) {
+                transforms[i].Get(instanceMatrix.matrix);
+                stateToCommit._instanceTransforms[i] = worldMatrix * instanceMatrix;
+
+                for (unsigned int j = 0; j < kNumColorChannels; j++) {
+                    stateToCommit._instanceColors[offset++] = color[j];
                 }
-                for (unsigned int index=0; index<instanceCount; index++)
-                {
-                    if (!selectedIndices[index])
-                        continue;
-                    transforms[index].Get(instanceMatrix.matrix);
-                    instanceMatrix = worldMatrix * instanceMatrix;
-                    stateToCommit._instanceTransforms.append(instanceMatrix);
-                }
-#else
-                for (const auto& indexArray : state->instanceIndices) {
-                    for (const auto index : indexArray) {
-                        transforms[index].Get(instanceMatrix.matrix);
-                        instanceMatrix = worldMatrix * instanceMatrix;
-                        stateToCommit._instanceTransforms.append(instanceMatrix);
-                    }
-                }
-#endif
             }
         }
         else {
-            stateToCommit._instanceTransforms.setLength(instanceCount);
-            for (size_t i = 0; i < instanceCount; ++i) {
-                transforms[i].Get(instanceMatrix.matrix);
-                instanceMatrix = worldMatrix * instanceMatrix;
-                stateToCommit._instanceTransforms[i] = instanceMatrix;
-            }
+            const MColor colors[] = {
+                drawScene.GetWireframeColor(),
+                drawScene.GetSelectionHighlightColor(false),
+                drawScene.GetSelectionHighlightColor(true)
+            };
 
-            // If the item is used for both regular draw and selection highlight,
-            // it needs to display both wireframe color and selection highlight
-            // with one color vertex buffer.
-            if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
-                const MColor& color = drawScene.GetWireframeColor();
-                unsigned int offset = 0;
+            std::vector<unsigned char> colorIndices;
+            colorIndices.resize(instanceCount, 0);
 
-                stateToCommit._instanceColors.setLength(instanceCount * kNumColorChannels);
-                for (unsigned int i = 0; i < instanceCount; ++i) {
-                    for (unsigned int j = 0; j < kNumColorChannels; j++) {
-                        stateToCommit._instanceColors[offset++] = color[j];
+            if (const auto state = drawScene.GetActiveSelectionState(id)) {
+                for (const auto& indexArray : state->instanceIndices) {
+                    for (const auto index : indexArray) {
+                        colorIndices[index] = 1;
                     }
                 }
+            }
 
-                if (auto state = drawScene.GetPrimSelectionState(id)) {
-                    for (const auto& indexArray : state->instanceIndices) {
-                        for (const auto i : indexArray) {
-                            offset = i * kNumColorChannels;
-                            for (unsigned int j = 0; j < kNumColorChannels; j++) {
-                                stateToCommit._instanceColors[offset+j] = kSelectionHighlightColor[j];
-                            }
-                        }
+            if (const auto state = drawScene.GetLeadSelectionState(id)) {
+                for (const auto& indexArray : state->instanceIndices) {
+                    for (const auto index : indexArray) {
+                        colorIndices[index] = 2;
                     }
+                }
+            }
+
+            for (unsigned int i = 0; i < instanceCount; i++) {
+                // If it is a dedicated selection highlight item, we don't draw wireframe for
+                // unselected instances.
+                unsigned char colorIndex = colorIndices[i];
+                if (isDedicatedSelectionHighlightItem && colorIndex == 0)
+                    continue;
+
+                transforms[i].Get(instanceMatrix.matrix);
+                stateToCommit._instanceTransforms.append(worldMatrix * instanceMatrix);
+
+                const MColor& color = colors[colorIndex];
+                for (unsigned int j = 0; j < kNumColorChannels; j++) {
+                    stateToCommit._instanceColors.append(color[j]);
                 }
             }
         }
     }
     else {
         // Non-instanced Rprims.
-        if (itemDirtyBits & DirtySelectionHighlight) {
-            if (drawItem->ContainsUsage(HdVP2DrawItem::kRegular) &&
-                drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
-                MHWRender::MShaderInstance* shader = _delegate->Get3dSolidShader(
-                    (_selectionState != kUnselected) ?
-                    kSelectionHighlightColor :
-                    drawScene.GetWireframeColor()
-                );
+        if ((itemDirtyBits & DirtySelectionHighlight) &&
+            drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
+            const MColor& color = (_selectionStatus != kUnselected ?
+                drawScene.GetSelectionHighlightColor(_selectionStatus == kFullyLead) :
+                drawScene.GetWireframeColor());
 
-                if (shader != nullptr && shader != drawItemData._shader) {
-                    drawItemData._shader = shader;
-                    stateToCommit._shader = shader;
-                    stateToCommit._isTransparent = false;
-                }
+            MHWRender::MShaderInstance* shader = _delegate->Get3dSolidShader(color);
+            if (shader != nullptr && shader != drawItemData._shader) {
+                drawItemData._shader = shader;
+                stateToCommit._shader = shader;
+                stateToCommit._isTransparent = false;
             }
         }
     }
 
     // Determine if the render item should be enabled or not.
-    if ((itemDirtyBits & (HdChangeTracker::DirtyVisibility |
+    if (!GetInstancerId().IsEmpty() ||
+        (itemDirtyBits & (HdChangeTracker::DirtyVisibility |
                          HdChangeTracker::DirtyRenderTag |
                          HdChangeTracker::DirtyPoints |
                          HdChangeTracker::DirtyExtent |
-                         DirtySelectionHighlight)) ||
-                        !GetInstancerId().IsEmpty()) {
+                         DirtySelectionHighlight))) {
         bool enable = drawItem->GetVisible() && !_meshSharedData._points.empty() && !instancerWithNoInstances;
 
         if (isDedicatedSelectionHighlightItem) {
-            enable = enable && (_selectionState != kUnselected);
+            enable = enable && (_selectionStatus != kUnselected);
         }
         else if (isBBoxItem) {
             enable = enable && !range.IsEmpty();
@@ -1749,7 +1742,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(
     renderItem->depthPriority(MHWRender::MRenderItem::sActiveWireDepthPriority);
     renderItem->castsShadows(false);
     renderItem->receivesShadows(false);
-    renderItem->setShader(_delegate->Get3dSolidShader(kSelectionHighlightColor));
+    renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask());
 
     setWantConsolidation(*renderItem, true);

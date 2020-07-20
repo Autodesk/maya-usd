@@ -140,7 +140,7 @@ private:
     HdVP2BasisCurvesSharedData  _curvesSharedData;
 
     //! Selection status of the Rprim
-    HdVP2SelectionStatus _selectionState { kUnselected };
+    HdVP2SelectionStatus _selectionStatus { kUnselected };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

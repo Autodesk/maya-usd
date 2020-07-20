@@ -55,7 +55,6 @@ namespace {
         HdTokens->widths
     };
 
-    const MColor kSelectionHighlightColor(0.056f, 1.0f, 0.366f, 1.0f); //!< Selection highlight color
     const MColor kOpaqueGray(.18f, .18f, .18f, 1.0f);                  //!< The default 18% gray color
     const unsigned int kNumColorChannels = 4;                          //!< The number of color channels
 
@@ -686,17 +685,6 @@ HdVP2BasisCurves::_UpdateDrawItem(
 
     const HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
-    // We don't need to update the dedicated selection highlight item when there
-    // is no selection highlight change and the prim is not selected. Draw item
-    // has its own dirty bits, so update will be doner when it shows in viewport.
-    const bool isDedicatedSelectionHighlightItem =
-        drawItem->MatchesUsage(HdVP2DrawItem::kSelectionHighlight);
-    if (isDedicatedSelectionHighlightItem &&
-        ((itemDirtyBits & DirtySelectionHighlight) == 0) &&
-        (_selectionState == kUnselected)) {
-        return;
-    }
-
     CommitState stateToCommit(*drawItem);
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
 
@@ -1117,76 +1105,50 @@ HdVP2BasisCurves::_UpdateDrawItem(
         if (0 == instanceCount) {
             instancerWithNoInstances = true;
         }
-        else if (isDedicatedSelectionHighlightItem) {
-            if (_selectionState == kFullySelected) {
-                stateToCommit._instanceTransforms.setLength(instanceCount);
-                for (size_t i = 0; i < transforms.size(); ++i) {
-                    transforms[i].Get(instanceMatrix.matrix);
-                    instanceMatrix = worldMatrix * instanceMatrix;
-                    stateToCommit._instanceTransforms[i] = instanceMatrix;
-                }
-            }
-            else if (auto state = drawScene.GetPrimSelectionState(id)) {
-#if USD_VERSION_NUM <= 2005
-                // In 20.05 and older GetPrimSelectionState may have duplicate entries
-                // in instanceIndices, which will cause Maya to draw that instance multiple
-                // times. Remove the duplicates here to avoid that problem.
-                std::vector<bool> selectedIndices;
-                selectedIndices.resize(instanceCount); // bool default ctor sets the value to false
-                for (const auto& indexArray : state->instanceIndices) {   
-                    for (const auto index : indexArray) {
-                        selectedIndices[index] = true;
-                    }
-                }
-                for (unsigned int index=0; index<instanceCount; index++)
-                {
-                    if (!selectedIndices[index])
-                        continue;
-                    transforms[index].Get(instanceMatrix.matrix);
-                    instanceMatrix = worldMatrix * instanceMatrix;
-                    stateToCommit._instanceTransforms.append(instanceMatrix);
-                }
-#else
-                for (const auto& indexArray : state->instanceIndices) {
-                    for (const auto index : indexArray) {
-                        transforms[index].Get(instanceMatrix.matrix);
-                        instanceMatrix = worldMatrix * instanceMatrix;
-                        stateToCommit._instanceTransforms.append(instanceMatrix);
-                    }
-                }
-#endif
-            }
-        }
         else {
             stateToCommit._instanceTransforms.setLength(instanceCount);
-            for (size_t i = 0; i < instanceCount; ++i) {
+            for (unsigned int i = 0; i < instanceCount; ++i) {
                 transforms[i].Get(instanceMatrix.matrix);
-                instanceMatrix = worldMatrix * instanceMatrix;
-                stateToCommit._instanceTransforms[i] = instanceMatrix;
+                stateToCommit._instanceTransforms[i] = worldMatrix * instanceMatrix;
             }
 
             // If the item is used for both regular draw and selection highlight,
             // it needs to display both wireframe color and selection highlight
             // with one color vertex buffer.
             if (drawItem->ContainsUsage(HdVP2DrawItem::kSelectionHighlight)) {
-                const MColor& color = drawScene.GetWireframeColor();
-                unsigned int offset = 0;
+                const MColor colors[] = {
+                    drawScene.GetWireframeColor(),
+                    drawScene.GetSelectionHighlightColor(false),
+                    drawScene.GetSelectionHighlightColor(true)
+                };
 
-                stateToCommit._instanceColors.setLength(instanceCount * kNumColorChannels);
-                for (unsigned int i = 0; i < instanceCount; ++i) {
-                    for (unsigned int j = 0; j < kNumColorChannels; j++) {
-                        stateToCommit._instanceColors[offset++] = color[j];
+                std::vector<unsigned char> colorIndices;
+                colorIndices.resize(instanceCount, 0);
+
+                if (auto state = drawScene.GetActiveSelectionState(id)) {
+                    for (const auto& indexArray : state->instanceIndices) {
+                        for (const auto index : indexArray) {
+                            colorIndices[index] = 1;
+                        }
                     }
                 }
 
-                if (auto state = drawScene.GetPrimSelectionState(id)) {
+                if (auto state = drawScene.GetLeadSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
-                        for (const auto i : indexArray) {
-                            offset = i * kNumColorChannels;
-                            for (unsigned int j = 0; j < kNumColorChannels; j++) {
-                                stateToCommit._instanceColors[offset+j] = kSelectionHighlightColor[j];
-                            }
+                        for (const auto index : indexArray) {
+                            colorIndices[index] = 2;
                         }
+                    }
+                }
+
+                stateToCommit._instanceColors.setLength(instanceCount * kNumColorChannels);
+                unsigned int offset = 0;
+
+                for (unsigned int i = 0; i < instanceCount; ++i) {
+                    unsigned char colorIndex = colorIndices[i];
+                    const MColor& color = colors[colorIndex];
+                    for (unsigned int j = 0; j < kNumColorChannels; j++) {
+                        stateToCommit._instanceColors[offset++] = color[j];
                     }
                 }
             }
@@ -1202,29 +1164,29 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 auto primitiveType = MHWRender::MGeometry::kLines;
                 int primitiveStride = 0;
 
+                const MColor& color = (_selectionStatus != kUnselected ?
+                    drawScene.GetSelectionHighlightColor(_selectionStatus == kFullyLead) :
+                    drawScene.GetWireframeColor());
+
                 if (desc.geomStyle == HdBasisCurvesGeomStylePatch) {
-                    if (_selectionState != kUnselected) {
+                    if (_selectionStatus != kUnselected) {
                         if (refineLevel <= 0) {
-                            shader = _delegate->Get3dSolidShader(kSelectionHighlightColor);
+                            shader = _delegate->Get3dSolidShader(color);
                         }
                         else if (type == HdTokens->linear) {
-                            shader = _delegate->GetBasisCurvesLinearFallbackShader(kSelectionHighlightColor);
+                            shader = _delegate->GetBasisCurvesLinearFallbackShader(color);
                             primitiveType = MHWRender::MGeometry::kPatch;
                             primitiveStride = 2;
                         }
                         else {
-                            shader = _delegate->GetBasisCurvesCubicFallbackShader(kSelectionHighlightColor);
+                            shader = _delegate->GetBasisCurvesCubicFallbackShader(color);
                             primitiveType = MHWRender::MGeometry::kPatch;
                             primitiveStride = 4;
                         }
                     }
                 }
                 else {
-                    shader = _delegate->Get3dSolidShader(
-                        (_selectionState != kUnselected) ?
-                        kSelectionHighlightColor :
-                        drawScene.GetWireframeColor()
-                    );
+                    shader = _delegate->Get3dSolidShader(color);
                 }
 
                 if (shader != nullptr && shader != drawItemData._shader) {
@@ -1246,18 +1208,15 @@ HdVP2BasisCurves::_UpdateDrawItem(
     }
 
     // Determine if the render item should be enabled or not.
-    if ((itemDirtyBits & (HdChangeTracker::DirtyVisibility |
+    if (!GetInstancerId().IsEmpty() ||
+        (itemDirtyBits & (HdChangeTracker::DirtyVisibility |
                          HdChangeTracker::DirtyRenderTag |
                          HdChangeTracker::DirtyPoints |
                          HdChangeTracker::DirtyExtent |
-                         DirtySelectionHighlight)) ||
-                         !GetInstancerId().IsEmpty()) {
+                         DirtySelectionHighlight))) {
         bool enable = drawItem->GetVisible() && !_curvesSharedData._points.empty() && !instancerWithNoInstances;
 
-        if (isDedicatedSelectionHighlightItem) {
-            enable = enable && (_selectionState != kUnselected);
-        }
-        else if (drawMode == MHWRender::MGeometry::kBoundingBox) {
+        if (drawMode == MHWRender::MGeometry::kBoundingBox) {
             enable = enable && !range.IsEmpty();
         }
 
@@ -1508,13 +1467,13 @@ void HdVP2BasisCurves::_InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBit
     // Update selection state on demand or when it is a new Rprim. DirtySelection
     // will be propagated to all draw items, to trigger sync for each repr.
     if (reprToken == HdVP2ReprTokens->selection || _reprs.empty()) {
-        const HdVP2SelectionStatus selectionState =
-            param->GetDrawScene().GetPrimSelectionStatus(GetId());
-        if (_selectionState != selectionState) {
-            _selectionState = selectionState;
+        const HdVP2SelectionStatus selectionStatus =
+            param->GetDrawScene().GetSelectionStatus(GetId());
+        if (_selectionStatus != selectionStatus) {
+            _selectionStatus = selectionStatus;
             *dirtyBits |= DirtySelection;
         }
-        else if (_selectionState == kPartiallySelected) {
+        else if (_selectionStatus == kPartiallySelected) {
             *dirtyBits |= DirtySelection;
         }
 
@@ -1672,7 +1631,8 @@ HdDirtyBits HdVP2BasisCurves::GetInitialDirtyBitsMask() const
         HdChangeTracker::DirtyVisibility |
         HdChangeTracker::DirtyWidths |
         HdChangeTracker::DirtyComputationPrimvarDesc |
-        HdChangeTracker::DirtyRenderTag;
+        HdChangeTracker::DirtyRenderTag |
+        DirtySelectionHighlight;
 
     return bits;
 }
