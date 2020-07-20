@@ -16,6 +16,7 @@
 
 #include "UsdUndoInsertChildCommand.h"
 #include "private/InPathChange.h"
+#include "private/Utils.h"
 #include "Utils.h"
 
 #include <ufe/log.h>
@@ -62,6 +63,10 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
     const auto& childPrim = child->prim();
     const auto& parentPrim = parent->prim();
 
+    // Apply restriction rules
+    ufe::applyCommandRestriction(childPrim, "reparent");
+    ufe::applyCommandRestriction(parentPrim, "reparent");
+
     // First, check if we need to rename the child.
     const auto& childName = uniqueChildName(parent, child->path());
 
@@ -78,22 +83,13 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
     }
     _usdDstPath = parent->prim().GetPath().AppendChild(TfToken(childName));
 
-    _childLayer = MayaUsdUtils::defPrimSpecLayer(childPrim);
-    if (!_childLayer) {
-        std::string err = TfStringPrintf("No child prim found at %s", childPrim.GetPath().GetString().c_str());
-        throw std::runtime_error(err.c_str());
-    }
+    _childLayer = _stage->GetEditTarget().GetLayer();
 
     // If parent prim is the pseudo-root, no def primSpec will be found, so
     // just use the edit target layer.
-    _parentLayer = parentPrim.IsPseudoRoot() ?
-        _stage->GetEditTarget().GetLayer() :
-        MayaUsdUtils::defPrimSpecLayer(parentPrim);
-
-    if (!_parentLayer) {
-        std::string err = TfStringPrintf("No parent prim found at %s", parentPrim.GetPath().GetString().c_str());
-        throw std::runtime_error(err.c_str());
-    }
+    _parentLayer = parentPrim.IsPseudoRoot() 
+        ? _stage->GetEditTarget().GetLayer() 
+        : MayaUsdUtils::defPrimSpecLayer(parentPrim);
 }
 
 UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand()
