@@ -13,21 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <memory>
-#include <string>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/shaderReader.h>
+#include <mayaUsd/fileio/shaderReaderRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
+#include <mayaUsd/utils/util.h>
 
-#include <maya/MFn.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MItDependencyGraph.h>
-#include <maya/MObject.h>
-#include <maya/MObjectHandle.h>
-#include <maya/MPlug.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
@@ -40,13 +38,18 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/shading/shadingModeExporter.h>
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/utils/shadingUtil.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MFn.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnSet.h>
+#include <maya/MItDependencyGraph.h>
+#include <maya/MObject.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+#include <memory>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -377,7 +380,6 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
 
 } // anonymous namespace
 
-
 TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, useRegistry)
 {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
@@ -390,8 +392,216 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, useRegistry)
     );
 }
 
+namespace {
 
-// XXX: No import support yet...
+/// This class implements a shading mode importer which uses a registry keyed by the info:id USD
+/// attribute to provide an importer class for each UsdShade node processed while traversing the
+/// main connections of a UsdMaterial node.
+class UseRegistryShadingModeImporter {
+public:
+    UseRegistryShadingModeImporter(UsdMayaShadingModeImportContext* context,
+                                   const UsdMayaJobImportArgs& jobArguments)
+        : _context(context)
+        , _jobArguments(jobArguments)
+    {
+    }
 
+    /// Main entry point of the import process. On input we get a UsdMaterial which gets traversed
+    /// in order to build a Maya shading network that reproduces the information found in the USD
+    /// shading network.
+    MObject Read()
+    {
+        const UsdShadeMaterial& shadeMaterial = _context->GetShadeMaterial();
+        if (!shadeMaterial) {
+            return MObject();
+        }
+
+        UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource();
+        if (!surfaceShader) {
+            return MObject();
+        }
+
+        const TfToken surfaceShaderPlugName = _context->GetSurfaceShaderPlugName();
+        if (surfaceShaderPlugName.IsEmpty()) {
+            return MObject();
+        }
+
+        MPlug shaderOutputPlug = _GetSourcePlug(surfaceShader, UsdShadeTokens->surface);
+        if (shaderOutputPlug.isNull()) {
+            return MObject();
+        }
+
+        // Create the shading engine.
+        MObject shadingEngine = _context->CreateShadingEngine();
+        if (shadingEngine.isNull()) {
+            return MObject();
+        }
+        MStatus status;
+        MFnSet  fnSet(shadingEngine, &status);
+        if (status != MS::kSuccess) {
+            return MObject();
+        }
+
+        MPlug seInputPlug = fnSet.findPlug(surfaceShaderPlugName.GetText(), &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+
+        UsdMayaUtil::Connect(
+            shaderOutputPlug,
+            seInputPlug,
+            /* clearDstPlug = */ true);
+
+        return shadingEngine;
+    }
+
+private:
+    /// Gets the Maya-side source plug that corresponds to the \p outputName attribute of
+    /// \p shaderSchema.
+    ///
+    /// This will create the Maya dependency nodes as necessary and return an empty plug in case of
+    /// import failure or if \p outputName could not map to a Maya plug.
+    ///
+    MPlug _GetSourcePlug(const UsdShadeShader& shaderSchema, const TfToken& outputName) {
+        const SdfPath& shaderPath(shaderSchema.GetPath());
+        const auto     iter = _shaderReaderMap.find(shaderPath);
+        UsdMayaShaderReaderSharedPtr shaderReader;
+        MObject sourceObj;
+        if (iter != _shaderReaderMap.end()) {
+            shaderReader = iter->second;
+            if (!_context->GetCreatedObject(shaderSchema.GetPrim(), &sourceObj)) {
+                return MPlug();
+            }
+        } else {
+            // No shader reader exists for this node yet, so create one.
+            TfToken shaderId;
+            shaderSchema.GetIdAttr().Get(&shaderId);
+
+            if (UsdMayaShaderReaderRegistry::ReaderFactoryFn factoryFn
+                = UsdMayaShaderReaderRegistry::Find(shaderId)) {
+
+                UsdPrim shaderPrim = shaderSchema.GetPrim();
+                UsdMayaPrimReaderArgs args(shaderPrim, _jobArguments);
+
+                shaderReader = std::dynamic_pointer_cast<UsdMayaShaderReader>(factoryFn(args));
+
+                sourceObj = _ReadSchema(shaderSchema, *shaderReader);
+                if (sourceObj.isNull()) {
+                    // Read failed. Invalidate the reader.
+                    shaderReader = nullptr;
+                }
+            }
+
+            // Store the shader reader pointer whether we succeeded or not so
+            // that we don't repeatedly attempt and fail to create it for the
+            // same node.
+            _shaderReaderMap[shaderPath] = shaderReader;
+
+            if (!shaderReader) {
+                return MPlug();
+            }
+        }
+
+        MStatus status;
+        MFnDependencyNode sourceDepFn(sourceObj, &status);
+        if (status != MS::kSuccess) {
+            return MPlug();
+        }
+
+        TfToken sourceOutputName
+            = TfToken(TfStringPrintf(
+                            "%s%s", UsdShadeTokens->outputs.GetText(), outputName.GetText())
+                            .c_str());
+        auto  srcAttrName = shaderReader->GetMayaNameForUsdAttrName(sourceOutputName);
+        MPlug sourcePlug = sourceDepFn.findPlug(srcAttrName.GetText());
+        if (sourcePlug.isArray()) {
+            const unsigned int numElements = sourcePlug.evaluateNumElements();
+            if (numElements > 0u) {
+                if (numElements > 1u) {
+                    TF_WARN(
+                        "Array with multiple elements encountered at '%s'. "
+                        "Currently, only arrays with a single element are "
+                        "supported. Not connecting attribute.",
+                        sourcePlug.name().asChar());
+                    return MPlug();
+                }
+
+                sourcePlug = sourcePlug[0];
+            }
+        }
+
+        return sourcePlug;
+    }
+
+    /// Reads \p shaderSchema using \p shaderReader.
+    ///
+    /// This will create the Maya dependency nodes for the \p shaderSchema UsdShade node. The
+    /// connections will be recursively traversed to complete the network.
+    ///
+    MObject
+    _ReadSchema(const UsdShadeShader& shaderSchema, UsdMayaShaderReader& shaderReader)
+    {
+        // UsdMayaPrimReader::Read is a function that works by indirect effect. It will return
+        // "true" on success, and the resulting changes will be found in the _context object.
+        if (!shaderReader.Read(_context->GetPrimReaderContext())) {
+            return MObject();
+        }
+
+        MObject shaderObj;
+        if (!_context->GetCreatedObject(shaderSchema.GetPrim(), &shaderObj)) {
+            return MObject();
+        }
+
+        MStatus           status;
+        MFnDependencyNode depFn(shaderObj, &status);
+        if (status != MS::kSuccess) {
+            return MObject();
+        }
+
+        for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
+            auto mayaAttrName = shaderReader.GetMayaNameForUsdAttrName(input.GetFullName());
+            if (mayaAttrName.IsEmpty()) {
+                continue;
+            }
+            MPlug                  mayaAttr = depFn.findPlug(mayaAttrName.GetText());
+            UsdShadeConnectableAPI source;
+            TfToken                sourceOutputName;
+            UsdShadeAttributeType  sourceType;
+
+            // Follow shader connections and recurse.
+            if (!UsdShadeConnectableAPI::GetConnectedSource(
+                    input, &source, &sourceOutputName, &sourceType)) {
+                continue;
+            }
+
+            UsdShadeShader sourceShaderSchema = UsdShadeShader(source.GetPrim());
+            if (!sourceShaderSchema) {
+                continue;
+            }
+
+            MPlug srcAttr = _GetSourcePlug(sourceShaderSchema, sourceOutputName);
+            if (srcAttr.isNull()) {
+                continue;
+            }
+
+            UsdMayaUtil::Connect(srcAttr, mayaAttr, false);
+        }
+
+        return shaderObj;
+    }
+
+    using _SdfPathToShaderReaderMap
+        = std::unordered_map<SdfPath, UsdMayaShaderReaderSharedPtr, SdfPath::Hash>;
+
+    UsdMayaShadingModeImportContext* _context = nullptr;
+    const UsdMayaJobImportArgs&      _jobArguments;
+    _SdfPathToShaderReaderMap        _shaderReaderMap;
+};
+
+}; // anonymous namespace
+
+DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(useRegistry, context, jobArguments)
+{
+    UseRegistryShadingModeImporter importer(context, jobArguments);
+    return importer.Read();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

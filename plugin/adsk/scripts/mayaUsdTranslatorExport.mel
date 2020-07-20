@@ -199,7 +199,21 @@ global proc int mayaUsdTranslatorExport (string $parent,
             checkBoxGrp -l "Color Sets:" -annotation $colorSetsAnn exportColorSetsCheckBox;
 
             checkBoxGrp -l "UV Sets:" -annotation $uvSetsAnn exportUVsCheckBox;
-            
+
+            string $exporters[] = `mayaUSDListShadingModes -export`;
+            optionMenuGrp -l "Materials:" shadingModePopup;
+            for ($modeName in $exporters) {
+                string $niceName = $modeName;
+                if ($modeName == "displayColor") {
+                    $niceName = "Material Colors";
+                } else if ($modeName == "pxrRis") {
+                    $niceName = "RfM Shaders";
+                } else if ($modeName == "useRegistry") {
+                    $niceName = "Preview Surface Shaders";
+                }
+                menuItem -l $niceName -ann $modeName;
+            }
+
             separator -style "none";
         setParent ..;
         
@@ -222,26 +236,6 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 checkBoxGrp -l "Euler Filter:" -cw 1 175 
                     -annotation $eulerFilterAnn eulerFilterCheckBox;
             setParent ..;
-
-            separator -style "none";
-        setParent ..;
-
-        frameLayout -label "Materials" -collapsable true -collapse false;
-            separator -style "none";
-
-            string $exporters[] = `mayaUSDListShadingModes -export`;
-            optionMenuGrp -l "Shading Mode:" shadingModePopup;
-            for ($modeName in $exporters) {
-                string $niceName = $modeName;
-                if ($modeName == "displayColor") {
-                    $niceName = "Material Colors";
-                } else if ($modeName == "pxrRis") {
-                    $niceName = "RfM Shaders";
-                } else if ($modeName == "useRegistry") {
-                    $niceName = "Preview Surface Shaders";
-                }
-                menuItem -l $niceName -ann $modeName;
-            }
 
             separator -style "none";
         setParent ..;

@@ -42,8 +42,12 @@ public:
     MAYAUSD_CORE_PUBLIC
     const UsdPrim& GetUsdPrim() const;
 
+    /// \brief return the initial job arguments, allowing a prim reader to
+    /// execute a secondary prim reader.
     MAYAUSD_CORE_PUBLIC
-    const TfToken& GetShadingMode() const;
+    const UsdMayaJobImportArgs& GetJobArguments() const {
+        return _jobArgs;
+    }
 
     /// Returns the time interval over which to import animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no

@@ -13,8 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "fileTextureWriter.h"
-
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -43,6 +41,20 @@
 #include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
+{
+    public:
+        PxrUsdTranslators_FileTextureWriter(
+                const MFnDependencyNode& depNodeFn,
+                const SdfPath& usdPath,
+                UsdMayaWriteJobContext& jobCtx);
+
+        void Write(const UsdTimeCode& usdTime) override;
+
+        TfToken GetShadingAttributeNameForMayaAttrName(
+                const TfToken& mayaAttrName) override;
+};
 
 PXRUSDMAYA_REGISTER_WRITER(file, PxrUsdTranslators_FileTextureWriter);
 
@@ -382,10 +394,6 @@ TfToken
 PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
         const TfToken& mayaAttrName)
 {
-    if (!_usdPrim) {
-        return TfToken();
-    }
-
     TfToken usdAttrName;
     SdfValueTypeName usdTypeName = SdfValueTypeNames->Float;
 
@@ -414,12 +422,7 @@ PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
 
         shaderSchema.CreateOutput(usdAttrName, usdTypeName);
 
-        usdAttrName =
-            TfToken(
-                TfStringPrintf(
-                    "%s%s",
-                    UsdShadeTokens->outputs.GetText(),
-                    usdAttrName.GetText()).c_str());
+        usdAttrName = UsdShadeUtils::GetFullName(usdAttrName, UsdShadeAttributeType::Output);
     }
 
     return usdAttrName;

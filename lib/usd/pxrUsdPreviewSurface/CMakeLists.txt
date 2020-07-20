@@ -32,6 +32,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         usdPreviewSurface.cpp
         usdPreviewSurfacePlugin.cpp
+        usdPreviewSurfaceReader.cpp
         usdPreviewSurfaceShadingNodeOverride.cpp
         usdPreviewSurfaceWriter.cpp
 )
@@ -49,6 +50,7 @@ mayaUsd_compile_config(${TARGET_NAME})
 
 mayaUsd_promoteHeaderList( 
     HEADERS
+        usdPreviewSurface.h
         usdPreviewSurfacePlugin.h
     BASEDIR
         ${TARGET_NAME}

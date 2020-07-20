@@ -24,7 +24,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdMayaPrimReaderContext
+/// \class UsdMayaPrimWriterContext
 /// \brief This class provides an interface for writer plugins to communicate
 /// state back to the core usd maya logic.
 class UsdMayaPrimWriterContext

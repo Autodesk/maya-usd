@@ -54,11 +54,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 /* static */
 MObject
 UsdMayaTranslatorMaterial::Read(
-        const TfToken& shadingMode,
+        const UsdMayaJobImportArgs& jobArguments,
         const UsdShadeMaterial& shadeMaterial,
         const UsdGeomGprim& boundPrim,
         UsdMayaPrimReaderContext* context)
 {
+    const TfToken& shadingMode = jobArguments.shadingMode;
     if (shadingMode == UsdMayaShadingModeTokens->none) {
         return MObject();
     }
@@ -73,7 +74,7 @@ UsdMayaTranslatorMaterial::Read(
 
     if (UsdMayaShadingModeImporter importer =
             UsdMayaShadingModeRegistry::GetImporter(shadingMode)) {
-        shadingEngine = importer(&c);
+        shadingEngine = importer(&c, jobArguments);
     }
 
     if (!shadingEngine.isNull()) {
@@ -123,7 +124,7 @@ _AssignMaterialFaceSet(
 
 bool
 UsdMayaTranslatorMaterial::AssignMaterial(
-        const TfToken& shadingMode,
+        const UsdMayaJobImportArgs& jobArguments,
         const UsdGeomGprim& primSchema,
         MObject shapeObj,
         UsdMayaPrimReaderContext* context)
@@ -142,7 +143,7 @@ UsdMayaTranslatorMaterial::AssignMaterial(
     MStatus status;
     const UsdShadeMaterialBindingAPI bindingAPI(primSchema.GetPrim());
     MObject shadingEngine =
-        UsdMayaTranslatorMaterial::Read(shadingMode,
+        UsdMayaTranslatorMaterial::Read(jobArguments,
                                            bindingAPI.ComputeBoundMaterial(),
                                            primSchema,
                                            context);
@@ -221,7 +222,7 @@ UsdMayaTranslatorMaterial::AssignMaterial(
             if (boundMaterial) {
                 MObject faceSubsetShadingEngine =
                     UsdMayaTranslatorMaterial::Read(
-                        shadingMode,
+                        jobArguments,
                         boundMaterial,
                         UsdGeomGprim(),
                         context);

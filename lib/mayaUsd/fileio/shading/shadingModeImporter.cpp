@@ -178,5 +178,10 @@ UsdMayaShadingModeImportContext::SetDisplacementShaderPlugName(
     _displacementShaderPlugName = displacementShaderPlugName;
 }
 
+UsdMayaPrimReaderContext*
+UsdMayaShadingModeImportContext::GetPrimReaderContext() const
+{
+    return _context;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

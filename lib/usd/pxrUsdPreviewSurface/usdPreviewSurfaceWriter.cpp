@@ -35,6 +35,7 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
@@ -48,18 +49,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_REGISTER_WRITER(
     pxrUsdPreviewSurface,
     PxrMayaUsdPreviewSurface_Writer);
-
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    // XXX: We duplicate this token here rather than create a dependency on
-    // usdImaging in case the plugin is being built with imaging disabled.
-    // If/when it moves out of usdImaging to a place that is always available,
-    // it should be pulled from there instead.
-    (UsdPreviewSurface)
-);
-
 
 PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(
         const MFnDependencyNode& depNodeFn,
@@ -76,7 +65,7 @@ PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(
         return;
     }
 
-    shaderSchema.CreateIdAttr(VtValue(_tokens->UsdPreviewSurface));
+    shaderSchema.CreateIdAttr(VtValue(UsdImagingTokens->UsdPreviewSurface));
 
     _usdPrim = shaderSchema.GetPrim();
     if (!TF_VERIFY(

@@ -17,14 +17,12 @@ target_sources(${TARGET_NAME}
     PRIVATE
         cameraReader.cpp
         cameraWriter.cpp
-        fileTextureWriter.cpp
         instancerWriter.cpp
         jointWriter.cpp
         lightReader.cpp
         lightWriter.cpp
         locatorWriter.cpp
         materialReader.cpp
-        materialWriter.cpp
         mayaReferenceReader.cpp
         mayaReferenceUpdater.cpp
         meshReader.cpp
@@ -39,6 +37,8 @@ target_sources(${TARGET_NAME}
         strokeWriter.cpp
         xformReader.cpp
 )
+
+add_subdirectory(shading)
 
 # -----------------------------------------------------------------------------
 # compiler configuration
@@ -80,6 +80,7 @@ target_link_libraries(${TARGET_NAME}
         ${MAYA_LIBRARIES}
         mayaUsd
         mayaUsd_Schemas
+        basePxrUsdPreviewSurface
 )
 
 # -----------------------------------------------------------------------------
