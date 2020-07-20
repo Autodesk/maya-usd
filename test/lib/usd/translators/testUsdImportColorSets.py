@@ -130,7 +130,7 @@ class testUsdImportColorSets(unittest.TestCase):
         inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
         usdFile = os.path.join(inputPath, "UsdImportColorSetsTest", "UsdImportColorSetsTest.usda")
-        cmds.usdImport(file=usdFile, shadingMode='none', excludePrimvar='ExcludeMeEvenIfOpacity')
+        cmds.usdImport(file=usdFile, shadingMode='none', excludePrimvar='ExcludeMe')
 
     def _GetMayaMesh(self, meshName):
         selectionList = OpenMaya.MSelectionList()
@@ -592,9 +592,22 @@ class testUsdImportColorSets(unittest.TestCase):
         """Tests excluding primvars when importing color sets."""
         mayaCubeMesh = self._GetMayaMesh('ColorSetsCubeShape')
         colorSets = mayaCubeMesh.getColorSetNames()
-        self.assertNotIn("ExcludeMeEvenIfOpacity", colorSets)
-        self.assertIn("ExcludeMeNotBecauseOpacity", colorSets)
+        self.assertNotIn("ExcludeMe", colorSets)
+        self.assertIn("ExcludeMeNot", colorSets)
+        # Plenty of colors to show:
+        self.assertTrue(mayaCubeMesh.displayColors)
 
+    def testOnlyCustomData(self):
+        """Test with a mesh containing non-color custom data."""
+        mayaCubeMesh = self._GetMayaMesh('NonColorSetsCubeShape')
+        colorSets = mayaCubeMesh.getColorSetNames()
+        self.assertNotIn("ExcludeMe", colorSets)
+        self.assertIn("ExcludeMeNot", colorSets)
+        self.assertIn("CustomFloatStream", colorSets)
+        self.assertIn("CustomFloat3Stream", colorSets)
+        self.assertIn("CustomFloat4Stream", colorSets)
+        # Not a single "color" to show:
+        self.assertFalse(mayaCubeMesh.displayColors)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

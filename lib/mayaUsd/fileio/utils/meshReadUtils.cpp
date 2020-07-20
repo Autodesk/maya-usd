@@ -521,8 +521,28 @@ namespace
             }
 
             MPlug plg = meshFn.findPlug("displayColors");
-            if (!plg.isNull()) {
-                plg.setBool(true);
+            if (!plg.isNull() && !plg.asBool()) {
+                // We will accept anything to be imported as a colorSet since this is one way to
+                // create custom data. But turning on the displayColors attribute will be done only
+                // if we have strong evidence that this is a color to be displayed in the viewport.
+                if (typeName == SdfValueTypeNames->Color3fArray
+                    || typeName == SdfValueTypeNames->Color4fArray) {
+                    plg.setBool(true);
+                } else {
+                    // A Float, Float3, or Float4 primvar could be anything. Check the name for a
+                    // color hint.
+                    std::string lowerCaseName(primvarName.GetString());
+                    std::transform(
+                        lowerCaseName.begin(),
+                        lowerCaseName.end(),
+                        lowerCaseName.begin(),
+                        [](unsigned char c) { return std::tolower(c); });
+                    if (lowerCaseName.find("color") != std::string::npos
+                        || lowerCaseName.find("alpha") != std::string::npos
+                        || lowerCaseName.find("opacity") != std::string::npos) {
+                        plg.setBool(true);
+                    }
+                }
             }
         }
 
@@ -660,38 +680,6 @@ UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
                    typeName == SdfValueTypeNames->Color3fArray ||
                    typeName == SdfValueTypeNames->Float4Array ||
                    typeName == SdfValueTypeNames->Color4fArray) {
-            if (typeName == SdfValueTypeNames->FloatArray
-                && name != UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName) {
-                // Could be anything, forcing us to guess...
-                std::string lowerCaseName(name.GetString());
-                std::transform(
-                    lowerCaseName.begin(),
-                    lowerCaseName.end(),
-                    lowerCaseName.begin(),
-                    [](unsigned char c) { return std::tolower(c); });
-                if (lowerCaseName.find("color") == std::string::npos
-                    && lowerCaseName.find("alpha") == std::string::npos
-                    && lowerCaseName.find("opacity") == std::string::npos) {
-                    // Does not look like an alpha channel
-                    continue;
-                }
-            }
-
-            if (typeName == SdfValueTypeNames->Float3Array
-                || typeName == SdfValueTypeNames->Float4Array) {
-                // Could be anything, forcing us to guess...
-                std::string lowerCaseName(name.GetString());
-                std::transform(
-                    lowerCaseName.begin(),
-                    lowerCaseName.end(),
-                    lowerCaseName.begin(),
-                    [](unsigned char c) { return std::tolower(c); });
-                if (lowerCaseName.find("color") == std::string::npos) {
-                    // Does not look like a color set
-                    continue;
-                }
-            }
-
           if (!assignColorSetPrimvarToMesh(mesh, primvar, meshFn)) {
               TF_WARN("Unable to retrieve and assign data for color set <%s> "
                       "on mesh <%s>",
