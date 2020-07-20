@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "UsdUndoRenameCommand.h"
+#include "private/Utils.h"
 
 #include <ufe/log.h>
 
@@ -62,38 +63,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    // early check to see if a particular node has any specs to contribute
-    // to the final composed prim. e.g (a node in payload)
-    if(!MayaUsdUtils::hasSpecs(prim)){
-        std::string err = TfStringPrintf("Cannot rename [%s] because it doesn't have any specs to contribute to the composed prim.",
-            prim.GetName().GetString().c_str());
-        throw std::runtime_error(err.c_str());
-    }
-
-    // if the current layer doesn't have any contributions
-    if (!MayaUsdUtils::doesEditTargetLayerContribute(prim)) {
-        auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
-        std::string err = TfStringPrintf("Cannot rename [%s] defined on another layer. " 
-                                         "Please set [%s] as the target layer to proceed", 
-                                         prim.GetName().GetString().c_str(),
-                                         strongestContributingLayer->GetDisplayName().c_str());
-        throw std::runtime_error(err.c_str());
-    }
-    else
-    {
-        auto layers = MayaUsdUtils::layersWithContribution(prim);
-        // if we have more than 2 layers that contributes to the final composed prim
-        if (layers.size() > 1) {
-            std::string layerDisplayNames;
-            for (auto layer : layers) {
-                layerDisplayNames.append("[" + layer->GetDisplayName() + "]" + ",");
-            }
-            layerDisplayNames.pop_back();
-            std::string err = TfStringPrintf("Cannot rename [%s] with definitions or opinions on other layers. "
-                                             "Opinions exist in %s", prim.GetName().GetString().c_str(), layerDisplayNames.c_str());
-            throw std::runtime_error(err.c_str());
-        }
-    }
+    ufe::applyCommandRestriction(prim, "rename");
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand()
