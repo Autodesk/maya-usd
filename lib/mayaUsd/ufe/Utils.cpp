@@ -22,8 +22,6 @@
 #include <string>
 #include <unordered_map>
 
-#include <ufe/scene.h>
-
 #include <maya/MGlobal.h>
 
 #include <maya/MObjectHandle.h>

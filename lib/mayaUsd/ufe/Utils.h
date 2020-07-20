@@ -17,6 +17,7 @@
 
 #include <ufe/path.h>
 #include <ufe/pathSegment.h>
+#include <ufe/scene.h>
 
 #include <maya/MDagPath.h>
 
