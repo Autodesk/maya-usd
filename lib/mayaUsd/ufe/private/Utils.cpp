@@ -133,7 +133,7 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     // to the final composed prim. e.g (a node in payload)
     if(!MayaUsdUtils::hasSpecs(prim)){
         std::string err = TfStringPrintf("Cannot %s [%s] because it doesn't have any specs to contribute to the composed prim.",
-                                          commandName, 
+                                          commandName.c_str(),
                                           prim.GetName().GetString().c_str());
         throw std::runtime_error(err.c_str());
     }
@@ -143,7 +143,7 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
         auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
         std::string err = TfStringPrintf("Cannot %s [%s] defined on another layer. " 
                                          "Please set [%s] as the target layer to proceed", 
-                                         commandName, 
+                                         commandName.c_str(),
                                          prim.GetName().GetString().c_str(),
                                          strongestContributingLayer->GetDisplayName().c_str());
         throw std::runtime_error(err.c_str());
@@ -159,8 +159,8 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
             }
             layerDisplayNames.pop_back();
             std::string err = TfStringPrintf("Cannot %s [%s] with definitions or opinions on other layers. "
-                                             "Opinions exist in %s", 
-                                             commandName,
+                                             "Opinions exist in %s",
+                                             commandName.c_str(),
                                              prim.GetName().GetString().c_str(), 
                                              layerDisplayNames.c_str());
             throw std::runtime_error(err.c_str());
