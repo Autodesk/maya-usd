@@ -15,12 +15,12 @@
 //
 #pragma once
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <ufe/undoableCommand.h>
 
 #include <pxr/usd/usd/prim.h>
 
-#include <ufe/undoableCommand.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,10 +31,11 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdUndoInsertChildCommand : public Ufe::UndoableCommand
 {
 public:
-    typedef std::shared_ptr<UsdUndoInsertChildCommand> Ptr;
+    using Ptr = std::shared_ptr<UsdUndoInsertChildCommand>;
 
     ~UsdUndoInsertChildCommand() override;
 
+    // Delete the copy/move constructors assignment operators.
     UsdUndoInsertChildCommand(const UsdUndoInsertChildCommand&) = delete;
     UsdUndoInsertChildCommand& operator=(const UsdUndoInsertChildCommand&) = delete;
     UsdUndoInsertChildCommand(UsdUndoInsertChildCommand&&) = delete;
@@ -42,20 +43,16 @@ public:
 
     //! Create a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
     //! pos argument is ignored, and only append is supported.
-    static UsdUndoInsertChildCommand::Ptr create(
-        const UsdSceneItem::Ptr& parent,
-        const UsdSceneItem::Ptr& child,
-        const UsdSceneItem::Ptr& pos
-    );
+    static UsdUndoInsertChildCommand::Ptr create(const UsdSceneItem::Ptr& parent,
+                                                 const UsdSceneItem::Ptr& child,
+                                                 const UsdSceneItem::Ptr& pos);
 
 protected:
     //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
     //! pos argument is ignored, and only append is supported.
-    UsdUndoInsertChildCommand(
-        const UsdSceneItem::Ptr& parent,
-        const UsdSceneItem::Ptr& child,
-        const UsdSceneItem::Ptr& pos
-    );
+    UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& parent,
+                              const UsdSceneItem::Ptr& child,
+                              const UsdSceneItem::Ptr& pos);
 
 private:
     void undo() override;
@@ -64,14 +61,18 @@ private:
     bool insertChildRedo();
     bool insertChildUndo();
 
-    UsdStageWeakPtr fStage;
-    SdfLayerHandle fChildLayer;
-    SdfLayerHandle fParentLayer;
-    UsdSceneItem::Ptr fUfeSrcItem;
-    SdfPath fUsdSrcPath;
-    UsdSceneItem::Ptr fUfeDstItem;
-    Ufe::Path fUfeDstPath;
-    SdfPath fUsdDstPath;
+    UsdStageWeakPtr _stage;
+
+    UsdSceneItem::Ptr _ufeSrcItem;
+    UsdSceneItem::Ptr _ufeDstItem;
+
+    SdfPath _usdSrcPath;
+    SdfPath _usdDstPath;
+
+    SdfLayerHandle _childLayer;
+    SdfLayerHandle _parentLayer;
+
+    Ufe::Path _ufeDstPath;
 
 }; // UsdUndoInsertChildCommand
 
