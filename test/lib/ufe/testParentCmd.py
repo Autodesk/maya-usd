@@ -20,7 +20,7 @@ from ufeTestUtils import mayaUtils, usdUtils
 from ufeTestUtils.testUtils import assertVectorAlmostEqual
 
 import ufe
-
+import mayaUsd.ufe
 import maya.cmds as cmds
 
 import unittest
@@ -51,7 +51,7 @@ class ParentCmdTestCase(unittest.TestCase):
     '''Verify the Maya parent command on a USD scene.'''
 
     pluginsLoaded = False
-    
+
     @classmethod
     def setUpClass(cls):
         if not cls.pluginsLoaded:
@@ -84,6 +84,17 @@ class ParentCmdTestCase(unittest.TestCase):
         cylinderPath = ufe.Path(
             [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1")])
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(shapeSegment))
+
+        # check GetLayerStack behavior
+        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
         # The cube is not a child of the cylinder.
         cylHier = ufe.Hierarchy.hierarchy(cylinderItem)
@@ -169,6 +180,17 @@ class ParentCmdTestCase(unittest.TestCase):
             [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1")])
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(shapeSegment))
+
+        # check GetLayerStack behavior
+        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
         # The cube is not a child of the cylinder.
         cylHier = ufe.Hierarchy.hierarchy(cylinderItem)
         cylChildren = cylHier.children()
@@ -244,57 +266,36 @@ class ParentCmdTestCase(unittest.TestCase):
                 "|world|mayaUsdProxy1|mayaUsdProxyShape1")
             shapePath = ufe.Path([shapeSegment])
             shapeItem = ufe.Hierarchy.createItem(shapePath)
-    
+
             spherePath = ufe.Path(
                 [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1/pCube1/pSphere1")])
             sphereItem = ufe.Hierarchy.createItem(spherePath)
-    
+
+            # get the USD stage
+            stage = mayaUsd.ufe.getStage(str(shapeSegment))
+
+            # check GetLayerStack behavior
+            self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
+            self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+            # set the edit target to the root layer
+            stage.SetEditTarget(stage.GetRootLayer())
+            self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
             # The sphere is not a child of the proxy shape.
             shapeHier = ufe.Hierarchy.hierarchy(shapeItem)
             shapeChildren = shapeHier.children()
             self.assertNotIn("pSphere1", childrenNames(shapeChildren))
-    
+
             # Get its world space transform.
             sphereT3d = ufe.Transform3d.transform3d(sphereItem)
             sphereWorld = sphereT3d.inclusiveMatrix()
             sphereWorldListPre = matrixToList(sphereWorld)
-    
+
             # Parent sphere to proxy shape in absolute mode (default), using UFE
-            # path strings.
-            cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1/pSphere1", "|mayaUsdProxy1|mayaUsdProxyShape1")
-    
-            # Confirm that the sphere is now a child of the proxy shape.
-            shapeChildren = shapeHier.children()
-            self.assertIn("pSphere1", childrenNames(shapeChildren))
-    
-            # Undo: the sphere is no longer a child of the proxy shape.
-            cmds.undo()
-    
-            shapeChildren = shapeHier.children()
-            self.assertNotIn("pSphere1", childrenNames(shapeChildren))
-    
-            # Redo: confirm that the sphere is again a child of the proxy shape.
-            cmds.redo()
-    
-            shapeChildren = shapeHier.children()
-            self.assertIn("pSphere1", childrenNames(shapeChildren))
-    
-            # Confirm that the sphere's world transform has not changed.  Must
-            # re-create the item, as its path has changed.
-            sphereChildPath = ufe.Path(
-                [shapeSegment, usdUtils.createUfePathSegment("/pSphere1")])
-            sphereChildItem = ufe.Hierarchy.createItem(sphereChildPath)
-            sphereChildT3d = ufe.Transform3d.transform3d(sphereChildItem)
-    
-            sphereWorld = sphereChildT3d.inclusiveMatrix()
-            assertVectorAlmostEqual(
-                self, sphereWorldListPre, matrixToList(sphereWorld), places=6)
-    
-            # Undo.
-            cmds.undo()
-    
-            shapeChildren = shapeHier.children()
-            self.assertNotIn("pSphere1", childrenNames(shapeChildren))
+            # path strings.Expect the exception happens
+            with self.assertRaises(RuntimeError):
+                cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1/pSphere1", "|mayaUsdProxy1|mayaUsdProxyShape1")
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testIllegalChild only available in UFE preview version 0.2.13 and greater')
     def testIllegalChild(self):
@@ -327,6 +328,17 @@ class ParentCmdTestCase(unittest.TestCase):
 
             parent = ufe.Hierarchy.hierarchy(parentItem)
             childrenPre = parent.children()
+
+            # get the USD stage
+            stage = mayaUsd.ufe.getStage(str(shapeSegment))
+
+            # check GetLayerStack behavior
+            self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
+            self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+
+            # set the edit target to the root layer
+            stage.SetEditTarget(stage.GetRootLayer())
+            self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
             # The sphere is not a child of the cylinder
             self.assertNotIn("pSphere1", childrenNames(childrenPre))
