@@ -20,12 +20,14 @@ target_sources(${PROJECT_NAME}
         primWriterContext.cpp
         primWriterRegistry.cpp
         registryHelper.cpp
+        shaderReader.cpp
+        shaderReaderRegistry.cpp
         shaderWriter.cpp
         transformWriter.cpp
         writeJobContext.cpp
 )
 
-set(headers
+set(HEADERS
     fallbackPrimReader.h
     functorPrimReader.h
     functorPrimWriter.h
@@ -43,6 +45,8 @@ set(headers
     primWriterContext.h
     primWriterRegistry.h
     registryHelper.h
+    shaderReader.h
+    shaderReaderRegistry.h
     shaderWriter.h
     transformWriter.h
     writeJobContext.h
@@ -51,12 +55,12 @@ set(headers
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR fileio)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR fileio)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/fileio
 )
 

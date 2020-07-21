@@ -88,9 +88,12 @@ class GroupCmdTestCase(unittest.TestCase):
         parentChildrenPost = parentHierarchy.children()
         self.assertEqual(len(parentChildrenPost), 34)
 
-        newGroupPath = parentPath + newGroupName
+        # The command will now append a number 1 at the end to match the naming
+        # convention in Maya.
+        newGroupPath = parentPath + ufe.PathComponent("newGroup1")
 
         childPaths = set([child.path() for child in parentChildrenPost])
+
         self.assertTrue(newGroupPath in childPaths)
         self.assertTrue(ball25Path not in childPaths)
         self.assertTrue(ball35Path not in childPaths)

@@ -15,11 +15,11 @@
 #
 set(TARGET_NAME basePxrUsdPreviewSurface)
 
-set(resources_install_path
+set(RESOURCES_INSTALL_PATH
     ${CMAKE_INSTALL_PREFIX}/lib/usd/${TARGET_NAME}/resources
 )
 
-set(library_install_path
+set(LIBRARY_INSTALL_PATH
     ${CMAKE_INSTALL_PREFIX}/lib
 )
 
@@ -32,6 +32,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         usdPreviewSurface.cpp
         usdPreviewSurfacePlugin.cpp
+        usdPreviewSurfaceReader.cpp
         usdPreviewSurfaceShadingNodeOverride.cpp
         usdPreviewSurfaceWriter.cpp
 )
@@ -49,6 +50,7 @@ mayaUsd_compile_config(${TARGET_NAME})
 
 mayaUsd_promoteHeaderList( 
     HEADERS
+        usdPreviewSurface.h
         usdPreviewSurfacePlugin.h
     BASEDIR
         ${TARGET_NAME}
@@ -107,22 +109,22 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json"
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    DESTINATION ${resources_install_path}
+    DESTINATION ${RESOURCES_INSTALL_PATH}
 )
 
 install(
     TARGETS ${TARGET_NAME}
     LIBRARY
-    DESTINATION ${library_install_path}
+    DESTINATION ${LIBRARY_INSTALL_PATH}
     ARCHIVE
-    DESTINATION ${library_install_path}
+    DESTINATION ${LIBRARY_INSTALL_PATH}
     RUNTIME
-    DESTINATION ${library_install_path}
+    DESTINATION ${LIBRARY_INSTALL_PATH}
 )
 
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 
-        DESTINATION ${library_install_path} OPTIONAL
+        DESTINATION ${LIBRARY_INSTALL_PATH} OPTIONAL
     )
 endif()
 

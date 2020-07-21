@@ -13,12 +13,12 @@ if(Qt5_FOUND)
 endif()
 
 #install top level plugInfo.json that includes the configured plugInfo.json
-set(install_destination 
+set(INSTALL_DESTINATION 
     ${CMAKE_INSTALL_PREFIX}/lib/usd
 )
 install(CODE
     "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
 )
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
-    DESTINATION ${install_destination}
+    DESTINATION ${INSTALL_DESTINATION}
 )

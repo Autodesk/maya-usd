@@ -13,7 +13,7 @@ target_sources(${TARGET_NAME}
         tokens.cpp
 )
 
-set(headers
+set(HEADERS
     api.h
     ALMayaReference.h
     MayaReference.h
@@ -35,7 +35,7 @@ mayaUsd_compile_config(${TARGET_NAME})
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers}
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS}
                           BASEDIR ${TARGET_NAME}
 )
 

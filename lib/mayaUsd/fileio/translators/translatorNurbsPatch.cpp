@@ -195,9 +195,9 @@ UsdMayaTranslatorNurbsPatch::Read(
 
     // If a material is bound, create (or reuse if already present) and assign it
     // If no binding is present, assign the nurbs surface to the default shader
-    const TfToken& shadingMode = args.GetShadingMode();  
+    const UsdMayaJobImportArgs& jobArguments = args.GetJobArguments();  
     UsdMayaTranslatorMaterial::AssignMaterial(
-            shadingMode,
+            jobArguments,
             usdNurbsPatch,
             surfaceObj,
             context);

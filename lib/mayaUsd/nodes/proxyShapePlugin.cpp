@@ -129,7 +129,7 @@ MStatus
 MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 {
     // If more than one plugin still has us registered, do nothing.
-    if (_registrationCount-- > 1) {
+    if (_registrationCount == 0 || _registrationCount-- > 1) {
         return MS::kSuccess;
     }
 

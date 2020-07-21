@@ -19,7 +19,7 @@ target_sources(${PROJECT_NAME}
         userData.cpp
 )
 
-set(headers
+set(HEADERS
     batchRenderer.h
     debugCodes.h
     hdImagingShapeDrawOverride.h
@@ -39,11 +39,11 @@ set(headers
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/pxrUsdMayaGL)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR render/pxrUsdMayaGL)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/pxrUsdMayaGL
 )

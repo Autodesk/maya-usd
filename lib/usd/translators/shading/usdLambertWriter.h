@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,28 +13,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef PXRUSDTRANSLATORS_FILE_TEXTURE_WRITER_H
-#define PXRUSDTRANSLATORS_FILE_TEXTURE_WRITER_H
+#ifndef PXRUSDTRANSLATORS_LAMBERT_WRITER_H
+#define PXRUSDTRANSLATORS_LAMBERT_WRITER_H
 
 /// \file
 
-#include <maya/MFnDependencyNode.h>
-
 #include <pxr/pxr.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/timeCode.h>
 
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include "usdMaterialWriter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Shader writer for exporting Maya's "file" texture shading node to USD.
-class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
+/// Shader writer for exporting the Lambert part of a Maya shading node to USD.
+/// Will be used by Blinn, Phong, and PhongE to export the Lambertian attributes.
+class PxrUsdTranslators_LambertWriter : public PxrUsdTranslators_MaterialWriter
 {
+    typedef PxrUsdTranslators_MaterialWriter BaseClass;
+
     public:
-        PxrUsdTranslators_FileTextureWriter(
+        PxrUsdTranslators_LambertWriter(
                 const MFnDependencyNode& depNodeFn,
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx);
@@ -43,10 +40,11 @@ class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
 
         TfToken GetShadingAttributeNameForMayaAttrName(
                 const TfToken& mayaAttrName) override;
+
+    protected:
+        virtual void WriteSpecular(const UsdTimeCode& usdTime);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif
