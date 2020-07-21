@@ -513,6 +513,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         HdxShadowTaskParams shadowParams;
         shadowParams.cullStyle = HdCullStyleNothing;
 
+        // The light & shadow parameters currently (19.11-20.08) are only used for tasks specific to Storm
         _taskController->SetEnableShadows(enableShadows);
         _taskController->SetShadowParams(shadowParams);
 
@@ -523,18 +524,20 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         HdMayaSetRenderGLState state;
 #endif
         renderFrame(true);
+
+        // This causes issues with the embree delegate and potentially others.
+        // (i.e. rendering a wireframe via collections isn't supported by other delegates)
+        if (_globals.wireframeSelectionHighlight &&
+            _globals.selectionOverlay == MtohTokens->UseHdSt && _isUsingHdSt) {
+            if (!_selectionCollection.GetRootPaths().empty()) {
+                _taskController->SetCollection(_selectionCollection);
+                renderFrame();
+                // XXX: This call isn't 'free' and will be done again on the next MtohRenderOverride::Render call anyway
+                _taskController->SetCollection(_renderCollection);
+            }
+        }
     } else {
         renderFrame(true);
-    }
-
-    // This causes issues with the embree delegate and potentially others.
-    if (_globals.wireframeSelectionHighlight &&
-        _globals.selectionOverlay == MtohTokens->UseHdSt && _isUsingHdSt) {
-        if (!_selectionCollection.GetRootPaths().empty()) {
-            _taskController->SetCollection(_selectionCollection);
-            renderFrame();
-            _taskController->SetCollection(_renderCollection);
-        }
     }
 
     for (auto& it : _delegates) { it->PostFrame(); }
