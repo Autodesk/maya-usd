@@ -297,6 +297,39 @@ class ParentCmdTestCase(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1/pSphere1", "|mayaUsdProxy1|mayaUsdProxyShape1")
 
+                # Confirm that the sphere is now a child of the proxy shape.
+                shapeChildren = shapeHier.children()
+                self.assertIn("pSphere1", childrenNames(shapeChildren))
+
+                # Undo: the sphere is no longer a child of the proxy shape.
+                cmds.undo()
+
+                shapeChildren = shapeHier.children()
+                self.assertNotIn("pSphere1", childrenNames(shapeChildren))
+
+                # Redo: confirm that the sphere is again a child of the proxy shape.
+                cmds.redo()
+
+                shapeChildren = shapeHier.children()
+                self.assertIn("pSphere1", childrenNames(shapeChildren))
+
+                # Confirm that the sphere's world transform has not changed.  Must
+                # re-create the item, as its path has changed.
+                sphereChildPath = ufe.Path(
+                    [shapeSegment, usdUtils.createUfePathSegment("/pSphere1")])
+                sphereChildItem = ufe.Hierarchy.createItem(sphereChildPath)
+                sphereChildT3d = ufe.Transform3d.transform3d(sphereChildItem)
+
+                sphereWorld = sphereChildT3d.inclusiveMatrix()
+                assertVectorAlmostEqual(
+                    self, sphereWorldListPre, matrixToList(sphereWorld), places=6)
+
+                # Undo.
+                cmds.undo()
+
+                shapeChildren = shapeHier.children()
+                self.assertNotIn("pSphere1", childrenNames(shapeChildren))
+
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testIllegalChild only available in UFE preview version 0.2.13 and greater')
     def testIllegalChild(self):
         '''Parenting an object to a descendant must report an error.'''
