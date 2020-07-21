@@ -73,6 +73,7 @@ void resetVariantToPrimSelection(TreeItem* variantItem)
 	}
 
 	variantItem->setData(qtVarNames, ItemDelegate::kVariantSelectionRole);
+	variantItem->resetVariantSelectionModified();
 }
 
 void resetAllVariants(TreeModel* treeModel, const QModelIndex& parent)
@@ -297,6 +298,8 @@ void TreeModel::uncheckEnableTree()
 {
 	// When unchecking any item we uncheck-enable the entire tree.
 	setChildCheckState(QModelIndex(), TreeItem::CheckState::kUnchecked);
+
+	updateCheckedItemCount();
 }
 
 void TreeModel::checkEnableItem(TreeItem* item)
@@ -318,7 +321,59 @@ void TreeModel::checkEnableItem(TreeItem* item)
 
 		// Then check-disable all the children of the clicked item.
 		setChildCheckState(modelIndex, TreeItem::CheckState::kChecked_Disabled);
+
+		updateCheckedItemCount();
 	}
+}
+
+void TreeModel::updateCheckedItemCount() const
+{
+	int nbChecked = 0, nbVariantsModified = 0;
+	countCheckedItems(QModelIndex(), nbChecked, nbVariantsModified);
+
+	// When the checked items change we will count, and emit signals for, the number of
+	// checked items as well as the number of in-scope modified variants.
+	Q_EMIT checkedStateChanged(nbChecked);
+	Q_EMIT modifiedVariantCountChanged(nbVariantsModified);
+}
+
+void TreeModel::countCheckedItems(const QModelIndex &parent, int& nbChecked, int& nbVariantsModified) const
+{
+	int count = 0;
+	for (int r=0; r<rowCount(parent); ++r)
+	{
+		TreeItem* item;
+
+		QModelIndex checkedChildIndex = this->index(r, kTreeColumn_Load, parent);
+		item = static_cast<TreeItem*>(itemFromIndex(checkedChildIndex));
+
+		const TreeItem::CheckState state = item->checkState();
+		if (TreeItem::CheckState::kChecked == state || 
+			TreeItem::CheckState::kChecked_Disabled == state)
+		{
+			nbChecked++;
+
+			// We are only counting modified variants of in-scope prims
+			QModelIndex variantChildIndex = this->index(r, kTreeColumn_Variants, parent);
+			item = static_cast<TreeItem*>(itemFromIndex(variantChildIndex));
+
+			if (item->variantSelectionModified())
+			{
+				nbVariantsModified++;
+			}			
+		}
+
+		if (hasChildren(checkedChildIndex))
+			countCheckedItems(checkedChildIndex, nbChecked, nbVariantsModified);
+	}
+}
+
+void TreeModel::updateModifiedVariantCount() const
+{
+	int nbChecked = 0, nbVariantsModified = 0;
+	countCheckedItems(QModelIndex(), nbChecked, nbVariantsModified);
+
+	Q_EMIT modifiedVariantCountChanged(nbVariantsModified);
 }
 
 void TreeModel::onItemClicked(TreeItem* item)

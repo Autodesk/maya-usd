@@ -97,6 +97,8 @@ public:
 	//! Only valid for kVariants type.
 	void setVariantSelectionModified();
 
+	void resetVariantSelectionModified() { fVariantSelectionModified = false; }
+
 private:
 	void initializeItem();
 

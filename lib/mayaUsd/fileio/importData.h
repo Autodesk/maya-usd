@@ -115,6 +115,11 @@ public:
 	void setPrimVariantSelections(const PrimVariantSelections& vars);
 	void setPrimVariantSelections(PrimVariantSelections&& vars);
 
+	void setPrimsInScopeCount(int count);
+	void switchedVariantCount(int count);
+	int primsInScopeCount() const;
+	int switchedVariantCount() const;
+
 private:
 	UsdStagePopulationMask		fPopMask;
 	UsdStage::InitialLoadSet	fLoadSet;
@@ -122,6 +127,9 @@ private:
 	PrimVariantSelections		fPrimVariants;
 	std::string					fRootPrimPath;
 	std::string					fFilename;
+
+	int							fPrimsInScopeCount;
+	int							fSwitchedVariantCount;
 };
 
 } // namespace MayaUsd

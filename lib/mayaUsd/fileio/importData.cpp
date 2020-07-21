@@ -28,6 +28,8 @@ constexpr const char* kRootPrimPath = "/";
 ImportData::ImportData()
 	: fLoadSet(UsdStage::InitialLoadSet::LoadAll)
 	, fRootPrimPath(kRootPrimPath)
+	, fPrimsInScopeCount(0)
+	, fSwitchedVariantCount(0)
 {
 }
 
@@ -35,6 +37,8 @@ ImportData::ImportData(const std::string& f)
 	: fLoadSet(UsdStage::InitialLoadSet::LoadAll)
 	, fRootPrimPath(kRootPrimPath)
 	, fFilename(f)
+	, fPrimsInScopeCount(0)
+	, fSwitchedVariantCount(0)	
 {
 }
 
@@ -60,6 +64,8 @@ void ImportData::clearData()
 	fPrimVariants.clear();
 	fFilename.clear();
 	fRootPrimPath = kRootPrimPath;
+	fPrimsInScopeCount = 0;
+	fSwitchedVariantCount =0;	
 }
 
 bool ImportData::empty() const
@@ -124,7 +130,7 @@ void ImportData::setStageInitialLoadSet(UsdStage::InitialLoadSet loadSet)
 
 bool ImportData::hasVariantSelections() const
 {
-	return !(fRootVariants.empty() || fPrimVariants.empty());
+	return !(fRootVariants.empty() && fPrimVariants.empty());
 }
 
 const SdfVariantSelectionMap& ImportData::rootVariantSelections() const
@@ -155,6 +161,26 @@ void ImportData::setPrimVariantSelections(const PrimVariantSelections& vars)
 void ImportData::setPrimVariantSelections(PrimVariantSelections&& vars)
 {
 	fPrimVariants = std::move(vars);
+}
+
+void ImportData::setPrimsInScopeCount(int count)
+{
+	fPrimsInScopeCount = count;
+}
+
+void ImportData::switchedVariantCount(int count)
+{
+	fSwitchedVariantCount = count;
+}
+
+int ImportData::primsInScopeCount() const
+{
+	return fPrimsInScopeCount;
+}
+
+int ImportData::switchedVariantCount() const
+{
+	return fSwitchedVariantCount;
 }
 
 } // namespace MayaUsd
