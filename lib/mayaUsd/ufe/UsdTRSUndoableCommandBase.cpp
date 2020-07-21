@@ -112,18 +112,37 @@ public:
 class XformOpUndo : public XformOpHandler
 {
     VtValue fInitialValue;
+    bool fHadTimeSamples = false;
+    bool fClearValue = false;
+
+    UsdTimeCode time(const UsdTimeCode& t) const
+    {
+        return fHadTimeSamples ? t : UsdTimeCode::Default();
+    }
 
 public:
     XformOpUndo(UsdGeomXformOp op, const UsdTimeCode& t)
         : XformOpHandler(std::move(op))
     {
-        fXformOp.GetAttr().Get(&fInitialValue, t);
+        auto attr = fXformOp.GetAttr();
+        attr.Get(&fInitialValue, t);
+        fHadTimeSamples = attr.GetNumTimeSamples() > 0;
+        fClearValue = attr.GetPropertyStack().size() <= 2;
+    }
+
+    bool doIt(UsdGeomXformable& xformable, VtValue& value,
+        const UsdTimeCode& t) override
+    {
+        return XformOpHandler::doIt(xformable, value, time(t));
     }
 
     bool undoIt(UsdGeomXformable& xformable, const XformOpState& state,
         const UsdTimeCode& t) override
     {
-        return fXformOp.Set(fInitialValue, t);
+        if (!fClearValue)
+            return XformOpHandler::doIt(xformable, fInitialValue, time(t));
+
+        return xformable.GetPrim().RemoveProperty(fXformOp.GetName());
     }
 
     const VtValue& initialValue() const override
@@ -141,6 +160,7 @@ class XformStackUndo : public XformOpHandler
     std::vector<UsdGeomXformOp> fXformStack;
     unsigned fOpIndex;
     bool fResetsXformStack;
+    bool fRemoveStack = true;
 
 public:
 
@@ -151,6 +171,7 @@ public:
         , fXformStack(std::move(other.fXformStack))
         , fOpIndex(other.fOpIndex)
         , fResetsXformStack(other.fResetsXformStack)
+        , fRemoveStack(other.fRemoveStack)
     {}
 
     bool doIt(UsdGeomXformable& xformable, VtValue& value,
@@ -177,7 +198,12 @@ public:
     bool undoIt(UsdGeomXformable& xformable, const XformOpState& state,
         const UsdTimeCode& t) override
     {
-        bool result1 = xformable.SetXformOpOrder(std::move(fXformStack), fResetsXformStack);
+        bool result1;
+        if (!fRemoveStack)
+            result1 = xformable.SetXformOpOrder(std::move(fXformStack), fResetsXformStack);
+        else
+            result1 = xformable.GetPrim().RemoveProperty(UsdGeomTokens->xformOpOrder);
+
         bool result2 = xformable.GetPrim().RemoveProperty(state.fAttribute);
         return result1 && result2;
     }
@@ -189,7 +215,14 @@ public:
     //
     XformStackUndo(UsdGeomXformable& xformable)
     {
+        // Rather than always getting the GetXformOpOrderAttr twice (as GetOrderedXformOps will do so),
+        // use the emptiness as a signal this attribute may have not existed at all.
+        //
         fXformStack = xformable.GetOrderedXformOps(&fResetsXformStack);
+        if (fXformStack.empty()) {
+            auto attr = xformable.GetXformOpOrderAttr();
+            fRemoveStack = !attr.IsValid() || !attr.HasAuthoredValue();
+        }
     }
 
     std::pair<std::unique_ptr<XformOpHandler>,bool>
@@ -252,10 +285,6 @@ public:
         return { std::unique_ptr<XformOpHandler>(
             new XformStackUndo(UsdGeomXformOp(std::move(attr), false, {}), std::move(*this))),
             true };
-    }
-
-    const std::vector<UsdGeomXformOp>& xformOps() const {
-        return fXformStack;
     }
 };
 
