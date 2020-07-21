@@ -56,8 +56,8 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
                                                      const UsdSceneItem::Ptr& child,
                                                      const UsdSceneItem::Ptr& /* pos */) 
     : Ufe::UndoableCommand()
-    , _ufeSrcItem(child)
     , _stage(child->prim().GetStage())
+    , _ufeSrcItem(child)
     , _usdSrcPath(child->prim().GetPath())
 {
     const auto& childPrim = child->prim();
