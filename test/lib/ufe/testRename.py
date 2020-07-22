@@ -25,6 +25,24 @@ import mayaUsd.ufe
 import unittest
 import re
 
+class TestObserver(ufe.Observer):
+    def __init__(self):
+        super(TestObserver, self).__init__()
+        self.unexpectedNotif = 0
+        self.renameNotif = 0
+
+    def __call__(self, notification):
+        if isinstance(notification, (ufe.ObjectAdd, ufe.ObjectDelete)):
+            self.unexpectedNotif += 1
+        if isinstance(notification, ufe.ObjectRename):
+            self.renameNotif += 1
+
+    def notifications(self):
+        return self.renameNotif
+
+    def receivedUnexpectedNotif(self):
+        return self.unexpectedNotif > 0
+
 class RenameTestCase(unittest.TestCase):
     '''Test renaming a UFE scene item and its ancestors.
 
@@ -120,14 +138,14 @@ class RenameTestCase(unittest.TestCase):
         self.assertTrue(stage.GetRootLayer().GetPrimAtPath("/TreeBase"))
 
         # get default prim
-        defualtPrim = stage.GetDefaultPrim()
-        self.assertEqual(defualtPrim.GetName(), 'TreeBase')
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertEqual(defaultPrim.GetName(), 'TreeBase')
 
         # TreeBase has two childern: leavesXform, trunk
-        assert len(defualtPrim.GetChildren()) == 2
+        assert len(defaultPrim.GetChildren()) == 2
 
-        # get prim spec for defualtPrim
-        primspec = stage.GetEditTarget().GetPrimSpecForScenePath(defualtPrim.GetPath());
+        # get prim spec for defaultPrim
+        primspec = stage.GetEditTarget().GetPrimSpecForScenePath(defaultPrim.GetPath());
 
         # set primspec name
         primspec.name = "TreeBase_potato"
@@ -138,9 +156,9 @@ class RenameTestCase(unittest.TestCase):
         # One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
         stage.SetDefaultPrim(renamedPrim);
 
-        # get defualtPrim again
-        defualtPrim = stage.GetDefaultPrim()
-        self.assertEqual(defualtPrim.GetName(), 'TreeBase_potato')
+        # get defaultPrim again
+        defaultPrim = stage.GetDefaultPrim()
+        self.assertEqual(defaultPrim.GetName(), 'TreeBase_potato')
 
         # make sure we have a valid prims after the primspec rename 
         assert stage.GetPrimAtPath('/TreeBase_potato')
@@ -380,3 +398,48 @@ class RenameTestCase(unittest.TestCase):
         cmds.rename(newNameStartingWithDigit)
 
         self.assertFalse(usdPrim.GetName()[0].isdigit())
+
+    def testRenameNotifications(self):
+        '''Rename a USD node and test for the UFE notifications.'''
+
+        # open usdCylinder.ma scene in test-samples
+        mayaUtils.openCylinderScene()
+
+        # clear selection to start off
+        cmds.select(clear=True)
+
+        # select a USD object.
+        mayaPathSegment = mayaUtils.createUfePathSegment('|world|mayaUsdTransform|shape')
+        usdPathSegment = usdUtils.createUfePathSegment('/pCylinder1')
+        cylinderPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
+
+        ufe.GlobalSelection.get().append(cylinderItem)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # set the edit target to the root layer
+        stage.SetEditTarget(stage.GetRootLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        # Create our UFE notification observer
+        ufeObs = TestObserver()
+
+        # We start off with no observers
+        self.assertFalse(ufe.Scene.hasObjectAddObserver(ufeObs))
+        self.assertFalse(ufe.Scene.hasObjectDeleteObserver(ufeObs))
+        self.assertFalse(ufe.Scene.hasObjectPathChangeObserver(ufeObs))
+
+        # Add the UFE observers we want to test
+        ufe.Scene.addObjectAddObserver(ufeObs)
+        ufe.Scene.addObjectDeleteObserver(ufeObs)
+        ufe.Scene.addObjectPathChangeObserver(ufeObs)
+
+        # rename
+        newName = 'pCylinder1_Renamed'
+        cmds.rename(newName)
+
+        # After the rename we should have 1 rename notif and no unexepected notifs.
+        self.assertEqual(ufeObs.notifications(), 1)
+        self.assertFalse(ufeObs.receivedUnexpectedNotif())
