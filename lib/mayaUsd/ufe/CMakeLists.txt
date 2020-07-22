@@ -20,6 +20,8 @@ target_sources(${PROJECT_NAME}
         UsdStageMap.cpp
         UsdTRSUndoableCommandBase.cpp
         UsdTransform3d.cpp
+        UsdTransform3dBase.cpp
+        UsdTransform3dMatrixOp.cpp
         UsdTransform3dHandler.cpp
         UsdTranslateUndoableCommand.cpp
         UsdUndoDeleteCommand.cpp
@@ -74,6 +76,8 @@ set(HEADERS
     UsdStageMap.h
     UsdTRSUndoableCommandBase.h
     UsdTransform3d.h
+    UsdTransform3dBase.h
+    UsdTransform3dMatrixOp.h
     UsdTransform3dHandler.h
     UsdTranslateUndoableCommand.h
     UsdUndoDeleteCommand.h

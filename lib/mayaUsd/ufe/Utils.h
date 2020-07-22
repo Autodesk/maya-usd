@@ -16,8 +16,8 @@
 #pragma once
 
 #include <ufe/path.h>
-#include <ufe/pathSegment.h>
 #include <ufe/scene.h>
+#include <ufe/types.h>
 
 #include <maya/MDagPath.h>
 
@@ -29,7 +29,13 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <cstring>		// memcpy
+
 PXR_NAMESPACE_USING_DIRECTIVE
+
+UFE_NS_DEF {
+class PathSegment;
+}
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -92,6 +98,20 @@ void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previous
 inline
 UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item) {
     return std::dynamic_pointer_cast<UsdSceneItem>(item);
+}
+
+//! Copy the argument matrix into the return matrix.
+inline Ufe::Matrix4d toUfe(const GfMatrix4d& src)
+{
+    Ufe::Matrix4d dst;
+    std::memcpy(&dst.matrix[0][0], src.GetArray(), sizeof(double) * 16);
+    return dst;
+}
+
+//! Copy the argument vector into the return vector.
+inline Ufe::Vector3d toUfe(const GfVec3d& src)
+{
+  return Ufe::Vector3d(src[0], src[1], src[2]);
 }
 
 } // namespace ufe

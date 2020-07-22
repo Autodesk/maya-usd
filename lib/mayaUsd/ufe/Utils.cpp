@@ -35,6 +35,8 @@
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/util.h>
 
+#include <ufe/pathSegment.h>
+
 #include "private/Utils.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
