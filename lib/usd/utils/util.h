@@ -31,7 +31,7 @@ namespace MayaUsdUtils {
 
     //! Return a list of layers in no strength order that can contribute to the argument prim.
     MAYA_USD_UTILS_PUBLIC
-    std::set<SdfLayerHandle> layersWithContribution(const UsdPrim&);
+    std::vector<SdfLayerHandle> layersWithContribution(const UsdPrim&);
 
     //! Check if a layer has any contributions towards the argument prim.
     MAYA_USD_UTILS_PUBLIC

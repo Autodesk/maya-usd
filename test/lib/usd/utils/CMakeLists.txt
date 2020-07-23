@@ -1,4 +1,4 @@
-set(TARGET_NAME DiffCore)
+set(TARGET_NAME Usd_Utils_GTests)
 
 add_executable(${TARGET_NAME})
 
@@ -9,6 +9,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         main.cpp
         test_DiffCore.cpp
+        test_CompositionQueryArc.cpp
 )
 
 # -----------------------------------------------------------------------------
@@ -23,6 +24,10 @@ target_link_libraries(${TARGET_NAME}
     PRIVATE 
         GTest::GTest
         mayaUsdUtils
+        gf
+        sdf
+        usd
+        usdGeom
 )
 
 # -----------------------------------------------------------------------------

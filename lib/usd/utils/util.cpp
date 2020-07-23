@@ -22,8 +22,6 @@
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/stage.h>
 
-#include <set>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace
@@ -95,16 +93,15 @@ defPrimSpecLayer(const UsdPrim& prim)
     return defLayer;
 }
 
-std::set<SdfLayerHandle>
+std::vector<SdfLayerHandle>
 layersWithContribution(const UsdPrim& prim)
 {
-    // get the list of all the specs that can 
-    // contribute to the final composed prim
-    const auto& primStack = prim.GetPrimStack();
+    UsdPrimCompositionQuery query(prim);
 
-    std::set<SdfLayerHandle> layersWithContribution;
-    for (auto primSpec : primStack) {
-        layersWithContribution.insert(primSpec->GetLayer());
+    std::vector<SdfLayerHandle> layersWithContribution;
+
+    for (const auto& arc : query.GetCompositionArcs()) {
+        layersWithContribution.emplace_back(arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer);
     }
 
     return layersWithContribution;
