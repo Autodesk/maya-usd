@@ -33,10 +33,7 @@
 
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
-
-#if UFE_PREVIEW_VERSION_NUM >= 2017
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
-#endif
 
 namespace {
 
@@ -92,63 +89,6 @@ private:
     const std::string fOldSelection;
     const std::string fNewSelection;
 };
-
-#if UFE_PREVIEW_VERSION_NUM < 2017
-//! \brief Undoable command for add new prim
-class AddNewPrimUndoableCommand : public Ufe::UndoableCommand
-{
-public:
-    AddNewPrimUndoableCommand(const MayaUsd::ufe::UsdSceneItem::Ptr& usdSceneItem,
-                              const Ufe::ContextOps::ItemPath& itemPath)
-    : Ufe::UndoableCommand()
-    {
-        // First get the stage from the proxy shape.
-        auto ufePath = usdSceneItem->path();
-        auto segments = ufePath.getSegments();
-        auto dagSegment = segments[0];
-        _stage = MayaUsd::ufe::getStage(Ufe::Path(dagSegment));
-        if (_stage) {
-            // Rename the new prim for uniqueness, if needed.
-            // When we have a gateway type node, the prim we'll be adding will be
-            // in a different runtime (USD vs Maya). So technically just appending
-            // itemPath[1] isn't correct. But in this case it is only used by
-            // uniqueChildName() which just takes the back of the path for child
-            //  name, so it's fine.
-            Ufe::Path newUfePath = ufePath + (itemPath[1] + std::to_string(1));
-            auto newPrimName = uniqueChildName(usdSceneItem, newUfePath);
-
-            // Build (and store) the path for the new prim with the unique name.
-            PXR_NS::SdfPath usdItemPath = usdSceneItem->prim().GetPath();
-            _primPath = usdItemPath.AppendChild(PXR_NS::TfToken(newPrimName));
-
-            // The type of prim we were asked to create.
-            // Note: "Def" means create typeless prim.
-            _primToken = (itemPath[1] == kUSDDefPrimItem) ? TfToken() : TfToken(itemPath[1]);
-        }
-    }
-
-    void undo() override
-    {
-        if (_stage) {
-            _stage->RemovePrim(_primPath);
-        }
-    }
-
-    void redo() override
-    {
-        if (_stage) {
-            auto newPrim = _stage->DefinePrim(_primPath, _primToken);
-            if (!newPrim.IsValid())
-                TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
-        }
-    }
-
-private:
-    PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath _primPath;
-    PXR_NS::TfToken _primToken;
-};
-#endif
 
 const char* selectUSDFileScript = R"(
 global proc string SelectUSDFileForAddReference()
@@ -417,11 +357,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 
         // At this point we know we have 2 arguments to execute the operation.
         // itemPath[1] contains the new prim type to create.
-#if UFE_PREVIEW_VERSION_NUM < 2017
-        return std::make_shared<AddNewPrimUndoableCommand>(fItem, itemPath);
-#else
         return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
-#endif        
     }
     else if (itemPath[0] == kUSDLayerEditorItem) {
         // Just open the editor directly and return null so we don't have undo.

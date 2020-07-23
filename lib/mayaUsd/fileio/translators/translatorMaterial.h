@@ -34,23 +34,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \brief Provides helper functions for reading UsdShadeMaterial
 struct UsdMayaTranslatorMaterial
 {
-    /// Reads \p material according to \p shadingMode . Some shading modes may
-    /// want to know the \p boundPrim. This returns an MObject that is the Maya
-    /// shadingEngine that corresponds to \p material.
+    /// Reads \p material according to the shading mode found in \p jobArguments. Some shading modes
+    /// may want to know the \p boundPrim. This returns an MObject that is the Maya shadingEngine
+    /// that corresponds to \p material.
     MAYAUSD_CORE_PUBLIC
     static MObject Read(
-            const TfToken& shadingMode,
+            const UsdMayaJobImportArgs& jobArguments,
             const UsdShadeMaterial& material,
             const UsdGeomGprim& boundPrim,
             UsdMayaPrimReaderContext* context);
 
-    /// Given a \p prim, assigns a material to it according to \p shadingMode.
-    /// This will see which UsdShadeMaterial is bound to \p prim. If the
-    /// material has not been read already, it will read it.
-    /// The created/retrieved shadingEngine will be assigned to \p shapeObj.
+    /// Given a \p prim, assigns a material to it according to the shading mode found in
+    /// \p jobArguments. This will see which UsdShadeMaterial is bound to \p prim. If the material
+    /// has not been read already, it will read it. The created/retrieved shadingEngine will be
+    /// assigned to \p shapeObj.
     MAYAUSD_CORE_PUBLIC
     static bool AssignMaterial(
-            const TfToken& shadingMode,
+            const UsdMayaJobImportArgs& jobArguments,
             const UsdGeomGprim& prim,
             MObject shapeObj,
             UsdMayaPrimReaderContext* context);

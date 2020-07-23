@@ -9,7 +9,7 @@ target_sources(${PROJECT_NAME}
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-list(APPEND shaderFragments_xmls
+list(APPEND SHADERFRAGMENTS_XMLS
     # Copied from pxrUsdPreviewSurface with change to support multiple lights
     Float4ToFloatW.xml
     Float4ToFloatX.xml
@@ -50,22 +50,22 @@ list(APPEND shaderFragments_xmls
     plugInfo.json
 )
 
-set(headers
+set(HEADERS
     shaderFragments.h
 )
 
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/vp2ShaderFragments)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR render/vp2ShaderFragments)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${shaderFragments_xmls}
+install(FILES ${SHADERFRAGMENTS_XMLS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd/mayaUsd_ShaderFragments/resources
 )
 
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/vp2ShaderFragments
 )

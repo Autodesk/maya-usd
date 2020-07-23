@@ -27,15 +27,16 @@ import unittest
 from maya import cmds
 from maya import standalone
 
+import fixturesUtils
 
-class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
+class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
+        inputPath = fixturesUtils.setUpClass(__file__)
 
-        test_dir = os.path.join(os.path.abspath('.'),
-                                "PxrUsdPreviewSurfaceExportTest")
+        test_dir = os.path.join(inputPath,
+                                "UsdExportImportRoundtripPreviewSurface")
 
         cmds.workspace(test_dir, o=True)
 
@@ -81,7 +82,8 @@ class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
         cmds.connectAttr(file_node + ".outColor",
                          material_node + ".diffuseColor", f=True)
 
-        txfile = "PxrUsdPreviewSurfaceExportTest/Brazilian_rosewood_pxr128.png"
+        txfile = "/".join(["UsdExportImportRoundtripPreviewSurface",
+                           "Brazilian_rosewood_pxr128.png"])
         cmds.setAttr(file_node+".fileTextureName", txfile, type="string")
         cmds.setAttr(file_node + ".defaultColor", 0.5, 0.25, 0.125,
                      type="double3")

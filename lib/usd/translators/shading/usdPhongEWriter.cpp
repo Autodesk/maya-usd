@@ -15,8 +15,9 @@
 //
 #include "usdReflectWriter.h"
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MStatus.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -25,52 +26,50 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MStatus.h>
+
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 #include <cmath>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdTranslators_PhongEWriter : public PxrUsdTranslators_ReflectWriter
-{
-    typedef PxrUsdTranslators_ReflectWriter baseClass;
+class PxrUsdTranslators_PhongEWriter : public PxrUsdTranslators_ReflectWriter {
+    typedef PxrUsdTranslators_ReflectWriter BaseClass;
 
-    public:
-        PxrUsdTranslators_PhongEWriter(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrUsdTranslators_PhongEWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        void Write(const UsdTimeCode& usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 
-        TfToken GetShadingAttributeNameForMayaAttrName(
-                const TfToken& mayaAttrName) override;
+    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 };
 
-PXRUSDMAYA_REGISTER_WRITER(
-    phongE,
-    PxrUsdTranslators_PhongEWriter);
+PXRUSDMAYA_REGISTER_WRITER(phongE, PxrUsdTranslators_PhongEWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    // UsdPreviewSurface
+    // Maya
     (roughness)
 );
 
 PxrUsdTranslators_PhongEWriter::PxrUsdTranslators_PhongEWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx)
-    : PxrUsdTranslators_ReflectWriter(depNodeFn, usdPath, jobCtx) {}
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : PxrUsdTranslators_ReflectWriter(depNodeFn, usdPath, jobCtx)
+{
+}
 
 /* virtual */
-void
-PxrUsdTranslators_PhongEWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_PhongEWriter::Write(const UsdTimeCode& usdTime)
 {
-    baseClass::Write(usdTime);
+    BaseClass::Write(usdTime);
 
     MStatus status;
 
@@ -91,29 +90,20 @@ PxrUsdTranslators_PhongEWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->roughness,
         shaderSchema,
-        _tokens->roughness,
+        PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName,
         usdTime);
 }
 
 /* virtual */
 TfToken
-PxrUsdTranslators_PhongEWriter::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+PxrUsdTranslators_PhongEWriter::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
-    if (!_usdPrim) {
-        return TfToken();
-    }
-
     if (mayaAttrName == _tokens->roughness) {
-        return TfToken(
-                    TfStringPrintf(
-                        "%s%s",
-                        UsdShadeTokens->inputs.GetText(),
-                        _tokens->roughness.GetText()).c_str());
-    } else {
-        return baseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
+        return UsdShadeUtils::GetFullName(
+            PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, UsdShadeAttributeType::Input);
     }
-
+    
+    return BaseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

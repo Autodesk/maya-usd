@@ -1,6 +1,6 @@
 set(TARGET_NAME IMPORT_EXPORT_TEST)
 
-set(test_script_files
+set(TEST_SCRIPT_FILES
     testUsdExportAsClip.py
     testUsdExportCamera.py
     testUsdExportColorSets.py
@@ -29,6 +29,7 @@ set(test_script_files
     ## XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdExportRfMLight.py
     testUsdExportSelection.py
+    testUsdExportSelectionHierarchy.py
     testUsdExportShadingInstanced.py
     testUsdExportShadingModeDisplayColor.py
     testUsdExportShadingModePxrRis.py
@@ -47,6 +48,7 @@ set(test_script_files
     testUsdImportSessionLayer.py
     testUsdImportShadingModeDisplayColor.py
     testUsdImportShadingModePxrRis.py
+    testUsdExportImportRoundtripPreviewSurface.py
     testUsdImportSkeleton.py
     testUsdImportXforms.py
 )
@@ -60,7 +62,7 @@ mayaUsd_copyDirectory(${TARGET_NAME}
     EXCLUDE "*.txt"
 )
 
-foreach(script ${test_script_files})
+foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}

@@ -394,10 +394,6 @@ TfToken
 PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
         const TfToken& mayaAttrName)
 {
-    if (!_usdPrim) {
-        return TfToken();
-    }
-
     TfToken usdAttrName;
     SdfValueTypeName usdTypeName = SdfValueTypeNames->Float;
 
@@ -426,12 +422,7 @@ PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
 
         shaderSchema.CreateOutput(usdAttrName, usdTypeName);
 
-        usdAttrName =
-            TfToken(
-                TfStringPrintf(
-                    "%s%s",
-                    UsdShadeTokens->outputs.GetText(),
-                    usdAttrName.GetText()).c_str());
+        usdAttrName = UsdShadeUtils::GetFullName(usdAttrName, UsdShadeAttributeType::Output);
     }
 
     return usdAttrName;

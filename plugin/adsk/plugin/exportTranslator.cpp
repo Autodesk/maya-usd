@@ -52,6 +52,12 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
                  const MString &optionsString,
                  MPxFileTranslator::FileAccessMode mode ) {
 
+    // If we are in neither of these modes then there won't be anything to do
+    if (mode != MPxFileTranslator::kExportActiveAccessMode && 
+        mode != MPxFileTranslator::kExportAccessMode) {
+        return MS::kSuccess;
+    }
+
     std::string fileName(file.fullName().asChar(), file.fullName().length());
     VtDictionary userArgs;
     bool exportAnimation = false;
@@ -123,24 +129,9 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
     }
 
     MSelectionList objSelList;
-    if(mode == MPxFileTranslator::kExportActiveAccessMode) {
-        // Get selected objects
-        MGlobal::getActiveSelectionList(objSelList);
-    } else if(mode == MPxFileTranslator::kExportAccessMode) {
-        // Get all objects at DAG root
-        objSelList.add("|*", true);
-    }
-
-    // Convert selection list to jobArgs dagPaths
     UsdMayaUtil::MDagPathSet dagPaths;
-    unsigned int len = objSelList.length();
-    for (unsigned int i=0; i < len; i++) {
-        MDagPath dagPath;
-        if (objSelList.getDagPath(i, dagPath) == MS::kSuccess) {
-            dagPaths.insert(dagPath);
-        }
-    }
-    
+    GetFilteredSelectionToExport((mode == MPxFileTranslator::kExportActiveAccessMode), objSelList, dagPaths);
+
     if (dagPaths.empty()) {
         TF_WARN("No DAG nodes to export. Skipping.");
         return MS::kSuccess;
@@ -151,7 +142,7 @@ UsdMayaExportTranslator::writer(const MFileObject &file,
     PXR_NS::UsdMayaJobExportArgs jobArgs = PXR_NS::UsdMayaJobExportArgs::CreateFromDictionary(
             userArgs, dagPaths, timeSamples);
     
-    len = filteredTypes.length();
+    unsigned int len = filteredTypes.length();
     for (unsigned int i=0; i < len; ++i) {
         jobArgs.AddFilteredTypeName(filteredTypes[i].asChar());
     }

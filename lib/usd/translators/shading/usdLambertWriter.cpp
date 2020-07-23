@@ -15,8 +15,9 @@
 //
 #include "usdLambertWriter.h"
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MStatus.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -25,17 +26,16 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MStatus.h>
+
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 #include <cmath>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(
-    lambert,
-    PxrUsdTranslators_LambertWriter);
+PXRUSDMAYA_REGISTER_WRITER(lambert, PxrUsdTranslators_LambertWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -45,26 +45,20 @@ TF_DEFINE_PRIVATE_TOKENS(
     (diffuse)
     (incandescence)
     (normalCamera)
-
-    // UsdPreviewSurface
-    (diffuseColor)
-    (emissiveColor)
-    (normal)
-    (roughness)
-    (useSpecularWorkflow)
 );
 
 PxrUsdTranslators_LambertWriter::PxrUsdTranslators_LambertWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx)
-    : baseClass(depNodeFn, usdPath, jobCtx) {}
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : BaseClass(depNodeFn, usdPath, jobCtx)
+{
+}
 
 /* virtual */
-void
-PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
 {
-    baseClass::Write(usdTime);
+    BaseClass::Write(usdTime);
 
     MStatus status;
 
@@ -85,7 +79,7 @@ PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->color,
         shaderSchema,
-        _tokens->diffuseColor,
+        PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName,
         usdTime,
         _tokens->diffuse);
 
@@ -93,7 +87,7 @@ PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->incandescence,
         shaderSchema,
-        _tokens->emissiveColor,
+        PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName,
         usdTime);
 
     // Exported, but unsupported in hdStorm.
@@ -101,54 +95,46 @@ PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         depNodeFn,
         _tokens->normalCamera,
         shaderSchema,
-        _tokens->normal,
+        PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
         usdTime);
 
     WriteSpecular(usdTime);
 }
 
 /* virtual */
-void
-PxrUsdTranslators_LambertWriter::WriteSpecular(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_LambertWriter::WriteSpecular(const UsdTimeCode& usdTime)
 {
     // No specular on plain Lambert
     UsdShadeShader shaderSchema(_usdPrim);
 
-    shaderSchema.CreateInput(
-        _tokens->roughness,
-        SdfValueTypeNames->Float).Set(1.0f, usdTime);
+    shaderSchema
+        .CreateInput(PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, SdfValueTypeNames->Float)
+        .Set(1.0f, usdTime);
 
-    shaderSchema.CreateInput(
-        _tokens->useSpecularWorkflow,
-        SdfValueTypeNames->Int).Set(0, usdTime);
+    // Using specular workflow, but with default black specular color.
+    shaderSchema
+        .CreateInput(
+            PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
+        .Set(1, usdTime);
 }
 
 /* virtual */
 TfToken
-PxrUsdTranslators_LambertWriter::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+PxrUsdTranslators_LambertWriter::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
-    if (!_usdPrim) {
-        return TfToken();
-    }
-
-    TfToken usdPortName;
+    TfToken usdAttrName;
 
     if (mayaAttrName == _tokens->color) {
-        usdPortName =_tokens->diffuseColor;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName;
     } else if (mayaAttrName == _tokens->incandescence) {
-        usdPortName =_tokens->emissiveColor;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName;
     } else if (mayaAttrName == _tokens->normalCamera) {
-        usdPortName =_tokens->normal;
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->NormalAttrName;
     } else {
-        return baseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
+        return BaseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
     }
 
-    return TfToken(
-                TfStringPrintf(
-                    "%s%s",
-                    UsdShadeTokens->inputs.GetText(),
-                    usdPortName.GetText()).c_str());
+    return UsdShadeUtils::GetFullName(usdAttrName, UsdShadeAttributeType::Input);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

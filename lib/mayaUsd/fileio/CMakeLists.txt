@@ -27,7 +27,7 @@ target_sources(${PROJECT_NAME}
         writeJobContext.cpp
 )
 
-set(headers
+set(HEADERS
     fallbackPrimReader.h
     functorPrimReader.h
     functorPrimWriter.h
@@ -55,12 +55,12 @@ set(headers
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR fileio)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR fileio)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/fileio
 )
 

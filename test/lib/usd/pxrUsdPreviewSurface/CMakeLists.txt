@@ -1,10 +1,9 @@
 set(TARGET_NAME MAYAUSD_NODES_TEST)
 
 # Unit test scripts.
-set(test_script_files
+set(TEST_SCRIPT_FILES
     testPxrUsdPreviewSurfaceDraw.py
     testPxrUsdPreviewSurfaceExport.py
-    testPxrUsdPreviewSurfaceExportImportRoundtrip.py
 )
 
 # copy tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
@@ -17,7 +16,7 @@ mayaUsd_copyDirectory(${TARGET_NAME}
     EXCLUDE "CMakeLists.txt"
 )
 
-foreach(script ${test_script_files})
+foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

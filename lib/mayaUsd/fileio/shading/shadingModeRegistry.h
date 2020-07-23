@@ -96,12 +96,20 @@ private:
 };
 
 #define DEFINE_SHADING_MODE_IMPORTER(name, contextName) \
-static MObject _ShadingModeImporter_##name(UsdMayaShadingModeImportContext*); \
+static MObject _ShadingModeImporter_##name(UsdMayaShadingModeImportContext*, const UsdMayaJobImportArgs&); \
 TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeImportContext, name) {\
     UsdMayaShadingModeRegistry::GetInstance().RegisterImporter(#name, &_ShadingModeImporter_##name); \
 }\
-MObject _ShadingModeImporter_##name(UsdMayaShadingModeImportContext* contextName)
+MObject _ShadingModeImporter_##name(UsdMayaShadingModeImportContext* contextName, \
+                                    const UsdMayaJobImportArgs&)
 
+#define DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(name, contextName, jobArgumentsName) \
+static MObject _ShadingModeImporter_##name(UsdMayaShadingModeImportContext*, const UsdMayaJobImportArgs&); \
+TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeImportContext, name) {\
+    UsdMayaShadingModeRegistry::GetInstance().RegisterImporter(#name, &_ShadingModeImporter_##name); \
+}\
+MObject _ShadingModeImporter_##name(UsdMayaShadingModeImportContext* contextName, \
+                                    const UsdMayaJobImportArgs& jobArgumentsName)
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

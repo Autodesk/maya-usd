@@ -24,10 +24,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Shader writer for exporting Maya's Lambert shading nodes to USD.
+/// Shader writer for exporting the Lambert part of a Maya shading node to USD.
+/// Will be used by Blinn, Phong, and PhongE to export the Lambertian attributes.
 class PxrUsdTranslators_LambertWriter : public PxrUsdTranslators_MaterialWriter
 {
-    typedef PxrUsdTranslators_MaterialWriter baseClass;
+    typedef PxrUsdTranslators_MaterialWriter BaseClass;
 
     public:
         PxrUsdTranslators_LambertWriter(
@@ -36,10 +37,12 @@ class PxrUsdTranslators_LambertWriter : public PxrUsdTranslators_MaterialWriter
                 UsdMayaWriteJobContext& jobCtx);
 
         void Write(const UsdTimeCode& usdTime) override;
-        virtual void WriteSpecular(const UsdTimeCode& usdTime);
 
         TfToken GetShadingAttributeNameForMayaAttrName(
                 const TfToken& mayaAttrName) override;
+
+    protected:
+        virtual void WriteSpecular(const UsdTimeCode& usdTime);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

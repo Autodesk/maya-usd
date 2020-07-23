@@ -49,7 +49,6 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MPoint.h>
-#include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
@@ -74,6 +73,39 @@
 #include <mayaUsd/utils/colorSpace.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace {
+    bool shouldAddToSet(const MDagPath& toAdd, const UsdMayaUtil::MDagPathSet& dagPaths)
+    // Utility function to check if an object should be added to the set of objects to
+    // export.  An object should not be added if it's invalid, or if any of it's parent
+    // objects are already in the set.
+    {
+        if (!toAdd.isValid())
+            return false;
+
+        MStatus status = MS::kSuccess;
+        bool pathIsValid = true;
+        MDagPath dp = toAdd;
+
+        UsdMayaUtil::MDagPathSet::const_iterator end = dagPaths.end();
+
+        // Travel up the hierarchy looking for a parent object that is already in the set.
+        // That is our only reason to return false.  Not finding any ancestors in the set
+        // will eventually hit the world root, which will be an invalid path and in that case
+        // we just exit the loop and return true.
+        while (pathIsValid && status == MS::kSuccess)
+        {
+            UsdMayaUtil::MDagPathSet::const_iterator dpIter = dagPaths.find(dp);
+            if (dpIter != end)
+                return false;
+
+            status = dp.pop();
+            pathIsValid = dp.isValid();
+        }
+
+        return true;
+    }
+}
 
 double
 UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(
@@ -2100,4 +2132,49 @@ UsdMayaUtil::nameToDagPath(const std::string& name)
     MStatus status = selection.getDagPath(0, dag);
     CHECK_MSTATUS(status);
     return dag;
+}
+
+void 
+UsdMayaUtil::GetFilteredSelectionToExport(bool exportSelected, MSelectionList& objectList, UsdMayaUtil::MDagPathSet& dagPaths)
+{
+    dagPaths.clear();
+
+    bool filterInput = true;
+
+    // There are three cases depending on the input:
+    // If exportSelected is true then we will grab the active selection
+    // If objectList is empty then we will grab all immediate children of the world root.
+    // Else there was a populated list of objects to use, most likely passed explicitly to the command.
+    if (exportSelected) {
+        MGlobal::getActiveSelectionList(objectList);
+    } else if (objectList.isEmpty()) {
+        objectList.add("|*", true);
+        // By construction, the list will only include the single top level objects
+        // when we get the input list with |*, so no need to filter selection.
+        filterInput = false;
+    }
+
+    unsigned int nbObj = objectList.length();
+    if (0 == nbObj) {
+        return;
+    }
+
+    MStatus status;
+
+    // Easiest way to filter by hierarchy is to:
+    // 1. Put the input into a set that is sorted by distance from the world root.
+    // 2. For each input object we iterate up its hierarchy checking if any parent is in the set.
+    // 3. If no parent is in the set then we can add it.
+    UsdMayaUtil::MDagPathSet sortedInput;
+    for (unsigned int i=0; i < nbObj; i++) {
+        MDagPath dagPath;
+        status = objectList.getDagPath(i, dagPath);
+        if (status == MS::kSuccess)
+            sortedInput.emplace(dagPath);
+    }
+
+    for(auto pIter : sortedInput) {
+        if (!filterInput || shouldAddToSet(pIter, dagPaths))
+            dagPaths.emplace(pIter);
+    }
 }

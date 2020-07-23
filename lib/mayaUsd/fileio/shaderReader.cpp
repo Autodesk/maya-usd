@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
 //
 #include "shaderReader.h"
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MString.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -24,8 +24,8 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/fileio/primReaderArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MString.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,9 +35,7 @@ UsdMayaShaderReader::UsdMayaShaderReader(const UsdMayaPrimReaderArgs& readArgs)
 }
 
 /* virtual */
-TfToken
-UsdMayaShaderReader::GetMayaNameForUsdAttrName(
-        const TfToken& usdAttrName)
+TfToken UsdMayaShaderReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
     return TfToken();
 }

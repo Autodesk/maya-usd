@@ -60,7 +60,7 @@ public:
 
     void Populate() override {
         GetDelegate()->InsertRprim(
-            HdPrimTypeTokens->basisCurves, GetID(), HdChangeTracker::AllDirty);
+            HdPrimTypeTokens->basisCurves, GetID());
     }
 
     void CreateCallbacks() override {

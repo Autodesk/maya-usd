@@ -2,7 +2,7 @@ set(TARGET_NAME UFE_TEST)
 
 # unit test scripts.  Note that testTRSBase.py is not a test case, but rather
 # a module providing a base class for other tests.
-set(test_script_files
+set(TEST_SCRIPT_FILES
     testDeleteCmd.py
     testMatrices.py
     testMayaPickwalk.py
@@ -11,12 +11,12 @@ set(test_script_files
     testUfePythonImport.py
 )
 
-set(test_support_files
+set(TEST_SUPPORT_FILES
     testTRSBase.py
 )
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
-    list(APPEND test_script_files
+    list(APPEND TEST_SCRIPT_FILES
         testGroupCmd.py
         testAttribute.py
         testAttributes.py
@@ -31,7 +31,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testTransform3dTranslate.py
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
-        list(APPEND test_script_files
+        list(APPEND TEST_SCRIPT_FILES
             testContextOps.py
         )
     endif()
@@ -47,7 +47,7 @@ mayaUsd_copyDirectory(${TARGET_NAME}
     EXCLUDE "*.txt"
 )
 
-foreach(script ${test_script_files})
+foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

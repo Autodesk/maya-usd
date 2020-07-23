@@ -30,11 +30,6 @@ UsdMayaPrimReaderArgs::GetUsdPrim() const
 {
     return _prim;
 }
-const TfToken&
-UsdMayaPrimReaderArgs::GetShadingMode() const
-{
-    return _jobArgs.shadingMode;
-}
 
 GfInterval
 UsdMayaPrimReaderArgs::GetTimeInterval() const

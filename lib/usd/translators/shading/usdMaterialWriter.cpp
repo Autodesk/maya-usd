@@ -35,6 +35,7 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
@@ -51,12 +52,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-
-    // XXX: We duplicate these tokens here rather than create a dependency on
-    // usdImaging in case the plugin is being built with imaging disabled.
-    // If/when they move out of usdImaging to a place that is always available,
-    // they should be pulled from there instead.
-    (UsdPreviewSurface)
 
     // Maya material nodes attribute names
     (outColor)
@@ -78,7 +73,7 @@ PxrUsdTranslators_MaterialWriter::PxrUsdTranslators_MaterialWriter(
     }
 
     UsdAttribute idAttr = 
-        shaderSchema.CreateIdAttr(VtValue(_tokens->UsdPreviewSurface));
+        shaderSchema.CreateIdAttr(VtValue(UsdImagingTokens->UsdPreviewSurface));
 
     _usdPrim = shaderSchema.GetPrim();
     if (!TF_VERIFY(
@@ -169,14 +164,7 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
                     /* wantNetworkedPlug = */ true,
                     &status);
             if (status == MS::kSuccess) {
-                VtValue vtScale =
-                    UsdMayaWriteUtil::GetVtValue(
-                        scalingPlug,
-                        SdfValueTypeNames->Float);
-
-                if (vtScale.IsHolding<float>()) {
-                    colorScale = vtScale.UncheckedGet<float>();
-                }
+                colorScale = scalingPlug.asFloat();
             }
 
             value = value.UncheckedGet<GfVec3f>() * colorScale;
@@ -193,23 +181,12 @@ TfToken
 PxrUsdTranslators_MaterialWriter::GetShadingAttributeNameForMayaAttrName(
         const TfToken& mayaAttrName)
 {
-    if (!_usdPrim) {
-        return TfToken();
+    if (mayaAttrName == _tokens->outColor) {
+        return UsdShadeUtils::GetFullName(UsdShadeTokens->surface, UsdShadeAttributeType::Output);
     }
 
-    if (mayaAttrName == _tokens->outColor) {
-        return TfToken(
-                    TfStringPrintf(
-                        "%s%s",
-                        UsdShadeTokens->outputs.GetText(),
-                        UsdShadeTokens->surface.GetText()).c_str());
-    } else {
-        TF_VERIFY(
-            false,
-            "Unsupported Maya attribute '%s'\n",
-            mayaAttrName.GetText());
-        return TfToken();
-    }
+    TF_CODING_ERROR("Unsupported Maya attribute '%s'\n", mayaAttrName.GetText());
+    return TfToken();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -74,8 +74,7 @@ public:
     void Populate() override {
         if (_isPopulated) { return; }
         GetDelegate()->InsertRprim(
-            HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty,
-            GetInstancerID());
+            HdPrimTypeTokens->mesh, GetID(), GetInstancerID());
         _isPopulated = true;
     }
 

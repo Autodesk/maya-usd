@@ -44,11 +44,11 @@ function(mayaUsd_append_path_to_env_var envVar pathToAppend)
     file(TO_NATIVE_PATH "${pathToAppend}" nativePathToAppend)
     if(DEFINED ENV{${envVar}})
         if(IS_WINDOWS)
-            set(newPath "$ENV{${envVar}};${nativePathToAppend}")
+            set(NEWPATH "$ENV{${envVar}};${nativePathToAppend}")
         else()
-            set(newPath "$ENV{${envVar}}:${nativePathToAppend}")
+            set(NEWPATH "$ENV{${envVar}}:${nativePathToAppend}")
         endif()
-        set(ENV{${envVar}} "${newPath}")
+        set(ENV{${envVar}} "${NEWPATH}")
     else()
         set(ENV{${envVar}} "${nativePathToAppend}")
     endif()
@@ -62,8 +62,8 @@ endfunction()
 #
 function(mayaUsd_find_python_module module)
     string(TOUPPER ${module} module_upper)
-    set(module_found "${module_upper}_FOUND")
-    if(NOT ${module_found})
+    set(MODULE_FOUND "${module_upper}_FOUND")
+    if(NOT ${MODULE_FOUND})
         if(ARGC GREATER 1 AND ARGV1 STREQUAL "REQUIRED")
             set(${module}_FIND_REQUIRED TRUE)
         endif()
@@ -73,10 +73,10 @@ function(mayaUsd_find_python_module module)
             OUTPUT_VARIABLE _${module}_location
             ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
         if(NOT _${module}_status)
-            set(${module_found} ${_${module}_location} CACHE STRING
+            set(${MODULE_FOUND} ${_${module}_location} CACHE STRING
                 "Location of Python module ${module}")
         endif(NOT _${module}_status)
-    endif(NOT ${module_found})
+    endif()
 endfunction()
 
 # Initialize a variable to accumulate an rpath.  The origin is the
@@ -117,20 +117,20 @@ function(mayaUsd_add_rpath rpathRef target)
         endif()
     endif()
     file(TO_CMAKE_PATH "${target}" target)
-    set(new_rpath "${${rpathRef}}")
-    list(APPEND new_rpath "$ORIGIN/${target}")
-    set(${rpathRef} "${new_rpath}" PARENT_SCOPE)
+    set(NEW_RPATH "${${rpathRef}}")
+    list(APPEND NEW_RPATH "$ORIGIN/${target}")
+    set(${rpathRef} "${NEW_RPATH}" PARENT_SCOPE)
 endfunction()
 
 function(mayaUsd_install_rpath rpathRef NAME)
     # Get and remove the origin.
     list(GET ${rpathRef} 0 origin)
-    set(rpath ${${rpathRef}})
-    list(REMOVE_AT rpath 0)
+    set(RPATH ${${rpathRef}})
+    list(REMOVE_AT RPATH 0)
 
     # Canonicalize and uniquify paths.
-    set(final "")
-    foreach(path ${rpath})
+    set(FINAL "")
+    foreach(path ${RPATH})
         # Replace $ORIGIN with @loader_path
         if(IS_MACOSX)
             if("${path}/" MATCHES "^[$]ORIGIN/")
@@ -143,15 +143,15 @@ function(mayaUsd_install_rpath rpathRef NAME)
         string(REGEX REPLACE "/+$" "" path "${path}")
 
         # Ignore paths we already have.
-        if (NOT ";${final};" MATCHES ";${path};")
-            list(APPEND final "${path}")
+        if (NOT ";${FINAL};" MATCHES ";${path};")
+            list(APPEND FINAL "${path}")
         endif()
     endforeach()
 
     set_target_properties(${NAME}
         PROPERTIES
             INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "${final}"
+            INSTALL_RPATH "${FINAL}"
     )
 endfunction()
 
@@ -176,36 +176,36 @@ function(mayaUsd_promoteHeaderList)
     )
 
     if (PREFIX_HEADERS)
-        set(headerFiles ${PREFIX_HEADERS})
+        set(HEADERFILES ${PREFIX_HEADERS})
     else()
         message(FATAL_ERROR "HEADERS keyword is not specified.")
     endif()
 
-    set(baseDir ${CMAKE_BINARY_DIR}/include)
+    set(BASEDIR ${CMAKE_BINARY_DIR}/include)
     if (PREFIX_BASEDIR)
-        set(baseDir ${baseDir}/${PREFIX_BASEDIR})
+        set(BASEDIR ${BASEDIR}/${PREFIX_BASEDIR})
     else()
-        set(baseDir ${baseDir}/mayaUsd)
+        set(BASEDIR ${BASEDIR}/mayaUsd)
     endif()
 
     if (PREFIX_SUBDIR)
-        set(baseDir ${baseDir}/${PREFIX_SUBDIR})
+        set(BASEDIR ${BASEDIR}/${PREFIX_SUBDIR})
     endif()
 
-    foreach(header ${headerFiles})
-        set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${baseDir}/${header})
+    foreach(header ${HEADERFILES})
+        set(SRCFILE ${CMAKE_CURRENT_SOURCE_DIR}/${header})
+        set(DSTFILE ${BASEDIR}/${header})
 
-        set(content "#pragma once\n#include \"${srcFile}\"\n")
+        set(CONTENT "#pragma once\n#include \"${SRCFILE}\"\n")
 
-        if (NOT EXISTS ${dstFile})
-            message(STATUS "promoting: " ${srcFile})
-            file(WRITE ${dstFile} "${content}")
+        if (NOT EXISTS ${DSTFILE})
+            message(STATUS "promoting: " ${SRCFILE})
+            file(WRITE ${DSTFILE} "${CONTENT}")
         else()
-            file(READ ${dstFile} oldContent)
-            if (NOT "${content}" STREQUAL "${oldContent}")
-                message(STATUS "Promoting ${srcfile}")
-                file(WRITE ${dstFile} "${content}")
+            file(READ ${DSTFILE} oldContent)
+            if (NOT "${CONTENT}" STREQUAL "${oldContent}")
+                message(STATUS "Promoting ${SRCFILE}")
+                file(WRITE ${DSTFILE} "${CONTENT}")
             endif()
         endif()
     endforeach()
@@ -228,27 +228,27 @@ function(mayaUsd_copyFiles target)
     )
 
     if(PREFIX_DESTINATION)
-        set(destination ${PREFIX_DESTINATION})
+        set(DESTINATION ${PREFIX_DESTINATION})
     else()
         message(FATAL_ERROR "DESTINATION keyword is not specified.")
     endif()
 
      if(PREFIX_FILES)
-        set(srcFiles ${PREFIX_FILES})
+        set(SRCFILES ${PREFIX_FILES})
     else()
         message(FATAL_ERROR "FILES keyword is not specified.")
     endif()
 
-    foreach(file ${srcFiles})
+    foreach(file ${SRCFILES})
         get_filename_component(input_file "${file}" ABSOLUTE)
-        get_filename_component(output_file "${destination}/${file}" ABSOLUTE)
+        get_filename_component(output_file "${DESTINATION}/${file}" ABSOLUTE)
 
         add_custom_command(
             TARGET ${target}
             PRE_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${input_file} ${output_file}
-            DEPENDS "${srcFiles}"
+            DEPENDS "${SRCFILES}"
             COMMENT "copying file from ${input_file} to ${output_file}"
         )
     endforeach()
@@ -314,13 +314,13 @@ function(mayaUsd_copyDirectory target)
 
     # do the actual copy
     foreach(file ${files})
-        set(input_file "${PREFIX_SOURCE}/${file}")
-        set(output_file "${PREFIX_DESTINATION}/${file}")
+        set(INPUT_FILE "${PREFIX_SOURCE}/${file}")
+        set(OUTPUT_FILE "${PREFIX_DESTINATION}/${file}")
         add_custom_command(TARGET ${target}
             PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${input_file} ${output_file}
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${INPUT_FILE} ${OUTPUT_FILE}
             COMMENT "Copying ${file} to ${PREFIX_DESTINATION}"
-            DEPENDS "${input_file}"
+            DEPENDS "${INPUT_FILE}"
         )
     endforeach()
 endfunction()

@@ -45,7 +45,7 @@ public:
 
     HDMAYA_API
     void InsertRprim(
-        const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits,
+        const TfToken& typeId, const SdfPath& id,
         const SdfPath& instancerId = {});
     HDMAYA_API
     void InsertSprim(

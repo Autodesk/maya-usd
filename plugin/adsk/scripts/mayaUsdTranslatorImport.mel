@@ -84,7 +84,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
             } else if ($modeName == "pxrRis") {
                 $niceName = "RfM Shaders";
             } else if ($modeName == "useRegistry") {
-                $niceName = "USD Shade";
+                $niceName = "Preview Surface Shaders";
             }
             menuItem -l $niceName -ann $modeName;
         }

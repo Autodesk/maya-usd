@@ -8,7 +8,7 @@ target_sources(${PROJECT_NAME}
 
 )
 
-set(headers
+set(HEADERS
     chaser.h
     chaserRegistry.h
 )
@@ -18,7 +18,7 @@ set(headers
 # -----------------------------------------------------------------------------
 mayaUsd_promoteHeaderList(
     HEADERS 
-        ${headers} 
+        ${HEADERS} 
     BASEDIR 
         ${PROJECT_NAME}/fileio/chaser
 )
@@ -26,6 +26,6 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/fileio/chaser
 )

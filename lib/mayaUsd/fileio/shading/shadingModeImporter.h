@@ -29,6 +29,7 @@
 #include <pxr/usd/usdShade/material.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -146,8 +147,8 @@ private:
     TfToken _volumeShaderPlugName;
     TfToken _displacementShaderPlugName;
 };
-typedef std::function< MObject (UsdMayaShadingModeImportContext*) > UsdMayaShadingModeImporter;
-
+typedef std::function<MObject(UsdMayaShadingModeImportContext*, const UsdMayaJobImportArgs&)>
+    UsdMayaShadingModeImporter;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

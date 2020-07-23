@@ -159,8 +159,8 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 
 	stage->RemovePrim(usdSrcPath);
 	auto ufeDstItem = UsdSceneItem::create(ufeDstPath, ufePathToPrim(ufeDstPath));
-	auto notification = Ufe::ObjectReparent(ufeDstItem, ufeSrcPath);
-	Ufe::Scene::notifyObjectPathChange(notification);
+
+	sendNotification<Ufe::ObjectReparent>(ufeDstItem, ufeSrcPath);
 
 	// FIXME  No idea how to get the child prim index yet.  PPT, 16-Aug-2018.
 	return Ufe::AppendedChild(ufeDstItem, ufeSrcPath, 0);
