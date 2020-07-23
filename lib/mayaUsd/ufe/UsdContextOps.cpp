@@ -33,10 +33,7 @@
 
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
-
-#if UFE_PREVIEW_VERSION_NUM >= 2017
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
-#endif
 
 namespace {
 
