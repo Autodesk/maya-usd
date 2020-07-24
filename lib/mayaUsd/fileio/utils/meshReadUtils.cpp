@@ -246,18 +246,24 @@ namespace
 
         MStatus status{MS::kSuccess};
         MString uvSetName(primvarName.GetText());
+        bool createUVSet = true;
+
         if (primvarName == UsdUtilsGetPrimaryUVSetName()) {
             // We assume that the primary USD UV set maps to Maya's default 'map1'
             // set which always exists, so we shouldn't try to create it.
             uvSetName = _meshTokens->map1.GetText();
+            createUVSet = false;
         } else if (!hasDefaultUVSet) {
             // If map1 still exists, we rename and re-use it:
             MStringArray uvSetNames;
             meshFn.getUVSetNames(uvSetNames);
             if (uvSetNames[0] == _meshTokens->map1.GetText()) {
                 meshFn.renameUVSet(_meshTokens->map1.GetText(), uvSetName);
+                createUVSet = false;
             }
-        } else {
+        }
+        
+        if (createUVSet) {
             status = meshFn.createUVSet(uvSetName);
             if (status != MS::kSuccess) {
                 TF_WARN("Unable to create UV set '%s' for mesh: %s",
