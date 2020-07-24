@@ -58,6 +58,9 @@ TF_DEFINE_PUBLIC_TOKENS(UsdMayaMeshColorSetTokens,
 TF_DEFINE_PRIVATE_TOKENS(
     _meshTokens,
 
+    // Default UV set name in Maya
+    (map1)
+
     // we capitalize this because it doesn't correspond to an actual attribute
     (USD_EmitNormals)
 
@@ -181,7 +184,7 @@ namespace
     }
 
     bool 
-    assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn)
+    assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bool hasDefaultUVSet)
     {
         const TfToken& primvarName = primvar.GetPrimvarName();
 
@@ -246,7 +249,14 @@ namespace
         if (primvarName == UsdUtilsGetPrimaryUVSetName()) {
             // We assume that the primary USD UV set maps to Maya's default 'map1'
             // set which always exists, so we shouldn't try to create it.
-            uvSetName = "map1";
+            uvSetName = _meshTokens->map1.GetText();
+        } else if (!hasDefaultUVSet) {
+            // If map1 still exists, we rename and re-use it:
+            MStringArray uvSetNames;
+            meshFn.getUVSetNames(uvSetNames);
+            if (uvSetNames[0] == _meshTokens->map1.GetText()) {
+                meshFn.renameUVSet(_meshTokens->map1.GetText(), uvSetName);
+            }
         } else {
             status = meshFn.createUVSet(uvSetName);
             if (status != MS::kSuccess) {
@@ -608,7 +618,25 @@ UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
 
     // GETTING PRIMVARS
     const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
-    TF_FOR_ALL(iter, primvars) 
+
+    // Maya always has a map1 UV set. We need to find out if there is any stream in the file that
+    // will use that slot. If not, the first texcoord stream to load will replace the default map1
+    // stream.
+    bool hasDefaultUVSet = false;
+    TF_FOR_ALL(iter, primvars)
+    {
+        const UsdGeomPrimvar&  primvar = *iter;
+        const SdfValueTypeName typeName = primvar.GetTypeName();
+        if (typeName == SdfValueTypeNames->TexCoord2fArray
+            || (UsdMayaReadUtil::ReadFloat2AsUV() && typeName == SdfValueTypeNames->Float2Array)) {
+            const TfToken fullName = primvar.GetPrimvarName();
+            if (fullName == _meshTokens->map1 || fullName == UsdUtilsGetPrimaryUVSetName()) {
+                hasDefaultUVSet = true;
+            }
+        }
+    }
+
+    TF_FOR_ALL(iter, primvars)
     {
         const UsdGeomPrimvar& primvar = *iter;
         const TfToken name = primvar.GetBaseName();
@@ -646,7 +674,7 @@ UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
           // Otherwise, if env variable for reading Float2
           // as uv sets is turned on, we assume that Float2Array primvars
           // are UV sets.
-          if (!assignUVSetPrimvarToMesh(primvar, meshFn)) {
+          if (!assignUVSetPrimvarToMesh(primvar, meshFn, hasDefaultUVSet)) {
               TF_WARN("Unable to retrieve and assign data for UV set <%s> on "
                       "mesh <%s>",
                       name.GetText(),
