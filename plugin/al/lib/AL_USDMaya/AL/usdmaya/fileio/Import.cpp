@@ -94,7 +94,6 @@ MObject Import::createParentTransform(
 void Import::doImport()
 {
     AL::usdmaya::Profiler::clearAll();
-    AL_BEGIN_PROFILE_SECTION(doImport);
 
     translators::TranslatorContextPtr  context = translators::TranslatorContext::create(nullptr);
     translators::TranslatorManufacture manufacture(context);
@@ -115,11 +114,9 @@ void Import::doImport()
     if (m_params.m_rootLayer) {
         // stage = UsdStage::Open(m_params.m_rootLayer, m_params.m_sessionLayer);
     } else {
-        AL_BEGIN_PROFILE_SECTION(OpenStage);
         stage = UsdStage::Open(
             m_params.m_fileName.asChar(),
             m_params.m_stageUnloaded ? UsdStage::LoadNone : UsdStage::LoadAll);
-        AL_END_PROFILE_SECTION();
     }
 
     if (stage != UsdStageRefPtr()) {
@@ -220,16 +217,12 @@ void Import::doImport()
                         fnP.addChild(shape, MFnTransform::kNextPos, true);
                     }
                 } else {
-                    AL_BEGIN_PROFILE_SECTION(ImportingTransform);
                     createParentTransform(prim, it, manufacture);
-                    AL_END_PROFILE_SECTION();
                 }
             }
         }
     }
     m_success = true;
-
-    AL_END_PROFILE_SECTION();
 
     std::stringstream strstr;
     strstr << "Breakdown for file: " << m_params.m_fileName << std::endl;

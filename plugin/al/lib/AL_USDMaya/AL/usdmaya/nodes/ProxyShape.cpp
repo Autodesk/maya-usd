@@ -735,7 +735,6 @@ void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg("ProxyShape::onPrimResync begin:\n%s\n", context()->serialise().asChar());
 
-    AL_BEGIN_PROFILE_SECTION(ObjectChanged);
     MFnDagNode fn(thisMObject());
     MDagPath   proxyTransformPath;
     fn.getPath(proxyTransformPath);
@@ -752,8 +751,6 @@ void ProxyShape::onPrimResync(SdfPath primPath, SdfPathVector& previousPrims)
 
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg("ProxyShape::onPrimResync end:\n%s\n", context()->serialise().asChar());
-
-    AL_END_PROFILE_SECTION();
 
     validateTransforms();
 }
@@ -1163,7 +1160,6 @@ void ProxyShape::loadStage()
 
     triggerEvent("PreStageLoaded");
 
-    AL_BEGIN_PROFILE_SECTION(LoadStage);
     MDataBlock dataBlock = forceCache();
 
     const int         stageIdVal = inputInt32Value(dataBlock, stageCacheId());
@@ -1284,8 +1280,6 @@ void ProxyShape::loadStage()
             MStatus        status;
             SdfLayerRefPtr sessionLayer;
 
-            AL_BEGIN_PROFILE_SECTION(OpeningUsdStage);
-            AL_BEGIN_PROFILE_SECTION(OpeningSessionLayer);
             {
                 // Grab the session layer from the layer manager
                 if (sessionLayerName.length() > 0) {
@@ -1321,9 +1315,6 @@ void ProxyShape::loadStage()
                     }
                 }
             }
-            AL_END_PROFILE_SECTION();
-
-            AL_BEGIN_PROFILE_SECTION(OpenRootLayer);
 
             const MString assetResolverConfig = inputStringValue(dataBlock, m_assetResolverConfig);
 
@@ -1337,15 +1328,9 @@ void ProxyShape::loadStage()
             }
 #endif
 
-            AL_END_PROFILE_SECTION();
-
-            AL_BEGIN_PROFILE_SECTION(UpdateGlobalVariantFallbacks);
             PcpVariantFallbackMap defaultVariantFallbacks;
             PcpVariantFallbackMap fallbacks(
                 updateVariantFallbacks(defaultVariantFallbacks, dataBlock));
-            AL_END_PROFILE_SECTION();
-
-            AL_BEGIN_PROFILE_SECTION(UsdStageOpen);
             {
                 UsdStageCacheContext ctx(StageCache::Get());
 
@@ -1384,18 +1369,13 @@ void ProxyShape::loadStage()
                 // Save the initial edit target
                 trackEditTargetLayer();
             }
-            AL_END_PROFILE_SECTION();
 
-            AL_BEGIN_PROFILE_SECTION(ResetGlobalVariantFallbacks);
             // reset only if the global variant fallbacks has been modified
             if (!fallbacks.empty()) {
                 saveVariantFallbacks(convertVariantFallbacksToStr(fallbacks), dataBlock);
                 // restore default value
                 UsdStage::SetGlobalVariantFallbacks(defaultVariantFallbacks);
             }
-            AL_END_PROFILE_SECTION();
-
-            AL_END_PROFILE_SECTION();
         } else if (!fileString.empty()) {
             TF_DEBUG(ALUSDMAYA_TRANSLATORS)
                 .Msg("ProxyShape::loadStage failed to open the usd file: %s.\n", file.asChar());
@@ -1418,16 +1398,12 @@ void ProxyShape::loadStage()
     }
 
     if (m_stage && !MFileIO::isReadingFile()) {
-        AL_BEGIN_PROFILE_SECTION(PostLoadProcess);
         // execute the post load process to import any custom prims
         cmds::ProxyShapePostLoadProcess::initialise(this);
         if (isLockPrimFeatureActive()) {
             findPrimsWithMetaData();
         }
-        AL_END_PROFILE_SECTION();
     }
-
-    AL_END_PROFILE_SECTION();
 
     if (MGlobal::kInteractive == MGlobal::mayaState()) {
         std::stringstream strstr;
