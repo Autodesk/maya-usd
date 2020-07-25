@@ -607,7 +607,7 @@ void ProxyRenderDelegate::updateSelectionGranularity(
     }
 }
 
-//! \brief  UFE-based selection for both instanced and non-instanced cases.
+//! \brief  Selection for both instanced and non-instanced cases.
 bool ProxyRenderDelegate::getInstancedSelectionPath(
     const MHWRender::MRenderItem& renderItem,
     const MHWRender::MIntersection& intersection,
@@ -729,11 +729,11 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection.");
         break;
     }
+#else
+    dagPath = _proxyShapeData->ProxyDagPath();
+#endif
 
     return true;
-#else
-    return false;
-#endif
 }
 
 //! \brief  Notify of selection change.
