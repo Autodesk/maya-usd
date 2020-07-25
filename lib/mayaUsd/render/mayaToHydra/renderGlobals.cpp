@@ -299,8 +299,6 @@ MObject MtohCreateRenderGlobals() {
                 defGlobals.delegateParams.maximumShadowMapResolution);
             return o;
         });
-    static const TfTokenVector selectionOverlays{MtohTokens->UseHdSt,
-                                                 MtohTokens->UseVp2};
     _CreateBoolAttribute(
         node, _tokens->mtohWireframeSelectionHighlight,
         defGlobals.wireframeSelectionHighlight);
