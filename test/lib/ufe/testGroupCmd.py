@@ -20,8 +20,6 @@ import os
 
 import maya.cmds as cmds
 
-from pxr import Sdf
-
 from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
 import ufe
 
