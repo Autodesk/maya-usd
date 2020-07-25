@@ -90,6 +90,12 @@ class GroupCmdTestCase(unittest.TestCase):
         # convention in Maya.
         newGroupPath = parentPath + ufe.PathComponent("newGroup1")
 
+        # Make sure the new group item has the correct Usd type
+        newGroupItem = ufe.Hierarchy.createItem(newGroupPath)
+        newGroupPrim = usdUtils.getPrimFromSceneItem(newGroupItem)
+        newGroupType = newGroupPrim.GetTypeName()
+        self.assertEqual(newGroupType, 'Xform')
+
         childPaths = set([child.path() for child in parentChildrenPost])
 
         self.assertTrue(newGroupPath in childPaths)
