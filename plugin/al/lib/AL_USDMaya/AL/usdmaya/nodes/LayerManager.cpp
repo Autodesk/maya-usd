@@ -30,8 +30,20 @@
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MPlugArray.h>
+#include <maya/MProfiler.h>
 
 #include <mutex>
+
+namespace {
+const int _layerManagerProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "LayerManager",
+    "LayerManager"
+#else
+    "LayerManager"
+#endif
+);
+} // namespace
 
 namespace {
 // Global mutex protecting _findNode / findOrCreateNode.
@@ -386,6 +398,9 @@ void LayerManager::getLayerIdentifiers(MStringArray& outputNames)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus LayerManager::populateSerialisationAttributes()
 {
+    MProfilingScope profilerScope(
+        _layerManagerProfilerCategory, MProfiler::kColorE_L3, "Populate serialisation attributes");
+
     TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::populateSerialisationAttributes\n");
     const char* errorString = "LayerManager::populateSerialisationAttributes";
 
@@ -426,6 +441,9 @@ MStatus LayerManager::populateSerialisationAttributes()
 
 MStatus LayerManager::clearSerialisationAttributes()
 {
+    MProfilingScope profilerScope(
+        _layerManagerProfilerCategory, MProfiler::kColorE_L3, "Clear serialisation attributes");
+
     TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::clearSerialisationAttributes\n");
     const char* errorString = "LayerManager::clearSerialisationAttributes";
 
@@ -450,6 +468,9 @@ MStatus LayerManager::clearSerialisationAttributes()
 
 void LayerManager::loadAllLayers()
 {
+    MProfilingScope profilerScope(
+        _layerManagerProfilerCategory, MProfiler::kColorE_L3, "Load all layers");
+
     TF_DEBUG(ALUSDMAYA_LAYERS).Msg("LayerManager::loadAllLayers\n");
     const char*    errorString = "LayerManager::loadAllLayers";
     const char*    identifierTempSuffix = "_tmp";

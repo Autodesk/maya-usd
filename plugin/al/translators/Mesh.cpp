@@ -37,7 +37,19 @@
 #include <maya/MFnSet.h>
 #include <maya/MIntArray.h>
 #include <maya/MNodeClass.h>
+#include <maya/MProfiler.h>
 #include <maya/MVectorArray.h>
+
+namespace {
+const int _meshProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "Mesh",
+    "Mesh"
+#else
+    "Mesh"
+#endif
+);
+} // namespace
 
 namespace AL {
 namespace usdmaya {
@@ -64,6 +76,8 @@ MStatus Mesh::initialize()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Mesh::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
+    MProfilingScope profilerScope(_meshProfilerCategory, MProfiler::kColorE_L3, "Import");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Mesh::import prim=%s\n", prim.GetPath().GetText());
 
     const UsdGeomMesh mesh(prim);

@@ -38,7 +38,19 @@
 #include <maya/MItDependencyNodes.h>
 #include <maya/MNodeClass.h>
 #include <maya/MPlug.h>
+#include <maya/MProfiler.h>
 #include <maya/MSelectionList.h>
+
+namespace {
+const int _mayaReferenceProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "MayaReference",
+    "MayaReference"
+#else
+    "MayaReference"
+#endif
+);
+} // namespace
 
 namespace AL {
 namespace usdmaya {
@@ -58,6 +70,8 @@ MStatus MayaReference::initialize()
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
+    MProfilingScope profilerScope(_mayaReferenceProfilerCategory, MProfiler::kColorE_L3, "Import");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
     return UsdMayaTranslatorMayaReference::update(prim, parent);
@@ -66,6 +80,9 @@ MStatus MayaReference::import(const UsdPrim& prim, MObject& parent, MObject& cre
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::tearDown(const SdfPath& primPath)
 {
+    MProfilingScope profilerScope(
+        _mayaReferenceProfilerCategory, MProfiler::kColorE_L3, "Tear down");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::tearDown prim=%s\n", primPath.GetText());
     MObject       mayaObject;
     MObjectHandle handle;
@@ -78,6 +95,8 @@ MStatus MayaReference::tearDown(const SdfPath& primPath)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::update(const UsdPrim& prim)
 {
+    MProfilingScope profilerScope(_mayaReferenceProfilerCategory, MProfiler::kColorE_L3, "Update");
+
     TF_DEBUG(ALUSDMAYA_TRANSLATORS)
         .Msg("MayaReference::update prim=%s\n", prim.GetPath().GetText());
     MObjectHandle handle;

@@ -37,6 +37,7 @@
 #include <maya/M3dView.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MProfiler.h>
 #include <maya/MTime.h>
 
 #if MAYA_API_VERSION >= 20180600
@@ -62,6 +63,16 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 namespace {
+
+const int _proxyDrawOverrideProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "ProxyDrawOverride",
+    "ProxyDrawOverride"
+#else
+    "ProxyDrawOverride"
+#endif
+);
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  user data struct - holds the info needed to render the scene
 //----------------------------------------------------------------------------------------------------------------------
@@ -123,6 +134,9 @@ bool ProxyDrawOverride::isBounded(const MDagPath& objPath, const MDagPath& camer
 MBoundingBox
 ProxyDrawOverride::boundingBox(const MDagPath& objPath, const MDagPath& cameraPath) const
 {
+    MProfilingScope profilerScope(
+        _proxyDrawOverrideProfilerCategory, MProfiler::kColorE_L3, "Compute bounding box");
+
     TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::boundingBox\n");
     ProxyShape* pShape = getShape(objPath);
     if (!pShape) {
@@ -138,6 +152,9 @@ MUserData* ProxyDrawOverride::prepareForDraw(
     const MHWRender::MFrameContext& frameContext,
     MUserData*                      userData)
 {
+    MProfilingScope profilerScope(
+        _proxyDrawOverrideProfilerCategory, MProfiler::kColorE_L3, "Prepare for draw");
+
     TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::prepareForDraw\n");
     MFnDagNode fn(objPath);
 
@@ -171,6 +188,9 @@ MUserData* ProxyDrawOverride::prepareForDraw(
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUserData* data)
 {
+    MProfilingScope profilerScope(
+        _proxyDrawOverrideProfilerCategory, MProfiler::kColorE_L3, "Draw");
+
     TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::draw\n");
 
     float clearCol[4];
@@ -178,6 +198,10 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
 
     RenderUserData* ptr = (RenderUserData*)data;
     if (ptr && ptr->m_rootPrim) {
+
+        MProfilingScope profilerScope(
+            _proxyDrawOverrideProfilerCategory, MProfiler::kColorE_L3, "Setup lighting");
+
         ptr->m_shape->onRedraw();
         auto* engine = ptr->m_shape->engine();
         if (!engine) {
@@ -386,8 +410,13 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
         combined.insert(combined.end(), paths1.begin(), paths1.end());
         combined.insert(combined.end(), paths2.begin(), paths2.end());
 
-        ptr->m_params.frame = ptr->m_shape->outTimePlug().asMTime().as(MTime::uiUnit());
-        engine->Render(ptr->m_rootPrim, ptr->m_params);
+        {
+            MProfilingScope profilerScope(
+                _proxyDrawOverrideProfilerCategory, MProfiler::kColorE_L3, "Render geometry");
+
+            ptr->m_params.frame = ptr->m_shape->outTimePlug().asMTime().as(MTime::uiUnit());
+            engine->Render(ptr->m_rootPrim, ptr->m_params);
+        }
 
         if (combined.size()) {
             UsdImagingGLRenderParams params = ptr->m_params;
@@ -399,7 +428,11 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
             // lines in front with negative offset.
             glEnable(GL_POLYGON_OFFSET_LINE);
             glPolygonOffset(-1.0, -1.0);
-            engine->RenderBatch(combined, params);
+            {
+                MProfilingScope profilerScope(
+                    _proxyDrawOverrideProfilerCategory, MProfiler::kColorE_L3, "Render selection");
+                engine->RenderBatch(combined, params);
+            }
             glDisable(GL_POLYGON_OFFSET_LINE);
         }
 
@@ -480,6 +513,9 @@ bool ProxyDrawOverride::userSelect(
     MSelectionList&                  selectionList,
     MPointArray&                     worldSpaceHitPts)
 {
+    MProfilingScope profilerScope(
+        _proxyDrawOverrideProfilerCategory, MProfiler::kColorE_L3, "User select");
+
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyDrawOverride::userSelect\n");
 
     MString fullSelPath = objPath.fullPathName();
@@ -559,15 +595,21 @@ bool ProxyDrawOverride::userSelect(
     TfToken resolveMode = selectInfo.singleSelection() ? HdxPickTokens->resolveNearestToCamera
                                                        : HdxPickTokens->resolveUnique;
 
-    bool hitSelected = engine->TestIntersectionBatch(
-        GfMatrix4d(worldViewMatrix.matrix),
-        GfMatrix4d(projectionMatrix.matrix),
-        worldToLocalSpace,
-        rootPath,
-        params,
-        resolveMode,
-        resolution,
-        &hitBatch);
+    bool hitSelected;
+    {
+        MProfilingScope profilerScope(
+            _proxyDrawOverrideProfilerCategory, MProfiler::kColorE_L3, "Hit test");
+
+        hitSelected = engine->TestIntersectionBatch(
+            GfMatrix4d(worldViewMatrix.matrix),
+            GfMatrix4d(projectionMatrix.matrix),
+            worldToLocalSpace,
+            rootPath,
+            params,
+            resolveMode,
+            resolution,
+            &hitBatch);
+    }
 
     auto selected = false;
 

@@ -15,7 +15,6 @@
 //
 #include "AL/usdmaya/cmds/ProxyShapePostLoadProcess.h"
 
-#include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"

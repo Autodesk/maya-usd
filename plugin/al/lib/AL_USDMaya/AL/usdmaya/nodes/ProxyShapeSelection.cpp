@@ -21,6 +21,7 @@
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
 #include <maya/MFnDagNode.h>
+#include <maya/MProfiler.h>
 #include <maya/MPxCommand.h>
 
 #include <cinttypes>
@@ -29,6 +30,16 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 namespace {
+
+const int _proxyShapeSelectionProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "AL_usdmaya_ProxyShape_selection",
+    "AL_usdmaya_ProxyShape_selection"
+#else
+    "AL_usdmaya_ProxyShape_selection"
+#endif
+);
+
 typedef void (
     *proxy_function_prototype)(void* userData, AL::usdmaya::nodes::ProxyShape* proxyInstance);
 inline void addObjToSelectionList(MSelectionList& list, const MObject& object)
@@ -55,6 +66,9 @@ inline void addObjToSelectionList(MSelectionList& list, const MObject& object)
 //----------------------------------------------------------------------------------------------------------------------
 void ProxyShape::onSelectionChanged(void* ptr)
 {
+    MProfilingScope profilerScope(
+        _proxyShapeSelectionProfilerCategory, MProfiler::kColorE_L3, "Run onSelectionChanged");
+
     TF_DEBUG(ALUSDMAYA_SELECTION)
         .Msg("ProxyShapeSelection::onSelectionChanged %d\n", MGlobal::isUndoing());
 
@@ -454,6 +468,9 @@ MObject ProxyShape::makeUsdTransformChain(
     bool            pushToPrim,
     bool            readAnimatedValues)
 {
+    MProfilingScope profilerScope(
+        _proxyShapeSelectionProfilerCategory, MProfiler::kColorE_L3, "Make Usd transform chain");
+
     if (!usdPrim) {
         return MObject::kNullObj;
     }
@@ -601,6 +618,11 @@ MObject ProxyShape::makeUsdTransformChain(
     TF_DEBUG(ALUSDMAYA_SELECTION)
         .Msg("ProxyShapeSelection::makeUsdTransformChain %s\n", usdPrim.GetPath().GetText());
 
+    MProfilingScope profilerScope(
+        _proxyShapeSelectionProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Make Usd transform chain with parent");
+
     const SdfPath path { usdPrim.GetPath() };
 
     auto iter = m_requiredPaths.find(path);
@@ -739,6 +761,9 @@ MObject ProxyShape::makeUsdTransforms(
     TransformReason reason,
     MDGModifier*    modifier2)
 {
+    MProfilingScope profilerScope(
+        _proxyShapeSelectionProfilerCategory, MProfiler::kColorE_L3, "Make Usd transforms");
+
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::makeUsdTransforms\n");
 
     // Ok, so let's go wondering up the transform chain making sure we have all of those transforms
@@ -820,6 +845,11 @@ void ProxyShape::removeUsdTransformChain_internal(
     MDagModifier&   modifier,
     TransformReason reason)
 {
+    MProfilingScope profilerScope(
+        _proxyShapeSelectionProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Remove Usd transform chain for prim");
+
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain\n");
     UsdPrim parentPrim = usdPrim;
     MObject parentTM = MObject::kNullObj;
@@ -850,6 +880,11 @@ void ProxyShape::removeUsdTransformChain(
     MDagModifier&   modifier,
     TransformReason reason)
 {
+    MProfilingScope profilerScope(
+        _proxyShapeSelectionProfilerCategory,
+        MProfiler::kColorE_L3,
+        "Remove Usd transform chain for path");
+
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::removeUsdTransformChain\n");
     SdfPath parentPrim = path;
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShape::removeUsdTransformChain %s\n", path.GetText());
@@ -1076,6 +1111,9 @@ void ProxyShape::removeTransformRefs(
     const std::vector<std::pair<SdfPath, MObject>>& removedRefs,
     TransformReason                                 reason)
 {
+    MProfilingScope profilerScope(
+        _proxyShapeSelectionProfilerCategory, MProfiler::kColorE_L3, "Remove transform refs");
+
     TF_DEBUG(ALUSDMAYA_SELECTION)
         .Msg("ProxyShapeSelection::removeTransformRefs %lu\n", removedRefs.size());
     for (auto iter : removedRefs) {
@@ -1105,6 +1143,9 @@ void ProxyShape::removeTransformRefs(
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::removeAllSelectedNodes(SelectionUndoHelper& helper)
 {
+    MProfilingScope profilerScope(
+        _proxyShapeSelectionProfilerCategory, MProfiler::kColorE_L3, "Remove all selected nodes");
+
     TF_DEBUG(ALUSDMAYA_SELECTION)
         .Msg("ProxyShapeSelection::removeAllSelectedNodes %lu\n", m_selectedPaths.size());
 
@@ -1167,6 +1208,9 @@ bool ProxyShape::removeAllSelectedNodes(SelectionUndoHelper& helper)
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::doSelect(SelectionUndoHelper& helper, const SdfPathVector& orderedPaths)
 {
+    MProfilingScope profilerScope(
+        _proxyShapeSelectionProfilerCategory, MProfiler::kColorE_L3, "Do select");
+
     TF_DEBUG(ALUSDMAYA_SELECTION).Msg("ProxyShapeSelection::doSelect\n");
     auto stage = m_stage;
     if (!stage)

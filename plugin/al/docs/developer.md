@@ -14,7 +14,6 @@
 - NodeHelper.h - various utility functions for adding static/dynamic attributes to an MpxNode, get data from a dataBlock, AETemplate Generators etc.
 
 Some of the modules are not even  maya dependent:
-- CodeTimings.h - Profiling
 - SIMD.h - low-level SSE/AVX routines
 
 more details [here](https://animallogic.github.io/AL_USDMaya/group__mayautils.html)

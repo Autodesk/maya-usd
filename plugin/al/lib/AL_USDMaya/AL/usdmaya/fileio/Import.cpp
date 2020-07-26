@@ -16,7 +16,6 @@
 #include "AL/usdmaya/fileio/Import.h"
 
 #include "AL/maya/utils/Utils.h"
-#include "AL/usdmaya/CodeTimings.h"
 #include "AL/usdmaya/Metadata.h"
 #include "AL/usdmaya/fileio/ImportTranslator.h"
 #include "AL/usdmaya/fileio/SchemaPrims.h"
@@ -93,8 +92,6 @@ MObject Import::createParentTransform(
 //----------------------------------------------------------------------------------------------------------------------
 void Import::doImport()
 {
-    AL::usdmaya::Profiler::clearAll();
-
     translators::TranslatorContextPtr  context = translators::TranslatorContext::create(nullptr);
     translators::TranslatorManufacture manufacture(context);
     if (m_params.m_activateAllTranslators) {
@@ -226,7 +223,6 @@ void Import::doImport()
 
     std::stringstream strstr;
     strstr << "Breakdown for file: " << m_params.m_fileName << std::endl;
-    AL::usdmaya::Profiler::printReport(strstr);
     MGlobal::displayInfo(AL::maya::utils::convert(strstr.str()));
 }
 
