@@ -144,3 +144,30 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
 
         # Check they are the same
         self.assertEqual(shapeStageA, cacheStageB)
+
+    def testCacheIdInStageData(self):
+        # Create the 2 Proxy nodes and load a stage from file
+        shapeNodeA = cmds.createNode('mayaUsdProxyShape')
+        cmds.setAttr('{}.filePath'.format(shapeNodeA),
+                     self.filePath,
+                     type='string')
+        shapeStageA = mayaUsdLib.GetPrim(shapeNodeA).GetStage()
+        shapeNodeB = cmds.createNode('mayaUsdProxyShape')
+
+        #Connect them
+        cmds.connectAttr('{}.outStageData'.format(shapeNodeA),
+                         '{}.inStageData'.format(shapeNodeB))
+
+        shapeStageB = mayaUsdLib.GetPrim(shapeNodeA).GetStage()
+
+        # Check they are the same
+        self.assertEqual(shapeStageA, shapeStageB)
+
+        # Get the cache ID and load the stage from the cache
+        cacheIdValue = cmds.getAttr('{}.outStageCacheId'.format(shapeNodeB))
+        cacheId = pxr.Usd.StageCache.Id.FromLongInt(cacheIdValue)
+        self.assertTrue(self.SC.Contains(cacheId))
+        cacheStageB = self.SC.Find(cacheId)
+
+        # Check they are the same
+        self.assertEqual(shapeStageA, cacheStageB)
