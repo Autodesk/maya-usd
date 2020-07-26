@@ -262,6 +262,7 @@ MayaUsdProxyShapeBase::initialize()
         -1,
         &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
+    numericAttrFn.setStorable(false);
     numericAttrFn.setCached(true);
     numericAttrFn.setConnectable(true);
     numericAttrFn.setReadable(true);
