@@ -84,6 +84,8 @@
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
+#include <boost/filesystem.hpp>
+
 #if defined(WANT_UFE_BUILD)
 #include <ufe/path.h>
 #endif

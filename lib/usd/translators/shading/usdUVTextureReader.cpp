@@ -18,6 +18,7 @@
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -171,14 +172,20 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         UsdMayaUtil::Connect(uvPlug, filePlug, false);
     }
 
+    VtValue val;
+    MPlug   mayaAttr;
+
     // File
     UsdShadeInput usdInput = shaderSchema.GetInput(_tokens->file);
-    MPlug         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
-    if (usdInput && status == MS::kSuccess) {
-        UsdMayaReadUtil::SetMayaAttr(mayaAttr, usdInput);
+    if (usdInput && usdInput.Get(&val) && val.IsHolding<SdfAssetPath>()) {
+        std::string filePath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
+        filePath = UsdMayaUtilFileSystem::canonicalPathFromUsdPrim(filePath, prim);
+        val = SdfAssetPath(filePath);
+        mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
+        if (status == MS::kSuccess) {
+            UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
+        }
     }
-
-    VtValue     val;
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the
     // UsdUVTexture's scale input.

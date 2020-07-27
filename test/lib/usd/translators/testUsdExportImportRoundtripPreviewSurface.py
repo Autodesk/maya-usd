@@ -82,8 +82,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.connectAttr(file_node + ".outColor",
                          material_node + ".diffuseColor", f=True)
 
-        txfile = "/".join(["UsdExportImportRoundtripPreviewSurface",
-                           "Brazilian_rosewood_pxr128.png"])
+        txfile = os.path.join("UsdExportImportRoundtripPreviewSurface",
+                              "Brazilian_rosewood_pxr128.png")
         cmds.setAttr(file_node+".fileTextureName", txfile, type="string")
         cmds.setAttr(file_node + ".defaultColor", 0.5, 0.25, 0.125,
                      type="double3")
@@ -130,9 +130,17 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                          [(0.125, 0.25, 0.75)])
         self.assertEqual(cmds.getAttr("file2.defaultColor"),
                          [(0.5, 0.25, 0.125)])
-        self.assertTrue(cmds.getAttr("file2.fileTextureName").endswith(txfile))
+        self.assertEqual(cmds.getAttr("file2.fileTextureName"),
+                         cmds.getAttr(file_node+".fileTextureName"))
         self.assertEqual(cmds.getAttr("place2dTexture.wrapU"), 0)
         self.assertEqual(cmds.getAttr("place2dTexture.wrapV"), 1)
+
+        # Make sure paths are relative in the USD file:
+        stage = Usd.Stage.Open(usd_path)
+        file_texture = stage.GetPrimAtPath(
+            "/pSphere1/Looks/pxrUsdPreviewSurface1SG/file1")
+        file_path = file_texture.GetAttribute('inputs:file').Get().path
+        self.assertTrue(file_path.startswith(".."))
 
 
 if __name__ == '__main__':

@@ -15,11 +15,10 @@
 //
 #include <string>
 
-#include <boost/filesystem.hpp>
-
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/common.h>
 
 #include <mayaUsd/base/api.h>
 
@@ -31,6 +30,18 @@ namespace UsdMayaUtilFileSystem
     */
     MAYAUSD_CORE_PUBLIC
     std::string resolvePath(const std::string& filePath);
+
+    /*! \brief returns the relative path to \p filePath based on the path of \p usdStage
+     */
+    MAYAUSD_CORE_PUBLIC
+    std::string
+    relativePathFromUsdStage(const std::string& filePath, const UsdStageRefPtr& usdStage);
+
+    /*! \brief returns the canonical path to the \p relativePath filename based on the file path
+        that introduces \p usdPrim
+    */
+    MAYAUSD_CORE_PUBLIC
+    std::string canonicalPathFromUsdPrim(const std::string& relativePath, const UsdPrim& usdPrim);
 
     /*! \brief returns the path to the
     */

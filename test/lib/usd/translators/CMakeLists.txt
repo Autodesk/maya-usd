@@ -43,6 +43,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportFrameRange.py
     testUsdImportMayaReference.py
     testUsdImportMesh.py
+    testUsdImportPreviewSurface.py
     # XXX: This test is disabled by default since it requires the RenderMan for Maya plugin.
     # testUsdImportRfMLight.py
     testUsdImportSessionLayer.py

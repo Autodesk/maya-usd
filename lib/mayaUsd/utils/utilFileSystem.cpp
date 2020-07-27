@@ -20,8 +20,13 @@
 #include <maya/MFnReference.h>
 
 #include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <mayaUsd/base/debugCodes.h>
+#include <mayaUsdUtils/util.h>
+
+#include <boost/filesystem.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -30,6 +35,40 @@ UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
 {
     ArResolver& resolver = ArGetResolver();
     return resolver.Resolve(filePath);
+}
+
+std::string
+UsdMayaUtilFileSystem::relativePathFromUsdStage(const std::string& filePath, const UsdStageRefPtr& usdStage)
+{
+    try {
+        boost::filesystem::path usdDir(usdStage->GetRootLayer()->GetRealPath());
+        usdDir = usdDir.parent_path();
+        boost::filesystem::path relativePath = boost::filesystem::relative(filePath, usdDir);
+        return relativePath.generic_string();
+    } catch (...) {
+        return filePath;
+    }
+}
+
+std::string
+UsdMayaUtilFileSystem::canonicalPathFromUsdPrim(const std::string& relativePath, const UsdPrim& usdPrim)
+{
+    // Calling UsdPrimCompositionQuery(usdPrim).GetCompositionArcs() would be
+    // recommended here, but when in the middle of an import, the graph is not
+    // yet fully computed, so use a rougher API to get the path to the USD file.
+    SdfPrimSpecHandleVector specs = usdPrim.GetPrimStack();
+    auto itSpec = specs.crbegin();
+    for (; itSpec != specs.crend(); ++itSpec) {
+        SdfPrimSpecHandle primSpec = *itSpec;
+        boost::filesystem::path filePath(primSpec->GetLayer()->GetRealPath());
+        filePath = filePath.parent_path() / relativePath;
+        boost::system::error_code ec;
+        boost::filesystem::path canonicalPath = boost::filesystem::canonical(filePath, ec);
+        if (!ec) {
+            return canonicalPath.generic_string();
+        }
+    }
+    return relativePath;
 }
 
 std::string

@@ -39,6 +39,7 @@
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -203,16 +204,17 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-
-    const MString fileTextureName = fileTextureNamePlug.asString(&status);
+    std::string fileTextureName(fileTextureNamePlug.asString(&status).asChar());
     if (status != MS::kSuccess) {
         return;
     }
+    fileTextureName
+        = UsdMayaUtilFileSystem::relativePathFromUsdStage(fileTextureName, GetUsdStage());
 
     shaderSchema.CreateInput(
         _tokens->file,
         SdfValueTypeNames->Asset).Set(
-            SdfAssetPath(fileTextureName.asChar()),
+            SdfAssetPath(fileTextureName.c_str()),
             usdTime);
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the

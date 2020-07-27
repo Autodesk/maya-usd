@@ -1,0 +1,189 @@
+#usda 1.0
+(
+    defaultPrim = "billboards"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Xform "billboards"
+{
+
+	def Mesh "pPlane1" (
+		kind = "component"
+	)
+	{
+		uniform bool doubleSided = 1
+		float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+		int[] faceVertexCounts = [4]
+		int[] faceVertexIndices = [0, 1, 3, 2]
+		rel material:binding = </billboards/pPlane1/Looks/nestedSG>
+		point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+		color3f[] primvars:displayColor = [(1, 1, 1)] (
+			customData = {
+				dictionary Maya = {
+					bool generated = 1
+				}
+			}
+		)
+		texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+			interpolation = "vertex"
+		)
+		int[] primvars:st:indices = [0, 1, 3, 2]
+		float3 xformOp:rotateXYZ = (90, 0, 90)
+		uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+
+		def Scope "Looks"
+		{
+			def Material "nestedSG"
+			{
+				token outputs:surface.connect = </billboards/pPlane1/Looks/nestedSG/nestedSurface.outputs:surface>
+
+				def Shader "nestedSurface"
+				{
+					uniform token info:id = "UsdPreviewSurface"
+					color3f inputs:diffuseColor.connect = </billboards/pPlane1/Looks/nestedSG/nestedFile.outputs:rgb>
+					token outputs:displacement
+					token outputs:surface
+				}
+
+				def Shader "nestedFile"
+				{
+					uniform token info:id = "UsdUVTexture"
+					float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+					asset inputs:file = @textures/green_A.png@
+					float2 inputs:st.connect = </billboards/pPlane1/Looks/nestedSG/nestedFile/TexCoordReader.outputs:result>
+					token inputs:wrapS = "repeat"
+					token inputs:wrapT = "repeat"
+					float3 outputs:rgb
+
+					def Shader "TexCoordReader"
+					{
+						uniform token info:id = "UsdPrimvarReader_float2"
+						token inputs:varname = "st"
+						float2 outputs:result
+					}
+				}
+			}
+		}
+	}
+
+	def Mesh "pPlane2" (
+		kind = "component"
+	)
+	{
+		uniform bool doubleSided = 1
+		float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+		int[] faceVertexCounts = [4]
+		int[] faceVertexIndices = [0, 1, 3, 2]
+		rel material:binding = </billboards/pPlane2/Looks/upOneLevelSG>
+		point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+		color3f[] primvars:displayColor = [(1, 1, 1)] (
+			customData = {
+				dictionary Maya = {
+					bool generated = 1
+				}
+			}
+		)
+		texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+			interpolation = "vertex"
+		)
+		int[] primvars:st:indices = [0, 1, 3, 2]
+		float3 xformOp:rotateXYZ = (90, 0, 90)
+		double3 xformOp:translate = (1.2, 0, 0)
+		uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+		def Scope "Looks"
+		{
+			def Material "upOneLevelSG"
+			{
+				token outputs:surface.connect = </billboards/pPlane2/Looks/upOneLevelSG/upOneLevelSurface.outputs:surface>
+
+				def Shader "upOneLevelSurface"
+				{
+					uniform token info:id = "UsdPreviewSurface"
+					color3f inputs:diffuseColor.connect = </billboards/pPlane2/Looks/upOneLevelSG/upOneLevelFile.outputs:rgb>
+					token outputs:displacement
+					token outputs:surface
+				}
+
+				def Shader "upOneLevelFile"
+				{
+					uniform token info:id = "UsdUVTexture"
+					float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+					asset inputs:file = @../textures/black_B.png@
+					float2 inputs:st.connect = </billboards/pPlane2/Looks/upOneLevelSG/upOneLevelFile/TexCoordReader.outputs:result>
+					token inputs:wrapS = "repeat"
+					token inputs:wrapT = "repeat"
+					float3 outputs:rgb
+
+					def Shader "TexCoordReader"
+					{
+						uniform token info:id = "UsdPrimvarReader_float2"
+						token inputs:varname = "st"
+						float2 outputs:result
+					}
+				}
+			}
+		}
+	}
+
+	def Mesh "pPlane3" (
+		kind = "component"
+	)
+	{
+		uniform bool doubleSided = 1
+		float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+		int[] faceVertexCounts = [4]
+		int[] faceVertexIndices = [0, 1, 3, 2]
+		rel material:binding = </billboards/pPlane3/Looks/upTwoLevelsSG>
+		point3f[] points = [(-0.5, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, -0.5), (0.5, 0, -0.5)]
+		color3f[] primvars:displayColor = [(1, 1, 1)] (
+			customData = {
+				dictionary Maya = {
+					bool generated = 1
+				}
+			}
+		)
+		texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+			interpolation = "vertex"
+		)
+		int[] primvars:st:indices = [0, 1, 3, 2]
+		float3 xformOp:rotateXYZ = (90, 0, 90)
+		double3 xformOp:translate = (-1.2, 0, 0)
+		uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+		def Scope "Looks"
+		{
+			def Material "upTwoLevelsSG"
+			{
+				token outputs:surface.connect = </billboards/pPlane3/Looks/upTwoLevelsSG/upTwoLevelsSurface.outputs:surface>
+
+				def Shader "upTwoLevelsSurface"
+				{
+					uniform token info:id = "UsdPreviewSurface"
+					color3f inputs:diffuseColor.connect = </billboards/pPlane3/Looks/upTwoLevelsSG/upTwoLevelsFile.outputs:rgb>
+					token outputs:displacement
+					token outputs:surface
+				}
+
+				def Shader "upTwoLevelsFile"
+				{
+					uniform token info:id = "UsdUVTexture"
+					float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+					asset inputs:file = @../../textures/red_C.png@
+					float2 inputs:st.connect = </billboards/pPlane3/Looks/upTwoLevelsSG/upTwoLevelsFile/TexCoordReader.outputs:result>
+					token inputs:wrapS = "repeat"
+					token inputs:wrapT = "repeat"
+					float3 outputs:rgb
+
+					def Shader "TexCoordReader"
+					{
+						uniform token info:id = "UsdPrimvarReader_float2"
+						token inputs:varname = "st"
+						float2 outputs:result
+					}
+				}
+			}
+		}
+	}
+}
