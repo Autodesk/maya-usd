@@ -1323,9 +1323,13 @@ void HdVP2Mesh::_UpdateDrawItem(
                 drawScene.GetSelectionHighlightColor(true)
             };
 
+            // Store the indices to colors.
             std::vector<unsigned char> colorIndices;
+
+            // Assign with the index to the dormant wireframe color by default.
             colorIndices.resize(instanceCount, 0);
 
+            // Assign with the index to active selection highlight color.
             if (const auto state = drawScene.GetActiveSelectionState(id)) {
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
@@ -1334,6 +1338,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             }
 
+            // Assign with the index to lead selection highlight color.
             if (const auto state = drawScene.GetLeadSelectionState(id)) {
                 for (const auto& indexArray : state->instanceIndices) {
                     for (const auto index : indexArray) {
@@ -1342,9 +1347,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
             }
 
+            // Fill per-instance colors. Skip unselected instances for the dedicated selection
+            // highlight item.
             for (unsigned int i = 0; i < instanceCount; i++) {
-                // If it is a dedicated selection highlight item, we don't draw wireframe for
-                // unselected instances.
                 unsigned char colorIndex = colorIndices[i];
                 if (isDedicatedSelectionHighlightItem && colorIndex == 0)
                     continue;

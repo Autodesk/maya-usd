@@ -1122,9 +1122,13 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     drawScene.GetSelectionHighlightColor(true)
                 };
 
+                // Store the indices to colors.
                 std::vector<unsigned char> colorIndices;
+
+                // Assign with the index to the dormant wireframe color by default.
                 colorIndices.resize(instanceCount, 0);
 
+                // Assign with the index to active selection highlight color.
                 if (auto state = drawScene.GetActiveSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
@@ -1133,6 +1137,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     }
                 }
 
+                // Assign with the index to lead selection highlight color.
                 if (auto state = drawScene.GetLeadSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
@@ -1141,6 +1146,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     }
                 }
 
+                // Fill per-instance colors.
                 stateToCommit._instanceColors.setLength(instanceCount * kNumColorChannels);
                 unsigned int offset = 0;
 

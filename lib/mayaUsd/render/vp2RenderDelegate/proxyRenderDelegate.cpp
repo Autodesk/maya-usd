@@ -46,6 +46,8 @@
 #include "tokens.h"
 
 #if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/UsdSceneItem.h>
+
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/runTimeMgr.h>
@@ -128,16 +130,18 @@ namespace
         UsdImagingDelegate& sceneDelegate,
         const HdSelectionSharedPtr& result)
     {
-        if (item->runTimeId() != USD_UFE_RUNTIME_ID) {
+        // Filter out items which are not under the current proxy shape.
+        if (!item->path().startsWith(proxyPath)) {
             return;
         }
 
-        const Ufe::Path::Segments& segments = item->path().getSegments();
-        if ((segments.size() != 2) || (proxyPath != segments[0])) {
+        // Filter out non-USD items.
+        auto usdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(item);
+        if (!usdItem) {
             return;
         }
 
-        SdfPath usdPath(segments[1].string());
+        SdfPath usdPath = usdItem->prim().GetPath();
 
 #if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 11
         usdPath = sceneDelegate.ConvertCachePathToIndexPath(usdPath);
@@ -807,13 +811,12 @@ void ProxyRenderDelegate::_PopulateSelection()
     auto it = globalSelection->crbegin();
     if (it != globalSelection->crend()) {
         PopulateSelection(*it, proxyPath, *_sceneDelegate, _leadSelection);
-        it++;
-    }
 
-    // Start reverse iteration from the second last item in UFE global selection
-    // and populate active selection.
-    for (; it != globalSelection->crend(); it++) {
-        PopulateSelection(*it, proxyPath, *_sceneDelegate, _activeSelection);
+        // Start reverse iteration from the second last item in UFE global
+        // selection and populate active selection.
+        for (it++; it != globalSelection->crend(); it++) {
+            PopulateSelection(*it, proxyPath, *_sceneDelegate, _activeSelection);
+        }
     }
 #endif
 }
