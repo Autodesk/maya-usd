@@ -55,7 +55,7 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         self.assertTrue(tempStage.GetRootLayer().Save())
 
         # Clear the cache before testing
-        pxr.UsdUtils.StageCache.Get().Clear()
+        self.SC.Clear()
 
     def tearDown(self):
         """Unload plugin, new Maya scene, reset class member variables."""
@@ -77,16 +77,15 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         # Get the cache ID and load the stage from the cache
         cacheIdValue = cmds.getAttr('{}.outStageCacheId'.format(shapeNode))
         cacheId = pxr.Usd.StageCache.Id.FromLongInt(cacheIdValue)
-        SC = pxr.UsdUtils.StageCache.Get()
-        self.assertTrue(SC.Contains(cacheId))
-        cacheStage = SC.Find(cacheId)
+        self.assertTrue(self.SC.Contains(cacheId))
+        cacheStage = self.SC.Find(cacheId)
 
         # Check they are the same
         self.assertEqual(shapeStage, cacheStage)
 
     def testCacheIdLoadFromCacheId(self):
         # Open the stage and get the cache Id
-        with pxr.Usd.StageCacheContext(pxr.UsdUtils.StageCache.Get()):
+        with pxr.Usd.StageCacheContext(self.SC):
             cachedStage = Usd.Stage.Open(self.filePath)
         stageId = self.SC.GetId(cachedStage).ToLongInt()
 
@@ -171,3 +170,24 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
 
         # Check they are the same
         self.assertEqual(shapeStageA, cacheStageB)
+
+    def testCacheIdNotStoredInFile(self):
+        # Open the stage and get the cache Id
+        with pxr.Usd.StageCacheContext(self.SC):
+            cachedStage = Usd.Stage.Open(self.filePath)
+        stageId = self.SC.GetId(cachedStage).ToLongInt()
+
+        self.assertGreaterEqual(stageId, 0)
+
+        # Create the proxy node and load using the stage id
+        shapeNode = cmds.createNode('mayaUsdProxyShape')
+        cmds.setAttr('{}.stageCacheId'.format(shapeNode), stageId)
+
+        # Save the file, reset and reopen it
+        cmds.file(rename=self.filePath)
+        cmds.file(save=True, force=True)
+        cmds.file(new=True, force=True)
+        cmds.file(self.filePath, open=True)
+
+        # Check that the stageCacheId reset to -1 
+        self.assertEqual(cmds.getAttr('{}.stageCacheId'.format(shapeNode)), -1)
