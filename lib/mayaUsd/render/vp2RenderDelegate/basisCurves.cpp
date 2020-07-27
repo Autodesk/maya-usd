@@ -1128,7 +1128,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 // Assign with the index to the dormant wireframe color by default.
                 colorIndices.resize(instanceCount, 0);
 
-                // Assign with the index to active selection highlight color.
+                // Assign with the index to the active selection highlight color.
                 if (auto state = drawScene.GetActiveSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
@@ -1137,7 +1137,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     }
                 }
 
-                // Assign with the index to lead selection highlight color.
+                // Assign with the index to the lead selection highlight color.
                 if (auto state = drawScene.GetLeadSelectionState(id)) {
                     for (const auto& indexArray : state->instanceIndices) {
                         for (const auto index : indexArray) {
