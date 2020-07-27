@@ -37,12 +37,6 @@ namespace UsdMayaUtilFileSystem
     std::string
     relativePathFromUsdStage(const std::string& filePath, const UsdStageRefPtr& usdStage);
 
-    /*! \brief returns the canonical path to the \p relativePath filename based on the file path
-        that introduces \p usdPrim
-    */
-    MAYAUSD_CORE_PUBLIC
-    std::string canonicalPathFromUsdPrim(const std::string& relativePath, const UsdPrim& usdPrim);
-
     /*! \brief returns the path to the
     */
     MAYAUSD_CORE_PUBLIC

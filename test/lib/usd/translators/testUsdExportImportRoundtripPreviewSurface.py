@@ -130,8 +130,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                          [(0.125, 0.25, 0.75)])
         self.assertEqual(cmds.getAttr("file2.defaultColor"),
                          [(0.5, 0.25, 0.125)])
-        self.assertEqual(cmds.getAttr("file2.fileTextureName"),
-                         cmds.getAttr(file_node+".fileTextureName"))
+        self.assertEqual(cmds.getAttr("file2.fileTextureName").lower(),
+                         cmds.getAttr(file_node+".fileTextureName").lower())
         self.assertEqual(cmds.getAttr("place2dTexture.wrapU"), 0)
         self.assertEqual(cmds.getAttr("place2dTexture.wrapV"), 1)
 
