@@ -231,7 +231,7 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			}
 		}
 #if UFE_PREVIEW_VERSION_NUM >= 2015
-		else if (!prim.IsValid())
+		else if (!prim.IsValid() && !InPathChange::inPathChange())
 		{
 			auto notification = Ufe::ObjectDestroyed(ufePath);
 			Ufe::Scene::notifyObjectDelete(notification);

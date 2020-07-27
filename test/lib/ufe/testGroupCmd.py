@@ -20,8 +20,6 @@ import os
 
 import maya.cmds as cmds
 
-from pxr import Sdf
-
 from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
 import ufe
 
@@ -91,6 +89,12 @@ class GroupCmdTestCase(unittest.TestCase):
         # The command will now append a number 1 at the end to match the naming
         # convention in Maya.
         newGroupPath = parentPath + ufe.PathComponent("newGroup1")
+
+        # Make sure the new group item has the correct Usd type
+        newGroupItem = ufe.Hierarchy.createItem(newGroupPath)
+        newGroupPrim = usdUtils.getPrimFromSceneItem(newGroupItem)
+        newGroupType = newGroupPrim.GetTypeName()
+        self.assertEqual(newGroupType, 'Xform')
 
         childPaths = set([child.path() for child in parentChildrenPost])
 

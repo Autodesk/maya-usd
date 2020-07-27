@@ -455,21 +455,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         it->PreFrame(drawContext);
     }
 
-    // TODO: Is there a way to improve this? Quite silly.
-    auto enableShadows = true;
-    auto* lightParam = drawContext.getLightParameterInformation(
-        0, MHWRender::MDrawContext::kFilteredIgnoreLightLimit);
-    if (lightParam != nullptr) {
-        MIntArray intVals;
-        if (lightParam->getParameter(
-                MHWRender::MLightParameterInformation::kGlobalShadowOn,
-                intVals) &&
-            intVals.length() > 0) {
-            enableShadows = intVals[0] != 0;
-        }
-    }
-    _taskController->SetEnableShadows(enableShadows);
-
     HdxRenderTaskParams params;
     params.enableLighting = true;
     params.enableSceneMaterials = true;
@@ -494,10 +479,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     params.cullStyle = HdCullStyleBackUnlessDoubleSided;
 
     _taskController->SetRenderParams(params);
-    HdxShadowTaskParams shadowParams;
-    shadowParams.cullStyle = HdCullStyleNothing;
-
-    _taskController->SetShadowParams(shadowParams);
 
     // Default color in usdview.
     _taskController->SetSelectionColor(_globals.colorSelectionHighlightColor);
@@ -514,27 +495,49 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
 #endif
 
-    // This is required for HdStorm to display transparency.
-    // We should fix this upstream, so HdStorm can setup
-    // all the required states.
     _taskController->SetCollection(_renderCollection);
     if (_isUsingHdSt) {
+        // TODO: Is there a way to improve this? Quite silly.
+        auto enableShadows = true;
+        auto* lightParam = drawContext.getLightParameterInformation(
+            0, MHWRender::MDrawContext::kFilteredIgnoreLightLimit);
+        if (lightParam != nullptr) {
+            MIntArray intVals;
+            if (lightParam->getParameter(
+                    MHWRender::MLightParameterInformation::kGlobalShadowOn,
+                    intVals) &&
+                intVals.length() > 0) {
+                enableShadows = intVals[0] != 0;
+            }
+        }
+        HdxShadowTaskParams shadowParams;
+        shadowParams.cullStyle = HdCullStyleNothing;
+
+        // The light & shadow parameters currently (19.11-20.08) are only used for tasks specific to Storm
+        _taskController->SetEnableShadows(enableShadows);
+        _taskController->SetShadowParams(shadowParams);
+
 #ifndef HDMAYA_OIT_ENABLED
+        // This is required for HdStorm to display transparency.
+        // We should fix this upstream, so HdStorm can setup
+        // all the required states.
         HdMayaSetRenderGLState state;
 #endif
         renderFrame(true);
+
+        // This causes issues with the embree delegate and potentially others.
+        // (i.e. rendering a wireframe via collections isn't supported by other delegates)
+        if (_globals.wireframeSelectionHighlight &&
+            _globals.selectionOverlay == MtohTokens->UseHdSt && _isUsingHdSt) {
+            if (!_selectionCollection.GetRootPaths().empty()) {
+                _taskController->SetCollection(_selectionCollection);
+                renderFrame();
+                // XXX: This call isn't 'free' and will be done again on the next MtohRenderOverride::Render call anyway
+                _taskController->SetCollection(_renderCollection);
+            }
+        }
     } else {
         renderFrame(true);
-    }
-
-    // This causes issues with the embree delegate and potentially others.
-    if (_globals.wireframeSelectionHighlight &&
-        _globals.selectionOverlay == MtohTokens->UseHdSt && _isUsingHdSt) {
-        if (!_selectionCollection.GetRootPaths().empty()) {
-            _taskController->SetCollection(_selectionCollection);
-            renderFrame();
-            _taskController->SetCollection(_renderCollection);
-        }
     }
 
     for (auto& it : _delegates) { it->PostFrame(); }
