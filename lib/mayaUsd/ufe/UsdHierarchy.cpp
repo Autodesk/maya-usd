@@ -180,6 +180,23 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
 }
 #endif
 
+#if UFE_PREVIEW_VERSION_NUM >= 2018
+
+Ufe::SceneItem::Ptr UsdHierarchy::insertChild(
+        const Ufe::SceneItem::Ptr& ,
+        const Ufe::SceneItem::Ptr& 
+)
+{
+    // Should be possible to implement trivially when support for returning the
+    // result of the parent command (MAYA-105278) is implemented.  For now,
+    // Ufe::Hierarchy::insertChildCmd() returns a base class
+    // Ufe::UndoableCommand::Ptr object, from which we can't retrieve the added
+    // child.  PPT, 13-Jul-2020.
+    return nullptr;
+}
+
+#endif // UFE_PREVIEW_VERSION_NUM
+
 #if UFE_PREVIEW_VERSION_NUM < 2017
 // Create a transform.
 Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
@@ -242,6 +259,7 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::createGroupCmd(const Ufe::Selection& sel
 #endif // UFE_PREVIEW_VERSION_NUM
 
 #if UFE_PREVIEW_VERSION_NUM >= 2018
+
 Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
 {
     // Default parent for USD nodes is the pseudo-root of their stage, which is
@@ -252,19 +270,6 @@ Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
 #endif
     auto proxyShapePath = path.popSegment();
     return createItem(proxyShapePath);
-}
-
-Ufe::SceneItem::Ptr UsdHierarchy::insertChild(
-        const Ufe::SceneItem::Ptr& ,
-        const Ufe::SceneItem::Ptr& 
-)
-{
-    // Should be possible to implement trivially when support for returning the
-    // result of the parent command (MAYA-105278) is implemented.  For now,
-    // Ufe::Hierarchy::insertChildCmd() returns a base class
-    // Ufe::UndoableCommand::Ptr object, from which we can't retrieve the added
-    // child.  PPT, 13-Jul-2020.
-    return nullptr;
 }
 
 #endif // UFE_PREVIEW_VERSION_NUM

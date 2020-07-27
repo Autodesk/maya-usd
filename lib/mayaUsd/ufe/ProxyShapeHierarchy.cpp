@@ -177,6 +177,23 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
 }
 #endif
 
+#if UFE_PREVIEW_VERSION_NUM >= 2018
+
+Ufe::SceneItem::Ptr ProxyShapeHierarchy::insertChild(
+        const Ufe::SceneItem::Ptr& ,
+        const Ufe::SceneItem::Ptr& 
+)
+{
+    // Should be possible to implement trivially when support for returning the
+    // result of the parent command (MAYA-105278) is implemented.  For now,
+    // Ufe::Hierarchy::insertChildCmd() returns a base class
+    // Ufe::UndoableCommand::Ptr object, from which we can't retrieve the added
+    // child.  PPT, 13-Jul-2020.
+    return nullptr;
+}
+
+#endif
+
 #if UFE_PREVIEW_VERSION_NUM < 2017
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
@@ -219,19 +236,6 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(const Ufe::Selecti
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 {
     // Maya shape nodes cannot be unparented.
-    return nullptr;
-}
-
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::insertChild(
-        const Ufe::SceneItem::Ptr& ,
-        const Ufe::SceneItem::Ptr& 
-)
-{
-    // Should be possible to implement trivially when support for returning the
-    // result of the parent command (MAYA-105278) is implemented.  For now,
-    // Ufe::Hierarchy::insertChildCmd() returns a base class
-    // Ufe::UndoableCommand::Ptr object, from which we can't retrieve the added
-    // child.  PPT, 13-Jul-2020.
     return nullptr;
 }
 
