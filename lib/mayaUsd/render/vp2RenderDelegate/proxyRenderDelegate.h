@@ -22,6 +22,7 @@
 #include <maya/MDrawContext.h>
 #include <maya/MFrameContext.h>
 #include <maya/MGlobal.h>
+#include <maya/MHWGeometryUtilities.h>
 #include <maya/MMessage.h>
 #include <maya/MObject.h>
 #include <maya/MPxSubSceneOverride.h>
@@ -67,9 +68,10 @@ class HdxTaskController;
 /*! \brief  Enumerations for selection status
 */
 enum HdVP2SelectionStatus {
-    kUnselected        = 0, //!< The Rprim is not selected
-    kPartiallySelected = 1, //!< The Rprim is partially selected (only applicable for instanced Rprims)
-    kFullySelected     = 2  //!< The Rprim is selected (meaning fully selected for instanced Rprims)
+    kUnselected,        //!< A Rprim is not selected
+    kPartiallySelected, //!< A Rprim is partially selected (only applicable for instanced Rprims)
+    kFullyActive,       //!< A Rprim is active (meaning fully active for instanced Rprims)
+    kFullyLead          //!< A Rprim is lead (meaning fully lead for instanced Rprims)
 };
 
 /*! \brief  USD Proxy rendering routine via VP2 MPxSubSceneOverride
@@ -128,10 +130,16 @@ public:
     const MColor& GetWireframeColor() const;
 
     MAYAUSD_CORE_PUBLIC
-    const HdSelection::PrimSelectionState* GetPrimSelectionState(const SdfPath& path) const;
+    const MColor& GetSelectionHighlightColor(bool lead) const;
 
     MAYAUSD_CORE_PUBLIC
-    HdVP2SelectionStatus GetPrimSelectionStatus(const SdfPath& path) const;
+    const HdSelection::PrimSelectionState* GetLeadSelectionState(const SdfPath& path) const;
+
+    MAYAUSD_CORE_PUBLIC
+    const HdSelection::PrimSelectionState* GetActiveSelectionState(const SdfPath& path) const;
+
+    MAYAUSD_CORE_PUBLIC
+    HdVP2SelectionStatus GetSelectionStatus(const SdfPath& path) const;
 
     MAYAUSD_CORE_PUBLIC
     bool DrawRenderTag(const TfToken& renderTag) const;
@@ -148,7 +156,7 @@ private:
 
     bool _isInitialized();
 
-    void _FilterSelection();
+    void _PopulateSelection();
     void _UpdateSelectionStates();
     void _UpdateRenderTags();
     SdfPathVector _GetFilteredRprims(HdRprimCollection const& collection, TfTokenVector const& renderTags);
@@ -198,7 +206,6 @@ private:
 
     bool                    _isPopulated{ false };      //!< If false, scene delegate wasn't populated yet within render index
     bool                    _selectionChanged{ true };  //!< Whether there is any selection change or not
-    bool                    _isProxySelected{ false };  //!< Whether the proxy shape is selected
     MColor                  _wireframeColor;            //!< Wireframe color assigned to the proxy shape
 
     //! A collection of Rprims to prepare render data for specified reprs
@@ -212,8 +219,9 @@ private:
 #endif
     bool _taskRenderTagsValid { false }; //!< If false the render tags on the dummy render task are not the minimum set of tags.
 
-    //! A collection of Rprims being selected
-    HdSelectionSharedPtr               _selection;
+    MHWRender::DisplayStatus _displayStatus{ MHWRender::kNoStatus }; //!< The display status of the proxy shape
+    HdSelectionSharedPtr _leadSelection;                             //!< A collection of Rprims being lead selection
+    HdSelectionSharedPtr _activeSelection;                           //!< A collection of Rprims being active selection
 
 #if defined(WANT_UFE_BUILD)
     //! Observer to listen to UFE changes

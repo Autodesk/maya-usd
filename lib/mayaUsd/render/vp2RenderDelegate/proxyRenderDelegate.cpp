@@ -46,6 +46,8 @@
 #include "tokens.h"
 
 #if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/UsdSceneItem.h>
+
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/runTimeMgr.h>
@@ -120,7 +122,58 @@ namespace
         }
         return TfToken();
     }
+
+    //! \brief  Populate Rprims into the Hydra selection from the UFE scene item.
+    void PopulateSelection(
+        const Ufe::SceneItem::Ptr& item,
+        const Ufe::Path& proxyPath,
+        UsdImagingDelegate& sceneDelegate,
+        const HdSelectionSharedPtr& result)
+    {
+        // Filter out items which are not under the current proxy shape.
+        if (!item->path().startsWith(proxyPath)) {
+            return;
+        }
+
+        // Filter out non-USD items.
+        auto usdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(item);
+        if (!usdItem) {
+            return;
+        }
+
+        SdfPath usdPath = usdItem->prim().GetPath();
+
+#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 11
+        usdPath = sceneDelegate.ConvertCachePathToIndexPath(usdPath);
+#endif
+
+        sceneDelegate.PopulateSelection(HdSelection::HighlightModeSelect,
+            usdPath, UsdImagingDelegate::ALL_INSTANCES, result);
+    }
 #endif // defined(WANT_UFE_BUILD)
+
+    //! \brief  Append the selected prim paths to the result list.
+    void AppendSelectedPrimPaths(
+        const HdSelectionSharedPtr& selection,
+        SdfPathVector& result)
+    {
+        if (!selection) {
+            return;
+        }
+
+        SdfPathVector paths = selection->GetSelectedPrimPaths(HdSelection::HighlightModeSelect);
+        if (paths.empty()) {
+            return;
+        }
+
+        if (result.empty()) {
+            result.swap(paths);
+        }
+        else {
+            result.reserve(result.size() + paths.size());
+            result.insert(result.end(), paths.begin(), paths.end());
+        }
+    }
 
     //! \brief  Configure repr descriptions
     void _ConfigureReprs()
@@ -376,8 +429,6 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
 
         _defaultCollection.reset(new HdRprimCollection());
         _defaultCollection->SetName(HdTokens->geometry);
-
-        _selection.reset(new HdSelection);
 
 #if defined(WANT_UFE_BUILD)
         if (!_observer) {
@@ -742,36 +793,30 @@ void ProxyRenderDelegate::SelectionChanged()
     _selectionChanged = true;
 }
 
-//! \brief  Filter selection for Rprims under the proxy shape.
-void ProxyRenderDelegate::_FilterSelection()
+//! \brief  Polulate lead and active selection for Rprims under the proxy shape.
+void ProxyRenderDelegate::_PopulateSelection()
 {
 #if defined(WANT_UFE_BUILD)
     if (_proxyShapeData->ProxyShape() == nullptr) {
         return;
     }
 
-    _selection.reset(new HdSelection);
+    _leadSelection.reset(new HdSelection);
+    _activeSelection.reset(new HdSelection);
 
     const auto proxyPath = _proxyShapeData->ProxyShape()->ufePath();
     const auto globalSelection = Ufe::GlobalSelection::get();
 
-    for (const Ufe::SceneItem::Ptr& item : *globalSelection) {
-        if (item->runTimeId() != USD_UFE_RUNTIME_ID) {
-            continue;
+    // Populate lead selection from the last item in UFE global selection.
+    auto it = globalSelection->crbegin();
+    if (it != globalSelection->crend()) {
+        PopulateSelection(*it, proxyPath, *_sceneDelegate, _leadSelection);
+
+        // Start reverse iteration from the second last item in UFE global
+        // selection and populate active selection.
+        for (it++; it != globalSelection->crend(); it++) {
+            PopulateSelection(*it, proxyPath, *_sceneDelegate, _activeSelection);
         }
-
-        const Ufe::Path::Segments& segments = item->path().getSegments();
-        if ((segments.size() != 2) || (proxyPath != segments[0])) {
-            continue;
-        }
-
-        SdfPath usdPath(segments[1].string());
-#if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 11
-        usdPath = _sceneDelegate->ConvertCachePathToIndexPath(usdPath);
-#endif
-
-        _sceneDelegate->PopulateSelection(HdSelection::HighlightModeSelect,
-            usdPath, UsdImagingDelegate::ALL_INSTANCES, _selection);
     }
 #endif
 }
@@ -780,35 +825,31 @@ void ProxyRenderDelegate::_FilterSelection()
 */
 void ProxyRenderDelegate::_UpdateSelectionStates()
 {
-    auto status = MHWRender::MGeometryUtilities::displayStatus(_proxyShapeData->ProxyDagPath());
-
-    const bool wasProxySelected = _isProxySelected;
-    _isProxySelected =
-        (status == MHWRender::kHilite) ||
-        (status == MHWRender::kLead) ||
-        (status == MHWRender::kActive);
+    const MHWRender::DisplayStatus previousStatus = _displayStatus;
+    _displayStatus = MHWRender::MGeometryUtilities::displayStatus(_proxyShapeData->ProxyDagPath());
 
     SdfPathVector rootPaths;
 
-    if (_isProxySelected) {
-        rootPaths.push_back(SdfPath::AbsoluteRootPath());
+    if (_displayStatus == MHWRender::kLead || _displayStatus == MHWRender::kActive) {
+        if (_displayStatus != previousStatus) {
+            rootPaths.push_back(SdfPath::AbsoluteRootPath());
+        }
     }
-    else if (wasProxySelected) {
+    else if (previousStatus == MHWRender::kLead || previousStatus == MHWRender::kActive) {
         rootPaths.push_back(SdfPath::AbsoluteRootPath());
-        _FilterSelection();
+        _PopulateSelection();
     }
     else {
-        constexpr HdSelection::HighlightMode mode = HdSelection::HighlightModeSelect;
+        // Append pre-update lead and active selection.
+        AppendSelectedPrimPaths(_leadSelection, rootPaths);
+        AppendSelectedPrimPaths(_activeSelection, rootPaths);
 
-        SdfPathVector oldPaths = _selection->GetSelectedPrimPaths(mode);
-        _FilterSelection();
-        SdfPathVector newPaths = _selection->GetSelectedPrimPaths(mode);
+        // Update lead and active selection.
+        _PopulateSelection();
 
-        if (!oldPaths.empty() || !newPaths.empty()) {
-            rootPaths = std::move(oldPaths);
-            rootPaths.reserve(rootPaths.size() + newPaths.size());
-            rootPaths.insert(rootPaths.end(), newPaths.begin(), newPaths.end());
-        }
+        // Append post-update lead and active selection.
+        AppendSelectedPrimPaths(_leadSelection, rootPaths);
+        AppendSelectedPrimPaths(_activeSelection, rootPaths);
     }
 
     if (!rootPaths.empty()) {
@@ -946,25 +987,42 @@ SdfPathVector ProxyRenderDelegate::_GetFilteredRprims(
     return rprimIds;
 }
 
-//! \brief  Query the selection state of a given prim.
+//! \brief  Query the selection state of a given prim from the lead selection.
 const HdSelection::PrimSelectionState*
-ProxyRenderDelegate::GetPrimSelectionState(const SdfPath& path) const
+ProxyRenderDelegate::GetLeadSelectionState(const SdfPath& path) const
 {
-    return (_selection == nullptr) ? nullptr :
-        _selection->GetPrimSelectionState(HdSelection::HighlightModeSelect, path);
+    return (_leadSelection == nullptr) ? nullptr :
+        _leadSelection->GetPrimSelectionState(HdSelection::HighlightModeSelect, path);
+}
+
+//! \brief  Qeury the selection state of a given prim from the active selection.
+const HdSelection::PrimSelectionState*
+ProxyRenderDelegate::GetActiveSelectionState(const SdfPath& path) const
+{
+    return (_activeSelection == nullptr) ? nullptr :
+        _activeSelection->GetPrimSelectionState(HdSelection::HighlightModeSelect, path);
 }
 
 //! \brief  Query the selection status of a given prim.
 HdVP2SelectionStatus
-ProxyRenderDelegate::GetPrimSelectionStatus(const SdfPath& path) const
+ProxyRenderDelegate::GetSelectionStatus(const SdfPath& path) const
 {
-    if (_isProxySelected) {
-        return kFullySelected;
+    if (_displayStatus == MHWRender::kLead) {
+        return kFullyLead;
     }
 
-    const HdSelection::PrimSelectionState* state = GetPrimSelectionState(path);
+    if (_displayStatus == MHWRender::kActive) {
+        return kFullyActive;
+    }
+
+    const HdSelection::PrimSelectionState* state = GetLeadSelectionState(path);
     if (state) {
-        return state->fullySelected ? kFullySelected : kPartiallySelected;
+        return state->fullySelected ? kFullyLead : kPartiallySelected;
+    }
+
+    state = GetActiveSelectionState(path);
+    if (state) {
+        return state->fullySelected ? kFullyActive : kPartiallySelected;
     }
 
     return kUnselected;
@@ -974,6 +1032,15 @@ ProxyRenderDelegate::GetPrimSelectionStatus(const SdfPath& path) const
 const MColor& ProxyRenderDelegate::GetWireframeColor() const
 {
     return _wireframeColor;
+}
+
+//! \brief  
+const MColor& ProxyRenderDelegate::GetSelectionHighlightColor(bool lead) const
+{
+    static const MColor kLeadColor(0.056f, 1.0f, 0.366f, 1.0f);
+    static const MColor kActiveColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+    return lead ? kLeadColor : kActiveColor;
 }
 
 bool ProxyRenderDelegate::DrawRenderTag(const TfToken& renderTag) const
