@@ -67,7 +67,7 @@ namespace
             {"isImplicit", arc.IsImplicit() ? "True" : "False"},
             {"isIntroRootLayer", arc.IsIntroducedInRootLayerStack() ? "True" : "False"},
             {"isIntroRootLayerPrim", arc.IsIntroducedInRootLayerPrimSpec() ? "True" : "False" },
-            {"nodeLayerStack", introducingNode ? introducingNode.GetLayerStack()->GetIdentifier().rootLayer->GetRealPath() : ""},
+            {"nodeLayerStack", arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer->GetRealPath()},
             {"nodePath", arc.GetTargetNode().GetPath().GetString()},
         };
     }

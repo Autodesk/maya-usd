@@ -133,7 +133,9 @@ private:
     HdDirtyBits          _customDirtyBitsInUse{ 0 };    //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
     const MString        _rprimId;                      //!< Rprim id cached as a maya string for easier debugging and profiling
     HdVP2MeshSharedData  _meshSharedData;               //!< Shared data for all draw items of the Rprim
-    HdVP2SelectionStatus _selectionState{ kUnselected };//!< Selection status of the Rprim
+
+    //! Selection status of the Rprim
+    HdVP2SelectionStatus _selectionStatus{ kUnselected };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
