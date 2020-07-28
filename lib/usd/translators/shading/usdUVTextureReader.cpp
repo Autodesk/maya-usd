@@ -178,7 +178,9 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     UsdShadeInput usdInput = shaderSchema.GetInput(_tokens->file);
     if (usdInput && usdInput.Get(&val) && val.IsHolding<SdfAssetPath>()) {
         std::string filePath = val.UncheckedGet<SdfAssetPath>().GetResolvedPath();
-        val = SdfAssetPath(filePath);
+        if (!filePath.empty()) {
+            val = SdfAssetPath(filePath);
+        }
         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
         if (status == MS::kSuccess) {
             UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);

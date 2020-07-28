@@ -68,6 +68,11 @@ class testUsdImportPreviewSurface(unittest.TestCase):
         self.assertTrue(filename.endswith("red_C.png"))
         self.assertFalse(filename.startswith(".."))
 
+        # Last one can not be resolved. Make sure it remained relative
+        filename = cmds.getAttr("unresolvableFile.fileTextureName")
+        self.assertTrue(filename.endswith("unresolvable.png"))
+        self.assertTrue(filename.startswith(".."))
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
