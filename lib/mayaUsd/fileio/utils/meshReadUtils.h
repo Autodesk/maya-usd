@@ -37,13 +37,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomMesh;
 
-#define PXRUSDMAYA_MESH_COLOR_SET_TOKENS \
+#define PXRUSDMAYA_MESH_PRIMVAR_TOKENS \
     ((DisplayColorColorSetName, "displayColor")) \
-    ((DisplayOpacityColorSetName, "displayOpacity"))
+    ((DisplayOpacityColorSetName, "displayOpacity")) \
+    ((DefaultMayaTexcoordName, "map1"))
+    
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaMeshColorSetTokens,
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaMeshPrimvarTokens,
     MAYAUSD_CORE_PUBLIC,
-    PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
+    PXRUSDMAYA_MESH_PRIMVAR_TOKENS);
 
 /// Utilities for dealing with USD and RenderMan for Maya mesh/subdiv tags.
 namespace UsdMayaMeshReadUtils

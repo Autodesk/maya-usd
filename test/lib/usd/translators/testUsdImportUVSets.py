@@ -192,6 +192,9 @@ class testUsdImportUVSets(unittest.TestCase):
         """
         mayaCubeMesh = self._GetMayaMesh('CompressibleUVSetsCubeShape')
 
+        # We should not see the default "map1" UV set:
+        self.assertNotIn("map1", mayaCubeMesh.getUVSetNames())
+
         # ALL face vertices should have the same value.
         uvSetName = 'ConstantInterpSet'
         expectedValues = {}
