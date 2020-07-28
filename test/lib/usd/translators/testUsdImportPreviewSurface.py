@@ -68,6 +68,18 @@ class testUsdImportPreviewSurface(unittest.TestCase):
         self.assertTrue(filename.endswith("red_C.png"))
         self.assertFalse(filename.startswith(".."))
 
+        filename = cmds.getAttr("nestedFile1.fileTextureName")
+        self.assertTrue(filename.endswith("black_B.png"))
+        self.assertFalse(filename.startswith("textures"))
+
+        filename = cmds.getAttr("upOneLevelFile1.fileTextureName")
+        self.assertTrue(filename.endswith("red_C.png"))
+        self.assertFalse(filename.startswith(".."))
+
+        filename = cmds.getAttr("upTwoLevelsFile1.fileTextureName")
+        self.assertTrue(filename.endswith("green_A.png"))
+        self.assertFalse(filename.startswith(".."))
+
         # Last one can not be resolved. Make sure it remained relative
         filename = cmds.getAttr("unresolvableFile.fileTextureName")
         self.assertTrue(filename.endswith("unresolvable.png"))
