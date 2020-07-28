@@ -20,11 +20,9 @@
 #include <maya/MFnReference.h>
 
 #include <pxr/usd/ar/resolver.h>
-#include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <mayaUsd/base/debugCodes.h>
-#include <mayaUsdUtils/util.h>
 
 #include <boost/filesystem.hpp>
 

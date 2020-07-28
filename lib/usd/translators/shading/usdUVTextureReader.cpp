@@ -18,7 +18,6 @@
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
