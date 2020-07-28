@@ -1,8 +1,8 @@
-//Maya ASCII 2020 scene
+//Maya ASCII 2018 scene
 //Name: ballset.ma
 //Last modified: Mon, Jul 20, 2020 11:08:40 PM
 //Codeset: 1252
-requires maya "2020";
+requires maya "2018";
 requires -nodeType "mayaUsdProxyShape" -dataType "pxrUsdStageData" "mayaUsdPlugin" "1.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
