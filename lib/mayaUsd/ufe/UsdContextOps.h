@@ -15,65 +15,65 @@
 //
 #pragma once
 
-#include <ufe/path.h>
-#include <ufe/contextOps.h>
-
-#include <pxr/usd/usd/prim.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <pxr/usd/usd/prim.h>
+
+#include <ufe/contextOps.h>
+#include <ufe/path.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief Interface for scene item context operations.
-/*!
-    This class defines the interface that USD run-time implements to
-    provide contextual operation support (example Outliner context menu).
-
-    This class is not copy-able, nor move-able.
-
-    \see UFE ContextOps class documentation for more details
-*/
-class MAYAUSD_CORE_PUBLIC UsdContextOps : public Ufe::ContextOps
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdContextOps> Ptr;
+    namespace ufe {
 
-	UsdContextOps(const UsdSceneItem::Ptr& item);
-	~UsdContextOps() override;
+    //! \brief Interface for scene item context operations.
+    /*!
+        This class defines the interface that USD run-time implements to
+        provide contextual operation support (example Outliner context menu).
 
-	// Delete the copy/move constructors assignment operators.
-	UsdContextOps(const UsdContextOps&) = delete;
-	UsdContextOps& operator=(const UsdContextOps&) = delete;
-	UsdContextOps(UsdContextOps&&) = delete;
-	UsdContextOps& operator=(UsdContextOps&&) = delete;
+        This class is not copy-able, nor move-able.
 
-	//! Create a UsdContextOps.
-	static UsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
+        \see UFE ContextOps class documentation for more details
+    */
+    class MAYAUSD_CORE_PUBLIC UsdContextOps : public Ufe::ContextOps {
+    public:
+        typedef std::shared_ptr<UsdContextOps> Ptr;
 
-	void setItem(const UsdSceneItem::Ptr& item);
-	const Ufe::Path& path() const;
+        UsdContextOps(const UsdSceneItem::Ptr& item);
+        ~UsdContextOps() override;
 
-	// When we are created from the ProxyShapeContextOpsHandler we do not have the proper
-	// Maya UFE scene item. So it won't return the correct node type. Therefore we set
-	// this flag directly.
-	void setIsAGatewayType(bool t) { fIsAGatewayType = t; }
-	bool isAGatewayType() const { return fIsAGatewayType; }
+        // Delete the copy/move constructors assignment operators.
+        UsdContextOps(const UsdContextOps&) = delete;
+        UsdContextOps& operator=(const UsdContextOps&) = delete;
+        UsdContextOps(UsdContextOps&&) = delete;
+        UsdContextOps& operator=(UsdContextOps&&) = delete;
 
-	// Ufe::ContextOps overrides
-	Ufe::SceneItem::Ptr sceneItem() const override;
-    Items getItems(const ItemPath& itemPath) const override;
-    Ufe::UndoableCommand::Ptr doOpCmd(const ItemPath& itemPath) override;
+        //! Create a UsdContextOps.
+        static UsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
 
-private:
-	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
-	bool fIsAGatewayType{false};
+        void             setItem(const UsdSceneItem::Ptr& item);
+        const Ufe::Path& path() const;
 
-}; // UsdContextOps
+        // When we are created from the ProxyShapeContextOpsHandler we do not have the proper
+        // Maya UFE scene item. So it won't return the correct node type. Therefore we set
+        // this flag directly.
+        void setIsAGatewayType(bool t) { fIsAGatewayType = t; }
+        bool isAGatewayType() const { return fIsAGatewayType; }
 
-} // namespace ufe
+        // Ufe::ContextOps overrides
+        Ufe::SceneItem::Ptr       sceneItem() const override;
+        Items                     getItems(const ItemPath& itemPath) const override;
+        Ufe::UndoableCommand::Ptr doOpCmd(const ItemPath& itemPath) override;
+
+    private:
+        UsdSceneItem::Ptr fItem;
+        UsdPrim           fPrim;
+        bool              fIsAGatewayType { false };
+
+    }; // UsdContextOps
+
+    } // namespace ufe
 } // namespace MayaUsd

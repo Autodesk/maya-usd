@@ -16,62 +16,55 @@
 //
 #include "importTranslator.h"
 
-#include <map>
-#include <string>
-
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/jobs/readJob.h>
 #include <mayaUsd/fileio/jobs/writeJob.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+
+#include <pxr/base/gf/interval.h>
+#include <pxr/base/vt/dictionary.h>
 
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 
-#include <pxr/base/gf/interval.h>
-#include <pxr/base/vt/dictionary.h>
+#include <map>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-void*
-UsdMayaImportTranslator::creator()
-{
-    return new UsdMayaImportTranslator();
-}
+void* UsdMayaImportTranslator::creator() { return new UsdMayaImportTranslator(); }
 
-UsdMayaImportTranslator::UsdMayaImportTranslator() : MPxFileTranslator()
+UsdMayaImportTranslator::UsdMayaImportTranslator()
+    : MPxFileTranslator()
 {
 }
 
 /* virtual */
-UsdMayaImportTranslator::~UsdMayaImportTranslator()
-{
-}
+UsdMayaImportTranslator::~UsdMayaImportTranslator() { }
 
 /* virtual */
-MStatus
-UsdMayaImportTranslator::reader(
-        const MFileObject& file,
-        const MString& optionsString,
-        MPxFileTranslator::FileAccessMode  /*mode*/)
+MStatus UsdMayaImportTranslator::reader(
+    const MFileObject& file,
+    const MString&     optionsString,
+    MPxFileTranslator::FileAccessMode /*mode*/)
 {
-    std::string fileName(file.fullName().asChar(), file.fullName().length());
+    std::string                        fileName(file.fullName().asChar(), file.fullName().length());
     std::map<std::string, std::string> variants;
 
     // If the input filename doesn't match the one in the importData we clear out
     // the import data. This would happen if the user performed an import with
     // the dialog and then manually with a different file name.
     MayaUsd::ImportData& importData = MayaUsd::ImportData::instance();
-    if (fileName != importData.filename())
-    {
+    if (fileName != importData.filename()) {
         importData.clearData();
         importData.setFilename(fileName);
     }
 
-    bool readAnimData = true;
-    bool useCustomFrameRange = false;
+    bool       readAnimData = true;
+    bool       useCustomFrameRange = false;
     GfInterval timeInterval(1.0, 1.0);
 
     VtDictionary userArgs;
@@ -80,7 +73,7 @@ UsdMayaImportTranslator::reader(
         MStringArray optionList;
         MStringArray theOption;
         optionsString.split(';', optionList);
-        for(int i=0, n=optionList.length(); i<n; ++i) {
+        for (int i = 0, n = optionList.length(); i < n; ++i) {
             theOption.clear();
             optionList[i].split('=', theOption);
             if (theOption.length() != 2) {
@@ -99,11 +92,8 @@ UsdMayaImportTranslator::reader(
             } else if (argName == "primPath") {
                 importData.setRootPrimPath(theOption[1].asChar());
             } else {
-                userArgs[argName] =
-                    UsdMayaUtil::ParseArgumentValue(
-                        argName,
-                        theOption[1].asChar(),
-                        UsdMayaJobImportArgs::GetDefaultDictionary());
+                userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
+                    argName, theOption[1].asChar(), UsdMayaJobImportArgs::GetDefaultDictionary());
             }
         }
     }
@@ -112,20 +102,18 @@ UsdMayaImportTranslator::reader(
         if (!useCustomFrameRange) {
             timeInterval = GfInterval::GetFullInterval();
         }
-    }
-    else {
+    } else {
         timeInterval = GfInterval();
     }
 
-    UsdMayaJobImportArgs jobArgs =
-        UsdMayaJobImportArgs::CreateFromDictionary(
-            userArgs,
-            /* importWithProxyShapes = */ false,
-            timeInterval);
+    UsdMayaJobImportArgs jobArgs = UsdMayaJobImportArgs::CreateFromDictionary(
+        userArgs,
+        /* importWithProxyShapes = */ false,
+        timeInterval);
 
-    UsdMaya_ReadJob mUsdReadJob(importData, jobArgs);
+    UsdMaya_ReadJob       mUsdReadJob(importData, jobArgs);
     std::vector<MDagPath> addedDagPaths;
-    bool success = mUsdReadJob.Read(&addedDagPaths);
+    bool                  success = mUsdReadJob.Read(&addedDagPaths);
 
     // After a successful import we clear the import data as we don't want to
     // re-use it on a subsequent import.
@@ -136,15 +124,14 @@ UsdMayaImportTranslator::reader(
 }
 
 /* virtual */
-MPxFileTranslator::MFileKind
-UsdMayaImportTranslator::identifyFile(
-        const MFileObject& file,
-        const char*  /*buffer*/,
-        short  /*size*/) const
+MPxFileTranslator::MFileKind UsdMayaImportTranslator::identifyFile(
+    const MFileObject& file,
+    const char* /*buffer*/,
+    short /*size*/) const
 {
-    MFileKind retValue = kNotMyFileType;
+    MFileKind     retValue = kNotMyFileType;
     const MString fileName = file.fullName();
-    const int lastIndex = fileName.length() - 1;
+    const int     lastIndex = fileName.length() - 1;
 
     const int periodIndex = fileName.rindex('.');
     if (periodIndex < 0 || periodIndex >= lastIndex) {
@@ -153,10 +140,10 @@ UsdMayaImportTranslator::identifyFile(
 
     const MString fileExtension = fileName.substring(periodIndex + 1, lastIndex);
 
-    if (fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText() ||
-        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText() ||
-        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText() ||
-        fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionPackage.GetText()) {
+    if (fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText()
+        || fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionASCII.GetText()
+        || fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText()
+        || fileExtension == UsdMayaTranslatorTokens->UsdFileExtensionPackage.GetText()) {
         retValue = kIsMyFileType;
     }
 
@@ -164,24 +151,22 @@ UsdMayaImportTranslator::identifyFile(
 }
 
 /* static */
-const std::string&
-UsdMayaImportTranslator::GetDefaultOptions()
+const std::string& UsdMayaImportTranslator::GetDefaultOptions()
 {
-    static std::string defaultOptions;
+    static std::string    defaultOptions;
     static std::once_flag once;
     std::call_once(once, []() {
         std::vector<std::string> entries;
         for (const std::pair<std::string, VtValue> keyValue :
-                UsdMayaJobImportArgs::GetDefaultDictionary()) {
+             UsdMayaJobImportArgs::GetDefaultDictionary()) {
             if (keyValue.second.IsHolding<bool>()) {
-                entries.push_back(TfStringPrintf("%s=%d",
-                        keyValue.first.c_str(),
-                        static_cast<int>(keyValue.second.Get<bool>())));
-            }
-            else if (keyValue.second.IsHolding<std::string>()) {
-                entries.push_back(TfStringPrintf("%s=%s",
-                        keyValue.first.c_str(),
-                        keyValue.second.Get<std::string>().c_str()));
+                entries.push_back(TfStringPrintf(
+                    "%s=%d",
+                    keyValue.first.c_str(),
+                    static_cast<int>(keyValue.second.Get<bool>())));
+            } else if (keyValue.second.IsHolding<std::string>()) {
+                entries.push_back(TfStringPrintf(
+                    "%s=%s", keyValue.first.c_str(), keyValue.second.Get<std::string>().c_str()));
             }
         }
         entries.push_back("readAnimData=0");
@@ -191,6 +176,5 @@ UsdMayaImportTranslator::GetDefaultOptions()
 
     return defaultOptions;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

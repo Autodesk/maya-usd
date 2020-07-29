@@ -15,43 +15,33 @@
 //
 #include "UsdUndoDeleteCommand.h"
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-UsdUndoDeleteCommand::UsdUndoDeleteCommand(const UsdPrim& prim)
-	: Ufe::UndoableCommand()
-	, fPrim(prim)
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-UsdUndoDeleteCommand::~UsdUndoDeleteCommand()
-{
-}
+    UsdUndoDeleteCommand::UsdUndoDeleteCommand(const UsdPrim& prim)
+        : Ufe::UndoableCommand()
+        , fPrim(prim)
+    {
+    }
 
-/*static*/
-UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const UsdPrim& prim)
-{
-	return std::make_shared<UsdUndoDeleteCommand>(prim);
-}
+    UsdUndoDeleteCommand::~UsdUndoDeleteCommand() { }
 
-void UsdUndoDeleteCommand::perform(bool state)
-{
-	fPrim.SetActive(state);
-}
+    /*static*/
+    UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const UsdPrim& prim)
+    {
+        return std::make_shared<UsdUndoDeleteCommand>(prim);
+    }
 
-//------------------------------------------------------------------------------
-// UsdUndoDeleteCommand overrides
-//------------------------------------------------------------------------------
+    void UsdUndoDeleteCommand::perform(bool state) { fPrim.SetActive(state); }
 
-void UsdUndoDeleteCommand::undo()
-{
-	perform(true);
-}
+    //------------------------------------------------------------------------------
+    // UsdUndoDeleteCommand overrides
+    //------------------------------------------------------------------------------
 
-void UsdUndoDeleteCommand::redo()
-{
-	perform(false);
-}
+    void UsdUndoDeleteCommand::undo() { perform(true); }
 
-} // namespace ufe
+    void UsdUndoDeleteCommand::redo() { perform(false); }
+
+    } // namespace ufe
 } // namespace MayaUsd

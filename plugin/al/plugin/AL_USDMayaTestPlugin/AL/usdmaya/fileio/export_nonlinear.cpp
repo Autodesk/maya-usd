@@ -1,9 +1,9 @@
-#include <maya/MGlobal.h>
-#include <maya/MFileIO.h>
-
 #include "test_usdmaya.h"
 
 #include <pxr/usd/usdGeom/mesh.h>
+
+#include <maya/MFileIO.h>
+#include <maya/MGlobal.h>
 
 using AL::maya::test::buildTempPath;
 
@@ -28,76 +28,73 @@ setKeyframe ($nl[0] + ".cur");
 
 TEST(export_nonlinear, nonanimated)
 {
-  MFileIO::newFile(true);
-  MGlobal::executeCommand(g_nonlinear);
+    MFileIO::newFile(true);
+    MGlobal::executeCommand(g_nonlinear);
 
-  const std::string temp_path = buildTempPath("AL_USDMayaTests_nonlinear.usda");
+    const std::string temp_path = buildTempPath("AL_USDMayaTests_nonlinear.usda");
 
-  MString command =
-  "select -r \"pCylinder1\";"
-  "file -force -options "
-  "\"Dynamic_Attributes=1;"
-  "Meshes=1;"
-  "Nurbs_Curves=1;"
-  "Duplicate_Instances=1;"
-  "Merge_Transforms=1;"
-  "Animation=1;"
-  "Use_Timeline_Range=0;"
-  "Frame_Min=1;"
-  "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"";
-  command += temp_path.c_str();
-  command += "\";";
+    MString command = "select -r \"pCylinder1\";"
+                      "file -force -options "
+                      "\"Dynamic_Attributes=1;"
+                      "Meshes=1;"
+                      "Nurbs_Curves=1;"
+                      "Duplicate_Instances=1;"
+                      "Merge_Transforms=1;"
+                      "Animation=1;"
+                      "Use_Timeline_Range=0;"
+                      "Frame_Min=1;"
+                      "Frame_Max=50;"
+                      "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"";
+    command += temp_path.c_str();
+    command += "\";";
 
-  MGlobal::executeCommand(command);
+    MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open(temp_path);
-  EXPECT_TRUE(stage);
+    UsdStageRefPtr stage = UsdStage::Open(temp_path);
+    EXPECT_TRUE(stage);
 
-  {
-    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCylinder1"));
-    UsdGeomMesh mesh(prim);
+    {
+        UsdPrim     prim = stage->GetPrimAtPath(SdfPath("/pCylinder1"));
+        UsdGeomMesh mesh(prim);
 
-    UsdAttribute pointsAttr = mesh.GetPointsAttr();
-    size_t size = pointsAttr.GetNumTimeSamples();
-    EXPECT_EQ(0u, size);
-  }
+        UsdAttribute pointsAttr = mesh.GetPointsAttr();
+        size_t       size = pointsAttr.GetNumTimeSamples();
+        EXPECT_EQ(0u, size);
+    }
 }
 
 TEST(export_nonlinear, animated)
 {
-  MFileIO::newFile(true);
-  MGlobal::executeCommand(g_nonlinear_animated);
+    MFileIO::newFile(true);
+    MGlobal::executeCommand(g_nonlinear_animated);
 
-  const std::string temp_path = buildTempPath("AL_USDMayaTests_nonlinear_animated.usda");
+    const std::string temp_path = buildTempPath("AL_USDMayaTests_nonlinear_animated.usda");
 
-  MString command =
-  "select -r \"pCylinder1\";"
-  "file -force -options "
-  "\"Dynamic_Attributes=1;"
-  "Meshes=1;"
-  "Nurbs_Curves=1;"
-  "Duplicate_Instances=1;"
-  "Merge_Transforms=1;"
-  "Animation=1;"
-  "Use_Timeline_Range=0;"
-  "Frame_Min=1;"
-  "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"";
-  command += temp_path.c_str();
-  command += "\";";
+    MString command = "select -r \"pCylinder1\";"
+                      "file -force -options "
+                      "\"Dynamic_Attributes=1;"
+                      "Meshes=1;"
+                      "Nurbs_Curves=1;"
+                      "Duplicate_Instances=1;"
+                      "Merge_Transforms=1;"
+                      "Animation=1;"
+                      "Use_Timeline_Range=0;"
+                      "Frame_Min=1;"
+                      "Frame_Max=50;"
+                      "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"";
+    command += temp_path.c_str();
+    command += "\";";
 
-  MGlobal::executeCommand(command);
+    MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open(temp_path);
-  EXPECT_TRUE(stage);
-  {
-    UsdPrim prim = stage->GetPrimAtPath(SdfPath("/pCylinder1"));
-    UsdGeomMesh mesh(prim);
+    UsdStageRefPtr stage = UsdStage::Open(temp_path);
+    EXPECT_TRUE(stage);
+    {
+        UsdPrim     prim = stage->GetPrimAtPath(SdfPath("/pCylinder1"));
+        UsdGeomMesh mesh(prim);
 
-    UsdAttribute pointsAttr = mesh.GetPointsAttr();
-    size_t size = pointsAttr.GetNumTimeSamples();
-    EXPECT_EQ(50u, size);
-  }
+        UsdAttribute pointsAttr = mesh.GetPointsAttr();
+        size_t       size = pointsAttr.GetNumTimeSamples();
+        EXPECT_EQ(50u, size);
+    }
 }
-

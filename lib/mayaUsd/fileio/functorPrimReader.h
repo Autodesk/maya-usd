@@ -16,15 +16,15 @@
 #ifndef PXRUSDMAYA_FUNCTORPRIMREADER_H
 #define PXRUSDMAYA_FUNCTORPRIMREADER_H
 
-#include <functional>
-
-#include <pxr/pxr.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primReader.h>
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
+
+#include <pxr/pxr.h>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,21 +32,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \brief This class is scaffolding to hold bare prim reader functions.
 ///
 /// It is used by the PXRUSDMAYA_DEFINE_READER macro.
-class UsdMaya_FunctorPrimReader final : public UsdMayaPrimReader
-{
+class UsdMaya_FunctorPrimReader final : public UsdMayaPrimReader {
 public:
-    UsdMaya_FunctorPrimReader(
-            const UsdMayaPrimReaderArgs&,
-            UsdMayaPrimReaderRegistry::ReaderFn);
+    UsdMaya_FunctorPrimReader(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderRegistry::ReaderFn);
 
     bool Read(UsdMayaPrimReaderContext* context) override;
 
-    static UsdMayaPrimReaderSharedPtr Create(
-            const UsdMayaPrimReaderArgs&,
-            UsdMayaPrimReaderRegistry::ReaderFn readerFn);
+    static UsdMayaPrimReaderSharedPtr
+    Create(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderRegistry::ReaderFn readerFn);
 
     static UsdMayaPrimReaderRegistry::ReaderFactoryFn
-            CreateFactory(UsdMayaPrimReaderRegistry::ReaderFn readerFn);
+    CreateFactory(UsdMayaPrimReaderRegistry::ReaderFn readerFn);
 
 private:
     UsdMayaPrimReaderRegistry::ReaderFn _readerFn;

@@ -18,37 +18,37 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdHierarchy.h>
 
-//PXR_NAMESPACE_USING_DIRECTIVE
+// PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief USD run-time hierarchy interface for children of the USD root prim.
-/*!
-    This class modifies its base class implementation to return the Maya USD
-    gateway node as parent of USD prims that are children of the USD root prim.
- */
-class MAYAUSD_CORE_PUBLIC UsdRootChildHierarchy : public UsdHierarchy
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdRootChildHierarchy> Ptr;
+    namespace ufe {
 
-	UsdRootChildHierarchy(const UsdSceneItem::Ptr& item);
-	~UsdRootChildHierarchy() override;
+    //! \brief USD run-time hierarchy interface for children of the USD root prim.
+    /*!
+        This class modifies its base class implementation to return the Maya USD
+        gateway node as parent of USD prims that are children of the USD root prim.
+     */
+    class MAYAUSD_CORE_PUBLIC UsdRootChildHierarchy : public UsdHierarchy {
+    public:
+        typedef std::shared_ptr<UsdRootChildHierarchy> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdRootChildHierarchy(const UsdRootChildHierarchy&) = delete;
-	UsdRootChildHierarchy& operator=(const UsdRootChildHierarchy&) = delete;
-	UsdRootChildHierarchy(UsdRootChildHierarchy&&) = delete;
-	UsdRootChildHierarchy& operator=(UsdRootChildHierarchy&&) = delete;
+        UsdRootChildHierarchy(const UsdSceneItem::Ptr& item);
+        ~UsdRootChildHierarchy() override;
 
-	//! Create a UsdRootChildHierarchy.
-	static UsdRootChildHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
+        // Delete the copy/move constructors assignment operators.
+        UsdRootChildHierarchy(const UsdRootChildHierarchy&) = delete;
+        UsdRootChildHierarchy& operator=(const UsdRootChildHierarchy&) = delete;
+        UsdRootChildHierarchy(UsdRootChildHierarchy&&) = delete;
+        UsdRootChildHierarchy& operator=(UsdRootChildHierarchy&&) = delete;
 
-	// Ufe::Hierarchy overrides
-	Ufe::SceneItem::Ptr parent() const override;
+        //! Create a UsdRootChildHierarchy.
+        static UsdRootChildHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
 
-}; // UsdRootChildHierarchy
+        // Ufe::Hierarchy overrides
+        Ufe::SceneItem::Ptr parent() const override;
 
-} // namespace ufe
+    }; // UsdRootChildHierarchy
+
+    } // namespace ufe
 } // namespace MayaUsd

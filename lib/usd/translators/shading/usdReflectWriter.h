@@ -18,29 +18,27 @@
 
 /// \file
 
-#include <pxr/pxr.h>
-
 #include "usdLambertWriter.h"
+
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Shader writer for exporting the reflective part of a Maya shading node to USD.
 /// Will be used by Blinn, Phong, and PhongE to export common specular attributes.
-class PxrUsdTranslators_ReflectWriter : public PxrUsdTranslators_LambertWriter
-{
+class PxrUsdTranslators_ReflectWriter : public PxrUsdTranslators_LambertWriter {
     typedef PxrUsdTranslators_LambertWriter BaseClass;
 
-    public:
-        PxrUsdTranslators_ReflectWriter(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrUsdTranslators_ReflectWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        TfToken GetShadingAttributeNameForMayaAttrName(
-                const TfToken& mayaAttrName) override;
+    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 
-    protected:
-        void WriteSpecular(const UsdTimeCode& usdTime) override;
+protected:
+    void WriteSpecular(const UsdTimeCode& usdTime) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

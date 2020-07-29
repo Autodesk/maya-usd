@@ -17,60 +17,56 @@
 
 #include "private/Utils.h"
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
-
-UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-) : Ufe::TranslateUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, x, y, z)
-{}
-
-UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
-{}
-
-/*static*/
-UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-)
+MAYAUSD_NS_DEF
 {
-    auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(
-        item, x, y, z);
-    cmd->initialize();
-    return cmd;
-}
+    namespace ufe {
 
-void UsdTranslateUndoableCommand::undo()
-{
-    undoImp();
-}
+    TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
 
-void UsdTranslateUndoableCommand::redo()
-{
-    redoImp();
-}
+    UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
+        const UsdSceneItem::Ptr& item,
+        double                   x,
+        double                   y,
+        double                   z)
+        : Ufe::TranslateUndoableCommand(item)
+        , UsdTRSUndoableCommandBase(item, x, y, z)
+    {
+    }
 
-void UsdTranslateUndoableCommand::addEmptyAttribute()
-{
-    performImp(0, 0, 0);    // Add an empty translate
-}
+    UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand() { }
 
-void UsdTranslateUndoableCommand::performImp(double x, double y, double z)
-{
-    translateOp(prim(), path(), x, y, z);
-}
+    /*static*/
+    UsdTranslateUndoableCommand::Ptr
+    UsdTranslateUndoableCommand::create(const UsdSceneItem::Ptr& item, double x, double y, double z)
+    {
+        auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(item, x, y, z);
+        cmd->initialize();
+        return cmd;
+    }
 
-//------------------------------------------------------------------------------
-// Ufe::TranslateUndoableCommand overrides
-//------------------------------------------------------------------------------
+    void UsdTranslateUndoableCommand::undo() { undoImp(); }
 
-bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
-{
-    perform(x, y, z);
-    return true;
-}
+    void UsdTranslateUndoableCommand::redo() { redoImp(); }
 
-} // namespace ufe
+    void UsdTranslateUndoableCommand::addEmptyAttribute()
+    {
+        performImp(0, 0, 0); // Add an empty translate
+    }
+
+    void UsdTranslateUndoableCommand::performImp(double x, double y, double z)
+    {
+        translateOp(prim(), path(), x, y, z);
+    }
+
+    //------------------------------------------------------------------------------
+    // Ufe::TranslateUndoableCommand overrides
+    //------------------------------------------------------------------------------
+
+    bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
+    {
+        perform(x, y, z);
+        return true;
+    }
+
+    } // namespace ufe
 } // namespace MayaUsd

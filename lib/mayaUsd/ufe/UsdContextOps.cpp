@@ -15,25 +15,23 @@
 //
 #include "UsdContextOps.h"
 
-#include <cassert>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/util.h>
 
-#include <maya/MGlobal.h>
-
-#include <ufe/attributes.h>
-#include <ufe/attribute.h>
-#include <ufe/path.h>
-
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/variantSets.h>
-#include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include <mayaUsd/utils/util.h>
+#include <maya/MGlobal.h>
+#include <ufe/attribute.h>
+#include <ufe/attributes.h>
+#include <ufe/path.h>
 
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+#include <cassert>
 
 namespace {
 
@@ -67,24 +65,22 @@ static constexpr char kUSDSpherePrimItem[] = "Sphere";
 static constexpr char kUSDSpherePrimLabel[] = "Sphere";
 
 //! \brief Undoable command for variant selection change
-class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand
-{
+class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand {
 public:
-    
     SetVariantSelectionUndoableCommand(
         const UsdPrim&                   prim,
-        const Ufe::ContextOps::ItemPath& itemPath
-    ) : fVarSet(prim.GetVariantSets().GetVariantSet(itemPath[1])),
-        fOldSelection(fVarSet.GetVariantSelection()),
-        fNewSelection(itemPath[2])
-    {}
+        const Ufe::ContextOps::ItemPath& itemPath)
+        : fVarSet(prim.GetVariantSets().GetVariantSet(itemPath[1]))
+        , fOldSelection(fVarSet.GetVariantSelection())
+        , fNewSelection(itemPath[2])
+    {
+    }
 
     void undo() override { fVarSet.SetVariantSelection(fOldSelection); }
 
     void redo() override { fVarSet.SetVariantSelection(fNewSelection); }
 
 private:
-
     UsdVariantSet     fVarSet;
     const std::string fOldSelection;
     const std::string fNewSelection;
@@ -118,27 +114,27 @@ global proc string ClearAllUSDReferencesConfirm()
 ClearAllUSDReferencesConfirm();
 )";
 
-class AddReferenceUndoableCommand : public Ufe::UndoableCommand
-{
+class AddReferenceUndoableCommand : public Ufe::UndoableCommand {
 public:
     static const std::string commandName;
 
-    AddReferenceUndoableCommand(
-        const UsdPrim& prim,
-        const std::string& filePath
-    ) : _prim(prim),
-        _sdfRef(),
-        _filePath(filePath)
-    {}
+    AddReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath)
+        : _prim(prim)
+        , _sdfRef()
+        , _filePath(filePath)
+    {
+    }
 
-    void undo() override { 
+    void undo() override
+    {
         if (_prim.IsValid()) {
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.RemoveReference(_sdfRef);
         }
     }
 
-    void redo() override { 
+    void redo() override
+    {
         if (_prim.IsValid()) {
             _sdfRef = SdfReference(_filePath);
             UsdReferences primRefs = _prim.GetReferences();
@@ -147,28 +143,26 @@ public:
     }
 
 private:
-    UsdPrim _prim;
-    SdfReference _sdfRef;
+    UsdPrim           _prim;
+    SdfReference      _sdfRef;
     const std::string _filePath;
 };
 const std::string AddReferenceUndoableCommand::commandName("Add Reference...");
 
-class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand
-{
+class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand {
 public:
     static const std::string commandName;
-    static const MString cancelRemoval;
+    static const MString     cancelRemoval;
 
-    ClearAllReferencesUndoableCommand(
-        const UsdPrim& prim
-    ) : _prim(prim)
-    {}
-
-    void undo() override { 
-
+    ClearAllReferencesUndoableCommand(const UsdPrim& prim)
+        : _prim(prim)
+    {
     }
 
-    void redo() override { 
+    void undo() override { }
+
+    void redo() override
+    {
         if (_prim.IsValid()) {
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.ClearReferences();
@@ -179,212 +173,205 @@ private:
     UsdPrim _prim;
 };
 const std::string ClearAllReferencesUndoableCommand::commandName("Clear All References");
-const MString ClearAllReferencesUndoableCommand::cancelRemoval("No");
+const MString     ClearAllReferencesUndoableCommand::cancelRemoval("No");
 
-}
+} // namespace
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
-	: Ufe::ContextOps(), fItem(item), fPrim(item->prim())
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-UsdContextOps::~UsdContextOps()
-{
-}
+    UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
+        : Ufe::ContextOps()
+        , fItem(item)
+        , fPrim(item->prim())
+    {
+    }
 
-/*static*/
-UsdContextOps::Ptr UsdContextOps::create(const UsdSceneItem::Ptr& item)
-{
-	return std::make_shared<UsdContextOps>(item);
-}
+    UsdContextOps::~UsdContextOps() { }
 
-void UsdContextOps::setItem(const UsdSceneItem::Ptr& item)
-{
-	fPrim = item->prim();
-	fItem = item;
-}
+    /*static*/
+    UsdContextOps::Ptr UsdContextOps::create(const UsdSceneItem::Ptr& item)
+    {
+        return std::make_shared<UsdContextOps>(item);
+    }
 
-const Ufe::Path& UsdContextOps::path() const
-{
-	return fItem->path();
-}
+    void UsdContextOps::setItem(const UsdSceneItem::Ptr& item)
+    {
+        fPrim = item->prim();
+        fItem = item;
+    }
 
-//------------------------------------------------------------------------------
-// Ufe::ContextOps overrides
-//------------------------------------------------------------------------------
+    const Ufe::Path& UsdContextOps::path() const { return fItem->path(); }
 
-Ufe::SceneItem::Ptr UsdContextOps::sceneItem() const
-{
-	return fItem;
-}
+    //------------------------------------------------------------------------------
+    // Ufe::ContextOps overrides
+    //------------------------------------------------------------------------------
 
-Ufe::ContextOps::Items UsdContextOps::getItems(
-    const Ufe::ContextOps::ItemPath& itemPath
-) const
-{
-    Ufe::ContextOps::Items items;
-    if (itemPath.empty()) {
-        // Top-level item - USD Layer editor (for all context op types).
-        int hasLayerEditorCmd{0};
-        MGlobal::executeCommand("runTimeCommand -exists UsdLayerEditor", hasLayerEditorCmd);
-        if (hasLayerEditorCmd) {
-            items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
+    Ufe::SceneItem::Ptr UsdContextOps::sceneItem() const { return fItem; }
+
+    Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& itemPath) const
+    {
+        Ufe::ContextOps::Items items;
+        if (itemPath.empty()) {
+            // Top-level item - USD Layer editor (for all context op types).
+            int hasLayerEditorCmd { 0 };
+            MGlobal::executeCommand("runTimeCommand -exists UsdLayerEditor", hasLayerEditorCmd);
+            if (hasLayerEditorCmd) {
+                items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
 #if UFE_PREVIEW_VERSION_NUM >= 2015
-            items.emplace_back(Ufe::ContextItem::kSeparator);
+                items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
-        }
-
-        // Top-level items.  Variant sets and visibility. Do not add for gateway type node.
-        if (!fIsAGatewayType) {
-            if (fPrim.HasVariantSets()) {
-                items.emplace_back(
-                    kUSDVariantSetsItem, kUSDVariantSetsLabel, Ufe::ContextItem::kHasChildren);
             }
-            // If the item has a visibility attribute, add menu item to change visibility.
-            // Note: certain prim types such as shaders & materials don't support visibility.
-            auto attributes = Ufe::Attributes::attributes(sceneItem());
-            if (attributes && attributes->hasAttribute(UsdGeomTokens->visibility)) {
-                auto visibility =
-                    std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
+
+            // Top-level items.  Variant sets and visibility. Do not add for gateway type node.
+            if (!fIsAGatewayType) {
+                if (fPrim.HasVariantSets()) {
+                    items.emplace_back(
+                        kUSDVariantSetsItem, kUSDVariantSetsLabel, Ufe::ContextItem::kHasChildren);
+                }
+                // If the item has a visibility attribute, add menu item to change visibility.
+                // Note: certain prim types such as shaders & materials don't support visibility.
+                auto attributes = Ufe::Attributes::attributes(sceneItem());
+                if (attributes && attributes->hasAttribute(UsdGeomTokens->visibility)) {
+                    auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
                         attributes->attribute(UsdGeomTokens->visibility));
-                if (visibility) {
-                    auto current = visibility->get();
-                    const std::string l = (current == UsdGeomTokens->invisible) ?
-                        std::string(kUSDMakeVisibleLabel) : std::string(kUSDMakeInvisibleLabel);
-                    items.emplace_back(kUSDToggleVisibilityItem, l);
+                    if (visibility) {
+                        auto              current = visibility->get();
+                        const std::string l = (current == UsdGeomTokens->invisible)
+                            ? std::string(kUSDMakeVisibleLabel)
+                            : std::string(kUSDMakeInvisibleLabel);
+                        items.emplace_back(kUSDToggleVisibilityItem, l);
+                    }
                 }
             }
-        }
 
-        // Top level item - Add New Prim (for all context op types).
-        items.emplace_back(
-            kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
+            // Top level item - Add New Prim (for all context op types).
+            items.emplace_back(
+                kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
 
-        if (!fIsAGatewayType) {
-            items.emplace_back(AddReferenceUndoableCommand::commandName,
-                                AddReferenceUndoableCommand::commandName);
-            items.emplace_back(ClearAllReferencesUndoableCommand::commandName,
-                                ClearAllReferencesUndoableCommand::commandName);            
-        }
-    }
-    else {
-        if (itemPath[0] == kUSDVariantSetsItem) {
-            UsdVariantSets varSets = fPrim.GetVariantSets();
-            std::vector<std::string> varSetsNames;
-            varSets.GetNames(&varSetsNames);
-
-            if (itemPath.size() == 1u) {
-                // Variant sets list.
-                for (auto i = varSetsNames.crbegin(); i != varSetsNames.crend(); ++i) {
-                    items.emplace_back(*i, *i, Ufe::ContextItem::kHasChildren);
-                }
+            if (!fIsAGatewayType) {
+                items.emplace_back(
+                    AddReferenceUndoableCommand::commandName,
+                    AddReferenceUndoableCommand::commandName);
+                items.emplace_back(
+                    ClearAllReferencesUndoableCommand::commandName,
+                    ClearAllReferencesUndoableCommand::commandName);
             }
-            else {
-                // Variants of a given variant set.  Second item in the path is
-                // the variant set name.
-                assert(itemPath.size() == 2u);
+        } else {
+            if (itemPath[0] == kUSDVariantSetsItem) {
+                UsdVariantSets           varSets = fPrim.GetVariantSets();
+                std::vector<std::string> varSetsNames;
+                varSets.GetNames(&varSetsNames);
 
-                UsdVariantSet varSet = varSets.GetVariantSet(itemPath[1]);
-                auto selected = varSet.GetVariantSelection();
+                if (itemPath.size() == 1u) {
+                    // Variant sets list.
+                    for (auto i = varSetsNames.crbegin(); i != varSetsNames.crend(); ++i) {
+                        items.emplace_back(*i, *i, Ufe::ContextItem::kHasChildren);
+                    }
+                } else {
+                    // Variants of a given variant set.  Second item in the path is
+                    // the variant set name.
+                    assert(itemPath.size() == 2u);
 
-                const auto varNames = varSet.GetVariantNames();
-                for (const auto& vn : varNames) {
-                    const bool checked(vn == selected);
-                    items.emplace_back(vn, vn, Ufe::ContextItem::kNoChildren,
-                                       Ufe::ContextItem::kCheckable, checked,
-                                       Ufe::ContextItem::kExclusive);
-                }
-            } // Variants of a variant set
-        } // Variant sets
-        else if (itemPath[0] == kUSDAddNewPrimItem) {
-            items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel);  // typeless prim
-            items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel);
-            items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel);
+                    UsdVariantSet varSet = varSets.GetVariantSet(itemPath[1]);
+                    auto          selected = varSet.GetVariantSelection();
+
+                    const auto varNames = varSet.GetVariantNames();
+                    for (const auto& vn : varNames) {
+                        const bool checked(vn == selected);
+                        items.emplace_back(
+                            vn,
+                            vn,
+                            Ufe::ContextItem::kNoChildren,
+                            Ufe::ContextItem::kCheckable,
+                            checked,
+                            Ufe::ContextItem::kExclusive);
+                    }
+                } // Variants of a variant set
+            }     // Variant sets
+            else if (itemPath[0] == kUSDAddNewPrimItem) {
+                items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel); // typeless prim
+                items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel);
+                items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel);
 #if UFE_PREVIEW_VERSION_NUM >= 2015
-            items.emplace_back(Ufe::ContextItem::kSeparator);
+                items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
-            items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel);
-            items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel);
-            items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel);
-            items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel);
-            items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel);
+                items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel);
+                items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel);
+                items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel);
+                items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel);
+                items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel);
+            }
+        } // Top-level items
+
+        return items;
+    }
+
+    Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
+    {
+        // Empty argument means no operation was specified, error.
+        if (itemPath.empty()) {
+            TF_CODING_ERROR("Empty path means no operation was specified");
+            return nullptr;
         }
-    } // Top-level items
 
-    return items;
-}
+        if (itemPath[0] == kUSDVariantSetsItem) {
+            // Operation is to set a variant in a variant set.  Need both the
+            // variant set and the variant as arguments to the operation.
+            if (itemPath.size() != 3u) {
+                TF_CODING_ERROR("Wrong number of arguments");
+                return nullptr;
+            }
 
-Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
-{
-    // Empty argument means no operation was specified, error.
-    if (itemPath.empty()) {
-        TF_CODING_ERROR("Empty path means no operation was specified");
+            // At this point we know we have enough arguments to execute the
+            // operation.
+            return std::make_shared<SetVariantSelectionUndoableCommand>(fPrim, itemPath);
+        } // Variant sets
+        else if (itemPath[0] == kUSDToggleVisibilityItem) {
+            auto attributes = Ufe::Attributes::attributes(sceneItem());
+            assert(attributes);
+            auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
+                attributes->attribute(UsdGeomTokens->visibility));
+            assert(visibility);
+            auto current = visibility->get();
+            return visibility->setCmd(
+                current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited
+                                                    : UsdGeomTokens->invisible);
+        } // Visibility
+        else if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
+            // Operation is to create a new prim of the type specified.
+            if (itemPath.size() != 2u) {
+                TF_CODING_ERROR("Wrong number of arguments");
+                return nullptr;
+            }
+
+            // At this point we know we have 2 arguments to execute the operation.
+            // itemPath[1] contains the new prim type to create.
+            return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
+        } else if (itemPath[0] == kUSDLayerEditorItem) {
+            // Just open the editor directly and return null so we don't have undo.
+            MGlobal::executeCommand("UsdLayerEditor");
+            return nullptr;
+        } else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
+            MString fileRef = MGlobal::executeCommandStringResult(selectUSDFileScript);
+
+            std::string path = UsdMayaUtil::convert(fileRef);
+            if (path.empty())
+                return nullptr;
+
+            return std::make_shared<AddReferenceUndoableCommand>(fPrim, path);
+        } else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
+            MString confirmation
+                = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
+            if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)
+                return nullptr;
+
+            return std::make_shared<ClearAllReferencesUndoableCommand>(fPrim);
+        }
+
         return nullptr;
     }
 
-    if (itemPath[0] == kUSDVariantSetsItem) {
-        // Operation is to set a variant in a variant set.  Need both the
-        // variant set and the variant as arguments to the operation.
-        if (itemPath.size() != 3u) {
-            TF_CODING_ERROR("Wrong number of arguments");
-            return nullptr;
-        }
-
-        // At this point we know we have enough arguments to execute the
-        // operation.
-        return std::make_shared<SetVariantSelectionUndoableCommand>(
-            fPrim, itemPath);
-    } // Variant sets
-    else if (itemPath[0] == kUSDToggleVisibilityItem) {
-        auto attributes = Ufe::Attributes::attributes(sceneItem());
-        assert(attributes);
-        auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
-            attributes->attribute(UsdGeomTokens->visibility));
-        assert(visibility);
-        auto current = visibility->get();
-        return visibility->setCmd(
-            current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
-    } // Visibility
-    else if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
-        // Operation is to create a new prim of the type specified.
-        if (itemPath.size() != 2u) {
-            TF_CODING_ERROR("Wrong number of arguments");
-            return nullptr;
-        }
-
-        // At this point we know we have 2 arguments to execute the operation.
-        // itemPath[1] contains the new prim type to create.
-        return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
-    }
-    else if (itemPath[0] == kUSDLayerEditorItem) {
-        // Just open the editor directly and return null so we don't have undo.
-        MGlobal::executeCommand("UsdLayerEditor");
-        return nullptr;
-    }
-    else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
-        MString fileRef = MGlobal::executeCommandStringResult(selectUSDFileScript);
-
-        std::string path = UsdMayaUtil::convert(fileRef);
-        if (path.empty())
-            return nullptr;
-
-        return std::make_shared<AddReferenceUndoableCommand>(
-            fPrim, path);        
-    }
-    else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
-        MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
-        if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)
-            return nullptr;
-
-        return std::make_shared<ClearAllReferencesUndoableCommand>(fPrim);
-        
-    }
-
-    return nullptr;
-}
-
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

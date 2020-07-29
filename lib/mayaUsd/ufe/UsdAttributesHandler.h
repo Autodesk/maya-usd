@@ -15,38 +15,37 @@
 //
 #pragma once
 
-#include <ufe/attributesHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdAttributes.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+#include <ufe/attributesHandler.h>
 
-//! \brief Interface to create the USD Attributes interface objects.
-class UsdAttributesHandler : public Ufe::AttributesHandler
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdAttributesHandler> Ptr;
+    namespace ufe {
 
-	UsdAttributesHandler();
-	~UsdAttributesHandler();
+    //! \brief Interface to create the USD Attributes interface objects.
+    class UsdAttributesHandler : public Ufe::AttributesHandler {
+    public:
+        typedef std::shared_ptr<UsdAttributesHandler> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdAttributesHandler(const UsdAttributesHandler&) = delete;
-	UsdAttributesHandler& operator=(const UsdAttributesHandler&) = delete;
-	UsdAttributesHandler(UsdAttributesHandler&&) = delete;
-	UsdAttributesHandler& operator=(UsdAttributesHandler&&) = delete;
+        UsdAttributesHandler();
+        ~UsdAttributesHandler();
 
-	//! Create a UsdAttributesHandler.
-	static UsdAttributesHandler::Ptr create();
+        // Delete the copy/move constructors assignment operators.
+        UsdAttributesHandler(const UsdAttributesHandler&) = delete;
+        UsdAttributesHandler& operator=(const UsdAttributesHandler&) = delete;
+        UsdAttributesHandler(UsdAttributesHandler&&) = delete;
+        UsdAttributesHandler& operator=(UsdAttributesHandler&&) = delete;
 
-	// Ufe::AttributesHandler overrides
-	Ufe::Attributes::Ptr attributes(const Ufe::SceneItem::Ptr& item) const override;
+        //! Create a UsdAttributesHandler.
+        static UsdAttributesHandler::Ptr create();
 
-private:
+        // Ufe::AttributesHandler overrides
+        Ufe::Attributes::Ptr attributes(const Ufe::SceneItem::Ptr& item) const override;
 
-}; // UsdAttributesHandler
+    private:
+    }; // UsdAttributesHandler
 
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

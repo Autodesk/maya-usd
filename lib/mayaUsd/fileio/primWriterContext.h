@@ -16,52 +16,50 @@
 #ifndef PXRUSDMAYA_PRIMWRITERCONTEXT_H
 #define PXRUSDMAYA_PRIMWRITERCONTEXT_H
 
+#include <mayaUsd/base/api.h>
+
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
-
-#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdMayaPrimWriterContext
 /// \brief This class provides an interface for writer plugins to communicate
 /// state back to the core usd maya logic.
-class UsdMayaPrimWriterContext
-{
+class UsdMayaPrimWriterContext {
 public:
-
     MAYAUSD_CORE_PUBLIC
     UsdMayaPrimWriterContext(
-            const UsdTimeCode& timeCode,
-            const SdfPath& authorPath,
-            const UsdStageRefPtr& stage);
+        const UsdTimeCode&    timeCode,
+        const SdfPath&        authorPath,
+        const UsdStageRefPtr& stage);
 
     /// \brief returns the time frame where data should be authored.
     MAYAUSD_CORE_PUBLIC
     const UsdTimeCode& GetTimeCode() const;
 
-    /// \brief returns the path where the writer plugin should create 
+    /// \brief returns the path where the writer plugin should create
     /// a prim.
     MAYAUSD_CORE_PUBLIC
     const SdfPath& GetAuthorPath() const;
 
     /// \brief returns the usd stage that is being written to.
     MAYAUSD_CORE_PUBLIC
-    UsdStageRefPtr GetUsdStage() const; 
-    
+    UsdStageRefPtr GetUsdStage() const;
+
     /// \brief Returns the value provided by SetExportsGprims(), or \c false
-    /// if SetExportsGprims() is not called.  
+    /// if SetExportsGprims() is not called.
     ///
     /// May be used by export processes to reason about what kind of asset we
     /// are creating.
     MAYAUSD_CORE_PUBLIC
     bool GetExportsGprims() const;
-    
+
     /// Set the value that will be returned by GetExportsGprims().
     ///
     /// A plugin should set this to \c true if it directly creates any
-    /// gprims, and should return the same value each time its write() 
+    /// gprims, and should return the same value each time its write()
     /// function is invoked.
     ///
     /// \sa GetExportsGprims()
@@ -110,15 +108,13 @@ public:
 
 private:
     const UsdTimeCode& _timeCode;
-    const SdfPath& _authorPath;
-    UsdStageRefPtr _stage;
-    bool _exportsGprims;
-    bool _pruneChildren;
-    SdfPathVector _modelPaths;
+    const SdfPath&     _authorPath;
+    UsdStageRefPtr     _stage;
+    bool               _exportsGprims;
+    bool               _pruneChildren;
+    SdfPathVector      _modelPaths;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
-

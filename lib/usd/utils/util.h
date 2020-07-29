@@ -18,44 +18,43 @@
 #define MAYAUSDUTILS_UTIL_H
 
 #include <mayaUsdUtils/Api.h>
-
 #include <mayaUsdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MayaUsdUtils {
 
-    //! Return the highest-priority layer where the prim has a def primSpec.
-    MAYA_USD_UTILS_PUBLIC
-    SdfLayerHandle defPrimSpecLayer(const UsdPrim&);
+//! Return the highest-priority layer where the prim has a def primSpec.
+MAYA_USD_UTILS_PUBLIC
+SdfLayerHandle defPrimSpecLayer(const UsdPrim&);
 
-    //! Return a list of layers in no strength order that can contribute to the argument prim.
-    MAYA_USD_UTILS_PUBLIC
-    std::set<SdfLayerHandle> layersWithContribution(const UsdPrim&);
+//! Return a list of layers in no strength order that can contribute to the argument prim.
+MAYA_USD_UTILS_PUBLIC
+std::set<SdfLayerHandle> layersWithContribution(const UsdPrim&);
 
-    //! Check if a layer has any contributions towards the argument prim.
-    MAYA_USD_UTILS_PUBLIC
-    bool doesEditTargetLayerContribute(const UsdPrim&);
+//! Check if a layer has any contributions towards the argument prim.
+MAYA_USD_UTILS_PUBLIC
+bool doesEditTargetLayerContribute(const UsdPrim&);
 
-    //! Return the strongest layer that can contribute to the argument prim.
-    MAYA_USD_UTILS_PUBLIC
-    SdfLayerHandle strongestContributingLayer(const UsdPrim&);
+//! Return the strongest layer that can contribute to the argument prim.
+MAYA_USD_UTILS_PUBLIC
+SdfLayerHandle strongestContributingLayer(const UsdPrim&);
 
-    //! Return a PrimSpec for the argument prim in the layer containing the stage's current edit target.
-    MAYA_USD_UTILS_PUBLIC
-    SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim&);
+//! Return a PrimSpec for the argument prim in the layer containing the stage's current edit target.
+MAYA_USD_UTILS_PUBLIC
+SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim&);
 
-    //! Returns true if the prim spec has an internal reference.
-    MAYA_USD_UTILS_PUBLIC
-    bool isInternalReference(const SdfPrimSpecHandle&);
+//! Returns true if the prim spec has an internal reference.
+MAYA_USD_UTILS_PUBLIC
+bool isInternalReference(const SdfPrimSpecHandle&);
 
-    //! Returns true if the target node has any specs to contribute to the composed prim.
-    MAYA_USD_UTILS_PUBLIC
-    bool hasSpecs(const UsdPrim&);
+//! Returns true if the target node has any specs to contribute to the composed prim.
+MAYA_USD_UTILS_PUBLIC
+bool hasSpecs(const UsdPrim&);
 
-    //! Convenience function for printing the list of queried composition arcs in order. 
-    MAYA_USD_UTILS_PUBLIC
-    void printCompositionQuery(const UsdPrim&, std::ostream&);
+//! Convenience function for printing the list of queried composition arcs in order.
+MAYA_USD_UTILS_PUBLIC
+void printCompositionQuery(const UsdPrim&, std::ostream&);
 
 } // namespace MayaUsdUtils
 

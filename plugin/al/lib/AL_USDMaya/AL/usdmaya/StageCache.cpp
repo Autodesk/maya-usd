@@ -14,76 +14,67 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/StageCache.h"
+
+#include "AL/maya/event/MayaEventManager.h"
 #include "AL/usdmaya/DebugCodes.h"
 
 #include <pxr/usd/usdUtils/stageCache.h>
-#include "AL/maya/event/MayaEventManager.h"
 
 namespace AL {
 namespace usdmaya {
 
-AL::event::CallbackId StageCache::g_beforeNewCallbackId = 0;
-AL::event::CallbackId StageCache::g_beforeLoadCallbackId = 0;
+AL::event::CallbackId     StageCache::g_beforeNewCallbackId = 0;
+AL::event::CallbackId     StageCache::g_beforeLoadCallbackId = 0;
 static AL::event::EventId g_stageCacheCleared = 0;
 
 //----------------------------------------------------------------------------------------------------------------------
 static void onMayaSceneUpdateCallback(void* clientData)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Clean the usdMaya cache on maya scene update.\n");
-  StageCache::Clear();
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("Clean the usdMaya cache on maya scene update.\n");
+    StageCache::Clear();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 UsdStageCache& StageCache::Get()
 {
 
-  // IMPORTANT: At every NEW scene in Maya we clear the USD stage cache.
-  if (g_beforeNewCallbackId == 0)
-  {
-    g_beforeNewCallbackId = AL::maya::event::MayaEventManager::instance().registerCallback(
-        onMayaSceneUpdateCallback,
-        "BeforeNew",
-        "ClearStageCacheOnFileNew",
-        0x10000);
-    g_beforeLoadCallbackId = AL::maya::event::MayaEventManager::instance().registerCallback(
-        onMayaSceneUpdateCallback,
-        "BeforeOpen",
-        "ClearStageCacheOnFileOpen",
-        0x10000);
+    // IMPORTANT: At every NEW scene in Maya we clear the USD stage cache.
+    if (g_beforeNewCallbackId == 0) {
+        g_beforeNewCallbackId = AL::maya::event::MayaEventManager::instance().registerCallback(
+            onMayaSceneUpdateCallback, "BeforeNew", "ClearStageCacheOnFileNew", 0x10000);
+        g_beforeLoadCallbackId = AL::maya::event::MayaEventManager::instance().registerCallback(
+            onMayaSceneUpdateCallback, "BeforeOpen", "ClearStageCacheOnFileOpen", 0x10000);
 
-    g_stageCacheCleared = AL::event::EventScheduler::getScheduler().registerEvent("OnUsdStageCacheCleared", AL::event::kUSDMayaEventType);
-  }
-  return UsdUtilsStageCache::Get();
+        g_stageCacheCleared = AL::event::EventScheduler::getScheduler().registerEvent(
+            "OnUsdStageCacheCleared", AL::event::kUSDMayaEventType);
+    }
+    return UsdUtilsStageCache::Get();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void StageCache::Clear()
 {
-  UsdUtilsStageCache::Get().Clear();
-  AL::event::EventScheduler::getScheduler().triggerEvent(g_stageCacheCleared);
+    UsdUtilsStageCache::Get().Clear();
+    AL::event::EventScheduler::getScheduler().triggerEvent(g_stageCacheCleared);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void StageCache::removeCallbacks()
 {
-  if (g_stageCacheCleared)
-  {
-    AL::event::EventScheduler::getScheduler().unregisterEvent(g_stageCacheCleared);
-    g_stageCacheCleared = 0;
-  }
-  if (g_beforeNewCallbackId)
-  {
-    AL::maya::event::MayaEventManager::instance().unregisterCallback(g_beforeNewCallbackId);
-    g_beforeNewCallbackId = 0;
-  }
-  if (g_beforeLoadCallbackId)
-  {
-    AL::maya::event::MayaEventManager::instance().unregisterCallback(g_beforeLoadCallbackId);
-    g_beforeLoadCallbackId = 0;
-  }
+    if (g_stageCacheCleared) {
+        AL::event::EventScheduler::getScheduler().unregisterEvent(g_stageCacheCleared);
+        g_stageCacheCleared = 0;
+    }
+    if (g_beforeNewCallbackId) {
+        AL::maya::event::MayaEventManager::instance().unregisterCallback(g_beforeNewCallbackId);
+        g_beforeNewCallbackId = 0;
+    }
+    if (g_beforeLoadCallbackId) {
+        AL::maya::event::MayaEventManager::instance().unregisterCallback(g_beforeLoadCallbackId);
+        g_beforeLoadCallbackId = 0;
+    }
 }
 //----------------------------------------------------------------------------------------------------------------------
-} // usdmaya
-} // AL
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------
-

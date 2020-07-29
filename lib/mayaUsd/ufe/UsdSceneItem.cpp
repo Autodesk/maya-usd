@@ -15,29 +15,27 @@
 //
 #include "UsdSceneItem.h"
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-UsdSceneItem::UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim)
-	: Ufe::SceneItem(path)
-	, fPrim(prim)
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-/*static*/
-UsdSceneItem::Ptr UsdSceneItem::create(const Ufe::Path& path, const UsdPrim& prim)
-{
-	return std::make_shared<UsdSceneItem>(path, prim);
-}
+    UsdSceneItem::UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim)
+        : Ufe::SceneItem(path)
+        , fPrim(prim)
+    {
+    }
 
-//------------------------------------------------------------------------------
-// Ufe::SceneItem overrides
-//------------------------------------------------------------------------------
+    /*static*/
+    UsdSceneItem::Ptr UsdSceneItem::create(const Ufe::Path& path, const UsdPrim& prim)
+    {
+        return std::make_shared<UsdSceneItem>(path, prim);
+    }
 
-std::string UsdSceneItem::nodeType() const
-{
-	return fPrim.GetTypeName();
-}
+    //------------------------------------------------------------------------------
+    // Ufe::SceneItem overrides
+    //------------------------------------------------------------------------------
 
-} // namespace ufe
+    std::string UsdSceneItem::nodeType() const { return fPrim.GetTypeName(); }
+
+    } // namespace ufe
 } // namespace MayaUsd

@@ -17,11 +17,11 @@
 
 #include <mayaUsd/nodes/hdImagingShape.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
-#include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
 
 #include <pxr/base/gf/bbox3d.h>
 #include <pxr/base/gf/range3d.h>
@@ -35,7 +35,6 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
-
 #include <pxr/usd/ar/resolver.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
@@ -49,10 +48,10 @@
 #include <pxr/usd/usdUtils/stageCache.h>
 
 #include <maya/MBoundingBox.h>
+#include <maya/MDGContext.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
-#include <maya/MDGContext.h>
 #include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnData.h>
 #include <maya/MFnDependencyNode.h>
@@ -80,44 +79,36 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens,
-                        PXRUSDMAYA_PROXY_SHAPE_TOKENS);
-
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens, PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
 // Hydra performs its own high-performance frustum culling, so
 // we don't want to rely on Maya to do it on the CPU. AS such, the best
 // performance comes from telling Maya to pretend that every object has no
 // bounds.
-TF_DEFINE_ENV_SETTING(PIXMAYA_ENABLE_BOUNDING_BOX_MODE, false,
-                      "Enable bounding box rendering (slows refresh rate)");
+TF_DEFINE_ENV_SETTING(
+    PIXMAYA_ENABLE_BOUNDING_BOX_MODE,
+    false,
+    "Enable bounding box rendering (slows refresh rate)");
 
 UsdMayaProxyShape::ObjectSoftSelectEnabledDelegate
-UsdMayaProxyShape::_sharedObjectSoftSelectEnabledDelegate = nullptr;
-
+    UsdMayaProxyShape::_sharedObjectSoftSelectEnabledDelegate
+    = nullptr;
 
 // ========================================================
 
 const MTypeId UsdMayaProxyShape::typeId(0x0010A259);
-const MString UsdMayaProxyShape::typeName(
-    UsdMayaProxyShapeTokens->MayaTypeName.GetText());
+const MString UsdMayaProxyShape::typeName(UsdMayaProxyShapeTokens->MayaTypeName.GetText());
 
 // Attributes
 MObject UsdMayaProxyShape::variantKeyAttr;
 MObject UsdMayaProxyShape::fastPlaybackAttr;
 MObject UsdMayaProxyShape::softSelectableAttr;
 
+/* static */
+void* UsdMayaProxyShape::creator() { return new UsdMayaProxyShape(); }
 
 /* static */
-void*
-UsdMayaProxyShape::creator()
-{
-    return new UsdMayaProxyShape();
-}
-
-/* static */
-MStatus
-UsdMayaProxyShape::initialize()
+MStatus UsdMayaProxyShape::initialize()
 {
     MStatus retValue = inheritAttributesFrom(MayaUsdProxyShapeBase::typeName);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -125,27 +116,19 @@ UsdMayaProxyShape::initialize()
     //
     // create attr factories
     //
-    MFnNumericAttribute  numericAttrFn;
-    MFnTypedAttribute    typedAttrFn;
+    MFnNumericAttribute numericAttrFn;
+    MFnTypedAttribute   typedAttrFn;
 
     variantKeyAttr = typedAttrFn.create(
-        "variantKey",
-        "variantKey",
-        MFnData::kString,
-        MObject::kNullObj,
-        &retValue);
+        "variantKey", "variantKey", MFnData::kString, MObject::kNullObj, &retValue);
     typedAttrFn.setReadable(false);
     typedAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
     retValue = addAttribute(variantKeyAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
-    fastPlaybackAttr = numericAttrFn.create(
-        "fastPlayback",
-        "fs",
-        MFnNumericData::kBoolean,
-        0,
-        &retValue);
+    fastPlaybackAttr
+        = numericAttrFn.create("fastPlayback", "fs", MFnNumericData::kBoolean, 0, &retValue);
     numericAttrFn.setInternal(true);
     numericAttrFn.setAffectsAppearance(true);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -153,11 +136,7 @@ UsdMayaProxyShape::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     softSelectableAttr = numericAttrFn.create(
-        "softSelectable",
-        "softSelectable",
-        MFnNumericData::kBoolean,
-        0.0,
-        &retValue);
+        "softSelectable", "softSelectable", MFnNumericData::kBoolean, 0.0, &retValue);
     numericAttrFn.setStorable(false);
     numericAttrFn.setAffectsAppearance(true);
     retValue = addAttribute(softSelectableAttr);
@@ -173,16 +152,13 @@ UsdMayaProxyShape::initialize()
 }
 
 /* static */
-void
-UsdMayaProxyShape::SetObjectSoftSelectEnabledDelegate(
-        ObjectSoftSelectEnabledDelegate delegate)
+void UsdMayaProxyShape::SetObjectSoftSelectEnabledDelegate(ObjectSoftSelectEnabledDelegate delegate)
 {
     _sharedObjectSoftSelectEnabledDelegate = delegate;
 }
 
 /* virtual */
-bool
-UsdMayaProxyShape::GetObjectSoftSelectEnabled() const
+bool UsdMayaProxyShape::GetObjectSoftSelectEnabled() const
 {
     // If the delegate isn't set, we just assume soft select isn't currently
     // enabled - this will mean that the object is selectable in VP2, by default
@@ -192,57 +168,48 @@ UsdMayaProxyShape::GetObjectSoftSelectEnabled() const
     return _sharedObjectSoftSelectEnabledDelegate();
 }
 
-SdfLayerRefPtr
-UsdMayaProxyShape::computeSessionLayer(MDataBlock& dataBlock)
+SdfLayerRefPtr UsdMayaProxyShape::computeSessionLayer(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
 
-        // get the variantKey
-        MDataHandle variantKeyHandle =
-            dataBlock.inputValue(variantKeyAttr, &retValue);
+    // get the variantKey
+    MDataHandle variantKeyHandle = dataBlock.inputValue(variantKeyAttr, &retValue);
     if (retValue != MS::kSuccess) {
         return nullptr;
     }
-        const MString variantKey = variantKeyHandle.asString();
+    const MString variantKey = variantKeyHandle.asString();
 
-        SdfLayerRefPtr sessionLayer;
-        std::vector<std::pair<std::string, std::string> > variantSelections;
-        std::string variantKeyString = variantKey.asChar();
-        if (!variantKeyString.empty()) {
-            variantSelections.push_back(
-                std::make_pair("modelingVariant",variantKeyString));
+    SdfLayerRefPtr                                   sessionLayer;
+    std::vector<std::pair<std::string, std::string>> variantSelections;
+    std::string                                      variantKeyString = variantKey.asChar();
+    if (!variantKeyString.empty()) {
+        variantSelections.push_back(std::make_pair("modelingVariant", variantKeyString));
 
-            // Get the primPath
-            const MString primPathMString =
-                dataBlock.inputValue(primPathAttr, &retValue).asString();
+        // Get the primPath
+        const MString primPathMString = dataBlock.inputValue(primPathAttr, &retValue).asString();
         if (retValue != MS::kSuccess) {
             return nullptr;
         }
 
-            std::vector<std::string> primPathEltStrs =
-                TfStringTokenize(primPathMString.asChar(),"/");
-            if (!primPathEltStrs.empty()) {
-                sessionLayer =
-                    UsdUtilsStageCache::GetSessionLayerForVariantSelections(
-                        TfToken(primPathEltStrs[0]), variantSelections);
-            }
+        std::vector<std::string> primPathEltStrs = TfStringTokenize(primPathMString.asChar(), "/");
+        if (!primPathEltStrs.empty()) {
+            sessionLayer = UsdUtilsStageCache::GetSessionLayerForVariantSelections(
+                TfToken(primPathEltStrs[0]), variantSelections);
         }
+    }
 
     return sessionLayer;
 }
 
 /* virtual */
-bool
-UsdMayaProxyShape::isBounded() const
+bool UsdMayaProxyShape::isBounded() const
 {
-    return !_useFastPlayback &&
-        TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE) &&
-        ParentClass::isBounded();
+    return !_useFastPlayback && TfGetEnvSetting(PIXMAYA_ENABLE_BOUNDING_BOX_MODE)
+        && ParentClass::isBounded();
 }
 
 /* virtual */
-MBoundingBox
-UsdMayaProxyShape::boundingBox() const
+MBoundingBox UsdMayaProxyShape::boundingBox() const
 {
     if (_useFastPlayback) {
         return UsdMayaUtil::GetInfiniteBoundingBox();
@@ -252,11 +219,10 @@ UsdMayaProxyShape::boundingBox() const
 }
 
 /* virtual */
-bool
-UsdMayaProxyShape::setInternalValueInContext(
-        const MPlug& plug,
-        const MDataHandle& dataHandle,
-        MDGContext& ctx)
+bool UsdMayaProxyShape::setInternalValueInContext(
+    const MPlug&       plug,
+    const MDataHandle& dataHandle,
+    MDGContext&        ctx)
 {
     if (plug == fastPlaybackAttr) {
         _useFastPlayback = dataHandle.asBool();
@@ -267,11 +233,10 @@ UsdMayaProxyShape::setInternalValueInContext(
 }
 
 /* virtual */
-bool
-UsdMayaProxyShape::getInternalValueInContext(
-        const MPlug& plug,
-        MDataHandle& dataHandle,
-        MDGContext& ctx)
+bool UsdMayaProxyShape::getInternalValueInContext(
+    const MPlug& plug,
+    MDataHandle& dataHandle,
+    MDGContext&  ctx)
 {
     if (plug == fastPlaybackAttr) {
         dataHandle.set(_useFastPlayback);
@@ -281,9 +246,9 @@ UsdMayaProxyShape::getInternalValueInContext(
     return MPxSurfaceShape::getInternalValueInContext(plug, dataHandle, ctx);
 }
 
-UsdMayaProxyShape::UsdMayaProxyShape() :
-        MayaUsdProxyShapeBase(/* enableUfeSelection = */ false),
-        _useFastPlayback(false)
+UsdMayaProxyShape::UsdMayaProxyShape()
+    : MayaUsdProxyShapeBase(/* enableUfeSelection = */ false)
+    , _useFastPlayback(false)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaProxyShape>();
 }
@@ -296,14 +261,12 @@ UsdMayaProxyShape::~UsdMayaProxyShape()
     //
 }
 
-bool
-UsdMayaProxyShape::canBeSoftSelected() const
+bool UsdMayaProxyShape::canBeSoftSelected() const
 {
     UsdMayaProxyShape* nonConstThis = const_cast<UsdMayaProxyShape*>(this);
-    MDataBlock dataBlock = nonConstThis->forceCache();
-    MStatus status;
-    MDataHandle softSelHandle =
-        dataBlock.inputValue(softSelectableAttr, &status);
+    MDataBlock         dataBlock = nonConstThis->forceCache();
+    MStatus            status;
+    MDataHandle        softSelHandle = dataBlock.inputValue(softSelectableAttr, &status);
     if (!status) {
         return false;
     }
@@ -315,8 +278,7 @@ void UsdMayaProxyShape::postConstructor()
 {
     ParentClass::postConstructor();
 
-    if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
-    {
+    if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
         // This shape uses Hydra for imaging, so make sure that the
         // pxrHdImagingShape is setup.
         PxrMayaHdImagingShape::GetOrCreateInstance();
@@ -327,17 +289,14 @@ void UsdMayaProxyShape::postConstructor()
 /// Technically, we could make ProxyShape track this itself, but then that would
 /// be making two callbacks to track the same thing... so we use BatchRenderer
 /// implementation
-bool
-UsdMayaGL_ObjectSoftSelectEnabled()
+bool UsdMayaGL_ObjectSoftSelectEnabled()
 {
     return UsdMayaGLBatchRenderer::GetInstance().GetObjectSoftSelectEnabled();
 }
 
-
 TF_REGISTRY_FUNCTION(UsdMayaProxyShape)
 {
-    UsdMayaProxyShape::SetObjectSoftSelectEnabledDelegate(
-        UsdMayaGL_ObjectSoftSelectEnabled);
+    UsdMayaProxyShape::SetObjectSoftSelectEnabledDelegate(UsdMayaGL_ObjectSoftSelectEnabled);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

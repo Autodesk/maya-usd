@@ -15,14 +15,35 @@
 //
 // GENERATED FILE.  DO NOT EDIT.
 #include "{{ libraryPath }}/tokens.h"
+
 #include <pxr/base/tf/pyStaticTokens.h>
 
-{% if useExportAPI %}
-{{ namespaceUsing }}
-
-{% endif %}
-void wrap{{ tokensPrefix }}Tokens()
 {
-    TF_PY_WRAP_PUBLIC_TOKENS("Tokens", {{ tokensPrefix }}Tokens,
-                             {{ Upper(tokensPrefix) }}_TOKENS);
+    % if useExportAPI %
+}
+{ { namespaceUsing } }
+
+{
+    % endif %
+}
+void wrap
+{
+    {
+        tokensPrefix
+    }
+}
+Tokens()
+{
+    TF_PY_WRAP_PUBLIC_TOKENS(
+        "Tokens",
+        {
+            {
+                tokensPrefix
+            }
+        } Tokens,
+        {
+            {
+                Upper(tokensPrefix)
+            }
+        } _TOKENS);
 }

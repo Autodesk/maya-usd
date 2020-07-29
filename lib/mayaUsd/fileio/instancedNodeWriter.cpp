@@ -15,32 +15,30 @@
 //
 #include "instancedNodeWriter.h"
 
-#include <string>
-#include <vector>
-
-#include <maya/MDagPath.h>
-#include <maya/MDagPathArray.h>
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
+#include <maya/MFnDependencyNode.h>
+
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Assuming that \p instance1 and \p instance2 are instances of one another,
 /// replaces the prefix \p instance1 in \p dagPath with \p instance2.
-static
-MDagPath
-_ReplaceInstancePrefix(
-        const MDagPath& dagPath,
-        const MDagPath& instance1,
-        const MDagPath& instance2)
+static MDagPath _ReplaceInstancePrefix(
+    const MDagPath& dagPath,
+    const MDagPath& instance1,
+    const MDagPath& instance2)
 {
     // Early out if the prefixes are the same (no replacement necessary).
     if (instance1 == instance2) {
@@ -79,9 +77,7 @@ _ReplaceInstancePrefix(
             }
         }
         if (!found) {
-            TF_CODING_ERROR(
-                "Couldn't find '%s' under its parent",
-                curPath.fullPathName().asChar());
+            TF_CODING_ERROR("Couldn't find '%s' under its parent", curPath.fullPathName().asChar());
             return MDagPath();
         }
     }
@@ -96,8 +92,7 @@ _ReplaceInstancePrefix(
         const unsigned int i = *it;
         if (i >= curPath.childCount()) {
             TF_CODING_ERROR(
-                "Child index %u is invalid for '%s'",
-                i, curPath.fullPathName().asChar());
+                "Child index %u is invalid for '%s'", i, curPath.fullPathName().asChar());
             return MDagPath();
         }
         curPath.push(curPath.child(i));
@@ -107,11 +102,11 @@ _ReplaceInstancePrefix(
 }
 
 UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdInstancePath,
-        UsdMayaWriteJobContext& ctx) :
-    UsdMayaPrimWriter(depNodeFn, usdInstancePath, ctx),
-    _exportsGprims(false)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdInstancePath,
+    UsdMayaWriteJobContext&  ctx)
+    : UsdMayaPrimWriter(depNodeFn, usdInstancePath, ctx)
+    , _exportsGprims(false)
 {
     const MDagPath& mayaInstancePath(GetDagPath());
     if (!TF_VERIFY(
@@ -123,9 +118,7 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
 
     _usdPrim = GetUsdStage()->DefinePrim(usdInstancePath);
     if (!TF_VERIFY(
-            _usdPrim,
-            "Could not define UsdPrim at path '%s'\n",
-            usdInstancePath.GetText())) {
+            _usdPrim, "Could not define UsdPrim at path '%s'\n", usdInstancePath.GetText())) {
         return;
     }
 
@@ -140,8 +133,7 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
         return;
     }
 
-    _usdPrim.GetReferences().AddReference(
-        SdfReference(std::string(), referencePath));
+    _usdPrim.GetReferences().AddReference(SdfReference(std::string(), referencePath));
     _usdPrim.SetInstanceable(true);
 
     // Get the Maya DAG path corresponding to our "instance master" root.
@@ -150,8 +142,7 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
     MDagPath::getAllPathsTo(mayaInstancePath.node(), allInstances);
     if (allInstances.length() == 0) {
         TF_CODING_ERROR(
-            "'%s' should have at least one path",
-            mayaInstancePath.fullPathName().asChar());
+            "'%s' should have at least one path", mayaInstancePath.fullPathName().asChar());
         return;
     }
     const MDagPath dagMasterRootPath = allInstances[0];
@@ -159,7 +150,7 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
     // Loop through our prim writers and compute cached data.
     std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator begin;
     std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator end;
-    const MDagPath path = GetDagPath();
+    const MDagPath                                          path = GetDagPath();
     if (_writeJobCtx._GetInstanceMasterPrimWriters(path, &begin, &end)) {
         for (auto it = begin; it != end; ++it) {
             const UsdMayaPrimWriterSharedPtr writer = *it;
@@ -172,21 +163,19 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
             // All of the subtree model paths are our model paths.
             const SdfPathVector& writerModelPaths = writer->GetModelPaths();
             _modelPaths.insert(
-                    _modelPaths.begin(),
-                    writerModelPaths.begin(),
-                    writerModelPaths.end());
+                _modelPaths.begin(), writerModelPaths.begin(), writerModelPaths.end());
 
             // Replace prefixes to obtain DAG-USD path mapping.
-            const UsdMayaUtil::MDagPathMap<SdfPath>& writerMapping =
-                    writer->GetDagToUsdPathMapping();
+            const UsdMayaUtil::MDagPathMap<SdfPath>& writerMapping
+                = writer->GetDagToUsdPathMapping();
             for (const std::pair<MDagPath, SdfPath>& pair : writerMapping) {
                 const MDagPath& dagPathInMaster = pair.first;
-                const SdfPath& usdPathInMaster = pair.second;
+                const SdfPath&  usdPathInMaster = pair.second;
 
-                const MDagPath& dagProxyPath = _ReplaceInstancePrefix(
-                        dagPathInMaster, dagMasterRootPath, mayaInstancePath);
-                const SdfPath& usdProxyPath = usdPathInMaster.ReplacePrefix(
-                        referencePath, usdInstancePath);
+                const MDagPath& dagProxyPath
+                    = _ReplaceInstancePrefix(dagPathInMaster, dagMasterRootPath, mayaInstancePath);
+                const SdfPath& usdProxyPath
+                    = usdPathInMaster.ReplacePrefix(referencePath, usdInstancePath);
                 _dagToUsdPaths[dagProxyPath] = usdProxyPath;
             }
         }
@@ -194,38 +183,21 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
 }
 
 /* virtual */
-bool
-UsdMaya_InstancedNodeWriter::ExportsGprims() const
-{
-    return _exportsGprims;
-}
+bool UsdMaya_InstancedNodeWriter::ExportsGprims() const { return _exportsGprims; }
 
 /* virtual */
-bool
-UsdMaya_InstancedNodeWriter::ShouldPruneChildren() const
-{
-    return true;
-}
+bool UsdMaya_InstancedNodeWriter::ShouldPruneChildren() const { return true; }
 
 /* virtual */
-const SdfPathVector&
-UsdMaya_InstancedNodeWriter::GetModelPaths() const
-{
-    return _modelPaths;
-}
+const SdfPathVector& UsdMaya_InstancedNodeWriter::GetModelPaths() const { return _modelPaths; }
 
 /* virtual */
-const UsdMayaUtil::MDagPathMap<SdfPath>&
-UsdMaya_InstancedNodeWriter::GetDagToUsdPathMapping() const
+const UsdMayaUtil::MDagPathMap<SdfPath>& UsdMaya_InstancedNodeWriter::GetDagToUsdPathMapping() const
 {
     return _dagToUsdPaths;
 }
 
 /* virtual */
-void
-UsdMaya_InstancedNodeWriter::Write(const UsdTimeCode& /* usdTime */)
-{
-}
-
+void UsdMaya_InstancedNodeWriter::Write(const UsdTimeCode& /* usdTime */) { }
 
 PXR_NAMESPACE_CLOSE_SCOPE

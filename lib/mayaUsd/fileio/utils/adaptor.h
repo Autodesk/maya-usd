@@ -16,19 +16,19 @@
 #ifndef PXRUSDMAYA_ADAPTOR_H
 #define PXRUSDMAYA_ADAPTOR_H
 
-#include <maya/MDGModifier.h>
-#include <maya/MObjectHandle.h>
-#include <maya/MPlug.h>
+#include <mayaUsd/base/api.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/primSpec.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 
-#include <mayaUsd/base/api.h>
+#include <maya/MDGModifier.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MPlug.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -138,9 +138,9 @@ public:
     /// Clear() the authored value. You can, however, completely remove the
     /// attribute by using UsdMayaAdaptor::SchemaAdaptor::RemoveAttribute().
     class AttributeAdaptor {
-        MPlug _plug;
-        MObjectHandle _node;
-        MObjectHandle _attr;
+        MPlug                  _plug;
+        MObjectHandle          _node;
+        MObjectHandle          _attr;
         SdfAttributeSpecHandle _attrDef;
 
     public:
@@ -169,8 +169,8 @@ public:
         /// the requested type, or if this attribute adaptor is invalid.
         /// \warning Unlike UsdAttribute::Get(), this function never performs
         /// fallback value resolution, since Maya attributes always have values.
-        template <typename T>
-        bool Get(T* value) const {
+        template <typename T> bool Get(T* value) const
+        {
             VtValue v;
             if (Get(&v) && v.IsHolding<T>()) {
                 *value = v.Get<T>();
@@ -216,7 +216,7 @@ public:
     /// using an adaptor and attributes automatically adapted from USD during
     /// import.
     class SchemaAdaptor {
-        MObjectHandle _handle;
+        MObjectHandle     _handle;
         SdfPrimSpecHandle _schemaDef;
 
     public:
@@ -272,9 +272,7 @@ public:
         /// \note This overload will call doIt() on the MDGModifier; thus
         /// any actions will have been committed when the function returns.
         MAYAUSD_CORE_PUBLIC
-        AttributeAdaptor CreateAttribute(
-                const TfToken& attrName,
-                MDGModifier& modifier);
+        AttributeAdaptor CreateAttribute(const TfToken& attrName, MDGModifier& modifier);
 
         /// Removes the named attribute adaptor from this Maya object. Raises a
         /// coding error if \p attrName does not exist on the schema, or if
@@ -311,8 +309,7 @@ public:
         /// Gets the name of the adapted Maya attribute for the given attribute
         /// definition. The name may come from the registered aliases if one
         /// exists and is already present on the node.
-        std::string _GetMayaAttrNameOrAlias(
-                const SdfAttributeSpecHandle& attrSpec) const;
+        std::string _GetMayaAttrNameOrAlias(const SdfAttributeSpecHandle& attrSpec) const;
     };
 
     MAYAUSD_CORE_PUBLIC
@@ -374,8 +371,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     SchemaAdaptor GetSchemaByName(const TfToken& schemaName) const;
 
-    template <typename T>
-    SchemaAdaptor GetSchemaOrInheritedSchema() const {
+    template <typename T> SchemaAdaptor GetSchemaOrInheritedSchema() const
+    {
         return GetSchemaOrInheritedSchema(TfType::Find<T>());
     }
 
@@ -441,9 +438,7 @@ public:
     /// \note This overload will call doIt() on the MDGModifier; thus any
     /// actions will have been committed when the function returns.
     MAYAUSD_CORE_PUBLIC
-    SchemaAdaptor ApplySchemaByName(
-            const TfToken& schemaName,
-            MDGModifier& modifier);
+    SchemaAdaptor ApplySchemaByName(const TfToken& schemaName, MDGModifier& modifier);
 
     /// Removes the given API schema from the adaptor's apiSchemas metadata.
     /// Raises a coding error if the adaptor is invalid.
@@ -500,10 +495,7 @@ public:
     /// \note This overload will call doIt() on the MDGModifier; thus any
     /// actions will have been committed when the function returns.
     MAYAUSD_CORE_PUBLIC
-    bool SetMetadata(
-            const TfToken& key,
-            const VtValue& value,
-            MDGModifier& modifier);
+    bool SetMetadata(const TfToken& key, const VtValue& value, MDGModifier& modifier);
 
     /// Clears the authored \p key's value on this Maya object.
     /// Raises a coding error if the adaptor is invalid.
@@ -534,8 +526,8 @@ public:
     /// the same Maya type again will overwrite the previous registration.
     /// However, multiple Maya types may map to the same TfType.
     MAYAUSD_CORE_PUBLIC
-    static void RegisterTypedSchemaConversion(
-            const std::string& nodeTypeName, const TfType& usdType);
+    static void
+    RegisterTypedSchemaConversion(const std::string& nodeTypeName, const TfType& usdType);
 
     /// For backwards compatibility only: when upgrading any pre-existing code
     /// to use the adaptor mechanism, you can instruct the adaptor to recognize
@@ -552,16 +544,14 @@ public:
     /// it always uses the generated name.
     /// \sa UsdMayaAdaptor::SchemaAdaptor::CreateAttribute()
     MAYAUSD_CORE_PUBLIC
-    static void RegisterAttributeAlias(
-            const TfToken& attributeName, const std::string& alias);
+    static void RegisterAttributeAlias(const TfToken& attributeName, const std::string& alias);
 
     /// Gets the name of all possible Maya attribute names for the given USD
     /// schema \p attributeName, in the order in which the aliases were
     /// registered. The default generated name is always the zeroth item in the
     /// returned vector.
     MAYAUSD_CORE_PUBLIC
-    static std::vector<std::string> GetAttributeAliases(
-            const TfToken& attributeName);
+    static std::vector<std::string> GetAttributeAliases(const TfToken& attributeName);
 
 private:
     MObjectHandle _handle;
@@ -590,12 +580,11 @@ private:
 /// \endcode
 ///
 /// \sa UsdMayaAdaptor::RegisterTypedSchemaConversion()
-#define PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mayaTypeName, schemaType)\
-TF_REGISTRY_FUNCTION(UsdMayaAdaptor)\
-{\
-    UsdMayaAdaptor::RegisterTypedSchemaConversion(\
-            #mayaTypeName, TfType::Find<schemaType>());\
-}
+#define PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mayaTypeName, schemaType)                              \
+    TF_REGISTRY_FUNCTION(UsdMayaAdaptor)                                                          \
+    {                                                                                             \
+        UsdMayaAdaptor::RegisterTypedSchemaConversion(#mayaTypeName, TfType::Find<schemaType>()); \
+    }
 
 /// Registers an \p alias string for the given \p attrName token or string.
 ///
@@ -604,11 +593,11 @@ TF_REGISTRY_FUNCTION(UsdMayaAdaptor)\
 /// that all the aliases are registered at the correct time.
 ///
 /// \sa UsdMayaAdaptor::RegisterAttributeAlias()
-#define PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(attrName, alias)\
-TF_REGISTRY_FUNCTION(UsdMayaAdaptor)\
-{\
-    UsdMayaAdaptor::RegisterAttributeAlias(TfToken(attrName), alias);\
-}
+#define PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(attrName, alias)      \
+    TF_REGISTRY_FUNCTION(UsdMayaAdaptor)                                  \
+    {                                                                     \
+        UsdMayaAdaptor::RegisterAttributeAlias(TfToken(attrName), alias); \
+    }
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

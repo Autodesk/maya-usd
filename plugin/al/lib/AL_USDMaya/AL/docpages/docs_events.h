@@ -3,17 +3,19 @@
 \defgroup  events  Core Event System
 \ingroup  mayautils
 \brief
-The AL_USDMaya event system attempts to provide a more robust event system for Maya that works around some of the
-short comings of the MMessage/scriptJob approach. This system is employed within AL_USDMaya to expose programming hooks
-that can be used to execute your own code during the internal processes of AL_USDMaya <i>(e.g. before/after a variant switch)</i>
+The AL_USDMaya event system attempts to provide a more robust event system for Maya that works
+around some of the short comings of the MMessage/scriptJob approach. This system is employed within
+AL_USDMaya to expose programming hooks that can be used to execute your own code during the internal
+processes of AL_USDMaya <i>(e.g. before/after a variant switch)</i>
 
 \section events_Motivation Events Motivation
 
 \subsection MMessage Why not use scriptJob / MMessage?
 
-Maya already has its own event management system, which are exposed via the MMessage <i>(and derived classes)</i> in the API,
-and scriptJob within MEL/python. These systems work, but they have a number of drawbacks when deployed in a medium to large
-sized studio with multiple shows in flight. As an example of some of the problems that can arise, consider this scenario:
+Maya already has its own event management system, which are exposed via the MMessage <i>(and derived
+classes)</i> in the API, and scriptJob within MEL/python. These systems work, but they have a number
+of drawbacks when deployed in a medium to large sized studio with multiple shows in flight. As an
+example of some of the problems that can arise, consider this scenario:
 
 \code
 // A callback that will create a node we will store some shot settings on
@@ -33,38 +35,42 @@ global proc onFileNew_createDefaultSetOfNodes()
 global int $scriptJob2 = `scriptJob -e "NewSceneOpened" "onFileNew_createDefaultSetOfNodes"`;
 \endcode
 
-Now in this case, since we are registering those script jobs in a specific order, when a 'file new' occurs, our custom
-shot node will be created, and it will be added to the set of nodes to ignore at export time. All well and good!
+Now in this case, since we are registering those script jobs in a specific order, when a 'file new'
+occurs, our custom shot node will be created, and it will be added to the set of nodes to ignore at
+export time. All well and good!
 
-If however we registered scriptJob2 first, we'd end up with the set being created first, and then we'd create our shot
-settings node <i>(which would not be part of the set)</i>. Now who knows which is the right way around in this context
-<i>(it is after all an illustrative example!)</i>, but the important take home message here, is that there can be
-behavioural changes when scriptJobs and MMessages are registered in differing orders.
+If however we registered scriptJob2 first, we'd end up with the set being created first, and then
+we'd create our shot settings node <i>(which would not be part of the set)</i>. Now who knows which
+is the right way around in this context <i>(it is after all an illustrative example!)</i>, but the
+important take home message here, is that there can be behavioural changes when scriptJobs and
+MMessages are registered in differing orders.
 
-This is often a problem in most studios, since it's likely that those two scriptJobs <i>(or MMessage events)</i> are
-actually located in different plug-ins, and therefore small bugs can be introduced if the events are accidentally
-registered in an incorrect order.
+This is often a problem in most studios, since it's likely that those two scriptJobs <i>(or MMessage
+events)</i> are actually located in different plug-ins, and therefore small bugs can be introduced
+if the events are accidentally registered in an incorrect order.
 
-In cases where small bugs are introduced, it is often extremely hard to track down what has caused the offending
-bug, since the maya event system doesn't really give you an adequate way to track down which events triggered which
-callbacks, and more importantly any ideas in how to track down the code that contained the events.
+In cases where small bugs are introduced, it is often extremely hard to track down what has caused
+the offending bug, since the maya event system doesn't really give you an adequate way to track down
+which events triggered which callbacks, and more importantly any ideas in how to track down the code
+that contained the events.
 
 \subsection terminology Some Terminology
 
 \li \b Event : An event is a point in code that can trigger multiple callbacks
-\li \b Callback : This is a small bit of code that the user can bind to a specific event, to be executed when it is triggered
-\li \b Node \b Event : an event that is bound to a specific maya node
+\li \b Callback : This is a small bit of code that the user can bind to a specific event, to be
+executed when it is triggered \li \b Node \b Event : an event that is bound to a specific maya node
 \li \b Global \b Event : an event that is not bound to any particular node
 
 \section events_CoreSystem Core Event API
 
 \subsection event_specialisation Implementing the System Backend
 
-The event system itself is defined in such as a way as to allow you to provide a custom backend when initialising the
-event system. The primary reason for this is to allow a repurposing of the event system into different DCC contexts
-(e.g. Maya, Houdini, etc). Within the usdmaya plugin, this backend binding is provided in the class MayaEventSystemBinding
-defined within AL/usdmaya/Global.cpp. The main purpose of this binding is to connect the event system to the underlying
-logging and scripting capability of the DCC app.
+The event system itself is defined in such as a way as to allow you to provide a custom backend when
+initialising the event system. The primary reason for this is to allow a repurposing of the event
+system into different DCC contexts (e.g. Maya, Houdini, etc). Within the usdmaya plugin, this
+backend binding is provided in the class MayaEventSystemBinding defined within
+AL/usdmaya/Global.cpp. The main purpose of this binding is to connect the event system to the
+underlying logging and scripting capability of the DCC app.
 
 \code
 #include "AL/event/EventHandler.h"
@@ -166,8 +172,9 @@ MStatus initializePlugin(MObject obj)
   // to access the global scheduler
   auto& scheduler = AL::event::EventScheduler::getScheduler();
 
-  // lets register a simple event named "OnSomethingHappened" that is of the type kUserSpecifiedEventType
-  g_mySimpleEvent = scheduler.registerEvent("OnSomethingHappened", kUserSpecifiedEventType);
+  // lets register a simple event named "OnSomethingHappened" that is of the type
+kUserSpecifiedEventType g_mySimpleEvent = scheduler.registerEvent("OnSomethingHappened",
+kUserSpecifiedEventType);
 
   // make sure the event registered correctly
   if(g_mySimpleEvent == 0)
@@ -178,10 +185,10 @@ MStatus initializePlugin(MObject obj)
   // Simply as an example, we may wish to register a C callback on the event!
   g_myCallbackId = scheduler.registerCallback(
     g_mySimpleEvent,                  ///< the event Id we wish to have our callback triggered on
-    "myToolName_myCallbackFunction",  ///< a unique tag to identify the who owns the callback, and its purpose
-    myCallbackFunction,               ///< the C function we wish to execute
-    10000,                            ///< a weight value for the callback. Smaller values are executed first, larger last
-    nullptr);                         ///< an optional userData pointer
+    "myToolName_myCallbackFunction",  ///< a unique tag to identify the who owns the callback, and
+its purpose myCallbackFunction,               ///< the C function we wish to execute 10000, ///< a
+weight value for the callback. Smaller values are executed first, larger last nullptr); ///< an
+optional userData pointer
 
   // make sure the callback registered correctly
   if(g_myCallbackId == 0)
@@ -212,8 +219,9 @@ MStatus uninitializePlugin(MObject obj)
 }
 \endcode
 
-It should be noted that once this plugin have been loaded, there are a number of MEL commands exposed that allow you
-to interact with that event in MEL/python script. Firstly we can get a list of the global events registered:
+It should be noted that once this plugin have been loaded, there are a number of MEL commands
+exposed that allow you to interact with that event in MEL/python script. Firstly we can get a list
+of the global events registered:
 
 \code
 print `AL_usdmaya_ListEvents`;
@@ -233,7 +241,8 @@ AL_usdmaya_TriggerEvent "OnSomethingHappened";
 //  I am a callback!
 \endcode
 
-Via the MEL command AL_usdmaya_Callback it is possible to assign a callback from a MEL or python script.
+Via the MEL command AL_usdmaya_Callback it is possible to assign a callback from a MEL or python
+script.
 
 \code
 // simple callback
@@ -246,12 +255,13 @@ string $melCodeToExecute = "print \"mel callback!\n\"";
 // * The integer weight for the callback
 // * The MEL script to execute
 //
-global int $callbackId[] = `AL_usdmaya_Callback -me "OnSomethingHappened" "MyMelScript_operation" 10001 $melCodeToExecute`;
-\endcode
+global int $callbackId[] = `AL_usdmaya_Callback -me "OnSomethingHappened" "MyMelScript_operation"
+10001 $melCodeToExecute`; \endcode
 
-You will notice that the callback id's are returned as an array. This is simply because the C++ Callback ID's are 64bit,
-however sadly MEL does not support 64bit integer values, so the callbacks are returned as a pair of 32bit integers.
-These pair of callback values can be used to query some information about the callback using the command AL_usdmaya_CallbackQuery
+You will notice that the callback id's are returned as an array. This is simply because the C++
+Callback ID's are 64bit, however sadly MEL does not support 64bit integer values, so the callbacks
+are returned as a pair of 32bit integers. These pair of callback values can be used to query some
+information about the callback using the command AL_usdmaya_CallbackQuery
 
 \code
 // print the tag for the callback
@@ -270,7 +280,8 @@ print ("weight: " + `AL_usdmaya_CallbackQuery -w $callbackId[0] $callbackId[1]` 
 print ("code: " + `AL_usdmaya_CallbackQuery -c $callbackId[0] $callbackId[1]` + "\n");
 \endcode
 
-If you wish to see which callbacks are registered against a specific event, you can use the AL_usdmaya_ListCallbacks command, e.g.
+If you wish to see which callbacks are registered against a specific event, you can use the
+AL_usdmaya_ListCallbacks command, e.g.
 
 \code
 proc printCallbackInfo(string $eventName)
@@ -279,19 +290,24 @@ proc printCallbackInfo(string $eventName)
   print ("EventBreakdown: " + $eventName + "\n");
   for(int $i = 0; $i < size($callbackIds); $i += 2)
   {
-    print ("callback " + ($i / 2 + 1) + " : [" + $callbackIds[$i] + ", " + $callbackIds[$i + 1] + "]\n");
+    print ("callback " + ($i / 2 + 1) + " : [" + $callbackIds[$i] + ", " + $callbackIds[$i + 1] +
+"]\n");
 
     // print the tag for the callback
-    print ("  tag: " + `AL_usdmaya_CallbackQuery -tag $callbackIds[$i] $callbackIds[$i + 1]` + "\n");
+    print ("  tag: " + `AL_usdmaya_CallbackQuery -tag $callbackIds[$i] $callbackIds[$i + 1]` +
+"\n");
 
     // print the eventId for the callback
-    print ("  eventId: " + `AL_usdmaya_CallbackQuery -e $callbackIds[$i] $callbackIds[$i + 1]` + "\n");
+    print ("  eventId: " + `AL_usdmaya_CallbackQuery -e $callbackIds[$i] $callbackIds[$i + 1]` +
+"\n");
 
     // print the type of the callback (returns "Python", "MEL", or "C")
-    print ("  type: " + `AL_usdmaya_CallbackQuery -ty $callbackIds[$i] $callbackIds[$i + 1]` + "\n");
+    print ("  type: " + `AL_usdmaya_CallbackQuery -ty $callbackIds[$i] $callbackIds[$i + 1]` +
+"\n");
 
     // print the callback weight
-    print ("  weight: " + `AL_usdmaya_CallbackQuery -w $callbackIds[$i] $callbackIds[$i + 1]` + "\n");
+    print ("  weight: " + `AL_usdmaya_CallbackQuery -w $callbackIds[$i] $callbackIds[$i + 1]` +
+"\n");
 
     // print the callback code
     print ("  code: \n----------------------------------------------------------------\n" +
@@ -333,8 +349,9 @@ AL_usdmaya_Event -d "AnEventDefinedInMEL";
 
 \subsection nodeEventsC Node Events in C++
 
-To make use of the maya node events, your node should derive from the AL::usdmaya::nodes::MayaNodeEvents class.
-A simple example of setting a node up with the events system would look like so:
+To make use of the maya node events, your node should derive from the
+AL::usdmaya::nodes::MayaNodeEvents class. A simple example of setting a node up with the events
+system would look like so:
 
 \code
 
@@ -356,7 +373,8 @@ public:
 
   ~MyMayaNode()
   {
-    // you don't need to unregister events (events are automatically unregistered in the MayaNodeEvents dtor).
+    // you don't need to unregister events (events are automatically unregistered in the
+MayaNodeEvents dtor).
     // This is only here for example purposes
     unregisterEvent("PreThingHappened");
     unregisterEvent("PostThingHappened");
@@ -380,8 +398,9 @@ public:
 };
 \endcode
 
-That's basically the only setup you need to perform in order to make a custom plugin node compatible with
-the events system. We can now use AL_usdmaya_ListEvents to get a list of the events that the node supports
+That's basically the only setup you need to perform in order to make a custom plugin node compatible
+with the events system. We can now use AL_usdmaya_ListEvents to get a list of the events that the
+node supports
 
 \code
 // create a node that supports events
@@ -396,21 +415,23 @@ print `AL_usdmaya_ListEvents $node`;
 //  PostThingHappened
 \endcode
 
-Via the MEL command AL_usdmaya_Callback it is possible to assign a callback from a MEL or python script to that node.
+Via the MEL command AL_usdmaya_Callback it is possible to assign a callback from a MEL or python
+script to that node.
 
 \code
 // simple callback
 string $melCodeToExecute = "print \"mel callback!\n\"";
 
-// -mne/-melNodeEvent flag arguments: (note: -pne/-pythonNodeEvent will treat the callback code as python)
+// -mne/-melNodeEvent flag arguments: (note: -pne/-pythonNodeEvent will treat the callback code as
+python)
 // * The node name
 // * The event name
 // * A unique tag to identify the callback
 // * The integer weight for the callback
 // * The MEL script to execute
 //
-global int $callbackId[] = `AL_usdmaya_Callback -mne $node "PreThingHappened" "MyMelScript_operation" 10001 $melCodeToExecute`;
-\endcode
+global int $callbackId[] = `AL_usdmaya_Callback -mne $node "PreThingHappened"
+"MyMelScript_operation" 10001 $melCodeToExecute`; \endcode
 
 We can also trigger the event from MEL/python if we wish:
 
@@ -423,8 +444,8 @@ AL_usdmaya_TriggerEvent "PreThingHappened" $node;
 \endcode
 
 
-As with the Global Events, these pair of callback values can be used to query some information about the callback using the
-command AL_usdmaya_CallbackQuery
+As with the Global Events, these pair of callback values can be used to query some information about
+the callback using the command AL_usdmaya_CallbackQuery
 
 \code
 // print the tag for the callback
@@ -443,7 +464,8 @@ print ("weight: " + `AL_usdmaya_CallbackQuery -w $callbackId[0] $callbackId[1]` 
 print ("code: " + `AL_usdmaya_CallbackQuery -c $callbackId[0] $callbackId[1]` + "\n");
 \endcode
 
-If you wish to see which callbacks are registered against a specific event, you can use the AL_usdmaya_ListCallbacks command, e.g.
+If you wish to see which callbacks are registered against a specific event, you can use the
+AL_usdmaya_ListCallbacks command, e.g.
 
 \code
 proc printNodeCallbackInfo(string $eventName, string $node)
@@ -452,19 +474,24 @@ proc printNodeCallbackInfo(string $eventName, string $node)
   print ("EventBreakdown for node: " + $node + " and event: " + $eventName + "\n");
   for(int $i = 0; $i < size($callbackIds); $i += 2)
   {
-    print ("callback " + ($i / 2 + 1) + " : [" + $callbackIds[$i] + ", " + $callbackIds[$i + 1] + "]\n");
+    print ("callback " + ($i / 2 + 1) + " : [" + $callbackIds[$i] + ", " + $callbackIds[$i + 1] +
+"]\n");
 
     // print the tag for the callback
-    print ("  tag: " + `AL_usdmaya_CallbackQuery -tag $callbackIds[$i] $callbackIds[$i + 1]` + "\n");
+    print ("  tag: " + `AL_usdmaya_CallbackQuery -tag $callbackIds[$i] $callbackIds[$i + 1]` +
+"\n");
 
     // print the eventId for the callback
-    print ("  eventId: " + `AL_usdmaya_CallbackQuery -e $callbackIds[$i] $callbackIds[$i + 1]` + "\n");
+    print ("  eventId: " + `AL_usdmaya_CallbackQuery -e $callbackIds[$i] $callbackIds[$i + 1]` +
+"\n");
 
     // print the type of the callback (returns "Python", "MEL", or "C")
-    print ("  type: " + `AL_usdmaya_CallbackQuery -ty $callbackIds[$i] $callbackIds[$i + 1]` + "\n");
+    print ("  type: " + `AL_usdmaya_CallbackQuery -ty $callbackIds[$i] $callbackIds[$i + 1]` +
+"\n");
 
     // print the callback weight
-    print ("  weight: " + `AL_usdmaya_CallbackQuery -w $callbackIds[$i] $callbackIds[$i + 1]` + "\n");
+    print ("  weight: " + `AL_usdmaya_CallbackQuery -w $callbackIds[$i] $callbackIds[$i + 1]` +
+"\n");
 
     // print the callback code
     print ("  code: \n----------------------------------------------------------------\n" +
@@ -487,7 +514,8 @@ AL_usdmaya_Callback -d $callbackId[0] $callbackId[1];
 AL_usdmaya_DeleteCallbacks $callbackId[0];
 \endcode
 
-It is also possible to define entirely new events on the node in your own MEL or python scripts, e.g.
+It is also possible to define entirely new events on the node in your own MEL or python scripts,
+e.g.
 
 \code
 
@@ -504,9 +532,10 @@ AL_usdmaya_Event -d "AnEventDefinedInMEL" $node;
 
 \subsection parentEventsC Parent / Child events in C++
 
-As an optional part of the events system, it is possible to provide additional information to an event that describes
-a parent/child relationship between callbacks and events. Child events themselves are not triggered automatically (that
-task is something that needs to be done manually), and child events can only be parented to a callback.
+As an optional part of the events system, it is possible to provide additional information to an
+event that describes a parent/child relationship between callbacks and events. Child events
+themselves are not triggered automatically (that task is something that needs to be done manually),
+and child events can only be parented to a callback.
 
 \code
 
@@ -567,10 +596,10 @@ MStatus initializePlugin(MObject obj)
   // Simply as an example, we may wish to register a C callback on the event!
   g_myCallbackId1 = scheduler.registerCallback(
     g_mySimpleEvent1,                 ///< the event Id we wish to have our callback triggered on
-    "myToolName_myCallbackFunction1", ///< a unique tag to identify the who owns the callback, and its purpose
-    myCallbackFunction1,              ///< the C function we wish to execute
-    10000,                            ///< a weight value for the callback. Smaller values are executed first, larger last
-    nullptr);                         ///< an optional userData pointer
+    "myToolName_myCallbackFunction1", ///< a unique tag to identify the who owns the callback, and
+its purpose myCallbackFunction1,              ///< the C function we wish to execute 10000, ///< a
+weight value for the callback. Smaller values are executed first, larger last nullptr); ///< an
+optional userData pointer
 
   // make sure the callback registered correctly
   if(g_myCallbackId1 == 0)
@@ -579,7 +608,8 @@ MStatus initializePlugin(MObject obj)
   }
 
   // lets register a simple event
-  g_mySimpleEvent2 = scheduler.registerEvent("OnChildThingHappened", kUserSpecifiedEventType, g_myCallbackId1);
+  g_mySimpleEvent2 = scheduler.registerEvent("OnChildThingHappened", kUserSpecifiedEventType,
+g_myCallbackId1);
 
   // make sure the event registered correctly
   if(g_mySimpleEvent2 == 0)
@@ -590,10 +620,10 @@ MStatus initializePlugin(MObject obj)
   // Simply as an example, we may wish to register a C callback on the event!
   g_myCallbackId2 = scheduler.registerCallback(
     g_mySimpleEvent2,                 ///< the event Id we wish to have our callback triggered on
-    "myToolName_myCallbackFunction2", ///< a unique tag to identify the who owns the callback, and its purpose
-    myCallbackFunction2,              ///< the C function we wish to execute
-    10000,                            ///< a weight value for the callback. Smaller values are executed first, larger last
-    nullptr);                         ///< an optional userData pointer
+    "myToolName_myCallbackFunction2", ///< a unique tag to identify the who owns the callback, and
+its purpose myCallbackFunction2,              ///< the C function we wish to execute 10000, ///< a
+weight value for the callback. Smaller values are executed first, larger last nullptr); ///< an
+optional userData pointer
 
   // make sure the callback registered correctly
   if(g_myCallbackId2 == 0)
@@ -669,7 +699,8 @@ int $parentCallback[] = `AL_usdmaya_EventQuery -p $childEventName`;
 // quickly check to see whether the event has a callback or not
 if(size($parentCallback))
 {
-  print ("parent callback of " + $childEventName + " has ID [" + $parentCallback[0] + ", " + $parentCallback[1] + "]\n");
+  print ("parent callback of " + $childEventName + " has ID [" + $parentCallback[0] + ", " +
+$parentCallback[1] + "]\n");
 }
 else
 {
@@ -677,33 +708,36 @@ else
 }
 \endcode
 
-similarly, given a callback you can determine the child event ID's via the AL_usdmaya_CallbackQuery command and the
--ce / -childEvents flag:
+similarly, given a callback you can determine the child event ID's via the AL_usdmaya_CallbackQuery
+command and the -ce / -childEvents flag:
 
 \code
 // query the parent callback to the child event
-int $childEventIds[] = `AL_usdmaya_CallbackQuery -ce $mainEventName $parentCallback[0] $parentCallback[1]`;
+int $childEventIds[] = `AL_usdmaya_CallbackQuery -ce $mainEventName $parentCallback[0]
+$parentCallback[1]`;
 
 // quickly check to see whether the event has a callback or not
 for($event in $childEventIds)
 {
-  print ("eventID " + $event + " is a child of callback " +  $parentCallback[0] + " " + $parentCallback[1] + "\n");
+  print ("eventID " + $event + " is a child of callback " +  $parentCallback[0] + " " +
+$parentCallback[1] + "\n");
 }
 \endcode
 
-If you wish to convert the event ID back into the text name (and possibly get the associated node) you the
-AL_usdmaya_EventLookup command
+If you wish to convert the event ID back into the text name (and possibly get the associated node)
+you the AL_usdmaya_EventLookup command
 
 \code
 // query the parent callback to the child event
-int $childEventIds[] = `AL_usdmaya_CallbackQuery -ce $mainEventName $parentCallback[0] $parentCallback[1]`;
+int $childEventIds[] = `AL_usdmaya_CallbackQuery -ce $mainEventName $parentCallback[0]
+$parentCallback[1]`;
 
 // quickly check to see whether the event has a callback or not
 for($event in $childEventIds)
 {
-  print ("eventID " + $event + " is a child of callback " +  $parentCallback[0] + " " + $parentCallback[1] + "\n");
-  print ("  - eventName  " + `AL_usdmaya_EventLookup -name $event` + "\n");
-  print ("  - owningNode " + `AL_usdmaya_EventLookup -node $event` + "\n");
+  print ("eventID " + $event + " is a child of callback " +  $parentCallback[0] + " " +
+$parentCallback[1] + "\n"); print ("  - eventName  " + `AL_usdmaya_EventLookup -name $event` +
+"\n"); print ("  - owningNode " + `AL_usdmaya_EventLookup -node $event` + "\n");
 }
 \endcode
 

@@ -19,17 +19,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/*! \brief  Begin update before rendering of VP2 starts. 
-*/
-void HdVP2RenderParam::BeginUpdate(MSubSceneContainer& container, UsdTimeCode frame) {
+/*! \brief  Begin update before rendering of VP2 starts.
+ */
+void HdVP2RenderParam::BeginUpdate(MSubSceneContainer& container, UsdTimeCode frame)
+{
     _container = &container;
     _frame = frame;
 }
 
 /*! \brief  End update & clear access to render item container which pass this point won't be valid.
-*/
-void HdVP2RenderParam::EndUpdate() {
-    _container = nullptr;
-}
+ */
+void HdVP2RenderParam::EndUpdate() { _container = nullptr; }
 
 PXR_NAMESPACE_CLOSE_SCOPE

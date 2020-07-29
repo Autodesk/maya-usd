@@ -15,47 +15,47 @@
 //
 #pragma once
 
-#include <ufe/undoableCommand.h>
-
-#include <pxr/usd/usd/prim.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <pxr/usd/usd/prim.h>
+
+#include <ufe/undoableCommand.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief UsdUndoDeleteCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoDeleteCommand : public Ufe::UndoableCommand
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdUndoDeleteCommand> Ptr;
+    namespace ufe {
 
-	UsdUndoDeleteCommand(const UsdPrim& prim);
-	~UsdUndoDeleteCommand() override;
+    //! \brief UsdUndoDeleteCommand
+    class MAYAUSD_CORE_PUBLIC UsdUndoDeleteCommand : public Ufe::UndoableCommand {
+    public:
+        typedef std::shared_ptr<UsdUndoDeleteCommand> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdUndoDeleteCommand(const UsdUndoDeleteCommand&) = delete;
-	UsdUndoDeleteCommand& operator=(const UsdUndoDeleteCommand&) = delete;
-	UsdUndoDeleteCommand(UsdUndoDeleteCommand&&) = delete;
-	UsdUndoDeleteCommand& operator=(UsdUndoDeleteCommand&&) = delete;
+        UsdUndoDeleteCommand(const UsdPrim& prim);
+        ~UsdUndoDeleteCommand() override;
 
-	//! Create a UsdUndoDeleteCommand from a USD prim.
-	static UsdUndoDeleteCommand::Ptr create(const UsdPrim& prim);
+        // Delete the copy/move constructors assignment operators.
+        UsdUndoDeleteCommand(const UsdUndoDeleteCommand&) = delete;
+        UsdUndoDeleteCommand& operator=(const UsdUndoDeleteCommand&) = delete;
+        UsdUndoDeleteCommand(UsdUndoDeleteCommand&&) = delete;
+        UsdUndoDeleteCommand& operator=(UsdUndoDeleteCommand&&) = delete;
 
-	// UsdUndoDeleteCommand overrides
-	void undo() override;
-	void redo() override;
+        //! Create a UsdUndoDeleteCommand from a USD prim.
+        static UsdUndoDeleteCommand::Ptr create(const UsdPrim& prim);
 
-private:
-	void perform(bool state);
+        // UsdUndoDeleteCommand overrides
+        void undo() override;
+        void redo() override;
 
-private:
-	UsdPrim fPrim;
+    private:
+        void perform(bool state);
 
-}; // UsdUndoDeleteCommand
+    private:
+        UsdPrim fPrim;
 
-} // namespace ufe
+    }; // UsdUndoDeleteCommand
+
+    } // namespace ufe
 } // namespace MayaUsd

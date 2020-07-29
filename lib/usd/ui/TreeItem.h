@@ -16,107 +16,94 @@
 
 #pragma once
 
-#include <QtGui/QStandardItem>
-#include <QtGui/QPixmap>
+#include <mayaUsd/mayaUsd.h>
 
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/mayaUsd.h>
-
+#include <QtGui/QPixmap>
+#include <QtGui/QStandardItem>
 #include <mayaUsdUI/ui/api.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-
-/**
- * \brief Item representing a node used to build a Qt TreeModel.
- * \remarks This item is intended to hold references to USD Prims in the future, so additional information can be
- * displayed to the User when interacting with Tree content.
- */
-class MAYAUSD_UI_PUBLIC TreeItem : public QStandardItem
+MAYAUSD_NS_DEF
 {
-public:
-	using ParentClass = QStandardItem;
 
-	enum class Type
-	{
-		kLoad,
-		kName,
-		kType,
-		kVariants
-	};
+    /**
+     * \brief Item representing a node used to build a Qt TreeModel.
+     * \remarks This item is intended to hold references to USD Prims in the future, so additional
+     * information can be displayed to the User when interacting with Tree content.
+     */
+    class MAYAUSD_UI_PUBLIC TreeItem : public QStandardItem {
+    public:
+        using ParentClass = QStandardItem;
 
-	enum class CheckState
-	{
-		kChecked,
-		kChecked_Disabled,
-		kUnchecked,
-		kUnchecked_Disabled
-	};
+        enum class Type { kLoad, kName, kType, kVariants };
 
-	/**
-	 * \brief Constructor.
-	 * \param prim The USD Prim to represent with this item.
-	 * \param text Column text to display on the View of the the Qt TreeModel.
-	 */
-	explicit TreeItem(const UsdPrim& prim, Type t) noexcept;
+        enum class CheckState { kChecked, kChecked_Disabled, kUnchecked, kUnchecked_Disabled };
 
-	/**
-	 * \brief Destructor.
-	 */
-	virtual ~TreeItem() = default;
+        /**
+         * \brief Constructor.
+         * \param prim The USD Prim to represent with this item.
+         * \param text Column text to display on the View of the the Qt TreeModel.
+         */
+        explicit TreeItem(const UsdPrim& prim, Type t) noexcept;
 
-	/**
-	 * \brief Return the USD Prim that is represented by the item.
-	 * \return The USD Prim that is represented by the item.
-	 */
-	UsdPrim prim() const;
+        /**
+         * \brief Destructor.
+         */
+        virtual ~TreeItem() = default;
 
-	/**
-	 * \brief Return a flag indicating the type of the item.
-	 * \remarks This is used by Qt to distinguish custom items from the base class.
-	 * \return A flag indicating that the type is a custom item, different from the base class.
-	 */
-	int type() const override;
+        /**
+         * \brief Return the USD Prim that is represented by the item.
+         * \return The USD Prim that is represented by the item.
+         */
+        UsdPrim prim() const;
 
-	//! Returns the check state of this tree item.
-	//! Only valid for kLoad type.
-	TreeItem::CheckState checkState() const { return fCheckState; }
-	const QPixmap& checkImage() const;
+        /**
+         * \brief Return a flag indicating the type of the item.
+         * \remarks This is used by Qt to distinguish custom items from the base class.
+         * \return A flag indicating that the type is a custom item, different from the base class.
+         */
+        int type() const override;
 
-	//! Sets the checkstate of this tree item.
-	//! Only valid for kLoad type.
-	void setCheckState(TreeItem::CheckState st);
+        //! Returns the check state of this tree item.
+        //! Only valid for kLoad type.
+        TreeItem::CheckState checkState() const { return fCheckState; }
+        const QPixmap&       checkImage() const;
 
-	//! Returns true if the variant selection for this item was modified.
-	//! Only valid for kVariants type.
-	bool variantSelectionModified() const { return fVariantSelectionModified; }
+        //! Sets the checkstate of this tree item.
+        //! Only valid for kLoad type.
+        void setCheckState(TreeItem::CheckState st);
 
-	//! Special flag set when the variant selection (of this item) is modified.
-	//! Only valid for kVariants type.
-	void setVariantSelectionModified();
+        //! Returns true if the variant selection for this item was modified.
+        //! Only valid for kVariants type.
+        bool variantSelectionModified() const { return fVariantSelectionModified; }
 
-private:
-	void initializeItem();
+        //! Special flag set when the variant selection (of this item) is modified.
+        //! Only valid for kVariants type.
+        void setVariantSelectionModified();
 
-protected:
-	// The USD Prim that the item represents in the TreeModel.
-	UsdPrim fPrim;
+    private:
+        void initializeItem();
 
-	// The type of this item.
-	Type fType;
+    protected:
+        // The USD Prim that the item represents in the TreeModel.
+        UsdPrim fPrim;
 
-	// For the LOAD column, the check state.
-	CheckState fCheckState;
+        // The type of this item.
+        Type fType;
 
-	// Special flag set when the variant selection was modified.
-	bool fVariantSelectionModified;
+        // For the LOAD column, the check state.
+        CheckState fCheckState;
 
-	static QPixmap* fsCheckBoxOn;
-	static QPixmap* fsCheckBoxOnDisabled;
-	static QPixmap* fsCheckBoxOff;
-	static QPixmap* fsCheckBoxOffDisabled;
-};
+        // Special flag set when the variant selection was modified.
+        bool fVariantSelectionModified;
+
+        static QPixmap* fsCheckBoxOn;
+        static QPixmap* fsCheckBoxOnDisabled;
+        static QPixmap* fsCheckBoxOff;
+        static QPixmap* fsCheckBoxOffDisabled;
+    };
 
 } // namespace MayaUsd

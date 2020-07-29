@@ -15,16 +15,15 @@
 //
 #include "viewCommand.h"
 
-#include <maya/MArgDatabase.h>
-#include <maya/MGlobal.h>
-#include <maya/MSyntax.h>
+#include "renderGlobals.h"
+#include "renderOverride.h"
+#include "utils.h"
 
 #include <hdMaya/delegates/delegateRegistry.h>
 
-#include "renderGlobals.h"
-#include "renderOverride.h"
-#include "renderOverride.h"
-#include "utils.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MGlobal.h>
+#include <maya/MSyntax.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -101,15 +100,15 @@ Debug flags:
 
 } // namespace
 
-MSyntax MtohViewCmd::createSyntax() {
+MSyntax MtohViewCmd::createSyntax()
+{
     MSyntax syntax;
 
     syntax.addFlag(_listRenderers, _listRenderersLong);
 
     syntax.addFlag(_listActiveRenderers, _listActiveRenderersLong);
 
-    syntax.addFlag(
-        _getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
+    syntax.addFlag(_getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
 
     syntax.addFlag(_listDelegates, _listDelegatesLong);
 
@@ -127,45 +126,49 @@ MSyntax MtohViewCmd::createSyntax() {
 
     syntax.addFlag(_visibleOnly, _visibleOnlyLong);
 
-    syntax.addFlag(
-        _sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString,
-        MSyntax::kString);
+    syntax.addFlag(_sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString, MSyntax::kString);
 
     return syntax;
 }
 
-MStatus MtohViewCmd::doIt(const MArgList& args) {
+MStatus MtohViewCmd::doIt(const MArgList& args)
+{
     MStatus status;
 
     MArgDatabase db(syntax(), args, &status);
-    if (!status) { return status; }
+    if (!status) {
+        return status;
+    }
 
     if (db.isFlagSet(_listRenderers)) {
         for (auto& plugin : MtohGetRendererDescriptions())
             appendToResult(plugin.rendererName.GetText());
 
         // Want to return an empty list, not None
-        if (!isCurrentResultArray()) { setResult(MStringArray()); }
+        if (!isCurrentResultArray()) {
+            setResult(MStringArray());
+        }
     } else if (db.isFlagSet(_listActiveRenderers)) {
-        for (const auto& renderer :
-             MtohRenderOverride::AllActiveRendererNames()) {
+        for (const auto& renderer : MtohRenderOverride::AllActiveRendererNames()) {
             appendToResult(renderer);
         }
         // Want to return an empty list, not None
-        if (!isCurrentResultArray()) { setResult(MStringArray()); }
+        if (!isCurrentResultArray()) {
+            setResult(MStringArray());
+        }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         MString id;
-        CHECK_MSTATUS_AND_RETURN_IT(
-            db.getFlagArgument(_getRendererDisplayName, 0, id));
+        CHECK_MSTATUS_AND_RETURN_IT(db.getFlagArgument(_getRendererDisplayName, 0, id));
         const auto dn = MtohGetRendererPluginDisplayName(TfToken(id.asChar()));
         setResult(MString(dn.c_str()));
     } else if (db.isFlagSet(_listDelegates)) {
-        for (const auto& delegate :
-             HdMayaDelegateRegistry::GetDelegateNames()) {
+        for (const auto& delegate : HdMayaDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
         }
         // Want to return an empty list, not None
-        if (!isCurrentResultArray()) { setResult(MStringArray()); }
+        if (!isCurrentResultArray()) {
+            setResult(MStringArray());
+        }
     } else if (db.isFlagSet(_help)) {
         MString helpText = _helpText;
         if (db.isFlagSet(_verbose)) {
@@ -180,27 +183,23 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         MtohRenderOverride::UpdateRenderGlobals();
     } else if (db.isFlagSet(_listRenderIndex)) {
         MString id;
-        CHECK_MSTATUS_AND_RETURN_IT(
-            db.getFlagArgument(_listRenderIndex, 0, id));
+        CHECK_MSTATUS_AND_RETURN_IT(db.getFlagArgument(_listRenderIndex, 0, id));
         const TfToken rendererName(id.asChar());
-        auto rprimPaths = MtohRenderOverride::RendererRprims(
-            rendererName, db.isFlagSet(_visibleOnly));
-        for (auto& rprimPath : rprimPaths) {
-            appendToResult(rprimPath.GetText());
-        }
+        auto          rprimPaths
+            = MtohRenderOverride::RendererRprims(rendererName, db.isFlagSet(_visibleOnly));
+        for (auto& rprimPath : rprimPaths) { appendToResult(rprimPath.GetText()); }
         // Want to return an empty list, not None
-        if (!isCurrentResultArray()) { setResult(MStringArray()); }
+        if (!isCurrentResultArray()) {
+            setResult(MStringArray());
+        }
     } else if (db.isFlagSet(_sceneDelegateId)) {
         MString renderDelegateName;
         MString sceneDelegateName;
-        CHECK_MSTATUS_AND_RETURN_IT(
-            db.getFlagArgument(_sceneDelegateId, 0, renderDelegateName));
-        CHECK_MSTATUS_AND_RETURN_IT(
-            db.getFlagArgument(_sceneDelegateId, 1, sceneDelegateName));
+        CHECK_MSTATUS_AND_RETURN_IT(db.getFlagArgument(_sceneDelegateId, 0, renderDelegateName));
+        CHECK_MSTATUS_AND_RETURN_IT(db.getFlagArgument(_sceneDelegateId, 1, sceneDelegateName));
 
         SdfPath delegateId = MtohRenderOverride::RendererSceneDelegateId(
-            TfToken(renderDelegateName.asChar()),
-            TfToken(sceneDelegateName.asChar()));
+            TfToken(renderDelegateName.asChar()), TfToken(sceneDelegateName.asChar()));
         setResult(MString(delegateId.GetText()));
     }
     return MS::kSuccess;

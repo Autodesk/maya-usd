@@ -16,32 +16,29 @@
 #ifndef PXRUSDMAYA_READ_JOB_H
 #define PXRUSDMAYA_READ_JOB_H
 
-#include <map>
-#include <string>
-#include <vector>
-
-#include <maya/MDagModifier.h>
-#include <maya/MDagPath.h>
+#include <mayaUsd/fileio/importData.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primRange.h>
 
-#include <mayaUsd/fileio/importData.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
+#include <maya/MDagModifier.h>
+#include <maya/MDagPath.h>
+
+#include <map>
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMayaPrimReaderArgs;
 
-class UsdMaya_ReadJob
-{
+class UsdMaya_ReadJob {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMaya_ReadJob(
-            const MayaUsd::ImportData& iImportData,
-            const UsdMayaJobImportArgs & iArgs);
+    UsdMaya_ReadJob(const MayaUsd::ImportData& iImportData, const UsdMayaJobImportArgs& iArgs);
 
     MAYAUSD_CORE_PUBLIC
     virtual ~UsdMaya_ReadJob();
@@ -62,12 +59,11 @@ public:
 
     // Getters/Setters
     MAYAUSD_CORE_PUBLIC
-    void SetMayaRootDagPath(const MDagPath &mayaRootDagPath);
+    void SetMayaRootDagPath(const MDagPath& mayaRootDagPath);
     MAYAUSD_CORE_PUBLIC
     const MDagPath& GetMayaRootDagPath() const;
 
 protected:
-
     MAYAUSD_CORE_PUBLIC
     virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
 
@@ -80,8 +76,7 @@ protected:
         const UsdPrim&               prim,
         const UsdMayaPrimReaderArgs& args,
         UsdMayaPrimReaderContext&    readCtx,
-        UsdPrimRange::iterator&      primIt
-    );
+        UsdPrimRange::iterator&      primIt);
 
     // Engine method for DoImport().  Covers the functionality of a regular
     // usdImport.
@@ -99,20 +94,17 @@ protected:
     virtual bool SkipRootPrim(bool isImportingPseudoRoot);
 
     // Data
-    UsdMayaJobImportArgs mArgs;
-    const MayaUsd::ImportData& mImportData;
+    UsdMayaJobImportArgs                     mArgs;
+    const MayaUsd::ImportData&               mImportData;
     UsdMayaPrimReaderContext::ObjectRegistry mNewNodeRegistry;
-    MDagPath mMayaRootDagPath;
+    MDagPath                                 mMayaRootDagPath;
 
 private:
-
     // Data
     MDagModifier mDagModifierUndo;
-    bool mDagModifierSeeded;
+    bool         mDagModifierSeeded;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

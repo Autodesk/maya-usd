@@ -15,36 +15,36 @@
 //
 #pragma once
 
-#include <ufe/transform3dHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTransform3d.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+#include <ufe/transform3dHandler.h>
 
-//! \brief Interface to create a UsdTransform3d interface object.
-class MAYAUSD_CORE_PUBLIC UsdTransform3dHandler : public Ufe::Transform3dHandler
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdTransform3dHandler> Ptr;
+    namespace ufe {
 
-	UsdTransform3dHandler();
-	~UsdTransform3dHandler();
+    //! \brief Interface to create a UsdTransform3d interface object.
+    class MAYAUSD_CORE_PUBLIC UsdTransform3dHandler : public Ufe::Transform3dHandler {
+    public:
+        typedef std::shared_ptr<UsdTransform3dHandler> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdTransform3dHandler(const UsdTransform3dHandler&) = delete;
-	UsdTransform3dHandler& operator=(const UsdTransform3dHandler&) = delete;
-	UsdTransform3dHandler(UsdTransform3dHandler&&) = delete;
-	UsdTransform3dHandler& operator=(UsdTransform3dHandler&&) = delete;
+        UsdTransform3dHandler();
+        ~UsdTransform3dHandler();
 
-	//! Create a UsdTransform3dHandler.
-	static UsdTransform3dHandler::Ptr create();
+        // Delete the copy/move constructors assignment operators.
+        UsdTransform3dHandler(const UsdTransform3dHandler&) = delete;
+        UsdTransform3dHandler& operator=(const UsdTransform3dHandler&) = delete;
+        UsdTransform3dHandler(UsdTransform3dHandler&&) = delete;
+        UsdTransform3dHandler& operator=(UsdTransform3dHandler&&) = delete;
 
-	// Ufe::Transform3dHandler overrides
-	Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
+        //! Create a UsdTransform3dHandler.
+        static UsdTransform3dHandler::Ptr create();
 
-}; // UsdTransform3dHandler
+        // Ufe::Transform3dHandler overrides
+        Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
 
-} // namespace ufe
+    }; // UsdTransform3dHandler
+
+    } // namespace ufe
 } // namespace MayaUsd

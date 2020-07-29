@@ -14,24 +14,22 @@
 // limitations under the License.
 //
 
+#include "AL/usdmaya/PluginRegister.h"
+#include "AL/usdmaya/Version.h"
 #include "Api.h"
 
 #include <maya/MFnPlugin.h>
 
-#include "AL/usdmaya/PluginRegister.h"
-#include "AL/usdmaya/Version.h"
-
 AL_USDMAYA_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
-  MFnPlugin plugin(obj, "Animal Logic", AL::usdmaya::getVersion(), "Any");
-  return AL::usdmaya::registerPlugin(plugin);
+    MFnPlugin plugin(obj, "Animal Logic", AL::usdmaya::getVersion(), "Any");
+    return AL::usdmaya::registerPlugin(plugin);
 }
 
 AL_USDMAYA_PLUGIN_PUBLIC
 MStatus uninitializePlugin(MObject obj)
 {
-  MFnPlugin plugin(obj);
-  return AL::usdmaya::unregisterPlugin(plugin);
+    MFnPlugin plugin(obj);
+    return AL::usdmaya::unregisterPlugin(plugin);
 }
-

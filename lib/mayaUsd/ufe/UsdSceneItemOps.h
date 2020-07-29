@@ -15,54 +15,54 @@
 //
 #pragma once
 
-#include <ufe/path.h>
-#include <ufe/sceneItemOps.h>
-
-#include <pxr/usd/usd/prim.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <pxr/usd/usd/prim.h>
+
+#include <ufe/path.h>
+#include <ufe/sceneItemOps.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief Interface for scene item operations.
-class MAYAUSD_CORE_PUBLIC UsdSceneItemOps : public Ufe::SceneItemOps
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdSceneItemOps> Ptr;
+    namespace ufe {
 
-	UsdSceneItemOps(const UsdSceneItem::Ptr& item);
-	~UsdSceneItemOps() override;
+    //! \brief Interface for scene item operations.
+    class MAYAUSD_CORE_PUBLIC UsdSceneItemOps : public Ufe::SceneItemOps {
+    public:
+        typedef std::shared_ptr<UsdSceneItemOps> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdSceneItemOps(const UsdSceneItemOps&) = delete;
-	UsdSceneItemOps& operator=(const UsdSceneItemOps&) = delete;
-	UsdSceneItemOps(UsdSceneItemOps&&) = delete;
-	UsdSceneItemOps& operator=(UsdSceneItemOps&&) = delete;
+        UsdSceneItemOps(const UsdSceneItem::Ptr& item);
+        ~UsdSceneItemOps() override;
 
-	//! Create a UsdSceneItemOps.
-	static UsdSceneItemOps::Ptr create(const UsdSceneItem::Ptr& item);
+        // Delete the copy/move constructors assignment operators.
+        UsdSceneItemOps(const UsdSceneItemOps&) = delete;
+        UsdSceneItemOps& operator=(const UsdSceneItemOps&) = delete;
+        UsdSceneItemOps(UsdSceneItemOps&&) = delete;
+        UsdSceneItemOps& operator=(UsdSceneItemOps&&) = delete;
 
-	void setItem(const UsdSceneItem::Ptr& item);
-	const Ufe::Path& path() const;
+        //! Create a UsdSceneItemOps.
+        static UsdSceneItemOps::Ptr create(const UsdSceneItem::Ptr& item);
 
-	// Ufe::SceneItemOps overrides
-	Ufe::SceneItem::Ptr sceneItem() const override;
-	Ufe::UndoableCommand::Ptr deleteItemCmd() override;
-	bool deleteItem() override;
-	Ufe::Duplicate duplicateItemCmd() override;
-	Ufe::SceneItem::Ptr duplicateItem() override;
-	Ufe::Rename renameItemCmd(const Ufe::PathComponent& newName) override;
-	Ufe::SceneItem::Ptr renameItem(const Ufe::PathComponent& newName) override;
+        void             setItem(const UsdSceneItem::Ptr& item);
+        const Ufe::Path& path() const;
 
-private:
-	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
+        // Ufe::SceneItemOps overrides
+        Ufe::SceneItem::Ptr       sceneItem() const override;
+        Ufe::UndoableCommand::Ptr deleteItemCmd() override;
+        bool                      deleteItem() override;
+        Ufe::Duplicate            duplicateItemCmd() override;
+        Ufe::SceneItem::Ptr       duplicateItem() override;
+        Ufe::Rename               renameItemCmd(const Ufe::PathComponent& newName) override;
+        Ufe::SceneItem::Ptr       renameItem(const Ufe::PathComponent& newName) override;
 
-}; // UsdSceneItemOps
+    private:
+        UsdSceneItem::Ptr fItem;
+        UsdPrim           fPrim;
 
-} // namespace ufe
+    }; // UsdSceneItemOps
+
+    } // namespace ufe
 } // namespace MayaUsd

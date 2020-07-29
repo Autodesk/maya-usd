@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 #pragma once
-#include <cstdint>
 #include <maya/MTypes.h>
+
+#include <cstdint>
 #include <string>
 
 // Maya 2018 introduced a namespace for the maya api... this also forward declares

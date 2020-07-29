@@ -16,20 +16,19 @@
 #ifndef PXRUSDMAYA_SHADING_UTIL_H
 #define PXRUSDMAYA_SHADING_UTIL_H
 
-#include <pxr/pxr.h>
+#include <mayaUsd/base/api.h>
+
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 
-#include <mayaUsd/base/api.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace UsdMayaShadingUtil
-{
+namespace UsdMayaShadingUtil {
 /// Create an input on the given material and shader and create a connection
 /// between them.
 ///
@@ -43,11 +42,11 @@ namespace UsdMayaShadingUtil
 /// otherwise.
 MAYAUSD_CORE_PUBLIC
 UsdShadeInput CreateMaterialInputAndConnectShader(
-        UsdShadeMaterial& material,
-        const TfToken& materialInputName,
-        const SdfValueTypeName& inputTypeName,
-        UsdShadeShader& shader,
-        const TfToken& shaderInputName);
+    UsdShadeMaterial&       material,
+    const TfToken&          materialInputName,
+    const SdfValueTypeName& inputTypeName,
+    UsdShadeShader&         shader,
+    const TfToken&          shaderInputName);
 
 /// Create an output on the given shader and material and create a connection
 /// between them.
@@ -62,17 +61,14 @@ UsdShadeInput CreateMaterialInputAndConnectShader(
 /// otherwise.
 MAYAUSD_CORE_PUBLIC
 UsdShadeOutput CreateShaderOutputAndConnectMaterial(
-        UsdShadeShader& shader,
-        const TfToken& shaderOutputName,
-        const SdfValueTypeName& outputTypeName,
-        UsdShadeMaterial& material,
-        const TfToken& materialOutputName);
-
+    UsdShadeShader&         shader,
+    const TfToken&          shaderOutputName,
+    const SdfValueTypeName& outputTypeName,
+    UsdShadeMaterial&       material,
+    const TfToken&          materialOutputName);
 
 } // namespace UsdMayaShadingUtil
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

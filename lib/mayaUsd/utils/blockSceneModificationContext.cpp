@@ -15,20 +15,20 @@
 //
 #include "blockSceneModificationContext.h"
 
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/pxr.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/stringUtils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaBlockSceneModificationContext::UsdMayaBlockSceneModificationContext()
 {
     const MString fileModifiedCmd("file -query -modified");
-    int cmdResult = 0;
-    MStatus status = MGlobal::executeCommand(fileModifiedCmd, cmdResult);
+    int           cmdResult = 0;
+    MStatus       status = MGlobal::executeCommand(fileModifiedCmd, cmdResult);
     CHECK_MSTATUS(status);
 
     _sceneWasModified = (cmdResult != 0);
@@ -38,13 +38,10 @@ UsdMayaBlockSceneModificationContext::UsdMayaBlockSceneModificationContext()
 UsdMayaBlockSceneModificationContext::~UsdMayaBlockSceneModificationContext()
 {
     const MString setFileModifiedCmd(
-        TfStringPrintf(
-            "file -modified %d",
-            _sceneWasModified ? 1 : 0).c_str());
+        TfStringPrintf("file -modified %d", _sceneWasModified ? 1 : 0).c_str());
 
     MStatus status = MGlobal::executeCommand(setFileModifiedCmd);
     CHECK_MSTATUS(status);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -15,48 +15,49 @@
 //
 #pragma once
 
-#include <ufe/contextOpsHandler.h>
-
 #include <mayaUsd/base/api.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+#include <ufe/contextOpsHandler.h>
 
-//! \brief Maya run-time context ops handler with support for USD gateway node.
-/*!
-    This context ops handler is NOT a USD run-time context ops handler: it is a
-    Maya run-time context ops handler.  It decorates the standard Maya run-time
-    context ops handler and replaces it, providing special behavior only if the
-    requested context ops interface is for the Maya to USD gateway node.
-
-    For all other Maya nodes, this context ops handler simply delegates the work
-    to the standard Maya context ops handler it decorates, which returns a
-    standard Maya context ops interface object.
- */
-class MAYAUSD_CORE_PUBLIC ProxyShapeContextOpsHandler : public Ufe::ContextOpsHandler
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<ProxyShapeContextOpsHandler> Ptr;
+    namespace ufe {
 
-	ProxyShapeContextOpsHandler(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
-	~ProxyShapeContextOpsHandler() override;
+    //! \brief Maya run-time context ops handler with support for USD gateway node.
+    /*!
+        This context ops handler is NOT a USD run-time context ops handler: it is a
+        Maya run-time context ops handler.  It decorates the standard Maya run-time
+        context ops handler and replaces it, providing special behavior only if the
+        requested context ops interface is for the Maya to USD gateway node.
 
-	// Delete the copy/move constructors assignment operators.
-	ProxyShapeContextOpsHandler(const ProxyShapeContextOpsHandler&) = delete;
-	ProxyShapeContextOpsHandler& operator=(const ProxyShapeContextOpsHandler&) = delete;
-	ProxyShapeContextOpsHandler(ProxyShapeContextOpsHandler&&) = delete;
-	ProxyShapeContextOpsHandler& operator=(ProxyShapeContextOpsHandler&&) = delete;
+        For all other Maya nodes, this context ops handler simply delegates the work
+        to the standard Maya context ops handler it decorates, which returns a
+        standard Maya context ops interface object.
+     */
+    class MAYAUSD_CORE_PUBLIC ProxyShapeContextOpsHandler : public Ufe::ContextOpsHandler {
+    public:
+        typedef std::shared_ptr<ProxyShapeContextOpsHandler> Ptr;
 
-	//! Create a ProxyShapeContextOpsHandler from a UFE hierarchy handler.
-	static ProxyShapeContextOpsHandler::Ptr create(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
+        ProxyShapeContextOpsHandler(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
+        ~ProxyShapeContextOpsHandler() override;
 
-	// Ufe::ContextOpsHandler overrides
-	Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
+        // Delete the copy/move constructors assignment operators.
+        ProxyShapeContextOpsHandler(const ProxyShapeContextOpsHandler&) = delete;
+        ProxyShapeContextOpsHandler& operator=(const ProxyShapeContextOpsHandler&) = delete;
+        ProxyShapeContextOpsHandler(ProxyShapeContextOpsHandler&&) = delete;
+        ProxyShapeContextOpsHandler& operator=(ProxyShapeContextOpsHandler&&) = delete;
 
-private:
-	Ufe::ContextOpsHandler::Ptr _mayaContextOpsHandler;
+        //! Create a ProxyShapeContextOpsHandler from a UFE hierarchy handler.
+        static ProxyShapeContextOpsHandler::Ptr
+        create(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
 
-}; // ProxyShapeContextOpsHandler
+        // Ufe::ContextOpsHandler overrides
+        Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
 
-} // namespace ufe
+    private:
+        Ufe::ContextOpsHandler::Ptr _mayaContextOpsHandler;
+
+    }; // ProxyShapeContextOpsHandler
+
+    } // namespace ufe
 } // namespace MayaUsd

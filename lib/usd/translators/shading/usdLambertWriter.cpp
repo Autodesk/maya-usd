@@ -19,10 +19,10 @@
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
@@ -41,11 +41,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (color)
-    (diffuse)
-    (incandescence)
-    (normalCamera)
-);
+    (color)(diffuse)(incandescence)(normalCamera));
 
 PxrUsdTranslators_LambertWriter::PxrUsdTranslators_LambertWriter(
     const MFnDependencyNode& depNodeFn,

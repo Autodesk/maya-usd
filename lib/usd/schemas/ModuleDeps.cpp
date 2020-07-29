@@ -13,20 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <vector>
-
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/scriptModuleLoader.h>
 #include <pxr/base/tf/token.h>
 
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
-    const std::vector<TfToken> reqs = {
-        TfToken("usd"),      TfToken("usdGeom")
-    };
-    TfScriptModuleLoader::GetInstance().
-        RegisterLibrary(TfToken("schemas"), TfToken("mayaUsd.schemas"), reqs);
+TF_REGISTRY_FUNCTION(TfScriptModuleLoader)
+{
+    const std::vector<TfToken> reqs = { TfToken("usd"), TfToken("usdGeom") };
+    TfScriptModuleLoader::GetInstance().RegisterLibrary(
+        TfToken("schemas"), TfToken("mayaUsd.schemas"), reqs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

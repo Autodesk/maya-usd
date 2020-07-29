@@ -15,37 +15,37 @@
 //
 #pragma once
 
-#include <ufe/sceneItemOpsHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItemOps.h>
 
-//PXR_NAMESPACE_USING_DIRECTIVE
+#include <ufe/sceneItemOpsHandler.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+// PXR_NAMESPACE_USING_DIRECTIVE
 
-//! \brief Interface to create a UsdSceneItemOps interface object.
-class MAYAUSD_CORE_PUBLIC UsdSceneItemOpsHandler : public Ufe::SceneItemOpsHandler
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdSceneItemOpsHandler> Ptr;
+    namespace ufe {
 
-	UsdSceneItemOpsHandler();
-	~UsdSceneItemOpsHandler() override;
+    //! \brief Interface to create a UsdSceneItemOps interface object.
+    class MAYAUSD_CORE_PUBLIC UsdSceneItemOpsHandler : public Ufe::SceneItemOpsHandler {
+    public:
+        typedef std::shared_ptr<UsdSceneItemOpsHandler> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdSceneItemOpsHandler(const UsdSceneItemOpsHandler&) = delete;
-	UsdSceneItemOpsHandler& operator=(const UsdSceneItemOpsHandler&) = delete;
-	UsdSceneItemOpsHandler(UsdSceneItemOpsHandler&&) = delete;
-	UsdSceneItemOpsHandler& operator=(UsdSceneItemOpsHandler&&) = delete;
+        UsdSceneItemOpsHandler();
+        ~UsdSceneItemOpsHandler() override;
 
-	//! Create a UsdSceneItemOpsHandler.
-	static UsdSceneItemOpsHandler::Ptr create();
+        // Delete the copy/move constructors assignment operators.
+        UsdSceneItemOpsHandler(const UsdSceneItemOpsHandler&) = delete;
+        UsdSceneItemOpsHandler& operator=(const UsdSceneItemOpsHandler&) = delete;
+        UsdSceneItemOpsHandler(UsdSceneItemOpsHandler&&) = delete;
+        UsdSceneItemOpsHandler& operator=(UsdSceneItemOpsHandler&&) = delete;
 
-	// Ufe::SceneItemOpsHandler overrides
-	Ufe::SceneItemOps::Ptr sceneItemOps(const Ufe::SceneItem::Ptr& item) const override;
-}; // UsdSceneItemOpsHandler
+        //! Create a UsdSceneItemOpsHandler.
+        static UsdSceneItemOpsHandler::Ptr create();
 
-} // namespace ufe
+        // Ufe::SceneItemOpsHandler overrides
+        Ufe::SceneItemOps::Ptr sceneItemOps(const Ufe::SceneItem::Ptr& item) const override;
+    }; // UsdSceneItemOpsHandler
+
+    } // namespace ufe
 } // namespace MayaUsd

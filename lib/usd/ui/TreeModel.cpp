@@ -15,332 +15,309 @@
 //
 #include "TreeModel.h"
 
-#include <functional>
-
-#include <QtWidgets/QTreeView>
-#include <QtCore/QSortFilterProxyModel>
-
 #include <pxr/usd/usd/variantSets.h>
 
-#include <mayaUsdUI/ui/TreeItem.h>
-#include <mayaUsdUI/ui/ItemDelegate.h>
+#include <QtCore/QSortFilterProxyModel>
+#include <QtWidgets/QTreeView>
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
+#include <mayaUsdUI/ui/ItemDelegate.h>
+#include <mayaUsdUI/ui/TreeItem.h>
 
-MAYAUSD_NS_DEF {
+#include <functional>
 
-namespace {
-
-TreeItem* findTreeItem(TreeModel* treeModel, const QModelIndex& parent, std::function<bool(TreeItem*)>fn)
+MAYAUSD_NS_DEF
 {
-	for (int r=0; r<treeModel->rowCount(parent); ++r)
-	{
-		// Note: only the load column (0) has children, so we use it when looking for children.
-		QModelIndex childIndex = treeModel->index(r, TreeModel::kTreeColumn_Load, parent);
-		TreeItem* item = static_cast<TreeItem*>(treeModel->itemFromIndex(childIndex));
-		if (fn(item))
-		{
-			return item;
-		}
-		// If this item is check-enabled, we don't need to check it's children because
-		// we know they will be check-disabled.
-		else if (treeModel->hasChildren(childIndex))
-		{
-			TreeItem* tempItem = findTreeItem(treeModel, childIndex, fn);
-			if (tempItem != nullptr)
-				return tempItem;
-		}
-	}
-	return nullptr;
-}
 
-void resetVariantToPrimSelection(TreeItem* variantItem)
-{
-	assert(variantItem);
+    namespace {
 
-	UsdPrim prim = variantItem->prim();
-	assert(prim.IsValid() && prim.HasVariantSets());
+    TreeItem*
+    findTreeItem(TreeModel* treeModel, const QModelIndex& parent, std::function<bool(TreeItem*)> fn)
+    {
+        for (int r = 0; r < treeModel->rowCount(parent); ++r) {
+            // Note: only the load column (0) has children, so we use it when looking for children.
+            QModelIndex childIndex = treeModel->index(r, TreeModel::kTreeColumn_Load, parent);
+            TreeItem*   item = static_cast<TreeItem*>(treeModel->itemFromIndex(childIndex));
+            if (fn(item)) {
+                return item;
+            }
+            // If this item is check-enabled, we don't need to check it's children because
+            // we know they will be check-disabled.
+            else if (treeModel->hasChildren(childIndex)) {
+                TreeItem* tempItem = findTreeItem(treeModel, childIndex, fn);
+                if (tempItem != nullptr)
+                    return tempItem;
+            }
+        }
+        return nullptr;
+    }
 
-	UsdVariantSets varSets = prim.GetVariantSets();
+    void resetVariantToPrimSelection(TreeItem* variantItem)
+    {
+        assert(variantItem);
 
-	std::vector<std::string> usdVarSetNames;
-	varSets.GetNames(&usdVarSetNames);
+        UsdPrim prim = variantItem->prim();
+        assert(prim.IsValid() && prim.HasVariantSets());
 
-	QStringList qtVarNames;
-	for (auto it=usdVarSetNames.crbegin(); it != usdVarSetNames.crend(); it++)
-	{
-		UsdVariantSet varSet1 = varSets.GetVariantSet(*it);
-		qtVarNames.push_back(QString::fromStdString(varSet1.GetVariantSelection()));
-	}
+        UsdVariantSets varSets = prim.GetVariantSets();
 
-	variantItem->setData(qtVarNames, ItemDelegate::kVariantSelectionRole);
-}
+        std::vector<std::string> usdVarSetNames;
+        varSets.GetNames(&usdVarSetNames);
 
-void resetAllVariants(TreeModel* treeModel, const QModelIndex& parent)
-{
-	for (int r=0; r<treeModel->rowCount(parent); ++r)
-	{
-		QModelIndex variantIndex = treeModel->index(r, TreeModel::kTreeColumn_Variants, parent);
-		TreeItem* variantItem = static_cast<TreeItem*>(treeModel->itemFromIndex(variantIndex));
+        QStringList qtVarNames;
+        for (auto it = usdVarSetNames.crbegin(); it != usdVarSetNames.crend(); it++) {
+            UsdVariantSet varSet1 = varSets.GetVariantSet(*it);
+            qtVarNames.push_back(QString::fromStdString(varSet1.GetVariantSelection()));
+        }
 
-		if (nullptr != variantItem && variantItem->variantSelectionModified()) 
-		{
-			resetVariantToPrimSelection(variantItem);
-		}
+        variantItem->setData(qtVarNames, ItemDelegate::kVariantSelectionRole);
+    }
 
-		QModelIndex childIndex = treeModel->index(r, TreeModel::kTreeColumn_Load, parent);
-		if (treeModel->hasChildren(childIndex))
-		{
-			resetAllVariants(treeModel, childIndex);
-		}
-	}	
-}
+    void resetAllVariants(TreeModel* treeModel, const QModelIndex& parent)
+    {
+        for (int r = 0; r < treeModel->rowCount(parent); ++r) {
+            QModelIndex variantIndex = treeModel->index(r, TreeModel::kTreeColumn_Variants, parent);
+            TreeItem* variantItem = static_cast<TreeItem*>(treeModel->itemFromIndex(variantIndex));
 
-}
+            if (nullptr != variantItem && variantItem->variantSelectionModified()) {
+                resetVariantToPrimSelection(variantItem);
+            }
 
-TreeModel::TreeModel(const IMayaMQtUtil& mayaQtUtil, const ImportData* importData /*= nullptr*/, QObject* parent /*= nullptr*/) noexcept
-	: ParentClass{ parent }
-	, fImportData{ importData }
-	, fMayaQtUtil{ mayaQtUtil }
-{
-}
+            QModelIndex childIndex = treeModel->index(r, TreeModel::kTreeColumn_Load, parent);
+            if (treeModel->hasChildren(childIndex)) {
+                resetAllVariants(treeModel, childIndex);
+            }
+        }
+    }
 
-QVariant TreeModel::data(const QModelIndex &index, int role /*= Qt::DisplayRole*/) const
-{
-	if (!index.isValid())
-		return QVariant();
+    } // namespace
 
-	TreeItem* item = static_cast<TreeItem*>(itemFromIndex(index));
+    TreeModel::TreeModel(
+        const IMayaMQtUtil& mayaQtUtil,
+        const ImportData*   importData /*= nullptr*/,
+        QObject*            parent /*= nullptr*/) noexcept
+        : ParentClass { parent }
+        , fImportData { importData }
+        , fMayaQtUtil { mayaQtUtil }
+    {
+    }
 
-	if ((role == Qt::DecorationRole) && (index.column() == kTreeColumn_Load))
-		return item->checkImage();
+    QVariant TreeModel::data(const QModelIndex& index, int role /*= Qt::DisplayRole*/) const
+    {
+        if (!index.isValid())
+            return QVariant();
 
-	return ParentClass::data(index, role);
-}
+        TreeItem* item = static_cast<TreeItem*>(itemFromIndex(index));
 
-Qt::ItemFlags TreeModel::flags(const QModelIndex &index) const
-{
-	if (!index.isValid())
-		return 0;
+        if ((role == Qt::DecorationRole) && (index.column() == kTreeColumn_Load))
+            return item->checkImage();
 
-	// The base class implementation returns a combination of flags that enables
-	// the item (ItemIsEnabled) and allows it to be selected (ItemIsSelectable).
-	Qt::ItemFlags flags = ParentClass::flags(index);
-	if (index.column() == kTreeColumn_Load)
-		flags &= ~Qt::ItemIsSelectable;
+        return ParentClass::data(index, role);
+    }
 
-	return flags;
-}
+    Qt::ItemFlags TreeModel::flags(const QModelIndex& index) const
+    {
+        if (!index.isValid())
+            return 0;
 
-void TreeModel::setParentsCheckState(const QModelIndex &child, TreeItem::CheckState state)
-{
-	QModelIndex parentIndex = this->parent(child);
-	if (parentIndex.isValid())
-	{
-		TreeItem* item = static_cast<TreeItem*>(itemFromIndex(parentIndex));
+        // The base class implementation returns a combination of flags that enables
+        // the item (ItemIsEnabled) and allows it to be selected (ItemIsSelectable).
+        Qt::ItemFlags flags = ParentClass::flags(index);
+        if (index.column() == kTreeColumn_Load)
+            flags &= ~Qt::ItemIsSelectable;
 
-		// If the parent item state matches the input, no need to recurse.
-		const TreeItem::CheckState currState = item->checkState();
-		if(currState != state)
-		{
-			item->setCheckState(state);
-			QVector<int> roles;
-			roles << Qt::DecorationRole;
-			Q_EMIT dataChanged(parentIndex, parentIndex, roles);
-			setParentsCheckState(parentIndex, state);
-		}
-	}
-}
+        return flags;
+    }
 
-void TreeModel::setChildCheckState(const QModelIndex &parent, TreeItem::CheckState state)
-{
-	int rMin = -1, rMax = -1;
-	for (int r=0; r<rowCount(parent); ++r)
-	{
-		// Note: only the load column (0) has children, so we use it when looking for children.
-		QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
-		TreeItem* item = static_cast<TreeItem*>(itemFromIndex(childIndex));
+    void TreeModel::setParentsCheckState(const QModelIndex& child, TreeItem::CheckState state)
+    {
+        QModelIndex parentIndex = this->parent(child);
+        if (parentIndex.isValid()) {
+            TreeItem* item = static_cast<TreeItem*>(itemFromIndex(parentIndex));
 
-		// If child item state matches the input, no need to recurse.
-		const TreeItem::CheckState currState = item->checkState();
-		if (currState != state)
-		{
-			if (rMin == -1) rMin = r;
-			if (r > rMax) rMax = r;
-			item->setCheckState(state);
-			if (hasChildren(childIndex))
-				setChildCheckState(childIndex, state);
-		}
-	}
-	QModelIndex rMinIndex = this->index(rMin, kTreeColumn_Load, parent);
-	QModelIndex rMaxIndex = this->index(rMax, kTreeColumn_Load, parent);
-	QVector<int> roles;
-	roles << Qt::DecorationRole;
-	Q_EMIT dataChanged(rMinIndex, rMaxIndex, roles);
-}
+            // If the parent item state matches the input, no need to recurse.
+            const TreeItem::CheckState currState = item->checkState();
+            if (currState != state) {
+                item->setCheckState(state);
+                QVector<int> roles;
+                roles << Qt::DecorationRole;
+                Q_EMIT dataChanged(parentIndex, parentIndex, roles);
+                setParentsCheckState(parentIndex, state);
+            }
+        }
+    }
 
-void TreeModel::getRootPrimPath(std::string& rootPrimPath, const QModelIndex& parent)
-{
-	// We simply need to find the single item that is "check-enabled" as there can
-	// only be one.
-	auto fn = [](TreeItem* item) -> bool
-	{
-		if (item->checkState() == TreeItem::CheckState::kChecked)
-			return true;
-		return false;
-	};
-	TreeItem* item = findTreeItem(this, QModelIndex(), fn);
-	if (item != nullptr)
-		rootPrimPath = item->prim().GetPath().GetString();
-}
+    void TreeModel::setChildCheckState(const QModelIndex& parent, TreeItem::CheckState state)
+    {
+        int rMin = -1, rMax = -1;
+        for (int r = 0; r < rowCount(parent); ++r) {
+            // Note: only the load column (0) has children, so we use it when looking for children.
+            QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
+            TreeItem*   item = static_cast<TreeItem*>(itemFromIndex(childIndex));
 
-void TreeModel::fillStagePopulationMask(UsdStagePopulationMask& popMask, const QModelIndex& parent)
-{
-	for (int r=0; r<rowCount(parent); ++r)
-	{
-		// Note: only the load column (0) has children, so we use it when looking for children.
-		QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
-		TreeItem* item = static_cast<TreeItem*>(itemFromIndex(childIndex));
-		if (item->checkState() == TreeItem::CheckState::kChecked)
-		{
-			auto primPath = item->prim().GetPath();
-			if (!popMask.Includes(primPath))
-				popMask.Add(primPath);
-			return;
-		}
-		// If this item is check-enabled, we don't need to check it's children because
-		// we know they will be check-disabled.
-		else if (hasChildren(childIndex))
-		{
-			fillStagePopulationMask(popMask, childIndex);
-		}
-	}
-}
+            // If child item state matches the input, no need to recurse.
+            const TreeItem::CheckState currState = item->checkState();
+            if (currState != state) {
+                if (rMin == -1)
+                    rMin = r;
+                if (r > rMax)
+                    rMax = r;
+                item->setCheckState(state);
+                if (hasChildren(childIndex))
+                    setChildCheckState(childIndex, state);
+            }
+        }
+        QModelIndex  rMinIndex = this->index(rMin, kTreeColumn_Load, parent);
+        QModelIndex  rMaxIndex = this->index(rMax, kTreeColumn_Load, parent);
+        QVector<int> roles;
+        roles << Qt::DecorationRole;
+        Q_EMIT dataChanged(rMinIndex, rMaxIndex, roles);
+    }
 
-void TreeModel::fillPrimVariantSelections(ImportData::PrimVariantSelections& primVariantSelections, const QModelIndex& parent)
-{
-	for (int r=0; r<rowCount(parent); ++r)
-	{
-		QModelIndex variantIndex = this->index(r, kTreeColumn_Variants, parent);
-		TreeItem* item = static_cast<TreeItem*>(itemFromIndex(variantIndex));
-		if (item->variantSelectionModified())
-		{
-			// Note: both the variant name and variant selection roles contain a
-			//		 QStringList for data.
-			QVariant varSel = variantIndex.data(ItemDelegate::kVariantSelectionRole);
-			if (varSel.isValid() && varSel.canConvert<QStringList>())
-			{
-				// The name role must be valid if the selection role was.
-				QStringList varSelections = varSel.toStringList();
-				QStringList varNames = variantIndex.data(ItemDelegate::kVariantNameRole).toStringList();
-				assert(varSelections.count() == varNames.count());
-				if (varSelections.count() == varNames.count())
-				{
-					SdfVariantSelectionMap varSels;
-					for (int i=0; i<varNames.count(); ++i)
-					{
-						varSels[varNames.at(i).toStdString()] = varSelections.at(i).toStdString();
-					}
-					primVariantSelections[item->prim().GetPath()] = varSels;
-				}
-			}
-		}
+    void TreeModel::getRootPrimPath(std::string & rootPrimPath, const QModelIndex& parent)
+    {
+        // We simply need to find the single item that is "check-enabled" as there can
+        // only be one.
+        auto fn = [](TreeItem* item) -> bool {
+            if (item->checkState() == TreeItem::CheckState::kChecked)
+                return true;
+            return false;
+        };
+        TreeItem* item = findTreeItem(this, QModelIndex(), fn);
+        if (item != nullptr)
+            rootPrimPath = item->prim().GetPath().GetString();
+    }
 
-		// Note: only the load column (0) has children, so we use it when looking for children.
-		QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
-		if (hasChildren(childIndex))
-		{
-			fillPrimVariantSelections(primVariantSelections, childIndex);
-		}
-	}
-}
+    void TreeModel::fillStagePopulationMask(
+        UsdStagePopulationMask & popMask, const QModelIndex& parent)
+    {
+        for (int r = 0; r < rowCount(parent); ++r) {
+            // Note: only the load column (0) has children, so we use it when looking for children.
+            QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
+            TreeItem*   item = static_cast<TreeItem*>(itemFromIndex(childIndex));
+            if (item->checkState() == TreeItem::CheckState::kChecked) {
+                auto primPath = item->prim().GetPath();
+                if (!popMask.Includes(primPath))
+                    popMask.Add(primPath);
+                return;
+            }
+            // If this item is check-enabled, we don't need to check it's children because
+            // we know they will be check-disabled.
+            else if (hasChildren(childIndex)) {
+                fillStagePopulationMask(popMask, childIndex);
+            }
+        }
+    }
 
-void TreeModel::openPersistentEditors(QTreeView* tv, const QModelIndex& parent)
-{
-	for (int r=0; r<rowCount(parent); ++r)
-	{
-		QModelIndex varSelIndex = this->index(r, kTreeColumn_Variants, parent);
-		int type = varSelIndex.data(ItemDelegate::kTypeRole).toInt();
-		if (type == ItemDelegate::kVariants)
-		{
-			QSortFilterProxyModel* proxyModel = qobject_cast<QSortFilterProxyModel*>(tv->model());
-			tv->openPersistentEditor(proxyModel->mapFromSource(varSelIndex));
-		}
+    void TreeModel::fillPrimVariantSelections(
+        ImportData::PrimVariantSelections & primVariantSelections, const QModelIndex& parent)
+    {
+        for (int r = 0; r < rowCount(parent); ++r) {
+            QModelIndex variantIndex = this->index(r, kTreeColumn_Variants, parent);
+            TreeItem*   item = static_cast<TreeItem*>(itemFromIndex(variantIndex));
+            if (item->variantSelectionModified()) {
+                // Note: both the variant name and variant selection roles contain a
+                //		 QStringList for data.
+                QVariant varSel = variantIndex.data(ItemDelegate::kVariantSelectionRole);
+                if (varSel.isValid() && varSel.canConvert<QStringList>()) {
+                    // The name role must be valid if the selection role was.
+                    QStringList varSelections = varSel.toStringList();
+                    QStringList varNames
+                        = variantIndex.data(ItemDelegate::kVariantNameRole).toStringList();
+                    assert(varSelections.count() == varNames.count());
+                    if (varSelections.count() == varNames.count()) {
+                        SdfVariantSelectionMap varSels;
+                        for (int i = 0; i < varNames.count(); ++i) {
+                            varSels[varNames.at(i).toStdString()]
+                                = varSelections.at(i).toStdString();
+                        }
+                        primVariantSelections[item->prim().GetPath()] = varSels;
+                    }
+                }
+            }
 
-		// Note: only the load column (0) has children, so we use it when looking for children.
-		QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
-		if (hasChildren(childIndex))
-		{
-			openPersistentEditors(tv, childIndex);
-		}
-	}
-}
+            // Note: only the load column (0) has children, so we use it when looking for children.
+            QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
+            if (hasChildren(childIndex)) {
+                fillPrimVariantSelections(primVariantSelections, childIndex);
+            }
+        }
+    }
 
-void TreeModel::setRootPrimPath(const std::string& path)
-{
-	// Find the prim matching the root prim path from the import data and
-	// check-enable it.
-	SdfPath rootPrimPath(path);
-	auto fnFindRoot = [rootPrimPath](TreeItem* item) -> bool
-	{
-		if (item->prim().GetPath() == rootPrimPath)
-			return true;
-		return false;
-	};
-	TreeItem* item = findTreeItem(this, QModelIndex(), fnFindRoot);
-	if (item != nullptr)
-	{
-		checkEnableItem(item);
-	}
-}
+    void TreeModel::openPersistentEditors(QTreeView * tv, const QModelIndex& parent)
+    {
+        for (int r = 0; r < rowCount(parent); ++r) {
+            QModelIndex varSelIndex = this->index(r, kTreeColumn_Variants, parent);
+            int         type = varSelIndex.data(ItemDelegate::kTypeRole).toInt();
+            if (type == ItemDelegate::kVariants) {
+                QSortFilterProxyModel* proxyModel
+                    = qobject_cast<QSortFilterProxyModel*>(tv->model());
+                tv->openPersistentEditor(proxyModel->mapFromSource(varSelIndex));
+            }
 
-void TreeModel::uncheckEnableTree()
-{
-	// When unchecking any item we uncheck-enable the entire tree.
-	setChildCheckState(QModelIndex(), TreeItem::CheckState::kUnchecked);
-}
+            // Note: only the load column (0) has children, so we use it when looking for children.
+            QModelIndex childIndex = this->index(r, kTreeColumn_Load, parent);
+            if (hasChildren(childIndex)) {
+                openPersistentEditors(tv, childIndex);
+            }
+        }
+    }
 
-void TreeModel::checkEnableItem(TreeItem* item)
-{
-	if (item != nullptr)
-	{
-		// All ancestors [and their descendants] become unchecked-disabled, and all descendants
-		// become checked-disabled.
+    void TreeModel::setRootPrimPath(const std::string& path)
+    {
+        // Find the prim matching the root prim path from the import data and
+        // check-enable it.
+        SdfPath rootPrimPath(path);
+        auto    fnFindRoot = [rootPrimPath](TreeItem* item) -> bool {
+            if (item->prim().GetPath() == rootPrimPath)
+                return true;
+            return false;
+        };
+        TreeItem* item = findTreeItem(this, QModelIndex(), fnFindRoot);
+        if (item != nullptr) {
+            checkEnableItem(item);
+        }
+    }
 
-		// First run-thru entire tree and uncheck-disable everything.
-		setChildCheckState(QModelIndex(), TreeItem::CheckState::kUnchecked_Disabled);
+    void TreeModel::uncheckEnableTree()
+    {
+        // When unchecking any item we uncheck-enable the entire tree.
+        setChildCheckState(QModelIndex(), TreeItem::CheckState::kUnchecked);
+    }
 
-		// Then check the item that was clicked.
-		item->setCheckState(TreeItem::CheckState::kChecked);
-		QModelIndex modelIndex = indexFromItem(item);
-		QVector<int> roles;
-		roles << Qt::DecorationRole;
-		Q_EMIT dataChanged(modelIndex, modelIndex, roles);
+    void TreeModel::checkEnableItem(TreeItem * item)
+    {
+        if (item != nullptr) {
+            // All ancestors [and their descendants] become unchecked-disabled, and all descendants
+            // become checked-disabled.
 
-		// Then check-disable all the children of the clicked item.
-		setChildCheckState(modelIndex, TreeItem::CheckState::kChecked_Disabled);
-	}
-}
+            // First run-thru entire tree and uncheck-disable everything.
+            setChildCheckState(QModelIndex(), TreeItem::CheckState::kUnchecked_Disabled);
 
-void TreeModel::onItemClicked(TreeItem* item)
-{
-	if (item->index().column() == kTreeColumn_Load)
-	{
-		// We only allow toggling an enabled checked or unchecked item.
-		TreeItem::CheckState st = item->checkState();
-		if (st == TreeItem::CheckState::kChecked)
-		{
-			uncheckEnableTree();
-		}
-		else if (st == TreeItem::CheckState::kUnchecked)
-		{
-			checkEnableItem(item);
-		}
-	}
-}
+            // Then check the item that was clicked.
+            item->setCheckState(TreeItem::CheckState::kChecked);
+            QModelIndex  modelIndex = indexFromItem(item);
+            QVector<int> roles;
+            roles << Qt::DecorationRole;
+            Q_EMIT dataChanged(modelIndex, modelIndex, roles);
 
-void TreeModel::resetVariants()
-{
-	resetAllVariants(this, QModelIndex());
-}
+            // Then check-disable all the children of the clicked item.
+            setChildCheckState(modelIndex, TreeItem::CheckState::kChecked_Disabled);
+        }
+    }
+
+    void TreeModel::onItemClicked(TreeItem * item)
+    {
+        if (item->index().column() == kTreeColumn_Load) {
+            // We only allow toggling an enabled checked or unchecked item.
+            TreeItem::CheckState st = item->checkState();
+            if (st == TreeItem::CheckState::kChecked) {
+                uncheckEnableTree();
+            } else if (st == TreeItem::CheckState::kUnchecked) {
+                checkEnableItem(item);
+            }
+        }
+    }
+
+    void TreeModel::resetVariants() { resetAllVariants(this, QModelIndex()); }
 
 } // namespace MayaUsd

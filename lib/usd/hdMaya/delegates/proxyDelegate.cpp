@@ -15,9 +15,13 @@
 //
 #include "proxyDelegate.h"
 
-#include <atomic>
-#include <mutex>
-#include <unordered_set>
+#include <hdMaya/adapters/proxyAdapter.h>
+#include <hdMaya/debugCodes.h>
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/type.h>
 
 #include <maya/MDGMessage.h>
 #include <maya/MFnDagNode.h>
@@ -28,13 +32,9 @@
 #include <maya/MObject.h>
 #include <maya/MSceneMessage.h>
 
-#include <pxr/base/tf/envSetting.h>
-#include <pxr/base/tf/type.h>
-
-#include <hdMaya/adapters/proxyAdapter.h>
-#include <hdMaya/debugCodes.h>
-#include <hdMaya/delegates/delegateRegistry.h>
-#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <atomic>
+#include <mutex>
+#include <unordered_set>
 
 #if WANT_UFE_BUILD
 #include <ufe/rtid.h>
@@ -45,15 +45,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdMayaProxyDelegate));
 
-TF_REGISTRY_FUNCTION(TfType) {
-    TF_DEBUG(HDMAYA_AL_PLUGIN)
-        .Msg("Calling TfType::Define for HdMayaProxyDelegate\n");
-    TfType::Define<HdMayaProxyDelegate, TfType::Bases<HdMayaDelegate> >();
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TF_DEBUG(HDMAYA_AL_PLUGIN).Msg("Calling TfType::Define for HdMayaProxyDelegate\n");
+    TfType::Define<HdMayaProxyDelegate, TfType::Bases<HdMayaDelegate>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaProxyDelegate) {
-    TF_DEBUG(HDMAYA_AL_PLUGIN)
-        .Msg("Calling RegisterDelegate for HdMayaProxyDelegate\n");
+TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaProxyDelegate)
+{
+    TF_DEBUG(HDMAYA_AL_PLUGIN).Msg("Calling RegisterDelegate for HdMayaProxyDelegate\n");
     HdMayaDelegateRegistry::RegisterDelegate(
         _tokens->HdMayaProxyDelegate, HdMayaProxyDelegate::Creator);
 }
@@ -61,7 +61,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaProxyDelegate) {
 namespace {
 
 #if WANT_UFE_BUILD
-constexpr auto USD_UFE_RUNTIME_NAME = "USD";
+constexpr auto      USD_UFE_RUNTIME_NAME = "USD";
 static UFE_NS::Rtid usdUfeRtid = 0;
 #endif // WANT_UFE_BUILD
 
@@ -72,16 +72,18 @@ std::atomic<bool> isALPluginLoaded(false);
 
 // Not sure if we actually need a mutex guarding _allAdapters, but
 // I'd rather be safe....
-std::mutex _allAdaptersMutex;
+std::mutex                              _allAdaptersMutex;
 std::unordered_set<HdMayaProxyAdapter*> _allAdapters;
 
-bool IsALPluginLoaded() {
+bool IsALPluginLoaded()
+{
     auto nodeClass = MNodeClass(MayaUsdProxyShapeBase::typeId);
     // if not loaded yet, typeName() will be an empty string
     return nodeClass.typeName() == MayaUsdProxyShapeBase::typeName;
 }
 
-void PluginCallback(const MStringArray& strs, void* clientData) {
+void PluginCallback(const MStringArray& strs, void* clientData)
+{
     // Considered having separate plugin loaded/unloaded callbacks, but that
     // would mean checking for the plugin "name", which seems somewhat
     // unreliable - it's just the name of the built library, which seems too
@@ -110,21 +112,20 @@ void PluginCallback(const MStringArray& strs, void* clientData) {
     }
 }
 
-void SetupPluginCallbacks() {
+void SetupPluginCallbacks()
+{
     MStatus status;
 
     isALPluginLoaded.store(IsALPluginLoaded());
 
     // Set up callback to notify of plugin load
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg("HdMayaProxyDelegate - creating PluginLoaded callback\n");
+    TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg("HdMayaProxyDelegate - creating PluginLoaded callback\n");
     MSceneMessage::addStringArrayCallback(
         MSceneMessage::kAfterPluginLoad, PluginCallback, nullptr, &status);
     TF_VERIFY(status, "Could not set pluginLoaded callback");
 
     // Set up callback to notify of plugin unload
-    TF_DEBUG(HDMAYA_AL_CALLBACKS)
-        .Msg("HdMayaProxyDelegate - creating PluginUnloaded callback\n");
+    TF_DEBUG(HDMAYA_AL_CALLBACKS).Msg("HdMayaProxyDelegate - creating PluginUnloaded callback\n");
     MSceneMessage::addStringArrayCallback(
         MSceneMessage::kAfterPluginUnload, PluginCallback, nullptr, &status);
     TF_VERIFY(status, "Could not set pluginUnloaded callback");
@@ -133,19 +134,17 @@ void SetupPluginCallbacks() {
 } // namespace
 
 HdMayaProxyDelegate::HdMayaProxyDelegate(const InitData& initData)
-    : HdMayaDelegate(initData) {
+    : HdMayaDelegate(initData)
+{
     TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
-        .Msg(
-            "HdMayaProxyDelegate - creating with delegateID %s\n",
-            GetMayaDelegateID().GetText());
+        .Msg("HdMayaProxyDelegate - creating with delegateID %s\n", GetMayaDelegateID().GetText());
 
     MStatus status;
 
 #if WANT_UFE_BUILD
     if (usdUfeRtid == 0) {
         try {
-            usdUfeRtid =
-                UFE_NS::RunTimeMgr::instance().getId(USD_UFE_RUNTIME_NAME);
+            usdUfeRtid = UFE_NS::RunTimeMgr::instance().getId(USD_UFE_RUNTIME_NAME);
         }
         // This shoudl catch ufe's InvalidRunTimeName exception, but they don't
         // expose that!
@@ -156,38 +155,45 @@ HdMayaProxyDelegate::HdMayaProxyDelegate(const InitData& initData)
 #endif // WANT_UFE_BUILD
 }
 
-HdMayaProxyDelegate::~HdMayaProxyDelegate() {
+HdMayaProxyDelegate::~HdMayaProxyDelegate()
+{
     TF_DEBUG(HDMAYA_AL_PROXY_DELEGATE)
         .Msg(
-            "HdMayaProxyDelegate - destroying with delegateID %s\n",
-            GetMayaDelegateID().GetText());
+            "HdMayaProxyDelegate - destroying with delegateID %s\n", GetMayaDelegateID().GetText());
 }
 
-HdMayaDelegatePtr HdMayaProxyDelegate::Creator(const InitData& initData) {
+HdMayaDelegatePtr HdMayaProxyDelegate::Creator(const InitData& initData)
+{
     static std::once_flag setupPluginCallbacksOnce;
     std::call_once(setupPluginCallbacksOnce, SetupPluginCallbacks);
 
-    if (!isALPluginLoaded.load()) { return nullptr; }
+    if (!isALPluginLoaded.load()) {
+        return nullptr;
+    }
     return std::static_pointer_cast<HdMayaDelegate>(
         std::make_shared<HdMayaProxyDelegate>(initData));
 }
 
-void HdMayaProxyDelegate::AddAdapter(HdMayaProxyAdapter* adapter) {
+void HdMayaProxyDelegate::AddAdapter(HdMayaProxyAdapter* adapter)
+{
     std::lock_guard<std::mutex> lock(_allAdaptersMutex);
     _allAdapters.insert(adapter);
 }
 
-void HdMayaProxyDelegate::RemoveAdapter(HdMayaProxyAdapter* adapter) {
+void HdMayaProxyDelegate::RemoveAdapter(HdMayaProxyAdapter* adapter)
+{
     std::lock_guard<std::mutex> lock(_allAdaptersMutex);
     _allAdapters.erase(adapter);
 }
 
-void HdMayaProxyDelegate::Populate() {
+void HdMayaProxyDelegate::Populate()
+{
     // Does nothing - delegate exists only for PreFrame and
     // PopulateSelectedPaths
 }
 
-void HdMayaProxyDelegate::PreFrame(const MHWRender::MDrawContext& context) {
+void HdMayaProxyDelegate::PreFrame(const MHWRender::MDrawContext& context)
+{
     std::lock_guard<std::mutex> lock(_allAdaptersMutex);
     for (auto adapter : _allAdapters) { adapter->PreFrame(); }
 }
@@ -195,10 +201,12 @@ void HdMayaProxyDelegate::PreFrame(const MHWRender::MDrawContext& context) {
 #if WANT_UFE_BUILD
 
 void HdMayaProxyDelegate::PopulateSelectedPaths(
-    const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
-    const HdSelectionSharedPtr& selection) {
-    MStatus status;
-    MObject proxyMObj;
+    const UFE_NS::Selection&    ufeSelection,
+    SdfPathVector&              selectedSdfPaths,
+    const HdSelectionSharedPtr& selection)
+{
+    MStatus    status;
+    MObject    proxyMObj;
     MFnDagNode proxyMFnDag;
 
     TF_DEBUG(HDMAYA_AL_SELECTION)
@@ -219,7 +227,7 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
         std::lock_guard<std::mutex> lock(_allAdaptersMutex);
         for (auto adapter : _allAdapters) {
             // First, we check to see if the entire proxy shape is selected
-            bool wholeProxySelected = false;
+            bool            wholeProxySelected = false;
             const MDagPath& dagPath = adapter->GetDagPath();
             // Loop over all parents
             MDagPath parentDag = dagPath;
@@ -229,9 +237,7 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
                     // PopulateSelectedPaths will handle this case. we can
                     // skip this shape...
                     TF_DEBUG(HDMAYA_AL_SELECTION)
-                        .Msg(
-                            "proxy node %s was selected\n",
-                            parentDag.fullPathName().asChar());
+                        .Msg("proxy node %s was selected\n", parentDag.fullPathName().asChar());
                     wholeProxySelected = true;
                     break;
                 }
@@ -243,25 +249,27 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
                         "HdMayaProxyDelegate::PopulateSelectedPaths - adding "
                         "proxy to lookup: %s\n",
                         dagPath.fullPathName().asChar());
-                proxyPathToAdapter.emplace(
-                    dagPath.fullPathName().asChar(), adapter);
+                proxyPathToAdapter.emplace(dagPath.fullPathName().asChar(), adapter);
             }
         }
     }
 
     for (auto item : ufeSelection) {
-        if (item->runTimeId() != usdUfeRtid) { continue; }
+        if (item->runTimeId() != usdUfeRtid) {
+            continue;
+        }
         auto& pathSegments = item->path().getSegments();
         if (pathSegments.size() != 2) {
             TF_WARN(
                 "Found invalid usd-ufe path (had %lu segments - should have "
                 "2): %s\n",
-                item->path().size(), item->path().string().c_str());
+                item->path().size(),
+                item->path().string().c_str());
             continue;
         }
         // We popHead for maya pathSegment because it always starts with
         // "|world", which makes it non-standard...
-        auto mayaPathSegment = pathSegments[0].popHead();
+        auto  mayaPathSegment = pathSegments[0].popHead();
         auto& usdPathSegment = pathSegments[1];
 
         auto findResult = proxyPathToAdapter.find(mayaPathSegment.string());
@@ -272,14 +280,15 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
                 "proxy: %s\n",
                 mayaPathSegment.string().c_str());
 
-        if (findResult == proxyPathToAdapter.cend()) { continue; }
+        if (findResult == proxyPathToAdapter.cend()) {
+            continue;
+        }
 
         auto proxyAdapter = findResult->second;
 
-        selectedSdfPaths.push_back(proxyAdapter->ConvertCachePathToIndexPath(
-            SdfPath(usdPathSegment.string())));
-        selection->AddRprim(
-            HdSelection::HighlightModeSelect, selectedSdfPaths.back());
+        selectedSdfPaths.push_back(
+            proxyAdapter->ConvertCachePathToIndexPath(SdfPath(usdPathSegment.string())));
+        selection->AddRprim(HdSelection::HighlightModeSelect, selectedSdfPaths.back());
         TF_DEBUG(HDMAYA_AL_SELECTION)
             .Msg(
                 "HdMayaProxyDelegate::PopulateSelectedPaths - selecting %s\n",

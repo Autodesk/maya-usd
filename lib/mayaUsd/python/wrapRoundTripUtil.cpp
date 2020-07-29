@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <boost/python.hpp>
+#include <mayaUsd/fileio/utils/roundTripUtil.h>
 
 #include <pxr/pxr.h>
-#include <pxr/usd/usdGeom/primvar.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/pyConversions.h>
+#include <pxr/usd/usdGeom/primvar.h>
 
-#include <mayaUsd/fileio/utils/roundTripUtil.h>
+#include <boost/python.hpp>
 
 using namespace std;
 using namespace boost::python;
@@ -31,20 +31,19 @@ PXR_NAMESPACE_USING_DIRECTIVE;
 void wrapRoundTripUtil()
 {
     typedef UsdMayaRoundTripUtil This;
-    scope RoundTripUtil = class_<This>("RoundTripUtil", no_init)
-        .def("IsAttributeUserAuthored", This::IsAttributeUserAuthored)
-        .staticmethod("IsAttributeUserAuthored")
+    scope                        RoundTripUtil
+        = class_<This>("RoundTripUtil", no_init)
+              .def("IsAttributeUserAuthored", This::IsAttributeUserAuthored)
+              .staticmethod("IsAttributeUserAuthored")
 
-        .def("IsAttributeMayaGenerated", This::IsAttributeMayaGenerated)
-        .staticmethod("IsAttributeMayaGenerated")
-        .def("MarkAttributeAsMayaGenerated", This::MarkAttributeAsMayaGenerated)
-        .staticmethod("MarkAttributeAsMayaGenerated")
+              .def("IsAttributeMayaGenerated", This::IsAttributeMayaGenerated)
+              .staticmethod("IsAttributeMayaGenerated")
+              .def("MarkAttributeAsMayaGenerated", This::MarkAttributeAsMayaGenerated)
+              .staticmethod("MarkAttributeAsMayaGenerated")
 
-        .def("IsPrimvarClamped", This::IsPrimvarClamped)
-        .staticmethod("IsPrimvarClamped")
+              .def("IsPrimvarClamped", This::IsPrimvarClamped)
+              .staticmethod("IsPrimvarClamped")
 
-        .def("MarkPrimvarAsClamped", This::MarkPrimvarAsClamped)
-        .staticmethod("MarkPrimvarAsClamped")
-    ;
-        
+              .def("MarkPrimvarAsClamped", This::MarkPrimvarAsClamped)
+              .staticmethod("MarkPrimvarAsClamped");
 }

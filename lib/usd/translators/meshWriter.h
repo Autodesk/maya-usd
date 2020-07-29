@@ -18,38 +18,38 @@
 
 /// \file
 
-#include <set>
-#include <string>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MFnMesh.h>
-#include <maya/MString.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdGeom/primvar.h>
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnMesh.h>
+#include <maya/MString.h>
+
+#include <set>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Exports Maya mesh objects (MFnMesh)as UsdGeomMesh prims, taking into account
 /// subd/poly, skinning, reference objects, UVs, and color sets.
-class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter
-{
+class PxrUsdTranslators_MeshWriter : public UsdMayaPrimWriter {
 public:
-    PxrUsdTranslators_MeshWriter(const MFnDependencyNode& depNodeFn,
-                                 const SdfPath& usdPath,
-                                 UsdMayaWriteJobContext& jobCtx);
+    PxrUsdTranslators_MeshWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
     void Write(const UsdTimeCode& usdTime) override;
     bool ExportsGprims() const override;
@@ -75,8 +75,6 @@ private:
     std::set<std::string> _excludeColorSets;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

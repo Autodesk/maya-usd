@@ -16,44 +16,48 @@
 #ifndef USD_ADD_NEW_PRIM_COMMAND
 #define USD_ADD_NEW_PRIM_COMMAND
 
-#include <ufe/undoableCommand.h>
-#include <ufe/path.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <ufe/path.h>
+#include <ufe/undoableCommand.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief Undoable command for add new prim
-class MAYAUSD_CORE_PUBLIC UsdUndoAddNewPrimCommand : public Ufe::UndoableCommand
+MAYAUSD_NS_DEF
 {
-public:
-    typedef std::shared_ptr<UsdUndoAddNewPrimCommand> Ptr;
+    namespace ufe {
 
-    UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdSceneItem,
-                              const std::string& name,
-                              const std::string& type);
+    //! \brief Undoable command for add new prim
+    class MAYAUSD_CORE_PUBLIC UsdUndoAddNewPrimCommand : public Ufe::UndoableCommand {
+    public:
+        typedef std::shared_ptr<UsdUndoAddNewPrimCommand> Ptr;
 
-    void undo() override;
-    void redo() override;
+        UsdUndoAddNewPrimCommand(
+            const UsdSceneItem::Ptr& usdSceneItem,
+            const std::string&       name,
+            const std::string&       type);
 
-    const Ufe::Path& newUfePath() const;
-    UsdPrim newPrim() const;
+        void undo() override;
+        void redo() override;
 
-    static UsdUndoAddNewPrimCommand::Ptr create(const UsdSceneItem::Ptr& usdSceneItem,
-                              const std::string& name, const std::string& type);
-private:
-    PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath _primPath;
-    PXR_NS::TfToken _primToken;
-    Ufe::Path _newUfePath;
+        const Ufe::Path& newUfePath() const;
+        UsdPrim          newPrim() const;
 
-}; // UsdUndoAddNewPrimCommand
+        static UsdUndoAddNewPrimCommand::Ptr create(
+            const UsdSceneItem::Ptr& usdSceneItem,
+            const std::string&       name,
+            const std::string&       type);
 
-} // namespace ufe
+    private:
+        PXR_NS::UsdStageWeakPtr _stage;
+        PXR_NS::SdfPath         _primPath;
+        PXR_NS::TfToken         _primToken;
+        Ufe::Path               _newUfePath;
+
+    }; // UsdUndoAddNewPrimCommand
+
+    } // namespace ufe
 } // namespace MayaUsd
 
 #endif

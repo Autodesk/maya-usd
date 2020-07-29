@@ -15,21 +15,19 @@
 //
 #include "usdMaya/importCommand.h"
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include "usdMaya/readJobWithSceneAssembly.h"
+
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-void*
-PxrMayaUSDImportCommand::creator()
-{
-    return new PxrMayaUSDImportCommand();
-}
+void* PxrMayaUSDImportCommand::creator() { return new PxrMayaUSDImportCommand(); }
 
 /* virtual */
-std::unique_ptr<UsdMaya_ReadJob> PxrMayaUSDImportCommand::initializeReadJob(const MayaUsd::ImportData & data, 
-        const UsdMayaJobImportArgs & args)
+std::unique_ptr<UsdMaya_ReadJob> PxrMayaUSDImportCommand::initializeReadJob(
+    const MayaUsd::ImportData&  data,
+    const UsdMayaJobImportArgs& args)
 {
     return std::unique_ptr<UsdMaya_ReadJob>(new UsdMaya_ReadJobWithSceneAssembly(data, args));
 }

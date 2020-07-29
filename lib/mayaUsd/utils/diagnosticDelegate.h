@@ -16,16 +16,16 @@
 #ifndef PXRUSDMAYA_DIAGNOSTICDELEGATE_H
 #define PXRUSDMAYA_DIAGNOSTICDELEGATE_H
 
-#include <atomic>
-#include <memory>
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/tf/diagnosticMgr.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usdUtils/coalescingDiagnosticDelegate.h>
 
 #include <maya/MGlobal.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/diagnosticMgr.h>
-#include <pxr/usd/usdUtils/coalescingDiagnosticDelegate.h>
-
-#include <mayaUsd/base/api.h>
+#include <atomic>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,9 +58,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     void IssueWarning(const TfWarning& warning) override;
     MAYAUSD_CORE_PUBLIC
-    void IssueFatalError(
-        const TfCallContext& context,
-        const std::string& msg) override;
+    void IssueFatalError(const TfCallContext& context, const std::string& msg) override;
 
     /// Installs a shared delegate globally.
     /// If this is invoked on a secondary thread, issues a fatal coding error.
@@ -79,7 +77,7 @@ public:
 private:
     friend class UsdMayaDiagnosticBatchContext;
 
-    std::atomic_int _batchCount;
+    std::atomic_int                                       _batchCount;
     std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedStatuses;
     std::unique_ptr<UsdUtilsCoalescingDiagnosticDelegate> _batchedWarnings;
 
@@ -106,8 +104,7 @@ private:
 ///   2. Context B constructed
 ///   3. Context A destructed
 ///   4. Context B destructed
-class UsdMayaDiagnosticBatchContext
-{
+class UsdMayaDiagnosticBatchContext {
 public:
     /// Constructs a batch context, causing all subsequent diagnostic messages
     /// to be batched on all threads.
@@ -117,10 +114,8 @@ public:
     MAYAUSD_CORE_PUBLIC
     ~UsdMayaDiagnosticBatchContext();
 
-    UsdMayaDiagnosticBatchContext(
-            const UsdMayaDiagnosticBatchContext&) = delete;
-    UsdMayaDiagnosticBatchContext& operator=(
-            const UsdMayaDiagnosticBatchContext&) = delete;
+    UsdMayaDiagnosticBatchContext(const UsdMayaDiagnosticBatchContext&) = delete;
+    UsdMayaDiagnosticBatchContext& operator=(const UsdMayaDiagnosticBatchContext&) = delete;
 
 private:
     /// This pointer is used to "bind" this context to a specific delegate in

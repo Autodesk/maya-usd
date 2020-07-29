@@ -15,46 +15,46 @@
 //
 #pragma once
 
-#include <ufe/hierarchyHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdHierarchy.h>
 #include <mayaUsd/ufe/UsdRootChildHierarchy.h>
 
-//PXR_NAMESPACE_USING_DIRECTIVE
+#include <ufe/hierarchyHandler.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+// PXR_NAMESPACE_USING_DIRECTIVE
 
-//! \brief USD run-time hierarchy handler.
-/*!
-	This hierarchy handler is the standard USD run-time hierarchy handler.  Its
-	only special behavior is to return a UsdRootChildHierarchy interface object
-	if it is asked for a hierarchy interface for a child of the USD root prim.
-	These prims are special because we define their parent to be the Maya USD
-	gateway node, which the UsdRootChildHierarchy interface implements.
- */
-class MAYAUSD_CORE_PUBLIC UsdHierarchyHandler : public Ufe::HierarchyHandler
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdHierarchyHandler> Ptr;
+    namespace ufe {
 
-	UsdHierarchyHandler();
-	~UsdHierarchyHandler() override;
+    //! \brief USD run-time hierarchy handler.
+    /*!
+            This hierarchy handler is the standard USD run-time hierarchy handler.  Its
+            only special behavior is to return a UsdRootChildHierarchy interface object
+            if it is asked for a hierarchy interface for a child of the USD root prim.
+            These prims are special because we define their parent to be the Maya USD
+            gateway node, which the UsdRootChildHierarchy interface implements.
+     */
+    class MAYAUSD_CORE_PUBLIC UsdHierarchyHandler : public Ufe::HierarchyHandler {
+    public:
+        typedef std::shared_ptr<UsdHierarchyHandler> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdHierarchyHandler(const UsdHierarchyHandler&) = delete;
-	UsdHierarchyHandler& operator=(const UsdHierarchyHandler&) = delete;
-	UsdHierarchyHandler(UsdHierarchyHandler&&) = delete;
-	UsdHierarchyHandler& operator=(UsdHierarchyHandler&&) = delete;
+        UsdHierarchyHandler();
+        ~UsdHierarchyHandler() override;
 
-	//! Create a UsdHierarchyHandler.
-	static UsdHierarchyHandler::Ptr create();
+        // Delete the copy/move constructors assignment operators.
+        UsdHierarchyHandler(const UsdHierarchyHandler&) = delete;
+        UsdHierarchyHandler& operator=(const UsdHierarchyHandler&) = delete;
+        UsdHierarchyHandler(UsdHierarchyHandler&&) = delete;
+        UsdHierarchyHandler& operator=(UsdHierarchyHandler&&) = delete;
 
-	// UsdHierarchyHandler overrides
-	Ufe::Hierarchy::Ptr hierarchy(const Ufe::SceneItem::Ptr& item) const override;
-	Ufe::SceneItem::Ptr createItem(const Ufe::Path& path) const override;
-}; // UsdHierarchyHandler
+        //! Create a UsdHierarchyHandler.
+        static UsdHierarchyHandler::Ptr create();
 
-} // namespace ufe
+        // UsdHierarchyHandler overrides
+        Ufe::Hierarchy::Ptr hierarchy(const Ufe::SceneItem::Ptr& item) const override;
+        Ufe::SceneItem::Ptr createItem(const Ufe::Path& path) const override;
+    }; // UsdHierarchyHandler
+
+    } // namespace ufe
 } // namespace MayaUsd

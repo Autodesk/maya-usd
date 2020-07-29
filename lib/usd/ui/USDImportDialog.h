@@ -16,78 +16,81 @@
 
 #pragma once
 
-#include <memory>
-
-#include <QtWidgets/QDialog>
-#include <QtCore/QSortFilterProxyModel>
+#include <mayaUsd/mayaUsd.h>
 
 #include <pxr/usd/usd/stage.h>
 
-#include <mayaUsd/mayaUsd.h>
-
-#include <mayaUsdUI/ui/api.h>
+#include <QtCore/QSortFilterProxyModel>
+#include <QtWidgets/QDialog>
 #include <mayaUsdUI/ui/IUSDImportView.h>
 #include <mayaUsdUI/ui/TreeModel.h>
+#include <mayaUsdUI/ui/api.h>
+
+#include <memory>
 
 namespace Ui {
-	class ImportDialog;
+class ImportDialog;
 }
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-
-class IMayaMQtUtil;
-
-/**
- * \brief USD file import dialog.
- */
-class MAYAUSD_UI_PUBLIC USDImportDialog
-		: public QDialog
-		, public IUSDImportView
+MAYAUSD_NS_DEF
 {
-	Q_OBJECT
 
-public:
-	/**
-	 * \brief Constructor.
-	 * \param filename Absolute file path of a USD file to import.
-	 * \param parent A reference to the parent widget of the dialog.
-	 */
-	explicit USDImportDialog(const std::string& filename, const ImportData* importData, const IMayaMQtUtil& mayaQtUtil, QWidget* parent = nullptr);
+    class IMayaMQtUtil;
 
-	//! Destructor.
-	~USDImportDialog();
+    /**
+     * \brief USD file import dialog.
+     */
+    class MAYAUSD_UI_PUBLIC USDImportDialog
+        : public QDialog
+        , public IUSDImportView {
+        Q_OBJECT
 
-	// IUSDImportView overrides
-	const std::string& filename() const override;
-	const std::string& rootPrimPath() const override;
-	UsdStagePopulationMask stagePopulationMask() const override;
-	UsdStage::InitialLoadSet stageInitialLoadSet() const override;
-	ImportData::PrimVariantSelections primVariantSelections() const override;
-	bool execute() override;
+    public:
+        /**
+         * \brief Constructor.
+         * \param filename Absolute file path of a USD file to import.
+         * \param parent A reference to the parent widget of the dialog.
+         */
+        explicit USDImportDialog(
+            const std::string&  filename,
+            const ImportData*   importData,
+            const IMayaMQtUtil& mayaQtUtil,
+            QWidget*            parent = nullptr);
 
-private Q_SLOTS:
-	void onItemClicked(const QModelIndex&);
-	void onResetFileTriggered();
+        //! Destructor.
+        ~USDImportDialog();
 
-protected:
-	// Reference to the Qt UI View of the dialog:
-	std::unique_ptr<Ui::ImportDialog> fUI;
+        // IUSDImportView overrides
+        const std::string&                filename() const override;
+        const std::string&                rootPrimPath() const override;
+        UsdStagePopulationMask            stagePopulationMask() const override;
+        UsdStage::InitialLoadSet          stageInitialLoadSet() const override;
+        ImportData::PrimVariantSelections primVariantSelections() const override;
+        bool                              execute() override;
 
-	// Reference to the Model holding the structure of the USD file hierarchy:
-	std::unique_ptr<TreeModel> fTreeModel;
-	// Reference to the Proxy Model used to sort and filter the USD file hierarchy:
-	std::unique_ptr<QSortFilterProxyModel> fProxyModel;
+    private Q_SLOTS:
+        void onItemClicked(const QModelIndex&);
+        void onResetFileTriggered();
 
-	// Reference to the USD Stage holding the list of Prims which could be imported:
-	UsdStageRefPtr fStage;
+    protected:
+        // Reference to the Qt UI View of the dialog:
+        std::unique_ptr<Ui::ImportDialog> fUI;
 
-	// The filename for the USD stage we opened.
-	std::string fFilename;
+        // Reference to the Model holding the structure of the USD file hierarchy:
+        std::unique_ptr<TreeModel> fTreeModel;
+        // Reference to the Proxy Model used to sort and filter the USD file hierarchy:
+        std::unique_ptr<QSortFilterProxyModel> fProxyModel;
 
-	// The root prim path.
-	mutable std::string fRootPrimPath;
-};
+        // Reference to the USD Stage holding the list of Prims which could be imported:
+        UsdStageRefPtr fStage;
+
+        // The filename for the USD stage we opened.
+        std::string fFilename;
+
+        // The root prim path.
+        mutable std::string fRootPrimPath;
+    };
 
 } // namespace MayaUsd

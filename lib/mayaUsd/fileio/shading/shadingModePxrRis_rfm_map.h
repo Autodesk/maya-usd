@@ -19,15 +19,15 @@
 // We use this table both for export and for import when RIS mode is active.
 // XXX This should probably live in a xml or json file that can be easily updated without recompile
 
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+
 #include <utility>
 #include <vector>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/token.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const std::vector<std::pair<TfToken, TfToken> > _RFM_RISNODE_TABLE = {
+static const std::vector<std::pair<TfToken, TfToken>> _RFM_RISNODE_TABLE = {
     { TfToken("blendColors", TfToken::Immortal), TfToken("PxrMayaBlendColors", TfToken::Immortal) },
     { TfToken("bulge", TfToken::Immortal), TfToken("PxrMayaBulge", TfToken::Immortal) },
     { TfToken("bump2d", TfToken::Immortal), TfToken("PxrMayaBump2d", TfToken::Immortal) },
@@ -43,22 +43,28 @@ static const std::vector<std::pair<TfToken, TfToken> > _RFM_RISNODE_TABLE = {
     { TfToken("file", TfToken::Immortal), TfToken("PxrMayaFile", TfToken::Immortal) },
     { TfToken("fluidShape", TfToken::Immortal), TfToken("PxrMayaFluidShape", TfToken::Immortal) },
     { TfToken("fractal", TfToken::Immortal), TfToken("PxrMayaFractal", TfToken::Immortal) },
-    { TfToken("gammaCorrect", TfToken::Immortal), TfToken("PxrMayaGammaCorrect", TfToken::Immortal) },
+    { TfToken("gammaCorrect", TfToken::Immortal),
+      TfToken("PxrMayaGammaCorrect", TfToken::Immortal) },
     { TfToken("granite", TfToken::Immortal), TfToken("PxrMayaGranite", TfToken::Immortal) },
     { TfToken("grid", TfToken::Immortal), TfToken("PxrMayaGrid", TfToken::Immortal) },
     { TfToken("hairSystem", TfToken::Immortal), TfToken("PxrMayaHair", TfToken::Immortal) },
     { TfToken("hsvToRgb", TfToken::Immortal), TfToken("PxrMayaHsvToRgb", TfToken::Immortal) },
     { TfToken("imagePlane", TfToken::Immortal), TfToken("PxrMayaImagePlane", TfToken::Immortal) },
-    { TfToken("layeredTexture", TfToken::Immortal), TfToken("PxrMayaLayeredTexture", TfToken::Immortal) },
+    { TfToken("layeredTexture", TfToken::Immortal),
+      TfToken("PxrMayaLayeredTexture", TfToken::Immortal) },
     { TfToken("leather", TfToken::Immortal), TfToken("PxrMayaLeather", TfToken::Immortal) },
     { TfToken("luminance", TfToken::Immortal), TfToken("PxrMayaLuminance", TfToken::Immortal) },
     { TfToken("marble", TfToken::Immortal), TfToken("PxrMayaMarble", TfToken::Immortal) },
     { TfToken("mountain", TfToken::Immortal), TfToken("PxrMayaMountain", TfToken::Immortal) },
-    { TfToken("multiplyDivide", TfToken::Immortal), TfToken("PxrMultiplyDivide", TfToken::Immortal) },
+    { TfToken("multiplyDivide", TfToken::Immortal),
+      TfToken("PxrMultiplyDivide", TfToken::Immortal) },
     { TfToken("noise", TfToken::Immortal), TfToken("PxrMayaNoise", TfToken::Immortal) },
-    { TfToken("place2dTexture", TfToken::Immortal), TfToken("PxrMayaPlacement2d", TfToken::Immortal) },
-    { TfToken("place3dTexture", TfToken::Immortal), TfToken("PxrMayaPlacement3d", TfToken::Immortal) },
-    { TfToken("plusMinusAverage", TfToken::Immortal), TfToken("PxrMayaPlusMinusAverage", TfToken::Immortal) },
+    { TfToken("place2dTexture", TfToken::Immortal),
+      TfToken("PxrMayaPlacement2d", TfToken::Immortal) },
+    { TfToken("place3dTexture", TfToken::Immortal),
+      TfToken("PxrMayaPlacement3d", TfToken::Immortal) },
+    { TfToken("plusMinusAverage", TfToken::Immortal),
+      TfToken("PxrMayaPlusMinusAverage", TfToken::Immortal) },
     { TfToken("ramp", TfToken::Immortal), TfToken("PxrMayaRamp", TfToken::Immortal) },
     { TfToken("remapColor", TfToken::Immortal), TfToken("PxrMayaRemapColor", TfToken::Immortal) },
     { TfToken("remapHsv", TfToken::Immortal), TfToken("PxrMayaRemapHsv", TfToken::Immortal) },
@@ -68,13 +74,13 @@ static const std::vector<std::pair<TfToken, TfToken> > _RFM_RISNODE_TABLE = {
     { TfToken("rock", TfToken::Immortal), TfToken("PxrMayaRock", TfToken::Immortal) },
     { TfToken("setRange", TfToken::Immortal), TfToken("PxrMayaSetRange", TfToken::Immortal) },
     { TfToken("snow", TfToken::Immortal), TfToken("PxrMayaSnow", TfToken::Immortal) },
-    { TfToken("solidFractal", TfToken::Immortal), TfToken("PxrMayaSolidFractal", TfToken::Immortal) },
+    { TfToken("solidFractal", TfToken::Immortal),
+      TfToken("PxrMayaSolidFractal", TfToken::Immortal) },
     { TfToken("stucco", TfToken::Immortal), TfToken("PxrMayaStucco", TfToken::Immortal) },
     { TfToken("uvChooser", TfToken::Immortal), TfToken("PxrMayaUVChooser", TfToken::Immortal) },
     { TfToken("volumeFog", TfToken::Immortal), TfToken("PxrMayaVolumeFog", TfToken::Immortal) },
     { TfToken("volumeNoise", TfToken::Immortal), TfToken("PxrMayaVolumeNoise", TfToken::Immortal) },
     { TfToken("wood", TfToken::Immortal), TfToken("PxrMayaWood", TfToken::Immortal) }
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

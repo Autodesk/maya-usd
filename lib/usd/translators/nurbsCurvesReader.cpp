@@ -13,24 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/pxr.h>
-#include <pxr/usd/usdGeom/nurbsCurves.h>
-
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorCurves.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_DEFINE_READER(UsdGeomNurbsCurves, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
-    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return UsdMayaTranslatorCurves::Create(
-            UsdGeomCurves(usdPrim),
-            parentNode,
-            args,
-            context);
+    MObject        parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    return UsdMayaTranslatorCurves::Create(UsdGeomCurves(usdPrim), parentNode, args, context);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

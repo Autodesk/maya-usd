@@ -13,40 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <vector>
-
-#include <pxr/pxr.h>
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/scriptModuleLoader.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
+TF_REGISTRY_FUNCTION(TfScriptModuleLoader)
+{
     // List of direct dependencies for this library.
-    const std::vector<TfToken> reqs = {
-        TfToken("ar"),
-        TfToken("gf"),
-        TfToken("hd"),
-        TfToken("hdx"),
-        TfToken("js"),
-        TfToken("kind"),
-        TfToken("plug"),
-        TfToken("sdf"),
-        TfToken("tf"),
-        TfToken("usd"),
-        TfToken("usdGeom"),
-        TfToken("usdImaging"),
-        TfToken("usdImagingGL"),
-        TfToken("usdLux"),
-        TfToken("usdRi"),
-        TfToken("usdShade"),
-        TfToken("usdSkel"),
-        TfToken("usdUtils"),
-        TfToken("vt")
-    };
-    TfScriptModuleLoader::GetInstance().
-        RegisterLibrary(TfToken("mayaUsd"), TfToken("mayaUsd.lib"), reqs);
+    const std::vector<TfToken> reqs
+        = { TfToken("ar"),           TfToken("gf"),       TfToken("hd"),      TfToken("hdx"),
+            TfToken("js"),           TfToken("kind"),     TfToken("plug"),    TfToken("sdf"),
+            TfToken("tf"),           TfToken("usd"),      TfToken("usdGeom"), TfToken("usdImaging"),
+            TfToken("usdImagingGL"), TfToken("usdLux"),   TfToken("usdRi"),   TfToken("usdShade"),
+            TfToken("usdSkel"),      TfToken("usdUtils"), TfToken("vt") };
+    TfScriptModuleLoader::GetInstance().RegisterLibrary(
+        TfToken("mayaUsd"), TfToken("mayaUsd.lib"), reqs);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -17,34 +17,35 @@
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-UsdTransform3dHandler::UsdTransform3dHandler() : Ufe::Transform3dHandler()
-{}
-
-UsdTransform3dHandler::~UsdTransform3dHandler()
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-/*static*/
-UsdTransform3dHandler::Ptr UsdTransform3dHandler::create()
-{
-	return std::make_shared<UsdTransform3dHandler>();
-}
+    UsdTransform3dHandler::UsdTransform3dHandler()
+        : Ufe::Transform3dHandler()
+    {
+    }
 
-//------------------------------------------------------------------------------
-// Ufe::Transform3dHandler overrides
-//------------------------------------------------------------------------------
+    UsdTransform3dHandler::~UsdTransform3dHandler() { }
 
-Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
-{
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    /*static*/
+    UsdTransform3dHandler::Ptr UsdTransform3dHandler::create()
+    {
+        return std::make_shared<UsdTransform3dHandler>();
+    }
+
+    //------------------------------------------------------------------------------
+    // Ufe::Transform3dHandler overrides
+    //------------------------------------------------------------------------------
+
+    Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
+    {
+        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-	assert(usdItem);
+        assert(usdItem);
 #endif
-	return UsdTransform3d::create(usdItem);
-}
+        return UsdTransform3d::create(usdItem);
+    }
 
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

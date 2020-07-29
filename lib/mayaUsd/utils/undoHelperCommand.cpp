@@ -22,7 +22,6 @@
 // This is added to prevent multiple definitions of the MApiVersion string.
 #define MNoVersionString
 #include <maya/MFnPlugin.h>
-
 #include <maya/MGlobal.h>
 
 namespace {
@@ -32,16 +31,15 @@ int _registrationCount = 0;
 
 // Name of the plugin registering the command.
 MString _registrantPluginName;
-}
+} // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const UsdMayaUndoHelperCommand::UndoableFunction*
-UsdMayaUndoHelperCommand::_dgModifierFunc = nullptr;
+const UsdMayaUndoHelperCommand::UndoableFunction* UsdMayaUndoHelperCommand::_dgModifierFunc
+    = nullptr;
 
 /* static */
-MStatus
-UsdMayaUndoHelperCommand::initialize(MFnPlugin& plugin)
+MStatus UsdMayaUndoHelperCommand::initialize(MFnPlugin& plugin)
 {
     if (_registrationCount < 0) {
         MGlobal::displayError("Illegal initialization of " CMD_NAME);
@@ -56,14 +54,11 @@ UsdMayaUndoHelperCommand::initialize(MFnPlugin& plugin)
     _registrantPluginName = plugin.name();
 
     return plugin.registerCommand(
-        CMD_NAME,
-        UsdMayaUndoHelperCommand::creator,
-        UsdMayaUndoHelperCommand::createSyntax);
+        CMD_NAME, UsdMayaUndoHelperCommand::creator, UsdMayaUndoHelperCommand::createSyntax);
 }
 
 /* static */
-MStatus
-UsdMayaUndoHelperCommand::finalize(MFnPlugin& plugin)
+MStatus UsdMayaUndoHelperCommand::finalize(MFnPlugin& plugin)
 {
     if (_registrationCount <= 0) {
         MGlobal::displayError("Illegal finalization of " CMD_NAME);
@@ -80,8 +75,8 @@ UsdMayaUndoHelperCommand::finalize(MFnPlugin& plugin)
     // deregister.
     if (plugin.name() != _registrantPluginName) {
         MGlobal::displayWarning(
-            CMD_NAME " cannot be deregistered, registering plugin "
-            + _registrantPluginName + " is unloaded.");
+            CMD_NAME " cannot be deregistered, registering plugin " + _registrantPluginName
+            + " is unloaded.");
         return MS::kSuccess;
     }
 
@@ -89,22 +84,16 @@ UsdMayaUndoHelperCommand::finalize(MFnPlugin& plugin)
 }
 
 /* static */
-const char*
-UsdMayaUndoHelperCommand::name()
-{
-    return CMD_NAME;
-}
+const char* UsdMayaUndoHelperCommand::name() { return CMD_NAME; }
 
-UsdMayaUndoHelperCommand::UsdMayaUndoHelperCommand() : _undoable(false)
+UsdMayaUndoHelperCommand::UsdMayaUndoHelperCommand()
+    : _undoable(false)
 {
 }
 
-UsdMayaUndoHelperCommand::~UsdMayaUndoHelperCommand()
-{
-}
+UsdMayaUndoHelperCommand::~UsdMayaUndoHelperCommand() { }
 
-MStatus
-UsdMayaUndoHelperCommand::doIt(const MArgList& /*args*/)
+MStatus UsdMayaUndoHelperCommand::doIt(const MArgList& /*args*/)
 {
     if (!_dgModifierFunc) {
         _undoable = false;
@@ -119,25 +108,13 @@ UsdMayaUndoHelperCommand::doIt(const MArgList& /*args*/)
     return MS::kSuccess;
 }
 
-MStatus
-UsdMayaUndoHelperCommand::redoIt()
-{
-    return _modifier.doIt();
-}
+MStatus UsdMayaUndoHelperCommand::redoIt() { return _modifier.doIt(); }
 
-MStatus
-UsdMayaUndoHelperCommand::undoIt()
-{
-    return _modifier.undoIt();
-}
+MStatus UsdMayaUndoHelperCommand::undoIt() { return _modifier.undoIt(); }
 
-bool
-UsdMayaUndoHelperCommand::isUndoable() const {
-    return _undoable;
-};
+bool UsdMayaUndoHelperCommand::isUndoable() const { return _undoable; };
 
-MSyntax
-UsdMayaUndoHelperCommand::createSyntax()
+MSyntax UsdMayaUndoHelperCommand::createSyntax()
 {
     MSyntax syntax;
     syntax.enableQuery(false);
@@ -145,21 +122,16 @@ UsdMayaUndoHelperCommand::createSyntax()
     return syntax;
 }
 
-void*
-UsdMayaUndoHelperCommand::creator()
-{
-    return new UsdMayaUndoHelperCommand();
-}
+void* UsdMayaUndoHelperCommand::creator() { return new UsdMayaUndoHelperCommand(); }
 
 /* static */
-void
-UsdMayaUndoHelperCommand::ExecuteWithUndo(const UndoableFunction& func)
+void UsdMayaUndoHelperCommand::ExecuteWithUndo(const UndoableFunction& func)
 {
     int cmdExists = 0;
     MGlobal::executeCommand("exists " CMD_NAME, cmdExists);
     if (!cmdExists) {
         TF_WARN(CMD_NAME " is unavailable; "
-                "function will run without undo support");
+                         "function will run without undo support");
         MDGModifier modifier;
         func(modifier);
         return;

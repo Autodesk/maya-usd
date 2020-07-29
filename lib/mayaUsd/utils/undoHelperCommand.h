@@ -16,17 +16,17 @@
 #ifndef PXRUSDMAYA_UNDO_HELPER_CMD_H
 #define PXRUSDMAYA_UNDO_HELPER_CMD_H
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
+
 #include <maya/MApiNamespace.h> // For MFnPlugin
 #include <maya/MDGModifier.h>
 #include <maya/MGlobal.h>
 #include <maya/MPxCommand.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/value.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,11 +35,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// run functions that take an MDGModifier; the command will use the MDGModifier
 /// for future undo and redo. Do not run the command directly (it will fail and
 /// do nothing in that case).
-class UsdMayaUndoHelperCommand : public MPxCommand
-{
+class UsdMayaUndoHelperCommand : public MPxCommand {
 public:
-    template <typename T>
-    using UndoableResultFunction = std::function<T (MDGModifier&)>;
+    template <typename T> using UndoableResultFunction = std::function<T(MDGModifier&)>;
     using UndoableFunction = UndoableResultFunction<void>;
 
     MAYAUSD_CORE_PUBLIC
@@ -80,19 +78,16 @@ public:
 
     /// This overload of ExecuteWithUndo() supports a \p func that returns a
     /// value of type \p T.
-    template <typename T>
-    static T ExecuteWithUndo(const UndoableResultFunction<T>& func)
+    template <typename T> static T ExecuteWithUndo(const UndoableResultFunction<T>& func)
     {
         T result;
-        ExecuteWithUndo([&result, &func](MDGModifier& modifier) {
-            result = func(modifier);
-        });
+        ExecuteWithUndo([&result, &func](MDGModifier& modifier) { result = func(modifier); });
         return result;
     }
 
 private:
     MDGModifier _modifier;
-    bool _undoable;
+    bool        _undoable;
 
     static const UndoableFunction* _dgModifierFunc;
 };

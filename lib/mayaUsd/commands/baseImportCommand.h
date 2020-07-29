@@ -18,68 +18,66 @@
 #define MAYA_IMPORT_COMMAND_H
 
 #include <mayaUsd/base/api.h>
-
-#include <memory>
+#include <mayaUsd/fileio/jobs/readJob.h>
 
 #include <maya/MPxCommand.h>
 
-#include <mayaUsd/fileio/jobs/readJob.h>
+#include <memory>
 
-MAYAUSD_NS_DEF {
-
-class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand
+MAYAUSD_NS_DEF
 {
-  public:
-    //
-    // Command flags are a mix of Arg Tokens defined in readJob.h
-    // and some that are defined by this command itself.
-    // All short forms of the Maya flag names are defined here.
-    // All long forms of flags defined by the command are also here.
-    // All long forms of flags defined by the Arg Tokens are queried
-    // for and set when creating the MSyntax object.
-    // Derived classes can use the short forms of the flags when
-    // calling Maya functions like argData.isFlagSet()
-    //
-    // The list of short forms of flags defined as Arg Tokens:
-    static constexpr auto kShadingModeFlag = "shd";
-    static constexpr auto kAssemblyRepFlag = "ar";
-    static constexpr auto kMetadataFlag = "md";
-    static constexpr auto kApiSchemaFlag = "api";
-    static constexpr auto kExcludePrimvarFlag = "epv";
-    static constexpr auto kUseAsAnimationCacheFlag = "uac";
 
-    // Short and Long forms of flags defined by this command itself:
-    static constexpr auto kFileFlag = "f";
-    static constexpr auto kFileFlagLong = "file";    
-    static constexpr auto kParentFlag = "p";
-    static constexpr auto kParentFlagLong = "parent";
-    static constexpr auto kReadAnimDataFlag = "ani";
-    static constexpr auto kReadAnimDataFlagLong = "readAnimData";
-    static constexpr auto kFrameRangeFlag = "fr";
-    static constexpr auto kFrameRangeFlagLong = "frameRange";
-    static constexpr auto kPrimPathFlag = "pp";
-    static constexpr auto kPrimPathFlagLong = "primPath";
-    static constexpr auto kVariantFlag = "var";
-    static constexpr auto kVariantFlagLong = "variant";
-    static constexpr auto kVerboseFlag = "v";
-    static constexpr auto kVerboseFlagLong = "verbose";
+    class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand {
+    public:
+        //
+        // Command flags are a mix of Arg Tokens defined in readJob.h
+        // and some that are defined by this command itself.
+        // All short forms of the Maya flag names are defined here.
+        // All long forms of flags defined by the command are also here.
+        // All long forms of flags defined by the Arg Tokens are queried
+        // for and set when creating the MSyntax object.
+        // Derived classes can use the short forms of the flags when
+        // calling Maya functions like argData.isFlagSet()
+        //
+        // The list of short forms of flags defined as Arg Tokens:
+        static constexpr auto kShadingModeFlag = "shd";
+        static constexpr auto kAssemblyRepFlag = "ar";
+        static constexpr auto kMetadataFlag = "md";
+        static constexpr auto kApiSchemaFlag = "api";
+        static constexpr auto kExcludePrimvarFlag = "epv";
+        static constexpr auto kUseAsAnimationCacheFlag = "uac";
 
-    MStatus doIt(const MArgList& args) override;
-    MStatus redoIt() override;
-    MStatus undoIt() override;
-    bool isUndoable() const override { return true; };
+        // Short and Long forms of flags defined by this command itself:
+        static constexpr auto kFileFlag = "f";
+        static constexpr auto kFileFlagLong = "file";
+        static constexpr auto kParentFlag = "p";
+        static constexpr auto kParentFlagLong = "parent";
+        static constexpr auto kReadAnimDataFlag = "ani";
+        static constexpr auto kReadAnimDataFlagLong = "readAnimData";
+        static constexpr auto kFrameRangeFlag = "fr";
+        static constexpr auto kFrameRangeFlagLong = "frameRange";
+        static constexpr auto kPrimPathFlag = "pp";
+        static constexpr auto kPrimPathFlagLong = "primPath";
+        static constexpr auto kVariantFlag = "var";
+        static constexpr auto kVariantFlagLong = "variant";
+        static constexpr auto kVerboseFlag = "v";
+        static constexpr auto kVerboseFlagLong = "verbose";
 
-    static MSyntax createSyntax();
-    static void* creator();
+        MStatus doIt(const MArgList& args) override;
+        MStatus redoIt() override;
+        MStatus undoIt() override;
+        bool    isUndoable() const override { return true; };
 
-  protected:
-    virtual std::unique_ptr<UsdMaya_ReadJob> initializeReadJob(const MayaUsd::ImportData &, 
-        const UsdMayaJobImportArgs &);
+        static MSyntax createSyntax();
+        static void*   creator();
 
-  private:
-    std::unique_ptr<UsdMaya_ReadJob> _readJob;
-};
+    protected:
+        virtual std::unique_ptr<UsdMaya_ReadJob>
+        initializeReadJob(const MayaUsd::ImportData&, const UsdMayaJobImportArgs&);
 
+    private:
+        std::unique_ptr<UsdMaya_ReadJob> _readJob;
+    };
 }
 
 #endif

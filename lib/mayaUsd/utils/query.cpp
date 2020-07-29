@@ -15,13 +15,8 @@
 //
 #include "query.h"
 
-#include <string>
-
-#include <maya/MDagPath.h>
-#include <maya/MFnDagNode.h>
-#include <maya/MObject.h>
-#include <maya/MPxNode.h>
-#include <maya/MStatus.h>
+#include <mayaUsd/nodes/usdPrimProvider.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/arch/systemInfo.h>
 #include <pxr/usd/ar/resolver.h>
@@ -29,13 +24,17 @@
 #include <pxr/usd/ar/resolverContextBinder.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/nodes/usdPrimProvider.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MDagPath.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MObject.h>
+#include <maya/MPxNode.h>
+#include <maya/MStatus.h>
+
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdPrim
-UsdMayaQuery::GetPrim(const std::string& shapeName)
+UsdPrim UsdMayaQuery::GetPrim(const std::string& shapeName)
 {
     UsdPrim usdPrim;
 
@@ -45,16 +44,15 @@ UsdMayaQuery::GetPrim(const std::string& shapeName)
     MFnDagNode dagNode(shapeObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, usdPrim);
 
-    if (const UsdMayaUsdPrimProvider* usdPrimProvider =
-            dynamic_cast<const UsdMayaUsdPrimProvider*>(dagNode.userNode())) {
+    if (const UsdMayaUsdPrimProvider* usdPrimProvider
+        = dynamic_cast<const UsdMayaUsdPrimProvider*>(dagNode.userNode())) {
         return usdPrimProvider->usdPrim();
     }
 
     return usdPrim;
 }
 
-void
-UsdMayaQuery::ReloadStage(const std::string& shapeName)
+void UsdMayaQuery::ReloadStage(const std::string& shapeName)
 {
     MStatus status;
 
@@ -65,6 +63,4 @@ UsdMayaQuery::ReloadStage(const std::string& shapeName)
     }
 }
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-

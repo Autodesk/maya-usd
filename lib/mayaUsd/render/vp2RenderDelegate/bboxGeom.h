@@ -16,12 +16,12 @@
 #ifndef HD_VP2_BBOX_GEOM
 #define HD_VP2_BBOX_GEOM
 
+#include <pxr/base/gf/range3d.h>
+#include <pxr/pxr.h>
+
 #include <maya/MHWGeometry.h>
 
 #include <memory>
-
-#include <pxr/pxr.h>
-#include <pxr/base/gf/range3d.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,19 +32,14 @@ PXR_NAMESPACE_OPEN_SCOPE
     provide shared geometry for all Rprims to display bounding box in VP2.
     The class can only be instantiated from main thread.
 */
-class HdVP2BBoxGeom final
-{
+class HdVP2BBoxGeom final {
 public:
     HdVP2BBoxGeom();
     ~HdVP2BBoxGeom() = default;
 
-    const MHWRender::MVertexBuffer* GetPositionBuffer() const {
-        return _positionBuffer.get();
-    }
+    const MHWRender::MVertexBuffer* GetPositionBuffer() const { return _positionBuffer.get(); }
 
-    const MHWRender::MIndexBuffer* GetIndexBuffer() const {
-        return _indexBuffer.get();
-    }
+    const MHWRender::MIndexBuffer* GetIndexBuffer() const { return _indexBuffer.get(); }
 
     const GfRange3d& GetRange() const { return _range; }
 

@@ -16,22 +16,22 @@
 //
 #pragma once
 
+#include "base/api.h"
+
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+
+#include <pxr/pxr.h>
+
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-
-#include "base/api.h"
-
-MAYAUSD_NS_DEF {
-
-/// File translator for USD files. Handles the USD option in the Export window.
-class UsdMayaExportTranslator : public MPxFileTranslator
+MAYAUSD_NS_DEF
 {
+
+    /// File translator for USD files. Handles the USD option in the Export window.
+    class UsdMayaExportTranslator : public MPxFileTranslator {
     public:
         MAYAUSD_PLUGIN_PUBLIC
         static const MString translatorName;
@@ -44,23 +44,23 @@ class UsdMayaExportTranslator : public MPxFileTranslator
 
         MAYAUSD_PLUGIN_PUBLIC
         MStatus writer(
-                const MFileObject& file, 
-                const MString& optionsString,
-                MPxFileTranslator::FileAccessMode mode) override;
+            const MFileObject&                file,
+            const MString&                    optionsString,
+            MPxFileTranslator::FileAccessMode mode) override;
 
         bool haveReadMethod() const override { return false; }
         bool haveWriteMethod() const override { return true; }
 
         MAYAUSD_PLUGIN_PUBLIC
-        MFileKind identifyFile(
-                const MFileObject& file,
-                const char* buffer,
-                short size) const override;
+        MFileKind
+        identifyFile(const MFileObject& file, const char* buffer, short size) const override;
 
-        MString defaultExtension() const override {
+        MString defaultExtension() const override
+        {
             return PXR_NS::UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
         }
-        MString filter() const override {
+        MString filter() const override
+        {
             return PXR_NS::UsdMayaTranslatorTokens->UsdWritableFileFilter.GetText();
         }
 
@@ -68,12 +68,9 @@ class UsdMayaExportTranslator : public MPxFileTranslator
         static const std::string& GetDefaultOptions();
 
     private:
-
         UsdMayaExportTranslator();
         UsdMayaExportTranslator(const UsdMayaExportTranslator&);
         ~UsdMayaExportTranslator() override;
         UsdMayaExportTranslator& operator=(const UsdMayaExportTranslator&);
-};
-
+    };
 }
-

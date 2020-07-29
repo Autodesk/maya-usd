@@ -15,8 +15,8 @@
 //
 #pragma once
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/debug.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,6 +43,5 @@ namespace maya {
 
 using PXR_NS::TfDebug;
 
-} // maya
-} // AL
-
+} // namespace maya
+} // namespace AL

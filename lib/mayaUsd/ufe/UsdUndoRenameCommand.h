@@ -15,52 +15,53 @@
 //
 #pragma once
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+
 #include <ufe/path.h>
 #include <ufe/pathComponent.h>
 #include <ufe/undoableCommand.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief UsdUndoRenameCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoRenameCommand : public Ufe::UndoableCommand
+MAYAUSD_NS_DEF
 {
-public:
-    typedef std::shared_ptr<UsdUndoRenameCommand> Ptr;
+    namespace ufe {
 
-    UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
-    ~UsdUndoRenameCommand() override;
+    //! \brief UsdUndoRenameCommand
+    class MAYAUSD_CORE_PUBLIC UsdUndoRenameCommand : public Ufe::UndoableCommand {
+    public:
+        typedef std::shared_ptr<UsdUndoRenameCommand> Ptr;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoRenameCommand(const UsdUndoRenameCommand&) = delete;
-    UsdUndoRenameCommand& operator=(const UsdUndoRenameCommand&) = delete;
-    UsdUndoRenameCommand(UsdUndoRenameCommand&&) = delete;
-    UsdUndoRenameCommand& operator=(UsdUndoRenameCommand&&) = delete;
+        UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
+        ~UsdUndoRenameCommand() override;
 
-    //! Create a UsdUndoRenameCommand from a USD scene item and UFE pathcomponent.
-    static UsdUndoRenameCommand::Ptr create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
+        // Delete the copy/move constructors assignment operators.
+        UsdUndoRenameCommand(const UsdUndoRenameCommand&) = delete;
+        UsdUndoRenameCommand& operator=(const UsdUndoRenameCommand&) = delete;
+        UsdUndoRenameCommand(UsdUndoRenameCommand&&) = delete;
+        UsdUndoRenameCommand& operator=(UsdUndoRenameCommand&&) = delete;
 
-    UsdSceneItem::Ptr renamedItem() const;
+        //! Create a UsdUndoRenameCommand from a USD scene item and UFE pathcomponent.
+        static UsdUndoRenameCommand::Ptr
+        create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
 
-private:
-    bool renameRedo();
-    bool renameUndo();
+        UsdSceneItem::Ptr renamedItem() const;
 
-    void undo() override;
-    void redo() override;
+    private:
+        bool renameRedo();
+        bool renameUndo();
 
-    UsdSceneItem::Ptr _ufeSrcItem;
-    UsdSceneItem::Ptr _ufeDstItem;
+        void undo() override;
+        void redo() override;
 
-    UsdStageWeakPtr _stage;
-    std::string _newName;
+        UsdSceneItem::Ptr _ufeSrcItem;
+        UsdSceneItem::Ptr _ufeDstItem;
 
-}; // UsdUndoRenameCommand
+        UsdStageWeakPtr _stage;
+        std::string     _newName;
 
-} // namespace ufe
+    }; // UsdUndoRenameCommand
+
+    } // namespace ufe
 } // namespace MayaUsd

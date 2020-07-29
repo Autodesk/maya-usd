@@ -17,59 +17,59 @@
 
 #if defined _WIN32 || defined __CYGWIN__
 
-  // The main export symbol used for the core library.
-  #ifdef MAYAUSD_CORE_EXPORT
-    #ifdef __GNUC__
-      #define MAYAUSD_CORE_PUBLIC __attribute__ ((dllexport))
-    #else
-      #define MAYAUSD_CORE_PUBLIC __declspec(dllexport)
-    #endif
-  #else
-    #ifdef __GNUC__
-      #define MAYAUSD_CORE_PUBLIC __attribute__ ((dllimport))
-    #else
-      #define MAYAUSD_CORE_PUBLIC __declspec(dllimport)
-    #endif
-  #endif
-  #define MAYAUSD_CORE_LOCAL
-
-  // We have a separate export symbol used in the helper macros.
-  #ifdef MAYAUSD_MACROS_EXPORT
-    #ifdef __GNUC__
-      #define MAYAUSD_MACROS_PUBLIC __attribute__ ((dllexport))
-    #else
-      #define MAYAUSD_MACROS_PUBLIC __declspec(dllexport)
-    #endif
-  #else
-    #ifdef __GNUC__
-      #define MAYAUSD_MACROS_PUBLIC __attribute__ ((dllimport))
-    #else
-      #define MAYAUSD_MACROS_PUBLIC __declspec(dllimport)
-    #endif
-  #endif
-  #define MAYAUSD_MACROS_LOCAL
+// The main export symbol used for the core library.
+#ifdef MAYAUSD_CORE_EXPORT
+#ifdef __GNUC__
+#define MAYAUSD_CORE_PUBLIC __attribute__((dllexport))
 #else
-  #if __GNUC__ >= 4
-    #define MAYAUSD_CORE_PUBLIC __attribute__ ((visibility ("default")))
-    #define MAYAUSD_CORE_LOCAL  __attribute__ ((visibility ("hidden")))
-
-    #define MAYAUSD_MACROS_PUBLIC __attribute__ ((visibility ("default")))
-    #define MAYAUSD_MACROS_LOCAL  __attribute__ ((visibility ("hidden")))
+#define MAYAUSD_CORE_PUBLIC __declspec(dllexport)
+#endif
 #else
-    #define MAYAUSD_CORE_PUBLIC
-    #define MAYAUSD_CORE_LOCAL
+#ifdef __GNUC__
+#define MAYAUSD_CORE_PUBLIC __attribute__((dllimport))
+#else
+#define MAYAUSD_CORE_PUBLIC __declspec(dllimport)
+#endif
+#endif
+#define MAYAUSD_CORE_LOCAL
 
-    #define MAYAUSD_MACROS_PUBLIC
-    #define MAYAUSD_MACROS_LOCAL
+// We have a separate export symbol used in the helper macros.
+#ifdef MAYAUSD_MACROS_EXPORT
+#ifdef __GNUC__
+#define MAYAUSD_MACROS_PUBLIC __attribute__((dllexport))
+#else
+#define MAYAUSD_MACROS_PUBLIC __declspec(dllexport)
+#endif
+#else
+#ifdef __GNUC__
+#define MAYAUSD_MACROS_PUBLIC __attribute__((dllimport))
+#else
+#define MAYAUSD_MACROS_PUBLIC __declspec(dllimport)
+#endif
+#endif
+#define MAYAUSD_MACROS_LOCAL
+#else
+#if __GNUC__ >= 4
+#define MAYAUSD_CORE_PUBLIC __attribute__((visibility("default")))
+#define MAYAUSD_CORE_LOCAL  __attribute__((visibility("hidden")))
+
+#define MAYAUSD_MACROS_PUBLIC __attribute__((visibility("default")))
+#define MAYAUSD_MACROS_LOCAL  __attribute__((visibility("hidden")))
+#else
+#define MAYAUSD_CORE_PUBLIC
+#define MAYAUSD_CORE_LOCAL
+
+#define MAYAUSD_MACROS_PUBLIC
+#define MAYAUSD_MACROS_LOCAL
 #endif
 #endif
 
 #ifdef MAYAUSD_CORE_EXPORT
-  #define MAYAUSD_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
-  #define MAYAUSD_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#define MAYAUSD_TEMPLATE_CLASS(...)  ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#define MAYAUSD_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
 #else
-  #define MAYAUSD_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
-  #define MAYAUSD_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#define MAYAUSD_TEMPLATE_CLASS(...)  ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#define MAYAUSD_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
 #endif
 
 // Convenience symbol versioning include: because api.h is widely

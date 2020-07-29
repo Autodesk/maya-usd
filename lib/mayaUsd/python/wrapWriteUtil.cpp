@@ -13,30 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <boost/python.hpp>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/utils/util.h>
 
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/pyConversions.h>
 
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MObject.h>
+
+#include <boost/python.hpp>
 
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
-static
-VtValue _GetVtValue(
-    const std::string& attrPath,
-    const SdfValueTypeName& typeName)
+static VtValue _GetVtValue(const std::string& attrPath, const SdfValueTypeName& typeName)
 {
     VtValue val;
 
-    MPlug plug;
+    MPlug   plug;
     MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
     CHECK_MSTATUS_AND_RETURN(status, val);
 
@@ -51,6 +48,5 @@ void wrapWriteUtil()
         .def("WriteUVAsFloat2", This::WriteUVAsFloat2)
         .staticmethod("WriteUVAsFloat2")
         .def("GetVtValue", _GetVtValue)
-        .staticmethod("GetVtValue")
-    ;
+        .staticmethod("GetVtValue");
 }

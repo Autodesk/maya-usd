@@ -13,20 +13,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <maya/MNodeClass.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
-#include <hdMaya/adapters/mayaAttrs.h>
+#include <maya/MNodeClass.h>
 
-#define SET_NODE_CLASS(nodeTypeName)     \
-    using namespace nodeTypeName;        \
-    MNodeClass nodeClass(#nodeTypeName); \
-    if (!TF_VERIFY(nodeClass.typeId() != 0)) { return MStatus::kFailure; }
+#define SET_NODE_CLASS(nodeTypeName)           \
+    using namespace nodeTypeName;              \
+    MNodeClass nodeClass(#nodeTypeName);       \
+    if (!TF_VERIFY(nodeClass.typeId() != 0)) { \
+        return MStatus::kFailure;              \
+    }
 
 #define SET_ATTR_OBJ(attr)              \
     setAttrObj(attr, nodeClass, #attr); \
-    if (!TF_VERIFY(status)) { return status; }
+    if (!TF_VERIFY(status)) {           \
+        return status;                  \
+    }
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -145,14 +149,15 @@ MObject imageCenter;
 
 } // namespace imagePlane
 
-MStatus initialize() {
+MStatus initialize()
+{
     MStatus status;
 
-    auto setAttrObj = [&status](
-                          MObject& attrObj, MNodeClass& nodeClass,
-                          const MString& name) {
+    auto setAttrObj = [&status](MObject& attrObj, MNodeClass& nodeClass, const MString& name) {
         attrObj = nodeClass.attribute(name, &status);
-        if (!TF_VERIFY(status)) { return; }
+        if (!TF_VERIFY(status)) {
+            return;
+        }
         if (!TF_VERIFY(!attrObj.isNull())) {
             status = MS::kFailure;
             MString errMsg("Error finding '");

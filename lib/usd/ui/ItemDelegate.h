@@ -16,15 +16,14 @@
 
 #pragma once
 
-#include <QtCore/QList>
-#include <QtCore/QStringList>
-#include <QtWidgets/QStyledItemDelegate>
+#include <mayaUsd/mayaUsd.h>
 
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/mayaUsd.h>
-
+#include <QtCore/QList>
+#include <QtCore/QStringList>
+#include <QtWidgets/QStyledItemDelegate>
 #include <mayaUsdUI/ui/api.h>
 
 class QLabel;
@@ -32,86 +31,93 @@ class QComboBox;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-
-class TreeItem;
-class VariantsEditorWidget;
-
-/**
- * \brief Item delegate for displaying and editing the variant sets.
- */
-class MAYAUSD_UI_PUBLIC ItemDelegate : public QStyledItemDelegate
+MAYAUSD_NS_DEF
 {
-	Q_OBJECT
 
-public:
-	using ParentClass = QStyledItemDelegate;
+    class TreeItem;
+    class VariantsEditorWidget;
 
-	using QStyledItemDelegate::QStyledItemDelegate;
+    /**
+     * \brief Item delegate for displaying and editing the variant sets.
+     */
+    class MAYAUSD_UI_PUBLIC ItemDelegate : public QStyledItemDelegate {
+        Q_OBJECT
 
-	enum DELEGATE_TYPE
-	{
-		kNone,
-		kVariants,
-	};
+    public:
+        using ParentClass = QStyledItemDelegate;
 
-	enum Roles {
-		// The type role is used to distinguish what type of delegate item we are dealing
-		// with. It should be set with one of the DELEGATE_TYPE from above.
-		kTypeRole = Qt::UserRole + 1,
+        using QStyledItemDelegate::QStyledItemDelegate;
 
-		// The variant name role is used to hold the current variant names (from the
-		// qt labels in the editor widget).
-		// Data = QStringList of variant names.
-		kVariantNameRole = Qt::UserRole + 2,
+        enum DELEGATE_TYPE {
+            kNone,
+            kVariants,
+        };
 
-		// The variant selection role is used to hold the current variant selections
-		// (from the qt comboboxes in the editor widget).
-		// Data = QStringList of variant selections.
-		kVariantSelectionRole = Qt::UserRole + 3
-	};
+        enum Roles {
+            // The type role is used to distinguish what type of delegate item we are dealing
+            // with. It should be set with one of the DELEGATE_TYPE from above.
+            kTypeRole = Qt::UserRole + 1,
 
-	// QStyledItemDelegate overrides
-	QWidget* createEditor(QWidget*, const QStyleOptionViewItem&, const QModelIndex&) const override;
-	void paint(QPainter*, const QStyleOptionViewItem&, const QModelIndex&) const override;
-	void setEditorData(QWidget*, const QModelIndex&) const override;
-	void setModelData(QWidget*, QAbstractItemModel*, const QModelIndex&) const override;
-	QSize sizeHint(const QStyleOptionViewItem&, const QModelIndex&) const override;
-	void updateEditorGeometry(QWidget*, const QStyleOptionViewItem&, const QModelIndex&) const override;
+            // The variant name role is used to hold the current variant names (from the
+            // qt labels in the editor widget).
+            // Data = QStringList of variant names.
+            kVariantNameRole = Qt::UserRole + 2,
 
-public Q_SLOTS:
-	void commitVariantSelection(VariantsEditorWidget* editor);
+            // The variant selection role is used to hold the current variant selections
+            // (from the qt comboboxes in the editor widget).
+            // Data = QStringList of variant selections.
+            kVariantSelectionRole = Qt::UserRole + 3
+        };
 
-private:
-	TreeItem* getTreeItemForIndex(const QModelIndex& index) const;
+        // QStyledItemDelegate overrides
+        QWidget*
+              createEditor(QWidget*, const QStyleOptionViewItem&, const QModelIndex&) const override;
+        void  paint(QPainter*, const QStyleOptionViewItem&, const QModelIndex&) const override;
+        void  setEditorData(QWidget*, const QModelIndex&) const override;
+        void  setModelData(QWidget*, QAbstractItemModel*, const QModelIndex&) const override;
+        QSize sizeHint(const QStyleOptionViewItem&, const QModelIndex&) const override;
+        void  updateEditorGeometry(QWidget*, const QStyleOptionViewItem&, const QModelIndex&)
+            const override;
 
-}; // ItemDelegate
+    public Q_SLOTS:
+        void commitVariantSelection(VariantsEditorWidget* editor);
 
-/**
- * \brief Widget that will contain all the variants for a prim.
- */
-class VariantsEditorWidget: public QWidget
-{
-	Q_OBJECT
+    private:
+        TreeItem* getTreeItemForIndex(const QModelIndex& index) const;
 
-public:
-	VariantsEditorWidget(QWidget* parent, const ItemDelegate* itemDelegate, const UsdPrim& prim, const SdfVariantSelectionMap& varSelMap);
+    }; // ItemDelegate
 
-	QStringList variantNames() const;
+    /**
+     * \brief Widget that will contain all the variants for a prim.
+     */
+    class VariantsEditorWidget : public QWidget {
+        Q_OBJECT
 
-	QStringList variantSelections() const;
-	void setVariantSelections(const QStringList& varSel);
+    public:
+        VariantsEditorWidget(
+            QWidget*                      parent,
+            const ItemDelegate*           itemDelegate,
+            const UsdPrim&                prim,
+            const SdfVariantSelectionMap& varSelMap);
 
-protected:
-	bool eventFilter(QObject *obj, QEvent *ev) override;
+        QStringList variantNames() const;
 
-private:
-	QLayout* createVariantSet(const ItemDelegate* itemDelegate, const QString& varName, QStringList& varNames);
+        QStringList variantSelections() const;
+        void        setVariantSelections(const QStringList& varSel);
 
-private:
-	QList<QLabel*>			fVariantLabels;
-	QList<QComboBox*>		fVariantCombos;
+    protected:
+        bool eventFilter(QObject* obj, QEvent* ev) override;
 
-}; // VariantsEditorWidget
+    private:
+        QLayout* createVariantSet(
+            const ItemDelegate* itemDelegate,
+            const QString&      varName,
+            QStringList&        varNames);
+
+    private:
+        QList<QLabel*>    fVariantLabels;
+        QList<QComboBox*> fVariantCombos;
+
+    }; // VariantsEditorWidget
 
 } // namespace MayaUsd

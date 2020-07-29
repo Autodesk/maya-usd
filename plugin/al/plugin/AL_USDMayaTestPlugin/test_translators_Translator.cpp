@@ -13,21 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "test_usdmaya.h"
-
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/usdmaya/fileio/translators/TranslatorTestType.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
+#include "test_usdmaya.h"
 
 #include <mayaUsd/nodes/stageData.h>
-
-#include <maya/MDagModifier.h>
 
 #include <pxr/base/tf/refPtr.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/usd/usd/schemaBase.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <maya/MDagModifier.h>
 
 using namespace AL::usdmaya::fileio::translators;
 
@@ -39,38 +38,39 @@ using namespace AL::usdmaya::fileio::translators;
 // its instanciation looks for a TranslatorTestType TfType
 TEST(translators_Translator, manufactureTranslator)
 {
-  // create a TranslatorTestType usd prim
-  UsdStageRefPtr m_stage = UsdStage::CreateInMemory();
-  TranslatorTestType testPrim = TranslatorTestType::Define(m_stage, SdfPath("/testPrim"));
-  UsdPrim m_prim = testPrim.GetPrim();
+    // create a TranslatorTestType usd prim
+    UsdStageRefPtr     m_stage = UsdStage::CreateInMemory();
+    TranslatorTestType testPrim = TranslatorTestType::Define(m_stage, SdfPath("/testPrim"));
+    UsdPrim            m_prim = testPrim.GetPrim();
 
-  // dummy context
-  TranslatorContextPtr context = TranslatorContext::create(0);
+    // dummy context
+    TranslatorContextPtr context = TranslatorContext::create(0);
 
-  TranslatorManufacture manufacture(context);
-  TranslatorRefPtr torBase = manufacture.getTranslatorFromId(TranslatorManufacture::TranslatorPrefixSchemaType.GetString() + m_prim.GetTypeName().GetString());
+    TranslatorManufacture manufacture(context);
+    TranslatorRefPtr      torBase = manufacture.getTranslatorFromId(
+        TranslatorManufacture::TranslatorPrefixSchemaType.GetString()
+        + m_prim.GetTypeName().GetString());
 
-  EXPECT_TRUE(torBase);
+    EXPECT_TRUE(torBase);
 }
 
 TEST(translators_Translator, translatorContext)
 {
-  // create a TranslatorTestType usd prim
-  UsdStageRefPtr m_stage = UsdStage::CreateInMemory();
-  TranslatorTestType testPrim = TranslatorTestType::Define(m_stage, SdfPath("/testPrim"));
-  UsdPrim m_prim = testPrim.GetPrim();
+    // create a TranslatorTestType usd prim
+    UsdStageRefPtr     m_stage = UsdStage::CreateInMemory();
+    TranslatorTestType testPrim = TranslatorTestType::Define(m_stage, SdfPath("/testPrim"));
+    UsdPrim            m_prim = testPrim.GetPrim();
 
+    TranslatorContextPtr context = TranslatorContext::create(nullptr);
 
-  TranslatorContextPtr context = TranslatorContext::create(nullptr);
+    EXPECT_TRUE(context->getProxyShape() == nullptr);
 
-  EXPECT_TRUE(context->getProxyShape() == nullptr);
+    MDagModifier dm;
+    MObject      tm = dm.createNode("transform");
+    dm.doIt();
+    context->registerItem(m_prim, tm);
 
-  MDagModifier dm;
-  MObject tm = dm.createNode("transform");
-  dm.doIt();
-  context->registerItem(m_prim, tm);
-
-  MObjectHandle handle;
-  EXPECT_TRUE(context->getTransform(m_prim, handle));
-  EXPECT_TRUE(handle.object() == tm);
+    MObjectHandle handle;
+    EXPECT_TRUE(context->getTransform(m_prim, handle));
+    EXPECT_TRUE(handle.object() == tm);
 }

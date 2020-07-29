@@ -15,11 +15,11 @@
 //
 #include "utils.h"
 
-#include <maya/MGlobal.h>
+#include "tokens.h"
 
 #include <pxr/imaging/glf/contextCaps.h>
 
-#include "tokens.h"
+#include <maya/MGlobal.h>
 
 #if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPlugin.h>
@@ -57,16 +57,16 @@ global proc {{override}}OptionBox() {
     attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;
 )mel"
 #if USD_VERSION_NUM >= 2005
-R"mel(
+                                                  R"mel(
     attrControlGrp -label "Highlight outline (in pixels, 0 to disable)" -attribute "defaultRenderGlobals.mtohSelectionOutline" -changeCommand $cc;
 )mel"
 #endif
 #if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
-R"mel(
+                                                  R"mel(
     attrControlGrp -label "Enable color quantization" -attribute "defaultRenderGlobals.mtohColorQuantization" -changeCommand $cc;
 )mel"
 #endif
-R"mel(
+                                                  R"mel(
     setParent ..;
     setParent ..;
     {{override}}Options();
@@ -76,18 +76,18 @@ R"mel(
 }
 )mel";
 
-bool _IsSupportedAttribute(const VtValue& v) {
-    return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
-           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>() ||
-           v.IsHolding<TfEnum>();
+bool _IsSupportedAttribute(const VtValue& v)
+{
+    return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>()
+        || v.IsHolding<GfVec4f>() || v.IsHolding<std::string>() || v.IsHolding<TfEnum>();
 }
 
-static void _BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
+static void _BuildOptionsMenu(
+    const MtohRendererDescription&       rendererDesc,
     const HdRenderSettingDescriptorList& rendererSettingDescriptors)
 {
     const auto optionBoxCommand = TfStringReplace(
-        _renderOverrideOptionBoxTemplate, "{{override}}",
-        rendererDesc.overrideName.GetText());
+        _renderOverrideOptionBoxTemplate, "{{override}}", rendererDesc.overrideName.GetText());
 
     auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
     if (!status) {
@@ -99,25 +99,21 @@ static void _BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
     std::stringstream ss;
     ss << "global proc " << rendererDesc.overrideName << "Options() {\n";
     ss << "\tstring $cc = \"mtoh -updateRenderGlobals; refresh -f\";\n";
-    ss << "\tframeLayout -label \"" << rendererDesc.displayName
-       << "Options\" -collapsable true;\n";
+    ss << "\tframeLayout -label \"" << rendererDesc.displayName << "Options\" -collapsable true;\n";
     ss << "\tcolumnLayout;\n";
     for (const auto& desc : rendererSettingDescriptors) {
         if (!_IsSupportedAttribute(desc.defaultValue))
             continue;
 
-        const auto attrName = TfStringPrintf(
-            "%s%s", rendererDesc.rendererName.GetText(),
-            desc.key.GetText());
-        ss << "\tattrControlGrp -label \"" << desc.name
-           << "\" -attribute \"defaultRenderGlobals." << attrName
-           << "\" -changeCommand $cc;\n";
+        const auto attrName
+            = TfStringPrintf("%s%s", rendererDesc.rendererName.GetText(), desc.key.GetText());
+        ss << "\tattrControlGrp -label \"" << desc.name << "\" -attribute \"defaultRenderGlobals."
+           << attrName << "\" -changeCommand $cc;\n";
     }
     if (rendererDesc.rendererName == MtohTokens->HdStormRendererPlugin) {
         ss << "\tattrControlGrp -label \"Maximum shadow map size"
            << "\" -attribute \"defaultRenderGlobals."
-           << MtohTokens->mtohMaximumShadowMapResolution.GetString()
-           << "\" -changeCommand $cc;\n";
+           << MtohTokens->mtohMaximumShadowMapResolution.GetString() << "\" -changeCommand $cc;\n";
     }
     ss << "\tsetParent ..;\n";
     ss << "\tsetParent ..;\n";
@@ -126,26 +122,25 @@ static void _BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
     const auto optionsCommand = ss.str();
     status = MGlobal::executeCommand(optionsCommand.c_str());
     if (!status) {
-        TF_WARN(
-            "Error in render delegate options function: \n%s",
-            status.errorString().asChar());
+        TF_WARN("Error in render delegate options function: \n%s", status.errorString().asChar());
     }
 }
 
 std::pair<const MtohRendererDescriptionVector&, const MtohRendererSettings&>
-MtohInitializeRenderPlugins() {
+MtohInitializeRenderPlugins()
+{
     using Storage = std::pair<MtohRendererDescriptionVector, MtohRendererSettings>;
 
     static const Storage ret = []() -> Storage {
         HdRendererPluginRegistry& pluginRegistry = HdRendererPluginRegistry::GetInstance();
-        HfPluginDescVector pluginDescs;
+        HfPluginDescVector        pluginDescs;
         pluginRegistry.GetPluginDescs(&pluginDescs);
 
         Storage store;
         store.first.reserve(pluginDescs.size());
 
         for (const auto& pluginDesc : pluginDescs) {
-            const TfToken renderer = pluginDesc.id;
+            const TfToken     renderer = pluginDesc.id;
             HdRendererPlugin* plugin = pluginRegistry.GetRendererPlugin(renderer);
             if (!plugin)
                 continue;
@@ -154,15 +149,16 @@ MtohInitializeRenderPlugins() {
             if (pluginDesc.id == MtohTokens->HdStormRendererPlugin)
                 GlfContextCaps::InitInstance();
 
-            HdRenderDelegate* delegate = plugin->IsSupported() ?
-                plugin->CreateRenderDelegate() : nullptr;
+            HdRenderDelegate* delegate
+                = plugin->IsSupported() ? plugin->CreateRenderDelegate() : nullptr;
 
             // No 'delete plugin', should plugin be cached as well?
             if (!delegate)
                 continue;
 
-            auto& rendererSettingDescriptors = store.second.emplace(renderer,
-                delegate->GetRenderSettingDescriptors()).first->second;
+            auto& rendererSettingDescriptors
+                = store.second.emplace(renderer, delegate->GetRenderSettingDescriptors())
+                      .first->second;
 
             // We only needed the delegate for the settings, so release
             plugin->DeleteRenderDelegate(delegate);
@@ -171,13 +167,8 @@ MtohInitializeRenderPlugins() {
 
             store.first.emplace_back(
                 renderer,
-                TfToken(
-                    TfStringPrintf("mtohRenderOverride_%s", renderer.GetText())
-                ),
-                TfToken(
-                    TfStringPrintf("%s (Hydra)", pluginDesc.displayName.c_str())
-                )
-            );
+                TfToken(TfStringPrintf("mtohRenderOverride_%s", renderer.GetText())),
+                TfToken(TfStringPrintf("%s (Hydra)", pluginDesc.displayName.c_str())));
 
             _BuildOptionsMenu(store.first.back(), rendererSettingDescriptors);
         }
@@ -190,25 +181,26 @@ MtohInitializeRenderPlugins() {
     return ret;
 }
 
-}
+} // namespace
 
-std::string MtohGetRendererPluginDisplayName(const TfToken& id) {
+std::string MtohGetRendererPluginDisplayName(const TfToken& id)
+{
     HfPluginDesc pluginDesc;
-    if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().GetPluginDesc(
-            id, &pluginDesc))) {
+    if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().GetPluginDesc(id, &pluginDesc))) {
         return {};
     }
 
     return pluginDesc.displayName;
 }
 
-const MtohRendererDescriptionVector& MtohGetRendererDescriptions() {
+const MtohRendererDescriptionVector& MtohGetRendererDescriptions()
+{
     return MtohInitializeRenderPlugins().first;
 }
 
-const MtohRendererSettings& MtohGetRendererSettings() {
+const MtohRendererSettings& MtohGetRendererSettings()
+{
     return MtohInitializeRenderPlugins().second;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

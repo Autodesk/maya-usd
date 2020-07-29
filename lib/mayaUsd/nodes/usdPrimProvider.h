@@ -16,16 +16,15 @@
 #ifndef PXRUSDMAYA_USD_PRIM_PROVIDER_H
 #define PXRUSDMAYA_USD_PRIM_PROVIDER_H
 
+#include <mayaUsd/base/api.h>
+
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-// interface class 
-class UsdMayaUsdPrimProvider
-{
+// interface class
+class UsdMayaUsdPrimProvider {
 public:
     // returns the prim that this node is holding
     virtual UsdPrim usdPrim() const = 0;
@@ -33,7 +32,6 @@ public:
     MAYAUSD_CORE_PUBLIC
     virtual ~UsdMayaUsdPrimProvider();
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -15,13 +15,10 @@
 //
 #include "adskImportCommand.h"
 
-MAYAUSD_NS_DEF {
-
-const MString ADSKMayaUSDImportCommand::commandName("mayaUSDImport");
-
-void* ADSKMayaUSDImportCommand::creator()
+MAYAUSD_NS_DEF
 {
-    return new ADSKMayaUSDImportCommand();
-}
 
+    const MString ADSKMayaUSDImportCommand::commandName("mayaUSDImport");
+
+    void* ADSKMayaUSDImportCommand::creator() { return new ADSKMayaUSDImportCommand(); }
 }

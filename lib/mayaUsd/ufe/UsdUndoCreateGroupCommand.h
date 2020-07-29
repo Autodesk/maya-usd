@@ -15,82 +15,90 @@
 //
 #pragma once
 
-#include <ufe/undoableCommand.h>
-#include <ufe/pathComponent.h>
-#include <ufe/selection.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-//PXR_NAMESPACE_USING_DIRECTIVE
+#include <ufe/pathComponent.h>
+#include <ufe/selection.h>
+#include <ufe/undoableCommand.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+// PXR_NAMESPACE_USING_DIRECTIVE
+
+MAYAUSD_NS_DEF
+{
+    namespace ufe {
 
 #if UFE_PREVIEW_VERSION_NUM >= 2017
 
-//! \brief UsdUndoCreateGroupCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::CompositeUndoableCommand
-{
-public:
-	typedef std::shared_ptr<UsdUndoCreateGroupCommand> Ptr;
+    //! \brief UsdUndoCreateGroupCommand
+    class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::CompositeUndoableCommand {
+    public:
+        typedef std::shared_ptr<UsdUndoCreateGroupCommand> Ptr;
 
-	UsdUndoCreateGroupCommand(const UsdSceneItem::Ptr& parentItem, const Ufe::Selection& selection, const Ufe::PathComponent& name);
-	~UsdUndoCreateGroupCommand() override;
+        UsdUndoCreateGroupCommand(
+            const UsdSceneItem::Ptr&  parentItem,
+            const Ufe::Selection&     selection,
+            const Ufe::PathComponent& name);
+        ~UsdUndoCreateGroupCommand() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdUndoCreateGroupCommand(const UsdUndoCreateGroupCommand&) = delete;
-	UsdUndoCreateGroupCommand& operator=(const UsdUndoCreateGroupCommand&) = delete;
-	UsdUndoCreateGroupCommand(UsdUndoCreateGroupCommand&&) = delete;
-	UsdUndoCreateGroupCommand& operator=(UsdUndoCreateGroupCommand&&) = delete;
+        // Delete the copy/move constructors assignment operators.
+        UsdUndoCreateGroupCommand(const UsdUndoCreateGroupCommand&) = delete;
+        UsdUndoCreateGroupCommand& operator=(const UsdUndoCreateGroupCommand&) = delete;
+        UsdUndoCreateGroupCommand(UsdUndoCreateGroupCommand&&) = delete;
+        UsdUndoCreateGroupCommand& operator=(UsdUndoCreateGroupCommand&&) = delete;
 
-	//! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
-	static UsdUndoCreateGroupCommand::Ptr create(const UsdSceneItem::Ptr& parentItem, const Ufe::Selection& selection, const Ufe::PathComponent& name);
-	Ufe::SceneItem::Ptr group() const;
+        //! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
+        static UsdUndoCreateGroupCommand::Ptr create(
+            const UsdSceneItem::Ptr&  parentItem,
+            const Ufe::Selection&     selection,
+            const Ufe::PathComponent& name);
+        Ufe::SceneItem::Ptr group() const;
 
-	// UsdUndoCreateGroupCommand overrides
-	void execute() override;
+        // UsdUndoCreateGroupCommand overrides
+        void execute() override;
 
-private:
-	UsdSceneItem::Ptr _parentItem;
-	Ufe::PathComponent _name;
-	UsdSceneItem::Ptr _group;
-	Ufe::Selection _selection;
+    private:
+        UsdSceneItem::Ptr  _parentItem;
+        Ufe::PathComponent _name;
+        UsdSceneItem::Ptr  _group;
+        Ufe::Selection     _selection;
 
-}; // UsdUndoCreateGroupCommand
+    }; // UsdUndoCreateGroupCommand
 
 #else
 
-//! \brief UsdUndoCreateGroupCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::UndoableCommand
-{
-public:
-	typedef std::shared_ptr<UsdUndoCreateGroupCommand> Ptr;
+    //! \brief UsdUndoCreateGroupCommand
+    class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::UndoableCommand {
+    public:
+        typedef std::shared_ptr<UsdUndoCreateGroupCommand> Ptr;
 
-	UsdUndoCreateGroupCommand(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name);
-	~UsdUndoCreateGroupCommand() override;
+        UsdUndoCreateGroupCommand(
+            const UsdSceneItem::Ptr&  parentItem,
+            const Ufe::PathComponent& name);
+        ~UsdUndoCreateGroupCommand() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdUndoCreateGroupCommand(const UsdUndoCreateGroupCommand&) = delete;
-	UsdUndoCreateGroupCommand& operator=(const UsdUndoCreateGroupCommand&) = delete;
-	UsdUndoCreateGroupCommand(UsdUndoCreateGroupCommand&&) = delete;
-	UsdUndoCreateGroupCommand& operator=(UsdUndoCreateGroupCommand&&) = delete;
+        // Delete the copy/move constructors assignment operators.
+        UsdUndoCreateGroupCommand(const UsdUndoCreateGroupCommand&) = delete;
+        UsdUndoCreateGroupCommand& operator=(const UsdUndoCreateGroupCommand&) = delete;
+        UsdUndoCreateGroupCommand(UsdUndoCreateGroupCommand&&) = delete;
+        UsdUndoCreateGroupCommand& operator=(UsdUndoCreateGroupCommand&&) = delete;
 
-	//! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
-	static UsdUndoCreateGroupCommand::Ptr create(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name);
-	Ufe::SceneItem::Ptr group() const;
+        //! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
+        static UsdUndoCreateGroupCommand::Ptr
+                            create(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name);
+        Ufe::SceneItem::Ptr group() const;
 
-	// UsdUndoCreateGroupCommand overrides
-	void undo() override;
-	void redo() override;
+        // UsdUndoCreateGroupCommand overrides
+        void undo() override;
+        void redo() override;
 
-private:
-	UsdSceneItem::Ptr _parentItem;
-	Ufe::PathComponent _name;
-	UsdSceneItem::Ptr _group;
-}; // UsdUndoCreateGroupCommand
+    private:
+        UsdSceneItem::Ptr  _parentItem;
+        Ufe::PathComponent _name;
+        UsdSceneItem::Ptr  _group;
+    }; // UsdUndoCreateGroupCommand
 
 #endif // UFE_PREVIEW_VERSION_NUM >= 2017
 
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

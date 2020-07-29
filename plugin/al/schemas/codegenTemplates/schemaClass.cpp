@@ -14,127 +14,219 @@
 // limitations under the License.
 //
 #include "{{ libraryPath }}/{{ cls.GetHeaderFile() }}"
+
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/schemaRegistry.h>
 #include <pxr/usd/usd/typed.h>
 
-#include <pxr/usd/sdf/types.h>
-#include <pxr/usd/sdf/assetPath.h>
+{
+    % if useExportAPI %
+}
+{ { namespaceOpen } }
 
-{% if useExportAPI %}
-{{ namespaceOpen }}
-
-{% endif %}
-// Register the schema with the TfType system.
+{ % endif % } // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<{{ cls.cppClassName }},
-        TfType::Bases< {{ cls.parentCppClassName }} > >();
-    
-{% if cls.isConcrete == "true" %}
+    TfType::Define<{ { cls.cppClassName } }, TfType::Bases<{ { cls.parentCppClassName } }>>();
+
+    {
+        % if cls.isConcrete == "true" %
+    }
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
     // TfType::Find<UsdSchemaBase>().FindDerivedByName("{{ cls.usdPrimTypeName }}")
     // to find TfType<{{ cls.cppClassName }}>, which is how IsA queries are
     // answered.
-    TfType::AddAlias<UsdSchemaBase, {{ cls.cppClassName }}>("{{ cls.usdPrimTypeName }}");
-{% endif %}
+    TfType::AddAlias<UsdSchemaBase, { { cls.cppClassName } }>("{{ cls.usdPrimTypeName }}");
+    {
+        % endif %
+    }
 }
 
 /* virtual */
-{{ cls.cppClassName }}::~{{ cls.cppClassName }}()
 {
+    {
+        cls.cppClassName
+    }
 }
+::~ { { cls.cppClassName } }() {}
 
 /* static */
-{{ cls.cppClassName }}
-{{ cls.cppClassName }}::Get(const UsdStagePtr &stage, const SdfPath &path)
+{ { cls.cppClassName } }
+{
+    {
+        cls.cppClassName
+    }
+}
+::Get(const UsdStagePtr& stage, const SdfPath& path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return {{ cls.cppClassName }}();
+        return { { cls.cppClassName } }();
     }
-    return {{ cls.cppClassName }}(stage->GetPrimAtPath(path));
+    return { { cls.cppClassName } }(stage->GetPrimAtPath(path));
 }
 
-{% if cls.isConcrete == "true" %}
+{
+    % if cls.isConcrete == "true" %
+}
 /* static */
-{{ cls.cppClassName }}
-{{ cls.cppClassName }}::Define(
-    const UsdStagePtr &stage, const SdfPath &path)
+{ { cls.cppClassName } } {
+    {
+        cls.cppClassName
+    }
+}
+::Define(const UsdStagePtr& stage, const SdfPath& path)
 {
     static TfToken usdPrimTypeName("{{ cls.usdPrimTypeName }}");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
-        return {{ cls.cppClassName }}();
+        return { { cls.cppClassName } }();
     }
-    return {{ cls.cppClassName }}(
-        stage->DefinePrim(path, usdPrimTypeName));
+    return { { cls.cppClassName } }(stage->DefinePrim(path, usdPrimTypeName));
 }
-{% endif %}
+{
+    % endif %
+}
 
 /* static */
-const TfType &
-{{ cls.cppClassName }}::_GetStaticTfType()
+const TfType&
 {
-    static TfType tfType = TfType::Find<{{ cls.cppClassName }}>();
+    {
+        cls.cppClassName
+    }
+}
+::_GetStaticTfType()
+{
+    static TfType tfType = TfType::Find<{ { cls.cppClassName } }>();
     return tfType;
 }
 
 /* static */
-bool 
-{{ cls.cppClassName }}::_IsTypedSchema()
+bool
+{
+    {
+        cls.cppClassName
+    }
+}
+::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
 }
 
 /* virtual */
-const TfType &
-{{ cls.cppClassName }}::_GetTfType() const
+const TfType&
 {
-    return _GetStaticTfType();
+    {
+        cls.cppClassName
+    }
+}
+::_GetTfType() const { return _GetStaticTfType(); }
+
+{% for attrName in cls.attrOrder %
+}
+{ % set attr = cls.attrs[attrName] % } UsdAttribute
+{
+    {
+        cls.cppClassName
+    }
+}
+::Get
+{
+    {
+        Proper(attr.apiName)
+    }
+}
+Attr() const
+{
+    return GetPrim().GetAttribute({
+        {
+            tokensPrefix
+        }
+    } Tokens-> { { attr.name } });
 }
 
-{% for attrName in cls.attrOrder %}
-{% set attr = cls.attrs[attrName] %}
 UsdAttribute
-{{ cls.cppClassName }}::Get{{ Proper(attr.apiName) }}Attr() const
 {
-    return GetPrim().GetAttribute({{ tokensPrefix }}Tokens->{{ attr.name }});
+    {
+        cls.cppClassName
+    }
+}
+::Create
+{
+    {
+        Proper(attr.apiName)
+    }
+}
+Attr(VtValue const& defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(
+        {
+            {
+                tokensPrefix
+            }
+        } Tokens-> { { attr.name } },
+        { { attr.usdType } },
+        /* custom = */ { { "true" if attr.custom else "false" } },
+        { { attr.variability } },
+        defaultValue,
+        writeSparsely);
 }
 
-UsdAttribute
-{{ cls.cppClassName }}::Create{{ Proper(attr.apiName) }}Attr(VtValue const &defaultValue, bool writeSparsely) const
+{ % endfor % } {% for relName in cls.relOrder %
+}
+{ % set rel = cls.rels[relName] % } UsdRelationship
 {
-    return UsdSchemaBase::_CreateAttr({{ tokensPrefix }}Tokens->{{ attr.name }},
-                       {{ attr.usdType }},
-                       /* custom = */ {{ "true" if attr.custom else "false" }},
-                       {{ attr.variability }},
-                       defaultValue,
-                       writeSparsely);
+    {
+        cls.cppClassName
+    }
+}
+::Get
+{
+    {
+        Proper(rel.apiName)
+    }
+}
+Rel() const
+{
+    return GetPrim().GetRelationship({
+        {
+            tokensPrefix
+        }
+    } Tokens-> { { rel.name } });
 }
 
-{% endfor %}
-{% for relName in cls.relOrder %}
-{% set rel = cls.rels[relName] %}
 UsdRelationship
-{{ cls.cppClassName }}::Get{{ Proper(rel.apiName) }}Rel() const
 {
-    return GetPrim().GetRelationship({{ tokensPrefix }}Tokens->{{ rel.name }});
+    {
+        cls.cppClassName
+    }
+}
+::Create
+{
+    {
+        Proper(rel.apiName)
+    }
+}
+Rel() const
+{
+    return GetPrim().CreateRelationship(
+        {
+            {
+                tokensPrefix
+            }
+        } Tokens-> { { rel.name } },
+        /* custom = */ { { "true" if rel.custom else "false" } });
 }
 
-UsdRelationship
-{{ cls.cppClassName }}::Create{{ Proper(rel.apiName) }}Rel() const
-{
-    return GetPrim().CreateRelationship({{ tokensPrefix }}Tokens->{{rel.name}},
-                       /* custom = */ {{ "true" if rel.custom else "false" }});
+{ % endfor % } {
+    % if cls.attrOrder | length > 0 %
 }
-
-{% endfor %}
-{% if cls.attrOrder|length > 0 %}
 namespace {
 static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+_ConcatenateAttributeNames(const TfTokenVector& left, const TfTokenVector& right)
 {
     TfTokenVector result;
     result.reserve(left.size() + right.size());
@@ -142,29 +234,44 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
     result.insert(result.end(), right.begin(), right.end());
     return result;
 }
-}
+} // namespace
 
-{% endif %}
+{
+    % endif %
+}
 /*static*/
 const TfTokenVector&
-{{ cls.cppClassName }}::GetSchemaAttributeNames(bool includeInherited)
 {
-{% if cls.attrOrder|length > 0 %}
+    {
+        cls.cppClassName
+    }
+}
+::GetSchemaAttributeNames(bool includeInherited)
+{
+    {
+        % if cls.attrOrder | length > 0 %
+    }
     static TfTokenVector localNames = {
 {% for attrName in cls.attrOrder %}
 {% set attr = cls.attrs[attrName] %}
         {{ tokensPrefix }}Tokens->{{ attr.name }},
 {% endfor %}
     };
-    static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            {{ cls.parentCppClassName }}::GetSchemaAttributeNames(true),
-            localNames);
-{% else %}
+    static TfTokenVector allNames = _ConcatenateAttributeNames(
+        {
+            {
+                cls.parentCppClassName
+            }
+        } ::GetSchemaAttributeNames(true),
+        localNames);
+    {
+        % else %
+    }
     static TfTokenVector localNames;
-    static TfTokenVector allNames =
-        {{ cls.parentCppClassName }}::GetSchemaAttributeNames(true);
-{% endif %}
+    static TfTokenVector allNames = { { cls.parentCppClassName } } ::GetSchemaAttributeNames(true);
+    {
+        % endif %
+    }
 
     if (includeInherited)
         return allNames;
@@ -172,18 +279,22 @@ const TfTokenVector&
         return localNames;
 }
 
-{% if useExportAPI %}
-{{ namespaceClose }}
+{
+    % if useExportAPI %
+}
+{ { namespaceClose } }
 
-{% endif %}
-// ===================================================================== //
-// Feel free to add custom code below this line. It will be preserved by
-// the code generator.
-{% if useExportAPI %}
+{ % endif % } // ===================================================================== //
+              // Feel free to add custom code below this line. It will be preserved by
+              // the code generator.
+{
+    % if useExportAPI %
+}
 //
 // Just remember to wrap code in the appropriate delimiters:
 // '{{ namespaceOpen }}', '{{ namespaceClose }}'.
-{% endif %}
+{
+    % endif %
+}
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
-

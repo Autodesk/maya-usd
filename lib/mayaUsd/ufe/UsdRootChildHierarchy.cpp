@@ -15,53 +15,52 @@
 //
 #include "UsdRootChildHierarchy.h"
 
-#include <cassert>
-
 #include <ufe/runTimeMgr.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+#include <cassert>
 
-//------------------------------------------------------------------------------
-// Global variables
-//------------------------------------------------------------------------------
-extern Ufe::Rtid g_MayaRtid;
-const char* const kNotGatewayNodePath = "Tail of path %s is not a gateway node.";
-
-UsdRootChildHierarchy::UsdRootChildHierarchy(const UsdSceneItem::Ptr& item)
-	: UsdHierarchy(item)
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-UsdRootChildHierarchy::~UsdRootChildHierarchy()
-{
-}
+    //------------------------------------------------------------------------------
+    // Global variables
+    //------------------------------------------------------------------------------
+    extern Ufe::Rtid  g_MayaRtid;
+    const char* const kNotGatewayNodePath = "Tail of path %s is not a gateway node.";
 
-/*static*/
-UsdRootChildHierarchy::Ptr UsdRootChildHierarchy::create(const UsdSceneItem::Ptr& item)
-{
-	return std::make_shared<UsdRootChildHierarchy>(item);
-}
+    UsdRootChildHierarchy::UsdRootChildHierarchy(const UsdSceneItem::Ptr& item)
+        : UsdHierarchy(item)
+    {
+    }
 
-//------------------------------------------------------------------------------
-// Ufe::Hierarchy overrides
-//------------------------------------------------------------------------------
+    UsdRootChildHierarchy::~UsdRootChildHierarchy() { }
 
-Ufe::SceneItem::Ptr UsdRootChildHierarchy::parent() const
-{
-	// If we're a child of the root, our parent node in the path is a Maya
-	// node.  Ask the Maya hierarchy interface to create a selection item
-	// for that path.
-	auto parentPath = path().pop();
+    /*static*/
+    UsdRootChildHierarchy::Ptr UsdRootChildHierarchy::create(const UsdSceneItem::Ptr& item)
+    {
+        return std::make_shared<UsdRootChildHierarchy>(item);
+    }
+
+    //------------------------------------------------------------------------------
+    // Ufe::Hierarchy overrides
+    //------------------------------------------------------------------------------
+
+    Ufe::SceneItem::Ptr UsdRootChildHierarchy::parent() const
+    {
+        // If we're a child of the root, our parent node in the path is a Maya
+        // node.  Ask the Maya hierarchy interface to create a selection item
+        // for that path.
+        auto parentPath = path().pop();
 #if !defined(NDEBUG)
-	assert(parentPath.runTimeId() == g_MayaRtid);
+        assert(parentPath.runTimeId() == g_MayaRtid);
 #endif
-	if (parentPath.runTimeId() != g_MayaRtid)
-		TF_WARN(kNotGatewayNodePath, path().string().c_str());
+        if (parentPath.runTimeId() != g_MayaRtid)
+            TF_WARN(kNotGatewayNodePath, path().string().c_str());
 
-	auto mayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
-	return mayaHierarchyHandler->createItem(parentPath);
-}
+        auto mayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
+        return mayaHierarchyHandler->createItem(parentPath);
+    }
 
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

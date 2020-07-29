@@ -16,33 +16,32 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 #define PXRUSDMAYA_TRANSLATOR_MATERIAL_H
 
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usdGeom/gprim.h>
-#include <pxr/usd/usdShade/material.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usdGeom/gprim.h>
+#include <pxr/usd/usdShade/material.h>
+
+#include <maya/MObject.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Provides helper functions for reading UsdShadeMaterial
-struct UsdMayaTranslatorMaterial
-{
+struct UsdMayaTranslatorMaterial {
     /// Reads \p material according to the shading mode found in \p jobArguments. Some shading modes
     /// may want to know the \p boundPrim. This returns an MObject that is the Maya shadingEngine
     /// that corresponds to \p material.
     MAYAUSD_CORE_PUBLIC
     static MObject Read(
-            const UsdMayaJobImportArgs& jobArguments,
-            const UsdShadeMaterial& material,
-            const UsdGeomGprim& boundPrim,
-            UsdMayaPrimReaderContext* context);
+        const UsdMayaJobImportArgs& jobArguments,
+        const UsdShadeMaterial&     material,
+        const UsdGeomGprim&         boundPrim,
+        UsdMayaPrimReaderContext*   context);
 
     /// Given a \p prim, assigns a material to it according to the shading mode found in
     /// \p jobArguments. This will see which UsdShadeMaterial is bound to \p prim. If the material
@@ -50,21 +49,19 @@ struct UsdMayaTranslatorMaterial
     /// assigned to \p shapeObj.
     MAYAUSD_CORE_PUBLIC
     static bool AssignMaterial(
-            const UsdMayaJobImportArgs& jobArguments,
-            const UsdGeomGprim& prim,
-            MObject shapeObj,
-            UsdMayaPrimReaderContext* context);
+        const UsdMayaJobImportArgs& jobArguments,
+        const UsdGeomGprim&         prim,
+        MObject                     shapeObj,
+        UsdMayaPrimReaderContext*   context);
 
     /// Finds shadingEngines in the Maya scene and exports them to the USD
     /// stage contained in \p writeJobContext.
     MAYAUSD_CORE_PUBLIC
     static void ExportShadingEngines(
-            UsdMayaWriteJobContext& writeJobContext,
-            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap);
+        UsdMayaWriteJobContext&                  writeJobContext,
+        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

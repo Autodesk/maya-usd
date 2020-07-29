@@ -16,18 +16,17 @@
 #ifndef PXRUSDMAYA_ROUND_TRIP_UTIL_H
 #define PXRUSDMAYA_ROUND_TRIP_UTIL_H
 
+#include <mayaUsd/base/api.h>
+
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usdGeom/primvar.h>
-
-#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// This holds some utility functions for dealing with data from Maya to Usd
 /// and back.
-struct UsdMayaRoundTripUtil
-{
+struct UsdMayaRoundTripUtil {
     /// Sometimes primvars like displayColor and displayOpacity aren't *really*
     /// authored by the user and instead are generated based on shaders, etc.
     /// This function encapsulates that logic so we can make this determination
@@ -57,18 +56,12 @@ struct UsdMayaRoundTripUtil
     /// attributes inside the array. Returns true if this was marked as an
     /// array attribute and will set \p index. Returns false otherwise.
     MAYAUSD_CORE_PUBLIC
-    static bool GetAttributeArray(
-            const UsdAttribute& attr,
-            unsigned int* index);
+    static bool GetAttributeArray(const UsdAttribute& attr, unsigned int* index);
 
     MAYAUSD_CORE_PUBLIC
-    static void MarkAttributeAsArray(
-            const UsdAttribute& attr,
-            const unsigned int index);
+    static void MarkAttributeAsArray(const UsdAttribute& attr, const unsigned int index);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

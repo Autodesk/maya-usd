@@ -20,23 +20,23 @@ namespace AL {
 namespace usdmaya {
 
 // The type id's for the maya nodes
-const MTypeId AL_USDMAYA_PROXYSHAPE                 (0x00112A20);
-const MTypeId AL_USDMAYA_TRANSFORM                  (0x00112A21);
-const MTypeId AL_USDMAYA_TRANSFORMATION_MATRIX      (0x00112A22);
-const MTypeId AL_USDMAYA_LAYER                      (0x00112A23);
-const MTypeId AL_USDMAYA_STAGEDATA                  (0x00112A24);
-const MTypeId AL_USDMAYA_LAYERMANAGER               (0x00112A27);
-const MTypeId AL_USDMAYA_RENDERERMANAGER            (0x00112A28);
-const MTypeId AL_USDMAYA_USDGEOMCAMERAPROXY         (0x00112A2B);
-const MTypeId AL_USDMAYA_SCOPE                      (0x00112A31);
-const MTypeId AL_USDMAYA_IDENTITY_MATRIX            (0x00112A32);
+const MTypeId AL_USDMAYA_PROXYSHAPE(0x00112A20);
+const MTypeId AL_USDMAYA_TRANSFORM(0x00112A21);
+const MTypeId AL_USDMAYA_TRANSFORMATION_MATRIX(0x00112A22);
+const MTypeId AL_USDMAYA_LAYER(0x00112A23);
+const MTypeId AL_USDMAYA_STAGEDATA(0x00112A24);
+const MTypeId AL_USDMAYA_LAYERMANAGER(0x00112A27);
+const MTypeId AL_USDMAYA_RENDERERMANAGER(0x00112A28);
+const MTypeId AL_USDMAYA_USDGEOMCAMERAPROXY(0x00112A2B);
+const MTypeId AL_USDMAYA_SCOPE(0x00112A31);
+const MTypeId AL_USDMAYA_IDENTITY_MATRIX(0x00112A32);
 
 #if defined(WANT_UFE_BUILD)
-const int MAYA_UFE_RUNTIME_ID(1);
+const int  MAYA_UFE_RUNTIME_ID(1);
 const char MAYA_UFE_SEPARATOR('|');
-const int USD_UFE_RUNTIME_ID(2);
+const int  USD_UFE_RUNTIME_ID(2);
 const char USD_UFE_SEPARATOR('/');
 #endif
 
-}  // namespace usdmaya
-}  // namespace AL
+} // namespace usdmaya
+} // namespace AL

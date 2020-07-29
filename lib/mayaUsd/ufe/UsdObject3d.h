@@ -7,48 +7,48 @@
 // ===========================================================================
 #pragma once
 
-#include <ufe/object3d.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+#include <ufe/object3d.h>
 
-//! \brief USD run-time 3D object interface
-/*!
-    This class implements the Object3d interface for USD prims.
-*/
-class MAYAUSD_CORE_PUBLIC UsdObject3d : public Ufe::Object3d
+MAYAUSD_NS_DEF
 {
-public:
-	using Ptr = std::shared_ptr<UsdObject3d>;
+    namespace ufe {
 
-	UsdObject3d(const UsdSceneItem::Ptr& item);
-	~UsdObject3d() override;
+    //! \brief USD run-time 3D object interface
+    /*!
+        This class implements the Object3d interface for USD prims.
+    */
+    class MAYAUSD_CORE_PUBLIC UsdObject3d : public Ufe::Object3d {
+    public:
+        using Ptr = std::shared_ptr<UsdObject3d>;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdObject3d(const UsdObject3d&) = delete;
-	UsdObject3d& operator=(const UsdObject3d&) = delete;
-	UsdObject3d(UsdObject3d&&) = delete;
-	UsdObject3d& operator=(UsdObject3d&&) = delete;
+        UsdObject3d(const UsdSceneItem::Ptr& item);
+        ~UsdObject3d() override;
 
-	//! Create a UsdObject3d.
-	static UsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);
+        // Delete the copy/move constructors assignment operators.
+        UsdObject3d(const UsdObject3d&) = delete;
+        UsdObject3d& operator=(const UsdObject3d&) = delete;
+        UsdObject3d(UsdObject3d&&) = delete;
+        UsdObject3d& operator=(UsdObject3d&&) = delete;
 
-	// Ufe::Object3d overrides
-	Ufe::SceneItem::Ptr sceneItem() const override;
-    Ufe::BBox3d boundingBox() const override;
+        //! Create a UsdObject3d.
+        static UsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);
+
+        // Ufe::Object3d overrides
+        Ufe::SceneItem::Ptr sceneItem() const override;
+        Ufe::BBox3d         boundingBox() const override;
 #if UFE_PREVIEW_VERSION_NUM >= 2010
-    bool visibility() const override;
-    void setVisibility(bool vis) override;
+        bool visibility() const override;
+        void setVisibility(bool vis) override;
 #endif
 
-private:
-	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
+    private:
+        UsdSceneItem::Ptr fItem;
+        UsdPrim           fPrim;
 
-}; // UsdObject3d
+    }; // UsdObject3d
 
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

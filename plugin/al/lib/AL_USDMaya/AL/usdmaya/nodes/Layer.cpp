@@ -13,9 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "AL/usdmaya/TypeIDs.h"
-#include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Layer.h"
+
+#include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/TypeIDs.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -60,54 +61,66 @@ MObject Layer::m_hasBeenEditTarget = MObject::kNullObj;
 //----------------------------------------------------------------------------------------------------------------------
 MStatus Layer::initialise()
 {
-  TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::initialise\n");
-  try
-  {
-    setNodeType(kTypeName);
-    addFrame("USD Layer Info");
+    TF_DEBUG(ALUSDMAYA_LAYERS).Msg("Layer::initialise\n");
+    try {
+        setNodeType(kTypeName);
+        addFrame("USD Layer Info");
 
-    // do not write these nodes to the file. They will be created automagically by the proxy shape
-    m_comment = addStringAttr("comment", "cm", kReadable | kWritable);
-    m_defaultPrim = addStringAttr("defaultPrim", "dp", kReadable | kWritable);
-    m_documentation = addStringAttr("documentation", "docs", kReadable | kWritable);
-    m_startTime = addDoubleAttr("startTime", "stc", 0, kReadable | kWritable);
-    m_endTime = addDoubleAttr("endTime", "etc", 0, kReadable | kWritable);
-    m_timeCodesPerSecond = addDoubleAttr("timeCodesPerSecond", "tcps", 0, kReadable | kWritable);
-    m_framePrecision = addInt32Attr("framePrecision", "fp", 0, kReadable | kWritable);
-    m_owner = addStringAttr("owner", "own", kReadable | kWritable);
-    m_sessionOwner = addStringAttr("sessionOwner", "sho", kReadable | kWritable);
-    m_permissionToEdit = addBoolAttr("permissionToEdit", "pte", false, kReadable | kWritable);
-    m_permissionToSave = addBoolAttr("permissionToSave", "pts", false, kReadable | kWritable);
+        // do not write these nodes to the file. They will be created automagically by the proxy
+        // shape
+        m_comment = addStringAttr("comment", "cm", kReadable | kWritable);
+        m_defaultPrim = addStringAttr("defaultPrim", "dp", kReadable | kWritable);
+        m_documentation = addStringAttr("documentation", "docs", kReadable | kWritable);
+        m_startTime = addDoubleAttr("startTime", "stc", 0, kReadable | kWritable);
+        m_endTime = addDoubleAttr("endTime", "etc", 0, kReadable | kWritable);
+        m_timeCodesPerSecond
+            = addDoubleAttr("timeCodesPerSecond", "tcps", 0, kReadable | kWritable);
+        m_framePrecision = addInt32Attr("framePrecision", "fp", 0, kReadable | kWritable);
+        m_owner = addStringAttr("owner", "own", kReadable | kWritable);
+        m_sessionOwner = addStringAttr("sessionOwner", "sho", kReadable | kWritable);
+        m_permissionToEdit = addBoolAttr("permissionToEdit", "pte", false, kReadable | kWritable);
+        m_permissionToSave = addBoolAttr("permissionToSave", "pts", false, kReadable | kWritable);
 
-    // parent/child relationships
-    m_proxyShape = addMessageAttr("proxyShape", "psh", kConnectable | kReadable | kWritable | kHidden | kStorable);
-    m_subLayers = addMessageAttr("subLayers", "sl", kConnectable | kReadable | kWritable | kHidden | kArray | kUsesArrayDataBuilder | kStorable);
-    m_parentLayer = addMessageAttr("parentLayer", "pl", kConnectable | kReadable | kWritable | kHidden | kStorable);
-    m_childLayers = addMessageAttr("childLayer", "cl", kConnectable | kReadable | kWritable | kHidden | kArray | kUsesArrayDataBuilder | kStorable);
+        // parent/child relationships
+        m_proxyShape = addMessageAttr(
+            "proxyShape", "psh", kConnectable | kReadable | kWritable | kHidden | kStorable);
+        m_subLayers = addMessageAttr(
+            "subLayers",
+            "sl",
+            kConnectable | kReadable | kWritable | kHidden | kArray | kUsesArrayDataBuilder
+                | kStorable);
+        m_parentLayer = addMessageAttr(
+            "parentLayer", "pl", kConnectable | kReadable | kWritable | kHidden | kStorable);
+        m_childLayers = addMessageAttr(
+            "childLayer",
+            "cl",
+            kConnectable | kReadable | kWritable | kHidden | kArray | kUsesArrayDataBuilder
+                | kStorable);
 
-    addFrame("USD Layer Identification");
-    m_displayName = addStringAttr("displayName", "dn", kReadable | kWritable);
-    m_realPath = addStringAttr("realPath", "rp", kReadable | kWritable);
-    m_fileExtension = addStringAttr("fileExtension", "fe", kReadable | kWritable);
-    m_version = addStringAttr("version", "ver", kWritable | kReadable);
-    m_repositoryPath = addStringAttr("repositoryPath", "rpath", kReadable | kWritable);
-    m_assetName = addStringAttr("assetName", "an", kReadable | kWritable);
+        addFrame("USD Layer Identification");
+        m_displayName = addStringAttr("displayName", "dn", kReadable | kWritable);
+        m_realPath = addStringAttr("realPath", "rp", kReadable | kWritable);
+        m_fileExtension = addStringAttr("fileExtension", "fe", kReadable | kWritable);
+        m_version = addStringAttr("version", "ver", kWritable | kReadable);
+        m_repositoryPath = addStringAttr("repositoryPath", "rpath", kReadable | kWritable);
+        m_assetName = addStringAttr("assetName", "an", kReadable | kWritable);
 
-    // add attributes to store the serialisation info
-    m_serialized = addStringAttr("serialised", "szd", kReadable | kWritable | kStorable | kHidden);
-    m_nameOnLoad = addStringAttr("nameOnLoad", "nol", kReadable | kWritable | kStorable | kHidden);
-    m_hasBeenEditTarget = addBoolAttr("hasBeenEditTarget", "hbet", false, kReadable | kWritable | kStorable | kHidden);
-  }
-  catch(const MStatus& status)
-  {
-    return status;
-  }
-  generateAETemplate();
-  return MS::kSuccess;
+        // add attributes to store the serialisation info
+        m_serialized
+            = addStringAttr("serialised", "szd", kReadable | kWritable | kStorable | kHidden);
+        m_nameOnLoad
+            = addStringAttr("nameOnLoad", "nol", kReadable | kWritable | kStorable | kHidden);
+        m_hasBeenEditTarget = addBoolAttr(
+            "hasBeenEditTarget", "hbet", false, kReadable | kWritable | kStorable | kHidden);
+    } catch (const MStatus& status) {
+        return status;
+    }
+    generateAETemplate();
+    return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-} // nodes
-} // usdmaya
-} // AL
+} // namespace nodes
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

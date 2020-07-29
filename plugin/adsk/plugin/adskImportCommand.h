@@ -20,17 +20,15 @@
 
 #include <mayaUsd/commands/baseImportCommand.h>
 
-MAYAUSD_NS_DEF {
-
-class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDImportCommand : public MayaUsd::MayaUSDImportCommand
+MAYAUSD_NS_DEF
 {
-  public:
 
-    static const MString commandName;
+    class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDImportCommand : public MayaUsd::MayaUSDImportCommand {
+    public:
+        static const MString commandName;
 
-    static void* creator();
-};
-
+        static void* creator();
+    };
 }
 
 #endif

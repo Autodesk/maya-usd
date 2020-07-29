@@ -22,46 +22,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMayaPrimUpdater::UsdMayaPrimUpdater(
-    const MFnDependencyNode& depNodeFn,
-    const SdfPath& usdPath) :
-    _dagPath(UsdMayaUtil::getDagPath(depNodeFn)),
-    _mayaObject(depNodeFn.object()),
-    _usdPath(usdPath),
-    _baseDagToUsdPaths(UsdMayaUtil::getDagPathMap(depNodeFn, usdPath))
+UsdMayaPrimUpdater::UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn, const SdfPath& usdPath)
+    : _dagPath(UsdMayaUtil::getDagPath(depNodeFn))
+    , _mayaObject(depNodeFn.object())
+    , _usdPath(usdPath)
+    , _baseDagToUsdPaths(UsdMayaUtil::getDagPathMap(depNodeFn, usdPath))
 {
 }
 
-bool UsdMayaPrimUpdater::Push(UsdMayaPrimUpdaterContext* context)
-{
-    return false;
-}
+bool UsdMayaPrimUpdater::Push(UsdMayaPrimUpdaterContext* context) { return false; }
 
-bool UsdMayaPrimUpdater::Pull(UsdMayaPrimUpdaterContext* context)
-{
-    return false;
-}
+bool UsdMayaPrimUpdater::Pull(UsdMayaPrimUpdaterContext* context) { return false; }
 
-void UsdMayaPrimUpdater::Clear(UsdMayaPrimUpdaterContext* context)
-{
-}
+void UsdMayaPrimUpdater::Clear(UsdMayaPrimUpdaterContext* context) { }
 
-const MDagPath&
-UsdMayaPrimUpdater::GetDagPath() const
-{
-    return _dagPath;
-}
+const MDagPath& UsdMayaPrimUpdater::GetDagPath() const { return _dagPath; }
 
-const MObject&
-UsdMayaPrimUpdater::GetMayaObject() const
-{
-    return _mayaObject;
-}
+const MObject& UsdMayaPrimUpdater::GetMayaObject() const { return _mayaObject; }
 
-const SdfPath&
-UsdMayaPrimUpdater::GetUsdPath() const
-{
-    return _usdPath;
-}
+const SdfPath& UsdMayaPrimUpdater::GetUsdPath() const { return _usdPath; }
 
 PXR_NAMESPACE_CLOSE_SCOPE

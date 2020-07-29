@@ -15,20 +15,18 @@
 //
 #include "fallbackPrimReader.h"
 
-#include <pxr/usd/usdGeom/imageable.h>
-
 #include <mayaUsd/fileio/translators/translatorUtil.h>
+
+#include <pxr/usd/usdGeom/imageable.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMaya_FallbackPrimReader::UsdMaya_FallbackPrimReader(
-    const UsdMayaPrimReaderArgs& args)
+UsdMaya_FallbackPrimReader::UsdMaya_FallbackPrimReader(const UsdMayaPrimReaderArgs& args)
     : UsdMayaPrimReader(args)
 {
 }
 
-bool
-UsdMaya_FallbackPrimReader::Read(UsdMayaPrimReaderContext* context)
+bool UsdMaya_FallbackPrimReader::Read(UsdMayaPrimReaderContext* context)
 {
     const UsdPrim& usdPrim = _GetArgs().GetUsdPrim();
     if (usdPrim.HasAuthoredTypeName() && !usdPrim.IsA<UsdGeomImageable>()) {
@@ -37,24 +35,22 @@ UsdMaya_FallbackPrimReader::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    MObject parentNode = context->GetMayaNode(
-            usdPrim.GetPath().GetParentPath(), true);
+    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
 
     MStatus status;
     MObject mayaNode;
     return UsdMayaTranslatorUtil::CreateDummyTransformNode(
-            usdPrim,
-            parentNode,
-            /*importTypeName*/ false,
-            _GetArgs(),
-            context,
-            &status,
-            &mayaNode);
+        usdPrim,
+        parentNode,
+        /*importTypeName*/ false,
+        _GetArgs(),
+        context,
+        &status,
+        &mayaNode);
 }
 
 /* static */
-UsdMayaPrimReaderRegistry::ReaderFactoryFn
-UsdMaya_FallbackPrimReader::CreateFactory()
+UsdMayaPrimReaderRegistry::ReaderFactoryFn UsdMaya_FallbackPrimReader::CreateFactory()
 {
     return [](const UsdMayaPrimReaderArgs& args) {
         return std::make_shared<UsdMaya_FallbackPrimReader>(args);

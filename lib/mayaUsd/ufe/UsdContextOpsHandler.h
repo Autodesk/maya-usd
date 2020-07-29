@@ -15,37 +15,37 @@
 //
 #pragma once
 
-#include <ufe/contextOpsHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdContextOps.h>
 
-//PXR_NAMESPACE_USING_DIRECTIVE
+#include <ufe/contextOpsHandler.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+// PXR_NAMESPACE_USING_DIRECTIVE
 
-//! \brief Interface to create a UsdContextOps interface object.
-class MAYAUSD_CORE_PUBLIC UsdContextOpsHandler : public Ufe::ContextOpsHandler
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdContextOpsHandler> Ptr;
+    namespace ufe {
 
-	UsdContextOpsHandler();
-	~UsdContextOpsHandler() override;
+    //! \brief Interface to create a UsdContextOps interface object.
+    class MAYAUSD_CORE_PUBLIC UsdContextOpsHandler : public Ufe::ContextOpsHandler {
+    public:
+        typedef std::shared_ptr<UsdContextOpsHandler> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdContextOpsHandler(const UsdContextOpsHandler&) = delete;
-	UsdContextOpsHandler& operator=(const UsdContextOpsHandler&) = delete;
-	UsdContextOpsHandler(UsdContextOpsHandler&&) = delete;
-	UsdContextOpsHandler& operator=(UsdContextOpsHandler&&) = delete;
+        UsdContextOpsHandler();
+        ~UsdContextOpsHandler() override;
 
-	//! Create a UsdContextOpsHandler.
-	static UsdContextOpsHandler::Ptr create();
+        // Delete the copy/move constructors assignment operators.
+        UsdContextOpsHandler(const UsdContextOpsHandler&) = delete;
+        UsdContextOpsHandler& operator=(const UsdContextOpsHandler&) = delete;
+        UsdContextOpsHandler(UsdContextOpsHandler&&) = delete;
+        UsdContextOpsHandler& operator=(UsdContextOpsHandler&&) = delete;
 
-	// Ufe::ContextOpsHandler overrides
-	Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
-}; // UsdContextOpsHandler
+        //! Create a UsdContextOpsHandler.
+        static UsdContextOpsHandler::Ptr create();
 
-} // namespace ufe
+        // Ufe::ContextOpsHandler overrides
+        Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
+    }; // UsdContextOpsHandler
+
+    } // namespace ufe
 } // namespace MayaUsd

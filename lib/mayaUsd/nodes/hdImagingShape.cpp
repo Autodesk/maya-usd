@@ -15,12 +15,20 @@
 //
 #include "hdImagingShape.h"
 
-#include <string>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/utils/blockSceneModificationContext.h>
+#include <mayaUsd/utils/util.h>
+
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/pxr.h>
 
 #include <maya/MBoundingBox.h>
+#include <maya/MDGMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataHandle.h>
-#include <maya/MDGMessage.h>
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -39,15 +47,7 @@
 #include <maya/MUuid.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/diagnostic.h>
-#include <pxr/base/tf/envSetting.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/stringUtils.h>
-
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/utils/blockSceneModificationContext.h>
-#include <mayaUsd/utils/util.h>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,13 +70,10 @@ TF_DEFINE_ENV_SETTING(
     false,
     "Enables area selection of objects occluded in depth");
 
-
-TF_DEFINE_PUBLIC_TOKENS(PxrMayaHdImagingShapeTokens,
-                        PXRUSDMAYA_HD_IMAGING_SHAPE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(PxrMayaHdImagingShapeTokens, PXRUSDMAYA_HD_IMAGING_SHAPE_TOKENS);
 
 const MTypeId PxrMayaHdImagingShape::typeId(0x00126402);
-const MString PxrMayaHdImagingShape::typeName(
-    PxrMayaHdImagingShapeTokens->MayaTypeName.GetText());
+const MString PxrMayaHdImagingShape::typeName(PxrMayaHdImagingShapeTokens->MayaTypeName.GetText());
 
 // Attributes
 MObject PxrMayaHdImagingShape::selectionResolutionAttr;
@@ -88,9 +85,7 @@ namespace {
 // any other node in Maya. These are consistent over a Maya session, so that
 // we can find the nodes again, but they are re-generated between different
 // Maya runs since we don't write the imaging shape to disk.
-static
-MUuid
-_GenerateUuid()
+static MUuid _GenerateUuid()
 {
     MUuid uuid;
     uuid.generate();
@@ -98,38 +93,28 @@ _GenerateUuid()
 }
 
 static const std::string _HdImagingTransformName("HdImaging");
-static const std::string _HdImagingShapeName =
-    TfStringPrintf("%sShape", _HdImagingTransformName.c_str());
+static const std::string _HdImagingShapeName
+    = TfStringPrintf("%sShape", _HdImagingTransformName.c_str());
 static const MUuid _HdImagingTransformUuid = _GenerateUuid();
 static const MUuid _HdImagingShapeUuid = _GenerateUuid();
 
 } // anonymous namespace
 
 /* static */
-void*
-PxrMayaHdImagingShape::creator()
-{
-    return new PxrMayaHdImagingShape();
-}
+void* PxrMayaHdImagingShape::creator() { return new PxrMayaHdImagingShape(); }
 
 /* static */
-MStatus
-PxrMayaHdImagingShape::initialize()
+MStatus PxrMayaHdImagingShape::initialize()
 {
     MStatus status;
 
-    MFnEnumAttribute enumAttrFn;
+    MFnEnumAttribute    enumAttrFn;
     MFnNumericAttribute numericAttrFn;
 
-    const int defaultSelectionResolution =
-        TfGetEnvSetting(PXRMAYAHD_DEFAULT_SELECTION_RESOLUTION);
+    const int defaultSelectionResolution = TfGetEnvSetting(PXRMAYAHD_DEFAULT_SELECTION_RESOLUTION);
 
-    selectionResolutionAttr =
-        enumAttrFn.create(
-            "selectionResolution",
-            "sr",
-            defaultSelectionResolution,
-            &status);
+    selectionResolutionAttr
+        = enumAttrFn.create("selectionResolution", "sr", defaultSelectionResolution, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = enumAttrFn.addField("256x256", 256);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -150,15 +135,10 @@ PxrMayaHdImagingShape::initialize()
     status = addAttribute(selectionResolutionAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    const bool enableDepthSelection =
-        TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION);
+    const bool enableDepthSelection = TfGetEnvSetting(PXRMAYAHD_ENABLE_DEPTH_SELECTION);
 
     enableDepthSelectionAttr = numericAttrFn.create(
-        "enableDepthSelection",
-        "eds",
-        MFnNumericData::kBoolean,
-        0.0,
-        &status);
+        "enableDepthSelection", "eds", MFnNumericData::kBoolean, 0.0, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = numericAttrFn.setDefault(enableDepthSelection);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -175,8 +155,7 @@ PxrMayaHdImagingShape::initialize()
 }
 
 /* static */
-PxrMayaHdImagingShape*
-PxrMayaHdImagingShape::GetShapeAtDagPath(const MDagPath& dagPath)
+PxrMayaHdImagingShape* PxrMayaHdImagingShape::GetShapeAtDagPath(const MDagPath& dagPath)
 {
     const MObject mObj = dagPath.node();
     if (mObj.apiType() != MFn::kPluginShape) {
@@ -189,8 +168,7 @@ PxrMayaHdImagingShape::GetShapeAtDagPath(const MDagPath& dagPath)
     }
 
     const MFnDependencyNode depNodeFn(mObj);
-    PxrMayaHdImagingShape* imagingShape =
-        static_cast<PxrMayaHdImagingShape*>(depNodeFn.userNode());
+    PxrMayaHdImagingShape* imagingShape = static_cast<PxrMayaHdImagingShape*>(depNodeFn.userNode());
     if (!imagingShape) {
         TF_CODING_ERROR(
             "Could not get PxrMayaHdImagingShape for node at DAG path: %s",
@@ -202,8 +180,7 @@ PxrMayaHdImagingShape::GetShapeAtDagPath(const MDagPath& dagPath)
 }
 
 /* static */
-MObject
-PxrMayaHdImagingShape::GetOrCreateInstance()
+MObject PxrMayaHdImagingShape::GetOrCreateInstance()
 {
     MStatus status;
 
@@ -240,9 +217,10 @@ PxrMayaHdImagingShape::GetOrCreateInstance()
             MObject::kNullObj,
             &status,
             &hdImagingTransformObj)) {
-        TF_RUNTIME_ERROR("Failed to create transform node %s for %s",
-                         _HdImagingTransformName.c_str(),
-                         _HdImagingShapeName.c_str());
+        TF_RUNTIME_ERROR(
+            "Failed to create transform node %s for %s",
+            _HdImagingTransformName.c_str(),
+            _HdImagingShapeName.c_str());
 
         MNamespace::setCurrentNamespace(currNamespace);
 
@@ -266,7 +244,7 @@ PxrMayaHdImagingShape::GetOrCreateInstance()
 
     for (unsigned int i = 0u; i < depNodeFn.attributeCount(); ++i) {
         const MObject attribute = depNodeFn.attribute(i);
-        MPlug plug = depNodeFn.findPlug(attribute, true);
+        MPlug         plug = depNodeFn.findPlug(attribute, true);
         plug.setLocked(true);
     }
 
@@ -299,22 +277,13 @@ PxrMayaHdImagingShape::GetOrCreateInstance()
 }
 
 /* virtual */
-bool
-PxrMayaHdImagingShape::isBounded() const
-{
-    return false;
-}
+bool PxrMayaHdImagingShape::isBounded() const { return false; }
 
 /* virtual */
-MBoundingBox
-PxrMayaHdImagingShape::boundingBox() const
-{
-    return MBoundingBox();
-}
+MBoundingBox PxrMayaHdImagingShape::boundingBox() const { return MBoundingBox(); }
 
 /* virtual */
-void
-PxrMayaHdImagingShape::postConstructor()
+void PxrMayaHdImagingShape::postConstructor()
 {
     MStatus status = setDoNotWrite(true);
     CHECK_MSTATUS(status);
@@ -327,13 +296,9 @@ PxrMayaHdImagingShape::postConstructor()
 }
 
 /* virtual */
-bool
-PxrMayaHdImagingShape::getInternalValue(
-        const MPlug& plug,
-        MDataHandle& dataHandle)
+bool PxrMayaHdImagingShape::getInternalValue(const MPlug& plug, MDataHandle& dataHandle)
 {
-    if (plug == selectionResolutionAttr ||
-            plug == enableDepthSelectionAttr) {
+    if (plug == selectionResolutionAttr || plug == enableDepthSelectionAttr) {
         // We just want notification of attribute gets and sets. We return
         // false here to tell Maya that it should still manage storage of the
         // value in the data block.
@@ -344,13 +309,9 @@ PxrMayaHdImagingShape::getInternalValue(
 }
 
 /* virtual */
-bool
-PxrMayaHdImagingShape::setInternalValue(
-        const MPlug& plug,
-        const MDataHandle& dataHandle)
+bool PxrMayaHdImagingShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHandle)
 {
-    if (plug == selectionResolutionAttr ||
-            plug == enableDepthSelectionAttr) {
+    if (plug == selectionResolutionAttr || plug == enableDepthSelectionAttr) {
         // If these attributes are changed, we mark the HdImagingShape as
         // needing to be redrawn, which is when we'll pull the new values from
         // the shape and pass them to the batch renderer.
@@ -366,11 +327,10 @@ PxrMayaHdImagingShape::setInternalValue(
 }
 
 /* static */
-void
-PxrMayaHdImagingShape::_OnObjectSetAdded(MObject& node, void* clientData)
+void PxrMayaHdImagingShape::_OnObjectSetAdded(MObject& node, void* clientData)
 {
     MStatus status;
-    MFnSet objectSet(node, &status);
+    MFnSet  objectSet(node, &status);
     if (!status) {
         return;
     }
@@ -388,15 +348,13 @@ PxrMayaHdImagingShape::_OnObjectSetAdded(MObject& node, void* clientData)
     // re-add ourselves if the user changes the set of nodes to isolate without
     // exiting isolate selection mode. If the node is already being tracked,
     // then skip it.
-    PxrMayaHdImagingShape* me =
-            static_cast<PxrMayaHdImagingShape*>(clientData);
-    MObjectHandle handle(node);
+    PxrMayaHdImagingShape* me = static_cast<PxrMayaHdImagingShape*>(clientData);
+    MObjectHandle          handle(node);
     if (me->_objectSetAttrChangedCallbackIds.count(handle) != 0) {
         return;
     }
-    me->_objectSetAttrChangedCallbackIds[handle] =
-            MNodeMessage::addAttributeChangedCallback(
-            node, _OnObjectSetAttrChanged, me);
+    me->_objectSetAttrChangedCallbackIds[handle]
+        = MNodeMessage::addAttributeChangedCallback(node, _OnObjectSetAttrChanged, me);
 
     // In rare cases, the user may have manually added the pxrHdImagingShape
     // into the isolate selection list. However, we won't know about it until
@@ -406,21 +364,19 @@ PxrMayaHdImagingShape::_OnObjectSetAdded(MObject& node, void* clientData)
 }
 
 /* static */
-void
-PxrMayaHdImagingShape::_OnObjectSetRemoved(MObject& node, void* clientData)
+void PxrMayaHdImagingShape::_OnObjectSetRemoved(MObject& node, void* clientData)
 {
     MStatus status;
-    MFnSet objectSet(node, &status);
+    MFnSet  objectSet(node, &status);
     if (!status) {
         return;
     }
 
     // Just to be safe, always check the removed set to see if we've been
     // tracking it, regardless of the set's name.
-    PxrMayaHdImagingShape* me =
-            static_cast<PxrMayaHdImagingShape*>(clientData);
-    MObjectHandle handle(node);
-    auto iter = me->_objectSetAttrChangedCallbackIds.find(handle);
+    PxrMayaHdImagingShape* me = static_cast<PxrMayaHdImagingShape*>(clientData);
+    MObjectHandle          handle(node);
+    auto                   iter = me->_objectSetAttrChangedCallbackIds.find(handle);
     if (iter == me->_objectSetAttrChangedCallbackIds.end()) {
         return;
     }
@@ -433,12 +389,11 @@ PxrMayaHdImagingShape::_OnObjectSetRemoved(MObject& node, void* clientData)
 }
 
 /* static */
-void
-PxrMayaHdImagingShape::_OnObjectSetAttrChanged(
-        MNodeMessage::AttributeMessage msg,
-        MPlug& plug,
-        MPlug& otherPlug,
-        void *clientData)
+void PxrMayaHdImagingShape::_OnObjectSetAttrChanged(
+    MNodeMessage::AttributeMessage msg,
+    MPlug&                         plug,
+    MPlug&                         otherPlug,
+    void*                          clientData)
 {
     // We only care about the case where the user has loaded a different set of
     // nodes into the isolate selection set, and when that happens, new
@@ -451,8 +406,7 @@ PxrMayaHdImagingShape::_OnObjectSetAttrChanged(
     // If the connection-made message indicates that _this node_ is the node
     // connecting to the set, then there is no more work for us to do, so
     // simply return.
-    PxrMayaHdImagingShape* me =
-            static_cast<PxrMayaHdImagingShape*>(clientData);
+    PxrMayaHdImagingShape* me = static_cast<PxrMayaHdImagingShape*>(clientData);
     if (otherPlug.node() == me->thisMObject()) {
         return;
     }
@@ -461,7 +415,8 @@ PxrMayaHdImagingShape::_OnObjectSetAttrChanged(
     objectSet.addMember(me->thisMObject());
 }
 
-PxrMayaHdImagingShape::PxrMayaHdImagingShape() : MPxSurfaceShape()
+PxrMayaHdImagingShape::PxrMayaHdImagingShape()
+    : MPxSurfaceShape()
 {
     // If a shape is isolated but depends on Hydra batched drawing for imaging,
     // it won't image in the viewport unless the pxrHdImagingShape is also
@@ -470,10 +425,10 @@ PxrMayaHdImagingShape::PxrMayaHdImagingShape() : MPxSurfaceShape()
     // actual drawing for the original shape. Thus, we listen for the
     // addition/removal of objectSets so that we can insert ourselves into any
     // objectSets used for viewport isolate selection.
-    _objectSetAddedCallbackId = MDGMessage::addNodeAddedCallback(
-            _OnObjectSetAdded, "objectSet", this);
-    _objectSetRemovedCallbackId = MDGMessage::addNodeRemovedCallback(
-            _OnObjectSetRemoved, "objectSet", this);
+    _objectSetAddedCallbackId
+        = MDGMessage::addNodeAddedCallback(_OnObjectSetAdded, "objectSet", this);
+    _objectSetRemovedCallbackId
+        = MDGMessage::addNodeRemovedCallback(_OnObjectSetRemoved, "objectSet", this);
 }
 
 /* virtual */
@@ -485,6 +440,5 @@ PxrMayaHdImagingShape::~PxrMayaHdImagingShape()
         MMessage::removeCallback(handleAndCallbackId.second);
     }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

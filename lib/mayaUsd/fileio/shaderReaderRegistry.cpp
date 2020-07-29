@@ -34,11 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (UsdMaya)
-    (ShaderReader)
-);
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (UsdMaya)(ShaderReader));
 
 typedef TfHashMap<TfToken, UsdMayaShaderReaderRegistry::ReaderFactoryFn, TfToken::HashFunctor>
                  _Registry;

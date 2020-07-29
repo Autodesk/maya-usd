@@ -16,31 +16,32 @@
 
 #pragma once
 
-#include <maya/MPxCommand.h>
-
 #include <mayaUsd/mayaUsd.h>
+
+#include <maya/MPxCommand.h>
 
 #include <mayaUsdUI/ui/api.h>
 
-MAYAUSD_NS_DEF {
+MAYAUSD_NS_DEF
+{
 
-class MAYAUSD_UI_PUBLIC USDImportDialogCmd : public MPxCommand {
-public:
-	USDImportDialogCmd() = default;
-	~USDImportDialogCmd() override = default;
+    class MAYAUSD_UI_PUBLIC USDImportDialogCmd : public MPxCommand {
+    public:
+        USDImportDialogCmd() = default;
+        ~USDImportDialogCmd() override = default;
 
-	static MStatus initialize(MFnPlugin&);
-	static MStatus finalize(MFnPlugin&);
+        static MStatus initialize(MFnPlugin&);
+        static MStatus finalize(MFnPlugin&);
 
-	static const MString fsName;
+        static const MString fsName;
 
-	static void* creator();
-	static MSyntax createSyntax();
+        static void*   creator();
+        static MSyntax createSyntax();
 
-	MStatus doIt(const MArgList& args) override;
+        MStatus doIt(const MArgList& args) override;
 
-private:
-    MStatus applyToProxy(const MString& proxyPath);
-};
+    private:
+        MStatus applyToProxy(const MString& proxyPath);
+    };
 
 } // namespace MayaUsd

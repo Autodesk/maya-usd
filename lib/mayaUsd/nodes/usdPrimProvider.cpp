@@ -19,10 +19,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-UsdMayaUsdPrimProvider::~UsdMayaUsdPrimProvider()
-{
-}
+UsdMayaUsdPrimProvider::~UsdMayaUsdPrimProvider() { }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

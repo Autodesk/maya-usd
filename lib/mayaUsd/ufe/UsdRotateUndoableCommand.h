@@ -15,63 +15,63 @@
 //
 #pragma once
 
-#include <exception>
-
-#include <ufe/transform3dUndoableCommands.h>
-
-#include <pxr/usd/usd/attribute.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
 
+#include <pxr/usd/usd/attribute.h>
+
+#include <ufe/transform3dUndoableCommands.h>
+
+#include <exception>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief Absolute rotation command of the given prim.
-/*!
-	Ability to perform undo to restore the original rotation value.
- */
-class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand : public Ufe::RotateUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3f>
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdRotateUndoableCommand> Ptr;
+    namespace ufe {
 
-	UsdRotateUndoableCommand(const UsdRotateUndoableCommand&) = delete;
-	UsdRotateUndoableCommand& operator=(const UsdRotateUndoableCommand&) = delete;
-	UsdRotateUndoableCommand(UsdRotateUndoableCommand&&) = delete;
-	UsdRotateUndoableCommand& operator=(UsdRotateUndoableCommand&&) = delete;
+    //! \brief Absolute rotation command of the given prim.
+    /*!
+            Ability to perform undo to restore the original rotation value.
+     */
+    class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand
+        : public Ufe::RotateUndoableCommand
+        , public UsdTRSUndoableCommandBase<GfVec3f> {
+    public:
+        typedef std::shared_ptr<UsdRotateUndoableCommand> Ptr;
 
-	//! Create a UsdRotateUndoableCommand from a UFE scene item.  The
-	//! command is not executed.
-	static UsdRotateUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+        UsdRotateUndoableCommand(const UsdRotateUndoableCommand&) = delete;
+        UsdRotateUndoableCommand& operator=(const UsdRotateUndoableCommand&) = delete;
+        UsdRotateUndoableCommand(UsdRotateUndoableCommand&&) = delete;
+        UsdRotateUndoableCommand& operator=(UsdRotateUndoableCommand&&) = delete;
 
-	// Ufe::RotateUndoableCommand overrides.  rotate() sets the command's
-	// rotation value and executes the command.
-	void undo() override;
-	void redo() override;
-	bool rotate(double x, double y, double z) override;
+        //! Create a UsdRotateUndoableCommand from a UFE scene item.  The
+        //! command is not executed.
+        static UsdRotateUndoableCommand::Ptr
+        create(const UsdSceneItem::Ptr& item, double x, double y, double z);
 
-protected:
+        // Ufe::RotateUndoableCommand overrides.  rotate() sets the command's
+        // rotation value and executes the command.
+        void undo() override;
+        void redo() override;
+        bool rotate(double x, double y, double z) override;
 
-    //! Construct a UsdRotateUndoableCommand.  The command is not executed.
-	UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
-	~UsdRotateUndoableCommand() override;
+    protected:
+        //! Construct a UsdRotateUndoableCommand.  The command is not executed.
+        UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+        ~UsdRotateUndoableCommand() override;
 
-private:
+    private:
+        static TfToken rotXYZ;
 
-    static TfToken rotXYZ;
+        TfToken attributeName() const override { return rotXYZ; }
+        void    performImp(double x, double y, double z) override;
+        void    addEmptyAttribute() override;
+        bool    cannotInit() const override { return bool(fFailedInit); }
 
-    TfToken attributeName() const override { return rotXYZ; }
-    void performImp(double x, double y, double z) override;
-    void addEmptyAttribute() override;
-    bool cannotInit() const override { return bool(fFailedInit); }
+        std::exception_ptr fFailedInit;
 
-	std::exception_ptr fFailedInit;
+    }; // UsdRotateUndoableCommand
 
-}; // UsdRotateUndoableCommand
-
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

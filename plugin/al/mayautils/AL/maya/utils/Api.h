@@ -15,47 +15,47 @@
 //
 
 #if defined _WIN32 || defined __CYGWIN__
-  #ifdef AL_MAYA_UTILS_EXPORT
-    #ifdef __GNUC__
-      #define AL_MAYA_UTILS_PUBLIC __attribute__ ((dllexport))
-    #else
-      #define AL_MAYA_UTILS_PUBLIC __declspec(dllexport)
-    #endif
-  #else
-    #ifdef __GNUC__
-      #define AL_MAYA_UTILS_PUBLIC __attribute__ ((dllimport))
-    #else
-      #define AL_MAYA_UTILS_PUBLIC __declspec(dllimport)
-    #endif
-  #endif
-  #define AL_MAYA_UTILS_LOCAL
-
-  #ifdef AL_MAYA_MACROS_EXPORT
-    #ifdef __GNUC__
-      #define AL_MAYA_MACROS_PUBLIC __attribute__ ((dllexport))
-    #else
-      #define AL_MAYA_MACROS_PUBLIC __declspec(dllexport)
-    #endif
-  #else
-    #ifdef __GNUC__
-      #define AL_MAYA_MACROS_PUBLIC __attribute__ ((dllimport))
-    #else
-      #define AL_MAYA_MACROS_PUBLIC __declspec(dllimport)
-    #endif
-  #endif
-  #define AL_MAYA_MACROS_LOCAL
+#ifdef AL_MAYA_UTILS_EXPORT
+#ifdef __GNUC__
+#define AL_MAYA_UTILS_PUBLIC __attribute__((dllexport))
 #else
-  #if __GNUC__ >= 4
-    #define AL_MAYA_UTILS_PUBLIC __attribute__ ((visibility ("default")))
-    #define AL_MAYA_UTILS_LOCAL  __attribute__ ((visibility ("hidden")))
+#define AL_MAYA_UTILS_PUBLIC __declspec(dllexport)
+#endif
+#else
+#ifdef __GNUC__
+#define AL_MAYA_UTILS_PUBLIC __attribute__((dllimport))
+#else
+#define AL_MAYA_UTILS_PUBLIC __declspec(dllimport)
+#endif
+#endif
+#define AL_MAYA_UTILS_LOCAL
 
-    #define AL_MAYA_MACROS_PUBLIC __attribute__ ((visibility ("default")))
-    #define AL_MAYA_MACROS_LOCAL  __attribute__ ((visibility ("hidden")))
-  #else
-    #define AL_MAYA_UTILS_PUBLIC
-    #define AL_MAYA_UTILS_LOCAL
+#ifdef AL_MAYA_MACROS_EXPORT
+#ifdef __GNUC__
+#define AL_MAYA_MACROS_PUBLIC __attribute__((dllexport))
+#else
+#define AL_MAYA_MACROS_PUBLIC __declspec(dllexport)
+#endif
+#else
+#ifdef __GNUC__
+#define AL_MAYA_MACROS_PUBLIC __attribute__((dllimport))
+#else
+#define AL_MAYA_MACROS_PUBLIC __declspec(dllimport)
+#endif
+#endif
+#define AL_MAYA_MACROS_LOCAL
+#else
+#if __GNUC__ >= 4
+#define AL_MAYA_UTILS_PUBLIC __attribute__((visibility("default")))
+#define AL_MAYA_UTILS_LOCAL  __attribute__((visibility("hidden")))
 
-    #define AL_MAYA_MACROS_PUBLIC
-    #define AL_MAYA_MACROS_LOCAL
-  #endif
+#define AL_MAYA_MACROS_PUBLIC __attribute__((visibility("default")))
+#define AL_MAYA_MACROS_LOCAL  __attribute__((visibility("hidden")))
+#else
+#define AL_MAYA_UTILS_PUBLIC
+#define AL_MAYA_UTILS_LOCAL
+
+#define AL_MAYA_MACROS_PUBLIC
+#define AL_MAYA_MACROS_LOCAL
+#endif
 #endif

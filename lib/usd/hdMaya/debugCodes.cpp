@@ -19,23 +19,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfDebug) {
+TF_REGISTRY_FUNCTION(TfDebug)
+{
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_AL_CALLBACKS,
-        "Print info about the various callbacks used by hdMaya_al");
+        HDMAYA_AL_CALLBACKS, "Print info about the various callbacks used by hdMaya_al");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_AL_PLUGIN,
-        "Print info about the loading of the hdMaya_al plugin");
+        HDMAYA_AL_PLUGIN, "Print info about the loading of the hdMaya_al plugin");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_AL_POPULATE,
-        "Print info about populating the delegate from the stage");
+        HDMAYA_AL_POPULATE, "Print info about populating the delegate from the stage");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_AL_PROXY_DELEGATE,
         "Print misc info about (ie, creation / destruction) of the delegate "
         "object");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_AL_SELECTION,
-        "Print info about selecting AL objects in the maya-to-hydra viewport");
+        HDMAYA_AL_SELECTION, "Print info about selecting AL objects in the maya-to-hydra viewport");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

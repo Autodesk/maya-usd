@@ -18,39 +18,39 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-UsdHierarchyHandler::UsdHierarchyHandler()
-	: Ufe::HierarchyHandler()
-{}
-
-UsdHierarchyHandler::~UsdHierarchyHandler()
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-/*static*/
-UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()
-{
-	return std::make_shared<UsdHierarchyHandler>();
-}
+    UsdHierarchyHandler::UsdHierarchyHandler()
+        : Ufe::HierarchyHandler()
+    {
+    }
 
-//------------------------------------------------------------------------------
-// UsdHierarchyHandler overrides
-//------------------------------------------------------------------------------
+    UsdHierarchyHandler::~UsdHierarchyHandler() { }
 
-Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
-{
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-	return isRootChild(usdItem->path()) ?
-        UsdRootChildHierarchy::create(usdItem) : UsdHierarchy::create(usdItem);
-}
+    /*static*/
+    UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()
+    {
+        return std::make_shared<UsdHierarchyHandler>();
+    }
 
-Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const
-{
-	const UsdPrim prim = ufePathToPrim(path);
-	return prim.IsValid() ? UsdSceneItem::create(path, prim) : nullptr;
-}
+    //------------------------------------------------------------------------------
+    // UsdHierarchyHandler overrides
+    //------------------------------------------------------------------------------
 
-} // namespace ufe
+    Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
+    {
+        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+        return isRootChild(usdItem->path()) ? UsdRootChildHierarchy::create(usdItem)
+                                            : UsdHierarchy::create(usdItem);
+    }
+
+    Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const
+    {
+        const UsdPrim prim = ufePathToPrim(path);
+        return prim.IsValid() ? UsdSceneItem::create(path, prim) : nullptr;
+    }
+
+    } // namespace ufe
 } // namespace MayaUsd

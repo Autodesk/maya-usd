@@ -18,44 +18,43 @@
 #include <mayaUsd/ufe/ProxyShapeHierarchy.h>
 #include <mayaUsd/ufe/Utils.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
-	: Ufe::HierarchyHandler()
-	, fMayaHierarchyHandler(mayaHierarchyHandler)
-{}
-
-ProxyShapeHierarchyHandler::~ProxyShapeHierarchyHandler()
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-/*static*/
-ProxyShapeHierarchyHandler::Ptr ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
-{
-	return std::make_shared<ProxyShapeHierarchyHandler>(mayaHierarchyHandler);
-}
+    ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(
+        const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
+        : Ufe::HierarchyHandler()
+        , fMayaHierarchyHandler(mayaHierarchyHandler)
+    {
+    }
 
-//------------------------------------------------------------------------------
-// Ufe::HierarchyHandler overrides
-//------------------------------------------------------------------------------
+    ProxyShapeHierarchyHandler::~ProxyShapeHierarchyHandler() { }
 
-Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
-{
-	if (isAGatewayType(item->nodeType()))
-	{
-		return ProxyShapeHierarchy::create(fMayaHierarchyHandler, item);
-	}
-	else
-	{
-		return fMayaHierarchyHandler->hierarchy(item);
-	}
-}
+    /*static*/
+    ProxyShapeHierarchyHandler::Ptr
+    ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
+    {
+        return std::make_shared<ProxyShapeHierarchyHandler>(mayaHierarchyHandler);
+    }
 
-Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path) const
-{
-	return fMayaHierarchyHandler->createItem(path);
-}
+    //------------------------------------------------------------------------------
+    // Ufe::HierarchyHandler overrides
+    //------------------------------------------------------------------------------
 
-} // namespace ufe
+    Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
+    {
+        if (isAGatewayType(item->nodeType())) {
+            return ProxyShapeHierarchy::create(fMayaHierarchyHandler, item);
+        } else {
+            return fMayaHierarchyHandler->hierarchy(item);
+        }
+    }
+
+    Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path) const
+    {
+        return fMayaHierarchyHandler->createItem(path);
+    }
+
+    } // namespace ufe
 } // namespace MayaUsd

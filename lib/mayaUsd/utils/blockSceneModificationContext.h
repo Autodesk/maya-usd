@@ -16,37 +16,31 @@
 #ifndef PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
 #define PXRUSDMAYA_BLOCK_SCENE_MODIFICATION_CONTEXT_H
 
-#include <pxr/pxr.h>
-
 #include <mayaUsd/base/api.h>
+
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Utility class for wrapping a scope of Maya operations such that the
 /// modification status of the Maya scene is preserved.
-class UsdMayaBlockSceneModificationContext
-{
-    public:
+class UsdMayaBlockSceneModificationContext {
+public:
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaBlockSceneModificationContext();
 
-        MAYAUSD_CORE_PUBLIC
-        UsdMayaBlockSceneModificationContext();
+    MAYAUSD_CORE_PUBLIC
+    virtual ~UsdMayaBlockSceneModificationContext();
 
-        MAYAUSD_CORE_PUBLIC
-        virtual ~UsdMayaBlockSceneModificationContext();
+private:
+    /// Modification status of the scene when the context was created.
+    bool _sceneWasModified;
 
-    private:
-
-        /// Modification status of the scene when the context was created.
-        bool _sceneWasModified;
-
-        UsdMayaBlockSceneModificationContext(
-                const UsdMayaBlockSceneModificationContext&) = delete;
-        UsdMayaBlockSceneModificationContext& operator=(
-                const UsdMayaBlockSceneModificationContext&) = delete;
+    UsdMayaBlockSceneModificationContext(const UsdMayaBlockSceneModificationContext&) = delete;
+    UsdMayaBlockSceneModificationContext& operator=(const UsdMayaBlockSceneModificationContext&)
+        = delete;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

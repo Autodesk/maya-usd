@@ -15,28 +15,28 @@
 //
 #pragma once
 
-#include <maya/MStatus.h>
-
-#include <ufe/rtid.h>
-
 #include <mayaUsd/base/api.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+#include <maya/MStatus.h>
+#include <ufe/rtid.h>
 
-// Only intended to be called by the plugin initialization, to
-// initialize the handlers and stage model.
-MAYAUSD_CORE_PUBLIC
-MStatus initialize();
+MAYAUSD_NS_DEF
+{
+    namespace ufe {
 
-//! Only intended to be called by the plugin finalization, to
-//! finalize the handlers stage model.
-MAYAUSD_CORE_PUBLIC
-MStatus finalize();
+    // Only intended to be called by the plugin initialization, to
+    // initialize the handlers and stage model.
+    MAYAUSD_CORE_PUBLIC
+    MStatus initialize();
 
-//! Return the run-time ID allocated to USD.
-MAYAUSD_CORE_PUBLIC
-Ufe::Rtid getUsdRunTimeId();
+    //! Only intended to be called by the plugin finalization, to
+    //! finalize the handlers stage model.
+    MAYAUSD_CORE_PUBLIC
+    MStatus finalize();
 
-} // namespace ufe
+    //! Return the run-time ID allocated to USD.
+    MAYAUSD_CORE_PUBLIC
+    Ufe::Rtid getUsdRunTimeId();
+
+    } // namespace ufe
 } // namespace MayaUsd

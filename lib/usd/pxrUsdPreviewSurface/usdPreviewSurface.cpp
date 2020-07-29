@@ -15,10 +15,9 @@
 //
 #include "usdPreviewSurface.h"
 
-#include <pxr/pxr.h>
-
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/pxr.h>
 
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
@@ -34,27 +33,26 @@
 #include <maya/MTypeId.h>
 #include <maya/MVector.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 TF_DEFINE_PUBLIC_TOKENS(
     PxrMayaUsdPreviewSurfaceTokens,
     PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS);
 
-
 const MTypeId PxrMayaUsdPreviewSurface::typeId(0x00126403);
-const MString PxrMayaUsdPreviewSurface::typeName(
-    PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText());
+const MString
+    PxrMayaUsdPreviewSurface::typeName(PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText());
 
 const MString PxrMayaUsdPreviewSurface::drawDbClassification(
     TfStringPrintf(
         "drawdb/shader/surface/%s",
-        PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText()).c_str());
+        PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText())
+        .c_str());
 const MString PxrMayaUsdPreviewSurface::fullClassification(
     TfStringPrintf(
         "shader/surface:shader/displacement:%s",
-        PxrMayaUsdPreviewSurface::drawDbClassification.asChar()).c_str());
+        PxrMayaUsdPreviewSurface::drawDbClassification.asChar())
+        .c_str());
 
 // Attributes
 MObject PxrMayaUsdPreviewSurface::clearcoatAttr;
@@ -75,17 +73,11 @@ MObject PxrMayaUsdPreviewSurface::useSpecularWorkflowAttr;
 MObject PxrMayaUsdPreviewSurface::outColorAttr;
 MObject PxrMayaUsdPreviewSurface::outTransparencyAttr;
 
+/* static */
+void* PxrMayaUsdPreviewSurface::creator() { return new PxrMayaUsdPreviewSurface(); }
 
 /* static */
-void*
-PxrMayaUsdPreviewSurface::creator()
-{
-    return new PxrMayaUsdPreviewSurface();
-}
-
-/* static */
-MStatus
-PxrMayaUsdPreviewSurface::initialize()
+MStatus PxrMayaUsdPreviewSurface::initialize()
 {
     MStatus status;
 
@@ -130,9 +122,7 @@ PxrMayaUsdPreviewSurface::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     diffuseColorAttr = numericAttrFn.createColor(
-        PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName.GetText(),
-        "dc",
-        &status);
+        PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName.GetText(), "dc", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = numericAttrFn.setDefault(0.18f, 0.18f, 0.18f);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -158,9 +148,7 @@ PxrMayaUsdPreviewSurface::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     emissiveColorAttr = numericAttrFn.createColor(
-        PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName.GetText(),
-        "ec",
-        &status);
+        PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName.GetText(), "ec", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = numericAttrFn.setKeyable(true);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -276,9 +264,7 @@ PxrMayaUsdPreviewSurface::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     specularColorAttr = numericAttrFn.createColor(
-        PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName.GetText(),
-        "spc",
-        &status);
+        PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName.GetText(), "spc", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = numericAttrFn.setKeyable(true);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -302,9 +288,7 @@ PxrMayaUsdPreviewSurface::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     outColorAttr = numericAttrFn.createColor(
-        PxrMayaUsdPreviewSurfaceTokens->OutColorAttrName.GetText(),
-        "oc",
-        &status);
+        PxrMayaUsdPreviewSurfaceTokens->OutColorAttrName.GetText(), "oc", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = numericAttrFn.setWritable(false);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -316,9 +300,7 @@ PxrMayaUsdPreviewSurface::initialize()
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     outTransparencyAttr = numericAttrFn.createColor(
-        PxrMayaUsdPreviewSurfaceTokens->OutTransparencyAttrName.GetText(),
-        "ot",
-        &status);
+        PxrMayaUsdPreviewSurfaceTokens->OutTransparencyAttrName.GetText(), "ot", &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = numericAttrFn.setWritable(false);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -335,7 +317,7 @@ PxrMayaUsdPreviewSurface::initialize()
     // (e.g. "surfaceShader"). The iterator will not traverse plugs that it
     // does not know affect connections downstream. For example, if this shader
     // has connections for both "diffuseColor" and "roughness", but we only
-    // declared the attribute affects relationship for "diffuseColor", then 
+    // declared the attribute affects relationship for "diffuseColor", then
     // only "diffuseColor" would be visited and "roughness" would be skipped
     // during the traversal, since the plug upstream of the shading engine's
     // "surfaceShader" plug is this shader's "outColor" attribute, which Maya
@@ -374,15 +356,10 @@ PxrMayaUsdPreviewSurface::initialize()
 }
 
 /* virtual */
-void
-PxrMayaUsdPreviewSurface::postConstructor()
-{
-    setMPSafe(true);
-}
+void PxrMayaUsdPreviewSurface::postConstructor() { setMPSafe(true); }
 
 /* virtual */
-MStatus
-PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlock)
+MStatus PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
     MStatus status = MS::kUnknownParameter;
 
@@ -390,31 +367,23 @@ PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlock)
     // opacity to outTransparency.
 
     if (plug == outColorAttr) {
-        const MDataHandle diffuseColorData =
-            dataBlock.inputValue(diffuseColorAttr, &status);
+        const MDataHandle diffuseColorData = dataBlock.inputValue(diffuseColorAttr, &status);
         CHECK_MSTATUS(status);
         const MFloatVector diffuseColor = diffuseColorData.asFloatVector();
 
-        MDataHandle outColorHandle =
-            dataBlock.outputValue(outColorAttr, &status);
+        MDataHandle outColorHandle = dataBlock.outputValue(outColorAttr, &status);
         CHECK_MSTATUS(status);
         outColorHandle.asFloatVector() = diffuseColor;
         status = dataBlock.setClean(outColorAttr);
         CHECK_MSTATUS(status);
-    }
-    else if (plug == outTransparencyAttr) {
-        const MDataHandle opacityData =
-            dataBlock.inputValue(opacityAttr, &status);
+    } else if (plug == outTransparencyAttr) {
+        const MDataHandle opacityData = dataBlock.inputValue(opacityAttr, &status);
         CHECK_MSTATUS(status);
         const float opacity = opacityData.asFloat();
 
-        const float transparency = 1.0f - opacity;
-        const MFloatVector transparencyColor(
-            transparency,
-            transparency,
-            transparency);
-        MDataHandle outTransparencyHandle =
-            dataBlock.outputValue(outTransparencyAttr, &status);
+        const float        transparency = 1.0f - opacity;
+        const MFloatVector transparencyColor(transparency, transparency, transparency);
+        MDataHandle outTransparencyHandle = dataBlock.outputValue(outTransparencyAttr, &status);
         CHECK_MSTATUS(status);
         outTransparencyHandle.asFloatVector() = transparencyColor;
         status = dataBlock.setClean(outTransparencyAttr);
@@ -424,14 +393,12 @@ PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlock)
     return status;
 }
 
-PxrMayaUsdPreviewSurface::PxrMayaUsdPreviewSurface() : MPxNode()
+PxrMayaUsdPreviewSurface::PxrMayaUsdPreviewSurface()
+    : MPxNode()
 {
 }
 
 /* virtual */
-PxrMayaUsdPreviewSurface::~PxrMayaUsdPreviewSurface()
-{
-}
-
+PxrMayaUsdPreviewSurface::~PxrMayaUsdPreviewSurface() { }
 
 PXR_NAMESPACE_CLOSE_SCOPE

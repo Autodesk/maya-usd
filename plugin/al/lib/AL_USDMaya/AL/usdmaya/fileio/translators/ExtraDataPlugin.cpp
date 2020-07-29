@@ -22,14 +22,11 @@ namespace fileio {
 namespace translators {
 
 //----------------------------------------------------------------------------------------------------------------------
-TF_REGISTRY_FUNCTION(TfType)
-{
-  TfType::Define<ExtraDataPluginBase>();
-}
+TF_REGISTRY_FUNCTION(TfType) { TfType::Define<ExtraDataPluginBase>(); }
 
 //----------------------------------------------------------------------------------------------------------------------
-} // translators
-} // fileio
-} // usdmaya
-} // AL
+} // namespace translators
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

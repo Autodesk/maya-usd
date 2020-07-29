@@ -16,12 +16,12 @@
 #ifndef PXRUSDMAYA_CHASER_H
 #define PXRUSDMAYA_CHASER_H
 
-#include <pxr/pxr.h>
+#include <mayaUsd/base/api.h>
+
 #include <pxr/base/tf/declarePtrs.h>
 #include <pxr/base/tf/refPtr.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/timeCode.h>
-
-#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,8 +42,7 @@ TF_DECLARE_REF_PTRS(UsdMayaChaser);
 /// Chasers need to be very careful as to not modify the structure of the usd
 /// file.  This should ideally be used to make small changes or to add
 /// attributes in a non-destructive way.
-class UsdMayaChaser : public TfRefBase
-{
+class UsdMayaChaser : public TfRefBase {
 public:
     ~UsdMayaChaser() override { }
 
@@ -70,7 +69,6 @@ public:
     MAYAUSD_CORE_PUBLIC
     virtual bool PostExport();
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

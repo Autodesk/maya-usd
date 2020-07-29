@@ -15,8 +15,8 @@
 //
 #include "shadingUtil.h"
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/material.h>
@@ -25,46 +25,40 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-UsdShadeInput
-UsdMayaShadingUtil::CreateMaterialInputAndConnectShader(
-        UsdShadeMaterial& material,
-        const TfToken& materialInputName,
-        const SdfValueTypeName& inputTypeName,
-        UsdShadeShader& shader,
-        const TfToken& shaderInputName)
+UsdShadeInput UsdMayaShadingUtil::CreateMaterialInputAndConnectShader(
+    UsdShadeMaterial&       material,
+    const TfToken&          materialInputName,
+    const SdfValueTypeName& inputTypeName,
+    UsdShadeShader&         shader,
+    const TfToken&          shaderInputName)
 {
     if (!material || !shader) {
         return UsdShadeInput();
     }
 
-    UsdShadeInput materialInput =
-        material.CreateInput(materialInputName, inputTypeName);
+    UsdShadeInput materialInput = material.CreateInput(materialInputName, inputTypeName);
 
-    UsdShadeInput shaderInput =
-        shader.CreateInput(shaderInputName, inputTypeName);
+    UsdShadeInput shaderInput = shader.CreateInput(shaderInputName, inputTypeName);
 
     shaderInput.ConnectToSource(materialInput);
 
     return materialInput;
 }
 
-UsdShadeOutput
-UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
-        UsdShadeShader& shader,
-        const TfToken& shaderOutputName,
-        const SdfValueTypeName& outputTypeName,
-        UsdShadeMaterial& material,
-        const TfToken& materialOutputName)
+UsdShadeOutput UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
+    UsdShadeShader&         shader,
+    const TfToken&          shaderOutputName,
+    const SdfValueTypeName& outputTypeName,
+    UsdShadeMaterial&       material,
+    const TfToken&          materialOutputName)
 {
     if (!shader || !material) {
         return UsdShadeOutput();
     }
 
-    UsdShadeOutput shaderOutput =
-        shader.CreateOutput(shaderOutputName, outputTypeName);
+    UsdShadeOutput shaderOutput = shader.CreateOutput(shaderOutputName, outputTypeName);
 
-    UsdShadeOutput materialOutput =
-        material.CreateOutput(materialOutputName, outputTypeName);
+    UsdShadeOutput materialOutput = material.CreateOutput(materialOutputName, outputTypeName);
 
     materialOutput.ConnectToSource(shaderOutput);
 

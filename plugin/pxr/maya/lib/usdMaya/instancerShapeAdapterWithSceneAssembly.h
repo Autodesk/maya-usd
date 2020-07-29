@@ -27,24 +27,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// This adapter will translate instancer prototypes that are USD reference
 /// assemblies into UsdGeomPointInstancer prototypes, ignoring any prototypes
 /// that are not reference assemblies.
-class UsdMayaGL_InstancerShapeAdapterWithSceneAssembly : public UsdMayaGL_InstancerShapeAdapter
-{
-    public:
+class UsdMayaGL_InstancerShapeAdapterWithSceneAssembly : public UsdMayaGL_InstancerShapeAdapter {
+public:
+    ~UsdMayaGL_InstancerShapeAdapterWithSceneAssembly() override;
 
-        ~UsdMayaGL_InstancerShapeAdapterWithSceneAssembly() override;
+    /// Construct a new uninitialized UsdMayaGL_InstancerShapeAdapterWithSceneAssembly.
+    UsdMayaGL_InstancerShapeAdapterWithSceneAssembly(bool isViewport2);
 
-        /// Construct a new uninitialized UsdMayaGL_InstancerShapeAdapterWithSceneAssembly.
-        UsdMayaGL_InstancerShapeAdapterWithSceneAssembly(bool isViewport2);
-
-    private:
-
-        // For each prototype in _SyncInstancerPrototypes(), perform scene
-        // assembly node processing.
-        void SyncInstancerPerPrototypePostHook(
-            const MPlug&              hierarchyPlug,
-            UsdPrim&                  prototypePrim,
-            std::vector<std::string>& layerIdsToMute
-        ) override;
+private:
+    // For each prototype in _SyncInstancerPrototypes(), perform scene
+    // assembly node processing.
+    void SyncInstancerPerPrototypePostHook(
+        const MPlug&              hierarchyPlug,
+        UsdPrim&                  prototypePrim,
+        std::vector<std::string>& layerIdsToMute) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

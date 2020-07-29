@@ -16,15 +16,15 @@
 #ifndef HDMAYA_TEST_DELEGATE_H
 #define HDMAYA_TEST_DELEGATE_H
 
-#include <memory>
+#include <hdMaya/delegates/delegate.h>
 
-#include <pxr/pxr.h>
 #include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include <hdMaya/delegates/delegate.h>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,7 +36,7 @@ public:
 
 private:
     std::unique_ptr<UsdImagingDelegate> _delegate;
-    UsdStageRefPtr _stage;
+    UsdStageRefPtr                      _stage;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

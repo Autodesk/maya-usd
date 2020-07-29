@@ -15,19 +15,19 @@
 //
 
 // glew must be included before any other GL header.
-#include <pxr/imaging/glf/glew.h>
-
 #include "glslProgram.h"
+
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/imaging/garch/gl.h>
+#include <pxr/imaging/glf/glew.h>
+#include <pxr/pxr.h>
 
 #include <string>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/diagnostic.h>
-#include <pxr/imaging/garch/gl.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-PxrMayaGLSLProgram::PxrMayaGLSLProgram() : mProgramId(0)
+PxrMayaGLSLProgram::PxrMayaGLSLProgram()
+    : mProgramId(0)
 {
 }
 
@@ -43,10 +43,7 @@ PxrMayaGLSLProgram::~PxrMayaGLSLProgram()
     }
 }
 
-bool
-PxrMayaGLSLProgram::CompileShader(
-        const GLenum type,
-        const std::string& shaderSource)
+bool PxrMayaGLSLProgram::CompileShader(const GLenum type, const std::string& shaderSource)
 {
     if (!glCreateProgram) {
         return false;
@@ -58,27 +55,13 @@ PxrMayaGLSLProgram::CompileShader(
 
     const char* shaderType = NULL;
     switch (type) {
-        case GL_COMPUTE_SHADER:
-            shaderType = "GL_COMPUTE_SHADER";
-            break;
-        case GL_VERTEX_SHADER:
-            shaderType = "GL_VERTEX_SHADER";
-            break;
-        case GL_TESS_CONTROL_SHADER:
-            shaderType = "GL_TESS_CONTROL_SHADER";
-            break;
-        case GL_TESS_EVALUATION_SHADER:
-            shaderType = "GL_TESS_EVALUATION_SHADER";
-            break;
-        case GL_GEOMETRY_SHADER:
-            shaderType = "GL_GEOMETRY_SHADER";
-            break;
-        case GL_FRAGMENT_SHADER:
-            shaderType = "GL_FRAGMENT_SHADER";
-            break;
-        default:
-            TF_CODING_ERROR("Unsupported shader type %d\n", type);
-            return false;
+    case GL_COMPUTE_SHADER: shaderType = "GL_COMPUTE_SHADER"; break;
+    case GL_VERTEX_SHADER: shaderType = "GL_VERTEX_SHADER"; break;
+    case GL_TESS_CONTROL_SHADER: shaderType = "GL_TESS_CONTROL_SHADER"; break;
+    case GL_TESS_EVALUATION_SHADER: shaderType = "GL_TESS_EVALUATION_SHADER"; break;
+    case GL_GEOMETRY_SHADER: shaderType = "GL_GEOMETRY_SHADER"; break;
+    case GL_FRAGMENT_SHADER: shaderType = "GL_FRAGMENT_SHADER"; break;
+    default: TF_CODING_ERROR("Unsupported shader type %d\n", type); return false;
     }
 
     // Create a program if one does not already exist.
@@ -90,10 +73,7 @@ PxrMayaGLSLProgram::CompileShader(
     const GLchar* shaderSources[1];
     shaderSources[0] = shaderSource.c_str();
     GLuint shader = glCreateShader(type);
-    glShaderSource(shader,
-                   sizeof(shaderSources) / sizeof(const GLchar*),
-                   shaderSources,
-                   NULL);
+    glShaderSource(shader, sizeof(shaderSources) / sizeof(const GLchar*), shaderSources, NULL);
     glCompileShader(shader);
 
     // Verify that the shader compiled successfully.
@@ -101,7 +81,7 @@ PxrMayaGLSLProgram::CompileShader(
     glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
         std::string compileInfo;
-        GLint infoLogLength = 0;
+        GLint       infoLogLength = 0;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
         if (infoLogLength > 0) {
             char* infoLog = new char[infoLogLength];
@@ -110,9 +90,7 @@ PxrMayaGLSLProgram::CompileShader(
             delete[] infoLog;
         }
 
-        TF_WARN("Failed to compile shader type %s: %s",
-                shaderType,
-                compileInfo.c_str());
+        TF_WARN("Failed to compile shader type %s: %s", shaderType, compileInfo.c_str());
         return false;
     }
 
@@ -125,8 +103,7 @@ PxrMayaGLSLProgram::CompileShader(
     return true;
 }
 
-bool
-PxrMayaGLSLProgram::Link()
+bool PxrMayaGLSLProgram::Link()
 {
     if (!glLinkProgram) {
         return false;
@@ -144,7 +121,7 @@ PxrMayaGLSLProgram::Link()
     glGetProgramiv(mProgramId, GL_LINK_STATUS, &success);
     if (!success) {
         std::string linkInfo;
-        GLint infoLogLength = 0;
+        GLint       infoLogLength = 0;
         glGetProgramiv(mProgramId, GL_INFO_LOG_LENGTH, &infoLogLength);
         if (infoLogLength > 0) {
             char* infoLog = new char[infoLogLength];
@@ -160,8 +137,7 @@ PxrMayaGLSLProgram::Link()
     return true;
 }
 
-bool
-PxrMayaGLSLProgram::Validate() const
+bool PxrMayaGLSLProgram::Validate() const
 {
     if (!glValidateProgram) {
         return false;
@@ -177,7 +153,7 @@ PxrMayaGLSLProgram::Validate() const
     glGetProgramiv(mProgramId, GL_VALIDATE_STATUS, &success);
     if (!success) {
         std::string validateInfo;
-        GLint infoLogLength = 0;
+        GLint       infoLogLength = 0;
         glGetProgramiv(mProgramId, GL_INFO_LOG_LENGTH, &infoLogLength);
         if (infoLogLength > 0) {
             char* infoLog = new char[infoLogLength];
@@ -186,13 +162,11 @@ PxrMayaGLSLProgram::Validate() const
             delete[] infoLog;
         }
 
-        TF_WARN("Validation failed for shader program: %s",
-                validateInfo.c_str());
+        TF_WARN("Validation failed for shader program: %s", validateInfo.c_str());
         return false;
     }
 
     return true;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

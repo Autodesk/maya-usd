@@ -20,79 +20,79 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <maya/MObject.h>
-#include <maya/MString.h>
-
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/mesh.h>
 
+#include <maya/MObject.h>
+#include <maya/MString.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-
-/// Provides helper functions for translating UsdGeomMesh prims into Maya
-/// meshes.
-class MAYAUSD_CORE_PUBLIC TranslatorMeshRead
+MAYAUSD_NS_DEF
 {
-public:
-    TranslatorMeshRead(const UsdGeomMesh& mesh,
-                       const UsdPrim& prim, 
-                       const MObject& transformObj,
-                       const MObject& stageNode,
-                       const GfInterval& frameRange,
-                       bool wantCacheAnimation,
-                       MStatus * status = nullptr);
 
-    ~TranslatorMeshRead() = default;
+    /// Provides helper functions for translating UsdGeomMesh prims into Maya
+    /// meshes.
+    class MAYAUSD_CORE_PUBLIC TranslatorMeshRead {
+    public:
+        TranslatorMeshRead(
+            const UsdGeomMesh& mesh,
+            const UsdPrim&     prim,
+            const MObject&     transformObj,
+            const MObject&     stageNode,
+            const GfInterval&  frameRange,
+            bool               wantCacheAnimation,
+            MStatus*           status = nullptr);
 
-    TranslatorMeshRead(const TranslatorMeshRead&) = delete;
-    TranslatorMeshRead& operator=(const TranslatorMeshRead&) = delete;
-    TranslatorMeshRead(TranslatorMeshRead&&) = delete;
-    TranslatorMeshRead& operator=(TranslatorMeshRead&&) = delete;
+        ~TranslatorMeshRead() = default;
 
-    MObject meshObject() const;
+        TranslatorMeshRead(const TranslatorMeshRead&) = delete;
+        TranslatorMeshRead& operator=(const TranslatorMeshRead&) = delete;
+        TranslatorMeshRead(TranslatorMeshRead&&) = delete;
+        TranslatorMeshRead& operator=(TranslatorMeshRead&&) = delete;
 
-    MObject blendObject() const;
-    MObject pointBasedDeformerNode() const;
-    MString pointBasedDeformerName() const;
-    size_t pointsNumTimeSamples() const;
+        MObject meshObject() const;
 
-    SdfPath shapePath() const;
+        MObject blendObject() const;
+        MObject pointBasedDeformerNode() const;
+        MString pointBasedDeformerName() const;
+        size_t  pointsNumTimeSamples() const;
 
-private:
-    MStatus setPointBasedDeformerForMayaNode(const MObject&, 
-                                             const MObject&, 
-                                             const UsdPrim&);
-private:
-    MObject m_meshObj;
-    MObject m_meshBlendObj;
-    MObject m_pointBasedDeformerNode;
-    MString m_newPointBasedDeformerName;
-    bool m_wantCacheAnimation;
-    size_t m_pointsNumTimeSamples;
+        SdfPath shapePath() const;
 
-    SdfPath m_shapePath;
-};
+    private:
+        MStatus setPointBasedDeformerForMayaNode(const MObject&, const MObject&, const UsdPrim&);
 
-class MAYAUSD_CORE_PUBLIC TranslatorMeshWrite
-{
-public:
-    TranslatorMeshWrite(const MFnDependencyNode&,
-                        const UsdStageRefPtr&,
-                        const SdfPath&,
-                        const MDagPath&);
+    private:
+        MObject m_meshObj;
+        MObject m_meshBlendObj;
+        MObject m_pointBasedDeformerNode;
+        MString m_newPointBasedDeformerName;
+        bool    m_wantCacheAnimation;
+        size_t  m_pointsNumTimeSamples;
 
-    ~TranslatorMeshWrite() = default;
+        SdfPath m_shapePath;
+    };
 
-    TranslatorMeshWrite(const TranslatorMeshWrite&) = delete;
-    TranslatorMeshWrite& operator=(const TranslatorMeshWrite&) = delete;
-    TranslatorMeshWrite(TranslatorMeshWrite&&) = delete;
-    TranslatorMeshWrite& operator=(TranslatorMeshWrite&&) = delete;
+    class MAYAUSD_CORE_PUBLIC TranslatorMeshWrite {
+    public:
+        TranslatorMeshWrite(
+            const MFnDependencyNode&,
+            const UsdStageRefPtr&,
+            const SdfPath&,
+            const MDagPath&);
 
-    UsdGeomMesh usdMesh() const;
+        ~TranslatorMeshWrite() = default;
 
-private:
-    UsdGeomMesh m_usdMesh;
-};
+        TranslatorMeshWrite(const TranslatorMeshWrite&) = delete;
+        TranslatorMeshWrite& operator=(const TranslatorMeshWrite&) = delete;
+        TranslatorMeshWrite(TranslatorMeshWrite&&) = delete;
+        TranslatorMeshWrite& operator=(TranslatorMeshWrite&&) = delete;
+
+        UsdGeomMesh usdMesh() const;
+
+    private:
+        UsdGeomMesh m_usdMesh;
+    };
 
 } // namespace MayaUsd

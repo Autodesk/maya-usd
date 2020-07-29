@@ -13,34 +13,37 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <stdio.h>
-#include <stdlib.h>
+#include "renderGlobals.h"
+#include "renderOverride.h"
+#include "viewCommand.h"
 
-#include <maya/MFnPlugin.h>
+#include <hdMaya/adapters/adapter.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/envSetting.h>
 
-#include <hdMaya/adapters/adapter.h>
+#include <maya/MFnPlugin.h>
 
-#include "renderGlobals.h"
-#include "renderOverride.h"
-#include "viewCommand.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
+PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
+{
     MStatus ret = MS::kSuccess;
 
     ret = HdMayaAdapter::Initialize();
-    if (!ret) { return ret; }
+    if (!ret) {
+        return ret;
+    }
 
     // For now this is required for the HdSt backed to use lights.
     // putenv requires char* and I'm not willing to use const cast!
     constexpr const char* envVarSet = "USDIMAGING_ENABLE_SCENE_LIGHTS=1";
-    const auto envVarSize = strlen(envVarSet) + 1;
-    std::vector<char> envVarData;
+    const auto            envVarSize = strlen(envVarSet) + 1;
+    std::vector<char>     envVarData;
     envVarData.resize(envVarSize);
     snprintf(envVarData.data(), envVarSize, "%s", envVarSet);
     putenv(envVarData.data());
@@ -48,8 +51,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
 
     if (!plugin.registerCommand(
-            MtohViewCmd::name, MtohViewCmd::creator,
-            MtohViewCmd::createSyntax)) {
+            MtohViewCmd::name, MtohViewCmd::creator, MtohViewCmd::createSyntax)) {
         ret = MS::kFailure;
         ret.perror("Error registering mtoh command!");
         return ret;
@@ -67,15 +69,15 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     return ret;
 }
 
-PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj) {
+PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj)
+{
     MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
-    MStatus ret = MS::kSuccess;
+    MStatus   ret = MS::kSuccess;
 
     auto* renderer = MHWRender::MRenderer::theRenderer();
     if (renderer) {
         for (const auto& desc : MtohGetRendererDescriptions()) {
-            const auto* override =
-                renderer->findRenderOverride(desc.overrideName.GetText());
+            const auto* override = renderer->findRenderOverride(desc.overrideName.GetText());
             if (override) {
                 renderer->deregisterOverride(override);
                 delete override;

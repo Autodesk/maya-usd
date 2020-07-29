@@ -16,16 +16,12 @@
 #ifndef HD_VP2_DEBUGCODES_H
 #define HD_VP2_DEBUGCODES_H
 
-#include <pxr/pxr.h>
-
 #include <pxr/base/tf/debug.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEBUG_CODES(
-    HDVP2_DEBUG_MATERIAL,
-    HDVP2_DEBUG_MESH
-);
+TF_DEBUG_CODES(HDVP2_DEBUG_MATERIAL, HDVP2_DEBUG_MESH);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

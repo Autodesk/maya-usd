@@ -18,56 +18,53 @@
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
-#include <maya/MArgList.h>
 #include <maya/MArgDatabase.h>
+#include <maya/MArgList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MSyntax.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+MAYAUSD_NS_DEF
+{
 
-MStatus
-MayaUSDListShadingModesCommand::doIt(const MArgList& args) {    
-    MStatus status;
-    MArgDatabase argData(syntax(), args, &status);
+    MStatus MayaUSDListShadingModesCommand::doIt(const MArgList& args)
+    {
+        MStatus      status;
+        MArgDatabase argData(syntax(), args, &status);
 
-    if (status != MS::kSuccess) {
-        return status;
+        if (status != MS::kSuccess) {
+            return status;
+        }
+
+        TfTokenVector v;
+        if (argData.isFlagSet("export")) {
+            v = UsdMayaShadingModeRegistry::ListExporters();
+        } else if (argData.isFlagSet("import")) {
+            v = UsdMayaShadingModeRegistry::ListImporters();
+        }
+
+        // Always include the "none" shading mode.
+        appendToResult(UsdMayaShadingModeTokens->none.GetText());
+
+        for (const auto& e : v) { appendToResult(e.GetText()); }
+
+        return MS::kSuccess;
     }
 
-    TfTokenVector v;
-    if (argData.isFlagSet("export")) {
-        v = UsdMayaShadingModeRegistry::ListExporters();
-    } else if (argData.isFlagSet("import")) {
-        v = UsdMayaShadingModeRegistry::ListImporters();
+    MSyntax MayaUSDListShadingModesCommand::createSyntax()
+    {
+        MSyntax syntax;
+        syntax.addFlag("-ex", "-export", MSyntax::kNoArg);
+        syntax.addFlag("-im", "-import", MSyntax::kNoArg);
+
+        syntax.enableQuery(false);
+        syntax.enableEdit(false);
+
+        return syntax;
     }
 
-    // Always include the "none" shading mode.
-    appendToResult(UsdMayaShadingModeTokens->none.GetText());
-
-    for (const auto& e : v) {
-        appendToResult(e.GetText());
-    }
-
-    return MS::kSuccess;
-}
-
-MSyntax
-MayaUSDListShadingModesCommand::createSyntax() {
-    MSyntax syntax;
-    syntax.addFlag("-ex", "-export", MSyntax::kNoArg);
-    syntax.addFlag("-im", "-import", MSyntax::kNoArg);
-
-    syntax.enableQuery(false);
-    syntax.enableEdit(false);
-
-    return syntax;
-}
-
-void* MayaUSDListShadingModesCommand::creator() {
-    return new MayaUSDListShadingModesCommand();
-}
+    void* MayaUSDListShadingModesCommand::creator() { return new MayaUSDListShadingModesCommand(); }
 
 } // MAYAUSD_NS_DEF

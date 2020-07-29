@@ -15,25 +15,25 @@
 //
 #include "UsdHierarchy.h"
 
-#include <cassert>
-#include <stdexcept>
+#include "private/InPathChange.h"
+#include "private/Utils.h"
+
+#include <mayaUsd/ufe/Utils.h>
+
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/xform.h>
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/sdf/copyUtils.h>
-#include <pxr/usd/usdGeom/xform.h>
-#include <pxr/base/tf/stringUtils.h>
-
-#include <mayaUsd/ufe/Utils.h>
-
 #include <mayaUsdUtils/util.h>
 
-#include "private/InPathChange.h"
-#include "private/Utils.h"
+#include <cassert>
+#include <stdexcept>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
@@ -43,203 +43,193 @@
 #endif
 
 namespace {
-	UsdPrimSiblingRange filteredChildren( const UsdPrim& prim )
-	{
-		// We need to be able to traverse down to instance proxies, so turn
-		// on that part of the predicate, since by default, it is off. Since
-		// the equivalent of GetChildren is
-		// GetFilteredChildren( UsdPrimDefaultPredicate ),
-		// we will use that as the initial value.
-		//
-		Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
-		predicate = predicate.TraverseInstanceProxies(true);
-		return prim.GetFilteredChildren(predicate);
-	}
-
+UsdPrimSiblingRange filteredChildren(const UsdPrim& prim)
+{
+    // We need to be able to traverse down to instance proxies, so turn
+    // on that part of the predicate, since by default, it is off. Since
+    // the equivalent of GetChildren is
+    // GetFilteredChildren( UsdPrimDefaultPredicate ),
+    // we will use that as the initial value.
+    //
+    Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
+    predicate = predicate.TraverseInstanceProxies(true);
+    return prim.GetFilteredChildren(predicate);
 }
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+} // namespace
 
-UsdHierarchy::UsdHierarchy(const UsdSceneItem::Ptr& item)
-	: Ufe::Hierarchy(), fItem(item), fPrim(item->prim())
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-UsdHierarchy::~UsdHierarchy()
-{
-}
+    UsdHierarchy::UsdHierarchy(const UsdSceneItem::Ptr& item)
+        : Ufe::Hierarchy()
+        , fItem(item)
+        , fPrim(item->prim())
+    {
+    }
 
-/*static*/
-UsdHierarchy::Ptr UsdHierarchy::create(const UsdSceneItem::Ptr& item)
-{
-	return std::make_shared<UsdHierarchy>(item);
-}
+    UsdHierarchy::~UsdHierarchy() { }
 
-void UsdHierarchy::setItem(const UsdSceneItem::Ptr& item)
-{
-	fPrim = item->prim();
-	fItem = item;
-}
+    /*static*/
+    UsdHierarchy::Ptr UsdHierarchy::create(const UsdSceneItem::Ptr& item)
+    {
+        return std::make_shared<UsdHierarchy>(item);
+    }
 
-const Ufe::Path& UsdHierarchy::path() const
-{
-	return fItem->path();
-}
+    void UsdHierarchy::setItem(const UsdSceneItem::Ptr& item)
+    {
+        fPrim = item->prim();
+        fItem = item;
+    }
 
-UsdSceneItem::Ptr UsdHierarchy::usdSceneItem() const
-{
-	return fItem;
-}
+    const Ufe::Path& UsdHierarchy::path() const { return fItem->path(); }
 
-//------------------------------------------------------------------------------
-// Ufe::Hierarchy overrides
-//------------------------------------------------------------------------------
+    UsdSceneItem::Ptr UsdHierarchy::usdSceneItem() const { return fItem; }
 
-Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const
-{
-	return fItem;
-}
+    //------------------------------------------------------------------------------
+    // Ufe::Hierarchy overrides
+    //------------------------------------------------------------------------------
 
-bool UsdHierarchy::hasChildren() const
-{
-	return !filteredChildren(fPrim).empty();
-}
+    Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const { return fItem; }
 
-Ufe::SceneItemList UsdHierarchy::children() const
-{
-	// Return USD children only, i.e. children within this run-time.
-	Ufe::SceneItemList children;
-	for (auto child : filteredChildren(fPrim))
-	{
-		children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
-	}
-	return children;
-}
+    bool UsdHierarchy::hasChildren() const { return !filteredChildren(fPrim).empty(); }
 
-Ufe::SceneItem::Ptr UsdHierarchy::parent() const
-{
-	return UsdSceneItem::create(fItem->path().pop(), fPrim.GetParent());
-}
+    Ufe::SceneItemList UsdHierarchy::children() const
+    {
+        // Return USD children only, i.e. children within this run-time.
+        Ufe::SceneItemList children;
+        for (auto child : filteredChildren(fPrim)) {
+            children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
+        }
+        return children;
+    }
 
-Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
-{
-	auto usdChild = std::dynamic_pointer_cast<UsdSceneItem>(child);
+    Ufe::SceneItem::Ptr UsdHierarchy::parent() const
+    {
+        return UsdSceneItem::create(fItem->path().pop(), fPrim.GetParent());
+    }
+
+    Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
+    {
+        auto usdChild = std::dynamic_pointer_cast<UsdSceneItem>(child);
 #if !defined(NDEBUG)
-	assert(usdChild);
+        assert(usdChild);
 #endif
 
-	// First, check if we need to rename the child.
-	std::string childName = uniqueChildName(fItem, child->path());
+        // First, check if we need to rename the child.
+        std::string childName = uniqueChildName(fItem, child->path());
 
-	// Set up all paths to perform the reparent.
-	auto prim = usdChild->prim();
-	auto stage = prim.GetStage();
-	auto ufeSrcPath = usdChild->path();
-	auto usdSrcPath = prim.GetPath();
-	auto ufeDstPath = fItem->path() + childName;
-	auto usdDstPath = fPrim.GetPath().AppendChild(TfToken(childName));
-	SdfLayerHandle layer = MayaUsdUtils::defPrimSpecLayer(prim);
-	if (!layer) {
-		std::string err = TfStringPrintf("No prim found at %s", usdSrcPath.GetString().c_str());
-		throw std::runtime_error(err.c_str());
-	}
+        // Set up all paths to perform the reparent.
+        auto           prim = usdChild->prim();
+        auto           stage = prim.GetStage();
+        auto           ufeSrcPath = usdChild->path();
+        auto           usdSrcPath = prim.GetPath();
+        auto           ufeDstPath = fItem->path() + childName;
+        auto           usdDstPath = fPrim.GetPath().AppendChild(TfToken(childName));
+        SdfLayerHandle layer = MayaUsdUtils::defPrimSpecLayer(prim);
+        if (!layer) {
+            std::string err = TfStringPrintf("No prim found at %s", usdSrcPath.GetString().c_str());
+            throw std::runtime_error(err.c_str());
+        }
 
-	// In USD, reparent is implemented like rename, using copy to
-	// destination, then remove from source.
-	// See UsdUndoRenameCommand._rename comments for details.
-	InPathChange pc;
+        // In USD, reparent is implemented like rename, using copy to
+        // destination, then remove from source.
+        // See UsdUndoRenameCommand._rename comments for details.
+        InPathChange pc;
 
-	auto status = SdfCopySpec(layer, usdSrcPath, layer, usdDstPath);
-	if (!status) {
-		std::string err = TfStringPrintf("Appending child %s to parent %s failed.",
-						ufeSrcPath.string().c_str(), fItem->path().string().c_str());
-		throw std::runtime_error(err.c_str());
-	}
+        auto status = SdfCopySpec(layer, usdSrcPath, layer, usdDstPath);
+        if (!status) {
+            std::string err = TfStringPrintf(
+                "Appending child %s to parent %s failed.",
+                ufeSrcPath.string().c_str(),
+                fItem->path().string().c_str());
+            throw std::runtime_error(err.c_str());
+        }
 
-	stage->RemovePrim(usdSrcPath);
-	auto ufeDstItem = UsdSceneItem::create(ufeDstPath, ufePathToPrim(ufeDstPath));
+        stage->RemovePrim(usdSrcPath);
+        auto ufeDstItem = UsdSceneItem::create(ufeDstPath, ufePathToPrim(ufeDstPath));
 
-	sendNotification<Ufe::ObjectReparent>(ufeDstItem, ufeSrcPath);
+        sendNotification<Ufe::ObjectReparent>(ufeDstItem, ufeSrcPath);
 
-	// FIXME  No idea how to get the child prim index yet.  PPT, 16-Aug-2018.
-	return Ufe::AppendedChild(ufeDstItem, ufeSrcPath, 0);
-}
+        // FIXME  No idea how to get the child prim index yet.  PPT, 16-Aug-2018.
+        return Ufe::AppendedChild(ufeDstItem, ufeSrcPath, 0);
+    }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #if UFE_PREVIEW_VERSION_NUM >= 2013
-Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
-    const Ufe::SceneItem::Ptr& child,
-    const Ufe::SceneItem::Ptr& pos
-)
-{
-    return UsdUndoInsertChildCommand::create(
-        fItem, downcast(child), downcast(pos));
-}
+    Ufe::UndoableCommand::Ptr
+    UsdHierarchy::insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos)
+    {
+        return UsdUndoInsertChildCommand::create(fItem, downcast(child), downcast(pos));
+    }
 #endif
 
 #if UFE_PREVIEW_VERSION_NUM < 2017
-// Create a transform.
-Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
-{
-	// According to Pixar, the following is more efficient when creating
-	// multiple transforms, because of the use of ChangeBlock():
-	// with Sdf.ChangeBlock():
-	//     primSpec = Sdf.CreatePrimInLayer(layer, usdPath)
-	//     primSpec.specifier = Sdf.SpecifierDef
-	//     primSpec.typeName = 'Xform'
+    // Create a transform.
+    Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
+    {
+        // According to Pixar, the following is more efficient when creating
+        // multiple transforms, because of the use of ChangeBlock():
+        // with Sdf.ChangeBlock():
+        //     primSpec = Sdf.CreatePrimInLayer(layer, usdPath)
+        //     primSpec.specifier = Sdf.SpecifierDef
+        //     primSpec.typeName = 'Xform'
 
-	// Rename the new group for uniqueness, if needed.
-	Ufe::Path newPath = fItem->path() + name;
-	auto childName = uniqueChildName(fItem, newPath);
+        // Rename the new group for uniqueness, if needed.
+        Ufe::Path newPath = fItem->path() + name;
+        auto      childName = uniqueChildName(fItem, newPath);
 
-	// Next, get the stage corresponding to the new path.
-	auto segments = newPath.getSegments();
-	TEST_USD_PATH(segments, newPath);
-	auto dagSegment = segments[0];
-	auto stage = getStage(Ufe::Path(dagSegment));
+        // Next, get the stage corresponding to the new path.
+        auto segments = newPath.getSegments();
+        TEST_USD_PATH(segments, newPath);
+        auto dagSegment = segments[0];
+        auto stage = getStage(Ufe::Path(dagSegment));
 
-	// Build the corresponding USD path and create the USD group prim.
-	auto usdPath = fItem->prim().GetPath().AppendChild(TfToken(childName));
-	auto prim = UsdGeomXform::Define(stage, usdPath).GetPrim();
+        // Build the corresponding USD path and create the USD group prim.
+        auto usdPath = fItem->prim().GetPath().AppendChild(TfToken(childName));
+        auto prim = UsdGeomXform::Define(stage, usdPath).GetPrim();
 
-	// Create a UFE scene item from the prim.
-	auto ufeChildPath = fItem->path() + childName;
-	return UsdSceneItem::create(ufeChildPath, prim);
-}
+        // Create a UFE scene item from the prim.
+        auto ufeChildPath = fItem->path() + childName;
+        return UsdSceneItem::create(ufeChildPath, prim);
+    }
 
-Ufe::Group UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
-{
-	auto createGroupCmd = UsdUndoCreateGroupCommand::create(fItem, name);
-	createGroupCmd->execute();
-	return Ufe::Group(createGroupCmd->group(), createGroupCmd);
-}
+    Ufe::Group UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
+    {
+        auto createGroupCmd = UsdUndoCreateGroupCommand::create(fItem, name);
+        createGroupCmd->execute();
+        return Ufe::Group(createGroupCmd->group(), createGroupCmd);
+    }
 
 #else // UFE_PREVIEW_VERSION_NUM
 
+    // Create a transform.
+    Ufe::SceneItem::Ptr
+    UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
+    {
+        Ufe::SceneItem::Ptr createdItem = nullptr;
 
-// Create a transform.
-Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
-{
-	Ufe::SceneItem::Ptr createdItem = nullptr;
+        UsdUndoCreateGroupCommand::Ptr cmd
+            = UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
+        if (cmd) {
+            cmd->execute();
+            createdItem = cmd->group();
+        }
 
-	UsdUndoCreateGroupCommand::Ptr cmd = UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
-	if (cmd) {
-		cmd->execute();
-		createdItem = cmd->group();
-	}
+        return createdItem;
+    }
 
-	return createdItem;
-}
-
-Ufe::UndoableCommand::Ptr UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
-{
-	return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
-}
+    Ufe::UndoableCommand::Ptr UsdHierarchy::createGroupCmd(
+        const Ufe::Selection&     selection,
+        const Ufe::PathComponent& name) const
+    {
+        return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
+    }
 
 #endif // UFE_PREVIEW_VERSION_NUM
 
 #endif // UFE_V2_FEATURES_AVAILABLE
 
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

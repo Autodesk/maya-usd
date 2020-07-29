@@ -15,35 +15,36 @@
 //
 #include "UsdSceneItemOpsHandler.h"
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-UsdSceneItemOpsHandler::UsdSceneItemOpsHandler()
-	: Ufe::SceneItemOpsHandler()
-{}
-
-UsdSceneItemOpsHandler::~UsdSceneItemOpsHandler()
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-/*static*/
-UsdSceneItemOpsHandler::Ptr UsdSceneItemOpsHandler::create()
-{
-	return std::make_shared<UsdSceneItemOpsHandler>();
-}
+    UsdSceneItemOpsHandler::UsdSceneItemOpsHandler()
+        : Ufe::SceneItemOpsHandler()
+    {
+    }
 
-//------------------------------------------------------------------------------
-// Ufe::SceneItemOpsHandler overrides
-//------------------------------------------------------------------------------
+    UsdSceneItemOpsHandler::~UsdSceneItemOpsHandler() { }
 
-Ufe::SceneItemOps::Ptr UsdSceneItemOpsHandler::sceneItemOps(const Ufe::SceneItem::Ptr& item) const
-{
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    /*static*/
+    UsdSceneItemOpsHandler::Ptr UsdSceneItemOpsHandler::create()
+    {
+        return std::make_shared<UsdSceneItemOpsHandler>();
+    }
+
+    //------------------------------------------------------------------------------
+    // Ufe::SceneItemOpsHandler overrides
+    //------------------------------------------------------------------------------
+
+    Ufe::SceneItemOps::Ptr
+    UsdSceneItemOpsHandler::sceneItemOps(const Ufe::SceneItem::Ptr& item) const
+    {
+        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-	assert(usdItem);
+        assert(usdItem);
 #endif
-	return UsdSceneItemOps::create(usdItem);
-}
+        return UsdSceneItemOps::create(usdItem);
+    }
 
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

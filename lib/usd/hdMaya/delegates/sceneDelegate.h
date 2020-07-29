@@ -16,21 +16,21 @@
 #ifndef HDMAYA_SCENE_DELEGATE_H
 #define HDMAYA_SCENE_DELEGATE_H
 
-#include <memory>
-
-#include <maya/MDagPath.h>
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec4d.h>
-#include <pxr/imaging/hd/meshTopology.h>
-#include <pxr/imaging/hd/sceneDelegate.h>
-#include <pxr/usd/sdf/path.h>
-
 #include <hdMaya/adapters/lightAdapter.h>
 #include <hdMaya/adapters/materialAdapter.h>
 #include <hdMaya/adapters/shapeAdapter.h>
 #include <hdMaya/delegates/delegateCtx.h>
+
+#include <pxr/base/gf/vec4d.h>
+#include <pxr/imaging/hd/meshTopology.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+
+#include <maya/MDagPath.h>
+#include <maya/MObject.h>
+
+#include <memory>
 
 /*
  * Notes.
@@ -111,7 +111,8 @@ public:
 
     HDMAYA_API
     void PopulateSelectedPaths(
-        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
+        const MSelectionList&       mayaSelection,
+        SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
 
 protected:
@@ -131,9 +132,9 @@ protected:
     GfMatrix4d GetTransform(const SdfPath& id) override;
 
     HDMAYA_API
-    size_t SampleTransform(
-        const SdfPath& id, size_t maxSampleCount, float* times,
-        GfMatrix4d* samples) override;
+    size_t
+    SampleTransform(const SdfPath& id, size_t maxSampleCount, float* times, GfMatrix4d* samples)
+        override;
 
     HDMAYA_API
     bool GetVisible(const SdfPath& id) override;
@@ -157,23 +158,24 @@ protected:
 
     HDMAYA_API
     size_t SamplePrimvar(
-        const SdfPath& id, const TfToken& key, size_t maxSampleCount,
-        float* times, VtValue* samples) override;
+        const SdfPath& id,
+        const TfToken& key,
+        size_t         maxSampleCount,
+        float*         times,
+        VtValue*       samples) override;
 
     HDMAYA_API
     TfToken GetRenderTag(SdfPath const& id) override;
 
     HDMAYA_API
-    HdPrimvarDescriptorVector GetPrimvarDescriptors(
-        const SdfPath& id, HdInterpolation interpolation) override;
+    HdPrimvarDescriptorVector
+    GetPrimvarDescriptors(const SdfPath& id, HdInterpolation interpolation) override;
 
     HDMAYA_API
-    VtValue GetLightParamValue(
-        const SdfPath& id, const TfToken& paramName) override;
+    VtValue GetLightParamValue(const SdfPath& id, const TfToken& paramName) override;
 
     HDMAYA_API
-    VtIntArray GetInstanceIndices(
-        const SdfPath& instancerId, const SdfPath& prototypeId) override;
+    VtIntArray GetInstanceIndices(const SdfPath& instancerId, const SdfPath& prototypeId) override;
 
     HDMAYA_API
     GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) override;
@@ -181,15 +183,17 @@ protected:
     HDMAYA_API
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 34
     SdfPath GetScenePrimPath(
-        const SdfPath& rprimPath, int instanceIndex,
-        HdInstancerContext *instancerContext) override;
+        const SdfPath&      rprimPath,
+        int                 instanceIndex,
+        HdInstancerContext* instancerContext) override;
 #elif defined(HD_API_VERSION) && HD_API_VERSION >= 33
-    SdfPath GetScenePrimPath(
-        const SdfPath& rprimPath, int instanceIndex) override;
+    SdfPath GetScenePrimPath(const SdfPath& rprimPath, int instanceIndex) override;
 #else
     SdfPath GetPathForInstanceIndex(
-        const SdfPath& protoPrimPath, int instanceIndex,
-        int* absoluteInstanceIndex, SdfPath* rprimPath,
+        const SdfPath& protoPrimPath,
+        int            instanceIndex,
+        int*           absoluteInstanceIndex,
+        SdfPath*       rprimPath,
         SdfPathVector* instanceContext) override;
 #endif
 
@@ -202,8 +206,7 @@ protected:
     std::string GetDisplacementShaderSource(const SdfPath& id) override;
 
     HDMAYA_API
-    VtValue GetMaterialParamValue(
-        const SdfPath& id, const TfToken& paramName) override;
+    VtValue GetMaterialParamValue(const SdfPath& id, const TfToken& paramName) override;
 
     HDMAYA_API
     HdMaterialParamVector GetMaterialParams(const SdfPath& id) override;
@@ -226,29 +229,26 @@ protected:
     VtValue GetMaterialResource(const SdfPath& id) override;
 
     HDMAYA_API
-    HdTextureResource::ID GetTextureResourceID(
-        const SdfPath& textureId) override;
+    HdTextureResource::ID GetTextureResourceID(const SdfPath& textureId) override;
 
     HDMAYA_API
-    HdTextureResourceSharedPtr GetTextureResource(
-        const SdfPath& textureId) override;
+    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureId) override;
 
 private:
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);
 
-    template <typename T>
-    using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
+    template <typename T> using AdapterMap = std::unordered_map<SdfPath, T, SdfPath::Hash>;
     /// \brief Unordered Map storing the shape adapters.
     AdapterMap<HdMayaShapeAdapterPtr> _shapeAdapters;
     /// \brief Unordered Map storing the light adapters.
     AdapterMap<HdMayaLightAdapterPtr> _lightAdapters;
     /// \brief Unordered Map storing the material adapters.
-    AdapterMap<HdMayaMaterialAdapterPtr> _materialAdapters;
-    std::vector<MCallbackId> _callbacks;
-    std::vector<std::tuple<SdfPath, MObject>> _adaptersToRecreate;
+    AdapterMap<HdMayaMaterialAdapterPtr>       _materialAdapters;
+    std::vector<MCallbackId>                   _callbacks;
+    std::vector<std::tuple<SdfPath, MObject>>  _adaptersToRecreate;
     std::vector<std::tuple<SdfPath, uint32_t>> _adaptersToRebuild;
-    std::vector<MObject> _addedNodes;
-    std::vector<SdfPath> _materialTagsChanged;
+    std::vector<MObject>                       _addedNodes;
+    std::vector<SdfPath>                       _materialTagsChanged;
 
     SdfPath _fallbackMaterial;
 };

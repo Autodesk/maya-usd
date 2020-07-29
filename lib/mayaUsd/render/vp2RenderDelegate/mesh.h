@@ -16,12 +16,12 @@
 #ifndef HD_VP2_MESH
 #define HD_VP2_MESH
 
-#include <maya/MHWGeometry.h>
-
-#include <pxr/pxr.h>
-#include <pxr/imaging/hd/mesh.h>
-
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
+#include <pxr/imaging/hd/mesh.h>
+#include <pxr/pxr.h>
+
+#include <maya/MHWGeometry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,7 +50,7 @@ struct HdVP2MeshSharedData {
     //! the actual primvar buffer, and "interpolation" is the interpolation mode
     //! to be used.
     struct PrimvarSource {
-        VtValue data;
+        VtValue         data;
         HdInterpolation interpolation;
     };
     TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
@@ -87,9 +87,7 @@ public:
     //! Destructor.
     ~HdVP2Mesh() override = default;
 
-    void Sync(
-        HdSceneDelegate*, HdRenderParam*,
-        HdDirtyBits*, const TfToken& reprToken) override;
+    void Sync(HdSceneDelegate*, HdRenderParam*, HdDirtyBits*, const TfToken& reprToken) override;
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
@@ -101,15 +99,17 @@ private:
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
 
     void _UpdateDrawItem(
-        HdSceneDelegate*, HdVP2DrawItem*,
+        HdSceneDelegate*,
+        HdVP2DrawItem*,
         const HdMeshReprDesc& desc,
-        bool requireSmoothNormals, bool requireFlatNormals);
+        bool                  requireSmoothNormals,
+        bool                  requireFlatNormals);
 
     void _HideAllDrawItems(const TfToken& reprToken);
 
     void _UpdatePrimvarSources(
-        HdSceneDelegate* sceneDelegate,
-        HdDirtyBits dirtyBits,
+        HdSceneDelegate*     sceneDelegate,
+        HdDirtyBits          dirtyBits,
         const TfTokenVector& requiredPrimvars);
 
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
@@ -128,14 +128,18 @@ private:
         DirtySelection = (DirtyPointsIndices << 1),
         DirtySelectionHighlight = (DirtySelection << 1)
     };
-    
-    HdVP2RenderDelegate* _delegate{ nullptr };          //!< VP2 render delegate for which this mesh was created
-    HdDirtyBits          _customDirtyBitsInUse{ 0 };    //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
-    const MString        _rprimId;                      //!< Rprim id cached as a maya string for easier debugging and profiling
-    HdVP2MeshSharedData  _meshSharedData;               //!< Shared data for all draw items of the Rprim
+
+    HdVP2RenderDelegate* _delegate {
+        nullptr
+    }; //!< VP2 render delegate for which this mesh was created
+    HdDirtyBits _customDirtyBitsInUse {
+        0
+    };                      //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
+    const MString _rprimId; //!< Rprim id cached as a maya string for easier debugging and profiling
+    HdVP2MeshSharedData _meshSharedData; //!< Shared data for all draw items of the Rprim
 
     //! Selection status of the Rprim
-    HdVP2SelectionStatus _selectionStatus{ kUnselected };
+    HdVP2SelectionStatus _selectionStatus { kUnselected };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

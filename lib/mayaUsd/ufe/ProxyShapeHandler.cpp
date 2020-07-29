@@ -15,79 +15,71 @@
 //
 #include "ProxyShapeHandler.h"
 
+#include <mayaUsd/utils/query.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 
-#include <mayaUsd/utils/query.h>
-
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//------------------------------------------------------------------------------
-// Global variables
-//------------------------------------------------------------------------------
-const std::string ProxyShapeHandler::fMayaUsdGatewayNodeType = "mayaUsdProxyShapeBase";
-
-//------------------------------------------------------------------------------
-// ProxyShapeHandler
-//------------------------------------------------------------------------------
-
-/*static*/
-const std::string& ProxyShapeHandler::gatewayNodeType()
+MAYAUSD_NS_DEF
 {
-	return fMayaUsdGatewayNodeType;
-}
+    namespace ufe {
 
-/*static*/
-std::vector<std::string> ProxyShapeHandler::getAllNames()
-{
-	std::vector<std::string> names;
-	MString cmd;
-	MStringArray result;
-	cmd.format("ls -type ^1s -long", fMayaUsdGatewayNodeType.c_str());
-	if (MS::kSuccess == MGlobal::executeCommand(cmd, result))
-	{
-		names.reserve(result.length());
-		for (MString& name : result)
-		{
-			names.push_back(name.asChar());
-		}
-	}
-	return names;
-}
+    //------------------------------------------------------------------------------
+    // Global variables
+    //------------------------------------------------------------------------------
+    const std::string ProxyShapeHandler::fMayaUsdGatewayNodeType = "mayaUsdProxyShapeBase";
 
-/*static*/
-UsdStageWeakPtr ProxyShapeHandler::dagPathToStage(const std::string& dagPath)
-{
-	auto prim = UsdMayaQuery::GetPrim(dagPath);
-	return prim ? prim.GetStage() : nullptr;
-}
+    //------------------------------------------------------------------------------
+    // ProxyShapeHandler
+    //------------------------------------------------------------------------------
 
-/*static*/
-std::vector<UsdStageRefPtr> ProxyShapeHandler::getAllStages()
-{
-	// According to Pixar, the following should work:
-	//   return UsdMayaStageCache::Get().GetAllStages();
-	// but after a file open of a scene with one or more Pixar proxy shapes,
-	// returns an empty list.  To be investigated, PPT, 28-Feb-2019.
+    /*static*/
+    const std::string& ProxyShapeHandler::gatewayNodeType() { return fMayaUsdGatewayNodeType; }
 
-	// When using an unmodified AL plugin, the following line crashes
-	// Maya, so it requires the AL proxy shape inheritance from
-	// MayaUsdProxyShapeBase.  PPT, 12-Apr-2019.
-	std::vector<UsdStageRefPtr> stages;
-	auto allNames = getAllNames();
-	stages.reserve(allNames.size());
-	for (const auto& name : allNames)
-	{
-		UsdStageWeakPtr stage = dagPathToStage(name);
-		if (stage)
-		{
-			stages.push_back(stage);
-		}
-	}
-	return stages;
-}
+    /*static*/
+    std::vector<std::string> ProxyShapeHandler::getAllNames()
+    {
+        std::vector<std::string> names;
+        MString                  cmd;
+        MStringArray             result;
+        cmd.format("ls -type ^1s -long", fMayaUsdGatewayNodeType.c_str());
+        if (MS::kSuccess == MGlobal::executeCommand(cmd, result)) {
+            names.reserve(result.length());
+            for (MString& name : result) { names.push_back(name.asChar()); }
+        }
+        return names;
+    }
 
-} // namespace ufe
+    /*static*/
+    UsdStageWeakPtr ProxyShapeHandler::dagPathToStage(const std::string& dagPath)
+    {
+        auto prim = UsdMayaQuery::GetPrim(dagPath);
+        return prim ? prim.GetStage() : nullptr;
+    }
+
+    /*static*/
+    std::vector<UsdStageRefPtr> ProxyShapeHandler::getAllStages()
+    {
+        // According to Pixar, the following should work:
+        //   return UsdMayaStageCache::Get().GetAllStages();
+        // but after a file open of a scene with one or more Pixar proxy shapes,
+        // returns an empty list.  To be investigated, PPT, 28-Feb-2019.
+
+        // When using an unmodified AL plugin, the following line crashes
+        // Maya, so it requires the AL proxy shape inheritance from
+        // MayaUsdProxyShapeBase.  PPT, 12-Apr-2019.
+        std::vector<UsdStageRefPtr> stages;
+        auto                        allNames = getAllNames();
+        stages.reserve(allNames.size());
+        for (const auto& name : allNames) {
+            UsdStageWeakPtr stage = dagPathToStage(name);
+            if (stage) {
+                stages.push_back(stage);
+            }
+        }
+        return stages;
+    }
+
+    } // namespace ufe
 } // namespace MayaUsd

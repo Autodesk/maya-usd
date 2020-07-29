@@ -15,9 +15,9 @@
 //
 #include "draw_item.h"
 
-#include <pxr/imaging/hd/mesh.h>
-
 #include "render_delegate.h"
+
+#include <pxr/imaging/hd/mesh.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -25,11 +25,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 Data holder for its corresponding render item to facilitate parallelized evaluation.
 */
-HdVP2DrawItem::HdVP2DrawItem(
-    HdVP2RenderDelegate* delegate,
-    const HdRprimSharedData* sharedData)
-: HdDrawItem(sharedData)
-, _delegate(delegate)
+HdVP2DrawItem::HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedData* sharedData)
+    : HdDrawItem(sharedData)
+    , _delegate(delegate)
 {
     // In the case of instancing, the ID of a proto has an attribute at the end,
     // we keep this info in _renderItemName so if needed we can extract proto ID
@@ -37,7 +35,7 @@ HdVP2DrawItem::HdVP2DrawItem(
     //
     //   "/Proxy/TreePatch/Tree_1.proto_leaves_id0"
     //
-    _renderItemName  = GetRprimID().GetText();
+    _renderItemName = GetRprimID().GetText();
     _renderItemName += TfStringPrintf("/DrawItem_%p", this).c_str();
 
     _renderItemData._indexBuffer.reset(
@@ -45,11 +43,12 @@ HdVP2DrawItem::HdVP2DrawItem(
 }
 
 //! \brief  Destructor.
-HdVP2DrawItem::~HdVP2DrawItem() {
+HdVP2DrawItem::~HdVP2DrawItem()
+{
     if (_delegate) {
-        auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+        auto* const         param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
         MSubSceneContainer* subSceneContainer = param ? param->GetContainer() : nullptr;
-        if(subSceneContainer) {
+        if (subSceneContainer) {
             subSceneContainer->remove(GetRenderItemName());
         }
     }

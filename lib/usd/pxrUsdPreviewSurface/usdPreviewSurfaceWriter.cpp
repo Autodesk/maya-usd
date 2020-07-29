@@ -23,11 +23,11 @@
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -42,22 +42,17 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-PXRUSDMAYA_REGISTER_WRITER(
-    pxrUsdPreviewSurface,
-    PxrMayaUsdPreviewSurface_Writer);
+PXRUSDMAYA_REGISTER_WRITER(pxrUsdPreviewSurface, PxrMayaUsdPreviewSurface_Writer);
 
 PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaShaderWriter(depNodeFn, usdPath, jobCtx)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaShaderWriter(depNodeFn, usdPath, jobCtx)
 {
-    UsdShadeShader shaderSchema =
-        UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
+    UsdShadeShader shaderSchema = UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
     if (!TF_VERIFY(
             shaderSchema,
             "Could not define UsdShadeShader at path '%s'\n",
@@ -76,39 +71,32 @@ PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(
     }
 
     // Surface Output
-    shaderSchema.CreateOutput(
-        UsdShadeTokens->surface,
-        SdfValueTypeNames->Token);
+    shaderSchema.CreateOutput(UsdShadeTokens->surface, SdfValueTypeNames->Token);
 
     // Displacement Output
-    shaderSchema.CreateOutput(
-        UsdShadeTokens->displacement,
-        SdfValueTypeNames->Token);
+    shaderSchema.CreateOutput(UsdShadeTokens->displacement, SdfValueTypeNames->Token);
 }
 
-static
-bool
-_AuthorShaderInputFromShadingNodeAttr(
-        const MFnDependencyNode& depNodeFn,
-        const MObject& shadingNodeAttr,
-        UsdShadeShader& shaderSchema,
-        const TfToken& shaderInputName,
-        const SdfValueTypeName& shaderInputTypeName,
-        const UsdTimeCode usdTime,
-        const bool mayaBoolAsUsdInt = false)
+static bool _AuthorShaderInputFromShadingNodeAttr(
+    const MFnDependencyNode& depNodeFn,
+    const MObject&           shadingNodeAttr,
+    UsdShadeShader&          shaderSchema,
+    const TfToken&           shaderInputName,
+    const SdfValueTypeName&  shaderInputTypeName,
+    const UsdTimeCode        usdTime,
+    const bool               mayaBoolAsUsdInt = false)
 {
     MStatus status;
 
     // If the USD shader input type is int but the Maya attribute type is bool,
     // we do a conversion (e.g. for "useSpecularWorkflow").
-    const bool convertBoolToInt = (mayaBoolAsUsdInt &&
-        (shaderInputTypeName == SdfValueTypeNames->Int));
+    const bool convertBoolToInt
+        = (mayaBoolAsUsdInt && (shaderInputTypeName == SdfValueTypeNames->Int));
 
-    MPlug shadingNodePlug =
-        depNodeFn.findPlug(
-            shadingNodeAttr,
-            /* wantNetworkedPlug = */ true,
-            &status);
+    MPlug shadingNodePlug = depNodeFn.findPlug(
+        shadingNodeAttr,
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -121,20 +109,16 @@ _AuthorShaderInputFromShadingNodeAttr(
     if (UsdMayaUtil::IsAuthored(shadingNodePlug)) {
         // Color values are all linear on the shader, so do not re-linearize
         // them.
-        VtValue value =
-            UsdMayaWriteUtil::GetVtValue(
-                shadingNodePlug,
-                convertBoolToInt ?
-                    SdfValueTypeNames->Bool :
-                    shaderInputTypeName,
-                /* linearizeColors = */ false);
+        VtValue value = UsdMayaWriteUtil::GetVtValue(
+            shadingNodePlug,
+            convertBoolToInt ? SdfValueTypeNames->Bool : shaderInputTypeName,
+            /* linearizeColors = */ false);
 
         if (value.IsEmpty()) {
             return false;
         }
 
-        UsdShadeInput shaderInput =
-            shaderSchema.CreateInput(shaderInputName, shaderInputTypeName);
+        UsdShadeInput shaderInput = shaderSchema.CreateInput(shaderInputName, shaderInputTypeName);
 
         // For attributes that are the destination of a connection, we create
         // the input on the shader but we do *not* author a value for it. We
@@ -158,8 +142,7 @@ _AuthorShaderInputFromShadingNodeAttr(
 }
 
 /* virtual */
-void
-PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
+void PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaShaderWriter::Write(usdTime);
 
@@ -300,8 +283,7 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
 
 /* virtual */
 TfToken
-PxrMayaUsdPreviewSurface_Writer::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+PxrMayaUsdPreviewSurface_Writer::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
     if (!_usdPrim) {
         return TfToken();
@@ -310,36 +292,30 @@ PxrMayaUsdPreviewSurface_Writer::GetShadingAttributeNameForMayaAttrName(
     TfToken usdAttrName;
 
     if (mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OutColorAttrName) {
-        usdAttrName =
-            TfToken(
-                TfStringPrintf(
-                    "%s%s",
-                    UsdShadeTokens->outputs.GetText(),
-                    UsdShadeTokens->surface.GetText()).c_str());
-    }
-    else if (mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->DisplacementAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->IorAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->NormalAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OcclusionAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName ||
-            mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName) {
-        usdAttrName =
-            TfToken(
-                TfStringPrintf(
-                    "%s%s",
-                    UsdShadeTokens->inputs.GetText(),
-                    mayaAttrName.GetText()).c_str());
+        usdAttrName = TfToken(
+            TfStringPrintf(
+                "%s%s", UsdShadeTokens->outputs.GetText(), UsdShadeTokens->surface.GetText())
+                .c_str());
+    } else if (
+        mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->DisplacementAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->IorAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->NormalAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OcclusionAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName) {
+        usdAttrName = TfToken(
+            TfStringPrintf("%s%s", UsdShadeTokens->inputs.GetText(), mayaAttrName.GetText())
+                .c_str());
     }
 
     return usdAttrName;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

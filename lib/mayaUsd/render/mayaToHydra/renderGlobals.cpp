@@ -15,8 +15,11 @@
 //
 #include "renderGlobals.h"
 
-#include <functional>
-#include <sstream>
+#include "utils.h"
+
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
+#include <pxr/imaging/hd/rendererPluginRegistry.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -27,11 +30,8 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 
-#include <pxr/imaging/hd/renderDelegate.h>
-#include <pxr/imaging/hd/rendererPlugin.h>
-#include <pxr/imaging/hd/rendererPluginRegistry.h>
-
-#include "utils.h"
+#include <functional>
+#include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,17 +53,24 @@ TF_DEFINE_PRIVATE_TOKENS(
 namespace {
 
 void _CreateEnumAttribute(
-    MFnDependencyNode& node, const TfToken& attrName,
-    const TfTokenVector& values, const TfToken& defValue) {
+    MFnDependencyNode&   node,
+    const TfToken&       attrName,
+    const TfTokenVector& values,
+    const TfToken&       defValue)
+{
     const auto attr = node.attribute(MString(attrName.GetText()));
     if (!attr.isNull()) {
         if ([&attr, &values]() -> bool { // Meaning: Can return?
-                MStatus status;
+                MStatus          status;
                 MFnEnumAttribute eAttr(attr, &status);
-                if (!status) { return false; }
+                if (!status) {
+                    return false;
+                }
                 short id = 0;
                 for (const auto& v : values) {
-                    if (eAttr.fieldName(id++) != v.GetText()) { return false; }
+                    if (eAttr.fieldName(id++) != v.GetText()) {
+                        return false;
+                    }
                 }
                 return true;
             }()) {
@@ -73,42 +80,51 @@ void _CreateEnumAttribute(
         }
     }
     MFnEnumAttribute eAttr;
-    auto o = eAttr.create(attrName.GetText(), attrName.GetText());
-    short id = 0;
+    auto             o = eAttr.create(attrName.GetText(), attrName.GetText());
+    short            id = 0;
     for (const auto& v : values) { eAttr.addField(v.GetText(), id++); }
     eAttr.setDefault(defValue.GetText());
     node.addAttribute(o);
 }
 
-void _CreateEnumAttribute(MFnDependencyNode& node, const TfToken& attrName,
-    const TfEnum& defValue) {
+void _CreateEnumAttribute(MFnDependencyNode& node, const TfToken& attrName, const TfEnum& defValue)
+{
     std::vector<std::string> names = TfEnum::GetAllNames(defValue);
-    TfTokenVector tokens(names.begin(), names.end());
-    return _CreateEnumAttribute(node, attrName, tokens,
-        TfToken(TfEnum::GetDisplayName(defValue)));
+    TfTokenVector            tokens(names.begin(), names.end());
+    return _CreateEnumAttribute(node, attrName, tokens, TfToken(TfEnum::GetDisplayName(defValue)));
 }
 
 void _CreateTypedAttribute(
-    MFnDependencyNode& node, const TfToken& attrName, MFnData::Type type,
-    const std::function<MObject()>& creator) {
+    MFnDependencyNode&              node,
+    const TfToken&                  attrName,
+    MFnData::Type                   type,
+    const std::function<MObject()>& creator)
+{
     const auto attr = node.attribute(attrName.GetText());
     if (!attr.isNull()) {
-        MStatus status;
+        MStatus           status;
         MFnTypedAttribute tAttr(attr, &status);
-        if (status && tAttr.attrType() == type) { return; }
+        if (status && tAttr.attrType() == type) {
+            return;
+        }
         node.removeAttribute(attr);
     }
     node.addAttribute(creator());
 }
 
 void _CreateNumericAttribute(
-    MFnDependencyNode& node, const TfToken& attrName, MFnNumericData::Type type,
-    const std::function<MObject()>& creator) {
+    MFnDependencyNode&              node,
+    const TfToken&                  attrName,
+    MFnNumericData::Type            type,
+    const std::function<MObject()>& creator)
+{
     const auto attr = node.attribute(attrName.GetText());
     if (!attr.isNull()) {
-        MStatus status;
+        MStatus             status;
         MFnNumericAttribute nAttr(attr, &status);
-        if (status && nAttr.unitType() == type) { return; }
+        if (status && nAttr.unitType() == type) {
+            return;
+        }
         node.removeAttribute(attr);
     }
     node.addAttribute(creator());
@@ -116,27 +132,29 @@ void _CreateNumericAttribute(
 
 template <typename T>
 void _CreateNumericAttribute(
-    MFnDependencyNode& node, const TfToken& attrName, MFnNumericData::Type type,
-    typename std::enable_if<std::is_pod<T>::value, T>::type defValue) {
-    _CreateNumericAttribute(
-        node, attrName, type,
-        [&]() -> MObject {
-            MFnNumericAttribute nAttr;
-            const auto o = nAttr.create(
-                        attrName.GetText(), attrName.GetText(),
-                        type);
-            nAttr.setDefault(defValue);
-            return o;
-        });
+    MFnDependencyNode&                                      node,
+    const TfToken&                                          attrName,
+    MFnNumericData::Type                                    type,
+    typename std::enable_if<std::is_pod<T>::value, T>::type defValue)
+{
+    _CreateNumericAttribute(node, attrName, type, [&]() -> MObject {
+        MFnNumericAttribute nAttr;
+        const auto          o = nAttr.create(attrName.GetText(), attrName.GetText(), type);
+        nAttr.setDefault(defValue);
+        return o;
+    });
 }
 
 void _CreateColorAttribute(
-    MFnDependencyNode& node, const TfToken& attrName, const TfToken& attrAName,
-    const GfVec4f& defValue) {
+    MFnDependencyNode& node,
+    const TfToken&     attrName,
+    const TfToken&     attrAName,
+    const GfVec4f&     defValue)
+{
     const auto attr = node.attribute(attrName.GetText());
-    auto foundColor = false;
+    auto       foundColor = false;
     if (!attr.isNull()) {
-        MStatus status;
+        MStatus             status;
         MFnNumericAttribute nAttr(attr, &status);
         if (status && nAttr.isUsedAsColor()) {
             foundColor = true;
@@ -145,12 +163,14 @@ void _CreateColorAttribute(
         }
     }
     const auto attrA = node.attribute(attrAName.GetText());
-    auto foundAlpha = false;
+    auto       foundAlpha = false;
     if (!attrA.isNull()) {
-        MStatus status;
+        MStatus             status;
         MFnNumericAttribute nAttr(attrA, &status);
         if (status && nAttr.unitType() == MFnNumericData::kFloat) {
-            if (foundColor) { return; }
+            if (foundColor) {
+                return;
+            }
             foundAlpha = true;
         } else {
             node.removeAttribute(attrA);
@@ -158,122 +178,120 @@ void _CreateColorAttribute(
     }
     MFnNumericAttribute nAttr;
     if (!foundColor) {
-        const auto o =
-            nAttr.createColor(attrName.GetText(), attrName.GetText());
+        const auto o = nAttr.createColor(attrName.GetText(), attrName.GetText());
         nAttr.setDefault(defValue[0], defValue[1], defValue[2]);
         node.addAttribute(o);
     }
     if (!foundAlpha) {
-        const auto o = nAttr.create(
-            attrAName.GetText(), attrAName.GetText(), MFnNumericData::kFloat);
+        const auto o
+            = nAttr.create(attrAName.GetText(), attrAName.GetText(), MFnNumericData::kFloat);
         nAttr.setDefault(defValue[3]);
         node.addAttribute(o);
     }
 }
 
-void _CreateBoolAttribute(
-    MFnDependencyNode& node, const TfToken& attrName, bool defValue) {
+void _CreateBoolAttribute(MFnDependencyNode& node, const TfToken& attrName, bool defValue)
+{
     _CreateNumericAttribute<bool>(node, attrName, MFnNumericData::kBoolean, defValue);
 }
 
 #if USD_VERSION_NUM >= 2005
-void _CreateFloatAttribute(
-    MFnDependencyNode& node, const TfToken& attrName, float defValue) {
+void _CreateFloatAttribute(MFnDependencyNode& node, const TfToken& attrName, float defValue)
+{
     _CreateNumericAttribute<float>(node, attrName, MFnNumericData::kFloat, defValue);
 }
 #endif
 
 void _CreateStringAttribute(
-    MFnDependencyNode& node, const TfToken& attrName,
-    const std::string& defValue) {
-    _CreateTypedAttribute(
-        node, attrName, MFnData::kString, [&attrName, &defValue]() -> MObject {
-            MFnTypedAttribute tAttr;
-            const auto o = tAttr.create(
-                attrName.GetText(), attrName.GetText(), MFnData::kString);
-            if (!defValue.empty()) {
-                MFnStringData strData;
-                MObject defObj = strData.create(defValue.c_str());
-                tAttr.setDefault(defObj);
-            }
-            return o;
-        });
+    MFnDependencyNode& node,
+    const TfToken&     attrName,
+    const std::string& defValue)
+{
+    _CreateTypedAttribute(node, attrName, MFnData::kString, [&attrName, &defValue]() -> MObject {
+        MFnTypedAttribute tAttr;
+        const auto o = tAttr.create(attrName.GetText(), attrName.GetText(), MFnData::kString);
+        if (!defValue.empty()) {
+            MFnStringData strData;
+            MObject       defObj = strData.create(defValue.c_str());
+            tAttr.setDefault(defObj);
+        }
+        return o;
+    });
 }
 
-template <typename T>
-void _GetFromPlug(const MPlug& plug, T& out) {
-    assert(false);
-}
+template <typename T> void _GetFromPlug(const MPlug& plug, T& out) { assert(false); }
 
-template <>
-void _GetFromPlug<bool>(const MPlug& plug, bool& out) {
-    out = plug.asBool();
-}
+template <> void _GetFromPlug<bool>(const MPlug& plug, bool& out) { out = plug.asBool(); }
 
-template <>
-void _GetFromPlug<int>(const MPlug& plug, int& out) {
-    out = plug.asInt();
-}
+template <> void _GetFromPlug<int>(const MPlug& plug, int& out) { out = plug.asInt(); }
 
-template <>
-void _GetFromPlug<float>(const MPlug& plug, float& out) {
-    out = plug.asFloat();
-}
+template <> void _GetFromPlug<float>(const MPlug& plug, float& out) { out = plug.asFloat(); }
 
-template <>
-void _GetFromPlug<std::string>(const MPlug& plug, std::string& out) {
+template <> void _GetFromPlug<std::string>(const MPlug& plug, std::string& out)
+{
     out = plug.asString().asChar();
 }
 
-template <>
-void _GetFromPlug<TfEnum>(const MPlug& plug, TfEnum& out) {
+template <> void _GetFromPlug<TfEnum>(const MPlug& plug, TfEnum& out)
+{
     out = TfEnum(out.GetType(), plug.asInt());
 }
 
 template <typename T>
-bool _GetAttribute(
-    const MFnDependencyNode& node, const TfToken& attrName, T& out) {
+bool _GetAttribute(const MFnDependencyNode& node, const TfToken& attrName, T& out)
+{
     const auto plug = node.findPlug(attrName.GetText(), true);
-    if (plug.isNull()) { return false; }
+    if (plug.isNull()) {
+        return false;
+    }
     _GetFromPlug<T>(plug, out);
     return true;
 }
 
 void _GetColorAttribute(
-    const MFnDependencyNode& node, const TfToken& attrName,
-    const TfToken& attrAName, GfVec4f& out) {
+    const MFnDependencyNode& node,
+    const TfToken&           attrName,
+    const TfToken&           attrAName,
+    GfVec4f&                 out)
+{
     const auto plug = node.findPlug(attrName.GetText(), true);
-    if (plug.isNull()) { return; }
+    if (plug.isNull()) {
+        return;
+    }
     out[0] = plug.child(0).asFloat();
     out[1] = plug.child(1).asFloat();
     out[2] = plug.child(2).asFloat();
     const auto plugA = node.findPlug(attrAName.GetText(), true);
-    if (plugA.isNull()) { return; }
+    if (plugA.isNull()) {
+        return;
+    }
     out[3] = plugA.asFloat();
 }
 
-
 } // namespace
 
-MtohRenderGlobals::MtohRenderGlobals() {}
+MtohRenderGlobals::MtohRenderGlobals() { }
 
-MObject MtohCreateRenderGlobals() {
+MObject MtohCreateRenderGlobals()
+{
     MSelectionList slist;
     slist.add(_tokens->defaultRenderGlobals.GetText());
     MObject ret;
-    if (slist.length() == 0 || !slist.getDependNode(0, ret)) { return ret; }
-    MStatus status;
+    if (slist.length() == 0 || !slist.getDependNode(0, ret)) {
+        return ret;
+    }
+    MStatus           status;
     MFnDependencyNode node(ret, &status);
-    if (!status) { return MObject(); }
+    if (!status) {
+        return MObject();
+    }
     static const MtohRenderGlobals defGlobals;
     _CreateBoolAttribute(
-        node, _tokens->mtohEnableMotionSamples,
-        defGlobals.delegateParams.enableMotionSamples);
+        node, _tokens->mtohEnableMotionSamples, defGlobals.delegateParams.enableMotionSamples);
     _CreateNumericAttribute(
-        node, _tokens->mtohTextureMemoryPerTexture, MFnNumericData::kInt,
-        []() -> MObject {
+        node, _tokens->mtohTextureMemoryPerTexture, MFnNumericData::kInt, []() -> MObject {
             MFnNumericAttribute nAttr;
-            const auto o = nAttr.create(
+            const auto          o = nAttr.create(
                 _tokens->mtohTextureMemoryPerTexture.GetText(),
                 _tokens->mtohTextureMemoryPerTexture.GetText(),
                 MFnNumericData::kInt);
@@ -281,144 +299,123 @@ MObject MtohCreateRenderGlobals() {
             nAttr.setMax(256 * 1024);
             nAttr.setSoftMin(1 * 1024);
             nAttr.setSoftMin(16 * 1024);
-            nAttr.setDefault(
-                defGlobals.delegateParams.textureMemoryPerTexture / 1024);
+            nAttr.setDefault(defGlobals.delegateParams.textureMemoryPerTexture / 1024);
             return o;
         });
     _CreateNumericAttribute(
-        node, MtohTokens->mtohMaximumShadowMapResolution, MFnNumericData::kInt,
-        []() -> MObject {
+        node, MtohTokens->mtohMaximumShadowMapResolution, MFnNumericData::kInt, []() -> MObject {
             MFnNumericAttribute nAttr;
-            const auto o = nAttr.create(
+            const auto          o = nAttr.create(
                 MtohTokens->mtohMaximumShadowMapResolution.GetText(),
                 MtohTokens->mtohMaximumShadowMapResolution.GetText(),
                 MFnNumericData::kInt);
             nAttr.setMin(32);
             nAttr.setMax(8192);
-            nAttr.setDefault(
-                defGlobals.delegateParams.maximumShadowMapResolution);
+            nAttr.setDefault(defGlobals.delegateParams.maximumShadowMapResolution);
             return o;
         });
     _CreateBoolAttribute(
-        node, _tokens->mtohWireframeSelectionHighlight,
-        defGlobals.wireframeSelectionHighlight);
+        node, _tokens->mtohWireframeSelectionHighlight, defGlobals.wireframeSelectionHighlight);
     _CreateBoolAttribute(
-        node, _tokens->mtohColorSelectionHighlight,
-        defGlobals.colorSelectionHighlight);
+        node, _tokens->mtohColorSelectionHighlight, defGlobals.colorSelectionHighlight);
     _CreateColorAttribute(
-        node, _tokens->mtohColorSelectionHighlightColor,
+        node,
+        _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
         defGlobals.colorSelectionHighlightColor);
 #if USD_VERSION_NUM >= 2005
-    _CreateFloatAttribute(
-        node, _tokens->mtohSelectionOutline,
-        defGlobals.outlineSelectionWidth);
+    _CreateFloatAttribute(node, _tokens->mtohSelectionOutline, defGlobals.outlineSelectionWidth);
 #endif
 #if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
-    _CreateBoolAttribute(
-        node, _tokens->mtohColorQuantization,
-        defGlobals.enableColorQuantization);
+    _CreateBoolAttribute(node, _tokens->mtohColorQuantization, defGlobals.enableColorQuantization);
 #endif
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
         const auto rendererName = rit.first;
         for (const auto& attr : rit.second) {
-            const TfToken attrName(TfStringPrintf(
-                "%s%s", rendererName.GetText(), attr.key.GetText()));
+            const TfToken attrName(
+                TfStringPrintf("%s%s", rendererName.GetText(), attr.key.GetText()));
             if (attr.defaultValue.IsHolding<bool>()) {
-                _CreateBoolAttribute(
-                    node, attrName, attr.defaultValue.UncheckedGet<bool>());
+                _CreateBoolAttribute(node, attrName, attr.defaultValue.UncheckedGet<bool>());
             } else if (attr.defaultValue.IsHolding<int>()) {
                 _CreateNumericAttribute(
-                    node, attrName, MFnNumericData::kInt,
-                    [&attrName, &attr]() -> MObject {
+                    node, attrName, MFnNumericData::kInt, [&attrName, &attr]() -> MObject {
                         MFnNumericAttribute nAttr;
-                        const auto o = nAttr.create(
-                            attrName.GetText(), attrName.GetText(),
-                            MFnNumericData::kInt);
+                        const auto          o = nAttr.create(
+                            attrName.GetText(), attrName.GetText(), MFnNumericData::kInt);
                         nAttr.setDefault(attr.defaultValue.UncheckedGet<int>());
                         return o;
                     });
             } else if (attr.defaultValue.IsHolding<float>()) {
                 _CreateNumericAttribute(
-                    node, attrName, MFnNumericData::kFloat,
-                    [&attrName, &attr]() -> MObject {
+                    node, attrName, MFnNumericData::kFloat, [&attrName, &attr]() -> MObject {
                         MFnNumericAttribute nAttr;
-                        const auto o = nAttr.create(
-                            attrName.GetText(), attrName.GetText(),
-                            MFnNumericData::kFloat);
-                        nAttr.setDefault(
-                            attr.defaultValue.UncheckedGet<float>());
+                        const auto          o = nAttr.create(
+                            attrName.GetText(), attrName.GetText(), MFnNumericData::kFloat);
+                        nAttr.setDefault(attr.defaultValue.UncheckedGet<float>());
                         return o;
                     });
             } else if (attr.defaultValue.IsHolding<GfVec4f>()) {
-                const TfToken attrAName(
-                    TfStringPrintf("%sA", attrName.GetText()));
+                const TfToken attrAName(TfStringPrintf("%sA", attrName.GetText()));
                 _CreateColorAttribute(
-                    node, attrName, attrAName,
-                    attr.defaultValue.UncheckedGet<GfVec4f>());
+                    node, attrName, attrAName, attr.defaultValue.UncheckedGet<GfVec4f>());
             } else if (attr.defaultValue.IsHolding<std::string>()) {
                 _CreateStringAttribute(
-                    node, attrName,
-                    attr.defaultValue.UncheckedGet<std::string>());
+                    node, attrName, attr.defaultValue.UncheckedGet<std::string>());
             } else if (attr.defaultValue.IsHolding<TfEnum>()) {
-                _CreateEnumAttribute(
-                    node, attrName,
-                    attr.defaultValue.UncheckedGet<TfEnum>());
+                _CreateEnumAttribute(node, attrName, attr.defaultValue.UncheckedGet<TfEnum>());
             }
         }
     }
     return ret;
 }
 
-MtohRenderGlobals MtohGetRenderGlobals() {
-    const auto obj = MtohCreateRenderGlobals();
-    MtohRenderGlobals ret{};
-    if (obj.isNull()) { return ret; }
-    MStatus status;
+MtohRenderGlobals MtohGetRenderGlobals()
+{
+    const auto        obj = MtohCreateRenderGlobals();
+    MtohRenderGlobals ret {};
+    if (obj.isNull()) {
+        return ret;
+    }
+    MStatus           status;
     MFnDependencyNode node(obj, &status);
-    if (!status) { return ret; }
+    if (!status) {
+        return ret;
+    }
     if (_GetAttribute(
-            node, _tokens->mtohTextureMemoryPerTexture,
+            node,
+            _tokens->mtohTextureMemoryPerTexture,
             ret.delegateParams.textureMemoryPerTexture)) {
         ret.delegateParams.textureMemoryPerTexture *= 1024;
     }
+    _GetAttribute(node, _tokens->mtohEnableMotionSamples, ret.delegateParams.enableMotionSamples);
     _GetAttribute(
-        node, _tokens->mtohEnableMotionSamples,
-        ret.delegateParams.enableMotionSamples);
-    _GetAttribute(
-        node, MtohTokens->mtohMaximumShadowMapResolution,
+        node,
+        MtohTokens->mtohMaximumShadowMapResolution,
         ret.delegateParams.maximumShadowMapResolution);
-    _GetAttribute(
-        node, _tokens->mtohWireframeSelectionHighlight,
-        ret.wireframeSelectionHighlight);
-    _GetAttribute(
-        node, _tokens->mtohColorSelectionHighlight,
-        ret.colorSelectionHighlight);
+    _GetAttribute(node, _tokens->mtohWireframeSelectionHighlight, ret.wireframeSelectionHighlight);
+    _GetAttribute(node, _tokens->mtohColorSelectionHighlight, ret.colorSelectionHighlight);
     _GetColorAttribute(
-        node, _tokens->mtohColorSelectionHighlightColor,
+        node,
+        _tokens->mtohColorSelectionHighlightColor,
         _tokens->mtohColorSelectionHighlightColorA,
         ret.colorSelectionHighlightColor);
 #if USD_VERSION_NUM >= 2005
-    _GetAttribute(
-        node, _tokens->mtohSelectionOutline,
-        ret.outlineSelectionWidth);
+    _GetAttribute(node, _tokens->mtohSelectionOutline, ret.outlineSelectionWidth);
 #endif
 #if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
-    _GetAttribute(
-        node, _tokens->mtohColorQuantization,
-        ret.enableColorQuantization);
+    _GetAttribute(node, _tokens->mtohColorQuantization, ret.enableColorQuantization);
 #endif
     // TODO: Move this to an external function and add support for more types,
     //  and improve code quality/reuse.
     for (const auto& rit : MtohGetRendererSettings()) {
         const auto rendererName = rit.first;
-        auto& settings = ret.rendererSettings[rendererName];
+        auto&      settings = ret.rendererSettings[rendererName];
         settings.reserve(rit.second.size());
         for (const auto& attr : rit.second) {
-            const TfToken attrName(TfStringPrintf(
-                "%s%s", rendererName.GetText(), attr.key.GetText()));
+            const TfToken attrName(
+                TfStringPrintf("%s%s", rendererName.GetText(), attr.key.GetText()));
             if (attr.defaultValue.IsHolding<bool>()) {
                 auto v = attr.defaultValue.UncheckedGet<bool>();
                 _GetAttribute(node, attrName, v);
@@ -432,9 +429,8 @@ MtohRenderGlobals MtohGetRenderGlobals() {
                 _GetAttribute(node, attrName, v);
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<GfVec4f>()) {
-                auto v = attr.defaultValue.UncheckedGet<GfVec4f>();
-                const TfToken attrAName(
-                    TfStringPrintf("%sA", attrName.GetText()));
+                auto          v = attr.defaultValue.UncheckedGet<GfVec4f>();
+                const TfToken attrAName(TfStringPrintf("%sA", attrName.GetText()));
                 _GetColorAttribute(node, attrName, attrAName, v);
                 settings.emplace_back(attr.key, v);
             } else if (attr.defaultValue.IsHolding<std::string>()) {

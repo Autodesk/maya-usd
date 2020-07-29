@@ -18,9 +18,6 @@
 #ifndef HD_VP2_SAMPLER_H
 #define HD_VP2_SAMPLER_H
 
-#include <cstddef>
-
-#include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/gf/vec2d.h>
@@ -35,6 +32,9 @@
 #include <pxr/imaging/glf/glew.h>
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/vtBufferSource.h>
+#include <pxr/pxr.h>
+
+#include <cstddef>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,38 +47,38 @@ public:
     using PrimvarTypeContainer = char[sizeof(GfMatrix4d)];
 
     /*! \brief  Return the HdTupleType corresponding to the given C++ type.
-    */
-    template<typename T>
-    static HdTupleType GetTupleType();
+     */
+    template <typename T> static HdTupleType GetTupleType();
 };
 
 // Define template specializations of HdVP2TypeHelper methods for
 // all our supported types...
-#define TYPE_HELPER(T,type)\
-template<> inline HdTupleType \
-HdVP2TypeHelper::GetTupleType<T>() { return HdTupleType{type, 1}; }
+#define TYPE_HELPER(T, type)                                          \
+    template <> inline HdTupleType HdVP2TypeHelper::GetTupleType<T>() \
+    {                                                                 \
+        return HdTupleType { type, 1 };                               \
+    }
 
-    TYPE_HELPER(bool, HdTypeBool)
-    TYPE_HELPER(char, HdTypeInt8)
-    TYPE_HELPER(short, HdTypeInt16)
-    TYPE_HELPER(unsigned short, HdTypeUInt16)
-    TYPE_HELPER(int, HdTypeInt32)
-    TYPE_HELPER(GfVec2i, HdTypeInt32Vec2)
-    TYPE_HELPER(GfVec3i, HdTypeInt32Vec3)
-    TYPE_HELPER(GfVec4i, HdTypeInt32Vec4)
-    TYPE_HELPER(unsigned int, HdTypeUInt32)
-    TYPE_HELPER(float, HdTypeFloat)
-    TYPE_HELPER(GfVec2f, HdTypeFloatVec2)
-    TYPE_HELPER(GfVec3f, HdTypeFloatVec3)
-    TYPE_HELPER(GfVec4f, HdTypeFloatVec4)
-    TYPE_HELPER(double, HdTypeDouble)
-    TYPE_HELPER(GfVec2d, HdTypeDoubleVec2)
-    TYPE_HELPER(GfVec3d, HdTypeDoubleVec3)
-    TYPE_HELPER(GfVec4d, HdTypeDoubleVec4)
-    TYPE_HELPER(GfMatrix4f, HdTypeFloatMat4)
-    TYPE_HELPER(GfMatrix4d, HdTypeDoubleMat4)
+TYPE_HELPER(bool, HdTypeBool)
+TYPE_HELPER(char, HdTypeInt8)
+TYPE_HELPER(short, HdTypeInt16)
+TYPE_HELPER(unsigned short, HdTypeUInt16)
+TYPE_HELPER(int, HdTypeInt32)
+TYPE_HELPER(GfVec2i, HdTypeInt32Vec2)
+TYPE_HELPER(GfVec3i, HdTypeInt32Vec3)
+TYPE_HELPER(GfVec4i, HdTypeInt32Vec4)
+TYPE_HELPER(unsigned int, HdTypeUInt32)
+TYPE_HELPER(float, HdTypeFloat)
+TYPE_HELPER(GfVec2f, HdTypeFloatVec2)
+TYPE_HELPER(GfVec3f, HdTypeFloatVec3)
+TYPE_HELPER(GfVec4f, HdTypeFloatVec4)
+TYPE_HELPER(double, HdTypeDouble)
+TYPE_HELPER(GfVec2d, HdTypeDoubleVec2)
+TYPE_HELPER(GfVec3d, HdTypeDoubleVec3)
+TYPE_HELPER(GfVec4d, HdTypeDoubleVec4)
+TYPE_HELPER(GfMatrix4f, HdTypeFloatMat4)
+TYPE_HELPER(GfMatrix4d, HdTypeDoubleMat4)
 #undef TYPE_HELPER
-
 
 /*! \brief  A utility class that knows how to sample an element from a type-tagged
             buffer (like HdVtBufferSource).
@@ -94,9 +94,9 @@ public:
     bool Sample(int index, void* value, HdTupleType dataType) const;
 
     // Convenient, templated frontend for Sample().
-    template<typename T> bool Sample(int index, T* value) const {
-        return Sample(index, static_cast<void*>(value),
-            HdVP2TypeHelper::GetTupleType<T>());
+    template <typename T> bool Sample(int index, T* value) const
+    {
+        return Sample(index, static_cast<void*>(value), HdVP2TypeHelper::GetTupleType<T>());
     }
 
 private:
@@ -125,11 +125,11 @@ public:
         having arity \p numComponents, each of type \p componentType. These
         parameters may not match the datatype declaration of the underlying
         buffer.
-    
+
         Derived classes are responsible for implementing sampling logic for
         their particular interpolation modes. Sample returns true if a value
         was successfully retrieved.
-    
+
         \param element The element index to sample.
         \param u The u coordinate to sample.
         \param v The v coordinate to sample.
@@ -138,19 +138,22 @@ public:
 
         \return True if the value was successfully sampled.
     */
-    virtual bool Sample(unsigned int element, float u, float v, void* value,
-                        HdTupleType dataType) const = 0;
+    virtual bool
+    Sample(unsigned int element, float u, float v, void* value, HdTupleType dataType) const = 0;
 
     //! Convenient, templated frontend for Sample().
-    template<typename T> bool Sample(unsigned int element, float u, float v,
-                                     T* value) const {
-        return Sample(element, u, v, static_cast<void*>(value),
-            HdVP2TypeHelper::GetTupleType<T>());
+    template <typename T> bool Sample(unsigned int element, float u, float v, T* value) const
+    {
+        return Sample(element, u, v, static_cast<void*>(value), HdVP2TypeHelper::GetTupleType<T>());
     }
 
 protected:
-    static bool _Interpolate(void* out, void** samples, float* weights,
-        size_t sampleCount, HdTupleType dataType);
+    static bool _Interpolate(
+        void*       out,
+        void**      samples,
+        float*      weights,
+        size_t      sampleCount,
+        HdTupleType dataType);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

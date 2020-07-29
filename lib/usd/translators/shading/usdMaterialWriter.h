@@ -33,43 +33,39 @@ class UsdShadeShader;
 class UsdTimeCode;
 
 /// Shader writer for exporting Maya's material shading nodes to USD.
-class PxrUsdTranslators_MaterialWriter : public UsdMayaShaderWriter
-{
-    public:
-        PxrUsdTranslators_MaterialWriter(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+class PxrUsdTranslators_MaterialWriter : public UsdMayaShaderWriter {
+public:
+    PxrUsdTranslators_MaterialWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        TfToken GetShadingAttributeNameForMayaAttrName(
-                const TfToken& mayaAttrName) override;
+    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 
-    protected:
-        /// Adds the schema attribute \p shaderInputName to the schema \p shaderSchema if the
-        /// Maya attribute \p shadingNodeAttrName in dependency node \p depNodeFn has been modified
-        /// or has an incoming connection at \p usdTime.
-        ///
-        bool AuthorShaderInputFromShadingNodeAttr(
-                const MFnDependencyNode& depNodeFn,
-                const TfToken& shadingNodeAttrName,
-                UsdShadeShader& shaderSchema,
-                const TfToken& shaderInputName,
-                const UsdTimeCode usdTime);
+protected:
+    /// Adds the schema attribute \p shaderInputName to the schema \p shaderSchema if the
+    /// Maya attribute \p shadingNodeAttrName in dependency node \p depNodeFn has been modified
+    /// or has an incoming connection at \p usdTime.
+    ///
+    bool AuthorShaderInputFromShadingNodeAttr(
+        const MFnDependencyNode& depNodeFn,
+        const TfToken&           shadingNodeAttrName,
+        UsdShadeShader&          shaderSchema,
+        const TfToken&           shaderInputName,
+        const UsdTimeCode        usdTime);
 
-        /// Same as AuthorShaderInputFromShadingNodeAttr, but allows scaling the value using a float
-        /// value found in the attribute \p scalingAttrName of the dependency node \p depNodeFn.
-        ///
-        bool AuthorShaderInputFromScaledShadingNodeAttr(
-                const MFnDependencyNode& depNodeFn,
-                const TfToken& shadingNodeAttrName,
-                UsdShadeShader& shaderSchema,
-                const TfToken& shaderInputName,
-                const UsdTimeCode usdTime,
-                const TfToken& scalingAttrName);
-
+    /// Same as AuthorShaderInputFromShadingNodeAttr, but allows scaling the value using a float
+    /// value found in the attribute \p scalingAttrName of the dependency node \p depNodeFn.
+    ///
+    bool AuthorShaderInputFromScaledShadingNodeAttr(
+        const MFnDependencyNode& depNodeFn,
+        const TfToken&           shadingNodeAttrName,
+        UsdShadeShader&          shaderSchema,
+        const TfToken&           shaderInputName,
+        const UsdTimeCode        usdTime,
+        const TfToken&           scalingAttrName);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

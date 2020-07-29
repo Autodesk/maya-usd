@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "usdMaya/translatorModelAssembly.h"
+
 #include <mayaUsd/fileio/primWriterRegistry.h>
 
 #include <pxr/pxr.h>
@@ -24,7 +25,6 @@ PXRUSDMAYA_DEFINE_WRITER(pxrUsdReferenceAssembly, args, context)
 {
     return UsdMayaTranslatorModelAssembly::Create(args, context);
 }
-
 
 PXRUSDMAYA_DEFINE_WRITER(pxrUsdProxyShape, args, context)
 {

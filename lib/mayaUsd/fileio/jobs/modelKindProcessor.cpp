@@ -20,27 +20,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMaya_ModelKindProcessor::UsdMaya_ModelKindProcessor(
-    const UsdMayaJobExportArgs& args)
-    : _args(args),
-      _rootIsAssembly(KindRegistry::IsA(args.rootKind, KindTokens->assembly))
+UsdMaya_ModelKindProcessor::UsdMaya_ModelKindProcessor(const UsdMayaJobExportArgs& args)
+    : _args(args)
+    , _rootIsAssembly(KindRegistry::IsA(args.rootKind, KindTokens->assembly))
 {
 }
 
 /// Returns the root-most ancestor of prim, which is either a component
 /// or a root-level prim.
-static SdfPath
-_FindAncestorRootPrimOrComponent(const UsdPrim& prim)
+static SdfPath _FindAncestorRootPrimOrComponent(const UsdPrim& prim)
 {
     SdfPath rootPath;
-    for (SdfPath p = prim.GetPath(); p != SdfPath::AbsoluteRootPath();
-        p = p.GetParentPath()) {
+    for (SdfPath p = prim.GetPath(); p != SdfPath::AbsoluteRootPath(); p = p.GetParentPath()) {
 
         UsdPrim ancestor = prim.GetStage()->GetPrimAtPath(p);
         if (ancestor && ancestor.IsModel()) {
             TfToken kind;
-            if (UsdModelAPI(ancestor).GetKind(&kind) &&
-               KindRegistry::IsA(kind, KindTokens->component)) {
+            if (UsdModelAPI(ancestor).GetKind(&kind)
+                && KindRegistry::IsA(kind, KindTokens->component)) {
                 return p;
             }
         }
@@ -50,10 +47,8 @@ _FindAncestorRootPrimOrComponent(const UsdPrim& prim)
     return rootPath;
 }
 
-
-void
-UsdMaya_ModelKindProcessor::OnWritePrim(
-    const UsdPrim& prim,
+void UsdMaya_ModelKindProcessor::OnWritePrim(
+    const UsdPrim&                    prim,
     const UsdMayaPrimWriterSharedPtr& primWriter)
 {
     const SdfPath& path = prim.GetPath();
@@ -88,18 +83,13 @@ UsdMaya_ModelKindProcessor::OnWritePrim(
         }
     }
 
-    const SdfPathVector& modelPaths =
-            primWriter->GetModelPaths();
-    _pathsThatMayHaveKind.insert(
-            _pathsThatMayHaveKind.end(),
-            modelPaths.begin(),
-            modelPaths.end());
+    const SdfPathVector& modelPaths = primWriter->GetModelPaths();
+    _pathsThatMayHaveKind.insert(_pathsThatMayHaveKind.end(), modelPaths.begin(), modelPaths.end());
 }
 
-bool
-UsdMaya_ModelKindProcessor::MakeModelHierarchy(UsdStageRefPtr& stage)
+bool UsdMaya_ModelKindProcessor::MakeModelHierarchy(UsdStageRefPtr& stage)
 {
-    // For any root-prim that doesn't already have an authored kind 
+    // For any root-prim that doesn't already have an authored kind
     // (thinking ahead to being able to specify USD_kind per bug/128430),
     // make it a model.  If there were any gprims authored directly during
     // export, we will make the roots be component models, and author
@@ -107,7 +97,7 @@ UsdMaya_ModelKindProcessor::MakeModelHierarchy(UsdStageRefPtr& stage)
     // evaluate to some model-kind; we may in future make this behavior
     // a jobargs option.
     //
-    // If there were no gprims directly authored, we'll make it an assembly 
+    // If there were no gprims directly authored, we'll make it an assembly
     // instead, and attempt to create a valid model-hierarchy if any of the
     // references we authored are references to models.
     //
@@ -130,16 +120,15 @@ UsdMaya_ModelKindProcessor::MakeModelHierarchy(UsdStageRefPtr& stage)
     return true;
 }
 
-bool
-UsdMaya_ModelKindProcessor::_AuthorRootPrimKinds(
+bool UsdMaya_ModelKindProcessor::_AuthorRootPrimKinds(
     UsdStageRefPtr& stage,
-    _PathBoolMap& rootPrimIsComponent)
+    _PathBoolMap&   rootPrimIsComponent)
 {
     UsdPrimSiblingRange usdRootPrims = stage->GetPseudoRoot().GetChildren();
     for (UsdPrim const& prim : usdRootPrims) {
-        SdfPath primPath = prim.GetPath();
+        SdfPath     primPath = prim.GetPath();
         UsdModelAPI usdRootModel(prim);
-        TfToken kind;
+        TfToken     kind;
         usdRootModel.GetKind(&kind);
 
         // If the rootKind job arg was set, then we need to check it against
@@ -153,20 +142,19 @@ UsdMaya_ModelKindProcessor::_AuthorRootPrimKinds(
                 // If no existing kind, author based on rootKind job arg.
                 kind = _args.rootKind;
                 usdRootModel.SetKind(kind);
-            }
-            else if (!KindRegistry::IsA(kind, _args.rootKind)) {
+            } else if (!KindRegistry::IsA(kind, _args.rootKind)) {
                 // If existing kind is not derived from rootKind, then error.
                 TF_RUNTIME_ERROR(
-                        "<%s> has kind '%s' but the export root kind option "
-                        "is set to '%s'; expected that or a derived kind",
-                        primPath.GetText(),
-                        kind.GetText(),
-                        _args.rootKind.GetText());
+                    "<%s> has kind '%s' but the export root kind option "
+                    "is set to '%s'; expected that or a derived kind",
+                    primPath.GetText(),
+                    kind.GetText(),
+                    _args.rootKind.GetText());
                 return false;
             }
         }
 
-        bool hasExportedGprims = false;
+        bool       hasExportedGprims = false;
         const auto pathIter = _pathsWithExportedGprims.find(primPath);
         if (pathIter != _pathsWithExportedGprims.end()) {
             hasExportedGprims = true;
@@ -174,56 +162,52 @@ UsdMaya_ModelKindProcessor::_AuthorRootPrimKinds(
 
         if (kind.IsEmpty()) {
             // Author kind based on hasExportedGprims.
-            kind = hasExportedGprims ?
-                    KindTokens->component : KindTokens->assembly;
+            kind = hasExportedGprims ? KindTokens->component : KindTokens->assembly;
             usdRootModel.SetKind(kind);
         } else {
             // Verify kind based on hasExportedGprims.
-            if (hasExportedGprims &&
-                    KindRegistry::IsA(kind, KindTokens->assembly)) {
+            if (hasExportedGprims && KindRegistry::IsA(kind, KindTokens->assembly)) {
                 MString errorMsg = primPath.GetText();
                 errorMsg += " has kind '";
                 errorMsg += kind.GetText();
                 errorMsg += "' and cannot have a mesh below. Please remove:";
 
                 std::vector<std::string> pathStrings;
-                const auto exportedGprimsIter =
-                        _pathsToExportedGprimsMap.find(primPath);
+                const auto exportedGprimsIter = _pathsToExportedGprimsMap.find(primPath);
                 if (exportedGprimsIter != _pathsToExportedGprimsMap.end()) {
                     std::vector<SdfPath>& paths = exportedGprimsIter->second;
                     std::transform(
-                            paths.begin(), paths.end(),
-                            std::back_inserter(pathStrings),
-                            [](const SdfPath& p) { return p.GetString(); });
+                        paths.begin(),
+                        paths.end(),
+                        std::back_inserter(pathStrings),
+                        [](const SdfPath& p) { return p.GetString(); });
                 }
 
                 TF_RUNTIME_ERROR(
-                        "<%s> has kind '%s', which is derived from 'assembly'. "
-                        "Assemblies should not directly contain meshes/gprims. "
-                        "Please remove %zu prim%s: %s",
-                        primPath.GetText(),
-                        kind.GetText(),
-                        pathStrings.size(),
-                        pathStrings.size() == 1 ? "" : "s",
-                        TfStringJoin(pathStrings, "; ").c_str());
+                    "<%s> has kind '%s', which is derived from 'assembly'. "
+                    "Assemblies should not directly contain meshes/gprims. "
+                    "Please remove %zu prim%s: %s",
+                    primPath.GetText(),
+                    kind.GetText(),
+                    pathStrings.size(),
+                    pathStrings.size() == 1 ? "" : "s",
+                    TfStringJoin(pathStrings, "; ").c_str());
                 return false;
             }
         }
 
-        rootPrimIsComponent[primPath] =
-                KindRegistry::IsA(kind, KindTokens->component);
+        rootPrimIsComponent[primPath] = KindRegistry::IsA(kind, KindTokens->component);
     }
 
     return true;
 }
 
-bool
-UsdMaya_ModelKindProcessor::_FixUpPrimKinds(
-    UsdStageRefPtr& stage,
+bool UsdMaya_ModelKindProcessor::_FixUpPrimKinds(
+    UsdStageRefPtr&     stage,
     const _PathBoolMap& rootPrimIsComponent)
 {
     std::unordered_set<SdfPath, SdfPath::Hash> pathsToBeGroup;
-    for (SdfPath const &path : _pathsThatMayHaveKind) {
+    for (SdfPath const& path : _pathsThatMayHaveKind) {
         // The kind of the root prim under which each reference was authored
         // informs how we will fix-up/fill-in kind on it and its ancestors.
         UsdPrim prim = stage->GetPrimAtPath(path);
@@ -232,13 +216,13 @@ UsdMaya_ModelKindProcessor::_FixUpPrimKinds(
         }
 
         UsdModelAPI usdModel(prim);
-        TfToken kind;
-        
+        TfToken     kind;
+
         // Nothing to fix if there's no resolved kind.
         if (!usdModel.GetKind(&kind) || kind.IsEmpty()) {
             continue;
         }
-        
+
         SdfPathVector ancestorPaths;
         path.GetParentPath().GetPrefixes(&ancestorPaths);
         if (ancestorPaths.empty()) {
@@ -258,17 +242,16 @@ UsdMaya_ModelKindProcessor::_FixUpPrimKinds(
                 if (!ancestorPrim)
                     continue;
                 UsdModelAPI ancestorModel(ancestorPrim);
-                TfToken  kind;
-                
-                if (!ancestorModel.GetKind(&kind) || 
-                    !KindRegistry::IsA(kind, KindTokens->group)) {
+                TfToken     kind;
+
+                if (!ancestorModel.GetKind(&kind) || !KindRegistry::IsA(kind, KindTokens->group)) {
                     pathsToBeGroup.insert(ancestorPaths[i]);
                 }
             }
         }
     }
 
-    {        
+    {
         // We drop down to Sdf to do the kind-authoring, because authoring
         // kind induces recomposition since we cache model-hierarchy.  Using
         // Sdf api, we can bundle the changes into a change block, and do all
@@ -276,22 +259,20 @@ UsdMaya_ModelKindProcessor::_FixUpPrimKinds(
         SdfLayerHandle layer = stage->GetEditTarget().GetLayer();
         SdfChangeBlock block;
 
-        for (SdfPath const &path : pathsToBeGroup) {
+        for (SdfPath const& path : pathsToBeGroup) {
             SdfPrimSpecHandle primSpec = SdfCreatePrimInLayer(layer, path);
             if (!primSpec) {
                 TF_RUNTIME_ERROR(
-                        "Failed to create prim spec for setting kind at path "
-                        "<%s>",
-                        path.GetText());
-            }
-            else {
+                    "Failed to create prim spec for setting kind at path "
+                    "<%s>",
+                    path.GetText());
+            } else {
                 primSpec->SetKind(KindTokens->group);
             }
-        }       
+        }
     }
 
     return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

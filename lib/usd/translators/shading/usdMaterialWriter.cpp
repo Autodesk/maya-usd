@@ -15,18 +15,18 @@
 //
 #include "usdMaterialWriter.h"
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MGlobal.h>
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/converter.h>
+#include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -37,12 +37,12 @@
 #include <pxr/usd/usdShade/tokens.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/utils/converter.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 
 #include <cmath>
 
@@ -54,17 +54,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (outColor)
-);
+    (outColor));
 
 PxrUsdTranslators_MaterialWriter::PxrUsdTranslators_MaterialWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaShaderWriter(depNodeFn, usdPath, jobCtx)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaShaderWriter(depNodeFn, usdPath, jobCtx)
 {
-    UsdShadeShader shaderSchema =
-        UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
+    UsdShadeShader shaderSchema = UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
     if (!TF_VERIFY(
             shaderSchema,
             "Could not define UsdShadeShader at path '%s'\n",
@@ -72,8 +70,7 @@ PxrUsdTranslators_MaterialWriter::PxrUsdTranslators_MaterialWriter(
         return;
     }
 
-    UsdAttribute idAttr = 
-        shaderSchema.CreateIdAttr(VtValue(UsdImagingTokens->UsdPreviewSurface));
+    UsdAttribute idAttr = shaderSchema.CreateIdAttr(VtValue(UsdImagingTokens->UsdPreviewSurface));
 
     _usdPrim = shaderSchema.GetPrim();
     if (!TF_VERIFY(
@@ -84,45 +81,37 @@ PxrUsdTranslators_MaterialWriter::PxrUsdTranslators_MaterialWriter(
     }
 
     // Surface Output
-    shaderSchema.CreateOutput(
-        UsdShadeTokens->surface,
-        SdfValueTypeNames->Token);
+    shaderSchema.CreateOutput(UsdShadeTokens->surface, SdfValueTypeNames->Token);
 
     // Displacement Output
-    shaderSchema.CreateOutput(
-        UsdShadeTokens->displacement,
-        SdfValueTypeNames->Token);
+    shaderSchema.CreateOutput(UsdShadeTokens->displacement, SdfValueTypeNames->Token);
 }
 
-bool
-PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromShadingNodeAttr(
-        const MFnDependencyNode& depNodeFn,
-        const TfToken& shadingNodeAttrName,
-        UsdShadeShader& shaderSchema,
-        const TfToken& shaderInputName,
-        const UsdTimeCode usdTime)
+bool PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromShadingNodeAttr(
+    const MFnDependencyNode& depNodeFn,
+    const TfToken&           shadingNodeAttrName,
+    UsdShadeShader&          shaderSchema,
+    const TfToken&           shaderInputName,
+    const UsdTimeCode        usdTime)
 {
     return AuthorShaderInputFromScaledShadingNodeAttr(
-        depNodeFn, shadingNodeAttrName, shaderSchema, shaderInputName,
-        usdTime, TfToken());
+        depNodeFn, shadingNodeAttrName, shaderSchema, shaderInputName, usdTime, TfToken());
 }
 
-bool
-PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
-        const MFnDependencyNode& depNodeFn,
-        const TfToken& shadingNodeAttrName,
-        UsdShadeShader& shaderSchema,
-        const TfToken& shaderInputName,
-        const UsdTimeCode usdTime,
-        const TfToken& scalingAttrName)
+bool PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
+    const MFnDependencyNode& depNodeFn,
+    const TfToken&           shadingNodeAttrName,
+    UsdShadeShader&          shaderSchema,
+    const TfToken&           shaderInputName,
+    const UsdTimeCode        usdTime,
+    const TfToken&           scalingAttrName)
 {
     MStatus status;
 
-    MPlug shadingNodePlug =
-        depNodeFn.findPlug(
-            depNodeFn.attribute(shadingNodeAttrName.GetText()),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    MPlug shadingNodePlug = depNodeFn.findPlug(
+        depNodeFn.attribute(shadingNodeAttrName.GetText()),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -136,18 +125,16 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
 
     // Are color values are all linear on the shader?
     // Do we need to re-linearize them?
-    VtValue value =
-        UsdMayaWriteUtil::GetVtValue(
-            shadingNodePlug,
-            shaderInputTypeName,
-            /* linearizeColors = */ false);
+    VtValue value = UsdMayaWriteUtil::GetVtValue(
+        shadingNodePlug,
+        shaderInputTypeName,
+        /* linearizeColors = */ false);
 
     if (value.IsEmpty()) {
         return false;
     }
 
-    UsdShadeInput shaderInput =
-        shaderSchema.CreateInput(shaderInputName, shaderInputTypeName);
+    UsdShadeInput shaderInput = shaderSchema.CreateInput(shaderInputName, shaderInputTypeName);
 
     // For attributes that are the destination of a connection, we create
     // the input on the shader but we do *not* author a value for it. We
@@ -158,11 +145,10 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
         if (scalingAttrName != TfToken() && value.IsHolding<GfVec3f>()) {
             float colorScale = 1.0f;
 
-            MPlug scalingPlug =
-                depNodeFn.findPlug(
-                    depNodeFn.attribute(scalingAttrName.GetText()),
-                    /* wantNetworkedPlug = */ true,
-                    &status);
+            MPlug scalingPlug = depNodeFn.findPlug(
+                depNodeFn.attribute(scalingAttrName.GetText()),
+                /* wantNetworkedPlug = */ true,
+                &status);
             if (status == MS::kSuccess) {
                 colorScale = scalingPlug.asFloat();
             }
@@ -177,9 +163,8 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
 }
 
 /* virtual */
-TfToken
-PxrUsdTranslators_MaterialWriter::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+TfToken PxrUsdTranslators_MaterialWriter::GetShadingAttributeNameForMayaAttrName(
+    const TfToken& mayaAttrName)
 {
     if (mayaAttrName == _tokens->outColor) {
         return UsdShadeUtils::GetFullName(UsdShadeTokens->surface, UsdShadeAttributeType::Output);

@@ -13,17 +13,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <boost/python/def.hpp>
-#include <boost/python.hpp>
+#include <mayaUsd/utils/colorSpace.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4d.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/pxr.h>
 
-#include <mayaUsd/utils/colorSpace.h>
+#include <boost/python.hpp>
+#include <boost/python/def.hpp>
 
 using namespace std;
 using namespace boost::python;

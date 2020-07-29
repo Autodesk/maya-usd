@@ -1,12 +1,11 @@
-#include <maya/MGlobal.h>
-#include <maya/MFileIO.h>
-
 #include "test_usdmaya.h"
 
 #include <pxr/usd/usdGeom/xform.h>
 
-using AL::maya::test::buildTempPath;
+#include <maya/MFileIO.h>
+#include <maya/MGlobal.h>
 
+using AL::maya::test::buildTempPath;
 
 static const char* const g_constraints = R"(
 {
@@ -90,62 +89,51 @@ tangentConstraint;
 }
 )";
 
-
 TEST(export_constraint, constraints)
 {
-  MFileIO::newFile(true);
-  MGlobal::executeCommand(g_constraints);
+    MFileIO::newFile(true);
+    MGlobal::executeCommand(g_constraints);
 
-  const std::string temp_path = buildTempPath("AL_USDMayaTests_constraints.usda");
+    const std::string temp_path = buildTempPath("AL_USDMayaTests_constraints.usda");
 
-  MString command =
-  "select -r \"polyCylinder1\" \"parentLoc\" \"orientLoc\" \"pointLoc\" \"scaleLoc\" \"aimLoc\" \"geomLoc\" \"pointOnPolyLoc\" \"normalLoc\" \"tangentLoc\";"
-  "file -force -options "
-  "\"Dynamic_Attributes=1;"
-  "Meshes=1;"
-  "Nurbs_Curves=1;"
-  "Duplicate_Instances=1;"
-  "Merge_Transforms=1;"
-  "Animation=1;"
-  "Use_Timeline_Range=0;"
-  "Frame_Min=1;"
-  "Frame_Max=50;"
-  "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"";
-  command += temp_path.c_str();
-  command += "\";";
+    MString command
+        = "select -r \"polyCylinder1\" \"parentLoc\" \"orientLoc\" \"pointLoc\" \"scaleLoc\" "
+          "\"aimLoc\" \"geomLoc\" \"pointOnPolyLoc\" \"normalLoc\" \"tangentLoc\";"
+          "file -force -options "
+          "\"Dynamic_Attributes=1;"
+          "Meshes=1;"
+          "Nurbs_Curves=1;"
+          "Duplicate_Instances=1;"
+          "Merge_Transforms=1;"
+          "Animation=1;"
+          "Use_Timeline_Range=0;"
+          "Frame_Min=1;"
+          "Frame_Max=50;"
+          "Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -es \"";
+    command += temp_path.c_str();
+    command += "\";";
 
-  MGlobal::executeCommand(command);
+    MGlobal::executeCommand(command);
 
-  UsdStageRefPtr stage = UsdStage::Open(temp_path);
-  EXPECT_TRUE(stage);
+    UsdStageRefPtr stage = UsdStage::Open(temp_path);
+    EXPECT_TRUE(stage);
 
-  const char* const paths[] = {
-    "/parentLoc",
-    "/orientLoc",
-    "/pointLoc",
-    "/scaleLoc",
-    "/aimLoc",
-    "/geomLoc",
-    "/pointOnPolyLoc",
-    "/normalLoc",
-    "/tangentLoc",
-    0
-  };
+    const char* const paths[]
+        = { "/parentLoc", "/orientLoc",      "/pointLoc",  "/scaleLoc",   "/aimLoc",
+            "/geomLoc",   "/pointOnPolyLoc", "/normalLoc", "/tangentLoc", 0 };
 
-  const char* const * iter = paths;
-  while(*iter)
-  {
-    UsdPrim prim = stage->GetPrimAtPath(SdfPath(*iter));
-    UsdGeomXform transform(prim);
+    const char* const* iter = paths;
+    while (*iter) {
+        UsdPrim      prim = stage->GetPrimAtPath(SdfPath(*iter));
+        UsdGeomXform transform(prim);
 
-    bool resetsXformStack;
-    std::vector<UsdGeomXformOp> ops = transform.GetOrderedXformOps(&resetsXformStack);
-    EXPECT_FALSE(ops.empty());
-    for(auto op : ops)
-    {
-      auto attr = op.GetAttr();
-      EXPECT_EQ(50u, attr.GetNumTimeSamples());
+        bool                        resetsXformStack;
+        std::vector<UsdGeomXformOp> ops = transform.GetOrderedXformOps(&resetsXformStack);
+        EXPECT_FALSE(ops.empty());
+        for (auto op : ops) {
+            auto attr = op.GetAttr();
+            EXPECT_EQ(50u, attr.GetNumTimeSamples());
+        }
+        ++iter;
     }
-    ++iter;
-  }
 }

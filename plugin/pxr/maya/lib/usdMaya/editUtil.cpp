@@ -16,15 +16,15 @@
 #include "usdMaya/editUtil.h"
 
 #include "usdMaya/referenceAssembly.h"
+
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/stringUtils.h>
-
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/xformable.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
+#include <pxr/usd/usdGeom/xformable.h>
 
 #include <maya/MEdit.h>
 #include <maya/MFnAssembly.h>
@@ -37,58 +37,49 @@
 #include <utility>
 #include <vector>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-static const std::unordered_map<std::string, std::pair<UsdMayaEditUtil::EditOp, UsdMayaEditUtil::EditSet>>
-    _attrToOpMap {
-        {"translate",  {UsdMayaEditUtil::OP_TRANSLATE, UsdMayaEditUtil::SET_ALL}},
-        {"translateX", {UsdMayaEditUtil::OP_TRANSLATE, UsdMayaEditUtil::SET_X  }},
-        {"translateY", {UsdMayaEditUtil::OP_TRANSLATE, UsdMayaEditUtil::SET_Y  }},
-        {"translateZ", {UsdMayaEditUtil::OP_TRANSLATE, UsdMayaEditUtil::SET_Z  }},
-        {"rotate",     {UsdMayaEditUtil::OP_ROTATE,    UsdMayaEditUtil::SET_ALL}},
-        {"rotateX",    {UsdMayaEditUtil::OP_ROTATE,    UsdMayaEditUtil::SET_X  }},
-        {"rotateY",    {UsdMayaEditUtil::OP_ROTATE,    UsdMayaEditUtil::SET_Y  }},
-        {"rotateZ",    {UsdMayaEditUtil::OP_ROTATE,    UsdMayaEditUtil::SET_Z  }},
-        {"scale",      {UsdMayaEditUtil::OP_SCALE,     UsdMayaEditUtil::SET_ALL}},
-        {"scaleX",     {UsdMayaEditUtil::OP_SCALE,     UsdMayaEditUtil::SET_X  }},
-        {"scaleY",     {UsdMayaEditUtil::OP_SCALE,     UsdMayaEditUtil::SET_Y  }},
-        {"scaleZ",     {UsdMayaEditUtil::OP_SCALE,     UsdMayaEditUtil::SET_Z  }}};
-
+static const std::
+    unordered_map<std::string, std::pair<UsdMayaEditUtil::EditOp, UsdMayaEditUtil::EditSet>>
+        _attrToOpMap { { "translate", { UsdMayaEditUtil::OP_TRANSLATE, UsdMayaEditUtil::SET_ALL } },
+                       { "translateX", { UsdMayaEditUtil::OP_TRANSLATE, UsdMayaEditUtil::SET_X } },
+                       { "translateY", { UsdMayaEditUtil::OP_TRANSLATE, UsdMayaEditUtil::SET_Y } },
+                       { "translateZ", { UsdMayaEditUtil::OP_TRANSLATE, UsdMayaEditUtil::SET_Z } },
+                       { "rotate", { UsdMayaEditUtil::OP_ROTATE, UsdMayaEditUtil::SET_ALL } },
+                       { "rotateX", { UsdMayaEditUtil::OP_ROTATE, UsdMayaEditUtil::SET_X } },
+                       { "rotateY", { UsdMayaEditUtil::OP_ROTATE, UsdMayaEditUtil::SET_Y } },
+                       { "rotateZ", { UsdMayaEditUtil::OP_ROTATE, UsdMayaEditUtil::SET_Z } },
+                       { "scale", { UsdMayaEditUtil::OP_SCALE, UsdMayaEditUtil::SET_ALL } },
+                       { "scaleX", { UsdMayaEditUtil::OP_SCALE, UsdMayaEditUtil::SET_X } },
+                       { "scaleY", { UsdMayaEditUtil::OP_SCALE, UsdMayaEditUtil::SET_Y } },
+                       { "scaleZ", { UsdMayaEditUtil::OP_SCALE, UsdMayaEditUtil::SET_Z } } };
 
 /// Returns true if the assembly edit tokenized as \p tokenizedEditString
 /// applies to the assembly \p assemblyFn based on a namespace match of the
 /// edited node with the assembly.
-static
-bool
-_EditAppliesToAssembly(
-        const MFnAssembly& assemblyFn,
-        const std::vector<std::string>& tokenizedEditString)
+static bool _EditAppliesToAssembly(
+    const MFnAssembly&              assemblyFn,
+    const std::vector<std::string>& tokenizedEditString)
 {
     if (tokenizedEditString.size() < 2u) {
         return false;
     }
 
-    const std::string editedNodeAndAttrName =
-        TfStringReplace(tokenizedEditString[1], "\"", "");
+    const std::string editedNodeAndAttrName = TfStringReplace(tokenizedEditString[1], "\"", "");
 
-    const std::string absRepNS =
-        TfStringPrintf("%s:", assemblyFn.getAbsoluteRepNamespace().asChar());
-    const std::string repNS =
-        TfStringPrintf("%s:", assemblyFn.getRepNamespace().asChar());
+    const std::string absRepNS
+        = TfStringPrintf("%s:", assemblyFn.getAbsoluteRepNamespace().asChar());
+    const std::string repNS = TfStringPrintf("%s:", assemblyFn.getRepNamespace().asChar());
 
-    return TfStringStartsWith(editedNodeAndAttrName, absRepNS) ||
-        TfStringStartsWith(editedNodeAndAttrName, repNS);
+    return TfStringStartsWith(editedNodeAndAttrName, absRepNS)
+        || TfStringStartsWith(editedNodeAndAttrName, repNS);
 }
 
-static
-bool
-_GetEditFromTokenizedString(
-        const MFnAssembly& assemblyFn,
-        const std::vector<std::string>& tokenizedEditString,
-        SdfPath* outEditPath,
-        UsdMayaEditUtil::AssemblyEdit* outEdit)
+static bool _GetEditFromTokenizedString(
+    const MFnAssembly&              assemblyFn,
+    const std::vector<std::string>& tokenizedEditString,
+    SdfPath*                        outEditPath,
+    UsdMayaEditUtil::AssemblyEdit*  outEdit)
 {
     // The expected format for editString is:
     //     setAttr "StairRot.rotateY" -7.2
@@ -106,11 +97,10 @@ _GetEditFromTokenizedString(
         return false;
     }
 
-    const std::string editedNodeAndAttrName =
-        TfStringReplace(tokenizedEditString[1u], "\"", "");
+    const std::string editedNodeAndAttrName = TfStringReplace(tokenizedEditString[1u], "\"", "");
 
-    const std::vector<std::string> editedNodeAndAttrSplit =
-        TfStringTokenize(editedNodeAndAttrName, ".");
+    const std::vector<std::string> editedNodeAndAttrSplit
+        = TfStringTokenize(editedNodeAndAttrName, ".");
     if (editedNodeAndAttrSplit.size() < 2u) {
         return false;
     }
@@ -118,10 +108,8 @@ _GetEditFromTokenizedString(
     const std::string mayaNodeName = editedNodeAndAttrSplit[0u];
     const std::string mayaAttrName = editedNodeAndAttrSplit[1u];
 
-    const SdfPath usdPath =
-        UsdMayaUtil::MayaNodeNameToSdfPath(
-            mayaNodeName,
-            UsdMayaUseUsdAssemblyNamespace());
+    const SdfPath usdPath
+        = UsdMayaUtil::MayaNodeNameToSdfPath(mayaNodeName, UsdMayaUseUsdAssemblyNamespace());
 
     // Our output path must be a relative path.
     if (usdPath.IsAbsolutePath()) {
@@ -139,11 +127,10 @@ _GetEditFromTokenizedString(
     outEdit->set = opSetPair->second;
 
     if (outEdit->set == UsdMayaEditUtil::SET_ALL) {
-        outEdit->value =
-            GfVec3d(
-                atof(tokenizedEditString[numEditTokens - 3u].c_str()),
-                atof(tokenizedEditString[numEditTokens - 2u].c_str()),
-                atof(tokenizedEditString[numEditTokens - 1u].c_str()));
+        outEdit->value = GfVec3d(
+            atof(tokenizedEditString[numEditTokens - 3u].c_str()),
+            atof(tokenizedEditString[numEditTokens - 2u].c_str()),
+            atof(tokenizedEditString[numEditTokens - 1u].c_str()));
     } else {
         outEdit->value = atof(tokenizedEditString[2u].c_str());
     }
@@ -152,15 +139,13 @@ _GetEditFromTokenizedString(
 }
 
 /* static */
-bool
-UsdMayaEditUtil::GetEditFromString(
-        const MFnAssembly& assemblyFn,
-        const std::string& editString,
-        SdfPath* outEditPath,
-        AssemblyEdit* outEdit)
+bool UsdMayaEditUtil::GetEditFromString(
+    const MFnAssembly& assemblyFn,
+    const std::string& editString,
+    SdfPath*           outEditPath,
+    AssemblyEdit*      outEdit)
 {
-    const std::vector<std::string> tokenizedEditString =
-        TfStringTokenize(editString);
+    const std::vector<std::string> tokenizedEditString = TfStringTokenize(editString);
 
     if (!_EditAppliesToAssembly(assemblyFn, tokenizedEditString)) {
         return false;
@@ -168,21 +153,16 @@ UsdMayaEditUtil::GetEditFromString(
 
     outEdit->editString = editString;
 
-    return _GetEditFromTokenizedString(
-        assemblyFn,
-        tokenizedEditString,
-        outEditPath,
-        outEdit);
+    return _GetEditFromTokenizedString(assemblyFn, tokenizedEditString, outEditPath, outEdit);
 }
 
 /* static */
-void
-UsdMayaEditUtil::GetEditsForAssembly(
-        const MObject& assemblyObj,
-        PathEditMap* assemEdits,
-        std::vector<std::string>* invalidEdits)
+void UsdMayaEditUtil::GetEditsForAssembly(
+    const MObject&            assemblyObj,
+    PathEditMap*              assemEdits,
+    std::vector<std::string>* invalidEdits)
 {
-    MStatus status;
+    MStatus           status;
     const MFnAssembly assemblyFn(assemblyObj, &status);
     if (status != MS::kSuccess) {
         return;
@@ -211,15 +191,13 @@ UsdMayaEditUtil::GetEditsForAssembly(
     // assembly edits in the scene. We determine whether each one applies to
     // the current assembly based on a namespace match of the edited node with
     // the assembly.
-    MObject editsOwner(assemblyObj);
+    MObject  editsOwner(assemblyObj);
     MItEdits itAssemEdits(editsOwner, MObject::kNullObj);
 
     while (!itAssemEdits.isDone()) {
-        const std::string editString =
-            itAssemEdits.currentEditString().asChar();
+        const std::string editString = itAssemEdits.currentEditString().asChar();
 
-        const std::vector<std::string> tokenizedEditString =
-            TfStringTokenize(editString);
+        const std::vector<std::string> tokenizedEditString = TfStringTokenize(editString);
 
         if (!_EditAppliesToAssembly(assemblyFn, tokenizedEditString)) {
             // Skip any edits that do not apply to this assembly so that we
@@ -232,11 +210,7 @@ UsdMayaEditUtil::GetEditsForAssembly(
         curEdit.editString = editString;
 
         SdfPath editPath;
-        if (_GetEditFromTokenizedString(
-                assemblyFn,
-                tokenizedEditString,
-                &editPath,
-                &curEdit)) {
+        if (_GetEditFromTokenizedString(assemblyFn, tokenizedEditString, &editPath, &curEdit)) {
             (*assemEdits)[editPath].push_back(curEdit);
         } else if (invalidEdits) {
             invalidEdits->push_back(editString);
@@ -247,83 +221,62 @@ UsdMayaEditUtil::GetEditsForAssembly(
 }
 
 /* static */
-void
-UsdMayaEditUtil::ApplyEditsToProxy(
-        const PathEditMap& assemEdits,
-        const UsdPrim& proxyRootPrim,
-        std::vector<std::string>* failedEdits)
+void UsdMayaEditUtil::ApplyEditsToProxy(
+    const PathEditMap&        assemEdits,
+    const UsdPrim&            proxyRootPrim,
+    std::vector<std::string>* failedEdits)
 {
     if (!proxyRootPrim.IsValid()) {
         return;
     }
 
-    const SdfPath proxyRootPrimPath = proxyRootPrim.GetPath();
+    const SdfPath        proxyRootPrimPath = proxyRootPrim.GetPath();
     const UsdStageRefPtr stage = proxyRootPrim.GetStage();
 
     // assemEdits is a container of lists of ordered edits sorted by path
     // This outer loop is per path...
-    TF_FOR_ALL(itr, assemEdits) {
-        const SdfPath editPath =
-            itr->first.IsAbsolutePath() ?
-                itr->first :
-                proxyRootPrimPath.AppendPath(itr->first);
+    TF_FOR_ALL(itr, assemEdits)
+    {
+        const SdfPath editPath
+            = itr->first.IsAbsolutePath() ? itr->first : proxyRootPrimPath.AppendPath(itr->first);
 
         // The UsdGeomXformCommonAPI will populate the data without us having
         // to know exactly how the data is set.
-        GfVec3d translation;
-        GfVec3f rotation;
-        GfVec3f scale;
-        GfVec3f pivot;
+        GfVec3d                              translation;
+        GfVec3f                              rotation;
+        GfVec3f                              scale;
+        GfVec3f                              pivot;
         UsdGeomXformCommonAPI::RotationOrder rotOrder;
 
-        UsdGeomXformCommonAPI xformCommonAPI =
-            UsdGeomXformCommonAPI::Get(stage, editPath);
-        if (!xformCommonAPI ||
-                !xformCommonAPI.GetXformVectors(
-                    &translation,
-                    &rotation,
-                    &scale,
-                    &pivot,
-                    &rotOrder,
-                    UsdTimeCode::Default())) {
+        UsdGeomXformCommonAPI xformCommonAPI = UsdGeomXformCommonAPI::Get(stage, editPath);
+        if (!xformCommonAPI
+            || !xformCommonAPI.GetXformVectors(
+                &translation, &rotation, &scale, &pivot, &rotOrder, UsdTimeCode::Default())) {
             // We failed either to get the xformCommonAPI or to get its
             // transform data, so mark all edits as failed.
-            TF_FOR_ALL(assemEdit, itr->second) {
-                failedEdits->push_back(assemEdit->editString);
-            }
+            TF_FOR_ALL(assemEdit, itr->second) { failedEdits->push_back(assemEdit->editString); }
             continue;
         }
 
         // Apply all edits for the particular path in order.
-        TF_FOR_ALL(assemEdit, itr->second) {
+        TF_FOR_ALL(assemEdit, itr->second)
+        {
             if (assemEdit->set == SET_ALL) {
                 const GfVec3d& toSet = assemEdit->value.Get<GfVec3d>();
                 switch (assemEdit->op) {
-                    default:
-                    case OP_TRANSLATE:
-                        translation = toSet;
-                        break;
-                    case OP_ROTATE:
-                        rotation = GfVec3f(toSet);
-                        break;
-                    case OP_SCALE:
-                        scale = GfVec3f(toSet);
-                        break;
+                default:
+                case OP_TRANSLATE: translation = toSet; break;
+                case OP_ROTATE: rotation = GfVec3f(toSet); break;
+                case OP_SCALE: scale = GfVec3f(toSet); break;
                 }
             } else {
                 // We're taking advantage of the enum values for EditSet here...
                 const double toSet = assemEdit->value.Get<double>();
                 switch (assemEdit->op) {
-                    default:
-                    case OP_TRANSLATE:
-                        translation[assemEdit->set] = toSet;
-                        break;
-                    case OP_ROTATE:
-                        rotation[assemEdit->set] = toSet;
-                        break;
-                    case OP_SCALE:
-                        scale[assemEdit->set] = toSet;
-                        break;
+                default:
+                case OP_TRANSLATE: translation[assemEdit->set] = toSet; break;
+                case OP_ROTATE: rotation[assemEdit->set] = toSet; break;
+                case OP_SCALE: scale[assemEdit->set] = toSet; break;
                 }
             }
         }
@@ -370,19 +323,11 @@ UsdMayaEditUtil::ApplyEditsToProxy(
         }
 
         if (!xformCommonAPI.SetXformVectors(
-                translation,
-                rotation,
-                scale,
-                pivot,
-                rotOrder,
-                UsdTimeCode::Default())) {
-            TF_FOR_ALL(assemEdit, itr->second) {
-                failedEdits->push_back(assemEdit->editString);
-            }
+                translation, rotation, scale, pivot, rotOrder, UsdTimeCode::Default())) {
+            TF_FOR_ALL(assemEdit, itr->second) { failedEdits->push_back(assemEdit->editString); }
             continue;
         }
     }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

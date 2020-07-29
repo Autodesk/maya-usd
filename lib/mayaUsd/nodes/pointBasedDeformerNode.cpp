@@ -15,7 +15,21 @@
 //
 #include "pointBasedDeformerNode.h"
 
-#include <string>
+#include <mayaUsd/nodes/stageData.h>
+
+#include <pxr/base/gf/math.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/pointBased.h>
 
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
@@ -35,28 +49,13 @@
 #include <maya/MTime.h>
 #include <maya/MTypeId.h>
 
-#include <pxr/base/gf/math.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/base/vt/types.h>
-
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/pointBased.h>
-
-#include <mayaUsd/nodes/stageData.h>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdMayaPointBasedDeformerNodeTokens,
-                        PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS);
-
+TF_DEFINE_PUBLIC_TOKENS(
+    UsdMayaPointBasedDeformerNodeTokens,
+    PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS);
 
 const MTypeId UsdMayaPointBasedDeformerNode::typeId(0x00126401);
 const MString UsdMayaPointBasedDeformerNode::typeName(
@@ -67,28 +66,19 @@ MObject UsdMayaPointBasedDeformerNode::inUsdStageAttr;
 MObject UsdMayaPointBasedDeformerNode::primPathAttr;
 MObject UsdMayaPointBasedDeformerNode::timeAttr;
 
+/* static */
+void* UsdMayaPointBasedDeformerNode::creator() { return new UsdMayaPointBasedDeformerNode(); }
 
 /* static */
-void*
-UsdMayaPointBasedDeformerNode::creator()
-{
-    return new UsdMayaPointBasedDeformerNode();
-}
-
-/* static */
-MStatus
-UsdMayaPointBasedDeformerNode::initialize()
+MStatus UsdMayaPointBasedDeformerNode::initialize()
 {
     MStatus status;
 
     MFnTypedAttribute typedAttrFn;
-    MFnUnitAttribute unitAttrFn;
+    MFnUnitAttribute  unitAttrFn;
 
-    inUsdStageAttr = typedAttrFn.create("inUsdStage",
-                                        "is",
-                                        MayaUsdStageData::mayaTypeId,
-                                        MObject::kNullObj,
-                                        &status);
+    inUsdStageAttr = typedAttrFn.create(
+        "inUsdStage", "is", MayaUsdStageData::mayaTypeId, MObject::kNullObj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = typedAttrFn.setReadable(false);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -104,20 +94,13 @@ UsdMayaPointBasedDeformerNode::initialize()
     MFnStringData stringDataFn;
     const MObject defaultStringDataObj = stringDataFn.create("");
 
-    primPathAttr = typedAttrFn.create("primPath",
-                                      "pp",
-                                      MFnData::kString,
-                                      defaultStringDataObj,
-                                      &status);
+    primPathAttr
+        = typedAttrFn.create("primPath", "pp", MFnData::kString, defaultStringDataObj, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = addAttribute(primPathAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    timeAttr = unitAttrFn.create("time",
-                                 "tm",
-                                 MFnUnitAttribute::kTime,
-                                 0.0,
-                                 &status);
+    timeAttr = unitAttrFn.create("time", "tm", MFnUnitAttribute::kTime, 0.0, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = addAttribute(timeAttr);
     CHECK_MSTATUS_AND_RETURN_IT(status);
@@ -133,22 +116,19 @@ UsdMayaPointBasedDeformerNode::initialize()
 }
 
 /* virtual */
-MStatus
-UsdMayaPointBasedDeformerNode::deform(
-        MDataBlock& block,
-        MItGeometry& iter,
-        const MMatrix& /* mat */,
-        unsigned int multiIndex)
+MStatus UsdMayaPointBasedDeformerNode::deform(
+    MDataBlock&  block,
+    MItGeometry& iter,
+    const MMatrix& /* mat */,
+    unsigned int multiIndex)
 {
     MStatus status;
 
     // Get the USD stage.
-    const MDataHandle inUsdStageHandle =
-        block.inputValue(inUsdStageAttr, &status);
+    const MDataHandle inUsdStageHandle = block.inputValue(inUsdStageAttr, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    MayaUsdStageData* stageData =
-        dynamic_cast<MayaUsdStageData*>(inUsdStageHandle.asPluginData());
+    MayaUsdStageData* stageData = dynamic_cast<MayaUsdStageData*>(inUsdStageHandle.asPluginData());
     if (!stageData || !stageData->stage) {
         return MS::kFailure;
     }
@@ -159,8 +139,7 @@ UsdMayaPointBasedDeformerNode::deform(
     const MDataHandle primPathHandle = block.inputValue(primPathAttr, &status);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
-    const std::string primPathString =
-        TfStringTrim(primPathHandle.asString().asChar());
+    const std::string primPathString = TfStringTrim(primPathHandle.asString().asChar());
 
     if (primPathString.empty()) {
         return MS::kFailure;
@@ -168,7 +147,7 @@ UsdMayaPointBasedDeformerNode::deform(
 
     const SdfPath primPath(primPathString);
 
-    const UsdPrim& usdPrim = usdStage->GetPrimAtPath(primPath);
+    const UsdPrim&          usdPrim = usdStage->GetPrimAtPath(primPath);
     const UsdGeomPointBased usdPointBased(usdPrim);
     if (!usdPointBased) {
         return MS::kFailure;
@@ -183,43 +162,36 @@ UsdMayaPointBasedDeformerNode::deform(
     const float envelope = envelopeHandle.asFloat();
 
     VtVec3fArray usdPoints;
-    if (!usdPointBased.GetPointsAttr().Get(&usdPoints, usdTime) ||
-            usdPoints.empty()) {
+    if (!usdPointBased.GetPointsAttr().Get(&usdPoints, usdTime) || usdPoints.empty()) {
         return MS::kFailure;
     }
 
-    for ( ; !iter.isDone(); iter.next()) {
+    for (; !iter.isDone(); iter.next()) {
         const int index = iter.index();
         if (index < 0 || static_cast<size_t>(index) >= usdPoints.size()) {
             continue;
         }
 
         const MPoint mayaPoint = iter.position();
-        const float weight = weightValue(block, multiIndex, index);
+        const float  weight = weightValue(block, multiIndex, index);
 
         const GfVec3f& usdPoint = usdPoints[static_cast<size_t>(index)];
 
-        const GfVec3f deformedPoint =
-            GfLerp<GfVec3f>(weight * envelope,
-                            GfVec3f(mayaPoint[0], mayaPoint[1], mayaPoint[2]),
-                            usdPoint);
+        const GfVec3f deformedPoint = GfLerp<GfVec3f>(
+            weight * envelope, GfVec3f(mayaPoint[0], mayaPoint[1], mayaPoint[2]), usdPoint);
 
-        iter.setPosition(
-            MPoint(deformedPoint[0], deformedPoint[1], deformedPoint[2]));
+        iter.setPosition(MPoint(deformedPoint[0], deformedPoint[1], deformedPoint[2]));
     }
 
     return status;
 }
 
-UsdMayaPointBasedDeformerNode::UsdMayaPointBasedDeformerNode() :
-    MPxDeformerNode()
+UsdMayaPointBasedDeformerNode::UsdMayaPointBasedDeformerNode()
+    : MPxDeformerNode()
 {
 }
 
 /* virtual */
-UsdMayaPointBasedDeformerNode::~UsdMayaPointBasedDeformerNode()
-{
-}
-
+UsdMayaPointBasedDeformerNode::~UsdMayaPointBasedDeformerNode() { }
 
 PXR_NAMESPACE_CLOSE_SCOPE

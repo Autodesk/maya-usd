@@ -17,144 +17,121 @@
 
 #include <type_traits>
 
-MAYAUSD_NS_DEF {
-
-//------------------------------------------------------------------------------
-// ImportData:
-//------------------------------------------------------------------------------
-
-constexpr const char* kRootPrimPath = "/";
-
-ImportData::ImportData()
-	: fLoadSet(UsdStage::InitialLoadSet::LoadAll)
-	, fRootPrimPath(kRootPrimPath)
+MAYAUSD_NS_DEF
 {
-}
 
-ImportData::ImportData(const std::string& f)
-	: fLoadSet(UsdStage::InitialLoadSet::LoadAll)
-	, fRootPrimPath(kRootPrimPath)
-	, fFilename(f)
-{
-}
+    //------------------------------------------------------------------------------
+    // ImportData:
+    //------------------------------------------------------------------------------
 
-/*static*/
-ImportData& ImportData::instance()
-{
-	static ImportData sImportData;
-	return sImportData;
-}
+    constexpr const char* kRootPrimPath = "/";
 
-/*static*/
-const ImportData& ImportData::cinstance()
-{
-	return instance();
-}
+    ImportData::ImportData()
+        : fLoadSet(UsdStage::InitialLoadSet::LoadAll)
+        , fRootPrimPath(kRootPrimPath)
+    {
+    }
 
-void ImportData::clearData()
-{
-	fLoadSet = UsdStage::InitialLoadSet::LoadAll;
-	UsdStagePopulationMask tmpPopMask;
-	fPopMask.swap(tmpPopMask);
-	fRootVariants.clear();
-	fPrimVariants.clear();
-	fFilename.clear();
-	fRootPrimPath = kRootPrimPath;
-}
+    ImportData::ImportData(const std::string& f)
+        : fLoadSet(UsdStage::InitialLoadSet::LoadAll)
+        , fRootPrimPath(kRootPrimPath)
+        , fFilename(f)
+    {
+    }
 
-bool ImportData::empty() const
-{
-	// If we don't have a filename set then we are empty.
-	return fFilename.empty();
-}
+    /*static*/
+    ImportData& ImportData::instance()
+    {
+        static ImportData sImportData;
+        return sImportData;
+    }
 
-const std::string& ImportData::filename() const
-{
-	return fFilename;
-}
+    /*static*/
+    const ImportData& ImportData::cinstance() { return instance(); }
 
-void ImportData::setFilename(const std::string& f)
-{
-	// If the input filename doesn't match what we have stored (empty or not) we
-	// clear the data because it doesn't belong to the new file.
-	if (fFilename != f)
-		clearData();
-	fFilename = f;
-}
+    void ImportData::clearData()
+    {
+        fLoadSet = UsdStage::InitialLoadSet::LoadAll;
+        UsdStagePopulationMask tmpPopMask;
+        fPopMask.swap(tmpPopMask);
+        fRootVariants.clear();
+        fPrimVariants.clear();
+        fFilename.clear();
+        fRootPrimPath = kRootPrimPath;
+    }
 
-const std::string& ImportData::rootPrimPath() const
-{
-	return fRootPrimPath;
-}
+    bool ImportData::empty() const
+    {
+        // If we don't have a filename set then we are empty.
+        return fFilename.empty();
+    }
 
-void ImportData::setRootPrimPath(const std::string& primPath)
-{
-	fRootPrimPath = primPath;
-}
+    const std::string& ImportData::filename() const { return fFilename; }
 
-bool ImportData::hasPopulationMask() const
-{
-	return !fPopMask.IsEmpty();
-}
+    void ImportData::setFilename(const std::string& f)
+    {
+        // If the input filename doesn't match what we have stored (empty or not) we
+        // clear the data because it doesn't belong to the new file.
+        if (fFilename != f)
+            clearData();
+        fFilename = f;
+    }
 
-const UsdStagePopulationMask& ImportData::stagePopulationMask() const
-{
-	return fPopMask;
-}
+    const std::string& ImportData::rootPrimPath() const { return fRootPrimPath; }
 
-void ImportData::setStagePopulationMask(const UsdStagePopulationMask& mask)
-{
-	fPopMask = mask;
-}
+    void ImportData::setRootPrimPath(const std::string& primPath) { fRootPrimPath = primPath; }
 
-void ImportData::setStagePopulationMask(UsdStagePopulationMask&& mask)
-{
-	fPopMask = std::move(mask);
-}
+    bool ImportData::hasPopulationMask() const { return !fPopMask.IsEmpty(); }
 
-UsdStage::InitialLoadSet ImportData::stageInitialLoadSet() const
-{
-	return fLoadSet;
-}
+    const UsdStagePopulationMask& ImportData::stagePopulationMask() const { return fPopMask; }
 
-void ImportData::setStageInitialLoadSet(UsdStage::InitialLoadSet loadSet)
-{
-	fLoadSet = loadSet;
-}
+    void ImportData::setStagePopulationMask(const UsdStagePopulationMask& mask) { fPopMask = mask; }
 
-bool ImportData::hasVariantSelections() const
-{
-	return !(fRootVariants.empty() || fPrimVariants.empty());
-}
+    void ImportData::setStagePopulationMask(UsdStagePopulationMask && mask)
+    {
+        fPopMask = std::move(mask);
+    }
 
-const SdfVariantSelectionMap& ImportData::rootVariantSelections() const
-{
-	return fRootVariants;
-}
+    UsdStage::InitialLoadSet ImportData::stageInitialLoadSet() const { return fLoadSet; }
 
-const ImportData::PrimVariantSelections& ImportData::primVariantSelections() const
-{
-	return fPrimVariants;
-}
+    void ImportData::setStageInitialLoadSet(UsdStage::InitialLoadSet loadSet)
+    {
+        fLoadSet = loadSet;
+    }
 
-void ImportData::setRootVariantSelections(const SdfVariantSelectionMap& vars)
-{
-	fRootVariants = vars;
-}
+    bool ImportData::hasVariantSelections() const
+    {
+        return !(fRootVariants.empty() || fPrimVariants.empty());
+    }
 
-void ImportData::setRootVariantSelections(SdfVariantSelectionMap&& vars)
-{
-	fRootVariants = std::move(vars);
-}
+    const SdfVariantSelectionMap& ImportData::rootVariantSelections() const
+    {
+        return fRootVariants;
+    }
 
-void ImportData::setPrimVariantSelections(const PrimVariantSelections& vars)
-{
-	fPrimVariants = vars;
-}
+    const ImportData::PrimVariantSelections& ImportData::primVariantSelections() const
+    {
+        return fPrimVariants;
+    }
 
-void ImportData::setPrimVariantSelections(PrimVariantSelections&& vars)
-{
-	fPrimVariants = std::move(vars);
-}
+    void ImportData::setRootVariantSelections(const SdfVariantSelectionMap& vars)
+    {
+        fRootVariants = vars;
+    }
+
+    void ImportData::setRootVariantSelections(SdfVariantSelectionMap && vars)
+    {
+        fRootVariants = std::move(vars);
+    }
+
+    void ImportData::setPrimVariantSelections(const PrimVariantSelections& vars)
+    {
+        fPrimVariants = vars;
+    }
+
+    void ImportData::setPrimVariantSelections(PrimVariantSelections && vars)
+    {
+        fPrimVariants = std::move(vars);
+    }
 
 } // namespace MayaUsd

@@ -15,31 +15,31 @@
 //
 #include "MayaReference.h"
 
-#include <maya/MSelectionList.h>
-#include <maya/MGlobal.h>
-#include <maya/MDGModifier.h>
-#include <maya/MNodeClass.h>
-#include <maya/MPlug.h>
-#include <maya/MFnStringData.h>
-#include <maya/MFnTransform.h>
-#include <maya/MFnTypedAttribute.h>
-#include <maya/MFnTransform.h>
-#include <maya/MFnCamera.h>
-#include <maya/MFileIO.h>
-#include <maya/MItDependencyNodes.h>
-#include "AL/usdmaya/nodes/Transform.h"
-#include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
-#include "AL/usdmaya/utils/DgNodeHelper.h"
-#include "AL/usdmaya/DebugCodes.h"
-
-#include "AL/usdmaya/utils/Utils.h"
 #include "AL/maya/utils/Utils.h"
+#include "AL/usdmaya/DebugCodes.h"
+#include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
+#include "AL/usdmaya/nodes/Transform.h"
+#include "AL/usdmaya/utils/DgNodeHelper.h"
+#include "AL/usdmaya/utils/Utils.h"
 
-#include <mayaUsd_Schemas/ALMayaReference.h>
-#include <mayaUsd_Schemas/MayaReference.h>
 #include <mayaUsd/fileio/translators/translatorMayaReference.h>
 
 #include <pxr/usd/usd/attribute.h>
+
+#include <maya/MDGModifier.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnCamera.h>
+#include <maya/MFnStringData.h>
+#include <maya/MFnTransform.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MNodeClass.h>
+#include <maya/MPlug.h>
+#include <maya/MSelectionList.h>
+
+#include <mayaUsd_Schemas/ALMayaReference.h>
+#include <mayaUsd_Schemas/MayaReference.h>
 
 namespace AL {
 namespace usdmaya {
@@ -52,45 +52,48 @@ AL_USDMAYA_DEFINE_TRANSLATOR(ALMayaReference, MayaUsd_SchemasALMayaReference)
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::initialize()
 {
-  //Initialise all the class plugs
-  return MStatus::kSuccess;
+    // Initialise all the class plugs
+    return MStatus::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
-  return UsdMayaTranslatorMayaReference::update(prim, parent);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS)
+        .Msg("MayaReference::import prim=%s\n", prim.GetPath().GetText());
+    return UsdMayaTranslatorMayaReference::update(prim, parent);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::tearDown(const SdfPath& primPath)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::tearDown prim=%s\n", primPath.GetText());
-  MObject mayaObject;
-  MObjectHandle handle;
-  context()->getTransform(primPath, handle);
-  mayaObject = handle.object();
-  UsdMayaTranslatorMayaReference::UnloadMayaReference(mayaObject);
-  return MS::kSuccess;
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::tearDown prim=%s\n", primPath.GetText());
+    MObject       mayaObject;
+    MObjectHandle handle;
+    context()->getTransform(primPath, handle);
+    mayaObject = handle.object();
+    UsdMayaTranslatorMayaReference::UnloadMayaReference(mayaObject);
+    return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus MayaReference::update(const UsdPrim& prim)
 {
-  TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("MayaReference::update prim=%s\n", prim.GetPath().GetText());
-  MObjectHandle handle;
-  if(!context()->getTransform(prim, handle))
-  {
-    MGlobal::displayError(MString("MayaReference::update unable to find the transform node for prim: ") + prim.GetPath().GetText());
-  }
-  MObject parent = handle.object();
-  return UsdMayaTranslatorMayaReference::update(prim, parent);
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS)
+        .Msg("MayaReference::update prim=%s\n", prim.GetPath().GetText());
+    MObjectHandle handle;
+    if (!context()->getTransform(prim, handle)) {
+        MGlobal::displayError(
+            MString("MayaReference::update unable to find the transform node for prim: ")
+            + prim.GetPath().GetText());
+    }
+    MObject parent = handle.object();
+    return UsdMayaTranslatorMayaReference::update(prim, parent);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-} // translators
-} // fileio
-} // usdmaya
-} // AL
+} // namespace translators
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

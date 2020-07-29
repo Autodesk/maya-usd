@@ -19,11 +19,11 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -55,54 +55,20 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya "file" node attribute names
-    (file)
-    (alphaGain)
-    (alphaOffset)
-    (colorGain)
-    (colorOffset)
-    (defaultColor)
-    (fileTextureName)
-    (outAlpha)
-    (outColor)
-    (outColorR)
-    (outColorG)
-    (outColorB)
-    (place2dTexture)
-    (coverage)
-    (translateFrame)
-    (rotateFrame)
-    (mirrorU)
-    (mirrorV)
-    (stagger)
-    (wrapU)
-    (wrapV)
-    (repeatUV)
-    (offset)
-    (rotateUV)
-    (noiseUV)
-    (vertexUvOne)
-    (vertexUvTwo)
-    (vertexUvThree)
-    (vertexCameraOne)
+    (file)(alphaGain)(alphaOffset)(colorGain)(colorOffset)(defaultColor)(fileTextureName)(outAlpha)(
+        outColor)(outColorR)(outColorG)(outColorB)(place2dTexture)(coverage)(translateFrame)(
+        rotateFrame)(mirrorU)(mirrorV)(stagger)(wrapU)(wrapV)(repeatUV)(offset)(rotateUV)(noiseUV)(
+        vertexUvOne)(vertexUvTwo)(vertexUvThree)(vertexCameraOne)
 
     // UsdUVTexture Input Names
-    (bias)
-    (fallback)
-    (scale)
-    (wrapS)
-    (wrapT)
+    (bias)(fallback)(scale)(wrapS)(wrapT)
 
     // Values for wrapS and wrapT
-    (black)
-    (repeat)
+    (black)(repeat)
 
     // UsdUVTexture Output Names
-    ((RGBOutputName, "rgb"))
-    ((RedOutputName, "r"))
-    ((GreenOutputName, "g"))
-    ((BlueOutputName, "b"))
-    ((AlphaOutputName, "a"))
-);
+    ((RGBOutputName, "rgb"))((RedOutputName, "r"))((GreenOutputName, "g"))((BlueOutputName, "b"))(
+        (AlphaOutputName, "a")));
 
 static const TfTokenVector _Place2dTextureConnections = {
     _tokens->coverage,    _tokens->translateFrame, _tokens->rotateFrame,   _tokens->mirrorU,
@@ -178,7 +144,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         UsdMayaReadUtil::SetMayaAttr(mayaAttr, usdInput);
     }
 
-    VtValue     val;
+    VtValue val;
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the
     // UsdUVTexture's scale input.
@@ -258,7 +224,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
 /* virtual */
 TfToken PxrMayaUsdUVTexture_Reader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
-    TfToken usdOutputName;
+    TfToken               usdOutputName;
     UsdShadeAttributeType attrType;
     std::tie(usdOutputName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 

@@ -33,12 +33,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-#define WRAP_CUSTOM                                                     \
-    template <class Cls> static void _CustomWrapCode(Cls &_class)
+#define WRAP_CUSTOM template <class Cls> static void _CustomWrapCode(Cls& _class)
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 } // anonymous namespace
 
@@ -46,37 +44,37 @@ void wrapAL_usd_ModelAPI()
 {
     typedef AL_usd_ModelAPI This;
 
-    class_<This, bases<UsdModelAPI> >
-        cls("ModelAPI");
+    class_<This, bases<UsdModelAPI>> cls("ModelAPI");
 
-    cls
-        .def(init<UsdPrim>(arg("prim")))
+    cls.def(init<UsdPrim>(arg("prim")))
         .def(init<UsdSchemaBase const&>(arg("schemaObj")))
         .def(TfTypePythonClass())
 
         .def("Get", &This::Get, (arg("stage"), arg("path")))
         .staticmethod("Get")
 
-        .def("GetSchemaAttributeNames",
-             &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+        .def(
+            "GetSchemaAttributeNames",
+            &This::GetSchemaAttributeNames,
+            arg("includeInherited") = true,
+            return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+        .def(
+            "_GetStaticTfType",
+            (TfType const& (*)())TfType::Find<This>,
+            return_value_policy<return_by_value>())
         .staticmethod("_GetStaticTfType")
 
         .def(!self)
 
-
-    ;
+        ;
 
     _CustomWrapCode(cls);
 }
 
 // ===================================================================== //
-// Feel free to add custom code below this line, it will be preserved by 
+// Feel free to add custom code below this line, it will be preserved by
 // the code generator.  The entry point for your custom code should look
 // minimally like the following:
 //
@@ -87,7 +85,7 @@ void wrapAL_usd_ModelAPI()
 // }
 //
 // Of course any other ancillary or support code may be provided.
-// 
+//
 // Just remember to wrap code in the appropriate delimiters:
 // 'namespace {', '}'.
 //
@@ -96,16 +94,14 @@ void wrapAL_usd_ModelAPI()
 
 namespace {
 
-WRAP_CUSTOM {
+WRAP_CUSTOM
+{
     typedef AL_usd_ModelAPI This;
-    _class
-      .def("SetSelectability", &This::SetSelectability, (arg("selectability")))
-      .def("GetSelectability", &This::GetSelectability)
-      .def("ComputeSelectability", &This::ComputeSelectabilty)
-      .def("SetLock", &This::SetLock, (arg("lock")))
-      .def("GetLock", &This::GetLock)
-      .def("ComputeLock", &This::ComputeLock)
-    ;
+    _class.def("SetSelectability", &This::SetSelectability, (arg("selectability")))
+        .def("GetSelectability", &This::GetSelectability)
+        .def("ComputeSelectability", &This::ComputeSelectabilty)
+        .def("SetLock", &This::SetLock, (arg("lock")))
+        .def("GetLock", &This::GetLock)
+        .def("ComputeLock", &This::ComputeLock);
 }
-}
-
+} // namespace

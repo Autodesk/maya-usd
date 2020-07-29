@@ -13,22 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+#include "api.h"
 
 #include <maya/MFnPlugin.h>
 #include <maya/MString.h>
 
-#include "api.h"
+#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PXRUSDPREVIEWSURFACE_API
-MStatus
-initializePlugin(MObject obj)
+MStatus initializePlugin(MObject obj)
 {
-    MStatus status;
+    MStatus   status;
     MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
-    
+
     status = PxrMayaUsdPreviewSurfacePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
 
@@ -36,12 +35,11 @@ initializePlugin(MObject obj)
 }
 
 PXRUSDPREVIEWSURFACE_API
-MStatus
-uninitializePlugin(MObject obj)
+MStatus uninitializePlugin(MObject obj)
 {
-    MStatus status;
+    MStatus   status;
     MFnPlugin plugin(obj);
-    
+
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(plugin);
     CHECK_MSTATUS(status);
 

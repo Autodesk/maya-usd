@@ -16,16 +16,16 @@
 #ifndef PXRUSDMAYA_MODEL_KIND_PROCESSOR_H
 #define PXRUSDMAYA_MODEL_KIND_PROCESSOR_H
 
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriter.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primWriter.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -33,8 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// UsdMaya_WriteJob. It is a "black box" that reads each newly-written prim, one
 /// by one, saving information that is used to determine model hierarchy at the
 /// end of writing to the USD stage.
-class UsdMaya_ModelKindProcessor
-{
+class UsdMaya_ModelKindProcessor {
 public:
     UsdMaya_ModelKindProcessor(const UsdMayaJobExportArgs& args);
 
@@ -43,9 +42,7 @@ public:
     /// prim writer.
     /// Note: this assumes DFS traversal, i.e. parent prims should be traversed
     /// before child prims.
-    void OnWritePrim(
-            const UsdPrim& prim,
-            const UsdMayaPrimWriterSharedPtr& primWriter);
+    void OnWritePrim(const UsdPrim& prim, const UsdMayaPrimWriterSharedPtr& primWriter);
 
     /// Writes model hierarchy for the given stage based on the information
     /// collected by OnWritePrim.
@@ -57,10 +54,9 @@ public:
     bool MakeModelHierarchy(UsdStageRefPtr& stage);
 
 private:
-    typedef std::unordered_map<SdfPath, std::vector<SdfPath>, SdfPath::Hash>
-            _PathVectorMap;
-    typedef std::unordered_map<SdfPath, bool, SdfPath::Hash> _PathBoolMap;
-    typedef std::unordered_set<SdfPath, SdfPath::Hash> _PathSet;
+    typedef std::unordered_map<SdfPath, std::vector<SdfPath>, SdfPath::Hash> _PathVectorMap;
+    typedef std::unordered_map<SdfPath, bool, SdfPath::Hash>                 _PathBoolMap;
+    typedef std::unordered_set<SdfPath, SdfPath::Hash>                       _PathSet;
 
     UsdMayaJobExportArgs _args;
 
@@ -80,15 +76,10 @@ private:
     // Set of all root paths that contain exported gprims.
     _PathSet _pathsWithExportedGprims;
 
-    bool _AuthorRootPrimKinds(
-            UsdStageRefPtr& stage,
-            _PathBoolMap& rootPrimIsComponent);
+    bool _AuthorRootPrimKinds(UsdStageRefPtr& stage, _PathBoolMap& rootPrimIsComponent);
 
-    bool _FixUpPrimKinds(
-            UsdStageRefPtr& stage,
-            const _PathBoolMap& rootPrimIsComponent);
+    bool _FixUpPrimKinds(UsdStageRefPtr& stage, const _PathBoolMap& rootPrimIsComponent);
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -14,94 +14,98 @@
 // limitations under the License.
 //
 #include "test_usdmaya.h"
+
+#include "AL/maya/test/testHelpers.h"
+
 #include <maya/MFileIO.h>
 #include <maya/MFnDagNode.h>
-#include "AL/maya/test/testHelpers.h"
 
 using AL::maya::test::buildTempPath;
 
 AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(
     std::function<UsdStageRefPtr()> buildUsdStage,
-    const std::string& tempPath,
-    MObject* shapeParent
-)
+    const std::string&              tempPath,
+    MObject*                        shapeParent)
 {
-  if(buildUsdStage != nullptr)
-  {
-    UsdStageRefPtr stage = buildUsdStage();
-    stage->Export(tempPath, false);
-  }
+    if (buildUsdStage != nullptr) {
+        UsdStageRefPtr stage = buildUsdStage();
+        stage->Export(tempPath, false);
+    }
 
-  MFnDagNode fn;
-  MObject xform = fn.create("transform");
-  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
+    MFnDagNode fn;
+    MObject    xform = fn.create("transform");
+    MObject    shape = fn.create("AL_usdmaya_ProxyShape", xform);
 
-  if(shapeParent)
-    *shapeParent = shape;
+    if (shapeParent)
+        *shapeParent = shape;
 
-  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
-  proxy->filePathPlug().setString(tempPath.c_str());
-  return proxy;
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+    proxy->filePathPlug().setString(tempPath.c_str());
+    return proxy;
 }
 
 AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(const std::string& rootLayerPath)
 {
-  MFnDagNode fn;
-  MObject xform = fn.create("transform");
-  MObject shape = fn.create("AL_usdmaya_ProxyShape", xform);
-  AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
-  proxy->filePathPlug().setString(rootLayerPath.c_str());
-  return proxy;
+    MFnDagNode                      fn;
+    MObject                         xform = fn.create("transform");
+    MObject                         shape = fn.create("AL_usdmaya_ProxyShape", xform);
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fn.userNode();
+    proxy->filePathPlug().setString(rootLayerPath.c_str());
+    return proxy;
 }
 
 AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMesh()
 {
-  MFileIO::newFile(true);
-  MGlobal::executeCommand("polySphere");
-  const MString scene = buildTempPath("AL_USDMayaTests_SceneWithMesh.usda");
-  MString command;
-  command.format("file -force -typ \"AL usdmaya export\" -options \"Merge_Transforms=0;Meshes=1;\" -pr -ea \"^1s\"", scene.asChar());
+    MFileIO::newFile(true);
+    MGlobal::executeCommand("polySphere");
+    const MString scene = buildTempPath("AL_USDMayaTests_SceneWithMesh.usda");
+    MString       command;
+    command.format(
+        "file -force -typ \"AL usdmaya export\" -options \"Merge_Transforms=0;Meshes=1;\" -pr -ea "
+        "\"^1s\"",
+        scene.asChar());
 
-  MGlobal::executeCommand(command, true);
+    MGlobal::executeCommand(command, true);
 
-  //clear scene then create ProxyShape
-  MFileIO::newFile(true);
-  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(scene.asChar());
-  return proxyShape;
+    // clear scene then create ProxyShape
+    MFileIO::newFile(true);
+    AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(scene.asChar());
+    return proxyShape;
 }
 
 AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMergedMesh()
 {
-  MFileIO::newFile(true);
-  MGlobal::executeCommand("polySphere");
-  const MString scene = buildTempPath("AL_USDMayaTests_SceneWithMergedMesh.usda");
-  MString command;
-  command.format("file -force -typ \"AL usdmaya export\" -options \"Merge_Transforms=1;Meshes=1;\" -pr -ea \"^1s\"", scene.asChar());
+    MFileIO::newFile(true);
+    MGlobal::executeCommand("polySphere");
+    const MString scene = buildTempPath("AL_USDMayaTests_SceneWithMergedMesh.usda");
+    MString       command;
+    command.format(
+        "file -force -typ \"AL usdmaya export\" -options \"Merge_Transforms=1;Meshes=1;\" -pr -ea "
+        "\"^1s\"",
+        scene.asChar());
 
-  MGlobal::executeCommand(command, true);
+    MGlobal::executeCommand(command, true);
 
-  //clear scene then create ProxyShape
-  MFileIO::newFile(true);
-  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(scene.asChar());
-  return proxyShape;
+    // clear scene then create ProxyShape
+    MFileIO::newFile(true);
+    AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(scene.asChar());
+    return proxyShape;
 }
 
 AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMultipleMeshes()
 {
-  MFileIO::newFile(true);
-  MGlobal::executeCommand("polySphere"); // pSphere1
-  MGlobal::executeCommand("polySphere"); // pSphere2
-  MGlobal::executeCommand("polySphere"); // pSphere3
-  const MString scene = buildTempPath("AL_USDMayaTests_SceneWithMultipleMeshs.usda");
-  MString command;
-  command.format("file -force -typ \"AL usdmaya export\" -pr -ea \"^1s\"", scene.asChar());
+    MFileIO::newFile(true);
+    MGlobal::executeCommand("polySphere"); // pSphere1
+    MGlobal::executeCommand("polySphere"); // pSphere2
+    MGlobal::executeCommand("polySphere"); // pSphere3
+    const MString scene = buildTempPath("AL_USDMayaTests_SceneWithMultipleMeshs.usda");
+    MString       command;
+    command.format("file -force -typ \"AL usdmaya export\" -pr -ea \"^1s\"", scene.asChar());
 
-  MGlobal::executeCommand(command, true);
+    MGlobal::executeCommand(command, true);
 
-  //clear scene then create ProxyShape
-  MFileIO::newFile(true);
-  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(scene.asChar());
-  return proxyShape;
+    // clear scene then create ProxyShape
+    MFileIO::newFile(true);
+    AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(scene.asChar());
+    return proxyShape;
 }
-
-

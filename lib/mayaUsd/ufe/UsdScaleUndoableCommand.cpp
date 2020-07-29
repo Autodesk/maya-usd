@@ -17,62 +17,56 @@
 
 #include "private/Utils.h"
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
-
-UsdScaleUndoableCommand::UsdScaleUndoableCommand(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-) : Ufe::ScaleUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, x, y, z)
-{}
-
-UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
-{}
-
-/*static*/
-UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-)
+MAYAUSD_NS_DEF
 {
-	auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
-        item, x, y, z);
-    cmd->initialize();
-    return cmd;
+    namespace ufe {
 
-}
+    TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 
-void UsdScaleUndoableCommand::undo()
-{
-    undoImp();
-}
+    UsdScaleUndoableCommand::UsdScaleUndoableCommand(
+        const UsdSceneItem::Ptr& item,
+        double                   x,
+        double                   y,
+        double                   z)
+        : Ufe::ScaleUndoableCommand(item)
+        , UsdTRSUndoableCommandBase(item, x, y, z)
+    {
+    }
 
-void UsdScaleUndoableCommand::redo()
-{
-	redoImp();
-}
+    UsdScaleUndoableCommand::~UsdScaleUndoableCommand() { }
 
-void UsdScaleUndoableCommand::addEmptyAttribute()
-{
-    performImp(1, 1, 1);	// Add a neutral scale
-}
+    /*static*/
+    UsdScaleUndoableCommand::Ptr
+    UsdScaleUndoableCommand::create(const UsdSceneItem::Ptr& item, double x, double y, double z)
+    {
+        auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(item, x, y, z);
+        cmd->initialize();
+        return cmd;
+    }
 
-void UsdScaleUndoableCommand::performImp(double x, double y, double z)
-{
-	scaleOp(prim(), path(), x, y, z);
-}
+    void UsdScaleUndoableCommand::undo() { undoImp(); }
 
+    void UsdScaleUndoableCommand::redo() { redoImp(); }
 
-//------------------------------------------------------------------------------
-// Ufe::ScaleUndoableCommand overrides
-//------------------------------------------------------------------------------
+    void UsdScaleUndoableCommand::addEmptyAttribute()
+    {
+        performImp(1, 1, 1); // Add a neutral scale
+    }
 
-bool UsdScaleUndoableCommand::scale(double x, double y, double z)
-{
-	perform(x, y, z);
-	return true;
-}
+    void UsdScaleUndoableCommand::performImp(double x, double y, double z)
+    {
+        scaleOp(prim(), path(), x, y, z);
+    }
 
-} // namespace ufe
+    //------------------------------------------------------------------------------
+    // Ufe::ScaleUndoableCommand overrides
+    //------------------------------------------------------------------------------
+
+    bool UsdScaleUndoableCommand::scale(double x, double y, double z)
+    {
+        perform(x, y, z);
+        return true;
+    }
+
+    } // namespace ufe
 } // namespace MayaUsd

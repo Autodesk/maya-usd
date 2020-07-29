@@ -15,24 +15,21 @@
 //
 #include "userData.h"
 
-#include <maya/MUserData.h>
-
 #include <pxr/pxr.h>
+
+#include <maya/MUserData.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Note that we set deleteAfterUse=false when calling the MUserData
 /// constructor. This ensures that the draw data survives across multiple draw
 /// passes in Viewport 2.0 (e.g. a shadow pass and a color pass).
-PxrMayaHdUserData::PxrMayaHdUserData() :
-    MUserData(/* deleteAfterUse = */ false)
+PxrMayaHdUserData::PxrMayaHdUserData()
+    : MUserData(/* deleteAfterUse = */ false)
 {
 }
 
 /* virtual */
-PxrMayaHdUserData::~PxrMayaHdUserData()
-{
-}
-
+PxrMayaHdUserData::~PxrMayaHdUserData() { }
 
 PXR_NAMESPACE_CLOSE_SCOPE

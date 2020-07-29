@@ -17,37 +17,36 @@
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-UsdAttributesHandler::UsdAttributesHandler()
-	: Ufe::AttributesHandler()
+MAYAUSD_NS_DEF
 {
-}
+    namespace ufe {
 
-UsdAttributesHandler::~UsdAttributesHandler()
-{
-}
+    UsdAttributesHandler::UsdAttributesHandler()
+        : Ufe::AttributesHandler()
+    {
+    }
 
-/*static*/
-UsdAttributesHandler::Ptr UsdAttributesHandler::create()
-{
-	return std::make_shared<UsdAttributesHandler>();
-}
+    UsdAttributesHandler::~UsdAttributesHandler() { }
 
-//------------------------------------------------------------------------------
-// Ufe::AttributesHandler overrides
-//------------------------------------------------------------------------------
+    /*static*/
+    UsdAttributesHandler::Ptr UsdAttributesHandler::create()
+    {
+        return std::make_shared<UsdAttributesHandler>();
+    }
 
-Ufe::Attributes::Ptr UsdAttributesHandler::attributes(const Ufe::SceneItem::Ptr& item) const
-{
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    //------------------------------------------------------------------------------
+    // Ufe::AttributesHandler overrides
+    //------------------------------------------------------------------------------
+
+    Ufe::Attributes::Ptr UsdAttributesHandler::attributes(const Ufe::SceneItem::Ptr& item) const
+    {
+        UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-	assert(usdItem);
+        assert(usdItem);
 #endif
-	auto usdAttributes = UsdAttributes::create(usdItem);
-	return usdAttributes;
-}
+        auto usdAttributes = UsdAttributes::create(usdItem);
+        return usdAttributes;
+    }
 
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

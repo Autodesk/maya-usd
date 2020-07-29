@@ -20,9 +20,8 @@
 
 #include "api.h"
 
-#include <pxr/pxr.h>
-
 #include <pxr/base/tf/staticTokens.h>
+#include <pxr/pxr.h>
 
 #include <maya/MDataBlock.h>
 #include <maya/MObject.h>
@@ -32,104 +31,90 @@
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-#define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS \
-    ((MayaTypeName, "pxrUsdPreviewSurface")) \
-    ((ClearcoatAttrName, "clearcoat")) \
-    ((ClearcoatRoughnessAttrName, "clearcoatRoughness")) \
-    ((DiffuseColorAttrName, "diffuseColor")) \
-    ((DisplacementAttrName, "displacement")) \
-    ((EmissiveColorAttrName, "emissiveColor")) \
-    ((IorAttrName, "ior")) \
-    ((MetallicAttrName, "metallic")) \
-    ((NormalAttrName, "normal")) \
-    ((OcclusionAttrName, "occlusion")) \
-    ((OpacityAttrName, "opacity")) \
-    ((RoughnessAttrName, "roughness")) \
-    ((SpecularColorAttrName, "specularColor")) \
-    ((UseSpecularWorkflowAttrName, "useSpecularWorkflow")) \
-    ((OutColorAttrName, "outColor")) \
-    ((OutTransparencyAttrName, "outTransparency"))
+#define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS                                        \
+    ((MayaTypeName, "pxrUsdPreviewSurface"))((ClearcoatAttrName, "clearcoat"))(                \
+        (ClearcoatRoughnessAttrName, "clearcoatRoughness"))(                                   \
+        (DiffuseColorAttrName, "diffuseColor"))((DisplacementAttrName, "displacement"))(       \
+        (EmissiveColorAttrName, "emissiveColor"))((IorAttrName, "ior"))(                       \
+        (MetallicAttrName, "metallic"))((NormalAttrName, "normal"))(                           \
+        (OcclusionAttrName, "occlusion"))((OpacityAttrName, "opacity"))(                       \
+        (RoughnessAttrName, "roughness"))((SpecularColorAttrName, "specularColor"))(           \
+        (UseSpecularWorkflowAttrName, "useSpecularWorkflow"))((OutColorAttrName, "outColor"))( \
+        (OutTransparencyAttrName, "outTransparency"))
 
 TF_DECLARE_PUBLIC_TOKENS(
     PxrMayaUsdPreviewSurfaceTokens,
     PXRUSDPREVIEWSURFACE_API,
     PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS);
 
+class PxrMayaUsdPreviewSurface : public MPxNode {
+public:
+    PXRUSDPREVIEWSURFACE_API
+    static const MTypeId typeId;
+    PXRUSDPREVIEWSURFACE_API
+    static const MString typeName;
 
-class PxrMayaUsdPreviewSurface : public MPxNode
-{
-    public:
-        PXRUSDPREVIEWSURFACE_API
-        static const MTypeId typeId;
-        PXRUSDPREVIEWSURFACE_API
-        static const MString typeName;
+    PXRUSDPREVIEWSURFACE_API
+    static const MString drawDbClassification;
+    PXRUSDPREVIEWSURFACE_API
+    static const MString fullClassification;
 
-        PXRUSDPREVIEWSURFACE_API
-        static const MString drawDbClassification;
-        PXRUSDPREVIEWSURFACE_API
-        static const MString fullClassification;
+    // Attributes
+    PXRUSDPREVIEWSURFACE_API
+    static MObject clearcoatAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject clearcoatRoughnessAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject diffuseColorAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject displacementAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject emissiveColorAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject iorAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject metallicAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject normalAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject occlusionAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject opacityAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject roughnessAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject specularColorAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject useSpecularWorkflowAttr;
 
-        // Attributes
-        PXRUSDPREVIEWSURFACE_API
-        static MObject clearcoatAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject clearcoatRoughnessAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject diffuseColorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject displacementAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject emissiveColorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject iorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject metallicAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject normalAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject occlusionAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject opacityAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject roughnessAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject specularColorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject useSpecularWorkflowAttr;
+    // Output Attributes.
+    PXRUSDPREVIEWSURFACE_API
+    static MObject outColorAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static MObject outTransparencyAttr;
 
-        // Output Attributes.
-        PXRUSDPREVIEWSURFACE_API
-        static MObject outColorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject outTransparencyAttr;
+    PXRUSDPREVIEWSURFACE_API
+    static void* creator();
 
-        PXRUSDPREVIEWSURFACE_API
-        static void* creator();
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus initialize();
 
-        PXRUSDPREVIEWSURFACE_API
-        static MStatus initialize();
+    PXRUSDPREVIEWSURFACE_API
+    void postConstructor() override;
 
-        PXRUSDPREVIEWSURFACE_API
-        void postConstructor() override;
+    PXRUSDPREVIEWSURFACE_API
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
 
-        PXRUSDPREVIEWSURFACE_API
-        MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
+private:
+    PxrMayaUsdPreviewSurface();
+    ~PxrMayaUsdPreviewSurface() override;
 
-    private:
-        PxrMayaUsdPreviewSurface();
-        ~PxrMayaUsdPreviewSurface() override;
-
-        PxrMayaUsdPreviewSurface(const PxrMayaUsdPreviewSurface&) = delete;
-        PxrMayaUsdPreviewSurface& operator=(
-                const PxrMayaUsdPreviewSurface&) = delete;
+    PxrMayaUsdPreviewSurface(const PxrMayaUsdPreviewSurface&) = delete;
+    PxrMayaUsdPreviewSurface& operator=(const PxrMayaUsdPreviewSurface&) = delete;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

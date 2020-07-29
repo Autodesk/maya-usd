@@ -7,39 +7,39 @@
 // ===========================================================================
 #pragma once
 
-#include <ufe/object3dHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdObject3d.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
+#include <ufe/object3dHandler.h>
 
-//! \brief USD run-time 3D object handler.
-/*!
-	Factory object for Object3d interfaces.
- */
-class MAYAUSD_CORE_PUBLIC UsdObject3dHandler : public Ufe::Object3dHandler
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdObject3dHandler> Ptr;
+    namespace ufe {
 
-	UsdObject3dHandler();
-	~UsdObject3dHandler() override;
+    //! \brief USD run-time 3D object handler.
+    /*!
+            Factory object for Object3d interfaces.
+     */
+    class MAYAUSD_CORE_PUBLIC UsdObject3dHandler : public Ufe::Object3dHandler {
+    public:
+        typedef std::shared_ptr<UsdObject3dHandler> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdObject3dHandler(const UsdObject3dHandler&) = delete;
-	UsdObject3dHandler& operator=(const UsdObject3dHandler&) = delete;
-	UsdObject3dHandler(UsdObject3dHandler&&) = delete;
-	UsdObject3dHandler& operator=(UsdObject3dHandler&&) = delete;
+        UsdObject3dHandler();
+        ~UsdObject3dHandler() override;
 
-	//! Create a UsdObject3dHandler.
-	static UsdObject3dHandler::Ptr create();
+        // Delete the copy/move constructors assignment operators.
+        UsdObject3dHandler(const UsdObject3dHandler&) = delete;
+        UsdObject3dHandler& operator=(const UsdObject3dHandler&) = delete;
+        UsdObject3dHandler(UsdObject3dHandler&&) = delete;
+        UsdObject3dHandler& operator=(UsdObject3dHandler&&) = delete;
 
-	// UsdObject3dHandler overrides
-	Ufe::Object3d::Ptr object3d(const Ufe::SceneItem::Ptr& item) const override;
+        //! Create a UsdObject3dHandler.
+        static UsdObject3dHandler::Ptr create();
 
-}; // UsdObject3dHandler
+        // UsdObject3dHandler overrides
+        Ufe::Object3d::Ptr object3d(const Ufe::SceneItem::Ptr& item) const override;
 
-} // namespace ufe
+    }; // UsdObject3dHandler
+
+    } // namespace ufe
 } // namespace MayaUsd

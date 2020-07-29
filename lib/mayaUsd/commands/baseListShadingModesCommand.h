@@ -22,18 +22,17 @@
 
 #include <maya/MPxCommand.h>
 
-MAYAUSD_NS_DEF {
-
-class MAYAUSD_CORE_PUBLIC MayaUSDListShadingModesCommand : public MPxCommand
+MAYAUSD_NS_DEF
 {
-public:
-    MStatus doIt(const MArgList& args) override;
-    bool  isUndoable () const override { return false; };
 
-    static MSyntax  createSyntax();
-    static void* creator();
-};
+    class MAYAUSD_CORE_PUBLIC MayaUSDListShadingModesCommand : public MPxCommand {
+    public:
+        MStatus doIt(const MArgList& args) override;
+        bool    isUndoable() const override { return false; };
 
+        static MSyntax createSyntax();
+        static void*   creator();
+    };
 }
 
 #endif

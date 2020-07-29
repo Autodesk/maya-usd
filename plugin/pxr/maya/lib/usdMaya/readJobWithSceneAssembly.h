@@ -23,25 +23,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdMaya_ReadJobWithSceneAssembly : public UsdMaya_ReadJob
-{
+class UsdMaya_ReadJobWithSceneAssembly : public UsdMaya_ReadJob {
 public:
     UsdMaya_ReadJobWithSceneAssembly(
-            const MayaUsd::ImportData& iImportData,
-            const UsdMayaJobImportArgs & iArgs);
+        const MayaUsd::ImportData&  iImportData,
+        const UsdMayaJobImportArgs& iArgs);
 
     ~UsdMaya_ReadJobWithSceneAssembly();
 
 private:
-
     bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim) override;
     bool OverridePrimReader(
         const UsdPrim&               usdRootPrim,
         const UsdPrim&               prim,
         const UsdMayaPrimReaderArgs& args,
         UsdMayaPrimReaderContext&    readCtx,
-        UsdPrimRange::iterator&      primIt
-    ) override;
+        UsdPrimRange::iterator&      primIt) override;
 
     // Hook to set the shading mode if dealing with scene assembly.
     void PreImport(Usd_PrimFlagsPredicate& returnPredicate) override;
@@ -58,15 +55,13 @@ private:
 
     // These are helper methods for the proxy import method.
     bool _ProcessProxyPrims(
-            const std::vector<UsdPrim>& proxyPrims,
-            const UsdPrim& pxrGeomRoot,
-            const std::vector<std::string>& collapsePointPathStrings);
+        const std::vector<UsdPrim>&     proxyPrims,
+        const UsdPrim&                  pxrGeomRoot,
+        const std::vector<std::string>& collapsePointPathStrings);
     bool _ProcessSubAssemblyPrims(const std::vector<UsdPrim>& subAssemblyPrims);
     bool _ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

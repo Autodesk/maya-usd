@@ -16,19 +16,18 @@
 #ifndef MAYAUSD_PROXYSTAGE_NOTICE_H
 #define MAYAUSD_PROXYSTAGE_NOTICE_H
 
-#include <maya/MObject.h>
+#include <mayaUsd/base/api.h>
 
 #include <pxr/base/tf/notice.h>
 
-#include <mayaUsd/base/api.h>
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MayaUsdProxyShapeBase;
 
 /// Notice sent when the ProxyShape loads a new stage
-class MayaUsdProxyStageBaseNotice : public TfNotice
-{
+class MayaUsdProxyStageBaseNotice : public TfNotice {
 public:
     MAYAUSD_CORE_PUBLIC
     MayaUsdProxyStageBaseNotice(const MayaUsdProxyShapeBase& proxy);
@@ -41,14 +40,12 @@ private:
     const MayaUsdProxyShapeBase& _proxy;
 };
 
-class MayaUsdProxyStageSetNotice : public MayaUsdProxyStageBaseNotice
-{
+class MayaUsdProxyStageSetNotice : public MayaUsdProxyStageBaseNotice {
 public:
     using MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice;
 };
 
-class MayaUsdProxyStageInvalidateNotice : public MayaUsdProxyStageBaseNotice
-{
+class MayaUsdProxyStageInvalidateNotice : public MayaUsdProxyStageBaseNotice {
 public:
     using MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice;
 };

@@ -26,64 +26,53 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace
+namespace {
+std::map<std::string, std::string> getDict(const UsdPrimCompositionQueryArc& arc)
 {
-    std::map<std::string,std::string> 
-    getDict(const UsdPrimCompositionQueryArc& arc) {
-        std::string arcType;
-        switch (arc.GetArcType()) {
-            case PcpArcTypeRoot:
-                arcType = "PcpArcTypeRoot";
-                break;
-            case PcpArcTypeReference:
-                arcType = "PcpArcTypeReference";
-                break;
-            case PcpArcTypePayload:
-                arcType = "PcpArcTypePayload";
-                break;
-            case PcpArcTypeInherit:
-                arcType = "PcpArcTypeInherit";
-                break;
-            case PcpArcTypeSpecialize:
-                arcType = "PcpArcTypeSpecialize";
-                break;
-            case PcpArcTypeVariant:
-                arcType = "PcpArcTypeVariant";
-                break;
-            default:
-                break;
-        }
-
-        auto introducingLayer = arc.GetIntroducingLayer();
-        auto introducingNode = arc.GetIntroducingNode();
-
-        return {
-            {"arcType" , arcType},
-            {"hasSpecs", arc.HasSpecs() ? "True" : "False"},
-            {"introLayer", introducingLayer ? introducingLayer->GetRealPath() : ""},
-            {"introLayerStack", introducingNode ? introducingNode.GetLayerStack()->GetIdentifier().rootLayer->GetRealPath() : ""},
-            {"introPath", arc.GetIntroducingPrimPath().GetString()},
-            {"isAncestral", arc.IsAncestral() ? "True" : "False"},
-            {"isImplicit", arc.IsImplicit() ? "True" : "False"},
-            {"isIntroRootLayer", arc.IsIntroducedInRootLayerStack() ? "True" : "False"},
-            {"isIntroRootLayerPrim", arc.IsIntroducedInRootLayerPrimSpec() ? "True" : "False" },
-            {"nodeLayerStack", arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer->GetRealPath()},
-            {"nodePath", arc.GetTargetNode().GetPath().GetString()},
-        };
+    std::string arcType;
+    switch (arc.GetArcType()) {
+    case PcpArcTypeRoot: arcType = "PcpArcTypeRoot"; break;
+    case PcpArcTypeReference: arcType = "PcpArcTypeReference"; break;
+    case PcpArcTypePayload: arcType = "PcpArcTypePayload"; break;
+    case PcpArcTypeInherit: arcType = "PcpArcTypeInherit"; break;
+    case PcpArcTypeSpecialize: arcType = "PcpArcTypeSpecialize"; break;
+    case PcpArcTypeVariant: arcType = "PcpArcTypeVariant"; break;
+    default: break;
     }
+
+    auto introducingLayer = arc.GetIntroducingLayer();
+    auto introducingNode = arc.GetIntroducingNode();
+
+    return {
+        { "arcType", arcType },
+        { "hasSpecs", arc.HasSpecs() ? "True" : "False" },
+        { "introLayer", introducingLayer ? introducingLayer->GetRealPath() : "" },
+        { "introLayerStack",
+          introducingNode
+              ? introducingNode.GetLayerStack()->GetIdentifier().rootLayer->GetRealPath()
+              : "" },
+        { "introPath", arc.GetIntroducingPrimPath().GetString() },
+        { "isAncestral", arc.IsAncestral() ? "True" : "False" },
+        { "isImplicit", arc.IsImplicit() ? "True" : "False" },
+        { "isIntroRootLayer", arc.IsIntroducedInRootLayerStack() ? "True" : "False" },
+        { "isIntroRootLayerPrim", arc.IsIntroducedInRootLayerPrimSpec() ? "True" : "False" },
+        { "nodeLayerStack",
+          arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer->GetRealPath() },
+        { "nodePath", arc.GetTargetNode().GetPath().GetString() },
+    };
 }
+} // namespace
 
 namespace MayaUsdUtils {
 
-SdfLayerHandle
-defPrimSpecLayer(const UsdPrim& prim)
+SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim)
 {
     // Iterate over the layer stack, starting at the highest-priority layer.
     // The source layer is the one in which there exists a def primSpec, not
     // an over.
 
     SdfLayerHandle defLayer;
-    auto layerStack = prim.GetStage()->GetLayerStack();
+    auto           layerStack = prim.GetStage()->GetLayerStack();
 
     for (auto layer : layerStack) {
         auto primSpec = layer->GetPrimAtPath(prim.GetPath());
@@ -95,29 +84,25 @@ defPrimSpecLayer(const UsdPrim& prim)
     return defLayer;
 }
 
-std::set<SdfLayerHandle>
-layersWithContribution(const UsdPrim& prim)
+std::set<SdfLayerHandle> layersWithContribution(const UsdPrim& prim)
 {
-    // get the list of all the specs that can 
+    // get the list of all the specs that can
     // contribute to the final composed prim
     const auto& primStack = prim.GetPrimStack();
 
     std::set<SdfLayerHandle> layersWithContribution;
-    for (auto primSpec : primStack) {
-        layersWithContribution.insert(primSpec->GetLayer());
-    }
+    for (auto primSpec : primStack) { layersWithContribution.insert(primSpec->GetLayer()); }
 
     return layersWithContribution;
 }
 
-bool
-doesEditTargetLayerContribute(const UsdPrim& prim)
+bool doesEditTargetLayerContribute(const UsdPrim& prim)
 {
     auto editTarget = prim.GetStage()->GetEditTarget();
     auto layer = editTarget.GetLayer();
     auto primSpec = layer->GetPrimAtPath(prim.GetPath());
 
-    // to know whether the target layer can contribute to the 
+    // to know whether the target layer can contribute to the
     // final composed prim, there must be a primSpec for that prim
     if (!primSpec) {
         return false;
@@ -126,14 +111,12 @@ doesEditTargetLayerContribute(const UsdPrim& prim)
     return true;
 }
 
-SdfLayerHandle
-strongestContributingLayer(const UsdPrim& prim)
+SdfLayerHandle strongestContributingLayer(const UsdPrim& prim)
 {
     SdfLayerHandle targetLayer;
-    auto layerStack = prim.GetStage()->GetLayerStack();
-    for (auto layer : layerStack)
-    {
-        // to know whether the target layer can contribute to the 
+    auto           layerStack = prim.GetStage()->GetLayerStack();
+    for (auto layer : layerStack) {
+        // to know whether the target layer can contribute to the
         // final composed prim, there must be a primSpec for that prim
         auto primSpec = layer->GetPrimAtPath(prim.GetPath());
         if (primSpec) {
@@ -144,17 +127,15 @@ strongestContributingLayer(const UsdPrim& prim)
     return targetLayer;
 }
 
-SdfPrimSpecHandle 
-getPrimSpecAtEditTarget(const UsdPrim& prim)
+SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim& prim)
 {
     auto stage = prim.GetStage();
     return stage->GetEditTarget().GetPrimSpecForScenePath(prim.GetPath());
 }
 
-bool
-isInternalReference(const SdfPrimSpecHandle& primSpec)
+bool isInternalReference(const SdfPrimSpecHandle& primSpec)
 {
-    bool isInternalRef{false};
+    bool isInternalRef { false };
 
     for (const SdfReference& ref : primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
         // GetAssetPath returns the asset path to the root layer of the referenced layer
@@ -168,16 +149,15 @@ isInternalReference(const SdfPrimSpecHandle& primSpec)
     return isInternalRef;
 }
 
-bool 
-hasSpecs(const UsdPrim& prim)
+bool hasSpecs(const UsdPrim& prim)
 {
-    bool found{true};
+    bool found { true };
 
     UsdPrimCompositionQuery query(prim);
 
     for (const auto& compQueryArc : query.GetCompositionArcs()) {
         if (!compQueryArc.GetTargetNode().HasSpecs()) {
-            found = false; 
+            found = false;
             break;
         }
     }
@@ -185,19 +165,18 @@ hasSpecs(const UsdPrim& prim)
     return found;
 }
 
-void
-printCompositionQuery(const UsdPrim& prim, std::ostream& os)
+void printCompositionQuery(const UsdPrim& prim, std::ostream& os)
 {
     UsdPrimCompositionQuery query(prim);
 
     os << "[\n";
 
-    // the composition arcs are always returned in order from strongest 
+    // the composition arcs are always returned in order from strongest
     // to weakest regardless of the filter.
     for (const auto& arc : query.GetCompositionArcs()) {
         const auto& arcDic = getDict(arc);
         os << "{\n";
-        std::for_each(arcDic.begin(),arcDic.end(), [&](const auto& it) {
+        std::for_each(arcDic.begin(), arcDic.end(), [&](const auto& it) {
             os << it.first << ": " << it.second << '\n';
         });
         os << "}\n";
@@ -206,4 +185,4 @@ printCompositionQuery(const UsdPrim& prim, std::ostream& os)
     os << "]\n\n";
 }
 
-} // MayaUsdUtils
+} // namespace MayaUsdUtils

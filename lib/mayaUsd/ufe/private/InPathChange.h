@@ -17,27 +17,27 @@
 
 #include <mayaUsd/base/api.h>
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief Helper class to scope when we are in a path change operation.
-class InPathChange
+MAYAUSD_NS_DEF
 {
-public:
-	InPathChange() { fInPathChange = true; }
-	~InPathChange() { fInPathChange = false; }
+    namespace ufe {
 
-	// Delete the copy/move constructors assignment operators.
-	InPathChange(const InPathChange&) = delete;
-	InPathChange& operator=(const InPathChange&) = delete;
-	InPathChange(InPathChange&&) = delete;
-	InPathChange& operator=(InPathChange&&) = delete;
+    //! \brief Helper class to scope when we are in a path change operation.
+    class InPathChange {
+    public:
+        InPathChange() { fInPathChange = true; }
+        ~InPathChange() { fInPathChange = false; }
 
-	static bool inPathChange() { return fInPathChange; }
+        // Delete the copy/move constructors assignment operators.
+        InPathChange(const InPathChange&) = delete;
+        InPathChange& operator=(const InPathChange&) = delete;
+        InPathChange(InPathChange&&) = delete;
+        InPathChange& operator=(InPathChange&&) = delete;
 
-private:
-	static bool fInPathChange;
-};
+        static bool inPathChange() { return fInPathChange; }
 
-} // namespace ufe
+    private:
+        static bool fInPathChange;
+    };
+
+    } // namespace ufe
 } // namespace MayaUsd

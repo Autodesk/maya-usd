@@ -15,14 +15,13 @@
 //
 #include "AL/usdmaya/fileio/SchemaPrims.h"
 
-#include <maya/MFnDagNode.h>
-
 #include <pxr/usd/usd/schemaBase.h>
+
+#include <maya/MFnDagNode.h>
 
 namespace AL {
 namespace usdmaya {
 namespace fileio {
-
 
 /// the prim typename tokens
 const TfToken ALSchemaType("ALType");
@@ -33,79 +32,79 @@ const TfToken ALExcludedPrimSchema("ALExcludedPrim");
 /// \param  cameraNode the returned camera
 /// \param  dagPath  path to the cameras transform node
 //----------------------------------------------------------------------------------------------------------------------
-void huntForParentCamera(MObject& cameraNode, const MDagPath &dagPath)
+void huntForParentCamera(MObject& cameraNode, const MDagPath& dagPath)
 {
-  MDagPath cameraPath = dagPath;
-  cameraPath.pop();
-  MFnDagNode cameraXform(cameraPath);
-  for(uint32_t i = 0; i < cameraXform.childCount(); ++i)
-  {
-    if(cameraXform.child(i).hasFn(MFn::kCamera))
-    {
-      cameraNode = cameraXform.child(i);
-      break;
+    MDagPath cameraPath = dagPath;
+    cameraPath.pop();
+    MFnDagNode cameraXform(cameraPath);
+    for (uint32_t i = 0; i < cameraXform.childCount(); ++i) {
+        if (cameraXform.child(i).hasFn(MFn::kCamera)) {
+            cameraNode = cameraXform.child(i);
+            break;
+        }
     }
-  }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 bool importSchemaPrim(
-    const UsdPrim& prim,
-    MObject& parent,
-    MObject& created,
-    translators::TranslatorContextPtr context,
-    const translators::TranslatorRefPtr torBase,
+    const UsdPrim&                                   prim,
+    MObject&                                         parent,
+    MObject&                                         created,
+    translators::TranslatorContextPtr                context,
+    const translators::TranslatorRefPtr              torBase,
     const fileio::translators::TranslatorParameters& param)
 {
-  if(torBase)
-  {
-    if(param.forceTranslatorImport() || torBase->importableByDefault())
-    {
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::importSchemaPrim import %s\n", prim.GetPath().GetText());
-      if(torBase->import(prim, parent, created) != MS::kSuccess)
-      {
-        std::cerr << "Failed to import schema prim \"" << prim.GetPath().GetText() << "\"\n";
+    if (torBase) {
+        if (param.forceTranslatorImport() || torBase->importableByDefault()) {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS)
+                .Msg("SchemaPrims::importSchemaPrim import %s\n", prim.GetPath().GetText());
+            if (torBase->import(prim, parent, created) != MS::kSuccess) {
+                std::cerr << "Failed to import schema prim \"" << prim.GetPath().GetText()
+                          << "\"\n";
+                return false;
+            }
+        } else {
+            TF_DEBUG(ALUSDMAYA_TRANSLATORS)
+                .Msg(
+                    "SchemaPrims::Skipping import of '%s' since it is not importable by default \n",
+                    prim.GetPath().GetText());
+            return false;
+        }
+    } else {
+        TF_DEBUG(ALUSDMAYA_TRANSLATORS)
+            .Msg(
+                "SchemaPrims::importSchemaPrim Failed to find a translator for %s[%s]\n",
+                prim.GetPath().GetText(),
+                prim.GetTypeName().GetText());
         return false;
-      }
     }
-    else
-    {
-      TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::Skipping import of '%s' since it is not importable by default \n", prim.GetPath().GetText());
-      return false;
-    }
-  }
-  else
-  {
-    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("SchemaPrims::importSchemaPrim Failed to find a translator for %s[%s]\n", prim.GetPath().GetText(), prim.GetTypeName().GetText());
-    return false;
-  }
 
-  if(context)
-    context->registerItem(prim, created == MObject::kNullObj ? parent : created);
-  return true;
+    if (context)
+        context->registerItem(prim, created == MObject::kNullObj ? parent : created);
+    return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 SchemaPrimsUtils::SchemaPrimsUtils(fileio::translators::TranslatorManufacture& manufacture)
-  : m_manufacture(manufacture)
+    : m_manufacture(manufacture)
 {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 bool SchemaPrimsUtils::needsTransformParent(const UsdPrim& prim)
 {
-  auto translator = m_manufacture.get(prim);
-  return translator->needsTransformParent();
+    auto translator = m_manufacture.get(prim);
+    return translator->needsTransformParent();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 fileio::translators::TranslatorRefPtr SchemaPrimsUtils::isSchemaPrim(const UsdPrim& prim)
 {
-  return m_manufacture.get(prim);
+    return m_manufacture.get(prim);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-} // fileio
-} // usdmaya
-} // AL
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

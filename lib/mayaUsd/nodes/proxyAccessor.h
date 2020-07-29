@@ -114,7 +114,8 @@ MAYAUSD_NS_DEF
         /*! \brief  Insert extra plug level dependencies for accessor plugs
             \note   Call from MPxNode::setDependentsDirty()
          */
-        static MStatus addDependentsDirty(const Owner& accessor, const MPlug& plug, MPlugArray& plugArray)
+        static MStatus
+        addDependentsDirty(const Owner& accessor, const MPlug& plug, MPlugArray& plugArray)
         {
             if (accessor)
                 return accessor->addDependentsDirty(plug, plugArray);
@@ -138,8 +139,10 @@ MAYAUSD_NS_DEF
          accessor plugs at each compute. This accelleration structure has to be invalidate when
          stage changes.
         */
-        static MStatus
-        stageChanged(const Owner& accessor, const MObject& node, const UsdNotice::ObjectsChanged& notice)
+        static MStatus stageChanged(
+            const Owner&                     accessor,
+            const MObject&                   node,
+            const UsdNotice::ObjectsChanged& notice)
         {
             if (accessor && !accessor->inCompute())
                 return accessor->stageChanged(node, notice);
@@ -227,7 +230,7 @@ MAYAUSD_NS_DEF
                                //!< Needed when USD changes directly.
 
         MCallbackIdArray _callbackIds; //!< List of registered callbacks
-        
+
         //! \brief  Acceleration structure holding all input accessor plugs
         Container _accessorInputItems;
         //! \brief  Acceleration structure holding all output accessor plugs

@@ -15,9 +15,9 @@
 //
 // Modifications copyright (C) 2019 Autodesk
 //
-#include <pxr/imaging/glf/glew.h>
-
 #include "instancer.h"
+
+#include "sampler.h"
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/quaternion.h>
@@ -25,22 +25,15 @@
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/staticTokens.h>
+#include <pxr/imaging/glf/glew.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
-
-#include "sampler.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Define local tokens for the names of the primvars the instancer
 // consumes.
 // XXX: These should be hydra tokens...
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (instanceTransform)
-    (rotate)
-    (scale)
-    (translate)
-);
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (instanceTransform)(rotate)(scale)(translate));
 
 /*! \brief  Constructor.
 
@@ -49,29 +42,27 @@ TF_DEFINE_PRIVATE_TOKENS(
     \param parentId     The unique id of the parent instancer,
                         or an empty id if not applicable.
 */
-HdVP2Instancer::HdVP2Instancer(HdSceneDelegate* delegate,
-                                     SdfPath const& id,
-                                     SdfPath const &parentId)
+HdVP2Instancer::HdVP2Instancer(
+    HdSceneDelegate* delegate,
+    SdfPath const&   id,
+    SdfPath const&   parentId)
     : HdInstancer(delegate, id, parentId)
 {
 }
 
 /*! \brief  Destructor.
-*/
+ */
 HdVP2Instancer::~HdVP2Instancer()
 {
-    TF_FOR_ALL(it, _primvarMap) {
-        delete it->second;
-    }
+    TF_FOR_ALL(it, _primvarMap) { delete it->second; }
     _primvarMap.clear();
 }
 
- 
 /*! \brief  Checks the change tracker to determine whether instance primvars are
-            dirty, and if so pulls them. 
-            
-    Since primvars can only be pulled once, and are cached, this function is not 
-    re-entrant. However, this function is called by ComputeInstanceTransforms, 
+            dirty, and if so pulls them.
+
+    Since primvars can only be pulled once, and are cached, this function is not
+    re-entrant. However, this function is called by ComputeInstanceTransforms,
     which is called by HdVP2Mesh::Sync(), which is dispatched in parallel, so it needs
     to be guarded by _instanceLock.
 */
@@ -80,9 +71,8 @@ void HdVP2Instancer::_SyncPrimvars()
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdChangeTracker &changeTracker = 
-        GetDelegate()->GetRenderIndex().GetChangeTracker();
-    SdfPath const& id = GetId();
+    HdChangeTracker& changeTracker = GetDelegate()->GetRenderIndex().GetChangeTracker();
+    SdfPath const&   id = GetId();
 
     // Use the double-checked locking pattern to check if this instancer's
     // primvars are dirty.
@@ -97,19 +87,18 @@ void HdVP2Instancer::_SyncPrimvars()
             // If this instancer has dirty primvars, get the list of
             // primvar names and then cache each one.
 
-            TfTokenVector primvarNames;
-            HdPrimvarDescriptorVector primvars = GetDelegate()
-                ->GetPrimvarDescriptors(id, HdInterpolationInstance);
+            TfTokenVector             primvarNames;
+            HdPrimvarDescriptorVector primvars
+                = GetDelegate()->GetPrimvarDescriptors(id, HdInterpolationInstance);
 
-            for (HdPrimvarDescriptor const& pv: primvars) {
+            for (HdPrimvarDescriptor const& pv : primvars) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
                     VtValue value = GetDelegate()->Get(id, pv.name);
                     if (!value.IsEmpty()) {
                         if (_primvarMap.count(pv.name) > 0) {
                             delete _primvarMap[pv.name];
                         }
-                        _primvarMap[pv.name] =
-                            new HdVtBufferSource(pv.name, value);
+                        _primvarMap[pv.name] = new HdVtBufferSource(pv.name, value);
                     }
                 }
             }
@@ -127,10 +116,10 @@ void HdVP2Instancer::_SyncPrimvars()
     Computes and flattens nested transforms, if necessary.
 
     \param prototypeId The prototype to compute transforms for.
-        
+
     \return One transform per instance, to apply when drawing.
 */
-VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const &prototypeId)
+VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const& prototypeId)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -144,15 +133,11 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const &prototy
     // }
     // If any transform isn't provided, it's assumed to be the identity.
 
-    GfMatrix4d instancerTransform =
-        GetDelegate()->GetInstancerTransform(GetId());
-    VtIntArray instanceIndices =
-        GetDelegate()->GetInstanceIndices(GetId(), prototypeId);
+    GfMatrix4d instancerTransform = GetDelegate()->GetInstancerTransform(GetId());
+    VtIntArray instanceIndices = GetDelegate()->GetInstanceIndices(GetId(), prototypeId);
 
     VtMatrix4dArray transforms(instanceIndices.size());
-    for (size_t i = 0; i < instanceIndices.size(); ++i) {
-        transforms[i] = instancerTransform;
-    }
+    for (size_t i = 0; i < instanceIndices.size(); ++i) { transforms[i] = instancerTransform; }
 
     // "translate" holds a translation vector for each index.
     if (_primvarMap.count(_tokens->translate) > 0) {
@@ -174,8 +159,8 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const &prototy
             GfVec4f quat;
             if (sampler.Sample(instanceIndices[i], &quat)) {
                 GfMatrix4d rotateMat(1);
-                rotateMat.SetRotate(GfRotation(GfQuaternion(
-                    quat[0], GfVec3d(quat[1], quat[2], quat[3]))));
+                rotateMat.SetRotate(
+                    GfRotation(GfQuaternion(quat[0], GfVec3d(quat[1], quat[2], quat[3]))));
                 transforms[i] = rotateMat * transforms[i];
             }
         }
@@ -209,8 +194,7 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const &prototy
         return transforms;
     }
 
-    HdInstancer *parentInstancer =
-        GetDelegate()->GetRenderIndex().GetInstancer(GetParentId());
+    HdInstancer* parentInstancer = GetDelegate()->GetRenderIndex().GetInstancer(GetParentId());
     if (!TF_VERIFY(parentInstancer)) {
         return transforms;
     }
@@ -220,19 +204,16 @@ VtMatrix4dArray HdVP2Instancer::ComputeInstanceTransforms(SdfPath const &prototy
     // foreach (parentXf : parentTransforms, xf : transforms) {
     //     parentXf * xf
     // }
-    VtMatrix4dArray parentTransforms =
-        static_cast<HdVP2Instancer*>(parentInstancer)->
-            ComputeInstanceTransforms(GetId());
+    VtMatrix4dArray parentTransforms
+        = static_cast<HdVP2Instancer*>(parentInstancer)->ComputeInstanceTransforms(GetId());
 
     VtMatrix4dArray final(parentTransforms.size() * transforms.size());
     for (size_t i = 0; i < parentTransforms.size(); ++i) {
         for (size_t j = 0; j < transforms.size(); ++j) {
-            final[i * transforms.size() + j] = transforms[j] *
-                                               parentTransforms[i];
+            final[i * transforms.size() + j] = transforms[j] * parentTransforms[i];
         }
     }
     return final;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

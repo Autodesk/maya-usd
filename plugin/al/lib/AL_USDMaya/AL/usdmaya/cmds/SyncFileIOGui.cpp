@@ -14,12 +14,13 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/cmds/SyncFileIOGui.h"
+
+#include "AL/maya/utils/MenuBuilder.h"
 #include "AL/maya/utils/PluginTranslatorOptions.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "AL/maya/utils/MenuBuilder.h"
 
-#include <maya/MSyntax.h>
 #include <maya/MArgDatabase.h>
+#include <maya/MSyntax.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -32,45 +33,39 @@ AL_MAYA_DEFINE_COMMAND(SyncFileIOGui, AL_usdmaya);
 //----------------------------------------------------------------------------------------------------------------------
 MSyntax SyncFileIOGui::createSyntax()
 {
-  MSyntax syn;
-  syn.addFlag("-h", "-help", MSyntax::kNoArg);
-  syn.addArg(MSyntax::kString);
-  return syn;
+    MSyntax syn;
+    syn.addFlag("-h", "-help", MSyntax::kNoArg);
+    syn.addArg(MSyntax::kString);
+    return syn;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool SyncFileIOGui::isUndoable() const
-{
-  return false;
-}
+bool SyncFileIOGui::isUndoable() const { return false; }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus SyncFileIOGui::doIt(const MArgList& argList)
 {
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("AL_usdmaya_SyncFileIOGui::doIt\n");
-  try
-  {
-    MStatus status;
-    MArgDatabase args(syntax(), argList, &status);
-    if(!status)
-      return status;
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("AL_usdmaya_SyncFileIOGui::doIt\n");
+    try {
+        MStatus      status;
+        MArgDatabase args(syntax(), argList, &status);
+        if (!status)
+            return status;
 
-    AL_MAYA_COMMAND_HELP(args, g_helpText);
+        AL_MAYA_COMMAND_HELP(args, g_helpText);
 
-    MString translatorName;
-    status = args.getCommandArgument(0, translatorName);
-    if(!status)
-      return status;
+        MString translatorName;
+        status = args.getCommandArgument(0, translatorName);
+        if (!status)
+            return status;
 
-    maya::utils::PluginTranslatorOptionsContextManager::resyncGUI(translatorName.asChar());
-  }
-  catch(const MStatus&)
-  {
-  }
-  return MS::kSuccess;
+        maya::utils::PluginTranslatorOptionsContextManager::resyncGUI(translatorName.asChar());
+    } catch (const MStatus&) {
+    }
+    return MS::kSuccess;
 }
 
-const char* const SyncFileIOGui::g_helpText =  R"(
+const char* const SyncFileIOGui::g_helpText = R"(
     AL_usdmaya_SyncFileIOGui Overview:
 
       This command is for internal use.
@@ -87,7 +82,7 @@ const char* const SyncFileIOGui::g_helpText =  R"(
 )";
 
 //----------------------------------------------------------------------------------------------------------------------
-}
-}
-}
+} // namespace cmds
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

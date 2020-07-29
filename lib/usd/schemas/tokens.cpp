@@ -17,13 +17,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-MayaUsd_SchemasTokensType::MayaUsd_SchemasTokensType() :
-    mayaNamespace("mayaNamespace", TfToken::Immortal),
-    mayaReference("mayaReference", TfToken::Immortal),
-    allTokens({
-        mayaNamespace,
-        mayaReference
-    })
+MayaUsd_SchemasTokensType::MayaUsd_SchemasTokensType()
+    : mayaNamespace("mayaNamespace", TfToken::Immortal)
+    , mayaReference("mayaReference", TfToken::Immortal)
+    , allTokens({ mayaNamespace, mayaReference })
 {
 }
 

@@ -20,17 +20,16 @@
 
 #include <mayaUsd/commands/baseListShadingModesCommand.h>
 
-MAYAUSD_NS_DEF {
-
-class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDListShadingModesCommand : public MayaUsd::MayaUSDListShadingModesCommand
+MAYAUSD_NS_DEF
 {
-  public:
 
-    static const MString commandName;
+    class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDListShadingModesCommand
+        : public MayaUsd::MayaUSDListShadingModesCommand {
+    public:
+        static const MString commandName;
 
-    static void* creator();
-};
-
+        static void* creator();
+    };
 }
 
 #endif

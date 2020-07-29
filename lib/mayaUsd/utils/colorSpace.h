@@ -16,18 +16,17 @@
 #ifndef PXRUSDMAYA_COLORSPACE_H
 #define PXRUSDMAYA_COLORSPACE_H
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/gamma.h>
-
 #include <mayaUsd/base/api.h>
+
+#include <pxr/base/gf/gamma.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Helper functions for dealing with colors stored in Maya.
 ///
 /// Technically, this doesn't need to be tied to Usd.
-namespace UsdMayaColorSpace
-{
+namespace UsdMayaColorSpace {
 
 /// Returns true if we treat colors from Maya as linear colors.
 ///
@@ -48,29 +47,23 @@ namespace UsdMayaColorSpace
 /// Viewport 2.0 (as proper color management is only supported there).
 ///
 MAYAUSD_CORE_PUBLIC
-bool
-IsColorManaged();
+bool IsColorManaged();
 
 /// Converts a linear color into the appropriate Maya color space as determined by
 /// the above \c IsColorManaged.
-template <typename T>
-T
-ConvertLinearToMaya(const T& linearColor)
+template <typename T> T ConvertLinearToMaya(const T& linearColor)
 {
     return IsColorManaged() ? linearColor : GfConvertLinearToDisplay(linearColor);
 }
 
 /// Converts a Maya color space into a linear color.
-template <typename T>
-T
-ConvertMayaToLinear(const T& mayaColor)
+template <typename T> T ConvertMayaToLinear(const T& mayaColor)
 {
     return IsColorManaged() ? mayaColor : GfConvertDisplayToLinear(mayaColor);
 }
 
-}; // UsdMayaColorSpace
+}; // namespace UsdMayaColorSpace
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
-

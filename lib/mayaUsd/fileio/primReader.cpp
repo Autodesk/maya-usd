@@ -22,20 +22,10 @@ UsdMayaPrimReader::UsdMayaPrimReader(const UsdMayaPrimReaderArgs& args)
 {
 }
 
-bool
-UsdMayaPrimReader::HasPostReadSubtree() const
-{
-    return false;
-}
+bool UsdMayaPrimReader::HasPostReadSubtree() const { return false; }
 
-void
-UsdMayaPrimReader::PostReadSubtree(UsdMayaPrimReaderContext*)
-{
-}
+void UsdMayaPrimReader::PostReadSubtree(UsdMayaPrimReaderContext*) { }
 
-const UsdMayaPrimReaderArgs&
-UsdMayaPrimReader::_GetArgs() {
-    return _args;
-}
+const UsdMayaPrimReaderArgs& UsdMayaPrimReader::_GetArgs() { return _args; }
 
 PXR_NAMESPACE_CLOSE_SCOPE

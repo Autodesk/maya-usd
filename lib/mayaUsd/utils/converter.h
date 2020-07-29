@@ -146,6 +146,7 @@ MAYAUSD_NS_DEF
 
         //! \brief  Default constructor makes no sense for this class
         Converter() = delete;
+
     public:
         //! \brief  Nothing special to do in the destructor.
         ~Converter() = default;
@@ -281,6 +282,7 @@ MAYAUSD_NS_DEF
 
         struct GenerateConverters;
         struct GenerateArrayPlugConverters;
+
     private:
         //! Usd type this converter is operating with.
         const SdfValueTypeName& _usdTypeName;

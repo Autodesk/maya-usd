@@ -26,54 +26,45 @@ namespace translators {
 AL_USDMAYA_DEFINE_TRANSLATOR(TranslatorTestPlugin, TranslatorTestType);
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus TranslatorTestPlugin::initialize()
-{
-  return MStatus::kSuccess;
-}
+MStatus TranslatorTestPlugin::initialize() { return MStatus::kSuccess; }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TranslatorTestPlugin::import(const UsdPrim& prim, MObject& parent, MObject& createdObj)
 {
-  MObject distanceShape = MFnDagNode().create("distanceDimShape", parent);
-  createdObj = distanceShape;
-  context()->insertItem(prim, createdObj);
-  return MStatus::kSuccess;
+    MObject distanceShape = MFnDagNode().create("distanceDimShape", parent);
+    createdObj = distanceShape;
+    context()->insertItem(prim, createdObj);
+    return MStatus::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus TranslatorTestPlugin::postImport(const UsdPrim& prim)
-{
-  return MStatus::kSuccess;
-}
+MStatus TranslatorTestPlugin::postImport(const UsdPrim& prim) { return MStatus::kSuccess; }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus TranslatorTestPlugin::preTearDown(UsdPrim& path)
-{
-  return MStatus::kSuccess;
-}
+MStatus TranslatorTestPlugin::preTearDown(UsdPrim& path) { return MStatus::kSuccess; }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus TranslatorTestPlugin::tearDown(const SdfPath& path)
 {
-  context()->removeItems(path);
-  return MStatus::kSuccess;
+    context()->removeItems(path);
+    return MStatus::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim TranslatorTestPlugin::exportObject(
-  UsdStageRefPtr stage,
-  MDagPath dagPath,
-  const SdfPath& usdPath,
-  const ExporterParams& params)
+    UsdStageRefPtr        stage,
+    MDagPath              dagPath,
+    const SdfPath&        usdPath,
+    const ExporterParams& params)
 {
-  MFnDagNode fn(dagPath);
-  TranslatorTestType node = TranslatorTestType::Define(stage, usdPath);
-  return node.GetPrim();
+    MFnDagNode         fn(dagPath);
+    TranslatorTestType node = TranslatorTestType::Define(stage, usdPath);
+    return node.GetPrim();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-} // translators
-} // fileio
-} // usdmaya
-} // AL
+} // namespace translators
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

@@ -21,11 +21,11 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -61,7 +61,7 @@ PxrMayaUsdPreviewSurface_Reader::PxrMayaUsdPreviewSurface_Reader(
 /* virtual */
 bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
 {
-    const UsdPrim&    prim = _GetArgs().GetUsdPrim();
+    const UsdPrim& prim = _GetArgs().GetUsdPrim();
     UsdShadeShader shaderSchema = UsdShadeShader(prim);
     if (!shaderSchema) {
         return false;
@@ -89,7 +89,7 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
     context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
     MDGModifier modifier;
-    bool useModifier = false;
+    bool        useModifier = false;
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
         TfToken baseName = GetMayaNameForUsdAttrName(input.GetFullName());
         if (baseName.IsEmpty()) {
@@ -111,7 +111,7 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
 /* virtual */
 TfToken PxrMayaUsdPreviewSurface_Reader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
-    TfToken baseName;
+    TfToken               baseName;
     UsdShadeAttributeType attrType;
     std::tie(baseName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 

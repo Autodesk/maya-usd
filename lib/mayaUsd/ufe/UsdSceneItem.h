@@ -15,43 +15,43 @@
 //
 #pragma once
 
-#include <ufe/sceneItem.h>
+#include <mayaUsd/base/api.h>
 
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
+#include <ufe/sceneItem.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief USD run-time scene item interface
-class MAYAUSD_CORE_PUBLIC UsdSceneItem : public Ufe::SceneItem
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<UsdSceneItem> Ptr;
+    namespace ufe {
 
-	UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim);
-	~UsdSceneItem() override = default;
+    //! \brief USD run-time scene item interface
+    class MAYAUSD_CORE_PUBLIC UsdSceneItem : public Ufe::SceneItem {
+    public:
+        typedef std::shared_ptr<UsdSceneItem> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdSceneItem(const UsdSceneItem&) = delete;
-	UsdSceneItem& operator=(const UsdSceneItem&) = delete;
-	UsdSceneItem(UsdSceneItem&&) = delete;
-	UsdSceneItem& operator=(UsdSceneItem&&) = delete;
+        UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim);
+        ~UsdSceneItem() override = default;
 
-	//! Create a UsdSceneItem from a UFE path and a USD prim.
-	static UsdSceneItem::Ptr create(const Ufe::Path& path, const UsdPrim& prim);
+        // Delete the copy/move constructors assignment operators.
+        UsdSceneItem(const UsdSceneItem&) = delete;
+        UsdSceneItem& operator=(const UsdSceneItem&) = delete;
+        UsdSceneItem(UsdSceneItem&&) = delete;
+        UsdSceneItem& operator=(UsdSceneItem&&) = delete;
 
-	const UsdPrim& prim() const { return fPrim; }
+        //! Create a UsdSceneItem from a UFE path and a USD prim.
+        static UsdSceneItem::Ptr create(const Ufe::Path& path, const UsdPrim& prim);
 
-	// Ufe::SceneItem overrides
-	std::string nodeType() const override;
+        const UsdPrim& prim() const { return fPrim; }
 
-private:
-	UsdPrim fPrim;
-}; // UsdSceneItem
+        // Ufe::SceneItem overrides
+        std::string nodeType() const override;
 
-} // namespace ufe
+    private:
+        UsdPrim fPrim;
+    }; // UsdSceneItem
+
+    } // namespace ufe
 } // namespace MayaUsd

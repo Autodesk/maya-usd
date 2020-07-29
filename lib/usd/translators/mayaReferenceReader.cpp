@@ -29,14 +29,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <maya/MObject.h>
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/translators/translatorMayaReference.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/camera.h>
 
-#include <mayaUsd/fileio/primReaderRegistry.h>
-#include <mayaUsd/fileio/translators/translatorMayaReference.h>
+#include <maya/MObject.h>
+
 #include <mayaUsd_Schemas/ALMayaReference.h>
 #include <mayaUsd_Schemas/MayaReference.h>
 
@@ -45,20 +46,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasMayaReference, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
-    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return UsdMayaTranslatorMayaReference::update(
-        usdPrim,
-        parentNode);
+    MObject        parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    return UsdMayaTranslatorMayaReference::update(usdPrim, parentNode);
 }
 
 PXRUSDMAYA_DEFINE_READER(MayaUsd_SchemasALMayaReference, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
-    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
-    return UsdMayaTranslatorMayaReference::update(
-        usdPrim,
-        parentNode);
+    MObject        parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    return UsdMayaTranslatorMayaReference::update(usdPrim, parentNode);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 #pragma once
-#include <cstdint>
 #include "AL/usdmaya/utils/ForwardDeclares.h"
+
+#include <cstdint>
 
 // forward declare usd types
 namespace AL {
@@ -45,7 +46,7 @@ class ProxyShapePostLoadProcess;
 class ProxyShapePrintRefCountState;
 class ProxyShapeRemoveAllTransforms;
 class TransformationMatrixToggleTimeSource;
-} // cmds
+} // namespace cmds
 
 namespace fileio {
 class AnimationTranslator;
@@ -61,11 +62,11 @@ struct NativeTranslatorRegistry;
 struct NodeFactory;
 class TransformIterator;
 namespace translators {
-  class DagNodeTranslator;
-  class DgNodeTranslator;
-  class TransformTranslator;
-} // translators
-} // fileio
+class DagNodeTranslator;
+class DgNodeTranslator;
+class TransformTranslator;
+} // namespace translators
+} // namespace fileio
 
 namespace nodes {
 class Layer;
@@ -77,7 +78,7 @@ class Transform;
 class Scope;
 class TransformationMatrix;
 class BasicTransformationMatrix;
-} // nodes
+} // namespace nodes
 
-} // usdmaya
-} // AL
+} // namespace usdmaya
+} // namespace AL

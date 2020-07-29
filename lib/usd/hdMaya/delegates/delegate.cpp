@@ -22,11 +22,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaDelegate>(); }
 
 HdMayaDelegate::HdMayaDelegate(const InitData& initData)
-    : _mayaDelegateID(initData.delegateID),
-      _name(initData.name),
-      _engine(initData.engine),
-      _taskController(initData.taskController),
-      _isHdSt(initData.isHdSt) {}
+    : _mayaDelegateID(initData.delegateID)
+    , _name(initData.name)
+    , _engine(initData.engine)
+    , _taskController(initData.taskController)
+    , _isHdSt(initData.isHdSt)
+{
+}
 
 void HdMayaDelegate::SetParams(const HdMayaParams& params) { _params = params; }
 

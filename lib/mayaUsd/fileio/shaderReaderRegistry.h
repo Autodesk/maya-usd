@@ -111,7 +111,8 @@ struct UsdMayaShaderReaderRegistry {
 #define PXRUSDMAYA_REGISTER_SHADER_READER(usdInfoId, readerClass)                         \
     TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShaderReaderRegistry, usdInfoId##_##readerClass) \
     {                                                                                     \
-        static_assert(std::is_base_of<UsdMayaShaderReader, readerClass>::value,           \
+        static_assert(                                                                    \
+            std::is_base_of<UsdMayaShaderReader, readerClass>::value,                     \
             #readerClass " must derive from UsdMayaShaderReader");                        \
         UsdMayaShaderReaderRegistry::Register(                                            \
             TfToken(#usdInfoId), [](const UsdMayaPrimReaderArgs& readerArgs) {            \

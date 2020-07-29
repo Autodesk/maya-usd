@@ -18,9 +18,9 @@
 
 #include "api.h"
 
-#include <maya/MApiNamespace.h>
-
 #include <pxr/pxr.h>
+
+#include <maya/MApiNamespace.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,18 +35,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// deregistration will only be done if the deregistering plugin is the same as
 /// the registering plugin.  Otherwise, a warning is shown.
 
-class PxrMayaUsdPreviewSurfacePlugin
-{
-    public:
-        PXRUSDPREVIEWSURFACE_API
-        static MStatus initialize(MFnPlugin&);
+class PxrMayaUsdPreviewSurfacePlugin {
+public:
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus initialize(MFnPlugin&);
 
-        PXRUSDPREVIEWSURFACE_API
-        static MStatus finalize(MFnPlugin&);
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus finalize(MFnPlugin&);
 
-        static MStatus registerFragments();
+    static MStatus registerFragments();
 
-        static MStatus deregisterFragments();
+    static MStatus deregisterFragments();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -15,66 +15,68 @@
 //
 #pragma once
 
-#include <ufe/undoableCommand.h>
-
-#include <pxr/usd/usd/prim.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <pxr/usd/usd/prim.h>
+
+#include <ufe/undoableCommand.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief UsdUndoInsertChildCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoInsertChildCommand : public Ufe::UndoableCommand
+MAYAUSD_NS_DEF
 {
-public:
-    using Ptr = std::shared_ptr<UsdUndoInsertChildCommand>;
+    namespace ufe {
 
-    ~UsdUndoInsertChildCommand() override;
+    //! \brief UsdUndoInsertChildCommand
+    class MAYAUSD_CORE_PUBLIC UsdUndoInsertChildCommand : public Ufe::UndoableCommand {
+    public:
+        using Ptr = std::shared_ptr<UsdUndoInsertChildCommand>;
 
-    // Delete the copy/move constructors assignment operators.
-    UsdUndoInsertChildCommand(const UsdUndoInsertChildCommand&) = delete;
-    UsdUndoInsertChildCommand& operator=(const UsdUndoInsertChildCommand&) = delete;
-    UsdUndoInsertChildCommand(UsdUndoInsertChildCommand&&) = delete;
-    UsdUndoInsertChildCommand& operator=(UsdUndoInsertChildCommand&&) = delete;
+        ~UsdUndoInsertChildCommand() override;
 
-    //! Create a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
-    //! pos argument is ignored, and only append is supported.
-    static UsdUndoInsertChildCommand::Ptr create(const UsdSceneItem::Ptr& parent,
-                                                 const UsdSceneItem::Ptr& child,
-                                                 const UsdSceneItem::Ptr& pos);
+        // Delete the copy/move constructors assignment operators.
+        UsdUndoInsertChildCommand(const UsdUndoInsertChildCommand&) = delete;
+        UsdUndoInsertChildCommand& operator=(const UsdUndoInsertChildCommand&) = delete;
+        UsdUndoInsertChildCommand(UsdUndoInsertChildCommand&&) = delete;
+        UsdUndoInsertChildCommand& operator=(UsdUndoInsertChildCommand&&) = delete;
 
-protected:
-    //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
-    //! pos argument is ignored, and only append is supported.
-    UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& parent,
-                              const UsdSceneItem::Ptr& child,
-                              const UsdSceneItem::Ptr& pos);
+        //! Create a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
+        //! pos argument is ignored, and only append is supported.
+        static UsdUndoInsertChildCommand::Ptr create(
+            const UsdSceneItem::Ptr& parent,
+            const UsdSceneItem::Ptr& child,
+            const UsdSceneItem::Ptr& pos);
 
-private:
-    void undo() override;
-    void redo() override;
+    protected:
+        //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
+        //! pos argument is ignored, and only append is supported.
+        UsdUndoInsertChildCommand(
+            const UsdSceneItem::Ptr& parent,
+            const UsdSceneItem::Ptr& child,
+            const UsdSceneItem::Ptr& pos);
 
-    bool insertChildRedo();
-    bool insertChildUndo();
+    private:
+        void undo() override;
+        void redo() override;
 
-    UsdStageWeakPtr _stage;
+        bool insertChildRedo();
+        bool insertChildUndo();
 
-    UsdSceneItem::Ptr _ufeSrcItem;
-    UsdSceneItem::Ptr _ufeDstItem;
+        UsdStageWeakPtr _stage;
 
-    SdfPath _usdSrcPath;
-    SdfPath _usdDstPath;
+        UsdSceneItem::Ptr _ufeSrcItem;
+        UsdSceneItem::Ptr _ufeDstItem;
 
-    SdfLayerHandle _childLayer;
-    SdfLayerHandle _parentLayer;
+        SdfPath _usdSrcPath;
+        SdfPath _usdDstPath;
 
-    Ufe::Path _ufeDstPath;
+        SdfLayerHandle _childLayer;
+        SdfLayerHandle _parentLayer;
 
-}; // UsdUndoInsertChildCommand
+        Ufe::Path _ufeDstPath;
 
-} // namespace ufe
+    }; // UsdUndoInsertChildCommand
+
+    } // namespace ufe
 } // namespace MayaUsd

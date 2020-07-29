@@ -44,8 +44,7 @@ class SdfAssetPath;
 ///
 /// Data used to import a maya reference.
 ///
-class AL_usd_ModelAPI : public UsdModelAPI
-{
+class AL_usd_ModelAPI : public UsdModelAPI {
 public:
     /// Compile time constant representing what kind of schema this class is.
     ///
@@ -56,7 +55,7 @@ public:
     /// Equivalent to AL_usd_ModelAPI::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit AL_usd_ModelAPI(const UsdPrim& prim=UsdPrim())
+    explicit AL_usd_ModelAPI(const UsdPrim& prim = UsdPrim())
         : UsdModelAPI(prim)
     {
     }
@@ -77,8 +76,7 @@ public:
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
     AL_USDMAYASCHEMAS_API
-    static const TfTokenVector &
-    GetSchemaAttributeNames(bool includeInherited=true);
+    static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
     /// Return a AL_usd_ModelAPI holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
@@ -90,9 +88,7 @@ public:
     /// \endcode
     ///
     AL_USDMAYASCHEMAS_API
-    static AL_usd_ModelAPI
-    Get(const UsdStagePtr &stage, const SdfPath &path);
-
+    static AL_usd_ModelAPI Get(const UsdStagePtr& stage, const SdfPath& path);
 
 protected:
     /// Returns the type of schema this class belongs to.
@@ -105,21 +101,21 @@ private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
     AL_USDMAYASCHEMAS_API
-    static const TfType &_GetStaticTfType();
+    static const TfType& _GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
     AL_USDMAYASCHEMAS_API
-    virtual const TfType &_GetTfType() const;
+    virtual const TfType& _GetTfType() const;
 
 public:
     // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
+    // Feel free to add custom code below this line, it will be preserved by
+    // the code generator.
     //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
+    // Just remember to:
+    //  - Close the class declaration with };
     //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
     //  - Close the include guard with #endif
     // ===================================================================== //
@@ -163,6 +159,7 @@ public:
     /// "inherited" is returned and should be considered as "unlocked".
     AL_USDMAYASCHEMAS_API
     TfToken ComputeLock() const;
+
 private:
     typedef std::function<bool(const UsdPrim&, TfToken&)> ComputeLogic;
     TfToken ComputeHierarchical(const UsdPrim& prim, const ComputeLogic& logic) const;

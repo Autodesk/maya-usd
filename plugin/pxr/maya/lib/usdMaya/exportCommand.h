@@ -20,23 +20,19 @@
 
 #include "usdMaya/api.h"
 
+#include <mayaUsd/commands/baseExportCommand.h>
+
 #include <pxr/pxr.h>
 
 #include <maya/MPxCommand.h>
 
-#include <mayaUsd/commands/baseExportCommand.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-class PxrMayaUSDExportCommand : public MayaUsd::MayaUSDExportCommand
-{
-  public:
-   
+class PxrMayaUSDExportCommand : public MayaUsd::MayaUSDExportCommand {
+public:
     PXRUSDMAYA_API
     static void* creator();
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

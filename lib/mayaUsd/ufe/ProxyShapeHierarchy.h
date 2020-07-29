@@ -15,83 +15,84 @@
 //
 #pragma once
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+
 #include <ufe/hierarchy.h>
 #include <ufe/hierarchyHandler.h>
 #include <ufe/selection.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-namespace ufe {
-
-//! \brief USD gateway node hierarchy interface.
-/*!
-    This class defines a hierarchy interface for a single kind of Maya node,
-    the USD gateway node.  This node is special in that its parent is a Maya
-    node, but its children are children of the USD root prim.
- */
-class MAYAUSD_CORE_PUBLIC ProxyShapeHierarchy : public Ufe::Hierarchy
+MAYAUSD_NS_DEF
 {
-public:
-	typedef std::shared_ptr<ProxyShapeHierarchy> Ptr;
+    namespace ufe {
 
-	ProxyShapeHierarchy(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
-	~ProxyShapeHierarchy() override;
+    //! \brief USD gateway node hierarchy interface.
+    /*!
+        This class defines a hierarchy interface for a single kind of Maya node,
+        the USD gateway node.  This node is special in that its parent is a Maya
+        node, but its children are children of the USD root prim.
+     */
+    class MAYAUSD_CORE_PUBLIC ProxyShapeHierarchy : public Ufe::Hierarchy {
+    public:
+        typedef std::shared_ptr<ProxyShapeHierarchy> Ptr;
 
-	// Delete the copy/move constructors assignment operators.
-	ProxyShapeHierarchy(const ProxyShapeHierarchy&) = delete;
-	ProxyShapeHierarchy& operator=(const ProxyShapeHierarchy&) = delete;
-	ProxyShapeHierarchy(ProxyShapeHierarchy&&) = delete;
-	ProxyShapeHierarchy& operator=(ProxyShapeHierarchy&&) = delete;
+        ProxyShapeHierarchy(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
+        ~ProxyShapeHierarchy() override;
 
-	//! Create a ProxyShapeHierarchy from a UFE hierarchy handler.
-	static ProxyShapeHierarchy::Ptr create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
-	static ProxyShapeHierarchy::Ptr create(
-        const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler,
-        const Ufe::SceneItem::Ptr&        item
-    );
+        // Delete the copy/move constructors assignment operators.
+        ProxyShapeHierarchy(const ProxyShapeHierarchy&) = delete;
+        ProxyShapeHierarchy& operator=(const ProxyShapeHierarchy&) = delete;
+        ProxyShapeHierarchy(ProxyShapeHierarchy&&) = delete;
+        ProxyShapeHierarchy& operator=(ProxyShapeHierarchy&&) = delete;
 
-	void setItem(const Ufe::SceneItem::Ptr& item);
+        //! Create a ProxyShapeHierarchy from a UFE hierarchy handler.
+        static ProxyShapeHierarchy::Ptr
+                                        create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
+        static ProxyShapeHierarchy::Ptr create(
+            const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler,
+            const Ufe::SceneItem::Ptr&        item);
 
-	// Ufe::Hierarchy overrides
-	Ufe::SceneItem::Ptr sceneItem() const override;
-	bool hasChildren() const override;
-	Ufe::SceneItemList children() const override;
-	Ufe::SceneItem::Ptr parent() const override;
-	Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
+        void setItem(const Ufe::SceneItem::Ptr& item);
+
+        // Ufe::Hierarchy overrides
+        Ufe::SceneItem::Ptr sceneItem() const override;
+        bool                hasChildren() const override;
+        Ufe::SceneItemList  children() const override;
+        Ufe::SceneItem::Ptr parent() const override;
+        Ufe::AppendedChild  appendChild(const Ufe::SceneItem::Ptr& child) override;
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #if UFE_PREVIEW_VERSION_NUM >= 2013
-    Ufe::UndoableCommand::Ptr insertChildCmd(
-        const Ufe::SceneItem::Ptr& child,
-        const Ufe::SceneItem::Ptr& pos
-    ) override;
+        Ufe::UndoableCommand::Ptr
+        insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
 #endif
 
 #if UFE_PREVIEW_VERSION_NUM < 2017
-	Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;
-	Ufe::Group createGroupCmd(const Ufe::PathComponent& name) const override;
+        Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;
+        Ufe::Group          createGroupCmd(const Ufe::PathComponent& name) const override;
 #else
-	Ufe::SceneItem::Ptr createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
-	Ufe::UndoableCommand::Ptr createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
+        Ufe::SceneItem::Ptr
+                                  createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
+        Ufe::UndoableCommand::Ptr createGroupCmd(
+            const Ufe::Selection&     selection,
+            const Ufe::PathComponent& name) const override;
 #endif
 
 #endif
 
-private:
-	const UsdPrim& getUsdRootPrim() const;
+    private:
+        const UsdPrim& getUsdRootPrim() const;
 
-private:
-	Ufe::SceneItem::Ptr fItem;
-	Hierarchy::Ptr fMayaHierarchy;
-	Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
+    private:
+        Ufe::SceneItem::Ptr        fItem;
+        Hierarchy::Ptr             fMayaHierarchy;
+        Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
 
-	// The root prim is initialized on first use and therefore mutable.
-	mutable UsdPrim fUsdRootPrim;
-}; // ProxyShapeHierarchy
+        // The root prim is initialized on first use and therefore mutable.
+        mutable UsdPrim fUsdRootPrim;
+    }; // ProxyShapeHierarchy
 
-} // namespace ufe
+    } // namespace ufe
 } // namespace MayaUsd

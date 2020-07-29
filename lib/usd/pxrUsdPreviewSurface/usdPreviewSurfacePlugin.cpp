@@ -20,29 +20,28 @@
 
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
-#include <maya/MStatus.h>
-#include <maya/MGlobal.h>
-#include <maya/MFnPlugin.h>
-#include <maya/MDrawRegistry.h>
-
 #include <pxr/base/tf/envSetting.h>
+
+#include <maya/MDrawRegistry.h>
+#include <maya/MFnPlugin.h>
+#include <maya/MGlobal.h>
+#include <maya/MStatus.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 const MString _RegistrantId("mayaUsd");
-int _registrationCount = 0;
+int           _registrationCount = 0;
 
 // Name of the plugin registering the preview surface class.
 MString _registrantPluginName;
 
-}
+} // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-MStatus
-PxrMayaUsdPreviewSurfacePlugin::initialize(MFnPlugin& plugin)
+MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(MFnPlugin& plugin)
 {
     // If we're already registered, do nothing.
     if (_registrationCount++ > 0) {
@@ -60,19 +59,17 @@ PxrMayaUsdPreviewSurfacePlugin::initialize(MFnPlugin& plugin)
         &PxrMayaUsdPreviewSurface::fullClassification);
     CHECK_MSTATUS(status);
 
-    status =
-        MHWRender::MDrawRegistry::registerSurfaceShadingNodeOverrideCreator(
-            PxrMayaUsdPreviewSurface::drawDbClassification,
-            _RegistrantId,
-            PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
+    status = MHWRender::MDrawRegistry::registerSurfaceShadingNodeOverrideCreator(
+        PxrMayaUsdPreviewSurface::drawDbClassification,
+        _RegistrantId,
+        PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
     CHECK_MSTATUS(status);
 
     return status;
 }
 
 /* static */
-MStatus
-PxrMayaUsdPreviewSurfacePlugin::finalize(MFnPlugin& plugin)
+MStatus PxrMayaUsdPreviewSurfacePlugin::finalize(MFnPlugin& plugin)
 {
     // If more than one plugin still has us registered, do nothing.
     if (_registrationCount == 0 || _registrationCount-- > 1) {
@@ -91,10 +88,8 @@ PxrMayaUsdPreviewSurfacePlugin::finalize(MFnPlugin& plugin)
         return MS::kSuccess;
     }
 
-    MStatus status =
-        MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
-            PxrMayaUsdPreviewSurface::drawDbClassification,
-            _RegistrantId);
+    MStatus status = MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
+        PxrMayaUsdPreviewSurface::drawDbClassification, _RegistrantId);
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(PxrMayaUsdPreviewSurface::typeId);
@@ -104,12 +99,12 @@ PxrMayaUsdPreviewSurfacePlugin::finalize(MFnPlugin& plugin)
 }
 
 namespace {
-    bool _registered = false;
+bool _registered = false;
 }
 
 /* static */
-MStatus
-PxrMayaUsdPreviewSurfacePlugin::registerFragments() {
+MStatus PxrMayaUsdPreviewSurfacePlugin::registerFragments()
+{
     if (_registered) {
         return MS::kSuccess;
     }
@@ -120,8 +115,8 @@ PxrMayaUsdPreviewSurfacePlugin::registerFragments() {
 }
 
 /* static */
-MStatus
-PxrMayaUsdPreviewSurfacePlugin::deregisterFragments() {
+MStatus PxrMayaUsdPreviewSurfacePlugin::deregisterFragments()
+{
     if (!_registered) {
         return MS::kSuccess;
     }

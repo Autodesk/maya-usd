@@ -16,20 +16,20 @@
 #ifndef MTOH_RENDER_GLOBALS_H
 #define MTOH_RENDER_GLOBALS_H
 
-#include <unordered_map>
-#include <vector>
-
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec4f.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/value.h>
+#include "tokens.h"
+#include "utils.h"
 
 #include <hdMaya/delegates/params.h>
 
-#include "tokens.h"
-#include "utils.h"
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
+
+#include <maya/MObject.h>
+
+#include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,7 +37,7 @@ struct MtohRenderGlobals {
     MtohRenderGlobals();
     ~MtohRenderGlobals() = default;
     HdMayaParams delegateParams;
-    GfVec4f colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
+    GfVec4f      colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
 #if USD_VERSION_NUM >= 2005
     float outlineSelectionWidth = 4.f;
 #endif
@@ -48,12 +48,15 @@ struct MtohRenderGlobals {
     bool wireframeSelectionHighlight = true;
     struct RenderParam {
         template <typename T>
-        RenderParam(const TfToken& k, const T& v) : key(k), value(v) {}
+        RenderParam(const TfToken& k, const T& v)
+            : key(k)
+            , value(v)
+        {
+        }
         TfToken key;
         VtValue value;
     };
-    std::unordered_map<TfToken, std::vector<RenderParam>, TfToken::HashFunctor>
-        rendererSettings;
+    std::unordered_map<TfToken, std::vector<RenderParam>, TfToken::HashFunctor> rendererSettings;
 };
 
 // Creating render globals attributes on "defaultRenderGlobals"

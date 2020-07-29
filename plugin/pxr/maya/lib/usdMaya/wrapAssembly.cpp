@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/pxr.h>
 #include "usdMaya/referenceAssembly.h"
 
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/pyContainerConversions.h>
+#include <pxr/pxr.h>
 
 #include <maya/MFnAssembly.h>
 #include <maya/MObject.h>
@@ -35,21 +35,19 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static
-std::map<std::string, std::string>
-_GetVariantSetSelections(const std::string& assemblyName) {
+static std::map<std::string, std::string> _GetVariantSetSelections(const std::string& assemblyName)
+{
     std::map<std::string, std::string> emptyResult;
 
     MObject assemblyObj;
-    MStatus status = UsdMayaUtil::GetMObjectByName(assemblyName,
-                                                      assemblyObj);
+    MStatus status = UsdMayaUtil::GetMObjectByName(assemblyName, assemblyObj);
     CHECK_MSTATUS_AND_RETURN(status, emptyResult);
 
     MFnAssembly assemblyFn(assemblyObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, emptyResult);
 
-    UsdMayaReferenceAssembly* assembly =
-        dynamic_cast<UsdMayaReferenceAssembly*>(assemblyFn.userNode());
+    UsdMayaReferenceAssembly* assembly
+        = dynamic_cast<UsdMayaReferenceAssembly*>(assemblyFn.userNode());
     if (!assembly) {
         return emptyResult;
     }
@@ -57,11 +55,9 @@ _GetVariantSetSelections(const std::string& assemblyName) {
     return assembly->GetVariantSetSelections();
 }
 
-} // anonymous namespace 
+} // anonymous namespace
 
 void wrapAssembly()
 {
-    def("GetVariantSetSelections",
-        &_GetVariantSetSelections,
-        arg("assemblyName"));
+    def("GetVariantSetSelections", &_GetVariantSetSelections, arg("assemblyName"));
 }

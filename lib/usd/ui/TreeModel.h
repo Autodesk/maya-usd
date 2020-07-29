@@ -16,85 +16,88 @@
 
 #pragma once
 
-#include <QtGui/QStandardItemModel>
-
-#include <pxr/usd/usd/stagePopulationMask.h>
-
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/mayaUsd.h>
 
-#include <mayaUsdUI/ui/api.h>
+#include <pxr/usd/usd/stagePopulationMask.h>
+
+#include <QtGui/QStandardItemModel>
 #include <mayaUsdUI/ui/TreeItem.h>
+#include <mayaUsdUI/ui/api.h>
 
 class QTreeView;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
-
-class IMayaMQtUtil;
-
-/**
- * \brief Qt Model to explore the hierarchy of a USD file.
- * \remarks Populating the Model with the content of a USD file is done through
- * the APIs exposed by the TreeModelFactory.
- */
-class MAYAUSD_UI_PUBLIC TreeModel : public QStandardItemModel
+MAYAUSD_NS_DEF
 {
-	Q_OBJECT
 
-public:
-	using ParentClass = QStandardItemModel;
+    class IMayaMQtUtil;
 
-	/**
-	 * \brief Constructor.
-	 * \param parent A reference to the parent of the TreeModel.
-	 */
-	explicit TreeModel(const IMayaMQtUtil& mayaQtUtil, const ImportData* importData = nullptr, QObject* parent = nullptr) noexcept;
+    /**
+     * \brief Qt Model to explore the hierarchy of a USD file.
+     * \remarks Populating the Model with the content of a USD file is done through
+     * the APIs exposed by the TreeModelFactory.
+     */
+    class MAYAUSD_UI_PUBLIC TreeModel : public QStandardItemModel {
+        Q_OBJECT
 
-	// QStandardItemModel overrides
-	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
-	Qt::ItemFlags flags(const QModelIndex &index) const override;
+    public:
+        using ParentClass = QStandardItemModel;
 
-	/**
-	 * \brief Order of the columns as they appear in the Tree.
-	 * \remarks The order of the enumeration is important.
-	 */
-	enum TREE_COLUMNS
-	{
-		kTreeColumn_Load,				// Should we load this prim?
-		kTreeColumn_Name,				// Name of the item as it appears in the TreeView.
-		kTreeColumn_Type,				// Type of the primitive.
-		kTreeColumn_Variants,			// Variant Set(s) and Variant Selection of the primitive.
-		kTreeColumn_Last				// Last element of the enum.
-	};
+        /**
+         * \brief Constructor.
+         * \param parent A reference to the parent of the TreeModel.
+         */
+        explicit TreeModel(
+            const IMayaMQtUtil& mayaQtUtil,
+            const ImportData*   importData = nullptr,
+            QObject*            parent = nullptr) noexcept;
 
-	void setRootPrimPath(const std::string& path);
-	void getRootPrimPath(std::string&, const QModelIndex& parent);
-	void fillStagePopulationMask(UsdStagePopulationMask& popMask, const QModelIndex& parent);
-	void fillPrimVariantSelections(ImportData::PrimVariantSelections& primVariantSelections, const QModelIndex& parent);
-	void openPersistentEditors(QTreeView* tv, const QModelIndex& parent);
+        // QStandardItemModel overrides
+        QVariant      data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
+        Qt::ItemFlags flags(const QModelIndex& index) const override;
 
-	const ImportData* importData() const { return fImportData; }
-	const IMayaMQtUtil& mayaQtUtil() const { return fMayaQtUtil; }
+        /**
+         * \brief Order of the columns as they appear in the Tree.
+         * \remarks The order of the enumeration is important.
+         */
+        enum TREE_COLUMNS {
+            kTreeColumn_Load,     // Should we load this prim?
+            kTreeColumn_Name,     // Name of the item as it appears in the TreeView.
+            kTreeColumn_Type,     // Type of the primitive.
+            kTreeColumn_Variants, // Variant Set(s) and Variant Selection of the primitive.
+            kTreeColumn_Last      // Last element of the enum.
+        };
 
-	void onItemClicked(TreeItem* item);
+        void setRootPrimPath(const std::string& path);
+        void getRootPrimPath(std::string&, const QModelIndex& parent);
+        void fillStagePopulationMask(UsdStagePopulationMask& popMask, const QModelIndex& parent);
+        void fillPrimVariantSelections(
+            ImportData::PrimVariantSelections& primVariantSelections,
+            const QModelIndex&                 parent);
+        void openPersistentEditors(QTreeView* tv, const QModelIndex& parent);
 
-	void resetVariants();
-	
-private:
-	void uncheckEnableTree();
-	void checkEnableItem(TreeItem* item);
+        const ImportData*   importData() const { return fImportData; }
+        const IMayaMQtUtil& mayaQtUtil() const { return fMayaQtUtil; }
 
-	void setParentsCheckState(const QModelIndex &child, TreeItem::CheckState state);
-	void setChildCheckState(const QModelIndex &parent, TreeItem::CheckState state);
+        void onItemClicked(TreeItem* item);
 
-private:
-	// Extra import data, if any to set the initial state of dialog from.
-	const ImportData*			fImportData;
+        void resetVariants();
 
-	// Special interface we can use to perform Maya Qt utilities (such as Pixmap loading).
-	const IMayaMQtUtil&			fMayaQtUtil;
-};
+    private:
+        void uncheckEnableTree();
+        void checkEnableItem(TreeItem* item);
+
+        void setParentsCheckState(const QModelIndex& child, TreeItem::CheckState state);
+        void setChildCheckState(const QModelIndex& parent, TreeItem::CheckState state);
+
+    private:
+        // Extra import data, if any to set the initial state of dialog from.
+        const ImportData* fImportData;
+
+        // Special interface we can use to perform Maya Qt utilities (such as Pixmap loading).
+        const IMayaMQtUtil& fMayaQtUtil;
+    };
 
 } // namespace MayaUsd
