@@ -15,7 +15,7 @@
 //
 
 #include "UsdUndoInsertChildCommand.h"
-#include "private/InPathChange.h"
+#include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 #include "Utils.h"
 
