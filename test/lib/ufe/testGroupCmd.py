@@ -22,6 +22,7 @@ import maya.cmds as cmds
 
 from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
 import ufe
+import mayaUsd.ufe
 
 import unittest
 
@@ -33,20 +34,20 @@ class GroupCmdTestCase(unittest.TestCase):
     '''
 
     pluginsLoaded = False
-    
+
     @classmethod
     def setUpClass(cls):
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
-        
-        # Open top_layer.ma scene in test-samples
-        mayaUtils.openTopLayerScene()
-        
+
+        # Open ballset.ma scene in test-samples
+        mayaUtils.openGroupBallsScene()
+
         # Clear selection to start off
         cmds.select(clear=True)
 
@@ -54,37 +55,43 @@ class GroupCmdTestCase(unittest.TestCase):
     def testUsdGroup(self):
         '''Creation of USD group objects.'''
 
-        ball25Path = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
-            usdUtils.createUfePathSegment("/Room_set/Props/Ball_25")])
-        ball25Item = ufe.Hierarchy.createItem(ball25Path)
+        mayaPathSegment = mayaUtils.createUfePathSegment("|world|transform1|proxyShape1")
 
-        ball35Path = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
-            usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
-        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+        usdSegmentBall5 = usdUtils.createUfePathSegment("/Ball_set/Props/Ball_5")
+        ball5Path = ufe.Path([mayaPathSegment, usdSegmentBall5])
+        ball5Item = ufe.Hierarchy.createItem(ball5Path)
 
-        ufeSelectionList = ufe.Selection()
-        ufeSelectionList.append(ball25Item)
-        ufeSelectionList.append(ball35Item)
+        usdSegmentBall3 = usdUtils.createUfePathSegment("/Ball_set/Props/Ball_3")
+        ball3Path = ufe.Path([mayaPathSegment, usdSegmentBall3])
+        ball3Item = ufe.Hierarchy.createItem(ball3Path)
 
-        parentPath = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
-            usdUtils.createUfePathSegment("/Room_set/Props")])
+        usdSegmentProps = usdUtils.createUfePathSegment("/Ball_set/Props")
+        parentPath = ufe.Path([mayaPathSegment, usdSegmentProps])
         parentItem = ufe.Hierarchy.createItem(parentPath)
 
         parentHierarchy = ufe.Hierarchy.hierarchy(parentItem)
-        
         parentChildrenPre = parentHierarchy.children()
-        self.assertEqual(len(parentChildrenPre), 35)
+        self.assertEqual(len(parentChildrenPre), 6)
 
         newGroupName = ufe.PathComponent("newGroup")
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # set the edit target to balls.usda
+        layer = stage.GetLayerStack()[1]
+        self.assertEqual("ballset.usda", layer.GetDisplayName())
+        stage.SetEditTarget(layer)
+
+        ufeSelectionList = ufe.Selection()
+        ufeSelectionList.append(ball5Item)
+        ufeSelectionList.append(ball3Item)
 
         groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList, newGroupName)
         groupCmd.execute()
 
         parentChildrenPost = parentHierarchy.children()
-        self.assertEqual(len(parentChildrenPost), 34)
+        self.assertEqual(len(parentChildrenPost), 5)
 
         # The command will now append a number 1 at the end to match the naming
         # convention in Maya.
@@ -99,26 +106,25 @@ class GroupCmdTestCase(unittest.TestCase):
         childPaths = set([child.path() for child in parentChildrenPost])
 
         self.assertTrue(newGroupPath in childPaths)
-        self.assertTrue(ball25Path not in childPaths)
-        self.assertTrue(ball35Path not in childPaths)
+        self.assertTrue(ball5Path not in childPaths)
+        self.assertTrue(ball3Path not in childPaths)
 
         groupCmd.undo()
 
         parentChildrenUndo = parentHierarchy.children()
-        self.assertEqual(len(parentChildrenUndo), 35)
+        self.assertEqual(len(parentChildrenUndo), 6)
 
         childPathsUndo = set([child.path() for child in parentChildrenUndo])
         self.assertTrue(newGroupPath not in childPathsUndo)
-        self.assertTrue(ball25Path in childPathsUndo)
-        self.assertTrue(ball35Path in childPathsUndo)
+        self.assertTrue(ball5Path in childPathsUndo)
+        self.assertTrue(ball3Path in childPathsUndo)
 
         groupCmd.redo()
 
         parentChildrenRedo = parentHierarchy.children()
-        self.assertEqual(len(parentChildrenRedo), 34)
+        self.assertEqual(len(parentChildrenRedo), 5)
 
         childPathsRedo = set([child.path() for child in parentChildrenRedo])
         self.assertTrue(newGroupPath in childPathsRedo)
-        self.assertTrue(ball25Path not in childPathsRedo)
-        self.assertTrue(ball35Path not in childPathsRedo)
-
+        self.assertTrue(ball5Path not in childPathsRedo)
+        self.assertTrue(ball3Path not in childPathsRedo)
