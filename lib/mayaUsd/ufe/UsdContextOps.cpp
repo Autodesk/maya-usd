@@ -35,6 +35,8 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 
+#include "private/UfeNotifGuard.h"
+
 namespace {
 
 // Ufe::ContextItem strings
@@ -133,6 +135,7 @@ public:
 
     void undo() override { 
         if (_prim.IsValid()) {
+            MayaUsd::ufe::InAddOrRemoveReference ar;
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.RemoveReference(_sdfRef);
         }
@@ -140,6 +143,7 @@ public:
 
     void redo() override { 
         if (_prim.IsValid()) {
+            MayaUsd::ufe::InAddOrRemoveReference ar;
             _sdfRef = SdfReference(_filePath);
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.AddReference(_sdfRef);
@@ -170,6 +174,7 @@ public:
 
     void redo() override { 
         if (_prim.IsValid()) {
+            MayaUsd::ufe::InAddOrRemoveReference ar;
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.ClearReferences();
         }
@@ -267,7 +272,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
             items.emplace_back(AddReferenceUndoableCommand::commandName,
                                 AddReferenceUndoableCommand::commandName);
             items.emplace_back(ClearAllReferencesUndoableCommand::commandName,
-                                ClearAllReferencesUndoableCommand::commandName);            
+                                ClearAllReferencesUndoableCommand::commandName);
         }
     }
     else {
@@ -372,7 +377,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             return nullptr;
 
         return std::make_shared<AddReferenceUndoableCommand>(
-            fPrim, path);        
+            fPrim, path);
     }
     else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
         MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
@@ -380,7 +385,6 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             return nullptr;
 
         return std::make_shared<ClearAllReferencesUndoableCommand>(fPrim);
-        
     }
 
     return nullptr;

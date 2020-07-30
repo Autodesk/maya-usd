@@ -32,7 +32,7 @@
 
 #include <mayaUsdUtils/util.h>
 
-#include "private/InPathChange.h"
+#include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE

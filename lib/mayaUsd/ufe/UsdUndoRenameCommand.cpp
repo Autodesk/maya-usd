@@ -31,7 +31,7 @@
 
 #include <mayaUsdUtils/util.h>
 
-#include "private/InPathChange.h"
+#include "private/UfeNotifGuard.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #define UFE_ENABLE_ASSERTS
