@@ -329,7 +329,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
         if (argParser.isFlagSet(kInsertSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kInsertSubPathFlag);
             for (unsigned i = 0; i < count; i++) {
-                auto cmd = std::make_unique<Impl::InsertSubPath>();
+                auto cmd = std::make_shared<Impl::InsertSubPath>();
 
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kInsertSubPathFlag, i, listOfArgs);
@@ -342,7 +342,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
         if (argParser.isFlagSet(kRemoveSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kRemoveSubPathFlag);
             for (unsigned i = 0; i < count; i++) {
-                auto cmd = std::make_unique<Impl::RemoveSubPath>();
+                auto cmd = std::make_shared<Impl::RemoveSubPath>();
 
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kRemoveSubPathFlag, i, listOfArgs);
@@ -354,7 +354,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
         if (argParser.isFlagSet(kReplaceSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kReplaceSubPathFlag);
             for (unsigned i = 0; i < count; i++) {
-                auto cmd = std::make_unique<Impl::ReplaceSubPath>();
+                auto cmd = std::make_shared<Impl::ReplaceSubPath>();
 
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kReplaceSubPathFlag, i, listOfArgs);
@@ -365,19 +365,19 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
         }
 
         if (argParser.isFlagSet(kDiscardEditsFlag)) {
-            auto cmd = std::make_unique<Impl::DiscardEdit>();
+            auto cmd = std::make_shared<Impl::DiscardEdit>();
             _subCommands.push_back(std::move(cmd));
         }
 
         if (argParser.isFlagSet(kClearLayerFlag)) {
-            auto cmd = std::make_unique<Impl::ClearLayer>();
+            auto cmd = std::make_shared<Impl::ClearLayer>();
             _subCommands.push_back(std::move(cmd));
         }
 
         if (argParser.isFlagSet(kAddAnonSublayerFlag)) {
             auto count = argParser.numberOfFlagUses(kAddAnonSublayerFlag);
             for (unsigned i = 0; i < count; i++) {
-                auto cmd = std::make_unique<Impl::AddAnonSubLayer>();
+                auto cmd = std::make_shared<Impl::AddAnonSubLayer>();
 
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kAddAnonSublayerFlag, i, listOfArgs);

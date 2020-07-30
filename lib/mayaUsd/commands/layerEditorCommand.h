@@ -53,7 +53,7 @@ private:
     bool isQuery() const { return _cmdMode == Mode::Query; }
 
     std::string                                 _layerIdentifier;
-    std::vector<std::unique_ptr<Impl::BaseCmd>> _subCommands;
+    std::vector<std::shared_ptr<Impl::BaseCmd>> _subCommands;
 };
 
 } // namespace MAYAUSD_NS
