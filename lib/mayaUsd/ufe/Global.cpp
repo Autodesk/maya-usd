@@ -174,5 +174,10 @@ Ufe::Rtid getUsdRunTimeId()
     return g_USDRtid;
 }
 
+Ufe::Rtid getMayaRunTimeId()
+{
+    return g_MayaRtid;
+}
+
 } // namespace ufe
 } // namespace MayaUsd
