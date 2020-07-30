@@ -28,6 +28,20 @@ proc mayaUsdTranslatorImport_hideInfo()
     }
 }
 
+proc mayaUsdTranslatorImport_showInfo()
+{
+    if (`rowLayout -exists mayaUsd_NBPrimsInScopeRL`) 
+    {
+        int $pc = `usdImportDialog -q -primCount`;
+        int $swc = `usdImportDialog -q -switchedVariantCount`;
+
+        text -edit -label $pc mayaUsd_NBPrimsInScopeLabel;
+        text -edit -label $swc mayaUsd_NBSwitchedVariantsLabel;
+
+        rowLayout -edit -visible true mayaUsd_NBPrimsInScopeRL;
+        rowLayout -edit -visible true mayaUsd_NBSwitchedVariantsRL;
+    }
+}
 
 global proc int mayaUsdTranslatorImport (string $parent,
                                  string $action,
@@ -275,14 +289,7 @@ global proc mayaUsdTranslatorImport_ViewHierCB()
     string $result = `usdImportDialog $usdFile`;
     if ("" != $result)
     {
-        int $pc = `usdImportDialog -q -primCount`;
-        int $swc = `usdImportDialog -q -switchedVariantCount`;
-
-        text -edit -label $pc mayaUsd_NBPrimsInScopeLabel;
-        text -edit -label $swc mayaUsd_NBSwitchedVariantsLabel;
-
-        rowLayout -edit -visible true mayaUsd_NBPrimsInScopeRL;
-        rowLayout -edit -visible true mayaUsd_NBSwitchedVariantsRL;
+        mayaUsdTranslatorImport_showInfo();
     }
 
     // If the dialog was cancelled then we will not get a result, but

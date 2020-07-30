@@ -97,6 +97,8 @@ public:
 	//! Only valid for kVariants type.
 	void setVariantSelectionModified();
 
+	//! Reset the flag that is set to track if the variant selection has been modified.
+	//! Only valid for kVariants type.
 	void resetVariantSelectionModified() { fVariantSelectionModified = false; }
 
 private:

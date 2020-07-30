@@ -237,7 +237,7 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 				importData.setPrimVariantSelections(usdImportDialog->primVariantSelections());
 				
 				importData.setPrimsInScopeCount(usdImportDialog->primsInScopeCount());
-				importData.switchedVariantCount(usdImportDialog->switchedVariantCount());
+				importData.setSwitchedVariantCount(usdImportDialog->switchedVariantCount());
 
 				setResult(assetPath);
 			}

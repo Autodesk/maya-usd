@@ -168,7 +168,7 @@ void ImportData::setPrimsInScopeCount(int count)
 	fPrimsInScopeCount = count;
 }
 
-void ImportData::switchedVariantCount(int count)
+void ImportData::setSwitchedVariantCount(int count)
 {
 	fSwitchedVariantCount = count;
 }

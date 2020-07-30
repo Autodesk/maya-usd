@@ -115,10 +115,16 @@ public:
 	void setPrimVariantSelections(const PrimVariantSelections& vars);
 	void setPrimVariantSelections(PrimVariantSelections&& vars);
 
+	//@{
+	//! Set and get the number of prims to be imported and the number of prims within that scope
+	//! that had a variant changed from what is currently set in the USD file.
+	//! These values are stored here as a way of communicating choices made between the various
+	//! Import options UI, and are used for display purposes only.
 	void setPrimsInScopeCount(int count);
-	void switchedVariantCount(int count);
+	void setSwitchedVariantCount(int count);
 	int primsInScopeCount() const;
 	int switchedVariantCount() const;
+	//@}
 
 private:
 	UsdStagePopulationMask		fPopMask;
