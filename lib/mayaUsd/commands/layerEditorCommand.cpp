@@ -106,17 +106,17 @@ public:
     {
         if (_cmdId == CmdId::kInsert || _cmdId == CmdId::kAddAnonLayer) {
             if (_index == -1) {
-                _index = layer->GetNumSubLayerPaths();
+                _index = (int)layer->GetNumSubLayerPaths();
             }
             if (_index != 0) {
-                if (_index < 0 || _index >= layer->GetNumSubLayerPaths()) {
+                if (_index < 0 || _index >= (int)layer->GetNumSubLayerPaths()) {
                     return false;
                 }
             }
             layer->InsertSubLayerPath(_subPath, _index);
             TF_VERIFY(layer->GetSubLayerPaths()[_index] == _subPath);
         } else {
-            if (_index < 0 || _index >= layer->GetNumSubLayerPaths()) {
+            if (_index < 0 || _index >= (int)layer->GetNumSubLayerPaths()) {
                 return false;
             }
             _subPath = layer->GetSubLayerPaths()[_index];
@@ -167,7 +167,7 @@ public:
     bool doIt(SdfLayerHandle layer) override
     {
         auto proxy = layer->GetSubLayerPaths();
-        if (proxy.Find(_oldPath) == -1) {
+        if (proxy.Find(_oldPath) == size_t(-1)) {
             std::string message = std::string("path ") + _oldPath
                 + std::string(" not found on layer ") + layer->GetIdentifier();
             MGlobal::displayError(message.c_str());

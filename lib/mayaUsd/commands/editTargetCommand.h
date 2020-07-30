@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 
+#include <mayaUsd/base/api.h>
 #include <mayaUsd/mayaUsd.h>
 
 #include <maya/MPxCommand.h>
@@ -28,7 +29,7 @@ namespace Impl {
 class SetEditTarget;
 }
 
-class EditTargetCommand : public MPxCommand {
+class MAYAUSD_CORE_PUBLIC EditTargetCommand : public MPxCommand {
 public:
     // plugin registration requirements
     static const char commandName[];

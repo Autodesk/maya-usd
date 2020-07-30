@@ -14,16 +14,17 @@
 // limitations under the License.
 //
 
+#include <mayaUsd/base/api.h>
 #include <mayaUsd/mayaUsd.h>
+
+#include <pxr/usd/sdf/layer.h>
 
 #include <maya/MPxCommand.h>
 #include <maya/MString.h>
 
-#include <pxr/usd/sdf/layer.h>
-
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace MAYAUSD_NS {
 
@@ -31,7 +32,7 @@ namespace Impl {
 class BaseCmd;
 }
 
-class LayerEditorCommand : public MPxCommand {
+class MAYAUSD_CORE_PUBLIC LayerEditorCommand : public MPxCommand {
 public:
     // plugin registration requirements
     static const char commandName[];
@@ -51,7 +52,7 @@ private:
     bool isEdit() const { return _cmdMode == Mode::Edit; }
     bool isQuery() const { return _cmdMode == Mode::Query; }
 
-    std::string          _layerIdentifier;
+    std::string                                 _layerIdentifier;
     std::vector<std::unique_ptr<Impl::BaseCmd>> _subCommands;
 };
 
