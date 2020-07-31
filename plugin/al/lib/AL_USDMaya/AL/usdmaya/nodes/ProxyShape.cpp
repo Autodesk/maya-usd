@@ -1453,6 +1453,7 @@ void ProxyShape::loadStage()
         if (isLockPrimFeatureActive()) {
             findPrimsWithMetaData();
         }
+        cmds::ProxyShapePostLoadProcess::uninitialise(this);
     }
 
     destroyGLImagingEngine();

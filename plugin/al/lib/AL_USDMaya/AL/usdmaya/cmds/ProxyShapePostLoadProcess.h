@@ -61,6 +61,11 @@ public:
     /// \return MS::kSuccess if ok
     static MStatus initialise(nodes::ProxyShape* shape);
 
+    /// \brief  called after all custom translation finished, to do some clean up or resetting.
+    /// \param  shape the proxy shape node that has finished its custom translation.
+    /// \return MS::kSuccess if ok
+    static MStatus uninitialise(nodes::ProxyShape* shape);
+
     /// \brief  given a specific proxy shape, and a collection of UsdPrims that represent custom
     /// DagNode types, this
     ///         will generate a transform hierarchy that will allow you to map the UsdPrims to

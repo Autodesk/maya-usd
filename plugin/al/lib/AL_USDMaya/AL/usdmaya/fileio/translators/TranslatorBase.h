@@ -31,6 +31,7 @@
 
 #include <functional>
 #include <iostream>
+#include <stack>
 #include <unordered_map>
 
 namespace AL {
@@ -327,8 +328,9 @@ private:
         m_registrationType; /// how was this plugin registered (e.g by schematype or by assettype)
 };
 
-typedef TfRefPtr<TranslatorBase>      TranslatorRefPtr;
-typedef std::vector<TranslatorRefPtr> TranslatorRefPtrVector;
+typedef TfRefPtr<TranslatorBase>              TranslatorRefPtr;
+typedef std::vector<TranslatorRefPtr>         TranslatorRefPtrVector;
+typedef std::stack<TranslatorContext::RefPtr> TranslatorContextPtrStack;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Forms a registry of all plug-in translator types registered
@@ -432,6 +434,10 @@ public:
     AL_USDMAYA_PUBLIC
     static void preparePythonTranslators(TranslatorContext::RefPtr context);
 
+    /// \brief  set the context of python translators to the previous one in the context stack.
+    AL_USDMAYA_PUBLIC
+    static void popPythonTranslatorContexts();
+
     /// \brief  Register python translators with this manufacture.
     /// \param  context the translator context
     AL_USDMAYA_PUBLIC
@@ -460,11 +466,16 @@ private:
     /// \return returns the python translator (if one is available)
     static TranslatorRefPtr getPythonTranslatorBySchemaType(const TfToken type_name);
 
+    /// \brief set contexts of all python translators.
+    static void setPythonTranslatorContexts(TranslatorContext::RefPtr context);
+
     std::unordered_map<std::string, TranslatorRefPtr>        m_translatorsMap;
     static std::unordered_map<std::string, TranslatorRefPtr> m_assetTypeToPythonTranslatorsMap;
     std::vector<ExtraDataPluginPtr>                          m_extraDataPlugins;
     static TranslatorRefPtrVector                            m_pythonTranslators;
     TranslatorRefPtrVector                                   m_contextualisedPythonTranslators;
+
+    static TranslatorContextPtrStack m_contextPtrStack;
 };
 
 //----------------------------------------------------------------------------------------------------------------------

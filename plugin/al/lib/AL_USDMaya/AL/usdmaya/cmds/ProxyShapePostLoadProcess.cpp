@@ -426,6 +426,15 @@ MStatus ProxyShapePostLoadProcess::initialise(nodes::ProxyShape* ptrNode)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+MStatus ProxyShapePostLoadProcess::uninitialise(nodes::ProxyShape* ptrNode)
+{
+    TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("ProxyShapePostLoadProcess::uninitialise called\n");
+
+    fileio::translators::TranslatorManufacture::popPythonTranslatorContexts();
+    return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 } // namespace cmds
 } // namespace usdmaya
 } // namespace AL
