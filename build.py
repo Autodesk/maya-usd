@@ -558,7 +558,6 @@ if __name__ == "__main__":
       Build directory           {buildDir}
       Install directory         {instDir}
       Variant                   {buildVariant}
-      Python 3:                 {enablePython3}
       Python Debug              {debugPython}
       CMake generator           {cmakeGenerator}"""
 
@@ -589,7 +588,6 @@ if __name__ == "__main__":
         ctestArgs=context.ctestArgs,
         buildVariant=BuildVariant(context),
         debugPython=("On" if context.debugPython else "Off"),
-        enablePython3=("On" if Python3() else "Off"),
         cmakeGenerator=("Default" if not context.cmakeGenerator
                         else context.cmakeGenerator)
     )

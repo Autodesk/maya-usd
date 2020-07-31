@@ -15,7 +15,7 @@
 //
 
 #include "UsdUndoInsertChildCommand.h"
-#include "private/InPathChange.h"
+#include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 #include "Utils.h"
 
@@ -102,6 +102,10 @@ UsdUndoInsertChildCommand::create(const UsdSceneItem::Ptr& parent,
                                   const UsdSceneItem::Ptr& child,
                                   const UsdSceneItem::Ptr& pos)
 {
+    if (!parent || !child) {
+        return nullptr;
+    }
+
     // Error if requested parent is currently a child of requested child.
     if (parent->path().startsWith(child->path())) {
         return nullptr;
