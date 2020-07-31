@@ -17,6 +17,7 @@
 #
 
 import unittest
+import tempfile
 from maya import cmds
 import mayaUsd_createStageWithNewLayer
 import mayaUsd
@@ -169,6 +170,8 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         newName = "david.usda"
         cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, second])
         cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, first])
+        # message for anyone looking at the test log:
+        # It's normal for stage.cpp to print the error that it can't find second.usa and first.usda, they do not exist"
         self.assertEqual(rootLayer.subLayerPaths, [first, second])
 
         # bad index
@@ -196,11 +199,11 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
                 rootLayer.subLayerPaths.clear()
             if testPass == DISCARD:
                 # save and load a stage
-                filePath = "dummy.usda"
-                with open(filePath, "w") as testFile:
-                    testFile.write(DUMMY_FILE_TEXT)
+                testUsdFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="dummy", delete=False)
+                testUsdFile.write(DUMMY_FILE_TEXT)
+                testUsdFile.close()
 
-                newStage = Usd.Stage.Open(filePath)
+                newStage = Usd.Stage.Open(testUsdFile.name)
                 rootLayer = newStage.GetRootLayer()
                 self.assertEqual(len(rootLayer.subLayerPaths), 0)
 
