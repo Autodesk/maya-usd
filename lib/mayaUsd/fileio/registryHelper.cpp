@@ -189,10 +189,17 @@ UsdMaya_RegistryHelper::FindAndLoadMayaPlug(
             }
             else {
                 TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-                        "Found usdMaya plugin %s: %s = %s.  No maya plugin.\n", 
+                        "Found %s usdMaya plugin %s: %s = %s.  No maya plugin.\n",
+                        plug->IsLoaded() ? "loaded" : "unloaded",
                         plug->GetName().c_str(),
                         _PluginDictScopeToDebugString(scope).c_str(),
                         value.c_str());
+
+                // Make sure that the Plug plugin is loaded to ensure that the
+                // library is loaded in case it is a "library" type plugin with
+                // no accompanying Maya plugin. This is a noop if the plugin is
+                // already loaded.
+                plug->Load();
             }
             break;
         }

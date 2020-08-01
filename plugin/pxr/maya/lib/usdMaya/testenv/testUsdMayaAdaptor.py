@@ -33,8 +33,11 @@ import unittest
 class testUsdMayaAdaptor(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        # Note that we do *not* explicitly load any USD plugins in this test.
+        # We are testing that the Plug-based lookup mechanism correctly
+        # identifies and loads the necessary libraries when a schema adapter is
+        # requested.
         standalone.initialize('usd')
-        cmds.loadPlugin('pxrUsd')
 
     @classmethod
     def tearDownClass(cls):
@@ -292,42 +295,6 @@ class testUsdMayaAdaptor(unittest.TestCase):
         cmds.createNode("nParticle", name="TestParticles")
         self.assertTrue(
                 mayaUsdLib.Adaptor("TestParticles").GetSchema(UsdGeom.Points))
-
-    def testUndoRedo(self):
-        """Tests that adaptors work with undo/redo."""
-        cmds.file(new=True, force=True)
-        cmds.group(name="group1", empty=True)
-        adaptor = mayaUsdLib.Adaptor("group1")
-        self.assertEqual(adaptor.GetAppliedSchemas(), [])
-
-        # Do a single operation, then undo, then redo.
-        adaptor.ApplySchema(UsdGeom.ModelAPI)
-        self.assertEqual(adaptor.GetAppliedSchemas(), ["GeomModelAPI"])
-        cmds.undo()
-        self.assertEqual(adaptor.GetAppliedSchemas(), [])
-        cmds.redo()
-        self.assertEqual(adaptor.GetAppliedSchemas(), ["GeomModelAPI"])
-
-        # Do a compound operation, then undo, then redo.
-        cmds.undoInfo(openChunk=True)
-        adaptor.ApplySchema(UsdGeom.MotionAPI).CreateAttribute(
-                UsdGeom.Tokens.motionVelocityScale).Set(0.42)
-        self.assertEqual(adaptor.GetAppliedSchemas(),
-                ["GeomModelAPI", "MotionAPI"])
-        self.assertAlmostEqual(adaptor.GetSchema(UsdGeom.MotionAPI).GetAttribute(
-                UsdGeom.Tokens.motionVelocityScale).Get(), 0.42)
-        cmds.undoInfo(closeChunk=True)
-        cmds.undo()
-        self.assertEqual(adaptor.GetAppliedSchemas(), ["GeomModelAPI"])
-        self.assertFalse(adaptor.GetSchema(UsdGeom.MotionAPI).GetAttribute(
-                UsdGeom.Tokens.motionVelocityScale))
-        self.assertIsNone(adaptor.GetSchema(UsdGeom.MotionAPI).GetAttribute(
-                UsdGeom.Tokens.motionVelocityScale).Get())
-        cmds.redo()
-        self.assertEqual(adaptor.GetAppliedSchemas(),
-                ["GeomModelAPI", "MotionAPI"])
-        self.assertAlmostEqual(adaptor.GetSchema(UsdGeom.MotionAPI).GetAttribute(
-                UsdGeom.Tokens.motionVelocityScale).Get(), 0.42)
 
     def testGetAttributeAliases(self):
         """Tests the GetAttributeAliases function."""
