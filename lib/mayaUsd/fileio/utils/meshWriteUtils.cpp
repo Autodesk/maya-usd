@@ -18,6 +18,7 @@
 #include "meshWriteUtils.h"
 
 #include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/meshReadUtils.h>
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 
@@ -835,7 +836,7 @@ UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn,
         // behavior, and the name to which it exports.
         // The UV Set "map1" is renamed st. This is a Pixar/USD convention.
         TfToken setName(uvSetNames[i].asChar());
-        if (setName == "map1") {
+        if (setName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()) {
             setName = UsdUtilsGetPrimaryUVSetName();
         }
 

@@ -28,7 +28,7 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
-#include "private/InPathChange.h"
+#include "private/UfeNotifGuard.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/attributes.h>
@@ -221,8 +221,20 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 
 			if (prim.IsActive())
 			{
-				auto notification = Ufe::ObjectAdd(sceneItem);
-				Ufe::Scene::notifyObjectAdd(notification);
+				if (InAddOrRemoveReference::inAddOrRemoveReference())
+				{
+#if UFE_PREVIEW_VERSION_NUM >= 2014
+					// When we are in an add or remove reference we send the
+					// UFE subtree invalidate notif instead.
+					auto notification = Ufe::SubtreeInvalidate(sceneItem);
+					Ufe::Scene::notifySubtreeInvalidate(notification);
+#endif
+				}
+				else
+				{
+					auto notification = Ufe::ObjectAdd(sceneItem);
+					Ufe::Scene::notifyObjectAdd(notification);
+				}
 			}
 			else
 			{
@@ -231,7 +243,7 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			}
 		}
 #if UFE_PREVIEW_VERSION_NUM >= 2015
-		else if (!prim.IsValid())
+		else if (!prim.IsValid() && !InPathChange::inPathChange())
 		{
 			auto notification = Ufe::ObjectDestroyed(ufePath);
 			Ufe::Scene::notifyObjectDelete(notification);

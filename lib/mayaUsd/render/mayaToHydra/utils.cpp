@@ -52,7 +52,6 @@ global proc {{override}}OptionBox() {
     columnLayout;
     attrControlGrp -label "Enable Motion Samples" -attribute "defaultRenderGlobals.mtohEnableMotionSamples" -changeCommand $cc;
     attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
-    attrControlGrp -label "OpenGL Selection Overlay" -attribute "defaultRenderGlobals.mtohSelectionOverlay" -changeCommand $cc;
     attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
     attrControlGrp -label "Highlight Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlight" -changeCommand $cc;
     attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;

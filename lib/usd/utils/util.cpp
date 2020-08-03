@@ -65,7 +65,7 @@ namespace
             {"isImplicit", arc.IsImplicit() ? "True" : "False"},
             {"isIntroRootLayer", arc.IsIntroducedInRootLayerStack() ? "True" : "False"},
             {"isIntroRootLayerPrim", arc.IsIntroducedInRootLayerPrimSpec() ? "True" : "False" },
-            {"nodeLayerStack", introducingNode ? introducingNode.GetLayerStack()->GetIdentifier().rootLayer->GetRealPath() : ""},
+            {"nodeLayerStack", arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer->GetRealPath()},
             {"nodePath", arc.GetTargetNode().GetPath().GetString()},
         };
     }
@@ -180,6 +180,23 @@ hasSpecs(const UsdPrim& prim)
     }
 
     return found;
+}
+
+std::vector<SdfLayerHandle>
+layerInCompositionArcsWithSpec(const UsdPrim& prim)
+{
+    UsdPrimCompositionQuery query(prim);
+
+    std::vector<SdfLayerHandle> layersWithContribution;
+
+    for (const auto& compQueryArc : query.GetCompositionArcs()) {
+        if (compQueryArc.GetTargetNode().HasSpecs()) {
+            layersWithContribution.emplace_back(
+                compQueryArc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer);
+        }
+    }
+
+    return layersWithContribution;
 }
 
 void

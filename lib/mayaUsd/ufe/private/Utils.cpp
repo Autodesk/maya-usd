@@ -132,17 +132,25 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     // early check to see if a particular node has any specs to contribute
     // to the final composed prim. e.g (a node in payload)
     if(!MayaUsdUtils::hasSpecs(prim)){
-        std::string err = TfStringPrintf("Cannot %s [%s] because it doesn't have any specs to contribute to the composed prim.",
-                                          commandName.c_str(),
-                                          prim.GetName().GetString().c_str());
+
+        auto layers = MayaUsdUtils::layerInCompositionArcsWithSpec(prim);
+        std::string layerDisplayNames;
+        for (auto layer : layers) {
+            layerDisplayNames.append("[" + layer->GetDisplayName() + "]" + ",");
+        }
+        layerDisplayNames.pop_back();
+        std::string err = TfStringPrintf("Cannot %s [%s]. It does not make any contributions in the current layer "
+                                         "because its specs are in an external composition arc. Please open %s to make direct edits.",
+                                         commandName.c_str(),
+                                         prim.GetName().GetString().c_str(), 
+                                         layerDisplayNames.c_str());
         throw std::runtime_error(err.c_str());
     }
 
     // if the current layer doesn't have any contributions
     if (!MayaUsdUtils::doesEditTargetLayerContribute(prim)) {
         auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
-        std::string err = TfStringPrintf("Cannot %s [%s] defined on another layer. " 
-                                         "Please set [%s] as the target layer to proceed", 
+        std::string err = TfStringPrintf("Cannot %s [%s]. It is defined on another layer. Please set [%s] as the target layer to proceed.", 
                                          commandName.c_str(),
                                          prim.GetName().GetString().c_str(),
                                          strongestContributingLayer->GetDisplayName().c_str());
@@ -162,8 +170,7 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
             });
 
             layerDisplayNames.pop_back();
-            std::string err = TfStringPrintf("Cannot %s [%s] with definitions or opinions on other layers. "
-                                             "Opinions exist in %s",
+            std::string err = TfStringPrintf("Cannot %s [%s]. It has definitions or opinions on other layers. Opinions exist in %s",
                                              commandName.c_str(),
                                              prim.GetName().GetString().c_str(), 
                                              layerDisplayNames.c_str());
