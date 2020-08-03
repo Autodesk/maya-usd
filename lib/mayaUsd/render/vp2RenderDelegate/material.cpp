@@ -624,11 +624,6 @@ void HdVP2Material::Sync(
     *dirtyBits = HdMaterial::Clean;
 }
 
-/*! \brief  Reload the shader
-*/
-void HdVP2Material::Reload() {
-}
-
 /*! \brief  Returns the minimal set of dirty bits to place in the
 change tracker for use in the first sync of this prim.
 */
