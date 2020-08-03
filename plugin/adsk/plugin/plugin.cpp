@@ -29,6 +29,8 @@
 
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/commands/editTargetCommand.h>
+#include <mayaUsd/commands/layerEditorCommand.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/stageData.h>
@@ -53,6 +55,25 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+
+template <typename T> void registerCommandCheck(MFnPlugin& plugin)
+{
+    auto status = plugin.registerCommand(T::commandName, T::creator, T::createSyntax);
+    if (!status) {
+        status.perror(MString("mayaUsdPlugin: unable to register command ") + T::commandName);
+    }
+}
+
+template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
+{
+    auto status = plugin.deregisterCommand(T::commandName);
+    if (!status) {
+        status.perror(MString("mayaUsdPlugin: unable to deregister command ") + T::commandName);
+    }
+}
+} // namespace
+
 MAYAUSD_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
@@ -71,58 +92,41 @@ MStatus initializePlugin(MObject obj)
     }
 
     status = plugin.registerFileTranslator(
-        MayaUsd::UsdMayaExportTranslator::translatorName,
+        MAYAUSD_NS::UsdMayaExportTranslator::translatorName,
         "",
-        MayaUsd::UsdMayaExportTranslator::creator,
+        MAYAUSD_NS::UsdMayaExportTranslator::creator,
         "mayaUsdTranslatorExport", // options script name
-        const_cast<char*>(MayaUsd::UsdMayaExportTranslator::GetDefaultOptions().c_str()),
+        const_cast<char*>(MAYAUSD_NS::UsdMayaExportTranslator::GetDefaultOptions().c_str()),
         false);
     if (!status) {
         status.perror("mayaUsdPlugin: unable to register export translator.");
     }
 
-    status = plugin.registerCommand(
-        MayaUsd::ADSKMayaUSDExportCommand::commandName,
-        MayaUsd::ADSKMayaUSDExportCommand::creator,
-        MayaUsd::ADSKMayaUSDExportCommand::createSyntax);
-    if (!status) {
-        status.perror("mayaUsdPlugin: unable to register export command.");
-    }
-
-    status = plugin.registerCommand(
-        MayaUsd::ADSKMayaUSDImportCommand::commandName,
-        MayaUsd::ADSKMayaUSDImportCommand::creator,
-        MayaUsd::ADSKMayaUSDImportCommand::createSyntax);
-    if (!status) {
-        status.perror("mayaUsdPlugin: unable to register import command.");
-    }
+    registerCommandCheck<MAYAUSD_NS::ADSKMayaUSDExportCommand>(plugin);
+    registerCommandCheck<MAYAUSD_NS::ADSKMayaUSDImportCommand>(plugin);
+    registerCommandCheck<MAYAUSD_NS::EditTargetCommand>(plugin);
+    registerCommandCheck<MAYAUSD_NS::LayerEditorCommand>(plugin);
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
     CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)
-    status = MayaUsd::ufe::initialize();
+    status = MAYAUSD_NS::ufe::initialize();
     if (!status) {
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
     }
 #endif
 
     status = plugin.registerShape(
-        MayaUsd::ProxyShape::typeName,
-        MayaUsd::ProxyShape::typeId,
-        MayaUsd::ProxyShape::creator,
-        MayaUsd::ProxyShape::initialize,
+        MAYAUSD_NS::ProxyShape::typeName,
+        MAYAUSD_NS::ProxyShape::typeId,
+        MAYAUSD_NS::ProxyShape::creator,
+        MAYAUSD_NS::ProxyShape::initialize,
         UsdMayaProxyShapeUI::creator,
         MayaUsdProxyShapePlugin::getProxyShapeClassification());
     CHECK_MSTATUS(status);
 
-    status = plugin.registerCommand(
-        MayaUsd::ADSKMayaUSDListShadingModesCommand::commandName,
-        MayaUsd::ADSKMayaUSDListShadingModesCommand::creator,
-        MayaUsd::ADSKMayaUSDListShadingModesCommand::createSyntax);
-    if (!status) {
-        status.perror("mayaUsdPlugin: unable to register list shading modes command.");
-    }
+    registerCommandCheck<MAYAUSD_NS::ADSKMayaUSDListShadingModesCommand>(plugin);
 
     status = UsdMayaUndoHelperCommand::initialize(plugin);
     if (!status) {
@@ -131,9 +135,9 @@ MStatus initializePlugin(MObject obj)
     }
 
 #if defined(WANT_QT_BUILD)
-    status = MayaUsd::USDImportDialogCmd::initialize(plugin);
+    status = MAYAUSD_NS::USDImportDialogCmd::initialize(plugin);
     if (!status) {
-        MString err("registerCommand" ); err += MayaUsd::USDImportDialogCmd::fsName;
+        MString err("registerCommand" ); err += MAYAUSD_NS::USDImportDialogCmd::fsName;
         status.perror(err);
     }
 #endif
@@ -188,15 +192,12 @@ MStatus uninitializePlugin(MObject obj)
                           UsdMayaUndoHelperCommand::name()).c_str());
     }
 
-    status = plugin.deregisterCommand(MayaUsd::ADSKMayaUSDListShadingModesCommand::commandName);
-    if (!status) {
-        status.perror("mayaUsdPlugin: unable to deregister list shading modes command.");
-    }
+    deregisterCommandCheck<MAYAUSD_NS::ADSKMayaUSDListShadingModesCommand>(plugin);
 
 #if defined(WANT_QT_BUILD)
-    status = MayaUsd::USDImportDialogCmd::finalize(plugin);
+    status = MAYAUSD_NS::USDImportDialogCmd::finalize(plugin);
     if (!status) {
-        MString err("deregisterCommand" ); err += MayaUsd::USDImportDialogCmd::fsName;
+        MString err("deregisterCommand" ); err += MAYAUSD_NS::USDImportDialogCmd::fsName;
         status.perror(err);
     }
 #endif
@@ -206,29 +207,21 @@ MStatus uninitializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to deregister import translator.");
     }
 
-    status = plugin.deregisterFileTranslator(MayaUsd::UsdMayaExportTranslator::translatorName);
+    status = plugin.deregisterFileTranslator(MAYAUSD_NS::UsdMayaExportTranslator::translatorName);
     if (!status) {
         status.perror("mayaUsdPlugin: unable to deregister export translator.");
     }
-
-    status = plugin.deregisterCommand(MayaUsd::ADSKMayaUSDExportCommand::commandName);
-    if (!status) {
-        status.perror("mayaUsdPlugin: unable to deregister export command.");
-    }
-
-    status = plugin.deregisterCommand(MayaUsd::ADSKMayaUSDImportCommand::commandName);
-    if (!status) {
-        status.perror("mayaUsdPlugin: unable to deregister import command.");
-    }
-
-    status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
+    deregisterCommandCheck<MAYAUSD_NS::ADSKMayaUSDExportCommand>(plugin);
+    deregisterCommandCheck<MAYAUSD_NS::ADSKMayaUSDImportCommand>(plugin);
+    deregisterCommandCheck<MAYAUSD_NS::EditTargetCommand>(plugin);
+    deregisterCommandCheck<MAYAUSD_NS::LayerEditorCommand>(plugin);
+    status = plugin.deregisterNode(MAYAUSD_NS::ProxyShape::typeId);
     CHECK_MSTATUS(status);
-
     status = MayaUsdProxyShapePlugin::finalize(plugin);
     CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)
-    status = MayaUsd::ufe::finalize();
+    status = MAYAUSD_NS::ufe::finalize();
     CHECK_MSTATUS(status);
 #endif
 
