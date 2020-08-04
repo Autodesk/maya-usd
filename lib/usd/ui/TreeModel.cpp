@@ -339,7 +339,6 @@ void TreeModel::updateCheckedItemCount() const
 
 void TreeModel::countCheckedItems(const QModelIndex &parent, int& nbChecked, int& nbVariantsModified) const
 {
-	int count = 0;
 	for (int r=0; r<rowCount(parent); ++r)
 	{
 		TreeItem* item;
