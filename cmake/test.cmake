@@ -58,13 +58,13 @@ function(mayaUsd_add_test test_name)
 
     # check that they provided one and ONLY 1 of:
     #     PYTHON_MODULE / PYTHON_COMMAND / COMMAND
-    set(num_exclusive_items 0)
+    set(NUM_EXCLUSIVE_ITEMS 0)
     foreach(option_name PYTHON_MODULE PYTHON_COMMAND COMMAND)
         if(PREFIX_${option_name})
-            math(EXPR num_exclusive_items "${num_exclusive_items} + 1")
+            math(EXPR NUM_EXCLUSIVE_ITEMS "${NUM_EXCLUSIVE_ITEMS} + 1")
         endif()
     endforeach()
-    if(NOT num_exclusive_items EQUAL 1)
+    if(NOT NUM_EXCLUSIVE_ITEMS EQUAL 1)
         message(FATAL_ERROR "mayaUsd_add_test: must be called with exactly "
             "one of PYTHON_MODULE, PYTHON_COMMAND, or COMMAND")
     endif()
@@ -77,62 +77,62 @@ function(mayaUsd_add_test test_name)
 
     # set the working_dir
     if(PREFIX_WORKING_DIRECTORY)
-        set(working_dir ${PREFIX_WORKING_DIRECTORY})
+        set(WORKING_DIR ${PREFIX_WORKING_DIRECTORY})
     else()
-        set(working_dir ${CMAKE_CURRENT_SOURCE_DIR})
+        set(WORKING_DIR ${CMAKE_CURRENT_SOURCE_DIR})
     endif()
 
     # --------------
     # 2) Create test
     # --------------
 
-    set(pytest_code "")
+    set(PYTEST_CODE "")
     if(PREFIX_PYTHON_MODULE)
-        set(module_name "${PREFIX_PYTHON_MODULE}")
-        set(pytest_code "
+        set(MODULE_NAME "${PREFIX_PYTHON_MODULE}")
+        set(PYTEST_CODE "
 import sys
 from unittest import main
-import ${module_name}
-main(module=${module_name})
+import ${MODULE_NAME}
+main(module=${MODULE_NAME})
 ")
     elseif(PREFIX_PYTHON_COMMAND)
-        set(pytest_code "${PREFIX_PYTHON_COMMAND}")
+        set(PYTEST_CODE "${PREFIX_PYTHON_COMMAND}")
     else()
-        set(command ${PREFIX_COMMAND})
+        set(COMMAND_CALL ${PREFIX_COMMAND})
     endif()
 
-    if(pytest_code)
+    if(PYTEST_CODE)
         if(NOT PREFIX_NO_STANDALONE_INIT)
             # first, indent pycode
-            mayaUsd_indent(indented_pytest_code "${pytest_code}")
+            mayaUsd_indent(indented_PYTEST_CODE "${PYTEST_CODE}")
             # then wrap in try/finally, and call maya.standalone.[un]initialize()
-            set(pytest_code "
+            set(PYTEST_CODE "
 import maya.standalone
 maya.standalone.initialize(name='python')
 try:
-${indented_pytest_code}
+${indented_PYTEST_CODE}
 finally:
     maya.standalone.uninitialize()
 "
             )
         endif()
 
-        string(REPLACE ";" "\;" pytest_code "${pytest_code}")
-        set(command ${MAYA_PY_EXECUTABLE} -c "${pytest_code}")
+        string(REPLACE ";" "\;" PYTEST_CODE "${PYTEST_CODE}")
+        set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} -c "${PYTEST_CODE}")
 
     endif()
 
     add_test(
         NAME "${test_name}"
-        WORKING_DIRECTORY ${working_dir}
-        COMMAND ${command}
+        WORKING_DIRECTORY ${WORKING_DIR}
+        COMMAND ${COMMAND_CALL}
     )
 
     # -----------------
     # 3) Set up environ
     # -----------------
 
-    set(all_path_vars
+    set(ALL_PATH_VARS
         PATH
         PYTHONPATH
         MAYA_PLUG_IN_PATH
@@ -142,59 +142,59 @@ finally:
     )
 
     # Set initial empty values for all path vars
-    foreach(pathvar ${all_path_vars})
-        set(mayaUsd_varname_${pathvar})
+    foreach(pathvar ${ALL_PATH_VARS})
+        set(MAYAUSD_VARNAME_${pathvar})
     endforeach()
 
     if(IS_WINDOWS)
-        list(APPEND mayaUsd_varname_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
+        list(APPEND MAYAUSD_VARNAME_PATH "${CMAKE_INSTALL_PREFIX}/lib/gtest")
     endif()
 
-    # NOTE - we prefix varnames with "mayaUsd_varname_" just to make collision
+    # NOTE - we prefix varnames with "MAYAUSD_VARNAME_" just to make collision
     # with some existing var less likely
 
     # Emulate what mayaUSD.mod would do
 
     # adsk
-    list(APPEND mayaUsd_varname_PATH
+    list(APPEND MAYAUSD_VARNAME_PATH
          "${CMAKE_INSTALL_PREFIX}/lib")
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/lib/python")
-    list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/lib/usd")
-    list(APPEND mayaUsd_varname_MAYA_PLUG_IN_PATH
+    list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin")
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
 
     # pxr
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/python")
-    list(APPEND mayaUsd_varname_PATH
+    list(APPEND MAYAUSD_VARNAME_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib")
-    list(APPEND mayaUsd_varname_MAYA_SCRIPT_PATH
+    list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/lib/usd/usdMaya/resources")
-    list(APPEND mayaUsd_varname_MAYA_PLUG_IN_PATH
+    list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/maya/plugin")
-    list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/plugin/pxr/lib/usd")
 
     # al
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/python")
-    list(APPEND mayaUsd_varname_PATH
+    list(APPEND MAYAUSD_VARNAME_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib")
-    list(APPEND mayaUsd_varname_MAYA_PLUG_IN_PATH
+    list(APPEND MAYAUSD_VARNAME_MAYA_PLUG_IN_PATH
          "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
-    list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd")
-    list(APPEND mayaUsd_varname_PXR_PLUGINPATH_NAME
+    list(APPEND MAYAUSD_VARNAME_PXR_PLUGINPATH_NAME
          "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin")
 
     if(IS_WINDOWS AND DEFINED ENV{PYTHONHOME})
         # If the environment contains a PYTHONHOME, also set the path to
         # that folder so that we can find the python DLLs.
-        list(APPEND mayaUsd_varname_PATH $ENV{PYTHONHOME})
+        list(APPEND MAYAUSD_VARNAME_PATH $ENV{PYTHONHOME})
     endif()
 
     # Adjust PATH and PYTHONPATH to include USD.
@@ -206,12 +206,12 @@ finally:
         set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
     endif()
     # Inherit any existing PYTHONPATH, but keep it at the end.
-    list(APPEND mayaUsd_varname_PYTHONPATH
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH
         "${USD_INSTALL_LOCATION}/lib/python")
     if(IS_WINDOWS)
-        list(APPEND mayaUsd_varname_PATH
+        list(APPEND MAYAUSD_VARNAME_PATH
             "${USD_INSTALL_LOCATION}/bin")
-        list(APPEND mayaUsd_varname_PATH
+        list(APPEND MAYAUSD_VARNAME_PATH
             "${USD_INSTALL_LOCATION}/lib")
     endif()
 
@@ -221,12 +221,12 @@ finally:
     # This is needed (especially for PATH) because we will overwrite
     # both with the values from our list and we need to keep any
     # system entries.
-    list(APPEND mayaUsd_varname_PATH $ENV{PATH})
-    list(APPEND mayaUsd_varname_PYTHONPATH $ENV{PYTHONPATH})
+    list(APPEND MAYAUSD_VARNAME_PATH $ENV{PATH})
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH $ENV{PYTHONPATH})
 
     # convert the internally-processed envs from cmake list
-    foreach(pathvar ${all_path_vars})
-        separate_argument_list(mayaUsd_varname_${pathvar})
+    foreach(pathvar ${ALL_PATH_VARS})
+        separate_argument_list(MAYAUSD_VARNAME_${pathvar})
     endforeach()
 
     # prepend the passed-in ENV values - assume these are already
@@ -239,24 +239,24 @@ finally:
         endif()
 
         # now either prepend to existing list, or create new
-        if("${env_name}" IN_LIST all_path_vars)
+        if("${env_name}" IN_LIST ALL_PATH_VARS)
             if(IS_WINDOWS)
-                set(mayaUsd_varname_${env_name}
-                    "${env_value}\;${mayaUsd_varname_${env_name}}")
+                set(MAYAUSD_VARNAME_${env_name}
+                    "${env_value}\;${MAYAUSD_VARNAME_${env_name}}")
             else()
-                set(mayaUsd_varname_${env_name}
-                    "${env_value}:${mayaUsd_varname_${env_name}}")
+                set(MAYAUSD_VARNAME_${env_name}
+                    "${env_value}:${MAYAUSD_VARNAME_${env_name}}")
             endif()
         else()
-            set("mayaUsd_varname_${env_name}" ${env_value})
-            list(APPEND all_path_vars "${env_name}")
+            set("MAYAUSD_VARNAME_${env_name}" ${env_value})
+            list(APPEND ALL_PATH_VARS "${env_name}")
         endif()
     endforeach()
 
     # set all env vars
-    foreach(pathvar ${all_path_vars})
+    foreach(pathvar ${ALL_PATH_VARS})
         set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
-            "${pathvar}=${mayaUsd_varname_${pathvar}}")
+            "${pathvar}=${MAYAUSD_VARNAME_${pathvar}}")
     endforeach()
 
     # without "MAYA_NO_STANDALONE_ATEXIT=1", standalone.uninitialize() will

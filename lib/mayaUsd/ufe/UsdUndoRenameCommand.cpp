@@ -14,8 +14,11 @@
 // limitations under the License.
 //
 #include "UsdUndoRenameCommand.h"
+#include "private/Utils.h"
 
 #include <ufe/log.h>
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/copyUtils.h>
@@ -28,7 +31,7 @@
 
 #include <mayaUsdUtils/util.h>
 
-#include "private/InPathChange.h"
+#include "private/UfeNotifGuard.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #define UFE_ENABLE_ASSERTS
@@ -36,6 +39,8 @@
 #else
 #include <cassert>
 #endif
+
+#include <cctype>
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -60,38 +65,7 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-    // early check to see if a particular node has any specs to contribute
-    // to the final composed prim. e.g (a node in payload)
-    if(!MayaUsdUtils::hasSpecs(prim)){
-        std::string err = TfStringPrintf("Cannot rename [%s] because it doesn't have any specs to contribute to the composed prim.",
-            prim.GetName().GetString().c_str());
-        throw std::runtime_error(err.c_str());
-    }
-
-    // if the current layer doesn't have any contributions
-    if (!MayaUsdUtils::doesEditTargetLayerContribute(prim)) {
-        auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
-        std::string err = TfStringPrintf("Cannot rename [%s] defined on another layer. " 
-                                         "Please set [%s] as the target layer to proceed", 
-                                         prim.GetName().GetString().c_str(),
-                                         strongestContributingLayer->GetDisplayName().c_str());
-        throw std::runtime_error(err.c_str());
-    }
-    else
-    {
-        auto layers = MayaUsdUtils::layersWithContribution(prim);
-        // if we have more than 2 layers that contributes to the final composed prim
-        if (layers.size() > 1) {
-            std::string layerDisplayNames;
-            for (auto layer : layers) {
-                layerDisplayNames.append("[" + layer->GetDisplayName() + "]" + ",");
-            }
-            layerDisplayNames.pop_back();
-            std::string err = TfStringPrintf("Cannot rename [%s] with definitions or opinions on other layers. "
-                                             "Opinions exist in %s", prim.GetName().GetString().c_str(), layerDisplayNames.c_str());
-            throw std::runtime_error(err.c_str());
-        }
-    }
+    ufe::applyCommandRestriction(prim, "rename");
 }
 
 UsdUndoRenameCommand::~UsdUndoRenameCommand()
@@ -131,8 +105,13 @@ bool UsdUndoRenameCommand::renameRedo()
         _newName = uniqueName(childrenNames, _newName);
     }
 
+    // names are not allowed to start to digit numbers
+    if(std::isdigit(_newName.at(0))){
+        _newName = prim.GetName();
+    }
+
     // all special characters are replaced with `_`
-    const std::string specialChars{"~!@#$%^&*()-=+,.?`':{}|<>[]/"};
+    const std::string specialChars{"~!@#$%^&*()-=+,.?`':{}|<>[]/ "};
     std::replace_if(_newName.begin(), _newName.end(), [&](auto c){
         return std::string::npos != specialChars.find(c);
     }, '_');
@@ -147,7 +126,8 @@ bool UsdUndoRenameCommand::renameRedo()
 
     // the renamed scene item is a "sibling" of its original name.
     _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
-    sendRenameNotification(_ufeDstItem, _ufeSrcItem->path());
+
+    sendNotification<Ufe::ObjectRename>(_ufeDstItem, _ufeSrcItem->path());
 
     // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
     // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
@@ -182,7 +162,8 @@ bool UsdUndoRenameCommand::renameUndo()
     // shouldn't have to again create a sibling sceneItem here since we already have a valid _ufeSrcItem
     // however, I get random crashes if I don't which needs furthur investigation.  HS, 6-May-2020.
     _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
-    sendRenameNotification(_ufeSrcItem, _ufeDstItem->path());
+
+    sendNotification<Ufe::ObjectRename>(_ufeSrcItem, _ufeDstItem->path());
 
     // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
     // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  

@@ -1,10 +1,10 @@
 set(TARGET_NAME mayaUsd_Translators)
 
-set(resources_install_path
+set(RESOURCES_INSTALL_PATH
     ${CMAKE_INSTALL_PREFIX}/lib/usd/${TARGET_NAME}/resources
 )
 
-set(library_install_path
+set(LIBRARY_INSTALL_PATH
     ${CMAKE_INSTALL_PREFIX}/lib
 )
 
@@ -17,14 +17,12 @@ target_sources(${TARGET_NAME}
     PRIVATE
         cameraReader.cpp
         cameraWriter.cpp
-        fileTextureWriter.cpp
         instancerWriter.cpp
         jointWriter.cpp
         lightReader.cpp
         lightWriter.cpp
         locatorWriter.cpp
         materialReader.cpp
-        materialWriter.cpp
         mayaReferenceReader.cpp
         mayaReferenceUpdater.cpp
         meshReader.cpp
@@ -39,6 +37,8 @@ target_sources(${TARGET_NAME}
         strokeWriter.cpp
         xformReader.cpp
 )
+
+add_subdirectory(shading)
 
 # -----------------------------------------------------------------------------
 # compiler configuration
@@ -80,6 +80,7 @@ target_link_libraries(${TARGET_NAME}
         ${MAYA_LIBRARIES}
         mayaUsd
         mayaUsd_Schemas
+        basePxrUsdPreviewSurface
 )
 
 # -----------------------------------------------------------------------------
@@ -110,25 +111,25 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json"
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    DESTINATION ${resources_install_path}
+    DESTINATION ${RESOURCES_INSTALL_PATH}
 )
 
 install(
     TARGETS ${TARGET_NAME}
     LIBRARY
-    DESTINATION ${library_install_path}
+    DESTINATION ${LIBRARY_INSTALL_PATH}
     ARCHIVE
-    DESTINATION ${library_install_path}
+    DESTINATION ${LIBRARY_INSTALL_PATH}
     RUNTIME
-    DESTINATION ${library_install_path}
+    DESTINATION ${LIBRARY_INSTALL_PATH}
 )
 
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 
-        DESTINATION ${library_install_path} OPTIONAL
+        DESTINATION ${LIBRARY_INSTALL_PATH} OPTIONAL
     )
 endif()
  
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${TARGET_NAME}
 )

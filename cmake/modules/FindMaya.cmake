@@ -37,24 +37,24 @@ macro(maya_set_plugin_properties target)
     set_target_properties(${target} PROPERTIES
                           SUFFIX ${MAYA_PLUGIN_SUFFIX})
 
-    set(_maya_DEFINES REQUIRE_IOSTREAM _BOOL)
+    set(_MAYA_DEFINES REQUIRE_IOSTREAM _BOOL)
 
     if(IS_MACOSX)
-        set(_maya_DEFINES "${_maya_DEFINES}" MAC_PLUGIN OSMac_ OSMac_MachO)
+        set(_MAYA_DEFINES "${_MAYA_DEFINES}" MAC_PLUGIN OSMac_ OSMac_MachO)
         set_target_properties(${target} PROPERTIES
                               PREFIX "")
     elseif(WIN32)
-        set(_maya_DEFINES "${_maya_DEFINES}" _AFXDLL _MBCS NT_PLUGIN)
+        set(_MAYA_DEFINES "${_MAYA_DEFINES}" _AFXDLL _MBCS NT_PLUGIN)
         set_target_properties( ${target} PROPERTIES
                                LINK_FLAGS "/export:initializePlugin /export:uninitializePlugin")
     else()
-        set(_maya_DEFINES "${_maya_DEFINES}" LINUX LINUX_64)
+        set(_MAYA_DEFINES "${_MAYA_DEFINES}" LINUX LINUX_64)
         set_target_properties( ${target} PROPERTIES
                                PREFIX "")
     endif()
     target_compile_definitions(${target}
         PRIVATE
-            ${_maya_DEFINES}
+            ${_MAYA_DEFINES}
     )
 endmacro()
 #=============================================================================
@@ -254,7 +254,7 @@ if(MAYA_INCLUDE_DIRS AND EXISTS "${MAYA_INCLUDE_DIR}/maya/MTypes.h")
 endif()
 
 # swtich between mayapy and mayapy2
-set(mayapy_exe mayapy)
+set(MAYAPY_EXE mayapy)
 if(${MAYA_APP_VERSION} STRGREATER_EQUAL "2021")
     # check to see if we have a mayapy2 executable
     find_program(MAYA_PY_EXECUTABLE2
@@ -270,12 +270,12 @@ if(${MAYA_APP_VERSION} STRGREATER_EQUAL "2021")
             "Maya's Python executable path"
     )
     if(NOT BUILD_WITH_PYTHON_3 AND MAYA_PY_EXECUTABLE2)
-        set(mayapy_exe mayapy2)
+        set(MAYAPY_EXE mayapy2)
     endif()
 endif()
 
 find_program(MAYA_PY_EXECUTABLE
-        ${mayapy_exe}
+        ${MAYAPY_EXE}
     HINTS
         "${MAYA_LOCATION}"
         "$ENV{MAYA_LOCATION}"

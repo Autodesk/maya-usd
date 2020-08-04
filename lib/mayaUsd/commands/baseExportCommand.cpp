@@ -265,30 +265,13 @@ try
         frameSamples.insert(tmpArgList.asDouble(0));
     }
 
-    // Get the objects to export as a MSelectionList
     MSelectionList objSelList;
-    if (argData.isFlagSet(kSelectionFlag)) {
-        MGlobal::getActiveSelectionList(objSelList);
-    }
-    else {
-        argData.getObjects(objSelList);
-
-        // If no objects specified, then get all objects at DAG root
-        if (objSelList.isEmpty()) {
-            objSelList.add("|*", true);
-        }
-    }
-
-    // Convert selection list to jobArgs dagPaths
     UsdMayaUtil::MDagPathSet dagPaths;
-    for (unsigned int i=0; i < objSelList.length(); i++) {
-        MDagPath dagPath;
-        status = objSelList.getDagPath(i, dagPath);
-        if (status == MS::kSuccess)
-        {
-            dagPaths.emplace(dagPath);
-        }
+    bool exportSelected = argData.isFlagSet(kSelectionFlag);
+    if (!exportSelected) {
+        argData.getObjects(objSelList);
     }
+    UsdMayaUtil::GetFilteredSelectionToExport(exportSelected, objSelList, dagPaths);
 
     const std::vector<double> timeSamples = UsdMayaWriteUtil::GetTimeSamples(
             timeInterval, frameSamples, frameStride);

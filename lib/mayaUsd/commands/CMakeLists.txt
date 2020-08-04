@@ -6,22 +6,26 @@ target_sources(${PROJECT_NAME}
         baseExportCommand.cpp
         baseImportCommand.cpp
         baseListShadingModesCommand.cpp
+        editTargetCommand.cpp
+        layerEditorCommand.cpp
 )
 
-set(headers
+set(HEADERS
         baseExportCommand.h
         baseImportCommand.h
         baseListShadingModesCommand.h
+        editTargetCommand.h
+        layerEditorCommand.h
 )
 
 # -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR commands)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR commands)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/commands/
 )

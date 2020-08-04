@@ -28,6 +28,7 @@
 #include <mayaUsdUI/ui/api.h>
 #include <mayaUsdUI/ui/IUSDImportView.h>
 #include <mayaUsdUI/ui/TreeModel.h>
+#include <mayaUsdUI/ui/ItemDelegate.h>
 
 namespace Ui {
 	class ImportDialog;
@@ -67,9 +68,15 @@ public:
 	ImportData::PrimVariantSelections primVariantSelections() const override;
 	bool execute() override;
 
+	int primsInScopeCount() const;
+	int switchedVariantCount() const;
+
 private Q_SLOTS:
 	void onItemClicked(const QModelIndex&);
 	void onResetFileTriggered();
+	void onHierarchyViewHelpTriggered();
+	void onCheckedStateChanged(int);
+	void onModifiedVariantsChanged(int);
 
 protected:
 	// Reference to the Qt UI View of the dialog:
@@ -79,6 +86,8 @@ protected:
 	std::unique_ptr<TreeModel> fTreeModel;
 	// Reference to the Proxy Model used to sort and filter the USD file hierarchy:
 	std::unique_ptr<QSortFilterProxyModel> fProxyModel;
+	// Reference to the delegate we set on the tree view:
+	std::unique_ptr<ItemDelegate> fItemDelegate;
 
 	// Reference to the USD Stage holding the list of Prims which could be imported:
 	UsdStageRefPtr fStage;

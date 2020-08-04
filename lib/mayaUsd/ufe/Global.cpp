@@ -28,7 +28,7 @@
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dHandler.h>
 
-#include "private/InPathChange.h"
+#include "private/UfeNotifGuard.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // Note: must come after include of ufe files so we have the define.
@@ -82,7 +82,8 @@ Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
 // Subject singleton for observation of all USD stages.
 StagesSubject::Ptr g_StagesSubject;
 
-bool InPathChange::fInPathChange = false;
+bool InPathChange::inGuard = false;
+bool InAddOrRemoveReference::inGuard = false;
 
 //------------------------------------------------------------------------------
 // Functions
@@ -172,6 +173,11 @@ MStatus finalize()
 Ufe::Rtid getUsdRunTimeId()
 {
     return g_USDRtid;
+}
+
+Ufe::Rtid getMayaRunTimeId()
+{
+    return g_MayaRtid;
 }
 
 } // namespace ufe

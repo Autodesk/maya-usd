@@ -9,7 +9,7 @@ target_sources(${PROJECT_NAME}
         writeJob.cpp
 )
 
-set(headers
+set(HEADERS
     jobArgs.h
     modelKindProcessor.h
     readJob.h
@@ -21,7 +21,7 @@ set(headers
 # -----------------------------------------------------------------------------
 mayaUsd_promoteHeaderList(
     HEADERS 
-        ${headers} 
+        ${HEADERS} 
     BASEDIR 
         ${PROJECT_NAME}/fileio/jobs
 )
@@ -29,6 +29,6 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
      DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/fileio/jobs
 )

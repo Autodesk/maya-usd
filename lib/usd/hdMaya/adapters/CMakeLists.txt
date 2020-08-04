@@ -23,7 +23,7 @@ target_sources(${TARGET_NAME}
         tokens.cpp
 )
 
-set(headers
+set(HEADERS
     adapter.h
     adapterDebugCodes.h
     adapterRegistry.h
@@ -43,7 +43,7 @@ set(headers
 # -----------------------------------------------------------------------------
 mayaUsd_promoteHeaderList( 
     HEADERS
-        ${headers}
+        ${HEADERS}
     BASEDIR
         ${TARGET_NAME}/adapters
 )
@@ -51,7 +51,7 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION 
         ${CMAKE_INSTALL_PREFIX}/include/hdMaya/adapters
 )

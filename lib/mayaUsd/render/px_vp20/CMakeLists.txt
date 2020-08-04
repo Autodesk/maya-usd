@@ -8,7 +8,7 @@ target_sources(${PROJECT_NAME}
         utils_legacy.cpp
 )
 
-set(headers
+set(HEADERS
     glslProgram.h
     utils.h
     utils_legacy.h
@@ -17,11 +17,11 @@ set(headers
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR render/px_vp20)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR render/px_vp20)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/render/px_vp20
 )

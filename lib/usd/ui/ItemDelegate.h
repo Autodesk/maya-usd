@@ -79,6 +79,9 @@ public:
 	QSize sizeHint(const QStyleOptionViewItem&, const QModelIndex&) const override;
 	void updateEditorGeometry(QWidget*, const QStyleOptionViewItem&, const QModelIndex&) const override;
 
+Q_SIGNALS:
+	void variantModified() const;
+
 public Q_SLOTS:
 	void commitVariantSelection(VariantsEditorWidget* editor);
 

@@ -13,7 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#pragma once
+#ifndef UFENOTIFGUARD_H
+#define UFENOTIFGUARD_H
 
 #include <mayaUsd/base/api.h>
 
@@ -24,8 +25,8 @@ namespace ufe {
 class InPathChange
 {
 public:
-	InPathChange() { fInPathChange = true; }
-	~InPathChange() { fInPathChange = false; }
+	InPathChange() { inGuard = true; }
+	~InPathChange() { inGuard = false; }
 
 	// Delete the copy/move constructors assignment operators.
 	InPathChange(const InPathChange&) = delete;
@@ -33,11 +34,33 @@ public:
 	InPathChange(InPathChange&&) = delete;
 	InPathChange& operator=(InPathChange&&) = delete;
 
-	static bool inPathChange() { return fInPathChange; }
+	static bool inPathChange() { return inGuard; }
 
 private:
-	static bool fInPathChange;
+	static bool inGuard;
 };
+
+//! \brief Helper class to scope when we are in an add or remove reference operation.
+class InAddOrRemoveReference
+{
+public:
+	InAddOrRemoveReference() { inGuard = true; }
+	~InAddOrRemoveReference() { inGuard = false; }
+
+	// Delete the copy/move constructors assignment operators.
+	InAddOrRemoveReference(const InAddOrRemoveReference&) = delete;
+	InAddOrRemoveReference& operator=(const InAddOrRemoveReference&) = delete;
+	InAddOrRemoveReference(InAddOrRemoveReference&&) = delete;
+	InAddOrRemoveReference& operator=(InAddOrRemoveReference&&) = delete;
+
+	static bool inAddOrRemoveReference() { return inGuard; }
+
+private:
+	static bool inGuard;
+};
+
 
 } // namespace ufe
 } // namespace MayaUsd
+
+#endif // UFENOTIFGUARD_H

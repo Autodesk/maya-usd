@@ -61,7 +61,9 @@ public:
 	bool hasChildren() const override;
 	Ufe::SceneItemList children() const override;
 	Ufe::SceneItem::Ptr parent() const override;
+#if UFE_PREVIEW_VERSION_NUM < 2018
 	Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
+#endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #if UFE_PREVIEW_VERSION_NUM >= 2013
@@ -79,6 +81,13 @@ public:
 	Ufe::UndoableCommand::Ptr createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
 #endif
 
+#if UFE_PREVIEW_VERSION_NUM >= 2018
+    Ufe::SceneItem::Ptr defaultParent() const override;
+    Ufe::SceneItem::Ptr insertChild(
+        const Ufe::SceneItem::Ptr& child,
+        const Ufe::SceneItem::Ptr& pos
+    ) override;
+#endif
 #endif
 
 private:

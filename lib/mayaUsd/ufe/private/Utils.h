@@ -51,6 +51,9 @@ const std::string kIllegalUSDPath = "Illegal USD run-time path %s.";
 //! Extended support for the xform operations.
 UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim);
 
+//! Apply restriction rules on the given prim
+void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName);
+
 //------------------------------------------------------------------------------
 // Operations: translate, rotate, scale, pivot
 //------------------------------------------------------------------------------

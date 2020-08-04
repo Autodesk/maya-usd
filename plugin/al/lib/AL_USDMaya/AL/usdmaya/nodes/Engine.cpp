@@ -31,6 +31,7 @@
 #include <vector>
 #include "AL/usdmaya/nodes/Engine.h"
 
+#include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/taskController.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -78,9 +79,15 @@ bool Engine::TestIntersectionBatch(
   pickParams.outHits = &allHits;
   VtValue vtPickParams(pickParams);
 
-  _engine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+#if defined(USDIMAGINGGL_API_VERSION) && USDIMAGINGGL_API_VERSION >= 6
+  HdEngine* hdEngine = _GetHdEngine();
+#else
+  HdEngine* hdEngine = &_engine;
+#endif
+
+  hdEngine->SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
   auto pickingTasks = _taskController->GetPickingTasks();
-  _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+  hdEngine->Execute(_taskController->GetRenderIndex(), &pickingTasks);
 
   if (allHits.size() == 0) {
     return false;

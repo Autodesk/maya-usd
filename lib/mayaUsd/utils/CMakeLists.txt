@@ -14,7 +14,7 @@ target_sources(${PROJECT_NAME}
         utilFileSystem.cpp
 )
 
-set(headers
+set(HEADERS
     blockSceneModificationContext.h
     colorSpace.h
     converter.h
@@ -29,11 +29,11 @@ set(headers
 # -----------------------------------------------------------------------------
 # promote headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers} SUBDIR utils)
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS} SUBDIR utils)
 
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/utils/
 )

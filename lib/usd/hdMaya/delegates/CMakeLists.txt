@@ -13,7 +13,7 @@ target_sources(${TARGET_NAME}
         testDelegate.cpp
 )
 
-set(headers
+set(HEADERS
     delegate.h
     delegateCtx.h
     delegateDebugCodes.h
@@ -30,7 +30,7 @@ set(headers
 # -----------------------------------------------------------------------------
 mayaUsd_promoteHeaderList( 
     HEADERS
-        ${headers}
+        ${HEADERS}
     BASEDIR
         ${TARGET_NAME}/delegates
 )
@@ -38,7 +38,7 @@ mayaUsd_promoteHeaderList(
 # -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
-install(FILES ${headers}
+install(FILES ${HEADERS}
     DESTINATION 
         ${CMAKE_INSTALL_PREFIX}/include/hdMaya/delegates
 )

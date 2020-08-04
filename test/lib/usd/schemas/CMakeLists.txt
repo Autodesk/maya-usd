@@ -1,7 +1,7 @@
 set(TARGET_NAME MAYAUSD_SCHEMA_TEST)
 
 # Unit test scripts.
-set(test_script_files
+set(TEST_SCRIPT_FILES
     testMayaUsdSchemasPythonImport.py
     testMayaUsdSchemasMayaReference.py
 )
@@ -11,10 +11,10 @@ add_custom_target(${TARGET_NAME} ALL)
 
 mayaUsd_copyFiles(${TARGET_NAME}
     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
-    FILES ${test_script_files}
+    FILES ${TEST_SCRIPT_FILES}
 )
 
-foreach(script ${test_script_files})
+foreach(script ${TEST_SCRIPT_FILES})
     mayaUsd_get_unittest_target(target ${script})
     mayaUsd_add_test(${target}
         PYTHON_MODULE ${target}
