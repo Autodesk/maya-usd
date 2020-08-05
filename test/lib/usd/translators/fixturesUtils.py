@@ -29,9 +29,11 @@ def _setUpClass(modulePathName, loadPlugin):
     if loadPlugin:
         cmds.loadPlugin('mayaUsdPlugin', quiet=True)
 
-    # Monkey patch cmds so that usdExport and usdImport becomes aliases.
-    cmds.usdExport = cmds.mayaUSDExport
-    cmds.usdImport = cmds.mayaUSDImport
+        # Monkey patch cmds so that usdExport and usdImport becomes aliases. We
+        # *only* do this if we're loading the plugin, since otherwise the
+        # export/import commands will not exist.
+        cmds.usdExport = cmds.mayaUSDExport
+        cmds.usdImport = cmds.mayaUSDImport
 
     realPath = os.path.realpath(modulePathName)
     return os.path.split(realPath)
