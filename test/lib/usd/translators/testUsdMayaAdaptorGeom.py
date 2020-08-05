@@ -24,6 +24,8 @@ from maya import standalone
 import os
 import unittest
 
+import fixturesUtils
+
 
 class testUsdMayaAdaptorGeom(unittest.TestCase):
 
@@ -33,10 +35,10 @@ class testUsdMayaAdaptorGeom(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
-        cmds.loadPlugin('pxrUsd')
+        cls.inputPath = fixturesUtils.setUpClass(__file__)
 
-        usdFile = os.path.abspath('UsdAttrs.usda')
+        usdFile = os.path.join(cls.inputPath, 'UsdMayaAdaptorGeomTest',
+            'UsdAttrs.usda')
         cmds.usdImport(file=usdFile, shadingMode='none')
 
     def testImportImageable(self):

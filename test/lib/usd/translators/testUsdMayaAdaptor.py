@@ -27,6 +27,8 @@ from maya import standalone
 
 import unittest
 
+import fixturesUtils
+
 
 class testUsdMayaAdaptor(unittest.TestCase):
     @classmethod
@@ -35,7 +37,7 @@ class testUsdMayaAdaptor(unittest.TestCase):
         # We are testing that the Plug-based lookup mechanism correctly
         # identifies and loads the necessary libraries when a schema adapter is
         # requested.
-        standalone.initialize('usd')
+        cls.inputPath = fixturesUtils.setUpClass(__file__, loadPlugin=False)
 
     @classmethod
     def tearDownClass(cls):

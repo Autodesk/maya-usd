@@ -24,16 +24,15 @@ from maya import standalone
 
 import unittest
 
+import fixturesUtils
+
 
 class testUsdMayaAdaptorUndoRedo(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
-
-        # We load the pxrUsd plugin here to ensure that the usdUndoHelperCmd
-        # has been registered. See the documentation on UsdMayaAdaptor for more
-        # detail.
-        cmds.loadPlugin('pxrUsd')
+        # We load the plugin here to ensure that the usdUndoHelperCmd has been
+        # registered. See the documentation on UsdMayaAdaptor for more detail.
+        cls.inputPath = fixturesUtils.setUpClass(__file__, loadPlugin=True)
 
     @classmethod
     def tearDownClass(cls):
