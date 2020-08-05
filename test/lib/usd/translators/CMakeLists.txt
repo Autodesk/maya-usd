@@ -51,6 +51,10 @@ set(TEST_SCRIPT_FILES
     testUsdExportImportRoundtripPreviewSurface.py
     testUsdImportSkeleton.py
     testUsdImportXforms.py
+    testUsdMayaAdaptor.py
+    testUsdMayaAdaptorGeom.py
+    testUsdMayaAdaptorMetadata.py
+    testUsdMayaAdaptorUndoRedo.py
 )
 
 add_custom_target(${TARGET_NAME} ALL)
