@@ -653,11 +653,10 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 
     MHWRender::MShaderInstance* shaderInstance = nullptr;
 
-    const auto rend = mat.nodes.rend();
-
     // MShaderInstance supports multiple connections between shaders on Maya 2018.7, 2019.3, 2020
     // and above.
 #if (MAYA_API_VERSION >= 20190300) || ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000))
+    const auto rend = mat.nodes.rend();
 
     // UsdImagingMaterialAdapter has walked the shader graph and emitted nodes
     // and relationships in topological order to avoid forward-references, thus
