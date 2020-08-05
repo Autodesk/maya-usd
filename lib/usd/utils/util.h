@@ -53,6 +53,10 @@ namespace MayaUsdUtils {
     MAYA_USD_UTILS_PUBLIC
     bool hasSpecs(const UsdPrim&);
 
+    //! Returns the layer in composition arc where HasSpecs is set to true
+    MAYA_USD_UTILS_PUBLIC
+    std::vector<SdfLayerHandle> layerInCompositionArcsWithSpec(const UsdPrim& prim);
+
     //! Convenience function for printing the list of queried composition arcs in order. 
     MAYA_USD_UTILS_PUBLIC
     void printCompositionQuery(const UsdPrim&, std::ostream&);

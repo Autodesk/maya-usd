@@ -4,6 +4,7 @@ set(TARGET_NAME MAYAUSD_TEST)
 set(TEST_SCRIPT_FILES
     testMayaUsdConverter.py
     testMayaUsdPythonImport.py
+    testMayaUsdLayerEditorCommands.py
 )
 
 if (MAYA_APP_VERSION VERSION_GREATER 2020)

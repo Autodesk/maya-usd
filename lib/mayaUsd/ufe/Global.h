@@ -38,5 +38,9 @@ MStatus finalize();
 MAYAUSD_CORE_PUBLIC
 Ufe::Rtid getUsdRunTimeId();
 
+//! Return the run-time ID allocated to Maya.
+MAYAUSD_CORE_PUBLIC
+Ufe::Rtid getMayaRunTimeId();
+
 } // namespace ufe
 } // namespace MayaUsd

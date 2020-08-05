@@ -32,7 +32,7 @@
 
 #include <mayaUsdUtils/util.h>
 
-#include "private/InPathChange.h"
+#include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -122,6 +122,7 @@ Ufe::SceneItem::Ptr UsdHierarchy::parent() const
 	return UsdSceneItem::create(fItem->path().pop(), fPrim.GetParent());
 }
 
+#if UFE_PREVIEW_VERSION_NUM < 2018
 Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 {
 	auto usdChild = std::dynamic_pointer_cast<UsdSceneItem>(child);
@@ -165,6 +166,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 	// FIXME  No idea how to get the child prim index yet.  PPT, 16-Aug-2018.
 	return Ufe::AppendedChild(ufeDstItem, ufeSrcPath, 0);
 }
+#endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #if UFE_PREVIEW_VERSION_NUM >= 2013
@@ -177,6 +179,23 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
         fItem, downcast(child), downcast(pos));
 }
 #endif
+
+#if UFE_PREVIEW_VERSION_NUM >= 2018
+
+Ufe::SceneItem::Ptr UsdHierarchy::insertChild(
+        const Ufe::SceneItem::Ptr& ,
+        const Ufe::SceneItem::Ptr& 
+)
+{
+    // Should be possible to implement trivially when support for returning the
+    // result of the parent command (MAYA-105278) is implemented.  For now,
+    // Ufe::Hierarchy::insertChildCmd() returns a base class
+    // Ufe::UndoableCommand::Ptr object, from which we can't retrieve the added
+    // child.  PPT, 13-Jul-2020.
+    return nullptr;
+}
+
+#endif // UFE_PREVIEW_VERSION_NUM
 
 #if UFE_PREVIEW_VERSION_NUM < 2017
 // Create a transform.
@@ -235,6 +254,22 @@ Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::Selection& selection, c
 Ufe::UndoableCommand::Ptr UsdHierarchy::createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
 	return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
+}
+
+#endif // UFE_PREVIEW_VERSION_NUM
+
+#if UFE_PREVIEW_VERSION_NUM >= 2018
+
+Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
+{
+    // Default parent for USD nodes is the pseudo-root of their stage, which is
+    // represented by the proxy shape.
+    auto path = fItem->path(); 
+#if !defined(NDEBUG)
+	assert(path.nbSegments() == 2);
+#endif
+    auto proxyShapePath = path.popSegment();
+    return createItem(proxyShapePath);
 }
 
 #endif // UFE_PREVIEW_VERSION_NUM
