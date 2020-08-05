@@ -66,13 +66,14 @@ private:
     UsdSceneItem::Ptr _ufeSrcItem;
     UsdSceneItem::Ptr _ufeDstItem;
 
+    Ufe::Path _ufeSrcPath;
+    Ufe::Path _ufeDstPath;
+
     SdfPath _usdSrcPath;
     SdfPath _usdDstPath;
 
     SdfLayerHandle _childLayer;
     SdfLayerHandle _parentLayer;
-
-    Ufe::Path _ufeDstPath;
 
 }; // UsdUndoInsertChildCommand
 
