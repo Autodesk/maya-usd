@@ -15,12 +15,14 @@
 # limitations under the License.
 #
 
+from pxr import Usd
+from pxr import UsdGeom
+
 from maya import cmds
 from maya import standalone
 
 import os
 import unittest
-from pxr import Usd, UsdGeom
 
 
 class testUsdMayaAdaptorGeom(unittest.TestCase):

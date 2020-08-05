@@ -15,10 +15,10 @@
 # limitations under the License.
 #
 
+import mayaUsd.lib as mayaUsdLib
+
 from pxr import Usd
 from pxr import UsdGeom
-
-import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
 from maya import standalone

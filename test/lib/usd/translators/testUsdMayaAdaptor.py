@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 import mayaUsd.lib as mayaUsdLib
 
 from pxr import Sdf
