@@ -36,13 +36,13 @@
 
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/utils/util.h>
 
 #include <mayaUsdUI/ui/USDImportDialog.h>
 #include <mayaUsdUI/ui/USDQtUtil.h>
 
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
-
 
 MAYAUSD_NS_DEF {
 
@@ -56,6 +56,11 @@ constexpr auto kClearDataFlag = "-cd";
 constexpr auto kClearDataFlagLong = "-clearData";
 constexpr auto kApplyToProxyFlag = "-ap";
 constexpr auto kApplyToProxyFlagLong = "-applyToProxy";
+
+constexpr auto kPrimCountFlag = "-pc";
+constexpr auto kPrimCountFlagLong = "-primCount";
+constexpr auto kSwitchedVariantCountFlag = "-swc";
+constexpr auto kSwitchedVariantCountFlagLong = "-switchedVariantCount";
 
 }
 
@@ -153,6 +158,20 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 			return MS::kSuccess;
 		}
 
+		if (argData.isFlagSet(kPrimCountFlag))
+		{
+			const ImportData& importData = ImportData::cinstance();
+			setResult(importData.primsInScopeCount());
+			return MS::kSuccess;
+		}
+
+		if (argData.isFlagSet(kSwitchedVariantCountFlag))
+		{
+			const ImportData& importData = ImportData::cinstance();
+			setResult(importData.switchedVariantCount());
+			return MS::kSuccess;
+		}
+
 		return MS::kInvalidParameter;
 	}
 
@@ -202,7 +221,7 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 			// Creating the View can pause Maya, usually only briefly but it's noticable, so we'll toggle the wait cursor to show that it's working.
 			QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-			std::unique_ptr<IUSDImportView> usdImportDialog(new USDImportDialog(assetPath.asChar(), &importData, usdQtUtil, MQtUtil::mainWindow()));
+			std::unique_ptr<USDImportDialog> usdImportDialog(new USDImportDialog(assetPath.asChar(), &importData, usdQtUtil, MQtUtil::mainWindow()));
 
 			QApplication::restoreOverrideCursor();
 
@@ -216,6 +235,9 @@ MStatus USDImportDialogCmd::doIt(const MArgList& args)
 				// the root prim path.
 				//importData.setStagePopulationMask(usdImportDialog->stagePopulationMask());
 				importData.setPrimVariantSelections(usdImportDialog->primVariantSelections());
+				
+				importData.setPrimsInScopeCount(usdImportDialog->primsInScopeCount());
+				importData.setSwitchedVariantCount(usdImportDialog->switchedVariantCount());
 
 				setResult(assetPath);
 			}
@@ -234,6 +256,9 @@ MSyntax USDImportDialogCmd::createSyntax()
 	syntax.addFlag(kPrimPathFlag, kPrimPathFlagLong);
 	syntax.addFlag(kClearDataFlag, kClearDataFlagLong);
 	syntax.addFlag(kApplyToProxyFlag, kApplyToProxyFlagLong);
+	syntax.addFlag(kPrimCountFlag, kPrimCountFlagLong);
+	syntax.addFlag(kSwitchedVariantCountFlag, kSwitchedVariantCountFlagLong);
+
 	syntax.setObjectType(MSyntax::kStringObjects, 0, 1);
 	return syntax;
 }

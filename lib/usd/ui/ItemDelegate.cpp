@@ -118,6 +118,7 @@ void ItemDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, cons
 		if (nullptr != treeItem)
 		{
 			treeItem->setVariantSelectionModified();
+			Q_EMIT variantModified();
 		}
 	}
 

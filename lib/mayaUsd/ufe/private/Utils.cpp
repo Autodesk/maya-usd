@@ -162,9 +162,13 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
         // if we have more than 2 layers that contributes to the final composed prim
         if (layers.size() > 1) {
             std::string layerDisplayNames;
-            for (auto layer : layers) {
-                layerDisplayNames.append("[" + layer->GetDisplayName() + "]" + ",");
-            }
+
+            // skip the the first arc which is PcpArcTypeRoot
+            // we are interested in all the arcs after root
+            std::for_each(std::next(layers.begin()),layers.end(), [&](const auto& it) {
+                 layerDisplayNames.append("[" + it->GetDisplayName() + "]" + ",");
+            });
+
             layerDisplayNames.pop_back();
             std::string err = TfStringPrintf("Cannot %s [%s]. It has definitions or opinions on other layers. Opinions exist in %s",
                                              commandName.c_str(),

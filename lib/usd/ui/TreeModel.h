@@ -86,8 +86,18 @@ private:
 	void uncheckEnableTree();
 	void checkEnableItem(TreeItem* item);
 
+	void updateCheckedItemCount() const;
+	void countCheckedItems(const QModelIndex &parent, int& nbChecked, int& nbVariantsModified) const;
+
 	void setParentsCheckState(const QModelIndex &child, TreeItem::CheckState state);
 	void setChildCheckState(const QModelIndex &parent, TreeItem::CheckState state);
+
+Q_SIGNALS:
+	void checkedStateChanged(int nbChecked) const;
+	void modifiedVariantCountChanged(int nbModified) const;
+
+public Q_SLOTS:
+	void updateModifiedVariantCount() const;
 
 private:
 	// Extra import data, if any to set the initial state of dialog from.

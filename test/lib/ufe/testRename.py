@@ -132,9 +132,9 @@ class RenameTestCase(unittest.TestCase):
         # get the USD stage
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
-        # set the edit target to the root layer
-        stage.SetEditTarget(stage.GetRootLayer())
+        # by default edit target is set to the Rootlayer.
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
         self.assertTrue(stage.GetRootLayer().GetPrimAtPath("/TreeBase"))
 
         # get default prim
@@ -199,10 +199,9 @@ class RenameTestCase(unittest.TestCase):
 
         # check GetLayerStack behavior
         self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
-        # set the edit target to the root layer
-        stage.SetEditTarget(stage.GetRootLayer())
+        # by default edit target is set to the Rootlayer.
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
         # rename
@@ -263,7 +262,7 @@ class RenameTestCase(unittest.TestCase):
 
         # check GetLayerStack behavior
         self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
         # expect the exception happens
         with self.assertRaises(RuntimeError):
@@ -336,8 +335,7 @@ class RenameTestCase(unittest.TestCase):
         # get the USD stage
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
-        # set the edit target to the root layer
-        stage.SetEditTarget(stage.GetRootLayer())
+        # by default edit target is set to the Rootlayer.
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
         # rename `/TreeBase/trunk` to `/TreeBase/leavesXform`
@@ -372,12 +370,7 @@ class RenameTestCase(unittest.TestCase):
         # get the USD stage
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
-        # check GetLayerStack behavior
-        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
-
-        # set the edit target to the root layer
-        stage.SetEditTarget(stage.GetRootLayer())
+        # by default edit target is set to the Rootlayer.
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
         # rename with special chars
