@@ -479,6 +479,20 @@ private:
 };
 
 //----------------------------------------------------------------------------------------------------------------------
+/// \brief  used to prepare python translator context on creation and push it into stack, and pop
+/// from stack on destruction. \ingroup   translators
+//----------------------------------------------------------------------------------------------------------------------
+class TranslatorContextSetterCtx
+{
+public:
+    TranslatorContextSetterCtx(TranslatorContext::RefPtr context)
+    {
+        TranslatorManufacture::preparePythonTranslators(context);
+    }
+    ~TranslatorContextSetterCtx() { TranslatorManufacture::popPythonTranslatorContexts(); }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
 /// \brief  the factory interface, used to create an instance of a particular translator type
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
