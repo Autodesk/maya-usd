@@ -627,6 +627,12 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
         selectUfeItems(ufeItemParent)
         
+        # We are going to manipulate animated prim. Let's make sure this opinion can be authored
+        # since currently UFE will author attribute values at default time which won't override
+        # attributes with time sampled data. Switching to session layer allows such manipulation
+        # to override time sampled data from root layer.
+        stage.SetEditTarget(stage.GetSessionLayer())
+
         # Current limitation requires access plugs to be created before we start manipulating and keying
         translatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
         rotatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
@@ -738,6 +744,12 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         # Get UFE item and select it
         ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
         selectUfeItems(ufeItemParent)
+
+        # We are going to manipulate animated prim. Let's make sure this opinion can be authored
+        # since currently UFE will author attribute values at default time which won't override
+        # attributes with time sampled data. Switching to session layer allows such manipulation
+        # to override time sampled data from root layer.
+        stage.SetEditTarget(stage.GetSessionLayer())
         
         # Current limitation requires access plugs to be created before we start manipulating and keying
         translatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')

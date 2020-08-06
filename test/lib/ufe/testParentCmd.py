@@ -89,11 +89,6 @@ class ParentCmdTestCase(unittest.TestCase):
         stage = mayaUsd.ufe.getStage(str(shapeSegment))
 
         # check GetLayerStack behavior
-        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
-
-        # set the edit target to the root layer
-        stage.SetEditTarget(stage.GetRootLayer())
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
         # The cube is not a child of the cylinder.
@@ -184,11 +179,6 @@ class ParentCmdTestCase(unittest.TestCase):
         stage = mayaUsd.ufe.getStage(str(shapeSegment))
 
         # check GetLayerStack behavior
-        self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
-        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
-
-        # set the edit target to the root layer
-        stage.SetEditTarget(stage.GetRootLayer())
         self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
         # The cube is not a child of the cylinder.
@@ -275,11 +265,6 @@ class ParentCmdTestCase(unittest.TestCase):
             stage = mayaUsd.ufe.getStage(str(shapeSegment))
 
             # check GetLayerStack behavior
-            self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
-            self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
-
-            # set the edit target to the root layer
-            stage.SetEditTarget(stage.GetRootLayer())
             self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
             # The sphere is not a child of the proxy shape.
@@ -365,11 +350,6 @@ class ParentCmdTestCase(unittest.TestCase):
             stage = mayaUsd.ufe.getStage(str(shapeSegment))
 
             # check GetLayerStack behavior
-            self.assertEqual(stage.GetLayerStack()[0], stage.GetSessionLayer())
-            self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetSessionLayer())
-
-            # set the edit target to the root layer
-            stage.SetEditTarget(stage.GetRootLayer())
             self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
 
             # The sphere is not a child of the cylinder
