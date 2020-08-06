@@ -661,7 +661,8 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
     // and relationships in topological order to avoid forward-references, thus
     // we can run a reverse iteration to avoid connecting a fragment before any
     // of its downstream fragments.
-    for (auto rit = mat.nodes.rbegin(), const auto rend = mat.nodes.rend(); rit != rend; rit++) {
+    const auto rend = mat.nodes.rend();
+    for (auto rit = mat.nodes.rbegin(); rit != rend; rit++) {
         const HdMaterialNode& node = *rit;
 
         const MString nodeId = node.identifier.GetText();
@@ -740,7 +741,8 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
     // and relationships in topological order to avoid forward-references, thus
     // we can run a reverse iteration to avoid connecting a fragment before any
     // of its downstream fragments.
-    for (auto rit = mat.nodes.rbegin(), const auto rend = mat.nodes.rend(); rit != rend; rit++) {
+    const auto rend = mat.nodes.rend();
+    for (auto rit = mat.nodes.rbegin(); rit != rend; rit++) {
         const HdMaterialNode& node = *rit;
 
         const MString nodeId = node.identifier.GetText();
