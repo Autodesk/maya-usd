@@ -146,7 +146,7 @@ def Run(context, cmd):
                 if l != "":
                     # Avoid "UnicodeEncodeError: 'ascii' codec can't encode 
                     # character" errors by serializing utf8 byte strings.
-                    logfile.write(l.encode("utf8"))
+                    logfile.write(str(l.encode("utf8")))
                     PrintCommandOutput(l)
                 elif p.poll() is not None:
                     break
