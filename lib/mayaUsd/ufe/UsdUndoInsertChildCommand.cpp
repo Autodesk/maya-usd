@@ -56,7 +56,6 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
                                                      const UsdSceneItem::Ptr& child,
                                                      const UsdSceneItem::Ptr& /* pos */) 
     : Ufe::UndoableCommand()
-    , _stage(child->prim().GetStage())
     , _ufeSrcItem(child)
     , _ufeDstItem(nullptr)
     , _ufeSrcPath(child->path())
@@ -85,12 +84,12 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
     }
     _usdDstPath = parent->prim().GetPath().AppendChild(TfToken(childName));
 
-    _childLayer = _stage->GetEditTarget().GetLayer();
+    _childLayer = child->prim().GetStage()->GetEditTarget().GetLayer();
 
     // If parent prim is the pseudo-root, no def primSpec will be found, so
     // just use the edit target layer.
     _parentLayer = parentPrim.IsPseudoRoot() 
-        ? _stage->GetEditTarget().GetLayer() 
+        ? parent->prim().GetStage()->GetEditTarget().GetLayer() 
         : MayaUsdUtils::defPrimSpecLayer(parentPrim);
 }
 
@@ -124,8 +123,9 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
         // remove all scene description for the given path and 
         // its subtree in the current UsdEditTarget 
         {
-            UsdEditContext ctx(_stage, _childLayer);
-            status = _stage->RemovePrim(_usdSrcPath);
+            auto stage = _ufeSrcItem->prim().GetStage();
+            UsdEditContext ctx(stage, _childLayer);
+            status = stage->RemovePrim(_usdSrcPath);
         }
 
         if (status) {
@@ -149,8 +149,9 @@ bool UsdUndoInsertChildCommand::insertChildUndo()
         // remove all scene description for the given path and 
         // its subtree in the current UsdEditTarget
         {
-            UsdEditContext ctx(_stage, _parentLayer);
-            status = _stage->RemovePrim(_usdDstPath);
+            auto stage = _ufeDstItem->prim().GetStage();
+            UsdEditContext ctx(stage, _parentLayer);
+            status = stage->RemovePrim(_usdDstPath);
         }
 
         if (status) {

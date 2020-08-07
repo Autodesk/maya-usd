@@ -61,8 +61,6 @@ private:
     bool insertChildRedo();
     bool insertChildUndo();
 
-    UsdStageWeakPtr _stage;
-
     UsdSceneItem::Ptr _ufeSrcItem;
     UsdSceneItem::Ptr _ufeDstItem;
 
