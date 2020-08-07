@@ -176,7 +176,13 @@ void HdMayaProxyAdapter::_OnStageSet(const MayaUsdProxyStageSetNotice& notice)
                 "(ProxyShape: "
                 "%s)\n",
                 GetDagPath().partialPathName().asChar());
+
         CreateUsdImagingDelegate();
+        auto stage = _proxy->getUsdStage();
+        if (_usdDelegate && stage) {
+            _usdDelegate->Populate(stage->GetPseudoRoot());
+            _isPopulated = true;
+        }
     }
 }
 

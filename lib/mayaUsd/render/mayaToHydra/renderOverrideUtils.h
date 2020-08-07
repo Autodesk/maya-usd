@@ -16,32 +16,15 @@
 #ifndef MTOH_VIEW_OVERRIDE_UTILS_H
 #define MTOH_VIEW_OVERRIDE_UTILS_H
 
+#include <pxr/pxr.h>
+#include <maya/MViewport2Renderer.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaSceneRender : public MHWRender::MSceneRender {
+class HdMayaPreRender : public MHWRender::MSceneRender {
 public:
-    explicit HdMayaSceneRender(const MString& name, bool drawSelectionOverlay)
-        : MHWRender::MSceneRender(name),
-          _drawSelectionOverlay(drawSelectionOverlay) {}
-
-    MUint64 getObjectTypeExclusions() override {
-        return _drawSelectionOverlay
-                   ? MHWRender::MSceneRender::getObjectTypeExclusions()
-                   : ~(MHWRender::MFrameContext::kExcludeSelectHandles |
-                       MHWRender::MFrameContext::kExcludeCameras |
-                       MHWRender::MFrameContext::kExcludeDimensions |
-                       MHWRender::MFrameContext::kExcludeLights |
-                       MHWRender::MFrameContext::kExcludeLocators |
-                       MHWRender::MFrameContext::kExcludeGrid);
-    }
-
-    MSceneFilterOption renderFilterOverride() override {
-        return _drawSelectionOverlay
-                   ? kRenderPreSceneUIItems
-                   : MHWRender::MSceneRender::renderFilterOverride();
-    }
-
-    MHWRender::MClearOperation& clearOperation() override {
+    explicit HdMayaPreRender(const MString& name)
+        : MHWRender::MSceneRender(name) {
         auto* renderer = MHWRender::MRenderer::theRenderer();
         const auto gradient = renderer->useGradient();
         const auto color1 = renderer->clearColor();
@@ -53,31 +36,39 @@ public:
         mClearOperation.setClearColor(c1);
         mClearOperation.setClearColor2(c2);
         mClearOperation.setClearGradient(gradient);
-        return mClearOperation;
-    }
-
-    bool _drawSelectionOverlay = false;
-};
-
-class HdMayaManipulatorRender : public MHWRender::MSceneRender {
-public:
-    explicit HdMayaManipulatorRender(const MString& name)
-        : MHWRender::MSceneRender(name) {}
-
-    MUint64 getObjectTypeExclusions() override {
-        // kExcludeHoldOuts is used so that camera-guides are rendered here.
-        // kExcludeCVs | kExcludeNurbsCurves are here because HdMayaSceneRender::getObjectTypeExclusions return is dynamic
-        // XXX: Should curves be an mtoh setting as to whether to push them through to the delegate or Maya ?
-        return ~(kExcludeManipulators | kExcludeCVs | kExcludeNurbsCurves | kExcludeHoldOuts);
-    }
-
-    MHWRender::MClearOperation& clearOperation() override {
-        mClearOperation.setMask(MHWRender::MClearOperation::kClearNone);
-        return mClearOperation;
     }
 
     MSceneFilterOption renderFilterOverride() override {
-        return kRenderPostSceneUIItems;
+        return kRenderPreSceneUIItems;
+    }
+
+    MHWRender::MClearOperation& clearOperation() override {
+        return mClearOperation;
+    }
+};
+
+class HdMayaPostRender : public MHWRender::MSceneRender {
+public:
+    explicit HdMayaPostRender(const MString& name)
+        : MHWRender::MSceneRender(name) {
+        mClearOperation.setMask(MHWRender::MClearOperation::kClearNone);
+    }
+
+    MUint64 getObjectTypeExclusions() override {
+        // FIXME:
+        //   1. kExcludePluginShapes is here so as to not re-draw UsdProxy shapes
+        //      ...but that means no plugin shapes would be drawn.
+        //   2. Curves as controls and curves as a renderitem need to be delineated
+        //
+        return MFrameContext::kExcludeMeshes | MFrameContext::kExcludePluginShapes;
+    }
+
+    MSceneFilterOption renderFilterOverride() override {
+        return MSceneFilterOption(kRenderShadedItems | kRenderPostSceneUIItems);
+    }
+
+    MHWRender::MClearOperation& clearOperation() override {
+        return mClearOperation;
     }
 };
 

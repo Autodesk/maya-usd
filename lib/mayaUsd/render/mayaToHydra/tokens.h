@@ -30,8 +30,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 // clang-format off
 #define MTOH_TOKENS \
     ((HdStormRendererPlugin, HD_STORM_PLUGIN_NAME)) \
-    (UseHdSt) \
-    (UseVp2)  \
     (mtohMaximumShadowMapResolution)
 // clang-format on
 

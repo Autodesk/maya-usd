@@ -31,7 +31,7 @@ namespace MayaUsdUtils {
 
     //! Return a list of layers in no strength order that can contribute to the argument prim.
     MAYA_USD_UTILS_PUBLIC
-    std::set<SdfLayerHandle> layersWithContribution(const UsdPrim&);
+    std::vector<SdfLayerHandle> layersWithContribution(const UsdPrim&);
 
     //! Check if a layer has any contributions towards the argument prim.
     MAYA_USD_UTILS_PUBLIC
@@ -52,6 +52,10 @@ namespace MayaUsdUtils {
     //! Returns true if the target node has any specs to contribute to the composed prim.
     MAYA_USD_UTILS_PUBLIC
     bool hasSpecs(const UsdPrim&);
+
+    //! Returns the layer in composition arc where HasSpecs is set to true
+    MAYA_USD_UTILS_PUBLIC
+    std::vector<SdfLayerHandle> layerInCompositionArcsWithSpec(const UsdPrim& prim);
 
     //! Convenience function for printing the list of queried composition arcs in order. 
     MAYA_USD_UTILS_PUBLIC

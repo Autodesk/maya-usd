@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from __future__ import print_function
 
 from distutils.spawn import find_executable
@@ -145,7 +146,7 @@ def Run(context, cmd):
                 if l != "":
                     # Avoid "UnicodeEncodeError: 'ascii' codec can't encode 
                     # character" errors by serializing utf8 byte strings.
-                    logfile.write(l.encode("utf8"))
+                    logfile.write(str(l.encode("utf8")))
                     PrintCommandOutput(l)
                 elif p.poll() is not None:
                     break
@@ -558,7 +559,6 @@ if __name__ == "__main__":
       Build directory           {buildDir}
       Install directory         {instDir}
       Variant                   {buildVariant}
-      Python 3:                 {enablePython3}
       Python Debug              {debugPython}
       CMake generator           {cmakeGenerator}"""
 
@@ -589,7 +589,6 @@ if __name__ == "__main__":
         ctestArgs=context.ctestArgs,
         buildVariant=BuildVariant(context),
         debugPython=("On" if context.debugPython else "Off"),
-        enablePython3=("On" if Python3() else "Off"),
         cmakeGenerator=("Default" if not context.cmakeGenerator
                         else context.cmakeGenerator)
     )

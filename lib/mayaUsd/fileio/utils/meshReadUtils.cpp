@@ -51,8 +51,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdMayaMeshColorSetTokens,
-    PXRUSDMAYA_MESH_COLOR_SET_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaMeshPrimvarTokens,
+    PXRUSDMAYA_MESH_PRIMVAR_TOKENS);
 
 // These tokens are supported Maya attributes used for Mesh surfaces
 TF_DEFINE_PRIVATE_TOKENS(
@@ -181,7 +181,7 @@ namespace
     }
 
     bool 
-    assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn)
+    assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bool hasDefaultUVSet)
     {
         const TfToken& primvarName = primvar.GetPrimvarName();
 
@@ -243,11 +243,25 @@ namespace
 
         MStatus status{MS::kSuccess};
         MString uvSetName(primvarName.GetText());
+        bool createUVSet = true;
+
         if (primvarName == UsdUtilsGetPrimaryUVSetName()) {
             // We assume that the primary USD UV set maps to Maya's default 'map1'
             // set which always exists, so we shouldn't try to create it.
-            uvSetName = "map1";
-        } else {
+            uvSetName = UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText();
+            createUVSet = false;
+        } else if (!hasDefaultUVSet) {
+            // If map1 still exists, we rename and re-use it:
+            MStringArray uvSetNames;
+            meshFn.getUVSetNames(uvSetNames);
+            if (uvSetNames[0] == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()) {
+                meshFn.renameUVSet(
+                    UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText(), uvSetName);
+                createUVSet = false;
+            }
+        }
+
+        if (createUVSet) {
             status = meshFn.createUVSet(uvSetName);
             if (status != MS::kSuccess) {
                 TF_WARN("Unable to create UV set '%s' for mesh: %s",
@@ -321,17 +335,17 @@ namespace
         // Note that if BOTH displayColor and displayOpacity are authored, they will
         // be imported as separate color sets. We do not attempt to combine them
         // into a single color set.
-        if (primvarName == UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName &&
+        if (primvarName == UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName &&
                 typeName == SdfValueTypeNames->FloatArray) {
             if (!UsdMayaRoundTripUtil::IsAttributeUserAuthored(mesh.GetDisplayColorPrimvar())) {
-                colorSetName = UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText();
+                colorSetName = UsdMayaMeshPrimvarTokens->DisplayColorColorSetName.GetText();
             }
         }
 
         // We'll need to convert colors from linear to display if this color set is
         // for display colors.
         const bool isDisplayColor =
-            (colorSetName == UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetText());
+            (colorSetName == UsdMayaMeshPrimvarTokens->DisplayColorColorSetName.GetText());
 
         // Get the raw data before applying any indexing. We'll only populate one
         // of these arrays based on the primvar's typeName, and we'll also set the
@@ -505,7 +519,7 @@ namespace
                 const MString colorSetName = colorSetNames[i];
 
                 if (std::string(colorSetName.asChar())
-                        == UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetString()) 
+                        == UsdMayaMeshPrimvarTokens->DisplayColorColorSetName.GetString()) 
                 {
                     const auto csRep = meshFn.getColorRepresentation(colorSetName);
 
@@ -608,9 +622,26 @@ UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
 
     // GETTING PRIMVARS
     const std::vector<UsdGeomPrimvar> primvars = mesh.GetPrimvars();
-    TF_FOR_ALL(iter, primvars) 
+
+    // Maya always has a map1 UV set. We need to find out if there is any stream in the file that
+    // will use that slot. If not, the first texcoord stream to load will replace the default map1
+    // stream.
+    bool hasDefaultUVSet = false;
+    for (const UsdGeomPrimvar&  primvar: primvars)
     {
-        const UsdGeomPrimvar& primvar = *iter;
+        const SdfValueTypeName typeName = primvar.GetTypeName();
+        if (typeName == SdfValueTypeNames->TexCoord2fArray
+            || (UsdMayaReadUtil::ReadFloat2AsUV() && typeName == SdfValueTypeNames->Float2Array)) {
+            const TfToken fullName = primvar.GetPrimvarName();
+            if (fullName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName
+                || fullName == UsdUtilsGetPrimaryUVSetName()) {
+                hasDefaultUVSet = true;
+            }
+        }
+    }
+
+    for (const UsdGeomPrimvar& primvar: primvars)
+    {
         const TfToken name = primvar.GetBaseName();
         const TfToken fullName = primvar.GetPrimvarName();
         const SdfValueTypeName typeName = primvar.GetTypeName();
@@ -628,8 +659,8 @@ UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
         // authored by the user, for example if it was generated by shader
         // values and not an authored colorset/entity.
         // If it was not really authored, we skip the primvar.
-        if (name == UsdMayaMeshColorSetTokens->DisplayColorColorSetName ||
-              name == UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName) {
+        if (name == UsdMayaMeshPrimvarTokens->DisplayColorColorSetName ||
+              name == UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName) {
           if (!UsdMayaRoundTripUtil::IsAttributeUserAuthored(primvar)) {
               continue;
           }
@@ -646,7 +677,7 @@ UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
           // Otherwise, if env variable for reading Float2
           // as uv sets is turned on, we assume that Float2Array primvars
           // are UV sets.
-          if (!assignUVSetPrimvarToMesh(primvar, meshFn)) {
+          if (!assignUVSetPrimvarToMesh(primvar, meshFn, hasDefaultUVSet)) {
               TF_WARN("Unable to retrieve and assign data for UV set <%s> on "
                       "mesh <%s>",
                       name.GetText(),

@@ -23,17 +23,6 @@
    <bool>false</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QMenuBar" name="menuBar">
-     <widget class="QMenu" name="menuEdit">
-      <property name="title">
-       <string>Edit</string>
-      </property>
-      <addaction name="actionReset_File"/>
-     </widget>
-     <addaction name="menuEdit"/>
-    </widget>
-   </item>   
    <item row="1" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_4">
      <property name="topMargin">
@@ -64,34 +53,7 @@
      </item>
     </layout>
    </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="selectPrims">
-     <property name="text">
-      <string>Select the prim(s) you'd like to import. Switch variants accordingly.</string>
-     </property>
-    </widget>
-   </item>   
-   <item row="3" column="0">
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QTreeView" name="treeView">
-       <property name="autoFillBackground">
-        <bool>true</bool>
-       </property>
-       <property name="editTriggers">
-        <set>QAbstractItemView::NoEditTriggers</set>
-       </property>
-       <property name="selectionMode">
-        <enum>QAbstractItemView::ExtendedSelection</enum>
-       </property>
-       <property name="uniformRowHeights">
-        <bool>false</bool>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
-   <item row="4" column="0">
+   <item row="6" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <property name="topMargin">
       <number>7</number>
@@ -146,6 +108,113 @@
      </item>
     </layout>
    </item>
+   <item row="3" column="0">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QTreeView" name="treeView">
+       <property name="autoFillBackground">
+        <bool>true</bool>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="selectionMode">
+        <enum>QAbstractItemView::ExtendedSelection</enum>
+       </property>
+       <property name="uniformRowHeights">
+        <bool>false</bool>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="4" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_2">
+       <property name="text">
+        <string>Total Number of Prims in Scope:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="nbPrimsInScopeLabel">
+       <property name="text">
+        <string>123</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="0" column="0">
+    <widget class="QMenuBar" name="menuBar">
+     <widget class="QMenu" name="menuEdit">
+      <property name="title">
+       <string>Edit</string>
+      </property>
+      <addaction name="actionReset_File"/>
+     </widget>
+     <widget class="QMenu" name="menuHelp">
+      <property name="title">
+       <string>Help</string>
+      </property>
+      <addaction name="actionHelp_on_Hierarchy_View"/>
+     </widget>
+     <addaction name="menuEdit"/>
+     <addaction name="menuHelp"/>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="selectPrims">
+     <property name="text">
+      <string>Select the prim(s) you'd like to import. Switch variants accordingly.</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout_5">
+     <item>
+      <spacer name="horizontalSpacer_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QLabel" name="label_3">
+       <property name="text">
+        <string>Variants Switched in Scope:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QLabel" name="nbVariantsChangedLabel">
+       <property name="text">
+        <string>12</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
   </layout>
   <action name="actionEdit">
    <property name="text">
@@ -155,6 +224,11 @@
   <action name="actionReset_File">
    <property name="text">
     <string>Reset File</string>
+   </property>
+  </action>
+  <action name="actionHelp_on_Hierarchy_View">
+   <property name="text">
+    <string>Help on Hierarchy View</string>
    </property>
   </action>
  </widget>

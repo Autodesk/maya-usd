@@ -260,18 +260,18 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
 
         bool isDisplayColor = false;
 
-        if (colorSetName == UsdMayaMeshColorSetTokens->DisplayColorColorSetName.GetString()) {
+        if (colorSetName == UsdMayaMeshPrimvarTokens->DisplayColorColorSetName.GetString()) {
             if (!_GetExportArgs().exportDisplayColor) {
                 continue;
             }
             isDisplayColor=true;
         }
 
-        if (colorSetName == UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName.GetString()) {
+        if (colorSetName == UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetString()) {
             TF_WARN("Mesh \"%s\" has a color set named \"%s\", "
                 "which is a reserved Primvar name in USD. Skipping...",
                 finalMesh.fullPathName().asChar(),
-                UsdMayaMeshColorSetTokens->DisplayOpacityColorSetName
+                UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName
                     .GetText());
             continue;
         }

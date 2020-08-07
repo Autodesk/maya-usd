@@ -64,7 +64,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdS
 
         // The type of prim we were asked to create.
         // Note: "Def" means create typeless prim.
-        _primToken = (type.empty() || type == "Def") ? TfToken() : TfToken(name);
+        _primToken = (type.empty() || type == "Def") ? TfToken() : TfToken(type);
     }
 }
 
