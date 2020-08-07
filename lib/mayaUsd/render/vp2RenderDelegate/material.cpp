@@ -653,8 +653,6 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 
     MHWRender::MShaderInstance* shaderInstance = nullptr;
 
-    const auto rend = mat.nodes.rend();
-
     // MShaderInstance supports multiple connections between shaders on Maya 2018.7, 2019.3, 2020
     // and above.
 #if (MAYA_API_VERSION >= 20190300) || ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000))
@@ -663,6 +661,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
     // and relationships in topological order to avoid forward-references, thus
     // we can run a reverse iteration to avoid connecting a fragment before any
     // of its downstream fragments.
+    const auto rend = mat.nodes.rend();
     for (auto rit = mat.nodes.rbegin(); rit != rend; rit++) {
         const HdMaterialNode& node = *rit;
 
@@ -742,6 +741,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
     // and relationships in topological order to avoid forward-references, thus
     // we can run a reverse iteration to avoid connecting a fragment before any
     // of its downstream fragments.
+    const auto rend = mat.nodes.rend();
     for (auto rit = mat.nodes.rbegin(); rit != rend; rit++) {
         const HdMaterialNode& node = *rit;
 
