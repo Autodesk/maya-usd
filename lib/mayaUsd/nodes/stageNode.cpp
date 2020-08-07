@@ -128,7 +128,7 @@ UsdMayaStageNode::compute(const MPlug& plug, MDataBlock& dataBlock)
             usdStage = UsdStage::Open(rootLayer,
                                       ArGetResolver().GetCurrentContext());
 
-            usdStage->SetEditTarget(usdStage->GetSessionLayer());
+            usdStage->SetEditTarget(usdStage->GetRootLayer());
         }
 
         SdfPath primPath;

@@ -199,7 +199,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
                 rootLayer.subLayerPaths.clear()
             if testPass == DISCARD:
                 # save and load a stage
-                testUsdFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="dummy", delete=False)
+                testUsdFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="dummy", delete=False, mode="w")
                 testUsdFile.write(DUMMY_FILE_TEXT)
                 testUsdFile.close()
 
