@@ -159,7 +159,7 @@ class ContextOpsTestCase(unittest.TestCase):
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrim only available in UFE preview version 0.2.15 and greater')
     def testAddNewPrim(self):
         # Create a ContextOps interface for the proxy shape.
-        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage|stageShape")])
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage1|stageShape1")])
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
 
