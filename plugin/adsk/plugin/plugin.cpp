@@ -53,6 +53,13 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
+#if defined(MAYAUSD_VERSION)
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#else
+#error "MAYAUSD_VERSION is not defined"
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -78,7 +85,7 @@ MAYAUSD_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
     MStatus status;
-    MFnPlugin plugin(obj, "Autodesk", "1.0", "Any");
+    MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
 
     status = plugin.registerFileTranslator(
         "USD Import",
