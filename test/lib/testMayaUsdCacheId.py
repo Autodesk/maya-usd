@@ -189,5 +189,31 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         cmds.file(new=True, force=True)
         cmds.file(self.filePath, open=True)
 
-        # Check that the stageCacheId reset to -1 
+        # Check that the stageCacheId reset to -1
         self.assertEqual(cmds.getAttr('{}.stageCacheId'.format(shapeNode)), -1)
+
+    def testCacheIdDisconnect(self):
+        # Create the 2 Proxy nodes and load a stage from file
+        shapeNodeA = cmds.createNode('mayaUsdProxyShape')
+        cmds.setAttr('{}.filePath'.format(shapeNodeA),
+                     self.filePath,
+                     type='string')
+        shapeStageA = mayaUsdLib.GetPrim(shapeNodeA).GetStage()
+        shapeNodeB = cmds.createNode('mayaUsdProxyShape')
+
+        #Connect them
+        cmds.connectAttr('{}.outStageCacheId'.format(shapeNodeA),
+                         '{}.stageCacheId'.format(shapeNodeB))
+
+        shapeStageB = mayaUsdLib.GetPrim(shapeNodeA).GetStage()
+
+        # Check they are the same
+        self.assertEqual(shapeStageA, shapeStageB)
+
+        # Diconnect them
+        cmds.disconnectAttr('{}.outStageCacheId'.format(shapeNodeA),
+                            '{}.stageCacheId'.format(shapeNodeB))
+
+        # Check that the stageCacheId reset to -1
+        self.assertEqual(cmds.getAttr('{}.stageCacheId'.format(shapeNodeB)),
+                         -1)
