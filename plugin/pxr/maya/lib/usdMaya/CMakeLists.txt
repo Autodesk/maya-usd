@@ -77,9 +77,6 @@ pxr_test_scripts(
         testenv/testUsdImportAsAssemblies.py
         testenv/testUsdImportNestedAssemblyAnimation.py
         testenv/testUsdTranslateTypelessDefs.py
-        testenv/testUsdMayaAdaptor.py
-        testenv/testUsdMayaAdaptorGeom.py
-        testenv/testUsdMayaAdaptorMetadata.py
         testenv/testUsdMayaBlockSceneModificationContext.py
         testenv/testUsdMayaDiagnosticDelegate.py
         testenv/testUsdMayaGetVariantSetSelections.py
@@ -232,50 +229,6 @@ pxr_register_test(testUsdTranslateTypelessDefs
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdTranslateTypelessDefs"
     TESTENV testUsdTranslateTypelessDefs
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_register_test(testUsdMayaAdaptor
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaAdaptor"
-    TESTENV testUsdMayaAdaptor
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_install_test_dir(
-    SRC testenv/UsdMayaAdaptorGeomTest
-    DEST testUsdMayaAdaptorGeom
-)
-pxr_register_test(testUsdMayaAdaptorGeom
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaAdaptorGeom"
-    TESTENV testUsdMayaAdaptorGeom
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_install_test_dir(
-    SRC testenv/UsdMayaAdaptorMetadataTest
-    DEST testUsdMayaAdaptorMetadata
-)
-pxr_register_test(testUsdMayaAdaptorMetadata
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaAdaptorMetadata"
-    TESTENV testUsdMayaAdaptorMetadata
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
