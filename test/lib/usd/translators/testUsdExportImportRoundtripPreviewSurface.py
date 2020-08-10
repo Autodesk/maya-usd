@@ -130,8 +130,14 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                          [(0.125, 0.25, 0.75)])
         self.assertEqual(cmds.getAttr("file2.defaultColor"),
                          [(0.5, 0.25, 0.125)])
-        self.assertEqual(cmds.getAttr("file2.fileTextureName").lower(),
-                         cmds.getAttr(file_node+".fileTextureName").lower())
+        original_path = cmds.getAttr(file_node+".fileTextureName")
+        imported_path = cmds.getAttr("file2.fileTextureName")
+        # imported path will be relative:
+        self.assertTrue(imported_path.startswith(".."))
+        # Compare remainder of paths:
+        imported_path = imported_path[2:]
+        original_path = original_path[-len(imported_path):]
+        self.assertEqual(imported_path, original_path)
         self.assertEqual(cmds.getAttr("place2dTexture.wrapU"), 0)
         self.assertEqual(cmds.getAttr("place2dTexture.wrapV"), 1)
 

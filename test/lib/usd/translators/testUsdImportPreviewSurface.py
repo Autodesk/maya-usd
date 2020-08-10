@@ -43,10 +43,6 @@ class testUsdImportPreviewSurface(unittest.TestCase):
         Tests that a nested file node with a reference file path resolves
         correctly.
         """
-        plugin_name = "mayaUsdPlugin"
-        if not cmds.pluginInfo(plugin_name, query=True, loaded=True):
-            cmds.loadPlugin(plugin_name)
-
         cmds.file(f=True, new=True)
 
         usd_path = os.path.join(self.test_dir, "world.usda")
@@ -55,35 +51,25 @@ class testUsdImportPreviewSurface(unittest.TestCase):
                   namespace="Test", pr=True, importTimeRange="combine",
                   options=";shadingMode=useRegistry;primPath=/")
 
-        # Check that all paths are resolved:
-        filename = cmds.getAttr("nestedFile.fileTextureName")
-        self.assertTrue(filename.endswith("green_A.png"))
-        self.assertFalse(filename.startswith("textures"))
+        # Check that all paths are rebased to the root layer:
+        green_a = "props/billboards/textures/green_A.png"
+        black_b = "props/textures/black_B.png"
+        red_c = "textures/red_C.png"
+        # Except this unresolvable path, left as-is:
+        unresolvable = "../textures/unresolvable.png"
 
-        filename = cmds.getAttr("upOneLevelFile.fileTextureName")
-        self.assertTrue(filename.endswith("black_B.png"))
-        self.assertFalse(filename.startswith(".."))
-
-        filename = cmds.getAttr("upTwoLevelsFile.fileTextureName")
-        self.assertTrue(filename.endswith("red_C.png"))
-        self.assertFalse(filename.startswith(".."))
-
-        filename = cmds.getAttr("nestedFile1.fileTextureName")
-        self.assertTrue(filename.endswith("black_B.png"))
-        self.assertFalse(filename.startswith("textures"))
-
-        filename = cmds.getAttr("upOneLevelFile1.fileTextureName")
-        self.assertTrue(filename.endswith("red_C.png"))
-        self.assertFalse(filename.startswith(".."))
-
-        filename = cmds.getAttr("upTwoLevelsFile1.fileTextureName")
-        self.assertTrue(filename.endswith("green_A.png"))
-        self.assertFalse(filename.startswith(".."))
-
-        # Last one can not be resolved. Make sure it remained relative
-        filename = cmds.getAttr("unresolvableFile.fileTextureName")
-        self.assertTrue(filename.endswith("unresolvable.png"))
-        self.assertTrue(filename.startswith(".."))
+        rebased = (
+            ("nestedFile", green_a),
+            ("upOneLevelFile", black_b),
+            ("upTwoLevelsFile", red_c),
+            ("nestedFile1", black_b),
+            ("upOneLevelFile1", red_c),
+            ("upTwoLevelsFile1", green_a),
+            ("unresolvableFile", unresolvable),
+        )
+        for node_name, rebased_name in rebased:
+            filename = cmds.getAttr("%s.fileTextureName" % node_name)
+            self.assertEqual(filename, rebased_name)
 
 
 if __name__ == '__main__':

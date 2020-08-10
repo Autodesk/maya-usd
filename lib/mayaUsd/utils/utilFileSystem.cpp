@@ -20,7 +20,6 @@
 #include <maya/MFnReference.h>
 
 #include <pxr/usd/ar/resolver.h>
-#include <pxr/usd/usd/stage.h>
 
 #include <mayaUsd/base/debugCodes.h>
 
@@ -33,19 +32,6 @@ UsdMayaUtilFileSystem::resolvePath(const std::string& filePath)
 {
     ArResolver& resolver = ArGetResolver();
     return resolver.Resolve(filePath);
-}
-
-std::string
-UsdMayaUtilFileSystem::relativePathFromUsdStage(const std::string& filePath, const UsdStageRefPtr& usdStage)
-{
-    try {
-        boost::filesystem::path usdDir(usdStage->GetRootLayer()->GetRealPath());
-        usdDir = usdDir.parent_path();
-        boost::filesystem::path relativePath = boost::filesystem::relative(filePath, usdDir);
-        return relativePath.generic_string();
-    } catch (...) {
-        return filePath;
-    }
 }
 
 std::string

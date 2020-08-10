@@ -39,7 +39,8 @@
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
-#include <mayaUsd/utils/utilFileSystem.h>
+
+#include <boost/filesystem.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -208,8 +209,18 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     if (status != MS::kSuccess) {
         return;
     }
-    fileTextureName
-        = UsdMayaUtilFileSystem::relativePathFromUsdStage(fileTextureName, GetUsdStage());
+
+    // WARNING: This extremely minimal attempt at making the file path relative
+    //          to the USD stage is a stopgap measure intended to provide
+    //          minimal interop. It will be replaced by proper use of Maya and
+    //          USD asset resolvers.
+    boost::filesystem::path usdDir(GetUsdStage()->GetRootLayer()->GetRealPath());
+    usdDir = usdDir.parent_path();
+    boost::system::error_code ec;
+    boost::filesystem::path relativePath = boost::filesystem::relative(fileTextureName, usdDir, ec);
+    if (!ec) {
+        fileTextureName = relativePath.generic_string();
+    }
 
     shaderSchema.CreateInput(
         _tokens->file,

@@ -18,7 +18,6 @@
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>
-#include <pxr/usd/usd/common.h>
 
 #include <mayaUsd/base/api.h>
 
@@ -30,12 +29,6 @@ namespace UsdMayaUtilFileSystem
     */
     MAYAUSD_CORE_PUBLIC
     std::string resolvePath(const std::string& filePath);
-
-    /*! \brief returns the relative path to \p filePath based on the path of \p usdStage
-     */
-    MAYAUSD_CORE_PUBLIC
-    std::string
-    relativePathFromUsdStage(const std::string& filePath, const UsdStageRefPtr& usdStage);
 
     /*! \brief returns the path to the
     */
