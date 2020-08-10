@@ -189,7 +189,7 @@ void HdMayaProxyDelegate::Populate() {
 
 void HdMayaProxyDelegate::PreFrame(const MHWRender::MDrawContext& context) {
     std::lock_guard<std::mutex> lock(_allAdaptersMutex);
-    for (auto adapter : _allAdapters) { adapter->PreFrame(); }
+    for (auto adapter : _allAdapters) { adapter->PreFrame(context); }
 }
 
 #if WANT_UFE_BUILD
