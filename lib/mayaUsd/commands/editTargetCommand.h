@@ -29,17 +29,29 @@ namespace Impl {
 class SetEditTarget;
 }
 
-class MAYAUSD_CORE_PUBLIC EditTargetCommand : public MPxCommand {
+class EditTargetCommand : public MPxCommand {
 public:
     // plugin registration requirements
+    MAYAUSD_CORE_PUBLIC
     static const char commandName[];
+    
+    MAYAUSD_CORE_PUBLIC
     static void*      creator();
+    
+    MAYAUSD_CORE_PUBLIC
     static MSyntax    createSyntax();
 
     // MPxCommand callbacks
+    MAYAUSD_CORE_PUBLIC
     MStatus doIt(const MArgList& argList) override;
+    
+    MAYAUSD_CORE_PUBLIC
     MStatus undoIt() override;
+    
+    MAYAUSD_CORE_PUBLIC
     MStatus redoIt() override;
+    
+    MAYAUSD_CORE_PUBLIC
     bool    isUndoable() const override;
 
 private:

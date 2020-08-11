@@ -251,6 +251,7 @@ private:
     std::vector<SdfPath> _materialTagsChanged;
 
     SdfPath _fallbackMaterial;
+    bool _enableMaterials = false;
 };
 
 typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;
