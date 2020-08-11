@@ -10,6 +10,7 @@ endfunction()
 #                    PYTHON_SCRIPT <python_script_file> |
 #                    COMMAND <cmd> [<cmdarg> ...] }
 #                   [NO_STANDALONE_INIT]
+#                   [INTERACTIVE]
 #                   [ENV <varname>=<varvalue> ...])
 #
 #   PYTHON_MODULE      - Module to import and test with unittest.main.
@@ -25,6 +26,13 @@ endfunction()
 #                        command will generally add some boilerplate code
 #                        to ensure that maya is initialized and exits
 #                        correctly. Use this option to NOT add that code.
+#   INTERACTIVE        - Only allowable with PYTHON_SCRIPT.
+#                        The test is run using an interactive (non-standalone)
+#                        session of Maya, including the UI.
+#                        Tests run in this way should finish by calling Maya's
+#                        quit command and returning an exit code of 0 for
+#                        success or 1 for failure:
+#                            cmds.quit(abort=True, exitCode=exitCode)
 #   ENV                - Set or append the indicated environment variables;
 #                        Since mayaUsd_add_test internally makes changes to
 #                        some environment variables, if a value is given
@@ -53,7 +61,7 @@ function(mayaUsd_add_test test_name)
     # -----------------
 
     cmake_parse_arguments(PREFIX
-        "NO_STANDALONE_INIT"                                            # options
+        "NO_STANDALONE_INIT;INTERACTIVE"                                # options
         "PYTHON_MODULE;PYTHON_COMMAND;PYTHON_SCRIPT;WORKING_DIRECTORY"  # one_value keywords
         "COMMAND;ENV"                                                   # multi_value keywords
         ${ARGN}
@@ -76,6 +84,11 @@ function(mayaUsd_add_test test_name)
                                           OR PREFIX_PYTHON_COMMAND))
         message(FATAL_ERROR "mayaUsd_add_test: NO_STANDALONE_INIT may only be "
             "used with PYTHON_MODULE or PYTHON_COMMAND")
+    endif()
+
+    if(PREFIX_INTERACTIVE AND NOT PREFIX_PYTHON_SCRIPT)
+        message(FATAL_ERROR "mayaUsd_add_test: INTERACTIVE may only be "
+            "used with PYTHON_SCRIPT")
     endif()
 
     # set the working_dir
@@ -101,7 +114,18 @@ main(module=${MODULE_NAME})
     elseif(PREFIX_PYTHON_COMMAND)
         set(PYTEST_CODE "${PREFIX_PYTHON_COMMAND}")
     elseif(PREFIX_PYTHON_SCRIPT)
-        set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${PREFIX_PYTHON_SCRIPT})
+        if (PREFIX_INTERACTIVE)
+            set(MEL_PY_EXEC_COMMAND "python(\"\
+file = \\\"${PREFIX_PYTHON_SCRIPT}\\\"\\\; \
+openMode = \\\"rb\\\"\\\; \
+compileMode = \\\"exec\\\"\\\; \
+globals = {\\\"__file__\\\": file, \\\"__name__\\\": \\\"__main__\\\"}\\\; \
+exec(compile(open(file, openMode).read(), file, compileMode), globals)\
+\")")
+            set(COMMAND_CALL ${MAYA_EXECUTABLE} -c ${MEL_PY_EXEC_COMMAND})
+        else()
+            set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${PREFIX_PYTHON_SCRIPT})
+        endif()
     else()
         set(COMMAND_CALL ${PREFIX_COMMAND})
     endif()
