@@ -7,6 +7,7 @@ endfunction()
 # mayaUsd_add_test( <test_name>
 #                   {PYTHON_MODULE <python_module_name> |
 #                    PYTHON_COMMAND <python_code> |
+#                    PYTHON_SCRIPT <python_script_file> |
 #                    COMMAND <cmd> [<cmdarg> ...] }
 #                   [NO_STANDALONE_INIT]
 #                   [ENV <varname>=<varvalue> ...])
@@ -15,6 +16,8 @@ endfunction()
 #   PYTHON_COMMAND     - Python code to execute; should call sys.exit
 #                        with an appropriate exitcode to indicate success
 #                        or failure.
+#   PYTHON_SCRIPT      - Python script file to execute; should exit with an
+#                        appropriate exitcode to indicate success or failure.
 #   WORKING_DIRECTORY  - Directory from which the test executable will be called.
 #   COMMAND            - Command line to execute as a test
 #   NO_STANDALONE_INIT - Only allowable with PYTHON_MODULE or
@@ -50,23 +53,23 @@ function(mayaUsd_add_test test_name)
     # -----------------
 
     cmake_parse_arguments(PREFIX
-        "NO_STANDALONE_INIT"                              # options
-        "PYTHON_MODULE;PYTHON_COMMAND;WORKING_DIRECTORY"  # one_value keywords
-        "COMMAND;ENV"                                     # multi_value keywords
+        "NO_STANDALONE_INIT"                                            # options
+        "PYTHON_MODULE;PYTHON_COMMAND;PYTHON_SCRIPT;WORKING_DIRECTORY"  # one_value keywords
+        "COMMAND;ENV"                                                   # multi_value keywords
         ${ARGN}
     )
 
     # check that they provided one and ONLY 1 of:
-    #     PYTHON_MODULE / PYTHON_COMMAND / COMMAND
+    #     PYTHON_MODULE / PYTHON_COMMAND / PYTHON_SCRIPT / COMMAND
     set(NUM_EXCLUSIVE_ITEMS 0)
-    foreach(option_name PYTHON_MODULE PYTHON_COMMAND COMMAND)
+    foreach(option_name PYTHON_MODULE PYTHON_COMMAND PYTHON_SCRIPT COMMAND)
         if(PREFIX_${option_name})
             math(EXPR NUM_EXCLUSIVE_ITEMS "${NUM_EXCLUSIVE_ITEMS} + 1")
         endif()
     endforeach()
     if(NOT NUM_EXCLUSIVE_ITEMS EQUAL 1)
         message(FATAL_ERROR "mayaUsd_add_test: must be called with exactly "
-            "one of PYTHON_MODULE, PYTHON_COMMAND, or COMMAND")
+            "one of PYTHON_MODULE, PYTHON_COMMAND, PYTHON_SCRIPT, or COMMAND")
     endif()
 
     if(PREFIX_NO_STANDALONE_INIT AND NOT (PREFIX_PYTHON_MODULE
@@ -97,6 +100,8 @@ main(module=${MODULE_NAME})
 ")
     elseif(PREFIX_PYTHON_COMMAND)
         set(PYTEST_CODE "${PREFIX_PYTHON_COMMAND}")
+    elseif(PREFIX_PYTHON_SCRIPT)
+        set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${PREFIX_PYTHON_SCRIPT})
     else()
         set(COMMAND_CALL ${PREFIX_COMMAND})
     endif()
