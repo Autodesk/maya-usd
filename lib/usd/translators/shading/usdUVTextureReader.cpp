@@ -38,9 +38,6 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
-#include <boost/filesystem.hpp>
-#include <cctype>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class PxrMayaUsdUVTexture_Reader : public UsdMayaShaderReader {
@@ -182,37 +179,12 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     if (usdInput && usdInput.Get(&val) && val.IsHolding<SdfAssetPath>()) {
         std::string filePath = val.UncheckedGet<SdfAssetPath>().GetResolvedPath();
         if (!filePath.empty()) {
-            // The import process has the important side-effect of flattening the
-            // imported USD data, so we must also flatten the relative file paths
-            // found in referenced assets so they become relative to the root layer.
-
-            // WARNING: This extremely minimal attempt at rebasing the file path relative
-            //          to the USD stage is a stopgap measure intended to provide
-            //          minimal interop. It will be replaced by proper use of Maya and
-            //          USD asset resolvers.
-#if defined(_WIN32) || defined(_WIN64) || defined __CYGWIN__
-            // Boost::filesystem gets confused if the drive letter is not uppercase
-            if (filePath.size() > 2 && filePath[1] == ':') {
-                filePath[0] = std::toupper(filePath[0]);
-            }
-#endif
-
-            std::string rootLayerPath = prim.GetStage()->GetRootLayer()->GetRealPath();
-#if defined(_WIN32) || defined(_WIN64) || defined __CYGWIN__
-            if (rootLayerPath.size() > 2 && rootLayerPath[1] == ':') {
-                rootLayerPath[0] = std::toupper(rootLayerPath[0]);
-            }
-#endif
-            boost::filesystem::path usdDir(rootLayerPath);
-            usdDir = usdDir.parent_path();
-            boost::system::error_code ec;
-            boost::filesystem::path relativePath = boost::filesystem::relative(filePath, usdDir, ec);
-            if (!ec) {
-                filePath = relativePath.generic_string();
-                if (!filePath.empty()) {
-                    val = SdfAssetPath(filePath);
-                }
-            }
+            // Maya has issues with relative paths, especially if deep inside a
+            // nesting of referenced assets. Use absolute path instead if USD was
+            // able to resolve. A better fix will require providing an asset
+            // resolver to Maya that can resolve the file correctly using the
+            // MPxAssertResolver API.
+            val = SdfAssetPath(filePath);
         }
         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
         if (status == MS::kSuccess) {

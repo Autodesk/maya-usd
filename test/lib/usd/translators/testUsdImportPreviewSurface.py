@@ -51,7 +51,7 @@ class testUsdImportPreviewSurface(unittest.TestCase):
                   namespace="Test", pr=True, importTimeRange="combine",
                   options=";shadingMode=useRegistry;primPath=/")
 
-        # Check that all paths are rebased to the root layer:
+        # Check that all paths are absolute:
         green_a = "props/billboards/textures/green_A.png"
         black_b = "props/textures/black_B.png"
         red_c = "textures/red_C.png"
@@ -59,17 +59,18 @@ class testUsdImportPreviewSurface(unittest.TestCase):
         unresolvable = "../textures/unresolvable.png"
 
         rebased = (
-            ("nestedFile", green_a),
-            ("upOneLevelFile", black_b),
-            ("upTwoLevelsFile", red_c),
-            ("nestedFile1", black_b),
-            ("upOneLevelFile1", red_c),
-            ("upTwoLevelsFile1", green_a),
+            ("nestedFile", os.path.join(self.test_dir, green_a)),
+            ("upOneLevelFile", os.path.join(self.test_dir, black_b)),
+            ("upTwoLevelsFile", os.path.join(self.test_dir, red_c)),
+            ("nestedFile1", os.path.join(self.test_dir, black_b)),
+            ("upOneLevelFile1", os.path.join(self.test_dir, red_c)),
+            ("upTwoLevelsFile1", os.path.join(self.test_dir, green_a)),
             ("unresolvableFile", unresolvable),
         )
         for node_name, rebased_name in rebased:
             filename = cmds.getAttr("%s.fileTextureName" % node_name)
-            self.assertEqual(filename, rebased_name)
+            self.assertEqual(filename.lower().replace("\\", "/"),
+                             rebased_name.lower().replace("\\", "/"))
 
 
 if __name__ == '__main__':
