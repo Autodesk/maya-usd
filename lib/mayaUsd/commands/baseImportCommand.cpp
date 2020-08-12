@@ -45,6 +45,9 @@ MayaUSDImportCommand::createSyntax()
     syntax.addFlag(kShadingModeFlag,
                    UsdMayaJobImportArgsTokens->shadingMode.GetText(),
                    MSyntax::kString);
+    syntax.addFlag(kShadingConversionFlag,
+                   UsdMayaJobImportArgsTokens->shadingConversion.GetText(),
+                   MSyntax::kString);
     syntax.addFlag(kAssemblyRepFlag,
                    UsdMayaJobImportArgsTokens->assemblyRep.GetText(),
                    MSyntax::kString);

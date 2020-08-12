@@ -102,10 +102,13 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.file(defaultExtensions=default_ext_setting)
 
         # Import back:
+        import_options = ("shadingMode=useRegistry",
+                          "shadingConversion=none",
+                          "primPath=/")
         cmds.file(usd_path, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
                   namespace="Test", pr=True, importTimeRange="combine",
-                  options=";shadingMode=useRegistry;primPath=/")
+                  options=";".join(import_options))
 
         # Check the new sphere is in the new shading group:
         self.assertTrue(cmds.sets(
