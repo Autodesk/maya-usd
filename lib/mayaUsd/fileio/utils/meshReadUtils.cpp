@@ -526,14 +526,13 @@ namespace
                     if (csRep == MFnMesh::kRGB || csRep == MFnMesh::kRGBA) 
                     {
                         meshFn.setCurrentColorSetName(colorSetName);
+                        MPlug plg = meshFn.findPlug("displayColors");
+                        if (!plg.isNull()) {
+                            plg.setBool(true);
+                        }
                     }
                     break;
                 }
-            }
-
-            MPlug plg = meshFn.findPlug("displayColors");
-            if (!plg.isNull()) {
-                plg.setBool(true);
             }
         }
 
