@@ -526,15 +526,14 @@ namespace
                     if (csRep == MFnMesh::kRGB || csRep == MFnMesh::kRGBA) 
                     {
                         meshFn.setCurrentColorSetName(colorSetName);
+                        MPlug plg = meshFn.findPlug("displayColors");
+                        if (!plg.isNull()) {
+                            plg.setBool(true);
+                        }
                     }
                     break;
                 }
             }
-
-            // It is tempting to enable "displayColors" here on the mesh to display the imported
-            // vertex colors. This would be fine if those streams were only vertex colors, but they
-            // are very frequently used to store custom per vertex values which would not display
-            // properly. Let the user turn that on manually.
         }
 
         return true;
