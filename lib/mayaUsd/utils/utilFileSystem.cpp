@@ -23,6 +23,8 @@
 
 #include <mayaUsd/base/debugCodes.h>
 
+#include <boost/filesystem.hpp>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 std::string

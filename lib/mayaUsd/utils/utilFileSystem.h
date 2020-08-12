@@ -15,8 +15,6 @@
 //
 #include <string>
 
-#include <boost/filesystem.hpp>
-
 #include <maya/MObject.h>
 
 #include <pxr/pxr.h>

@@ -171,14 +171,26 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         UsdMayaUtil::Connect(uvPlug, filePlug, false);
     }
 
+    VtValue val;
+    MPlug   mayaAttr;
+
     // File
     UsdShadeInput usdInput = shaderSchema.GetInput(_tokens->file);
-    MPlug         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
-    if (usdInput && status == MS::kSuccess) {
-        UsdMayaReadUtil::SetMayaAttr(mayaAttr, usdInput);
+    if (usdInput && usdInput.Get(&val) && val.IsHolding<SdfAssetPath>()) {
+        std::string filePath = val.UncheckedGet<SdfAssetPath>().GetResolvedPath();
+        if (!filePath.empty()) {
+            // Maya has issues with relative paths, especially if deep inside a
+            // nesting of referenced assets. Use absolute path instead if USD was
+            // able to resolve. A better fix will require providing an asset
+            // resolver to Maya that can resolve the file correctly using the
+            // MPxAssertResolver API.
+            val = SdfAssetPath(filePath);
+        }
+        mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
+        if (status == MS::kSuccess) {
+            UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
+        }
     }
-
-    VtValue     val;
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the
     // UsdUVTexture's scale input.
