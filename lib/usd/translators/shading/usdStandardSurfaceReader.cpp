@@ -56,7 +56,7 @@ public:
 
     /// Get the name of the Maya shading attribute that corresponds to the
     /// USD attribute named \p usdAttrName.
-    virtual TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const;
+    TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 
 protected:
     const TfToken& _GetMayaNodeTypeName() const override;

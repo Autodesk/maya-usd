@@ -38,7 +38,7 @@ public:
 
     /// Get the name of the Maya shading attribute that corresponds to the
     /// USD attribute named \p usdAttrName.
-    virtual TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const;
+    TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 
     /// Generic read function that traverses a schema and reads everything.
     bool Read(UsdMayaPrimReaderContext* context) override;
