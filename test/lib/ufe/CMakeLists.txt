@@ -28,6 +28,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
 		testParentCmd.py
         testRotateCmd.py
         testScaleCmd.py
+        testSceneItem.py
         testTransform3dTranslate.py
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
