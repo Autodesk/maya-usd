@@ -15,6 +15,12 @@
 //
 #include "UsdSceneItem.h"
 
+#include <pxr/base/tf/type.h>
+#include <pxr/usd/usd/primTypeInfo.h>
+#if USD_VERSION_NUM >= 2008
+#include <pxr/usd/usd/schemaRegistry.h>
+#endif
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -38,6 +44,38 @@ std::string UsdSceneItem::nodeType() const
 {
 	return fPrim.GetTypeName();
 }
+
+#if UFE_PREVIEW_VERSION_NUM >= 2020
+std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
+{
+	const UsdPrimTypeInfo& typeInfo = fPrim.GetPrimTypeInfo();
+	const TfType& schemaType = typeInfo.GetSchemaType();
+
+	// According to the USD docs GetAllAncestorTypes() is expensive, so we keep a cache.
+	static std::map<TfType, std::vector<std::string>> ancestorTypesCache;
+	const auto iter = ancestorTypesCache.find(schemaType);
+	if (iter != ancestorTypesCache.end()) {
+		return iter->second;
+	}
+
+	std::vector<std::string> strAncestorTypes;
+	std::vector<TfType> tfAncestorTypes;
+	schemaType.GetAllAncestorTypes(&tfAncestorTypes);
+	for (const TfType& ty : tfAncestorTypes)
+	{
+#if USD_VERSION_NUM >= 2008
+		// If there is a concrete schema type name, we'll return that since it is what
+		// is used/shown in the UI (ex: 'Xform' vs 'UsdGeomXform').
+		auto concreteType = UsdSchemaRegistry::GetConcreteSchemaTypeName(ty);
+		strAncestorTypes.emplace_back(!concreteType.IsEmpty() ? concreteType : ty.GetTypeName());
+#else
+		strAncestorTypes.emplace_back(ty.GetTypeName());
+#endif
+	}
+	ancestorTypesCache[schemaType] = strAncestorTypes;
+	return strAncestorTypes;
+}
+#endif
 
 } // namespace ufe
 } // namespace MayaUsd
