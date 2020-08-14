@@ -35,7 +35,7 @@ class MAYAUSD_CORE_PUBLIC UsdRotatePivotTranslateUndoableCommand : public Ufe::T
 public:
 	typedef std::shared_ptr<UsdRotatePivotTranslateUndoableCommand> Ptr;
 
-	UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
 	~UsdRotatePivotTranslateUndoableCommand() override;
 
 	// Delete the copy/move constructors assignment operators.
@@ -45,7 +45,7 @@ public:
 	UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&) = delete;
 
 	//! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
-	static UsdRotatePivotTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+	static UsdRotatePivotTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode);
 
 	// Ufe::TranslateUndoableCommand overrides
 	void undo() override;
@@ -57,6 +57,7 @@ private:
 	UsdAttribute fPivotAttrib;
 	GfVec3f fPrevPivotValue;
 	Ufe::Path fPath;
+	UsdTimeCode fTimeCode;
 	bool fNoPivotOp;
 
 }; // UsdRotatePivotTranslateUndoableCommand

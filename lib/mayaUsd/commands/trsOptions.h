@@ -1,5 +1,5 @@
 //
-// Copyright 2017 Animal Logic
+// Copyright 2020 AnimalLogic
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,29 +12,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+#ifndef TRS_OPTIONS_COMMAND_H
+#define TRS_OPTIONS_COMMAND_H
 
-#pragma once
+#include <mayaUsd/base/api.h>
 
-#include <string>
+#include <memory>
 
-#define xstr(a) stringify(a)
-#define stringify(a) #a
+#include <maya/MPxCommand.h>
 
-#define AL_USDMAYA_VERSION_MAJOR 1
-#define AL_USDMAYA_VERSION_MINOR 1
-#define AL_USDMAYA_VERSION_PATCH 8
+#include <mayaUsd/fileio/jobs/readJob.h>
 
-#define AL_USDMAYA_VERSION_STR xstr(AL_USDMAYA_VERSION_MAJOR) "." \
-                               xstr(AL_USDMAYA_VERSION_MINOR) "." \
-                               xstr(AL_USDMAYA_VERSION_PATCH)
+MAYAUSD_NS_DEF {
 
-namespace AL {
-namespace usdmaya {
-
-inline const char* getVersion()
+class MAYAUSD_CORE_PUBLIC TRSOptions : public MPxCommand
 {
-    return AL_USDMAYA_VERSION_STR;
+public:
+
+    MStatus doIt(const MArgList& args) override;
+
+    static MSyntax createSyntax();
+    static void* creator();
+};
+
 }
 
-} // namespace AL
-} // namespace usdmaya
+#endif

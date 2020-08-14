@@ -20,10 +20,11 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 	: Ufe::TranslateUndoableCommand(item)
 	, fPrim(prim)
 	, fPath(ufePath)
+	, fTimeCode(timeCode)
 	, fNoPivotOp(false)
 {
 	// Prim does not have a pivot translate attribute
@@ -44,9 +45,9 @@ UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand(
 }
 
 /*static*/
-UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item, const UsdTimeCode& timeCode)
 {
-	return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(prim, ufePath, item);
+	return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(prim, ufePath, item, timeCode);
 }
 
 void UsdRotatePivotTranslateUndoableCommand::undo()

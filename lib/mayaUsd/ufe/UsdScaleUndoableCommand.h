@@ -18,6 +18,7 @@
 #include <ufe/transform3dUndoableCommands.h>
 
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
@@ -31,7 +32,7 @@ namespace ufe {
 /*!
 	Ability to perform undo to restore the original scale value.
  */
-class MAYAUSD_CORE_PUBLIC UsdScaleUndoableCommand : public Ufe::ScaleUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3f>
+class MAYAUSD_CORE_PUBLIC UsdScaleUndoableCommand : public Ufe::ScaleUndoableCommand
 {
 public:
 	typedef std::shared_ptr<UsdScaleUndoableCommand> Ptr;
@@ -44,7 +45,7 @@ public:
 	//! Create a UsdScaleUndoableCommand from a UFE scene item.  The command is
     //! not executed.
 	static UsdScaleUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+        const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 
 	// Ufe::ScaleUndoableCommand overrides
 	void undo() override;
@@ -54,16 +55,15 @@ public:
 protected:
 
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.
-	UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 	~UsdScaleUndoableCommand() override;
 
-private:
-
-    static TfToken scaleTok;
-
-    TfToken attributeName() const override { return scaleTok; }
-    void performImp(double x, double y, double z) override;
-    void addEmptyAttribute() override;
+	UsdPrim fPrim;
+	UsdGeomXformOp fOp;
+	GfVec3d fPrevValue;
+	GfVec3d fNewValue;
+	Ufe::Path fPath;
+	UsdTimeCode fTimeCode;
 
 }; // UsdScaleUndoableCommand
 

@@ -21,12 +21,35 @@
 #include <pxr/usd/usd/prim.h>
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsdUtils/TransformOpTools.h>
+#include <mayaUsd/ufe/UsdTranslateUndoableCommand.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {
 namespace ufe {
+
+// UFE assumes that all transforms can simply be boiled down to a world matrix, 
+// and a parent matrix, which is clearly nonsense, since we might be trying to 
+// operate on something within that stack. This unfortunately means I have to 
+// keep track of which Maya tool is enabled (rotate, scale, or translate), 
+// and modify the transforms returned from Transform3d as a result.  
+enum class ActiveTool 
+{
+	kRotate,
+	kTranslate,
+	kScale,
+	kSelect
+};
+
+// queries mayas current status to return the current tool.
+MAYAUSD_CORE_PUBLIC
+ActiveTool GetActiveTool();
+
+MAYAUSD_CORE_PUBLIC
+MayaUsdUtils::TransformOpProcessor::Space CurrentManipulatorSpace(); 
 
 //! \brief Interface to transform objects in 3D.
 class MAYAUSD_CORE_PUBLIC UsdTransform3d : public Ufe::Transform3d
@@ -49,6 +72,9 @@ public:
 	static UsdTransform3d::Ptr create(const UsdSceneItem::Ptr& item);
 
 	void setItem(const UsdSceneItem::Ptr& item);
+
+	UsdTimeCode timeCode() const;
+	MayaUsdProxyShapeBase* proxy() const;
 
 	// Ufe::Transform3d overrides
 	const Ufe::Path& path() const override;

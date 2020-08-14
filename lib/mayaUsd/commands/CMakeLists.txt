@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}
         baseListShadingModesCommand.cpp
         editTargetCommand.cpp
         layerEditorCommand.cpp
+        trsOptions.cpp
 )
 
 set(HEADERS
@@ -16,6 +17,7 @@ set(HEADERS
         baseListShadingModesCommand.h
         editTargetCommand.h
         layerEditorCommand.h
+        trsOptions.h
 )
 
 # -----------------------------------------------------------------------------

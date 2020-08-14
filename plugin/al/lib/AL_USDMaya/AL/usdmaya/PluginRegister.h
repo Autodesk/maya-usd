@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #pragma once
+#define WANT_UFE_BUILD 1
 #include <pxr/pxr.h>
 #include <pxr/imaging/glf/glew.h>
 #include "AL/maya/utils/CommandGuiHelper.h"
@@ -54,6 +55,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
 
+#include <mayaUsd/commands/trsOptions.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 
 #if defined(WANT_UFE_BUILD)
@@ -325,6 +327,8 @@ MStatus registerPlugin(AFnPlugin& plugin)
     }
   }
 
+  plugin.registerCommand("AL_TRSOptions", MayaUsd::TRSOptions::creator, MayaUsd::TRSOptions::createSyntax);
+
   // generate the menu GUI + option boxes
   AL::usdmaya::cmds::constructLayerCommandGuis();
   AL::usdmaya::cmds::constructProxyShapeCommandGuis();
@@ -412,6 +416,8 @@ MStatus unregisterPlugin(AFnPlugin& plugin)
       return MS::kFailure;
     }
   }
+
+  plugin.deregisterCommand("AL_TRSOptions");
 
   AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
   AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);

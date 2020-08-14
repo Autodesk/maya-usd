@@ -9,6 +9,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         DebugCodes.cpp
         DiffCore.cpp
+        TransformOpTools.cpp
         util.cpp
 )
 
@@ -42,6 +43,7 @@ target_link_libraries(${TARGET_NAME}
     PUBLIC
         gf
         usd
+        usdGeom
         sdf
 )
 
@@ -55,6 +57,7 @@ set(HEADERS
     DiffCore.h
     ForwardDeclares.h
     SIMD.h
+    TransformOpTools.h
     util.h
 )
 

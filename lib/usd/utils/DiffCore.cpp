@@ -1395,7 +1395,7 @@ bool compareArrayFloat3DtoDouble4D(
     return false;
   }
 #ifdef __AVX2__
-  const f128 eps4 = splatf4f(eps);
+  const f128 eps4 = splat4f(eps);
   for (size_t i = 0; i < count3d; ++i)
   {
     const f128 float3d = loadmask3f(input3d + i * 3, 3);

@@ -102,8 +102,8 @@ private:
 template<class T>
 struct MakeSharedEnabler : public T {
     MakeSharedEnabler(
-        const UsdSceneItem::Ptr& item, double x, double y, double z)
-        : T(item, x, y, z) {}
+        const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode)
+        : T(item, x, y, z, timeCode) {}
 };
 
 } // namespace ufe

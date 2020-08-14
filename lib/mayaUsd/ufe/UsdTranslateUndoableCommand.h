@@ -18,6 +18,7 @@
 #include <ufe/transform3dUndoableCommands.h>
 
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
@@ -27,11 +28,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 MAYAUSD_NS_DEF {
 namespace ufe {
 
+
 //! \brief Translation command of the given prim.
 /*!
 	Ability to perform undo to restore the original translate value.
  */
-class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand : public Ufe::TranslateUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3d>
+class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand : public Ufe::TranslateUndoableCommand
 {
 public:
 	typedef std::shared_ptr<UsdTranslateUndoableCommand> Ptr;
@@ -44,27 +46,28 @@ public:
 	//! Create a UsdTranslateUndoableCommand from a UFE scene item.  The
 	//! command is not executed.
 	static UsdTranslateUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+        const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 
 	// Ufe::TranslateUndoableCommand overrides.  translate() sets the command's
 	// translation value and executes the command.
 	void undo() override;
 	void redo() override;
 	bool translate(double x, double y, double z) override;
+    // Overridden from Ufe::Observer
+    //void operator()(const Ufe::Notification& notification) override;
 
 protected:
 
+	UsdPrim fPrim;
+	UsdGeomXformOp fOp;
+	GfVec3d fPrevValue;
+	GfVec3d fNewValue;
+	Ufe::Path fPath;
+	UsdTimeCode fTimeCode;
+
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
-	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 	~UsdTranslateUndoableCommand() override;
-
-private:
-
-    static TfToken xlate;
-
-    TfToken attributeName() const override { return xlate; }
-    void performImp(double x, double y, double z) override;
-    void addEmptyAttribute() override;
 
 }; // UsdTranslateUndoableCommand
 

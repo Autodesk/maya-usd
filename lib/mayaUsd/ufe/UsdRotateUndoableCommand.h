@@ -20,6 +20,7 @@
 #include <ufe/transform3dUndoableCommands.h>
 
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
@@ -33,7 +34,7 @@ namespace ufe {
 /*!
 	Ability to perform undo to restore the original rotation value.
  */
-class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand : public Ufe::RotateUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3f>
+class MAYAUSD_CORE_PUBLIC UsdRotateUndoableCommand : public Ufe::RotateUndoableCommand
 {
 public:
 	typedef std::shared_ptr<UsdRotateUndoableCommand> Ptr;
@@ -46,7 +47,7 @@ public:
 	//! Create a UsdRotateUndoableCommand from a UFE scene item.  The
 	//! command is not executed.
 	static UsdRotateUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+        const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 
 	// Ufe::RotateUndoableCommand overrides.  rotate() sets the command's
 	// rotation value and executes the command.
@@ -56,20 +57,17 @@ public:
 
 protected:
 
+
     //! Construct a UsdRotateUndoableCommand.  The command is not executed.
-	UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z, const UsdTimeCode& timeCode);
 	~UsdRotateUndoableCommand() override;
-
-private:
-
-    static TfToken rotXYZ;
-
-    TfToken attributeName() const override { return rotXYZ; }
-    void performImp(double x, double y, double z) override;
-    void addEmptyAttribute() override;
-    bool cannotInit() const override { return bool(fFailedInit); }
-
-	std::exception_ptr fFailedInit;
+	
+	UsdPrim fPrim;
+	UsdGeomXformOp fOp;
+	GfQuatd fPrevValue;
+	GfQuatd fNewValue;
+	Ufe::Path fPath;
+	UsdTimeCode fTimeCode;
 
 }; // UsdRotateUndoableCommand
 

@@ -150,6 +150,8 @@ AL_DLL_HIDDEN inline i128 andnot4i(const i128 a, const i128 b) { return _mm_andn
 
 AL_DLL_HIDDEN inline f128 mul4f(const f128 a, const f128 b) { return _mm_mul_ps(a, b); }
 AL_DLL_HIDDEN inline d128 mul2d(const d128 a, const d128 b) { return _mm_mul_pd(a, b); }
+AL_DLL_HIDDEN inline f128 div4f(const f128 a, const f128 b) { return _mm_div_ps(a, b); }
+AL_DLL_HIDDEN inline d128 div2d(const d128 a, const d128 b) { return _mm_div_pd(a, b); }
 
 AL_DLL_HIDDEN inline f128 add4f(const f128 a, const f128 b) { return _mm_add_ps(a, b); }
 AL_DLL_HIDDEN inline i128 add4i(const i128 a, const i128 b) { return _mm_add_epi32(a, b); }
@@ -196,6 +198,9 @@ AL_DLL_HIDDEN inline i128 cmpeq2i64(const i128 a, const i128 b) { return _mm_cmp
 inline f128 abs4f(const f128 v) { return _mm_andnot_ps(splat4f(-0.0f), v); }
 inline d128 abs2d(const d128 v) { return _mm_andnot_pd(splat2d(-0.0), v); }
 
+#define div4d _mm256_div_pd
+#define sqrt4d _mm256_sqrt_pd
+
 #endif
 
 
@@ -213,10 +218,15 @@ AL_DLL_HIDDEN inline d256 zero4d() { return _mm256_setzero_pd(); }
 
 AL_DLL_HIDDEN inline f256 cast8f(const d256 reg) { return _mm256_castpd_ps(reg); }
 AL_DLL_HIDDEN inline f256 cast8f(const i256 reg) { return _mm256_castsi256_ps(reg); }
+AL_DLL_HIDDEN inline f256 cast8f(const f128 reg) { return _mm256_castps128_ps256(reg); }
 AL_DLL_HIDDEN inline i256 cast8i(const d256 reg) { return _mm256_castpd_si256(reg); }
 AL_DLL_HIDDEN inline i256 cast8i(const f256 reg) { return _mm256_castps_si256(reg); }
+AL_DLL_HIDDEN inline i256 cast8i(const i128 reg) { return _mm256_castsi128_si256(reg); }
 AL_DLL_HIDDEN inline d256 cast4d(const f256 reg) { return _mm256_castps_pd(reg); }
+AL_DLL_HIDDEN inline d256 cast4d(const f128 reg) { return cast4d(cast8f(reg)); }
 AL_DLL_HIDDEN inline d256 cast4d(const i256 reg) { return _mm256_castsi256_pd(reg); }
+AL_DLL_HIDDEN inline d256 cast4d(const i128 reg) { return cast4d(cast8i(reg)); }
+AL_DLL_HIDDEN inline d256 cast4d(const d128 reg) { return _mm256_castpd128_pd256(reg); }
 AL_DLL_HIDDEN inline f128 cast4f(const f256 reg) { return _mm256_castps256_ps128(reg); }
 
 AL_DLL_HIDDEN inline int32_t movemask32i8(const i256 reg) { return _mm256_movemask_epi8(reg); }
@@ -242,8 +252,6 @@ AL_DLL_HIDDEN inline f256 set8f(const float a, const float b, const float c, con
 AL_DLL_HIDDEN inline i256 set8i(const int32_t a, const int32_t b, const int32_t c, const int32_t d,
                                 const int32_t e, const int32_t f, const int32_t g, const int32_t h)
   {return _mm256_setr_epi32(a,b,c,d,e,f,g,h); }
-AL_DLL_HIDDEN inline d256 set4f(const double a, const double b, const double c, const double d)
-  {return _mm256_setr_pd(a, b, c, d); }
 
 AL_DLL_HIDDEN inline f256 loadu8f(const void* const ptr) { return _mm256_loadu_ps((const float*)ptr); }
 AL_DLL_HIDDEN inline i256 loadu8i(const void* const ptr) { return _mm256_loadu_si256((const i256*)ptr); }
@@ -293,6 +301,7 @@ AL_DLL_HIDDEN inline f256 permutevar8x32f(const f256 a, const i256 b) { return _
 
 AL_DLL_HIDDEN inline f256 unpacklo8f(const f256 a, const f256 b) { return _mm256_unpacklo_ps(a, b); }
 AL_DLL_HIDDEN inline f256 unpackhi8f(const f256 a, const f256 b) { return _mm256_unpackhi_ps(a, b); }
+
 
 # define extract4f(reg, index) _mm256_extractf128_ps(reg, index)
 # define extract256i64(reg, index) _mm256_extract_epi64(reg, index)
@@ -373,13 +382,12 @@ inline i256 loadmask3i64(const void* const ptr, const size_t count)
 
 #ifdef __F16C__
 # ifdef __AVX__
-inline f256 cvtph8(const i128 a) { return _mm256_cvtph_ps(a); }
-inline i128 cvtph8(const f256 a) { return _mm256_cvtps_ph(a, _MM_FROUND_CUR_DIRECTION); }
-# else
-inline f128 cvtph4(const i128 a) { return _mm_cvtph_ps(a); }
-inline i128 cvtph4(const f128 a) { return _mm_cvtps_ph(a, _MM_FROUND_CUR_DIRECTION); }
 # endif
 #endif
+inline f256 cvtph8(const i128 a) { return _mm256_cvtph_ps(a); }
+inline i128 cvtph8(const f256 a) { return _mm256_cvtps_ph(a, _MM_FROUND_CUR_DIRECTION); }
+inline f128 cvtph4(const i128 a) { return _mm_cvtph_ps(a); }
+inline i128 cvtph4(const f128 a) { return _mm_cvtps_ph(a, _MM_FROUND_CUR_DIRECTION); }
 
 
 #ifdef __AVX__
@@ -414,6 +422,29 @@ inline f128 loadmask3f(const void* const ptr, size_t count)
   return _mm_load_ps((const float*)p);
 }
 #endif
+
+#define xor4d _mm256_xor_pd
+#define fmadd4d _mm256_fmadd_pd
+#define fmsub4d _mm256_fmsub_pd
+#define fnmadd4d _mm256_fnmadd_pd
+#define fnmsub4d _mm256_fnmsub_pd
+
+template<bool x, bool y, bool z, bool w>
+inline d256 select4d(const d256 a, const d256 b)
+{
+  return _mm256_blend_pd(b, a, x | (y << 1) | (z << 2) | (w << 3));
+}
+
+template<int X, int Y, int Z, int W>
+inline d256 permute4d(const d256 a)
+{
+    return _mm256_permute4x64_pd(a, X | (Y << 2) | (Z << 4) | (W << 6));
+}
+
+inline d256 round4d(const d256 x)
+{
+  return _mm256_round_pd(x, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+}
 
 } // MayaUsdUtils
 
