@@ -35,8 +35,9 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -52,13 +53,15 @@ class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx);
 
+        static ContextSupport CanExport(const UsdMayaJobExportArgs&);
+
         void Write(const UsdTimeCode& usdTime) override;
 
         TfToken GetShadingAttributeNameForMayaAttrName(
                 const TfToken& mayaAttrName) override;
 };
 
-PXRUSDMAYA_REGISTER_WRITER(file, PxrUsdTranslators_FileTextureWriter);
+PXRUSDMAYA_REGISTER_SHADER_WRITER(file, PxrUsdTranslators_FileTextureWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -119,6 +122,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((AlphaOutputName, "a"))
 );
 
+UsdMayaShaderWriter::ContextSupport
+PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
+{
+    return exportArgs.renderContext == UsdMayaShadingModeTokens->preview
+        ? ContextSupport::Supported
+        : ContextSupport::Unsupported;
+}
 
 PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
         const MFnDependencyNode& depNodeFn,

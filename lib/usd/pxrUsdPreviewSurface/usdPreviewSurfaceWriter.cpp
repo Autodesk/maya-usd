@@ -17,8 +17,9 @@
 
 #include "usdPreviewSurface.h"
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
@@ -45,10 +46,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-PXRUSDMAYA_REGISTER_WRITER(
+PXRUSDMAYA_REGISTER_SHADER_WRITER(
     pxrUsdPreviewSurface,
     PxrMayaUsdPreviewSurface_Writer);
+
+UsdMayaShaderWriter::ContextSupport
+PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArgs)
+{
+    return exportArgs.renderContext == UsdMayaShadingModeTokens->preview
+        ? ContextSupport::Supported
+        : ContextSupport::Unsupported;
+}
 
 PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(
         const MFnDependencyNode& depNodeFn,

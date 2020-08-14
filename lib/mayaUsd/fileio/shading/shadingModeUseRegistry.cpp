@@ -17,6 +17,7 @@
 #include <mayaUsd/fileio/shaderReader.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -119,27 +120,37 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
             const SdfPath shaderUsdPath =
                 parentPath.AppendChild(shaderUsdPrimName);
 
-            UsdMayaPrimWriterSharedPtr primWriter =
-                context.GetWriteJobContext().CreatePrimWriter(
-                    depNodeFn,
-                    shaderUsdPath);
+            UsdMayaShaderWriterRegistry::WriterFactoryFn primWriterFactory
+                = UsdMayaShaderWriterRegistry::Find(
+                    TfToken(depNodeFn.typeName().asChar()), context.GetExportArgs());
+            if (!primWriterFactory) {
+                return nullptr;
+            }
 
-            UsdMayaShaderWriterSharedPtr shaderWriter =
-                std::dynamic_pointer_cast<UsdMayaShaderWriter>(primWriter);
+            UsdMayaPrimWriterSharedPtr primWriter
+                = primWriterFactory(depNodeFn, shaderUsdPath, context.GetWriteJobContext());
+            if (!primWriter) {
+                return nullptr;
+            }
+
+            UsdMayaShaderWriterSharedPtr shaderWriter
+                = std::dynamic_pointer_cast<UsdMayaShaderWriter>(primWriter);
 
             // Store the shader writer pointer whether we succeeded or not so
             // that we don't repeatedly attempt and fail to create it for the
             // same node.
             shaderWriterMap[nodeHandle] = shaderWriter;
 
+            shaderWriter->Write(UsdTimeCode::Default());
+
             return shaderWriter;
         }
 
         /// Export nodes in the Maya dependency graph rooted at \p rootPlug
-        /// for \p material.
+        /// under \p materialExportPath.
         ///
         /// The root plug should be from an attribute on the Maya shadingEngine
-        /// node that \p material represents.
+        /// node that the material represents.
         ///
         /// The first shader prim authored during the traversal will be assumed
         /// to be the primary shader for the connection represented by
@@ -147,7 +158,7 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
         /// connected to the Material prim.
         UsdShadeShader
         _ExportShadingDepGraph(
-                UsdShadeMaterial& material,
+                const SdfPath& materialExportPath,
                 const MPlug& rootPlug,
                 const UsdMayaShadingModeExportContext& context)
         {
@@ -226,14 +237,12 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                 UsdMayaShaderWriterSharedPtr srcShaderWriter =
                     _GetShaderWriterForNode(
                         srcPlug.node(),
-                        material.GetPath(),
+                        materialExportPath,
                         context,
                         shaderWriterMap);
                 if (!srcShaderWriter) {
                     continue;
                 }
-
-                srcShaderWriter->Write(UsdTimeCode::Default());
 
                 UsdPrim shaderPrim = srcShaderWriter->GetUsdPrim();
                 if (shaderPrim && !topLevelShader) {
@@ -249,14 +258,12 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                     UsdMayaShaderWriterSharedPtr dstShaderWriter =
                         _GetShaderWriterForNode(
                             dstPlug.node(),
-                            material.GetPath(),
+                            materialExportPath,
                             context,
                             shaderWriterMap);
                     if (!dstShaderWriter) {
                         continue;
                     }
-
-                    dstShaderWriter->Write(UsdTimeCode::Default());
 
                     UsdPrim shaderPrim = dstShaderWriter->GetUsdPrim();
                     if (shaderPrim && !topLevelShader) {
@@ -340,41 +347,64 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                 *mat = material;
             }
 
+            const TfToken& renderContext = context.GetExportArgs().renderContext;
+            SdfPath materialExportPath = materialPrim.GetPath();
+
             UsdShadeShader surfaceShaderSchema =
                 _ExportShadingDepGraph(
-                    material,
+                    materialExportPath,
                     context.GetSurfaceShaderPlug(),
                     context);
+            TfToken entryPointName = UsdShadeTokens->surface;
+
+            // For preview we will use the universal context, and for anything else we will prefix
+            if (renderContext != UsdMayaShadingModeTokens->preview) {
+                entryPointName = TfToken(
+                    TfStringPrintf("%s:%s", renderContext.GetText(), entryPointName.GetText())
+                        .c_str());
+            }
             UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
                 surfaceShaderSchema,
                 UsdShadeTokens->surface,
                 SdfValueTypeNames->Token,
                 material,
-                UsdShadeTokens->surface);
+                entryPointName);
 
             UsdShadeShader volumeShaderSchema =
                 _ExportShadingDepGraph(
-                    material,
+                    materialExportPath,
                     context.GetVolumeShaderPlug(),
                     context);
+            entryPointName = UsdShadeTokens->volume;
+            if (renderContext != UsdMayaShadingModeTokens->preview) {
+                entryPointName = TfToken(
+                    TfStringPrintf("%s:%s", renderContext.GetText(), entryPointName.GetText())
+                        .c_str());
+            }
             UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
                 volumeShaderSchema,
                 UsdShadeTokens->volume,
                 SdfValueTypeNames->Token,
                 material,
-                UsdShadeTokens->volume);
+                entryPointName);
 
             UsdShadeShader displacementShaderSchema =
                 _ExportShadingDepGraph(
-                    material,
+                    materialExportPath,
                     context.GetDisplacementShaderPlug(),
                     context);
+            entryPointName = UsdShadeTokens->displacement;
+            if (renderContext != UsdMayaShadingModeTokens->preview) {
+                entryPointName = TfToken(
+                    TfStringPrintf("%s:%s", renderContext.GetText(), entryPointName.GetText())
+                        .c_str());
+            }
             UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
                 displacementShaderSchema,
                 UsdShadeTokens->displacement,
                 SdfValueTypeNames->Token,
                 material,
-                UsdShadeTokens->displacement);
+                entryPointName);
         }
 };
 
@@ -384,12 +414,14 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, useRegistry)
 {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
         "useRegistry",
+        "Use Registry",
+        "Use a registry based machanism, complemented with render contexts, to export to a "
+        "UsdShade network",
         []() -> UsdMayaShadingModeExporterPtr {
             return UsdMayaShadingModeExporterPtr(
                 static_cast<UsdMayaShadingModeExporter*>(
                     new UseRegistryShadingModeExporter()));
-        }
-    );
+        });
 }
 
 namespace {

@@ -337,6 +337,11 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
                 UsdMayaJobExportArgsTokens->shadingMode,
                 UsdMayaShadingModeTokens->none,
                 UsdMayaShadingModeRegistry::ListExporters())),
+        renderContext(
+            _Token(userArgs,
+                UsdMayaJobExportArgsTokens->renderContext,
+                UsdMayaShadingModeTokens->preview,
+                UsdMayaShadingModeRegistry::ListRenderContexts())),
         verbose(
             _Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose)),
 
@@ -388,6 +393,7 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
         << "shadingMode: " << exportArgs.shadingMode << std::endl
+        << "renderContext: " << exportArgs.renderContext << std::endl
         << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
         << "timeSamples: " << exportArgs.timeSamples.size() << " sample(s)" << std::endl
         << "usdModelRootOverridePath: " << exportArgs.usdModelRootOverridePath << std::endl;
@@ -485,7 +491,9 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->renderLayerMode] =
                 UsdMayaJobExportArgsTokens->defaultLayer.GetString();
         d[UsdMayaJobExportArgsTokens->shadingMode] =
-                UsdMayaShadingModeTokens->displayColor.GetString();
+                UsdMayaShadingModeTokens->useRegistry.GetString();
+        d[UsdMayaJobExportArgsTokens->renderContext] =
+                UsdMayaShadingModeTokens->preview.GetString();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
 

@@ -233,6 +233,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, displayColor)
 {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
         "displayColor",
+        "Display Colors",
+        "Exports the diffuse color of the bound shader as a displayColor primvar on the USD mesh.",
         []() -> UsdMayaShadingModeExporterPtr {
             return UsdMayaShadingModeExporterPtr(
                 static_cast<UsdMayaShadingModeExporter*>(

@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdAttribute;
 
 /// Base class for USD prim writers that export Maya shading nodes as USD
-/// shader prims.
+/// shader prims in a given render context.
 class UsdMayaShaderWriter : public UsdMayaPrimWriter
 {
     public:
@@ -42,6 +42,19 @@ class UsdMayaShaderWriter : public UsdMayaPrimWriter
                 const MFnDependencyNode& depNodeFn,
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx);
+
+        /// The level of support a writer can offer for a given context
+        ///
+        /// A basic writer that gives correct results across most contexts should
+        /// report `Fallback`, while a specialized writer that really shines in a
+        /// given context should report `Supported` when the context is right and
+        /// `Unsupported` if the context is not as expected.
+        enum class ContextSupport { Supported, Fallback, Unsupported };
+
+        /// This static function is expected for all shader writers and allows
+        /// declaring how well this class can support the current context:
+        MAYAUSD_CORE_PUBLIC
+        static ContextSupport CanExport(const UsdMayaJobExportArgs& exportArgs);
 
         /// Get the name of the USD shading attribute that corresponds to the
         /// Maya attribute named \p mayaAttrName.

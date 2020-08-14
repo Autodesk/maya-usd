@@ -34,24 +34,41 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
     PXRUSDMAYA_SHADINGMODE_TOKENS);
 
-typedef std::map<TfToken, UsdMayaShadingModeExporterCreator> _ExportRegistry;
+namespace {
+    static const std::string _kEmptyString;
+}
+
+struct _ShadingMode {
+    std::string _niceName;
+    std::string _description;
+    UsdMayaShadingModeExporterCreator _fn;
+};
+typedef std::map<TfToken, _ShadingMode> _ExportRegistry;
 static _ExportRegistry _exportReg;
+
+struct _RenderContextInfo {
+    std::string _niceName;
+    std::string _description;
+};
+typedef std::unordered_map<TfToken, _RenderContextInfo, TfToken::HashFunctor> _RenderContextRegistry;
+static _RenderContextRegistry _contextReg;
 
 bool
 UsdMayaShadingModeRegistry::RegisterExporter(
         const std::string& name,
+        std::string niceName,
+        std::string description,
         UsdMayaShadingModeExporterCreator fn)
 {
     const TfToken nameToken(name);
-    std::pair<_ExportRegistry::const_iterator, bool> insertStatus =
-        _exportReg.insert(
-            std::make_pair(nameToken, fn));
+    std::pair<_ExportRegistry::const_iterator, bool> insertStatus
+        = _exportReg.insert(_ExportRegistry::value_type(
+            nameToken, _ShadingMode { std::move(niceName), std::move(description), fn }));
     if (insertStatus.second) {
         UsdMaya_RegistryHelper::AddUnloader([nameToken]() {
             _exportReg.erase(nameToken);
         });
-    }
-    else {
+    } else {
         TF_CODING_ERROR("Multiple shading exporters named '%s'", name.c_str());
     }
     return insertStatus.second;
@@ -63,7 +80,23 @@ UsdMayaShadingModeRegistry::_GetExporter(const TfToken& name)
     UsdMaya_RegistryHelper::LoadShadingModePlugins();
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
     const auto it = _exportReg.find(name);
-    return it == _exportReg.end() ? nullptr : it->second;
+    return it == _exportReg.end() ? nullptr : it->second._fn;
+}
+
+const std::string&
+UsdMayaShadingModeRegistry::_GetExporterNiceName(const TfToken& name) {
+    UsdMaya_RegistryHelper::LoadShadingModePlugins();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
+    const auto it = _exportReg.find(name);
+    return it == _exportReg.end() ? _kEmptyString : it->second._niceName;
+}
+
+const std::string&
+UsdMayaShadingModeRegistry::_GetExporterDescription(const TfToken& name) {
+    UsdMaya_RegistryHelper::LoadShadingModePlugins();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
+    const auto it = _exportReg.find(name);
+    return it == _exportReg.end() ? _kEmptyString : it->second._description;
 }
 
 typedef std::map<TfToken, UsdMayaShadingModeImporter> _ImportRegistry;
@@ -96,8 +129,8 @@ UsdMayaShadingModeRegistry::_GetImporter(const TfToken& name)
     return _importReg[name];
 }
 
-TfTokenVector
-UsdMayaShadingModeRegistry::_ListExporters() {
+TfTokenVector UsdMayaShadingModeRegistry::_ListExporters()
+{
     UsdMaya_RegistryHelper::LoadShadingModePlugins();
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
     TfTokenVector ret;
@@ -117,6 +150,53 @@ UsdMayaShadingModeRegistry::_ListImporters() {
         ret.push_back(e.first);
     }
     return ret;
+}
+
+REGISTER_SHADING_MODE_RENDER_CONTEXT(
+    UsdMayaShadingModeTokens->preview,
+    "USD Preview Surface",
+    "Exports the bound shader as a USD preview surface UsdShade network.");
+
+void UsdMayaShadingModeRegistry::RegisterRenderContext(
+    const TfToken& renderContext,
+    std::string    niceName,
+    std::string    description)
+{
+    // It is perfectly valid to register the same render context more than once,
+    // especially if exporters for a context are split across multiple libraries.
+    // We will keep the first niceName registered.
+    _contextReg.insert(_RenderContextRegistry::value_type(
+        renderContext, _RenderContextInfo { std::move(niceName), std::move(description) }));
+}
+
+TfTokenVector
+UsdMayaShadingModeRegistry::_ListRenderContexts() {
+    UsdMaya_RegistryHelper::LoadShadingModePlugins();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
+    TfTokenVector ret;
+    ret.reserve(_contextReg.size());
+    for (const auto& e : _contextReg) {
+        ret.push_back(e.first);
+    }
+    return ret;
+}
+
+const std::string&
+UsdMayaShadingModeRegistry::_GetRenderContextNiceName(const TfToken& renderContext)
+{
+    UsdMaya_RegistryHelper::LoadShadingModePlugins();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
+    auto it = _contextReg.find(renderContext);
+    return it == _contextReg.end() ? _kEmptyString : it->second._niceName;
+}
+
+const std::string&
+UsdMayaShadingModeRegistry::_GetRenderContextDescription(const TfToken& renderContext)
+{
+    UsdMaya_RegistryHelper::LoadShadingModePlugins();
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
+    auto it = _contextReg.find(renderContext);
+    return it == _contextReg.end() ? _kEmptyString : it->second._description;
 }
 
 TF_INSTANTIATE_SINGLETON(UsdMayaShadingModeRegistry);

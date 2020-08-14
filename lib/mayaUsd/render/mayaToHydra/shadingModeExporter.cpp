@@ -189,7 +189,10 @@ public:
 
 TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, mtoh) {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
-        "mtoh", []() -> UsdMayaShadingModeExporterPtr {
+        "mtoh",
+        "MtoH",
+        "",
+        []() -> UsdMayaShadingModeExporterPtr {
             return UsdMayaShadingModeExporterPtr(new MtohShadingModeExporter());
         });
 }

@@ -55,6 +55,7 @@ class MAYAUSD_CORE_PUBLIC MayaUSDExportCommand : public MPxCommand
     static constexpr auto kExportRefsAsInstanceableFlag = "eri";
     static constexpr auto kExportDisplayColorFlag = "dsp";
     static constexpr auto kShadingModeFlag = "shd";
+    static constexpr auto kRenderContextFlag = "rdc";
     static constexpr auto kMaterialsScopeNameFlag = "msn";
     static constexpr auto kExportMaterialCollectionsFlag = "mcs";
     static constexpr auto kMaterialCollectionsPathFlag = "mcp";

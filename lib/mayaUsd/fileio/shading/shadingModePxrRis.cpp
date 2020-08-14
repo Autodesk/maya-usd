@@ -385,6 +385,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, pxrRis)
 {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
         "pxrRis",
+        "RfM Shaders",
+        "",
         []() -> UsdMayaShadingModeExporterPtr {
             return UsdMayaShadingModeExporterPtr(
                 static_cast<UsdMayaShadingModeExporter*>(
