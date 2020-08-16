@@ -296,4 +296,11 @@ finally:
         "MAYA_NO_STANDALONE_ATEXIT=1"
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
+
+    if (PREFIX_INTERACTIVE)
+        # Add the "interactive" label to all tests that launch the Maya UI.
+        # This allows bypassing them by using the --label-exclude/-LE option to
+        # ctest. This is useful when running tests in a headless configuration.
+        set_property(TEST "${test_name}" APPEND PROPERTY LABELS interactive)
+    endif()
 endfunction()
