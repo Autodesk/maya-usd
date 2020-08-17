@@ -392,7 +392,8 @@ void HdVP2Mesh::Sync(
             _meshSharedData._renderingToSceneFaceVtxIds = faceVertexIndices;
 
             // Fill with sequentially increasing values, starting from 0. The
-            // new face vertex indices will be used to populate index data.
+            // new face vertex indices will be used to populate index data for
+            // unshared vertex layout.
             std::iota(newFaceVertexIndices.begin(), newFaceVertexIndices.end(), 0);
         }
         else {
