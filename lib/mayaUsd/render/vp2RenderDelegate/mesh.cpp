@@ -163,9 +163,6 @@ namespace {
             break;
         case HdInterpolationUniform:
         {
-            // Unshared vertex layout is required for uniform primvars, in this case
-            // renderingToSceneFaceVtxIds is a natural sequence starting from 0,
-            // thus we can avoid looking up in the table.
             const VtIntArray& faceVertexCounts = topology.GetFaceVertexCounts();
             const size_t numFaces = faceVertexCounts.size();
             if (numFaces <= primvarData.size()) {
@@ -205,7 +202,9 @@ namespace {
         case HdInterpolationFaceVarying:
             // Unshared vertex layout is required for face-varying primvars, in
             // this case renderingToSceneFaceVtxIds is a natural sequence starting
-            // from 0, thus we can avoid looking up in the table.
+            // from 0, thus we can save a lookup into the table. If the assumption
+            // about the natural sequence is changed, we will need the lookup and
+            // remap indices.
             if (numVertices <= primvarData.size()) {
                 // If the primvar has more data than needed, we issue a warning,
                 // but don't skip the primvar update. Truncate the buffer to the
@@ -391,9 +390,12 @@ void HdVP2Mesh::Sync(
             _meshSharedData._numVertices = numFaceVertexIndices;
             _meshSharedData._renderingToSceneFaceVtxIds = faceVertexIndices;
 
-            // Fill with sequentially increasing values, starting from 0. The
-            // new face vertex indices will be used to populate index data for
-            // unshared vertex layout.
+            // Fill with sequentially increasing values, starting from 0. The new
+            // face vertex indices will be used to populate index data for unshared
+            // vertex layout. Note that _FillPrimvarData assumes this sequence to
+            // be used for face-varying primvars and saves lookup and remapping
+            // with _renderingToSceneFaceVtxIds, so in case we change the array we
+            // should update _FillPrimvarData() code to remap indices correctly.
             std::iota(newFaceVertexIndices.begin(), newFaceVertexIndices.end(), 0);
         }
         else {
