@@ -104,7 +104,7 @@ void UsdUndoDuplicateCommand::undo()
 	// the notification is sent, we send a pre delete notification here.
 	Ufe::ObjectPreDelete notification(createSiblingSceneItem(
 										fUfeSrcPath, fUsdDstPath.GetElementString()));
-	Ufe::Scene::notifyObjectDelete(notification);
+	Ufe::Scene::instance().notify(notification);
 
 	fStage->RemovePrim(fUsdDstPath);
 }

@@ -108,8 +108,7 @@ void UsdUndoCreateGroupCommand::undo()
 	if (!_group) return;
 
 	// See UsdUndoDuplicateCommand.undo() comments.
-	auto notification = Ufe::ObjectPreDelete(_group);
-	Ufe::Scene::notifyObjectDelete(notification);
+	Ufe::Scene::instance().notify(Ufe::ObjectPreDelete(_group));
 
 	auto prim = _group->prim();
 	auto stage = prim.GetStage();

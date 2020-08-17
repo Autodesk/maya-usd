@@ -47,7 +47,7 @@ void UsdTRSUndoableCommandBase<V>::initialize()
     // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
     // for explanation of this->shared_from_this() in templated class.
     attribute().Get(&fPrevValue);
-    Ufe::Scene::instance().addObjectPathChangeObserver(this->shared_from_this());
+    Ufe::Scene::instance().addObserver(this->shared_from_this());
 }
 
 template<class V>

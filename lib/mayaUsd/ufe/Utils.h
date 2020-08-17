@@ -85,7 +85,7 @@ template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
 {
     T notification(item, previousPath);
-    Ufe::Scene::notifyObjectPathChange(notification);
+    Ufe::Scene::instance().notify(notification);
 }
 
 //! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
