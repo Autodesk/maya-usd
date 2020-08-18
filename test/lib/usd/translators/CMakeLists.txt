@@ -56,7 +56,6 @@ set(TEST_SCRIPT_FILES
     testUsdMayaAdaptorGeom.py
     testUsdMayaAdaptorMetadata.py
     testUsdMayaAdaptorUndoRedo.py
-    testUsdMayaListShadingModesCommand.py
 )
 
 add_custom_target(${TARGET_NAME} ALL)
@@ -114,10 +113,18 @@ mayaUsd_add_test(testUsdImportUVSetsFloat
 )
 set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS translators)
 
+mayaUsd_add_test(testUsdExportCustomRenderContext
+    PYTHON_MODULE testUsdExportCustomRenderContext
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+)
+set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS translators)
+
 # Test uses standardSurface, which was introduced in Maya 2020.
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020) 
-    mayaUsd_add_test(testUsdExportCustomRenderContext
-        PYTHON_MODULE testUsdExportCustomRenderContext
+    mayaUsd_add_test(testUsdMayaListShadingModesCommand
+        PYTHON_MODULE testUsdMayaListShadingModesCommand
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         ENV
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"

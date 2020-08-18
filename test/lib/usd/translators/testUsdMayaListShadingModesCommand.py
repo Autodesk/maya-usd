@@ -64,9 +64,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # plugin was not discoverable by USD so it was not loaded when asking
         # for the modes the first time. We will test discoverability in the
         # testUsdExportCustomRenderContext.py test.
-        test_plugin = os.path.join(self.inputPath, "..", "plugin",
-                                   "usdTestPlugin")
-        cmds.loadPlugin(test_plugin)
+        cmds.loadPlugin("usdTestPlugin")
 
         exporters = modes(ex=True)
 
