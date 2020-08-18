@@ -40,6 +40,8 @@
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
+#include <boost/filesystem.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
@@ -203,16 +205,27 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-
-    const MString fileTextureName = fileTextureNamePlug.asString(&status);
+    std::string fileTextureName(fileTextureNamePlug.asString(&status).asChar());
     if (status != MS::kSuccess) {
         return;
+    }
+
+    // WARNING: This extremely minimal attempt at making the file path relative
+    //          to the USD stage is a stopgap measure intended to provide
+    //          minimal interop. It will be replaced by proper use of Maya and
+    //          USD asset resolvers.
+    boost::filesystem::path usdDir(GetUsdStage()->GetRootLayer()->GetRealPath());
+    usdDir = usdDir.parent_path();
+    boost::system::error_code ec;
+    boost::filesystem::path relativePath = boost::filesystem::relative(fileTextureName, usdDir, ec);
+    if (!ec) {
+        fileTextureName = relativePath.generic_string();
     }
 
     shaderSchema.CreateInput(
         _tokens->file,
         SdfValueTypeNames->Asset).Set(
-            SdfAssetPath(fileTextureName.asChar()),
+            SdfAssetPath(fileTextureName.c_str()),
             usdTime);
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the

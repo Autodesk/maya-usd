@@ -10,6 +10,14 @@ set(LIBRARY_INSTALL_PATH
 
 add_library(${TARGET_NAME} SHARED)
 
+#------------------------------------------------------------------------------
+# modules and definitions
+#------------------------------------------------------------------------------
+if(NOT DEFINED ENV{BOOST_ROOT})
+    set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
+endif()
+find_package(Boost COMPONENTS filesystem system REQUIRED)
+
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
@@ -81,6 +89,8 @@ target_link_libraries(${TARGET_NAME}
         mayaUsd
         mayaUsd_Schemas
         basePxrUsdPreviewSurface
+        Boost::filesystem
+        Boost::system
 )
 
 # -----------------------------------------------------------------------------

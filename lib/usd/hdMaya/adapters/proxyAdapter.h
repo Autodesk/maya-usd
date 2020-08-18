@@ -37,7 +37,7 @@ public:
 
     void CreateUsdImagingDelegate();
 
-    void PreFrame();
+    void PreFrame(const MHWRender::MDrawContext& context);
 
     MayaUsdProxyShapeBase* GetProxy() { return _proxy; }
 

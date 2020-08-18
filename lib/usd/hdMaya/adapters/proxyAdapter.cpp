@@ -158,7 +158,8 @@ void HdMayaProxyAdapter::CreateUsdImagingDelegate() {
     _isPopulated = false;
 }
 
-void HdMayaProxyAdapter::PreFrame() {
+void HdMayaProxyAdapter::PreFrame(const MHWRender::MDrawContext& context) {
+    _usdDelegate->SetSceneMaterialsEnabled(!(context.getDisplayStyle() & MHWRender::MFrameContext::kDefaultMaterial));
     _usdDelegate->ApplyPendingUpdates();
     // TODO: set this only when time is actually changed
     _usdDelegate->SetTime(_proxy->getTime());

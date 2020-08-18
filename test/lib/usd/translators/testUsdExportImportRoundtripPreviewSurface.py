@@ -82,8 +82,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.connectAttr(file_node + ".outColor",
                          material_node + ".diffuseColor", f=True)
 
-        txfile = "/".join(["UsdExportImportRoundtripPreviewSurface",
-                           "Brazilian_rosewood_pxr128.png"])
+        txfile = os.path.join("UsdExportImportRoundtripPreviewSurface",
+                              "Brazilian_rosewood_pxr128.png")
         cmds.setAttr(file_node+".fileTextureName", txfile, type="string")
         cmds.setAttr(file_node + ".defaultColor", 0.5, 0.25, 0.125,
                      type="double3")
@@ -130,9 +130,25 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                          [(0.125, 0.25, 0.75)])
         self.assertEqual(cmds.getAttr("file2.defaultColor"),
                          [(0.5, 0.25, 0.125)])
-        self.assertTrue(cmds.getAttr("file2.fileTextureName").endswith(txfile))
+        original_path = cmds.getAttr(file_node+".fileTextureName")
+        imported_path = cmds.getAttr("file2.fileTextureName")
+        # imported path will be absolute:
+        self.assertFalse(imported_path.startswith(".."))
+        self.assertEqual(imported_path.lower(), original_path.lower())
         self.assertEqual(cmds.getAttr("place2dTexture.wrapU"), 0)
         self.assertEqual(cmds.getAttr("place2dTexture.wrapV"), 1)
+
+        # Make sure paths are relative in the USD file. Joining the directory
+        # that the USD file lives in with the texture path should point us at
+        # a file that exists.
+        stage = Usd.Stage.Open(usd_path)
+        texture_prim = stage.GetPrimAtPath(
+            "/pSphere1/Looks/pxrUsdPreviewSurface1SG/file1")
+        rel_texture_path = texture_prim.GetAttribute('inputs:file').Get().path
+
+        usd_dir = os.path.dirname(usd_path)
+        full_texture_path = os.path.join(usd_dir, rel_texture_path)
+        self.assertTrue(os.path.isfile(full_texture_path))
 
 
 if __name__ == '__main__':

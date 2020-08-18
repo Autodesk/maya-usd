@@ -211,6 +211,13 @@ void HdMayaSceneDelegate::Populate() {
 }
 
 void HdMayaSceneDelegate::PreFrame(const MHWRender::MDrawContext& context) {
+    bool enableMaterials = !(context.getDisplayStyle() & MHWRender::MFrameContext::kDefaultMaterial);
+    if (enableMaterials != _enableMaterials) {
+        _enableMaterials = enableMaterials;
+        for (const auto& shape : _shapeAdapters)
+            shape.second->MarkDirty(HdChangeTracker::DirtyMaterialId);
+    }
+
     if (!_materialTagsChanged.empty()) {
         if (IsHdSt()) {
             for (const auto& id : _materialTagsChanged) {
@@ -988,6 +995,8 @@ VtDictionary HdMayaSceneDelegate::GetMaterialMetadata(
 SdfPath HdMayaSceneDelegate::GetMaterialId(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MATERIAL_ID)
         .Msg("HdMayaSceneDelegate::GetMaterialId(%s)\n", id.GetText());
+    if (!_enableMaterials)
+        return {};
     auto shapeAdapter = TfMapLookupPtr(_shapeAdapters, id);
     if (shapeAdapter == nullptr) { return _fallbackMaterial; }
     auto material = shapeAdapter->get()->GetMaterial();
@@ -1083,19 +1092,20 @@ HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(
 bool HdMayaSceneDelegate::_CreateMaterial(
     const SdfPath& id, const MObject& obj) {
     TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
-        .Msg(
-            "HdMayaSceneDelegate::_CreateMaterial(%s)\n",
-            id.GetText());
-    auto materialCreator =
-        HdMayaAdapterRegistry::GetMaterialAdapterCreator(obj);
-    if (materialCreator == nullptr) { return false; }
+        .Msg("HdMayaSceneDelegate::_CreateMaterial(%s)\n", id.GetText());
+
+    auto materialCreator = HdMayaAdapterRegistry::GetMaterialAdapterCreator(obj);
+    if (materialCreator == nullptr) {
+        return false;
+    }
     auto materialAdapter = materialCreator(id, this, obj);
     if (materialAdapter == nullptr || !materialAdapter->IsSupported()) {
         return false;
     }
+
     materialAdapter->Populate();
     materialAdapter->CreateCallbacks();
-    _materialAdapters.insert({id, materialAdapter});
+    _materialAdapters.emplace(id, std::move(materialAdapter));
     return true;
 }
 
