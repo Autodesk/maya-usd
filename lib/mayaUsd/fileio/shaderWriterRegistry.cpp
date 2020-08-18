@@ -80,7 +80,7 @@ void UsdMayaShaderWriterRegistry::Register(
     UsdMayaShaderWriterRegistry::WriterFactoryFn    fn)
 {
     TF_DEBUG(PXRUSDMAYA_REGISTRY)
-        .Msg("Registering UsdMayaShaderWriter for maya type %s.\n", mayaTypeName.GetString());
+        .Msg("Registering UsdMayaShaderWriter for maya type %s.\n", mayaTypeName.GetText());
 
     int index = _indexCounter++;
     _reg.insert(std::make_pair(mayaTypeName, _RegistryEntry { pred, fn, index }));

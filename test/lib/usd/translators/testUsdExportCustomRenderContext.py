@@ -34,7 +34,7 @@ class testUsdExportCustomRenderContext(unittest.TestCase):
         cls.input_path = fixturesUtils.setUpClass(__file__)
 
         test_dir = os.path.join(cls.input_path,
-                                "UsdExportCustomRenderContext")
+                                "UsdExportCustomRenderContextTest")
 
         cmds.workspace(test_dir, o=True)
 

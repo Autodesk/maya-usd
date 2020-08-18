@@ -130,27 +130,19 @@ bool Maya_GenericWriter::_IsConnectable(MPlug & plug)
 {
     MStatus    status;
     MPlugArray connections;
-    bool       isSource = true;
-    while (true) {
-        if (plug.connectedTo(connections, isSource, &status) && status == MS::kSuccess) {
-            for (MPlug const& otherPlug : connections) {
-                MFnDependencyNode depNodeFn(otherPlug.node(), &status);
-                if (status != MS::kSuccess) {
-                    continue;
-                }
-                // See if it is connected to something exportable:
-                UsdMayaShaderWriterRegistry::WriterFactoryFn primWriterFactory
-                    = UsdMayaShaderWriterRegistry::Find(
-                        TfToken(depNodeFn.typeName().asChar()), _GetExportArgs());
-                if (primWriterFactory) {
-                    return true;
-                }
+    if (plug.connectedTo(connections, true, true, &status) && status == MS::kSuccess) {
+        for (MPlug const& otherPlug : connections) {
+            MFnDependencyNode depNodeFn(otherPlug.node(), &status);
+            if (status != MS::kSuccess) {
+                continue;
             }
-        }
-        if (isSource) {
-            isSource = false;
-        } else {
-            break;
+            // See if it is connected to something exportable:
+            UsdMayaShaderWriterRegistry::WriterFactoryFn primWriterFactory
+                = UsdMayaShaderWriterRegistry::Find(
+                    TfToken(depNodeFn.typeName().asChar()), _GetExportArgs());
+            if (primWriterFactory) {
+                return true;
+            }
         }
     }
 
