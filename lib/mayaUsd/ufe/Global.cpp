@@ -83,7 +83,7 @@ Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
 StagesSubject::Ptr g_StagesSubject;
 
 bool InPathChange::inGuard = false;
-bool InAddOrRemoveReference::inGuard = false;
+bool InAddOrDeleteOperation::inGuard = false;
 
 //------------------------------------------------------------------------------
 // Functions
