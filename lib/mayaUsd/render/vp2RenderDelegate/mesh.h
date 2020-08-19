@@ -29,6 +29,15 @@ class HdSceneDelegate;
 class HdVP2DrawItem;
 class HdVP2RenderDelegate;
 
+//! Primvar data and interpolation.
+struct PrimvarSource {
+    VtValue data;
+    HdInterpolation interpolation;
+};
+
+//! A hash map of primvar scene data using primvar name as the key.
+typedef TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> PrimvarSourceMap;
+
 /*! \brief  HdVP2Mesh-specific data shared among all its draw items.
     \class  HdVP2MeshSharedData
 
@@ -37,23 +46,26 @@ class HdVP2RenderDelegate;
     draw data from these shared data as needed.
 */
 struct HdVP2MeshSharedData {
-    //! Cached scene data. VtArrays are reference counted, so as long as we
+    //! Cached scene topology. VtArrays are reference counted, so as long as we
     //! only call const accessors keeping them around doesn't incur a buffer
     //! copy.
     HdMeshTopology _topology;
 
-    //! Optional topology which is computed for conversion from shared vertices
-    //! to unshared when needed.
-    std::unique_ptr<HdMeshTopology> _unsharedTopology;
+    //! The rendering topology is to create unshared or sorted vertice layout
+    //! for efficient GPU rendering.
+    HdMeshTopology _renderingTopology;
+
+    //! An array to store original scene face vertex index of each rendering
+    //! face vertex index.
+    VtIntArray _renderingToSceneFaceVtxIds;
+
+    //! The number of vertices in each vertex buffer.
+    size_t _numVertices;
 
     //! A local cache of primvar scene data. "data" is a copy-on-write handle to
     //! the actual primvar buffer, and "interpolation" is the interpolation mode
     //! to be used.
-    struct PrimvarSource {
-        VtValue data;
-        HdInterpolation interpolation;
-    };
-    TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
+    PrimvarSourceMap _primvarSourceMap;
 
     //! A local cache of points. It is not cached in the above primvar map
     //! but a separate VtArray for easier access.
