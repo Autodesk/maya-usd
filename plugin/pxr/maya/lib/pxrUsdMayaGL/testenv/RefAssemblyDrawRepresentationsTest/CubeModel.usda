@@ -14,6 +14,7 @@ def Xform "CubeModel" (
     variants = {
         string shadingVariant = "Default"
     }
+    prepend apiSchemas = ["GeomModelAPI"]
 )
 {
     uniform token model:cardGeometry = "cross"
