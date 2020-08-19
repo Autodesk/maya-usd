@@ -20,7 +20,7 @@
 
 #include "AL/maya/utils/MayaHelperMacros.h"
 
-#include "maya/MPxCommand.h"
+#include <maya/MPxCommand.h>
 
 #include <sstream>
 #include <vector>

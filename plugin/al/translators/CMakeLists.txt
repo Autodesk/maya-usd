@@ -24,17 +24,18 @@ add_library(${TRANSLATORS_PACKAGE}
     DirectionalLight.cpp
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${TRANSLATORS_PACKAGE})
 
-# HS OCT 2019, do we really need to define 
+# HS OCT 2019, do we really need to define
 # AL_MAYA_MACROS_EXPORT for this target?
 if(NOT IS_WINDOWS)
-    set_target_properties(${TRANSLATORS_PACKAGE}
-          PROPERTIES COMPILE_DEFINITIONS
-          "AL_MAYA_MACROS_EXPORT;${_macDef}"
-    )
+  target_compile_definitions(${TRANSLATORS_PACKAGE}
+      PRIVATE
+          AL_MAYA_MACROS_EXPORT
+          $<$<BOOL:${IS_MACOSX}>:OSMac_>
+          $<$<BOOL:${IS_LINUX}>:LINUX>
+  )
 endif()
 
 set(arg_PUBLIC_HEADER_FILES
@@ -109,7 +110,10 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
 
 #install top level plugInfo.json that includes the configured plugInfo.json
 install(CODE
- "file(WRITE \"${AL_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+ "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
+ DESTINATION ${AL_INSTALL_PREFIX}/lib/usd
 )
 
 # install public headers

@@ -1,15 +1,14 @@
 #ifndef HDMAYA_AL_PROXY_ADAPTER_H
 #define HDMAYA_AL_PROXY_ADAPTER_H
 
-#include "../delegates/proxyUsdImagingDelegate.h"
-#include "shapeAdapter.h"
-
 #include <pxr/pxr.h>
 #include <pxr/base/tf/weakBase.h>
-
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include "../../../listeners/proxyShapeNotice.h"
+#include <mayaUsd/listeners/proxyShapeNotice.h>
+
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/proxyUsdImagingDelegate.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,10 +37,24 @@ public:
 
     void CreateUsdImagingDelegate();
 
-    void PreFrame();
+    void PreFrame(const MHWRender::MDrawContext& context);
 
     MayaUsdProxyShapeBase* GetProxy() { return _proxy; }
 
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimId, int instanceIndex,
+        HdInstancerContext *instancerContext) {
+        return _usdDelegate->GetScenePrimPath(
+            rprimId, instanceIndex, instancerContext);
+    }
+#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimId, int instanceIndex) {
+        return _usdDelegate->GetScenePrimPath(
+            rprimId, instanceIndex);
+    }
+#else
     SdfPath GetPathForInstanceIndex(
         const SdfPath& protoPrimPath, int instanceIndex,
         int* absoluteInstanceIndex, SdfPath* rprimPath = NULL,
@@ -50,6 +63,7 @@ public:
             protoPrimPath, instanceIndex, absoluteInstanceIndex, rprimPath,
             instanceContext);
     }
+#endif
 
     SdfPath ConvertIndexPathToCachePath(SdfPath const& indexPath) {
         return _usdDelegate->ConvertIndexPathToCachePath(indexPath);
@@ -61,7 +75,7 @@ public:
 
 private:
     /// Notice listener method for proxy stage set
-    void _OnStageSet(const UsdMayaProxyStageSetNotice& notice);
+    void _OnStageSet(const MayaUsdProxyStageSetNotice& notice);
 
     MayaUsdProxyShapeBase* _proxy{ nullptr };
     std::unique_ptr<HdMayaProxyUsdImagingDelegate> _usdDelegate;

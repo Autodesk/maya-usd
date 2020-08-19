@@ -16,14 +16,13 @@
 #ifndef HDMAYA_SHADOW_MATRIX_H
 #define HDMAYA_SHADOW_MATRIX_H
 
-#include <pxr/imaging/hdx/shadowMatrixComputation.h>
-#include <pxr/pxr.h>
-
-#include <pxr/base/gf/matrix4d.h>
-
 #include <vector>
 
 #include <boost/shared_ptr.hpp>
+
+#include <pxr/pxr.h>
+#include <pxr/imaging/hdx/shadowMatrixComputation.h>
+#include <pxr/base/gf/matrix4d.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -17,10 +17,10 @@
 
 #include "AL/usdmaya/utils/AttributeType.h"
 
-#include "pxr/usd/sdf/types.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test USD to attribute enum mappings

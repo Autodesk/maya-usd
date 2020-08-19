@@ -15,24 +15,22 @@
 //
 #pragma once
 
-#include "../../Api.h"
-
+#include <AL/maya/utils/MayaHelperMacros.h>
+#include <AL/usdmaya/Api.h>
 #include <AL/usdmaya/ForwardDeclares.h>
-#include "AL/usdmaya/utils/AttributeType.h"
-#include "AL/usdmaya/utils/DgNodeHelper.h"
-#include "AL/usdmaya/utils/ForwardDeclares.h"
-#include "AL/maya/utils/MayaHelperMacros.h"
+#include <AL/usdmaya/utils/AttributeType.h>
+#include <AL/usdmaya/utils/DgNodeHelper.h>
+#include <AL/usdmaya/utils/ForwardDeclares.h>
 
-#include "maya/MPlug.h"
-#include "maya/MAngle.h"
-#include "maya/MDistance.h"
-#include "maya/MTime.h"
+#include <pxr/base/gf/half.h>
+#include <pxr/usd/usd/attribute.h>
 
-#include "maya/MGlobal.h"
-#include "maya/MStatus.h"
-
-#include "pxr/base/gf/half.h"
-#include "pxr/usd/usd/attribute.h"
+#include <maya/MAngle.h>
+#include <maya/MDistance.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MTime.h>
 
 #include <string>
 #include <vector>

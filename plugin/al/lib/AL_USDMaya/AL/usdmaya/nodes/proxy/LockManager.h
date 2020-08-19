@@ -15,9 +15,9 @@
 //
 #pragma once
 
-#include <pxr/usd/sdf/path.h>
+#include <AL/usdmaya/Api.h>
 
-#include "../../Api.h"
+#include <pxr/usd/sdf/path.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

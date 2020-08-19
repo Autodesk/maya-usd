@@ -13,21 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "strokeWriter.h"
-
-#include "../../fileio/primWriterRegistry.h"
-
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/vt/types.h"
-#include "pxr/base/vt/value.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/basisCurves.h"
-#include "pxr/usd/usdGeom/primvar.h"
-#include "pxr/usd/usdGeom/tokens.h"
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFnDependencyNode.h>
@@ -37,12 +23,23 @@
 #include <maya/MStatus.h>
 #include <maya/MVectorArray.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/basisCurves.h>
+#include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdGeom/tokens.h>
+
+#include <mayaUsd/fileio/primWriterRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 PXRUSDMAYA_REGISTER_WRITER(stroke, PxrUsdTranslators_StrokeWriter);
-
 
 PxrUsdTranslators_StrokeWriter::PxrUsdTranslators_StrokeWriter(
         const MFnDependencyNode& depNodeFn,

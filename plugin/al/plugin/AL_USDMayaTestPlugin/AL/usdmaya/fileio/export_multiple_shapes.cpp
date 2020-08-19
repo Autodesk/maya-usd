@@ -1,7 +1,7 @@
 #include <maya/MGlobal.h>
 #include <maya/MFileIO.h>
 
-#include "pxr/usd/usdGeom/camera.h"
+#include <pxr/usd/usdGeom/camera.h>
 
 #include "test_usdmaya.h"
 

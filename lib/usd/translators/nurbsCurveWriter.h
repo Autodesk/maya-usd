@@ -16,22 +16,19 @@
 #ifndef PXRUSDTRANSLATORS_NURBS_CURVE_WRITER_H
 #define PXRUSDTRANSLATORS_NURBS_CURVE_WRITER_H
 
-/// \file pxrUsdTranslators/nurbsCurveWriter.h
-
-#include "pxr/pxr.h"
-
-#include "../../fileio/primWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+/// \file
 
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Exports Maya nurbsCurve objects (MFnNurbsCurve) as UsdGeomNurbsCurves.
 class PxrUsdTranslators_NurbsCurveWriter : public UsdMayaPrimWriter

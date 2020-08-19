@@ -15,17 +15,42 @@
 //
 // Modifications copyright (C) 2020 Autodesk
 //
+#include <maya/MFnBlendShapeDeformer.h>
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/mesh.h>
 
-#include "../../fileio/primReaderRegistry.h"
-#include "../../fileio/translators/translatorMesh.h"
-
-#include "pxr/usd/usdGeom/mesh.h"
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/translators/translatorGprim.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/fileio/translators/translatorMesh.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/meshReadUtils.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/nodes/stageNode.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Prim reader for mesh
+namespace
+{
+    bool
+    assignMaterial(const UsdGeomMesh& mesh,
+                   const UsdMayaPrimReaderArgs& args,
+                   const MObject& meshObj,
+                   UsdMayaPrimReaderContext* context)
+    {
+        // If a material is bound, create (or reuse if already present) and assign it
+        // If no binding is present, assign the mesh to the default shader
+        const UsdMayaJobImportArgs& jobArguments = args.GetJobArguments();  
+        return UsdMayaTranslatorMaterial::AssignMaterial(jobArguments,
+                                                         mesh,
+                                                         meshObj,
+                                                         context);
+    }
+}
+
+// prim reader for mesh
 class MayaUsdPrimReaderMesh final : public UsdMayaPrimReader
 {
 public:
@@ -48,14 +73,79 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimReaderRegistry, UsdGeomMesh)
 bool
 MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
 {
-    const UsdPrim& usdPrim = _GetArgs().GetUsdPrim();
+    if(!context){
+        return false;
+    }
 
-    auto parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+    MStatus status{MS::kSuccess};
 
-    return UsdMayaTranslatorMesh::Create(UsdGeomMesh(usdPrim),
-                                         parentNode,
-                                         _GetArgs(),
-                                         context);
+    const auto& prim = _GetArgs().GetUsdPrim();
+    auto mesh = UsdGeomMesh(prim);
+    if (!mesh) {
+        return false;
+    }
+
+    auto parentNode = context->GetMayaNode(prim.GetPath().GetParentPath(), true);
+    MObject transformObj;
+    bool retStatus = UsdMayaTranslatorUtil::CreateTransformNode(prim,
+                                                                parentNode,
+                                                                _GetArgs(),
+                                                                context,
+                                                                &status,
+                                                                &transformObj);
+    if(!retStatus){
+        return false;
+    }
+
+    // get the USD stage node from the context's registry
+    MObject stageNode;
+    if (_GetArgs().GetUseAsAnimationCache()){
+        stageNode = context->GetMayaNode(SdfPath(UsdMayaStageNodeTokens->MayaTypeName.GetString()),false);
+    }
+
+    MayaUsd::TranslatorMeshRead meshRead(mesh, 
+                                         prim, 
+                                         transformObj, 
+                                         stageNode, 
+                                         _GetArgs().GetTimeInterval(),
+                                         _GetArgs().GetUseAsAnimationCache(),
+                                         &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    // mesh is a shape, so read Gprim properties
+    UsdMayaTranslatorGprim::Read(mesh, meshRead.meshObject(), context);
+
+    // undo/redo mesh object
+    context->RegisterNewMayaNode(meshRead.shapePath().GetString(), meshRead.meshObject());
+
+    // undo/redo deformable mesh (blenshape, PointBasedDeformer)
+    if (meshRead.pointsNumTimeSamples() > 0) {
+        if (_GetArgs().GetUseAsAnimationCache()){
+            context->RegisterNewMayaNode(meshRead.pointBasedDeformerName().asChar(), 
+                                         meshRead.pointBasedDeformerNode());
+        }
+        else {
+            if(meshRead.blendObject().apiType() == MFn::kBlend){ 
+                return false;
+            }
+
+            MFnBlendShapeDeformer blendFnSet(meshRead.blendObject());
+            context->RegisterNewMayaNode(blendFnSet.name().asChar(), 
+                                         meshRead.blendObject());
+        }
+    }
+
+    // assign material
+    assignMaterial(mesh, _GetArgs(), meshRead.meshObject(), context);
+
+    // assign primvars to mesh
+    UsdMayaMeshReadUtils::assignPrimvarsToMesh( mesh, 
+                                           meshRead.meshObject(),
+                                           _GetArgs().GetExcludePrimvarNames());
+    // assign invisible faces
+    UsdMayaMeshReadUtils::assignInvisibleFaces(mesh, meshRead.meshObject());
+
+    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

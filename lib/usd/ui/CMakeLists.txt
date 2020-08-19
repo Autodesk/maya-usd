@@ -27,64 +27,43 @@ add_library(${PROJECT_NAME} SHARED)
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
-        cmds/USDImportDialogCmd.cpp
-        factories/TreeModelFactory.cpp
+        ItemDelegate.cpp
+        TreeItem.cpp
+        TreeModel.cpp
+        TreeModelFactory.cpp
+        USDImportDialog.cpp
+        USDImportDialogCmd.cpp
+        USDQtUtil.cpp
+
+        USDImportDialog.ui
         images/ui.qrc
-        views/ItemDelegate.cpp
-        views/TreeItem.cpp
-        views/TreeModel.cpp
-        views/USDImportDialog.cpp
-        views/USDImportDialog.ui
-        views/USDQtUtil.cpp
 )
 
 # -----------------------------------------------------------------------------
-# promoted headers
-# -----------------------------------------------------------------------------
-set(mayaUsdUI_headers
-    api.h
-    cmds/USDImportDialogCmd.h
-    factories/TreeModelFactory.h
-    views/IMayaMQtUtil.h
-    views/IUSDImportView.h
-    views/ItemDelegate.h
-    views/TreeItem.h
-    views/TreeModel.h
-    views/USDImportDialog.h
-    views/USDQtUtil.h
-)
-
-mayaUsd_promoteHeaderList(SUBDIR "ui" HEADERS ${mayaUsdUI_headers})
-
-# -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${PROJECT_NAME}
     PRIVATE
+        # These flags are needed for Maya
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
+
         MAYAUSD_UI_EXPORT
 )
 
-# -----------------------------------------------------------------------------
-# include directories
-# -----------------------------------------------------------------------------
-target_include_directories(${PROJECT_NAME}
-    PRIVATE
-        ${MAYA_INCLUDE_DIRS}
-        ${PXR_INCLUDE_DIRS}
-        ${CMAKE_BINARY_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}
-)
+# QT_NO_KEYWORDS prevents Qt from defining the foreach, signals, slots and emit macros.
+# this avoids overlap between Qt macros and boost, and enforces using Q_ macros.
+set_target_properties(Qt5::Core PROPERTIES INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+
+mayaUsd_compile_config(${PROJECT_NAME})
 
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        usd
+    PUBLIC
         mayaUsd
-        ${MAYA_OpenMaya_LIBRARY}
-        ${MAYA_OpenMayaUI_LIBRARY}
+    PRIVATE
         Qt5::Core
         Qt5::Gui
         Qt5::Widgets
@@ -111,6 +90,29 @@ if(IS_MACOSX OR IS_LINUX)
 endif()
 
 # -----------------------------------------------------------------------------
+# promoted headers
+# -----------------------------------------------------------------------------
+set(HEADERS
+    api.h
+    IMayaMQtUtil.h
+    ItemDelegate.h
+    IUSDImportView.h
+    TreeItem.h
+    TreeModel.h
+    TreeModelFactory.h
+    USDImportDialog.h
+    USDImportDialogCmd.h
+    USDQtUtil.h
+)
+
+mayaUsd_promoteHeaderList( 
+    HEADERS
+        ${HEADERS}
+    BASEDIR
+        ${PROJECT_NAME}/ui
+)
+
+# -----------------------------------------------------------------------------
 # install
 # -----------------------------------------------------------------------------
 install(
@@ -128,8 +130,8 @@ if(IS_WINDOWS)
     )
 endif()
 
-install(FILES ${mayaUsdUI_headers}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd/ui
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/ui
 )
 
 # -----------------------------------------------------------------------------

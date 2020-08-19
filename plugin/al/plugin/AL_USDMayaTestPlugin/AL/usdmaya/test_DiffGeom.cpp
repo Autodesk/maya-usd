@@ -17,11 +17,11 @@
 
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 
-#include "maya/MFileIO.h"
-#include "maya/MFloatPointArray.h"
-#include "maya/MIntArray.h"
-#include "maya/MFnMesh.h"
-#include "maya/MFnTransform.h"
+#include <maya/MFileIO.h>
+#include <maya/MFloatPointArray.h>
+#include <maya/MIntArray.h>
+#include <maya/MFnMesh.h>
+#include <maya/MFnTransform.h>
 
 static const float P[][4] = {
   { 0, 0, 0, 1 },

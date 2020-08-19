@@ -16,7 +16,7 @@
 #ifndef PXRUSD_API_H
 #define PXRUSD_API_H
 
-#include "pxr/base/arch/export.h"
+#include <pxr/base/arch/export.h>
 
 #if defined(PXR_STATIC)
 #   define PXRUSD_API

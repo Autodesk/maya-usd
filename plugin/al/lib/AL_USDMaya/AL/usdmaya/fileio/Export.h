@@ -17,9 +17,9 @@
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
-#include "maya/MPxCommand.h"
+#include <maya/MPxCommand.h>
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "AL/usdmaya/utils/ForwardDeclares.h"
 #include "AL/maya/utils/Api.h"
 #include "AL/maya/utils/MayaHelperMacros.h"

@@ -19,11 +19,11 @@
 #include "AL/usdmaya/TransformOperation.h"
 #include "AL/usdmaya/nodes/BasicTransformationMatrix.h"
 
-#include "maya/MPxTransformationMatrix.h"
-#include "maya/MPxTransform.h"
+#include <maya/MPxTransformationMatrix.h>
+#include <maya/MPxTransform.h>
 
-#include "pxr/usd/usdGeom/xformable.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -372,6 +372,7 @@ public:
 
   /// \brief  set the prim that this transformation matrix will read/write to.
   /// \param  prim the prim
+  /// \param  transformNode the owning transform node
   void setPrim(const UsdPrim& prim, Scope* transformNode) override;
 
   /// \brief  Returns the timecode to use when pushing the transform values to the USD prim. If readFromTimeline flag
@@ -488,6 +489,7 @@ public:
   void pushRotatePivotTranslateToPrim();
   void pushRotatePivotToPrim();
   void pushRotateToPrim();
+  void pushRotateQuatToPrim();
   void pushRotateAxisToPrim();
   void pushScalePivotTranslateToPrim();
   void pushScalePivotToPrim();

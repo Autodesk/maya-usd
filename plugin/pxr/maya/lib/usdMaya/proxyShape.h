@@ -21,15 +21,15 @@
 #include "usdMaya/api.h"
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/tf/staticTokens.h"
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/tf/staticTokens.h>
 
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/notice.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/timeCode.h"
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/notice.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>

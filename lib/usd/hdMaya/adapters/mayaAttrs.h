@@ -16,12 +16,12 @@
 #ifndef HDMAYA_ATTRS_H
 #define HDMAYA_ATTRS_H
 
-#include <pxr/pxr.h>
-
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 
-#include "../api.h"
+#include <pxr/pxr.h>
+
+#include <hdMaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

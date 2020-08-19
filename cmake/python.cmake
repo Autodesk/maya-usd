@@ -55,8 +55,12 @@ if(PYTHONLIBS_FOUND AND PYTHON_MODULE_EXTENSION)
     return()
 endif()
 
-# Use the Python interpreter to find the libs.
-find_package(Python 2.7 EXACT REQUIRED COMPONENTS Interpreter)
+# Use the Python module to find the python lib.
+if(BUILD_WITH_PYTHON_3)
+    find_package(Python 3.7 EXACT REQUIRED COMPONENTS Interpreter)
+else()
+    find_package(Python 2.7 EXACT REQUIRED COMPONENTS Interpreter)
+endif()
 
 if(NOT Python_Interpreter_FOUND)
     set(PYTHONLIBS_FOUND FALSE)

@@ -18,15 +18,10 @@
 
 #include "AL/usdmaya/utils/Api.h"
 
-#include "maya/MFnNurbsCurve.h"
+#include <maya/MFnNurbsCurve.h>
 
-#if MAYA_API_VERSION < 201800
-#include "maya/MFnDoubleArrayData.h"
-#include "maya/MFnFloatArrayData.h"
-#endif
-
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -36,6 +31,9 @@ namespace utils {
 
 AL_USDMAYA_UTILS_PUBLIC
 void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr, UsdTimeCode time = UsdTimeCode::Default());
+
+AL_USDMAYA_UTILS_PUBLIC
+void copyExtent(const MFnNurbsCurve& fnCurve, const UsdAttribute& extentAttr, UsdTimeCode time = UsdTimeCode::Default());
 
 AL_USDMAYA_UTILS_PUBLIC
 void copyCurveVertexCounts(const MFnNurbsCurve& fnCurve, const UsdAttribute& countsAttr, UsdTimeCode time = UsdTimeCode::Default());
@@ -99,6 +97,7 @@ enum DiffNurbsCurve
   kRanges = 1 << 3,
   kOrder = 1 << 4,
   kWidths = 1 << 5,
+  kCurveExtent = 1 << 6,
   kAllNurbsCurveComponents = 0xFFFFFFFF
 };
 

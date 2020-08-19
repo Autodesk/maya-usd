@@ -16,7 +16,7 @@
 #include "test_usdmaya.h"
 
 #include "AL/maya/event/MayaEventManager.h"
-#include "maya/MFileIO.h"
+#include <maya/MFileIO.h>
 
 
 using namespace AL::maya::event;

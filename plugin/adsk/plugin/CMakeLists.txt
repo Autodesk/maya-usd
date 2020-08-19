@@ -23,13 +23,16 @@ add_library(${TARGET_NAME} MODULE)
 target_sources(${TARGET_NAME} 
     PRIVATE
         plugin.cpp
+        adskImportCommand.cpp
+        adskExportCommand.cpp
+        adskListShadingModesCommand.cpp
         importTranslator.cpp
         exportTranslator.cpp
         ProxyShape.cpp
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compile configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
@@ -38,13 +41,20 @@ target_compile_definitions(${TARGET_NAME}
         $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
+if(DEFINED MAYAUSD_VERSION)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+            MAYAUSD_VERSION=${MAYAUSD_VERSION}
+    )
+endif()
+
+mayaUsd_compile_config(${TARGET_NAME})
+
 # -----------------------------------------------------------------------------
 # include directories
 # -----------------------------------------------------------------------------
 target_include_directories(${TARGET_NAME}
     PRIVATE
-        ${CMAKE_BINARY_DIR}/include
-        ${PXR_INCLUDE_DIRS}
         $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
@@ -53,20 +63,21 @@ target_include_directories(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME}
     PRIVATE
-        ar 
-        gf
-        kind
-        plug
-        sdf
-        tf
-        usd
-        usdGeom
-        usdUtils
-        mayaUsd
-        $<$<BOOL:${Qt5_FOUND}>:mayaUsdUI>
         $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
-        ${MAYA_LIBRARIES}
+        basePxrUsdPreviewSurface
 )
+
+if (${Qt5_FOUND})
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsdUI
+    )
+else()
+    target_link_libraries(${TARGET_NAME}
+        PRIVATE
+            mayaUsd
+    )
+endif()
 
 # -----------------------------------------------------------------------------
 # properties

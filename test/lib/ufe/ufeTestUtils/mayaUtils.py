@@ -19,15 +19,16 @@
 """
     Helper functions regarding Maya that will be used throughout the test.
 """
-
-
 import maya.cmds as cmds
 import sys, os
+import re
 
 import ufe
 
 mayaRuntimeID = 1
 mayaSeparator = "|"
+
+prRe = re.compile('Preview Release ([0-9]+)')
 
 def loadPlugin(pluginName):
     """ 
@@ -42,8 +43,8 @@ def loadPlugin(pluginName):
             cmds.loadPlugin( pluginName, quiet = True )
         return True
     except:
-        print sys.exc_info()[1]
-        print "Unable to load %s" % pluginName
+        print(sys.exc_info()[1])
+        print("Unable to load %s" % pluginName)
         return False
             
 def isPluginLoaded(pluginName):
@@ -106,8 +107,13 @@ def getMayaSelectionList():
             A list(str) containing all selected Maya items
     """
     # Remove the unicode of cmds.ls
-    return [x.encode('UTF8') for x in cmds.ls(sl=True)]
-    
+
+    # TODO: HS, June 10, 2020 investigate why x needs to be encoded
+    if sys.version_info[0] == 2:
+        return [x.encode('UTF8') for x in cmds.ls(sl=True)]
+    else:
+        return [x for x in cmds.ls(sl=True)]
+
 def openTopLayerScene():
     '''
         The test scene hierarchy is represented as :
@@ -126,4 +132,56 @@ def openTopLayerScene():
     # Open top_layer file which contains the USD scene
     filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "ballset", "StandaloneScene", "top_layer.ma" )
     cmds.file(filePath, force=True, open=True)
-    
+
+def openCylinderScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "cylinder", "usdCylinder.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def openTwoSpheresScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "twoSpheres", "twoSpheres.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def openSphereAnimatedRadiusScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def openTreeScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "tree", "tree.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def openTreeRefScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "tree", "treeRef.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def openAppleBiteScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "appleBite", "appleBite.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def openGroupBallsScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "groupBalls", "ballset.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def previewReleaseVersion():
+    '''Return the Maya Preview Release version.
+
+    If the version of Maya is 2019, returns 98.
+
+    If the version of Maya is 2020, returns 110.
+
+    If the version of Maya is current and is not a Preview Release, returns
+    sys.maxsize (a very large number).  If the environment variable
+    MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE is defined, return its value instead.
+    '''
+
+    if 'MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE' in os.environ:
+        return int(os.environ['MAYA_PREVIEW_RELEASE_VERSION_OVERRIDE'])
+
+    majorVersion = int(cmds.about(majorVersion=True))
+    if majorVersion == 2019:
+        return 98
+    elif majorVersion == 2020:
+        return 110
+
+    match = prRe.match(cmds.about(v=True))
+
+    return int(match.group(1)) if match else sys.maxsize

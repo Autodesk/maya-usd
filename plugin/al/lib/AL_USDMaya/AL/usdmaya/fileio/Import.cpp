@@ -23,13 +23,13 @@
 
 #include "AL/usdmaya/CodeTimings.h"
 
-#include "maya/MAnimControl.h"
-#include "maya/MArgDatabase.h"
-#include "maya/MFnTransform.h"
-#include "maya/MSyntax.h"
-#include "maya/MTime.h"
+#include <maya/MAnimControl.h>
+#include <maya/MArgDatabase.h>
+#include <maya/MFnTransform.h>
+#include <maya/MSyntax.h>
+#include <maya/MTime.h>
 
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/usd/stage.h>
 
 namespace AL {
 namespace usdmaya {

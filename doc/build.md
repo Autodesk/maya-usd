@@ -13,7 +13,7 @@ Before building the project, consult the following table to ensure you use the r
 |    Operating System   |         Windows 10        | Catalina (10.15), Mojave (10.14), High Sierra (10.13)        |       CentOS 7              |
 |   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3)<br>Maya 2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1)<br>Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2)<br>Maya 2019/2020 (gcc 6.3.1) |
 | Minimum Cmake Version |           3.13            |                             3.13                             |         3.13                |
-|         Python        |           2.7.15          |                            2.7.15                            |        2.7.15               |
+|         Python        |       2.7.15 or 3.7.7     |                            2.7.15 or 3.7.7                   |        2.7.15 or 3.7.7      |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              |      PyYAML, PySide, PyOpenGL, Jinja2             |
 |    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja (Recommended)                      |    Ninja (Recommended)      |
 |    Command processor  | Visual Studio X64 2015 or 2017 command prompt  |                     bash                |             bash            |
@@ -23,8 +23,6 @@ Before building the project, consult the following table to ensure you use the r
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
 |          Qt           | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 |
 
-***NOTE:*** We haven't fully tested the plug-ins on ```Catalina``` and it is still at the experimental stage.
-
 ***NOTE:*** Visit the online Maya developer help document under ***Setting up your build environment*** for additional compiler requirements on different platforms.
 
 #### 2. Download and Build Pixar USD 
@@ -33,7 +31,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          |        
 |:------------: |:---------------:                  |
-|  CommitID/Tags | master: [v19.07](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.07) or [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) <br> dev: [893c8e4](https://github.com/PixarAnimationStudios/USD/commit/893c8e4cc4d45fb3e7364369d7767602de411120) | 
+|  CommitID/Tags | release: [v19.07](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.07) or [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) <br> dev: [238d0f4](https://github.com/PixarAnimationStudios/USD/commit/238d0f4b09d595955d3b5819db427e270756cc24) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
@@ -81,13 +79,13 @@ There are four arguments that must be passed to the script:
 
 ```
 Linux:
-➜ maya-usd python build.py --maya-location /usr/autodesk/maya2020 --pxrusd-location /usr/local/USD-Master --devkit-location /usr/local/devkitBase /usr/local/workspace
+➜ maya-usd python build.py --maya-location /usr/autodesk/maya2020 --pxrusd-location /usr/local/USD-Release --devkit-location /usr/local/devkitBase /usr/local/workspace
 
 MacOSX:
-➜ maya-usd python build.py --maya-location /Applications/Autodesk/maya2020 --pxrusd-location /opt/local/USD-Master --devkit-location /opt/local/devkitBase /opt/local/workspace
+➜ maya-usd python build.py --maya-location /Applications/Autodesk/maya2020 --pxrusd-location /opt/local/USD-Release --devkit-location /opt/local/devkitBase /opt/local/workspace
 
 Windows:
-c:\maya-usd> python build.py --maya-location "C:\Program Files\Autodesk\Maya2020" --pxrusd-location C:\USD-Master --devkit-location C:\devkitBase C:\workspace
+c:\maya-usd> python build.py --maya-location "C:\Program Files\Autodesk\Maya2020" --pxrusd-location C:\USD-Release --devkit-location C:\devkitBase C:\workspace
 ```
 
 ##### Build Arguments
@@ -110,6 +108,9 @@ BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.        
 BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON
 BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
+BUILD_STRICT_MODE           | enforces all warnings as errors.                           | ON
+BUILD_WITH_PYTHON_3			| build with python 3.										 | OFF
+BUILD_SHARED_LIBS			| build libraries as shared or static.						 | ON
 CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON
 
 ##### Stages
@@ -183,6 +184,14 @@ Test project /Users/sabrih/Desktop/workspace/build/Debug/plugin/al
 100% tests passed, 0 tests failed out of 8
 ```
 
+***NOTE:*** As part of compatibility support for python 3 in maya-usd, there are number of python tests that require the use of python’s `future` module. While the `future` module is 
+available in our new preview releases of Maya, this package doesn't exist in the version of python in Maya 2018/2019/2020. Please follow the below steps in order to install the `future` package:
+
+ 1. Download get-py.py from https://bootstrap.pypa.io/get-pip.py 
+ 2. Open a command-line and navigate to `mayapy` executable for Maya version which needs future package.
+ 3. Install pip: `mayapy <path_to_downloaded_file>/get-pip.py` 
+ 3. Install the future package: `mayapy -m pip install future`
+
 # Additional Build Instruction
 
 ##### Boost:
@@ -231,6 +240,20 @@ PyYAML     3.13
 setuptools 39.0.1 
 shiboken2  5.12.1 
 ```
+
+##### dependencies on Linux DSOs when running tests
+
+Normally either runpath or rpath are used on some DSOs in this library to specify explicit on other libraries (such as USD itself)
+
+If for some reason you don't want to use either of these options, and switch them off with:
+```
+CMAKE_SKIP_RPATH=TRUE
+```
+To allow your tests to run, you can inject LD_LIBRARY_PATH into any of the mayaUSD_add_test calls by setting the ADDITIONAL_LD_LIBRARY_PATH cmake variable to $ENV{LD_LIBRARY_PATH} or similar.
+
+There is a related ADDITIONAL_PXR_PLUGINPATH_NAME cmake var which can be used if schemas are installed in a non-standard location
+
+
 
 # How to Load Plug-ins in Maya 
 

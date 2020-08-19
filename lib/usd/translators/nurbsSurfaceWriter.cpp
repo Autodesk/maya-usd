@@ -13,38 +13,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "nurbsSurfaceWriter.h"
-
-#include "../../fileio/utils/adaptor.h"
-#include "../../fileio/primWriter.h"
-#include "../../fileio/primWriterRegistry.h"
-#include "../../fileio/writeJobContext.h"
-#include "../../fileio/utils/writeUtil.h"
-
-#include "pxr/base/gf/vec2d.h"
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/nurbsPatch.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
-#include "pxr/usd/usdGeom/pointBased.h"
-#include "pxr/usd/usdUtils/pipeline.h"
 
 #include <maya/MDoubleArray.h>
 #include <maya/MFnDependencyNode.h>
-#include <maya/MFnNurbsSurface.h>
 #include <maya/MFnNurbsCurve.h>
+#include <maya/MFnNurbsSurface.h>
 #include <maya/MPointArray.h>
 #include <maya/MTrimBoundaryArray.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec2d.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
+#include <pxr/usd/usdGeom/nurbsPatch.h>
+#include <pxr/usd/usdGeom/pointBased.h>
+#include <pxr/usd/usdUtils/pipeline.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PXRUSDMAYA_REGISTER_WRITER(nurbsSurface, PxrUsdTranslators_NurbsSurfaceWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsSurface, UsdGeomNurbsPatch);
@@ -160,7 +158,7 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                 if (interpolation != dispColor.GetInterpolation()) {
                     dispColor.SetInterpolation(interpolation);
                 }
-                _SetAttribute(dispColor.GetAttr(), RGBData);
+                UsdMayaWriteUtil::SetAttribute(dispColor.GetAttr(), RGBData, UsdTimeCode::Default(), _GetSparseValueWriter());
                 if (!assignmentIndices.empty()) {
                     dispColor.SetIndices(assignmentIndices);
                 }
@@ -171,7 +169,7 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                 if (interpolation != dispOpacity.GetInterpolation()) {
                     dispOpacity.SetInterpolation(interpolation);
                 }
-                _SetAttribute(dispOpacity, AlphaData);
+                UsdMayaWriteUtil::SetAttribute(dispOpacity, AlphaData, UsdTimeCode::Default(), _GetSparseValueWriter());
                 if (!assignmentIndices.empty()) {
                     dispOpacity.SetIndices(assignmentIndices);
                 }
@@ -293,20 +291,21 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     // Compute the extent using the CVs.
     VtArray<GfVec3f> extent(2);
     UsdGeomPointBased::ComputeExtent(sampPos, &extent);
-    _SetAttribute(primSchema.CreateExtentAttr(), extent, usdTimeCode);
+    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), extent, usdTimeCode, _GetSparseValueWriter());
 
     // Set NurbsPatch attributes
-    _SetAttribute(primSchema.GetUVertexCountAttr(), numCVsInU);
-    _SetAttribute(primSchema.GetVVertexCountAttr(), numCVsInV);
-    _SetAttribute(primSchema.GetUOrderAttr(), nurbs.degreeU() + 1);
-    _SetAttribute(primSchema.GetVOrderAttr(), nurbs.degreeV() + 1);
-    _SetAttribute(primSchema.GetUKnotsAttr(), sampKnotsInU);
-    _SetAttribute(primSchema.GetVKnotsAttr(), sampKnotsInV);
-    _SetAttribute(primSchema.GetURangeAttr(), uRange);
-    _SetAttribute(primSchema.GetVRangeAttr(), vRange);
-    _SetAttribute(primSchema.GetPointsAttr(), sampPos, usdTimeCode);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetUVertexCountAttr(), numCVsInU, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetVVertexCountAttr(), numCVsInV, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetUOrderAttr(), nurbs.degreeU() + 1, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetVOrderAttr(), nurbs.degreeV() + 1, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetUKnotsAttr(), sampKnotsInU, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetVKnotsAttr(), sampKnotsInV, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetURangeAttr(), uRange, UsdTimeCode::Default(),_GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetVRangeAttr(), vRange, UsdTimeCode::Default(),_GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), sampPos, usdTimeCode, _GetSparseValueWriter());
     if (setWeights) {
-        _SetAttribute(primSchema.GetPointWeightsAttr(), sampPosWeights);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetPointWeightsAttr(), 
+                                       sampPosWeights, UsdTimeCode::Default(), _GetSparseValueWriter());
     }
 
     // If stValues vector has vertex data, create and assign st
@@ -317,29 +316,29 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
             primSchema.CreatePrimvar(UsdUtilsGetPrimaryUVSetName(),
                                      uvValueType,
                                      UsdGeomTokens->vertex);
-        _SetAttribute(uvSet.GetAttr(), &stValues);
+        UsdMayaWriteUtil::SetAttribute(uvSet.GetAttr(), &stValues, UsdTimeCode::Default(), _GetSparseValueWriter());
     }
 
     // Set Form
     switch (nurbs.formInU()) {
         case MFnNurbsSurface::kClosed:
-            _SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->closed);
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->closed, UsdTimeCode::Default(), _GetSparseValueWriter());
         break;
         case MFnNurbsSurface::kPeriodic:
-            _SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->periodic);
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->periodic, UsdTimeCode::Default(), _GetSparseValueWriter());
         break;
         default:
-            _SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->open);
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->open, UsdTimeCode::Default(), _GetSparseValueWriter());
     }
     switch (nurbs.formInV()) {
         case MFnNurbsSurface::kClosed:
-            _SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->closed);
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->closed, UsdTimeCode::Default(), _GetSparseValueWriter());
         break;
         case MFnNurbsSurface::kPeriodic:
-            _SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->periodic);
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->periodic, UsdTimeCode::Default(), _GetSparseValueWriter());
         break;
         default:
-            _SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->open);
+            UsdMayaWriteUtil::SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->open, UsdTimeCode::Default(), _GetSparseValueWriter());
     }
 
     // If not trimmed surface, you are done
@@ -455,12 +454,12 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
         } // for j
     } // for i
 
-    _SetAttribute(primSchema.GetTrimCurveCountsAttr(), &trimNumCurves);
-    _SetAttribute(primSchema.GetTrimCurveOrdersAttr(), &trimOrder);
-    _SetAttribute(primSchema.GetTrimCurveVertexCountsAttr(), &trimNumPos);
-    _SetAttribute(primSchema.GetTrimCurveKnotsAttr(), &trimKnot);
-    _SetAttribute(primSchema.GetTrimCurveRangesAttr(), &trimRange);
-    _SetAttribute(primSchema.GetTrimCurvePointsAttr(), &trimPoint);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveCountsAttr(), &trimNumCurves, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveOrdersAttr(), &trimOrder, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveVertexCountsAttr(), &trimNumPos, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveKnotsAttr(), &trimKnot, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveRangesAttr(), &trimRange, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurvePointsAttr(), &trimPoint, UsdTimeCode::Default(), _GetSparseValueWriter());
 
     // NO NON TRIM CODE HERE SINCE WE RETURN EARLIER IF NOT TRIMMED
     return true;

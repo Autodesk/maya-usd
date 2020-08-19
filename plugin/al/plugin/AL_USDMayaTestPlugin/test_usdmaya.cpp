@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #include "test_usdmaya.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnDagNode.h"
+#include <maya/MFileIO.h>
+#include <maya/MFnDagNode.h>
 #include "AL/maya/test/testHelpers.h"
 
 using AL::maya::test::buildTempPath;

@@ -18,8 +18,8 @@
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/maya/utils/MenuBuilder.h"
 
-#include "maya/MSyntax.h"
-#include "maya/MArgDatabase.h"
+#include <maya/MSyntax.h>
+#include <maya/MArgDatabase.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

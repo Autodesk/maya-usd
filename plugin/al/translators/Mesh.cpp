@@ -15,16 +15,16 @@
 // limitations under the License.
 //
 
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/mesh.h"
-#include "maya/MFloatPointArray.h"
-#include "maya/MVectorArray.h"
-#include "maya/MIntArray.h"
-#include "maya/MFnMesh.h"
-#include "maya/MFnSet.h"
-#include "maya/MFileIO.h"
-#include "maya/MNodeClass.h"
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <maya/MFloatPointArray.h>
+#include <maya/MVectorArray.h>
+#include <maya/MIntArray.h>
+#include <maya/MFnMesh.h>
+#include <maya/MFnSet.h>
+#include <maya/MFileIO.h>
+#include <maya/MNodeClass.h>
 
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
@@ -35,7 +35,7 @@
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/Metadata.h"
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/mesh.h>
 
 #include "Mesh.h"
 #include "CommonTranslatorOptions.h"
@@ -137,6 +137,10 @@ UsdPrim Mesh::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath
     if(params.getBool(GeometryExportOptions::kMeshPoints))
     {
       context.copyVertexData(context.timeCode());
+    }
+    if(params.getBool(GeometryExportOptions::kMeshExtents))
+    {
+      context.copyExtentData(context.timeCode());
     }
     if(params.getBool(GeometryExportOptions::kMeshConnects))
     {
@@ -252,6 +256,7 @@ void Mesh::writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options
   if(context)
   {
     context.copyVertexData(t);
+    context.copyExtentData(t);
     context.copyNormalData(t);
     context.copyFaceConnectsAndPolyCounts();
     context.copyInvisibleHoles();

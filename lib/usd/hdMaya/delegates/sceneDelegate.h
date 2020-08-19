@@ -16,24 +16,21 @@
 #ifndef HDMAYA_SCENE_DELEGATE_H
 #define HDMAYA_SCENE_DELEGATE_H
 
-#include <pxr/pxr.h>
-
-#include <pxr/base/gf/vec4d.h>
-
-#include <pxr/usd/sdf/path.h>
-
-#include <pxr/imaging/hd/meshTopology.h>
-#include <pxr/imaging/hd/sceneDelegate.h>
+#include <memory>
 
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
 
-#include <memory>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec4d.h>
+#include <pxr/imaging/hd/meshTopology.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/usd/sdf/path.h>
 
-#include "../adapters/lightAdapter.h"
-#include "../adapters/materialAdapter.h"
-#include "../adapters/shapeAdapter.h"
-#include "delegateCtx.h"
+#include <hdMaya/adapters/lightAdapter.h>
+#include <hdMaya/adapters/materialAdapter.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/delegates/delegateCtx.h>
 
 /*
  * Notes.
@@ -182,10 +179,19 @@ protected:
     GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) override;
 
     HDMAYA_API
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 34
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimPath, int instanceIndex,
+        HdInstancerContext *instancerContext) override;
+#elif defined(HD_API_VERSION) && HD_API_VERSION >= 33
+    SdfPath GetScenePrimPath(
+        const SdfPath& rprimPath, int instanceIndex) override;
+#else
     SdfPath GetPathForInstanceIndex(
         const SdfPath& protoPrimPath, int instanceIndex,
         int* absoluteInstanceIndex, SdfPath* rprimPath,
         SdfPathVector* instanceContext) override;
+#endif
 
 #if USD_VERSION_NUM <= 1911
 
@@ -245,6 +251,7 @@ private:
     std::vector<SdfPath> _materialTagsChanged;
 
     SdfPath _fallbackMaterial;
+    bool _enableMaterials = false;
 };
 
 typedef std::shared_ptr<HdMayaSceneDelegate> MayaSceneDelegateSharedPtr;

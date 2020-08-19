@@ -15,21 +15,21 @@
 //
 
 #include "Camera.h"
-#include "pxr/usd/usdGeom/camera.h"
+#include <pxr/usd/usdGeom/camera.h>
 
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
-#include "maya/MDagPath.h"
-#include "maya/MGlobal.h"
-#include "maya/MTime.h"
-#include "maya/MDistance.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnCamera.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MNodeClass.h"
-#include "maya/M3dView.h"
+#include <maya/MDagPath.h>
+#include <maya/MGlobal.h>
+#include <maya/MTime.h>
+#include <maya/MDistance.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnCamera.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MNodeClass.h>
+#include <maya/M3dView.h>
 
 namespace AL {
 namespace usdmaya {
@@ -200,11 +200,19 @@ MStatus Camera::updateAttributes(MObject to, const UsdPrim& prim)
   }
 
   // Near/far clip planes
-  // N.B. Animated clip plane values not supported
-  GfVec2f clippingRange;
-  usdCamera.GetClippingRangeAttr().Get(&clippingRange, timeCode);
-  AL_MAYA_CHECK_ERROR(DgNodeTranslator::setDistance(to, m_nearDistance, MDistance(clippingRange[0], MDistance::kCentimeters)), errorString);
-  AL_MAYA_CHECK_ERROR(DgNodeTranslator::setDistance(to, m_farDistance, MDistance(clippingRange[1], MDistance::kCentimeters)), errorString);
+  auto clippingRangeAttr = usdCamera.GetClippingRangeAttr();
+  if (!clippingRangeAttr.GetNumTimeSamples() || forceDefaultRead)
+  {
+    GfVec2f clippingRange;
+    clippingRangeAttr.Get(&clippingRange, timeCode);
+    AL_MAYA_CHECK_ERROR(DgNodeTranslator::setDistance(to, m_nearDistance, MDistance(clippingRange[0], MDistance::kCentimeters)), errorString);
+    AL_MAYA_CHECK_ERROR(DgNodeTranslator::setDistance(to, m_farDistance, MDistance(clippingRange[1], MDistance::kCentimeters)), errorString);
+  }
+  else
+  {
+    DgNodeTranslator::setClippingRangeAttrAnim(to, m_nearDistance, m_farDistance, clippingRangeAttr, collector.nodeContainerPtr());
+  }
+
   return MS::kSuccess;
 }
 
@@ -342,6 +350,8 @@ void Camera::writePrim(UsdPrim &prim, MDagPath dagPath, const ExporterParams& pa
     animTranslator->addPlug(MPlug(cameraObject, m_focalLength), usdCamera.GetFocalLengthAttr(), true);
     animTranslator->addPlug(MPlug(cameraObject, m_fstop), usdCamera.GetFStopAttr(), true);
     animTranslator->addPlug(MPlug(cameraObject, m_focusDistance), usdCamera.GetFocusDistanceAttr(), true);
+    // near-far clipping range are special: these two Maya attributes need to be mapped to one Usd attribute
+    animTranslator->addMultiPlugs({MPlug(cameraObject, m_nearDistance), MPlug(cameraObject, m_farDistance)}, usdCamera.GetClippingRangeAttr(), true);
   }
 }
 

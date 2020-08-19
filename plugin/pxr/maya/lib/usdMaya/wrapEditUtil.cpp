@@ -13,15 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "usdMaya/editUtil.h"
 
 #include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyEnum.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/pyEnum.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
 
 #include <maya/MFnAssembly.h>
 #include <maya/MObject.h>
@@ -185,31 +185,6 @@ _ApplyEditsToProxy(
     return boost::python::make_tuple(failedEdits.empty(), failedEdits);
 }
 
-static
-boost::python::object
-_GetAvarEdits(boost::python::dict& assemEditDict)
-{
-    UsdMayaEditUtil::PathEditMap assemEdits;
-    if (!_GetAssemblyEditsFromDict(assemEditDict, &assemEdits)) {
-        return BOOST_PYTHON_NONE;
-    }
-
-    UsdMayaEditUtil::PathAvarMap avarMap;
-    UsdMayaEditUtil::GetAvarEdits(assemEdits, &avarMap);
-
-    boost::python::dict pathDict;
-    TF_FOR_ALL (pathEdits, avarMap) {
-        boost::python::dict valueMap;
-        TF_FOR_ALL (avarEdit, pathEdits->second) {
-            valueMap[avarEdit->first] = avarEdit->second;
-        }
-
-        pathDict[pathEdits->first] = valueMap;
-    }
-
-    return std::move(pathDict);
-}
-
 
 } // anonymous namespace
 
@@ -228,9 +203,6 @@ void wrapEditUtil()
         .def("ApplyEditsToProxy",
             &_ApplyEditsToProxy)
         .staticmethod("ApplyEditsToProxy")
-        .def("GetAvarEdits",
-            &_GetAvarEdits)
-        .staticmethod("GetAvarEdits")
     ;
 
     enum_<UsdMayaEditUtil::EditOp>("EditOp")

@@ -21,19 +21,19 @@
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
-#include "maya/MDagModifier.h"
-#include "maya/MDoubleArray.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MFileIO.h"
-#include "maya/MFnNurbsCurve.h"
-#include "maya/MFnTransform.h"
-#include "maya/MPointArray.h"
-#include "maya/MFnDoubleArrayData.h"
-#include "maya/MFnFloatArrayData.h"
+#include <maya/MDagModifier.h>
+#include <maya/MDoubleArray.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnNurbsCurve.h>
+#include <maya/MFnTransform.h>
+#include <maya/MPointArray.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnFloatArrayData.h>
 
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdGeom/nurbsCurves.h"
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
@@ -95,6 +95,11 @@ MObject createNurbStage(bool useSingleWidth=false)
   nurb.GetKnotsAttr().Set(knots);
   nurb.GetPointsAttr().Set(points);
   nurb.GetRangesAttr().Set(ranges);
+
+  VtArray<GfVec3f> extent(2);
+  UsdGeomPointBased::ComputeExtent(points, &extent);
+  nurb.GetExtentAttr().Set(extent);
+
   VtArray<int> order;
   order.push_back(4);
   nurb.GetOrderAttr().Set(order);

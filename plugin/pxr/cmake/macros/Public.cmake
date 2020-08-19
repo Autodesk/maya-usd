@@ -184,12 +184,14 @@ function(pxr_setup_python)
     # Install a pxr __init__.py in order to have Python 
     # see UsdMaya module inside pxr subdirectory 
     _get_install_dir(lib/python/pxr installPrefix)
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/__init__.py"
     "try:\n  __import__('pkg_resources').declare_namespace(__name__)\nexcept:\n  from pkgutil import extend_path\n  __path__ = extend_path(__path__, __name__)\n")
+	execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_CURRENT_BINARY_DIR}/__init__.py)
     install(
-        FILES "${CMAKE_CURRENT_BINARY_DIR}/generated_modules_init.py"
-        DESTINATION ${INSTALL_DIR_SUFFIX}/${installPrefix}
-        RENAME "__init__.py"
+        FILES
+          ${CMAKE_CURRENT_BINARY_DIR}/__init__.py
+        DESTINATION
+          ${INSTALL_DIR_SUFFIX}/${installPrefix}
     )
 endfunction() # pxr_setup_python
 
@@ -258,6 +260,9 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
             PROPERTIES 
                 FOLDER "${folder}"
         )
+
+        # compiler configuration
+        mayaUsd_compile_config(${LIBRARY_NAME})
 
         # Find libraries under the install prefix, which has the core USD
         # libraries.
@@ -817,6 +822,9 @@ function(pxr_monolithic_epilogue)
         COMMAND ${CMAKE_COMMAND} -E touch "${CMAKE_CURRENT_BINARY_DIR}/usd_m.cpp"
     )
     add_library(usd_m STATIC "${CMAKE_CURRENT_BINARY_DIR}/usd_m.cpp" ${objects})
+
+    # compiler configuration
+    mayaUsd_compile_config(usd_m)
 
     _get_folder("" folder)
     set_target_properties(usd_m

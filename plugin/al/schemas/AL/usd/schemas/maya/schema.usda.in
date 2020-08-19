@@ -75,7 +75,7 @@ doc = "Data used to import a maya reference."
         string className = "ModelAPI"
         string fileName = "ModelAPI"
         string extraIncludes = """
-#include "./tokens.h"
+#include "tokens.h"
 """
       }
 )

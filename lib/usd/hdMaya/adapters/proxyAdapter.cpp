@@ -13,25 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "proxyAdapter.h"
-#include "adapterRegistry.h"
-
-#include "../debugCodes.h"
-
-#include "../delegates/proxyDelegate.h"
-#include "../delegates/sceneDelegate.h"
-
-#include "../../../nodes/proxyShapeBase.h"
 
 #include <maya/MTime.h>
 #include <maya/MGlobal.h>
+
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/debugCodes.h>
+#include <hdMaya/delegates/proxyDelegate.h>
+#include <hdMaya/delegates/sceneDelegate.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #if WANT_UFE_BUILD
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 #endif // WANT_UFE_BUILD
-
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -135,7 +131,7 @@ void HdMayaProxyAdapter::PopulateSelectedPaths(
     // First, we check to see if the entire proxy shape is selected
     if (selectedDag.node() == proxyMObj) {
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 11
-        selectedSdfPaths.push_back(sdfPath::AbsoluteRootPath());
+        selectedSdfPaths.push_back(SdfPath::AbsoluteRootPath());
 #else
         selectedSdfPaths.push_back(_usdDelegate->GetDelegateID());
 #endif
@@ -147,13 +143,13 @@ void HdMayaProxyAdapter::PopulateSelectedPaths(
 }
 
 void HdMayaProxyAdapter::CreateUsdImagingDelegate() {
-    // Why do this release when we do a reset right below? Because we want
+    // Why do this reset when we do another right below? Because we want
     // to make sure we delete the old delegate before creating a new one
     // (the reset statement below will first create a new one, THEN delete
     // the old one). Why do we care? In case they have the same _renderIndex
     // - if so, the delete may clear out items from the renderIndex that the
     // constructor potentially adds
-    _usdDelegate.release();
+    _usdDelegate.reset();
     _usdDelegate.reset(new HdMayaProxyUsdImagingDelegate(
         &GetDelegate()->GetRenderIndex(),
         _id.AppendChild(TfToken(TfStringPrintf(
@@ -162,14 +158,15 @@ void HdMayaProxyAdapter::CreateUsdImagingDelegate() {
     _isPopulated = false;
 }
 
-void HdMayaProxyAdapter::PreFrame() {
+void HdMayaProxyAdapter::PreFrame(const MHWRender::MDrawContext& context) {
+    _usdDelegate->SetSceneMaterialsEnabled(!(context.getDisplayStyle() & MHWRender::MFrameContext::kDefaultMaterial));
     _usdDelegate->ApplyPendingUpdates();
     // TODO: set this only when time is actually changed
     _usdDelegate->SetTime(_proxy->getTime());
     _usdDelegate->PostSyncCleanup();
 }
 
-void HdMayaProxyAdapter::_OnStageSet(const UsdMayaProxyStageSetNotice& notice)
+void HdMayaProxyAdapter::_OnStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
     if(&notice.GetProxyShape() == _proxy)
     {
@@ -180,7 +177,13 @@ void HdMayaProxyAdapter::_OnStageSet(const UsdMayaProxyStageSetNotice& notice)
                 "(ProxyShape: "
                 "%s)\n",
                 GetDagPath().partialPathName().asChar());
+
         CreateUsdImagingDelegate();
+        auto stage = _proxy->getUsdStage();
+        if (_usdDelegate && stage) {
+            _usdDelegate->Populate(stage->GetPseudoRoot());
+            _isPopulated = true;
+        }
     }
 }
 

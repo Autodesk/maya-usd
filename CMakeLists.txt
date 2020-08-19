@@ -26,7 +26,13 @@ option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
 option(BUILD_TESTS "Build tests." ON)
+option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
+option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
+option(BUILD_WITH_PYTHON_3 "Build with python 3." OFF)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
+option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
+option(PXR_BUILD_TESTS "Build tests" ON)
+option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
 
 #------------------------------------------------------------------------------
 # internal flags to control build
@@ -46,13 +52,12 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64")
 set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults
 )
 
 # Use RUNPATH instead of RPATH for all shared libs and executables on Linux
 if(IS_LINUX)
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--enable-new-dtags")
 endif()
 
 #------------------------------------------------------------------------------
@@ -66,7 +71,12 @@ endif()
 if (DEFINED PYTHON_INCLUDE_DIR AND DEFINED PYTHON_LIBRARIES AND DEFINED Python_EXECUTABLE)
     SET(PYTHON_INCLUDE_DIRS "${PYTHON_INCLUDE_DIR}")
     SET(PYTHONLIBS_FOUND TRUE)
-    find_package(Python 2.7 EXACT REQUIRED COMPONENTS Interpreter)
+    # Use the Python module to find the python lib.
+    if(BUILD_WITH_PYTHON_3)
+        find_package(Python 3.7 EXACT REQUIRED COMPONENTS Interpreter)
+    else()
+        find_package(Python 2.7 EXACT REQUIRED COMPONENTS Interpreter)
+    endif()
     if(NOT Python_Interpreter_FOUND)
         set(PYTHONLIBS_FOUND FALSE)
     endif()
@@ -74,20 +84,16 @@ endif()
 if (NOT PYTHONLIBS_FOUND)
     include(cmake/python.cmake)
 endif()
-include(cmake/utils.cmake)
-message(STATUS "Building with Python:")
+message(STATUS "Build MayaUSD with Python3 = " ${BUILD_WITH_PYTHON_3})
 message(STATUS "   PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "   PYTHON_LIBRARIES    = ${PYTHON_LIBRARIES}")
 message(STATUS "   Python_EXECUTABLE   = ${Python_EXECUTABLE}")
 
-# The building of the schemas requires some extra python packages which may or
-# may not be installed. If they aren't we provide an option to add them from
-# a python egg.
-if (BUILD_USDMAYA_SCHEMAS)
-    include(cmake/jinja.cmake)
-endif()
+include(cmake/utils.cmake)
 
-find_package(Maya REQUIRED)
+include(cmake/jinja.cmake)
+
+find_package(Maya 2018 REQUIRED)
 find_package(USD REQUIRED)
 include(cmake/usd.cmake)
 include(${USD_CONFIG_FILE})
@@ -128,26 +134,14 @@ endif()
 #------------------------------------------------------------------------------
 # compiler configuration
 #------------------------------------------------------------------------------
-# CXXDefaults will set a variety of variables for the project.
-# Consume them here. This is an effort to keep the most common
-# build files readable.
-include(CXXDefaults)
-add_definitions(${_PXR_CXX_DEFINITIONS} -DBOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
-set(CMAKE_CXX_FLAGS "${_PXR_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-
-if(NOT WIN32)
-    set(CMAKE_CXX_FLAGS
-        -msse3
-        "${CMAKE_CXX_FLAGS} ${_PXR_CXX_FLAGS}"
-    )
-endif()
-string(REPLACE ";" " " CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+include(cmake/compiler_config.cmake)
 
 #------------------------------------------------------------------------------
 # test
 #------------------------------------------------------------------------------
 if (BUILD_TESTS)
-    include(cmake/Googletest.cmake)
+    include(cmake/googletest.cmake)
+    include(cmake/test.cmake)
     fetch_googletest()
     enable_testing()
     add_subdirectory(test)
@@ -174,10 +168,6 @@ if (BUILD_AL_PLUGIN)
     endif()
 
     add_subdirectory(plugin/al)
-
-    if(BUILD_USDMAYA_PXR_TRANSLATORS)
-        add_dependencies(AL_USDMayaPxrTranslators usdMaya)
-    endif()
 endif()
 
 if (BUILD_ADSK_PLUGIN)
@@ -187,7 +177,16 @@ endif()
 #------------------------------------------------------------------------------
 # install
 #------------------------------------------------------------------------------
-configure_file(mayaUSD.mod.template ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
+    set(USD_INSTALL_LOCATION "${CMAKE_INSTALL_PREFIX}/${MAYAUSD_TO_USD_RELATIVE_PATH}")
+else()
+    set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
+endif()
+if (IS_WINDOWS)
+    configure_file("modules/mayaUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+else()
+    configure_file("modules/mayaUSD.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+endif()
 install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod
     DESTINATION ${CMAKE_INSTALL_PREFIX}
 )

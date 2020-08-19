@@ -21,10 +21,10 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/utils/Utils.h"
 
-#include "maya/MFnMesh.h"
-#include "maya/MTime.h"
+#include <maya/MFnMesh.h>
+#include <maya/MTime.h>
 
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/mesh.h>
 
 #include <mayaUsd/nodes/stageData.h>
 

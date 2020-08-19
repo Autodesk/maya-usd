@@ -1,6 +1,6 @@
 #include "AL/maya/utils/PluginTranslatorOptions.h"
-#include "maya/MGlobal.h"
-#include "maya/MStringArray.h"
+#include <maya/MGlobal.h>
+#include <maya/MStringArray.h>
 #include <gtest/gtest.h>
 
 using namespace AL::maya::utils;

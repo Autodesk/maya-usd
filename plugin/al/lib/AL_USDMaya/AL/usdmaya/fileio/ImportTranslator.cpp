@@ -16,8 +16,8 @@
 #include "AL/usdmaya/fileio/Import.h"
 #include "AL/usdmaya/fileio/ImportTranslator.h"
 
-#include "maya/MSelectionList.h"
-#include "maya/MGlobal.h"
+#include <maya/MSelectionList.h>
+#include <maya/MGlobal.h>
 
 namespace AL {
 namespace usdmaya {

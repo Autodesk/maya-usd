@@ -15,11 +15,11 @@
 //
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/DebugCodes.h"
-#include "pxr/base/plug/registry.h"
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/type.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/type.h>
+#include <pxr/usd/usd/schemaBase.h>
 #include "AL/usdmaya/Metadata.h"
 
 namespace AL {
@@ -141,6 +141,11 @@ TranslatorManufacture::RefPtr TranslatorManufacture::getTranslatorByAssetTypeMet
 //----------------------------------------------------------------------------------------------------------------------
 TranslatorRefPtr TranslatorManufacture::getTranslatorBySchemaType(const TfToken type_name)
 {
+  if(auto py = getPythonTranslatorBySchemaType(type_name))
+  {
+    return py;
+  }
+
   TfType type = TfType::FindDerivedByName<UsdSchemaBase>(type_name);
   std::string typeName(type.GetTypeName());
   TF_DEBUG(ALUSDMAYA_TRANSLATORS).Msg("TranslatorManufacture::getTranslatorBySchemaType:: found schema %s\n",typeName.c_str());
@@ -155,7 +160,7 @@ TranslatorRefPtr TranslatorManufacture::getTranslatorBySchemaType(const TfToken 
       return it->second;
     }
   }
-  return getPythonTranslatorBySchemaType(type_name);
+  return TranslatorRefPtr();
 }
 
 
@@ -164,6 +169,12 @@ TranslatorRefPtr TranslatorManufacture::get(const MObject& mayaObject)
 {
   TranslatorRefPtr base;
   TranslatorManufacture::RefPtr derived;
+
+  if(auto py = TranslatorManufacture::getPythonTranslator(mayaObject))
+  {
+    return py;
+  }
+  
   for(auto& it : m_translatorsMap)
   {
     if(it.second->active())
@@ -182,11 +193,7 @@ TranslatorRefPtr TranslatorManufacture::get(const MObject& mayaObject)
   if(derived) {
     return derived;
   }
-  else if(base) {
-    return base;
-  }
-  auto py = TranslatorManufacture::getPythonTranslator(mayaObject);
-  return py;
+  return base;
 }
 
 

@@ -17,12 +17,12 @@
 
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
-#include "maya/MFnTransform.h"
-#include "maya/MSelectionList.h"
-#include "maya/MGlobal.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MFileIO.h"
-#include "pxr/usd/usdGeom/xform.h"
+#include <maya/MFnTransform.h>
+#include <maya/MSelectionList.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MFileIO.h>
+#include <pxr/usd/usdGeom/xform.h>
 
 using AL::maya::test::buildTempPath;
 

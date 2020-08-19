@@ -13,15 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/pxr.h>
-
-#include <pxr/base/tf/type.h>
-
-#include <pxr/usd/usdGeom/tokens.h>
-
-#include <pxr/imaging/hd/tokens.h>
-#include <pxr/imaging/pxOsd/tokens.h>
-
 #include <maya/MAnimControl.h>
 #include <maya/MCallbackIdArray.h>
 #include <maya/MDGContext.h>
@@ -35,11 +26,17 @@
 #include <maya/MPlug.h>
 #include <maya/MPolyMessage.h>
 
-#include "adapterDebugCodes.h"
-#include "adapterRegistry.h"
-#include "mayaAttrs.h"
-#include "shapeAdapter.h"
-#include "tokens.h"
+#include <pxr/pxr.h>
+#include <pxr/base/tf/type.h>
+#include <pxr/imaging/hd/tokens.h>
+#include <pxr/imaging/pxOsd/tokens.h>
+#include <pxr/usd/usdGeom/tokens.h>
+
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/shapeAdapter.h>
+#include <hdMaya/adapters/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -77,8 +74,7 @@ public:
     void Populate() override {
         if (_isPopulated) { return; }
         GetDelegate()->InsertRprim(
-            HdPrimTypeTokens->mesh, GetID(), HdChangeTracker::AllDirty,
-            GetInstancerID());
+            HdPrimTypeTokens->mesh, GetID(), GetInstancerID());
         _isPopulated = true;
     }
 

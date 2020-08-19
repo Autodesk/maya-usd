@@ -20,10 +20,12 @@ import unittest
 
 import maya.cmds as cmds
 
+from ufeTestUtils.testUtils import assertVectorAlmostEqual
+
 class TRSTestCaseBase(unittest.TestCase):
     '''Base class for translate (move), rotate, scale command tests.'''
 
-    def snapShotAndTest(self, expected):
+    def snapShotAndTest(self, expected, places=7):
         '''Take a snapshot of the state and append it to the memento list.
 
         The snapshot is compared to the expected results.
@@ -32,9 +34,9 @@ class TRSTestCaseBase(unittest.TestCase):
         self.memento.append(snapshot)
         # Since snapshotRunTimeUFE checks run-time to UFE equality, we can use
         # the UFE or the run-time value to check against expected.
-        self.assertVectorAlmostEqual(snapshot[1], expected)
+        assertVectorAlmostEqual(self, snapshot[1], expected, places)
             
-    def multiSelectSnapShotAndTest(self, items, expected):
+    def multiSelectSnapShotAndTest(self, items, expected, places=7):
         '''Take a snapshot of the state and append it to the memento list.
 
         The snapshot is compared to the expected results.
@@ -45,7 +47,7 @@ class TRSTestCaseBase(unittest.TestCase):
             # Since multiSelectSnapshotRunTimeUFE checks run-time to UFE
             # equality, we can use the UFE or the run-time value to
             # check against expected.
-            self.assertVectorAlmostEqual(itemSnapshot[1], itemExpected)
+            assertVectorAlmostEqual(self, itemSnapshot[1], itemExpected, places)
             
     def rewindMemento(self):
         '''Undo through all items in memento.

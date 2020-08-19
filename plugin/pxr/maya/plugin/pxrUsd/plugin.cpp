@@ -13,8 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-#include "pxrUsd/api.h"
+#include <pxr/pxr.h>
 
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
@@ -43,8 +42,10 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
+
+#include "api.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -132,24 +133,24 @@ initializePlugin(MObject obj)
 
     status = plugin.registerCommand(
         "usdExport",
-        UsdMayaExportCommand::creator,
-        UsdMayaExportCommand::createSyntax);
+        PxrMayaUSDExportCommand::creator,
+        PxrMayaUSDExportCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdExport");
     }
 
     status = plugin.registerCommand(
         "usdImport",
-        UsdMayaImportCommand::creator,
-        UsdMayaImportCommand::createSyntax);
+        PxrMayaUSDImportCommand::creator,
+        PxrMayaUSDImportCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdImport");
     }
 
     status = plugin.registerCommand(
         "usdListShadingModes",
-        UsdMayaListShadingModesCommand::creator,
-        UsdMayaListShadingModesCommand::createSyntax);
+        PxrMayaUSDListShadingModesCommand::creator,
+        PxrMayaUSDListShadingModesCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdListShadingModes");
     }

@@ -5,6 +5,9 @@ add_library(
     plugin.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(${PXR_PACKAGE})
+
 target_compile_definitions(${PXR_PACKAGE}
     PRIVATE
         AL_USDMAYA_PLUGIN_EXPORT

@@ -18,15 +18,15 @@
 #include "AL/usdmaya/utils/Api.h"
 #include "AL/usdmaya/utils/AnimationTranslator.h"
 
-#include "maya/MAngle.h"
-#include "maya/MDistance.h"
-#include "maya/MFnAnimCurve.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MTime.h"
-#include "maya/MObjectArray.h"
+#include <maya/MAngle.h>
+#include <maya/MDistance.h>
+#include <maya/MFnAnimCurve.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MTime.h>
+#include <maya/MObjectArray.h>
 
-#include "pxr/usd/usdGeom/xformOp.h"
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/usdmaya/utils/AttributeType.h"
@@ -1252,6 +1252,16 @@ public:
   /// \return MS::kSuccess on success, error code otherwise
   AL_USDMAYA_UTILS_PUBLIC
   static MStatus setVisAttrAnim(const MObject node, const MObject attr, const UsdAttribute & usdAttr, MObjectArray *newAnimCurves=nullptr);
+
+  /// \brief  creates animation curves in maya for the near / far clipping planes attribute
+  /// \param  node the node instance the animated attribute belongs to
+  /// \param  nearAttr the near clipping plane attribute handle
+  /// \param  farAttr the far clipping plane attribute handle
+  /// \param  usdAttr the USD attribute that contains the keyframe data
+  /// \param  newAnimCurves The MObjectArray to contain possibly created animCurve nodes.
+  /// \return MS::kSuccess on success, error code otherwise
+  AL_USDMAYA_UTILS_PUBLIC
+  static MStatus setClippingRangeAttrAnim(const MObject node, const MObject nearAttr, const MObject farAttr, const UsdAttribute & usdAttr, MObjectArray *newAnimCurves=nullptr);
 
   /// \brief  check if an animation curves type is supported for DgNodeHelper::set*Anim functions.
   /// \param  animCurveFn the MFnAnimCurve object that holds a animCurve MObject.

@@ -19,20 +19,20 @@
 #include <mayaUsdUtils/ALHalf.h>
 #include <mayaUsdUtils/SIMD.h>
 
-#include "maya/MDGModifier.h"
-#include "maya/MFloatArray.h"
-#include "maya/MFloatMatrix.h"
-#include "maya/MFnCompoundAttribute.h"
-#include "maya/MFnDoubleArrayData.h"
-#include "maya/MFnFloatArrayData.h"
-#include "maya/MFnMatrixData.h"
-#include "maya/MFnMatrixArrayData.h"
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MFnNumericData.h"
-#include "maya/MFnTypedAttribute.h"
-#include "maya/MMatrix.h"
-#include "maya/MMatrixArray.h"
-#include "maya/MObjectArray.h"
+#include <maya/MDGModifier.h>
+#include <maya/MFloatArray.h>
+#include <maya/MFloatMatrix.h>
+#include <maya/MFnCompoundAttribute.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnFloatArrayData.h>
+#include <maya/MFnMatrixData.h>
+#include <maya/MFnMatrixArrayData.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnNumericData.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MMatrix.h>
+#include <maya/MMatrixArray.h>
+#include <maya/MObjectArray.h>
 
 #include <iostream>
 
@@ -1134,6 +1134,48 @@ MStatus DgNodeHelper::setVisAttrAnim(const MObject node, const MObject attr, con
     MTime tm(timeValue, MTime::kFilm);
 
     fnCurve.addKey(tm, (value == UsdGeomTokens->invisible) ? 0 : 1, MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
+  }
+
+  return MS::kSuccess;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+MStatus DgNodeHelper::setClippingRangeAttrAnim(const MObject node, const MObject nearAttr, const MObject farAttr, const UsdAttribute & usdAttr, MObjectArray *newAnimCurves)
+{
+  if (!usdAttr.GetNumTimeSamples())
+  {
+    return MS::kFailure;
+  }
+
+  const char* const errorString = "DgNodeTranslator::setClippingRangeAttrAnim: Error adding keyframes";
+  MStatus status;
+
+  MPlug nearPlug(node, nearAttr);
+  MFnAnimCurve fnCurveNear;
+  status = prepareAnimCurve(nearPlug, fnCurveNear, newAnimCurves);
+  if(!status)return MS::kFailure;
+
+  MPlug farPlug(node, farAttr);
+  MFnAnimCurve fnCurveFar;
+  status = prepareAnimCurve(farPlug, fnCurveFar, newAnimCurves);
+  if(!status)return MS::kFailure;
+
+  std::vector<double> times;
+  usdAttr.GetTimeSamples(&times);
+
+  GfVec2f clippingRange;
+  for(auto const& timeValue: times)
+  {
+    if (!usdAttr.Get(&clippingRange, timeValue))
+    {
+      continue;
+    }
+    MTime tm(timeValue, MTime::kFilm);
+
+    fnCurveNear.addKey(tm, clippingRange[0], MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
+    fnCurveFar.addKey(tm, clippingRange[1], MFnAnimCurve::kTangentGlobal, MFnAnimCurve::kTangentGlobal, NULL, &status);
     AL_MAYA_CHECK_ERROR(status, errorString);
   }
 
@@ -3684,11 +3726,7 @@ MStatus DgNodeHelper::getInt64(MObject node, MObject attr, int64_t& value)
     return MS::kFailure;
   }
   MStatus status;
-  #if MAYA_API_VERSION >= 201800
   value = plug.asInt64(&status);
-  #else
-  value = plug.asInt64(MDGContext::fsNormal, &status);
-  #endif
   return status;
 }
 

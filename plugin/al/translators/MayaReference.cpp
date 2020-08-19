@@ -15,18 +15,18 @@
 //
 #include "MayaReference.h"
 
-#include "maya/MSelectionList.h"
-#include "maya/MGlobal.h"
-#include "maya/MDGModifier.h"
-#include "maya/MNodeClass.h"
-#include "maya/MPlug.h"
-#include "maya/MFnStringData.h"
-#include "maya/MFnTransform.h"
-#include "maya/MFnTypedAttribute.h"
-#include "maya/MFnTransform.h"
-#include "maya/MFnCamera.h"
-#include "maya/MFileIO.h"
-#include "maya/MItDependencyNodes.h"
+#include <maya/MSelectionList.h>
+#include <maya/MGlobal.h>
+#include <maya/MDGModifier.h>
+#include <maya/MNodeClass.h>
+#include <maya/MPlug.h>
+#include <maya/MFnStringData.h>
+#include <maya/MFnTransform.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnTransform.h>
+#include <maya/MFnCamera.h>
+#include <maya/MFileIO.h>
+#include <maya/MItDependencyNodes.h>
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 #include "AL/usdmaya/utils/DgNodeHelper.h"

@@ -4,8 +4,8 @@
 #include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/stackTrace.h>
 #include <pxr/base/tf/stringUtils.h>
-#include "pxr/base/plug/registry.h"
-#include "pxr/base/plug/plugin.h"
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/plug/plugin.h>
 
 #define AL_USDMAYA_LOCATION_NAME "AL_USDMAYA_LOCATION"
 

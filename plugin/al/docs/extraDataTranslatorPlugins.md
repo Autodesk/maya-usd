@@ -23,7 +23,7 @@ Here's an example header for an imaginary renderer, where we register separate p
 ```
 #include "AL/usdmaya/fileio/translators/ExtraDataPlugin.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-#include "maya/MPlug.h"
+#include <maya/MPlug.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

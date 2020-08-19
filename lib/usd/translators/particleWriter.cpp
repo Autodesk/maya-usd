@@ -13,21 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "particleWriter.h"
 
-#include "../../fileio/utils/adaptor.h"
-#include "../../fileio/primWriterRegistry.h"
-#include "../../fileio/transformWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/vt/array.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/points.h"
+#include <limits>
+#include <memory>
+#include <set>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #include <maya/MAnimControl.h>
 #include <maya/MDoubleArray.h>
@@ -39,16 +32,22 @@
 #include <maya/MString.h>
 #include <maya/MVectorArray.h>
 
-#include <limits>
-#include <memory>
-#include <set>
-#include <type_traits>
-#include <utility>
-#include <vector>
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/points.h>
 
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PXRUSDMAYA_REGISTER_WRITER(particle, PxrUsdTranslators_ParticleWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(particle, UsdGeomPoints);
@@ -352,12 +351,14 @@ PxrUsdTranslators_ParticleWriter::writeParams(
     radii->resize(minSize);
     masses->resize(minSize);
 
-    _SetAttribute(points.GetPointsAttr(), positions.get(), usdTime);
-    _SetAttribute(points.GetVelocitiesAttr(), velocities.get(), usdTime);
-    _SetAttribute(points.GetIdsAttr(), ids.get(), usdTime);
+    UsdMayaWriteUtil::SetAttribute(points.GetPointsAttr(), positions.get(), usdTime, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(points.GetVelocitiesAttr(), velocities.get(), usdTime, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(points.GetIdsAttr(), ids.get(), usdTime, _GetSparseValueWriter());
+
     // radius -> width conversion
     for (auto& r : *radii) { r = r * 2.0f; }
-    _SetAttribute(points.GetWidthsAttr(), radii.get(), usdTime);
+    
+    UsdMayaWriteUtil::SetAttribute(points.GetWidthsAttr(), radii.get(), usdTime, _GetSparseValueWriter());
 
     _addAttr(points, _massName, SdfValueTypeNames->FloatArray, *masses, usdTime,
              _GetSparseValueWriter());

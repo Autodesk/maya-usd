@@ -23,8 +23,8 @@
 #include "AL/usdmaya/nodes/Scope.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 
-#include "maya/MFnDagNode.h"
-#include "maya/MPxCommand.h"
+#include <maya/MFnDagNode.h>
+#include <maya/MPxCommand.h>
 
 namespace AL {
 namespace usdmaya {

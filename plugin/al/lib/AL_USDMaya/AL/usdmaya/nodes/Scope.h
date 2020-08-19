@@ -17,12 +17,12 @@
 
 #include "AL/maya/utils/NodeHelper.h"
 
-#include "maya/MObjectHandle.h"
-#include "maya/MPxTransform.h"
-#include "maya/MPxTransformationMatrix.h"
+#include <maya/MObjectHandle.h>
+#include <maya/MPxTransform.h>
+#include <maya/MPxTransformationMatrix.h>
 #include "AL/usdmaya/nodes/BasicTransformationMatrix.h"
 
-#include "pxr/usd/usdGeom/scope.h"
+#include <pxr/usd/usdGeom/scope.h>
 
 namespace AL {
 namespace usdmaya {
@@ -81,6 +81,8 @@ public:
 
   virtual const MObject getProxyShape() const
     { return proxyShapeHandle.object(); }
+  
+  MBoundingBox boundingBox() const override;
 
 protected:
 
@@ -96,7 +98,6 @@ private:
   MStatus validateAndSetValue(const MPlug& plug, const MDataHandle& handle, const MDGContext& context) override;
   MPxTransformationMatrix* createTransformationMatrix() override;
   void postConstructor() override;
-  MBoundingBox boundingBox() const override;
   MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
   MStatus connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
   bool isBounded() const override
