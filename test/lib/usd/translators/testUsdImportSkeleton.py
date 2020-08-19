@@ -238,8 +238,12 @@ class testUsdImportSkeleton(unittest.TestCase):
         
         bindingSitePrim = stage.GetPrimAtPath("/Root")
         self.assertTrue(bindingSitePrim.IsA(UsdSkel.Root))
-        
-        skelCache.Populate(UsdSkel.Root(bindingSitePrim))
+
+        if Usd.GetVersion() > (0, 20, 8):
+            skelCache.Populate(UsdSkel.Root(bindingSitePrim),
+                Usd.PrimDefaultPredicate)
+        else:
+            skelCache.Populate(UsdSkel.Root(bindingSitePrim))
 
         skel = UsdSkel.Skeleton.Get(stage, "/Root/Skeleton")
         self.assertTrue(skel)
