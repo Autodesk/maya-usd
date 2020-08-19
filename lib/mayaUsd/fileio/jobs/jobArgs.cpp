@@ -485,7 +485,7 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->renderLayerMode] =
                 UsdMayaJobExportArgsTokens->defaultLayer.GetString();
         d[UsdMayaJobExportArgsTokens->shadingMode] =
-                UsdMayaShadingModeTokens->displayColor.GetString();
+                UsdMayaShadingModeTokens->useRegistry.GetString();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
 
