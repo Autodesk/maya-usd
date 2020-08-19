@@ -127,6 +127,54 @@ global proc mayaUsdTranslatorExport_AnimationRangeCB() {
     intFieldGrp -e -v1 $startTime -v2 $endTime framRangeFields;
 }
 
+// Known shading modes, in triplets with the nice name and the annotation:
+proc string[] mayaUsdTranslatorExport_shadingModeData() {
+    string $shadingModeData[] = {
+        "useRegistry",
+        "USD Preview Surface",
+        "Exports the bound shader as a USD preview surface UsdShade network.",
+
+        "displayColor",
+        "Display Colors",
+        "Exports the diffuse color of the bound shader as a displayColor primvar on the USD mesh.",
+        
+        "none",
+        "None",
+        "No material data gets exported.",
+        
+        "pxrRis",
+        "RfM Shaders",
+        ""
+    };
+    return $shadingModeData;
+}
+
+proc string[] mayaUsdTranslatorExport_shadingModeInfo(string $shadingMode) {
+    string $shadingModeData[] = mayaUsdTranslatorExport_shadingModeData();
+    int $index = stringArrayFind($shadingMode, 0, $shadingModeData);
+    if ($index != -1) {
+        return { $shadingModeData[$index + 1], $shadingModeData[$index + 2] };
+    } else {
+        return { $shadingMode, "" };
+    }
+}
+
+proc mayaUsdTranslatorExport_SetMaterialOptionMenu(string $shadingMode, string $widget) {
+    string $info[] = mayaUsdTranslatorExport_shadingModeInfo($shadingMode);
+    optionMenuGrp -e -value $info[0] $widget;
+}
+
+proc string mayaUsdTranslatorExport_AppendFromMaterialPopup(string $currentOptions, string $arg, string $widget) {
+    string $value = `optionMenuGrp -q -value $widget`;
+    string $shadingModeData[] = mayaUsdTranslatorExport_shadingModeData();
+    int $index = stringArrayFind($value, 1, $shadingModeData);
+    if ($index != -1) {
+        return $currentOptions + ";" + $arg + "=" + $shadingModeData[$index - 1];
+    } else {
+        return $currentOptions + ";" + $arg + "=" + $value;
+    }
+}
+
 global proc int mayaUsdTranslatorExport (string $parent,
                                      string $action,
                                      string $initialSettings,
@@ -163,7 +211,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $parentScopAnn = "Name of the USD scope that is the parent of the exported data.";
         string $colorSetsAnn = "Exports Maya Color Sets as USD primvars.";
         string $uvSetsAnn = "Exports Maya UV Sets as USD primvars.";
-        string $materialsAnn = "Controls whether shading data is exported from the Maya scene and how it is created in USD.";        string $animDataAnn = "Exports Maya animation data as USD time samples.";
+        string $materialsAnn = "Controls whether shading data is exported from the Maya scene and how it is created in USD.";
+        string $animDataAnn = "Exports Maya animation data as USD time samples.";
         string $frameStepAnn = "Specifies the increment between USD time sample frames during animation export";
         string $eulerFilterAnn = "Exports the euler angle filtering that was performed in Maya.";
         string $visibilityAnn = "Exports Maya visibility attributes as USD metadata.";

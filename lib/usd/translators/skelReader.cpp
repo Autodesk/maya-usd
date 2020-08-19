@@ -161,12 +161,24 @@ UsdMayaPrimReaderSkelRoot::PostReadSubtree(
     // We do this in a post-subtree stage to ensure that any skinnable
     // prims we produce skin clusters for have been processed first.
 
+    std::vector<UsdSkelBinding> bindings;
+
+#if USD_VERSION_NUM > 2008
+    _cache.Populate(skelRoot, UsdTraverseInstanceProxies());
+
+    if (!_cache.ComputeSkelBindings(
+            skelRoot,
+            &bindings,
+            UsdTraverseInstanceProxies())) {
+        return;
+    }
+#else
     _cache.Populate(skelRoot);
 
-    std::vector<UsdSkelBinding> bindings;
     if (!_cache.ComputeSkelBindings(skelRoot, &bindings)) {
         return;
     }
+#endif
 
     for (const UsdSkelBinding& binding : bindings) {
         if (binding.GetSkinningTargets().empty())
