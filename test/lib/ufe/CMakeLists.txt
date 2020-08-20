@@ -29,6 +29,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testRotateCmd.py
         testScaleCmd.py
         testTransform3dTranslate.py
+        testObservableScene.py
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
         list(APPEND TEST_SCRIPT_FILES
