@@ -15,19 +15,18 @@
 //
 #include "delegateCtx.h"
 
+#include <array>
+
+#include <maya/MFnLight.h>
+
 #include <pxr/base/gf/frustum.h>
 #include <pxr/base/gf/plane.h>
 #include <pxr/base/gf/range1d.h>
-
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hio/glslfx.h>
 
-#include "../../../utils/util.h"
-
-#include <maya/MFnLight.h>
-
-#include <array>
+#include "mayaUsd/utils/util.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,14 +69,12 @@ HdMayaDelegateCtx::HdMayaDelegateCtx(const InitData& initData)
 }
 
 void HdMayaDelegateCtx::InsertRprim(
-    const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits,
-    const SdfPath& instancerId) {
+    const TfToken& typeId, const SdfPath& id, const SdfPath& instancerId) {
     if (!instancerId.IsEmpty()) {
         GetRenderIndex().InsertInstancer(this, instancerId);
         GetChangeTracker().InstancerInserted(id);
     }
     GetRenderIndex().InsertRprim(typeId, this, id, instancerId);
-    GetChangeTracker().RprimInserted(id, initialBits);
 }
 
 void HdMayaDelegateCtx::InsertSprim(

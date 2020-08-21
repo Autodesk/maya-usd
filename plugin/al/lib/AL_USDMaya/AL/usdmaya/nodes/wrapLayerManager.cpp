@@ -33,7 +33,7 @@
 
 #include <pxr/base/tf/refPtr.h>
 
-#include "maya/MStringArray.h"
+#include <maya/MStringArray.h>
 
 #include <memory>
 

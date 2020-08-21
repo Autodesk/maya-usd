@@ -4,7 +4,7 @@ find_package(GTest REQUIRED)
 
 add_library(${TARGET_NAME} SHARED)
 
-target_sources(${TARGET_NAME} 
+target_sources(${TARGET_NAME}
     PRIVATE
         plugin.cpp
         test_maya_MenuBuilder.cpp
@@ -23,9 +23,13 @@ elseif(IS_LINUX)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 endif()
 
+# compiler configuration
+mayaUsd_compile_config(${TARGET_NAME})
+
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
 )
 
 target_link_libraries(${TARGET_NAME}
@@ -51,31 +55,9 @@ install(TARGETS ${TARGET_NAME}
 )
 
 target_include_directories(${TARGET_NAME}
-    PUBLIC 
+    PUBLIC
     ${MAYAUTILS_INCLUDE_LOCATION}
 )
-
-# unit tests
-set(path 
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib" # AL_MayaTest, AL_MayaUtils
-    "$ENV{PATH}"
-)
-
-if(IS_WINDOWS)
-  list(APPEND path "${CMAKE_INSTALL_PREFIX}/lib/gtest")
-endif()
-
-set(pythonPath 
-    "$ENV{PYTHONPATH}"
-)
-
-set(mayaPluginPath 
-    "${MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH}"
-)
-
-separate_argument_list(path)
-separate_argument_list(pythonPath)
-separate_argument_list(mayaPluginPath)
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX)
@@ -99,20 +81,19 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
-add_test(
-    NAME ${TARGET_NAME}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys;import maya.standalone; \
-                                      maya.standalone.initialize(name='python'); \
-                                      maya.cmds.loadPlugin('AL_MayaUtilsTests'); \
-                                      ret=maya.mel.eval('AL_maya_test_UnitTestHarness'); \
-                                      maya.standalone.uninitialize(); \
-                                      "
-)
+# unit tests
 
-set_property(TEST ${TARGET_NAME} APPEND PROPERTY ENVIRONMENT 
-    "PYTHONPATH=${pythonPath}"
-    "PATH=${path}"
-    "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
-    "MAYA_NO_STANDALONE_ATEXIT=1"
+set(pycode "
+import sys
+import maya.cmds
+maya.cmds.loadPlugin('AL_MayaUtilsTests')
+sys.exit(maya.cmds.AL_maya_test_UnitTestHarness())
+")
+
+mayaUsd_add_test(${TARGET_NAME}
+    PYTHON_COMMAND "${pycode}"
+    ENV
+        "MAYA_PLUG_IN_PATH=${MAYAUTILS_TEST_MAYAPLUGIN_INSTALL_PATH}"
+        "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )

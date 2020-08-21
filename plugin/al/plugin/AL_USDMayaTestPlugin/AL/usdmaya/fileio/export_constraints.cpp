@@ -3,7 +3,7 @@
 
 #include "test_usdmaya.h"
 
-#include "pxr/usd/usdGeom/xform.h"
+#include <pxr/usd/usdGeom/xform.h>
 
 using AL::maya::test::buildTempPath;
 

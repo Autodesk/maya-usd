@@ -15,9 +15,10 @@
 //
 #pragma once
 
-#include "Api.h"
-#include "ALHalf.h"
 #include <cstdint>
+
+#include <mayaUsdUtils/ALHalf.h>
+#include <mayaUsdUtils/Api.h>
 
 namespace MayaUsdUtils {
 

@@ -16,7 +16,7 @@
 #include <algorithm>
 #include "AL/maya/utils/FileTranslatorOptions.h"
 
-#include "maya/MGlobal.h"
+#include <maya/MGlobal.h>
 
 namespace AL {
 namespace maya {

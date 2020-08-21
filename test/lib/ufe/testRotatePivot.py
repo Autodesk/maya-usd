@@ -62,12 +62,8 @@ class RotatePivotTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
 
-        # Create a simple USD scene.  Ideally this would be done
-        # programmatically, but as of 28-Jun-2018 attempts to do so have
-        # resulted in a file that crashes Maya on pickWalk of the scene.
-        # Use a saved scene read from file instead.
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test-samples", "twoSpheres", "twoSpheres.ma" )
-        cmds.file(filePath, force=True, open=True)
+        # Open twoSpheres.ma scene in test-samples
+        mayaUtils.openTwoSpheresScene()
 
     def testRotatePivot(self):
         # mayaSphere is at (10, 0, 10) in local space, and since it has no

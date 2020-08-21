@@ -9,8 +9,8 @@
 #include "test_usdmaya.h"
 #include "AL/usdmaya/Metadata.h"
 
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/mesh.h>
 
 using AL::maya::test::buildTempPath;
 

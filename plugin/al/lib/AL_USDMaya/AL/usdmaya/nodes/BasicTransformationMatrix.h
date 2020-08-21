@@ -15,13 +15,13 @@
 //
 #pragma once
 
-#include "maya/MPxTransformationMatrix.h"
-#include "maya/MObjectHandle.h"
+#include <maya/MPxTransformationMatrix.h>
+#include <maya/MObjectHandle.h>
 
 #include "AL/usdmaya/Api.h"
 
-#include "pxr/usd/usdGeom/scope.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usd/prim.h>
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -55,7 +55,7 @@ public:
 
   /// \brief  set the prim that this transformation matrix will read/write to.
   /// \param  prim the prim
-  /// \param  scope the maya node
+  /// \param  scopeNode the owning maya node
   virtual void setPrim(const UsdPrim& prim, Scope* scopeNode);
 
   /// \brief  sets the MObject for the transform

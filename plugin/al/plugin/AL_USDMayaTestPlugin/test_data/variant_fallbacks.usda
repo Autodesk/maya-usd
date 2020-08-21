@@ -1,0 +1,87 @@
+#usda 1.0
+
+def "root" (
+    prepend variantSets = "geo"
+)
+{
+    def "GEO"
+    {
+    }
+    variantSet "geo" = {
+        "cube" {
+            def Scope "GEO" (
+            )
+            {
+                def Xform "cube1"
+                {
+                    def Mesh "cubeShape1"
+                    {
+                        int[] faceVertexCounts = [4, 4, 4, 4]
+                        int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+                        point3f[] points = [(-0.5, 0, 0.5), (0, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 0, -0.5), (0, 0, -0.5), (0.5, 0, -0.5)]
+                    }
+                }
+            }
+        }
+        "plane" {
+            def Scope "GEO" (
+            )
+            {
+                def Xform "plane1"
+                {
+                    def Mesh "planeShape1"
+                    {
+                        int[] faceVertexCounts = [4, 4, 4, 4]
+                        int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+                        point3f[] points = [(-0.5, 0, 0.5), (0, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 0, -0.5), (0, 0, -0.5), (0.5, 0, -0.5)]
+                    }
+                }
+            }
+        }
+        "sphere" {
+            def Scope "GEO" (
+            )
+            {
+                def Xform "sphere1"
+                {
+                    def Mesh "sphereShape1"
+                    {
+                        int[] faceVertexCounts = [4, 4, 4, 4]
+                        int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+                        point3f[] points = [(-0.5, 0, 0.5), (0, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 0, -0.5), (0, 0, -0.5), (0.5, 0, -0.5)]
+                    }
+                }
+            }
+        }
+        "render_high" {
+            def Scope "GEO" (
+            )
+            {
+                def Xform "render_xform1"
+                {
+                    def Mesh "render_mesh1"
+                    {
+                        int[] faceVertexCounts = [4, 4, 4, 4]
+                        int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+                        point3f[] points = [(-0.5, 0, 0.5), (0, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 0, -0.5), (0, 0, -0.5), (0.5, 0, -0.5)]
+                    }
+                }
+            }
+        }
+        "display_high" {
+            def Scope "GEO" (
+            )
+            {
+                def Xform "display_xform1"
+                {
+                    def Mesh "display_mesh1"
+                    {
+                        int[] faceVertexCounts = [4, 4, 4, 4]
+                        int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+                        point3f[] points = [(-0.5, 0, 0.5), (0, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 0, -0.5), (0, 0, -0.5), (0.5, 0, -0.5)]
+                    }
+                }
+            }
+        }
+    }
+}

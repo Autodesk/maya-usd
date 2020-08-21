@@ -13,10 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
 #pragma once
 
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/prim.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -29,6 +30,8 @@ class UsdAttribute;
 class UsdPrim;
 class UsdGeomCamera;
 class UsdLuxDistantLight;
+class UsdPrimCompositionQuery;
+class UsdPrimCompositionQueryArc;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

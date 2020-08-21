@@ -19,9 +19,9 @@
 
 #include <mayaUsdUtils/ForwardDeclares.h>
 
-#include "maya/MFnMesh.h"
+#include <maya/MFnMesh.h>
 
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/mesh.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -45,6 +45,7 @@ enum DiffComponents
   kCreaseLengths = 1 << 8, ///< the edge crease lengths
   kCornerIndices = 1 << 9, ///< the vertex creases have changed
   kCornerSharpness = 1 << 10, ///< the vertex crease weights have changed
+  kExtent = 1 << 11, ///< the point extents have changed
   kAllComponents = 0xFFFFFFFF
 };
 

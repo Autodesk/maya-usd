@@ -15,7 +15,7 @@
 //
 #include "test_usdmaya.h"
 
-#include "maya/MFileIO.h"
+#include <maya/MFileIO.h>
 
 #include "AL/maya/utils/NodeHelper.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
@@ -246,13 +246,6 @@ UsdGeomPrimvar getDefaultUvSet(UsdGeomMesh mesh)
 
 TEST(translators_MeshTranslator, constantUvExport)
 {
-  // Ignore this test on Maya 2016. On other versions of maya, this test scales the 
-  // UV's to a single point via the polyEditUV command. In the UV texture editor in 2016, 
-  // echo all commands lists this exact command, however in 2016 this command
-  // does nothing when executed in MEL ???? (unlike 2017/2018 ???)
-  // I've disabled this test on 2016 as a result (if it passes on 2017/2018, the code itself 
-  // works)
-  #if MAYA_API_VERSION >= 201700
   MFileIO::newFile(true);
 
   // create a cube, and shrink all of its UV's to a single point  
@@ -320,7 +313,6 @@ TEST(translators_MeshTranslator, constantUvExport)
     EXPECT_NEAR(0.5f, received[0][0], 1e-5f);
     EXPECT_NEAR(0.5f, received[0][1], 1e-5f);
   }
-  #endif
 }
 
 

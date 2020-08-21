@@ -1,5 +1,5 @@
 from pxr import Tf
-import _AL_USDTransaction
+from . import _AL_USDTransaction
 Tf.PrepareModule(_AL_USDTransaction, locals())
 del Tf
 

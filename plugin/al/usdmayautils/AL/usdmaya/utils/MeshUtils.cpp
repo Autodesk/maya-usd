@@ -22,10 +22,10 @@
 #include <mayaUsdUtils/DebugCodes.h>
 #include <mayaUsdUtils/DiffCore.h>
 
-#include "pxr/usd/usdUtils/pipeline.h"
+#include <pxr/usd/usdUtils/pipeline.h>
 
-#include "maya/MItMeshPolygon.h"
-#include "maya/MGlobal.h"
+#include <maya/MItMeshPolygon.h>
+#include <maya/MGlobal.h>
 
 #include <iostream>
 
@@ -794,11 +794,7 @@ void MeshImportContext::applyColourSetData()
         continue;
 
       MStatus status;
-  #if MAYA_API_VERSION >= 201800
       colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, nullptr, &status);
-  #else
-      colourSetName = fnMesh.createColorSetWithName(colourSetName, nullptr, &status);
-  #endif
       if (status)
       {
         status = fnMesh.setCurrentColorSetName(colourSetName);
@@ -1997,6 +1993,33 @@ void MeshExportContext::copyVertexData(UsdTimeCode time)
         memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
         pointsAttr.Set(points, time);
+      }
+      else
+      {
+        MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + fnMesh.fullPathName());
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void MeshExportContext::copyExtentData(UsdTimeCode time)
+{
+  if(diffGeom & kExtent)
+  {
+    if(UsdAttribute extentAttr = mesh.GetExtentAttr())
+    {
+      MStatus status;
+      const float* pointsData = fnMesh.getRawPoints(&status);
+      if(status)
+      {
+        const uint32_t numVertices = fnMesh.numVertices();
+        VtArray<GfVec3f> points(numVertices);
+        memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+
+        VtArray<GfVec3f> extent(2);
+        UsdGeomPointBased::ComputeExtent(points, &extent);
+        extentAttr.Set(extent, time);
       }
       else
       {

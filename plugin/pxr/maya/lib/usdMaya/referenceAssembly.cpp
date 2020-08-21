@@ -26,18 +26,18 @@
 #include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
 #include "usdMaya/instancerShapeAdapterWithSceneAssembly.h"
 
-#include "pxr/base/tf/fileUtils.h"
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/stringUtils.h"
+#include <pxr/base/tf/fileUtils.h>
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/stringUtils.h>
 
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/usd/editContext.h"
-#include "pxr/usd/usd/editTarget.h"
-#include "pxr/usd/usd/stageCacheContext.h"
-#include "pxr/usd/usd/variantSets.h"
-#include "pxr/usd/usdGeom/modelAPI.h"
-#include "pxr/usd/usdUtils/stageCache.h"
-#include "pxr/usd/usdUtils/pipeline.h"
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/editTarget.h>
+#include <pxr/usd/usd/stageCacheContext.h>
+#include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usdGeom/modelAPI.h>
+#include <pxr/usd/usdUtils/stageCache.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <maya/MDagModifier.h>
 #include <maya/MDagPath.h>
@@ -732,7 +732,8 @@ UsdMayaReferenceAssembly::computeInStageDataCached(MDataBlock& dataBlock)
                 sessionLayer = unsharedSessionLayer;
             }
 
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
+            const bool loadAll = true;
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadAll));
             usdStage = UsdStage::Open(rootLayer,
                                       sessionLayer,
                                       ArGetResolver().GetCurrentContext());
@@ -899,7 +900,8 @@ UsdMayaReferenceAssembly::computeOutStageData(MDataBlock& dataBlock)
             sessionLayer->TransferContent(oldLayer);
             sessionLayer->TransferContent(newLayer);
 
-            UsdStageCacheContext ctx(UsdMayaStageCache::Get());
+            const bool loadAll = true;
+            UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadAll));
             usdStage = UsdStage::Open(usdPrim.GetStage()->GetRootLayer(),
                                       sessionLayer,
                                       ArGetResolver().GetCurrentContext());
@@ -1577,9 +1579,9 @@ bool UsdMayaGL_InstancerImager_ContinueTrackingOnDisconnect(
 }
 
 UsdMayaGL_InstancerShapeAdapter*
-UsdMayaGL_InstancerImager_InstancerShapeAdapterFactory()
+UsdMayaGL_InstancerImager_InstancerShapeAdapterFactory(bool isViewport2)
 {
-    return new UsdMayaGL_InstancerShapeAdapterWithSceneAssembly();
+    return new UsdMayaGL_InstancerShapeAdapterWithSceneAssembly(isViewport2);
 }
 
 TF_REGISTRY_FUNCTION(UsdMayaReferenceAssembly)

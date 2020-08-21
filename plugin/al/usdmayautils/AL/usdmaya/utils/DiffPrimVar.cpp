@@ -17,11 +17,11 @@
 #include <mayaUsdUtils/SIMD.h>
 #include <mayaUsdUtils/DiffCore.h>
 
-#include "maya/MDoubleArray.h"
-#include "maya/MFloatArray.h"
-#include "maya/MIntArray.h"
-#include "maya/MItMeshPolygon.h"
-#include "maya/MUintArray.h"
+#include <maya/MDoubleArray.h>
+#include <maya/MFloatArray.h>
+#include <maya/MIntArray.h>
+#include <maya/MItMeshPolygon.h>
+#include <maya/MUintArray.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -53,6 +53,30 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
     if(!MayaUsdUtils::compareArray(usdPoints, mayaPoints, usdPointsCount * 3, mayaPointsCount * 3))
     {
       result |= kPoints;
+    }
+  }
+
+  if(exportMask & kExtent)
+  {
+    MStatus status;
+    const float* pointsData = mesh.getRawPoints(&status);
+    if(status)
+    {
+      const uint32_t numVertices = mesh.numVertices();
+      VtArray<GfVec3f> points(numVertices);
+      memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+
+      VtArray<GfVec3f> mayaExtent(2);
+      UsdGeomPointBased::ComputeExtent(points, &mayaExtent);
+
+      VtArray<GfVec3f> usdExtent(2);
+      geom.GetExtentAttr().Get(&usdExtent, timeCode);
+
+      const GfRange3f mayaRange(mayaExtent[0], mayaExtent[1]);
+      const GfRange3f usdRange(usdExtent[0], usdExtent[1]);
+
+      if (mayaRange != usdRange)
+        result |= kExtent;
     }
   }
 

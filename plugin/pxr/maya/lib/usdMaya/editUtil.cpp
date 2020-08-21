@@ -18,13 +18,13 @@
 #include "usdMaya/referenceAssembly.h"
 #include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/stringUtils.h"
+#include <pxr/base/tf/stringUtils.h>
 
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/xformable.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 #include <maya/MEdit.h>
 #include <maya/MFnAssembly.h>
@@ -380,99 +380,6 @@ UsdMayaEditUtil::ApplyEditsToProxy(
                 failedEdits->push_back(assemEdit->editString);
             }
             continue;
-        }
-    }
-}
-
-/* static */
-void
-UsdMayaEditUtil::_ApplyEditToAvar(
-        const EditOp op,
-        const EditSet set,
-        const double value,
-        AvarValueMap* valueMap)
-{
-    switch (op) {
-        case OP_TRANSLATE:
-            switch (set) {
-                case SET_X:
-                    (*valueMap)["Tx"] = value;
-                    return;
-                case SET_Y:
-                    (*valueMap)["Ty"] = value;
-                    return;
-                case SET_Z:
-                    (*valueMap)["Tz"] = value;
-                    return;
-                default:
-                    return;
-            }
-        case OP_ROTATE:
-            switch (set) {
-                case SET_X:
-                    (*valueMap)["Rx"] = value;
-                    return;
-                case SET_Y:
-                    (*valueMap)["Ry"] = value;
-                    return;
-                case SET_Z:
-                    (*valueMap)["Rz"] = value;
-                    return;
-                default:
-                    return;
-            }
-        case OP_SCALE:
-            switch (set) {
-                case SET_X:
-                    (*valueMap)["Swide"] = value;
-                    return;
-                case SET_Y:
-                    (*valueMap)["Sthick"] = value;
-                    return;
-                case SET_Z:
-                    (*valueMap)["Shigh"] = value;
-                    return;
-                default:
-                    return;
-            }
-    }
-}
-
-/* static */
-void
-UsdMayaEditUtil::_ApplyEditToAvars(
-        const AssemblyEdit& assemEdit,
-        AvarValueMap* valueMap)
-{
-    if (assemEdit.set == SET_ALL) {
-        const GfVec3d& toSet = assemEdit.value.Get<GfVec3d>();
-
-        _ApplyEditToAvar(assemEdit.op, SET_X, toSet[0], valueMap);
-        _ApplyEditToAvar(assemEdit.op, SET_Y, toSet[1], valueMap);
-        _ApplyEditToAvar(assemEdit.op, SET_Z, toSet[2], valueMap);
-    } else {
-        const double toSet = assemEdit.value.Get<double>();
-
-        _ApplyEditToAvar(assemEdit.op, assemEdit.set, toSet, valueMap);
-    }
-}
-
-/* static */
-void
-UsdMayaEditUtil::GetAvarEdits(
-        const PathEditMap& assemEdits,
-        PathAvarMap* avarMap)
-{
-    // assemEdits is a container of lists of ordered edits sorted by path
-    // This outer loop is per path...
-    TF_FOR_ALL(itr, assemEdits) {
-        const SdfPath& editPath = itr->first;
-
-        AvarValueMap& valueMap = (*avarMap)[editPath];
-
-        // Apply all edits for the particular path in order.
-        TF_FOR_ALL(assemEdit, itr->second) {
-            _ApplyEditToAvars(*assemEdit, &valueMap);
         }
     }
 }

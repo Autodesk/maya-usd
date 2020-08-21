@@ -13,12 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "proxyUsdImagingDelegate.h"
 
-#include "../../../nodes/proxyShapeBase.h"
-
 #include <maya/MMatrix.h>
+
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -17,16 +17,16 @@
 #include <mayaUsd/fileio/chaser/chaserRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/stl.h"
-#include "pxr/base/tf/stringUtils.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/pxr.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stl.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/mesh.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>

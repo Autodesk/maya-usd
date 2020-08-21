@@ -4,7 +4,7 @@
 
 #include "test_usdmaya.h"
 
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/mesh.h>
 
 using AL::maya::test::buildTempPath;
 

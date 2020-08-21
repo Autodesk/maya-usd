@@ -16,9 +16,9 @@
 #include <gtest/gtest.h>
 #include "testHarness.h"
 #include "testHelpers.h"
-#include "maya/MSyntax.h"
-#include "maya/MArgDatabase.h"
-#include "maya/MGlobal.h"
+#include <maya/MSyntax.h>
+#include <maya/MArgDatabase.h>
+#include <maya/MGlobal.h>
 
 
 namespace AL {

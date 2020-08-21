@@ -15,7 +15,7 @@
 //
 // GENERATED FILE.  DO NOT EDIT.
 #include "{{ libraryPath }}/tokens.h"
-#include "pxr/base/tf/pyStaticTokens.h"
+#include <pxr/base/tf/pyStaticTokens.h>
 
 {% if useExportAPI %}
 {{ namespaceUsing }}

@@ -44,7 +44,7 @@ try:
     from mayaUsd.lib import DiagnosticBatchContext
     from mayaUsd.lib import DiagnosticDelegate
     from mayaUsd.lib import GetPrim
-    from mayaUsd.lib import MeshUtil
+    from mayaUsd.lib import MeshWriteUtils
     from mayaUsd.lib import ReadUtil
     from mayaUsd.lib import ReloadStage
     from mayaUsd.lib import RoundTripUtil
@@ -115,7 +115,7 @@ def LoadReferenceAssemblies(parentNodes=None):
             isInterruptable=True, minValue=0, maxValue=numRefAssemblies,
             status='Loading USD reference assemblies...')
 
-    for i in xrange(numRefAssemblies):
+    for i in range(numRefAssemblies):
         refAssembly = refAssemblies[i]
 
         if mainProgressBar:

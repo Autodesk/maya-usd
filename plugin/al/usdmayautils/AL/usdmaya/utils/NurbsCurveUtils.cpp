@@ -22,16 +22,16 @@
 
 #include <mayaUsdUtils/DiffCore.h>
 
-#include "maya/MDoubleArray.h"
-#include "maya/MFloatArray.h"
-#include "maya/MFnDoubleArrayData.h"
-#include "maya/MFnFloatArrayData.h"
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MPointArray.h"
+#include <maya/MDoubleArray.h>
+#include <maya/MFloatArray.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnFloatArrayData.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MPointArray.h>
 
-#include "pxr/usd/usdUtils/pipeline.h"
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <iostream>
 
@@ -64,6 +64,24 @@ void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr, Us
 
   convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, usdPoints, cvCount);
   pointsAttr.Set(dataPoints, time);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void copyExtent(const MFnNurbsCurve& fnCurve, const UsdAttribute& extentAttr, UsdTimeCode time)
+{
+  MPointArray controlVertices;
+  fnCurve.getCVs(controlVertices);
+  const unsigned int cvCount = controlVertices.length();
+  VtArray<GfVec3f> dataPoints(cvCount);
+
+  float* const usdPoints = (float* const)dataPoints.cdata();
+  const double* const mayaCVs = (const double* const)&controlVertices[0];
+
+  convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, usdPoints, cvCount);
+
+  VtArray<GfVec3f> mayaExtent(2);
+  UsdGeomPointBased::ComputeExtent(dataPoints, &mayaExtent);
+  extentAttr.Set(mayaExtent, time);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -334,6 +352,27 @@ uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, U
       result |= kCurvePoints;
     }
   }
+  if (exportMask & kCurveExtent)
+  {
+    MPointArray controlVertices;
+    fnCurve.getCVs(controlVertices);
+
+    const unsigned int cvCount = controlVertices.length();
+    VtArray<GfVec3f> points(cvCount);
+    float* const dataPoints = (float* const)points.cdata();
+    const double* const mayaCVs = (const double* const)&controlVertices[0];
+    convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, dataPoints, cvCount);
+
+    VtArray<GfVec3f> mayaExtent(2);
+    UsdGeomPointBased::ComputeExtent(points, &mayaExtent);
+
+    VtArray<GfVec3f> usdExtent(2);
+    usdCurves.GetExtentAttr().Get(&usdExtent, timeCode);
+
+    if (usdExtent != mayaExtent)
+      result |= kCurveExtent;
+  }
+
   if (exportMask & kCurveVertexCounts)
   {
     int numCVs = fnCurve.numCVs();

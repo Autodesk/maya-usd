@@ -19,31 +19,31 @@
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
 
-#include "maya/MAngle.h"
-#include "maya/MDGModifier.h"
-#include "maya/MFloatMatrix.h"
-#include "maya/MFloatPoint.h"
-#include "maya/MFloatVector.h"
-#include "maya/MFnAttribute.h"
-#include "maya/MFnData.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MFnMatrixAttribute.h"
-#include "maya/MFnMatrixData.h"
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MFnNumericData.h"
-#include "maya/MFnTypedAttribute.h"
-#include "maya/MFnUnitAttribute.h"
-#include "maya/MLibrary.h"
-#include "maya/MMatrix.h"
-#include "maya/MPoint.h"
-#include "maya/MStatus.h"
-#include "maya/MTime.h"
-#include "maya/MVector.h"
+#include <maya/MAngle.h>
+#include <maya/MDGModifier.h>
+#include <maya/MFloatMatrix.h>
+#include <maya/MFloatPoint.h>
+#include <maya/MFloatVector.h>
+#include <maya/MFnAttribute.h>
+#include <maya/MFnData.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnMatrixAttribute.h>
+#include <maya/MFnMatrixData.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnNumericData.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnUnitAttribute.h>
+#include <maya/MLibrary.h>
+#include <maya/MMatrix.h>
+#include <maya/MPoint.h>
+#include <maya/MStatus.h>
+#include <maya/MTime.h>
+#include <maya/MVector.h>
 
-#include "pxr/usd/sdf/types.h"
-#include "pxr/usd/usd/attribute.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 #include <cstring>
 

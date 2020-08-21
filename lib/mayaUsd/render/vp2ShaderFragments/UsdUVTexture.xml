@@ -1,0 +1,148 @@
+<!--
+========================================================================
+Copyright 2019 Autodesk
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment uiName="UsdUVTexture" name="UsdUVTexture" type="plumbing" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        <![CDATA[VP2 implementation for UsdUVTexture.]]>
+    </description>
+    <properties>
+        <texture2 name="file" />
+        <sampler name="fileSampler" />
+        <float2 name="st" />
+        <float2 name="stScale" />
+        <float2 name="stOffset" />
+        <bool name="isColorSpaceSRGB" />
+        <float4 name="fallback" />
+        <float4 name="scale" />
+        <float4 name="bias" />
+    </properties>
+    <values>
+        <float2 name="st" value="0.0,0.0" />
+        <float2 name="stScale" value="1.0,1.0" />
+        <float2 name="stOffset" value="0.0,0.0" />
+        <bool name="isColorSpaceSRGB" value="true" />
+        <float4 name="fallback" value="0.0,0.0,0.0,1.0" />
+        <float4 name="scale" value="1.0,1.0,1.0,1.0" />
+        <float4 name="bias" value="0.0,0.0,0.0,0.0" />
+    </values>
+    <outputs>
+        <float4 name="output" />
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="UsdUVTexture" />
+            <source>
+                <![CDATA[
+vec4 UsdUVTexture(
+    sampler2D fileSampler,
+    vec2 st,
+    vec2 stScale,
+    vec2 stOffset,
+    bool isColorSpaceSRGB,
+    vec4 fallback,
+    vec4 scale,
+    vec4 bias)
+{
+    vec2 stScaleOffset = (st + stOffset) * stScale;
+    vec2 stFlipped = stScaleOffset * vec2(1, -1) + vec2(0, 1);
+    vec4 outColor = texture(fileSampler, stFlipped);
+    if (isColorSpaceSRGB) {
+        vec4 breakPnt = vec4(0.03928571566939354, 0.03928571566939354, 0.03928571566939354, 1.);
+        vec4 slope = vec4(0.07738015800714493, 0.07738015800714493, 0.07738015800714493, 1.);
+        vec4 scale = vec4(0.9478672742843628, 0.9478672742843628, 0.9478672742843628, 0.9999989867210388);
+        vec4 offset = vec4(0.05213269963860512, 0.05213269963860512, 0.05213269963860512, 9.999989742937032e-007);
+        vec4 gamma = vec4(2.400000095367432, 2.400000095367432, 2.400000095367432, 1.000000953674316);
+        vec4 isAboveBreak = vec4(greaterThan(outColor, breakPnt));
+        vec4 linSeg = outColor * slope;
+        vec4 powSeg = pow( max( vec4(0., 0., 0., 0.), scale * outColor + offset), gamma);
+        outColor = isAboveBreak * powSeg + ( vec4(1., 1., 1., 1.) - isAboveBreak ) * linSeg;
+    }
+    return outColor * scale + bias;
+}
+                ]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="UsdUVTexture" />
+            <source>
+                <![CDATA[
+float4 UsdUVTexture(
+    Texture2D file,
+    sampler fileSampler,
+    float2 st,
+    float2 stScale,
+    float2 stOffset,
+    bool isColorSpaceSRGB,
+    float4 fallback,
+    float4 scale,
+    float4 bias)
+{
+    float2 stScaleOffset = (st + stOffset) * stScale;
+    float2 stFlipped = stScaleOffset * float2(1, -1) + float2(0, 1);
+    float4 outColor = file.Sample(fileSampler, stFlipped);
+    if (isColorSpaceSRGB) {
+        float4 breakPnt = float4(0.03928571566939354, 0.03928571566939354, 0.03928571566939354, 1.);
+        float4 slope = float4(0.07738015800714493, 0.07738015800714493, 0.07738015800714493, 1.);
+        float4 scale = float4(0.9478672742843628, 0.9478672742843628, 0.9478672742843628, 0.9999989867210388);
+        float4 offset = float4(0.05213269963860512, 0.05213269963860512, 0.05213269963860512, 9.999989742937032e-007);
+        float4 gamma = float4(2.400000095367432, 2.400000095367432, 2.400000095367432, 1.000000953674316);
+        float4 isAboveBreak = float4((outColor > breakPnt) ? float4(1., 1., 1., 1.) : float4(0., 0., 0., 0.));
+        float4 linSeg = outColor * slope;
+        float4 powSeg = pow( max( float4(0., 0., 0., 0.), scale * outColor + offset), gamma);
+        outColor = isAboveBreak * powSeg + ( float4(1., 1., 1., 1.) - isAboveBreak ) * linSeg;
+    }
+    return outColor * scale + bias;
+}
+                ]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="UsdUVTexture" />
+            <source>
+                <![CDATA[
+float4 UsdUVTexture(
+    texture2D file,
+    sampler2D fileSampler,
+    float2 st,
+    float2 stScale,
+    float2 stOffset,
+    bool isColorSpaceSRGB,
+    float4 fallback,
+    float4 scale,
+    float4 bias)
+{
+    float2 stScaleOffset = (st + stOffset) * stScale;
+    float2 stFlipped = stScaleOffset * float2(1, -1) + float2(0, 1);
+    float4 outColor = tex2D(fileSampler, stFlipped);
+    if (isColorSpaceSRGB) {
+        float4 breakPnt = float4(0.03928571566939354, 0.03928571566939354, 0.03928571566939354, 1.);
+        float4 slope = float4(0.07738015800714493, 0.07738015800714493, 0.07738015800714493, 1.);
+        float4 scale = float4(0.9478672742843628, 0.9478672742843628, 0.9478672742843628, 0.9999989867210388);
+        float4 offset = float4(0.05213269963860512, 0.05213269963860512, 0.05213269963860512, 9.999989742937032e-007);
+        float4 gamma = float4(2.400000095367432, 2.400000095367432, 2.400000095367432, 1.000000953674316);
+        float4 isAboveBreak = float4((outColor > breakPnt) ? float4(1., 1., 1., 1.) : float4(0., 0., 0., 0.));
+        float4 linSeg = outColor * slope;
+        float4 powSeg = pow( max( float4(0., 0., 0., 0.), scale * outColor + offset), gamma);
+        outColor = isAboveBreak * powSeg + ( float4(1., 1., 1., 1.) - isAboveBreak ) * linSeg;
+    }
+    return outColor * scale + bias;
+} 
+                ]]>
+            </source>
+        </implementation>
+    </implementation>
+</fragment>

@@ -13,7 +13,7 @@ target_sources(${TARGET_NAME}
         tokens.cpp
 )
 
-set(headers
+set(HEADERS
     api.h
     ALMayaReference.h
     MayaReference.h
@@ -21,9 +21,21 @@ set(headers
 )
 
 # -----------------------------------------------------------------------------
+# compiler configuration
+# -----------------------------------------------------------------------------
+target_compile_definitions(${TARGET_NAME}
+    PUBLIC
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+)
+
+mayaUsd_compile_config(${TARGET_NAME})
+
+# -----------------------------------------------------------------------------
 # promoted headers
 # -----------------------------------------------------------------------------
-mayaUsd_promoteHeaderList(HEADERS ${headers}
+mayaUsd_promoteHeaderList(HEADERS ${HEADERS}
                           BASEDIR ${TARGET_NAME}
 )
 
@@ -96,7 +108,7 @@ if(IS_WINDOWS)
 endif()
 
 install(FILES ${headers}
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/mayaUsd_Schemas
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${TARGET_NAME}
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
@@ -154,7 +166,7 @@ target_sources(${TARGET_PYTHON_NAME}
 )
 
 # -----------------------------------------------------------------------------
-# compile definitions
+# compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_PYTHON_NAME}
     PRIVATE
@@ -162,6 +174,8 @@ target_compile_definitions(${TARGET_PYTHON_NAME}
         MFB_ALT_PACKAGE_NAME=${SCHEMAS_LIBRARY_NAME}
         MFB_PACKAGE_MODULE=mayaUsd.schemas
 )
+
+mayaUsd_compile_config(${TARGET_PYTHON_NAME})
 
 # -----------------------------------------------------------------------------
 # properties
@@ -180,7 +194,7 @@ target_link_libraries(${TARGET_PYTHON_NAME}
 # run-time search paths
 # -----------------------------------------------------------------------------
 if(IS_MACOSX OR IS_LINUX)
-    mayaUsd_init_rpath(rpath "${PROJECT_NAME}")
+    mayaUsd_init_rpath(rpath mayaUsd)
     mayaUsd_add_rpath(rpath "../../../")
     mayaUsd_install_rpath(rpath ${TARGET_PYTHON_NAME})
 endif()
@@ -190,16 +204,16 @@ endif()
 # -----------------------------------------------------------------------------
 install(TARGETS ${TARGET_PYTHON_NAME}
     LIBRARY
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${SCHEMAS_LIBRARY_NAME}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/mayaUsd/${SCHEMAS_LIBRARY_NAME}
     RUNTIME
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${SCHEMAS_LIBRARY_NAME}
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/mayaUsd/${SCHEMAS_LIBRARY_NAME}
 )
 
 if(IS_WINDOWS)
     install(FILES $<TARGET_PDB_FILE:${TARGET_PYTHON_NAME}> 
-        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${SCHEMAS_LIBRARY_NAME} OPTIONAL)
+        DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/mayaUsd/${SCHEMAS_LIBRARY_NAME} OPTIONAL)
 endif()
 
 install(FILES __init__.py
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/${PROJECT_NAME}/${SCHEMAS_LIBRARY_NAME}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/python/mayaUsd/${SCHEMAS_LIBRARY_NAME}
 )

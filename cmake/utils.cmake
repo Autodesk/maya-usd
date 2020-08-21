@@ -24,6 +24,15 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(IS_MACOSX TRUE)
 endif()
 
+# compiler type
+if (CMAKE_COMPILER_IS_GNUCXX)
+    set(IS_GNU TRUE)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+    set(IS_CLANG TRUE)
+elseif(MSVC)
+    set(IS_MSVC TRUE)
+endif()
+
 # Appends a path to an environment variable.
 # Note: if you want to append multiple paths either call this multiple
 #       times, or send in the paths with the proper platform separator.
@@ -35,11 +44,11 @@ function(mayaUsd_append_path_to_env_var envVar pathToAppend)
     file(TO_NATIVE_PATH "${pathToAppend}" nativePathToAppend)
     if(DEFINED ENV{${envVar}})
         if(IS_WINDOWS)
-            set(newPath "$ENV{${envVar}};${nativePathToAppend}")
+            set(NEWPATH "$ENV{${envVar}};${nativePathToAppend}")
         else()
-            set(newPath "$ENV{${envVar}}:${nativePathToAppend}")
+            set(NEWPATH "$ENV{${envVar}}:${nativePathToAppend}")
         endif()
-        set(ENV{${envVar}} "${newPath}")
+        set(ENV{${envVar}} "${NEWPATH}")
     else()
         set(ENV{${envVar}} "${nativePathToAppend}")
     endif()
@@ -53,21 +62,21 @@ endfunction()
 #
 function(mayaUsd_find_python_module module)
     string(TOUPPER ${module} module_upper)
-    set(module_found "${module_upper}_FOUND")
-    if(NOT ${module_found})
+    set(MODULE_FOUND "${module_upper}_FOUND")
+    if(NOT ${MODULE_FOUND})
         if(ARGC GREATER 1 AND ARGV1 STREQUAL "REQUIRED")
             set(${module}_FIND_REQUIRED TRUE)
         endif()
         execute_process(COMMAND "${Python_EXECUTABLE}" "-c"
-            "import re, ${module}; print re.compile('/__init__.py.*').sub('',${module}.__file__)"
+            "from __future__ import print_function; import re, ${module}; print(re.compile('/__init__.py.*').sub('',${module}.__file__))"
             RESULT_VARIABLE _${module}_status
             OUTPUT_VARIABLE _${module}_location
             ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
         if(NOT _${module}_status)
-            set(${module_found} ${_${module}_location} CACHE STRING
+            set(${MODULE_FOUND} ${_${module}_location} CACHE STRING
                 "Location of Python module ${module}")
         endif(NOT _${module}_status)
-    endif(NOT ${module_found})
+    endif()
 endfunction()
 
 # Initialize a variable to accumulate an rpath.  The origin is the
@@ -91,12 +100,12 @@ endfunction()
 # and add a relative path from the origin to the target.
 function(mayaUsd_add_rpath rpathRef target)
     if(IS_ABSOLUTE "${target}")
-	    # init_rpath calls get_filename_component([...] REALPATH), which does
-		# symlink resolution, so we must do the same, otherwise relative path
-		# determination below will fail.
+        # init_rpath calls get_filename_component([...] REALPATH), which does
+        # symlink resolution, so we must do the same, otherwise relative path
+        # determination below will fail.
         get_filename_component(target "${target}" REALPATH)
         # Make target relative to $ORIGIN (which is the first element in
-        # rpath when initialized with _pxr_mayaUsd_init_rpath()).
+        # rpath when initialized with mayaUsd_init_rpath()).
         list(GET ${rpathRef} 0 origin)
         file(RELATIVE_PATH
             target
@@ -108,20 +117,20 @@ function(mayaUsd_add_rpath rpathRef target)
         endif()
     endif()
     file(TO_CMAKE_PATH "${target}" target)
-    set(new_rpath "${${rpathRef}}")
-    list(APPEND new_rpath "$ORIGIN/${target}")
-    set(${rpathRef} "${new_rpath}" PARENT_SCOPE)
+    set(NEW_RPATH "${${rpathRef}}")
+    list(APPEND NEW_RPATH "$ORIGIN/${target}")
+    set(${rpathRef} "${NEW_RPATH}" PARENT_SCOPE)
 endfunction()
 
 function(mayaUsd_install_rpath rpathRef NAME)
     # Get and remove the origin.
     list(GET ${rpathRef} 0 origin)
-    set(rpath ${${rpathRef}})
-    list(REMOVE_AT rpath 0)
+    set(RPATH ${${rpathRef}})
+    list(REMOVE_AT RPATH 0)
 
     # Canonicalize and uniquify paths.
-    set(final "")
-    foreach(path ${rpath})
+    set(FINAL "")
+    foreach(path ${RPATH})
         # Replace $ORIGIN with @loader_path
         if(IS_MACOSX)
             if("${path}/" MATCHES "^[$]ORIGIN/")
@@ -134,15 +143,15 @@ function(mayaUsd_install_rpath rpathRef NAME)
         string(REGEX REPLACE "/+$" "" path "${path}")
 
         # Ignore paths we already have.
-        if (NOT ";${final};" MATCHES ";${path};")
-            list(APPEND final "${path}")
+        if (NOT ";${FINAL};" MATCHES ";${path};")
+            list(APPEND FINAL "${path}")
         endif()
     endforeach()
 
     set_target_properties(${NAME}
         PROPERTIES
             INSTALL_RPATH_USE_LINK_PATH TRUE
-            INSTALL_RPATH "${final}"
+            INSTALL_RPATH "${FINAL}"
     )
 endfunction()
 
@@ -155,7 +164,7 @@ endfunction()
 #   SUBDIR     - sub-directory in which to promote files.
 #   FILES      - list of files to promote.
 #   BASESDIR   - base dirctory where promoted headers are installed into.
-#                if not defined, mayaUsd subdirectory is used by default. 
+#                if not defined, mayaUsd subdirectory is used by default.
 #
 #
 function(mayaUsd_promoteHeaderList)
@@ -167,44 +176,39 @@ function(mayaUsd_promoteHeaderList)
     )
 
     if (PREFIX_HEADERS)
-        set(headerFiles ${PREFIX_HEADERS})
+        set(HEADERFILES ${PREFIX_HEADERS})
     else()
         message(FATAL_ERROR "HEADERS keyword is not specified.")
     endif()
 
-    set(baseDir ${CMAKE_BINARY_DIR}/include)
+    set(BASEDIR ${CMAKE_BINARY_DIR}/include)
     if (PREFIX_BASEDIR)
-        set(baseDir ${baseDir}/${PREFIX_BASEDIR})
+        set(BASEDIR ${BASEDIR}/${PREFIX_BASEDIR})
     else()
-        set(baseDir ${baseDir}/mayaUsd)
+        set(BASEDIR ${BASEDIR}/mayaUsd)
     endif()
 
     if (PREFIX_SUBDIR)
-        set(baseDir ${baseDir}/${PREFIX_SUBDIR})
+        set(BASEDIR ${BASEDIR}/${PREFIX_SUBDIR})
     endif()
 
-    foreach(header ${headerFiles})
-        set(srcFile ${CMAKE_CURRENT_SOURCE_DIR}/${header})
-        set(dstFile ${baseDir}/${header})
+    foreach(header ${HEADERFILES})
+        set(SRCFILE ${CMAKE_CURRENT_SOURCE_DIR}/${header})
+        set(DSTFILE ${BASEDIR}/${header})
 
-        set(content "#pragma once\n#include \"${srcFile}\"\n")
+        set(CONTENT "#pragma once\n#include \"${SRCFILE}\"\n")
 
-        if (NOT EXISTS ${dstFile})
-            message(STATUS "promoting: " ${srcFile})
-            file(WRITE ${dstFile} "${content}")
+        if (NOT EXISTS ${DSTFILE})
+            message(STATUS "promoting: " ${SRCFILE})
+            file(WRITE ${DSTFILE} "${CONTENT}")
         else()
-            file(READ ${dstFile} oldContent)
-            if (NOT "${content}" STREQUAL "${oldContent}")
-                message(STATUS "Promoting ${srcfile}")
-                file(WRITE ${dstFile} "${content}")
+            file(READ ${DSTFILE} oldContent)
+            if (NOT "${CONTENT}" STREQUAL "${oldContent}")
+                message(STATUS "Promoting ${SRCFILE}")
+                file(WRITE ${DSTFILE} "${CONTENT}")
             endif()
         endif()
     endforeach()
-endfunction()
-
-function(mayaUsd_get_unittest_target unittest_target unittest_basename)
-    get_filename_component(unittest_name ${unittest_basename} NAME_WE)
-    set(${unittest_target} "${unittest_name}" PARENT_SCOPE)
 endfunction()
 
 #
@@ -216,7 +220,7 @@ endfunction()
 #   FILES         - list of files to copy
 #
 function(mayaUsd_copyFiles target)
-    cmake_parse_arguments(PREFIX 
+    cmake_parse_arguments(PREFIX
         ""             # options
         "DESTINATION"  # one_value keywords
         "FILES"        # multi_value keywords
@@ -224,27 +228,27 @@ function(mayaUsd_copyFiles target)
     )
 
     if(PREFIX_DESTINATION)
-        set(destination ${PREFIX_DESTINATION})
+        set(DESTINATION ${PREFIX_DESTINATION})
     else()
         message(FATAL_ERROR "DESTINATION keyword is not specified.")
     endif()
 
      if(PREFIX_FILES)
-        set(srcFiles ${PREFIX_FILES})
+        set(SRCFILES ${PREFIX_FILES})
     else()
         message(FATAL_ERROR "FILES keyword is not specified.")
     endif()
 
-    foreach(file ${srcFiles})
+    foreach(file ${SRCFILES})
         get_filename_component(input_file "${file}" ABSOLUTE)
-        get_filename_component(output_file "${destination}/${file}" ABSOLUTE)
+        get_filename_component(output_file "${DESTINATION}/${file}" ABSOLUTE)
 
         add_custom_command(
             TARGET ${target}
             PRE_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 ${input_file} ${output_file}
-            DEPENDS "${srcFiles}"
+            DEPENDS "${SRCFILES}"
             COMMENT "copying file from ${input_file} to ${output_file}"
         )
     endforeach()
@@ -252,53 +256,94 @@ endfunction()
 
 #
 # mayaUsd_copyDirectory( <target>
+#                        [SOURCE <directory>]
 #                        [DESTINATION <destination>]
-#                        [DIRECTORY <directory>])
+#                        [EXCLUDE <exclude_files>]
+#                        [GLOB <pattern>]
 #
+#   SOURCE        - directory to be copied.
 #   DESTINATION   - destination where directory will be copied into.
-#   DIRECTORY     - directory to be copied.
+#   EXCLUDE       - exclude files from copy.
+#   GLOB          - glob files with pattern (e.g *.cpp, *.py)
 #
 function(mayaUsd_copyDirectory target)
     cmake_parse_arguments(PREFIX
-        ""             # options
-        "DESTINATION"  # one_value keywords
-        "DIRECTORY"    # multi_value keywords
+        ""
+        "SOURCE;DESTINATION" # one value-keyword
+        "EXCLUDE;GLOB"       # multi_value keywords
         ${ARGN}
     )
 
-    if(PREFIX_DESTINATION)
-        set(destination ${PREFIX_DESTINATION})
+    # source
+    if(NOT PREFIX_SOURCE)
+        set(PREFIX_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}")
     endif()
+    get_filename_component(PREFIX_SOURCE "${PREFIX_SOURCE}" ABSOLUTE)
+
+    # destination
     if(NOT PREFIX_DESTINATION)
-        message(FATAL_ERROR "DESTINATION keyword is not specified.")
+        set(PREFIX_DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
     endif()
+    get_filename_component(PREFIX_DESTINATION "${PREFIX_DESTINATION}" ABSOLUTE)
 
-     if(PREFIX_DIRECTORY)
-        set(directory ${PREFIX_DIRECTORY})
-        get_filename_component(directory "${directory}" ABSOLUTE)
-        get_filename_component(dir_name "${directory}" NAME)
+    # exclude
+    if(NOT PREFIX_EXCLUDE)
+        unset(PREFIX_EXCLUDE)
     endif()
-    if(NOT PREFIX_DIRECTORY)
-        message(FATAL_ERROR "DIRECTORY keyword is not specified.")
-    endif()
-
-    # figure out files in directories by traversing all the subdirectories 
-    # relative to directory
-    file(GLOB_RECURSE srcFiles RELATIVE ${directory} ${directory}/*)
- 
-    foreach(file ${srcFiles})
-        get_filename_component(input_file "${dir_name}/${file}" ABSOLUTE)
-        get_filename_component(output_file "${destination}/${dir_name}/${file}" ABSOLUTE)
-
-        add_custom_command(
-            TARGET ${target}
-            PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${input_file} ${output_file}
-            DEPENDS "${input_file}"
-        )
-
+    unset(exclude_files)
+    foreach(pattern ${PREFIX_EXCLUDE})
+        list(APPEND exclude_files "${PREFIX_SOURCE}/${pattern}")
     endforeach()
+
+    # glob
+    if(NOT PREFIX_GLOB)
+        set(PREFIX_GLOB "*")
+    endif()
+    unset(glob_files)
+    foreach(pattern ${PREFIX_GLOB})
+        list(APPEND glob_files "${PREFIX_SOURCE}/${pattern}")
+    endforeach()
+    file(GLOB_RECURSE files RELATIVE "${PREFIX_SOURCE}" ${glob_files})
+
+    if(NOT "${exclude_files}" STREQUAL "")
+        file(GLOB_RECURSE excludes RELATIVE "${PREFIX_SOURCE}" ${exclude_files})
+        if(excludes)
+            list(REMOVE_ITEM files ${excludes})
+        endif()
+    endif()
+
+    # do the actual copy
+    foreach(file ${files})
+        set(INPUT_FILE "${PREFIX_SOURCE}/${file}")
+        set(OUTPUT_FILE "${PREFIX_DESTINATION}/${file}")
+        add_custom_command(TARGET ${target}
+            PRE_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different ${INPUT_FILE} ${OUTPUT_FILE}
+            COMMENT "Copying ${file} to ${PREFIX_DESTINATION}"
+            DEPENDS "${INPUT_FILE}"
+        )
+    endforeach()
+endfunction()
+
+function(mayaUsd_split_head_tail input_string split_string var_head var_tail)
+    string(FIND "${input_string}" "${split_string}" head_end)
+    if("${head_end}" EQUAL -1)
+        message(FATAL_ERROR "input_string '${input_string}' did not contain "
+            "split_string '${split_string}'")
+    endif()
+
+    string(LENGTH "${split_string}" split_string_len)
+    math(EXPR tail_start "${head_end} + ${split_string_len}")
+
+    string(SUBSTRING "${input_string}" 0 "${head_end}" "${var_head}")
+    string(SUBSTRING "${input_string}" "${tail_start}" -1 "${var_tail}")
+    set("${var_head}" "${${var_head}}" PARENT_SCOPE)
+    set("${var_tail}" "${${var_tail}}" PARENT_SCOPE)
+endfunction()
+
+function(mayaUsd_indent outvar lines)
+    string(REPLACE "\n" "\n    " lines "${lines}")
+    set("${outvar}" "    ${lines}" PARENT_SCOPE)
 endfunction()
 
 # parse list arguments into a new list separated by ";" or ":"

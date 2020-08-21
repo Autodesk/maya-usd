@@ -15,24 +15,25 @@
 //
 #pragma once
 
-#include "../../Api.h"
-
+#include <AL/usdmaya/Api.h>
+#include <AL/usdmaya/DebugCodes.h>
 #include <AL/usdmaya/ForwardDeclares.h>
-#include "maya/MPxData.h"
-#include "maya/MGlobal.h"
-#include "maya/MObject.h"
-#include "maya/MObjectHandle.h"
-#include "maya/MObjectArray.h"
-#include "maya/MDGModifier.h"
-#include "pxr/pxr.h"
-#include "pxr/base/tf/refPtr.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/base/tf/debug.h"
-#include "AL/usdmaya/DebugCodes.h"
-
-#include <vector>
-#include <string>
 #include <mayaUsdUtils/ForwardDeclares.h>
+
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/refPtr.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
+
+#include <maya/MDGModifier.h>
+#include <maya/MGlobal.h>
+#include <maya/MObject.h>
+#include <maya/MObjectArray.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MPxData.h>
+
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -315,8 +316,7 @@ public:
   {
     /// \brief  ctor
     /// \param  path the prim path of the items we will be tracking
-    /// \param  translatorId. Used to help us determine which translator plugin
-    ///         to call to tear down this prim.
+    /// \param  translatorId Used to help us determine which translator plugin to call to tear down this prim.
     /// \param  mayaObj the maya transform
     PrimLookup(const SdfPath& path, const std::string& translatorId, MObject mayaObj)
       : m_path(path), m_translatorId(translatorId), m_uniqueKey(0), m_object(mayaObj), m_createdNodes() { }
@@ -350,7 +350,7 @@ public:
       { return m_uniqueKey; }
 
     /// \brief  set the unique key for this prim
-    /// \param the unique key for this prim
+    /// \param  key the unique key for this prim
     void setUniqueKey(const std::size_t key)
       { m_uniqueKey = key; }
 

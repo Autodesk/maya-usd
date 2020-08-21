@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 // GENERATED FILE.  DO NOT EDIT.
+#include "tokens.h"
+
 #include <boost/python/class.hpp>
-#include "./tokens.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

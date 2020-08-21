@@ -15,6 +15,34 @@
 // limitations under the License.
 //
 
+
+proc mayaUsdTranslatorImport_hideInfo()
+{
+    if (`rowLayout -exists mayaUsd_NBPrimsInScopeRL`) 
+    {
+        rowLayout -edit -visible false mayaUsd_NBPrimsInScopeRL;
+        rowLayout -edit -visible false mayaUsd_NBSwitchedVariantsRL;
+
+        text -edit -label "---" mayaUsd_NBPrimsInScopeLabel;
+        text -edit -label "---" mayaUsd_NBSwitchedVariantsLabel;
+    }
+}
+
+proc mayaUsdTranslatorImport_showInfo()
+{
+    if (`rowLayout -exists mayaUsd_NBPrimsInScopeRL`) 
+    {
+        int $pc = `usdImportDialog -q -primCount`;
+        int $swc = `usdImportDialog -q -switchedVariantCount`;
+
+        text -edit -label $pc mayaUsd_NBPrimsInScopeLabel;
+        text -edit -label $swc mayaUsd_NBSwitchedVariantsLabel;
+
+        rowLayout -edit -visible true mayaUsd_NBPrimsInScopeRL;
+        rowLayout -edit -visible true mayaUsd_NBSwitchedVariantsRL;
+    }
+}
+
 global proc int mayaUsdTranslatorImport (string $parent,
                                  string $action,
                                  string $initialSettings,
@@ -45,6 +73,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
     int $bResult = 0;
     int $cw1 = 180;
     int $cw2 = 300;
+    int $bw = 125;
 
     if ($action == "post") {
         setParent $parent;
@@ -53,18 +82,38 @@ global proc int mayaUsdTranslatorImport (string $parent,
 
         if (`exists usdImportDialog`)
         {
-            rowLayout -numberOfColumns 3 -cw 1 $cw1 -cat 1 "right" 0;
+            rowLayout -numberOfColumns 4 -cw 1 $cw1 -cat 1 "right" 0;
                 text -label "Scope and Variants: "
                     -al "right"
                     -sbm "Select a USD file and click Hierarchy View to open the Hierarchy View window. This window lets you toggle prim checkboxes and non-destructively switch between variants to build the scope of your import."
                     -ann "Select a USD file and click <strong>Hierarchy View</strong> to build the scope of your import and switch variants.<br><br><strong>Scope</strong>: A USD file consists of prims, the primary container object in USD. Prims can contain any scene element, like meshes, lights, cameras, etc. Use the checkboxes in the <strong>Hierarchy View</strong> to select and deselect prims to build the scope of your import.<br><br><strong>Variant</strong>: A variant is a single, named variation of a variant set. Each variant set is a package of alternatives that users can switch between non-destructively. A variant set has no limits to what it can store. Variants can be used to swap out a material or change the entire hierarchy of an asset. A single prim can have many variants and variant sets, but only one variant from each variant set can be selected for import into Maya."
                 ;
                 textField -ed false -nbg true -text "Please select a file to enable this option" -w $cw2 mayaUsdTranslator_SelectFileField;
-                button -label "Hierarchy View" -c "string $usdFile = currentFileDialogSelection(); usdImportDialog $usdFile;" mayaUsdTranslator_ViewHierBtn;
+                button -label "Hierarchy View" -c "mayaUsdTranslatorImport_ViewHierCB" mayaUsdTranslator_ViewHierBtn;
+                iconTextButton -w 32 -h 32 -command ("mayaUsdTranslatorImport_ClearImportData;") -
+                    style "iconAndTextVertical" -image1 "refresh.png" -label "" mayaUsdTranslator_ResetBtn;
+
+                string $nbPrimsInScopeLabel = "Total Number of Prims in Scope:";
+                string $nbModifiedVariantsLabel = "Variants Switched in Scope:";
 
                 // Hide the button by default.
-                button -e -visible false mayaUsdTranslator_ViewHierBtn;
+                button -e -visible false -w 1 mayaUsdTranslator_ViewHierBtn;
+                iconTextButton -e -visible false mayaUsdTranslator_ResetBtn;
             setParent ..;
+
+            rowLayout -numberOfColumns 3 -cw 1 $cw1 -cat 1 "right" 0 -cal 1 "right" mayaUsd_NBPrimsInScopeRL;
+                text -label "";
+                text -label $nbPrimsInScopeLabel;
+                text -label "---" mayaUsd_NBPrimsInScopeLabel;
+            setParent ..;
+            rowLayout -numberOfColumns 3 -cw 1 $cw1 -cat 1 "right" 0 -cal 1 "right" mayaUsd_NBSwitchedVariantsRL;
+                text -label "";
+                text -label $nbModifiedVariantsLabel;
+                text -label "---" mayaUsd_NBSwitchedVariantsLabel;
+            setParent ..;
+            // We'll start off with the info UI hidden and only make it visible when we come out of 
+            // the Hierarchy View the first time.
+            mayaUsdTranslatorImport_hideInfo();
         }
 //        checkBoxGrp -label "Load Payloads: " -cw 1 $cw1 mayaUsdTranslator_LoadPayloadsCheckBox;
 //
@@ -73,13 +122,22 @@ global proc int mayaUsdTranslatorImport (string $parent,
 //            menuItem -label "Object space";
 //            menuItem -label "World space";
 //        optionMenuGrp -e -sl 1 mayaUsdTranslator_CoordSystemOptionMenu;
-//
-//        optionMenuGrp -label "Materials: " -cw 1 $cw1 mayaUsdTranslator_MaterialsOptionMenu;
-//            menuItem -label "None";
-//            menuItem -label "Display Colors";
-//            menuItem -label "USD Shade";
-//        optionMenuGrp -e -sl 2 mayaUsdTranslator_MaterialsOptionMenu;
-//
+
+        string $importers[] = `mayaUSDListShadingModes -import`;
+        optionMenuGrp -l "Materials:" -cw 1 $cw1 mayaUsdTranslator_MaterialsOptionMenu;
+        for ($modeName in $importers) {
+            string $niceName = $modeName;
+            if ($modeName == "displayColor") {
+                $niceName = "Display Colors";
+            } else if ($modeName == "pxrRis") {
+                $niceName = "RfM Shaders";
+            } else if ($modeName == "useRegistry") {
+                $niceName = "Preview Surface Shaders";
+            }
+            menuItem -l $niceName -ann $modeName;
+        }
+        mayaUsdTranslatorImport_SetOptionMenuByAnnotation("useRegistry", "mayaUsdTranslator_MaterialsOptionMenu");
+
 //        checkBoxGrp -label "InstancedPrims: " -label1 "Convert to Instances" -cw 1 $cw1 mayaUsdTranslator_InstancedPrimsCheckBox;
 //
 //        optionMenuGrp -label "Include Metadata: " -cw 1 $cw1 mayaUsdTranslator_IncludeMetadataOptionMenu;
@@ -113,7 +171,9 @@ global proc int mayaUsdTranslatorImport (string $parent,
             tokenize($currentOptions, ";", $optionList);
             for ($index = 0; $index < size($optionList); $index++) {
                 tokenize($optionList[$index], "=", $optionBreakDown);
-                if ($optionBreakDown[0] == "readAnimData") {
+                if ($optionBreakDown[0] == "shadingMode") {
+                    mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "mayaUsdTranslator_MaterialsOptionMenu");
+                } else if ($optionBreakDown[0] == "readAnimData") {
                     mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_AnimDataCheckBox");
                 } else if ($optionBreakDown[0] == "startTime") {
                     int $startTime = $optionBreakDown[1];
@@ -131,6 +191,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
 
     } else if ($action == "query") {
         string $currentOptions = "";
+        $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "shadingMode", "mayaUsdTranslator_MaterialsOptionMenu");
         $currentOptions = mayaUsdTranslatorImport_AppendFromDialog($currentOptions, "primPath", "-primPath");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "readAnimData", "mayaUsdTranslator_AnimDataCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "useCustomFrameRange", "mayaUsdTranslator_CustomFrameRangeCheckBox");
@@ -144,7 +205,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         if (`exists usdImportDialog`)
         {
             // Clear out the import data since we have a new selection.
-            usdImportDialog -clearData "";
+            mayaUsdTranslatorImport_ClearImportData;
         }
 
         // Test the currently selected file in the import dialog to see if it is
@@ -167,16 +228,16 @@ global proc int mayaUsdTranslatorImport (string $parent,
             {
                 // Hide the field (and shrink it) and show the button (which will align with label).
                 textField -e -vis false -w 1 mayaUsdTranslator_SelectFileField;
+                button -e -visible true -w $bw mayaUsdTranslator_ViewHierBtn;
+                iconTextButton -e -visible true -w 32 mayaUsdTranslator_ResetBtn;
             }
             else
             {
                 // Show the field and hide the button.
                 textField -e -vis true -w $cw2 mayaUsdTranslator_SelectFileField;
+                button -e -visible false -w 1 mayaUsdTranslator_ViewHierBtn;
+                iconTextButton -e -visible false -w 1 mayaUsdTranslator_ResetBtn;
             }
-        }
-
-        if (`button -exists mayaUsdTranslator_ViewHierBtn`) {
-            button -e -visible $showBtn mayaUsdTranslator_ViewHierBtn;
         }
 
         $bResult = 1;
@@ -187,6 +248,19 @@ global proc int mayaUsdTranslatorImport (string $parent,
 
     mayaUsdTranslatorImport_AnimationCB();
     return $bResult;
+}
+
+global proc mayaUsdTranslatorImport_SetOptionMenuByAnnotation(
+        string $ann, string $widget) {
+    int $index = 1; // 1-based indexing.
+    for ($i in `optionMenuGrp -q -itemListLong $widget`) {
+        if (`menuItem -q -ann $i` == $ann) {
+            optionMenuGrp -e -select $index $widget;
+            return;
+        }
+
+        $index++;
+    }
 }
 
 global proc mayaUsdTranslatorImport_SetCheckBoxGrp(string $arg, string $widget)
@@ -215,6 +289,14 @@ global proc string mayaUsdTranslatorImport_AppendFromCheckBoxGrp(string $current
     }
 }
 
+global proc string mayaUsdTranslatorImport_AppendFromPopup(string $currentOptions, string $arg, string $widget) {
+    int $index = `optionMenuGrp -q -select $widget` - 1;
+    string $allItems[] = `optionMenuGrp -q -itemListLong $widget`;
+    string $item = $allItems[$index];
+    string $annotation = `menuItem -q -ann $item`;
+    return $currentOptions + ";" + $arg + "=" + $annotation;
+}
+
 global proc string mayaUsdTranslatorImport_AppendFromIntFieldGrp(string $currentOptions, string $arg, int $index, string $widget)
 {
     string $si = ("-value" + $index);
@@ -232,4 +314,23 @@ global proc string mayaUsdTranslatorImport_AppendFromDialog(string $currentOptio
             return $currentOptions + ";" + $arg + "=" + $value;
         }
     }
+}
+
+global proc mayaUsdTranslatorImport_ViewHierCB()
+{
+    string $usdFile = currentFileDialogSelection(); 
+    string $result = `usdImportDialog $usdFile`;
+    if ("" != $result)
+    {
+        mayaUsdTranslatorImport_showInfo();
+    }
+
+    // If the dialog was cancelled then we will not get a result, but
+    // don't clear out the info since nothing should be changed.
+}
+
+global proc mayaUsdTranslatorImport_ClearImportData()
+{
+    usdImportDialog -clearData "";
+    mayaUsdTranslatorImport_hideInfo();
 }

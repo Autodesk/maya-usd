@@ -16,22 +16,26 @@
 #ifndef HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 #define HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 
-#include "../api.h"
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
 
 #include <pxr/base/tf/token.h>
-
 #include <pxr/imaging/hd/material.h>
-
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
+#include <hdMaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaShaderParam {
+#if USD_VERSION_NUM >= 1911
+    TfToken name;
+    VtValue fallbackValue;
+#else
     HdMaterialParam param;
+#endif
+
     SdfValueTypeName type;
 
     HDMAYA_API

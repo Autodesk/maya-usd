@@ -17,9 +17,9 @@
 #include "AL/usdmaya/nodes/RendererManager.h"
 #include "AL/maya/utils/CommandGuiHelper.h"
 
-#include "maya/MArgDatabase.h"
-#include "maya/MGlobal.h"
-#include "maya/MSyntax.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MGlobal.h>
+#include <maya/MSyntax.h>
 
 namespace AL {
 namespace usdmaya {

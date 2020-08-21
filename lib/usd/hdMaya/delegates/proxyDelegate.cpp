@@ -13,18 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-
 #include "proxyDelegate.h"
 
-#include "../adapters/proxyAdapter.h"
-#include "../debugCodes.h"
-
-#include "delegateRegistry.h"
-
-#include "../../../nodes/proxyShapeBase.h"
-
-#include <pxr/base/tf/envSetting.h>
-#include <pxr/base/tf/type.h>
+#include <atomic>
+#include <mutex>
+#include <unordered_set>
 
 #include <maya/MDGMessage.h>
 #include <maya/MFnDagNode.h>
@@ -35,9 +28,13 @@
 #include <maya/MObject.h>
 #include <maya/MSceneMessage.h>
 
-#include <atomic>
-#include <mutex>
-#include <unordered_set>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/tf/type.h>
+
+#include <hdMaya/adapters/proxyAdapter.h>
+#include <hdMaya/debugCodes.h>
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #if WANT_UFE_BUILD
 #include <ufe/rtid.h>
@@ -192,7 +189,7 @@ void HdMayaProxyDelegate::Populate() {
 
 void HdMayaProxyDelegate::PreFrame(const MHWRender::MDrawContext& context) {
     std::lock_guard<std::mutex> lock(_allAdaptersMutex);
-    for (auto adapter : _allAdapters) { adapter->PreFrame(); }
+    for (auto adapter : _allAdapters) { adapter->PreFrame(context); }
 }
 
 #if WANT_UFE_BUILD

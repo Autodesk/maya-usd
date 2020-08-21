@@ -15,7 +15,7 @@
 //
 
 
-#include "pxr/usd/usdGeom/xform.h"
+#include <pxr/usd/usdGeom/xform.h>
 
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
@@ -24,10 +24,10 @@
 #include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/StageCache.h"
 
-#include "maya/MFileIO.h"
-#include "maya/MItDependencyNodes.h"
-#include "maya/MFnMatrixData.h"
-#include "maya/MString.h"
+#include <maya/MFileIO.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MFnMatrixData.h>
+#include <maya/MString.h>
 
 #include "test_usdmaya.h"
 

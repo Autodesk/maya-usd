@@ -15,9 +15,12 @@
 # limitations under the License.
 #
 
+from future.utils import iteritems
+
 from pxr import UsdMaya
 
 from pxr import Tf
+from pxr import Trace
 
 from maya import cmds
 
@@ -47,7 +50,7 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         statsOutputLines = []
-        for profileScopeName, elapsedTime in cls._profileScopeMetrics.iteritems():
+        for profileScopeName, elapsedTime in iteritems(cls._profileScopeMetrics):
             statsDict = {
                 'profile': profileScopeName,
                 'metric': 'time',
@@ -75,15 +78,26 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
         exit and stores the elapsed time in the class' metrics dictionary.
         """
         stopwatch = Tf.Stopwatch()
+        collector = Trace.Collector()
 
         try:
             stopwatch.Start()
+            collector.enabled = True
+            collector.BeginEvent(profileScopeName)
             yield
         finally:
+            collector.EndEvent(profileScopeName)
+            collector.enabled = False
             stopwatch.Stop()
             elapsedTime = stopwatch.seconds
             self._profileScopeMetrics[profileScopeName] = elapsedTime
-            Tf.Status("%s: %f" % (profileScopeName, elapsedTime))
+            Tf.Status('%s: %f' % (profileScopeName, elapsedTime))
+
+            traceFilePath = '%s/%s.trace' % (
+                self._testDir, profileScopeName)
+            Trace.Reporter.globalReporter.Report(traceFilePath)
+            collector.Clear()
+            Trace.Reporter.globalReporter.ClearTree()
 
     def _RunLoadTest(self):
         profileScopeName = '%s Assemblies Load Time' % self._testName
@@ -131,7 +145,7 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
         profileScopeName = '%s Proxy Orbit Playback Time' % self._testName
 
         with self._ProfileScope(profileScopeName):
-            for frame in xrange(int(self.animStartTime), int(self.animEndTime + 1.0)):
+            for frame in range(int(self.animStartTime), int(self.animEndTime + 1.0)):
                 cmds.currentTime(frame, edit=True)
 
         playElapsedTime = self._profileScopeMetrics[profileScopeName]

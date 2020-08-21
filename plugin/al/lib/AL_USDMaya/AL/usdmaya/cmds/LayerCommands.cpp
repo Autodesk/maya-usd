@@ -21,16 +21,16 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
-#include "pxr/usd/sdf/listOp.h"
-#include "pxr/usd/usd/stage.h"
+#include <pxr/usd/sdf/listOp.h>
+#include <pxr/usd/usd/stage.h>
 
-#include "maya/MArgDatabase.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MSelectionList.h"
-#include "maya/MStringArray.h"
-#include "maya/MSyntax.h"
-#include "maya/MStringArray.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MSelectionList.h>
+#include <maya/MStringArray.h>
+#include <maya/MSyntax.h>
+#include <maya/MStringArray.h>
 
 namespace {
   AL::usdmaya::nodes::ProxyShape* getProxyShapeFromSel(const MSelectionList& sl)

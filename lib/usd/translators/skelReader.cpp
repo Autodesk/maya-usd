@@ -13,25 +13,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
-
-#include "../../fileio/primReaderRegistry.h"
-#include "../../fileio/translators/translatorSkel.h"
-#include "../../fileio/translators/translatorUtil.h"
-
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/primRange.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdSkel/cache.h"
-#include "pxr/usd/usdSkel/root.h"
-#include "pxr/usd/usdSkel/skeletonQuery.h"
-#include "pxr/usd/usdSkel/skinningQuery.h"
-
 #include <maya/MObject.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdSkel/cache.h>
+#include <pxr/usd/usdSkel/root.h>
+#include <pxr/usd/usdSkel/skeletonQuery.h>
+#include <pxr/usd/usdSkel/skinningQuery.h>
+
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/translators/translatorSkel.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Prim reader for skeletons.
 /// This produce a joint hierarchy, possibly animated, corresponding

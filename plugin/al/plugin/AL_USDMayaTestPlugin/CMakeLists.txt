@@ -39,6 +39,7 @@ target_sources(${TARGET_NAME}
         AL/usdmaya/nodes/test_TransformMatrix.cpp
         AL/usdmaya/nodes/test_ScopeMatrix.cpp
         AL/usdmaya/nodes/test_TranslatorContext.cpp
+        AL/usdmaya/nodes/test_VariantFallbacks.cpp
         AL/usdmaya/test_DiffGeom.cpp
         AL/usdmaya/test_DiffPrimVar.cpp
         AL/usdmaya/test_SelectabilityDB.cpp
@@ -62,12 +63,16 @@ elseif(IS_LINUX)
     set_target_properties(${TARGET_NAME} PROPERTIES PREFIX "")
 endif()
 
+# compiler configuration
+mayaUsd_compile_config(${TARGET_NAME})
+
 target_compile_definitions(${TARGET_NAME}
     PRIVATE
         AL_USDMAYA_UNITTEST
         AL_USDMAYATEST_PLUGIN_EXPORT
         AL_USDMAYA_TEST_DATA="${CMAKE_CURRENT_SOURCE_DIR}/test_data"
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
 )
 
 target_include_directories(${TARGET_NAME}
@@ -93,7 +98,7 @@ target_link_libraries(${TARGET_NAME}
 )
 
 # handle run-time search paths
-if(IS_MACOSX OR IS_LINUX) 
+if(IS_MACOSX OR IS_LINUX)
     mayaUsd_init_rpath(rpath "plugin")
     mayaUsd_add_rpath(rpath "../lib")
     if(BUILD_TESTS)
@@ -122,59 +127,20 @@ install(TARGETS ${TARGET_NAME}
 )
 
 # unit tests
-set(path 
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib" # AL_MayaTest, AL_MayaUtils
-    "${CMAKE_INSTALL_PREFIX}/lib"
-    "$ENV{PATH}"
+
+set(pycode "
+import sys
+import maya.cmds
+maya.cmds.loadPlugin('AL_USDMayaTestPlugin')
+sys.exit(maya.cmds.AL_maya_test_UnitTestHarness())
+")
+
+mayaUsd_add_test(${TARGET_NAME}
+    PYTHON_COMMAND "${pycode}"
+    ENV
+        "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
+        "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
-
-if(IS_WINDOWS)
-  list(APPEND path "${CMAKE_INSTALL_PREFIX}/lib/gtest")
-endif()
-
-set(pythonPath 
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/python"
-    "$ENV{PYTHONPATH}"
-)
-
-set(mayaPluginPath
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/plugin"
-)
-
-set(pxrPluginPath
-    "${CMAKE_INSTALL_PREFIX}/plugin/al/lib/usd"
-    "${CMAKE_INSTALL_PREFIX}/lib/usd"
-)
-
-separate_argument_list(path)
-separate_argument_list(pythonPath)
-separate_argument_list(mayaPluginPath)
-separate_argument_list(pxrPluginPath)
-
-add_test(
-    NAME ${TARGET_NAME}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMAND ${MAYA_PY_EXECUTABLE} -c "import sys;import maya.standalone; \
-                                      maya.standalone.initialize(name='python'); \
-                                      maya.cmds.loadPlugin('AL_USDMayaTestPlugin'); \
-                                      maya.mel.eval('AL_maya_test_UnitTestHarness'); \
-                                      maya.standalone.uninitialize(); \
-                                      "
-)
-
-set_property(TEST ${TARGET_NAME} APPEND PROPERTY ENVIRONMENT 
-    "PYTHONPATH=${pythonPath}"
-    "PATH=${path}"
-    "MAYA_PLUG_IN_PATH=${mayaPluginPath}"
-    "PXR_PLUGINPATH_NAME=${pxrPluginPath}"
-    "MAYA_NO_STANDALONE_ATEXIT=1"
-)
-
-if(IS_LINUX)
-    set_property(TEST ${TARGET_NAME} APPEND PROPERTY ENVIRONMENT 
-        "LD_LIBRARY_PATH=${MAYA_LIBRARY_DIR}:${CMAKE_INSTALL_PREFIX}/plugin/al/lib"
-    )
-endif()
 
 if(NOT SKIP_USDMAYA_TESTS)
     add_subdirectory(py)

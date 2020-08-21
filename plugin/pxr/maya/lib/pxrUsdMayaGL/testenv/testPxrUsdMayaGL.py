@@ -38,9 +38,9 @@ class testPxrUsdMayaGL(unittest.TestCase):
         # a memory issue would sometimes cause maya to crash when opening a new
         # scene.  
 
-        for _ in xrange(20):
+        for _ in range(20):
             cmds.file(new=True, force=True)
-            for i in xrange(10):
+            for i in range(10):
                 usdFilePath = os.path.abspath('plane%d.usda' % (i%2))
                 assembly = cmds.assembly(name='plane', type='pxrUsdReferenceAssembly')
                 cmds.setAttr("%s.filePath" % assembly, usdFilePath, type='string')

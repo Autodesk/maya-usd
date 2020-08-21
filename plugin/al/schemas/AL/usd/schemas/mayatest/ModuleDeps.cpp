@@ -1,6 +1,6 @@
-#include "pxr/base/tf/registryManager.h"
-#include "pxr/base/tf/scriptModuleLoader.h"
-#include "pxr/base/tf/token.h"
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/scriptModuleLoader.h>
+#include <pxr/base/tf/token.h>
 
 #include <vector>
 

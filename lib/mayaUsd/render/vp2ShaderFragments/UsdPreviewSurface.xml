@@ -1,0 +1,105 @@
+<!--
+========================================================================
+Copyright 2018 Pixar
+Copyright 2020 Autodesk
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment_graph name="UsdPreviewSurface" ref="UsdPreviewSurface" class="FragmentGraph" version="1.0" feature_level="0">
+    <fragments>
+        <!-- Nearly all of the shading for this fragment graph is actually
+             managed by the UsdPreviewSurfaceCore fragment graph. We forward
+             all connections into this graph to the core with the exception of
+             opacity, which we first convert into transparency. -->
+        <fragment_ref name="UsdPreviewSurfaceCore" ref="UsdPreviewSurfaceCore"/>
+        <fragment_ref name="opacityToTransparency" ref="opacityToTransparency"/>
+    </fragments>
+    <connections>
+        <connect from="opacityToTransparency.transparency" to="UsdPreviewSurfaceCore.transparency" name="transparency"/>
+    </connections>
+    <properties>
+        <!-- UsdPreviewSurface Parameters passed through to the core. -->
+        <float name="clearcoat" ref="UsdPreviewSurfaceCore.clearcoat"/>
+        <float name="clearcoatRoughness" ref="UsdPreviewSurfaceCore.clearcoatRoughness"/>
+        <float3 name="diffuseColor" ref="UsdPreviewSurfaceCore.diffuseColor"/>
+        <float3 name="emissiveColor" ref="UsdPreviewSurfaceCore.emissiveColor"/>
+        <float name="ior" ref="UsdPreviewSurfaceCore.ior"/>
+        <float name="metallic" ref="UsdPreviewSurfaceCore.metallic"/>
+        <float name="occlusion" ref="UsdPreviewSurfaceCore.occlusion"/>
+        <float name="roughness" ref="UsdPreviewSurfaceCore.roughness"/>
+        <float3 name="specularColor" ref="UsdPreviewSurfaceCore.specularColor"/>
+        <bool name="useSpecularWorkflow" ref="UsdPreviewSurfaceCore.useSpecularWorkflow"/>
+
+        <!-- Opacity converted to transparency before passing to the core. -->
+        <float name="opacity" ref="opacityToTransparency.opacity"/>
+
+        <!-- Maya Parameters for Lighting passed through to the core. -->
+        <undefined name="GPUStage" ref="UsdPreviewSurfaceCore.GPUStage" semantic="GPUStage"/>
+        <float3 name="Nw" ref="UsdPreviewSurfaceCore.Nw" flags="varyingInputParam"/>
+        <float3 name="Lw" ref="UsdPreviewSurfaceCore.Lw"/>
+        <float3 name="HLw" ref="UsdPreviewSurfaceCore.HLw"/>
+        <float3 name="diffuseI" ref="UsdPreviewSurfaceCore.diffuseI"/>
+        <float3 name="specularI" ref="UsdPreviewSurfaceCore.specularI"/>
+        <string name="selector" ref="UsdPreviewSurfaceCore.selector"/>
+        <bool name="mayaAlphaCut" ref="UsdPreviewSurfaceCore.mayaAlphaCut" semantic="mayaAlphaCut" flags="isRequirementOnly"/>
+        <float3 name="ambientIn" ref="UsdPreviewSurfaceCore.ambientIn"/>
+        <float3 name="IrradianceEnv" ref="UsdPreviewSurfaceCore.IrradianceEnv"/>
+        <float3 name="SpecularEnv" ref="UsdPreviewSurfaceCore.SpecularEnv"/>
+        <float name="extraOpacity" ref="UsdPreviewSurfaceCore.extraOpacity"/>
+        <bool name="fogEnabled" ref="UsdPreviewSurfaceCore.fogEnabled"/>
+        <float3 name="Pw" ref="UsdPreviewSurfaceCore.Pw" semantic="Pw"/>
+        <float4x4 name="ViewProj" ref="UsdPreviewSurfaceCore.ViewProj" semantic="viewprojection"/>
+        <float name="fogStart" ref="UsdPreviewSurfaceCore.fogStart"/>
+        <float name="fogEnd" ref="UsdPreviewSurfaceCore.fogEnd"/>
+        <int name="fogMode" ref="UsdPreviewSurfaceCore.fogMode"/>
+        <float name="fogDensity" ref="UsdPreviewSurfaceCore.fogDensity"/>
+        <float4 name="fogColor" ref="UsdPreviewSurfaceCore.fogColor"/>
+        <float name="fogMultiplier" ref="UsdPreviewSurfaceCore.fogMultiplier"/>
+    </properties>
+    <values>
+        <!-- UsdPreviewSurface Parameter Default Values -->
+        <float name="clearcoat" value="0.0"/>
+        <float name="clearcoatRoughness" value="0.01"/>
+        <float3 name="diffuseColor" value="0.18,0.18,0.18"/>
+        <float3 name="emissiveColor" value="0.0,0.0,0.0"/>
+        <float name="ior" value="1.5"/>
+        <float name="metallic" value="0.0"/>
+        <float name="occlusion" value="1.0"/>
+        <float name="roughness" value="0.5"/>
+        <float3 name="specularColor" value="0.0,0.0,0.0"/>
+        <float name="opacity" value="1.0"/>
+        <bool name="useSpecularWorkflow" value="false"/>
+
+        <!-- Default values for Maya-provided parameters. -->
+        <float3 name="Lw" value="0.0,0.0,0.0"/>
+        <float3 name="HLw" value="0.0,0.0,0.0"/>
+        <float3 name="diffuseI" value="0.0,0.0,0.0"/>
+        <float3 name="specularI" value="0.0,0.0,0.0"/>
+        <string name="selector" value="mayaLightSelector16"/>
+        <float3 name="ambientIn" value="0.0,0.0,0.0"/>
+        <float3 name="IrradianceEnv" value="0.0,0.0,0.0"/>
+        <float3 name="SpecularEnv" value="0.0,0.0,0.0"/>
+        <float name="extraOpacity" value="1.0"/>
+        <bool name="fogEnabled" value="false"/>
+        <float name="fogStart" value="0.0"/>
+        <float name="fogEnd" value="92.0"/>
+        <int name="fogMode" value="0"/>
+        <float name="fogDensity" value="0.1"/>
+        <float4 name="fogColor" value="0.5,0.5,0.5,1.0"/>
+        <float name="fogMultiplier" value="1.0"/>
+    </values>
+    <outputs>
+        <struct name="mayaSurfaceShaderOutput" ref="UsdPreviewSurfaceCore.mayaSurfaceShaderOutput"/>
+    </outputs>
+</fragment_graph>

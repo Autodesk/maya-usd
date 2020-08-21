@@ -19,13 +19,14 @@ import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
 from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
+from ufeTestUtils.testUtils import assertVectorAlmostEqual
 import testTRSBase
 import ufe
 
 import unittest
 
 from functools import partial
-    
+
 def transform3dScale(transform3d):
     matrix = om.MMatrix(transform3d.inclusiveMatrix().matrix)
     return om.MTransformationMatrix(matrix).scale(om.MSpace.kObject)
@@ -98,7 +99,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         '''
         runTimeVec = self.runTimeScale()
         ufeVec  = self.ufeScale()
-        self.assertVectorAlmostEqual(runTimeVec, ufeVec)
+        assertVectorAlmostEqual(self, runTimeVec, ufeVec, places=6)
         return (runTimeVec, ufeVec)
 
     def multiSelectSnapshotRunTimeUFE(self, items):
@@ -111,16 +112,9 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         for item in items:
             runTimeVec = self.runTimeScale(item)
             ufeVec  = self.ufeScale(item)
-            self.assertVectorAlmostEqual(runTimeVec, ufeVec)
+            assertVectorAlmostEqual(self, runTimeVec, ufeVec, places=6)
             snapshot.append((runTimeVec, ufeVec))
         return snapshot
-
-    def assertVectorAlmostEqual(self, a, b):
-        for va, vb in zip(a, b):
-            # In this test (perhaps in general, not investigated), scale
-            # extraction from matrix provides 6 decimal places, not default 7,
-            # close enough.  PPT, 21-Dec-2018.
-            self.assertAlmostEqual(va, vb, places=6)
 
     def runTestScale(self, expected):
         '''Engine method to run scale test.'''
@@ -138,7 +132,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         self.rewindMemento()
         self.fforwardMemento()
 
-    def runMultiSelectTestScale(self, items, expected):
+    def runMultiSelectTestScale(self, items, expected, places=7):
         '''Engine method to run multiple selection scale test.'''
 
         # Save the initial positions to the memento list.
@@ -148,7 +142,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         for relativeScale in [[4, 5, 6], [0.5, 0.2, 0.1]]:
             cmds.scale(*relativeScale, relative=True)
             expected = multiSelectCombineScales(expected, relativeScale)
-            self.multiSelectSnapShotAndTest(items, expected)
+            self.multiSelectSnapShotAndTest(items, expected, places)
 
         # Test undo, redo.
         self.multiSelectRewindMemento(items)
@@ -177,6 +171,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestScale(expected)
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
     def testScaleUSD(self):
         '''Scale USD object, read through the Transform3d interface.'''
 
@@ -211,14 +206,10 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Save the initial position to the memento list.
         expected = ball35Scale()
 
-        # MAYA-96058: unfortunately, scale command currently requires a scale
-        # manipulator to be created to update the UFE object.
-        manipCtx = cmds.manipScaleContext()
-        cmds.setToolTo(manipCtx)
-
         self.runTestScale(expected)
 
-    def _testMultiSelectScaleUSD(self):
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
+    def testMultiSelectScaleUSD(self):
         '''Scale multiple USD objects, read through Transform3d interface.'''
 
         # Select multiple balls to scale them.
@@ -245,7 +236,7 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         proxyShapeXformFn = om.MFnTransform(proxyShapeXformObj)
 
         def usdSceneItemScale(item):
-            prim = usdUtils.getPrimFromSceneItem(ball35Item)
+            prim = usdUtils.getPrimFromSceneItem(item)
             if not prim.HasAttribute('xformOp:scale'):
                 return proxyShapeXformFn.scale()
             else:
@@ -265,15 +256,9 @@ class ScaleCmdTestCase(testTRSBase.TRSTestCaseBase):
         backT3d = ufe.Transform3d.transform3d(backItem)
         initialScale = [1.1, 2.2, 3.3]
         backT3d.scale(*initialScale)
-        self.assertVectorAlmostEqual(initialScale, usdSceneItemScale(backItem))
+        assertVectorAlmostEqual(self, initialScale, usdSceneItemScale(backItem), places=6)
 
         # Save the initial positions to the memento list.
         expected = [usdSceneItemScale(ballItem) for ballItem in ballItems]
 
-        # MAYA-96058: unfortunately, scale command currently requires a scale
-        # manipulator to be created to update the UFE object.
-        manipCtx = cmds.manipScaleContext()
-        cmds.setToolTo(manipCtx)
-
-        #Temporarily disabling undo redo until we fix it for PR 94
-        self.runMultiSelectTestScale(ballItems, expected)
+        self.runMultiSelectTestScale(ballItems, expected, places=6)

@@ -16,8 +16,8 @@
 #include "AL/usdmaya/utils/AttributeType.h"
 #include <unordered_map>
 
-#include "pxr/usd/sdf/types.h"
-#include "pxr/usd/usd/attribute.h"
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usd/attribute.h>
 
 namespace AL {
 namespace usdmaya {

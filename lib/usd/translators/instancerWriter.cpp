@@ -15,22 +15,7 @@
 //
 #include "instancerWriter.h"
 
-#include "../../fileio/utils/adaptor.h"
-#include "../../fileio/primWriterRegistry.h"
-#include "../../utils/util.h"
-#include "../../fileio/writeJobContext.h"
-#include "../../fileio/utils/writeUtil.h"
-
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/base/gf/vec3d.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/usd/kind/registry.h"
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/pointInstancer.h"
-#include "pxr/usd/usdGeom/xformCommonAPI.h"
-#include "pxr/usd/usdGeom/xformOp.h"
+#include <vector>
 
 #include <maya/MAnimUtil.h>
 #include <maya/MDagPath.h>
@@ -39,11 +24,24 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MMatrix.h>
 
-#include <vector>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/pointInstancer.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PXRUSDMAYA_REGISTER_WRITER(instancer, PxrUsdTranslators_InstancerWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(instancer, UsdGeomPointInstancer);
@@ -383,7 +381,7 @@ PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
             GfVec3d origin;
             if (_GetTransformedOriginInLocalSpace(opData.mayaPath, &origin)) {
                 UsdGeomXformOp translateOp = opData.op;
-                _SetAttribute(translateOp.GetAttr(), -origin, usdTime);
+                UsdMayaWriteUtil::SetAttribute(translateOp.GetAttr(), -origin, usdTime, _GetSparseValueWriter());
             }
         }
     }
@@ -423,7 +421,7 @@ PxrUsdTranslators_InstancerWriter::writeInstancerAttrs(
     instancer.GetPrim().GetStage()->Load(instancer.GetPath());
     VtArray<GfVec3f> extent(2);
     if (instancer.ComputeExtentAtTime(&extent, usdTime, usdTime)) {
-        _SetAttribute(instancer.CreateExtentAttr(), &extent, usdTime);
+        UsdMayaWriteUtil::SetAttribute(instancer.CreateExtentAttr(), &extent, usdTime, _GetSparseValueWriter());
     }
 
     return true;

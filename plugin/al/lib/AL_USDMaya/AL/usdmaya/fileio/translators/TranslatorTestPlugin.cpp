@@ -15,8 +15,8 @@
 //
 #include "AL/usdmaya/fileio/translators/TranslatorTestPlugin.h"
 
-#include "maya/MFn.h"
-#include "maya/MFnDagNode.h"
+#include <maya/MFn.h>
+#include <maya/MFnDagNode.h>
 
 namespace AL {
 namespace usdmaya {

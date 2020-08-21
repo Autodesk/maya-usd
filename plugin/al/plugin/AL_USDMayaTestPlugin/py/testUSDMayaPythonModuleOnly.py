@@ -42,7 +42,7 @@ class TestPythonModule(unittest.TestCase):
         import AL.usdmaya
         self.assertIn('AL', sys.modules)
         self.assertIn('AL.usdmaya', sys.modules)
-    
+
     def test_ExportFlag(self):
         """
         Test ExportFlag enum.
@@ -59,7 +59,7 @@ class TestPythonModule(unittest.TestCase):
         self.assertEqual(AL.usdmaya.ExportFlag.values[2],
                          AL.usdmaya.ExportFlag.kSupported)
 
-        
+
 tests = unittest.TestLoader().loadTestsFromTestCase(TestPythonModule)
 result = unittest.TextTestRunner(verbosity=2).run(tests)
 

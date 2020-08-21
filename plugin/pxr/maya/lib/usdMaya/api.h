@@ -16,7 +16,7 @@
 #ifndef PXRUSDMAYA_API_H
 #define PXRUSDMAYA_API_H
 
-#include "pxr/base/arch/export.h"
+#include <pxr/base/arch/export.h>
 
 #if defined(USDMAYA_EXPORTS)
 #    define PXRUSDMAYA_API ARCH_EXPORT

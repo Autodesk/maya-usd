@@ -13,22 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
+#include <pxr/usd/usdShade/material.h>
 
-#include "../../fileio/primReaderRegistry.h"
-#include "../../fileio/translators/translatorMaterial.h"
-
-#include "pxr/usd/usdShade/material.h"
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 PXRUSDMAYA_DEFINE_READER(UsdShadeMaterial, args, context)
 {
     bool importUnboundShaders = args.ShouldImportUnboundShaders();
     if (importUnboundShaders) {
         const UsdPrim& usdPrim = args.GetUsdPrim();
-        UsdMayaTranslatorMaterial::Read(args.GetShadingMode(), 
+        UsdMayaTranslatorMaterial::Read(args.GetJobArguments(), 
                 UsdShadeMaterial(usdPrim), 
                 UsdGeomGprim(), 
                 context);

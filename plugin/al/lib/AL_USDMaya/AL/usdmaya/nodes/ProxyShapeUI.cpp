@@ -13,27 +13,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "maya/MTypes.h"
+#include <maya/MTypes.h>
 
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
 
-#include "maya/MFnDagNode.h"
-#include "maya/MMatrix.h"
-#include "maya/MTime.h"
-#include "maya/MDrawInfo.h"
-#include "maya/MDrawRequest.h"
-#include "maya/MDrawRequestQueue.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MMatrix.h"
-#include "maya/MSelectInfo.h"
-#include "maya/MTime.h"
+#include <maya/MFnDagNode.h>
+#include <maya/MMatrix.h>
+#include <maya/MTime.h>
+#include <maya/MDrawInfo.h>
+#include <maya/MDrawRequest.h>
+#include <maya/MDrawRequestQueue.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MMatrix.h>
+#include <maya/MSelectInfo.h>
+#include <maya/MTime.h>
 
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"
-#include "pxr/base/arch/env.h"
+#include <pxr/base/arch/env.h>
 #include "ufe/hierarchyHandler.h"
 #include "ufe/sceneItem.h"
 #include "ufe/runTimeMgr.h"
@@ -42,8 +42,8 @@
 #include "ufe/log.h"
 #endif
 
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/kind/registry.h"
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/kind/registry.h>
 
 namespace AL {
 namespace usdmaya {
@@ -380,21 +380,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
   auto selected = false;
 
-  auto getHitPath = [&engine] (Engine::HitBatch::const_reference& it) -> SdfPath
-  {
-    const Engine::HitInfo& hit = it.second;
-    auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
-    if (!path.IsEmpty())
-    {
-      return path;
-    }
-    return it.first.StripAllVariantSelections();
-  };
-
-
   auto addSelection = [&hitBatch, &selectInfo, &selectionList,
-      &worldSpaceSelectPoints, &objectsMask, &selected, proxyShape,
-      &getHitPath] (const MString& command)
+      &worldSpaceSelectPoints, &objectsMask, &selected, proxyShape]
+      (const MString& command)
   {
     selected = true;
     MStringArray nodes;
@@ -411,7 +399,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
       // Retarget hit path based on pick mode policy. The retargeted prim must
       // align with the path used in the 'AL_usdmaya_ProxyShapeSelect' command.
-      const SdfPath hitPath = getHitPath(it).StripAllVariantSelections();
+      const SdfPath hitPath = it.first;
       const UsdPrim retargetedHitPrim = retargetSelectPrim(proxyShape->getUsdStage()->GetPrimAtPath(hitPath));
       const MObject obj = proxyShape->findRequiredPath(retargetedHitPrim.GetPath());
 
@@ -464,7 +452,7 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
 
       for(const auto& it : hitBatch)
       {
-        auto path = getHitPath(it);
+        auto path = it.first;
         command += " -pp \"";
         command += path.GetText();
         command += "\"";
@@ -509,9 +497,9 @@ bool ProxyShapeUI::select(MSelectInfo& selectInfo, MSelectionList& selectionList
     {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&paths, &getHitPath](Engine::HitBatch::const_reference& it)
+      auto addHit = [&paths](Engine::HitBatch::const_reference& it)
       {
-        paths.push_back(getHitPath(it));
+        paths.push_back(it.first);
       };
 
       // Do to the inaccuracies in the selection method in gl engine

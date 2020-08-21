@@ -31,22 +31,18 @@
 
 #include "AL/usd/transaction/Notice.h"
 
-#include "maya/MDagModifier.h"
-#include "maya/MDagPath.h"
-#include "maya/MGlobal.h"
-#include "maya/MNodeMessage.h"
-#include "maya/MPxSurfaceShape.h"
-#include "maya/MSelectionList.h"
+#include <maya/MDagModifier.h>
+#include <maya/MDagPath.h>
+#include <maya/MGlobal.h>
+#include <maya/MNodeMessage.h>
+#include <maya/MPxSurfaceShape.h>
+#include <maya/MSelectionList.h>
 
-#if MAYA_API_VERSION < 201800
-#include "maya/MViewport2Renderer.h"
-#endif
-
-#include "pxr/usd/sdf/notice.h"
-#include "pxr/usd/usd/notice.h"
-#include "pxr/usd/usd/prim.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usdImaging/usdImagingGL/renderParams.h"
+#include <pxr/usd/sdf/notice.h>
+#include <pxr/usd/usd/notice.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usdImaging/usdImagingGL/renderParams.h>
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
@@ -345,12 +341,15 @@ public:
   /// A place to put a custom assetResolver Config string that's passed to the Resolver Context when stage is opened
   AL_DECL_ATTRIBUTE(assetResolverConfig);
 
+  /// Variant fallbacks if stage was opened and/reopened a Maya scene with custom variants fallbacks
+  AL_DECL_ATTRIBUTE(variantFallbacks);
+
   //--------------------------------------------------------------------------------------------------------------------
   /// \name   Output Attributes
   //--------------------------------------------------------------------------------------------------------------------
 
   /// outTime = (time - timeOffset) * timeScalar
-  AL_DECL_ATTRIBUTE(outTime);
+  AL_INHERIT_ATTRIBUTE(outTime);
 
   /// Inject m_stage and m_path members into DG as a data attribute.
   AL_INHERIT_ATTRIBUTE(outStageData);
@@ -451,6 +450,8 @@ public:
   ///         flags to true. (This has to be done after the transform has been created and initialized, otherwise
   ///         the default maya values will be pushed in the UsdPrim, wiping out the values you just loaded)
   /// \param  createCount the returned number of transforms that were created.
+  /// \param  pushToPrim the initial value for the pushToPrim attributes on the generate transform nodes
+  /// \param  readAnimatedValues the initial value for the readAnimatedValues attributes on the generate transform nodes
   /// \return the MObject of the parent transform node for the usdPrim
   /// \todo   The mode ProxyShape::kSelection will cause the possibility of instability in the selection system.
   ///         This mode will be removed at a future date
@@ -698,9 +699,9 @@ public:
   void onPrePrimChanged(const SdfPath& path, SdfPathVector& outPathVector);
 
   // \brief process any USD objects which have been changed, normally by a notice of some kind
-  /// \param[in] vector of topmost paths for which hierarchy has changed
-  /// \param[in] vector of paths that changed properties
-  /// \param[in] do we need to handle the complex prim locking and selection logic that is curently on by default?
+  /// \param[in] resyncedPaths vector of topmost paths for which hierarchy has changed
+  /// \param[in] changedOnlyPaths vector of paths that changed properties
+  /// \note do we need to handle the complex prim locking and selection logic that is curently on by default?
   void processChangedObjects(const SdfPathVector& resyncedPaths, const SdfPathVector& changedOnlyPaths);
 
   /// \brief Re-Creates and updates the maya prim hierarchy starting from the specified primpath
@@ -955,11 +956,7 @@ private:
   bool getInternalValue(const MPlug& plug, MDataHandle& dataHandle) override;
   MStatus setDependentsDirty(const MPlug& plugBeingDirtied, MPlugArray& plugs) override;
   bool isBounded() const override;
-  #if MAYA_API_VERSION < 201700
-  MPxNode::SchedulingType schedulingType() const override { return kSerialize; }
-  #else
   MPxNode::SchedulingType schedulingType() const override { return kSerial; }
-  #endif
   MStatus preEvaluation(const MDGContext & context, const MEvaluationNode& evaluationNode) override;
   void CacheEmptyBoundingBox(MBoundingBox&) override;
   UsdTimeCode GetOutputTime(MDataBlock) const override;
@@ -981,6 +978,32 @@ private:
   UsdPrim getUsdPrim(MDataBlock& dataBlock) const;
   SdfPathVector getExcludePrimPaths() const override;
   UsdStagePopulationMask constructStagePopulationMask(const MString &paths) const;
+
+  /// \brief  Convert variant fallbacks from string (attribute value)
+  /// \param  fallbacksStr attribute value
+  /// \return PcpVariantFallbackMap type of variant fallbacks
+  PcpVariantFallbackMap convertVariantFallbackFromStr(const MString& fallbacksStr) const;
+
+  /// \brief  Convert variant fallbacks to string
+  /// \param  fallbacks variant fallbacks map
+  /// \return MString string form of variant fallbacks
+  MString convertVariantFallbacksToStr(const PcpVariantFallbackMap& fallbacks) const;
+
+  /// \brief  Get variant fallbacks from session layer
+  /// \param  layer session layer pointer
+  /// \return MString string form of variant fallbacks JSON data
+  MString getVariantFallbacksFromLayer(const SdfLayerRefPtr& layer) const;
+
+  /// \brief  Set global variant fallbacks if found from attribute ".variantFallbacks"
+  /// \param  defaultVariantFallbacks default global variant fallbacks before updating
+  /// \param  dataBlock attribute data block
+  /// \return PcpVariantFallbackMap variant fallbacks that applied to global variant fallbacks, would be empty if nothing applied
+  PcpVariantFallbackMap updateVariantFallbacks(PcpVariantFallbackMap& defaultVariantFallbacks, MDataBlock& dataBlock) const;
+
+  /// \brief  Save variant fallbacks from session layer customLayerData to attribute
+  /// \param  fallbacksStr string format of variant fallbacks to save to the node attribute
+  /// \param  dataBlock attribute data block
+  void saveVariantFallbacks(const MString& fallbacksStr, MDataBlock& dataBlock) const;
 
   bool isStageValid() const;
   bool initPrim(const uint32_t index, MDGContext& ctx);

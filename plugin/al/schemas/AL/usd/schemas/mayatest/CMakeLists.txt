@@ -16,7 +16,7 @@ set(
 # Bake library name
 configure_file (
     plugInfo.json.in
-    ./plugInfo.json
+    ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
     @ONLY
 )
 
@@ -60,9 +60,15 @@ add_library(AL_USDMayaSchemasTest
     ${CMAKE_CURRENT_BINARY_DIR}/tokens.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(AL_USDMayaSchemasTest)
+
 target_compile_definitions(AL_USDMayaSchemasTest
     PRIVATE
         AL_USDMAYASCHEMASTEST_EXPORTS
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
 
 target_include_directories(AL_USDMayaSchemasTest 
@@ -100,8 +106,14 @@ add_library(${PYTHON_LIBRARY_NAME}
     ${CMAKE_CURRENT_BINARY_DIR}/wrapExamplePolyCubeNode.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
+
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
         MFB_PACKAGE_NAME=AL_USDMayaSchemasTest
         MFB_ALT_PACKAGE_NAME=AL_USDMayaSchemasTest
         MFB_PACKAGE_MODULE=AL.usd.schemas.mayatest
@@ -124,7 +136,7 @@ install(TARGETS ${PYTHON_LIBRARY_NAME}
 
 # configure_file has a nice feature where it will copy the __init__ file over when it gets modified, unlike file(COPY ...)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_BINARY_DIR}/AL/usd/schemas/mayatest/__init__.py COPYONLY)
-install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${CMAKE_BINARY_DIR}/AL/usd/schemas/mayatest/__init__.py\" )")
+execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_BINARY_DIR}/AL/usd/schemas/mayatest/__init__.py)
 
 string(REPLACE "/" ";" folderHierarchy "AL/usd/schemas/mayatest")
 
@@ -148,6 +160,7 @@ if(${listCount} STRGREATER 1)
         ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py
         "try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\n"
       )
+      execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_BINARY_DIR}/${currentPath}/__init__.py)
     endforeach(i)
 endif()
 
@@ -157,9 +170,6 @@ install(
     DESTINATION
         ${AL_INSTALL_PREFIX}/lib/python
 )
-
-install(CODE "message(STATUS \"POST INSTALL: Compiling python/pyc for ${AL_INSTALL_PREFIX}/lib/python ... \")")
-install(CODE "execute_process(COMMAND \"${Python_EXECUTABLE}\" -m compileall \"${AL_INSTALL_PREFIX}/lib/python\" )")
 
 ####################################################################################################
 # Install usd plugin resources
@@ -175,7 +185,7 @@ file(RELATIVE_PATH
 # Bake relative path
 configure_file(
     ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    .
+    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 install(
