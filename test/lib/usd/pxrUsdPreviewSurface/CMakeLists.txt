@@ -3,8 +3,16 @@ set(TARGET_NAME MAYAUSD_NODES_TEST)
 # Unit test scripts.
 set(TEST_SCRIPT_FILES
     testPxrUsdPreviewSurfaceDraw.py
-    testPxrUsdPreviewSurfaceExport.py
 )
+
+if(BUILD_PXR_PLUGIN)
+    # This test uses the file "PxrUsdPreviewSurfaceExportTest.ma" which
+    # requires the plugin "pxrUsdPreviewSurface" that is built by the
+    # Pixar plugin.
+    list(APPEND TEST_SCRIPT_FILES
+        testPxrUsdPreviewSurfaceExport.py
+    )
+endif()
 
 # copy tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
 add_custom_target(${TARGET_NAME} ALL)
