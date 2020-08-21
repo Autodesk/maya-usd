@@ -219,34 +219,48 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			if (!sceneItem)
 				continue;
 
-			if (prim.IsActive())
+			// Special case when we know the operation came from either
+			// the add or delete of our UFE/USD implementation.
+			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
 			{
-				if (InAddOrRemoveReference::inAddOrRemoveReference())
-				{
-#if UFE_PREVIEW_VERSION_NUM >= 2014
-					// When we are in an add or remove reference we send the
-					// UFE subtree invalidate notif instead.
-					auto notification = Ufe::SubtreeInvalidate(sceneItem);
-					Ufe::Scene::notifySubtreeInvalidate(notification);
-#endif
-				}
-				else
+				if (prim.IsActive())
 				{
 					auto notification = Ufe::ObjectAdd(sceneItem);
 					Ufe::Scene::notifyObjectAdd(notification);
 				}
+				else
+				{
+					auto notification = Ufe::ObjectPostDelete(sceneItem);
+					Ufe::Scene::notifyObjectDelete(notification);
+				}
 			}
 			else
 			{
-				auto notification = Ufe::ObjectPostDelete(sceneItem);
-				Ufe::Scene::notifyObjectDelete(notification);
+#if UFE_PREVIEW_VERSION_NUM >= 2014
+				// According to USD docs for GetResyncedPaths():
+				// - Resyncs imply entire subtree invalidation of all descendant prims and properties.
+				// So we send the UFE subtree invalidate notif.
+				auto notification = Ufe::SubtreeInvalidate(sceneItem);
+				Ufe::Scene::notifySubtreeInvalidate(notification);
+#endif
 			}
 		}
 #if UFE_PREVIEW_VERSION_NUM >= 2015
 		else if (!prim.IsValid() && !InPathChange::inPathChange())
 		{
-			auto notification = Ufe::ObjectDestroyed(ufePath);
-			Ufe::Scene::notifyObjectDelete(notification);
+			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
+			{
+				auto notification = Ufe::ObjectDestroyed(ufePath);
+				Ufe::Scene::notifyObjectDelete(notification);
+			}
+			else
+			{
+#if UFE_PREVIEW_VERSION_NUM >= 2014
+				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
+				auto notification = Ufe::SubtreeInvalidate(sceneItem);
+				Ufe::Scene::notifySubtreeInvalidate(notification);
+#endif
+			}
 		}
 #endif
 	}

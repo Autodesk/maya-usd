@@ -35,8 +35,6 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 
-#include "private/UfeNotifGuard.h"
-
 namespace {
 
 // Ufe::ContextItem strings
@@ -135,7 +133,6 @@ public:
 
     void undo() override { 
         if (_prim.IsValid()) {
-            MayaUsd::ufe::InAddOrRemoveReference ar;
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.RemoveReference(_sdfRef);
         }
@@ -143,7 +140,6 @@ public:
 
     void redo() override { 
         if (_prim.IsValid()) {
-            MayaUsd::ufe::InAddOrRemoveReference ar;
             _sdfRef = SdfReference(_filePath);
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.AddReference(_sdfRef);
@@ -174,7 +170,6 @@ public:
 
     void redo() override { 
         if (_prim.IsValid()) {
-            MayaUsd::ufe::InAddOrRemoveReference ar;
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.ClearReferences();
         }
