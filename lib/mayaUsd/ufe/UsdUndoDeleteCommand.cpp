@@ -15,6 +15,8 @@
 //
 #include "UsdUndoDeleteCommand.h"
 
+#include "private/UfeNotifGuard.h"
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -36,6 +38,7 @@ UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const UsdPrim& prim)
 
 void UsdUndoDeleteCommand::perform(bool state)
 {
+	MayaUsd::ufe::InAddOrDeleteOperation ad;
 	fPrim.SetActive(state);
 }
 
