@@ -45,7 +45,6 @@ mayaUsd_promoteHeaderList(HEADERS ${HEADERS}
 target_include_directories(${TARGET_NAME} 
     PUBLIC
         ${CMAKE_BINARY_DIR}/include
-        $<$<VERSION_LESS:USD_VERSION,0.19.11>:${USD_INCLUDE_DIR}>
 )
 
 # -----------------------------------------------------------------------------

@@ -375,13 +375,6 @@ private:
                         connectedFileObj, filePath,
                         GetDelegate()->GetParams().textureMemoryPerTexture);
                     textureInstance.SetValue(textureResource);
-#if USD_VERSION_NUM < 1911
-                    _textureResources[paramName] = textureResource;
-                }
-                else {
-                    _textureResources[paramName] = textureInstance.GetValue();
-                }
-#else // USD_VERSION_NUM == 1911
                 }
 
                 HdStTextureResourceSharedPtr texResource =
@@ -410,7 +403,6 @@ private:
                     handleInstance.GetValue()->SetTextureResource(texResource);
                 }
                 _textureResourceHandles[paramName] = handleInstance.GetValue();
-#endif // USD_VERSION_NUM < 1911
 
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS) &&
@@ -430,11 +422,8 @@ private:
                     .Msg(
                         "  ...failed registering texture - could not get "
                         "textureID\n");
-#if USD_VERSION_NUM >= 1911
+
                 _textureResourceHandles[paramName].reset();
-#else // USD_VERSION_NUM < 1911
-                _textureResources[paramName].reset();
-#endif // USD_VERSION_NUM >= 1911
             }
         }
         return false;
@@ -454,11 +443,7 @@ private:
         for (const auto& it :
              HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             auto textureType = HdTextureType::Uv;
-#if USD_VERSION_NUM >= 1911
             auto remappedName = it.name;
-#else // USD_VERSION_NUM < 1911
-            auto remappedName = it.param.GetName();
-#endif // USD_VERSION_NUM >= 1911
             auto attrConverter = nodeConverter->GetAttrConverter(remappedName);
             if (attrConverter) {
                 TfToken tempName = attrConverter->GetPlugName(remappedName);
@@ -467,13 +452,9 @@ private:
 
             if (_RegisterTexture(node, remappedName, textureType)) {
                 ret.emplace_back(
-#if USD_VERSION_NUM >= 1911
                     HdMaterialParam::ParamTypeTexture, it.name,
                     it.fallbackValue,
-#else // USD_VERSION_NUM < 1911
-                    HdMaterialParam::ParamTypeTexture, it.param.GetName(),
-                    it.param.GetFallbackValue(),
-#endif // USD_VERSION_NUM >= 1911
+
                     GetID().AppendProperty(remappedName), _stSamplerCoords,
                     textureType);
 
@@ -481,7 +462,7 @@ private:
                     .Msg(
                         "HdMayaShadingEngineAdapter: registered texture with "
                         "connection path: %s\n",
-#if USD_VERSION_NUM >= 1911
+
                         ret.back().connection.GetText());
             } else {
                 ret.emplace_back(
@@ -489,12 +470,6 @@ private:
                     it.name,
                     it.fallbackValue);
             }
-#else // USD_VERSION_NUM < 1911
-                        ret.back().GetConnection().GetText());
-            } else {
-                ret.emplace_back(it.param);
-            }
-#endif // USD_VERSION_NUM >= 1911
         }
 
         return ret;
@@ -526,13 +501,8 @@ private:
         auto attrConverter = nodeConverter->GetAttrConverter(paramName);
         if (attrConverter) {
             return attrConverter->GetValue(
-#if USD_VERSION_NUM >= 1911
                 node, previewIt->name, previewIt->type,
                 &previewIt->fallbackValue);
-#else // USD_VERSION_NUM < 1911
-                node, previewIt->param.GetName(), previewIt->type,
-                &previewIt->param.GetFallbackValue());
-#endif // USD_VERSION_NUM >= 1911
         } else {
             return GetPreviewMaterialParamValue(paramName);
         }

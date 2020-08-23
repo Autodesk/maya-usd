@@ -81,10 +81,6 @@
 #include <pxr/imaging/hgi/tokens.h>
 #endif
 
-#if USD_VERSION_NUM < 1911
-#include <pxr/usd/usdGeom/tokens.h>
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
