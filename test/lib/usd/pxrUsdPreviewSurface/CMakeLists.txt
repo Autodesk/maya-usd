@@ -22,5 +22,5 @@ foreach(script ${TEST_SCRIPT_FILES})
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_MODULE ${target}
     )
-    set_tests_properties(${target} PROPERTIES LABELS usdPreviewSurface)
+    set_property(TEST ${target} APPEND PROPERTY LABELS usdPreviewSurface)
 endforeach()
