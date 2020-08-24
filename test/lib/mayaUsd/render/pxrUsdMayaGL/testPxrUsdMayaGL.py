@@ -29,7 +29,7 @@ class testPxrUsdMayaGL(unittest.TestCase):
 
     def testEmptySceneDraws(self):
         cmds.file(new=True, force=True)
-        usdFilePath = os.path.abspath('blank.usda')
+        usdFilePath = os.path.abspath(os.path.join('PxrUsdMayaGL', 'blank.usda'))
         assembly = cmds.assembly(name='blank', type='pxrUsdReferenceAssembly')
         cmds.setAttr("%s.filePath" % assembly, usdFilePath, type='string')
         cmds.assembly(assembly, edit=True, active='Collapsed')
@@ -41,7 +41,7 @@ class testPxrUsdMayaGL(unittest.TestCase):
         for _ in range(20):
             cmds.file(new=True, force=True)
             for i in range(10):
-                usdFilePath = os.path.abspath('plane%d.usda' % (i%2))
+                usdFilePath = os.path.abspath(os.path.join('PxrUsdMayaGL', 'plane%d.usda' % (i%2)))
                 assembly = cmds.assembly(name='plane', type='pxrUsdReferenceAssembly')
                 cmds.setAttr("%s.filePath" % assembly, usdFilePath, type='string')
                 cmds.assembly(assembly, edit=True, active='Collapsed')

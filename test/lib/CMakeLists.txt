@@ -31,6 +31,8 @@ foreach(script ${TEST_SCRIPT_FILES})
     )
 endforeach()
 
+add_subdirectory(mayaUsd)
+
 if (UFE_FOUND)
     add_subdirectory(ufe)
 endif()
