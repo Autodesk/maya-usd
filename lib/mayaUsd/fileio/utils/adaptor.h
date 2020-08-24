@@ -218,6 +218,7 @@ public:
     class SchemaAdaptor {
         MObjectHandle _handle;
         SdfPrimSpecHandle _schemaDef;
+        TfToken _schemaName;
 
     public:
         MAYAUSD_CORE_PUBLIC
@@ -309,10 +310,9 @@ public:
 
     private:
         /// Gets the name of the adapted Maya attribute for the given attribute
-        /// definition. The name may come from the registered aliases if one
+        /// name. The name may come from the registered aliases if one
         /// exists and is already present on the node.
-        std::string _GetMayaAttrNameOrAlias(
-                const SdfAttributeSpecHandle& attrSpec) const;
+        std::string _GetMayaAttrNameOrAlias(const TfToken& attrName) const;
     };
 
     MAYAUSD_CORE_PUBLIC
