@@ -143,5 +143,75 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         os.remove(_tmpMayafile.name)
 
 
+    def test_multipleFormatsSerialisation(self):
+        """Tests multiple dirty layers with various formats can be saved and restored.
+
+        """
+        _, rootLayerPath = tempfile.mkstemp(suffix=".usda")
+        _, tmpMayafilePath = tempfile.mkstemp(suffix=".ma")
+
+        def _initialiseLayers(rootLayerPath):
+            cmds.file(new=True, force=True)
+            rootLayer = Sdf.Layer.CreateNew(rootLayerPath)
+            subLayerPaths = rootLayer.subLayerPaths
+            layers = []
+            for ext in ["usd", "usda", "usdc"]:
+                _format = Sdf.FileFormat.FindByExtension(ext)
+                _, filePath = tempfile.mkstemp(suffix=".{}".format(ext))
+                layer = Sdf.Layer.CreateNew(filePath)
+                layer.comment = ext
+                layer.Save()
+                layers.append(layer)
+                subLayerPaths.append(filePath)
+
+            rootLayer.Save()
+
+        def _buildAndEditAndSaveScene(rootLayerPath):
+            """Add edits to the 3 format layers and scene the maya scene.
+
+            """
+            cmds.file(new=True, force=True)
+            cmds.file(rename=tmpMayafilePath)
+            proxyName = cmds.AL_usdmaya_ProxyShapeImport(file=rootLayerPath)[0]
+            ps = ProxyShape.getByName(proxyName)
+            self.assertTrue(ps)
+            stage = ps.getUsdStage()
+            self.assertTrue(stage)
+
+            rootLayer = stage.GetRootLayer()
+            for subLayerPath in rootLayer.subLayerPaths:
+                layer = Sdf.Layer.Find(subLayerPath)
+                with Usd.EditContext(stage, layer):
+                    stage.DefinePrim("/{}".format(layer.GetFileFormat().primaryFileExtension))
+            self.assertTrue(stage.GetSessionLayer().empty)
+
+            cmds.file(save=True, force=True)
+            return proxyName
+
+        def _reloadAndAssert(rootLayerPath, proxyName):
+            """Assert the edits have been restored
+            
+            """
+            cmds.file(new=True, force=True)
+            cmds.file(tmpMayafilePath, open=True)
+
+            ps = ProxyShape.getByName(proxyName)
+            self.assertTrue(ps)
+            stage = ps.getUsdStage()
+            self.assertTrue(stage)
+            # root + session + 3 format layers
+            self.assertEqual(len(stage.GetUsedLayers()), 5)
+
+            for ext in ["usd", "usda", "usdc"]:
+                prim = stage.GetPrimAtPath("/{}".format(ext))
+                self.assertTrue(prim.IsValid())
+
+            stage.Reload()
+
+        _initialiseLayers(rootLayerPath)
+        proxyName = _buildAndEditAndSaveScene(rootLayerPath)
+        _reloadAndAssert(rootLayerPath, proxyName)
+
+
 if __name__ == '__main__':
     fixturesUtils.runTests(globals())
