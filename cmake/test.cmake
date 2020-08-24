@@ -162,13 +162,22 @@ finally:
     # -----------------
 
     set(ALL_PATH_VARS
-        PATH
         PYTHONPATH
         MAYA_PLUG_IN_PATH
         MAYA_SCRIPT_PATH
         PXR_PLUGINPATH_NAME
-        LD_LIBRARY_PATH
     )
+
+    if(IS_WINDOWS)
+        # Put path at the front of the list of env vars.
+        list(INSERT ALL_PATH_VARS 0
+            PATH
+        )
+    else()
+        list(APPEND ALL_PATH_VARS
+            LD_LIBRARY_PATH
+        )
+    endif()
 
     # Set initial empty values for all path vars
     foreach(pathvar ${ALL_PATH_VARS})
