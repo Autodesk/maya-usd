@@ -1112,13 +1112,8 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
                 nullptr,
                 collection,
                 TfTokenVector{
-#if USD_VERSION_NUM >= 1911
                     HdRenderTagTokens->geometry,
                     HdRenderTagTokens->proxy}
-#else
-                    HdTokens->geometry,
-                    UsdGeomTokens->proxy}
-#endif
         });
     }
 
