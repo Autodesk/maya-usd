@@ -40,6 +40,7 @@ public:
     void PreFrame(const MHWRender::MDrawContext& context);
 
     MayaUsdProxyShapeBase* GetProxy() { return _proxy; }
+    const SdfPath& GetUsdDelegateID() const { return _usdDelegate->GetDelegateID(); }
 
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
     SdfPath GetScenePrimPath(

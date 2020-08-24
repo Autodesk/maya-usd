@@ -114,6 +114,10 @@ public:
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
 
+    HDMAYA_API
+    void PopulateSelectionList(
+        const SdfPathVector& selectedSdfPaths, MSelectionList& mayaSelection) override;
+
 protected:
     HDMAYA_API
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;

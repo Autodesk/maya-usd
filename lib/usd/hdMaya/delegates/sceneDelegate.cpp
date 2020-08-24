@@ -667,6 +667,30 @@ void HdMayaSceneDelegate::PopulateSelectedPaths(
         MFn::kShape);
 }
 
+void HdMayaSceneDelegate::PopulateSelectionList(
+    const SdfPathVector& selectedSdfPaths, MSelectionList& mayaSelection) {
+    for (const auto& it : selectedSdfPaths) {
+        _FindAdapter<HdMayaDagAdapter>(it,
+                [&selectedSdfPaths, &mayaSelection](HdMayaDagAdapter* a) {
+            if (a->IsInstanced()) {
+                const auto& dagPath = a->GetDagPath();
+                MDagPathArray dags;
+                MDagPath::getAllPathsTo(dagPath.node(), dags);
+                const auto dagCount = dags.length();
+                for (auto i = decltype(dagCount){0}; i < dagCount; ++i) {
+                    mayaSelection.add(dags[i].node(), false);
+                }
+
+                mayaSelection.add(a->GetNode(), false);
+            }
+            else {
+                mayaSelection.add(a->GetNode(), false);
+            }
+        },
+                _shapeAdapters);
+    }
+}
+
 HdMeshTopology HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MESH_TOPOLOGY)
         .Msg("HdMayaSceneDelegate::GetMeshTopology(%s)\n", id.GetText());
