@@ -107,12 +107,11 @@ UsdMayaPrimWriterRegistry::WriterFactoryFn
 UsdMaya_FunctorPrimWriter::CreateFactory(
         UsdMayaPrimWriterRegistry::WriterFn fn)
 {
-    return std::bind(
-            Create,
-            std::placeholders::_1,
-            std::placeholders::_2,
-            std::placeholders::_3,
-            fn);
+    return [=](const MFnDependencyNode& depNodeFn, 
+               const SdfPath& usdPath, 
+               UsdMayaWriteJobContext& jobCtx) { 
+        return Create(depNodeFn, usdPath, jobCtx, fn); 
+    };
 }
 
 
