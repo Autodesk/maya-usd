@@ -196,6 +196,21 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 }
 #endif
 
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+Ufe::SetMatrixUndoableCommand::Ptr UsdTransform3d::setMatrixCmd(const Ufe::Matrix4d& m)
+{
+    // TODO: HS Aug25,2020 dummy code to pass the compiler errors
+    return nullptr;
+}
+
+Ufe::Matrix4d UsdTransform3d::getMatrix() const
+{
+    // TODO: HS Aug25,2020 dummy code to pass the compiler errors
+    Ufe::Matrix4d m;
+    return m;
+}
+#endif
+
 void UsdTransform3d::scale(double x, double y, double z)
 {
 	scaleOp(fPrim, fItem->path(), x, y, z);
