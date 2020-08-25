@@ -96,7 +96,7 @@ public:
     void redo() { fOp.GetAttr().Set(fNewOpValue,  fTime); }
 
     UsdGeomXformOp          fOp;
-    const UsdTimeCode       fTime;
+    const UsdTimeCode       fTime; // Authoring time
     const VtValue           fPrevOpValue;
     VtValue                 fNewOpValue;
 };
@@ -112,7 +112,8 @@ public:
         const UsdTimeCode&       time
     ) : Ufe::TranslateUndoableCommand(item), UsdTRSUndoableCmdBase(op, time)
     {
-        fOpTransform = op.GetOpTransform(time);
+        // We always read from proxy shape time.
+        fOpTransform = op.GetOpTransform(getTime(item->path()));
     }
 
     void undo() override { UsdTRSUndoableCmdBase::undo(); }
@@ -142,7 +143,8 @@ public:
         const UsdTimeCode&       time
     ) : Ufe::RotateUndoableCommand(item), UsdTRSUndoableCmdBase(op, time)
     {
-        GfMatrix4d opTransform = op.GetOpTransform(time);
+        // We always read from proxy shape time.
+        GfMatrix4d opTransform = op.GetOpTransform(getTime(item->path()));
 
         // Other matrix decomposition code from AL:
         // from https://github.com/AnimalLogic/maya-usd/blob/8852bdbb1fc904ac80543cd6103489097fa00154/lib/usd/utils/MayaTransformAPI.cpp#L979-L1055
@@ -190,7 +192,8 @@ public:
         const UsdTimeCode&       time
     ) : Ufe::ScaleUndoableCommand(item), UsdTRSUndoableCmdBase(op, time)
     {
-        GfMatrix4d opTransform = op.GetOpTransform(time);
+        // We always read from proxy shape time.
+        GfMatrix4d opTransform = op.GetOpTransform(getTime(item->path()));
 
         // Other matrix decomposition code from AL:
         // from https://github.com/AnimalLogic/maya-usd/blob/8852bdbb1fc904ac80543cd6103489097fa00154/lib/usd/utils/MayaTransformAPI.cpp#L979-L1055
