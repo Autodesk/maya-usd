@@ -72,16 +72,15 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
     MFnDependencyNode depFn;
     if (!(UsdMayaTranslatorUtil::CreateShaderNode(
               MString(prim.GetName().GetText()),
-              PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText(),
+              "UsdPreviewSurface",
               UsdMayaShadingNodeType::Shader,
               &status,
               &mayaObject)
           && depFn.setObject(mayaObject))) {
         // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
-            "Could not create node of type '%s' for shader '%s'. "
+            "Could not create node of type UsdPreviewSurface for shader '%s'. "
             "Probably missing a loadPlugin.\n",
-            PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText(),
             prim.GetPath().GetText());
         return false;
     }

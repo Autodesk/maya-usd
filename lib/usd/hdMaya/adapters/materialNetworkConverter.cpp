@@ -427,6 +427,8 @@ void HdMayaMaterialNetworkConverter::initialize() {
             defaultTextureMemoryLimit);
 
     _nodeConverters = {
+        {HdMayaAdapterTokens->UsdPreviewSurface,
+         {UsdImagingTokens->UsdPreviewSurface, {}}},
         {HdMayaAdapterTokens->pxrUsdPreviewSurface,
          {UsdImagingTokens->UsdPreviewSurface, {}}},
         {HdMayaAdapterTokens->lambert,

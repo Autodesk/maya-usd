@@ -54,6 +54,7 @@ pxr_shared_library(${PXR_PACKAGE}
         userExportedAttributesUI.py
 
     RESOURCE_FILES
+        AEpxrUsdPreviewSurfaceTemplate.mel
         AEpxrUsdProxyShapeTemplate.mel
         out_pxrUsdProxyShape.xpm
         out_pxrUsdReferenceAssembly.xpm

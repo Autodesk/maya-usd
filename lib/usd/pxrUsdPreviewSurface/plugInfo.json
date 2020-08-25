@@ -4,9 +4,9 @@
             "Info": {
                 "UsdMaya": {
                     "PrimWriter": {
-                        "mayaPlugin": "pxrUsdPreviewSurface",
+                        "mayaPlugin": "mayaUsdPlugin",
                         "providesTranslator": [
-                            "pxrUsdPreviewSurface"
+                            "UsdPreviewSurface"
                         ]
                     }
                 }

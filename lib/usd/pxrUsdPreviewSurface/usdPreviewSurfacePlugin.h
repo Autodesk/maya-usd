@@ -18,9 +18,10 @@
 
 #include "api.h"
 
-#include <maya/MApiNamespace.h>
-
 #include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
+
+#include <maya/MApiNamespace.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -28,25 +29,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \brief Encapsulates plugin registration and deregistration of preview surface classes.
 ///
 /// Preview surface support requires plugin registration of node classes, node
-/// data, and draw support.  This class provides this service, including if
-/// multiple plugins that use preveiw surface are loaded: using reference
-/// counting, only the first registration and the last deregistration will
-/// be performed.  Note that because of Maya architecture requirements,
-/// deregistration will only be done if the deregistering plugin is the same as
-/// the registering plugin.  Otherwise, a warning is shown.
+/// data, and draw support.  This class provides this service. Each client is expected
+/// to provide a separate typeName and typeId to ensure proper plugin registration.
+class PxrMayaUsdPreviewSurfacePlugin {
+public:
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus initialize(MFnPlugin&, const MString&, MTypeId, const MString&);
 
-class PxrMayaUsdPreviewSurfacePlugin
-{
-    public:
-        PXRUSDPREVIEWSURFACE_API
-        static MStatus initialize(MFnPlugin&);
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus finalize(MFnPlugin&, const MString&, MTypeId, const MString&);
 
-        PXRUSDPREVIEWSURFACE_API
-        static MStatus finalize(MFnPlugin&);
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus registerFragments();
 
-        static MStatus registerFragments();
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus deregisterFragments();
 
-        static MStatus deregisterFragments();
+    /// \brief Get the typenames of all registered users.
+    PXRUSDPREVIEWSURFACE_API
+    static const TfToken::Set& registeredTypeNames();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

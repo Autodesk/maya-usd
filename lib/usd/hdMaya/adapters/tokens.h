@@ -58,6 +58,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (varname)                                 \
     (result)                                  \
     (eccentricity)                            \
+    (UsdPreviewSurface)                       \
     (pxrUsdPreviewSurface)
 // clang-format on
 

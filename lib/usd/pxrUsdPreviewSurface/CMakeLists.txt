@@ -127,8 +127,3 @@ if(IS_WINDOWS)
         DESTINATION ${LIBRARY_INSTALL_PATH} OPTIONAL
     )
 endif()
-
-install(
-    FILES AEpxrUsdPreviewSurfaceTemplate.mel
-    DESTINATION plugin/adsk/scripts
-)

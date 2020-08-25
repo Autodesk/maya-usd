@@ -26,78 +26,73 @@
 #include <maya/MDrawRegistry.h>
 
 #include <pxr/base/tf/envSetting.h>
-
-PXR_NAMESPACE_USING_DIRECTIVE
-
-namespace {
-const MString _RegistrantId("mayaUsd");
-int _registrationCount = 0;
-
-// Name of the plugin registering the preview surface class.
-MString _registrantPluginName;
-
-}
+#include <pxr/base/tf/stringUtils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+TfToken::Set _registeredTypeNames;
+}
 /* static */
-MStatus
-PxrMayaUsdPreviewSurfacePlugin::initialize(MFnPlugin& plugin)
+MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
+    MFnPlugin&     plugin,
+    const MString& typeName,
+    MTypeId        typeId,
+    const MString& registrantId)
 {
-    // If we're already registered, do nothing.
-    if (_registrationCount++ > 0) {
-        return MS::kSuccess;
+    TfToken tfTypeName(typeName.asChar());
+    if (_registeredTypeNames.count(tfTypeName) > 0) {
+        TF_CODING_ERROR("Trying to register typeName %s more than once", tfTypeName.GetText());
+        return MStatus::kFailure;
     }
+    _registeredTypeNames.insert(tfTypeName);
 
-    _registrantPluginName = plugin.name();
+    MString drawDbClassification(
+        TfStringPrintf("drawdb/shader/surface/%s", typeName.asChar()).c_str());
+    MString fullClassification(
+        TfStringPrintf("shader/surface:shader/displacement:%s", drawDbClassification.asChar())
+            .c_str());
 
     MStatus status = plugin.registerNode(
-        PxrMayaUsdPreviewSurface::typeName,
-        PxrMayaUsdPreviewSurface::typeId,
+        typeName,
+        typeId,
         PxrMayaUsdPreviewSurface::creator,
         PxrMayaUsdPreviewSurface::initialize,
         MPxNode::kDependNode,
-        &PxrMayaUsdPreviewSurface::fullClassification);
+        &fullClassification);
     CHECK_MSTATUS(status);
 
-    status =
-        MHWRender::MDrawRegistry::registerSurfaceShadingNodeOverrideCreator(
-            PxrMayaUsdPreviewSurface::drawDbClassification,
-            _RegistrantId,
-            PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
+    status = MHWRender::MDrawRegistry::registerSurfaceShadingNodeOverrideCreator(
+        drawDbClassification, registrantId, PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
     CHECK_MSTATUS(status);
 
     return status;
 }
 
 /* static */
-MStatus
-PxrMayaUsdPreviewSurfacePlugin::finalize(MFnPlugin& plugin)
+MStatus PxrMayaUsdPreviewSurfacePlugin::finalize(
+    MFnPlugin&     plugin,
+    const MString& typeName,
+    MTypeId        typeId,
+    const MString& registrantId)
 {
-    // If more than one plugin still has us registered, do nothing.
-    if (_registrationCount == 0 || _registrationCount-- > 1) {
-        return MS::kSuccess;
+    TfToken tfTypeName(typeName.asChar());
+    if (_registeredTypeNames.count(tfTypeName) == 0) {
+        TF_CODING_ERROR("TypeName %s is not currently registered", tfTypeName.GetText());
+        return MStatus::kFailure;
     }
+    _registeredTypeNames.erase(tfTypeName);
+
+    MString drawDbClassification(
+        TfStringPrintf("drawdb/shader/surface/%s", typeName.asChar()).c_str());
 
     deregisterFragments();
 
-    // Maya requires deregistration to be done by the same plugin that
-    // performed the registration.  If this isn't possible, warn and don't
-    // deregister.
-    if (plugin.name() != _registrantPluginName) {
-        MGlobal::displayWarning(
-            "USD preview surface base cannot be deregistered, registering plugin "
-            + _registrantPluginName + " is unloaded.");
-        return MS::kSuccess;
-    }
-
-    MStatus status =
-        MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
-            PxrMayaUsdPreviewSurface::drawDbClassification,
-            _RegistrantId);
+    MStatus status = MHWRender::MDrawRegistry::deregisterSurfaceShadingNodeOverrideCreator(
+        drawDbClassification, registrantId);
     CHECK_MSTATUS(status);
 
-    status = plugin.deregisterNode(PxrMayaUsdPreviewSurface::typeId);
+    status = plugin.deregisterNode(typeId);
     CHECK_MSTATUS(status);
 
     return status;
@@ -129,6 +124,12 @@ PxrMayaUsdPreviewSurfacePlugin::deregisterFragments() {
     MStatus status = HdVP2ShaderFragments::deregisterFragments();
     _registered = false;
     return status;
+}
+
+/* static */
+const TfToken::Set&
+PxrMayaUsdPreviewSurfacePlugin::registeredTypeNames() {
+    return _registeredTypeNames;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
