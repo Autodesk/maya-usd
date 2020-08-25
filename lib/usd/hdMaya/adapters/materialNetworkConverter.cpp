@@ -228,9 +228,35 @@ public:
             node, _remappedName.GetText(), type, fallback, outPlug);
     }
 
-private:
+protected:
     const TfToken& _remappedName;
     const SdfValueTypeName& _type;
+};
+
+class HdMayaScaledRemappingMaterialAttrConverter : public HdMayaRemappingMaterialAttrConverter {
+public:
+    HdMayaScaledRemappingMaterialAttrConverter(
+        const TfToken&          remappedName,
+        const TfToken&          scaleName,
+        const SdfValueTypeName& type)
+        : HdMayaRemappingMaterialAttrConverter(remappedName, type)
+        , _scaleName(scaleName)
+    {
+    }
+
+    VtValue GetValue(
+        MFnDependencyNode&      node,
+        const TfToken&          paramName,
+        const SdfValueTypeName& type,
+        const VtValue*          fallback = nullptr,
+        MPlug*                  outPlug = nullptr) override
+    {
+        return HdMayaMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
+            node, _remappedName.GetText(), _scaleName.GetText(), type, fallback, outPlug);
+    }
+
+private:
+    const TfToken&          _scaleName;
 };
 
 class HdMayaComputedMaterialAttrConverter : public HdMayaMaterialAttrConverter {
@@ -337,6 +363,32 @@ public:
     }
 };
 
+class HdMayaTransmissionMaterialAttrConverter
+    : public HdMayaComputedMaterialAttrConverter {
+public:
+    SdfValueTypeName GetType() override { return SdfValueTypeNames->Float; }
+
+    VtValue GetValue(
+        MFnDependencyNode& node, const TfToken& paramName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr) override {
+        VtValue transmission =
+            HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
+                node, "transmission", type, nullptr);
+        if (!transmission.IsHolding<float>()) {
+            if (fallback) { return *fallback; }
+            TF_DEBUG(HDMAYA_ADAPTER_GET)
+                .Msg(
+                    "HdMayaTransmissionMaterialAttrConverter::GetValue(): "
+                    "No float plug found with name: transmission and no "
+                    "fallback given");
+            return VtValue();
+        } else {
+            return VtValue(1.0f - transmission.UncheckedGet<float>());
+        }
+    }
+};
+
 class HdMayaFilenameMaterialAttrConverter
     : public HdMayaComputedMaterialAttrConverter {
 public:
@@ -392,16 +444,42 @@ NameToNodeConverterMap _nodeConverters;
 
 /*static*/
 void HdMayaMaterialNetworkConverter::initialize() {
-    auto colorConverter =
-        std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-            HdMayaAdapterTokens->color, SdfValueTypeNames->Vector3f);
-    auto incandescenceConverter =
-        std::make_shared<HdMayaRemappingMaterialAttrConverter>(
-            HdMayaAdapterTokens->incandescence, SdfValueTypeNames->Vector3f);
+    auto colorConverter = std::make_shared<HdMayaScaledRemappingMaterialAttrConverter>(
+        HdMayaAdapterTokens->color, HdMayaAdapterTokens->diffuse, SdfValueTypeNames->Vector3f);
+    auto incandescenceConverter = std::make_shared<HdMayaRemappingMaterialAttrConverter>(
+        HdMayaAdapterTokens->incandescence, SdfValueTypeNames->Vector3f);
     auto eccentricityConverter =
         std::make_shared<HdMayaRemappingMaterialAttrConverter>(
             HdMayaAdapterTokens->eccentricity, SdfValueTypeNames->Float);
     auto uvConverter = std::make_shared<HdMayaUvAttrConverter>();
+
+    // Standard surface:
+    auto baseColorConverter = std::make_shared<HdMayaScaledRemappingMaterialAttrConverter>(
+        HdMayaAdapterTokens->baseColor,
+        HdMayaAdapterTokens->base,
+        SdfValueTypeNames->Vector3f);
+    auto emissionColorConverter = std::make_shared<HdMayaScaledRemappingMaterialAttrConverter>(
+        HdMayaAdapterTokens->emissionColor,
+        HdMayaAdapterTokens->emission,
+        SdfValueTypeNames->Vector3f);
+    auto specularColorConverter = std::make_shared<HdMayaScaledRemappingMaterialAttrConverter>(
+        HdMayaAdapterTokens->specularColor,
+        HdMayaAdapterTokens->specular,
+        SdfValueTypeNames->Vector3f);
+    auto specularIORConverter =
+        std::make_shared<HdMayaRemappingMaterialAttrConverter>(
+            HdMayaAdapterTokens->specularIOR, SdfValueTypeNames->Float);
+    auto specularRoughnessConverter =
+        std::make_shared<HdMayaRemappingMaterialAttrConverter>(
+            HdMayaAdapterTokens->specularRoughness, SdfValueTypeNames->Float);
+    auto coatConverter =
+        std::make_shared<HdMayaRemappingMaterialAttrConverter>(
+            HdMayaAdapterTokens->coat, SdfValueTypeNames->Float);
+    auto coatRoughnessConverter =
+        std::make_shared<HdMayaRemappingMaterialAttrConverter>(
+            HdMayaAdapterTokens->coatRoughness, SdfValueTypeNames->Float);
+    auto transmissionToOpacity =
+        std::make_shared<HdMayaTransmissionMaterialAttrConverter>();
 
     auto fixedZeroFloat =
         std::make_shared<HdMayaFixedMaterialAttrConverter>(0.0f);
@@ -453,6 +531,20 @@ void HdMayaMaterialNetworkConverter::initialize() {
               {HdMayaAdapterTokens->diffuseColor, colorConverter},
               {HdMayaAdapterTokens->emissiveColor, incandescenceConverter},
               {HdMayaAdapterTokens->roughness, cosinePowerToRoughness},
+              {HdMayaAdapterTokens->metallic, fixedZeroFloat},
+              {HdMayaAdapterTokens->useSpecularWorkflow, fixedOneInt},
+          }}},
+        {HdMayaAdapterTokens->standardSurface,
+         {UsdImagingTokens->UsdPreviewSurface,
+          {
+              {HdMayaAdapterTokens->diffuseColor, baseColorConverter},
+              {HdMayaAdapterTokens->emissiveColor, emissionColorConverter},
+              {HdMayaAdapterTokens->specularColor, specularColorConverter},
+              {HdMayaAdapterTokens->ior, specularIORConverter},
+              {HdMayaAdapterTokens->roughness, specularRoughnessConverter},
+              {HdMayaAdapterTokens->clearcoat, coatConverter},
+              {HdMayaAdapterTokens->clearcoatRoughness, coatRoughnessConverter},
+              {HdMayaAdapterTokens->opacity, transmissionToOpacity},
               {HdMayaAdapterTokens->metallic, fixedZeroFloat},
               {HdMayaAdapterTokens->useSpecularWorkflow, fixedOneInt},
           }}},
@@ -644,6 +736,30 @@ VtValue HdMayaMaterialNetworkConverter::ConvertMayaAttrToValue(
                 "No plug found with name: %s and no fallback given",
                 plugName.asChar());
         val = VtValue();
+    }
+    return val;
+}
+
+VtValue HdMayaMaterialNetworkConverter::ConvertMayaAttrToScaledValue(
+    MFnDependencyNode& node, const MString& plugName, const MString& scaleName,
+    const SdfValueTypeName& type, const VtValue* fallback, MPlug* outPlug) {
+    VtValue val = ConvertMayaAttrToValue(node, plugName, type, fallback, outPlug);
+    MStatus status;
+    auto p = node.findPlug(scaleName, true, &status);
+    if (status) {
+        if (type.GetType() == SdfValueTypeNames->Vector3f.GetType()) {
+            val = val.UncheckedGet<GfVec3f>() * p.asFloat();
+        } else if (type == SdfValueTypeNames->Float) {
+            val = val.UncheckedGet<float>() * p.asFloat();
+        } else if (type.GetType() == SdfValueTypeNames->Float2.GetType()) {
+            val = val.UncheckedGet<GfVec2f>() * p.asFloat();
+        }
+    } else {
+        TF_DEBUG(HDMAYA_ADAPTER_GET)
+            .Msg(
+                "HdMayaMaterialNetworkConverter::ConvertMayaAttrToScaledValue(): "
+                "No scaling plug found with name: %s",
+                scaleName.asChar());
     }
     return val;
 }
