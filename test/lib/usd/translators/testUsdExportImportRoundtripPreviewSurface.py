@@ -141,12 +141,17 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         self.assertEqual(cmds.getAttr("place2dTexture.wrapU"), 0)
         self.assertEqual(cmds.getAttr("place2dTexture.wrapV"), 1)
 
-        # Make sure paths are relative in the USD file:
+        # Make sure paths are relative in the USD file. Joining the directory
+        # that the USD file lives in with the texture path should point us at
+        # a file that exists.
         stage = Usd.Stage.Open(usd_path)
-        file_texture = stage.GetPrimAtPath(
+        texture_prim = stage.GetPrimAtPath(
             "/pSphere1/Looks/pxrUsdPreviewSurface1SG/file1")
-        file_path = file_texture.GetAttribute('inputs:file').Get().path
-        self.assertTrue(file_path.startswith(".."))
+        rel_texture_path = texture_prim.GetAttribute('inputs:file').Get().path
+
+        usd_dir = os.path.dirname(usd_path)
+        full_texture_path = os.path.join(usd_dir, rel_texture_path)
+        self.assertTrue(os.path.isfile(full_texture_path))
 
 
 if __name__ == '__main__':

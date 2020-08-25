@@ -40,20 +40,20 @@ private:
 	static bool inGuard;
 };
 
-//! \brief Helper class to scope when we are in an add or remove reference operation.
-class InAddOrRemoveReference
+//! \brief Helper class to scope when we are in an add or delete operation.
+class InAddOrDeleteOperation
 {
 public:
-	InAddOrRemoveReference() { inGuard = true; }
-	~InAddOrRemoveReference() { inGuard = false; }
+	InAddOrDeleteOperation() { inGuard = true; }
+	~InAddOrDeleteOperation() { inGuard = false; }
 
 	// Delete the copy/move constructors assignment operators.
-	InAddOrRemoveReference(const InAddOrRemoveReference&) = delete;
-	InAddOrRemoveReference& operator=(const InAddOrRemoveReference&) = delete;
-	InAddOrRemoveReference(InAddOrRemoveReference&&) = delete;
-	InAddOrRemoveReference& operator=(InAddOrRemoveReference&&) = delete;
+	InAddOrDeleteOperation(const InAddOrDeleteOperation&) = delete;
+	InAddOrDeleteOperation& operator=(const InAddOrDeleteOperation&) = delete;
+	InAddOrDeleteOperation(InAddOrDeleteOperation&&) = delete;
+	InAddOrDeleteOperation& operator=(InAddOrDeleteOperation&&) = delete;
 
-	static bool inAddOrRemoveReference() { return inGuard; }
+	static bool inAddOrDeleteOperation() { return inGuard; }
 
 private:
 	static bool inGuard;

@@ -86,7 +86,10 @@ public:
     void Sync(HdSceneDelegate*, HdRenderParam*, HdDirtyBits*) override;
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
-    void Reload() override;
+
+#if USD_VERSION_NUM < 2011
+    void Reload() override {};
+#endif
 
     //! Get the surface shader instance.
     MHWRender::MShaderInstance* GetSurfaceShader() const {

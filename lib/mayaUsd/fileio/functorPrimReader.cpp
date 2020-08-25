@@ -45,10 +45,9 @@ UsdMayaPrimReaderRegistry::ReaderFactoryFn
 UsdMaya_FunctorPrimReader::CreateFactory(
     UsdMayaPrimReaderRegistry::ReaderFn readerFn)
 {
-    return std::bind(
-            Create,
-            std::placeholders::_1,
-            readerFn);
+    return [=](const UsdMayaPrimReaderArgs& args) { 
+        return Create(args, readerFn); 
+    };
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

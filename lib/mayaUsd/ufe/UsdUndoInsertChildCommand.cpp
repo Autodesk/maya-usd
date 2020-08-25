@@ -56,8 +56,9 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
                                                      const UsdSceneItem::Ptr& child,
                                                      const UsdSceneItem::Ptr& /* pos */) 
     : Ufe::UndoableCommand()
-    , _stage(child->prim().GetStage())
     , _ufeSrcItem(child)
+    , _ufeDstItem(nullptr)
+    , _ufeSrcPath(child->path())
     , _usdSrcPath(child->prim().GetPath())
 {
     const auto& childPrim = child->prim();
@@ -83,12 +84,12 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
     }
     _usdDstPath = parent->prim().GetPath().AppendChild(TfToken(childName));
 
-    _childLayer = _stage->GetEditTarget().GetLayer();
+    _childLayer = child->prim().GetStage()->GetEditTarget().GetLayer();
 
     // If parent prim is the pseudo-root, no def primSpec will be found, so
     // just use the edit target layer.
     _parentLayer = parentPrim.IsPseudoRoot() 
-        ? _stage->GetEditTarget().GetLayer() 
+        ? parent->prim().GetStage()->GetEditTarget().GetLayer() 
         : MayaUsdUtils::defPrimSpecLayer(parentPrim);
 }
 
@@ -116,22 +117,20 @@ UsdUndoInsertChildCommand::create(const UsdSceneItem::Ptr& parent,
 
 bool UsdUndoInsertChildCommand::insertChildRedo()
 {
-    // See comments in UsdUndoRenameCommand.cpp.
     bool status = SdfCopySpec(_childLayer, _usdSrcPath, _parentLayer, _usdDstPath);
     if (status)
     {
-        auto srcPrim = _stage->GetPrimAtPath(_usdSrcPath);
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        UFE_ASSERT_MSG(srcPrim, "Invalid prim cannot be inactivated.");
-#else
-        assert(srcPrim);
-#endif
-        status = srcPrim.SetActive(false);
+        // remove all scene description for the given path and 
+        // its subtree in the current UsdEditTarget 
+        {
+            auto stage = _ufeSrcItem->prim().GetStage();
+            UsdEditContext ctx(stage, _childLayer);
+            status = stage->RemovePrim(_usdSrcPath);
+        }
 
         if (status) {
             _ufeDstItem = UsdSceneItem::create(_ufeDstPath, ufePathToPrim(_ufeDstPath));
-
-            sendNotification<Ufe::ObjectReparent>(_ufeDstItem, _ufeSrcItem->path());
+            sendNotification<Ufe::ObjectReparent>(_ufeDstItem, _ufeSrcPath);
         }
     }
     else {
@@ -144,28 +143,20 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
 
 bool UsdUndoInsertChildCommand::insertChildUndo()
 {
-    bool status{false};
+    bool status = SdfCopySpec(_parentLayer, _usdDstPath, _childLayer, _usdSrcPath);
+    if (status)
     {
-        // Regardless of where the edit target is currently set, switch to the
-        // layer where we copied the source prim into the destination, then
-        // restore the edit target.
-        UsdEditContext ctx(_stage, _parentLayer);
-        status = _stage->RemovePrim(_usdDstPath);
-    }
-    if (status) {
-        auto srcPrim = _stage->GetPrimAtPath(_usdSrcPath);
-#ifdef UFE_V2_FEATURES_AVAILABLE
-        UFE_ASSERT_MSG(srcPrim, "Invalid prim cannot be activated.");
-#else
-        assert(srcPrim);
-#endif
-        status = srcPrim.SetActive(true);
+        // remove all scene description for the given path and 
+        // its subtree in the current UsdEditTarget
+        {
+            auto stage = _ufeDstItem->prim().GetStage();
+            UsdEditContext ctx(stage, _parentLayer);
+            status = stage->RemovePrim(_usdDstPath);
+        }
 
         if (status) {
-
-            sendNotification<Ufe::ObjectReparent>(_ufeSrcItem, _ufeDstItem->path());
-
-            _ufeDstItem = nullptr;
+            _ufeSrcItem = UsdSceneItem::create(_ufeSrcPath, ufePathToPrim(_ufeSrcPath));
+            sendNotification<Ufe::ObjectReparent>(_ufeSrcItem, _ufeDstPath);
         }
     }
     else {
