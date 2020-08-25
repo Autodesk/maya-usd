@@ -47,20 +47,6 @@ void UsdTRSUndoableCommandBase<V>::initialize()
     // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
     // for explanation of this->shared_from_this() in templated class.
     attribute().Get(&fPrevValue);
-    Ufe::Scene::instance().addObserver(this->shared_from_this());
-}
-
-template<class V>
-void UsdTRSUndoableCommandBase<V>::operator()(
-    const Ufe::Notification& n
-)
-{
-    if (auto renamed = dynamic_cast<const Ufe::ObjectRename*>(&n)) {
-        checkNotification(renamed);
-    }
-    else if (auto reparented = dynamic_cast<const Ufe::ObjectReparent*>(&n)) {
-        checkNotification(reparented);
-    }
 }
 
 template<class V>
@@ -83,15 +69,6 @@ void UsdTRSUndoableCommandBase<V>::redoImp()
     }
 
     perform(fNewValue[0], fNewValue[1], fNewValue[2]);
-}
-
-template<class V>
-template<class N>
-void UsdTRSUndoableCommandBase<V>::checkNotification(const N* notification)
-{
-    if (notification->previousPath() == path()) {
-        fItem = std::dynamic_pointer_cast<UsdSceneItem>(notification->item());
-    }
 }
 
 template<class V>

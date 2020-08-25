@@ -47,8 +47,8 @@ namespace ufe {
 //   becomes stale, and the prim in the updated scene item should be used.
 //
 template<class V>
-class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase : public Ufe::Observer,
-        public std::enable_shared_from_this<UsdTRSUndoableCommandBase<V> >
+class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase 
+    : public std::enable_shared_from_this<UsdTRSUndoableCommandBase<V> >
 {
 protected:
 
@@ -81,12 +81,6 @@ protected:
     virtual bool cannotInit() const;
 
 private:
-
-    // Overridden from Ufe::Observer
-    void operator()(const Ufe::Notification& notification) override;
-
-    template<class N> void checkNotification(const N* notification);
-
     inline UsdAttribute attribute() const {
       return prim().GetAttribute(attributeName());
     }
