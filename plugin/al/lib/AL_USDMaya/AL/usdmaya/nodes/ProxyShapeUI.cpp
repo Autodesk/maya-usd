@@ -162,16 +162,10 @@ void ProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
   unsigned int x, y, w, h;
   view.viewport(x, y, w, h);
   
-  #if USD_VERSION_NUM >= 1911
   engine->SetCameraState(
       GfMatrix4d((model.inverse() * viewMatrix).matrix),
       GfMatrix4d(projection.matrix));
   engine->SetRenderViewport(GfVec4d(x, y, w, h));
-  #else
-  engine->SetCameraState(
-      GfMatrix4d((model.inverse() * viewMatrix).matrix),
-      GfMatrix4d(projection.matrix), GfVec4d(x, y, w, h));
-  #endif
 
   switch(request.displayStyle())
   {
