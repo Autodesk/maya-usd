@@ -44,10 +44,6 @@ public:
 
     PXRUSDPREVIEWSURFACE_API
     static MStatus deregisterFragments();
-
-    /// \brief Get the typenames of all registered users.
-    PXRUSDPREVIEWSURFACE_API
-    static const TfToken::Set& registeredTypeNames();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

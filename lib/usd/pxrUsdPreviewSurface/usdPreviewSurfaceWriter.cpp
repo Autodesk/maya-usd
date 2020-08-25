@@ -16,7 +16,6 @@
 #include "usdPreviewSurfaceWriter.h"
 
 #include "usdPreviewSurface.h"
-#include "usdPreviewSurfacePlugin.h"
 
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
@@ -46,19 +45,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimWriterRegistry, UsdPreviewSurface_PxrMayaUsdPreviewSurface_Writer)
-{
-    for (const auto& typeName: PxrMayaUsdPreviewSurfacePlugin::registeredTypeNames()) {
-        UsdMayaPrimWriterRegistry::Register(
-        typeName.GetString(),
-        [](
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx) {
-            return std::make_shared<PxrMayaUsdPreviewSurface_Writer>(depNodeFn, usdPath, jobCtx);
-        });
-    }
-}
+PXRUSDMAYA_REGISTER_WRITER(UsdPreviewSurface, PxrMayaUsdPreviewSurface_Writer);
+PXRUSDMAYA_REGISTER_WRITER(pxrUsdPreviewSurface, PxrMayaUsdPreviewSurface_Writer);
 
 PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(
         const MFnDependencyNode& depNodeFn,

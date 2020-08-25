@@ -126,10 +126,4 @@ PxrMayaUsdPreviewSurfacePlugin::deregisterFragments() {
     return status;
 }
 
-/* static */
-const TfToken::Set&
-PxrMayaUsdPreviewSurfacePlugin::registeredTypeNames() {
-    return _registeredTypeNames;
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
