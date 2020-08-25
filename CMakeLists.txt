@@ -182,11 +182,34 @@ if (DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
 else()
     set(USD_INSTALL_LOCATION ${PXR_USD_LOCATION})
 endif()
-if (IS_WINDOWS)
-    configure_file("modules/mayaUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
-else()
-    configure_file("modules/mayaUSD.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+
+
+#------------------------------------------------------------------------------
+# Maya module files
+#------------------------------------------------------------------------------
+if (BUILD_ADSK_PLUGIN)
+    if (IS_WINDOWS)
+        configure_file("modules/mayaUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+    else()
+        configure_file("modules/mayaUSD.mod.template" ${PROJECT_BINARY_DIR}/mayaUSD.mod)
+    endif()
+    install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
 endif()
-install(FILES ${PROJECT_BINARY_DIR}/mayaUSD.mod
-    DESTINATION ${CMAKE_INSTALL_PREFIX}
-)
+
+if (BUILD_PXR_PLUGIN)
+    if (IS_WINDOWS)
+        configure_file("modules/pxrUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/pxrUSD.mod)
+    else()
+        configure_file("modules/pxrUSD.mod.template" ${PROJECT_BINARY_DIR}/pxrUSD.mod)
+    endif()
+    install(FILES ${PROJECT_BINARY_DIR}/pxrUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+endif()
+
+if (BUILD_AL_PLUGIN)
+    if (IS_WINDOWS)
+        configure_file("modules/alUSD_Win.mod.template" ${PROJECT_BINARY_DIR}/alUSD.mod)
+    else()
+        configure_file("modules/alUSD.mod.template" ${PROJECT_BINARY_DIR}/alUSD.mod)
+    endif()
+    install(FILES ${PROJECT_BINARY_DIR}/alUSD.mod DESTINATION ${CMAKE_INSTALL_PREFIX})
+endif()

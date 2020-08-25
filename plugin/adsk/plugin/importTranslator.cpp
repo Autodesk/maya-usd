@@ -58,7 +58,6 @@ UsdMayaImportTranslator::reader(
         MPxFileTranslator::FileAccessMode  /*mode*/)
 {
     std::string fileName(file.fullName().asChar(), file.fullName().length());
-    std::map<std::string, std::string> variants;
 
     // If the input filename doesn't match the one in the importData we clear out
     // the import data. This would happen if the user performed an import with
