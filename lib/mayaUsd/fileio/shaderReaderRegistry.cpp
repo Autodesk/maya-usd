@@ -28,8 +28,8 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -63,6 +63,7 @@ _Registry::const_iterator _Find(
         ContextSupport support = first->second._pred(importArgs);
         if (support == ContextSupport::Supported) {
             ret = first;
+            break;
         } else if (support == ContextSupport::Fallback && ret == _reg.end()) {
             ret = first;
         }
@@ -79,10 +80,13 @@ void UsdMayaShaderReaderRegistry::Register(
     UsdMayaShaderReaderRegistry::ContextPredicateFn pred,
     UsdMayaShaderReaderRegistry::ReaderFactoryFn    fn)
 {
-    TF_DEBUG(PXRUSDMAYA_REGISTRY)
-        .Msg("Registering UsdMayaShaderReader for info:id %s.\n", usdInfoId.GetText());
-
     int index = _indexCounter++;
+    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+        .Msg(
+            "Registering UsdMayaShaderReader for info:id %s with index %d.\n",
+            usdInfoId.GetText(),
+            index);
+
     _reg.insert(std::make_pair(usdInfoId, _RegistryEntry{pred, fn, index}));
 
     // The unloader uses the index to know which entry to erase when there are

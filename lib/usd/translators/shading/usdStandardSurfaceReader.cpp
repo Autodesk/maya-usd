@@ -45,9 +45,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Shader writer for importing UsdPreviewSurface to Maya's lambert material nodes
+/// Shader reader for importing UsdPreviewSurface to Maya's standardSurface material nodes
 class PxrUsdTranslators_StandardSurfaceReader : public PxrUsdTranslators_MaterialReader {
-    typedef PxrUsdTranslators_MaterialReader _BaseClass;
+    using _BaseClass = PxrUsdTranslators_MaterialReader;
 
 public:
     PxrUsdTranslators_StandardSurfaceReader(const UsdMayaPrimReaderArgs&);
@@ -59,9 +59,17 @@ public:
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
 
 protected:
+    /// What is the Maya node type name we want to convert to:
     const TfToken& _GetMayaNodeTypeName() const override;
-    void           _ConvertToMaya(const TfToken& mayaAttrName, VtValue& usdValue) const override;
-    void _OnReadAttribute(const TfToken& mayaAttrName, MFnDependencyNode& shaderFn) const override;
+
+    /// Convert the value in \p usdValue from USD back to Maya following rules
+    /// for attribute \p mayaAttrName
+    void _ConvertToMaya(const TfToken& mayaAttrName, VtValue& usdValue) const override;
+
+    /// Callback called before the attribute \p mayaAttribute is read from UsdShade. This allows
+    /// setting back values in \p shaderFn that were lost during the export phase.
+    void
+    _OnBeforeReadAttribute(const TfToken& mayaAttrName, MFnDependencyNode& shaderFn) const override;
 };
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrUsdTranslators_StandardSurfaceReader);
@@ -116,7 +124,7 @@ void PxrUsdTranslators_StandardSurfaceReader::_ConvertToMaya(
     }
 }
 
-void PxrUsdTranslators_StandardSurfaceReader::_OnReadAttribute(
+void PxrUsdTranslators_StandardSurfaceReader::_OnBeforeReadAttribute(
     const TfToken&     mayaAttrName,
     MFnDependencyNode& shaderFn) const
 {
@@ -135,7 +143,7 @@ void PxrUsdTranslators_StandardSurfaceReader::_OnReadAttribute(
         surfaceFn.setEmissionColor(color);
         surfaceFn.setEmission(1.0f);
     } else {
-        return _BaseClass::_OnReadAttribute(mayaAttrName, shaderFn);
+        _BaseClass::_OnBeforeReadAttribute(mayaAttrName, shaderFn);
     }
 }
 

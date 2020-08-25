@@ -60,12 +60,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct UsdMayaShaderReaderRegistry {
     /// Predicate function, i.e. a function that can tell the level of support
     /// the reader function will provide for a given context.
-    typedef std::function<UsdMayaShaderReader::ContextSupport(const UsdMayaJobImportArgs&)>
-        ContextPredicateFn;
+    using ContextPredicateFn
+        = std::function<UsdMayaShaderReader::ContextSupport(const UsdMayaJobImportArgs&)>;
 
     /// Reader factory function, i.e. a function that creates a prim reader
     /// for the given prim reader args.
-    typedef std::function<UsdMayaPrimReaderSharedPtr(const UsdMayaPrimReaderArgs&)> ReaderFactoryFn;
+    using ReaderFactoryFn = std::function<UsdMayaPrimReaderSharedPtr(const UsdMayaPrimReaderArgs&)>;
 
     /// \brief Register \p fn as a factory function providing a
     /// UsdMayaShaderReader subclass that can be used to read \p usdInfoId.

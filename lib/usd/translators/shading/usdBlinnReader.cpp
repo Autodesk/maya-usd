@@ -45,9 +45,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Shader writer for importing UsdPreviewSurface to Maya's lambert material nodes
+/// Shader reader for importing UsdPreviewSurface to Maya's blinn material nodes
 class PxrUsdTranslators_BlinnReader : public PxrUsdTranslators_LambertReader {
-    typedef PxrUsdTranslators_LambertReader _BaseClass;
+    using _BaseClass = PxrUsdTranslators_LambertReader;
 
 public:
     PxrUsdTranslators_BlinnReader(const UsdMayaPrimReaderArgs&);
@@ -62,7 +62,10 @@ protected:
     /// What is the Maya node type name we want to convert to:
     const TfToken& _GetMayaNodeTypeName() const override;
 
-    void _OnReadAttribute(const TfToken& mayaAttrName, MFnDependencyNode& shaderFn) const override;
+    /// Callback called before the attribute \p mayaAttribute is read from UsdShade. This allows
+    /// setting back values in \p shaderFn that were lost during the export phase.
+    void
+    _OnBeforeReadAttribute(const TfToken& mayaAttrName, MFnDependencyNode& shaderFn) const override;
 };
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrUsdTranslators_BlinnReader);
@@ -96,7 +99,7 @@ const TfToken& PxrUsdTranslators_BlinnReader::_GetMayaNodeTypeName() const
     return UsdMayaShadingConversionTokens->blinn;
 }
 
-void PxrUsdTranslators_BlinnReader::_OnReadAttribute(
+void PxrUsdTranslators_BlinnReader::_OnBeforeReadAttribute(
     const TfToken&     mayaAttrName,
     MFnDependencyNode& shaderFn) const
 {
@@ -109,7 +112,7 @@ void PxrUsdTranslators_BlinnReader::_OnReadAttribute(
         blinnFn.setSpecularColor(color);
         blinnFn.setSpecularRollOff(1.0f);
     } else {
-        return _BaseClass::_OnReadAttribute(mayaAttrName, shaderFn);
+        _BaseClass::_OnBeforeReadAttribute(mayaAttrName, shaderFn);
     }
 }
 

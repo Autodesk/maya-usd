@@ -44,9 +44,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// Shader writer for importing UsdPreviewSurface to Maya's lambert material nodes
+/// Shader reader for importing UsdPreviewSurface to Maya's phong material nodes
 class PxrUsdTranslators_PhongReader : public PxrUsdTranslators_LambertReader {
-    typedef PxrUsdTranslators_LambertReader _BaseClass;
+    using _BaseClass = PxrUsdTranslators_LambertReader;
 
 public:
     PxrUsdTranslators_PhongReader(const UsdMayaPrimReaderArgs&);
@@ -61,6 +61,8 @@ protected:
     /// What is the Maya node type name we want to convert to:
     const TfToken& _GetMayaNodeTypeName() const override;
 
+    /// Convert the value in \p usdValue from USD back to Maya following rules
+    /// for attribute \p mayaAttrName
     void _ConvertToMaya(const TfToken& mayaAttrName, VtValue& usdValue) const override;
 };
 

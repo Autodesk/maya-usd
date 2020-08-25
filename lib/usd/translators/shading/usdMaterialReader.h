@@ -31,7 +31,7 @@ class TfToken;
 struct UsdMayaJobImportArgs;
 class UsdShadeShader;
 
-/// Shader writer for importing UsdPreviewSurface to Maya's native material nodes
+/// Shader reader for importing UsdPreviewSurface to Maya's native material nodes
 class PxrUsdTranslators_MaterialReader : public UsdMayaShaderReader {
 public:
     PxrUsdTranslators_MaterialReader(const UsdMayaPrimReaderArgs&);
@@ -47,10 +47,10 @@ protected:
     /// What is the Maya node type name we want to convert to:
     virtual const TfToken& _GetMayaNodeTypeName() const = 0;
 
-    /// Allows setting values on attributes indirectly affected by attribute
-    /// \p mayaAttribute. This allows setting back values in \p shaderFn that
-    /// were lost during the export phase.
-    virtual void _OnReadAttribute(const TfToken& mayaAttrName, MFnDependencyNode& shaderFn) const;
+    /// Callback called before the attribute \p mayaAttribute is read from UsdShade. This allows
+    /// setting back values in \p shaderFn that were lost during the export phase.
+    virtual void
+    _OnBeforeReadAttribute(const TfToken& mayaAttrName, MFnDependencyNode& shaderFn) const;
 
     /// Convert the value in \p usdValue from USD back to Maya following rules
     /// for attribute \p mayaAttrName

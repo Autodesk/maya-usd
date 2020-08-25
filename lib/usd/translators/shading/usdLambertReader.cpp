@@ -78,7 +78,7 @@ const TfToken& PxrUsdTranslators_LambertReader::_GetMayaNodeTypeName() const
     return UsdMayaShadingConversionTokens->lambert;
 }
 
-void PxrUsdTranslators_LambertReader::_OnReadAttribute(
+void PxrUsdTranslators_LambertReader::_OnBeforeReadAttribute(
     const TfToken&     mayaAttrName,
     MFnDependencyNode& shaderFn) const
 {
@@ -91,7 +91,7 @@ void PxrUsdTranslators_LambertReader::_OnReadAttribute(
         lambertFn.setColor(color);
         lambertFn.setDiffuseCoeff(1.0f);
     } else {
-        return _BaseClass::_OnReadAttribute(mayaAttrName, shaderFn);
+        _BaseClass::_OnBeforeReadAttribute(mayaAttrName, shaderFn);
     }
 }
 
