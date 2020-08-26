@@ -85,19 +85,31 @@ auto computeLocalExclusiveTransform = computeLocalTransform<false>;
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
 class UsdTRSUndoableCmdBase {
+private:
+    UsdGeomXformOp          fOp;
+    const UsdTimeCode       fReadTime;
+    const UsdTimeCode       fWriteTime;
+    const VtValue           fPrevOpValue;
+
 public:
     UsdTRSUndoableCmdBase(
+        const UsdSceneItem::Ptr& item,
         const UsdGeomXformOp&    op, 
-        const UsdTimeCode&       time
-    ) : fOp(op), fTime(time), fPrevOpValue(getValue(op.GetAttr(), time)), 
+        const UsdTimeCode&       writeTime_
+    ) : fOp(op), 
+        // Always read from proxy shape time.
+        fReadTime(getTime(item->path())),
+        fWriteTime(writeTime_), 
+        fPrevOpValue(getValue(op.GetAttr(), readTime())),
         fNewOpValue(fPrevOpValue) {}
         
-    void undo() { fOp.GetAttr().Set(fPrevOpValue, fTime); }
-    void redo() { fOp.GetAttr().Set(fNewOpValue,  fTime); }
+    void undo() { fOp.GetAttr().Set(fPrevOpValue, fWriteTime); }
+    void redo() { fOp.GetAttr().Set(fNewOpValue,  fWriteTime); }
 
-    UsdGeomXformOp          fOp;
-    const UsdTimeCode       fTime; // Authoring time
-    const VtValue           fPrevOpValue;
+    UsdTimeCode readTime() const { return fReadTime; }
+    UsdTimeCode writeTime() const { return fWriteTime; }
+
+protected:
     VtValue                 fNewOpValue;
 };
 
@@ -109,11 +121,11 @@ public:
     UsdTranslateUndoableCmd(
         const UsdSceneItem::Ptr& item,
         const UsdGeomXformOp&    op, 
-        const UsdTimeCode&       time
-    ) : Ufe::TranslateUndoableCommand(item), UsdTRSUndoableCmdBase(op, time)
+        const UsdTimeCode&       writeTime
+    ) : Ufe::TranslateUndoableCommand(item), 
+        UsdTRSUndoableCmdBase(item, op, writeTime)
     {
-        // We always read from proxy shape time.
-        fOpTransform = op.GetOpTransform(getTime(item->path()));
+        fOpTransform = op.GetOpTransform(readTime());
     }
 
     void undo() override { UsdTRSUndoableCmdBase::undo(); }
@@ -140,11 +152,11 @@ public:
     UsdRotateUndoableCmd(
         const UsdSceneItem::Ptr& item,
         const UsdGeomXformOp&    op, 
-        const UsdTimeCode&       time
-    ) : Ufe::RotateUndoableCommand(item), UsdTRSUndoableCmdBase(op, time)
+        const UsdTimeCode&       writeTime
+    ) : Ufe::RotateUndoableCommand(item), 
+        UsdTRSUndoableCmdBase(item, op, writeTime)
     {
-        // We always read from proxy shape time.
-        GfMatrix4d opTransform = op.GetOpTransform(getTime(item->path()));
+        GfMatrix4d opTransform = op.GetOpTransform(readTime());
 
         // Other matrix decomposition code from AL:
         // from https://github.com/AnimalLogic/maya-usd/blob/8852bdbb1fc904ac80543cd6103489097fa00154/lib/usd/utils/MayaTransformAPI.cpp#L979-L1055
@@ -189,11 +201,11 @@ public:
     UsdScaleUndoableCmd(
         const UsdSceneItem::Ptr& item,
         const UsdGeomXformOp&    op, 
-        const UsdTimeCode&       time
-    ) : Ufe::ScaleUndoableCommand(item), UsdTRSUndoableCmdBase(op, time)
+        const UsdTimeCode&       writeTime
+    ) : Ufe::ScaleUndoableCommand(item),
+        UsdTRSUndoableCmdBase(item, op, writeTime)
     {
-        // We always read from proxy shape time.
-        GfMatrix4d opTransform = op.GetOpTransform(getTime(item->path()));
+        GfMatrix4d opTransform = op.GetOpTransform(readTime());
 
         // Other matrix decomposition code from AL:
         // from https://github.com/AnimalLogic/maya-usd/blob/8852bdbb1fc904ac80543cd6103489097fa00154/lib/usd/utils/MayaTransformAPI.cpp#L979-L1055
