@@ -25,8 +25,10 @@ UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(c
 	, fPath(path)
 	, fNoPivotOp(false)
 {
-	conditionalCreateItem();
-
+	// create on first access
+	if(!fItem) {
+	    fItem = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(fPath));
+	}
 
 	// Prim does not have a pivot translate attribute
 	const TfToken xpivot("xformOp:translate:pivot");
@@ -43,15 +45,6 @@ UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(c
 
 UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand()
 {
-}
-
-void UsdRotatePivotTranslateUndoableCommand::conditionalCreateItem()
-{
-    if(!fItem)
-    {
-        auto ufeSceneItemPtr = Ufe::Hierarchy::createItem(fPath);
-        fItem = std::dynamic_pointer_cast<UsdSceneItem>(ufeSceneItemPtr);
-    }
 }
 
 /*static*/

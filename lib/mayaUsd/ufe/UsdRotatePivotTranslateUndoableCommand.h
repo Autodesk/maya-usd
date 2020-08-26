@@ -54,14 +54,10 @@ public:
 	bool translate(double x, double y, double z) override;
 
 private:
-	void conditionalCreateItem();
-
-private:
+	Ufe::Path fPath;
 	UsdSceneItem::Ptr fItem{nullptr};
-	UsdPrim fPrim;
 	UsdAttribute fPivotAttrib;
 	GfVec3f fPrevPivotValue;
-	Ufe::Path fPath;
 	bool fNoPivotOp;
 
 }; // UsdRotatePivotTranslateUndoableCommand
