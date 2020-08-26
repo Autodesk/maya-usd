@@ -78,7 +78,7 @@ protected:
     virtual void addEmptyAttribute() = 0;
     virtual bool cannotInit() const;
 
-    // Create a UsdSceneItem::Ptr conditionaly in the first access from Ufe::Path
+    // Create a UsdSceneItem::Ptr conditionaly in the first access from Ufe::Path.
     void conditionalCreateItem();
 
 private:

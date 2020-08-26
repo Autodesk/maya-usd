@@ -65,8 +65,8 @@ void UsdTRSUndoableCommandBase<V>::undoImp()
     // Todo : We would want to remove the xformOp
     // (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 
-    // Set fItem to because the command does not know what can go on with the prim inside
-    // its item after their own undo() or redo().Setting it back to 0 is safer because it means 
+    // Set fItem to nullptr because the command does not know what can go on with the prim inside
+    // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
     // that the next time the command is used, it will be forced to create a new item from the path, 
     // or the command will crash on a null pointer.
     fItem = nullptr;
@@ -87,8 +87,8 @@ void UsdTRSUndoableCommandBase<V>::redoImp()
 
     perform(fNewValue[0], fNewValue[1], fNewValue[2]);
 
-    // Set fItem to because the command does not know what can go on with the prim inside
-    // its item after their own undo() or redo().Setting it back to 0 is safer because it means 
+    // Set fItem to nullptr because the command does not know what can go on with the prim inside
+    // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
     // that the next time the command is used, it will be forced to create a new item from the path, 
     // or the command will crash on a null pointer.
     fItem = nullptr;
