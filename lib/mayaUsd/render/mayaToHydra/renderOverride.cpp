@@ -111,6 +111,7 @@ private:
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText()),
       _rendererDesc(desc),
+      _globals(MtohRenderGlobals::GetInstance()),
 #if USD_VERSION_NUM > 2002
 #if USD_VERSION_NUM > 2005
       _hgi(Hgi::CreatePlatformDefaultHgi()),
@@ -161,8 +162,6 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
         _allInstances.push_back(this);
     }
 
-    _globals = MtohGetRenderGlobals();
-
 #if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection =
         UFE_NS::GlobalSelection::get();
@@ -201,11 +200,36 @@ MtohRenderOverride::~MtohRenderOverride() {
     }
 }
 
-void MtohRenderOverride::UpdateRenderGlobals() {
-    std::lock_guard<std::mutex> lock(_allInstancesMutex);
-    for (auto* instance : _allInstances) {
-        instance->_renderGlobalsHaveChanged = true;
+HdRenderDelegate* MtohRenderOverride::_GetRenderDelegate() {
+    return _renderIndex ? _renderIndex->GetRenderDelegate() : nullptr;
+}
+
+void MtohRenderOverride::UpdateRenderGlobals(const MtohRenderGlobals& globals, const TfToken& filter) {
+    // If no attribute or attribute starts with 'mtoh', these setting wil be applied on the next
+    // call to MtohRenderOverride::Render, so just force an invalidation
+    // XXX: This will need to change if mtoh settings should ever make it to the delegate itself.
+    if (filter.GetString().find("mtoh") != 0) {
+        std::lock_guard<std::mutex> lock(_allInstancesMutex);
+        for (auto* instance : _allInstances) {
+            const auto& rendererName = instance->_rendererDesc.rendererName;
+
+            // If no filter or the filter is the renderer, then update everything
+            const size_t attrFilter = (filter.IsEmpty() || filter == rendererName) ? 0 : 1;
+            if (attrFilter && !instance->_globals.AffectsRenderer(filter, rendererName))
+                continue;
+
+            // Will be applied in _InitHydraResources later anyway
+            if (auto* renderDelegate = instance->_GetRenderDelegate()) {
+                instance->_globals.ApplySettings(renderDelegate,
+                    instance->_rendererDesc.rendererName, &filter, attrFilter);
+                if (attrFilter)
+                    break;
+            }
+        }
     }
+
+    // Less than ideal still
+    MGlobal::executeCommandOnIdle("refresh -f");
 }
 
 std::vector<MString> MtohRenderOverride::AllActiveRendererNames() {
@@ -311,31 +335,6 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(
     }
 }
 
-void MtohRenderOverride::_UpdateRenderGlobals() {
-    if (!_renderGlobalsHaveChanged) { return; }
-    _renderGlobalsHaveChanged = false;
-    _globals = MtohGetRenderGlobals();
-    _UpdateRenderDelegateOptions();
-}
-
-void MtohRenderOverride::_UpdateRenderDelegateOptions() {
-    if (_renderIndex == nullptr) { return; }
-    auto* renderDelegate = _renderIndex->GetRenderDelegate();
-    if (renderDelegate == nullptr) { return; }
-    const auto* settings =
-        TfMapLookupPtr(_globals.rendererSettings, _rendererDesc.rendererName);
-    if (settings == nullptr) { return; }
-    // TODO: Which is better? Set everything blindly or only set settings that
-    //  have changed? This is not performance critical, and render delegates
-    //  might track changes internally.
-    for (const auto& setting : *settings) {
-        const auto v = renderDelegate->GetRenderSetting(setting.key);
-        if (v != setting.value) {
-            renderDelegate->SetRenderSetting(setting.key, setting.value);
-        }
-    }
-}
-
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // It would be good to clear the resources of the overrides that are
     // not in active use, but I'm not sure if we have a better way than
@@ -415,8 +414,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         }
     };
 
-    _UpdateRenderGlobals();
-
     _DetectMayaDefaultLighting(drawContext);
     if (_needsClear.exchange(false)) { ClearHydraResources(); }
 
@@ -429,14 +426,14 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _SelectionChanged();
 
     const auto displayStyle = drawContext.getDisplayStyle();
-    _globals.delegateParams.displaySmoothMeshes =
-        !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
+    HdMayaParams delegateParams = _globals.delegateParams;
+    delegateParams.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
     if (_defaultLightDelegate != nullptr) {
         _defaultLightDelegate->SetDefaultLight(_defaultLight);
     }
     for (auto& it : _delegates) {
-        it->SetParams(_globals.delegateParams);
+        it->SetParams(delegateParams);
         it->PreFrame(drawContext);
     }
 
@@ -599,7 +596,15 @@ void MtohRenderOverride::_InitHydraResources() {
     _SelectionChanged();
 
     _initializedViewport = true;
-    _UpdateRenderDelegateOptions();
+    if (auto* renderDelegate = _GetRenderDelegate()) {
+        // Pull in any options that may have changed due file-open.
+        // If the currentScene has defaultRenderGlobals we'll absorb those new settings,
+        // but if not, fallback to user-defaults (current state) .
+        const bool filterRenderer = true;
+        const bool fallbackToUserDefaults = true;
+        _globals.GlobalChanged({_rendererDesc.rendererName, filterRenderer, fallbackToUserDefaults});
+        _globals.ApplySettings(renderDelegate, _rendererDesc.rendererName);
+    }
 }
 
 void MtohRenderOverride::ClearHydraResources() {
@@ -646,7 +651,6 @@ void MtohRenderOverride::_RemovePanel(MString panelName) {
 
     if (_renderPanelCallbacks.empty()) {
         ClearHydraResources();
-        _UpdateRenderGlobals();
     }
 }
 

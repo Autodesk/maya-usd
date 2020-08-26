@@ -17,6 +17,7 @@
 #include <stdlib.h>
 
 #include <maya/MFnPlugin.h>
+#include <maya/MGlobal.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
@@ -82,6 +83,9 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj) {
             }
         }
     }
+
+    // Clear any registered callbacks
+    MGlobal::executeCommand("callbacks -cc mtoh;");
 
     if (!plugin.deregisterCommand(MtohViewCmd::name)) {
         ret = MS::kFailure;
