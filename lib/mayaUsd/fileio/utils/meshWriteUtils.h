@@ -29,10 +29,74 @@
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
+#include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnMesh.h>
 #include <maya/MObject.h>
 #include <maya/MString.h>
+
+/**
+ * Gets the minimum unique name of a DAG node.
+ *
+ * @param node  The node to find the name of.
+ *
+ * @return      The name as a Maya string.
+ */
+MString mayaGetUniqueNameOfDAGNode(const MObject& node);
+
+/**
+ * Finds a child plug with the given `name`.
+ *
+ * @param parent    The parent plug to start the search from.
+ * @param name      The name of the child plug to find. This should be the short name.
+ *
+ * @return          The plug if it can be found, or a null `MPlug` otherwise.
+ */
+MPlug mayaFindChildPlugWithName(const MPlug& parent, const MString& name);
+
+/**
+ * Finds a skinCluster directly connected upstream in the DG to the given mesh.
+ *
+ * @param mesh              The mesh to search from.
+ * @param skinCluster       Storage for the result. If no skinCluster can be found,
+ *                          this will be a null `MObject`.
+ *
+ * @return                  `MStatus::kSuccess` if the operation completed successfully.
+ */
+MStatus mayaGetSkinClusterConnectedToMesh(const MObject& mesh, MObject& skinCluster);
+
+/**
+ * Similar to `mayaGetSkinClusterConnectedToMesh`, except that instead of finding a
+ * directly-connected skinCluster, it searches the DG upstream of the mesh for any
+ * other skinClusters as well.
+ *
+ * @param mesh              The mesh to start the search from.
+ * @param skinClusters      Storage for the result.
+ *
+ * @return                  `MStatus::kSuccess` if the operation completed successfully.
+ */
+MStatus mayaGetSkinClustersUpstreamOfMesh(const MObject& mesh, MObjectArray& skinClusters);
+
+/**
+ * Searches the given array for an element.
+ *
+ * @param a         The element to search for.
+ * @param array     The array to search within.
+ * @param idx       Storage for the index of the element within the array if it exists.
+ *                  If it does not exist, this will be undefined.
+ *
+ * @return          Returns ``true`` if the element exists in the array, ``false`` otherwise.
+ */
+bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx);
+
+/**
+ * Calculates the union bounding box of a given array of meshes.
+ *
+ * @param meshes    The meshes to calculate the union bounding box of.
+ *
+ * @return          The union bounding box.
+ */
+MBoundingBox mayaCalcBBoxOfMeshes(const MObjectArray& meshes);
 
 PXR_NAMESPACE_OPEN_SCOPE
 

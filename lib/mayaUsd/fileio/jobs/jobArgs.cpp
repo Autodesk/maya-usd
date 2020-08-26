@@ -321,6 +321,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdMayaJobExportArgsTokens->exportSkin,
           UsdMayaJobExportArgsTokens->none,
           { UsdMayaJobExportArgsTokens->auto_, UsdMayaJobExportArgsTokens->explicit_ }))
+    , exportBlendShapes(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportBlendShapes))
     , exportVisibility(_Boolean(userArgs, UsdMayaJobExportArgsTokens->exportVisibility))
     , file(_String(userArgs, UsdMayaJobExportArgsTokens->file))
     , materialCollectionsPath(
@@ -388,6 +389,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << std::endl
         << "exportSkels: " << TfStringify(exportArgs.exportSkels) << std::endl
         << "exportSkin: " << TfStringify(exportArgs.exportSkin) << std::endl
+        << "exportBlendShapes: " << TfStringify(exportArgs.exportBlendShapes) << std::endl
         << "exportVisibility: " << TfStringify(exportArgs.exportVisibility) << std::endl
         << "file: " << exportArgs.file << std::endl
         << "materialCollectionsPath: " << exportArgs.materialCollectionsPath << std::endl
@@ -471,6 +473,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->exportRefsAsInstanceable] = false;
         d[UsdMayaJobExportArgsTokens->exportSkin] = UsdMayaJobExportArgsTokens->none.GetString();
         d[UsdMayaJobExportArgsTokens->exportSkels] = UsdMayaJobExportArgsTokens->none.GetString();
+        d[UsdMayaJobExportArgsTokens->exportBlendShapes] = false;
         d[UsdMayaJobExportArgsTokens->exportUVs] = true;
         d[UsdMayaJobExportArgsTokens->exportVisibility] = true;
         d[UsdMayaJobExportArgsTokens->file] = std::string();
