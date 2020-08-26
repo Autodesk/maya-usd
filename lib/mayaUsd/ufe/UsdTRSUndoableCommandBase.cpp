@@ -31,13 +31,6 @@ UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(const Ufe::Path& path, d
 }
 
 template<class V>
-UsdPrim UsdTRSUndoableCommandBase<V>::prim()
-{
-    conditionalCreateItem();
-    return fItem->prim();
-}
-
-template<class V>
 void UsdTRSUndoableCommandBase<V>::conditionalCreateItem()
 {
     if(!fItem) {

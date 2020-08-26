@@ -68,7 +68,7 @@ protected:
     // UFE item (and its USD prim) may change after creation time (e.g.
     // parenting change caused by undo / redo of other commands in the undo
     // stack), so always return current data.
-    UsdPrim prim();
+    inline UsdPrim prim() { conditionalCreateItem(); return fItem->prim(); };
 
     // Hooks to be implemented by the derived class: name of the attribute set
     // by the command, implementation of perform(), and add empty attribute.
@@ -78,8 +78,7 @@ protected:
     virtual void addEmptyAttribute() = 0;
     virtual bool cannotInit() const;
 
-    // Create a UsdSceneItem conditionaly in the first access from the path
-    // EveryTime unde/redo is called, the UsdSceneItem/UsdPrim can go stale.
+    // Create a UsdSceneItem::Ptr conditionaly in the first access from Ufe::Path
     void conditionalCreateItem();
 
 private:
