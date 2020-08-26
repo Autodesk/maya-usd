@@ -34,6 +34,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
     PXRUSDMAYA_SHADINGMODE_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingConversionTokens,
+    PXRUSDMAYA_SHADINGCONVERSION_TOKENS);
+
 typedef std::map<TfToken, UsdMayaShadingModeExporterCreator> _ExportRegistry;
 static _ExportRegistry _exportReg;
 

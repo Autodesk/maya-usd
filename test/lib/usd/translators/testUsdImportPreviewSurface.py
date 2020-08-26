@@ -46,10 +46,13 @@ class testUsdImportPreviewSurface(unittest.TestCase):
         cmds.file(f=True, new=True)
 
         usd_path = os.path.join(self.test_dir, "world.usda")
+        options = ["shadingMode=useRegistry",
+                   "primPath=/",
+                   "shadingConversion=none"]
         cmds.file(usd_path, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
                   namespace="Test", pr=True, importTimeRange="combine",
-                  options=";shadingMode=useRegistry;primPath=/")
+                  options=";".join(options))
 
         # Check that all paths are absolute:
         green_a = "props/billboards/textures/green_A.png"
@@ -72,6 +75,19 @@ class testUsdImportPreviewSurface(unittest.TestCase):
             self.assertEqual(filename.lower().replace("\\", "/"),
                              rebased_name.lower().replace("\\", "/"))
 
+        # We expect pxrUsdPreviewSurface shaders:
+        self.assertEqual(len(cmds.ls(typ="pxrUsdPreviewSurface")), 8)
+
+        # Re-import, but with lamberts:
+        lambert_before = len(cmds.ls(typ="lambert"))
+        options = options[:-1]
+        options.append("shadingConversion=lambert")
+        cmds.file(usd_path, i=True, type="USD Import",
+                  ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
+                  namespace="Test", pr=True, importTimeRange="combine",
+                  options=";".join(options))
+
+        self.assertEqual(len(cmds.ls(typ="lambert")), lambert_before + 8)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
