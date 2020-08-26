@@ -115,6 +115,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(
         kExportSkinFlag, UsdMayaJobExportArgsTokens->exportSkin.GetText(), MSyntax::kString);
     syntax.addFlag(
+        kExportBlendShapesFlag,
+        UsdMayaJobExportArgsTokens->exportBlendShapes.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kParentScopeFlag, UsdMayaJobExportArgsTokens->parentScope.GetText(), MSyntax::kString);
     syntax.addFlag(
         kRenderableOnlyFlag, UsdMayaJobExportArgsTokens->renderableOnly.GetText(), MSyntax::kNoArg);

@@ -16,9 +16,15 @@
 #ifndef PXRUSDMAYA_PRIM_WRITER_H
 #define PXRUSDMAYA_PRIM_WRITER_H
 
+#include <memory>
+
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/utils/util.h>
+#include <maya/MBoundingBox.h>
+#include <maya/MDagPath.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
 
 #include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>

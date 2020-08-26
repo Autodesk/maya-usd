@@ -590,4 +590,13 @@ void UsdMayaWriteJobContext::MarkSkelBindings(
     _skelBindingsProcessor->MarkBindings(path, skelPath, config);
 }
 
+bool UsdMayaWriteJobContext::UpdateSkelBindingsWithExtent(
+    const UsdStagePtr&  stage,
+    const VtVec3fArray& bbox,
+    const UsdTimeCode&  timeSample)
+{
+    bool bStat = _skelBindingsProcessor->UpdateSkelRootsWithExtent(stage, bbox, timeSample);
+    return bStat;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

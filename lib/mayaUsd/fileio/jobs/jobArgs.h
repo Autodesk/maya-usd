@@ -68,6 +68,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportRefsAsInstanceable) \
     (exportSkels) \
     (exportSkin) \
+    (exportBlendShapes) \
     (exportUVs) \
     (exportVisibility) \
     (kind) \
@@ -152,6 +153,7 @@ struct UsdMayaJobExportArgs
     const bool    exportRefsAsInstanceable;
     const TfToken exportSkels;
     const TfToken exportSkin;
+    const bool    exportBlendShapes;
     const bool    exportVisibility;
 
     /// If this is not empty, then a set of collections are exported on the

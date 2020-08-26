@@ -2,6 +2,7 @@ set(TARGET_NAME IMPORT_EXPORT_TEST)
 
 set(TEST_SCRIPT_FILES
     testUsdExportAsClip.py
+    testUsdExportBlendshapes.py
     testUsdExportCamera.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
