@@ -27,8 +27,6 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-#if UFE_PREVIEW_VERSION_NUM >= 2017
-
 //! \brief UsdUndoCreateGroupCommand
 class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::CompositeUndoableCommand
 {
@@ -58,39 +56,6 @@ private:
 	Ufe::Selection _selection;
 
 }; // UsdUndoCreateGroupCommand
-
-#else
-
-//! \brief UsdUndoCreateGroupCommand
-class MAYAUSD_CORE_PUBLIC UsdUndoCreateGroupCommand : public Ufe::UndoableCommand
-{
-public:
-	typedef std::shared_ptr<UsdUndoCreateGroupCommand> Ptr;
-
-	UsdUndoCreateGroupCommand(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name);
-	~UsdUndoCreateGroupCommand() override;
-
-	// Delete the copy/move constructors assignment operators.
-	UsdUndoCreateGroupCommand(const UsdUndoCreateGroupCommand&) = delete;
-	UsdUndoCreateGroupCommand& operator=(const UsdUndoCreateGroupCommand&) = delete;
-	UsdUndoCreateGroupCommand(UsdUndoCreateGroupCommand&&) = delete;
-	UsdUndoCreateGroupCommand& operator=(UsdUndoCreateGroupCommand&&) = delete;
-
-	//! Create a UsdUndoCreateGroupCommand from a USD scene item and a UFE path component.
-	static UsdUndoCreateGroupCommand::Ptr create(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name);
-	Ufe::SceneItem::Ptr group() const;
-
-	// UsdUndoCreateGroupCommand overrides
-	void undo() override;
-	void redo() override;
-
-private:
-	UsdSceneItem::Ptr _parentItem;
-	Ufe::PathComponent _name;
-	UsdSceneItem::Ptr _group;
-}; // UsdUndoCreateGroupCommand
-
-#endif // UFE_PREVIEW_VERSION_NUM >= 2017
 
 } // namespace ufe
 } // namespace MayaUsd

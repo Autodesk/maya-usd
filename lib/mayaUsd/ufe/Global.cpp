@@ -34,15 +34,9 @@
 // Note: must come after include of ufe files so we have the define.
 #include <mayaUsd/ufe/UsdAttributesHandler.h>
 #include <mayaUsd/ufe/UsdObject3dHandler.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2009
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
-#endif
-#if UFE_PREVIEW_VERSION_NUM >= 2015
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
-#endif
-#if UFE_PREVIEW_VERSION_NUM >= 2011
 #include <ufe/pathString.h>
-#endif
 #else
 #include <mayaUsd/ufe/UfeVersionCompat.h>
 #endif
@@ -73,7 +67,7 @@ Ufe::Rtid g_USDRtid = 0;
 // Keep a reference to it to restore on finalization.
 Ufe::HierarchyHandler::Ptr g_MayaHierarchyHandler;
 
-#if UFE_PREVIEW_VERSION_NUM >= 2015
+#ifdef UFE_V2_FEATURES_AVAILABLE
 // The normal Maya context ops handler, which we decorate for ProxyShape support.
 // Keep a reference to it to restore on finalization.
 Ufe::ContextOpsHandler::Ptr g_MayaContextOpsHandler;
@@ -109,7 +103,7 @@ MStatus initialize()
 	auto proxyShapeHierHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
 	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, proxyShapeHierHandler);
 
-#if UFE_PREVIEW_VERSION_NUM >= 2015
+#ifdef UFE_V2_FEATURES_AVAILABLE
 	g_MayaContextOpsHandler = Ufe::RunTimeMgr::instance().contextOpsHandler(g_MayaRtid);
 	auto proxyShapeContextOpsHandler = ProxyShapeContextOpsHandler::create(g_MayaContextOpsHandler);
 	Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, proxyShapeContextOpsHandler);
@@ -120,16 +114,12 @@ MStatus initialize()
 	auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
 	UFE_V2(auto usdAttributesHandler = UsdAttributesHandler::create();)
 	UFE_V2(auto usdObject3dHandler = UsdObject3dHandler::create();)
-#if UFE_PREVIEW_VERSION_NUM >= 2009
 	UFE_V2(auto usdContextOpsHandler = UsdContextOpsHandler::create();)
-#endif
 	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
 		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, 
         usdSceneItemOpsHandler
         UFE_V2(, usdAttributesHandler, usdObject3dHandler)
-#if UFE_PREVIEW_VERSION_NUM >= 2009
         UFE_V2(, usdContextOpsHandler)
-#endif
     );
 
 #if !defined(NDEBUG)
@@ -141,9 +131,7 @@ MStatus initialize()
 	g_StagesSubject = StagesSubject::create();
 
     // Register for UFE string to path service using path component separator '/'
-#if UFE_PREVIEW_VERSION_NUM >= 2011
     UFE_V2(Ufe::PathString::registerPathComponentSeparator(g_USDRtid, '/');)
-#endif
 
 	return MS::kSuccess;
 }
@@ -156,7 +144,7 @@ MStatus finalize()
 
 	// Restore the normal Maya hierarchy handler, and unregister.
 	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, g_MayaHierarchyHandler);
-#if UFE_PREVIEW_VERSION_NUM >= 2015
+#ifdef UFE_V2_FEATURES_AVAILABLE
 	// Restore the normal Maya context ops handler (can be empty).
 	if (g_MayaContextOpsHandler)
 		Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, g_MayaContextOpsHandler);

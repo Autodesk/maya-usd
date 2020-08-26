@@ -37,9 +37,7 @@
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2013
 #include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
-#endif
 #endif
 
 namespace {
@@ -122,54 +120,8 @@ Ufe::SceneItem::Ptr UsdHierarchy::parent() const
 	return UsdSceneItem::create(fItem->path().pop(), fPrim.GetParent());
 }
 
-#if UFE_PREVIEW_VERSION_NUM < 2018
-Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
-{
-	auto usdChild = std::dynamic_pointer_cast<UsdSceneItem>(child);
-#if !defined(NDEBUG)
-	assert(usdChild);
-#endif
-
-	// First, check if we need to rename the child.
-	std::string childName = uniqueChildName(fItem, child->path());
-
-	// Set up all paths to perform the reparent.
-	auto prim = usdChild->prim();
-	auto stage = prim.GetStage();
-	auto ufeSrcPath = usdChild->path();
-	auto usdSrcPath = prim.GetPath();
-	auto ufeDstPath = fItem->path() + childName;
-	auto usdDstPath = fPrim.GetPath().AppendChild(TfToken(childName));
-	SdfLayerHandle layer = MayaUsdUtils::defPrimSpecLayer(prim);
-	if (!layer) {
-		std::string err = TfStringPrintf("No prim found at %s", usdSrcPath.GetString().c_str());
-		throw std::runtime_error(err.c_str());
-	}
-
-	// In USD, reparent is implemented like rename, using copy to
-	// destination, then remove from source.
-	// See UsdUndoRenameCommand._rename comments for details.
-	InPathChange pc;
-
-	auto status = SdfCopySpec(layer, usdSrcPath, layer, usdDstPath);
-	if (!status) {
-		std::string err = TfStringPrintf("Appending child %s to parent %s failed.",
-						ufeSrcPath.string().c_str(), fItem->path().string().c_str());
-		throw std::runtime_error(err.c_str());
-	}
-
-	stage->RemovePrim(usdSrcPath);
-	auto ufeDstItem = UsdSceneItem::create(ufeDstPath, ufePathToPrim(ufeDstPath));
-
-	sendNotification<Ufe::ObjectReparent>(ufeDstItem, ufeSrcPath);
-
-	// FIXME  No idea how to get the child prim index yet.  PPT, 16-Aug-2018.
-	return Ufe::AppendedChild(ufeDstItem, ufeSrcPath, 0);
-}
-#endif
-
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2013
+
 Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,
     const Ufe::SceneItem::Ptr& pos
@@ -178,9 +130,6 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
     return UsdUndoInsertChildCommand::create(
         fItem, downcast(child), downcast(pos));
 }
-#endif
-
-#if UFE_PREVIEW_VERSION_NUM >= 2018
 
 Ufe::SceneItem::Ptr UsdHierarchy::insertChild(
         const Ufe::SceneItem::Ptr& ,
@@ -194,48 +143,6 @@ Ufe::SceneItem::Ptr UsdHierarchy::insertChild(
     // child.  PPT, 13-Jul-2020.
     return nullptr;
 }
-
-#endif // UFE_PREVIEW_VERSION_NUM
-
-#if UFE_PREVIEW_VERSION_NUM < 2017
-// Create a transform.
-Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::PathComponent& name) const
-{
-	// According to Pixar, the following is more efficient when creating
-	// multiple transforms, because of the use of ChangeBlock():
-	// with Sdf.ChangeBlock():
-	//     primSpec = Sdf.CreatePrimInLayer(layer, usdPath)
-	//     primSpec.specifier = Sdf.SpecifierDef
-	//     primSpec.typeName = 'Xform'
-
-	// Rename the new group for uniqueness, if needed.
-	Ufe::Path newPath = fItem->path() + name;
-	auto childName = uniqueChildName(fItem, newPath);
-
-	// Next, get the stage corresponding to the new path.
-	auto segments = newPath.getSegments();
-	TEST_USD_PATH(segments, newPath);
-	auto dagSegment = segments[0];
-	auto stage = getStage(Ufe::Path(dagSegment));
-
-	// Build the corresponding USD path and create the USD group prim.
-	auto usdPath = fItem->prim().GetPath().AppendChild(TfToken(childName));
-	auto prim = UsdGeomXform::Define(stage, usdPath).GetPrim();
-
-	// Create a UFE scene item from the prim.
-	auto ufeChildPath = fItem->path() + childName;
-	return UsdSceneItem::create(ufeChildPath, prim);
-}
-
-Ufe::Group UsdHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
-{
-	auto createGroupCmd = UsdUndoCreateGroupCommand::create(fItem, name);
-	createGroupCmd->execute();
-	return Ufe::Group(createGroupCmd->group(), createGroupCmd);
-}
-
-#else // UFE_PREVIEW_VERSION_NUM
-
 
 // Create a transform.
 Ufe::SceneItem::Ptr UsdHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
@@ -256,10 +163,6 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::createGroupCmd(const Ufe::Selection& sel
 	return UsdUndoCreateGroupCommand::create(fItem, selection, name.string());
 }
 
-#endif // UFE_PREVIEW_VERSION_NUM
-
-#if UFE_PREVIEW_VERSION_NUM >= 2018
-
 Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
 {
     // Default parent for USD nodes is the pseudo-root of their stage, which is
@@ -271,8 +174,6 @@ Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
     auto proxyShapePath = path.popSegment();
     return createItem(proxyShapePath);
 }
-
-#endif // UFE_PREVIEW_VERSION_NUM
 
 #endif // UFE_V2_FEATURES_AVAILABLE
 

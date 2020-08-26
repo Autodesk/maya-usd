@@ -178,7 +178,6 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.undo()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrim only available in UFE preview version 0.2.15 and greater')
     def testAddNewPrim(self):
 
         # Create a proxy shape with empty stage to start with.
