@@ -70,7 +70,6 @@ public:
 
 private:
 	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
 	bool fIsAGatewayType{false};
 
 }; // UsdContextOps
