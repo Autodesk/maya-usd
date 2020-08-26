@@ -60,7 +60,6 @@ public:
 
 private:
 	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
 
 }; // UsdSceneItemOps
 

@@ -89,7 +89,6 @@ public:
 
 private:
 	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
 
 }; // UsdTransform3d
 

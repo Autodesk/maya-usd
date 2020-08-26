@@ -62,7 +62,8 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdHierarchy::UsdHierarchy(const UsdSceneItem::Ptr& item)
-	: Ufe::Hierarchy(), fItem(item), fPrim(item->prim())
+	: Ufe::Hierarchy()
+    , fItem(item)
 {
 }
 
@@ -78,7 +79,6 @@ UsdHierarchy::Ptr UsdHierarchy::create(const UsdSceneItem::Ptr& item)
 
 void UsdHierarchy::setItem(const UsdSceneItem::Ptr& item)
 {
-	fPrim = item->prim();
 	fItem = item;
 }
 
@@ -103,14 +103,14 @@ Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const
 
 bool UsdHierarchy::hasChildren() const
 {
-	return !filteredChildren(fPrim).empty();
+	return !filteredChildren(fItem->prim()).empty();
 }
 
 Ufe::SceneItemList UsdHierarchy::children() const
 {
 	// Return USD children only, i.e. children within this run-time.
 	Ufe::SceneItemList children;
-	for (auto child : filteredChildren(fPrim))
+	for (auto child : filteredChildren(fItem->prim()))
 	{
 		children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
 	}
@@ -119,7 +119,7 @@ Ufe::SceneItemList UsdHierarchy::children() const
 
 Ufe::SceneItem::Ptr UsdHierarchy::parent() const
 {
-	return UsdSceneItem::create(fItem->path().pop(), fPrim.GetParent());
+	return UsdSceneItem::create(fItem->path().pop(), fItem->prim().GetParent());
 }
 
 #if UFE_PREVIEW_VERSION_NUM < 2018
@@ -139,7 +139,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 	auto ufeSrcPath = usdChild->path();
 	auto usdSrcPath = prim.GetPath();
 	auto ufeDstPath = fItem->path() + childName;
-	auto usdDstPath = fPrim.GetPath().AppendChild(TfToken(childName));
+	auto usdDstPath = fItem->prim().GetPath().AppendChild(TfToken(childName));
 	SdfLayerHandle layer = MayaUsdUtils::defPrimSpecLayer(prim);
 	if (!layer) {
 		std::string err = TfStringPrintf("No prim found at %s", usdSrcPath.GetString().c_str());
