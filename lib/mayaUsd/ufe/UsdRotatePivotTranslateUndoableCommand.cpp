@@ -20,22 +20,24 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
-	: Ufe::TranslateUndoableCommand(item)
-	, fPrim(prim)
-	, fPath(ufePath)
+UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path)
+	: Ufe::TranslateUndoableCommand(path)
+	, fPath(path)
 	, fNoPivotOp(false)
 {
+	conditionalCreateItem();
+
+
 	// Prim does not have a pivot translate attribute
 	const TfToken xpivot("xformOp:translate:pivot");
-	if (!fPrim.HasAttribute(xpivot))
+	if (!fItem->prim().HasAttribute(xpivot))
 	{
 		fNoPivotOp = true;
 		// Add an empty pivot translate.
-		rotatePivotTranslateOp(fPrim, fPath, 0, 0, 0);
+		rotatePivotTranslateOp(fItem->prim(), fPath, 0, 0, 0);
 	}
 
-	fPivotAttrib = fPrim.GetAttribute(xpivot);
+	fPivotAttrib = fItem->prim().GetAttribute(xpivot);
 	fPivotAttrib.Get<GfVec3f>(&fPrevPivotValue);
 }
 
@@ -43,10 +45,19 @@ UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand(
 {
 }
 
-/*static*/
-UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+void UsdRotatePivotTranslateUndoableCommand::conditionalCreateItem()
 {
-	return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(prim, ufePath, item);
+    if(!fItem)
+    {
+        auto ufeSceneItemPtr = Ufe::Hierarchy::createItem(fPath);
+        fItem = std::dynamic_pointer_cast<UsdSceneItem>(ufeSceneItemPtr);
+    }
+}
+
+/*static*/
+UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const Ufe::Path& path)
+{
+	return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(path);
 }
 
 void UsdRotatePivotTranslateUndoableCommand::undo()
@@ -69,7 +80,7 @@ void UsdRotatePivotTranslateUndoableCommand::redo()
 
 bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)
 {
-	rotatePivotTranslateOp(fPrim, fPath, x, y, z);
+	rotatePivotTranslateOp(fItem->prim(), fPath, x, y, z);
 	return true;
 }
 

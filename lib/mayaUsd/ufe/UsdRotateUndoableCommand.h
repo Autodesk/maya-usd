@@ -46,7 +46,7 @@ public:
 	//! Create a UsdRotateUndoableCommand from a UFE scene item.  The
 	//! command is not executed.
 	static UsdRotateUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+        const Ufe::Path& path, double x, double y, double z);
 
 	// Ufe::RotateUndoableCommand overrides.  rotate() sets the command's
 	// rotation value and executes the command.
@@ -57,7 +57,7 @@ public:
 protected:
 
     //! Construct a UsdRotateUndoableCommand.  The command is not executed.
-	UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	UsdRotateUndoableCommand(const Ufe::Path& path, double x, double y, double z);
 	~UsdRotateUndoableCommand() override;
 
 private:

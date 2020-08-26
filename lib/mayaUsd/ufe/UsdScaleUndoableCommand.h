@@ -44,7 +44,7 @@ public:
 	//! Create a UsdScaleUndoableCommand from a UFE scene item.  The command is
     //! not executed.
 	static UsdScaleUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+        const Ufe::Path& path, double x, double y, double z);
 
 	// Ufe::ScaleUndoableCommand overrides
 	void undo() override;
@@ -54,7 +54,7 @@ public:
 protected:
 
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.
-	UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	UsdScaleUndoableCommand(const Ufe::Path& path, double x, double y, double z);
 	~UsdScaleUndoableCommand() override;
 
 private:

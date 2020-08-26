@@ -24,10 +24,27 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 template<class V>
-UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-) : fItem(item), fNewValue(x, y, z)
-{}
+UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(const Ufe::Path& path, double x, double y, double z)
+    : fPath(path)
+    , fNewValue(x, y, z)
+{
+}
+
+template<class V>
+UsdPrim UsdTRSUndoableCommandBase<V>::prim()
+{
+    conditionalCreateItem();
+    return fItem->prim();
+}
+
+template<class V>
+void UsdTRSUndoableCommandBase<V>::conditionalCreateItem()
+{
+    if(!fItem) {
+        auto ufeSceneItemPtr = Ufe::Hierarchy::createItem(fPath);
+        fItem = std::dynamic_pointer_cast<UsdSceneItem>(ufeSceneItemPtr);
+    }
+}
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::initialize()
@@ -43,23 +60,30 @@ void UsdTRSUndoableCommandBase<V>::initialize()
         addEmptyAttribute();
     }
 
-    // See
-    // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
-    // for explanation of this->shared_from_this() in templated class.
     attribute().Get(&fPrevValue);
 }
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::undoImp()
 {
+    conditionalCreateItem();
+
     attribute().Set(fPrevValue);
     // Todo : We would want to remove the xformOp
     // (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
+
+    // Set fItem to because the command does not know what can go on with the prim inside
+    // its item after their own undo() or redo().Setting it back to 0 is safer because it means 
+    // that the next time the command is used, it will be forced to create a new item from the path, 
+    // or the command will crash on a null pointer.
+    fItem = nullptr;
 }
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::redoImp()
 {
+    conditionalCreateItem();
+
     // We must go through conversion to the common transform API by calling
     // perform(), otherwise we get "Empty typeName" USD assertions for rotate
     // and scale.  Once that is done, we can simply set the attribute directly.
@@ -69,6 +93,12 @@ void UsdTRSUndoableCommandBase<V>::redoImp()
     }
 
     perform(fNewValue[0], fNewValue[1], fNewValue[2]);
+
+    // Set fItem to because the command does not know what can go on with the prim inside
+    // its item after their own undo() or redo().Setting it back to 0 is safer because it means 
+    // that the next time the command is used, it will be forced to create a new item from the path, 
+    // or the command will crash on a null pointer.
+    fItem = nullptr;
 }
 
 template<class V>

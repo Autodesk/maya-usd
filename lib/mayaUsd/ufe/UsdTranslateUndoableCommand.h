@@ -41,10 +41,10 @@ public:
 	UsdTranslateUndoableCommand(UsdTranslateUndoableCommand&&) = delete;
 	UsdTranslateUndoableCommand& operator=(UsdTranslateUndoableCommand&&) = delete;
 
-	//! Create a UsdTranslateUndoableCommand from a UFE scene item.  The
+	//! Create a UsdTranslateUndoableCommand from a UFE scene path.  The
 	//! command is not executed.
 	static UsdTranslateUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+        const Ufe::Path& path, double x, double y, double z);
 
 	// Ufe::TranslateUndoableCommand overrides.  translate() sets the command's
 	// translation value and executes the command.
@@ -55,7 +55,7 @@ public:
 protected:
 
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
-	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	UsdTranslateUndoableCommand(const Ufe::Path& path, double x, double y, double z);
 	~UsdTranslateUndoableCommand() override;
 
 private:

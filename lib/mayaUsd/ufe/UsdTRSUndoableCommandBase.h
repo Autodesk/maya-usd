@@ -52,8 +52,7 @@ class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase
 {
 protected:
 
-    UsdTRSUndoableCommandBase(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+    UsdTRSUndoableCommandBase(const Ufe::Path& path, double x, double y, double z);
     ~UsdTRSUndoableCommandBase() = default;
 
     // Initialize the command.
@@ -69,8 +68,7 @@ protected:
     // UFE item (and its USD prim) may change after creation time (e.g.
     // parenting change caused by undo / redo of other commands in the undo
     // stack), so always return current data.
-    inline UsdPrim prim() const { return fItem->prim(); }
-    inline Ufe::Path path() const { return fItem->path(); }
+    UsdPrim prim();
 
     // Hooks to be implemented by the derived class: name of the attribute set
     // by the command, implementation of perform(), and add empty attribute.
@@ -80,24 +78,30 @@ protected:
     virtual void addEmptyAttribute() = 0;
     virtual bool cannotInit() const;
 
+    // Create a UsdSceneItem conditionaly in the first access from the path
+    // EveryTime unde/redo is called, the UsdSceneItem/UsdPrim can go stale.
+    void conditionalCreateItem();
+
 private:
-    inline UsdAttribute attribute() const {
-      return prim().GetAttribute(attributeName());
+    inline UsdAttribute attribute() {
+        return prim().GetAttribute(attributeName());
     }
 
-    UsdSceneItem::Ptr fItem;
+    UsdSceneItem::Ptr fItem{nullptr};
     V                 fPrevValue;
     V                 fNewValue;
     bool              fOpAdded{false};
     bool              fDoneOnce{false};
+    Ufe::Path         fPath;
+
 }; // UsdTRSUndoableCommandBase
 
 // shared_ptr requires public ctor, dtor, so derive a class for it.
 template<class T>
 struct MakeSharedEnabler : public T {
     MakeSharedEnabler(
-        const UsdSceneItem::Ptr& item, double x, double y, double z)
-        : T(item, x, y, z) {}
+        const Ufe::Path& path, double x, double y, double z)
+        : T(path, x, y, z) {}
 };
 
 } // namespace ufe
