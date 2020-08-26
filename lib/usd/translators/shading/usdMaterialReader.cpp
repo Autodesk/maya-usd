@@ -74,7 +74,6 @@ bool PxrUsdTranslators_MaterialReader::Read(UsdMayaPrimReaderContext* context)
               &status,
               &mayaObject)
           && depFn.setObject(mayaObject))) {
-        // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
             "Could not create node of type '%s' for shader '%s'.\n",
             mayaNodeTypeName.GetText(),
@@ -89,7 +88,7 @@ bool PxrUsdTranslators_MaterialReader::Read(UsdMayaPrimReaderContext* context)
         if (baseName.IsEmpty()) {
             continue;
         }
-        _OnReadAttribute(baseName, depFn);
+        _OnBeforeReadAttribute(baseName, depFn);
         MPlug mayaAttr = depFn.findPlug(baseName.GetText(), true, &status);
         if (status != MS::kSuccess) {
             continue;
@@ -127,7 +126,8 @@ void PxrUsdTranslators_MaterialReader::_ConvertToMaya(const TfToken&, VtValue&) 
     return;
 }
 
-void PxrUsdTranslators_MaterialReader::_OnReadAttribute(const TfToken&, MFnDependencyNode&) const
+void PxrUsdTranslators_MaterialReader::_OnBeforeReadAttribute(const TfToken&, MFnDependencyNode&)
+    const
 {
     // Nothing to do
     return;

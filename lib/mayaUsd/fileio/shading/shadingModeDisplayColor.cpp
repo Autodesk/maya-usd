@@ -350,7 +350,6 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(displayColor, context, jobArgume
               &status,
               &shadingObj);
     if (status != MS::kSuccess) {
-        // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
             "Could not create node of type '%s' for prim '%s'.\n",
             shadingConversion.GetText(),
@@ -364,7 +363,6 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(displayColor, context, jobArgume
 #endif
         MFnLambertShader lambertFn;
         lambertFn.setObject(shadingObj);
-        lambertFn.setName(shaderName.c_str());
         lambertFn.setColor(
             MColor(displayColor[0], displayColor[1], displayColor[2]));
         lambertFn.setTransparency(
@@ -386,7 +384,6 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(displayColor, context, jobArgume
     } else {
         MFnStandardSurfaceShader surfaceFn;
         surfaceFn.setObject(shadingObj);
-        surfaceFn.setName(shaderName.c_str());
         surfaceFn.setBase(1.0f);
         surfaceFn.setBaseColor(
             MColor(displayColor[0], displayColor[1], displayColor[2]));
