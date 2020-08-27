@@ -68,7 +68,7 @@ protected:
     // UFE item (and its USD prim) may change after creation time (e.g.
     // parenting change caused by undo / redo of other commands in the undo
     // stack), so always return current data.
-    inline UsdPrim prim() { conditionalCreateItem(); return fItem->prim(); };
+    inline UsdPrim prim() const { updateItem(); return fItem->prim(); };
 
     // Hooks to be implemented by the derived class: name of the attribute set
     // by the command, implementation of perform(), and add empty attribute.
@@ -79,19 +79,19 @@ protected:
     virtual bool cannotInit() const;
 
     // Create a UsdSceneItem::Ptr conditionaly in the first access from Ufe::Path.
-    void conditionalCreateItem();
+    void updateItem() const;
 
 private:
-    inline UsdAttribute attribute() {
+    inline UsdAttribute attribute() const {
         return prim().GetAttribute(attributeName());
     }
 
-    UsdSceneItem::Ptr fItem{nullptr};
-    V                 fPrevValue;
-    V                 fNewValue;
-    bool              fOpAdded{false};
-    bool              fDoneOnce{false};
-    Ufe::Path         fPath;
+    mutable UsdSceneItem::Ptr fItem{nullptr};
+    V                         fPrevValue;
+    V                         fNewValue;
+    bool                      fOpAdded{false};
+    bool                      fDoneOnce{false};
+    Ufe::Path                 fPath;
 
 }; // UsdTRSUndoableCommandBase
 

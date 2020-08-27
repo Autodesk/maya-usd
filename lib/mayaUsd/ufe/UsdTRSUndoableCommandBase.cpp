@@ -31,7 +31,7 @@ UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(const Ufe::Path& path, d
 }
 
 template<class V>
-void UsdTRSUndoableCommandBase<V>::conditionalCreateItem()
+void UsdTRSUndoableCommandBase<V>::updateItem() const
 {
     if(!fItem) {
         auto ufeSceneItemPtr = Ufe::Hierarchy::createItem(fPath);
@@ -59,23 +59,29 @@ void UsdTRSUndoableCommandBase<V>::initialize()
 template<class V>
 void UsdTRSUndoableCommandBase<V>::undoImp()
 {
-    conditionalCreateItem();
-
-    attribute().Set(fPrevValue);
-    // Todo : We would want to remove the xformOp
-    // (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
-
     // Set fItem to nullptr because the command does not know what can go on with the prim inside
     // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
     // that the next time the command is used, it will be forced to create a new item from the path, 
     // or the command will crash on a null pointer.
     fItem = nullptr;
+
+    updateItem();
+
+    attribute().Set(fPrevValue);
+    // Todo : We would want to remove the xformOp
+    // (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 }
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::redoImp()
 {
-    conditionalCreateItem();
+    // Set fItem to nullptr because the command does not know what can go on with the prim inside
+    // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
+    // that the next time the command is used, it will be forced to create a new item from the path, 
+    // or the command will crash on a null pointer.
+    fItem = nullptr;
+
+    updateItem();
 
     // We must go through conversion to the common transform API by calling
     // perform(), otherwise we get "Empty typeName" USD assertions for rotate
@@ -86,12 +92,6 @@ void UsdTRSUndoableCommandBase<V>::redoImp()
     }
 
     perform(fNewValue[0], fNewValue[1], fNewValue[2]);
-
-    // Set fItem to nullptr because the command does not know what can go on with the prim inside
-    // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
-    // that the next time the command is used, it will be forced to create a new item from the path, 
-    // or the command will crash on a null pointer.
-    fItem = nullptr;
 }
 
 template<class V>
