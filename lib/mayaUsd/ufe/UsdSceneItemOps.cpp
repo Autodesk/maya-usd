@@ -60,19 +60,19 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const
 
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
 {
-	auto deleteCmd = UsdUndoDeleteCommand::create(fItem->prim());
+	auto deleteCmd = UsdUndoDeleteCommand::create(prim());
 	deleteCmd->execute();
 	return deleteCmd;
 }
 
 bool UsdSceneItemOps::deleteItem()
 {
-	return fItem->prim().SetActive(false);
+	return prim().SetActive(false);
 }
 
 Ufe::Duplicate UsdSceneItemOps::duplicateItemCmd()
 {
-	auto duplicateCmd = UsdUndoDuplicateCommand::create(fItem->prim(), fItem->path());
+	auto duplicateCmd = UsdUndoDuplicateCommand::create(prim(), fItem->path());
 	duplicateCmd->execute();
 	auto item = createSiblingSceneItem(path(), duplicateCmd->usdDstPath().GetElementString());
 	return Ufe::Duplicate(item, duplicateCmd);
@@ -82,8 +82,8 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::duplicateItem()
 {
 	SdfPath usdDstPath;
 	SdfLayerHandle layer;
-	UsdUndoDuplicateCommand::primInfo(fItem->prim(), usdDstPath, layer);
-	bool status = UsdUndoDuplicateCommand::duplicate(layer, fItem->prim().GetPath(), usdDstPath);
+	UsdUndoDuplicateCommand::primInfo(prim(), usdDstPath, layer);
+	bool status = UsdUndoDuplicateCommand::duplicate(layer, prim().GetPath(), usdDstPath);
 
 	// The duplicate is a sibling of the source.
 	if (status)

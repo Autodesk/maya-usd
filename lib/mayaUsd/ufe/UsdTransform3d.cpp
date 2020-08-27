@@ -109,18 +109,18 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double
 
 void UsdTransform3d::translate(double x, double y, double z)
 {
-    translateOp(fItem->prim(), fItem->path(), x, y, z);
+    translateOp(prim(), fItem->path(), x, y, z);
 }
 
 Ufe::Vector3d UsdTransform3d::translation() const
 {
     double x{0}, y{0}, z{0};
     const TfToken xlate("xformOp:translate");
-    if (fItem->prim().HasAttribute(xlate))
+    if (prim().HasAttribute(xlate))
     {
         // Initially, attribute can be created, but have no value.
         GfVec3d v;
-        if (fItem->prim().GetAttribute(xlate).Get<GfVec3d>(&v,getTime(path())))
+        if (prim().GetAttribute(xlate).Get<GfVec3d>(&v,getTime(path())))
         {
             x = v[0]; y = v[1]; z = v[2];
         }
@@ -133,11 +133,11 @@ Ufe::Vector3d UsdTransform3d::rotation() const
 {
     double x{0}, y{0}, z{0};
     const TfToken rotXYZ("xformOp:rotateXYZ");
-    if (fItem->prim().HasAttribute(rotXYZ))
+    if (prim().HasAttribute(rotXYZ))
     {
         // Initially, attribute can be created, but have no value.
         GfVec3f v;
-        if (fItem->prim().GetAttribute(rotXYZ).Get<GfVec3f>(&v,getTime(path())))
+        if (prim().GetAttribute(rotXYZ).Get<GfVec3f>(&v,getTime(path())))
         {
             x = v[0]; y = v[1]; z = v[2];
         }
@@ -149,11 +149,11 @@ Ufe::Vector3d UsdTransform3d::scale() const
 {
     double x{0}, y{0}, z{0};
     const TfToken scaleTok("xformOp:scale");
-    if (fItem->prim().HasAttribute(scaleTok))
+    if (prim().HasAttribute(scaleTok))
     {
         // Initially, attribute can be created, but have no value.
         GfVec3f v;
-        if (fItem->prim().GetAttribute(scaleTok).Get<GfVec3f>(&v,getTime(path())))
+        if (prim().GetAttribute(scaleTok).Get<GfVec3f>(&v,getTime(path())))
         {
             x = v[0]; y = v[1]; z = v[2];
         }
@@ -169,7 +169,7 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, do
 
 void UsdTransform3d::rotate(double x, double y, double z)
 {
-    rotateOp(fItem->prim(), fItem->path(), x, y, z);
+    rotateOp(prim(), fItem->path(), x, y, z);
 }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2013
@@ -213,7 +213,7 @@ Ufe::Matrix4d UsdTransform3d::getMatrix() const
 
 void UsdTransform3d::scale(double x, double y, double z)
 {
-    scaleOp(fItem->prim(), fItem->path(), x, y, z);
+    scaleOp(prim(), fItem->path(), x, y, z);
 }
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
@@ -223,18 +223,18 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 
 void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)
 {
-    rotatePivotTranslateOp(fItem->prim(), path(), x, y, z);
+    rotatePivotTranslateOp(prim(), path(), x, y, z);
 }
 
 Ufe::Vector3d UsdTransform3d::rotatePivot() const
 {
     double x{0}, y{0}, z{0};
     const TfToken xpivot("xformOp:translate:pivot");
-    if (fItem->prim().HasAttribute(xpivot))
+    if (prim().HasAttribute(xpivot))
     {
         // Initially, attribute can be created, but have no value.
         GfVec3f v;
-        if (fItem->prim().GetAttribute(xpivot).Get<GfVec3f>(&v,getTime(path())))
+        if (prim().GetAttribute(xpivot).Get<GfVec3f>(&v,getTime(path())))
         {
             x = v[0]; y = v[1]; z = v[2];
         }
@@ -259,12 +259,12 @@ Ufe::Vector3d UsdTransform3d::scalePivot() const
 
 Ufe::Matrix4d UsdTransform3d::segmentInclusiveMatrix() const
 {
-    return primToUfeXform(fItem->prim(),getTime(path()));
+    return primToUfeXform(prim(),getTime(path()));
 }
  
 Ufe::Matrix4d UsdTransform3d::segmentExclusiveMatrix() const
 {
-    return primToUfeExclusiveXform(fItem->prim(),getTime(path()));
+    return primToUfeExclusiveXform(prim(),getTime(path()));
 }
 
 } // namespace ufe

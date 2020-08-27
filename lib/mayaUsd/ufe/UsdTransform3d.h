@@ -53,6 +53,7 @@ public:
 	// Ufe::Transform3d overrides
 	const Ufe::Path& path() const override;
 	Ufe::SceneItem::Ptr sceneItem() const override;
+	inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 
     // When the current Maya preview release has UFE 0.2.13, this conditional
     // compilation can be converted to:

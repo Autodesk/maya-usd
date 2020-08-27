@@ -244,7 +244,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
 
         // Top-level items.  Variant sets and visibility. Do not add for gateway type node.
         if (!fIsAGatewayType) {
-            if (fItem->prim().HasVariantSets()) {
+            if (prim().HasVariantSets()) {
                 items.emplace_back(
                     kUSDVariantSetsItem, kUSDVariantSetsLabel, Ufe::ContextItem::kHasChildren);
             }
@@ -277,7 +277,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
     }
     else {
         if (itemPath[0] == kUSDVariantSetsItem) {
-            UsdVariantSets varSets = fItem->prim().GetVariantSets();
+            UsdVariantSets varSets = prim().GetVariantSets();
             std::vector<std::string> varSetsNames;
             varSets.GetNames(&varSetsNames);
 
@@ -341,7 +341,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // At this point we know we have enough arguments to execute the
         // operation.
         return std::make_shared<SetVariantSelectionUndoableCommand>(
-            fItem->prim(), itemPath);
+            prim(), itemPath);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
         auto attributes = Ufe::Attributes::attributes(sceneItem());
@@ -377,14 +377,14 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
             return nullptr;
 
         return std::make_shared<AddReferenceUndoableCommand>(
-            fItem->prim(), path);
+            prim(), path);
     }
     else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
         MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
         if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)
             return nullptr;
 
-        return std::make_shared<ClearAllReferencesUndoableCommand>(fItem->prim());
+        return std::make_shared<ClearAllReferencesUndoableCommand>(prim());
     }
 
     return nullptr;

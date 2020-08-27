@@ -49,6 +49,7 @@ public:
 
 	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
+	inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 
 	UsdSceneItem::Ptr usdSceneItem() const;
 
