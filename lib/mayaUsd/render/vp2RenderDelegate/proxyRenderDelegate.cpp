@@ -365,6 +365,12 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
     _taskController.reset();
     _renderIndex.reset();
     _renderDelegate.reset();
+
+    // reset any version ids or dirty information that doesn't make sense if we clear
+    // the render index.
+    _renderTagVersion = 0;
+    _visibilityVersion = 0;
+    _taskRenderTagsValid = false;
 }
 
 //! \brief  One time initialization of this drawing routine
