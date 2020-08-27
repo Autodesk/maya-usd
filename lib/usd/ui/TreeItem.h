@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDUI_TREE_ITEM_H
+#define MAYAUSDUI_TREE_ITEM_H
+
 
 #include <QtGui/QStandardItem>
 #include <QtGui/QPixmap>
@@ -124,3 +126,6 @@ protected:
 };
 
 } // namespace MayaUsd
+
+
+#endif

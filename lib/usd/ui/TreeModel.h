@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDUI_TREE_MODEL_H
+#define MAYAUSDUI_TREE_MODEL_H
+
 
 #include <QtGui/QStandardItemModel>
 
@@ -108,3 +110,6 @@ private:
 };
 
 } // namespace MayaUsd
+
+
+#endif
