@@ -149,6 +149,14 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const
 	return fMayaHierarchy->parent();
 }
 
+#ifndef UFE_V2_FEATURES_AVAILABLE
+// UFE v1 specific method
+Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
+{
+	throw std::runtime_error("ProxyShapeHierarchy::appendChild() not implemented");
+}
+#endif
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,

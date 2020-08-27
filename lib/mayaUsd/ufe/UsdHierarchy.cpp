@@ -120,6 +120,53 @@ Ufe::SceneItem::Ptr UsdHierarchy::parent() const
 	return UsdSceneItem::create(fItem->path().pop(), fPrim.GetParent());
 }
 
+#ifndef UFE_V2_FEATURES_AVAILABLE
+// UFE v1 specific method
+Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
+{
+	auto usdChild = std::dynamic_pointer_cast<UsdSceneItem>(child);
+#if !defined(NDEBUG)
+	assert(usdChild);
+#endif
+
+	// First, check if we need to rename the child.
+	std::string childName = uniqueChildName(fItem, child->path());
+
+	// Set up all paths to perform the reparent.
+	auto prim = usdChild->prim();
+	auto stage = prim.GetStage();
+	auto ufeSrcPath = usdChild->path();
+	auto usdSrcPath = prim.GetPath();
+	auto ufeDstPath = fItem->path() + childName;
+	auto usdDstPath = fPrim.GetPath().AppendChild(TfToken(childName));
+	SdfLayerHandle layer = MayaUsdUtils::defPrimSpecLayer(prim);
+	if (!layer) {
+		std::string err = TfStringPrintf("No prim found at %s", usdSrcPath.GetString().c_str());
+		throw std::runtime_error(err.c_str());
+	}
+
+	// In USD, reparent is implemented like rename, using copy to
+	// destination, then remove from source.
+	// See UsdUndoRenameCommand._rename comments for details.
+	InPathChange pc;
+
+	auto status = SdfCopySpec(layer, usdSrcPath, layer, usdDstPath);
+	if (!status) {
+		std::string err = TfStringPrintf("Appending child %s to parent %s failed.",
+						ufeSrcPath.string().c_str(), fItem->path().string().c_str());
+		throw std::runtime_error(err.c_str());
+	}
+
+	stage->RemovePrim(usdSrcPath);
+	auto ufeDstItem = UsdSceneItem::create(ufeDstPath, ufePathToPrim(ufeDstPath));
+
+	sendNotification<Ufe::ObjectReparent>(ufeDstItem, ufeSrcPath);
+
+	// FIXME  No idea how to get the child prim index yet.  PPT, 16-Aug-2018.
+	return Ufe::AppendedChild(ufeDstItem, ufeSrcPath, 0);
+}
+#endif
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 
 Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(

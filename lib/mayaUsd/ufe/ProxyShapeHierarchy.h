@@ -61,6 +61,9 @@ public:
 	bool hasChildren() const override;
 	Ufe::SceneItemList children() const override;
 	Ufe::SceneItem::Ptr parent() const override;
+#ifndef UFE_V2_FEATURES_AVAILABLE
+	Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
+#endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::UndoableCommand::Ptr insertChildCmd(
