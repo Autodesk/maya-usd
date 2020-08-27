@@ -2,7 +2,7 @@ list(APPEND scripts_src
     mayaUsdTranslatorImport.mel
     mayaUsdTranslatorExport.mel
     AEmayaUsdProxyShapeTemplate.mel
-    AEUsdPreviewSurfaceTemplate.mel    
+    AEusdPreviewSurfaceTemplate.mel    
     mayaUsdMenu.mel
     mayaUsd_createStageFromFile.mel
     mayaUsd_createStageWithNewLayer.py

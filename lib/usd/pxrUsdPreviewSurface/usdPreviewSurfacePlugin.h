@@ -33,11 +33,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// to provide a separate typeName and typeId to ensure proper plugin registration.
 class PxrMayaUsdPreviewSurfacePlugin {
 public:
+    /// Initialize a UsdPreviewSurface dependency node named \p typeName with a unique \p typeId for
+    /// the \p plugin using the registrant id \p registrantId for the render overrides.
     PXRUSDPREVIEWSURFACE_API
-    static MStatus initialize(MFnPlugin&, const MString&, MTypeId, const MString&);
+    static MStatus initialize(
+        MFnPlugin&     plugin,
+        const MString& typeName,
+        MTypeId        typeId,
+        const MString& registrantId);
 
+    /// Deinitialize a UsdPreviewSurface dependency node named \p typeName with unique \p typeId for
+    /// the \p plugin using the registrant id \p registrantId for the render overrides.
     PXRUSDPREVIEWSURFACE_API
-    static MStatus finalize(MFnPlugin&, const MString&, MTypeId, const MString&);
+    static MStatus finalize(
+        MFnPlugin&     plugin,
+        const MString& typeName,
+        MTypeId        typeId,
+        const MString& registrantId);
 
     PXRUSDPREVIEWSURFACE_API
     static MStatus registerFragments();

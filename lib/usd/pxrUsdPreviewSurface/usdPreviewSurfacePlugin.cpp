@@ -40,12 +40,12 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
     MTypeId        typeId,
     const MString& registrantId)
 {
-    TfToken tfTypeName(typeName.asChar());
-    if (_registeredTypeNames.count(tfTypeName) > 0) {
-        TF_CODING_ERROR("Trying to register typeName %s more than once", tfTypeName.GetText());
+    TfToken typeNameToken(typeName.asChar());
+    if (_registeredTypeNames.count(typeNameToken) > 0) {
+        TF_CODING_ERROR("Trying to register typeName %s more than once", typeNameToken.GetText());
         return MStatus::kFailure;
     }
-    _registeredTypeNames.insert(tfTypeName);
+    _registeredTypeNames.insert(typeNameToken);
 
     MString drawDbClassification(
         TfStringPrintf("drawdb/shader/surface/%s", typeName.asChar()).c_str());
@@ -76,12 +76,12 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::finalize(
     MTypeId        typeId,
     const MString& registrantId)
 {
-    TfToken tfTypeName(typeName.asChar());
-    if (_registeredTypeNames.count(tfTypeName) == 0) {
-        TF_CODING_ERROR("TypeName %s is not currently registered", tfTypeName.GetText());
+    TfToken typeNameToken(typeName.asChar());
+    if (_registeredTypeNames.count(typeNameToken) == 0) {
+        TF_CODING_ERROR("TypeName %s is not currently registered", typeNameToken.GetText());
         return MStatus::kFailure;
     }
-    _registeredTypeNames.erase(tfTypeName);
+    _registeredTypeNames.erase(typeNameToken);
 
     MString drawDbClassification(
         TfStringPrintf("drawdb/shader/surface/%s", typeName.asChar()).c_str());

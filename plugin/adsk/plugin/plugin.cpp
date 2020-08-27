@@ -65,7 +65,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 const MTypeId MayaUsdPreviewSurface_typeId(0x58000096);
-const MString MayaUsdPreviewSurface_typeName("UsdPreviewSurface");
+const MString MayaUsdPreviewSurface_typeName("usdPreviewSurface");
 const MString MayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
 
 template <typename T> void registerCommandCheck(MFnPlugin& plugin)

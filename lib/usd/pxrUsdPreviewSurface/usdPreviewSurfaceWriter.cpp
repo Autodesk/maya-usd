@@ -45,7 +45,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(UsdPreviewSurface, PxrMayaUsdPreviewSurface_Writer);
+PXRUSDMAYA_REGISTER_WRITER(usdPreviewSurface, PxrMayaUsdPreviewSurface_Writer);
 PXRUSDMAYA_REGISTER_WRITER(pxrUsdPreviewSurface, PxrMayaUsdPreviewSurface_Writer);
 
 PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(

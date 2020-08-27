@@ -648,7 +648,7 @@ private:
     }
 
     bool IsTranslucent() {
-        if (_surfaceShaderType == HdMayaAdapterTokens->UsdPreviewSurface ||
+        if (_surfaceShaderType == HdMayaAdapterTokens->usdPreviewSurface ||
             _surfaceShaderType == HdMayaAdapterTokens->pxrUsdPreviewSurface) {
             MFnDependencyNode node(_surfaceShader);
             const auto plug =

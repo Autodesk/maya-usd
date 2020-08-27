@@ -46,7 +46,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
     def testUsdPreviewSurfaceRoundtrip(self):
         """
-        Tests that a UsdPreviewSurface exports and imports correctly.
+        Tests that a usdPreviewSurface exports and imports correctly.
         """
         mayaUsdPluginName = "mayaUsdPlugin"
         if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
@@ -56,7 +56,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         sphere_xform = cmds.polySphere()[0]
 
-        material_node = cmds.shadingNode("UsdPreviewSurface", asShader=True)
+        material_node = cmds.shadingNode("usdPreviewSurface", asShader=True)
 
         material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
                                 empty=True, name=material_node+"SG")
@@ -110,23 +110,23 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # Check the new sphere is in the new shading group:
         self.assertTrue(cmds.sets(
             "pSphere1Shape",
-            isMember="USD_Materials:UsdPreviewSurface1SG"))
+            isMember="USD_Materials:usdPreviewSurface1SG"))
 
         # Check connections:
         self.assertEqual(
-            cmds.connectionInfo("UsdPreviewSurface2.outColor", dfs=True),
-            ["USD_Materials:UsdPreviewSurface1SG.surfaceShader"])
+            cmds.connectionInfo("usdPreviewSurface2.outColor", dfs=True),
+            ["USD_Materials:usdPreviewSurface1SG.surfaceShader"])
         self.assertEqual(
-            cmds.connectionInfo("UsdPreviewSurface2.diffuseColor", sfd=True),
+            cmds.connectionInfo("usdPreviewSurface2.diffuseColor", sfd=True),
             "file2.outColor")
         self.assertEqual(
             cmds.connectionInfo("file2.wrapU", sfd=True),
             "place2dTexture.wrapU")
 
         # Check values:
-        self.assertAlmostEqual(cmds.getAttr("UsdPreviewSurface2.roughness"),
+        self.assertAlmostEqual(cmds.getAttr("usdPreviewSurface2.roughness"),
                                0.25)
-        self.assertEqual(cmds.getAttr("UsdPreviewSurface2.specularColor"),
+        self.assertEqual(cmds.getAttr("usdPreviewSurface2.specularColor"),
                          [(0.125, 0.25, 0.75)])
         self.assertEqual(cmds.getAttr("file2.defaultColor"),
                          [(0.5, 0.25, 0.125)])
@@ -143,7 +143,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # a file that exists.
         stage = Usd.Stage.Open(usd_path)
         texture_prim = stage.GetPrimAtPath(
-            "/pSphere1/Looks/UsdPreviewSurface1SG/file1")
+            "/pSphere1/Looks/usdPreviewSurface1SG/file1")
         rel_texture_path = texture_prim.GetAttribute('inputs:file').Get().path
 
         usd_dir = os.path.dirname(usd_path)
