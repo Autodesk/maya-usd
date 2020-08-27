@@ -217,14 +217,26 @@ public:
     /// import.
     class SchemaAdaptor {
         MObjectHandle _handle;
+#if USD_VERSION_NUM > 2002
+        const UsdPrimDefinition *_schemaDef;
+#else
         SdfPrimSpecHandle _schemaDef;
+#endif
+        TfToken _schemaName;
 
     public:
         MAYAUSD_CORE_PUBLIC
         SchemaAdaptor();
 
+#if USD_VERSION_NUM > 2002
+        MAYAUSD_CORE_PUBLIC
+        SchemaAdaptor(const MObjectHandle& object, 
+                      const TfToken &schemaName,
+                      const UsdPrimDefinition *schemaPrimDef);
+#else
         MAYAUSD_CORE_PUBLIC
         SchemaAdaptor(const MObjectHandle& object, SdfPrimSpecHandle schemaDef);
+#endif
 
         MAYAUSD_CORE_PUBLIC
         explicit operator bool() const;
@@ -302,17 +314,23 @@ public:
         MAYAUSD_CORE_PUBLIC
         TfTokenVector GetAttributeNames() const;
 
+#if USD_VERSION_NUM > 2002
+        /// Gets the prim definition for this schema from the schema registry.
+        /// Returns a null pointer if this schema adaptor is invalid.
+        MAYAUSD_CORE_PUBLIC
+        const UsdPrimDefinition *GetSchemaDefinition() const;
+#else 
         /// Gets the prim spec for this schema from the schema registry.
         /// Returns a null handle if this schema adaptor is invalid.
         MAYAUSD_CORE_PUBLIC
         const SdfPrimSpecHandle GetSchemaDefinition() const;
+#endif
 
     private:
         /// Gets the name of the adapted Maya attribute for the given attribute
-        /// definition. The name may come from the registered aliases if one
+        /// name. The name may come from the registered aliases if one
         /// exists and is already present on the node.
-        std::string _GetMayaAttrNameOrAlias(
-                const SdfAttributeSpecHandle& attrSpec) const;
+        std::string _GetMayaAttrNameOrAlias(const TfToken& attrName) const;
     };
 
     MAYAUSD_CORE_PUBLIC
