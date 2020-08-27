@@ -28,6 +28,28 @@ import os
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
 
+class TestObserver(ufe.Observer):
+    def __init__(self):
+        super(TestObserver, self).__init__()
+        self.deleteNotif = 0
+        self.addNotif = 0
+
+    def __call__(self, notification):
+        if isinstance(notification, ufe.ObjectDelete):
+            self.deleteNotif += 1
+        if isinstance(notification, ufe.ObjectAdd):
+            self.addNotif += 1
+
+    def nbDeleteNotif(self):
+        return self.deleteNotif
+
+    def nbAddNotif(self):
+        return self.addNotif
+
+    def reset(self):
+        self.addNotif = 0
+        self.deleteNotif = 0
+
 class DeleteCmdTestCase(unittest.TestCase):
     '''Verify the Maya delete command, for multiple runtimes.
 
@@ -68,6 +90,11 @@ class DeleteCmdTestCase(unittest.TestCase):
     def testDelete(self):
         '''Delete Maya and USD objects.'''
 
+        # Create our UFE notification observer
+        ufeObs = TestObserver()
+        ufe.Scene.addObjectDeleteObserver(ufeObs)
+        ufe.Scene.addObjectAddObserver(ufeObs)
+
         # Select two objects, one Maya, one USD.
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
         sphereItem = ufe.Hierarchy.createItem(spherePath)
@@ -106,7 +133,12 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertIn(sphereShapeName, sphereChildrenNames)
         self.assertIn(ball35Name, propsChildrenNames)
 
+        ufeObs.reset()
         cmds.delete()
+
+        # We deleted two items.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
+        self.assertEqual(ufeObs.nbAddNotif(), 0)
 
         sphereChildren = sphereHierarchy.children()
         propsChildren = propsHierarchy.children()
@@ -118,6 +150,10 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertNotIn(ball35Name, propsChildrenNames)
 
         cmds.undo()
+
+        # After the undo we added two items back.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
+        self.assertEqual(ufeObs.nbAddNotif(), 2)
 
         sphereChildren = sphereHierarchy.children()
         propsChildren = propsHierarchy.children()
@@ -132,6 +168,10 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         cmds.redo()
 
+        # After the redo we again deleted two items.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 4)
+        self.assertEqual(ufeObs.nbAddNotif(), 2)
+
         sphereChildren = sphereHierarchy.children()
         propsChildren = propsHierarchy.children()
 
@@ -144,9 +184,18 @@ class DeleteCmdTestCase(unittest.TestCase):
         # undo to restore state to original.
         cmds.undo()
 
+        # After the undo we again added two items back.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 4)
+        self.assertEqual(ufeObs.nbAddNotif(), 4)
+
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2011', 'testDeleteArgs only available in UFE preview 2011 and greater')
     def testDeleteArgs(self):
         '''Delete Maya and USD objects passed as command arguments.'''
+
+        # Create our UFE notification observer
+        ufeObs = TestObserver()
+        ufe.Scene.addObjectDeleteObserver(ufeObs)
+        ufe.Scene.addObjectAddObserver(ufeObs)
 
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
         sphereItem = ufe.Hierarchy.createItem(spherePath)
@@ -197,8 +246,13 @@ class DeleteCmdTestCase(unittest.TestCase):
         # Test that "|world" prefix is optional for multi-segment paths.
         ball35PathString = "|transform1|proxyShape1,/Room_set/Props/Ball_35"
 
+        ufeObs.reset()
         cmds.delete(
             ball35PathString, ball34PathString, "|pSphere1|pSphereShape1")
+
+        # We deleted 3 items.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 3)
+        self.assertEqual(ufeObs.nbAddNotif(), 0)
 
         sphereChildren = sphereHierarchy.children()
         propsChildren = propsHierarchy.children()
@@ -209,9 +263,13 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertNotIn(sphereShapeName, sphereChildrenNames)
         self.assertNotIn(ball35Name, propsChildrenNames)
         self.assertNotIn(ball34Name, propsChildrenNames)
-        self.assertFalse(cmds.ls("|pSphere1|pSphereShape1"))
+        self.assertFalse(cmds.objExists("|pSphere1|pSphereShape1"))
 
         cmds.undo()
+
+        # After the undo we added three items back.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 3)
+        self.assertEqual(ufeObs.nbAddNotif(), 3)
 
         sphereChildren = sphereHierarchy.children()
         propsChildren = propsHierarchy.children()
@@ -225,9 +283,13 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertIn(sphereShapeName, sphereChildrenNames)
         self.assertIn(ball35Name, propsChildrenNames)
         self.assertIn(ball34Name, propsChildrenNames)
-        self.assertTrue(cmds.ls("|pSphere1|pSphereShape1"))
+        self.assertTrue(cmds.objExists("|pSphere1|pSphereShape1"))
 
         cmds.redo()
+
+        # After the redo we again deleted three items.
+        self.assertEqual(ufeObs.nbDeleteNotif(), 6)
+        self.assertEqual(ufeObs.nbAddNotif(), 3)
 
         sphereChildren = sphereHierarchy.children()
         propsChildren = propsHierarchy.children()
@@ -238,4 +300,4 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertNotIn(sphereShapeName, sphereChildrenNames)
         self.assertNotIn(ball35Name, propsChildrenNames)
         self.assertNotIn(ball34Name, propsChildrenNames)
-        self.assertFalse(cmds.ls("|pSphere1|pSphereShape1"))
+        self.assertFalse(cmds.objExists("|pSphere1|pSphereShape1"))

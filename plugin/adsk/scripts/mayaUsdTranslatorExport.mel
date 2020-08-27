@@ -164,17 +164,6 @@ proc mayaUsdTranslatorExport_SetMaterialOptionMenu(string $shadingMode, string $
     optionMenuGrp -e -value $info[0] $widget;
 }
 
-proc string mayaUsdTranslatorExport_AppendFromMaterialPopup(string $currentOptions, string $arg, string $widget) {
-    string $value = `optionMenuGrp -q -value $widget`;
-    string $shadingModeData[] = mayaUsdTranslatorExport_shadingModeData();
-    int $index = stringArrayFind($value, 1, $shadingModeData);
-    if ($index != -1) {
-        return $currentOptions + ";" + $arg + "=" + $shadingModeData[$index - 1];
-    } else {
-        return $currentOptions + ";" + $arg + "=" + $value;
-    }
-}
-
 global proc int mayaUsdTranslatorExport (string $parent,
                                      string $action,
                                      string $initialSettings,

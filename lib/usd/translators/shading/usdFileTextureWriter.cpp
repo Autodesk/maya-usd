@@ -229,7 +229,7 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     usdDir = usdDir.parent_path();
     boost::system::error_code ec;
     boost::filesystem::path relativePath = boost::filesystem::relative(fileTextureName, usdDir, ec);
-    if (!ec) {
+    if (!ec && !relativePath.empty()) {
         fileTextureName = relativePath.generic_string();
     }
 

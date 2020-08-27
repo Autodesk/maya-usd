@@ -46,6 +46,9 @@ struct _ShadingMode {
 using _ExportRegistry = std::map<TfToken, _ShadingMode>;
 static _ExportRegistry _exportReg;
 
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingConversionTokens,
+    PXRUSDMAYA_SHADINGCONVERSION_TOKENS);
+
 using _MaterialConversionRegistry = std::
     unordered_map<TfToken, UsdMayaShadingModeRegistry::ExportConversionInfo, TfToken::HashFunctor>;
 static _MaterialConversionRegistry _conversionReg;

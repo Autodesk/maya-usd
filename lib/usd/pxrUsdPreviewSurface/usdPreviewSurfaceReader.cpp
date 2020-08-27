@@ -88,8 +88,6 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
 
     context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
-    MDGModifier modifier;
-    bool useModifier = false;
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
         TfToken baseName = GetMayaNameForUsdAttrName(input.GetFullName());
         if (baseName.IsEmpty()) {
@@ -100,9 +98,6 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
             continue;
         }
         UsdMayaReadUtil::SetMayaAttr(mayaAttr, input, /*unlinearizeColors*/ false);
-    }
-    if (useModifier) {
-        modifier.doIt();
     }
 
     return true;

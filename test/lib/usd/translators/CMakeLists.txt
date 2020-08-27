@@ -74,8 +74,8 @@ foreach(script ${TEST_SCRIPT_FILES})
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
 
-    # Assign a ctest label to these tests for easy filtering.
-    set_tests_properties(${target} PROPERTIES LABELS translators)
+    # Add a ctest label to these tests for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS translators)
 endforeach()
 
 # testUsdExportUVSets and testUsdImportUVSets are run twice, with float writing
@@ -87,7 +87,7 @@ mayaUsd_add_test(testUsdExportUVSets
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
 )
-set_tests_properties(testUsdExportUVSets PROPERTIES LABELS translators)
+set_property(TEST testUsdExportUVSets APPEND PROPERTY LABELS translators)
 
 mayaUsd_add_test(testUsdExportUVSetsFloat
     PYTHON_MODULE testUsdExportUVSets
@@ -95,7 +95,7 @@ mayaUsd_add_test(testUsdExportUVSetsFloat
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=1"
 )
-set_tests_properties(testUsdExportUVSetsFloat PROPERTIES LABELS translators)
+set_property(TEST testUsdExportUVSetsFloat APPEND PROPERTY LABELS translators)
 
 mayaUsd_add_test(testUsdImportUVSets
     PYTHON_MODULE testUsdImportUVSets
@@ -103,7 +103,7 @@ mayaUsd_add_test(testUsdImportUVSets
     ENV
         "PIXMAYA_READ_FLOAT2_AS_UV=0"
 )
-set_tests_properties(testUsdImportUVSets PROPERTIES LABELS translators)
+set_property(TEST testUsdImportUVSets APPEND PROPERTY LABELS translators)
 
 mayaUsd_add_test(testUsdImportUVSetsFloat
     PYTHON_MODULE testUsdImportUVSets
@@ -111,7 +111,7 @@ mayaUsd_add_test(testUsdImportUVSetsFloat
     ENV
         "PIXMAYA_READ_FLOAT2_AS_UV=1"
 )
-set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS translators)
+set_property(TEST testUsdImportUVSetsFloat APPEND PROPERTY LABELS translators)
 
 mayaUsd_add_test(testUsdExportCustomConverter
     PYTHON_MODULE testUsdExportCustomConverter
@@ -120,7 +120,7 @@ mayaUsd_add_test(testUsdExportCustomConverter
         "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
         "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
 )
-set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS translators)
+set_property(TEST testUsdExportCustomConverter APPEND PROPERTY LABELS translators)
 
 # Test uses standardSurface, which was introduced in Maya 2020.
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020) 
@@ -130,5 +130,5 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
         ENV
             "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
     )
-    set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS translators)
+    set_property(TEST testUsdMayaListShadingModesCommand APPEND PROPERTY LABELS translators)
 endif()

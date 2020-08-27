@@ -43,6 +43,17 @@ TF_DECLARE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_SHADINGMODE_TOKENS);
 
+#define PXRUSDMAYA_SHADINGCONVERSION_TOKENS \
+    (none) \
+    (lambert) \
+    (standardSurface) \
+    (blinn) \
+    (phong) \
+    (phongE)
+
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaShadingConversionTokens,
+    MAYAUSD_CORE_PUBLIC,
+    PXRUSDMAYA_SHADINGCONVERSION_TOKENS);
 
 TF_DECLARE_WEAK_PTRS(UsdMayaShadingModeRegistry);
 

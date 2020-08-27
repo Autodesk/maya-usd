@@ -570,6 +570,11 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
                 UsdMayaJobImportArgsTokens->shadingMode,
                 UsdMayaShadingModeTokens->none,
                 UsdMayaShadingModeRegistry::ListImporters())),
+        shadingConversion(
+            _Token(userArgs,
+                UsdMayaJobImportArgsTokens->shadingConversion,
+                UsdMayaShadingConversionTokens->none,
+                UsdMayaShadingConversionTokens->allTokens)),
         useAsAnimationCache(
             _Boolean(userArgs,
                 UsdMayaJobImportArgsTokens->useAsAnimationCache)),
@@ -610,6 +615,8 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
                 });
         d[UsdMayaJobImportArgsTokens->shadingMode] =
                 UsdMayaShadingModeTokens->displayColor.GetString();
+        d[UsdMayaJobImportArgsTokens->shadingConversion] =
+                UsdMayaShadingConversionTokens->lambert.GetString();
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
 
         // plugInfo.json site defaults.
@@ -628,6 +635,7 @@ std::ostream&
 operator <<(std::ostream& out, const UsdMayaJobImportArgs& importArgs)
 {
     out << "shadingMode: " << importArgs.shadingMode << std::endl
+        << "shadingConversion: " << importArgs.shadingConversion << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl

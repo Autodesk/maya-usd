@@ -54,6 +54,10 @@
 #include <maya/MStringArray.h>
 #include <maya/MTime.h>
 
+#if MAYA_API_VERSION >= 20200000
+#include <maya/MFnStandardSurfaceShader.h>
+#endif
+
 #include <pxr/base/gf/gamma.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
@@ -819,13 +823,41 @@ _GetColorAndTransparencyFromLambert(
         }
         if (alpha) {
             MColor trn = lambertFn.transparency();
-            // Assign Alpha as 1.0 - average of shader trasparency
+            // Assign Alpha as 1.0 - average of shader transparency
             // and check if they are all the same
             *alpha = 1.0 - ((trn[0] + trn[1] + trn[2]) / 3.0);
         }
         return true;
     }
 
+    return false;
+}
+
+bool
+_GetColorAndTransparencyFromStandardSurface(
+        const MObject& shaderObj,
+        GfVec3f* rgb,
+        float* alpha)
+{
+#if MAYA_API_VERSION >= 20200000
+    MStatus status;
+    MFnStandardSurfaceShader surfaceFn(shaderObj, &status);
+    if (status == MS::kSuccess ) {
+        if (rgb) {
+            GfVec3f displayColor;
+            MColor color = surfaceFn.baseColor();
+            for (int j=0;j<3;j++) {
+                displayColor[j] = color[j];
+            }
+            displayColor *= surfaceFn.base();
+            *rgb = UsdMayaColorSpace::ConvertMayaToLinear(displayColor);
+        }
+        if (alpha) {
+            *alpha = 1.0f - surfaceFn.transmission();
+        }
+        return true;
+    }
+#endif
     return false;
 }
 
@@ -909,6 +941,11 @@ _getMayaShadersColor(
         // we try our next best guess.
         const bool gotShaderValues =
             _GetColorAndTransparencyFromLambert(
+                shaderObjs[i],
+                RGBData ? &(*RGBData)[i] : nullptr,
+                AlphaData ? &(*AlphaData)[i] : nullptr)
+
+            || _GetColorAndTransparencyFromStandardSurface(
                 shaderObjs[i],
                 RGBData ? &(*RGBData)[i] : nullptr,
                 AlphaData ? &(*AlphaData)[i] : nullptr)

@@ -140,13 +140,12 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
                 PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
             .Set(1, usdTime);
 
-        AuthorShaderInputFromScaledShadingNodeAttr(
+        AuthorShaderInputFromShadingNodeAttr(
             depNodeFn,
             _tokens->specularColor,
             shaderSchema,
             PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName,
-            usdTime,
-            _tokens->specular);
+            usdTime);
 
         AuthorShaderInputFromShadingNodeAttr(
             depNodeFn,

@@ -480,7 +480,7 @@ private:
             shaderSchema.GetIdAttr().Get(&shaderId);
 
             if (UsdMayaShaderReaderRegistry::ReaderFactoryFn factoryFn
-                = UsdMayaShaderReaderRegistry::Find(shaderId)) {
+                = UsdMayaShaderReaderRegistry::Find(shaderId, _jobArguments)) {
 
                 UsdPrim shaderPrim = shaderSchema.GetPrim();
                 UsdMayaPrimReaderArgs args(shaderPrim, _jobArguments);
