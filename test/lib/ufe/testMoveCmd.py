@@ -175,7 +175,6 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestMove(expected)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
     def testMoveUSD(self):
         '''Move USD object, read through the Transform3d interface.'''
 
@@ -211,7 +210,6 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestMove(expected)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
     def testMultiSelectMoveUSD(self):
         '''Move multiple USD objects, read through Transform3d interface.'''
 
