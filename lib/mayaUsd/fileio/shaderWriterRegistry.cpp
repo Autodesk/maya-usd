@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    
+
     (UsdMaya)
         (ShaderWriter)
 );
@@ -47,7 +47,7 @@ struct _RegistryEntry {
     int                                             _index;
 };
 
-typedef std::unordered_multimap<TfToken, _RegistryEntry, TfToken::HashFunctor> _Registry;
+using _Registry = std::unordered_multimap<TfToken, _RegistryEntry, TfToken::HashFunctor>;
 static _Registry _reg;
 static int _indexCounter = 0;
 
@@ -63,6 +63,7 @@ _Registry::const_iterator _Find(
         ContextSupport support = first->second._pred(exportArgs);
         if (support == ContextSupport::Supported) {
             ret = first;
+            break;
         } else if (support == ContextSupport::Fallback && ret == _reg.end()) {
             ret = first;
         }
@@ -79,10 +80,13 @@ void UsdMayaShaderWriterRegistry::Register(
     UsdMayaShaderWriterRegistry::ContextPredicateFn pred,
     UsdMayaShaderWriterRegistry::WriterFactoryFn    fn)
 {
-    TF_DEBUG(PXRUSDMAYA_REGISTRY)
-        .Msg("Registering UsdMayaShaderWriter for maya type %s.\n", mayaTypeName.GetText());
-
     int index = _indexCounter++;
+    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+        .Msg(
+            "Registering UsdMayaShaderWriter for maya type %s with index %d.\n",
+            mayaTypeName.GetText(),
+            index);
+
     _reg.insert(std::make_pair(mayaTypeName, _RegistryEntry { pred, fn, index }));
 
     // The unloader uses the index to know which entry to erase when there are

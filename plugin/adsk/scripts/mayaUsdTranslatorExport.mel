@@ -343,7 +343,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     if (size($niceName)) {
                         optionMenuGrp -e -value $niceName "shadingModePopup";
                     }
-                } else if ($optionBreakDown[0] == "renderContext") {
+                } else if ($optionBreakDown[0] == "convertMaterialsTo") {
                     string $niceName = `mayaUSDListShadingModes -fen $optionBreakDown[1]`;
                     if (size($niceName)) {
                         optionMenuGrp -e -value $niceName "shadingModePopup";

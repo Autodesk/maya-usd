@@ -35,8 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \brief Provides functionality to register and lookup USD writer plugins
 /// for Maya shader nodes.
 ///
-/// Use PXRUSDMAYA_DEFINE_SHADER_WRITER(mayaTypeName, args, ctx) to define a new
-/// writer function, or use
 /// PXRUSDMAYA_REGISTER_SHADER_WRITER(mayaTypeName, writerClass) to register a writer
 /// class with the registry.
 ///
@@ -59,47 +57,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \endcode
 ///
 /// The registry contains information for both Maya built-in node types
-/// and for any user-defined plugin types. If UsdMaya does not ship with a
+/// and for any user-defined plugin types. If mayaUSD does not ship with a
 /// writer plugin for some Maya built-in type, you can register your own
 /// plugin for that Maya built-in type.
 struct UsdMayaShaderWriterRegistry {
     /// Writer factory function, i.e. a function that creates a shader writer
     /// for the given Maya node/USD paths and context.
-    typedef std::function<UsdMayaShaderWriterSharedPtr(
+    using WriterFactoryFn = std::function<UsdMayaShaderWriterSharedPtr(
         const MFnDependencyNode&,
         const SdfPath&,
-        UsdMayaWriteJobContext&)>
-        WriterFactoryFn;
+        UsdMayaWriteJobContext&)>;
 
     /// Predicate function, i.e. a function that can tell the level of support
-    /// the writer function will provide for a given renderContext.
-    typedef std::function<UsdMayaShaderWriter::ContextSupport(const UsdMayaJobExportArgs&)>
-        ContextPredicateFn;
-
-    /// Writer function, i.e. a function that writes a shader. This is the
-    /// signature of the function defined by the PXRUSDMAYA_DEFINE_SHADER_WRITER
-    /// macro.
-    typedef std::function<bool(const UsdMayaPrimWriterArgs&, UsdMayaPrimWriterContext*)>
-        WriterFn;
+    /// the writer function will provide for a given set of export options.
+    using ContextPredicateFn
+        = std::function<UsdMayaShaderWriter::ContextSupport(const UsdMayaJobExportArgs&)>;
 
     /// \brief Register \p fn as a factory function providing a
     /// UsdMayaShaderWriter subclass that can be used to write \p mayaType.
     /// If you can't provide a valid UsdMayaShaderWriter for the given arguments,
     /// return a null pointer from the factory function \p fn.
-    ///
-    /// Example for registering a writer factory in your custom plugin:
-    /// \code{.cpp}
-    /// class MyWriter : public UsdMayaShaderWriter {
-    ///     static UsdMayaShaderWriterSharedPtr Create(
-    ///             const MFnDependencyNode& depNodeFn,
-    ///             const SdfPath& usdPath,
-    ///             UsdMayaWriteJobContext& jobCtx);
-    /// };
-    /// TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShaderWriterRegistry, MyWriter) {
-    ///     UsdMayaShaderWriterRegistry::Register("myCustomMayaNode",
-    ///             MyWriter::Create);
-    /// }
-    /// \endcode
     MAYAUSD_CORE_PUBLIC
     static void Register(const TfToken& mayaType, ContextPredicateFn pred, WriterFactoryFn fn);
 

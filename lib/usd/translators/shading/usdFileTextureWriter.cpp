@@ -13,13 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
+#include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -27,6 +26,7 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
@@ -34,12 +34,13 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdUtils/pipeline.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
-#include <mayaUsd/fileio/shaderWriterRegistry.h>
-#include <mayaUsd/fileio/shaderWriter.h>
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
 
 #include <boost/filesystem.hpp>
 
@@ -125,9 +126,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 UsdMayaShaderWriter::ContextSupport
 PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    return exportArgs.renderContext == UsdMayaShadingModeTokens->preview
+    return exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface
         ? ContextSupport::Supported
-        : ContextSupport::Unsupported;
+        : ContextSupport::Fallback;
 }
 
 PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(

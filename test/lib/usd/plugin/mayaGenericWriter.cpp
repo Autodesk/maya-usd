@@ -84,21 +84,24 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShaderWriterRegistry, Maya_GenericWriter)
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    // Render context:
+    // Material conversion and render context:
     (maya)
+    ((niceName, "Maya Shaders"))
+    ((description, "Dumps the bound shader in a Maya UsdShade network that can only be used for "
+                   "import. Will not render in the Maya viewport or usdView."))
 );
 
-REGISTER_SHADING_MODE_RENDER_CONTEXT(
+REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     _tokens->maya,
-    "Maya Shaders",
-    "Dumps the bound shader in a Maya UsdShade network that can only be used for import. Will not "
-    "render in the Maya viewport or usdView.");
+    _tokens->maya,
+    _tokens->niceName,
+    _tokens->description);
 
 UsdMayaShaderWriter::ContextSupport
 Maya_GenericWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    return exportArgs.renderContext == _tokens->maya ? ContextSupport::Fallback
-                                                     : ContextSupport::Unsupported;
+    return exportArgs.convertMaterialsTo == _tokens->maya ? ContextSupport::Supported
+                                                          : ContextSupport::Unsupported;
 }
 
 Maya_GenericWriter::Maya_GenericWriter(

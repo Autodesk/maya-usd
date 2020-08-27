@@ -61,9 +61,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 UsdMayaShaderWriter::ContextSupport
 PxrUsdTranslators_MaterialWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    return exportArgs.renderContext == UsdMayaShadingModeTokens->preview
+    return exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface
         ? ContextSupport::Supported
-        : ContextSupport::Unsupported;
+        : ContextSupport::Fallback;
 }
 
 PxrUsdTranslators_MaterialWriter::PxrUsdTranslators_MaterialWriter(

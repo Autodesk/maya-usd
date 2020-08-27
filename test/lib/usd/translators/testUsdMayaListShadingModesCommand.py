@@ -43,9 +43,11 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         modes = cmds.mayaUSDListShadingModes
 
         preview = "USD Preview Surface"
-        preview_option = "shadingMode=useRegistry;renderContext=preview"
+        preview_option = ";".join(("shadingMode=useRegistry",
+                                   "convertMaterialsTo=UsdPreviewSurface"))
         maya_shaders = "Maya Shaders"
-        maya_options = "shadingMode=useRegistry;renderContext=maya"
+        maya_options = ";".join(("shadingMode=useRegistry",
+                                 "convertMaterialsTo=maya"))
 
         # These 3 should always be there:
         exporters = modes(ex=True)
@@ -53,7 +55,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         self.assertTrue("Display Colors" in exporters)
         self.assertTrue(preview in exporters)
 
-        self.assertEqual(modes(findExportName="preview"), preview)
+        self.assertEqual(modes(findExportName="UsdPreviewSurface"), preview)
         self.assertTrue(len(modes(exportAnnotation=preview)) > 5)
         self.assertEqual(modes(exportOptions=preview), preview_option)
 

@@ -33,7 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdAttribute;
 
 /// Base class for USD prim writers that export Maya shading nodes as USD
-/// shader prims in a given render context.
+/// shader prims.
 class UsdMayaShaderWriter : public UsdMayaPrimWriter
 {
     public:

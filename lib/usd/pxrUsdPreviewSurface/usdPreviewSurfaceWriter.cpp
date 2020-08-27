@@ -46,6 +46,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((niceName, "USD Preview Surface"))
+    ((description, "Exports the bound shader as a USD preview surface UsdShade network."))
+);
+
+REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
+    UsdImagingTokens->UsdPreviewSurface,
+    UsdShadeTokens->universalRenderContext,
+    _tokens->niceName,
+    _tokens->description);
+
 PXRUSDMAYA_REGISTER_SHADER_WRITER(
     pxrUsdPreviewSurface,
     PxrMayaUsdPreviewSurface_Writer);
@@ -53,9 +65,9 @@ PXRUSDMAYA_REGISTER_SHADER_WRITER(
 UsdMayaShaderWriter::ContextSupport
 PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArgs)
 {
-    return exportArgs.renderContext == UsdMayaShadingModeTokens->preview
+    return exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface
         ? ContextSupport::Supported
-        : ContextSupport::Unsupported;
+        : ContextSupport::Fallback;
 }
 
 PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(

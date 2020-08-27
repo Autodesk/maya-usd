@@ -37,8 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define PXRUSDMAYA_SHADINGMODE_TOKENS \
     (none) \
     (displayColor) \
-    (useRegistry) \
-    (preview)
+    (useRegistry)
 
 TF_DECLARE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
     MAYAUSD_CORE_PUBLIC,
@@ -97,36 +96,50 @@ public:
             const std::string& name,
             UsdMayaShadingModeImporter fn);
 
-    /// The useRegistry importers and exporters can be specialized to support render contexts. The
-    /// most well known is the default context where UsdPreviewSurface shaders are used. This
-    /// registry allows introducing other render contexts as necessary to support other renderers
-    /// and DCC. Look in "UsdShade Material Assignment", section "Refinement 2: Material Purpose"
-    /// for more details.
+    /// The useRegistry exporters can be specialized to support material conversions. The most well
+    /// known is the default conversion to UsdPreviewSurface shaders. This registry allows
+    /// introducing other material conversions as necessary to support other renderers.
     ///
-    /// To register a render context, you need to use the REGISTER_SHADING_MODE_RENDER_CONTEXT macro
-    /// for each render contexts supported by the library. Multiple registration is supported, so
-    /// each plugin should declare once the render contexts it supports.
+    /// To register a material conversion, you need to use the
+    /// REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION macro for each material conversion
+    /// supported by the library. Multiple registration is supported, so each plugin should declare
+    /// once the material conversions it supports.
     ///
-    static TfTokenVector ListRenderContexts() { return GetInstance()._ListRenderContexts(); }
+    static TfTokenVector ListExportConversions() { return GetInstance()._ListExportConversions(); }
 
-    /// Gets the nice name of a render context. Used for the UI label of the export options
-    static const std::string& GetRenderContextNiceName(const TfToken& renderContext)
+    /// All the information registered for a specific material conversion.
+    struct ExportConversionInfo {
+        TfToken _renderContext;
+        TfToken _niceName;
+        TfToken _description;
+    };
+
+    /// Gets the information associated with \p materialConversion
+    static const ExportConversionInfo& GetExportConversionInfo(const TfToken& materialConversion)
     {
-        return GetInstance()._GetRenderContextNiceName(renderContext);
+        return GetInstance()._GetExportConversionInfo(materialConversion);
     }
 
-    /// Gets the description of a render context. Used for the popup help of the export options
-    static const std::string& GetRenderContextDescription(const TfToken& renderContext)
-    {
-        return GetInstance()._GetRenderContextDescription(renderContext);
-    }
-
-    /// Registers a render context, along with the nice name and a description
+    /// Registers an export material conversion, with render context, nice name and description.
+    ///
+    /// The \p materialConversion name will be used directly in the render option string as one of
+    /// the valid values of the convertMaterialsTo export option.
+    ///
+    /// The \p renderContext will be used to specialize the binding point. See UsdShadeMaterial
+    /// documentation for details. A value of "UsdShadeTokens->universalRenderContext" should be
+    /// used if the resulting UsdShade nodes are written using an API shared by multiple renderers,
+    /// like UsdPreviewSurface or MaterialX. For UsdShade nodes targetting a specific rendering
+    /// engine, please define a custom render context understood by the renderer.
+    /// 
+    /// The \p niceName is the name displayed in the render options dialog.
+    ///
+    /// The \p description is displayed as a tooltip in the render options dialog.
     MAYAUSD_CORE_PUBLIC
-    void RegisterRenderContext(
+    void RegisterExportConversion(
+        const TfToken& materialConversion,
         const TfToken& renderContext,
-        std::string    niceName,
-        std::string    description);
+        const TfToken& niceName,
+        const TfToken& description);
 
 private:
     MAYAUSD_CORE_PUBLIC
@@ -140,9 +153,8 @@ private:
     MAYAUSD_CORE_PUBLIC TfTokenVector _ListExporters();
     MAYAUSD_CORE_PUBLIC TfTokenVector _ListImporters();
 
-    MAYAUSD_CORE_PUBLIC TfTokenVector _ListRenderContexts();
-    MAYAUSD_CORE_PUBLIC const std::string& _GetRenderContextNiceName(const TfToken&);
-    MAYAUSD_CORE_PUBLIC const std::string& _GetRenderContextDescription(const TfToken&);
+    MAYAUSD_CORE_PUBLIC TfTokenVector _ListExportConversions();
+    MAYAUSD_CORE_PUBLIC const ExportConversionInfo& _GetExportConversionInfo(const TfToken&);
 
     UsdMayaShadingModeRegistry();
     ~UsdMayaShadingModeRegistry();
@@ -172,11 +184,12 @@ private:
         UsdMayaShadingModeImportContext* contextName,                                        \
         const UsdMayaJobImportArgs&      jobArgumentsName)
 
-#define REGISTER_SHADING_MODE_RENDER_CONTEXT(name, niceName, description) \
-    TF_REGISTRY_FUNCTION(UsdMayaShadingModeExportContext)                 \
-    {                                                                     \
-        UsdMayaShadingModeRegistry::GetInstance().RegisterRenderContext(  \
-            name, niceName, description);                                 \
+#define REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(                           \
+    name, renderContext, niceName, description)                                     \
+    TF_REGISTRY_FUNCTION(UsdMayaShadingModeExportContext)                           \
+    {                                                                               \
+        UsdMayaShadingModeRegistry::GetInstance().RegisterExportConversion(         \
+            name, renderContext, niceName, description);                            \
     }
 
 PXR_NAMESPACE_CLOSE_SCOPE

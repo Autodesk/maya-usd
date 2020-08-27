@@ -113,11 +113,12 @@ mayaUsd_add_test(testUsdImportUVSetsFloat
 )
 set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS translators)
 
-mayaUsd_add_test(testUsdExportCustomRenderContext
-    PYTHON_MODULE testUsdExportCustomRenderContext
+mayaUsd_add_test(testUsdExportCustomConverter
+    PYTHON_MODULE testUsdExportCustomConverter
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+        "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
 )
 set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS translators)
 

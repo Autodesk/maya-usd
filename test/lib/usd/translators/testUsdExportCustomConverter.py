@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import Plug
 from pxr import Usd
 from pxr import UsdShade
 
@@ -27,14 +26,14 @@ from maya import standalone
 
 import fixturesUtils
 
-class testUsdExportCustomRenderContext(unittest.TestCase):
+class testUsdExportCustomConverter(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         cls.input_path = fixturesUtils.setUpClass(__file__)
 
         test_dir = os.path.join(cls.input_path,
-                                "UsdExportCustomRenderContextTest")
+                                "UsdExportCustomConverterTest")
 
         cmds.workspace(test_dir, o=True)
 
@@ -42,26 +41,24 @@ class testUsdExportCustomRenderContext(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testUsdExportCustomRenderContext(self):
+    def testUsdExportCustomConverter(self):
         """
-        Tests a custom exporter for a render context that exists in an unloaded
+        Tests a custom exporter for a conversion that exists in an unloaded
         plugin.
         """
-        plugin_path = os.path.join(self.input_path, "..", "plugin")
-        Plug.Registry().RegisterPlugins(plugin_path)
-
         # Load test scene:
         file_path = os.path.join(self.input_path,
-                                 "UsdExportCustomRenderContextTest",
+                                 "UsdExportCustomConverterTest",
                                  "testScene.ma")
         cmds.file(file_path, force=True, open=True)
 
         # Export to USD:
-        usd_path = os.path.abspath('UsdExportCustomRenderContextTest.usda')
+        usd_path = os.path.abspath('UsdExportCustomConverterTest.usda')
 
-        # Using the "maya" render context, which only exists in the test plugin
+        # Using the "maya" material conversion, which only exists in the test
+        # plugin
         options = ["shadingMode=useRegistry",
-                   "renderContext=maya",
+                   "convertMaterialsTo=maya",
                    "mergeTransformAndShape=1"]
 
         default_ext_setting = cmds.file(q=True, defaultExtensions=True)

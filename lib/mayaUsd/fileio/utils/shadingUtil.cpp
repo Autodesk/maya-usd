@@ -51,20 +51,27 @@ UsdMayaShadingUtil::CreateMaterialInputAndConnectShader(
 UsdShadeOutput
 UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
         UsdShadeShader& shader,
-        const TfToken& shaderOutputName,
-        const SdfValueTypeName& outputTypeName,
         UsdShadeMaterial& material,
-        const TfToken& materialOutputName)
+        const TfToken& terminalName,
+        const TfToken& renderContext)
 {
     if (!shader || !material) {
         return UsdShadeOutput();
     }
 
-    UsdShadeOutput shaderOutput =
-        shader.CreateOutput(shaderOutputName, outputTypeName);
+    UsdShadeOutput materialOutput;
+    if (terminalName == UsdShadeTokens->surface) {
+        materialOutput = material.CreateSurfaceOutput(renderContext);
+    } else if (terminalName == UsdShadeTokens->volume) {
+        materialOutput = material.CreateVolumeOutput(renderContext);
+    } else if (terminalName == UsdShadeTokens->displacement) {
+        materialOutput = material.CreateDisplacementOutput(renderContext);
+    } else {
+        return UsdShadeOutput();
+    }
 
-    UsdShadeOutput materialOutput =
-        material.CreateOutput(materialOutputName, outputTypeName);
+    UsdShadeOutput shaderOutput =
+        shader.CreateOutput(terminalName, materialOutput.GetTypeName());
 
     materialOutput.ConnectToSource(shaderOutput);
 

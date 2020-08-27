@@ -43,15 +43,12 @@ struct _ShadingMode {
     std::string _description;
     UsdMayaShadingModeExporterCreator _fn;
 };
-typedef std::map<TfToken, _ShadingMode> _ExportRegistry;
+using _ExportRegistry = std::map<TfToken, _ShadingMode>;
 static _ExportRegistry _exportReg;
 
-struct _RenderContextInfo {
-    std::string _niceName;
-    std::string _description;
-};
-typedef std::unordered_map<TfToken, _RenderContextInfo, TfToken::HashFunctor> _RenderContextRegistry;
-static _RenderContextRegistry _contextReg;
+using _MaterialConversionRegistry = std::
+    unordered_map<TfToken, UsdMayaShadingModeRegistry::ExportConversionInfo, TfToken::HashFunctor>;
+static _MaterialConversionRegistry _conversionReg;
 
 bool
 UsdMayaShadingModeRegistry::RegisterExporter(
@@ -99,7 +96,7 @@ UsdMayaShadingModeRegistry::_GetExporterDescription(const TfToken& name) {
     return it == _exportReg.end() ? _kEmptyString : it->second._description;
 }
 
-typedef std::map<TfToken, UsdMayaShadingModeImporter> _ImportRegistry;
+using _ImportRegistry = std::map<TfToken, UsdMayaShadingModeImporter>;
 static _ImportRegistry _importReg;
 
 bool
@@ -152,51 +149,40 @@ UsdMayaShadingModeRegistry::_ListImporters() {
     return ret;
 }
 
-REGISTER_SHADING_MODE_RENDER_CONTEXT(
-    UsdMayaShadingModeTokens->preview,
-    "USD Preview Surface",
-    "Exports the bound shader as a USD preview surface UsdShade network.");
-
-void UsdMayaShadingModeRegistry::RegisterRenderContext(
+void UsdMayaShadingModeRegistry::RegisterExportConversion(
+    const TfToken& materialConversion,
     const TfToken& renderContext,
-    std::string    niceName,
-    std::string    description)
+    const TfToken& niceName,
+    const TfToken& description)
 {
-    // It is perfectly valid to register the same render context more than once,
-    // especially if exporters for a context are split across multiple libraries.
+    // It is perfectly valid to register the same material conversion more than once,
+    // especially if exporters for a conversion are split across multiple libraries.
     // We will keep the first niceName registered.
-    _contextReg.insert(_RenderContextRegistry::value_type(
-        renderContext, _RenderContextInfo { std::move(niceName), std::move(description) }));
+    _conversionReg.insert(_MaterialConversionRegistry::value_type(
+        materialConversion,
+        ExportConversionInfo { renderContext, niceName, description }));
 }
 
 TfTokenVector
-UsdMayaShadingModeRegistry::_ListRenderContexts() {
+UsdMayaShadingModeRegistry::_ListExportConversions() {
     UsdMaya_RegistryHelper::LoadShadingModePlugins();
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
     TfTokenVector ret;
-    ret.reserve(_contextReg.size());
-    for (const auto& e : _contextReg) {
+    ret.reserve(_conversionReg.size());
+    for (const auto& e : _conversionReg) {
         ret.push_back(e.first);
     }
     return ret;
 }
 
-const std::string&
-UsdMayaShadingModeRegistry::_GetRenderContextNiceName(const TfToken& renderContext)
+const UsdMayaShadingModeRegistry::ExportConversionInfo&
+UsdMayaShadingModeRegistry::_GetExportConversionInfo(const TfToken& materialConversion)
 {
     UsdMaya_RegistryHelper::LoadShadingModePlugins();
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
-    auto it = _contextReg.find(renderContext);
-    return it == _contextReg.end() ? _kEmptyString : it->second._niceName;
-}
-
-const std::string&
-UsdMayaShadingModeRegistry::_GetRenderContextDescription(const TfToken& renderContext)
-{
-    UsdMaya_RegistryHelper::LoadShadingModePlugins();
-    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShadingModeExportContext>();
-    auto it = _contextReg.find(renderContext);
-    return it == _contextReg.end() ? _kEmptyString : it->second._description;
+    auto it = _conversionReg.find(materialConversion);
+    static const ExportConversionInfo _emptyInfo;
+    return it != _conversionReg.end() ? it->second : _emptyInfo;
 }
 
 TF_INSTANTIATE_SINGLETON(UsdMayaShadingModeRegistry);
