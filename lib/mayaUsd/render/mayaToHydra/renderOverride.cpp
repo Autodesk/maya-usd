@@ -30,10 +30,13 @@
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
 #include <maya/MConditionMessage.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MSelectionContext.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/hd/rprim.h>
 
@@ -768,6 +771,67 @@ MHWRender::MRenderOperation* MtohRenderOverride::renderOperation() {
 
 bool MtohRenderOverride::nextRenderOperation() {
     return ++_currentOperation < static_cast<int>(_operations.size());
+}
+
+bool MtohRenderOverride::select(const MHWRender::MDrawContext& context, const MHWRender::MSelectionInfo& selectInfo, MSelectionList& selectionList) {
+    MStatus status;
+    MMatrix worldViewMatrix =
+        context.getMatrix(MHWRender::MFrameContext::kWorldViewMtx, &status);
+    if (status != MStatus::kSuccess) return false;
+
+    MMatrix projectionMatrix =
+        context.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
+    if (status != MStatus::kSuccess) return false;
+
+    // Compute a pick matrix that, when it is post-multiplied with the
+    // projection matrix, will cause the picking region to fill the entire
+    // viewport for OpenGL selection.
+    {
+        int view_x, view_y, view_w, view_h;
+        context.getViewportDimensions(view_x, view_y, view_w, view_h);
+
+        unsigned int sel_x, sel_y, sel_w, sel_h;
+        selectInfo.selectRect(sel_x, sel_y, sel_w, sel_h);
+
+        MMatrix pickMatrix;
+        pickMatrix[0][0] = view_w / double(sel_w);
+        pickMatrix[1][1] = view_h / double(sel_h);
+        pickMatrix[3][0] = (view_w - (double)(sel_x*2 + sel_w)) / double(sel_w);
+        pickMatrix[3][1] = (view_h - (double)(sel_y*2 + sel_h)) / double(sel_h);
+
+        projectionMatrix *= pickMatrix;
+    }
+    
+    HdxPickHitVector allHits;
+
+    HdxPickTaskContextParams pickParams;
+    pickParams.resolution = GfVec2i(128,128);
+    pickParams.hitMode = HdxPickTokens->hitAll;
+    pickParams.resolveMode = HdxPickTokens->resolveUnique;
+    pickParams.viewMatrix = GfMatrix4d(worldViewMatrix.matrix);
+    pickParams.projectionMatrix = GfMatrix4d(projectionMatrix.matrix);;
+    pickParams.collection = _renderCollection;
+    pickParams.outHits = &allHits;
+    VtValue vtPickParams(pickParams);
+
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+    auto pickingTasks = _taskController->GetPickingTasks();
+    _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+
+    if (allHits.size() == 0) {
+        return true;
+    }
+
+    SdfPathVector outhitPrimPaths;
+    for (const auto& hit : allHits) {
+        outhitPrimPaths.push_back(hit.objectId);
+    }
+
+    for (auto& it : _delegates) {
+        it->PopulateSelectionList(outhitPrimPaths, selectionList);
+    }
+
+    return true;
 }
 
 void MtohRenderOverride::_ClearHydraCallback(void* data) {

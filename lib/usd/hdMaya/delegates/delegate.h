@@ -95,6 +95,9 @@ public:
     virtual bool SupportsUfeSelection() { return false; }
 #endif // WANT_UFE_BUILD
 
+    virtual void PopulateSelectionList(
+        const SdfPathVector& selectedSdfPaths, MSelectionList& mayaSelection) {}
+
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
     bool GetLightsEnabled() { return _lightsEnabled; }
 

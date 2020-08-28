@@ -99,6 +99,8 @@ public:
     MHWRender::MRenderOperation* renderOperation() override;
     bool nextRenderOperation() override;
 
+    bool select(const MHWRender::MDrawContext& context, const MHWRender::MSelectionInfo& selectInfo, MSelectionList& selectionList) override;
+
 private:
     typedef std::pair<MString, MCallbackIdArray> PanelCallbacks;
     typedef std::vector<PanelCallbacks> PanelCallbacksList;

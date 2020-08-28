@@ -63,6 +63,10 @@ public:
         const HdSelectionSharedPtr& selection) override;
     bool SupportsUfeSelection() override;
 #endif // WANT_UFE_BUILD
+
+    HDMAYA_API
+    void PopulateSelectionList(
+        const SdfPathVector& selectedSdfPaths, MSelectionList& mayaSelection) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
