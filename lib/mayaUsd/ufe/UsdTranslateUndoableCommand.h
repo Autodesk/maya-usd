@@ -52,6 +52,8 @@ public:
 	void redo() override;
 	bool translate(double x, double y, double z) override;
 
+	Ufe::Path getPath() const override { return path(); }
+
 protected:
 
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.

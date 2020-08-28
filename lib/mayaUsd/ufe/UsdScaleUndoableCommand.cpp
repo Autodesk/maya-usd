@@ -25,7 +25,7 @@ TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(
     const Ufe::Path& path, double x, double y, double z
 ) : Ufe::ScaleUndoableCommand(path),
-    UsdTRSUndoableCommandBase(path, x, y, z)
+    UsdTRSUndoableCommandBase(x, y, z)
 {}
 
 UsdScaleUndoableCommand::~UsdScaleUndoableCommand()

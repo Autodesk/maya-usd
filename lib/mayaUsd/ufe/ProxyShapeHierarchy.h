@@ -67,7 +67,7 @@ public:
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #if UFE_PREVIEW_VERSION_NUM >= 2013
-    Ufe::UndoableCommand::Ptr insertChildCmd(
+    Ufe::InsertChildCommand::Ptr insertChildCmd(
         const Ufe::SceneItem::Ptr& child,
         const Ufe::SceneItem::Ptr& pos
     ) override;

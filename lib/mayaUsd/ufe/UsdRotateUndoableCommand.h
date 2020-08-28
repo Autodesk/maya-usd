@@ -54,6 +54,8 @@ public:
 	void redo() override;
 	bool rotate(double x, double y, double z) override;
 
+	Ufe::Path getPath() const override { return path(); }
+
 protected:
 
     //! Construct a UsdRotateUndoableCommand.  The command is not executed.

@@ -51,6 +51,8 @@ public:
 	void redo() override;
 	bool scale(double x, double y, double z) override;
 
+	Ufe::Path getPath() const override { return path(); }
+
 protected:
 
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.

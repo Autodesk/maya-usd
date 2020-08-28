@@ -24,9 +24,8 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 template<class V>
-UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(const Ufe::Path& path, double x, double y, double z)
-    : fPath(path)
-    , fNewValue(x, y, z)
+UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(double x, double y, double z)
+    : fNewValue(x, y, z)
 {
 }
 
@@ -34,7 +33,7 @@ template<class V>
 void UsdTRSUndoableCommandBase<V>::updateItem() const
 {
     if(!fItem) {
-        auto ufeSceneItemPtr = Ufe::Hierarchy::createItem(fPath);
+        auto ufeSceneItemPtr = Ufe::Hierarchy::createItem(getPath());
         fItem = std::dynamic_pointer_cast<UsdSceneItem>(ufeSceneItemPtr);
     }
 }

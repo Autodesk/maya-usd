@@ -24,10 +24,8 @@ TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
 
 UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(const Ufe::Path& path, double x, double y, double z) 
     : Ufe::TranslateUndoableCommand(path)
-    , UsdTRSUndoableCommandBase(path, x, y, z)
-{
-
-}
+    , UsdTRSUndoableCommandBase(x, y, z)
+{}
 
 UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
 {}

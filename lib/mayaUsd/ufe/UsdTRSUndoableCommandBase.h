@@ -52,7 +52,7 @@ class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase
 {
 protected:
 
-    UsdTRSUndoableCommandBase(const Ufe::Path& path, double x, double y, double z);
+    UsdTRSUndoableCommandBase(double x, double y, double z);
     ~UsdTRSUndoableCommandBase() = default;
 
     // Initialize the command.
@@ -81,6 +81,9 @@ protected:
     // Create a UsdSceneItem::Ptr conditionaly in the first access from Ufe::Path.
     void updateItem() const;
 
+    //
+    virtual Ufe::Path getPath() const = 0;
+
 private:
     inline UsdAttribute attribute() const {
         return prim().GetAttribute(attributeName());
@@ -91,7 +94,6 @@ private:
     V                         fNewValue;
     bool                      fOpAdded{false};
     bool                      fDoneOnce{false};
-    Ufe::Path                 fPath;
 
 }; // UsdTRSUndoableCommandBase
 

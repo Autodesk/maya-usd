@@ -25,7 +25,7 @@ TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
 UsdRotateUndoableCommand::UsdRotateUndoableCommand(
     const Ufe::Path& path, double x, double y, double z)
 	: Ufe::RotateUndoableCommand(path),
-      UsdTRSUndoableCommandBase(path, x, y, z)
+      UsdTRSUndoableCommandBase(x, y, z)
 {
 	// Since we want to change xformOp:rotateXYZ, and we need to store the
 	// prevRotate for undo purposes, we need to make sure we convert it to

@@ -55,7 +55,7 @@ namespace ufe {
 UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& parent,
                                                      const UsdSceneItem::Ptr& child,
                                                      const UsdSceneItem::Ptr& /* pos */) 
-    : Ufe::UndoableCommand()
+    : Ufe::InsertChildCommand()
     , _ufeSrcItem(child)
     , _ufeDstItem(nullptr)
     , _ufeSrcPath(child->path())
@@ -130,6 +130,7 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
 
         if (status) {
             _ufeDstItem = UsdSceneItem::create(_ufeDstPath, ufePathToPrim(_ufeDstPath));
+            std::cout << "UsdUndoInsertChildCommand::_ufeDstPath = " << _ufeDstPath.string() << '\n'; 
             sendNotification<Ufe::ObjectReparent>(_ufeDstItem, _ufeSrcPath);
         }
     }
