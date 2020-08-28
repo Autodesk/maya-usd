@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDUI_I_USD_IMPORT_VIEW_H
+#define MAYAUSDUI_I_USD_IMPORT_VIEW_H
+
 
 #include <pxr/usd/usd/stage.h>
 
@@ -61,3 +63,6 @@ public:
 };
 
 } // namespace MayaUsd
+
+
+#endif
