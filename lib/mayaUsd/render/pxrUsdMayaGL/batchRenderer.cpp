@@ -81,10 +81,6 @@
 #include <pxr/imaging/hgi/tokens.h>
 #endif
 
-#if USD_VERSION_NUM < 1911
-#include <pxr/usd/usdGeom/tokens.h>
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1116,13 +1112,8 @@ UsdMayaGLBatchRenderer::_GetIntersectionPrimFilters(
                 nullptr,
                 collection,
                 TfTokenVector{
-#if USD_VERSION_NUM >= 1911
                     HdRenderTagTokens->geometry,
                     HdRenderTagTokens->proxy}
-#else
-                    HdTokens->geometry,
-                    UsdGeomTokens->proxy}
-#endif
         });
     }
 
