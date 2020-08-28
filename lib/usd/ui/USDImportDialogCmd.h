@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDUI_USD_IMPORT_DIALOG_CMD_H
+#define MAYAUSDUI_USD_IMPORT_DIALOG_CMD_H
+
 
 #include <maya/MPxCommand.h>
 
@@ -44,3 +46,6 @@ private:
 };
 
 } // namespace MayaUsd
+
+
+#endif
