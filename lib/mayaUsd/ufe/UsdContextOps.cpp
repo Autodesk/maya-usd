@@ -232,9 +232,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
         MGlobal::executeCommand("runTimeCommand -exists UsdLayerEditor", hasLayerEditorCmd);
         if (hasLayerEditorCmd) {
             items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
-#if UFE_PREVIEW_VERSION_NUM >= 2015
             items.emplace_back(Ufe::ContextItem::kSeparator);
-#endif
         }
 
         // Top-level items.  Variant sets and visibility. Do not add for gateway type node.
@@ -303,9 +301,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
             items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel);  // typeless prim
             items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel);
             items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel);
-#if UFE_PREVIEW_VERSION_NUM >= 2015
             items.emplace_back(Ufe::ContextItem::kSeparator);
-#endif
             items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel);
             items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel);
             items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel);

@@ -40,9 +40,7 @@
 #include <ufe/transform3d.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/object3d.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2010
 #include <ufe/object3dNotification.h>
-#endif
 #include <unordered_map>
 #endif
 
@@ -234,18 +232,18 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 					Ufe::Scene::notifyObjectDelete(notification);
 				}
 			}
+#ifdef UFE_V2_FEATURES_AVAILABLE
 			else
 			{
-#if UFE_PREVIEW_VERSION_NUM >= 2014
 				// According to USD docs for GetResyncedPaths():
 				// - Resyncs imply entire subtree invalidation of all descendant prims and properties.
 				// So we send the UFE subtree invalidate notif.
 				auto notification = Ufe::SubtreeInvalidate(sceneItem);
 				Ufe::Scene::notifySubtreeInvalidate(notification);
-#endif
 			}
+#endif
 		}
-#if UFE_PREVIEW_VERSION_NUM >= 2015
+#ifdef UFE_V2_FEATURES_AVAILABLE
 		else if (!prim.IsValid() && !InPathChange::inPathChange())
 		{
 			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
@@ -255,11 +253,9 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			}
 			else
 			{
-#if UFE_PREVIEW_VERSION_NUM >= 2014
 				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
 				auto notification = Ufe::SubtreeInvalidate(sceneItem);
 				Ufe::Scene::notifySubtreeInvalidate(notification);
-#endif
 			}
 		}
 #endif
@@ -284,14 +280,12 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			}
 		}
 
-#if UFE_PREVIEW_VERSION_NUM >= 2010
 		// Send a special message when visibility has changed.
 		if (changedPath.GetNameToken() == UsdGeomTokens->visibility)
 		{
 			Ufe::VisibilityChanged vis(ufePath);
 			Ufe::Object3d::notify(vis);
 		}
-#endif
 #endif
 
 		// We need to determine if the change is a Transform3d change.
@@ -323,7 +317,7 @@ void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& n
 {
 	afterOpen();
 
-#if UFE_PREVIEW_VERSION_NUM >= 2014
+#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(notice.GetProxyShape().ufePath());
 	auto notification = Ufe::SubtreeInvalidate(sceneItem);
 	Ufe::Scene::notifySubtreeInvalidate(notification);
