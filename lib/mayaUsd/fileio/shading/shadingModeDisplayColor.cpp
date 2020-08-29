@@ -97,7 +97,6 @@ private:
             return;
         }
 
-        const UsdStageRefPtr& stage = context.GetUsdStage();
         GfVec3f color;
         GfVec3f transparency;
         const MFnLambertShader lambertFn(ssDepNode.object(), &status);
@@ -141,6 +140,8 @@ private:
         if (transparencyAvg > 0.0f) {
             displayOpacityAry.push_back(1.0f - transparencyAvg);
         }
+
+        const UsdStageRefPtr& stage = context.GetUsdStage();
 
         TF_FOR_ALL(iter, assignments) {
             const SdfPath& boundPrimPath = iter->first;
