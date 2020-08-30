@@ -72,7 +72,7 @@ public:
 
 #if UFE_PREVIEW_VERSION_NUM >= 2021
 	Ufe::SetMatrixUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
-	Ufe::Matrix4d getMatrix() const override;
+	Ufe::Matrix4d matrix() const override;
 #endif
 
 	void translate(double x, double y, double z) override;
