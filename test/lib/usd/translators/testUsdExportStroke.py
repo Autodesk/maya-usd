@@ -15,31 +15,33 @@
 # limitations under the License.
 #
 
-import os
-import unittest
-
-from pxr import Gf
 from pxr import Usd
 from pxr import UsdGeom
 
 from maya import cmds
 from maya import standalone
 
+import fixturesUtils
 
-class testPxrUsdTranslatorsStroke(unittest.TestCase):
+import os
+import unittest
+
+
+class testUsdExportStroke(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
+        inputPath = fixturesUtils.setUpClass(__file__)
 
-        cls._testName = 'StrokeExportTest'
+        cls._testName = 'UsdExportStrokeTest'
 
-        mayaFile = os.path.abspath('%s.ma' % cls._testName)
-        cmds.file(mayaFile, open=True, force=True)
+        mayaFilePath = os.path.join(inputPath, cls._testName,
+            "%s.ma" % cls._testName)
+
+        cmds.file(mayaFilePath, open=True, force=True)
 
         # Export to USD.
         usdFilePath = os.path.abspath('%s.usda' % cls._testName)
-        cmds.loadPlugin('pxrUsd')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
             shadingMode='none')
 

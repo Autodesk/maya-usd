@@ -35,6 +35,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportShadingModePxrRis.py
     testUsdExportSkeleton.py
     testUsdExportStripNamespaces.py
+    testUsdExportStroke.py
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py

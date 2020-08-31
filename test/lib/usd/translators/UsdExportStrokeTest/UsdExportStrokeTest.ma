@@ -1,5 +1,5 @@
 //Maya ASCII 2016 scene
-//Name: StrokeExportTest.ma
+//Name: UsdExportStrokeTest.ma
 //Last modified: Mon, Jun 24, 2019 04:49:14 PM
 //Codeset: UTF-8
 requires maya "2016";
@@ -71,9 +71,9 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".man" -type "string" "side_mask";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
-createNode transform -n "StrokeExportTest";
+createNode transform -n "UsdExportStrokeTest";
 	rename -uid "B31EB8C0-0000-5E19-5D11-615E00000262";
-createNode transform -n "Geom" -p "StrokeExportTest";
+createNode transform -n "Geom" -p "UsdExportStrokeTest";
 	rename -uid "B31EB8C0-0000-5E19-5D11-616600000263";
 createNode transform -n "Plane" -p "Geom";
 	rename -uid "B31EB8C0-0000-5E19-5D11-60CC00000254";
@@ -583,4 +583,4 @@ connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
 connectAttr ":time1.o" "crystals1.tim";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
 connectAttr "PlaneShape.iog" ":initialShadingGroup.dsm" -na;
-// End of StrokeExportTest.ma
+// End of UsdExportStrokeTest.ma
