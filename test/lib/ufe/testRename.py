@@ -420,14 +420,10 @@ class RenameTestCase(unittest.TestCase):
         ufeObs = TestObserver()
 
         # We start off with no observers
-        self.assertFalse(ufe.Scene.hasObjectAddObserver(ufeObs))
-        self.assertFalse(ufe.Scene.hasObjectDeleteObserver(ufeObs))
-        self.assertFalse(ufe.Scene.hasObjectPathChangeObserver(ufeObs))
+        self.assertFalse(ufe.Scene.hasObserver(ufeObs))
 
-        # Add the UFE observers we want to test
-        ufe.Scene.addObjectAddObserver(ufeObs)
-        ufe.Scene.addObjectDeleteObserver(ufeObs)
-        ufe.Scene.addObjectPathChangeObserver(ufeObs)
+        # Add the UFE observer we want to test
+        ufe.Scene.addObserver(ufeObs)
 
         # rename
         newName = 'pCylinder1_Renamed'

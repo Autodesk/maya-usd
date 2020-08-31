@@ -158,7 +158,7 @@ Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& c
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
+Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,
     const Ufe::SceneItem::Ptr& pos
 )

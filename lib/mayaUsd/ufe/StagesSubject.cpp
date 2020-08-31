@@ -223,13 +223,11 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			{
 				if (prim.IsActive())
 				{
-					auto notification = Ufe::ObjectAdd(sceneItem);
-					Ufe::Scene::notifyObjectAdd(notification);
+					Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
 				}
 				else
 				{
-					auto notification = Ufe::ObjectPostDelete(sceneItem);
-					Ufe::Scene::notifyObjectDelete(notification);
+					Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
 				}
 			}
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -238,8 +236,7 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 				// According to USD docs for GetResyncedPaths():
 				// - Resyncs imply entire subtree invalidation of all descendant prims and properties.
 				// So we send the UFE subtree invalidate notif.
-				auto notification = Ufe::SubtreeInvalidate(sceneItem);
-				Ufe::Scene::notifySubtreeInvalidate(notification);
+				Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 			}
 #endif
 		}
@@ -248,14 +245,12 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		{
 			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
 			{
-				auto notification = Ufe::ObjectDestroyed(ufePath);
-				Ufe::Scene::notifyObjectDelete(notification);
+				Ufe::Scene::instance().notify(Ufe::ObjectDestroyed(ufePath));
 			}
 			else
 			{
 				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
-				auto notification = Ufe::SubtreeInvalidate(sceneItem);
-				Ufe::Scene::notifySubtreeInvalidate(notification);
+				Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 			}
 		}
 #endif
@@ -319,8 +314,7 @@ void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& n
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(notice.GetProxyShape().ufePath());
-	auto notification = Ufe::SubtreeInvalidate(sceneItem);
-	Ufe::Scene::notifySubtreeInvalidate(notification);
+	Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 #endif
 }
 

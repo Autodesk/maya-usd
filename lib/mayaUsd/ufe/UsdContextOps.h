@@ -56,6 +56,7 @@ public:
 
 	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
+	inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 
 	// When we are created from the ProxyShapeContextOpsHandler we do not have the proper
 	// Maya UFE scene item. So it won't return the correct node type. Therefore we set
@@ -70,7 +71,6 @@ public:
 
 private:
 	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
 	bool fIsAGatewayType{false};
 
 }; // UsdContextOps

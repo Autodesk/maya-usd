@@ -53,6 +53,7 @@ public:
 	// Ufe::Transform3d overrides
 	const Ufe::Path& path() const override;
 	Ufe::SceneItem::Ptr sceneItem() const override;
+	inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
@@ -64,6 +65,11 @@ public:
 	Ufe::TranslateUndoableCommand::Ptr translateCmd() override;
 	Ufe::RotateUndoableCommand::Ptr rotateCmd() override;
 	Ufe::ScaleUndoableCommand::Ptr scaleCmd() override;
+#endif
+
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+	Ufe::SetMatrixUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
+	Ufe::Matrix4d matrix() const override;
 #endif
 
 	void translate(double x, double y, double z) override;
@@ -81,7 +87,6 @@ public:
 
 private:
 	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
 
 }; // UsdTransform3d
 
