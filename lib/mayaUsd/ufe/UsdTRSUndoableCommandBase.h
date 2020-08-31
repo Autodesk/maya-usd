@@ -47,13 +47,12 @@ namespace ufe {
 //   becomes stale, and the prim in the updated scene item should be used.
 //
 template<class V>
-class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase : public Ufe::Observer,
-        public std::enable_shared_from_this<UsdTRSUndoableCommandBase<V> >
+class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase 
+    : public std::enable_shared_from_this<UsdTRSUndoableCommandBase<V> >
 {
 protected:
 
-    UsdTRSUndoableCommandBase(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
+    UsdTRSUndoableCommandBase(double x, double y, double z);
     ~UsdTRSUndoableCommandBase() = default;
 
     // Initialize the command.
@@ -69,8 +68,7 @@ protected:
     // UFE item (and its USD prim) may change after creation time (e.g.
     // parenting change caused by undo / redo of other commands in the undo
     // stack), so always return current data.
-    inline UsdPrim prim() const { return fItem->prim(); }
-    inline Ufe::Path path() const { return fItem->path(); }
+    inline UsdPrim prim() const { updateItem(); return fItem->prim(); };
 
     // Hooks to be implemented by the derived class: name of the attribute set
     // by the command, implementation of perform(), and add empty attribute.
@@ -80,30 +78,31 @@ protected:
     virtual void addEmptyAttribute() = 0;
     virtual bool cannotInit() const;
 
+    // Create a UsdSceneItem::Ptr conditionaly in the first access from Ufe::Path.
+    void updateItem() const;
+
+    //
+    virtual Ufe::Path getPath() const = 0;
+
 private:
-
-    // Overridden from Ufe::Observer
-    void operator()(const Ufe::Notification& notification) override;
-
-    template<class N> void checkNotification(const N* notification);
-
     inline UsdAttribute attribute() const {
-      return prim().GetAttribute(attributeName());
+        return prim().GetAttribute(attributeName());
     }
 
-    UsdSceneItem::Ptr fItem;
-    V                 fPrevValue;
-    V                 fNewValue;
-    bool              fOpAdded{false};
-    bool              fDoneOnce{false};
+    mutable UsdSceneItem::Ptr fItem{nullptr};
+    V                         fPrevValue;
+    V                         fNewValue;
+    bool                      fOpAdded{false};
+    bool                      fDoneOnce{false};
+
 }; // UsdTRSUndoableCommandBase
 
 // shared_ptr requires public ctor, dtor, so derive a class for it.
 template<class T>
 struct MakeSharedEnabler : public T {
     MakeSharedEnabler(
-        const UsdSceneItem::Ptr& item, double x, double y, double z)
-        : T(item, x, y, z) {}
+        const Ufe::Path& path, double x, double y, double z)
+        : T(path, x, y, z) {}
 };
 
 } // namespace ufe

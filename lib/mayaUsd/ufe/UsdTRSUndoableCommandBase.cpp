@@ -24,10 +24,19 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 template<class V>
-UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-) : fItem(item), fNewValue(x, y, z)
-{}
+UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(double x, double y, double z)
+    : fNewValue(x, y, z)
+{
+}
+
+template<class V>
+void UsdTRSUndoableCommandBase<V>::updateItem() const
+{
+    if(!fItem) {
+        auto ufeSceneItemPtr = Ufe::Hierarchy::createItem(getPath());
+        fItem = std::dynamic_pointer_cast<UsdSceneItem>(ufeSceneItemPtr);
+    }
+}
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::initialize()
@@ -43,29 +52,20 @@ void UsdTRSUndoableCommandBase<V>::initialize()
         addEmptyAttribute();
     }
 
-    // See
-    // https://stackoverflow.com/questions/17853212/using-shared-from-this-in-templated-classes
-    // for explanation of this->shared_from_this() in templated class.
     attribute().Get(&fPrevValue);
-    Ufe::Scene::instance().addObserver(this->shared_from_this());
-}
-
-template<class V>
-void UsdTRSUndoableCommandBase<V>::operator()(
-    const Ufe::Notification& n
-)
-{
-    if (auto renamed = dynamic_cast<const Ufe::ObjectRename*>(&n)) {
-        checkNotification(renamed);
-    }
-    else if (auto reparented = dynamic_cast<const Ufe::ObjectReparent*>(&n)) {
-        checkNotification(reparented);
-    }
 }
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::undoImp()
 {
+    // Set fItem to nullptr because the command does not know what can go on with the prim inside
+    // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
+    // that the next time the command is used, it will be forced to create a new item from the path, 
+    // or the command will crash on a null pointer.
+    fItem = nullptr;
+
+    updateItem();
+
     attribute().Set(fPrevValue);
     // Todo : We would want to remove the xformOp
     // (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
@@ -74,6 +74,14 @@ void UsdTRSUndoableCommandBase<V>::undoImp()
 template<class V>
 void UsdTRSUndoableCommandBase<V>::redoImp()
 {
+    // Set fItem to nullptr because the command does not know what can go on with the prim inside
+    // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
+    // that the next time the command is used, it will be forced to create a new item from the path, 
+    // or the command will crash on a null pointer.
+    fItem = nullptr;
+
+    updateItem();
+
     // We must go through conversion to the common transform API by calling
     // perform(), otherwise we get "Empty typeName" USD assertions for rotate
     // and scale.  Once that is done, we can simply set the attribute directly.
@@ -83,15 +91,6 @@ void UsdTRSUndoableCommandBase<V>::redoImp()
     }
 
     perform(fNewValue[0], fNewValue[1], fNewValue[2]);
-}
-
-template<class V>
-template<class N>
-void UsdTRSUndoableCommandBase<V>::checkNotification(const N* notification)
-{
-    if (notification->previousPath() == path()) {
-        fItem = std::dynamic_pointer_cast<UsdSceneItem>(notification->item());
-    }
 }
 
 template<class V>
