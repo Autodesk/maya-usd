@@ -39,6 +39,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
+    testUsdImportExportScope.py
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but
     # passes.  PPT, 17-Jun-20.
     testUsdImportFrameRange.py
