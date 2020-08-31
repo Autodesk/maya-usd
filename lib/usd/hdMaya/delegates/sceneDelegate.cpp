@@ -671,7 +671,7 @@ void HdMayaSceneDelegate::PopulateSelectionList(
     const SdfPathVector& selectedSdfPaths, MSelectionList& mayaSelection) {
     for (const auto& it : selectedSdfPaths) {
         _FindAdapter<HdMayaDagAdapter>(it,
-                [&selectedSdfPaths, &mayaSelection](HdMayaDagAdapter* a) {
+                [&mayaSelection](HdMayaDagAdapter* a) {
             if (a->IsInstanced()) {
                 const auto& dagPath = a->GetDagPath();
                 MDagPathArray dags;
