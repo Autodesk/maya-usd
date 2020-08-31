@@ -28,12 +28,13 @@ DISCARD = "-discardEdits"
 PROXY_NODE_TYPE = "mayaUsdProxyShapeBase"
 
 DUMMY_FILE_TEXT = \
-"""#usda 1.0
+    """#usda 1.0
 def Sphere "ball"
     {
         custom string Winner = "shotFX"
     }
 """
+
 
 def getCleanMayaStage():
     """ gets a stage that only has an anon layer """
@@ -46,13 +47,13 @@ def getCleanMayaStage():
     stage = mayaUsd.lib.GetPrim(shapePath).GetStage()
     return shapePath, stage
 
+
 class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
     """ test mel commands intended for the layer editor """
 
     @classmethod
     def setUpClass(cls):
         cmds.loadPlugin('mayaUsdPlugin')
-
 
     def testEditTarget(self):
         """ tests 'mayaUsdEditTarget' command, but also touches on adding anon layers """
@@ -74,7 +75,8 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         cmds.mayaUsdEditTarget(shapePath, edit=True, editTarget=greenLayerId)
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, greenLayerId)
         # do we return that new target?
-        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, cmds.mayaUsdEditTarget(shapePath, query=True, editTarget=True)[0])
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier,
+                         cmds.mayaUsdEditTarget(shapePath, query=True, editTarget=True)[0])
         undoStepTwo = greenLayerId
 
         cmds.mayaUsdEditTarget(shapePath, edit=True, editTarget=redLayerId)
@@ -118,8 +120,26 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         addedLayers = [layer1Id, layer2Id, layer3Id]
         self.assertEqual(rootLayer.subLayerPaths, addedLayers)
 
-        # -removeSubPath
+        # test undo
+        cmds.undo() # undo last add
+        self.assertEqual(len(rootLayer.subLayerPaths), 2)
+        cmds.undo()
+        cmds.undo() # all gone now
+        self.assertEqual(len(rootLayer.subLayerPaths), 0)
+        # put them all back
+        for _ in range(3):
+            cmds.redo()
+        self.assertEqual(rootLayer.subLayerPaths, addedLayers)
+        # remove them again
+        for _ in range(3):
+            cmds.undo()
+        # redo  again
+        for _ in range(3):
+            cmds.redo()
+        # all back?
+        self.assertEqual(rootLayer.subLayerPaths, addedLayers)
 
+        # -removeSubPath
         # remove second sublayer
         cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=1)
         afterDeletion = [layer1Id, layer3Id]
@@ -218,12 +238,12 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
             # test everything is gone
             self.assertEqual(len(rootLayer.subLayerPaths), 0)
 
-            cmds.undo() # layers are back
+            cmds.undo()  # layers are back
             self.assertEqual(len(rootLayer.subLayerPaths), 1)
             self.assertEqual(rootLayer.subLayerPaths[0], childLayerId)
-            cmds.redo() # cleared/discarded again
+            cmds.redo()  # cleared/discarded again
             self.assertEqual(len(rootLayer.subLayerPaths), 0)
-            cmds.undo() # layers are back
+            cmds.undo()  # layers are back
             self.assertEqual(rootLayer.subLayerPaths[0], childLayerId)
             childLayer = Sdf.Layer.Find(childLayerId)
             self.assertEqual(childLayer.subLayerPaths[0], grandChildLayerId)
