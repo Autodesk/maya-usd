@@ -235,6 +235,9 @@ finally:
         list(APPEND MAYAUSD_VARNAME_PATH $ENV{PYTHONHOME})
     endif()
 
+    # Adjust PYTHONPATH to include the path to our test utilities.
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${CMAKE_BINARY_DIR}/test/python")
+
     # Adjust PATH and PYTHONPATH to include USD.
     # These should come last (esp PYTHONPATH, in case another module is overriding
     # with pkgutil)
