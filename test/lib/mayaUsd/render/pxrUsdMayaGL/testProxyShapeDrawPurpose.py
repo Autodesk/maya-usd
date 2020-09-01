@@ -75,7 +75,8 @@ class testProxyShapeDrawPurpose(unittest.TestCase):
         self._testName = 'ProxyShapeDrawPurposeTest'
 
         mayaSceneFile = '%s.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFullPath = os.path.abspath(
+            os.path.join('ProxyShapeDrawPurposeTest', mayaSceneFile))
         cmds.file(mayaSceneFullPath, open=True, force=True)
 
         # Force an initial draw to complete by switching frames.

@@ -34,7 +34,8 @@ class testProxyShapeDrawLighting(unittest.TestCase):
 
         cls._testRootNodeName = 'ProxyShapeDrawLightingTest'
         cls._testSceneName = '%s.ma' % cls._testRootNodeName
-        cls._testSceneFullPath = os.path.abspath(cls._testSceneName)
+        cls._testSceneFullPath = os.path.abspath(
+            os.path.join('ProxyShapeDrawLightingTest', cls._testSceneName))
 
         cls._nativeNodePathName = '|%s|Native' % cls._testRootNodeName
         cls._nativeTorusPathName = '%s|Torus' % cls._nativeNodePathName
