@@ -51,6 +51,9 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
+
+#include <ufe/runTimeMgr.h>
 #endif
 
 #if defined(MAYAUSD_VERSION)
@@ -79,6 +82,11 @@ template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
         status.perror(MString("mayaUsdPlugin: unable to deregister command ") + T::commandName);
     }
 }
+
+// The existing USD Transform3d handler, which we decorate for augmented
+// Transform3d support.  Keep a reference to it to restore on finalization.
+Ufe::Transform3dHandler::Ptr g_Transform3dHandler;
+
 } // namespace
 
 MAYAUSD_PLUGIN_PUBLIC
@@ -122,6 +130,18 @@ MStatus initializePlugin(MObject obj)
     if (!status) {
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
     }
+
+    // Augment the core maya-usd Transform3dHandler with our own chain of
+    // responsibility: first try the single matrix op at arbitrary position in
+    // the transform stack, then pass it off to the core maya-usd
+    // Transform3dHandler (which at time of writing converts to the USD common
+    // transform API).
+	auto& runTimeMgr = Ufe::RunTimeMgr::instance();
+	auto usdRtid = MAYAUSD_NS::ufe::getUsdRunTimeId();
+    g_Transform3dHandler = runTimeMgr.transform3dHandler(usdRtid);
+	auto matrixHandler = MAYAUSD_NS::ufe::UsdTransform3dMatrixOpHandler::create(
+		g_Transform3dHandler);
+	runTimeMgr.setTransform3dHandler(usdRtid, matrixHandler);
 #endif
 
     status = plugin.registerShape(
@@ -228,6 +248,10 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)
+    // Restore the initial maya-usd Transform3d handler.
+    Ufe::RunTimeMgr::instance().setTransform3dHandler(
+        MAYAUSD_NS::ufe::getUsdRunTimeId(), g_Transform3dHandler);
+
     status = MAYAUSD_NS::ufe::finalize();
     CHECK_MSTATUS(status);
 #endif
