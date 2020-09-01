@@ -18,13 +18,12 @@
 
 #include <mayaUsd/utils/query.h>
 
+#include <pxr/base/tf/diagnostic.h>
+
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
-#include <maya/MGlobal.h>
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
-
-#include <pxr/base/tf/diagnostic.h>
 
 #include <cstddef>
 #include <string>
@@ -61,7 +60,7 @@ public:
     }
     virtual ~BaseCmd() { }
     virtual bool doIt(SdfLayerHandle layer) = 0;
-    virtual void undoIt(SdfLayerHandle layer) = 0;
+    virtual bool undoIt(SdfLayerHandle layer) = 0;
 
     std::string _cmdResult; // set if the command returns something
 
@@ -109,14 +108,15 @@ public:
                 _index = (int)layer->GetNumSubLayerPaths();
             }
             if (_index != 0) {
-                if (_index < 0 || _index >= (int)layer->GetNumSubLayerPaths()) {
+                if (!validateAndReportIndex(layer, _index)) {
                     return false;
                 }
             }
             layer->InsertSubLayerPath(_subPath, _index);
             TF_VERIFY(layer->GetSubLayerPaths()[_index] == _subPath);
         } else {
-            if (_index < 0 || _index >= (int)layer->GetNumSubLayerPaths()) {
+            TF_VERIFY(_cmdId == CmdId::kRemove);
+            if (!validateAndReportIndex(layer, _index)) {
                 return false;
             }
             _subPath = layer->GetSubLayerPaths()[_index];
@@ -125,18 +125,43 @@ public:
         }
         return true;
     }
-    void undoIt(SdfLayerHandle layer) override
+    bool undoIt(SdfLayerHandle layer) override
     {
         if (_cmdId == CmdId::kInsert || _cmdId == CmdId::kAddAnonLayer) {
             auto index = _index;
             if (index == -1) {
                 index = static_cast<int>(layer->GetNumSubLayerPaths() - 1);
             }
-            TF_VERIFY(layer->GetSubLayerPaths()[index] == _subPath);
-            layer->RemoveSubLayerPath(index);
+            if (validateUndoIndex(layer, _index)) {
+                TF_VERIFY(layer->GetSubLayerPaths()[index] == _subPath);
+                layer->RemoveSubLayerPath(index);
+            } else {
+                return false;
+            }
         } else {
             TF_VERIFY(_index != -1);
-            layer->InsertSubLayerPath(_subPath, _index);
+            if (validateUndoIndex(layer, _index)) {
+                layer->InsertSubLayerPath(_subPath, _index);
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+    static bool validateUndoIndex(SdfLayerHandle layer, int index)
+    {   // allow re-inserting at the last index + 1, but -1 should have been changed to 0
+        return !(index < 0 || index > (int)layer->GetNumSubLayerPaths());
+    }
+
+    static bool validateAndReportIndex(SdfLayerHandle layer, int index)
+    {
+        if (index < 0 || index >= (int)layer->GetNumSubLayerPaths()) {
+            std::string message = std::string("Index ") + std::to_string(index)
+                + std::string(" out-of-bound for ") + layer->GetIdentifier();
+            MPxCommand::displayError(message.c_str());
+            return false;
+        } else {
+            return true;
         }
     }
 };
@@ -170,7 +195,7 @@ public:
         if (proxy.Find(_oldPath) == size_t(-1)) {
             std::string message = std::string("path ") + _oldPath
                 + std::string(" not found on layer ") + layer->GetIdentifier();
-            MGlobal::displayError(message.c_str());
+            MPxCommand::displayError(message.c_str());
             return false;
         }
 
@@ -179,12 +204,13 @@ public:
         return true;
     }
 
-    void undoIt(SdfLayerHandle layer) override
+    bool undoIt(SdfLayerHandle layer) override
     {
         auto proxy = layer->GetSubLayerPaths();
         proxy.Replace(_newPath, _oldPath);
         releaseSubLayers();
         holdOnPathIfDirty(layer, _newPath);
+        return true;
     }
 
     std::string _oldPath, _newPath;
@@ -197,23 +223,29 @@ public:
 
     bool doIt(SdfLayerHandle layer) override
     {
-        _anonLayer = SdfLayer::CreateAnonymous(_anonName);
-        _subPath = _anonLayer->GetIdentifier();
+        // the first time, USD will create a layer with a certain identifier
+        // on undo(), we will remove the path, but hold onto the layer
+        // on redo, we want to put back that same identifier, for later commands
+        if (_anonIdentifier.empty()) {
+            _anonLayer = SdfLayer::CreateAnonymous(_anonName);
+            _anonIdentifier = _anonLayer->GetIdentifier();            
+        } 
+        _subPath = _anonIdentifier;
         _index = 0;
         _cmdResult = _subPath;
         return InsertRemoveSubPathBase::doIt(layer);
     }
 
-    void undoIt(SdfLayerHandle layer) override
+    bool undoIt(SdfLayerHandle layer) override
     {
-        InsertRemoveSubPathBase::undoIt(layer);
-        _anonLayer = nullptr;
+        return InsertRemoveSubPathBase::undoIt(layer);
     }
 
     std::string _anonName;
 
 protected:
     PXR_NS::SdfLayerRefPtr _anonLayer;
+    std::string _anonIdentifier;
 };
 
 class BackupLayerBase : public BaseCmd {
@@ -240,7 +272,7 @@ public:
         }
         return true;
     }
-    void undoIt(SdfLayerHandle layer) override
+    bool undoIt(SdfLayerHandle layer) override
     {
         if (_backupLayer == nullptr) {
             layer->Reload();
@@ -249,6 +281,7 @@ public:
             _backupLayer = nullptr;
             releaseSubLayers();
         }
+        return true;
     }
 
     // we need to hold onto the layer if we dirty it
@@ -439,7 +472,9 @@ MStatus LayerEditorCommand::undoIt()
 
     // clang-format off
     for (auto it = _subCommands.rbegin(); it != _subCommands.rend(); ++it) { 
-        (*it)->undoIt(layer); 
+        if (!(*it)->undoIt(layer)) {
+            return MS::kFailure;
+        }
     }
 
     // clang-format on
