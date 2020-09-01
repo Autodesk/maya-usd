@@ -4,6 +4,7 @@ set(TARGET_NAME MAYAUSD_RENDER_PXRUSDMAYAGL_TEST)
 set(TEST_SCRIPT_FILES
     testProxyShapeDrawLighting.py
     testProxyShapeDrawPurpose.py
+    testProxyShapeRendererSceneMessages.py
     testPxrUsdMayaGL.py
 )
 

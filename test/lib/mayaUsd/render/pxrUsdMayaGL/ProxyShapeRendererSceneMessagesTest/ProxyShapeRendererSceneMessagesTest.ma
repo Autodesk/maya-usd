@@ -1,9 +1,9 @@
 //Maya ASCII 2016 scene
-//Name: ProxyShapeBatchRendererResetTest.ma
+//Name: ProxyShapeRendererSceneMessagesTest.ma
 //Last modified: Mon, Feb 26, 2018 11:10:50 AM
 //Codeset: UTF-8
 requires maya "2016";
-requires -nodeType "pxrUsdProxyShape" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
+requires -nodeType "mayaUsdProxyShape" "mayaUsdPlugin" "1.0";
 requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
@@ -72,12 +72,12 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".man" -type "string" "side_mask";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
-createNode transform -n "ProxyShapeBatchRendererResetTest";
+createNode transform -n "ProxyShapeRendererSceneMessagesTest";
 	rename -uid "24A938C0-0000-731D-5A94-5B3300000248";
-createNode transform -n "CubeProxy" -p "ProxyShapeBatchRendererResetTest";
+createNode transform -n "CubeProxy" -p "ProxyShapeRendererSceneMessagesTest";
 	rename -uid "2DAE0900-0000-511C-5AD9-371B00000265";
 	setAttr ".s" -type "double3" 5 5 5 ;
-createNode pxrUsdProxyShape -n "CubeProxyShape" -p "CubeProxy";
+createNode mayaUsdProxyShape -n "CubeProxyShape" -p "CubeProxy";
 	rename -uid "2DAE0900-0000-511C-5AD9-371B00000264";
 	setAttr -k off ".v";
 	setAttr ".covm[0]"  0 1 1;
@@ -226,4 +226,4 @@ relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":default
 connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
-// End of ProxyShapeBatchRendererResetTest.ma
+// End of ProxyShapeRendererSceneMessagesTest.ma

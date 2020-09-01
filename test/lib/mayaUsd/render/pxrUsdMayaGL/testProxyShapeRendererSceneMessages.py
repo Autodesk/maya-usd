@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import Tf
 
 from maya import cmds
@@ -26,7 +24,7 @@ import sys
 import unittest
 
 
-class testBatchRendererReset(unittest.TestCase):
+class testProxyShapeRendererSceneMessages(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -34,7 +32,8 @@ class testBatchRendererReset(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('pxrUsd')
+        cls._testName = 'ProxyShapeRendererSceneMessagesTest'
+        cls._inputDir = os.path.abspath(cls._testName)
 
     def setUp(self):
         cmds.file(new=True, force=True)
@@ -55,18 +54,15 @@ class testBatchRendererReset(unittest.TestCase):
         This test ensures that the batch renderer does not reset and Maya does
         not crash when doing a "Save Scene As..." operation.
         """
-        mayaSceneFile = 'AssemblySaveAsTest.ma'
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFile = '%s.ma' % self._testName
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         Tf.Status('Opening Maya Scene File: %s' % mayaSceneFullPath)
         cmds.file(mayaSceneFullPath, open=True, force=True)
-
-        animStartTime = cmds.playbackOptions(query=True,
-            animationStartTime=True)
-
-        UsdMaya.LoadReferenceAssemblies()
+        currentTime = cmds.playbackOptions(query=True, animationStartTime=True)
 
         # Force a draw to complete by switching frames.
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
         saveAsMayaSceneFile = 'SavedScene.ma'
         saveAsMayaSceneFullPath = os.path.abspath(saveAsMayaSceneFile)
@@ -74,13 +70,14 @@ class testBatchRendererReset(unittest.TestCase):
         cmds.file(rename=saveAsMayaSceneFullPath)
         cmds.file(save=True)
 
-        # Try to select the USD assembly/proxy. This will cause the proxy's
+        # Try to select the USD proxy shape. This will cause the proxy's
         # shape adapter's Sync() method to be called, which would fail if the
         # batch renderer had been reset out from under the shape adapter.
-        cmds.select('CubeAssembly')
+        cmds.select('CubeProxyShape')
 
         # Force a draw to complete by switching frames.
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
     def testSceneOpenAndReopen(self):
         """
@@ -95,36 +92,32 @@ class testBatchRendererReset(unittest.TestCase):
         been fully read and an initial draw may have happened by the time the
         message is received. Either case results in the batch renderer being
         reset in the middle of an active scene and a possible crash.
-
-        This test depends on the proxy shape node directly and not the assembly
-        node. The proxy shape will be drawn immediately when the scene is
-        opened, as opposed to an assembly that must first be loaded to create
-        the proxy shape node underneath it.
         """
-        mayaSceneFile = 'ProxyShapeBatchRendererResetTest.ma'
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFile = '%s.ma' % self._testName
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         Tf.Status('Opening Maya Scene File: %s' % mayaSceneFullPath)
         cmds.file(mayaSceneFullPath, open=True, force=True)
+        currentTime = cmds.playbackOptions(query=True, animationStartTime=True)
 
         # Force a draw to complete by switching frames.
-        animStartTime = cmds.playbackOptions(query=True,
-            animationStartTime=True)
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
         # Re-open the same scene.
         Tf.Status('Re-opening Maya Scene File: %s' % mayaSceneFullPath)
         cmds.file(mayaSceneFullPath, open=True, force=True)
+        currentTime = cmds.playbackOptions(query=True, animationStartTime=True)
 
         # Force a draw to complete by switching frames.
-        animStartTime = cmds.playbackOptions(query=True,
-            animationStartTime=True)
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
         # Try to select the proxy shape.
-        cmds.select('CubeProxy')
+        cmds.select('CubeProxyShape')
 
         # Force a draw to complete by switching frames.
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
     def testSceneImportAndReference(self):
         """
@@ -136,44 +129,47 @@ class testBatchRendererReset(unittest.TestCase):
         current scene. In that case, we want to make sure that the batch
         renderer does not get reset.
         """
-        mayaSceneFile = 'ProxyShapeBatchRendererResetTest.ma'
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFile = '%s.ma' % self._testName
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         Tf.Status('Opening Maya Scene File: %s' % mayaSceneFullPath)
         cmds.file(mayaSceneFullPath, open=True, force=True)
+        currentTime = cmds.playbackOptions(query=True, animationStartTime=True)
 
         # Force a draw to complete by switching frames.
-        animStartTime = cmds.playbackOptions(query=True,
-            animationStartTime=True)
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
         # Import another scene file into the current scene.
         mayaSceneFile = 'EmptyScene.ma'
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         Tf.Status('Importing Maya Scene File: %s' % mayaSceneFullPath)
         cmds.file(mayaSceneFullPath, i=True)
 
         # Force a draw to complete by switching frames.
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
         # Try to select the proxy shape.
-        cmds.select('CubeProxy')
+        cmds.select('CubeProxyShape')
 
         # Force a draw to complete by switching frames.
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
         # Reference another scene file into the current scene.
         Tf.Status('Referencing Maya Scene File: %s' % mayaSceneFullPath)
         cmds.file(mayaSceneFullPath, reference=True)
 
         # Force a draw to complete by switching frames.
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
         # Try to select the proxy shape.
-        cmds.select('CubeProxy')
+        cmds.select('CubeProxyShape')
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(testBatchRendererReset)
+    suite = unittest.TestLoader().loadTestsFromTestCase(testProxyShapeRendererSceneMessages)
 
     results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
     if results.wasSuccessful():
