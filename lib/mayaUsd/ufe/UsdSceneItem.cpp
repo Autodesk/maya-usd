@@ -53,7 +53,13 @@ std::string UsdSceneItem::nodeType() const
 std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 {
 	std::vector<std::string> strAncestorTypes;
-
+	
+	// during drag/drop in outliner UsdPrim can become invalidated which
+	// should never happens.
+	// MAYA-106644: HS August 31,2020 investigate the invalidation.
+	if (!fPrim.IsValid()) {
+		return {};
+	}
 #if USD_VERSION_NUM < 2005
 	static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
 	const TfType schemaType = schemaBaseType.FindDerivedByName(fPrim.GetTypeName().GetString());
