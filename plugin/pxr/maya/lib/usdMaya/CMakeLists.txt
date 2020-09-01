@@ -75,7 +75,6 @@ pxr_test_scripts(
         testenv/testUsdExportPointInstancer.py
         testenv/testUsdImportAsAssemblies.py
         testenv/testUsdImportNestedAssemblyAnimation.py
-        testenv/testUsdTranslateTypelessDefs.py
         testenv/testUsdMayaBlockSceneModificationContext.py
         testenv/testUsdMayaDiagnosticDelegate.py
         testenv/testUsdMayaGetVariantSetSelections.py
@@ -196,22 +195,6 @@ pxr_register_test(testUsdImportNestedAssemblyAnimation
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdImportNestedAssemblyAnimation"
     TESTENV testUsdImportNestedAssemblyAnimation
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_install_test_dir(
-    SRC testenv/UsdTranslateTypelessDefs
-    DEST testUsdTranslateTypelessDefs
-)
-pxr_register_test(testUsdTranslateTypelessDefs
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdTranslateTypelessDefs"
-    TESTENV testUsdTranslateTypelessDefs
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
