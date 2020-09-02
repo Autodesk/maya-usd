@@ -58,14 +58,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// reader plugin for some Maya built-in type, you can register your own
 /// plugin for that Maya built-in type.
 struct UsdMayaShaderReaderRegistry {
+    /// Predicate function, i.e. a function that can tell the level of support
+    /// the reader function will provide for a given context.
+    using ContextPredicateFn
+        = std::function<UsdMayaShaderReader::ContextSupport(const UsdMayaJobImportArgs&)>;
+
     /// Reader factory function, i.e. a function that creates a prim reader
     /// for the given prim reader args.
-    typedef std::function<UsdMayaPrimReaderSharedPtr(const UsdMayaPrimReaderArgs&)> ReaderFactoryFn;
-
-    /// Reader function, i.e. a function that reads a prim. This is the
-    /// signature of the function declared in the PXRUSDMAYA_DEFINE_READER
-    /// macro.
-    typedef std::function<bool(const UsdMayaPrimReaderArgs&, UsdMayaPrimReaderContext*)> ReaderFn;
+    using ReaderFactoryFn = std::function<UsdMayaPrimReaderSharedPtr(const UsdMayaPrimReaderArgs&)>;
 
     /// \brief Register \p fn as a factory function providing a
     /// UsdMayaShaderReader subclass that can be used to read \p usdInfoId.
@@ -77,20 +77,27 @@ struct UsdMayaShaderReaderRegistry {
     /// class MyReader : public UsdMayaShaderReader {
     ///     static UsdMayaPrimReaderSharedPtr Create(
     ///             const UsdMayaPrimReaderArgs&);
+    ///     static CanImport(const UsdMayaJobImportArgs& importArgs) {
+    ///         return Supported; // After consulting the arguments
+    ///     }
     /// };
     /// TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShaderReaderRegistry, MyReader) {
     ///     UsdMayaShaderReaderRegistry::Register("myCustomInfoId",
+    ///             MyReader::CanImport,
     ///             MyReader::Create);
     /// }
     /// \endcode
     MAYAUSD_CORE_PUBLIC
-    static void Register(TfToken usdInfoId, ReaderFactoryFn fn);
+    static void Register(TfToken usdInfoId, ContextPredicateFn pred, ReaderFactoryFn fn);
 
-    /// \brief Finds a reader if one exists for \p usdInfoId.
+    /// \brief Finds a reader if one exists for \p usdInfoId. The returned reader will have declared
+    /// support given the current \p importArgs.
     ///
-    /// If there is no reader plugin for \p usdInfoId, returns nullptr.
+    /// If there is no supported reader plugin for \p usdInfoId, returns nullptr.
     MAYAUSD_CORE_PUBLIC
-    static ReaderFactoryFn Find(const TfToken& usdInfoId);
+    static ReaderFactoryFn Find(
+        const TfToken&              usdInfoId,
+        const UsdMayaJobImportArgs& importArgs);
 };
 
 /// \brief Registers a pre-existing reader class for the given USD info:id;
@@ -105,16 +112,22 @@ struct UsdMayaShaderReaderRegistry {
 ///             const UsdMayaPrimReaderArgs& readerArgs) {
 ///         // ...
 ///     }
+///     static CanImport(const UsdMayaJobImportArgs& importArgs) {
+///         return Supported; // After consulting the arguments
+///     }
 /// };
 /// PXRUSDMAYA_REGISTER_SHADER_READER(myCustomInfoId, MyReader);
 /// \endcode
 #define PXRUSDMAYA_REGISTER_SHADER_READER(usdInfoId, readerClass)                         \
     TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShaderReaderRegistry, usdInfoId##_##readerClass) \
     {                                                                                     \
-        static_assert(std::is_base_of<UsdMayaShaderReader, readerClass>::value,           \
+        static_assert(                                                                    \
+            std::is_base_of<UsdMayaShaderReader, readerClass>::value,                     \
             #readerClass " must derive from UsdMayaShaderReader");                        \
         UsdMayaShaderReaderRegistry::Register(                                            \
-            TfToken(#usdInfoId), [](const UsdMayaPrimReaderArgs& readerArgs) {            \
+            TfToken(#usdInfoId),                                                          \
+            readerClass::CanImport,                                                       \
+            [](const UsdMayaPrimReaderArgs& readerArgs) {                                 \
                 return std::make_shared<readerClass>(readerArgs);                         \
             });                                                                           \
     }

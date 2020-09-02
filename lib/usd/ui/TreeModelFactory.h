@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDUI_TREE_MODEL_FACTORY_H
+#define MAYAUSDUI_TREE_MODEL_FACTORY_H
+
 
 #include <memory>
 #include <unordered_set>
@@ -102,3 +104,6 @@ protected:
 };
 
 } // namespace MayaUsd
+
+
+#endif

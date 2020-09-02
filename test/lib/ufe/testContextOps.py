@@ -64,8 +64,8 @@ class ContextOpsTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
 
-        # This test requires no additional setup.
-        if self._testMethodName == 'testAddNewPrim':
+        # These tests requires no additional setup.
+        if self._testMethodName in ['testAddNewPrim', 'testAddNewPrimWithDelete']:
             return
 
         # Open top_layer.ma scene in test-samples
@@ -178,8 +178,8 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.undo()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrim only available in UFE preview version 0.2.15 and greater')
     def testAddNewPrim(self):
+        cmds.file(new=True, force=True)
 
         # Create a proxy shape with empty stage to start with.
         import mayaUsd_createStageWithNewLayer
@@ -282,3 +282,45 @@ class ContextOpsTestCase(unittest.TestCase):
         # Ensure we got the correct UFE notifs.
         self.assertEqual(ufeObs.nbAddNotif(), 2)
         self.assertEqual(ufeObs.nbDeleteNotif(), 2)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrimWithDelete only available in UFE preview version 0.2.15 and greater')
+    def testAddNewPrimWithDelete(self):
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage1|stageShape1")])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        # Add a new Xform prim.
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The proxy shape should now have a single UFE child item.
+        proxyShapehier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 1)
+
+        # Using UFE, delete this new prim (which doesn't actually delete it but
+        # instead makes it inactive).
+        cmds.pickWalk(d='down')
+        cmds.delete()
+
+        # The proxy shape should now have no UFE child items (since we skip inactive).
+        self.assertFalse(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 0)
+
+        # Add another Xform prim (which should get a unique name taking into
+        # account the prim we just made inactive).
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The proxy shape should now have a single UFE child item.
+        self.assertTrue(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 1)

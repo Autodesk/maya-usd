@@ -54,10 +54,7 @@ public:
 	const Ufe::Path& path() const override;
 	Ufe::SceneItem::Ptr sceneItem() const override;
 
-    // When the current Maya preview release has UFE 0.2.13, this conditional
-    // compilation can be converted to:
-    // #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2013
+#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
 	Ufe::RotateUndoableCommand::Ptr rotateCmd(double x, double y, double z) override;
 	Ufe::ScaleUndoableCommand::Ptr scaleCmd(double x, double y, double z) override;

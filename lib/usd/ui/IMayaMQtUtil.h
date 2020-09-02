@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDUI_I_MAYA_MQT_UTIL_H
+#define MAYAUSDUI_I_MAYA_MQT_UTIL_H
+
 
 #include <string>
 
@@ -44,3 +46,6 @@ public:
 };
 
 } // namespace MayaUsd
+
+
+#endif

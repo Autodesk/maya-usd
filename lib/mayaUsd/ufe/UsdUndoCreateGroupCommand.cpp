@@ -22,14 +22,10 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
-#if UFE_PREVIEW_VERSION_NUM >= 2017
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
-#endif
 
 MAYAUSD_NS_DEF {
 namespace ufe {
-
-#if UFE_PREVIEW_VERSION_NUM >= 2017
 
 UsdUndoCreateGroupCommand::UsdUndoCreateGroupCommand(const UsdSceneItem::Ptr& parentItem, const Ufe::Selection& selection, const Ufe::PathComponent& name)
 	: Ufe::CompositeUndoableCommand()
@@ -75,58 +71,5 @@ void UsdUndoCreateGroupCommand::execute()
 	}
 }
 
-#else // UFE_PREVIEW_VERSION_NUM
-
-UsdUndoCreateGroupCommand::UsdUndoCreateGroupCommand(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name)
-	: Ufe::UndoableCommand()
-	, _parentItem(parentItem)
-	, _name(name)
-{
-}
-
-UsdUndoCreateGroupCommand::~UsdUndoCreateGroupCommand()
-{
-}
-
-/*static*/
-UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(const UsdSceneItem::Ptr& parentItem, const Ufe::PathComponent& name)
-{
-	return std::make_shared<UsdUndoCreateGroupCommand>(parentItem, name);
-}
-
-Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const
-{
-	return _group;
-}
-
-//------------------------------------------------------------------------------
-// UsdUndoCreateGroupCommand overrides
-//------------------------------------------------------------------------------
-
-void UsdUndoCreateGroupCommand::undo()
-{
-	if (!_group) return;
-
-	// See UsdUndoDuplicateCommand.undo() comments.
-	auto notification = Ufe::ObjectPreDelete(_group);
-	Ufe::Scene::notifyObjectDelete(notification);
-
-	auto prim = _group->prim();
-	auto stage = prim.GetStage();
-	auto usdPath = prim.GetPath();
-	stage->RemovePrim(usdPath);
-
-	_group.reset();
-}
-
-void UsdUndoCreateGroupCommand::redo()
-{
-	auto hierarchy = Ufe::Hierarchy::hierarchy(_parentItem);
-	// See MAYA-92264: redo doesn't work.  PPT, 19-Nov-2018.
-	Ufe::SceneItem::Ptr group = hierarchy->createGroup(_name);
-	_group = std::dynamic_pointer_cast<UsdSceneItem>(group);
-}
-
-#endif // #if UFE_PREVIEW_VERSION_NUM < 2017
 } // namespace ufe
 } // namespace MayaUsd
