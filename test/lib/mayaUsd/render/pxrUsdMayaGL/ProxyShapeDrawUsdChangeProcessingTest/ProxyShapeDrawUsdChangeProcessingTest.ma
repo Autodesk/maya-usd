@@ -1,9 +1,9 @@
 //Maya ASCII 2016 scene
-//Name: UsdChangeProcessingTest_Assembly.ma
+//Name: ProxyShapeDrawUsdChangeProcessingTest.ma
 //Last modified: Tue, Mar 06, 2018 04:45:22 PM
 //Codeset: UTF-8
 requires maya "2016";
-requires -nodeType "pxrUsdReferenceAssembly" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
+requires -nodeType "mayaUsdProxyShape" "mayaUsdPlugin" "1.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2016";
@@ -71,15 +71,17 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".man" -type "string" "side_mask";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
-createNode transform -n "UsdChangeProcessingTest";
+createNode transform -n "ProxyShapeDrawUsdChangeProcessingTest";
+	rename -uid "1D0608C0-0000-2875-5A9F-35BB00000248";
+createNode transform -n "Primitive" -p "ProxyShapeDrawUsdChangeProcessingTest";
 	rename -uid "1D0608C0-0000-2875-5A9F-35BB00000249";
-createNode pxrUsdReferenceAssembly -n "Primitive" -p "UsdChangeProcessingTest";
+createNode mayaUsdProxyShape -n "PrimitiveShape" -p "Primitive";
 	rename -uid "1D0608C0-0000-2875-5A9F-35AB00000247";
-	setAttr ".isc" yes;
+	setAttr -k off ".v";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
 	setAttr ".fp" -type "string" "./PrimitiveModel.usda";
 	setAttr ".pp" -type "string" "/PrimitiveModel";
-	setAttr ".irp" -type "string" "Collapsed";
-	setAttr ".rns" -type "string" "NS_Primitive";
 createNode transform -n "MainCamera";
 	rename -uid "1D0608C0-0000-2875-5A9F-35E10000024C";
 	setAttr ".t" -type "double3" 4.4561158328930315 -4.3637510267835431 2.6992641120199261 ;
@@ -212,4 +214,4 @@ relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":default
 connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
-// End of UsdChangeProcessingTest_Assembly.ma
+// End of ProxyShapeDrawUsdChangeProcessingTest.ma

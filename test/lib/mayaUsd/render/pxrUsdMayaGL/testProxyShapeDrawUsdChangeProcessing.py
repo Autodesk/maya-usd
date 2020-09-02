@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 import mayaUsd.lib as mayaUsdLib
 
 from maya import cmds
@@ -30,6 +28,13 @@ class testProxyShapeDrawUsdChangeProcessing(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        # The test USD data is authored Z-up, so make sure Maya is configured
+        # that way too.
+        cmds.upAxis(axis='z')
+
+        cls._testName = 'ProxyShapeDrawUsdChangeProcessingTest'
+        cls._inputDir = os.path.abspath(cls._testName)
+
         cls._testDir = os.path.abspath('.')
 
         cls._cameraName = 'MainCamera'
@@ -67,7 +72,17 @@ class testProxyShapeDrawUsdChangeProcessing(unittest.TestCase):
         cmds.ogsRender(camera=self._cameraName, currentFrame=True, width=960,
             height=540)
 
-    def _RunTest(self, dagPathName):
+    def testUsdChangeProcessingProxy(self):
+        """
+        Tests that authoring on a USD stage that is referenced by a proxy shape
+        invokes drawing refreshes in Maya correctly.
+        """
+        mayaSceneFile = '%s.ma' % self._testName
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
+        cmds.file(mayaSceneFullPath, open=True, force=True)
+
+        dagPathName = '|%s|Primitive|PrimitiveShape' % self._testName
+
         rootPrim = mayaUsdLib.GetPrim(dagPathName)
         self.assertTrue(rootPrim)
 
@@ -83,39 +98,6 @@ class testProxyShapeDrawUsdChangeProcessing(unittest.TestCase):
         prim.SetTypeName('Cube')
         self.assertEqual(prim.GetTypeName(), 'Cube')
         self._WriteViewportImage(self._testName, 'Cube')
-
-    def testUsdChangeProcessingAssembly(self):
-        """
-        Tests that authoring on a USD stage that is referenced by an assembly
-        node (in "Collapsed" representation with a proxy shape underneath)
-        invokes drawing refreshes in Maya correctly.
-        """
-        self._testName = 'UsdChangeProcessingTest_Assembly'
-
-        mayaSceneFile = '%s.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
-        cmds.file(mayaSceneFullPath, open=True, force=True)
-
-        UsdMaya.LoadReferenceAssemblies()
-
-        assemblyDagPathName = '|UsdChangeProcessingTest|Primitive'
-        self._RunTest(assemblyDagPathName)
-
-    def testUsdChangeProcessingProxy(self):
-        """
-        Tests that authoring on a USD stage that is referenced by a proxy shape
-        invokes drawing refreshes in Maya correctly.
-        """
-        self._testName = 'UsdChangeProcessingTest_Proxy'
-
-        mayaSceneFile = '%s.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
-        cmds.file(mayaSceneFullPath, open=True, force=True)
-
-        UsdMaya.LoadReferenceAssemblies()
-
-        proxyShapeDagPathName = '|UsdChangeProcessingTest|Primitive|PrimitiveShape'
-        self._RunTest(proxyShapeDagPathName)
 
 
 if __name__ == '__main__':
