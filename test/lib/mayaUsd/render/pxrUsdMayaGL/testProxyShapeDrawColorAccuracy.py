@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from maya import cmds
 
 import os
@@ -32,7 +30,8 @@ class testProxyShapeDrawColorAccuracy(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('pxrUsd')
+        cls._testName = 'ProxyShapeDrawColorAccuracyTest'
+        cls._inputDir = os.path.abspath(cls._testName)
 
         cls._testDir = os.path.abspath('.')
 
@@ -80,18 +79,14 @@ class testProxyShapeDrawColorAccuracy(unittest.TestCase):
         This ensures that gamma correction is applied correctly in both
         lighting modes and that there is no additional scene ambient added.
         """
-        self._testName = 'ProxyShapeDrawColorAccuracyTest'
-
         mayaSceneFile = '%s.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         cmds.file(mayaSceneFullPath, open=True, force=True)
-
-        UsdMaya.LoadReferenceAssemblies()
+        currentTime = cmds.playbackOptions(query=True, animationStartTime=True)
 
         # Force an initial draw to complete by switching frames.
-        animStartTime = cmds.playbackOptions(query=True,
-            animationStartTime=True)
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
         # Set the lighting mode to using the default lights.
         cmds.setAttr("hardwareRenderingGlobals.lightingMode", 0)
@@ -105,7 +100,8 @@ class testProxyShapeDrawColorAccuracy(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(testProxyShapeDrawColorAccuracy)
+    suite = unittest.TestLoader().loadTestsFromTestCase(
+        testProxyShapeDrawColorAccuracy)
 
     results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
     if results.wasSuccessful():

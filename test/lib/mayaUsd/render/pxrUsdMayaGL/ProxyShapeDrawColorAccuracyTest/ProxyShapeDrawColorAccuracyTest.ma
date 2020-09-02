@@ -3,7 +3,7 @@
 //Last modified: Mon, Feb 26, 2018 11:10:50 AM
 //Codeset: UTF-8
 requires maya "2016";
-requires -nodeType "pxrUsdReferenceAssembly" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
+requires -nodeType "mayaUsdProxyShape" "mayaUsdPlugin" "1.0";
 requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
@@ -74,17 +74,16 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".o" yes;
 createNode transform -n "ProxyShapeDrawColorAccuracyTest";
 	rename -uid "24A938C0-0000-731D-5A94-5B3300000248";
-createNode pxrUsdReferenceAssembly -n "Cube_1" -p "ProxyShapeDrawColorAccuracyTest";
-	rename -uid "24A938C0-0000-731D-5A94-5B2400000246";
-	addAttr -is true -ci true -sn "usdVariantSet_shadingVariant" -ln "usdVariantSet_shadingVariant" 
-		-dt "string";
-	setAttr ".isc" yes;
+createNode transform -n "Cube_1" -p "ProxyShapeDrawColorAccuracyTest";
+	rename -uid "24A938C0-0000-731D-5A94-5B3300000247";
 	setAttr ".s" -type "double3" 5 5 5 ;
-	setAttr ".fp" -type "string" "./CubeModel.usda";
+createNode mayaUsdProxyShape -n "Cube_1Shape" -p "Cube_1";
+	rename -uid "24A938C0-0000-731D-5A94-5B2400000246";
+	setAttr -k off ".v";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr ".fp" -type "string" "./CubeModel_Red.usda";
 	setAttr ".pp" -type "string" "/CubeModel";
-	setAttr ".irp" -type "string" "Collapsed";
-	setAttr ".rns" -type "string" "NS_Cube_1";
-	setAttr ".usdVariantSet_shadingVariant" -type "string" "Red";
 createNode transform -n "MainCamera";
 	rename -uid "24A938C0-0000-731D-5A94-5B660000024A";
 	setAttr ".t" -type "double3" 11.025 -10.6 6.35 ;
@@ -119,9 +118,6 @@ createNode renderLayerManager -n "renderLayerManager";
 createNode renderLayer -n "defaultRenderLayer";
 	rename -uid "24A938C0-0000-731D-5A94-5B1800000244";
 	setAttr ".g" yes;
-createNode hyperLayout -n "hyperLayout1";
-	rename -uid "24A938C0-0000-731D-5A94-5B2400000247";
-	setAttr ".ihi" 0;
 createNode script -n "uiConfigurationScriptNode";
 	rename -uid "24A938C0-0000-731D-5A94-5BBA0000024D";
 	setAttr ".b" -type "string" (
@@ -231,7 +227,6 @@ select -ne :defaultLightSet;
 select -ne :hardwareRenderGlobals;
 	setAttr ".ctrs" 256;
 	setAttr ".btrs" 512;
-connectAttr "hyperLayout1.msg" "Cube_1.hl";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
