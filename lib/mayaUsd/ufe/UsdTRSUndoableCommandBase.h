@@ -78,7 +78,7 @@ protected:
     virtual void addEmptyAttribute() = 0;
     virtual bool cannotInit() const;
 
-    // Create a UsdSceneItem::Ptr conditionaly in the first access from Ufe::Path.
+    // Conditionally create a UsdSceneItem::Ptr from the Ufe::Path, if null.
     void updateItem() const;
 
     // Returns the new Ufe::Path overriden by derived classes (e.g TRS)

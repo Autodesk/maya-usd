@@ -56,7 +56,7 @@ class UFEObservableSceneTest(unittest.TestCase):
         self.assertTrue(testObserver.subtreeInvalidate == listNotifications[3])
         self.assertTrue(testObserver.composite == listNotifications[4])
 
-    def testObservableSelection(self):
+    def testObservableScene(self):
         # Setup
         ca = ufe.PathComponent("a")
         cb = ufe.PathComponent("b")
