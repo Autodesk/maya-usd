@@ -9,6 +9,7 @@ set(TEST_SCRIPT_FILES
     testProxyShapeDrawPurpose.py
     testProxyShapeDrawTimeSampled.py
     testProxyShapeDrawUsdChangeProcessing.py
+    testProxyShapeDrawVisibility.py
     testProxyShapeRendererSceneMessages.py
     testPxrUsdMayaGL.py
 )

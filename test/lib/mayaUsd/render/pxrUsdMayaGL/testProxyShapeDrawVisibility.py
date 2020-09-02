@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from maya import cmds
 
 import os
@@ -32,7 +30,8 @@ class testProxyShapeDrawVisibility(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('pxrUsd')
+        cls._testName = 'ProxyShapeDrawVisibilityTest'
+        cls._inputDir = os.path.abspath(cls._testName)
 
         cls._testDir = os.path.abspath('.')
 
@@ -78,18 +77,14 @@ class testProxyShapeDrawVisibility(unittest.TestCase):
         This ensures that indirect changes in the proxy shape's visibility
         (e.g. through a display layer) are imaged correctly.
         """
-        self._testName = 'ProxyShapeDrawVisibilityTest'
-
         mayaSceneFile = '%s.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         cmds.file(mayaSceneFullPath, open=True, force=True)
-
-        UsdMaya.LoadReferenceAssemblies()
+        currentTime = cmds.playbackOptions(query=True, animationStartTime=True)
 
         # Force an initial draw to complete by switching frames.
-        animStartTime = cmds.playbackOptions(query=True,
-            animationStartTime=True)
-        cmds.currentTime(animStartTime + 1.0, edit=True)
+        currentTime += 1
+        cmds.currentTime(currentTime, edit=True)
 
         self._WriteViewportImage(self._testName, 'initial')
 
@@ -108,7 +103,8 @@ class testProxyShapeDrawVisibility(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(testProxyShapeDrawVisibility)
+    suite = unittest.TestLoader().loadTestsFromTestCase(
+        testProxyShapeDrawVisibility)
 
     results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
     if results.wasSuccessful():
