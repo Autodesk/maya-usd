@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from pxr import Tf
 
 from maya import cmds
@@ -34,7 +32,8 @@ class testProxyShapeDrawAndTransform(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('pxrUsd')
+        cls._testName = 'ProxyShapeDrawAndTransformTest'
+        cls._inputDir = os.path.abspath(cls._testName)
 
         cls._testDir = os.path.abspath('.')
 
@@ -46,15 +45,6 @@ class testProxyShapeDrawAndTransform(unittest.TestCase):
         # To control where the rendered images are written, we force Maya to
         # use the test directory as the workspace.
         cmds.workspace(self._testDir, o=True)
-
-    def _LoadAssemblies(self):
-        loadStartTime = cmds.timerX()
-
-        UsdMaya.LoadReferenceAssemblies()
-
-        loadElapsedTime = cmds.timerX(startTime=loadStartTime)
-
-        Tf.Status("Load Elapsed Time: %f" % loadElapsedTime)
 
     def _WriteViewportImage(self, outputImageName, suffix):
         # Make sure the hardware renderer is available
@@ -90,15 +80,11 @@ class testProxyShapeDrawAndTransform(unittest.TestCase):
         This ensures that changes in the proxy shape's transform node are
         propagated to Hydra correctly when using Viewport 2.0.
         """
-        self._testName = 'ProxyShapeDrawAndTransformTest'
-
         mayaSceneFile = '%s.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         cmds.file(mayaSceneFullPath, open=True, force=True)
 
         Tf.Status("Maya Scene File: %s" % mayaSceneFile)
-
-        self._LoadAssemblies()
 
         self._WriteViewportImage(self._testName, 'initial')
 
