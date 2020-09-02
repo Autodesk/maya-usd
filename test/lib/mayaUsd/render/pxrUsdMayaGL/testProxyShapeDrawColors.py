@@ -21,30 +21,36 @@ import os
 import sys
 import unittest
 
+
 class testProxyShapeDrawColors(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
         # The test USD data is authored Z-up, so make sure Maya is configured
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('pxrUsd')
+        cmds.loadPlugin('mayaUsdPlugin')
+
+        cls._testName = 'ProxyShapeDrawColorsTest'
+        cls._inputDir = os.path.abspath(cls._testName)
 
         cls._testDir = os.path.abspath('.')
 
     def setUp(self):
-        mayaFilePath = os.path.abspath('stage.ma')
-        cmds.file(mayaFilePath, open=True, force=True)
+        mayaSceneFile = '%s.ma' % self._testName
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
+        cmds.file(mayaSceneFullPath, open=True, force=True)
 
         # To control where the rendered images are written, we force Maya to
         # use the test directory as the workspace.
         cmds.workspace(self._testDir, o=True)
 
-    def testMeshNextToAssemblyAndImported(self):
+    def testMeshNextToProxyShapeAndImported(self):
         """
         Tests the colors between a mesh with (0.55, 0.55, 0.55)
         exporting that file and then re-importing it, and also referencing
-        it back into the same scene.
+        it back into the same scene through a proxy shape.
 
         While this is a bit more than just "GL" testing, it's a useful place to
         centralize all this.  If we don't like that this is testing usdImport
@@ -61,18 +67,17 @@ class testProxyShapeDrawColors(unittest.TestCase):
 
         """
         x = self._PlaneWithColor((0.55, 0.55, 0.55))
-        cmds.loadPlugin('pxrUsd')
-        cwd = os.path.abspath('.')
-        usdFile = os.path.join(cwd, 'plane.usd')
         cmds.select(x)
-        cmds.usdExport(file=usdFile, selection=True, shadingMode='displayColor')
-        assembly = cmds.assembly(name='ref', type='pxrUsdReferenceAssembly')
-        cmds.xform(assembly, translation=(30.48, 0, 0))
-        cmds.setAttr('%s.filePath' % assembly, usdFile, type='string')
-        cmds.setAttr('%s.primPath' % assembly, '/pPlane1', type='string')
-        cmds.assembly(assembly, edit=True, active='Collapsed')
+        usdFile = os.path.join(self._testDir, 'plane.usd')
+        cmds.mayaUSDExport(file=usdFile, selection=True, shadingMode='displayColor')
+        proxyShape = cmds.createNode('mayaUsdProxyShape', name='usdProxyShape')
+        proxyTransform = cmds.listRelatives(proxyShape, parent=True,
+            fullPath=True)[0]
+        cmds.xform(proxyTransform, translation=(30.48, 0, 0))
+        cmds.setAttr('%s.filePath' % proxyShape, usdFile, type='string')
+        cmds.setAttr('%s.primPath' % proxyShape, '/pPlane1', type='string')
 
-        x = cmds.usdImport(file=usdFile)
+        x = cmds.mayaUSDImport(file=usdFile)
         cmds.xform(x, translation=(30.48, 30.48, 0))
 
         cmds.setAttr("hardwareRenderingGlobals.floatingPointRTEnable", 0)
@@ -98,7 +103,7 @@ class testProxyShapeDrawColors(unittest.TestCase):
         cmds.setAttr('defaultRenderGlobals.currentRenderer', MAYA_RENDERER_NAME,
             type='string')
         # Set the image format to PNG.
-        cmds.setAttr('defaultRenderGlobals.imageFormat', 32) 
+        cmds.setAttr('defaultRenderGlobals.imageFormat', 32)
         # Set the render mode to shaded and textured.
         cmds.setAttr('hardwareRenderingGlobals.renderMode', 4)
 
@@ -106,11 +111,12 @@ class testProxyShapeDrawColors(unittest.TestCase):
                 type='string')
 
         # Do the render.
-        cmds.ogsRender(camera='top', currentFrame=True, width=400,
-            height=400)
+        cmds.ogsRender(camera='top', currentFrame=True, width=400, height=400)
+
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(testProxyShapeDrawColors)
+    suite = unittest.TestLoader().loadTestsFromTestCase(
+        testProxyShapeDrawColors)
 
     results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
     if results.wasSuccessful():

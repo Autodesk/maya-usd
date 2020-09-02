@@ -1,9 +1,8 @@
 //Maya ASCII 2016 scene
-//Name: stage.ma
+//Name: ProxyShapeDrawColorsTest.ma
 //Last modified: Tue, Apr 24, 2018 04:48:58 PM
 //Codeset: UTF-8
 requires maya "2016";
-requires -nodeType "px_renderGlobals" "px_render" "1.0";
 requires -nodeType "displayPoints" "Type" "2.0a";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
@@ -197,8 +196,6 @@ createNode shadingEngine -n "lambert2SG";
 	setAttr ".ro" yes;
 createNode materialInfo -n "materialInfo4";
 	rename -uid "C4409900-0000-69A0-5ADF-9AFE0000075F";
-createNode px_renderGlobals -s -n "px_renderGlobals1";
-	rename -uid "9A6AA900-0000-2DE7-5ADF-C25900000345";
 createNode nodeGraphEditorInfo -n "hyperShadePrimaryNodeEditorSavedTabsInfo";
 	rename -uid "9A6AA900-0000-2DE7-5ADF-C26A0000035A";
 	setAttr ".tgi[0].tn" -type "string" "Untitled_1";
@@ -227,9 +224,6 @@ select -ne :initialShadingGroup;
 	setAttr ".ro" yes;
 select -ne :initialParticleSE;
 	setAttr ".ro" yes;
-select -ne :defaultRenderGlobals;
-	setAttr ".ren" -type "string" "px_render";
-	setAttr ".outf" 3;
 select -ne :defaultResolution;
 	setAttr ".pa" 1;
 select -ne :hardwareRenderGlobals;
@@ -270,4 +264,4 @@ connectAttr "typeBlinn1.msg" ":defaultShaderList1.s" -na;
 connectAttr "typeBlinn2.msg" ":defaultShaderList1.s" -na;
 connectAttr "lambert2.msg" ":defaultShaderList1.s" -na;
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
-// End of stage.ma
+// End of ProxyShapeDrawColorsTest.ma
