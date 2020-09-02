@@ -6,6 +6,7 @@ set(TEST_SCRIPT_FILES
     testProxyShapeDrawColors.py
     testProxyShapeDrawLighting.py
     testProxyShapeDrawPurpose.py
+    testProxyShapeDrawTimeSampled.py
     testProxyShapeRendererSceneMessages.py
     testPxrUsdMayaGL.py
 )

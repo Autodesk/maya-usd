@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 from maya import cmds
 
 import os
@@ -32,7 +30,8 @@ class testProxyShapeDrawTimeSampled(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('pxrUsd')
+        cls._testName = 'ProxyShapeDrawTimeSampledTest'
+        cls._inputDir = os.path.abspath(cls._testName)
 
         cls._testDir = os.path.abspath('.')
 
@@ -78,17 +77,11 @@ class testProxyShapeDrawTimeSampled(unittest.TestCase):
 
         This test ensures that the shape is redrawn correctly when upstream
         connections are dirtied. The built in "time1" object's "outTime" plug
-        is the source of the connection to the assembly node's "time" plug,
-        which is then the source of the connection to the proxy shape's "time"
-        plug.
+        is the source of the connection to the proxy shape's "time" plug.
         """
-        self._testName = 'ProxyShapeDrawTimeSampledTest'
-
         mayaSceneFile = '%s.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         cmds.file(mayaSceneFullPath, open=True, force=True)
-
-        UsdMaya.LoadReferenceAssemblies()
 
         cmds.currentTime(1.0, edit=True)
         self._WriteViewportImage(self._testName, '1')
@@ -101,7 +94,8 @@ class testProxyShapeDrawTimeSampled(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(testProxyShapeDrawTimeSampled)
+    suite = unittest.TestLoader().loadTestsFromTestCase(
+        testProxyShapeDrawTimeSampled)
 
     results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
     if results.wasSuccessful():
