@@ -15,34 +15,16 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
-# Maya 2017 and later use PyQt5/PySide2 while Maya 2016 and earlier use
-# PyQt4/PySide. We test whether we're running in Maya 2017+ by trying to import
-# PySide2, which should only be available there. If that succeeds, we import
-# the rest of the modules from PySide2. Otherwise, we assume we're in 2016 or
-# earlier and we import everything from PySide.
-try:
-    import PySide2
-    usePySide2 = True
-except ImportError:
-    usePySide2 = False
-
-if usePySide2:
-    from PySide2 import QtCore
-    from PySide2.QtTest import QTest
-    from PySide2.QtWidgets import QWidget
-
-    from shiboken2 import wrapInstance
-else:
-    from PySide import QtCore
-    from PySide.QtTest import QTest
-    from PySide.QtGui import QWidget
-
-    from shiboken import wrapInstance
+from pxr import Gf
 
 from maya import OpenMayaUI as OMUI
 from maya import cmds
+
+from PySide2 import QtCore
+from PySide2.QtTest import QTest
+from PySide2.QtWidgets import QWidget
+
+from shiboken2 import wrapInstance
 
 import os
 import sys
@@ -56,28 +38,27 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         # The test USD data is authored Z-up, so make sure Maya is configured
         # that way too.
         cmds.upAxis(axis='z')
-        cmds.loadPlugin('pxrUsd')
+
+        cls._testName = 'ProxyShapeLiveSurfaceTest'
+        cls._inputDir = os.path.abspath(cls._testName)
 
     def setUp(self):
-        cmds.file(
-                os.path.abspath('ProxyShapeLiveSurfaceTest.ma'),
-                open=True, force=True)
+        mayaSceneFile = '%s.ma' % self._testName
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
+        cmds.file(mayaSceneFullPath, open=True, force=True)
 
     def testObjectPosition(self):
         """
         Tests that an object created interactively is positioned correctly on
         the live surface.
         """
-        # Load our reference assembly.
-        UsdMaya.LoadReferenceAssemblies()
-
         # Create a new custom viewport.
         window = cmds.window(widthHeight=(500, 400))
         cmds.paneLayout()
         panel = cmds.modelPanel()
         cmds.modelPanel(panel, edit=True, camera='persp')
         cmds.modelEditor(cmds.modelPanel(panel, q=True, modelEditor=True),
-                edit=True, displayAppearance='smoothShaded', rnm='vp2Renderer')
+            edit=True, displayAppearance='smoothShaded', rnm='vp2Renderer')
         cmds.showWindow(window)
 
         # Force all views to re-draw. This causes us to block until the
@@ -92,15 +73,15 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         OMUI.M3dView.getM3dViewFromModelPanel(panel, view)
         viewWidget = wrapInstance(long(view.widget()), QWidget)
 
-        # Make our assembly live.
+        # Make our proxy shape live.
         cmds.makeLive('Block_1')
 
         # Enter interactive creation context.
         cmds.setToolTo('CreatePolyTorusCtx')
 
         # Click in the center of the viewport widget.
-        QTest.mouseClick(viewWidget, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier,
-                viewWidget.rect().center())
+        QTest.mouseClick(viewWidget, QtCore.Qt.LeftButton,
+            QtCore.Qt.NoModifier, viewWidget.rect().center())
 
         # Find the torus (it should be called pTorus1).
         self.assertTrue(cmds.ls('pTorus1'))
@@ -119,18 +100,13 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         Tests that an object created interactively by dragging in the viewport
         has the correct orientation based on the live surface normal.
         """
-        from pxr import Gf
-
-        # Load our reference assembly.
-        UsdMaya.LoadReferenceAssemblies()
-
         # Create a new custom viewport.
         window = cmds.window(widthHeight=(500, 400))
         cmds.paneLayout()
         panel = cmds.modelPanel()
         cmds.modelPanel(panel, edit=True, camera='persp')
         cmds.modelEditor(cmds.modelPanel(panel, q=True, modelEditor=True),
-                edit=True, displayAppearance='smoothShaded', rnm='vp2Renderer')
+            edit=True, displayAppearance='smoothShaded', rnm='vp2Renderer')
         cmds.showWindow(window)
 
         # Force all views to re-draw. This causes us to block until the
@@ -145,15 +121,15 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         OMUI.M3dView.getM3dViewFromModelPanel(panel, view)
         viewWidget = wrapInstance(long(view.widget()), QWidget)
 
-        # Make our assembly live.
+        # Make our proxy shape live.
         cmds.makeLive('Block_2')
 
         # Enter interactive creation context.
         cmds.setToolTo('CreatePolyConeCtx')
 
         # Click in the center of the viewport widget.
-        QTest.mouseClick(viewWidget, QtCore.Qt.LeftButton, QtCore.Qt.NoModifier,
-                viewWidget.rect().center())
+        QTest.mouseClick(viewWidget, QtCore.Qt.LeftButton,
+            QtCore.Qt.NoModifier, viewWidget.rect().center())
 
         # Find the cone (it should be called pCone1).
         self.assertTrue(cmds.ls('pCone1'))
@@ -164,12 +140,12 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         # the same exact rotation).
         rotationAngles = cmds.xform('pCone1', q=True, ro=True)
         rotation = (Gf.Rotation(Gf.Vec3d.XAxis(), rotationAngles[0]) *
-                Gf.Rotation(Gf.Vec3d.YAxis(), rotationAngles[1]) *
-                Gf.Rotation(Gf.Vec3d.ZAxis(), rotationAngles[2]))
+            Gf.Rotation(Gf.Vec3d.YAxis(), rotationAngles[1]) *
+            Gf.Rotation(Gf.Vec3d.ZAxis(), rotationAngles[2]))
         actualZAxis = rotation.TransformDir(Gf.Vec3d.ZAxis())
 
         expectedRotation = (Gf.Rotation(Gf.Vec3d.XAxis(), 75.0) *
-                Gf.Rotation(Gf.Vec3d.YAxis(), 90.0))
+            Gf.Rotation(Gf.Vec3d.YAxis(), 90.0))
         expectedZAxis = expectedRotation.TransformDir(Gf.Vec3d.ZAxis())
 
         # Verify that the error angle between the two axes is less than
@@ -178,9 +154,10 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         errorRotation = Gf.Rotation(actualZAxis, expectedZAxis)
         self.assertLess(errorRotation.GetAngle(), 0.1)
 
+
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(
-            testProxyShapeLiveSurface)
+        testProxyShapeLiveSurface)
 
     results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
     if results.wasSuccessful():
