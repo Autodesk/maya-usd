@@ -19,6 +19,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
         testAttribute.py
         testAttributes.py
+        testChildFilter.py
         testComboCmd.py
         testContextOps.py
         testDuplicateCmd.py
@@ -31,6 +32,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testScaleCmd.py
         testSceneItem.py
         testTransform3dTranslate.py
+        testUIInfoHandler.py
         testObservableScene.py
     )
 endif()

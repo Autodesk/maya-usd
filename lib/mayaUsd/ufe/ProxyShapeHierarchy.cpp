@@ -16,6 +16,7 @@
 #include "ProxyShapeHierarchy.h"
 
 #include <stdexcept>
+#include <cassert>
 
 #include <ufe/log.h>
 #include <ufe/pathComponent.h>
@@ -143,6 +144,17 @@ Ufe::SceneItemList ProxyShapeHierarchy::children() const
 	}
 	return children;
 }
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2022
+Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& childFilter) const
+{
+	// Currently no child filters are supported.
+	assert(childFilter.empty());
+	return children();
+}
+#endif
+#endif
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const
 {

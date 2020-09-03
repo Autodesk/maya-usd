@@ -52,5 +52,17 @@ Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const
 	return prim.IsValid() ? UsdSceneItem::create(path, prim) : nullptr;
 }
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2022
+Ufe::Hierarchy::ChildFilter UsdHierarchyHandler::childFilter() const
+{
+    Ufe::ChildFilterFlag inactivePrims("InactivePrims", "Inactive Prims", true);
+    Ufe::Hierarchy::ChildFilter childFilters;
+    childFilters.emplace_back(inactivePrims);
+    return childFilters;
+}
+#endif
+#endif
+
 } // namespace ufe
 } // namespace MayaUsd

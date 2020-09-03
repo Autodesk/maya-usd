@@ -57,5 +57,14 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path
 	return fMayaHierarchyHandler->createItem(path);
 }
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2022
+Ufe::Hierarchy::ChildFilter ProxyShapeHierarchyHandler::childFilter() const
+{
+	return Ufe::Hierarchy::ChildFilter();
+}
+#endif
+#endif
+
 } // namespace ufe
 } // namespace MayaUsd
