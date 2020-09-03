@@ -14,40 +14,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+from maya import cmds
+
 import os
 import sys
 import unittest
 
-from pxr import Usd
-
-from maya import cmds
 
 class testPxrUsdMayaGL(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
-        cmds.loadPlugin('pxrUsd')
+        # The test USD data is authored Z-up, so make sure Maya is configured
+        # that way too.
+        cmds.upAxis(axis='z')
+
+        cmds.loadPlugin('mayaUsdPlugin')
+
+        cls._testName = 'PxrUsdMayaGLTest'
+        cls._inputDir = os.path.abspath(cls._testName)
 
     def testEmptySceneDraws(self):
         cmds.file(new=True, force=True)
-        usdFilePath = os.path.abspath(os.path.join('PxrUsdMayaGL', 'blank.usda'))
-        assembly = cmds.assembly(name='blank', type='pxrUsdReferenceAssembly')
-        cmds.setAttr("%s.filePath" % assembly, usdFilePath, type='string')
-        cmds.assembly(assembly, edit=True, active='Collapsed')
+
+        usdFilePath = os.path.join(self._inputDir, 'blank.usda')
+        proxyShape = cmds.createNode('mayaUsdProxyShape', name='blank')
+        cmds.setAttr("%s.filePath" % proxyShape, usdFilePath, type='string')
+        cmds.refresh()
 
     def testSimpleSceneDrawsAndReloads(self):
         # a memory issue would sometimes cause maya to crash when opening a new
-        # scene.  
+        # scene.
 
         for _ in range(20):
             cmds.file(new=True, force=True)
+
             for i in range(10):
-                usdFilePath = os.path.abspath(os.path.join('PxrUsdMayaGL', 'plane%d.usda' % (i%2)))
-                assembly = cmds.assembly(name='plane', type='pxrUsdReferenceAssembly')
-                cmds.setAttr("%s.filePath" % assembly, usdFilePath, type='string')
-                cmds.assembly(assembly, edit=True, active='Collapsed')
+                usdFilePath = os.path.join(self._inputDir, 'plane%d.usda' % (i%2))
+                proxyShape = cmds.createNode('mayaUsdProxyShape', name='plane')
+                cmds.setAttr("%s.filePath" % proxyShape, usdFilePath, type='string')
+
             cmds.refresh()
 
         cmds.file(new=True, force=True)
+
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(testPxrUsdMayaGL)
