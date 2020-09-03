@@ -14,6 +14,7 @@ set(TEST_SCRIPT_FILES
     testProxyShapeDuplicatePerformance.py
     testProxyShapeLiveSurface.py
     testProxyShapeRendererSceneMessages.py
+    testProxyShapeSelectionPerformance.py
     testPxrUsdMayaGL.py
 )
 

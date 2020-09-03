@@ -15,10 +15,6 @@
 # limitations under the License.
 #
 
-from future.utils import iteritems
-
-from pxr import UsdMaya
-
 from pxr import Gf
 from pxr import Tf
 from pxr import Trace
@@ -26,31 +22,13 @@ from pxr import Trace
 from maya import cmds
 from maya.api import OpenMayaUI as OMUI
 
-# Maya 2017 and later use PyQt5/PySide2 while Maya 2016 and earlier use
-# PyQt4/PySide. We test whether we're running in Maya 2017+ by trying to import
-# PySide2, which should only be available there. If that succeeds, we import
-# the rest of the modules from PySide2. Otherwise, we assume we're in 2016 or
-# earlier and we import everything from PySide.
-try:
-    import PySide2
-    usePySide2 = True
-except ImportError:
-    usePySide2 = False
 
-if usePySide2:
-    from PySide2 import QtCore
-    from PySide2.QtTest import QTest
-    from PySide2.QtWidgets import QApplication
-    from PySide2.QtWidgets import QWidget
+from PySide2 import QtCore
+from PySide2.QtTest import QTest
+from PySide2.QtWidgets import QApplication
+from PySide2.QtWidgets import QWidget
 
-    from shiboken2 import wrapInstance
-else:
-    from PySide import QtCore
-    from PySide.QtTest import QTest
-    from PySide.QtGui import QApplication
-    from PySide.QtGui import QWidget
-
-    from shiboken import wrapInstance
+from shiboken2 import wrapInstance
 
 import contextlib
 import json
@@ -92,7 +70,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('pxrUsd')
+        cls._inputDir = os.path.abspath('ProxyShapeSelectionPerformanceTest')
 
         cls._testDir = os.path.abspath('.')
 
@@ -112,7 +90,8 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         statsOutputLines = []
-        for profileScopeName, elapsedTime in iteritems(cls._profileScopeMetrics):
+        for profileScopeName in cls._profileScopeMetrics.keys():
+            elapsedTime = cls._profileScopeMetrics[profileScopeName]
             statsDict = {
                 'profile': profileScopeName,
                 'metric': 'time',
@@ -121,8 +100,8 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
             }
             statsOutputLines.append(json.dumps(statsDict))
 
-        statsOutput = '\n'.join(statsOutputLines)
-        perfStatsFilePath = '%s/perfStats.raw' % cls._testDir
+        statsOutput = os.linesep.join(statsOutputLines)
+        perfStatsFilePath = os.path.join(cls._testDir, 'perfStats.raw')
         with open(perfStatsFilePath, 'w') as perfStatsFile:
             perfStatsFile.write(statsOutput)
 
@@ -209,8 +188,8 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
             self._profileScopeMetrics[profileScopeName] = elapsedTime
             Tf.Status('%s: %f' % (profileScopeName, elapsedTime))
 
-            traceFilePath = '%s/%s.trace' % (
-                self._testDir, profileScopeName)
+            traceFilePath = os.path.join(self._testDir,
+                '%s.trace' % profileScopeName)
             Trace.Reporter.globalReporter.Report(traceFilePath)
             collector.Clear()
             Trace.Reporter.globalReporter.ClearTree()
@@ -318,16 +297,10 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
     def _RunPerfTest(self):
         mayaSceneFile = 'Grid_5_of_CubeGrid%s_10.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         cmds.file(mayaSceneFullPath, open=True, force=True)
 
         Tf.Status("Maya Scene File: %s" % mayaSceneFile)
-
-        # Load all USD reference assemblies.
-        profileScopeName = '%s Assemblies Load Time' % self._testName
-
-        with self._ProfileScope(profileScopeName):
-            UsdMaya.LoadReferenceAssemblies()
 
         # Get the QWidget for the viewport window.
         self.assertTrue(self._IsViewportRendererViewport20())
@@ -383,10 +356,10 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
     def testPerfGridOfCubeGridsCombinedMesh(self):
         """
         Tests selection correctness and performance with a grid of proxy shape
-        nodes underneath reference assemblies.
+        nodes.
 
         The geometry in this scene is a grid of grids. The top-level grid is
-        made up of USD reference assembly nodes. Each of those assembly nodes
+        made up of USD proxy shape nodes. Each of those proxy shape nodes
         references a USD file that contains a single Mesh prim that is a grid
         of cubes. This single cube grid mesh is the result of combining the
         grid of cube asset meshes referenced from the "ModelRefs" test below.
@@ -396,25 +369,13 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         self._testName = 'CombinedMesh'
         self._RunPerfTest()
 
-    def testPerfGridOfCubeGridsCombinedMeshProxyOnly(self):
+    def testPerfGridOfCubeGridsModelRefs(self):
         """
         Tests selection correctness and performance with a grid of proxy shape
         nodes.
 
-        This is the same test as the one above except that the scene is
-        composed of proxy shapes directly rather than reference assemblies in
-        the Collapsed representation.
-        """
-        self._testName = 'CombinedMesh_ProxyOnly'
-        self._RunPerfTest()
-
-    def testPerfGridOfCubeGridsModelRefs(self):
-        """
-        Tests selection correctness and performance with a grid of proxy shape
-        nodes underneath reference assemblies.
-
         The geometry in this scene is a grid of grids. The top-level grid is
-        made up of USD reference assembly nodes. Each of those assembly nodes
+        made up of USD proxy shape nodes. Each of those proxy shape nodes
         references a USD file with many references to a "CubeModel" asset USD
         file. This results in equivalent geometry but a higher prim/mesh count
         than the "CombinedMesh" test above.
@@ -426,7 +387,8 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(testProxyShapeSelectionPerformance)
+    suite = unittest.TestLoader().loadTestsFromTestCase(
+        testProxyShapeSelectionPerformance)
 
     results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
     if results.wasSuccessful():
