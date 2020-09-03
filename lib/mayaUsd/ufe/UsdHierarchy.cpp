@@ -133,13 +133,13 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 	std::string childName = uniqueChildName(fItem, child->path());
 
 	// Set up all paths to perform the reparent.
-	auto prim = usdChild->prim();
-	auto stage = prim.GetStage();
+	auto childPrim = usdChild->prim();
+	auto stage = childPrim.GetStage();
 	auto ufeSrcPath = usdChild->path();
-	auto usdSrcPath = prim.GetPath();
+	auto usdSrcPath = childPrim.GetPath();
 	auto ufeDstPath = fItem->path() + childName;
 	auto usdDstPath = prim().GetPath().AppendChild(TfToken(childName));
-	SdfLayerHandle layer = MayaUsdUtils::defPrimSpecLayer(prim);
+	SdfLayerHandle layer = MayaUsdUtils::defPrimSpecLayer(childPrim);
 	if (!layer) {
 		std::string err = TfStringPrintf("No prim found at %s", usdSrcPath.GetString().c_str());
 		throw std::runtime_error(err.c_str());
