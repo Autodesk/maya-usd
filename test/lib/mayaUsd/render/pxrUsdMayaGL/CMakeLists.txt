@@ -6,6 +6,7 @@ set(TEST_SCRIPT_FILES
     testProxyShapeDrawColorAccuracy.py
     testProxyShapeDrawColors.py
     testProxyShapeDrawLighting.py
+    testProxyShapeDrawPerformance.py
     testProxyShapeDrawPurpose.py
     testProxyShapeDrawTimeSampled.py
     testProxyShapeDrawUsdChangeProcessing.py

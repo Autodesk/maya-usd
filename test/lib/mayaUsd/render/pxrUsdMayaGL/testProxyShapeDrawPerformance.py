@@ -15,10 +15,6 @@
 # limitations under the License.
 #
 
-from future.utils import iteritems
-
-from pxr import UsdMaya
-
 from pxr import Tf
 from pxr import Trace
 
@@ -39,7 +35,7 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('pxrUsd')
+        cls._inputDir = os.path.abspath('ProxyShapeDrawPerformanceTest')
 
         cls._testDir = os.path.abspath('.')
 
@@ -50,7 +46,8 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         statsOutputLines = []
-        for profileScopeName, elapsedTime in iteritems(cls._profileScopeMetrics):
+        for profileScopeName in cls._profileScopeMetrics.keys():
+            elapsedTime = cls._profileScopeMetrics[profileScopeName]
             statsDict = {
                 'profile': profileScopeName,
                 'metric': 'time',
@@ -59,8 +56,8 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
             }
             statsOutputLines.append(json.dumps(statsDict))
 
-        statsOutput = '\n'.join(statsOutputLines)
-        perfStatsFilePath = '%s/perfStats.raw' % cls._testDir
+        statsOutput = os.linesep.join(statsOutputLines)
+        perfStatsFilePath = os.path.join(cls._testDir, 'perfStats.raw')
         with open(perfStatsFilePath, 'w') as perfStatsFile:
             perfStatsFile.write(statsOutput)
 
@@ -93,17 +90,11 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
             self._profileScopeMetrics[profileScopeName] = elapsedTime
             Tf.Status('%s: %f' % (profileScopeName, elapsedTime))
 
-            traceFilePath = '%s/%s.trace' % (
-                self._testDir, profileScopeName)
+            traceFilePath = os.path.join(self._testDir,
+                '%s.trace' % profileScopeName)
             Trace.Reporter.globalReporter.Report(traceFilePath)
             collector.Clear()
             Trace.Reporter.globalReporter.ClearTree()
-
-    def _RunLoadTest(self):
-        profileScopeName = '%s Assemblies Load Time' % self._testName
-
-        with self._ProfileScope(profileScopeName):
-            UsdMaya.LoadReferenceAssemblies()
 
     def _RunTimeToFirstDrawTest(self):
         # We measure the time to first draw by switching to frame
@@ -156,7 +147,7 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
 
     def _RunPerfTest(self):
         mayaSceneFile = 'Grid_5_of_CubeGrid%s_10.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         cmds.file(mayaSceneFullPath, open=True, force=True)
 
         Tf.Status("Maya Scene File: %s" % mayaSceneFile)
@@ -165,8 +156,6 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
             animationStartTime=True)
         self.animEndTime = cmds.playbackOptions(query=True,
             animationEndTime=True)
-        
-        self._RunLoadTest()
 
         self._RunTimeToFirstDrawTest()
 
@@ -181,7 +170,7 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
         proxy shape nodes.
 
         The geometry in this scene is a grid of grids. The top-level grid is
-        made up of USD reference assembly nodes. Each of those assembly nodes
+        made up of USD proxy shape nodes. Each of those proxy shape nodes
         references a USD file that contains a single Mesh prim that is a grid
         of cubes. This single cube grid mesh is the result of combining the
         grid of cube asset meshes referenced from the "ModelRefs" test below.
@@ -197,7 +186,7 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
         proxy shape nodes.
 
         The geometry in this scene is a grid of grids. The top-level grid is
-        made up of USD reference assembly nodes. Each of those assembly nodes
+        made up of USD proxy shape nodes. Each of those proxy shape nodes
         references a USD file with many references to a "CubeModel" asset USD
         file. This results in equivalent geometry but a higher prim/mesh count
         than the "CombinedMesh" test above.
@@ -209,7 +198,8 @@ class testProxyShapeDrawPerformance(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(testProxyShapeDrawPerformance)
+    suite = unittest.TestLoader().loadTestsFromTestCase(
+        testProxyShapeDrawPerformance)
 
     results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
     if results.wasSuccessful():
