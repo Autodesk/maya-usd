@@ -446,9 +446,9 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
             }
 
             #if UFE_PREVIEW_VERSION_NUM >= 2021
-                Ufe::Scene::instance().addObserver(_observer);
+            Ufe::Scene::instance().addObserver(_observer);
             #else
-                Ufe::Scene::instance().addObjectAddObserver(_observer);
+            Ufe::Scene::instance().addObjectAddObserver(_observer);
             #endif
         }
 #else

@@ -67,9 +67,9 @@ public:
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 	#if UFE_PREVIEW_VERSION_NUM >= 2021
-    	Ufe::InsertChildCommand::Ptr insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
+    Ufe::InsertChildCommand::Ptr insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
     #else
-    	Ufe::UndoableCommand::Ptr insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
+    Ufe::UndoableCommand::Ptr insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
     #endif
 
 	Ufe::SceneItem::Ptr createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;

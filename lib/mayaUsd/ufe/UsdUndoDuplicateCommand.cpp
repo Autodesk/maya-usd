@@ -106,9 +106,9 @@ void UsdUndoDuplicateCommand::undo()
 										fUfeSrcPath, fUsdDstPath.GetElementString()));
 
 	#if UFE_PREVIEW_VERSION_NUM >= 2021
-		Ufe::Scene::instance().notify(notification);
+	Ufe::Scene::instance().notify(notification);
 	#else
-		Ufe::Scene::notifyObjectDelete(notification);
+	Ufe::Scene::notifyObjectDelete(notification);
 	#endif
 
 	fStage->RemovePrim(fUsdDstPath);

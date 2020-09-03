@@ -103,7 +103,11 @@ Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double y, double z)
 {
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
     return UsdTranslateUndoableCommand::create(path(), x, y, z);
+    #else
+    return UsdTranslateUndoableCommand::create(fItem, x, y, z);
+    #endif
 }
 #endif
 
@@ -163,7 +167,11 @@ Ufe::Vector3d UsdTransform3d::scale() const
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd(double x, double y, double z)
 {
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
     return UsdRotateUndoableCommand::create(path(), x, y, z);
+    #else
+    return UsdRotateUndoableCommand::create(fItem, x, y, z);
+    #endif
 }
 #endif
 
@@ -175,24 +183,40 @@ void UsdTransform3d::rotate(double x, double y, double z)
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, double z)
 {
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
     return UsdScaleUndoableCommand::create(path(), x, y, z);
+    #else
+    return UsdScaleUndoableCommand::create(fItem, x, y, z);
+    #endif
 }
 
 #else
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 {
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
     return UsdTranslateUndoableCommand::create(path(), 0, 0, 0);
+    #else
+    return UsdTranslateUndoableCommand::create(fItem, 0, 0, 0);
+    #endif
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 {
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
     return UsdRotateUndoableCommand::create(path(), 0, 0, 0);
+    #else
+    return UsdRotateUndoableCommand::create(fItem, 0, 0, 0);
+    #endif
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 {
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
     return UsdScaleUndoableCommand::create(path(), 1, 1, 1);
+    #else
+    return UsdScaleUndoableCommand::create(fItem, 1, 1, 1);
+    #endif
 }
 #endif
 
@@ -218,7 +242,12 @@ void UsdTransform3d::scale(double x, double y, double z)
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 {
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
     return UsdRotatePivotTranslateUndoableCommand::create(fItem->path());
+    #else
+    auto translateCmd = UsdRotatePivotTranslateUndoableCommand::create(prim(), fItem->path(), fItem);
+    return translateCmd;
+    #endif
 }
 
 void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)
