@@ -11,6 +11,7 @@ set(TEST_SCRIPT_FILES
     testProxyShapeDrawTimeSampled.py
     testProxyShapeDrawUsdChangeProcessing.py
     testProxyShapeDrawVisibility.py
+    testProxyShapeDuplicatePerformance.py
     testProxyShapeLiveSurface.py
     testProxyShapeRendererSceneMessages.py
     testPxrUsdMayaGL.py

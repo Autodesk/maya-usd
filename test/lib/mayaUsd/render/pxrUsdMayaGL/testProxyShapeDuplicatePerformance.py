@@ -15,10 +15,6 @@
 # limitations under the License.
 #
 
-from future.utils import iteritems
-
-from pxr import UsdMaya
-
 from pxr import Tf
 from pxr import Trace
 
@@ -39,6 +35,8 @@ class testProxyShapeDuplicatePerformance(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
+        cls._inputDir = os.path.abspath('ProxyShapeDuplicatePerformanceTest')
+
         cls._testDir = os.path.abspath('.')
 
         cls._profileScopeMetrics = dict()
@@ -48,7 +46,8 @@ class testProxyShapeDuplicatePerformance(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         statsOutputLines = []
-        for profileScopeName, elapsedTime in iteritems(cls._profileScopeMetrics):
+        for profileScopeName in cls._profileScopeMetrics.keys():
+            elapsedTime = cls._profileScopeMetrics[profileScopeName]
             statsDict = {
                 'profile': profileScopeName,
                 'metric': 'time',
@@ -57,8 +56,8 @@ class testProxyShapeDuplicatePerformance(unittest.TestCase):
             }
             statsOutputLines.append(json.dumps(statsDict))
 
-        statsOutput = '\n'.join(statsOutputLines)
-        perfStatsFilePath = '%s/perfStats.raw' % cls._testDir
+        statsOutput = os.linesep.join(statsOutputLines)
+        perfStatsFilePath = os.path.join(cls._testDir, 'perfStats.raw')
         with open(perfStatsFilePath, 'w') as perfStatsFile:
             perfStatsFile.write(statsOutput)
 
@@ -91,20 +90,14 @@ class testProxyShapeDuplicatePerformance(unittest.TestCase):
             self._profileScopeMetrics[profileScopeName] = elapsedTime
             Tf.Status('%s: %f' % (profileScopeName, elapsedTime))
 
-            traceFilePath = '%s/%s.trace' % (
-                self._testDir, profileScopeName)
+            traceFilePath = os.path.join(self._testDir,
+                '%s.trace' % profileScopeName)
             Trace.Reporter.globalReporter.Report(traceFilePath)
             collector.Clear()
             Trace.Reporter.globalReporter.ClearTree()
 
-    def _RunLoadTest(self):
-        profileScopeName = '%s Assemblies Load Time' % self._testName
-
-        with self._ProfileScope(profileScopeName):
-            UsdMaya.LoadReferenceAssemblies()
-
     def _RunDuplicateTest(self):
-        profileScopeName = '%s Assembly Duplicate' % self._testName
+        profileScopeName = '%s Proxy Duplicate' % self._testName
 
         cmds.select('AssetRef_0_0_0')
         cmds.refresh(force=True)
@@ -141,22 +134,20 @@ class testProxyShapeDuplicatePerformance(unittest.TestCase):
 
     def testPerfGridOfCubeModelDuplicate(self):
         """
-        Tests speed of duplicating a model reference assembly/proxy when many
-        such models are present.
+        Tests speed of duplicating a USD proxy shape when many such nodes are
+        present.
 
         The geometry in this scene is a grid of grids. The top-level grid is
-        made up of USD reference assembly nodes. Each of those assembly nodes
+        made up of USD proxy shape nodes. Each of those proxy shape nodes
         references a USD file with many references to a "CubeModel" asset USD
         file.
         """
         self._testName = 'ModelRefs'
         mayaSceneFile = 'Grid_5_of_CubeGrid%s_10.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(mayaSceneFile)
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         cmds.file(mayaSceneFullPath, open=True, force=True)
 
         Tf.Status("Maya Scene File: %s" % mayaSceneFile)
-
-        self._RunLoadTest()
 
         self._WriteViewportImage(self._testName, 'initial')
 
