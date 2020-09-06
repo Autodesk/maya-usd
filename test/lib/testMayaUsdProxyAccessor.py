@@ -1042,7 +1042,59 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         
         dumpSessionLayer = stage.GetSessionLayer().ExportToString()
         self.assertNotIn("double3 xformOp:translate.timeSamples = {\n",dumpSessionLayer)
+      
+    def validateMatrixOps(self, cachingScope):
+        """
+        Validate that accessor works correctly with matrix ops
+        """
+        nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
+        stage.GetRootLayer().ImportFromString('''#usda 1.0
+          (
+              defaultPrim = "pCube1"
+              upAxis = "Y"
+          )
+
+          def Cube "pCube1" (
+              kind = "component"
+          )
+          {
+              matrix4d xformOp:transform:offset = ((1,0,0,0),(0,1,0,0),(0,0,1,0),(0, 5, 10,1))
+              uniform token[] xformOpOrder = ["xformOp:transform:offset"]
+          }
+        ''')
+
+        # Get UFE items
+        ufeItem = makeUfePath(nodeDagPath,'/pCube1')
+
+        # Create accessor plugs
+        matrixPlug = pa.getOrCreateAccessPlug(ufeItem, usdAttrName='xformOp:transform:offset')
+
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
+
+        # Validate output accessor plugs
+        cmds.currentTime(1)
+        v0 = cmds.getAttr('{}.{}'.format(nodeDagPath,matrixPlug))
+        self.assertEqual(v0, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 5.0, 10.0, 1.0])
         
+        # Create a locator to drive matrix op
+        # and apply offset on its translateY
+        cmds.spaceLocator()
+        srcNodeDagPath = cmds.ls(sl=True,l=True)[0]
+        cmds.setAttr('{}.ty'.format(srcNodeDagPath), 3)
+        
+        # Connect src to drive matrix op
+        cmds.connectAttr('{}.worldMatrix[0]'.format(srcNodeDagPath), '{}.{}'.format(nodeDagPath,matrixPlug))
+        
+        # Validate
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
+        
+        cmds.currentTime(1)
+        v0 = cmds.getAttr('{}.{}'.format(nodeDagPath,matrixPlug))
+        self.assertEqual(v0, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 3.0, 0.0, 1.0])
+      
     ###################################################################################
     def testOutput_NoCaching(self):
         """
@@ -1269,3 +1321,24 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         with CachingScope(self) as thisScope:
             thisScope.verifyScopeSetup()
             self.validateDisconnect(thisScope)
+
+    def testMatrixOp_NoCaching(self):
+        """
+        Validate that accessor works correctly with matrix ops
+        Cached playback is disabled in this test.
+        """
+        cmds.file(new=True, force=True)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
+            self.validateMatrixOps(thisScope)
+
+    def testMatrixOp_Caching(self):
+        """
+        Validate that accessor works correctly with matrix ops
+        Cached playback is disabled in this test.
+        """
+        cmds.file(new=True, force=True)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
+            self.validateMatrixOps(thisScope)
+            
