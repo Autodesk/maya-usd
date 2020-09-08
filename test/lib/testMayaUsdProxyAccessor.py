@@ -1335,7 +1335,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
     def testMatrixOp_Caching(self):
         """
         Validate that accessor works correctly with matrix ops
-        Cached playback is disabled in this test.
+        Cached playback is ENABLED in this test.
         """
         cmds.file(new=True, force=True)
         with CachingScope(self) as thisScope:
