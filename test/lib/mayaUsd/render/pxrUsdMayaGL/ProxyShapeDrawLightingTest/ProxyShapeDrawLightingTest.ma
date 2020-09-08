@@ -3,7 +3,7 @@
 //Last modified: Wed, Jul 25, 2018 10:38:54 AM
 //Codeset: UTF-8
 requires maya "2016";
-requires -nodeType "pxrUsdProxyShape" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
+requires -nodeType "mayaUsdProxyShape" "mayaUsdPlugin" "1.0";
 requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
@@ -111,7 +111,7 @@ createNode transform -n "Hydra" -p "ProxyShapeDrawLightingTest";
 createNode transform -n "Torus" -p "Hydra";
 	rename -uid "2DAE0900-0000-511C-5AD9-371B00000265";
 	setAttr ".t" -type "double3" 0 0 0.1 ;
-createNode pxrUsdProxyShape -n "TorusShape" -p "|ProxyShapeDrawLightingTest|Hydra|Torus";
+createNode mayaUsdProxyShape -n "TorusShape" -p "|ProxyShapeDrawLightingTest|Hydra|Torus";
 	rename -uid "2DAE0900-0000-511C-5AD9-371B00000264";
 	setAttr -k off ".v";
 	setAttr ".covm[0]"  0 1 1;
@@ -120,7 +120,7 @@ createNode pxrUsdProxyShape -n "TorusShape" -p "|ProxyShapeDrawLightingTest|Hydr
 createNode transform -n "Plane" -p "Hydra";
 	rename -uid "2DAE0900-0000-511C-5AD9-371B00000267";
 	setAttr ".t" -type "double3" 0 0 0.1 ;
-createNode pxrUsdProxyShape -n "PlaneShape" -p "|ProxyShapeDrawLightingTest|Hydra|Plane";
+createNode mayaUsdProxyShape -n "PlaneShape" -p "|ProxyShapeDrawLightingTest|Hydra|Plane";
 	rename -uid "2DAE0900-0000-511C-5AD9-371B00000266";
 	setAttr -k off ".v";
 	setAttr ".covm[0]"  0 1 1;
