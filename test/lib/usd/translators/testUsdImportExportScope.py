@@ -15,25 +15,25 @@
 # limitations under the License.
 #
 
-
-import os
-import unittest
+from pxr import Usd
 
 from maya import cmds
 from maya import standalone
 
-from pxr import Usd
+import fixturesUtils
+
+import os
+import unittest
 
 
-class testPxrUsdTranslatorsScope(unittest.TestCase):
-
-    USD_FILE = os.path.abspath('Scopes.usda')
-    USD_FILE_OUT = os.path.abspath('Scopes.reexported.usda')
+class testUsdImportExportScope(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
-        cmds.loadPlugin('pxrUsd')
+        inputPath = fixturesUtils.setUpClass(__file__)
+
+        cls._usdFile = os.path.join(inputPath, "UsdImportExportScopeTest",
+            "Scopes.usda")
 
     @classmethod
     def tearDownClass(cls):
@@ -43,7 +43,7 @@ class testPxrUsdTranslatorsScope(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testImportScope(self):
-        cmds.usdImport(file=self.USD_FILE, primPath='/')
+        cmds.usdImport(file=self._usdFile, primPath='/')
         dagObjects = cmds.ls(long=True, dag=True)
 
         self.assertIn('|A', dagObjects)
@@ -83,10 +83,12 @@ class testPxrUsdTranslatorsScope(unittest.TestCase):
         self.assertFalse(cmds.getAttr('|B|B_1.tx', lock=True))
 
     def testReexportScope(self):
-        cmds.usdImport(file=self.USD_FILE, primPath='/')
-        cmds.usdExport(file=self.USD_FILE_OUT)
+        cmds.usdImport(file=self._usdFile, primPath='/')
 
-        stage = Usd.Stage.Open(self.USD_FILE_OUT)
+        exportedUsdFile = os.path.abspath('Scopes.reexported.usda')
+        cmds.usdExport(file=exportedUsdFile)
+
+        stage = Usd.Stage.Open(exportedUsdFile)
         self.assertTrue(stage)
 
         self.assertTrue(stage.GetPrimAtPath('/A'))

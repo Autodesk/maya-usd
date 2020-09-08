@@ -15,25 +15,28 @@
 # limitations under the License.
 #
 
-import os
-import unittest
-
-from pxr import Gf
 from pxr import Usd
 from pxr import UsdGeom
 
 from maya import cmds
 from maya import standalone
 
+import fixturesUtils
 
-class testPxrUsdTranslatorsInstancer(unittest.TestCase):
+import os
+import unittest
+
+
+class testUsdExportMayaInstancer(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
+        inputPath = fixturesUtils.setUpClass(__file__)
 
-        cls._clsTestName = 'InstancerExportTest'
-        cls.mayaFile = os.path.abspath('%s.ma' % cls._clsTestName)
+        cls._clsTestName = 'UsdExportMayaInstancerTest'
+
+        cls.mayaFile = os.path.join(inputPath, cls._clsTestName,
+            "%s.ma" % cls._clsTestName)
 
     @classmethod
     def tearDownClass(cls):
@@ -43,7 +46,6 @@ class testPxrUsdTranslatorsInstancer(unittest.TestCase):
         # Export to USD.
         usdFilePath = os.path.abspath('%s_%s.usda' % (self._clsTestName,
                                                       self._testMethodName))
-        cmds.loadPlugin('pxrUsd')
         
         finalKwargs = {
             'mergeTransformAndShape': True,
@@ -141,7 +143,7 @@ def addExportInstancerTest(namespacedInstancer, namespacedPrototype,
     doc += '.'
     testMethod.__doc__ = doc
     
-    setattr(testPxrUsdTranslatorsInstancer, testName, testMethod)
+    setattr(testUsdExportMayaInstancer, testName, testMethod)
 
 for namespacedInstancer in (False, True):
     for namespacedPrototype in (False, True):
