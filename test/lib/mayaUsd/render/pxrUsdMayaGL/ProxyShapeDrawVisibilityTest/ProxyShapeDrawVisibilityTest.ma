@@ -1,5 +1,5 @@
 //Maya ASCII 2016 scene
-//Name: ProxyShapeDrawPurposeTest.ma
+//Name: ProxyShapeDrawVisibilityTest.ma
 //Last modified: Fri, Mar 30, 2018 05:50:15 PM
 //Codeset: UTF-8
 requires maya "2016";
@@ -71,17 +71,30 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".man" -type "string" "side_mask";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
-createNode transform -n "ProxyShapeDrawPurposeTest";
+createNode transform -n "ProxyShapeDrawVisibilityTest";
 	rename -uid "F117D900-0000-12C3-5ABE-DA5000000253";
-createNode transform -n "PurposeCubesProxy" -p "ProxyShapeDrawPurposeTest";
+createNode transform -n "Cubes_grp" -p "ProxyShapeDrawVisibilityTest";
 	rename -uid "F117D900-0000-12C3-5ABE-DA4C00000252";
-createNode mayaUsdProxyShape -n "PurposeCubesProxyShape" -p "PurposeCubesProxy";
+createNode transform -n "Cube_1" -p "Cubes_grp";
+	rename -uid "F117D900-0000-12C3-5ABE-DA4C00000254";
+	setAttr ".t" -type "double3" -1.5 0 0 ;
+createNode mayaUsdProxyShape -n "Cube_1Shape" -p "Cube_1";
 	rename -uid "F117D900-0000-12C3-5ABE-DA180000024E";
 	setAttr -k off ".v";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr ".fp" -type "string" "./PurposeCubes.usda";
-	setAttr ".pp" -type "string" "/PurposeCubes";
+	setAttr ".fp" -type "string" "./CubeModel_Red.usda";
+	setAttr ".pp" -type "string" "/CubeModel";
+createNode transform -n "Cube_2" -p "Cubes_grp";
+	rename -uid "F117D900-0000-12C3-5ABE-DA4C00000255";
+	setAttr ".t" -type "double3" 1.5 0 0 ;
+createNode mayaUsdProxyShape -n "Cube_2Shape" -p "Cube_2";
+	rename -uid "F117D900-0000-12C3-5ABE-DA4400000250";
+	setAttr -k off ".v";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr ".fp" -type "string" "./CubeModel_Blue.usda";
+	setAttr ".pp" -type "string" "/CubeModel";
 createNode transform -n "MainCamera";
 	rename -uid "24A938C0-0000-731D-5A94-5B660000024A";
 	setAttr ".t" -type "double3" 5.4308552027321859 -4.9599363811486468 4.2321958069354952 ;
@@ -101,6 +114,9 @@ createNode lightLinker -s -n "lightLinker1";
 	setAttr -s 2 ".slnk";
 createNode displayLayerManager -n "layerManager";
 	rename -uid "69C99900-0000-177D-5ABE-DAD80000025C";
+	setAttr ".cdl" 1;
+	setAttr -s 2 ".dli[1:2]"  1 2;
+	setAttr -s 3 ".dli";
 createNode displayLayer -n "defaultLayer";
 	rename -uid "F117D900-0000-12C3-5ABE-DA060000024A";
 createNode renderLayerManager -n "renderLayerManager";
@@ -108,12 +124,6 @@ createNode renderLayerManager -n "renderLayerManager";
 createNode renderLayer -n "defaultRenderLayer";
 	rename -uid "F117D900-0000-12C3-5ABE-DA060000024C";
 	setAttr ".g" yes;
-createNode hyperLayout -n "hyperLayout1";
-	rename -uid "F117D900-0000-12C3-5ABE-DA180000024F";
-	setAttr ".ihi" 0;
-createNode hyperLayout -n "hyperLayout2";
-	rename -uid "F117D900-0000-12C3-5ABE-DA4400000251";
-	setAttr ".ihi" 0;
 createNode script -n "uiConfigurationScriptNode";
 	rename -uid "F117D900-0000-12C3-5ABE-DA8B00000254";
 	setAttr ".b" -type "string" (
@@ -162,6 +172,12 @@ createNode script -n "sceneConfigurationScriptNode";
 	rename -uid "F117D900-0000-12C3-5ABE-DA8B00000255";
 	setAttr ".b" -type "string" "playbackOptions -min 1 -max 120 -ast 1 -aet 200 ";
 	setAttr ".st" 6;
+createNode displayLayer -n "Cube_1_layer";
+	rename -uid "69C99900-0000-177D-5ABE-DAF200000267";
+	setAttr ".do" 1;
+createNode displayLayer -n "Cube_2_layer";
+	rename -uid "69C99900-0000-177D-5ABE-DB0100000268";
+	setAttr ".do" 2;
 select -ne :time1;
 	setAttr ".o" 1;
 	setAttr ".unw" 1;
@@ -188,11 +204,15 @@ select -ne :defaultResolution;
 select -ne :hardwareRenderGlobals;
 	setAttr ".ctrs" 256;
 	setAttr ".btrs" 512;
+connectAttr "Cube_1_layer.di" "Cube_1.do";
+connectAttr "Cube_2_layer.di" "Cube_2.do";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
+connectAttr "layerManager.dli[1]" "Cube_1_layer.id";
+connectAttr "layerManager.dli[2]" "Cube_2_layer.id";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
-// End of ProxyShapeDrawPurposeTest.ma
+// End of ProxyShapeDrawVisibilityTest.ma

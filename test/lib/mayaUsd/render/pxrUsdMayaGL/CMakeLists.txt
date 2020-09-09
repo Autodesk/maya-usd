@@ -2,8 +2,19 @@ set(TARGET_NAME MAYAUSD_RENDER_PXRUSDMAYAGL_TEST)
 
 # Unit test scripts.
 set(TEST_SCRIPT_FILES
+    testProxyShapeDrawAndTransform.py
+    testProxyShapeDrawColorAccuracy.py
+    testProxyShapeDrawColors.py
     testProxyShapeDrawLighting.py
+    testProxyShapeDrawPerformance.py
     testProxyShapeDrawPurpose.py
+    testProxyShapeDrawTimeSampled.py
+    testProxyShapeDrawUsdChangeProcessing.py
+    testProxyShapeDrawVisibility.py
+    testProxyShapeDuplicatePerformance.py
+    testProxyShapeLiveSurface.py
+    testProxyShapeRendererSceneMessages.py
+    testProxyShapeSelectionPerformance.py
     testPxrUsdMayaGL.py
 )
 
