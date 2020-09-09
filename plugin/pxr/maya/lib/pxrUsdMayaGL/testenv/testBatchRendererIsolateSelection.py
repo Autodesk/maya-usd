@@ -123,6 +123,30 @@ class testBatchRendererIsolateSelection(unittest.TestCase):
 
         # Reload assemblies.
         UsdMaya.LoadReferenceAssemblies()
+
+        # XXX: A regression appears to have been introduced some time around
+        # the release of Maya 2020.
+        # When using the "Show -> Isolate Select" feature in a particular
+        # viewport, if your isolated selection includes assemblies and you
+        # unload and reload those assemblies while "Isolate Select -> View
+        # Selected" is turned on, those assemblies will not be visible when
+        # they are reloaded, nor can they be selected. They continue to be
+        # visible and selectable in other viewports, and turning off "View
+        # Selected" will make them visible and selectable in the previously
+        # filtered viewport.
+        # It's not quite clear whether this regression has to do specifically
+        # with the assembly framework or is instead more generally related to
+        # some set membership state being lost as nodes are created or
+        # destroyed while a viewport is being filtered.
+        # To work around this for now, in Maya 2020+ we force a renderer reset
+        # to make the isolated assemblies visible and selectable in the
+        # filtered viewport.
+        # This regression is tracked in the following issues:
+        #     Autodesk Issue ID: BSPR-35674
+        #     Pixar Issue ID: MAYA-2808
+        if cmds.about(apiVersion=True) > 20200000:
+            cmds.ogs(reset=True)
+
         self._HitTest(panel1, True, True, False)
         self._HitTest(panel2, False, True, True)
 

@@ -17,25 +17,21 @@ set(TEST_SUPPORT_FILES
 
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND TEST_SCRIPT_FILES
-        testGroupCmd.py
         testAttribute.py
         testAttributes.py
         testComboCmd.py
+        testContextOps.py
         testDuplicateCmd.py
+        testGroupCmd.py
         testMoveCmd.py
         testObject3d.py
         testRename.py
-		testParentCmd.py
+        testParentCmd.py
         testRotateCmd.py
         testScaleCmd.py
         testSceneItem.py
         testTransform3dTranslate.py
     )
-    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2009)
-        list(APPEND TEST_SCRIPT_FILES
-            testContextOps.py
-        )
-    endif()
 endif()
 
 # copy ufe tests to ${CMAKE_CURRENT_BINARY_DIR} and run them from there
@@ -59,6 +55,6 @@ foreach(script ${TEST_SCRIPT_FILES})
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
 
-    # Assign a ctest label to these tests for easy filtering.
-    set_tests_properties(${target} PROPERTIES LABELS ufe)
+    # Add a ctest label to these tests for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS ufe)
 endforeach()

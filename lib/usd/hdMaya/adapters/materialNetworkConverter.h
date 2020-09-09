@@ -29,12 +29,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaShaderParam {
-#if USD_VERSION_NUM >= 1911
     TfToken name;
     VtValue fallbackValue;
-#else
-    HdMaterialParam param;
-#endif
 
     SdfValueTypeName type;
 
@@ -143,6 +139,11 @@ public:
 
     HDMAYA_API static VtValue ConvertMayaAttrToValue(
         MFnDependencyNode& node, const MString& plugName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr);
+
+    HDMAYA_API static VtValue ConvertMayaAttrToScaledValue(
+        MFnDependencyNode& node, const MString& plugName, const MString& scaleName,
         const SdfValueTypeName& type, const VtValue* fallback = nullptr,
         MPlug* outPlug = nullptr);
 

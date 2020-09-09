@@ -717,16 +717,14 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     {
         // Start listening for notices for the USD stage.
         _stageNoticeListener.SetStage(usdStage);
-        _stageNoticeListener.SetStageContentsChangedCallback(
-            std::bind(&MayaUsdProxyShapeBase::_OnStageContentsChanged,
-                      this,
-                      std::placeholders::_1));
+        _stageNoticeListener.SetStageContentsChangedCallback([this](const UsdNotice::StageContentsChanged& notice) { 
+            return _OnStageContentsChanged(notice);
+        });
 
-        _stageNoticeListener.SetStageObjectsChangedCallback(
-            std::bind(&MayaUsdProxyShapeBase::_OnStageObjectsChanged,
-                this,
-                std::placeholders::_1));
-        
+        _stageNoticeListener.SetStageObjectsChangedCallback([this](const UsdNotice::ObjectsChanged& notice) { 
+            return _OnStageObjectsChanged(notice);
+        });
+
         MayaUsdProxyStageSetNotice(*this).Send();
     }
 

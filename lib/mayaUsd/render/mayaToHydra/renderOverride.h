@@ -38,14 +38,7 @@
 #include <pxr/imaging/hd/rprimCollection.h>
 #include <pxr/imaging/hdSt/renderDelegate.h>
 
-#if USD_VERSION_NUM >= 1911
 #include <pxr/imaging/hd/rendererPlugin.h>
-#else
-#include <pxr/imaging/hdx/rendererPlugin.h>
-PXR_NAMESPACE_OPEN_SCOPE
-using HdRendererPlugin = HdxRendererPlugin;
-PXR_NAMESPACE_CLOSE_SCOPE
-#endif
 #include <pxr/imaging/hdx/taskController.h>
 
 #if WANT_UFE_BUILD

@@ -7,10 +7,8 @@
 USD support in Maya is provided through several libraries and plugins:
 - \subpage usd_maya_lib_usdMaya_page_front
   This library provides reusable logic for using USD in Maya.
-- \subpage usd_maya_plugin_pxrUsdTranslators_page_front
-  This plugin supports the built-in Maya nodes.
 - \subpage usd_maya_plugin_pxrUsd_page_front
-  This is the main plugin that you load for USD functionality in Maya.
+  This is the main plugin that you load for Pixar's USD functionality in Maya.
 - \subpage usd_maya_plugin_pxrUsdPreviewSurface_page_front
   This is a Maya surface shader plugin node that mimics the UsdPreviewSurface shader in USD.
 
@@ -31,9 +29,7 @@ proxy shapes, and related Maya nodes.
 ## Translation Plugins
 
 Plugins can provide new translation functions for USD types that are not built
-into the core UsdMaya library. We ship plugins for the major Maya built-in node
-types in the \ref usd_maya_plugin_pxrUsdTranslators_page_front
-"pxrUsdTranslators Maya plugin".
+into the core UsdMaya library.
 
 When implementing new plugins, you must make sure to generate plugInfo.json
 files, and that they are recognized by the Plug system. More details for

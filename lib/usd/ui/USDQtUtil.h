@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDUI_USD_QT_UTIL_H
+#define MAYAUSDUI_USD_QT_UTIL_H
+
 
 #include <mayaUsd/mayaUsd.h>
 
@@ -34,3 +36,6 @@ public:
 };
 
 } // namespace MayaUsd
+
+
+#endif

@@ -38,8 +38,7 @@ def getUfeGlobalSelectionList():
     for item in ufe.GlobalSelection.get():
         selection.append(str(item.path().back()))
     return selection
-    
-    
+
 def selectPath(path, replace=False):
     """ 
         Select a path in the UFE Global selection
@@ -55,3 +54,18 @@ def selectPath(path, replace=False):
         ufeSelectCmd.replaceWith(selection)
     else:
         ufeSelectCmd.append(sceneItem)
+
+def ufeFeatureSetVersion():
+    '''Return the UFE feature set version taking into account rollback to using
+    0 for unreleased version after we ship a UFE.
+
+    If you need to test for a specific UFE preview release version then check
+    the cmake variable UFE_PREVIEW_VERSION_NUM. This is also set as an env
+    for the python tests.
+    '''
+
+    # Examples:
+    #   v2.0.0 (released version 2).
+    #   v0.2.20 (unreleased preview version 2).
+    major = ufe.VersionInfo.getMajorVersion()
+    return ufe.VersionInfo.getMinorVersion() if major == 0 else major
