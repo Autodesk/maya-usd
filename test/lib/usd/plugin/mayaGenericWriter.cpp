@@ -34,6 +34,7 @@
 #include <maya/MFnAttribute.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
 #include <maya/MStatus.h>
 #include <maya/MGlobal.h>
 
@@ -134,8 +135,11 @@ bool Maya_GenericWriter::_IsConnectable(MPlug & plug)
     MStatus    status;
     MPlugArray connections;
     if (plug.connectedTo(connections, true, true, &status) && status == MS::kSuccess) {
-        for (MPlug const& otherPlug : connections) {
-            MFnDependencyNode depNodeFn(otherPlug.node(), &status);
+        auto connectionsLength = connections.length();
+        for (uint32_t i = 0; i < connectionsLength; ++i)
+        {
+            MObject otherNode = connections[i].node();
+            MFnDependencyNode depNodeFn(otherNode, &status);
             if (status != MS::kSuccess) {
                 continue;
             }
