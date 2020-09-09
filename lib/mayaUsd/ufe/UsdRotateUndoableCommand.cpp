@@ -22,10 +22,17 @@ namespace ufe {
 
 TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
 
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+UsdRotateUndoableCommand::UsdRotateUndoableCommand(
+    const Ufe::Path& path, double x, double y, double z)
+	: Ufe::RotateUndoableCommand(path),
+      UsdTRSUndoableCommandBase(x, y, z)
+#else
 UsdRotateUndoableCommand::UsdRotateUndoableCommand(
     const UsdSceneItem::Ptr& item, double x, double y, double z)
 	: Ufe::RotateUndoableCommand(item),
       UsdTRSUndoableCommandBase(item, x, y, z)
+#endif
 {
 	// Since we want to change xformOp:rotateXYZ, and we need to store the
 	// prevRotate for undo purposes, we need to make sure we convert it to
@@ -45,6 +52,16 @@ UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
 {}
 
 /*static*/
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
+    const Ufe::Path& path, double x, double y, double z)
+{
+	auto cmd = std::make_shared<MakeSharedEnabler<UsdRotateUndoableCommand>>(
+        path, x, y, z);
+    cmd->initialize();
+    return cmd;
+}
+#else
 UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
     const UsdSceneItem::Ptr& item, double x, double y, double z)
 {
@@ -53,6 +70,8 @@ UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
     cmd->initialize();
     return cmd;
 }
+#endif
+
 
 void UsdRotateUndoableCommand::undo()
 {

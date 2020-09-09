@@ -445,7 +445,11 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
                 globalSelection->addObserver(_observer);
             }
 
+            #if UFE_PREVIEW_VERSION_NUM >= 2021
+            Ufe::Scene::instance().addObserver(_observer);
+            #else
             Ufe::Scene::instance().addObjectAddObserver(_observer);
+            #endif
         }
 #else
         // Without UFE, support basic selection highlight at proxy shape level.
