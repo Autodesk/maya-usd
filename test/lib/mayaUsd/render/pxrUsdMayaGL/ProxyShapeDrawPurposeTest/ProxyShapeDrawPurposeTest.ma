@@ -3,7 +3,7 @@
 //Last modified: Fri, Mar 30, 2018 05:50:15 PM
 //Codeset: UTF-8
 requires maya "2016";
-requires -nodeType "pxrUsdProxyShape" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
+requires -nodeType "mayaUsdProxyShape" "mayaUsdPlugin" "1.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2016";
@@ -75,9 +75,11 @@ createNode transform -n "ProxyShapeDrawPurposeTest";
 	rename -uid "F117D900-0000-12C3-5ABE-DA5000000253";
 createNode transform -n "PurposeCubesProxy" -p "ProxyShapeDrawPurposeTest";
 	rename -uid "F117D900-0000-12C3-5ABE-DA4C00000252";
-createNode pxrUsdProxyShape -n "PurposeCubesProxyShape" -p "PurposeCubesProxy";
+createNode mayaUsdProxyShape -n "PurposeCubesProxyShape" -p "PurposeCubesProxy";
 	rename -uid "F117D900-0000-12C3-5ABE-DA180000024E";
-	setAttr ".isc" yes;
+	setAttr -k off ".v";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
 	setAttr ".fp" -type "string" "./PurposeCubes.usda";
 	setAttr ".pp" -type "string" "/PurposeCubes";
 createNode transform -n "MainCamera";

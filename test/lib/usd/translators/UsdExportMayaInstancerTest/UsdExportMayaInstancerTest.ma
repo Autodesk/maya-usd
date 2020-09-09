@@ -1,5 +1,5 @@
 //Maya ASCII 2019 scene
-//Name: InstancerExportTest.ma
+//Name: UsdExportMayaInstancerTest.ma
 //Last modified: Tue, Dec 17, 2019 02:42:02 PM
 //Codeset: UTF-8
 requires maya "2019";
@@ -582,4 +582,4 @@ connectAttr "npPointsBlinn.msg" ":defaultShaderList1.s" -na;
 connectAttr "npPointsVolume.msg" ":defaultShaderList1.s" -na;
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
 connectAttr "pCubeShape1.iog" ":initialShadingGroup.dsm" -na;
-// End of InstancerExportTest.ma
+// End of UsdExportMayaInstancerTest.ma

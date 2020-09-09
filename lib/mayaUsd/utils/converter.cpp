@@ -291,9 +291,21 @@ MAYAUSD_NS_DEF
 
         static void set(FnType& data, const Type& value) { data.set(value); }
 
-        static void get(const MDataHandle& handle, Type& value) { value = handle.asMatrix(); }
+        static void get(const MDataHandle& handle, Type& value)
+        {
+            MObject dataObj = const_cast<MDataHandle&>(handle).data();
+            FnType  dataFn(dataObj);
+            get(dataFn, value);
+        }
 
-        static void set(MDataHandle& handle, const Type& value) { handle.set(value); }
+        static void set(MDataHandle& handle, const Type& value)
+        {
+            FnType  dataFn;
+            MObject dataObj = create(dataFn);
+            set(dataFn, value);
+
+            handle.setMObject(dataObj);
+        }
     };
 
     //! \brief  Type trait for Maya's float3 type providing get and set methods for data handle and

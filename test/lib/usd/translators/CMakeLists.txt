@@ -12,6 +12,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportFrameOffset.py
     testUsdExportInstances.py
     testUsdExportLocator.py
+    testUsdExportMayaInstancer.py
     testUsdExportMesh.py
     testUsdExportNurbsCurve.py
     testUsdExportOpenLayer.py
@@ -35,9 +36,11 @@ set(TEST_SCRIPT_FILES
     testUsdExportShadingModePxrRis.py
     testUsdExportSkeleton.py
     testUsdExportStripNamespaces.py
+    testUsdExportStroke.py
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
+    testUsdImportExportScope.py
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but
     # passes.  PPT, 17-Jun-20.
     testUsdImportFrameRange.py
