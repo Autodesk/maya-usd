@@ -100,7 +100,7 @@ Ufe::SceneItem::Ptr UsdTransform3d::sceneItem() const
 	return fItem;
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2013
+#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd(double x, double y, double z)
 {
 	return UsdTranslateUndoableCommand::create(fItem, x, y, z);
@@ -128,7 +128,7 @@ Ufe::Vector3d UsdTransform3d::translation() const
 	return Ufe::Vector3d(x, y, z);
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2013
+#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::Vector3d UsdTransform3d::rotation() const
 {
 	double x{0}, y{0}, z{0};
@@ -172,7 +172,7 @@ void UsdTransform3d::rotate(double x, double y, double z)
 	rotateOp(fPrim, fItem->path(), x, y, z);
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2013
+#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, double z)
 {
 	return UsdScaleUndoableCommand::create(fItem, x, y, z);

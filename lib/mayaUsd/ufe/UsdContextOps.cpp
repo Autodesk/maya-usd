@@ -35,8 +35,6 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 
-#include "private/UfeNotifGuard.h"
-
 namespace {
 
 // Ufe::ContextItem strings
@@ -135,7 +133,6 @@ public:
 
     void undo() override { 
         if (_prim.IsValid()) {
-            MayaUsd::ufe::InAddOrRemoveReference ar;
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.RemoveReference(_sdfRef);
         }
@@ -143,7 +140,6 @@ public:
 
     void redo() override { 
         if (_prim.IsValid()) {
-            MayaUsd::ufe::InAddOrRemoveReference ar;
             _sdfRef = SdfReference(_filePath);
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.AddReference(_sdfRef);
@@ -174,7 +170,6 @@ public:
 
     void redo() override { 
         if (_prim.IsValid()) {
-            MayaUsd::ufe::InAddOrRemoveReference ar;
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.ClearReferences();
         }
@@ -237,9 +232,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
         MGlobal::executeCommand("runTimeCommand -exists UsdLayerEditor", hasLayerEditorCmd);
         if (hasLayerEditorCmd) {
             items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
-#if UFE_PREVIEW_VERSION_NUM >= 2015
             items.emplace_back(Ufe::ContextItem::kSeparator);
-#endif
         }
 
         // Top-level items.  Variant sets and visibility. Do not add for gateway type node.
@@ -308,9 +301,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
             items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel);  // typeless prim
             items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel);
             items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel);
-#if UFE_PREVIEW_VERSION_NUM >= 2015
             items.emplace_back(Ufe::ContextItem::kSeparator);
-#endif
             items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel);
             items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel);
             items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel);

@@ -176,7 +176,6 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestRotate(rotation)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
     def testRotateUSD(self):
         '''Rotate USD object, read through the Transform3d interface.'''
 
@@ -214,7 +213,6 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestRotate(expected)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.') 
     def testMultiSelectRotateUSD(self):
         '''Rotate multiple USD objects, read through Transform3d interface.'''
 

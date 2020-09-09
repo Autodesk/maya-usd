@@ -7,14 +7,18 @@ endfunction()
 # mayaUsd_add_test( <test_name>
 #                   {PYTHON_MODULE <python_module_name> |
 #                    PYTHON_COMMAND <python_code> |
+#                    PYTHON_SCRIPT <python_script_file> |
 #                    COMMAND <cmd> [<cmdarg> ...] }
 #                   [NO_STANDALONE_INIT]
+#                   [INTERACTIVE]
 #                   [ENV <varname>=<varvalue> ...])
 #
 #   PYTHON_MODULE      - Module to import and test with unittest.main.
 #   PYTHON_COMMAND     - Python code to execute; should call sys.exit
 #                        with an appropriate exitcode to indicate success
 #                        or failure.
+#   PYTHON_SCRIPT      - Python script file to execute; should exit with an
+#                        appropriate exitcode to indicate success or failure.
 #   WORKING_DIRECTORY  - Directory from which the test executable will be called.
 #   COMMAND            - Command line to execute as a test
 #   NO_STANDALONE_INIT - Only allowable with PYTHON_MODULE or
@@ -22,6 +26,13 @@ endfunction()
 #                        command will generally add some boilerplate code
 #                        to ensure that maya is initialized and exits
 #                        correctly. Use this option to NOT add that code.
+#   INTERACTIVE        - Only allowable with PYTHON_SCRIPT.
+#                        The test is run using an interactive (non-standalone)
+#                        session of Maya, including the UI.
+#                        Tests run in this way should finish by calling Maya's
+#                        quit command and returning an exit code of 0 for
+#                        success or 1 for failure:
+#                            cmds.quit(abort=True, exitCode=exitCode)
 #   ENV                - Set or append the indicated environment variables;
 #                        Since mayaUsd_add_test internally makes changes to
 #                        some environment variables, if a value is given
@@ -50,29 +61,34 @@ function(mayaUsd_add_test test_name)
     # -----------------
 
     cmake_parse_arguments(PREFIX
-        "NO_STANDALONE_INIT"                              # options
-        "PYTHON_MODULE;PYTHON_COMMAND;WORKING_DIRECTORY"  # one_value keywords
-        "COMMAND;ENV"                                     # multi_value keywords
+        "NO_STANDALONE_INIT;INTERACTIVE"                                # options
+        "PYTHON_MODULE;PYTHON_COMMAND;PYTHON_SCRIPT;WORKING_DIRECTORY"  # one_value keywords
+        "COMMAND;ENV"                                                   # multi_value keywords
         ${ARGN}
     )
 
     # check that they provided one and ONLY 1 of:
-    #     PYTHON_MODULE / PYTHON_COMMAND / COMMAND
+    #     PYTHON_MODULE / PYTHON_COMMAND / PYTHON_SCRIPT / COMMAND
     set(NUM_EXCLUSIVE_ITEMS 0)
-    foreach(option_name PYTHON_MODULE PYTHON_COMMAND COMMAND)
+    foreach(option_name PYTHON_MODULE PYTHON_COMMAND PYTHON_SCRIPT COMMAND)
         if(PREFIX_${option_name})
             math(EXPR NUM_EXCLUSIVE_ITEMS "${NUM_EXCLUSIVE_ITEMS} + 1")
         endif()
     endforeach()
     if(NOT NUM_EXCLUSIVE_ITEMS EQUAL 1)
         message(FATAL_ERROR "mayaUsd_add_test: must be called with exactly "
-            "one of PYTHON_MODULE, PYTHON_COMMAND, or COMMAND")
+            "one of PYTHON_MODULE, PYTHON_COMMAND, PYTHON_SCRIPT, or COMMAND")
     endif()
 
     if(PREFIX_NO_STANDALONE_INIT AND NOT (PREFIX_PYTHON_MODULE
                                           OR PREFIX_PYTHON_COMMAND))
         message(FATAL_ERROR "mayaUsd_add_test: NO_STANDALONE_INIT may only be "
             "used with PYTHON_MODULE or PYTHON_COMMAND")
+    endif()
+
+    if(PREFIX_INTERACTIVE AND NOT PREFIX_PYTHON_SCRIPT)
+        message(FATAL_ERROR "mayaUsd_add_test: INTERACTIVE may only be "
+            "used with PYTHON_SCRIPT")
     endif()
 
     # set the working_dir
@@ -97,6 +113,19 @@ main(module=${MODULE_NAME})
 ")
     elseif(PREFIX_PYTHON_COMMAND)
         set(PYTEST_CODE "${PREFIX_PYTHON_COMMAND}")
+    elseif(PREFIX_PYTHON_SCRIPT)
+        if (PREFIX_INTERACTIVE)
+            set(MEL_PY_EXEC_COMMAND "python(\"\
+file = \\\"${PREFIX_PYTHON_SCRIPT}\\\"\\\; \
+openMode = \\\"rb\\\"\\\; \
+compileMode = \\\"exec\\\"\\\; \
+globals = {\\\"__file__\\\": file, \\\"__name__\\\": \\\"__main__\\\"}\\\; \
+exec(compile(open(file, openMode).read(), file, compileMode), globals)\
+\")")
+            set(COMMAND_CALL ${MAYA_EXECUTABLE} -c ${MEL_PY_EXEC_COMMAND})
+        else()
+            set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${PREFIX_PYTHON_SCRIPT})
+        endif()
     else()
         set(COMMAND_CALL ${PREFIX_COMMAND})
     endif()
@@ -133,13 +162,22 @@ finally:
     # -----------------
 
     set(ALL_PATH_VARS
-        PATH
         PYTHONPATH
         MAYA_PLUG_IN_PATH
         MAYA_SCRIPT_PATH
         PXR_PLUGINPATH_NAME
-        LD_LIBRARY_PATH
     )
+
+    if(IS_WINDOWS)
+        # Put path at the front of the list of env vars.
+        list(INSERT ALL_PATH_VARS 0
+            PATH
+        )
+    else()
+        list(APPEND ALL_PATH_VARS
+            LD_LIBRARY_PATH
+        )
+    endif()
 
     # Set initial empty values for all path vars
     foreach(pathvar ${ALL_PATH_VARS})
@@ -196,6 +234,9 @@ finally:
         # that folder so that we can find the python DLLs.
         list(APPEND MAYAUSD_VARNAME_PATH $ENV{PYTHONHOME})
     endif()
+
+    # Adjust PYTHONPATH to include the path to our test utilities.
+    list(APPEND MAYAUSD_VARNAME_PYTHONPATH "${CMAKE_BINARY_DIR}/test/python")
 
     # Adjust PATH and PYTHONPATH to include USD.
     # These should come last (esp PYTHONPATH, in case another module is overriding
@@ -267,4 +308,11 @@ finally:
         "MAYA_NO_STANDALONE_ATEXIT=1"
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")
+
+    if (PREFIX_INTERACTIVE)
+        # Add the "interactive" label to all tests that launch the Maya UI.
+        # This allows bypassing them by using the --label-exclude/-LE option to
+        # ctest. This is useful when running tests in a headless configuration.
+        set_property(TEST "${test_name}" APPEND PROPERTY LABELS interactive)
+    endif()
 endfunction()

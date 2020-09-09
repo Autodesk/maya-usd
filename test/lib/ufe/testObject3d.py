@@ -179,7 +179,6 @@ class Object3dTestCase(unittest.TestCase):
             assertVectorAlmostEqual(self, ufeBBox.max.vector,
                                     expected[frame-1][1], places=6)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2010', 'testVisibility only available in UFE PR2010 and greater')
     def testVisibility(self):
         '''Test the Object3d visibility methods.'''
 

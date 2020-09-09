@@ -40,9 +40,7 @@
 #include <ufe/transform3d.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/object3d.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2010
 #include <ufe/object3dNotification.h>
-#endif
 #include <unordered_map>
 #endif
 
@@ -219,34 +217,46 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			if (!sceneItem)
 				continue;
 
-			if (prim.IsActive())
+			// Special case when we know the operation came from either
+			// the add or delete of our UFE/USD implementation.
+			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
 			{
-				if (InAddOrRemoveReference::inAddOrRemoveReference())
-				{
-#if UFE_PREVIEW_VERSION_NUM >= 2014
-					// When we are in an add or remove reference we send the
-					// UFE subtree invalidate notif instead.
-					auto notification = Ufe::SubtreeInvalidate(sceneItem);
-					Ufe::Scene::notifySubtreeInvalidate(notification);
-#endif
-				}
-				else
+				if (prim.IsActive())
 				{
 					auto notification = Ufe::ObjectAdd(sceneItem);
 					Ufe::Scene::notifyObjectAdd(notification);
 				}
+				else
+				{
+					auto notification = Ufe::ObjectPostDelete(sceneItem);
+					Ufe::Scene::notifyObjectDelete(notification);
+				}
+			}
+#ifdef UFE_V2_FEATURES_AVAILABLE
+			else
+			{
+				// According to USD docs for GetResyncedPaths():
+				// - Resyncs imply entire subtree invalidation of all descendant prims and properties.
+				// So we send the UFE subtree invalidate notif.
+				auto notification = Ufe::SubtreeInvalidate(sceneItem);
+				Ufe::Scene::notifySubtreeInvalidate(notification);
+			}
+#endif
+		}
+#ifdef UFE_V2_FEATURES_AVAILABLE
+		else if (!prim.IsValid() && !InPathChange::inPathChange())
+		{
+			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
+			{
+				auto notification = Ufe::ObjectDestroyed(ufePath);
+				Ufe::Scene::notifyObjectDelete(notification);
 			}
 			else
 			{
-				auto notification = Ufe::ObjectPostDelete(sceneItem);
-				Ufe::Scene::notifyObjectDelete(notification);
+				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
+				auto notification = Ufe::SubtreeInvalidate(sceneItem);
+				Ufe::Scene::notifySubtreeInvalidate(notification);
 			}
-		}
-#if UFE_PREVIEW_VERSION_NUM >= 2015
-		else if (!prim.IsValid() && !InPathChange::inPathChange())
-		{
-			auto notification = Ufe::ObjectDestroyed(ufePath);
-			Ufe::Scene::notifyObjectDelete(notification);
 		}
 #endif
 	}
@@ -270,14 +280,12 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			}
 		}
 
-#if UFE_PREVIEW_VERSION_NUM >= 2010
 		// Send a special message when visibility has changed.
 		if (changedPath.GetNameToken() == UsdGeomTokens->visibility)
 		{
 			Ufe::VisibilityChanged vis(ufePath);
 			Ufe::Object3d::notify(vis);
 		}
-#endif
 #endif
 
 		// Is the change a Transform3d change?
@@ -307,7 +315,7 @@ void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& n
 {
 	afterOpen();
 
-#if UFE_PREVIEW_VERSION_NUM >= 2014
+#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(notice.GetProxyShape().ufePath());
 	auto notification = Ufe::SubtreeInvalidate(sceneItem);
 	Ufe::Scene::notifySubtreeInvalidate(notification);

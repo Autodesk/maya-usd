@@ -183,7 +183,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             // nesting of referenced assets. Use absolute path instead if USD was
             // able to resolve. A better fix will require providing an asset
             // resolver to Maya that can resolve the file correctly using the
-            // MPxAssertResolver API.
+            // MPxFileResolver API.
             val = SdfAssetPath(filePath);
         }
         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);

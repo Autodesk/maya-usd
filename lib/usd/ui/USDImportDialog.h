@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDUI_USD_IMPORT_DIALOG_H
+#define MAYAUSDUI_USD_IMPORT_DIALOG_H
+
 
 #include <memory>
 
@@ -100,3 +102,6 @@ protected:
 };
 
 } // namespace MayaUsd
+
+
+#endif

@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from ufeTestUtils import mayaUtils, usdUtils
+from ufeTestUtils import mayaUtils, usdUtils, ufeUtils
 
 import ufe
 
@@ -127,7 +127,7 @@ class SelectTestCase(unittest.TestCase):
             ufeSelectCmd.replaceWith(sn)
         self.runTestSelection(selectCmd)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 116, 'Requires Maya fixes only available in Maya Preview Release 116 or later.') 
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testMayaSelect only available in UFE v2 or greater.')
     def testMayaSelect(self):
         # At time of writing (17-May-2020), Maya select command does not
         # accept UFE path strings.  Use Maya select for Maya scene items,
