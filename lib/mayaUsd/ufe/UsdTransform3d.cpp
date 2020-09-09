@@ -230,7 +230,7 @@ Ufe::SetMatrixUndoableCommand::Ptr UsdTransform3d::setMatrixCmd(const Ufe::Matri
 Ufe::Matrix4d UsdTransform3d::matrix() const
 {
     // TODO: HS Aug25,2020 dummy code to pass the compiler errors
-    Ufe::Matrix4d m;
+    Ufe::Matrix4d m{};
     return m;
 }
 #endif
