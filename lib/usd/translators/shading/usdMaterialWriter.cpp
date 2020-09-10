@@ -39,6 +39,7 @@
 
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 #include <mayaUsd/fileio/writeJobContext.h>
@@ -56,6 +57,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Maya material nodes attribute names
     (outColor)
 );
+
+UsdMayaShaderWriter::ContextSupport
+PxrUsdTranslators_MaterialWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
+{
+    return exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface
+        ? ContextSupport::Supported
+        : ContextSupport::Fallback;
+}
 
 PxrUsdTranslators_MaterialWriter::PxrUsdTranslators_MaterialWriter(
         const MFnDependencyNode& depNodeFn,

@@ -115,3 +115,25 @@ mayaUsd_add_test(testUsdImportUVSetsFloat
         "PIXMAYA_READ_FLOAT2_AS_UV=1"
 )
 set_property(TEST testUsdImportUVSetsFloat APPEND PROPERTY LABELS translators)
+
+# Test using standardSurface, which was introduced in Maya 2020.
+if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020) 
+    mayaUsd_add_test(testUsdExportCustomConverter
+        PYTHON_MODULE testUsdExportCustomConverter
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+            "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+    )
+    set_property(TEST testUsdExportCustomConverter APPEND PROPERTY LABELS translators)
+endif()
+
+# We are explicitly not setting PXR_PLUGINPATH_NAME here. We want to test
+# manually loading the plugin that provides Maya export.
+mayaUsd_add_test(testUsdMayaListShadingModesCommand
+    PYTHON_MODULE testUsdMayaListShadingModesCommand
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+)
+set_property(TEST testUsdMayaListShadingModesCommand APPEND PROPERTY LABELS translators)
