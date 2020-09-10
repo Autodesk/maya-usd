@@ -120,9 +120,9 @@ public:
 
     /// All the information registered for a specific material conversion.
     struct ExportConversionInfo {
-        TfToken _renderContext;
-        TfToken _niceName;
-        TfToken _description;
+        TfToken renderContext;
+        TfToken niceName;
+        TfToken description;
     };
 
     /// Gets the information associated with \p materialConversion

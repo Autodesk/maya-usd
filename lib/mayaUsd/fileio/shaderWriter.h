@@ -51,10 +51,12 @@ class UsdMayaShaderWriter : public UsdMayaPrimWriter
         /// `Unsupported` if the context is not as expected.
         enum class ContextSupport { Supported, Fallback, Unsupported };
 
-        /// This static function is expected for all shader writers and allows
-        /// declaring how well this class can support the current context:
-        MAYAUSD_CORE_PUBLIC
-        static ContextSupport CanExport(const UsdMayaJobExportArgs& exportArgs);
+        /// A static function is expected for all shader writers and allows
+        /// declaring how well this class can support the current context.
+        ///
+        /// The prototype is:
+        ///
+        /// static ContextSupport CanExport(const UsdMayaJobExportArgs& exportArgs);
 
         /// Get the name of the USD shading attribute that corresponds to the
         /// Maya attribute named \p mayaAttrName.

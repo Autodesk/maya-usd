@@ -24,7 +24,7 @@ from maya import standalone
 import fixturesUtils
 
 
-class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
+class testUsdMayaListShadingModesCommand(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -65,7 +65,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # Load the test plugin directly to get the "Maya shading" export. This
         # plugin was not discoverable by USD so it was not loaded when asking
         # for the modes the first time. We will test discoverability in the
-        # testUsdExportCustomRenderContext.py test.
+        # testUsdExportCustomConverter.py test.
         cmds.loadPlugin("usdTestPlugin")
 
         exporters = modes(ex=True)

@@ -55,7 +55,7 @@ namespace {
         }
         if (shadingMode.IsEmpty()) {
             for (auto const& r: UsdMayaShadingModeRegistry::ListExportConversions()) {
-                if (niceToken == UsdMayaShadingModeRegistry::GetExportConversionInfo(r)._niceName) {
+                if (niceToken == UsdMayaShadingModeRegistry::GetExportConversionInfo(r).niceName) {
                     shadingMode = UsdMayaShadingModeTokens->useRegistry;
                     convertMaterialsTo = r;
                 }
@@ -78,7 +78,7 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
         // We have these default exporters which are always 1-2-3 in the options:
         appendToResult(UsdMayaShadingModeRegistry::GetExportConversionInfo(
                            UsdImagingTokens->UsdPreviewSurface)
-                           ._niceName.GetText());
+                           .niceName.GetText());
         appendToResult(
             UsdMayaShadingModeRegistry::GetExporterNiceName(UsdMayaShadingModeTokens->displayColor)
                 .c_str());
@@ -94,7 +94,7 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
         for (auto const& materialConversion : UsdMayaShadingModeRegistry::ListExportConversions()) {
             appendToResult(
                 UsdMayaShadingModeRegistry::GetExportConversionInfo(materialConversion)
-                    ._niceName.GetText());
+                    .niceName.GetText());
         }
     } else if (argData.isFlagSet("import")) {
         // Always include the "none" shading mode.
@@ -138,7 +138,7 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
             }
         } else {
             setResult(UsdMayaShadingModeRegistry::GetExportConversionInfo(materialConversion)
-                          ._description.GetText());
+                          .description.GetText());
         }
     } else if (argData.isFlagSet("findExportName")) {
         MString optName;
@@ -154,7 +154,7 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
         for (auto const& r: UsdMayaShadingModeRegistry::ListExportConversions()) {
             if (r == optToken) {
                 setResult(
-                    UsdMayaShadingModeRegistry::GetExportConversionInfo(r)._niceName.GetText());
+                    UsdMayaShadingModeRegistry::GetExportConversionInfo(r).niceName.GetText());
                 return MS::kSuccess;
             }
         }

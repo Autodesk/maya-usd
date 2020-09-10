@@ -89,6 +89,21 @@ struct UsdMayaShaderWriterRegistry {
     Find(const TfToken& mayaTypeName, const UsdMayaJobExportArgs& exportArgs);
 };
 
+/// SFINAE utility class to detect the presence of a CanExport static function
+/// inside a writer class. Used by the registration macro for basic writers.
+template <typename T> class HasCanExport {
+    typedef char _One;
+    struct _Two {
+        char _x[2];
+    };
+
+    template <typename C> static _One _Test(decltype(&C::CanExport));
+    template <typename C> static _Two _Test(...);
+
+public:
+    enum { value = sizeof(_Test<T>(0)) == sizeof(char) };
+};
+
 /// \brief Registers a pre-existing writer class for the given Maya type;
 /// the writer class should be a subclass of UsdMayaShaderWriter with a three-place
 /// constructor that takes <tt>(const MFnDependencyNode& depNodeFn,
@@ -118,6 +133,9 @@ struct UsdMayaShaderWriterRegistry {
         static_assert(                                                                       \
             std::is_base_of<UsdMayaShaderWriter, writerClass>::value,                        \
             #writerClass " must derive from UsdMayaShaderWriter");                           \
+        static_assert(                                                                       \
+            HasCanExport<writerClass>::value,                                                \
+            #writerClass " must define a static CanExport() function");                      \
         UsdMayaShaderWriterRegistry::Register(                                               \
             TfToken(#mayaTypeName),                                                          \
             &writerClass::CanExport,                                                         \

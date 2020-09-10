@@ -35,13 +35,6 @@ UsdMayaShaderWriter::UsdMayaShaderWriter(
 {
 }
 
-/* static */
-UsdMayaShaderWriter::ContextSupport
-UsdMayaShaderWriter::CanExport(const UsdMayaJobExportArgs&)
-{
-    return ContextSupport::Unsupported;
-}
-
 /* virtual */
 TfToken
 UsdMayaShaderWriter::GetShadingAttributeNameForMayaAttrName(

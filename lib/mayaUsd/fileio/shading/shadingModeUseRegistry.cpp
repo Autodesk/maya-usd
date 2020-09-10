@@ -342,7 +342,7 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
             const TfToken& convertMaterialsTo = context.GetExportArgs().convertMaterialsTo;
             const TfToken& renderContext
                 = UsdMayaShadingModeRegistry::GetExportConversionInfo(convertMaterialsTo)
-                      ._renderContext;
+                      .renderContext;
             SdfPath materialExportPath = materialPrim.GetPath();
 
             UsdShadeShader surfaceShaderSchema =
