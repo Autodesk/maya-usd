@@ -160,6 +160,21 @@ Ufe::Vector3d UsdTransform3dBase::scalePivot() const
     return Ufe::Vector3d(0, 0, 0);
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+Ufe::SetMatrixUndoableCommand::Ptr UsdTransform3dBase::setMatrixCmd(const Ufe::Matrix4d& m)
+{
+    // TODO: HS Aug25,2020 dummy code to pass the compiler errors
+    return nullptr;
+}
+
+Ufe::Matrix4d UsdTransform3dBase::matrix() const
+{
+    // TODO: HS Aug25,2020 dummy code to pass the compiler errors
+    Ufe::Matrix4d m{};
+    return m;
+}
+#endif
+
 Ufe::Matrix4d UsdTransform3dBase::segmentInclusiveMatrix() const
 {
     UsdGeomXformCache xformCache(getTime(path()));
