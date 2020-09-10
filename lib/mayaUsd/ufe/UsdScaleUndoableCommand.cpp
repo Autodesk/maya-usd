@@ -22,26 +22,47 @@ namespace ufe {
 
 TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+UsdScaleUndoableCommand::UsdScaleUndoableCommand(
+    const Ufe::Path& path, double x, double y, double z
+) : Ufe::ScaleUndoableCommand(path),
+    UsdTRSUndoableCommandBase(x, y, z)
+{}
+#else
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(
     const UsdSceneItem::Ptr& item, double x, double y, double z
 ) : Ufe::ScaleUndoableCommand(item),
     UsdTRSUndoableCommandBase(item, x, y, z)
 {}
+#endif
 
 UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
 {}
 
 /*static*/
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
+    const Ufe::Path& path, double x, double y, double z
+)
+{
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
+        path, x, y, z);
+    cmd->initialize();
+    return cmd;
+
+}
+#else
 UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
     const UsdSceneItem::Ptr& item, double x, double y, double z
 )
 {
-	auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
         item, x, y, z);
     cmd->initialize();
     return cmd;
 
 }
+#endif
 
 void UsdScaleUndoableCommand::undo()
 {
