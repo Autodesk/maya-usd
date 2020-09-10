@@ -49,6 +49,7 @@ public:
 
 	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
+	inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 
 	UsdSceneItem::Ptr usdSceneItem() const;
 
@@ -62,10 +63,11 @@ public:
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    Ufe::UndoableCommand::Ptr insertChildCmd(
-        const Ufe::SceneItem::Ptr& child,
-        const Ufe::SceneItem::Ptr& pos
-    ) override;
+	#if UFE_PREVIEW_VERSION_NUM >= 2021
+    Ufe::InsertChildCommand::Ptr insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
+    #else
+    Ufe::UndoableCommand::Ptr insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
+    #endif
 
 	Ufe::SceneItem::Ptr createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
 	Ufe::UndoableCommand::Ptr createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
@@ -78,7 +80,6 @@ public:
 
 private:
 	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
 
 }; // UsdHierarchy
 
