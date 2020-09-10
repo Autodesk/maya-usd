@@ -81,6 +81,11 @@ public:
     void scalePivotTranslate(double x, double y, double z) override;
     Ufe::Vector3d scalePivot() const override;
 
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+    Ufe::SetMatrixUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
+    Ufe::Matrix4d matrix() const override;
+#endif
+
     Ufe::Matrix4d segmentInclusiveMatrix() const override;
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 

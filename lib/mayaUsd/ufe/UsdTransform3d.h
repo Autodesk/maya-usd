@@ -56,7 +56,6 @@ public:
 	inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 
 	inline UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
-	inline UsdPrim prim() const { return fPrim; }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
