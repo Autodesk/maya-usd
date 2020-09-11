@@ -172,8 +172,6 @@ bool UsdUndoRenameCommand::renameUndo()
         _stage->SetDefaultPrim(_ufeSrcItem->prim());
     }
 
-    _ufeDstItem = nullptr;
-
     return true;
 }
 
