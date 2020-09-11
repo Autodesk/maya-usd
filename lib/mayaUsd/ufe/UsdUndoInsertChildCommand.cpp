@@ -60,7 +60,6 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
     #else
     : Ufe::UndoableCommand()
     #endif
-    , _ufeSrcItem(child)
     , _ufeDstItem(nullptr)
     , _ufeSrcPath(child->path())
     , _usdSrcPath(child->prim().GetPath())
@@ -154,7 +153,6 @@ bool UsdUndoInsertChildCommand::insertChildUndo()
     bool status = SdfCopySpec(_parentLayer, _usdDstPath, _childLayer, _usdSrcPath);
     if (status)
     {
-
         // remove all scene description for the given path and 
         // its subtree in the current UsdEditTarget
         {
@@ -168,8 +166,8 @@ bool UsdUndoInsertChildCommand::insertChildUndo()
         }
 
         if (status) {
-            _ufeSrcItem = UsdSceneItem::create(_ufeSrcPath, ufePathToPrim(_ufeSrcPath));
-            sendNotification<Ufe::ObjectReparent>(_ufeSrcItem, _ufeDstPath);
+            auto ufeSrcItem = UsdSceneItem::create(_ufeSrcPath, ufePathToPrim(_ufeSrcPath));
+            sendNotification<Ufe::ObjectReparent>(ufeSrcItem, _ufeDstPath);
         }
     }
     else {

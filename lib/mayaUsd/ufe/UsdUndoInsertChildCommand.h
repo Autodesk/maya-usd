@@ -73,7 +73,6 @@ private:
     bool insertChildRedo();
     bool insertChildUndo();
 
-    UsdSceneItem::Ptr _ufeSrcItem;
     UsdSceneItem::Ptr _ufeDstItem;
 
     Ufe::Path _ufeSrcPath;
