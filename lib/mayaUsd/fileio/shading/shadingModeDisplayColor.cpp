@@ -97,9 +97,15 @@ private:
             return;
         }
 
-        const UsdStageRefPtr& stage = context.GetUsdStage();
         GfVec3f color;
         GfVec3f transparency;
+
+        // We might use the Maya shading node's transparency to author a scalar
+        // displayOpacity value on the UsdGeomGprim, as well as an input on the
+        // shader prim. How we compute that value will depend on which Maya
+        // shading node we're working with.
+        float transparencyAvg;
+
         const MFnLambertShader lambertFn(ssDepNode.object(), &status);
         if (status == MS::kSuccess) {
             const MColor mayaColor = lambertFn.color();
@@ -109,6 +115,11 @@ private:
                 diffuseCoeff*GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
             transparency = UsdMayaColorSpace::ConvertMayaToLinear(
                 GfVec3f(mayaTransparency[0], mayaTransparency[1], mayaTransparency[2]));
+            // Compute the average transparency using the un-linearized Maya
+            // value.
+            transparencyAvg = (mayaTransparency[0] +
+                               mayaTransparency[1] +
+                               mayaTransparency[2]) / 3.0f;
         } else {
 #if MAYA_API_VERSION >= 20200000
             const MFnStandardSurfaceShader surfaceFn(ssDepNode.object(), &status);
@@ -121,6 +132,9 @@ private:
                 base*GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
             const float mayaTransparency = surfaceFn.transmission();
             transparency = GfVec3f(mayaTransparency, mayaTransparency, mayaTransparency);
+            // We can directly use the scalar transmission value as the
+            // "average".
+            transparencyAvg = mayaTransparency;
 #else
             return;
 #endif
@@ -129,18 +143,12 @@ private:
         VtVec3fArray displayColorAry;
         displayColorAry.push_back(color);
 
-        // The simple UsdGeomGprim display shading schema only allows for a
-        // scalar opacity.  We compute it as the unweighted average of the
-        // components since it would be ridiculous to apply the inverse weighting
-        // (of the common graycale conversion) on re-import
-        // The average is compute from the Maya color as is
         VtFloatArray displayOpacityAry;
-        const float transparencyAvg = (transparency[0] +
-                                       transparency[1] +
-                                       transparency[2]) / 3.0f;
         if (transparencyAvg > 0.0f) {
             displayOpacityAry.push_back(1.0f - transparencyAvg);
         }
+
+        const UsdStageRefPtr& stage = context.GetUsdStage();
 
         TF_FOR_ALL(iter, assignments) {
             const SdfPath& boundPrimPath = iter->first;
@@ -254,6 +262,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, displayColor)
 {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
         "displayColor",
+        "Display Colors",
+        "Exports the diffuse color of the bound shader as a displayColor primvar on the USD mesh.",
         []() -> UsdMayaShadingModeExporterPtr {
             return UsdMayaShadingModeExporterPtr(
                 static_cast<UsdMayaShadingModeExporter*>(

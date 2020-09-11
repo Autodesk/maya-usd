@@ -41,8 +41,9 @@ class PxrUsdTranslators_MaterialWriter : public UsdMayaShaderWriter
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx);
 
-        TfToken GetShadingAttributeNameForMayaAttrName(
-                const TfToken& mayaAttrName) override;
+        static ContextSupport CanExport(const UsdMayaJobExportArgs&);
+
+        TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 
     protected:
         /// Adds the schema attribute \p shaderInputName to the schema \p shaderSchema if the

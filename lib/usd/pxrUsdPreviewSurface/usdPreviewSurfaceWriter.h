@@ -40,6 +40,8 @@ class PxrMayaUsdPreviewSurface_Writer : public UsdMayaShaderWriter
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx);
 
+        static ContextSupport CanExport(const UsdMayaJobExportArgs&);
+
         void Write(const UsdTimeCode& usdTime) override;
 
         TfToken GetShadingAttributeNameForMayaAttrName(

@@ -51,7 +51,6 @@ class GroupCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2017', 'testUsdGroup did not really test anything before UFE 2.17')
     def testUsdGroup(self):
         '''Creation of USD group objects.'''
 

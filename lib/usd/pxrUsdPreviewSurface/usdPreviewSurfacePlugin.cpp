@@ -20,6 +20,8 @@
 #include "usdPreviewSurfaceShadingNodeOverride.h"
 #include "usdPreviewSurfaceWriter.h"
 
+#include <mayaUsd/fileio/shaderReaderRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
 #include <maya/MStatus.h>
@@ -69,11 +71,12 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
         drawDbClassification, registrantId, PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
     CHECK_MSTATUS(status);
 
-    UsdMayaPrimWriterRegistry::Register(
-        typeName.asChar(),
+    UsdMayaShaderWriterRegistry::Register(
+        typeNameToken,
+        &PxrMayaUsdPreviewSurface_Writer::CanExport,
         [](const MFnDependencyNode& depNodeFn,
-           const SdfPath&           usdPath,
-           UsdMayaWriteJobContext&  jobCtx) {
+            const SdfPath&           usdPath,
+            UsdMayaWriteJobContext&  jobCtx) {
             return std::make_shared<PxrMayaUsdPreviewSurface_Writer>(depNodeFn, usdPath, jobCtx);
         });
 

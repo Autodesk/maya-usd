@@ -178,7 +178,6 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.undo()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrim only available in UFE preview version 0.2.15 and greater')
     def testAddNewPrim(self):
         cmds.file(new=True, force=True)
 
@@ -188,8 +187,11 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestAddPrimObserver()
-        ufe.Scene.addObjectDeleteObserver(ufeObs)
-        ufe.Scene.addObjectAddObserver(ufeObs)
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         # Create a ContextOps interface for the proxy shape.
         proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage1|stageShape1")])

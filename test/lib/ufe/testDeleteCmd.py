@@ -18,11 +18,10 @@
 
 import maya.cmds as cmds
 
-from ufeTestUtils import usdUtils, mayaUtils
+from ufeTestUtils import ufeUtils, usdUtils, mayaUtils
 import ufe
 
 import unittest
-
 import os
 
 def childrenNames(children):
@@ -56,7 +55,7 @@ class DeleteCmdTestCase(unittest.TestCase):
     UFE Feature : SceneItemOps
     Maya Feature : delete
     Action : Remove object from scene.
-    Applied On Selection :
+    Applied On Selection / Command Arguments:
         - Multiple Selection [Mixed, Non-Maya].  Maya-only selection tested by
           Maya.
     Undo/Redo Test : Yes
@@ -92,8 +91,12 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        ufe.Scene.addObjectDeleteObserver(ufeObs)
-        ufe.Scene.addObjectAddObserver(ufeObs)
+
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         # Select two objects, one Maya, one USD.
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
@@ -188,14 +191,17 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertEqual(ufeObs.nbDeleteNotif(), 4)
         self.assertEqual(ufeObs.nbAddNotif(), 4)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2011', 'testDeleteArgs only available in UFE preview 2011 and greater')
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'testDeleteArgs only available in UFE v2 or greater.')
     def testDeleteArgs(self):
         '''Delete Maya and USD objects passed as command arguments.'''
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        ufe.Scene.addObjectDeleteObserver(ufeObs)
-        ufe.Scene.addObjectAddObserver(ufeObs)
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
         sphereItem = ufe.Hierarchy.createItem(spherePath)
@@ -239,9 +245,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         ball34PathString = ufe.PathString.string(ball34Path)
         self.assertEqual(
             ball34PathString,
-            "|transform1|proxyShape1,/Room_set/Props/Ball_34" if \
-            mayaUtils.previewReleaseVersion() >= 116 else \
-            "|world|transform1|proxyShape1,/Room_set/Props/Ball_34")
+            "|transform1|proxyShape1,/Room_set/Props/Ball_34")
 
         # Test that "|world" prefix is optional for multi-segment paths.
         ball35PathString = "|transform1|proxyShape1,/Room_set/Props/Ball_35"

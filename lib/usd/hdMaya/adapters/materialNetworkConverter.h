@@ -142,6 +142,11 @@ public:
         const SdfValueTypeName& type, const VtValue* fallback = nullptr,
         MPlug* outPlug = nullptr);
 
+    HDMAYA_API static VtValue ConvertMayaAttrToScaledValue(
+        MFnDependencyNode& node, const MString& plugName, const MString& scaleName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr);
+
     HDMAYA_API
     static void initialize();
 

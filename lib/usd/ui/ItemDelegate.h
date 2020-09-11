@@ -14,7 +14,9 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef MAYAUSDUI_ITEM_DELEGATE_H
+#define MAYAUSDUI_ITEM_DELEGATE_H
+
 
 #include <QtCore/QList>
 #include <QtCore/QStringList>
@@ -118,3 +120,6 @@ private:
 }; // VariantsEditorWidget
 
 } // namespace MayaUsd
+
+
+#endif

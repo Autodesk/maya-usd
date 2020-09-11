@@ -49,6 +49,7 @@ public:
 
 	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
+	inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 
 	UsdSceneItem::Ptr usdSceneItem() const;
 
@@ -57,37 +58,28 @@ public:
 	bool hasChildren() const override;
 	Ufe::SceneItemList children() const override;
 	Ufe::SceneItem::Ptr parent() const override;
-#if UFE_PREVIEW_VERSION_NUM < 2018
+#ifndef UFE_V2_FEATURES_AVAILABLE
 	Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2013
-    Ufe::UndoableCommand::Ptr insertChildCmd(
-        const Ufe::SceneItem::Ptr& child,
-        const Ufe::SceneItem::Ptr& pos
-    ) override;
-#endif
+	#if UFE_PREVIEW_VERSION_NUM >= 2021
+    Ufe::InsertChildCommand::Ptr insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
+    #else
+    Ufe::UndoableCommand::Ptr insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
+    #endif
 
-#if UFE_PREVIEW_VERSION_NUM < 2017
-	Ufe::SceneItem::Ptr createGroup(const Ufe::PathComponent& name) const override;
-	Ufe::Group createGroupCmd(const Ufe::PathComponent& name) const override;
-#else
 	Ufe::SceneItem::Ptr createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
 	Ufe::UndoableCommand::Ptr createGroupCmd(const Ufe::Selection& selection, const Ufe::PathComponent& name) const override;
-#endif
-#if UFE_PREVIEW_VERSION_NUM >= 2018
     Ufe::SceneItem::Ptr defaultParent() const override;
     Ufe::SceneItem::Ptr insertChild(
         const Ufe::SceneItem::Ptr& child,
         const Ufe::SceneItem::Ptr& pos
     ) override;
 #endif
-#endif
 
 private:
 	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
 
 }; // UsdHierarchy
 

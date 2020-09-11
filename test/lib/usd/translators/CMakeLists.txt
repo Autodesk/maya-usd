@@ -12,6 +12,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportFrameOffset.py
     testUsdExportInstances.py
     testUsdExportLocator.py
+    testUsdExportMayaInstancer.py
     testUsdExportMesh.py
     testUsdExportNurbsCurve.py
     testUsdExportOpenLayer.py
@@ -35,9 +36,11 @@ set(TEST_SCRIPT_FILES
     testUsdExportShadingModePxrRis.py
     testUsdExportSkeleton.py
     testUsdExportStripNamespaces.py
+    testUsdExportStroke.py
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
+    testUsdImportExportScope.py
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but
     # passes.  PPT, 17-Jun-20.
     testUsdImportFrameRange.py
@@ -112,3 +115,25 @@ mayaUsd_add_test(testUsdImportUVSetsFloat
         "PIXMAYA_READ_FLOAT2_AS_UV=1"
 )
 set_property(TEST testUsdImportUVSetsFloat APPEND PROPERTY LABELS translators)
+
+# Test using standardSurface, which was introduced in Maya 2020.
+if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020) 
+    mayaUsd_add_test(testUsdExportCustomConverter
+        PYTHON_MODULE testUsdExportCustomConverter
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+            "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+    )
+    set_property(TEST testUsdExportCustomConverter APPEND PROPERTY LABELS translators)
+endif()
+
+# We are explicitly not setting PXR_PLUGINPATH_NAME here. We want to test
+# manually loading the plugin that provides Maya export.
+mayaUsd_add_test(testUsdMayaListShadingModesCommand
+    PYTHON_MODULE testUsdMayaListShadingModesCommand
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+)
+set_property(TEST testUsdMayaListShadingModesCommand APPEND PROPERTY LABELS translators)

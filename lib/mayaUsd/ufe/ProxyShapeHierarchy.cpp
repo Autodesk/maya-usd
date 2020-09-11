@@ -28,13 +28,8 @@
 #include <mayaUsd/ufe/Global.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2013
 #include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
-#endif
-
-#if UFE_PREVIEW_VERSION_NUM >= 2017
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
-#endif
 #endif
 
 MAYAUSD_NS_DEF {
@@ -154,7 +149,8 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::parent() const
 	return fMayaHierarchy->parent();
 }
 
-#if UFE_PREVIEW_VERSION_NUM < 2018
+#ifndef UFE_V2_FEATURES_AVAILABLE
+// UFE v1 specific method
 Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 {
 	throw std::runtime_error("ProxyShapeHierarchy::appendChild() not implemented");
@@ -162,11 +158,18 @@ Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& c
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2013
+
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
+    const Ufe::SceneItem::Ptr& child,
+    const Ufe::SceneItem::Ptr& pos
+)
+#else
 Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,
     const Ufe::SceneItem::Ptr& pos
 )
+#endif
 {
     // UsdUndoInsertChildCommand expects a UsdSceneItem which wraps a prim, so
     // create one using the pseudo-root and our own path.
@@ -175,9 +178,6 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     return UsdUndoInsertChildCommand::create(
         usdItem, downcast(child), downcast(pos));
 }
-#endif
-
-#if UFE_PREVIEW_VERSION_NUM >= 2018
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::insertChild(
         const Ufe::SceneItem::Ptr& ,
@@ -191,22 +191,6 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::insertChild(
     // child.  PPT, 13-Jul-2020.
     return nullptr;
 }
-
-#endif
-
-#if UFE_PREVIEW_VERSION_NUM < 2017
-
-Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::PathComponent& name) const
-{
-	throw std::runtime_error("ProxyShapeHierarchy::createGroup() not implemented");
-}
-
-Ufe::Group ProxyShapeHierarchy::createGroupCmd(const Ufe::PathComponent& name) const
-{
-	throw std::runtime_error("ProxyShapeHierarchy::createGroupCmd not implemented");
-}
-
-#else
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
 {
@@ -229,17 +213,11 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(const Ufe::Selecti
 	return UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
 }
 
-#endif // UFE_PREVIEW_VERSION_NUM
-
-#if UFE_PREVIEW_VERSION_NUM >= 2018
-
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 {
     // Maya shape nodes cannot be unparented.
     return nullptr;
 }
-
-#endif
 
 #endif // UFE_V2_FEATURES_AVAILABLE
 

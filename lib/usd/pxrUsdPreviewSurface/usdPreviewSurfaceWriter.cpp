@@ -15,8 +15,9 @@
 //
 #include "usdPreviewSurfaceWriter.h"
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
@@ -43,6 +44,26 @@
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((niceName, "USD Preview Surface"))
+    ((description, "Exports the bound shader as a USD preview surface UsdShade network."))
+);
+
+REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
+    UsdImagingTokens->UsdPreviewSurface,
+    UsdShadeTokens->universalRenderContext,
+    _tokens->niceName,
+    _tokens->description);
+
+UsdMayaShaderWriter::ContextSupport
+PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArgs)
+{
+    return exportArgs.convertMaterialsTo == UsdImagingTokens->UsdPreviewSurface
+        ? ContextSupport::Supported
+        : ContextSupport::Fallback;
+}
 
 PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(
         const MFnDependencyNode& depNodeFn,
