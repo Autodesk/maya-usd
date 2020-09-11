@@ -14,7 +14,7 @@
 // limitations under the License.
 //
 
-global proc usdPreviewSurface_ToggleSpecularWorkflow(string $nodeName)
+global proc ${PREVIEWSURFACE_MAYA_TYPE_NAME}_ToggleSpecularWorkflow(string $nodeName)
 {
     int $useSpecularWorkflow = getAttr($nodeName + ".useSpecularWorkflow");
 
@@ -31,7 +31,7 @@ global proc usdPreviewSurface_ToggleSpecularWorkflow(string $nodeName)
     }
 }
 
-global proc AEusdPreviewSurfaceTemplate(string $nodeName)
+global proc AE${PREVIEWSURFACE_MAYA_TYPE_NAME}Template(string $nodeName)
 {
     AEswatchDisplay $nodeName;
 
@@ -44,7 +44,7 @@ global proc AEusdPreviewSurfaceTemplate(string $nodeName)
 
     editorTemplate -beginLayout "Specular" -collapse false;
         editorTemplate -addControl "useSpecularWorkflow"
-            "usdPreviewSurface_ToggleSpecularWorkflow";
+            "${PREVIEWSURFACE_MAYA_TYPE_NAME}_ToggleSpecularWorkflow";
         editorTemplate -addControl "ior";
         editorTemplate -addControl "metallic";
         editorTemplate -addControl "roughness";

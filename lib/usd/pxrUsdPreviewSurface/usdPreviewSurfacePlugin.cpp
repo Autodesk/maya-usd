@@ -16,7 +16,9 @@
 #include "usdPreviewSurfacePlugin.h"
 
 #include "usdPreviewSurface.h"
+#include "usdPreviewSurfaceReader.h"
 #include "usdPreviewSurfaceShadingNodeOverride.h"
+#include "usdPreviewSurfaceWriter.h"
 
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
@@ -27,6 +29,7 @@
 
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,6 +68,23 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
     status = MHWRender::MDrawRegistry::registerSurfaceShadingNodeOverrideCreator(
         drawDbClassification, registrantId, PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
     CHECK_MSTATUS(status);
+
+    UsdMayaPrimWriterRegistry::Register(
+        typeName.asChar(),
+        [](const MFnDependencyNode& depNodeFn,
+           const SdfPath&           usdPath,
+           UsdMayaWriteJobContext&  jobCtx) {
+            return std::make_shared<PxrMayaUsdPreviewSurface_Writer>(depNodeFn, usdPath, jobCtx);
+        });
+
+    // There is obvious ambiguity here as soon as two plugins register a UsdPreviewSurface node.
+    // First registered will be the one used for import.
+    UsdMayaShaderReaderRegistry::Register(
+        UsdImagingTokens->UsdPreviewSurface,
+        PxrMayaUsdPreviewSurface_Reader::CanImport,
+        [typeNameToken](const UsdMayaPrimReaderArgs& readerArgs) {
+            return std::make_shared<PxrMayaUsdPreviewSurface_Reader>(readerArgs, typeNameToken);
+        });
 
     return status;
 }

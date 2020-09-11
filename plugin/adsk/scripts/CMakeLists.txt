@@ -2,7 +2,6 @@ list(APPEND scripts_src
     mayaUsdTranslatorImport.mel
     mayaUsdTranslatorExport.mel
     AEmayaUsdProxyShapeTemplate.mel
-    AEusdPreviewSurfaceTemplate.mel    
     mayaUsdMenu.mel
     mayaUsd_createStageFromFile.mel
     mayaUsd_createStageWithNewLayer.py
@@ -14,5 +13,15 @@ list(APPEND scripts_src
 )
 
 install(FILES ${scripts_src}
+    DESTINATION ${INSTALL_DIR_SUFFIX}/scripts
+)
+
+set(PREVIEWSURFACE_MAYA_TYPE_NAME "usdPreviewSurface")
+
+configure_file("${CMAKE_SOURCE_DIR}/lib/usd/pxrUsdPreviewSurface/AEusdPreviewSurfaceTemplate.mel"
+               "${CMAKE_CURRENT_BINARY_DIR}/AEusdPreviewSurfaceTemplate.mel"
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AEusdPreviewSurfaceTemplate.mel
     DESTINATION ${INSTALL_DIR_SUFFIX}/scripts
 )

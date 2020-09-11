@@ -15,8 +15,6 @@
 //
 #include "usdPreviewSurfaceWriter.h"
 
-#include "usdPreviewSurface.h"
-
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
@@ -42,11 +40,9 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-PXRUSDMAYA_REGISTER_WRITER(usdPreviewSurface, PxrMayaUsdPreviewSurface_Writer);
-PXRUSDMAYA_REGISTER_WRITER(pxrUsdPreviewSurface, PxrMayaUsdPreviewSurface_Writer);
 
 PxrMayaUsdPreviewSurface_Writer::PxrMayaUsdPreviewSurface_Writer(
         const MFnDependencyNode& depNodeFn,
