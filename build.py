@@ -5,6 +5,7 @@ from distutils.spawn import find_executable
 
 import argparse
 import contextlib
+import codecs
 import datetime
 import distutils
 import multiprocessing
@@ -124,7 +125,7 @@ def Run(context, cmd):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
-    with open(context.logFileLocation, "a") as logfile:
+    with codecs.open(context.logFileLocation, "a", "utf-8") as logfile:
         logfile.write("#####################################################################################" + "\n")
         logfile.write("log date: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + "\n")
         commitID,commitData = GetGitHeadInfo(context)
@@ -146,7 +147,7 @@ def Run(context, cmd):
                 if l != "":
                     # Avoid "UnicodeEncodeError: 'ascii' codec can't encode 
                     # character" errors by serializing utf8 byte strings.
-                    logfile.write(str(l.encode("utf8")))
+                    logfile.write(l)
                     PrintCommandOutput(l)
                 elif p.poll() is not None:
                     break
