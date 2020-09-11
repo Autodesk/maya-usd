@@ -124,16 +124,20 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
     bool status = SdfCopySpec(_childLayer, _usdSrcPath, _parentLayer, _usdDstPath);
     if (status)
     {
+        // we shouldn't rely on UsdSceneItem to access the UsdPrim since 
+        // it could be stale. Instead we should get the USDPrim from the Ufe::Path
+        const auto& desPrimUsd = ufePathToPrim(_ufeDstPath);
+
         // remove all scene description for the given path and 
         // its subtree in the current UsdEditTarget 
         {
-            auto stage = _ufeSrcItem->prim().GetStage();
+            auto stage = desPrimUsd.GetStage();
             UsdEditContext ctx(stage, _childLayer);
             status = stage->RemovePrim(_usdSrcPath);
         }
 
         if (status) {
-            _ufeDstItem = UsdSceneItem::create(_ufeDstPath, ufePathToPrim(_ufeDstPath));
+            _ufeDstItem = UsdSceneItem::create(_ufeDstPath, desPrimUsd);
             sendNotification<Ufe::ObjectReparent>(_ufeDstItem, _ufeSrcPath);
         }
     }
@@ -150,16 +154,20 @@ bool UsdUndoInsertChildCommand::insertChildUndo()
     bool status = SdfCopySpec(_parentLayer, _usdDstPath, _childLayer, _usdSrcPath);
     if (status)
     {
+        // we shouldn't rely on UsdSceneItem to access the UsdPrim since 
+        // it could be stale. Instead we should get the USDPrim from the Ufe::Path
+        const auto& srcPrimUsd = ufePathToPrim(_ufeSrcPath);
+
         // remove all scene description for the given path and 
         // its subtree in the current UsdEditTarget
         {
-            auto stage = _ufeDstItem->prim().GetStage();
+            auto stage = srcPrimUsd.GetStage();
             UsdEditContext ctx(stage, _parentLayer);
             status = stage->RemovePrim(_usdDstPath);
         }
 
         if (status) {
-            _ufeSrcItem = UsdSceneItem::create(_ufeSrcPath, ufePathToPrim(_ufeSrcPath));
+            _ufeSrcItem = UsdSceneItem::create(_ufeSrcPath, srcPrimUsd);
             sendNotification<Ufe::ObjectReparent>(_ufeSrcItem, _ufeDstPath);
         }
     }
