@@ -136,7 +136,6 @@ static GfMatrix4d _GetJointWorldBindTransform(const MDagPath& dagPath)
         CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
         MPlug plgWorldMatrices = fnNode.findPlug("worldMatrix", false, &status);
         CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
-        TF_VERIFY(membersIdx < plgWorldMatrices.numElements());
         MPlug         plgWorldMatrix = plgWorldMatrices.elementByLogicalIndex(membersIdx);
         MObject       plgWorldMatrixData = plgWorldMatrix.asMObject();
         MFnMatrixData fnMatrixData(plgWorldMatrixData, &status);
@@ -222,16 +221,16 @@ static bool _FindDagPoseMembers(
     indices->resize(numDagPaths);
 
     std::vector<uint8_t> visitedIndices(numDagPaths, 0);
-    for (unsigned int i = 0; i < membersPlug.numElements(); ++i) {
+    for (unsigned int i = 0; i < membersPlug.numConnectedElements(); ++i) {
 
-        MPlug memberPlug = membersPlug[i];
+        MPlug memberPlug = membersPlug.connectionByPhysicalIndex(i);
         memberPlug.connectedTo(inputs, /*asDst*/ true, /*asSrc*/ false);
 
         for (unsigned int j = 0; j < inputs.length(); ++j) {
             MObjectHandle connNode(inputs[j].node());
             auto          it = pathIndexMap.find(connNode);
             if (it != pathIndexMap.end()) {
-                (*indices)[it->second] = i;
+                (*indices)[it->second] = memberPlug.logicalIndex();
                 visitedIndices[it->second] = 1;
             }
         }
@@ -253,25 +252,23 @@ static bool _FindDagPoseMembers(
 
 bool _GetLocalTransformForDagPoseMember(
     const MFnDependencyNode& dagPoseDep,
-    unsigned int             index,
+    unsigned int             logicalIndex,
     GfMatrix4d*              xform)
 {
     MStatus status;
 
     MPlug xformMatrixPlug = dagPoseDep.findPlug("xformMatrix");
-    if (index < xformMatrixPlug.numElements()) {
-        MPlug xformPlug = xformMatrixPlug[index];
+    MPlug xformPlug = xformMatrixPlug.elementByLogicalIndex(logicalIndex, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
-        MObject plugObj = xformPlug.asMObject(MDGContext::fsNormal, &status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
+    MObject plugObj = xformPlug.asMObject(MDGContext::fsNormal, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
-        MFnMatrixData plugMatrixData(plugObj, &status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
+    MFnMatrixData plugMatrixData(plugObj, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
 
-        *xform = GfMatrix4d(plugMatrixData.matrix().matrix);
-        return true;
-    }
-    return false;
+    *xform = GfMatrix4d(plugMatrixData.matrix().matrix);
+    return true;
 }
 
 /// Get local-space bind transforms to use as rest transforms.

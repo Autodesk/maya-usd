@@ -264,6 +264,31 @@ class testUsdExportSkeleton(unittest.TestCase):
         self.assertIn("Node 'joint4' is not a member of dagPose 'dagPose1'",
                       missingJointWarnings[0])
 
+    def testSkelBindPoseSparseIndices(self):
+        """
+        Check that if a dagPose has sparse indices on some of it's attributes,
+        with differing number of created indices, that things still work.
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonBindPoseSparseIndices.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        usdFile = os.path.abspath('UsdExportBindPoseSparseIndicesTest.usda')
+
+        cmds.select('joint_grp')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile, shadingMode='none',
+                           exportSkels='auto', selection=True)
+
+        stage = Usd.Stage.Open(usdFile)
+
+        skeleton = UsdSkel.Skeleton.Get(stage, '/joint_grp/joint1')
+        self.assertEqual(skeleton.GetRestTransformsAttr().Get(),
+            Vt.Matrix4dArray(
+                # If we're not correlating using logical indices correctly, we may get this
+                # matrix in here somehwere (which we shouldn't):
+                # Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (777, 888, 999, 1) ),
+                [Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 2, 1) ),
+                 Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 3, 0, 1) ),
+                 Gf.Matrix4d( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (5, 0, 0, 1) )]))
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
