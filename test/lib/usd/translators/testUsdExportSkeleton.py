@@ -144,17 +144,19 @@ class testUsdExportSkeleton(unittest.TestCase):
                 self.assertTrue(Gf.IsClose(mayaJointWorldXf,
                                            usdJointWorldXf, 1e-5))
 
-    def testSkelWithoutBindPose(self):
+    def testSkelWithIdentityBindPose(self):
         """
         Tests export of a Skeleton when a bindPose is not fully setup.
+
+        In this test, there is a maya dagPose node, but it is set to identity
         """
 
         mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest",
-            "UsdExportSkeletonWithoutBindPose.ma")
+            "UsdExportSkeletonWithIdentityBindPose.ma")
         cmds.file(mayaFile, force=True, open=True)
 
         frameRange = [1, 5]
-        usdFile = os.path.abspath('UsdExportSkeletonWithoutBindPose.usda')
+        usdFile = os.path.abspath('UsdExportSkeletonWithIdentityBindPose.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                        shadingMode='none', frameRange=frameRange,
                        exportSkels='auto')
@@ -204,6 +206,49 @@ class testUsdExportSkeleton(unittest.TestCase):
         self.assertEqual(
             animSource.GetTranslationsAttr().Get(5.0),
             Vt.Vec3fArray([Gf.Vec3f(5.0, 5.0, 0.0)]))
+
+    def testSkelRestXformsWithNoDagPose(self):
+        """
+        Tests export of of rest xforms when there is no dagPose node at all.
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest",
+            "UsdExportSkeletonNoDagPose.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        usdFile = os.path.abspath('UsdExportSkeletonRestXformsWithNoDagPose.usda')
+        cmds.select('skel_root')
+        cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile,
+                           shadingMode='none', exportSkels='auto', selection=True)
+
+        stage = Usd.Stage.Open(usdFile)
+
+        skeleton = UsdSkel.Skeleton.Get(stage, '/skel_root/joint1')
+
+        self.assertEqual(skeleton.GetJointsAttr().Get(),
+            Vt.TokenArray(['joint1',
+                           'joint1/joint2',
+                           'joint1/joint2/joint3',
+                           'joint1/joint2/joint3/joint4']))
+
+        self.assertEqual(
+            skeleton.GetBindTransformsAttr().Get(),
+            Vt.Matrix4dArray([
+                Gf.Matrix4d( (-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1) ),
+                Gf.Matrix4d( (0, -1, 0, 0), (-1, 0, 0, 0), (0, 0, -1, 0), (3, 0, 0, 1) ),
+                Gf.Matrix4d( (0, -1, 0, 0), (0, 0, -1, 0), (1, 0, 0, 0), (3, 0, -2, 1) ),
+                Gf.Matrix4d( (0, -1, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0), (3, 0, -4, 1) ),
+            ])
+        )
+
+        self.assertEqual(
+            skeleton.GetRestTransformsAttr().Get(),
+            Vt.Matrix4dArray([
+                Gf.Matrix4d( (-1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1) ),
+                Gf.Matrix4d( (0, -1, 0, 0), (1, 0, 0, 0), (0, 0, 1, 0), (-3, 0, 0, 1) ),
+                Gf.Matrix4d( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 0, 2, 1) ),
+                Gf.Matrix4d( (1, 0, 0, 0), (0, 0, 1, 0), (0, -1, 0, 0), (0, 2, 0, 1) ),
+            ])
+        )        
 
     def testSkelWithJointsAtSceneRoot(self):
         """

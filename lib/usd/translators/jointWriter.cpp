@@ -15,6 +15,7 @@
 //
 #include "jointWriter.h"
 
+#include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorSkel.h>
@@ -282,11 +283,12 @@ static bool _GetJointLocalRestTransformsFromDagPose(
     // Use whatever bindPose the root joint is a member of.
     MObject bindPose = _FindBindPose(rootJoint);
     if (bindPose.isNull()) {
-        TF_WARN(
-            "%s -- Could not find a dagPose node holding a bind pose: "
-            "The Skeleton's 'restTransforms' property will not be "
-            "authored.",
-            skelPath.GetText());
+        TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+            .Msg(
+                "%s -- Could not find a dagPose node holding a bind pose: "
+                "The Skeleton's 'restTransforms' property will be "
+                "calculated from the 'bindTransforms'.\n",
+                skelPath.GetText());
         return false;
     }
 
@@ -303,17 +305,61 @@ static bool _GetJointLocalRestTransformsFromDagPose(
     for (size_t i = 0; i < xforms->size(); ++i) {
         if (!_GetLocalTransformForDagPoseMember(
                 bindPoseDep, memberIndices[i], xforms->data() + i)) {
-            TF_WARN(
-                "%s -- Failed retrieving the local transform of joint '%s' "
-                "from dagPose '%s': The Skeleton's 'restTransforms' "
-                "property will not be authored.",
-                skelPath.GetText(),
-                jointDagPaths[i].fullPathName().asChar(),
-                bindPoseDep.name().asChar());
+            TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+                .Msg(
+                    "%s -- Failed retrieving the local transform of joint '%s' "
+                    "from dagPose '%s': The Skeleton's 'restTransforms' "
+                    "property will be calculated from the 'bindTransforms'.",
+                    skelPath.GetText(),
+                    jointDagPaths[i].fullPathName().asChar(),
+                    bindPoseDep.name().asChar());
             return false;
         }
     }
     return true;
+}
+
+/// Set local-space rest transform by converting from the world-space bind xforms.
+static bool
+_GetJointLocalRestTransformsFromBindTransforms(UsdSkelSkeleton& skel, VtMatrix4dArray& restXforms)
+{
+    auto bindXformsAttr = skel.GetBindTransformsAttr();
+    if (!bindXformsAttr) {
+        TF_WARN("skeleton was missing bind transforms attr: %s", skel.GetPath().GetText());
+        return false;
+    }
+    VtMatrix4dArray bindXforms;
+    if (!bindXformsAttr.Get(&bindXforms)) {
+        TF_WARN("error retrieving bind transforms: %s", skel.GetPath().GetText());
+        return false;
+    }
+
+    auto jointsAttr = skel.GetJointsAttr();
+    if (!jointsAttr) {
+        TF_WARN("skeleton was missing bind joints attr: %s", skel.GetPath().GetText());
+        return false;
+    }
+    VtTokenArray joints;
+    if (!jointsAttr.Get(&joints)) {
+        TF_WARN("error retrieving bind joints: %s", skel.GetPath().GetText());
+        return false;
+    }
+
+    auto restXformsAttr = skel.GetRestTransformsAttr();
+    if (!restXformsAttr) {
+        restXformsAttr = skel.CreateRestTransformsAttr();
+        if (!restXformsAttr) {
+            TF_WARN(
+                "skeleton had no rest transforms attr, and was unable to "
+                "create it: %s",
+                skel.GetPath().GetText());
+            return false;
+        }
+    }
+
+    UsdSkelTopology topology(joints);
+    restXforms.resize(bindXforms.size());
+    return UsdSkelComputeJointLocalTransforms(topology, bindXforms, restXforms);
 }
 
 /// Gets the world-space transform of \p dagPath at the current time.
@@ -497,12 +543,15 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
         _skel.GetBindTransformsAttr(), bindXforms, UsdTimeCode::Default(), _GetSparseValueWriter());
 
     VtMatrix4dArray restXforms;
-    if (_GetJointLocalRestTransformsFromDagPose(skelPath, GetDagPath(), _joints, &restXforms)) {
+    if (_GetJointLocalRestTransformsFromDagPose(skelPath, GetDagPath(), _joints, &restXforms)
+        || _GetJointLocalRestTransformsFromBindTransforms(_skel, restXforms)) {
         UsdMayaWriteUtil::SetAttribute(
             _skel.GetRestTransformsAttr(),
             restXforms,
             UsdTimeCode::Default(),
             _GetSparseValueWriter());
+    } else {
+        TF_WARN("Unable to set rest transforms");
     }
 
     VtTokenArray animJointNames;
