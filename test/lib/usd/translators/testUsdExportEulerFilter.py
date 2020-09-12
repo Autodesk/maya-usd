@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from future.utils import iteritems
-
 import os
 import unittest
 
@@ -48,7 +46,8 @@ class testUsdExportEulerFilter(unittest.TestCase):
         xform = stage.GetPrimAtPath('/pCube1')
         rot = xform.GetProperty('xformOp:rotateXYZ')
 
-        for time, expectedVec in iteritems(expected):
+        for time in expected.keys():
+            expectedVec = expected[time]
             actualVec = rot.Get(time)
             for i in range(3):
                 msg = "sample at time {}, index {} unequal".format(time, i)
