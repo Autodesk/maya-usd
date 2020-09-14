@@ -375,7 +375,7 @@ PxrMayaHdSceneDelegate::_SetLightingStateFromLightingContext()
 
         // Store GlfSimpleLight directly.
         cache[HdLightTokens->params] = VtValue(lights[i]);
-        cache[HdLightTokens->transform] = VtValue();
+        cache[HdTokens->transform] = VtValue();
 
         HdxShadowParams shadowParams;
         shadowParams.enabled = lights[i].HasShadow();
