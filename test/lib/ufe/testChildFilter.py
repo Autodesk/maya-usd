@@ -75,8 +75,8 @@ class ChildFilterTestCase(unittest.TestCase):
         # Make sure the USD hierarchy handler has an inactive prims filter
         self.assertEqual('InactivePrims', cf[0].name)
 
-        # Toggle "Inactive Prims" on and get the filtered chlidren with
-        # Inactive Prims and verify ball3 is one of them.
+        # Toggle "Inactive Prims" on and get the filtered children
+        # (with inactive prims) and verify ball3 is one of them.
         cf[0].value = True
         children = propsHier.filteredChildren(cf)
         self.assertEqual(6, len(children))

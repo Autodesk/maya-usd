@@ -61,7 +61,9 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path
 #if UFE_PREVIEW_VERSION_NUM >= 2022
 Ufe::Hierarchy::ChildFilter ProxyShapeHierarchyHandler::childFilter() const
 {
-	return Ufe::Hierarchy::ChildFilter();
+	Ufe::Hierarchy::ChildFilter childFilters;
+	childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
+	return childFilters;
 }
 #endif
 #endif

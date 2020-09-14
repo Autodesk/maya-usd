@@ -56,10 +56,9 @@ Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const
 #if UFE_PREVIEW_VERSION_NUM >= 2022
 Ufe::Hierarchy::ChildFilter UsdHierarchyHandler::childFilter() const
 {
-    Ufe::ChildFilterFlag inactivePrims("InactivePrims", "Inactive Prims", true);
-    Ufe::Hierarchy::ChildFilter childFilters;
-    childFilters.emplace_back(inactivePrims);
-    return childFilters;
+	Ufe::Hierarchy::ChildFilter childFilters;
+	childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
+	return childFilters;
 }
 #endif
 #endif

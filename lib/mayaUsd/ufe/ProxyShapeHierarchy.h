@@ -87,6 +87,7 @@ public:
 
 private:
 	const UsdPrim& getUsdRootPrim() const;
+	Ufe::SceneItemList createUFEChildList(const UsdPrimSiblingRange& range) const;
 
 private:
 	Ufe::SceneItem::Ptr fItem;

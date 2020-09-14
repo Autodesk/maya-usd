@@ -100,25 +100,37 @@ class ToggleActiveStateCommand : public Ufe::UndoableCommand
 {
 public:
     ToggleActiveStateCommand(const UsdPrim& prim)
-        : _prim(prim)
     {
-        _active = _prim.IsActive();
+        _stage = prim.GetStage();
+        _primPath = prim.GetPath();
+        _active = prim.IsActive();
     }
 
     void undo() override
     {
-        MayaUsd::ufe::InAddOrDeleteOperation ad;
-        _prim.SetActive(_active);
+        if (_stage) {
+            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (prim.IsValid()) {
+                MayaUsd::ufe::InAddOrDeleteOperation ad;
+                prim.SetActive(_active);
+            }
+        }
     }
 
     void redo() override
     {
-        MayaUsd::ufe::InAddOrDeleteOperation ad;
-        _prim.SetActive(!_active);
+        if (_stage) {
+            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (prim.IsValid()) {
+                MayaUsd::ufe::InAddOrDeleteOperation ad;
+                prim.SetActive(!_active);
+            }
+        }
     }
 
 private:
-    UsdPrim _prim;
+    PXR_NS::UsdStageWeakPtr _stage;
+    PXR_NS::SdfPath _primPath;
     bool _active;
 };
 

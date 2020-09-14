@@ -131,7 +131,7 @@ Ufe::SceneItemList UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& r
 {
     // Return UFE child list from input USD child list.
     Ufe::SceneItemList children;
-    for (auto child : range)
+    for (const auto& child : range)
     {
         children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
     }
