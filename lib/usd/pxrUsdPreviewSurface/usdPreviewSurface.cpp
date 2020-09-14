@@ -23,6 +23,7 @@
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
 #include <maya/MFloatVector.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnNumericData.h>
 #include <maya/MGlobal.h>
@@ -42,40 +43,6 @@ TF_DEFINE_PUBLIC_TOKENS(
     PxrMayaUsdPreviewSurfaceTokens,
     PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS);
 
-
-const MTypeId PxrMayaUsdPreviewSurface::typeId(0x00126403);
-const MString PxrMayaUsdPreviewSurface::typeName(
-    PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText());
-
-const MString PxrMayaUsdPreviewSurface::drawDbClassification(
-    TfStringPrintf(
-        "drawdb/shader/surface/%s",
-        PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText()).c_str());
-const MString PxrMayaUsdPreviewSurface::fullClassification(
-    TfStringPrintf(
-        "shader/surface:shader/displacement:%s",
-        PxrMayaUsdPreviewSurface::drawDbClassification.asChar()).c_str());
-
-// Attributes
-MObject PxrMayaUsdPreviewSurface::clearcoatAttr;
-MObject PxrMayaUsdPreviewSurface::clearcoatRoughnessAttr;
-MObject PxrMayaUsdPreviewSurface::diffuseColorAttr;
-MObject PxrMayaUsdPreviewSurface::displacementAttr;
-MObject PxrMayaUsdPreviewSurface::emissiveColorAttr;
-MObject PxrMayaUsdPreviewSurface::iorAttr;
-MObject PxrMayaUsdPreviewSurface::metallicAttr;
-MObject PxrMayaUsdPreviewSurface::normalAttr;
-MObject PxrMayaUsdPreviewSurface::occlusionAttr;
-MObject PxrMayaUsdPreviewSurface::opacityAttr;
-MObject PxrMayaUsdPreviewSurface::roughnessAttr;
-MObject PxrMayaUsdPreviewSurface::specularColorAttr;
-MObject PxrMayaUsdPreviewSurface::useSpecularWorkflowAttr;
-
-// Output Attributes
-MObject PxrMayaUsdPreviewSurface::outColorAttr;
-MObject PxrMayaUsdPreviewSurface::outTransparencyAttr;
-
-
 /* static */
 void*
 PxrMayaUsdPreviewSurface::creator()
@@ -88,6 +55,22 @@ MStatus
 PxrMayaUsdPreviewSurface::initialize()
 {
     MStatus status;
+
+    MObject clearcoatAttr;
+    MObject clearcoatRoughnessAttr;
+    MObject diffuseColorAttr;
+    MObject displacementAttr;
+    MObject emissiveColorAttr;
+    MObject iorAttr;
+    MObject metallicAttr;
+    MObject normalAttr;
+    MObject occlusionAttr;
+    MObject opacityAttr;
+    MObject roughnessAttr;
+    MObject specularColorAttr;
+    MObject useSpecularWorkflowAttr;
+    MObject outColorAttr;
+    MObject outTransparencyAttr;
 
     MFnNumericAttribute numericAttrFn;
 
@@ -388,10 +371,15 @@ PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlock)
 
     // XXX: For now, we simply propagate diffuseColor to outColor and
     // opacity to outTransparency.
-
+    MFnDependencyNode depNodeFn(thisMObject());
+    MObject           outColorAttr
+        = depNodeFn.attribute(PxrMayaUsdPreviewSurfaceTokens->OutColorAttrName.GetText());
+    MObject outTransparencyAttr
+        = depNodeFn.attribute(PxrMayaUsdPreviewSurfaceTokens->OutTransparencyAttrName.GetText());
     if (plug == outColorAttr) {
-        const MDataHandle diffuseColorData =
-            dataBlock.inputValue(diffuseColorAttr, &status);
+        MObject diffuseColorAttr
+            = depNodeFn.attribute(PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName.GetText());
+        const MDataHandle diffuseColorData = dataBlock.inputValue(diffuseColorAttr, &status);
         CHECK_MSTATUS(status);
         const MFloatVector diffuseColor = diffuseColorData.asFloatVector();
 
@@ -401,10 +389,10 @@ PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlock)
         outColorHandle.asFloatVector() = diffuseColor;
         status = dataBlock.setClean(outColorAttr);
         CHECK_MSTATUS(status);
-    }
-    else if (plug == outTransparencyAttr) {
-        const MDataHandle opacityData =
-            dataBlock.inputValue(opacityAttr, &status);
+    } else if (plug == outTransparencyAttr) {
+        MObject opacityAttr
+            = depNodeFn.attribute(PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName.GetText());
+        const MDataHandle opacityData = dataBlock.inputValue(opacityAttr, &status);
         CHECK_MSTATUS(status);
         const float opacity = opacityData.asFloat();
 

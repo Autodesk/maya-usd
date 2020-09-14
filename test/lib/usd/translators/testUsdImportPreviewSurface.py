@@ -75,8 +75,8 @@ class testUsdImportPreviewSurface(unittest.TestCase):
             self.assertEqual(filename.lower().replace("\\", "/"),
                              rebased_name.lower().replace("\\", "/"))
 
-        # We expect pxrUsdPreviewSurface shaders:
-        self.assertEqual(len(cmds.ls(typ="pxrUsdPreviewSurface")), 8)
+        # We expect usdPreviewSurface shaders:
+        self.assertEqual(len(cmds.ls(typ="usdPreviewSurface")), 8)
 
         # Re-import, but with lamberts:
         lambert_before = len(cmds.ls(typ="lambert"))
