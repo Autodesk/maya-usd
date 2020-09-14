@@ -15,8 +15,6 @@
 //
 #include "usdPreviewSurfaceWriter.h"
 
-#include "usdPreviewSurface.h"
-
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -43,6 +41,7 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,10 +56,6 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     UsdShadeTokens->universalRenderContext,
     _tokens->niceName,
     _tokens->description);
-
-PXRUSDMAYA_REGISTER_SHADER_WRITER(
-    pxrUsdPreviewSurface,
-    PxrMayaUsdPreviewSurface_Writer);
 
 UsdMayaShaderWriter::ContextSupport
 PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArgs)
@@ -110,7 +105,6 @@ static
 bool
 _AuthorShaderInputFromShadingNodeAttr(
         const MFnDependencyNode& depNodeFn,
-        const MObject& shadingNodeAttr,
         UsdShadeShader& shaderSchema,
         const TfToken& shaderInputName,
         const SdfValueTypeName& shaderInputTypeName,
@@ -126,7 +120,7 @@ _AuthorShaderInputFromShadingNodeAttr(
 
     MPlug shadingNodePlug =
         depNodeFn.findPlug(
-            shadingNodeAttr,
+            shaderInputName.GetText(),
             /* wantNetworkedPlug = */ true,
             &status);
     if (status != MS::kSuccess) {
@@ -201,7 +195,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Clearcoat
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::clearcoatAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->ClearcoatAttrName,
         SdfValueTypeNames->Float,
@@ -210,7 +203,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Clearcoat Roughness
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::clearcoatRoughnessAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->ClearcoatRoughnessAttrName,
         SdfValueTypeNames->Float,
@@ -219,7 +211,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Diffuse Color
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::diffuseColorAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName,
         SdfValueTypeNames->Color3f,
@@ -228,7 +219,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Displacement
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::displacementAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->DisplacementAttrName,
         SdfValueTypeNames->Float,
@@ -237,7 +227,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Emissive Color
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::emissiveColorAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName,
         SdfValueTypeNames->Color3f,
@@ -246,7 +235,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Ior
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::iorAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->IorAttrName,
         SdfValueTypeNames->Float,
@@ -255,7 +243,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Metallic
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::metallicAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->MetallicAttrName,
         SdfValueTypeNames->Float,
@@ -264,7 +251,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Normal
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::normalAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
         SdfValueTypeNames->Normal3f,
@@ -273,7 +259,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Occlusion
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::occlusionAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->OcclusionAttrName,
         SdfValueTypeNames->Float,
@@ -282,7 +267,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Opacity
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::opacityAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName,
         SdfValueTypeNames->Float,
@@ -291,7 +275,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Roughness
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::roughnessAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName,
         SdfValueTypeNames->Float,
@@ -300,7 +283,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // Specular Color
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::specularColorAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName,
         SdfValueTypeNames->Color3f,
@@ -310,7 +292,6 @@ PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
     // The Maya attribute is bool-typed, while the USD attribute is int-typed.
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
-        PxrMayaUsdPreviewSurface::useSpecularWorkflowAttr,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName,
         SdfValueTypeNames->Int,

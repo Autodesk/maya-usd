@@ -13,10 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "usdPreviewSurface.h"
+#include "usdPreviewSurfaceReader.h"
 
-#include <mayaUsd/fileio/shaderReader.h>
-#include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
@@ -39,22 +37,14 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrMayaUsdPreviewSurface_Reader : public UsdMayaShaderReader {
-public:
-    PxrMayaUsdPreviewSurface_Reader(const UsdMayaPrimReaderArgs&);
-
-    bool Read(UsdMayaPrimReaderContext* context) override;
-
-    TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
-};
-
-PXRUSDMAYA_REGISTER_SHADER_READER(UsdPreviewSurface, PxrMayaUsdPreviewSurface_Reader)
-
 PxrMayaUsdPreviewSurface_Reader::PxrMayaUsdPreviewSurface_Reader(
-    const UsdMayaPrimReaderArgs& readArgs)
+    const UsdMayaPrimReaderArgs& readArgs, const TfToken& mayaTypeName)
     : UsdMayaShaderReader(readArgs)
+    , _mayaTypeName(mayaTypeName)
 {
 }
 
@@ -72,16 +62,16 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
     MFnDependencyNode depFn;
     if (!(UsdMayaTranslatorUtil::CreateShaderNode(
               MString(prim.GetName().GetText()),
-              PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText(),
+              _mayaTypeName.GetText(),
               UsdMayaShadingNodeType::Shader,
               &status,
               &mayaObject)
           && depFn.setObject(mayaObject))) {
         // we need to make sure assumes those types are loaded..
         TF_RUNTIME_ERROR(
-            "Could not create node of type '%s' for shader '%s'. "
+            "Could not create node of type %s for shader '%s'. "
             "Probably missing a loadPlugin.\n",
-            PxrMayaUsdPreviewSurfaceTokens->MayaTypeName.GetText(),
+            _mayaTypeName.GetText(),
             prim.GetPath().GetText());
         return false;
     }

@@ -64,6 +64,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
+const MTypeId MayaUsdPreviewSurface_typeId(0x58000096);
+const MString MayaUsdPreviewSurface_typeName("usdPreviewSurface");
+const MString MayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
+
 template <typename T> void registerCommandCheck(MFnPlugin& plugin)
 {
     auto status = plugin.registerCommand(T::commandName, T::creator, T::createSyntax);
@@ -149,7 +153,11 @@ MStatus initializePlugin(MObject obj)
     }
 #endif
 
-    status = PxrMayaUsdPreviewSurfacePlugin::initialize(plugin);
+    status = PxrMayaUsdPreviewSurfacePlugin::initialize(
+        plugin,
+        MayaUsdPreviewSurface_typeName,
+        MayaUsdPreviewSurface_typeId,
+        MayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     plugin.registerUI("mayaUsd_pluginUICreation", "mayaUsd_pluginUIDeletion", 
@@ -190,7 +198,11 @@ MStatus uninitializePlugin(MObject obj)
     MFnPlugin plugin(obj);
     MStatus status;
 
-    status = PxrMayaUsdPreviewSurfacePlugin::finalize(plugin);
+    status = PxrMayaUsdPreviewSurfacePlugin::finalize(
+        plugin,
+        MayaUsdPreviewSurface_typeName,
+        MayaUsdPreviewSurface_typeId,
+        MayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);
