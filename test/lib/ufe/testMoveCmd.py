@@ -210,8 +210,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestMove(expected)
 
-    # Not running because of expired prim problems.  PPT, 21-Dec-2018.
-    def _testMultiSelectMoveUSD(self):
+    def testMultiSelectMoveUSD(self):
         '''Move multiple USD objects, read through Transform3d interface.'''
 
         # Select multiple balls to move them.
@@ -264,5 +263,4 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Save the initial positions to the memento list.
         expected = [usdSceneItemTranslation(ballItem) for ballItem in ballItems]
 
-        #Temporarily disabling undo redo until we fix it for PR 94
         self.runMultiSelectTestMove(ballItems, expected)

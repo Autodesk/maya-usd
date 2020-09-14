@@ -1,71 +1,102 @@
-set(TRANSLATORS_PLUGIN mayaUsd_Translators)
+set(TARGET_NAME mayaUsd_Translators)
 
-set(INSTALL_DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/usd)
-
-set(
-    resources_install_path
-    ${CMAKE_INSTALL_PREFIX}/lib/usd/${TRANSLATORS_PLUGIN}/resources
+set(RESOURCES_INSTALL_PATH
+    ${CMAKE_INSTALL_PREFIX}/lib/usd/${TARGET_NAME}/resources
 )
 
-set(
-    library_install_path
-    ${CMAKE_INSTALL_PREFIX}/lib/
+set(LIBRARY_INSTALL_PATH
+    ${CMAKE_INSTALL_PREFIX}/lib
 )
 
-list(APPEND DEPENDANT_LIBRARIES 
-    arch
-    gf
-    kind
-    sdf
-    tf
-    usd
-    usdGeom
-    usdLux
-    usdRi
-    usdShade
-    usdSkel
-    usdUtils
-    vt
-    ${MAYA_LIBRARIES}
-    ${LIBRARY_NAME}
-	mayaUsd_Schemas
+add_library(${TARGET_NAME} SHARED)
+
+#------------------------------------------------------------------------------
+# modules and definitions
+#------------------------------------------------------------------------------
+if(NOT DEFINED ENV{BOOST_ROOT})
+    set(ENV{BOOST_ROOT} ${PXR_USD_LOCATION})
+endif()
+find_package(Boost COMPONENTS filesystem system REQUIRED)
+
+# -----------------------------------------------------------------------------
+# sources
+# -----------------------------------------------------------------------------
+target_sources(${TARGET_NAME} 
+    PRIVATE
+        cameraReader.cpp
+        cameraWriter.cpp
+        instancerWriter.cpp
+        jointWriter.cpp
+        lightReader.cpp
+        lightWriter.cpp
+        locatorWriter.cpp
+        materialReader.cpp
+        mayaReferenceReader.cpp
+        mayaReferenceUpdater.cpp
+        meshReader.cpp
+        meshWriter.cpp
+        nurbsCurvesReader.cpp
+        nurbsCurveWriter.cpp
+        nurbsPatchReader.cpp
+        nurbsSurfaceWriter.cpp
+        particleWriter.cpp
+        scopeReader.cpp
+        skelReader.cpp
+        strokeWriter.cpp
+        xformReader.cpp
 )
 
-list(APPEND source
-    cameraReader.cpp
-    cameraWriter.cpp
-    fileTextureWriter.cpp
-    instancerWriter.cpp
-    jointWriter.cpp
-    lightReader.cpp
-    lightWriter.cpp
-    locatorWriter.cpp
-    materialReader.cpp
-    mayaReferenceReader.cpp
-    mayaReferenceUpdater.cpp
-    meshReader.cpp
-    meshWriter.cpp
-    meshWriter_Primvars.cpp
-    meshWriter_Skin.cpp
-    meshWriter_Subdiv.cpp
-    nurbsCurveWriter.cpp
-    nurbsCurvesReader.cpp
-    nurbsPatchReader.cpp
-    nurbsSurfaceWriter.cpp
-    particleWriter.cpp
-    scopeReader.cpp
-    strokeWriter.cpp
-    skelReader.cpp
-    xformReader.cpp
+add_subdirectory(shading)
+
+# -----------------------------------------------------------------------------
+# compiler configuration
+# -----------------------------------------------------------------------------
+target_compile_definitions(${TARGET_NAME} 
+    PRIVATE
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
 )
 
-add_library(${TRANSLATORS_PLUGIN} SHARED ${source})
+mayaUsd_compile_config(${TARGET_NAME})
 
-#======================================================================
-# TARGET PROPERTIES
-#======================================================================
+# -----------------------------------------------------------------------------
+# include directories
+# -----------------------------------------------------------------------------
+target_include_directories(${TARGET_NAME}
+    PRIVATE
+        ${MAYA_INCLUDE_DIRS}
+        ${CMAKE_BINARY_DIR}
+)
+
+# -----------------------------------------------------------------------------
+# link libraries
+# -----------------------------------------------------------------------------
+target_link_libraries(${TARGET_NAME} 
+    PRIVATE 
+        arch
+        gf
+        kind
+        sdf
+        tf
+        usd
+        usdGeom
+        usdLux
+        usdRi
+        usdShade
+        usdSkel
+        usdUtils
+        vt
+        ${MAYA_LIBRARIES}
+        mayaUsd
+        mayaUsd_Schemas
+        basePxrUsdPreviewSurface
+        Boost::filesystem
+        Boost::system
+)
+
+# -----------------------------------------------------------------------------
+# run-time search paths
+# -----------------------------------------------------------------------------
 if(IS_MACOSX OR IS_LINUX)
-    # rpath setup
     mayaUsd_init_rpath(rpath "lib")
     mayaUsd_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     if(DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
@@ -79,56 +110,36 @@ if(IS_MACOSX OR IS_LINUX)
     if(IS_MACOSX AND DEFINED MAYAUSD_TO_USD_RELATIVE_PATH)
         mayaUsd_add_rpath(rpath "../../../Maya.app/Contents/MacOS")
     endif()
-    mayaUsd_install_rpath(rpath ${TRANSLATORS_PLUGIN})
+    mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
-if(IS_MACOSX)
-    target_compile_definitions(${TRANSLATORS_PLUGIN} PRIVATE
-        OSMac_
-    )
-endif()
-
-#======================================================================
-# INCLUDE, LINK
-#======================================================================
-target_include_directories(${TRANSLATORS_PLUGIN}
-    PUBLIC
-    ${MAYA_INCLUDE_DIRS}
-    ${CMAKE_BINARY_DIR}
-)
-
-target_link_libraries(${TRANSLATORS_PLUGIN} PRIVATE ${DEPENDANT_LIBRARIES})
-
-#======================================================================
-# PLUGINFO
-#======================================================================
-configure_file (
-  "${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json"
-  "${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json"
+#------------------------------------------------------------------------------
+# install
+#------------------------------------------------------------------------------
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json"
+               "${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json"
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    DESTINATION ${resources_install_path}
+    DESTINATION ${RESOURCES_INSTALL_PATH}
 )
-
-#install top level plugInfo.json that includes the configured plugInfo.json
-install(CODE
-    "file(WRITE \"${INSTALL_DESTINATION}/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
-)
-
-#======================================================================
-# INSTALL
-#======================================================================
 
 install(
-    TARGETS ${TRANSLATORS_PLUGIN}
+    TARGETS ${TARGET_NAME}
     LIBRARY
-    DESTINATION ${library_install_path}
-	ARCHIVE
-    DESTINATION ${library_install_path}
+    DESTINATION ${LIBRARY_INSTALL_PATH}
+    ARCHIVE
+    DESTINATION ${LIBRARY_INSTALL_PATH}
     RUNTIME
-    DESTINATION ${library_install_path}
+    DESTINATION ${LIBRARY_INSTALL_PATH}
 )
+
 if(IS_WINDOWS)
-    install(FILES $<TARGET_PDB_FILE:${TRANSLATORS_PLUGIN}> DESTINATION ${library_install_path} OPTIONAL)
+    install(FILES $<TARGET_PDB_FILE:${TARGET_NAME}> 
+        DESTINATION ${LIBRARY_INSTALL_PATH} OPTIONAL
+    )
 endif()
+ 
+install(FILES ${HEADERS}
+    DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${TARGET_NAME}
+)

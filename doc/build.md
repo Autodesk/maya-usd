@@ -11,36 +11,31 @@ Before building the project, consult the following table to ensure you use the r
 |        Required       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
 |    Operating System   |         Windows 10        | Catalina (10.15), Mojave (10.14), High Sierra (10.13)        |       CentOS 7              |
-|   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3),  Maya2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1), Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2), Maya 2019/2020 (gcc 6.3.1) |
+|   Compiler Requirement| Maya 2018/2019 (VS 2015 update 3)<br>Maya 2020 (VS 2017) | Maya 2018/2019 (Xcode 7.3.1)<br>Maya 2020 (Xcode version 10.2.1) | Maya 2018 (gcc 4.8.2)<br>Maya 2019/2020 (gcc 6.3.1) |
 | Minimum Cmake Version |           3.13            |                             3.13                             |         3.13                |
-|         Python        |           2.7.15          |                            2.7.15                            |        2.7.15               |
+|         Python        |       2.7.15 or 3.7.7     |                            2.7.15 or 3.7.7                   |        2.7.15 or 3.7.7      |
 |    Python Packages    | PyYAML, PySide, PyOpenGL, Jinja2        | PyYAML, PySide2, PyOpenGL, Jinja2              |      PyYAML, PySide, PyOpenGL, Jinja2             |
-|    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja(Recommended)                       |    Ninja(Recommended)       |
+|    Build generator    | Visual Studio, Ninja (Recommended)    |  XCode, Ninja (Recommended)                      |    Ninja (Recommended)      |
 |    Command processor  | Visual Studio X64 2015 or 2017 command prompt  |                     bash                |             bash            |
 | Supported Maya Version|      2018, 2019, 2020           |                      2018, 2019, 2020                  |        2018, 2019, 2020     |
 
 |        Optional       | ![](images/windows.png)   |                            ![](images/mac.png)               |   ![](images/linux.png)     |
 |:---------------------:|:-------------------------:|:------------------------------------------------------------:|:---------------------------:|
-|          Qt           |           5.12.6          |                             5.12.6                           |         5.12.6              |
-
-***NOTE:*** The optional Qt features require building with Qt version 5.12.6, which is the version used by Maya 2020. They are not supported with Maya 2018 and 2019 since those versions of Maya use Qt 5.6.1.
-
-***NOTE:*** We haven't fully tested the plug-ins on ```Catalina``` and it is still at the experimental stage.
+|          Qt           | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 | Maya 2018/2019 = 5.6.1<br>Maya 2020 = 5.12.5 |
 
 ***NOTE:*** Visit the online Maya developer help document under ***Setting up your build environment*** for additional compiler requirements on different platforms.
 
 #### 2. Download and Build Pixar USD 
 
-See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD . Pixar has recently removed support for building Maya USD libraries/plug-ins in their github repository and ```build_usd.py```. When building the maya-usd project, it is important the recommended ```Pixar USD``` and ```Animal Logic``` commitID or tag from the table below are used: 
+See Pixar's official github page for instructions on how to build USD: https://github.com/PixarAnimationStudios/USD . Pixar has recently removed support for building Maya USD libraries/plug-ins in their github repository and ```build_usd.py```. When building the maya-usd project, it is important the recommended ```Pixar USD``` commitID or tag from the table below are used: 
 
-|   Required    |      ![](images/pxr.png)          |         ![](images/al.png)            |
-|:------------: |:---------------:  |:-----------------:    |
-| CommitID/tag  | ceca736(>19.11)   | 631a2911(>0.34.0)     |
-
+|               |      ![](images/pxr.png)          |        
+|:------------: |:---------------:                  |
+|  CommitID/Tags | release: [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) <br> dev: [5d1771d](https://github.com/PixarAnimationStudios/USD/commit/5d1771d23b935740bcd5bfb985a92a6652e070c0) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
-***NOTE:*** Make sure that you don't have older USD locations in your ```PATH``` and ```PYTHONPATH``` environment settings. ```PATH``` and ```PYTHONPATH``` are automatically adjusted inside the project to point to the correct USD location. See ```cmake/usd.cmake```.
+***NOTE:*** Make sure that you don't have an older USD locations in your ```PATH``` and ```PYTHONPATH``` environment settings. ```PATH``` and ```PYTHONPATH``` are automatically adjusted inside the project to point to the correct USD location. See ```cmake/usd.cmake```.
 
 #### 3. Universal Front End (UFE)
 
@@ -84,13 +79,13 @@ There are four arguments that must be passed to the script:
 
 ```
 Linux:
-➜ maya-usd python build.py --maya-location /usr/autodesk/maya2020 --pxrusd-location /usr/local/USD-Master --devkit-location /usr/local/devkitBase /usr/local/workspace
+➜ maya-usd python build.py --maya-location /usr/autodesk/maya2020 --pxrusd-location /usr/local/USD-Release --devkit-location /usr/local/devkitBase /usr/local/workspace
 
 MacOSX:
-➜ maya-usd python build.py --maya-location /Applications/Autodesk/maya2020 --pxrusd-location /opt/local/USD-Master --devkit-location /opt/local/devkitBase /opt/local/workspace
+➜ maya-usd python build.py --maya-location /Applications/Autodesk/maya2020 --pxrusd-location /opt/local/USD-Release --devkit-location /opt/local/devkitBase /opt/local/workspace
 
 Windows:
-c:\maya-usd> python build.py --maya-location "C:\Program Files\Autodesk\Maya2020" --pxrusd-location C:\USD-Master --devkit-location C:\devkitBase C:\workspace
+c:\maya-usd> python build.py --maya-location "C:\Program Files\Autodesk\Maya2020" --pxrusd-location C:\USD-Release --devkit-location C:\devkitBase C:\workspace
 ```
 
 ##### Build Arguments
@@ -113,8 +108,10 @@ BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.        
 BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON
 BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
+BUILD_STRICT_MODE           | enforces all warnings as errors.                           | ON
+BUILD_WITH_PYTHON_3			| build with python 3.										 | OFF
+BUILD_SHARED_LIBS			| build libraries as shared or static.						 | ON
 CMAKE_WANT_UFE_BUILD        | enables building with UFE (if found).                      | ON
-CMAKE_WANT_QT_BUILD         | enables building with Qt (if found).                       | ON
 
 ##### Stages
 
@@ -235,6 +232,20 @@ PyYAML     3.13
 setuptools 39.0.1 
 shiboken2  5.12.1 
 ```
+
+##### dependencies on Linux DSOs when running tests
+
+Normally either runpath or rpath are used on some DSOs in this library to specify explicit on other libraries (such as USD itself)
+
+If for some reason you don't want to use either of these options, and switch them off with:
+```
+CMAKE_SKIP_RPATH=TRUE
+```
+To allow your tests to run, you can inject LD_LIBRARY_PATH into any of the mayaUSD_add_test calls by setting the ADDITIONAL_LD_LIBRARY_PATH cmake variable to $ENV{LD_LIBRARY_PATH} or similar.
+
+There is a related ADDITIONAL_PXR_PLUGINPATH_NAME cmake var which can be used if schemas are installed in a non-standard location
+
+
 
 # How to Load Plug-ins in Maya 
 

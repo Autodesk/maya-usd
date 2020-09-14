@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #pragma once
-#include "pxr/pxr.h"
-#include "pxr/imaging/glf/glew.h"
+#include <pxr/pxr.h>
+#include <pxr/imaging/glf/glew.h>
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
@@ -45,14 +45,14 @@
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
 #include "AL/usdmaya/nodes/Scope.h"
 
-#include "pxr/base/plug/plugin.h"
-#include "pxr/base/plug/registry.h"
-#include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/glContext.h"
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
+#include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/glf/glContext.h>
 
-#include "maya/MDrawRegistry.h"
-#include "maya/MGlobal.h"
-#include "maya/MStatus.h"
+#include <maya/MDrawRegistry.h>
+#include <maya/MGlobal.h>
+#include <maya/MStatus.h>
 
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 

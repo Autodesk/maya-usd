@@ -18,7 +18,7 @@
 
 from ufeTestUtils import mayaUtils
 from ufeTestUtils import usdUtils
-from ufeTestUtils.testUtils import assertVectorAlmostEqual
+from ufeTestUtils.testUtils import assertVectorAlmostEqual, assertVectorEqual
 
 import ufe
 
@@ -34,6 +34,18 @@ def nameToPlug(nodeName):
     selection = OpenMaya.MSelectionList()
     selection.add(nodeName)
     return selection.getPlug(0)
+
+class TestObserver(ufe.Observer):
+    def __init__(self):
+        super(TestObserver, self).__init__()
+        self.changed = 0
+
+    def __call__(self, notification):
+        if isinstance(notification, ufe.VisibilityChanged):
+            self.changed += 1
+
+    def notifications(self):
+        return self.changed
 
 class Object3dTestCase(unittest.TestCase):
     '''Verify the Object3d UFE interface, for the USD runtime.
@@ -88,6 +100,7 @@ class Object3dTestCase(unittest.TestCase):
         proxyShapePathSegment = mayaUtils.createUfePathSegment(
             proxyShapeMayaPath)
         
+        #######
         # Create a UFE scene item from the sphere prim.
         spherePathSegment = usdUtils.createUfePathSegment('/parent/sphere')
         spherePath = ufe.Path([proxyShapePathSegment, spherePathSegment])
@@ -103,17 +116,32 @@ class Object3dTestCase(unittest.TestCase):
         assertVectorAlmostEqual(self, ufeBBox.min.vector, [-1]*3)
         assertVectorAlmostEqual(self, ufeBBox.max.vector, [1]*3)
 
+        #######
+        # Create a UFE scene item from the parent Xform of the sphere prim.
+        parentPathSegment = usdUtils.createUfePathSegment('/parent')
+        parentPath = ufe.Path([proxyShapePathSegment, parentPathSegment])
+        parentItem = ufe.Hierarchy.createItem(parentPath)
+
+        # Get its Object3d interface.
+        parentObject3d = ufe.Object3d.object3d(parentItem)
+
+        # Get its bounding box.
+        parentUFEBBox = parentObject3d.boundingBox()
+
+        # Compare it to sphere's extents.
+        assertVectorEqual(self, ufeBBox.min.vector, parentUFEBBox.min.vector)
+        assertVectorEqual(self, ufeBBox.max.vector, parentUFEBBox.max.vector)
+
+
+        #######
         # Remove the test file.
         os.remove(usdFilePath)
 
     def testAnimatedBoundingBox(self):
         '''Test the Object3d bounding box interface for animated geometry.'''
 
-        # Load up a scene with a sphere that has an animated radius, with
-        # time connected to the proxy shape.
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test-samples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
-
-        cmds.file(filePath, force=True, open=True)
+        # Open sphereAnimatedRadiusProxyShape.ma scene in test-samples
+        mayaUtils.openSphereAnimatedRadiusScene()
 
         # The extents of the sphere are copied from the .usda file.
         expected = [
@@ -140,7 +168,7 @@ class Object3dTestCase(unittest.TestCase):
 
         # Loop over frames 1 to 10, and compare the values returned to the
         # expected values.
-        for frame in xrange(1,11):
+        for frame in range(1,11):
             cmds.currentTime(frame)
 
             ufeBBox = object3d.boundingBox()
@@ -150,3 +178,54 @@ class Object3dTestCase(unittest.TestCase):
                                     expected[frame-1][0], places=6)
             assertVectorAlmostEqual(self, ufeBBox.max.vector,
                                     expected[frame-1][1], places=6)
+
+    def testVisibility(self):
+        '''Test the Object3d visibility methods.'''
+
+        # Open top_layer.ma scene in test-samples
+        mayaUtils.openTopLayerScene()
+
+        # Get a scene item for Ball_35.
+        ball35Path = ufe.Path([
+            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
+        ball35Item = ufe.Hierarchy.createItem(ball35Path)
+
+        # Create an Object3d interface for it.
+        object3d = ufe.Object3d.object3d(ball35Item)
+
+        visObs = TestObserver()
+
+        # We start off with no visibility observers.
+        self.assertFalse(ufe.Object3d.hasObserver(visObs))
+        self.assertEqual(ufe.Object3d.nbObservers(), 0)
+
+        # Set the observer for visibility changes.
+        ufe.Object3d.addObserver(visObs)
+        self.assertTrue(ufe.Object3d.hasObserver(visObs))
+        self.assertEqual(ufe.Object3d.nbObservers(), 1)
+
+        # No notifications yet.
+        self.assertEqual(visObs.notifications(), 0)
+
+        # Initially it should be visible.
+        self.assertTrue(object3d.visibility())
+
+        # Make it invisible.
+        object3d.setVisibility(False)
+        self.assertFalse(object3d.visibility())
+
+        # We should have got 'one' notification.
+        self.assertEqual(visObs.notifications(), 1)
+
+        # Make it visible.
+        object3d.setVisibility(True)
+        self.assertTrue(object3d.visibility())
+
+        # We should have got one more notification.
+        self.assertEqual(visObs.notifications(), 2)
+
+        # Remove the observer.
+        ufe.Object3d.removeObserver(visObs)
+        self.assertFalse(ufe.Object3d.hasObserver(visObs))
+        self.assertEqual(ufe.Object3d.nbObservers(), 0)

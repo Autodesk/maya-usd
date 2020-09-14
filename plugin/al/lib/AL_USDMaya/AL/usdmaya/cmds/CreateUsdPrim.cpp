@@ -16,11 +16,11 @@
 #include "AL/usdmaya/cmds/CreateUsdPrim.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
-#include "maya/MArgDatabase.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MSyntax.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MSyntax.h>
 
-#include "pxr/usd/usd/modelAPI.h"
+#include <pxr/usd/usd/modelAPI.h>
 
 namespace AL {
 namespace usdmaya {

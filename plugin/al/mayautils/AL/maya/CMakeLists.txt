@@ -45,13 +45,13 @@ add_library(${MAYAUTILS_LIBRARY_NAME}
         ${maya_source}
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${MAYAUTILS_LIBRARY_NAME})
 
 target_compile_definitions(${MAYAUTILS_LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
         AL_MAYA_EVENTS_EXPORT
         AL_MAYA_UTILS_EXPORT
         AL_MAYA_MACROS_EXPORT
@@ -59,7 +59,6 @@ target_compile_definitions(${MAYAUTILS_LIBRARY_NAME}
 
 target_include_directories(${MAYAUTILS_LIBRARY_NAME}
     PUBLIC 
-    ${UTILS_INCLUDE_LOCATION}
     ${MAYAUTILS_INCLUDE_LOCATION}
     ${MAYA_INCLUDE_DIRS}
     )
@@ -70,6 +69,7 @@ target_link_libraries(${MAYAUTILS_LIBRARY_NAME}
   ${MAYA_OpenMaya_LIBRARY}
   ${MAYA_OpenMayaAnim_LIBRARY}
   ${MAYA_OpenMayaUI_LIBRARY}
+  mayaUsdUtils
 )
 
 ####################################################################################################

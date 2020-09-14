@@ -14,16 +14,16 @@
 // limitations under the License.
 //
 
-#include "pxr/usd/usdGeom/nurbsCurves.h"
-#include "pxr/usd/usdGeom/xform.h"
+#include <pxr/usd/usdGeom/nurbsCurves.h>
+#include <pxr/usd/usdGeom/xform.h>
 
-#include "maya/MDoubleArray.h"
-#include "maya/MFnDoubleArrayData.h"
-#include "maya/MFnFloatArrayData.h"
-#include "maya/MFnNurbsCurve.h"
-#include "maya/MPointArray.h"
-#include "maya/MStatus.h"
-#include "maya/MNodeClass.h"
+#include <maya/MDoubleArray.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnFloatArrayData.h>
+#include <maya/MFnNurbsCurve.h>
+#include <maya/MPointArray.h>
+#include <maya/MStatus.h>
+#include <maya/MNodeClass.h>
 
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/utils/DiffPrimVar.h"
@@ -127,6 +127,11 @@ UsdPrim NurbsCurve::exportObject(UsdStageRefPtr stage, MDagPath dagPath, const S
     AL::usdmaya::utils::copyNurbsCurveBindPoseData(fnCurve, nurbs, params.m_timeCode);
   }
 
+  if(params.getBool(GeometryExportOptions::kMeshExtents))
+  {
+    AL::usdmaya::utils::copyExtent(fnCurve, nurbs.GetExtentAttr(), params.m_timeCode);
+  }
+
   return nurbs.GetPrim();
 }
 
@@ -207,6 +212,10 @@ void NurbsCurve::writeEdits(UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& 
   if(diff_curves & AL::usdmaya::utils::kCurvePoints)
   {
     AL::usdmaya::utils::copyPoints(fnCurve, nurbsCurvesPrim.GetPointsAttr());
+  }
+  if(diff_curves & AL::usdmaya::utils::kCurveExtent)
+  {
+    AL::usdmaya::utils::copyExtent(fnCurve, nurbsCurvesPrim.GetExtentAttr());
   }
   if(diff_curves & AL::usdmaya::utils::kCurveVertexCounts)
   {

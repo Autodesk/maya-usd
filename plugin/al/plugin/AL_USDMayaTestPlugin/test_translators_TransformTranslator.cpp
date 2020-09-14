@@ -22,11 +22,11 @@
 #include "AL/usdmaya/fileio/translators/TransformTranslator.h"
 #include "AL/usdmaya/fileio/AnimationTranslator.h"
 
-#include "maya/MDagModifier.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MFileIO.h"
-#include "maya/MObjectArray.h"
-#include "maya/MObjectHandle.h"
+#include <maya/MDagModifier.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFileIO.h>
+#include <maya/MObjectArray.h>
+#include <maya/MObjectHandle.h>
 
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;

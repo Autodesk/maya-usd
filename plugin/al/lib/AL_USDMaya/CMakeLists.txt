@@ -118,6 +118,7 @@ list(APPEND AL_usdmaya_nodes_headers
 
 list(APPEND AL_usdmaya_nodes_proxy_headers
         AL/usdmaya/nodes/proxy/PrimFilter.h
+        AL/usdmaya/nodes/proxy/LockManager.h
 )
 
 list(APPEND AL_usdmaya_nodes_source
@@ -136,7 +137,10 @@ list(APPEND AL_usdmaya_nodes_source
         AL/usdmaya/nodes/Scope.cpp
         AL/usdmaya/nodes/BasicTransformationMatrix.cpp
         AL/usdmaya/nodes/TransformationMatrix.cpp
+        AL/usdmaya/nodes/proxy/LockManager.cpp
         AL/usdmaya/nodes/proxy/PrimFilter.cpp
+        AL/usdmaya/nodes/proxy/ProxyShapeMetaData.cpp
+        AL/usdmaya/nodes/proxy/ProxyShapeVariantFallbacks.cpp
 )
 
 list(APPEND AL_usdmaya_public_headers
@@ -157,13 +161,13 @@ add_library(${LIBRARY_NAME}
         ${AL_usdmaya_nodes_source}
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${LIBRARY_NAME})
 
 target_compile_definitions(${LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
@@ -178,23 +182,20 @@ target_include_directories(
     $<$<BOOL:${UFE_FOUND}>:${UFE_INCLUDE_DIR}>
 )
 
-set(Boost_LINK_LIBRARIES
-    ${Boost_PYTHON_LIBRARY}
-    ${Boost_THREAD_LIBRARY}
-)
-if(WIN32)
-    list(APPEND Boost_LINK_LIBRARIES
-        ${Boost_CHRONO_LIBRARY}
-        ${Boost_DATE_TIME_LIBRARY}
-    )
+# There were bugs in both cmake and findboost with the boost version string. So in
+# order to support all boost and cmake versions, we check how the boost version is
+# defined and create our version comparison string.
+if(${Boost_VERSION} MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
+    set(boost_1_70_0_ver_string "1.70.0")
+else()
+    set(boost_1_70_0_ver_string "107000")
 endif()
-
 
 target_link_libraries(${LIBRARY_NAME}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
-    AL_USDUtils
+    mayaUsdUtils
     AL_USDTransaction
     ar 
     gf 
@@ -208,7 +209,12 @@ target_link_libraries(${LIBRARY_NAME}
     usdImaging
     usdImagingGL
     vt
-    ${Boost_LINK_LIBRARIES}
+    Boost::python
+    $<IF:$<VERSION_GREATER_EQUAL:${Boost_VERSION},${boost_1_70_0_ver_string}>,Boost::thread,${Boost_THREAD_LIBRARY}>
+    $<$<BOOL:${IS_WINDOWS}>:Boost::chrono>
+    $<$<BOOL:${IS_WINDOWS}>:Boost::date_time>
+    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::filesystem>
+    $<$<BOOL:${NEED_BOOST_FILESYSTEM}>:Boost::system>
     ${MAYA_Foundation_LIBRARY}
     ${MAYA_OpenMayaAnim_LIBRARY}
     ${MAYA_OpenMayaUI_LIBRARY}
@@ -217,12 +223,6 @@ target_link_libraries(${LIBRARY_NAME}
     mayaUsd
     $<$<BOOL:${UFE_FOUND}>:${UFE_LIBRARY}>
 )
-
-if(NEED_BOOST_FILESYSTEM)
-    target_link_libraries(${LIBRARY_NAME}
-                        ${Boost_FILESYSTEM_LIBRARY}
-                        ${Boost_SYSTEM_LIBRARY})
-endif()
 
 install(TARGETS ${LIBRARY_NAME}
     LIBRARY
@@ -254,23 +254,19 @@ add_library(${PYTHON_LIBRARY_NAME}
     AL/usdmaya/fileio/translators/wrapTranslatorContext.cpp
 )
 
-if(IS_MACOSX)
-    set(_macDef OSMac_)
-endif()
+# compiler configuration
+mayaUsd_compile_config(${PYTHON_LIBRARY_NAME})
 
 target_compile_definitions(${PYTHON_LIBRARY_NAME}
     PRIVATE
-        ${_macDef}
+        $<$<BOOL:${IS_MACOSX}>:OSMac_>
+        $<$<BOOL:${IS_LINUX}>:LINUX>
         MFB_PACKAGE_NAME=${LIBRARY_NAME}
         MFB_ALT_PACKAGE_NAME=${LIBRARY_NAME}
         MFB_PACKAGE_MODULE=usdmaya
 )
-set_target_properties(${PYTHON_LIBRARY_NAME} 
-    PROPERTIES 
-        PREFIX ""
-)
 
-set_python_module_suffix(${PYTHON_LIBRARY_NAME})
+set_python_module_property(${PYTHON_LIBRARY_NAME})
 
 target_link_libraries(${PYTHON_LIBRARY_NAME}
     ${LIBRARY_NAME}
@@ -306,19 +302,29 @@ set_target_properties(${PYTHON_LIBRARY_LOCATION}
 )
 set_property(GLOBAL PROPERTY GLOBAL_PYTHON_LIBRARY_LOCATION ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}/${PYTHON_LIBRARY_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
 
-install(FILES __init__.py
-    DESTINATION ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}
+execute_process(COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py)
+execute_process(COMMAND ${Python_EXECUTABLE} -m compileall ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py)
+install(FILES
+        ${CMAKE_CURRENT_BINARY_DIR}/lib/python/${arDirPath}/__init__.py
+    DESTINATION
+        ${AL_INSTALL_PREFIX}/lib/python/${arDirPath}
 )
 install(CODE
-    "file(WRITE \"${AL_INSTALL_PREFIX}/lib/python/AL/__init__.py\"
+    "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/python/AL/__init__.py\"
     \"try:\n\t__import__('pkg_resources').declare_namespace(__name__)\nexcept:\n\tfrom pkgutil import extend_path\n\t__path__ = extend_path(__path__, __name__)\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/python/AL/__init__.py
+    DESTINATION ${AL_INSTALL_PREFIX}/lib/python/AL
 )
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
     DESTINATION ${AL_INSTALL_PREFIX}/lib/usd/${LIBRARY_NAME}/resources
 )
 install(CODE
-    "file(WRITE \"${AL_INSTALL_PREFIX}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+    "file(WRITE \"${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json\" \"{\n    \\\"Includes\\\": [ \\\"*/resources/\\\" ]\n}\")"
+)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib/usd/plugInfo.json
+    DESTINATION ${AL_INSTALL_PREFIX}/lib/usd
 )
 
 # install public headers

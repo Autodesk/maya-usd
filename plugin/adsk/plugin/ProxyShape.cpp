@@ -15,8 +15,8 @@
 //
 #include "ProxyShape.h"
 
-#include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
 
 MAYAUSD_NS_DEF {
 
@@ -67,6 +67,11 @@ void ProxyShape::postConstructor()
         // pxrHdImagingShape is setup.
         PXR_NS::PxrMayaHdImagingShape::GetOrCreateInstance();
     }
+    
+    // Enable proxy accessor features for this proxy
+#if MAYA_API_VERSION >= 20210000
+    enableProxyAccessor();
+#endif
 }
 
 } // MayaUsd

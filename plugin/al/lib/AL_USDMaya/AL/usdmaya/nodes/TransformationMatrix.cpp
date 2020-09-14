@@ -22,9 +22,9 @@
 #include "AL/usdmaya/utils/AttributeType.h"
 #include "AL/usdmaya/utils/Utils.h"
 
-#include "maya/MFileIO.h"
-#include "maya/MViewport2Renderer.h"
-#include "maya/MFnTransform.h"
+#include <maya/MFileIO.h>
+#include <maya/MViewport2Renderer.h>
+#include <maya/MFnTransform.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -1316,7 +1316,7 @@ void TransformationMatrix::insertTranslateOp()
 {
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::insertTranslateOp\n");
   // generate our translate op, and insert into the correct stack location
-  UsdGeomXformOp op = m_xform.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, TfToken("translate"));
+  UsdGeomXformOp op = m_xform.AddTranslateOp(UsdGeomXformOp::PrecisionDouble);
   m_xformops.insert(m_xformops.begin(), op);
   m_orderedOps.insert(m_orderedOps.begin(), kTranslate);
   m_xform.SetXformOpOrder(m_xformops, (m_flags & kInheritsTransform) == 0);
@@ -1368,7 +1368,7 @@ void TransformationMatrix::insertScaleOp()
   TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::insertScaleOp\n");
 
   // generate our translate op, and insert into the correct stack location
-  UsdGeomXformOp op = m_xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat, TfToken("scale"));
+  UsdGeomXformOp op = m_xform.AddScaleOp(UsdGeomXformOp::PrecisionFloat);
 
   auto posInOps = std::lower_bound(m_orderedOps.begin(), m_orderedOps.end(), kScale);
   auto posInXfm = m_xformops.begin() + (posInOps - m_orderedOps.begin());
@@ -1666,32 +1666,32 @@ void TransformationMatrix::insertRotateOp()
   switch(rotationOrder())
   {
   case MTransformationMatrix::kXYZ:
-    op = m_xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
+    op = m_xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat);
     break;
 
   case MTransformationMatrix::kXZY:
-    op = m_xform.AddRotateXZYOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
+    op = m_xform.AddRotateXZYOp(UsdGeomXformOp::PrecisionFloat);
     break;
 
   case MTransformationMatrix::kYXZ:
-    op = m_xform.AddRotateYXZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
+    op = m_xform.AddRotateYXZOp(UsdGeomXformOp::PrecisionFloat);
     break;
 
   case MTransformationMatrix::kYZX:
-    op = m_xform.AddRotateYZXOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
+    op = m_xform.AddRotateYZXOp(UsdGeomXformOp::PrecisionFloat);
     break;
 
   case MTransformationMatrix::kZXY:
-    op = m_xform.AddRotateZXYOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
+    op = m_xform.AddRotateZXYOp(UsdGeomXformOp::PrecisionFloat);
     break;
 
   case MTransformationMatrix::kZYX:
-    op = m_xform.AddRotateZYXOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
+    op = m_xform.AddRotateZYXOp(UsdGeomXformOp::PrecisionFloat);
     break;
 
   default:
     TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::insertRotateOp - got invalid rotation order; assuming XYZ");
-    op = m_xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, TfToken("rotate"));
+    op = m_xform.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat);
     break;
   }
 
@@ -1733,7 +1733,7 @@ MStatus TransformationMatrix::rotateTo(const MQuaternion &q, MSpace::Space space
       // Push new value to prim, but only if it's changing.
       if (!MPxTransformationMatrix::rotationValue.isEquivalent(m_rotationFromUsd))
       {
-        pushRotateToPrim();
+        pushRotateQuatToPrim();
       }
     }
   }
@@ -2023,6 +2023,36 @@ void TransformationMatrix::pushRotateToPrim()
 
       // only write back if data has changed significantly
       if(!tempRotate.isEquivalent(MPxTransformationMatrix::rotationValue))
+      {
+        internal_pushRotation(MPxTransformationMatrix::rotationValue, op);
+        m_rotationFromUsd = MPxTransformationMatrix::rotationValue;
+        m_rotationTweak = MEulerRotation(0, 0, 0);
+      }
+      return;
+    }
+  }
+  if(m_enableUsdWriteback)
+  {
+    pushTransformToPrim();
+  }
+}
+
+
+//----------------------------------------------------------------------------------------------------------------------
+void TransformationMatrix::pushRotateQuatToPrim()
+{
+  TF_DEBUG(ALUSDMAYA_TRANSFORM_MATRIX).Msg("TransformationMatrix::pushRotateQuatToPrim\n");
+  auto opIt = m_orderedOps.begin();
+  for(std::vector<UsdGeomXformOp>::iterator it = m_xformops.begin(), e = m_xformops.end(); it != e; ++it, ++opIt)
+  {
+    if(*opIt == kRotate)
+    {
+      UsdGeomXformOp& op = *it;
+      MEulerRotation tempRotate;
+      internal_readRotation(tempRotate, op);
+
+      // only write back if data has changed significantly
+      if(!tempRotate.asQuaternion().isEquivalent(MPxTransformationMatrix::rotationValue.asQuaternion()))
       {
         internal_pushRotation(MPxTransformationMatrix::rotationValue, op);
         m_rotationFromUsd = MPxTransformationMatrix::rotationValue;

@@ -31,8 +31,10 @@
 #include <vector>
 #include "AL/usdmaya/nodes/Engine.h"
 
-#include "pxr/imaging/hdx/pickTask.h"
-#include "pxr/imaging/hdx/taskController.h"
+#include <pxr/imaging/hd/engine.h>
+#include <pxr/imaging/hdx/pickTask.h>
+#include <pxr/imaging/hdx/taskController.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 namespace AL {
 namespace usdmaya {
@@ -77,9 +79,15 @@ bool Engine::TestIntersectionBatch(
   pickParams.outHits = &allHits;
   VtValue vtPickParams(pickParams);
 
-  _engine.SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+#if defined(USDIMAGINGGL_API_VERSION) && USDIMAGINGGL_API_VERSION >= 6
+  HdEngine* hdEngine = _GetHdEngine();
+#else
+  HdEngine* hdEngine = &_engine;
+#endif
+
+  hdEngine->SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
   auto pickingTasks = _taskController->GetPickingTasks();
-  _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+  hdEngine->Execute(_taskController->GetRenderIndex(), &pickingTasks);
 
   if (allHits.size() == 0) {
     return false;
@@ -90,12 +98,33 @@ bool Engine::TestIntersectionBatch(
   }
 
   for (const auto& hit : allHits) {
-    const SdfPath primPath = hit.objectId;
-    const SdfPath instancerPath = hit.instancerId;
-    const int instanceIndex = hit.instanceIndex;
+    SdfPath primPath = hit.objectId;
+    SdfPath instancerPath = hit.instancerId;
+    int instanceIndex = hit.instanceIndex;
+
+#if defined(USDIMAGINGGL_API_VERSION) && USDIMAGINGGL_API_VERSION >= 5
+    // See similar code in usdImagingGL/engine.cpp...
+    primPath = _GetSceneDelegate()->GetScenePrimPath(primPath, instanceIndex);
+    instancerPath = _GetSceneDelegate()->ConvertIndexPathToCachePath(instancerPath)
+        .GetAbsoluteRootOrPrimPath();
+#elif defined(USDIMAGINGGL_API_VERSION) && USDIMAGINGGL_API_VERSION >= 3
+    // See similar code in usdImagingGL/engine.cpp...
+    primPath = _delegate->GetScenePrimPath(primPath, instanceIndex);
+    instancerPath = _delegate->ConvertIndexPathToCachePath(instancerPath)
+        .GetAbsoluteRootOrPrimPath();
+#else
+    SdfPath resolvedPath =
+        GetPrimPathFromInstanceIndex(primPath, instanceIndex);
+    if (!resolvedPath.IsEmpty()) {
+        primPath = resolvedPath;
+    } else {
+        primPath = primPath.StripAllVariantSelections();
+    }
+#endif
 
     HitInfo& info = (*outHit)[pathTranslator(primPath, instancerPath,
                                              instanceIndex)];
+
     info.worldSpaceHitPoint = GfVec3d(hit.worldSpaceHitPoint[0],
                                       hit.worldSpaceHitPoint[1],
                                       hit.worldSpaceHitPoint[2]);

@@ -242,7 +242,6 @@ class TestTranslator(unittest.TestCase):
     
         stage = translatortestutils.getStage()
         stage.SetEditTarget(stage.GetSessionLayer())
-         
         variantPrim = stage.GetPrimAtPath("/TestVariantSwitch")
         variantSet = variantPrim.GetVariantSet("MeshVariants")
     
@@ -252,16 +251,16 @@ class TestTranslator(unittest.TestCase):
         self.assertEqual(len(mc.ls('MeshA')), 1)
         self.assertEqual(len(mc.ls('MeshB')), 0)
         self.assertEqual(len(mc.ls(type='mesh')), 1)
+        mc.AL_usdmaya_TranslatePrim(tp="/TestVariantSwitch/MeshA", proxy="AL_usdmaya_Proxy") # teardown
 
         #######
         # the MeshB should now be in the scene
-
         variantSet.SetVariantSelection("ShowMeshB")
- 
         mc.AL_usdmaya_TranslatePrim(ip="/TestVariantSwitch/MeshB", fi=True, proxy="AL_usdmaya_Proxy") # force the import
         self.assertEqual(len(mc.ls('MeshA')), 0)
         self.assertEqual(len(mc.ls('MeshB')), 1)
         self.assertEqual(len(mc.ls(type='mesh')), 1)
+        mc.AL_usdmaya_TranslatePrim(tp="/TestVariantSwitch/MeshB", proxy="AL_usdmaya_Proxy") # teardown
 
         # the MeshA and MeshB should be in the scene
         variantSet.SetVariantSelection("ShowMeshAnB")
@@ -473,7 +472,7 @@ class TestTranslator(unittest.TestCase):
         spherePrimMesh = UsdGeom.Mesh.Get(d.stage, spherePrimPath)  
 
         # Test import,modify,teardown a bunch of times
-        for i in xrange(3):
+        for i in range(3):
             # Determine expected result
             expectedPoint = spherePrimMesh.GetPointsAttr().Get()[0] + offsetAmount
 

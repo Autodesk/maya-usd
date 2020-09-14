@@ -15,12 +15,13 @@
 //
 #pragma once
 
-#include "../../Api.h"
-
+#include <AL/usdmaya/Api.h>
 #include <AL/usdmaya/ForwardDeclares.h>
-#include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
-#include "maya/MObject.h"
+#include <AL/usdmaya/fileio/translators/DgNodeTranslator.h>
+
 #include <pxr/base/tf/token.h>
+
+#include <maya/MObject.h>
 
 namespace AL {
 namespace usdmaya {

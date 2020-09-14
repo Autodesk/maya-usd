@@ -19,18 +19,19 @@
 #include "AL/maya/utils/NodeHelper.h"
 #include "AL/usdmaya/utils/DgNodeHelper.h"
 #include "AL/usdmaya/utils/Utils.h"
-#include "AL/usd/utils/DiffCore.h"
 
-#include "maya/MDoubleArray.h"
-#include "maya/MFloatArray.h"
-#include "maya/MFnDoubleArrayData.h"
-#include "maya/MFnFloatArrayData.h"
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MPointArray.h"
+#include <mayaUsdUtils/DiffCore.h>
 
-#include "pxr/usd/usdUtils/pipeline.h"
+#include <maya/MDoubleArray.h>
+#include <maya/MFloatArray.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnFloatArrayData.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MPointArray.h>
+
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <iostream>
 
@@ -63,6 +64,24 @@ void copyPoints(const MFnNurbsCurve& fnCurve, const UsdAttribute& pointsAttr, Us
 
   convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, usdPoints, cvCount);
   pointsAttr.Set(dataPoints, time);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+void copyExtent(const MFnNurbsCurve& fnCurve, const UsdAttribute& extentAttr, UsdTimeCode time)
+{
+  MPointArray controlVertices;
+  fnCurve.getCVs(controlVertices);
+  const unsigned int cvCount = controlVertices.length();
+  VtArray<GfVec3f> dataPoints(cvCount);
+
+  float* const usdPoints = (float* const)dataPoints.cdata();
+  const double* const mayaCVs = (const double* const)&controlVertices[0];
+
+  convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, usdPoints, cvCount);
+
+  VtArray<GfVec3f> mayaExtent(2);
+  UsdGeomPointBased::ComputeExtent(dataPoints, &mayaExtent);
+  extentAttr.Set(mayaExtent, time);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -328,11 +347,32 @@ uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, U
     const size_t numPoints = dataPoints.size();
     const float* const usdPoints = (const float* const)dataPoints.cdata();
     const double* const mayaCVs = (const double* const)&controlVertices[0];
-    if (!usd::utils::compareArrayFloat3DtoDouble4D(usdPoints, mayaCVs, numPoints, numControlVertices))
+    if (!MayaUsdUtils::compareArrayFloat3DtoDouble4D(usdPoints, mayaCVs, numPoints, numControlVertices))
     {
       result |= kCurvePoints;
     }
   }
+  if (exportMask & kCurveExtent)
+  {
+    MPointArray controlVertices;
+    fnCurve.getCVs(controlVertices);
+
+    const unsigned int cvCount = controlVertices.length();
+    VtArray<GfVec3f> points(cvCount);
+    float* const dataPoints = (float* const)points.cdata();
+    const double* const mayaCVs = (const double* const)&controlVertices[0];
+    convertDoubleVec4ArrayToFloatVec3Array(mayaCVs, dataPoints, cvCount);
+
+    VtArray<GfVec3f> mayaExtent(2);
+    UsdGeomPointBased::ComputeExtent(points, &mayaExtent);
+
+    VtArray<GfVec3f> usdExtent(2);
+    usdCurves.GetExtentAttr().Get(&usdExtent, timeCode);
+
+    if (usdExtent != mayaExtent)
+      result |= kCurveExtent;
+  }
+
   if (exportMask & kCurveVertexCounts)
   {
     int numCVs = fnCurve.numCVs();
@@ -357,7 +397,7 @@ uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, U
     const size_t numMayaKnots = knots.length();
     const double* const usdKnots = (const double* const)dataKnots.cdata();
     const double* const mayaKnots = (const double* const)&knots[0];
-    if (!usd::utils::compareArray(usdKnots, mayaKnots, numKnots, numMayaKnots))
+    if (!MayaUsdUtils::compareArray(usdKnots, mayaKnots, numKnots, numMayaKnots))
     {
       result |= kKnots;
     }
@@ -370,7 +410,7 @@ uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, U
     VtArray<GfVec2d> dataRanges;
     usdCurves.GetRangesAttr().Get(&dataRanges);
     const float* const usdRanges = (const float* const)dataRanges.cdata();
-    if (dataRanges.size() != 1 || !usd::utils::compareArray(usdRanges, knotDomain, 2, 2))
+    if (dataRanges.size() != 1 || !MayaUsdUtils::compareArray(usdRanges, knotDomain, 2, 2))
     {
       result |= kRanges;
     }
@@ -404,7 +444,7 @@ uint32_t diffNurbsCurve(UsdGeomNurbsCurves& usdCurves, MFnNurbsCurve& fnCurve, U
         const size_t numMayaWidth = widthArray.length();
         const float* const usdWidths = dataWidths.cdata();
         const double* const mayaWidth = &widthArray[0];
-        if (!usd::utils::compareArray(usdWidths, mayaWidth, numUsdWidths, numMayaWidth))
+        if (!MayaUsdUtils::compareArray(usdWidths, mayaWidth, numUsdWidths, numMayaWidth))
         {
           result |= kWidths;
         }

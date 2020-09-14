@@ -13,26 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/imaging/glf/glew.h"
+#include <pxr/imaging/glf/glew.h>
 
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 
-#include "maya/M3dView.h"
-#include "maya/MDrawContext.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MTime.h"
+#include <maya/M3dView.h>
+#include <maya/MDrawContext.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MTime.h>
 
 #if MAYA_API_VERSION >= 20180600
-#include "maya/MPointArray.h"
-#include "maya/MSelectionContext.h"
+#include <maya/MPointArray.h>
+#include <maya/MSelectionContext.h>
 #endif
 
 #if defined(WANT_UFE_BUILD)
 #include "AL/usdmaya/TypeIDs.h"
-#include "pxr/base/arch/env.h"
+#include <pxr/base/arch/env.h>
 #include "ufe/sceneItem.h"
 #include "ufe/runTimeMgr.h"
 #include "ufe/globalSelection.h"
@@ -79,10 +79,8 @@ ProxyDrawOverride::ProxyDrawOverride(const MObject& obj)
   : MHWRender::MPxDrawOverride(obj, draw, true)
 #elif MAYA_API_VERSION >= 20180600
   : MHWRender::MPxDrawOverride2(obj, draw, true)
-#elif MAYA_API_VERSION >= 201700
-  : MHWRender::MPxDrawOverride(obj, draw, true)
 #else
-  : MHWRender::MPxDrawOverride(obj, draw)
+  : MHWRender::MPxDrawOverride(obj, draw, true)
 #endif
 {
   TF_DEBUG(ALUSDMAYA_DRAW).Msg("ProxyDrawOverride::ProxyDrawOverride\n");
@@ -314,7 +312,11 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
               MMatrix value;
               lightParam->getParameter(paramNames[i], value);
               GfMatrix4d m(value.matrix);
+#if HDX_API_VERSION >= 6
+              light.SetShadowMatrices({m});
+#else
               light.SetShadowMatrix(m);
+#endif
             }
             break;
           case MHWRender::MLightParameterInformation::kShadowColor:
@@ -603,22 +605,9 @@ bool ProxyDrawOverride::userSelect(
 
   auto selected = false;
 
-  auto getHitPath = [&engine] (Engine::HitBatch::const_reference& it) -> SdfPath
-  {
-    const Engine::HitInfo& hit = it.second;
-    auto path = engine->GetPrimPathFromInstanceIndex(it.first, hit.hitInstanceIndex);
-    if (!path.IsEmpty())
-    {
-      return path;
-    }
-
-    return it.first.StripAllVariantSelections();
-  };
-
-
   auto addSelection = [&hitBatch, &selectionList,
-    &worldSpaceHitPts, proxyShape, &selected,
-    &getHitPath] (const MString& command)
+    &worldSpaceHitPts, proxyShape, &selected]
+    (const MString& command)
   {
     selected = true;
     MStringArray nodes;
@@ -626,7 +615,7 @@ bool ProxyDrawOverride::userSelect(
     
     for(const auto& it : hitBatch)
     {
-      auto path = getHitPath(it).StripAllVariantSelections();
+      auto path = it.first;
       auto obj = proxyShape->findRequiredPath(path);
       if (obj != MObject::kNullObj) 
       {
@@ -682,7 +671,7 @@ bool ProxyDrawOverride::userSelect(
 
       for(const auto& it : hitBatch)
       {
-        auto path = getHitPath(it);
+        auto path = it.first;
         command += " -pp \"";
         command += path.GetText();
         command += "\"";
@@ -709,9 +698,9 @@ bool ProxyDrawOverride::userSelect(
     {
       paths.reserve(hitBatch.size());
 
-      auto addHit = [&paths, &getHitPath](Engine::HitBatch::const_reference& it)
+      auto addHit = [&paths](Engine::HitBatch::const_reference& it)
       {
-        paths.push_back(getHitPath(it));
+        paths.push_back(it.first);
       };
 
       // Due to the inaccuracies in the selection method in gl engine

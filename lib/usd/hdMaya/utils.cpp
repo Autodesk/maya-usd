@@ -13,11 +13,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "utils.h"
 
-#include <hdMaya/utils.h>
+#include <maya/MPlugArray.h>
 
 #include <pxr/base/tf/fileUtils.h>
-
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/image.h>
 #include <pxr/imaging/glf/textureHandle.h>
@@ -25,8 +25,6 @@
 #include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/imaging/hdSt/textureResource.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
-
-#include <maya/MPlugArray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

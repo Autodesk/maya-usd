@@ -17,7 +17,7 @@
 
 #include "AL/usdmaya/Api.h"
 
-#include "maya/MPxSurfaceShapeUI.h"
+#include <maya/MPxSurfaceShapeUI.h>
 
 namespace AL {
 namespace usdmaya {

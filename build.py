@@ -1,7 +1,11 @@
+#!/usr/bin/env python
+from __future__ import print_function
+
 from distutils.spawn import find_executable
 
 import argparse
 import contextlib
+import codecs
 import datetime
 import distutils
 import multiprocessing
@@ -21,19 +25,19 @@ verbosity = 1
 
 def Print(msg):
     if verbosity > 0:
-        print msg
+        print(msg)
 
 def PrintWarning(warning):
     if verbosity > 0:
-        print "WARNING:", warning
+        print("WARNING:", warning)
 
 def PrintStatus(status):
     if verbosity >= 1:
-        print "STATUS:", status
+        print("STATUS:", status)
 
 def PrintInfo(info):
     if verbosity >= 2:
-        print "INFO:", info
+        print("INFO:", info)
 
 def PrintCommandOutput(output):
     if verbosity >= 3:
@@ -43,8 +47,10 @@ def PrintError(error):
     if verbosity >= 3 and sys.exc_info()[1] is not None:
         import traceback
         traceback.print_exc()
-    print "ERROR:", error
+    print("ERROR:", error)
 
+def Python3():
+    return sys.version_info.major == 3
 ############################################################
 def Windows():
     return platform.system() == "Windows"
@@ -95,7 +101,7 @@ def GetVisualStudioCompilerAndVersion():
         # VisualStudioVersion environment variable should be set by the
         # Visual Studio Command Prompt.
         match = re.search(
-            "(\d+).(\d+)",
+            r"(\d+)\.(\d+)",
             os.environ.get("VisualStudioVersion", ""))
         if match:
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
@@ -119,7 +125,7 @@ def Run(context, cmd):
     """Run the specified command in a subprocess."""
     PrintInfo('Running "{cmd}"'.format(cmd=cmd))
 
-    with open(context.logFileLocation, "a") as logfile:
+    with codecs.open(context.logFileLocation, "a", "utf-8") as logfile:
         logfile.write("#####################################################################################" + "\n")
         logfile.write("log date: " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + "\n")
         commitID,commitData = GetGitHeadInfo(context)
@@ -135,9 +141,12 @@ def Run(context, cmd):
         if context.redirectOutstreamFile:
             p = subprocess.Popen(shlex.split(cmd), stdout=subprocess.PIPE,
                                  stderr=subprocess.STDOUT)
+            encoding = sys.stdout.encoding or "UTF-8"
             while True:
-                l = p.stdout.readline()
+                l = p.stdout.readline().decode(encoding)
                 if l != "":
+                    # Avoid "UnicodeEncodeError: 'ascii' codec can't encode 
+                    # character" errors by serializing utf8 byte strings.
                     logfile.write(l)
                     PrintCommandOutput(l)
                 elif p.poll() is not None:
@@ -280,19 +289,15 @@ def RunCMake(context, extraArgs=None, stages=None):
 def RunCTest(context, extraArgs=None):
     buildDir = context.buildDir
     variant = BuildVariant(context)
-    #TODO we can't currently run tests in parallel, something to revisit.
-    numJobs = 1
 
     with CurrentWorkingDirectory(buildDir):
         Run(context,
             'ctest '
             '--output-on-failure ' 
             '--timeout 300 '
-            '-j {numJobs} '
             '-C {variant} '
             '{extraArgs} '
-            .format(numJobs=numJobs,
-                    variant=variant,
+            .format(variant=variant,
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
 
 def RunMakeZipArchive(context):

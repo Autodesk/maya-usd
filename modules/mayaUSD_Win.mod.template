@@ -1,0 +1,32 @@
++ USD ${USD_VERSION} ${USD_INSTALL_LOCATION}
+icons: 
+plug-ins: 
+presets: 
+scripts: 
+resources: 
+PYTHONPATH+:=lib/python
+PATH+:=bin
+PATH+:=lib
+USD_LOCATION:=
+
++ MayaUSD_LIB ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}
+icons: 
+plug-ins: 
+presets: 
+scripts: 
+resources: 
+PATH+:=lib
+PYTHONPATH+:=lib/python
+PXR_PLUGINPATH_NAME+:=lib/usd
+VP2_RENDER_DELEGATE_PROXY=1
+${MAYAUSD_GTEST_PATH}
+
++ MayaUSD ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/plugin/adsk
+plug-ins: plugin
+
++ MTOH ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}/lib
+icons: 
+plug-ins: maya
+presets: 
+scripts: 
+resources: 

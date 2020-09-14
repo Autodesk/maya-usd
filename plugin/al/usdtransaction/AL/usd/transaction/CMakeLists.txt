@@ -38,9 +38,15 @@ add_library(${USDTRANSACTION_LIBRARY_NAME}
     ${usdtransaction_source}
 )
 
+# compiler configuration
+mayaUsd_compile_config(${USDTRANSACTION_LIBRARY_NAME})
+
 target_compile_definitions(${USDTRANSACTION_LIBRARY_NAME}
     PRIVATE
         AL_USD_TRANSACTION_EXPORT
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+        $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
 )
 
 target_include_directories(${USDTRANSACTION_LIBRARY_NAME} 
@@ -68,8 +74,14 @@ add_library(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
     ${usdtransaction_python_source}
 )
 
+# compiler configuration
+mayaUsd_compile_config(${USDTRANSACTION_PYTHON_LIBRARY_NAME})
+
 target_compile_definitions(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
   PRIVATE
+    $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
+    $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
+    $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
     MFB_PACKAGE_NAME=${USDTRANSACTION_LIBRARY_NAME}
     MFB_ALT_PACKAGE_NAME=${USDTRANSACTION_LIBRARY_NAME}
     MFB_PACKAGE_MODULE=${USDTRANSACTION_LIBRARY_NAME}
@@ -88,7 +100,6 @@ target_link_libraries(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
 
 set_target_properties(${USDTRANSACTION_PYTHON_LIBRARY_NAME}
   PROPERTIES 
-    PREFIX ""
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 
@@ -99,7 +110,7 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${USDTRANSACTION_PYTHON_LIBRARY_NAME})
 endif()
 
-set_python_module_suffix(${USDTRANSACTION_PYTHON_LIBRARY_NAME})
+set_python_module_property(${USDTRANSACTION_PYTHON_LIBRARY_NAME})
 
 if(NOT SKIP_USDMAYA_TESTS)
   add_subdirectory(tests)

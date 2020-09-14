@@ -14,21 +14,22 @@
 // limitations under the License.
 //
 #include "dagAdapter.h"
-#include "adapterDebugCodes.h"
-#include "mayaAttrs.h"
-
-#include <pxr/base/tf/type.h>
-#include <pxr/imaging/hd/tokens.h>
 
 #include <maya/MAnimControl.h>
-#include <maya/MDGContext.h>
-#include <maya/MDGContextGuard.h>
 #include <maya/MDagMessage.h>
 #include <maya/MDagPathArray.h>
+#include <maya/MDGContext.h>
+#include <maya/MDGContextGuard.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 #include <maya/MTransformationMatrix.h>
+
+#include <pxr/base/tf/type.h>
+#include <pxr/imaging/hd/tokens.h>
+
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/mayaAttrs.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

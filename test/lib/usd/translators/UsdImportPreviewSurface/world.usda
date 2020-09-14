@@ -1,0 +1,32 @@
+#usda 1.0
+
+over "refSphere" (
+    prepend references = @props/billboards/billboards.usda@
+)
+{
+}
+
+over "refSphere1" (
+    prepend references = @props/billboards/billboards.usda@
+)
+{
+    double3 xformOp:translate = (0, 1.2, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+    over "Looks" {
+        over "nestedSG" {
+            over "nestedFile" {
+                asset inputs:file = @props/textures/black_B.png@
+            }
+        }
+        over "upOneLevelSG" {
+            over "upOneLevelFile" {
+                asset inputs:file = @textures/red_C.png@
+            }
+        }
+        over "upTwoLevelsSG" {
+            over "upTwoLevelsFile" {
+                asset inputs:file = @props/billboards/textures/green_A.png@
+            }
+        }
+    }
+}

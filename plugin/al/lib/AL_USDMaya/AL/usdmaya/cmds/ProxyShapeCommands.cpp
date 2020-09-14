@@ -20,11 +20,11 @@
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/maya/utils/Utils.h"
 
-#include "maya/MArgDatabase.h"
-#include "maya/MArgList.h"
-#include "maya/MDagPathArray.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MSyntax.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MArgList.h>
+#include <maya/MDagPathArray.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MSyntax.h>
 
 namespace {
     typedef void (AL::usdmaya::nodes::SelectionList::*SelectionListModifierFunc)(SdfPath);
@@ -1562,7 +1562,13 @@ MStatus TranslatePrim::redoIt()
 
   TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("TranslatePrim::redoIt\n");
   m_proxy->translatePrimPathsIntoMaya(newImportPaths, m_teardownPaths, tp);
-
+  
+  // construct locks and selectability for imported prims
+  if(m_proxy->isLockPrimFeatureActive())
+  {
+    m_proxy->removeMetaData(m_teardownPaths);
+    m_proxy->processChangedMetaData(SdfPathVector(), newImportPaths);
+  }
 
   auto stage = m_proxy->usdStage();
   auto manufacture = m_proxy->translatorManufacture();

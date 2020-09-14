@@ -13,24 +13,54 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <iostream>
+#include <string>
 
+#include <QtCore/QProcessEnvironment>
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QStyle>
-#include <QtCore/QProcessEnvironment>
-
-#include <mayaUsd/ui/views/USDImportDialog.h>
-#include <mayaUsd/fileio/importData.h>
 
 #include <pxr/usd/usd/stagePopulationMask.h>
 
-#include <iostream>
-#include <string>
+#include <mayaUsd/fileio/importData.h>
+
+#include <mayaUsdUI/ui/IMayaMQtUtil.h>
+#include <mayaUsdUI/ui/USDImportDialog.h>
+
+class TestUIQtUtil : public MayaUsd::IMayaMQtUtil
+{
+public:
+	~TestUIQtUtil() override = default;
+
+	int dpiScale(int size) const override;
+	float dpiScale(float size) const override;
+	QPixmap* createPixmap(const std::string& imageName) const override;
+};
+
+int TestUIQtUtil::dpiScale(int size) const
+{
+    return size;
+}
+
+float TestUIQtUtil::dpiScale(float size) const
+{
+    return size;
+}
+
+QPixmap* TestUIQtUtil::createPixmap(const std::string& imageName) const
+{
+    QString resName(":/");
+    resName += imageName.c_str();
+    return new QPixmap(resName);
+}
 
 int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        std::cout << "Usage: " << argv[0] << " <filename>" << std::endl;
+        std::cout << "Usage: " << argv[0] << " <filename> <rootPrimPath> <primVarSelection>" << std::endl;
+        std::cout << std::endl;
+        std::cout << "  Ex: " << argv[0] << "\"/Kitchen_set/Props_grp/DiningTable_grp/ChairB_2\" \"/Kitchen_set/Props_grp/North_grp/NorthWall_grp/NailA_1:modelingVariant=NailB\"" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -46,9 +76,41 @@ int main(int argc, char *argv[])
     QApplication app(argc, argv);
     app.setStyle("adskdarkflatui");
 
-    // Create and show the ImportUI
     std::string usdFile = argv[1];
-    MAYAUSD_NS::USDImportDialog usdImportDialog(usdFile);
+
+    // Set some import data for testing.
+    MayaUsd::ImportData importData(usdFile);
+    if (argc >= 3)
+    {
+        std::string strRootPrimPath = argv[2];
+        importData.setRootPrimPath(strRootPrimPath);
+    }
+
+    if (argc >= 4)
+    {
+        std::string strPrimVarSel = argv[3];
+        std::string::size_type pos1 = strPrimVarSel.find(':');
+        if (pos1 != std::string::npos)
+        {
+            std::string strPrimPath = strPrimVarSel.substr(0, pos1);
+            std::string::size_type pos2 = strPrimVarSel.find('=', pos1);
+            if (pos2 != std::string::npos)
+            {
+                std::string strVarName = strPrimVarSel.substr(pos1+1, pos2-pos1-1);
+                std::string strVarSel  = strPrimVarSel.substr(pos2+1);
+
+                MayaUsd::ImportData::PrimVariantSelections primVarSels;
+                SdfVariantSelectionMap varSel;
+                varSel[strVarName] = strVarSel;
+                primVarSels[SdfPath(strPrimPath)] = varSel;
+                importData.setPrimVariantSelections(primVarSels);
+            }
+        }
+    }
+
+    // Create and show the ImportUI
+    TestUIQtUtil uiQtUtil;
+    MayaUsd::USDImportDialog usdImportDialog(usdFile, &importData, uiQtUtil);
 
     // Give the dialog the Maya dark style.
     QStyle* adsk = app.style();
@@ -59,6 +121,7 @@ int main(int argc, char *argv[])
     usdImportDialog.show();
 
     auto ret = app.exec();
+    std::string rootPrimPath = usdImportDialog.rootPrimPath();
     UsdStagePopulationMask popMask = usdImportDialog.stagePopulationMask();
     MayaUsd::ImportData::PrimVariantSelections varSel = usdImportDialog.primVariantSelections();
 

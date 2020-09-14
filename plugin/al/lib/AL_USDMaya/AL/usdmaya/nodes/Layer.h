@@ -18,7 +18,7 @@
 #include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/maya/utils/NodeHelper.h"
 
-#include "maya/MPxNode.h"
+#include <maya/MPxNode.h>
 
 namespace AL {
 namespace usdmaya {

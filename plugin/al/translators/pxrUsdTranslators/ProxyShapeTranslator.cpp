@@ -15,25 +15,25 @@
 //
 #include "ProxyShapeTranslator.h"
 
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 
 #include "AL/maya/utils/Utils.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 
-#include "maya/MTime.h"
+#include <maya/MTime.h>
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/kind/registry.h"
-#include "pxr/usd/sdf/schema.h"
-#include "pxr/usd/sdf/types.h"
-#include "pxr/usd/sdf/copyUtils.h"
-#include "pxr/usd/usd/modelAPI.h"
-#include "pxr/usd/usdGeom/xformable.h"
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/sdf/schema.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/usdGeom/xformable.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

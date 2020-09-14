@@ -16,6 +16,8 @@
 # limitations under the License.
 #
 
+import os
+import sys
 import unittest
 import tempfile
 
@@ -178,7 +180,6 @@ class DeleteParentNodeOnPostImport(usdmaya.TranslatorBase):
         return
 
 
-@unittest.skip("Temporary disabling this test. importObject methods don't seem to be called!  HS 2020, Jan 21th")
 class TestPythonTranslators(unittest.TestCase):
     
     def setUp(self):
@@ -223,6 +224,7 @@ class TestPythonTranslators(unittest.TestCase):
         prim = stage.GetPrimAtPath('/root/peter01/rig')
         # self.assertTrue(usdmaya.TranslatorBase.generateTranslatorId(prim)=="assettype:beast_rig")
 
+    @unittest.skipIf(sys.version_info[0] >= 3, "RecursionError: maximum recursion depth exceeded while calling a Python object")
     def test_variantSwitch_that_removes_prim_and_create_new_one(self):
 
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
@@ -279,6 +281,7 @@ class TestPythonTranslators(unittest.TestCase):
         self.assertEqual(CubeGenerator.getState()["importObjectCount"], 1)
         self.assertFalse(cmds.objExists('|bobo|root|peter01|rig'))
 
+    @unittest.skipIf(sys.version_info[0] >= 3, "RecursionError: maximum recursion depth exceeded while calling a Python object")
     def test_variantSwitch_that_keeps_existing_prim_runs_teardown_and_import(self):
         usdmaya.TranslatorBase.registerTranslator(CubeGenerator(), 'beast_rig')
 

@@ -22,10 +22,10 @@
 #include "AL/usdmaya/utils/Utils.h"
 #include "AL/usdmaya/utils/MeshUtils.h"
 
-#include "maya/MFnMeshData.h"
-#include "maya/MTime.h"
+#include <maya/MFnMeshData.h>
+#include <maya/MTime.h>
 
-#include "pxr/usd/usdGeom/mesh.h"
+#include <pxr/usd/usdGeom/mesh.h>
 
 #include <mayaUsd/nodes/stageData.h>
 

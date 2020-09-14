@@ -17,18 +17,18 @@
 #include "AL/usdmaya/utils/DiffPrimVar.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "test_usdmaya.h"
-#include "maya/MFnMesh.h"
-#include "maya/MSelectionList.h"
-#include "maya/MFileIO.h"
-#include "maya/MFloatArray.h"
-#include "maya/MFnDagNode.h"
-#include "maya/MGlobal.h"
-#include "maya/MUintArray.h"
-#include "maya/MStringArray.h"
-#include "maya/MPointArray.h"
-#include "maya/MVectorArray.h"
-#include "maya/MFloatPointArray.h"
-#include "maya/MFloatVectorArray.h"
+#include <maya/MFnMesh.h>
+#include <maya/MSelectionList.h>
+#include <maya/MFileIO.h>
+#include <maya/MFloatArray.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MUintArray.h>
+#include <maya/MStringArray.h>
+#include <maya/MPointArray.h>
+#include <maya/MVectorArray.h>
+#include <maya/MFloatPointArray.h>
+#include <maya/MFloatVectorArray.h>
 #include <gtest/gtest.h>
 
 using namespace AL::maya;
@@ -79,21 +79,76 @@ TEST(DiffPrimVar, diffGeomVerts)
     UsdGeomMesh geom(geomPrim);
 
     // hopefully nothing will have changed here
-    uint32_t result = AL::usdmaya::utils::diffGeom(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents);
+    uint32_t result = AL::usdmaya::utils::diffGeom(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kPoints);
     EXPECT_EQ(0u, result);
 
-    MPoint p, pm;
+    // offset vertex
+    MPoint p;
     fn.getPoint(4, p);
-    pm = p;
-    pm.x += 0.1f;
-    fn.setPoint(4, pm);
+    p.x += 0.1f;
+    fn.setPoint(4, p);
+
+    // mesh changed
+    result = AL::usdmaya::utils::diffGeom(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kPoints);
+    EXPECT_EQ(AL::usdmaya::utils::kPoints, result);
+  }
+}
+
+TEST(DiffPrimVar, diffGeomExtent)
+{
+  MFileIO::newFile(true);
+  MStringArray result;
+  ASSERT_TRUE(MGlobal::executeCommand("polySphere  -r 1 -sx 20 -sy 20 -ax 0 1 0 -cuv 2 -ch 1", result) == MS::kSuccess);
+
+  const MString temp_path = buildTempPath("AL_USDMayaTests_diffPrimVarExtents.usda");
+  const MString temp_path2 = buildTempPath("AL_USDMayaTests_diffPrimVarExtents2.usda");
+
+  const MString exportCommand =
+  "file -force -options \"Dynamic_Attributes=0;Meshes=1;Mesh_Normals=1;Mesh_Extents=1;Nurbs_Curves=1;Duplicate_Instances=1;Merge_Transforms=1;Animation=0;"
+  "Use_Timeline_Range=0;Frame_Min=1;Frame_Max=50;Filter_Sample=0;\" -typ \"AL usdmaya export\" -pr -ea \"" + temp_path + "\";";
+
+  ASSERT_TRUE(MGlobal::executeCommand(exportCommand) == MS::kSuccess);
+  ASSERT_TRUE(result.length() == 2);
+
+  MSelectionList sl;
+  EXPECT_TRUE(sl.add("pSphereShape1")  == MS::kSuccess);
+  MGlobal::setActiveSelectionList(sl);
+
+  MObject obj;
+  sl.getDependNode(0, obj);
+  MStatus status;
+  MFnMesh fn(obj, &status);
+
+  {
+    MFnDagNode fnd;
+    MObject xform = fnd.create("transform");
+    MObject shape = fnd.create("AL_usdmaya_ProxyShape", xform);
+
+    AL::usdmaya::nodes::ProxyShape* proxy = (AL::usdmaya::nodes::ProxyShape*)fnd.userNode();
+
+    // force the stage to load
+    proxy->filePathPlug().setString(temp_path);
+
+    auto stage = proxy->getUsdStage();
+    MString path = MString("/") + result[0];
+
+    SdfPath primPath(path.asChar());
+    UsdPrim geomPrim = stage->GetPrimAtPath(primPath);
+    UsdGeomMesh geom(geomPrim);
 
     // hopefully nothing will have changed here
-    result = AL::usdmaya::utils::diffGeom(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents);
-    EXPECT_EQ(AL::usdmaya::utils::kPoints | AL::usdmaya::utils::kNormals, result);
+    uint32_t result = AL::usdmaya::utils::diffGeom(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kExtent);
+    EXPECT_EQ(0u, result);
 
+    // offset vertex
+    MPoint p;
+    fn.getPoint(4, p);
+    p.y += 100.0f;
     fn.setPoint(4, p);
-    result = AL::usdmaya::utils::diffGeom(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kAllComponents);
+
+    // extent should be different
+    result = AL::usdmaya::utils::diffGeom(geom, fn, UsdTimeCode::Default(), AL::usdmaya::utils::kExtent);
+    EXPECT_EQ(AL::usdmaya::utils::kExtent, result);
   }
 }
 

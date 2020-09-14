@@ -13,29 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "jointWriter.h"
 
-#include "../../fileio/utils/adaptor.h"
-#include "../../fileio/primWriter.h"
-#include "../../fileio/primWriterRegistry.h"
-#include "../../fileio/translators/translatorSkel.h"
-#include "../../fileio/translators/translatorUtil.h"
-#include "../../utils/util.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/tf/staticTokens.h"
-#include "pxr/base/tf/token.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/xform.h"
-#include "pxr/usd/usdSkel/animation.h"
-#include "pxr/usd/usdSkel/bindingAPI.h"
-#include "pxr/usd/usdSkel/root.h"
-#include "pxr/usd/usdSkel/skeleton.h"
-#include "pxr/usd/usdSkel/utils.h"
-
-#include "pxr/usd/sdf/pathTable.h"
+#include <vector>
 
 #include <maya/MAnimUtil.h>
 #include <maya/MDagPath.h>
@@ -47,82 +27,33 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#include <vector>
+#include <pxr/pxr.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/pathTable.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdSkel/animation.h>
+#include <pxr/usd/usdSkel/bindingAPI.h>
+#include <pxr/usd/usdSkel/root.h>
+#include <pxr/usd/usdSkel/skeleton.h>
+#include <pxr/usd/usdSkel/utils.h>
 
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/translators/translatorSkel.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/jointWriteUtils.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 PXRUSDMAYA_REGISTER_WRITER(joint, PxrUsdTranslators_JointWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(joint, UsdSkelSkeleton);
-
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (Animation)
-    (Skeleton)
-);
-
-
-static
-SdfPath
-_GetAnimationPath(const SdfPath& skelPath)
-{
-    return skelPath.AppendChild(_tokens->Animation);
-}
-
-
-/// Gets all of the components of the joint hierarchy rooted at \p dagPath.
-/// The \p skelXformPath will hold the path to a joint that defines
-/// the transform of a UsdSkelSkeleton. It may be invalid if no
-/// joint explicitly defines that transform.
-/// The \p joints array, if provided, will be filled with the ordered set of
-/// joint paths, excluding the set of joints described above.
-/// The \p jointHierarchyRootPath will hold the common parent path of
-/// all of the returned joints.
-static
-void
-_GetJointHierarchyComponents(
-        const MDagPath& dagPath,
-        MDagPath* skelXformPath,
-        MDagPath* jointHierarchyRootPath,
-        std::vector<MDagPath>* joints=nullptr)
-{
-    if(joints)
-        joints->clear();
-    *skelXformPath = MDagPath();
-
-    MItDag dagIter(MItDag::kDepthFirst, MFn::kJoint);
-    dagIter.reset(dagPath, MItDag::kDepthFirst, MFn::kJoint);
-
-    // The first joint may be the root of a Skeleton.
-    if (!dagIter.isDone()) {
-        MDagPath path;
-        dagIter.getPath(path);
-        if (UsdMayaTranslatorSkel::IsUsdSkeleton(path)) {
-            *skelXformPath = path;
-            dagIter.next();
-        }
-    }
-
-    // All remaining joints are treated as normal joints.
-    if (joints) {
-        while (!dagIter.isDone()) {
-            MDagPath path;
-            dagIter.getPath(path);
-            joints->push_back(path);
-            dagIter.next();
-        }
-    }
-
-    if(skelXformPath->isValid()) {
-        *jointHierarchyRootPath = *skelXformPath;
-    } else {
-        *jointHierarchyRootPath = dagPath;
-        jointHierarchyRootPath->pop();
-    }
-}
-
 
 PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
         const MFnDependencyNode& depNodeFn,
@@ -142,7 +73,7 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
     }
 
     SdfPath skelPath =
-        GetSkeletonPath(GetDagPath(), _GetExportArgs().stripNamespaces);
+        UsdMayaJointUtil::getSkeletonPath(GetDagPath(), _GetExportArgs().stripNamespaces);
 
     _skel = UsdSkelSkeleton::Define(GetUsdStage(), skelPath);
     if (!TF_VERIFY(_skel)) {
@@ -150,56 +81,6 @@ PxrUsdTranslators_JointWriter::PxrUsdTranslators_JointWriter(
     }
 
     _usdPrim = _skel.GetPrim();
-}
-
-VtTokenArray
-PxrUsdTranslators_JointWriter::GetJointNames(
-        const std::vector<MDagPath>& joints,
-        const MDagPath& rootDagPath,
-        bool stripNamespaces)
-{
-    MDagPath skelXformPath, jointHierarchyRootPath;
-    _GetJointHierarchyComponents(rootDagPath, &skelXformPath,
-                                 &jointHierarchyRootPath);
-
-    // Get paths relative to the root of the joint hierarchy or the scene root.
-    // Joints have to be transforms, so mergeTransformAndShape
-    // shouldn't matter here. (Besides, we're not actually using these
-    // to point to prims.)
-    SdfPath rootPath;
-    if (jointHierarchyRootPath.length() == 0) {
-        // Joint name relative to the scene root.
-        // Note that, in this case, the export will eventually error when trying
-        // to obtain the SkelRoot. But it's better that we not error here and
-        // only error inside the UsdMaya_SkelBindingsProcessor so that we
-        // consolidate the SkelRoot-related errors in one place.
-        rootPath = SdfPath::AbsoluteRootPath();
-    }
-    else {
-        // Joint name relative to joint root.
-        rootPath = UsdMayaUtil::MDagPathToUsdPath(
-                jointHierarchyRootPath,
-                /*mergeTransformAndShape*/ false,
-                stripNamespaces);
-    }
-
-    VtTokenArray result;
-    for (const MDagPath& joint : joints) {
-
-        SdfPath path = UsdMayaUtil::MDagPathToUsdPath(
-                joint, /*mergeTransformAndShape*/ false, stripNamespaces);
-        result.push_back(path.MakeRelativePath(rootPath).GetToken());
-    }
-    return result;
-}
-
-SdfPath
-PxrUsdTranslators_JointWriter::GetSkeletonPath(
-        const MDagPath& rootJoint,
-        bool stripNamespaces)
-{
-    return UsdMayaUtil::MDagPathToUsdPath(
-        rootJoint, /*mergeTransformAndShape*/ false, stripNamespaces);
 }
 
 /// Whether the transform plugs on a transform node are animated.
@@ -581,14 +462,14 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
         UsdMayaTranslatorSkel::MarkSkelAsMayaGenerated(_skel);
     }
 
-    _GetJointHierarchyComponents(GetDagPath(),
-                                 &_skelXformPath,
-                                 &_jointHierarchyRootPath,
-                                 &_joints);
+    UsdMayaJointUtil::getJointHierarchyComponents(GetDagPath(),
+                                                  &_skelXformPath,
+                                                  &_jointHierarchyRootPath,
+                                                  &_joints);
 
     VtTokenArray skelJointNames =
-        GetJointNames(_joints, GetDagPath(),
-                      _GetExportArgs().stripNamespaces);
+        UsdMayaJointUtil::getJointNames(_joints, GetDagPath(),
+                                        _GetExportArgs().stripNamespaces);
     _topology = UsdSkelTopology(skelJointNames);
     std::string whyNotValid;
     if (!_topology.Validate(&whyNotValid)) {
@@ -605,7 +486,7 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
 
     // Mark the bindings for post processing.
 
-    _SetAttribute(_skel.GetJointsAttr(), skelJointNames);
+    UsdMayaWriteUtil::SetAttribute(_skel.GetJointsAttr(), skelJointNames, UsdTimeCode::Default(), _GetSparseValueWriter());
 
     SdfPath skelPath = _skel.GetPrim().GetPath();
     _writeJobCtx.MarkSkelBindings(
@@ -613,12 +494,12 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
 
     VtMatrix4dArray bindXforms =
         _GetJointWorldBindTransforms(_topology, _joints);
-    _SetAttribute(_skel.GetBindTransformsAttr(), bindXforms);
+    UsdMayaWriteUtil::SetAttribute(_skel.GetBindTransformsAttr(), bindXforms, UsdTimeCode::Default(), _GetSparseValueWriter());
 
     VtMatrix4dArray restXforms;
     if (_GetJointLocalRestTransformsFromDagPose(
             skelPath, GetDagPath(), _joints, &restXforms)) {
-        _SetAttribute(_skel.GetRestTransformsAttr(), restXforms);
+        UsdMayaWriteUtil::SetAttribute(_skel.GetRestTransformsAttr(), restXforms, UsdTimeCode::Default(), _GetSparseValueWriter());
     }
 
     VtTokenArray animJointNames;
@@ -639,14 +520,14 @@ PxrUsdTranslators_JointWriter::_WriteRestState()
 
     if (!animJointNames.empty()) {
 
-        SdfPath animPath = _GetAnimationPath(skelPath);
+        SdfPath animPath = UsdMayaJointUtil::getAnimationPath(skelPath);
         _skelAnim = UsdSkelAnimation::Define(GetUsdStage(), animPath);
 
         if (TF_VERIFY(_skelAnim)) {
             _skelToAnimMapper =
                 UsdSkelAnimMapper(skelJointNames, animJointNames);
 
-            _SetAttribute(_skelAnim.GetJointsAttr(), animJointNames);
+            UsdMayaWriteUtil::SetAttribute(_skelAnim.GetJointsAttr(), animJointNames, UsdTimeCode::Default(), _GetSparseValueWriter());
 
             binding.CreateAnimationSourceRel().SetTargets({animPath});
         } else {
@@ -673,7 +554,7 @@ PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
         // We have a joint which provides the transform of the Skeleton,
         // instead of the transform of a joint in the hierarchy.
         GfMatrix4d localXf = _GetJointLocalTransform(_skelXformPath);
-        _SetAttribute(_skelXformAttr, localXf, usdTime);
+        UsdMayaWriteUtil::SetAttribute(_skelXformAttr, localXf, usdTime, _GetSparseValueWriter());
     }
 
     // Time-varying step: write the packed joint animation transforms once per
@@ -684,7 +565,7 @@ PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
 
         if (!_skelAnim) {
 
-            SdfPath animPath = _GetAnimationPath(_skel.GetPrim().GetPath());
+            SdfPath animPath = UsdMayaJointUtil::getAnimationPath(_skel.GetPrim().GetPath());
 
             TF_CODING_ERROR(
                 "SkelAnimation <%s> doesn't exist but should "
@@ -714,12 +595,12 @@ PxrUsdTranslators_JointWriter::Write(const UsdTimeCode& usdTime)
                     // separate anim components.
                     // In the future, we may want to RLE-compress the data in
                     // PostExport to remove redundant time samples.
-                    _SetAttribute(_skelAnim.GetTranslationsAttr(),
-                                  &translations, usdTime);
-                    _SetAttribute(_skelAnim.GetRotationsAttr(),
-                                  &rotations, usdTime);
-                    _SetAttribute(_skelAnim.GetScalesAttr(),
-                                  &scales, usdTime);
+                    UsdMayaWriteUtil::SetAttribute(_skelAnim.GetTranslationsAttr(),
+                                  &translations, usdTime, _GetSparseValueWriter());
+                    UsdMayaWriteUtil::SetAttribute(_skelAnim.GetRotationsAttr(),
+                                  &rotations, usdTime, _GetSparseValueWriter());
+                    UsdMayaWriteUtil::SetAttribute(_skelAnim.GetScalesAttr(),
+                                  &scales, usdTime, _GetSparseValueWriter());
                 }
             }
         }

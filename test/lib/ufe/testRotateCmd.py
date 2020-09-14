@@ -211,15 +211,9 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Save the initial position to the memento list.
         expected = ball35Rotation()
 
-        # MAYA-96058: unfortunately, rotate command currently requires a rotate
-        # manipulator to be created to update the UFE object.
-        manipCtx = cmds.manipRotateContext()
-        cmds.setToolTo(manipCtx)
-
-        #Temporarily disabling undo redo until we fix it for PR 94
         self.runTestRotate(expected)
 
-    def _testMultiSelectRotateUSD(self):
+    def testMultiSelectRotateUSD(self):
         '''Rotate multiple USD objects, read through Transform3d interface.'''
 
         # Select multiple balls to rotate them.
@@ -271,11 +265,5 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Save the initial positions to the memento list.
         expected = [usdSceneItemRotation(ballItem) for ballItem in ballItems]
 
-        # MAYA-96058: unfortunately, rotate command currently requires a rotate
-        # manipulator to be created to update the UFE object.
-        manipCtx = cmds.manipRotateContext()
-        cmds.setToolTo(manipCtx)
-
-        #Temporarily disabling undo redo until we fix it for PR 94
         self.runMultiSelectTestRotate(ballItems, expected)
         

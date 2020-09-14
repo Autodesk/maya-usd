@@ -887,7 +887,7 @@ class UserExportedAttributeWidget(mayaMixin.MayaQWidgetDockableMixin, QWidget):
         # primvarInterpolation would only appear when the table cell is put into
         # edit mode. Instead, we want the combo boxes to always be visible, so
         # we tell the view to open them as persistent editors.
-        for row in xrange(self.exportedAttrsModel.rowCount()):
+        for row in range(self.exportedAttrsModel.rowCount()):
             usdAttrTypeIndex = self.exportedAttrsModel.index(row,
                 ExportedAttributesModel.USD_ATTR_TYPE_COLUMN)
             self.exportedAttrsView.openPersistentEditor(usdAttrTypeIndex)

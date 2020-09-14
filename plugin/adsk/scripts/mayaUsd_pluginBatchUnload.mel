@@ -1,0 +1,6 @@
+global proc mayaUsd_pluginBatchUnload()
+// Callback registered with the MFnPlugin for when the plugin is unloaded
+// in batch mode.
+// Do not currently have anything we need to handle.
+{
+}

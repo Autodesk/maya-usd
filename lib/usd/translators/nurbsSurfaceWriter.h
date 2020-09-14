@@ -16,22 +16,19 @@
 #ifndef PXRUSDTRANSLATORS_NURBS_SURFACE_WRITER_H
 #define PXRUSDTRANSLATORS_NURBS_SURFACE_WRITER_H
 
-/// \file pxrUsdTranslators/nurbsSurfaceWriter.h
-
-#include "pxr/pxr.h"
-
-#include "../../fileio/primWriter.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/nurbsPatch.h"
+/// \file
 
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/nurbsPatch.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Exports Maya nurbsSurface objects (MFnNurbsSurface) as UsdGeomNurbsPatch.
 class PxrUsdTranslators_NurbsSurfaceWriter : public UsdMayaPrimWriter

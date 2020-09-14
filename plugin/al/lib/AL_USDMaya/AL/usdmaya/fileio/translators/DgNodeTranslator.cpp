@@ -14,25 +14,25 @@
 // limitations under the License.
 //
 #include "AL/maya/utils/NodeHelper.h"
-#include "AL/usd/utils/SIMD.h"
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/translators/DgNodeTranslator.h"
+#include <mayaUsdUtils/SIMD.h>
 
-#include "maya/MObject.h"
-#include "maya/MStatus.h"
-#include "maya/MGlobal.h"
-#include "maya/MPlug.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MMatrixArray.h"
-#include "maya/MFnMatrixData.h"
-#include "maya/MFnMatrixArrayData.h"
-#include "maya/MMatrix.h"
-#include "maya/MFloatMatrix.h"
-#include "maya/MFnNumericAttribute.h"
-#include "maya/MFnMatrixAttribute.h"
-#include "maya/MFnTypedAttribute.h"
-#include "maya/MFnCompoundAttribute.h"
+#include <maya/MObject.h>
+#include <maya/MStatus.h>
+#include <maya/MGlobal.h>
+#include <maya/MPlug.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MMatrixArray.h>
+#include <maya/MFnMatrixData.h>
+#include <maya/MFnMatrixArrayData.h>
+#include <maya/MMatrix.h>
+#include <maya/MFloatMatrix.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnMatrixAttribute.h>
+#include <maya/MFnTypedAttribute.h>
+#include <maya/MFnCompoundAttribute.h>
 
 #include <unordered_map>
 

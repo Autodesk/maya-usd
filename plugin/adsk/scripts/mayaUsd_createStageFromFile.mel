@@ -1,0 +1,198 @@
+// Copyright 2020 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+proc setOptionVars(int $forceFactorySettings)
+{
+    if ($forceFactorySettings || !`optionVar -exists stageFromFile_primPath`) {
+        optionVar -stringValue stageFromFile_primPath "";
+    }
+
+    if ($forceFactorySettings || !`optionVar -exists stageFromFile_excludePrimPath`) {
+        optionVar -stringValue stageFromFile_excludePrimPath "";
+    }
+
+    if ($forceFactorySettings || !`optionVar -exists stageFromFile_loadPayloads`) {
+        optionVar -intValue stageFromFile_loadPayloads 1;
+    }
+}
+
+// stageFromFile_UISetup
+// creates the options of the stageFromFile dialog
+global proc string stageFromFile_UISetup(string $parent) {
+    setParent $parent;
+    string $layout = `scrollLayout -childResizable true`;
+
+    frameLayout -label "USD File Options" -collapsable false;
+    textFieldGrp -l "Prim Path:" 
+        -ann "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded." 
+        -sbm "Loads the specified prim path" 
+        primPathField;
+    textFieldGrp -l "Exclude Prim Paths:" 
+        -ann "Excludes the specified prim paths from the loaded USD data. Multiple prim paths must be separated by a comma." 
+        -sbm "Excludes the specified prim paths from the loaded USD data" 
+        excludePrimPathField;
+    checkBoxGrp -l "Load Payloads:" 
+        -ann "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded." 
+        -sbm "Loads prims marked as payloads" 
+        loadPayloadsCheckBox;
+
+    return $layout;
+}
+
+// stageFromFile_UIInit
+// init defaults values for the options of the stageFromFile dialog
+global proc stageFromFile_UIInit(string $parent, string $filterType) {
+    setOptionVars(false);
+
+    string $ppath = `optionVar -q stageFromFile_primPath`;
+    string $exppath = `optionVar -q stageFromFile_excludePrimPath`;
+    int $loadp = `optionVar -q stageFromFile_loadPayloads`;
+
+    setParent $parent;
+    textFieldGrp -e -text $ppath primPathField;
+    textFieldGrp -e -text $exppath excludePrimPathField;
+    checkBoxGrp -e -value1 $loadp loadPayloadsCheckBox;
+}
+
+global proc stageFromFile_UICommit(string $parent) {
+    setParent $parent;
+
+    // fetch values
+    optionVar -stringValue stageFromFile_primPath
+        (`textFieldGrp -q -text  primPathField`);
+    optionVar -stringValue stageFromFile_excludePrimPath
+        (`textFieldGrp -q -text  excludePrimPathField`);
+    optionVar -intValue stageFromFile_loadPayloads
+        (`checkBoxGrp -q -value1 loadPayloadsCheckBox`);
+}
+
+proc doCreateStage(string $fileName) {
+    // actually load the file
+    string $baseName = capitalizeString(`basenameEx $fileName`);
+    if( isValidObjectName($baseName) )
+        $baseName += "_usd";
+    else
+        $baseName = "UsdStage";
+
+    string $ppath = `optionVar -q stageFromFile_primPath`;
+    string $exppath = `optionVar -q stageFromFile_excludePrimPath`;
+    int $loadp = `optionVar -q stageFromFile_loadPayloads`;
+
+    string $shapeNode = `createNode "mayaUsdProxyShape" -skipSelect -name ($baseName+"Shape")`;
+    setAttr -type "string" ($shapeNode+".filePath") $fileName;
+    setAttr -type "string" ($shapeNode+".primPath") $ppath;
+    setAttr -type "string" ($shapeNode+".excludePrimPaths") $exppath;
+    setAttr ($shapeNode+".loadPayloads") $loadp;
+    connectAttr time1.outTime ($shapeNode+".time");
+    select -r $shapeNode;
+}
+
+global proc createStageFromExistingCallback(string $parent, int $doIt)
+{
+    stageFromFile_UICommit($parent);
+
+    if ($doIt) {
+        mayaUsd_createStageFromFile; 
+        addToRecentCommandQueue "mayaUsd_createStageFromFile" 
+            "mayaUsdCreateStageFromFile";
+    }
+}
+
+global proc createStageFromExistingSetup(string $parent, int $forceFactorySettings)
+{
+    setOptionVars($forceFactorySettings);
+
+    stageFromFile_UIInit($parent, "");
+}
+
+global proc mayaUsd_createStageFromFileOptions()
+{
+    global int $gOptionBoxTemplateFrameSpacing;
+
+    setOptionVars(false);
+
+    string $commandName = "createStageFromExisting";
+    string $callback = ($commandName + "Callback");
+    string $setup = ($commandName + "Setup");
+
+    string $layout = getOptionBox();
+    setParent $layout;
+
+    setOptionBoxCommandName($commandName);
+
+    setUITemplate -pushTemplate DefaultTemplate;
+
+    string $parent = `formLayout createStageFromExistingOptions`;
+
+    string $settingsFrame = stageFromFile_UISetup($parent);
+
+    formLayout -e
+        -af $settingsFrame "top" $gOptionBoxTemplateFrameSpacing
+        -af $settingsFrame "left" $gOptionBoxTemplateFrameSpacing
+        -af $settingsFrame "right" $gOptionBoxTemplateFrameSpacing
+        -af $settingsFrame "bottom"  $gOptionBoxTemplateFrameSpacing
+        $parent;
+
+    string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
+    button -edit -label "Create Stage"
+        -command ($callback + " " + $parent + " " + 1 + "; hideOptionBox;")
+        $applyCloseBtn;
+
+    string $applyBtn = getOptionBoxApplyBtn();
+    button -edit -label "Save and Close"
+        -command ($callback + " " + $parent + " " + 0 + "; hideOptionBox;")
+        $applyBtn;
+
+    string $cancelBtn = getOptionBoxCloseBtn();
+    button -edit -label "Cancel"
+        -command ("hideOptionBox;")
+        $cancelBtn;
+
+    string $resetBtn = getOptionBoxResetBtn();
+    button -edit 
+        -command ($setup + " " + $parent + " " + 1)
+        $resetBtn;
+
+    string $saveBtn = getOptionBoxSaveBtn();
+    button -edit 
+        -command ($callback + " " + $parent + " " + 0)
+        $saveBtn;
+
+    setOptionBoxTitle("Create USD Stage from File Options");
+
+    setOptionBoxHelpTag( "" );
+
+    eval (($setup + " " + $parent + " " + 0));	
+
+    showOptionBox();
+}
+
+global proc mayaUsd_createStageFromFile() {
+    setOptionVars(false);
+    
+    string $result[] = `fileDialog2 
+        -fileMode 1
+        -caption "Create USD Stage from File"
+        -fileFilter "All USD Files (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz"
+        -okCaption "Create"
+        -optionsUICreate "stageFromFile_UISetup"
+        -optionsUIInit "stageFromFile_UIInit"
+        -optionsUICommit "stageFromFile_UICommit"`;
+
+    if (size($result) > 0) {
+        doCreateStage($result[0]);
+    }
+        
+}

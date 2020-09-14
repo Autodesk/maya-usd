@@ -1,0 +1,79 @@
+name: Pre-flight build on pull request
+
+# Trigger the workflow on pull request (assigned) event for the branch
+# https://help.github.com/en/actions/reference/events-that-trigger-workflows
+on:
+  pull_request:
+    branches: [dev]
+    types:    [assigned]
+
+jobs:
+
+  # Wait for remote build to start and finish, report results
+  build_preflight:
+      timeout-minutes: 400
+      runs-on: ubuntu-latest
+      if: ${{ github.event.assignee.login == 'ecp-maya-devops-adsk' }}
+      steps:
+
+        # Build start info will be committed here when the remote build is launched
+        - name: Setup transfer repo
+          uses: actions/checkout@v2
+          with:
+            repository: ecp-maya-devops-adsk/log-transfer
+            ref: transfer
+            path: transfer
+
+        # Echo the file name - it's hard to find the run_id in the UI
+        - name: Echo the expected start file name
+          run: "echo ${{ github.run_id }}_${{ github.run_number }}_start.txt"
+
+        # Wait for remote build to start
+        - name: Wait until remote build starts
+          shell: bash
+          # 180 minutes wait time. There will be overhead for the git pull command, so actual wait time will be slightly more than 180 minutes
+          run: "cd transfer ; for (( i=0; i<180; i++ )) ; do if [ -f ${{ github.run_id }}_${{ github.run_number }}_start.txt ] ; then break ; fi ; git pull --quiet ; sleep 60 ; false ; done || exit 1"
+
+        # Show contents of start file
+        - name: Show build start information
+          shell: bash
+          run: "cat transfer/${{ github.run_id }}_${{ github.run_number }}_start.txt"
+
+        # Grep the start file to show failures
+        - name: Exit with error if a build failed to start
+          # Default shell includes "-o pipefail" and "-e". Specify a different shell
+          shell: bash --noprofile --norc {0}
+          run: "if grep -i failed transfer/${{ github.run_id }}_${{ github.run_number }}_start.txt; then exit 1; else exit 0; fi"
+
+        # Echo the file name - it's hard to find the run_id in the UI
+        - name: Echo the expected result file name
+          run: "echo ${{ github.run_id }}_${{ github.run_number }}_result.txt"
+
+        # Wait for remote build to finish and commit results to git
+        - name: Wait until build results are available
+          shell: bash
+          # 180 minutes wait time. There will be overhead for the git pull command, so actual wait time will be slightly more than 180 minutes
+          run: "cd transfer ; for (( i=0; i<180; i++ )) ; do if [ -f ${{ github.run_id }}_${{ github.run_number }}_result.txt ] ; then break ; fi ; git pull --quiet ; sleep 60 ; false ; done || exit 1"
+
+        # List files related to this build
+        - name: List files in transfer directory
+          shell: bash
+          run: "ls -lap transfer/${{ github.run_id }}_${{ github.run_number }}_*"
+
+        # Upload files related to this build
+        - name: Upload files in transfer directory as artifacts
+          uses: actions/upload-artifact@v2
+          with:
+            name: build logs
+            path: "transfer/${{ github.run_id }}_${{ github.run_number }}_*"
+
+        # Show contents of result file
+        - name: Show build result information
+          shell: bash
+          run: "cat transfer/${{ github.run_id }}_${{ github.run_number }}_result.txt"
+
+        # Grep the results file to show failures
+        - name: Exit with error if a build failed
+          # Default shell includes "-o pipefail" and "-e". Specify a different shell
+          shell: bash --noprofile --norc {0}
+          run: "if grep -i failed transfer/${{ github.run_id }}_${{ github.run_number }}_result.txt; then exit 1; else exit 0; fi"

@@ -17,7 +17,7 @@
 
 #include <pxr/base/tf/envSetting.h>
 
-#include "delegateRegistry.h"
+#include <hdMaya/delegates/delegateRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

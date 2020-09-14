@@ -16,22 +16,22 @@
 #ifndef HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 #define HDMAYA_MATERIAL_NETWORK_CONVERTER_H
 
-#include "../api.h"
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
 
 #include <pxr/base/tf/token.h>
-
 #include <pxr/imaging/hd/material.h>
-
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
+#include <hdMaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HdMayaShaderParam {
-    HdMaterialParam param;
+    TfToken name;
+    VtValue fallbackValue;
+
     SdfValueTypeName type;
 
     HDMAYA_API
@@ -139,6 +139,11 @@ public:
 
     HDMAYA_API static VtValue ConvertMayaAttrToValue(
         MFnDependencyNode& node, const MString& plugName,
+        const SdfValueTypeName& type, const VtValue* fallback = nullptr,
+        MPlug* outPlug = nullptr);
+
+    HDMAYA_API static VtValue ConvertMayaAttrToScaledValue(
+        MFnDependencyNode& node, const MString& plugName, const MString& scaleName,
         const SdfValueTypeName& type, const VtValue* fallback = nullptr,
         MPlug* outPlug = nullptr);
 

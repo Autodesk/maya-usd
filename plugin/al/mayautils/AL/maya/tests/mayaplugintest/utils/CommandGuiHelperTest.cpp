@@ -16,10 +16,10 @@
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/tests/mayaplugintest/utils/CommandGuiHelperTest.h"
 
-#include "maya/MString.h"
-#include "maya/MGlobal.h"
-#include "maya/MSyntax.h"
-#include "maya/MArgDatabase.h"
+#include <maya/MString.h>
+#include <maya/MGlobal.h>
+#include <maya/MSyntax.h>
+#include <maya/MArgDatabase.h>
 
 #include <cmath>
 #include <iostream>

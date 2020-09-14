@@ -17,7 +17,7 @@
 
 #include "AL/maya/utils/Api.h"
 
-#include "maya/MGlobal.h"
+#include <maya/MGlobal.h>
 
 #include <iostream>
 #include <set>

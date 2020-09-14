@@ -23,7 +23,7 @@
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
 
-#include "maya/MFnDagNode.h"
+#include <maya/MFnDagNode.h>
 
 namespace AL {
 namespace usdmaya {
@@ -176,7 +176,7 @@ void ProxyShapePostLoadProcess::createTranformChainsForSchemaPrims(
             newpath = ptrNode->makeUsdTransformChain(usdPrim.GetParent(), modifier, nodes::ProxyShape::kRequired, &modifier2, 0, pushToPrim, readAnimatedValues);
           }
         }
-        objsToCreate.push_back(std::make_pair(newpath, usdPrim));
+        objsToCreate.emplace_back(newpath, usdPrim);
       }
       else
       {

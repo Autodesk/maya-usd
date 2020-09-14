@@ -14,13 +14,15 @@
 // limitations under the License.
 //
 #pragma once
+
+#include <mayaUsdUtils/ForwardDeclares.h>
+
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
 #include "AL/maya/utils/ForwardDeclares.h"
-#include "AL/usd/utils/ForwardDeclares.h"
 
-#include "pxr/pxr.h"
-#include "pxr/base/tf/token.h"
+#include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

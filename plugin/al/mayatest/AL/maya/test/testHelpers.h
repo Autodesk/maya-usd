@@ -17,12 +17,12 @@
 
 #include <gtest/gtest.h>
 
-#include "maya/MAngle.h"
-#include "maya/MDistance.h"
-#include "maya/MFnDependencyNode.h"
-#include "maya/MPlug.h"
-#include "maya/MString.h"
-#include "maya/MTime.h"
+#include <maya/MAngle.h>
+#include <maya/MDistance.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
+#include <maya/MString.h>
+#include <maya/MTime.h>
 
 #include <cstdint>
 #include <iostream>
@@ -207,8 +207,8 @@ AL_MAYA_TEST_PUBLIC void randomNode(MObject node, const char* const attributeNam
 //----------------------------------------------------------------------------------------------------------------------
 // make a random plug full of random data that is animated in the range startFrame -> endFrame
 //----------------------------------------------------------------------------------------------------------------------
-AL_MAYA_TEST_PUBLIC void randomAnimatedNode(MObject node, const char* const attributeNames[], const uint32_t attributeCount, double startFrame, double endFrame);
-AL_MAYA_TEST_PUBLIC void randomAnimatedValue(MPlug plug, double startFrame, double endFrame);
+AL_MAYA_TEST_PUBLIC void randomAnimatedNode(MObject node, const char* const attributeNames[], const uint32_t attributeCount, double startFrame, double endFrame, bool forceKeyframe=false);
+AL_MAYA_TEST_PUBLIC void randomAnimatedValue(MPlug plug, double startFrame, double endFrame, bool forceKeyframe=false);
 
 
 //----------------------------------------------------------------------------------------------------------------------

@@ -17,10 +17,9 @@
 #define HDMAYA_ADAPTER_TOKENS_H
 
 #include <pxr/pxr.h>
-
 #include <pxr/base/tf/staticTokens.h>
 
-#include "../api.h"
+#include <hdMaya/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -30,6 +29,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (clearcoat)                               \
     (clearcoatRoughness)                      \
     (emissiveColor)                           \
+    (specular)                                \
     (specularColor)                           \
     (metallic)                                \
     (useSpecularWorkflow)                     \
@@ -37,11 +37,23 @@ PXR_NAMESPACE_OPEN_SCOPE
     (ior)                                     \
     (normal)                                  \
     (opacity)                                 \
+    (diffuse)                                 \
     (diffuseColor)                            \
     (displacement)                            \
+    (base)                                    \
+    (baseColor)                               \
+    (emission)                                \
+    (emissionColor)                           \
+    (metalness)                               \
+    (specularIOR)                             \
+    (specularRoughness)                       \
+    (coat)                                    \
+    (coatRoughness)                           \
+    (transmission)                            \
     (lambert)                                 \
     (blinn)                                   \
     (phong)                                   \
+    (standardSurface)                         \
     (file)                                    \
     (place2dTexture)                          \
     (fileTextureName)                         \

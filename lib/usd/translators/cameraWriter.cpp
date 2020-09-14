@@ -13,33 +13,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
 #include "cameraWriter.h"
-
-#include "../../fileio/utils/adaptor.h"
-#include "../../fileio/primWriter.h"
-#include "../../fileio/primWriterRegistry.h"
-#include "../../utils/util.h"
-#include "../../fileio/writeJobContext.h"
-
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/tf/diagnostic.h"
-#include "pxr/usd/sdf/path.h"
-#include "pxr/usd/usd/timeCode.h"
-#include "pxr/usd/usdGeom/camera.h"
-#include "pxr/usd/usdGeom/tokens.h"
-#include "pxr/usd/usdUtils/pipeline.h"
 
 #include <maya/MFnCamera.h>
 #include <maya/MFnDependencyNode.h>
 
+#include <pxr/pxr.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/camera.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usd/usdUtils/pipeline.h>
+
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 PXRUSDMAYA_REGISTER_WRITER(camera, PxrUsdTranslators_CameraWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(camera, UsdGeomCamera);
-
 
 PxrUsdTranslators_CameraWriter::PxrUsdTranslators_CameraWriter(
         const MFnDependencyNode& depNodeFn,
@@ -102,9 +100,9 @@ PxrUsdTranslators_CameraWriter::writeCameraAttrs(
     // Using SetFromCamera() would stomp them with a single "transform" xformOp.
 
     if (camFn.isOrtho()) {
-        _SetAttribute(primSchema.GetProjectionAttr(),
-                      UsdGeomTokens->orthographic,
-                      usdTime);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetProjectionAttr(),
+                                       UsdGeomTokens->orthographic,
+                                       usdTime, _GetSparseValueWriter());
 
         // Contrary to the documentation, Maya actually stores the orthographic
         // width in centimeters (Maya's internal unit system), not inches.
@@ -113,15 +111,15 @@ PxrUsdTranslators_CameraWriter::writeCameraAttrs(
         // It doesn't seem to be possible to specify a non-square orthographic
         // camera in Maya, and aspect ratio, lens squeeze ratio, and film
         // offset have no effect.
-        _SetAttribute(primSchema.GetHorizontalApertureAttr(),
-                      static_cast<float>(orthoWidth), usdTime);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetHorizontalApertureAttr(),
+                      static_cast<float>(orthoWidth), usdTime, _GetSparseValueWriter());
 
-        _SetAttribute(primSchema.GetVerticalApertureAttr(),
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetVerticalApertureAttr(),
                       static_cast<float>(orthoWidth),
-                      usdTime);
+                       usdTime, _GetSparseValueWriter());
     } else {
-        _SetAttribute(primSchema.GetProjectionAttr(),
-                      UsdGeomTokens->perspective, usdTime);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetProjectionAttr(),
+                      UsdGeomTokens->perspective, usdTime, _GetSparseValueWriter());
 
         // Lens squeeze ratio applies horizontally only.
         const double horizontalAperture = UsdMayaUtil::ConvertInchesToMM(
@@ -136,36 +134,36 @@ PxrUsdTranslators_CameraWriter::writeCameraAttrs(
         const double verticalApertureOffset = UsdMayaUtil::ConvertInchesToMM(
             (camFn.shakeEnabled() ? camFn.verticalFilmOffset() + camFn.verticalShake() : camFn.verticalFilmOffset()));
 
-        _SetAttribute(primSchema.GetHorizontalApertureAttr(),
-                      static_cast<float>(horizontalAperture), usdTime);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetHorizontalApertureAttr(),
+                      static_cast<float>(horizontalAperture), usdTime, _GetSparseValueWriter());
 
-        _SetAttribute(primSchema.GetVerticalApertureAttr(),
-                      static_cast<float>(verticalAperture), usdTime);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetVerticalApertureAttr(),
+                      static_cast<float>(verticalAperture), usdTime, _GetSparseValueWriter());
 
-        _SetAttribute(primSchema.GetHorizontalApertureOffsetAttr(),
-                      static_cast<float>(horizontalApertureOffset), usdTime);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetHorizontalApertureOffsetAttr(),
+                      static_cast<float>(horizontalApertureOffset), usdTime, _GetSparseValueWriter());
 
-        _SetAttribute(primSchema.GetVerticalApertureOffsetAttr(),
-                      static_cast<float>(verticalApertureOffset), usdTime);
+        UsdMayaWriteUtil::SetAttribute(primSchema.GetVerticalApertureOffsetAttr(),
+                      static_cast<float>(verticalApertureOffset), usdTime, _GetSparseValueWriter());
     }
 
     // Set the lens parameters.
-    _SetAttribute(primSchema.GetFocalLengthAttr(),
-                  static_cast<float>(camFn.focalLength()), usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetFocalLengthAttr(),
+                  static_cast<float>(camFn.focalLength()), usdTime, _GetSparseValueWriter());
 
     // Always export focus distance and fStop regardless of what
     // camFn.isDepthOfField() says. Downstream tools can choose to ignore or
     // override them.
-    _SetAttribute(primSchema.GetFocusDistanceAttr(),
-                  static_cast<float>(camFn.focusDistance()), usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetFocusDistanceAttr(),
+                  static_cast<float>(camFn.focusDistance()), usdTime, _GetSparseValueWriter());
 
-    _SetAttribute(primSchema.GetFStopAttr(),
-                  static_cast<float>(camFn.fStop()), usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetFStopAttr(),
+                  static_cast<float>(camFn.fStop()), usdTime, _GetSparseValueWriter());
 
     // Set the clipping planes.
     GfVec2f clippingRange(camFn.nearClippingPlane(), camFn.farClippingPlane());
-    _SetAttribute(primSchema.GetClippingRangeAttr(), clippingRange,
-                  usdTime);
+    UsdMayaWriteUtil::SetAttribute(primSchema.GetClippingRangeAttr(), clippingRange,
+                                    usdTime, _GetSparseValueWriter());
 
     return true;
 }

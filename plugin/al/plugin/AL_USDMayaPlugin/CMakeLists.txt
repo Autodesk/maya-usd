@@ -5,6 +5,9 @@ add_library(
     plugin.cpp
 )
 
+# compiler configuration
+mayaUsd_compile_config(${PXR_PACKAGE})
+
 target_compile_definitions(${PXR_PACKAGE}
     PRIVATE
         AL_USDMAYA_PLUGIN_EXPORT
@@ -18,7 +21,7 @@ target_link_libraries(${PXR_PACKAGE}
     AL_EventSystem
     AL_USDMayaUtils
     AL_MayaUtils
-    AL_USDUtils
+    mayaUsdUtils
     AL_USDMaya
     ${MAYA_LIBRARIES}
 )
@@ -29,7 +32,7 @@ target_include_directories(${PXR_PACKAGE}
         "../../lib/AL_USDMaya"
 )
 
-MAYA_SET_PLUGIN_PROPERTIES(${PXR_PACKAGE})
+maya_set_plugin_properties(${PXR_PACKAGE})
 
 # handle run-time search paths
 if(IS_MACOSX OR IS_LINUX) 

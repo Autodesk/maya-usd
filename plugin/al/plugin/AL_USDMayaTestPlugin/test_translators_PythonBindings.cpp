@@ -40,12 +40,17 @@ TEST(translators_PythonBindings, import)
   prim.GetDepthAttr().Set(3.4f);
   stage->Save();
 
-  auto pythonscript = MString("\"") + AL_USDMAYA_TEST_DATA +
-                      MString("/../py/examplecubetranslator.py\"");
+  auto pythonscript = MString("'") + AL_USDMAYA_TEST_DATA +
+                      MString("/../py/examplecubetranslator.py'");
 
-  auto status = MGlobal::executePythonCommand(
-      MString {"execfile("} + pythonscript + ")\n"
-  );
+  MString pyExecCmd;
+  pyExecCmd.format(
+    "file = ^1s;\n"
+    "globals = {'__file__': ^1s, '__name__': '__main__'};\n"
+    "exec(compile(open(file, 'rb').read(), file, 'exec'), globals);\n",
+    pythonscript);
+
+  auto status = MGlobal::executePythonCommand(pyExecCmd);
   ASSERT_TRUE(status);
 
   MFnDagNode fnd;
@@ -72,12 +77,17 @@ TEST(translators_PythonBindings, import)
 
 TEST(translators_PythonBindings, unknownType)
 {
-  auto pythonscript = MString("\"") + AL_USDMAYA_TEST_DATA +
-                      MString("/unknowntypetranslator.py\"");
+  auto pythonscript = MString("'") + AL_USDMAYA_TEST_DATA +
+                      MString("/unknowntypetranslator.py'");
 
-  auto status = MGlobal::executePythonCommand(
-      MString {"execfile("} + pythonscript + ")\n"
-  );
+  MString pyExecCmd;
+  pyExecCmd.format(
+    "file = ^1s;\n"
+    "globals = {'__file__': ^1s, '__name__': '__main__'};\n"
+    "exec(compile(open(file, 'rb').read(), file, 'exec'), globals);\n",
+    pythonscript);
+
+  auto status = MGlobal::executePythonCommand(pyExecCmd);
   ASSERT_TRUE(status);
 
   auto pythonTranslators = TranslatorManufacture::getPythonTranslators();

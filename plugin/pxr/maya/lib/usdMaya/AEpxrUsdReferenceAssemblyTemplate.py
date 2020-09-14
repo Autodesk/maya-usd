@@ -160,7 +160,7 @@ def variantSets_Replace(nodeAttr, new):
 
         try:
             cmds.optionMenuGrp(omg, e=True, value=variantOverride)
-        except RuntimeError, e:
+        except RuntimeError:
             cmds.warning('Invalid choice %r for %r'%(variantOverride, variantSetName))
 
         cmds.optionMenuGrp(omg, e=True, changeCommand=functools.partial(variantSets_changeCommmand, omg=omg, node=node, variantSetName=variantSetName))

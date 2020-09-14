@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "pxr/pxr.h"
+#include <pxr/pxr.h>
 #include "usdMaya/referenceAssembly.h"
 
 #include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/pyContainerConversions.h"
+#include <pxr/base/tf/pyContainerConversions.h>
 
 #include <maya/MFnAssembly.h>
 #include <maya/MObject.h>

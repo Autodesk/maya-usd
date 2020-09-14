@@ -13,16 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "./FrameRange.h"
-#include "pxr/usd/usd/schemaBase.h"
+#include "FrameRange.h"
 
-#include "pxr/usd/sdf/primSpec.h"
-
-#include "pxr/usd/usd/pyConversions.h"
-#include "pxr/base/tf/pyContainerConversions.h"
-#include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyUtils.h"
-#include "pxr/base/tf/wrapTypeHelpers.h"
+#include <pxr/base/tf/pyContainerConversions.h>
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/pyUtils.h>
+#include <pxr/base/tf/wrapTypeHelpers.h>
+#include <pxr/usd/sdf/primSpec.h>
+#include <pxr/usd/usd/pyConversions.h>
+#include <pxr/usd/usd/schemaBase.h>
 
 #include <boost/python.hpp>
 

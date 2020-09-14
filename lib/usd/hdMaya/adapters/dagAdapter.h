@@ -16,17 +16,6 @@
 #ifndef HDMAYA_DG_ADAPTER_H
 #define HDMAYA_DG_ADAPTER_H
 
-#include <pxr/pxr.h>
-
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/gf/range3d.h>
-
-#include <pxr/base/tf/token.h>
-
-#include <pxr/imaging/hd/meshTopology.h>
-#include <pxr/imaging/hd/renderIndex.h>
-#include <pxr/imaging/hd/sceneDelegate.h>
-
 #include <functional>
 
 #include <maya/MBoundingBox.h>
@@ -34,12 +23,19 @@
 #include <maya/MFn.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MMatrix.h>
-
 #include <maya/MMessage.h>
 
-#include "adapter.h"
-#include "adapterDebugCodes.h"
-#include "../utils.h"
+#include <pxr/pxr.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/range3d.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/meshTopology.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+
+#include <hdMaya/adapters/adapter.h>
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/utils.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

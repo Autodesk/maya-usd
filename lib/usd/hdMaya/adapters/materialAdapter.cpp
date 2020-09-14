@@ -15,39 +15,33 @@
 //
 #include "materialAdapter.h"
 
-#include <pxr/base/tf/fileUtils.h>
-
-#include <pxr/imaging/hd/instanceRegistry.h>
-#include <pxr/imaging/hd/material.h>
-#include <pxr/imaging/hd/resourceRegistry.h>
-#include <pxr/imaging/hdSt/resourceRegistry.h>
-
-#include <pxr/imaging/glf/contextCaps.h>
-#include <pxr/imaging/glf/textureRegistry.h>
-#include <pxr/imaging/glf/udimTexture.h>
-#include <pxr/imaging/hdSt/textureResource.h>
-#include <pxr/imaging/hio/glslfx.h>
-#include <pxr/usdImaging/usdImaging/textureUtils.h>
-#include <pxr/usdImaging/usdImaging/tokens.h>
-#include <pxr/usdImaging/usdImagingGL/package.h>
-
-#if USD_VERSION_NUM >= 1911
-#include <pxr/imaging/hdSt/textureResourceHandle.h>
-#endif
-
-#include <pxr/usd/sdf/types.h>
-
-#include <pxr/usd/sdr/registry.h>
-
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 
-#include "adapterRegistry.h"
-#include "materialNetworkConverter.h"
-#include "mayaAttrs.h"
-#include "tokens.h"
-#include "../utils.h"
+#include <pxr/base/tf/fileUtils.h>
+#include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/glf/textureRegistry.h>
+#include <pxr/imaging/glf/udimTexture.h>
+#include <pxr/imaging/hd/instanceRegistry.h>
+#include <pxr/imaging/hd/material.h>
+#include <pxr/imaging/hd/resourceRegistry.h>
+#include <pxr/imaging/hdSt/resourceRegistry.h>
+#include <pxr/imaging/hdSt/textureResource.h>
+#include <pxr/imaging/hio/glslfx.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/sdr/registry.h>
+#include <pxr/usdImaging/usdImaging/textureUtils.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
+#include <pxr/usdImaging/usdImagingGL/package.h>
+
+#include <hdMaya/adapters/adapterRegistry.h>
+#include <hdMaya/adapters/materialNetworkConverter.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/adapters/tokens.h>
+#include <hdMaya/utils.h>
+
+#include <pxr/imaging/hdSt/textureResourceHandle.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -168,11 +162,7 @@ HdMayaShaderParams::const_iterator _FindPreviewParam(const TfToken& id) {
     return std::lower_bound(
             previewShaderParams.cbegin(), previewShaderParams.cend(), id,
             [](const HdMayaShaderParam& param, const TfToken& id){
-#if USD_VERSION_NUM >= 1911
-                return param.param.name < id;
-#else
-                return param.param.GetName() < id;
-#endif
+                return param.name < id;
             }
     );
 }
@@ -188,11 +178,7 @@ const VtValue& HdMayaMaterialAdapter::GetPreviewMaterialParamValue(
             paramName.GetText());
         return _emptyValue;
     }
-#if USD_VERSION_NUM >= 1911
-    return it->param.fallbackValue;
-#else
-    return it->param.GetFallbackValue();
-#endif
+    return it->fallbackValue;
 }
 
 HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(
@@ -227,24 +213,14 @@ VtValue HdMayaMaterialAdapter::GetPreviewMaterialResource(
     HdMaterialNode node;
     node.path = materialID;
     node.identifier = UsdImagingTokens->UsdPreviewSurface;
-#if USD_VERSION_NUM >= 1911
     map.terminals.push_back(node.path);
-#endif
     for (const auto& it :
          HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
         node.parameters.emplace(
-#if USD_VERSION_NUM >= 1911
-            it.param.name, it.param.fallbackValue);
-#else
-            it.param.GetName(), it.param.GetFallbackValue());
-#endif
+            it.name, it.fallbackValue);
     }
     network.nodes.push_back(node);
-#if USD_VERSION_NUM >= 1911
     map.map.emplace(HdMaterialTerminalTokens->surface, network);
-#else
-    map.map.emplace(UsdImagingTokens->bxdf, network);
-#endif
     return VtValue(map);
 }
 
@@ -379,13 +355,6 @@ private:
                         connectedFileObj, filePath,
                         GetDelegate()->GetParams().textureMemoryPerTexture);
                     textureInstance.SetValue(textureResource);
-#if USD_VERSION_NUM < 1911
-                    _textureResources[paramName] = textureResource;
-                }
-                else {
-                    _textureResources[paramName] = textureInstance.GetValue();
-                }
-#else // USD_VERSION_NUM == 1911
                 }
 
                 HdStTextureResourceSharedPtr texResource =
@@ -414,7 +383,6 @@ private:
                     handleInstance.GetValue()->SetTextureResource(texResource);
                 }
                 _textureResourceHandles[paramName] = handleInstance.GetValue();
-#endif // USD_VERSION_NUM < 1911
 
                 if (GlfIsSupportedUdimTexture(filePath)) {
                     if (TfDebug::IsEnabled(HDMAYA_ADAPTER_MATERIALS) &&
@@ -434,11 +402,8 @@ private:
                     .Msg(
                         "  ...failed registering texture - could not get "
                         "textureID\n");
-#if USD_VERSION_NUM >= 1911
+
                 _textureResourceHandles[paramName].reset();
-#else // USD_VERSION_NUM < 1911
-                _textureResources[paramName].reset();
-#endif // USD_VERSION_NUM >= 1911
             }
         }
         return false;
@@ -458,11 +423,7 @@ private:
         for (const auto& it :
              HdMayaMaterialNetworkConverter::GetPreviewShaderParams()) {
             auto textureType = HdTextureType::Uv;
-#if USD_VERSION_NUM >= 1911
-            auto remappedName = it.param.name;
-#else // USD_VERSION_NUM < 1911
-            auto remappedName = it.param.GetName();
-#endif // USD_VERSION_NUM >= 1911
+            auto remappedName = it.name;
             auto attrConverter = nodeConverter->GetAttrConverter(remappedName);
             if (attrConverter) {
                 TfToken tempName = attrConverter->GetPlugName(remappedName);
@@ -471,13 +432,9 @@ private:
 
             if (_RegisterTexture(node, remappedName, textureType)) {
                 ret.emplace_back(
-#if USD_VERSION_NUM >= 1911
-                    HdMaterialParam::ParamTypeTexture, it.param.name,
-                    it.param.fallbackValue,
-#else // USD_VERSION_NUM < 1911
-                    HdMaterialParam::ParamTypeTexture, it.param.GetName(),
-                    it.param.GetFallbackValue(),
-#endif // USD_VERSION_NUM >= 1911
+                    HdMaterialParam::ParamTypeTexture, it.name,
+                    it.fallbackValue,
+
                     GetID().AppendProperty(remappedName), _stSamplerCoords,
                     textureType);
 
@@ -485,13 +442,13 @@ private:
                     .Msg(
                         "HdMayaShadingEngineAdapter: registered texture with "
                         "connection path: %s\n",
-#if USD_VERSION_NUM >= 1911
+
                         ret.back().connection.GetText());
-#else // USD_VERSION_NUM < 1911
-                        ret.back().GetConnection().GetText());
-#endif // USD_VERSION_NUM >= 1911
             } else {
-                ret.emplace_back(it.param);
+                ret.emplace_back(
+                    HdMaterialParam::ParamTypeTexture,
+                    it.name,
+                    it.fallbackValue);
             }
         }
 
@@ -524,13 +481,8 @@ private:
         auto attrConverter = nodeConverter->GetAttrConverter(paramName);
         if (attrConverter) {
             return attrConverter->GetValue(
-#if USD_VERSION_NUM >= 1911
-                node, previewIt->param.name, previewIt->type,
-                &previewIt->param.fallbackValue);
-#else // USD_VERSION_NUM < 1911
-                node, previewIt->param.GetName(), previewIt->type,
-                &previewIt->param.GetFallbackValue());
-#endif // USD_VERSION_NUM >= 1911
+                node, previewIt->name, previewIt->type,
+                &previewIt->fallbackValue);
         } else {
             return GetPreviewMaterialParamValue(paramName);
         }
@@ -620,15 +572,12 @@ private:
         }
 
         HdMaterialNetworkMap materialNetworkMap;
-#if USD_VERSION_NUM >= 1911
         materialNetworkMap.map[HdMaterialTerminalTokens->surface] = materialNetwork;
         if (!materialNetwork.nodes.empty()) {
             materialNetworkMap.terminals.push_back(
                 materialNetwork.nodes.back().path);
         }
-#else
-        materialNetworkMap.map[UsdImagingTokens->bxdf] = materialNetwork;
-#endif
+
         // HdMaterialNetwork displacementNetwork;
         // materialNetworkMap.map[HdMaterialTerminalTokens->displacement] =
         // displacementNetwork;
@@ -677,15 +626,10 @@ private:
     TfToken _surfaceShaderType;
     // So they live long enough
 
-#if USD_VERSION_NUM >= 1911
     std::unordered_map<
         TfToken, HdStTextureResourceHandleSharedPtr, TfToken::HashFunctor>
         _textureResourceHandles;
-#else // USD_VERSION_NUM >= 1911
-    std::unordered_map<
-        TfToken, HdTextureResourceSharedPtr, TfToken::HashFunctor>
-        _textureResources;
-#endif
+
     MCallbackId _surfaceShaderCallback;
 #ifdef HDMAYA_OIT_ENABLED
     bool _isTranslucent = false;
