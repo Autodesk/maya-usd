@@ -6,8 +6,7 @@ set(TEST_SCRIPT_FILES
     testDeleteCmd.py
     testMatrices.py
     testMayaPickwalk.py
-    testRotatePivot.py
-	testSelection.py
+    testSelection.py
     testUfePythonImport.py
 )
 
@@ -28,6 +27,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testRename.py
         testParentCmd.py
         testRotateCmd.py
+        testRotatePivot.py
         testScaleCmd.py
         testSceneItem.py
         testTransform3dTranslate.py
