@@ -15,6 +15,8 @@
 //
 #include "UsdContextOps.h"
 
+#include "private/UfeNotifGuard.h"
+
 #include <cassert>
 
 #include <maya/MGlobal.h>
@@ -47,6 +49,9 @@ static constexpr char kUSDVariantSetsLabel[] = "Variant Sets";
 static constexpr char kUSDToggleVisibilityItem[] = "Toggle Visibility";
 static constexpr char kUSDMakeVisibleLabel[] = "Make Visible";
 static constexpr char kUSDMakeInvisibleLabel[] = "Make Invisible";
+static constexpr char kUSDToggleActiveStateItem[] = "Toggle Active State";
+static constexpr char kUSDActivatePrimLabel[] = "Activate Prim";
+static constexpr char kUSDDeactivatePrimLabel[] = "Deactivate Prim";
 static constexpr char kUSDAddNewPrimItem[] = "Add New Prim";
 static constexpr char kUSDAddNewPrimLabel[] = "Add New Prim";
 static constexpr char kUSDDefPrimItem[] = "Def";
@@ -88,6 +93,45 @@ private:
     UsdVariantSet     fVarSet;
     const std::string fOldSelection;
     const std::string fNewSelection;
+};
+
+//! \brief Undoable command for prim active state change
+class ToggleActiveStateCommand : public Ufe::UndoableCommand
+{
+public:
+    ToggleActiveStateCommand(const UsdPrim& prim)
+    {
+        _stage = prim.GetStage();
+        _primPath = prim.GetPath();
+        _active = prim.IsActive();
+    }
+
+    void undo() override
+    {
+        if (_stage) {
+            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (prim.IsValid()) {
+                MayaUsd::ufe::InAddOrDeleteOperation ad;
+                prim.SetActive(_active);
+            }
+        }
+    }
+
+    void redo() override
+    {
+        if (_stage) {
+            UsdPrim prim = _stage->GetPrimAtPath(_primPath);
+            if (prim.IsValid()) {
+                MayaUsd::ufe::InAddOrDeleteOperation ad;
+                prim.SetActive(!_active);
+            }
+        }
+    }
+
+private:
+    PXR_NS::UsdStageWeakPtr _stage;
+    PXR_NS::SdfPath _primPath;
+    bool _active;
 };
 
 const char* selectUSDFileScript = R"(
@@ -235,12 +279,14 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
             items.emplace_back(Ufe::ContextItem::kSeparator);
         }
 
-        // Top-level items.  Variant sets and visibility. Do not add for gateway type node.
+        // Top-level items (do not add for gateway type node):
         if (!fIsAGatewayType) {
+            // Variant sets:
             if (prim().HasVariantSets()) {
                 items.emplace_back(
                     kUSDVariantSetsItem, kUSDVariantSetsLabel, Ufe::ContextItem::kHasChildren);
             }
+            // Visibility:
             // If the item has a visibility attribute, add menu item to change visibility.
             // Note: certain prim types such as shaders & materials don't support visibility.
             auto attributes = Ufe::Attributes::attributes(sceneItem());
@@ -255,6 +301,8 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
                     items.emplace_back(kUSDToggleVisibilityItem, l);
                 }
             }
+            // Prim active state:
+            items.emplace_back(kUSDToggleActiveStateItem, prim().IsActive() ? kUSDDeactivatePrimLabel : kUSDActivatePrimLabel);
         }
 
         // Top level item - Add New Prim (for all context op types).
@@ -344,6 +392,9 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return visibility->setCmd(
             current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
     } // Visibility
+    else if (itemPath[0] == kUSDToggleActiveStateItem) {
+        return std::make_shared<ToggleActiveStateCommand>(prim());
+    } // ActiveState
     else if (!itemPath.empty() && (itemPath[0] == kUSDAddNewPrimItem)) {
         // Operation is to create a new prim of the type specified.
         if (itemPath.size() != 2u) {
