@@ -15,7 +15,7 @@
 //
 #include "usdReflectWriter.h"
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/utils/util.h>
 
@@ -49,7 +49,7 @@ public:
     TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 };
 
-PXRUSDMAYA_REGISTER_WRITER(phongE, PxrUsdTranslators_PhongEWriter);
+PXRUSDMAYA_REGISTER_SHADER_WRITER(phongE, PxrUsdTranslators_PhongEWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

@@ -68,13 +68,14 @@ target_include_directories(${TARGET_NAME}
 # -----------------------------------------------------------------------------
 # link libraries
 # -----------------------------------------------------------------------------
-target_link_libraries(${TARGET_NAME} 
+target_link_libraries(${TARGET_NAME}
+    PUBLIC
+        tf
     PRIVATE
         arch
         gf
         plug
         sdf
-        tf
         vt
         usdShade
         ${MAYA_LIBRARIES}
@@ -104,14 +105,6 @@ endif()
 #------------------------------------------------------------------------------
 # install
 #------------------------------------------------------------------------------
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/plugInfo.json"
-               "${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json"
-)
-
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/plugInfo.json
-    DESTINATION ${RESOURCES_INSTALL_PATH}
-)
-
 install(
     TARGETS ${TARGET_NAME}
     LIBRARY
@@ -127,8 +120,3 @@ if(IS_WINDOWS)
         DESTINATION ${LIBRARY_INSTALL_PATH} OPTIONAL
     )
 endif()
-
-install(
-    FILES AEpxrUsdPreviewSurfaceTemplate.mel
-    DESTINATION plugin/adsk/scripts
-)

@@ -31,6 +31,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testScaleCmd.py
         testSceneItem.py
         testTransform3dTranslate.py
+        testObservableScene.py
     )
 endif()
 

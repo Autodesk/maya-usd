@@ -22,6 +22,7 @@ from ufeTestUtils import ufeUtils, usdUtils, mayaUtils
 import ufe
 
 import unittest
+import os
 
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
@@ -90,8 +91,12 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        ufe.Scene.addObjectDeleteObserver(ufeObs)
-        ufe.Scene.addObjectAddObserver(ufeObs)
+
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         # Select two objects, one Maya, one USD.
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
@@ -192,8 +197,11 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        ufe.Scene.addObjectDeleteObserver(ufeObs)
-        ufe.Scene.addObjectAddObserver(ufeObs)
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
 
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
         sphereItem = ufe.Hierarchy.createItem(spherePath)

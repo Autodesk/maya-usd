@@ -15,7 +15,7 @@
 //
 #include "usdLambertWriter.h"
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/utils/util.h>
 
@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(lambert, PxrUsdTranslators_LambertWriter);
+PXRUSDMAYA_REGISTER_SHADER_WRITER(lambert, PxrUsdTranslators_LambertWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

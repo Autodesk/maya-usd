@@ -23,6 +23,7 @@ target_sources(${PROJECT_NAME}
         shaderReader.cpp
         shaderReaderRegistry.cpp
         shaderWriter.cpp
+        shaderWriterRegistry.cpp
         transformWriter.cpp
         writeJobContext.cpp
 )
@@ -48,6 +49,7 @@ set(HEADERS
     shaderReader.h
     shaderReaderRegistry.h
     shaderWriter.h
+    shaderWriterRegistry.h
     transformWriter.h
     writeJobContext.h
 )
