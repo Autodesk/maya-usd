@@ -36,6 +36,9 @@
 #include <mayaUsd/ufe/UsdObject3dHandler.h>
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
+#if UFE_PREVIEW_VERSION_NUM >= 2022
+#include <mayaUsd/ufe/UsdUIInfoHandler.h>
+#endif
 #include <ufe/pathString.h>
 #else
 #include <mayaUsd/ufe/UfeVersionCompat.h>
@@ -115,11 +118,17 @@ MStatus initialize()
 	UFE_V2(auto usdAttributesHandler = UsdAttributesHandler::create();)
 	UFE_V2(auto usdObject3dHandler = UsdObject3dHandler::create();)
 	UFE_V2(auto usdContextOpsHandler = UsdContextOpsHandler::create();)
+#if UFE_PREVIEW_VERSION_NUM >= 2022
+	UFE_V2(auto usdUIInfoHandler = UsdUIInfoHandler::create();)
+#endif
 	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
 		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, 
         usdSceneItemOpsHandler
         UFE_V2(, usdAttributesHandler, usdObject3dHandler)
         UFE_V2(, usdContextOpsHandler)
+#if UFE_PREVIEW_VERSION_NUM >= 2022
+        UFE_V2(, usdUIInfoHandler)
+#endif
     );
 
 #if !defined(NDEBUG)
