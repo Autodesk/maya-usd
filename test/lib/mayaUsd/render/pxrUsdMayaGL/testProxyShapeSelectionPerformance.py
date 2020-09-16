@@ -113,6 +113,8 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         cmds.workspace(self._testDir, o=True)
 
     def tearDown(self):
+        self._viewWidget = None
+        self._m3dView = None
         cmds.deleteUI(self._testWindow)
 
     def _GetViewportWidget(self, cameraName, rendererName):
@@ -125,8 +127,8 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
             displayAppearance='smoothShaded', rendererName=rendererName)
         cmds.showWindow(self._testWindow)
 
-        m3dView = OMUI.M3dView.getM3dViewFromModelPanel(testModelPanel)
-        viewWidget = wrapInstance(long(m3dView.widget()), QWidget)
+        self._m3dView = OMUI.M3dView.getM3dViewFromModelPanel(testModelPanel)
+        viewWidget = wrapInstance(long(self._m3dView.widget()), QWidget)
 
         return viewWidget
 
