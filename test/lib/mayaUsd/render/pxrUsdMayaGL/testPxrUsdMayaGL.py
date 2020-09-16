@@ -21,6 +21,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testPxrUsdMayaGL(unittest.TestCase):
 
@@ -30,10 +32,11 @@ class testPxrUsdMayaGL(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('mayaUsdPlugin')
+        inputPath = fixturesUtils.readOnlySetUpClass(__file__,
+            initializeStandalone=False)
 
         cls._testName = 'PxrUsdMayaGLTest'
-        cls._inputDir = os.path.abspath(cls._testName)
+        cls._inputDir = os.path.join(inputPath, cls._testName)
 
     def testEmptySceneDraws(self):
         cmds.file(new=True, force=True)

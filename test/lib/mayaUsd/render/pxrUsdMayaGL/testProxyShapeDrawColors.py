@@ -21,6 +21,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testProxyShapeDrawColors(unittest.TestCase):
 
@@ -30,10 +32,11 @@ class testProxyShapeDrawColors(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cmds.loadPlugin('mayaUsdPlugin')
+        inputPath = fixturesUtils.setUpClass(__file__,
+            initializeStandalone=False)
 
         cls._testName = 'ProxyShapeDrawColorsTest'
-        cls._inputDir = os.path.abspath(cls._testName)
+        cls._inputDir = os.path.join(inputPath, cls._testName)
 
         cls._testDir = os.path.abspath('.')
 
