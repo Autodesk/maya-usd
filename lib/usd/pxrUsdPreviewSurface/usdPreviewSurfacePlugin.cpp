@@ -71,24 +71,6 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::initialize(
         drawDbClassification, registrantId, PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator);
     CHECK_MSTATUS(status);
 
-    UsdMayaShaderWriterRegistry::Register(
-        typeNameToken,
-        &PxrMayaUsdPreviewSurface_Writer::CanExport,
-        [](const MFnDependencyNode& depNodeFn,
-            const SdfPath&           usdPath,
-            UsdMayaWriteJobContext&  jobCtx) {
-            return std::make_shared<PxrMayaUsdPreviewSurface_Writer>(depNodeFn, usdPath, jobCtx);
-        });
-
-    // There is obvious ambiguity here as soon as two plugins register a UsdPreviewSurface node.
-    // First registered will be the one used for import.
-    UsdMayaShaderReaderRegistry::Register(
-        UsdImagingTokens->UsdPreviewSurface,
-        PxrMayaUsdPreviewSurface_Reader::CanImport,
-        [typeNameToken](const UsdMayaPrimReaderArgs& readerArgs) {
-            return std::make_shared<PxrMayaUsdPreviewSurface_Reader>(readerArgs, typeNameToken);
-        });
-
     return status;
 }
 
@@ -147,6 +129,37 @@ PxrMayaUsdPreviewSurfacePlugin::deregisterFragments() {
     MStatus status = HdVP2ShaderFragments::deregisterFragments();
     _registered = false;
     return status;
+}
+
+/* static */
+void
+PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(const MString& typeName) {
+    TfToken typeNameToken(typeName.asChar());
+
+    // There is obvious ambiguity here as soon as two plugins register a UsdPreviewSurface node.
+    // First registered will be the one used for import.
+    UsdMayaShaderReaderRegistry::Register(
+        UsdImagingTokens->UsdPreviewSurface,
+        PxrMayaUsdPreviewSurface_Reader::CanImport,
+        [typeNameToken](const UsdMayaPrimReaderArgs& readerArgs) {
+            return std::make_shared<PxrMayaUsdPreviewSurface_Reader>(readerArgs, typeNameToken);
+        });
+
+}
+
+/* static */
+void
+PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(const MString& typeName) {
+    TfToken typeNameToken(typeName.asChar());
+
+    UsdMayaShaderWriterRegistry::Register(
+        typeNameToken,
+        &PxrMayaUsdPreviewSurface_Writer::CanExport,
+        [](const MFnDependencyNode& depNodeFn,
+            const SdfPath&           usdPath,
+            UsdMayaWriteJobContext&  jobCtx) {
+            return std::make_shared<PxrMayaUsdPreviewSurface_Writer>(depNodeFn, usdPath, jobCtx);
+        });
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

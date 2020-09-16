@@ -15,6 +15,9 @@
 //
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
+#include <mayaUsd/fileio/shaderReaderRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
+
 #include <maya/MFnPlugin.h>
 #include <maya/MString.h>
 
@@ -27,6 +30,11 @@ const MString PxrUsdPreviewSurface_typeName("pxrUsdPreviewSurface");
 const MTypeId PxrUsdPreviewSurface_typeId(0x00126403);
 const MString& PxrUsdPreviewSurface_registrantId = PxrUsdPreviewSurface_typeName;
 }
+
+TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
+{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(PxrUsdPreviewSurface_typeName); };
+TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
+{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(PxrUsdPreviewSurface_typeName); };
 
 PXRUSDPREVIEWSURFACE_API
 MStatus
