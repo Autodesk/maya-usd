@@ -364,8 +364,6 @@ void HdMayaProxyDelegate::PopulateSelectionList(
 
             SdfPath usdPath = objectId.ReplacePrefix(delegateId, SdfPath::AbsoluteRootPath());
 
-            printf("usdPath: %s\n", usdPath.GetText());
-
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
             usdPath = adapter->GetScenePrimPath(usdPath, instanceIndex, nullptr);
 #elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
