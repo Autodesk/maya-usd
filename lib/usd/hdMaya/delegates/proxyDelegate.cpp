@@ -37,6 +37,8 @@
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
 #if WANT_UFE_BUILD
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 #endif // WANT_UFE_BUILD
@@ -128,6 +130,31 @@ void SetupPluginCallbacks() {
     MSceneMessage::addStringArrayCallback(
         MSceneMessage::kAfterPluginUnload, PluginCallback, nullptr, &status);
     TF_VERIFY(status, "Could not set pluginUnloaded callback");
+}
+
+MGlobal::ListAdjustment GetListAdjustment()
+{
+    // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
+    // in case running MEL command leads to performance hit. On the other hand
+    // the advantage of using MEL command is the platform-agnostic state of the
+    // CONTROL key that it provides for aligning to Maya's implementation.
+    int modifiers = 0;
+    MGlobal::executeCommand("getModifiers", modifiers);
+
+    const bool shiftHeld = (modifiers % 2);
+    const bool ctrlHeld = (modifiers / 4 % 2);
+
+    MGlobal::ListAdjustment listAdjustment = MGlobal::kReplaceList;
+
+    if (shiftHeld && ctrlHeld) {
+        listAdjustment = MGlobal::kAddToList;
+    } else if (ctrlHeld) {
+        listAdjustment = MGlobal::kRemoveFromList;
+    } else if (shiftHeld) {
+        listAdjustment = MGlobal::kXORWithList;
+    }
+
+    return listAdjustment;
 }
 
 } // namespace
@@ -290,5 +317,107 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
 bool HdMayaProxyDelegate::SupportsUfeSelection() { return usdUfeRtid != 0; }
 
 #endif // WANT_UFE_BUILD
+
+#if MAYA_API_VERSION >= 20210000
+void HdMayaProxyDelegate::PopulateSelectionList(
+    const HdxPickHitVector&          hits,
+    const MHWRender::MSelectionInfo& selectInfo,
+    MSelectionList&                  selectionList,
+    MPointArray&                     worldSpaceHitPts)
+{
+    if (selectInfo.pointSnapping()) {
+        for (const HdxPickHit& hit : hits) {
+            std::lock_guard<std::mutex> lock(_allAdaptersMutex);
+            for (auto adapter : _allAdapters) {
+                const SdfPath& delegateId = adapter->GetUsdDelegateID();
+                if (hit.objectId.HasPrefix(delegateId)) {
+                    selectionList.add(adapter->GetDagPath());
+                    worldSpaceHitPts.append(
+                        hit.worldSpaceHitPoint[0],
+                        hit.worldSpaceHitPoint[1],
+                        hit.worldSpaceHitPoint[2]);
+
+                    break;
+                }
+            }
+        }
+        return;
+    }
+
+#if WANT_UFE_BUILD
+    auto handler = Ufe::RunTimeMgr::instance().hierarchyHandler(USD_UFE_RUNTIME_ID);
+    if (handler == nullptr)
+        return;
+
+    const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
+
+    for (const HdxPickHit& hit : hits) {
+        const SdfPath& objectId = hit.objectId;
+        const int instanceIndex = hit.instanceIndex;
+
+        std::lock_guard<std::mutex> lock(_allAdaptersMutex);
+        for (auto adapter : _allAdapters) {
+            const SdfPath& delegateId = adapter->GetUsdDelegateID();
+            if (!objectId.HasPrefix(delegateId)) {
+                continue;
+            }
+
+            SdfPath usdPath = objectId.ReplacePrefix(delegateId, SdfPath::AbsoluteRootPath());
+
+            printf("usdPath: %s\n", usdPath.GetText());
+
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
+            usdPath = adapter->GetScenePrimPath(usdPath, instanceIndex, nullptr);
+#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+            usdPath = adapter->GetScenePrimPath(usdPath, instanceIndex);
+#else
+            if (instanceIndex >= 0) {
+                usdPath = adapter->GetPathForInstanceIndex(usdPath, instanceIndex, nullptr);
+            }
+
+            usdPath = adapter->ConvertIndexPathToCachePath(usdPath);
+#endif
+
+            const Ufe::PathSegment pathSegment(
+                usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
+            const Ufe::SceneItem::Ptr& si =
+                handler->createItem(adapter->GetProxy()->ufePath() + pathSegment);
+            if (!si) {
+                TF_WARN("Failed to create UFE scene item for '%s'", objectId.GetText());
+                break;
+            }
+
+            auto globalSelection = Ufe::GlobalSelection::get();
+
+            switch (listAdjustment) {
+            case MGlobal::kReplaceList:
+                // The list has been cleared before viewport selection runs, so we
+                // can add the new hits directly. UFE selection list is a superset
+                // of Maya selection list, calling clear()/replaceWith() on UFE
+                // selection list would clear Maya selection list.
+                globalSelection->append(si);
+                break;
+            case MGlobal::kAddToList:
+                globalSelection->append(si);
+                break;
+            case MGlobal::kRemoveFromList:
+                globalSelection->remove(si);
+                break;
+            case MGlobal::kXORWithList:
+                if (!globalSelection->remove(si)) {
+                    globalSelection->append(si);
+                }
+                break;
+            default:
+                TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection.");
+                break;
+            }
+
+            break;
+        }
+    }
+#endif // WANT_UFE_BUILD
+}
+#endif // MAYA_API_VERSION >= 20210000
 
 PXR_NAMESPACE_CLOSE_SCOPE

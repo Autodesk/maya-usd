@@ -73,6 +73,8 @@ public:
         return _usdDelegate->ConvertCachePathToIndexPath(cachePath);
     }
 
+    const SdfPath& GetUsdDelegateID() const { return _usdDelegate->GetDelegateID(); }
+
 private:
     /// Notice listener method for proxy stage set
     void _OnStageSet(const MayaUsdProxyStageSetNotice& notice);

@@ -667,6 +667,42 @@ void HdMayaSceneDelegate::PopulateSelectedPaths(
         MFn::kShape);
 }
 
+#if MAYA_API_VERSION >= 20210000
+void HdMayaSceneDelegate::PopulateSelectionList(
+    const HdxPickHitVector&          hits,
+    const MHWRender::MSelectionInfo& selectInfo,
+    MSelectionList&                  selectionList,
+    MPointArray&                     worldSpaceHitPts)
+{
+    for (const HdxPickHit& hit : hits) {
+        _FindAdapter<HdMayaDagAdapter>(
+            hit.objectId,
+            [&hit, &selectionList, &worldSpaceHitPts](HdMayaDagAdapter* a) {
+                if (a->IsInstanced()) {
+                    MDagPathArray dagPaths;
+                    MDagPath::getAllPathsTo(a->GetDagPath().node(), dagPaths);
+
+                    const int numInstances = dagPaths.length();
+                    if (hit.instanceIndex >= 0 && hit.instanceIndex < numInstances) {
+                        selectionList.add(dagPaths[hit.instanceIndex]);
+                        worldSpaceHitPts.append(
+                            hit.worldSpaceHitPoint[0],
+                            hit.worldSpaceHitPoint[1],
+                            hit.worldSpaceHitPoint[2]);
+                    }
+                } else {
+                    selectionList.add(a->GetDagPath());
+                    worldSpaceHitPts.append(
+                        hit.worldSpaceHitPoint[0],
+                        hit.worldSpaceHitPoint[1],
+                        hit.worldSpaceHitPoint[2]);
+                }
+            },
+            _shapeAdapters);
+    }
+}
+#endif
+
 HdMeshTopology HdMayaSceneDelegate::GetMeshTopology(const SdfPath& id) {
     TF_DEBUG(HDMAYA_DELEGATE_GET_MESH_TOPOLOGY)
         .Msg("HdMayaSceneDelegate::GetMeshTopology(%s)\n", id.GetText());
