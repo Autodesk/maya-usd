@@ -52,8 +52,8 @@ class testUsdExportInstances(unittest.TestCase):
         self.assertTrue(s.GetPrim().IsValid())
 
         expectedMeshPath = [
-            '/InstanceSources/pCube1_pCubeShape1/Shape',
-            '/InstanceSources/pCube1_pCube2_pCubeShape2/Shape'
+            '/InstanceSources/pCube1_pCubeShape1/pCubeShape1',
+            '/InstanceSources/pCube1_pCube2_pCubeShape2/pCubeShape2'
         ]
 
         for each in expectedMeshPath:

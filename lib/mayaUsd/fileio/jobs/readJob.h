@@ -74,7 +74,7 @@ protected:
 
     MAYAUSD_CORE_PUBLIC
     virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim,
-        const UsdStageRefPtr& stage);
+        const UsdStage& stage);
 
     // Hook for derived classes to override the prim reader.  Returns true if
     // override was done, false otherwise.  Implementation in this class
@@ -92,7 +92,7 @@ protected:
     // usdImport.
     MAYAUSD_CORE_PUBLIC
     bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim,
-        const UsdStageRefPtr& stage);
+        const UsdStage& stage);
 
     // Hook for derived classes to perform processing before import.
     // Method in this class is a no-op.
@@ -114,6 +114,15 @@ private:
     void _DoImportPrimIt(
         UsdPrimRange::iterator& primIt, const UsdPrim& usdRootPrim,
         UsdMayaPrimReaderContext& readCtx, _PrimReaderMap& primReaders);
+
+    void _DoImportInstanceIt(
+        UsdPrimRange::iterator& primIt, const UsdPrim& usdRootPrim,
+        UsdMayaPrimReaderContext& readCtx, _PrimReaderMap& primReaders);
+
+    void _ImportMaster(
+        const UsdPrim&            master,
+        const UsdPrim&            usdRootPrim,
+        UsdMayaPrimReaderContext& readCtx);
 
     // Data
     MDagModifier mDagModifierUndo;

@@ -37,7 +37,7 @@ private:
     bool DoImport(
         UsdPrimRange& range,
         const UsdPrim& usdRootPrim,
-        const UsdStageRefPtr& stage
+        const UsdStage& stage
     ) override;
     bool OverridePrimReader(
         const UsdPrim&               usdRootPrim,

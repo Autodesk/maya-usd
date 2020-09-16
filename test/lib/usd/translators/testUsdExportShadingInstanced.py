@@ -108,7 +108,7 @@ class testUsdExportShadingInstanced(unittest.TestCase):
                 "/World/blueSphereMultiAssign")
         self.assertFalse(multiAssignPrim.IsInstanceable())
 
-        shape = multiAssignPrim.GetChild("Shape")
+        shape = multiAssignPrim.GetChild("blueSphereMultiAssignShape")
         self.assertFalse(shape.IsInstance())
 
         subset1 = shape.GetChild("initialShadingGroup")
@@ -139,24 +139,24 @@ class testUsdExportShadingInstanced(unittest.TestCase):
         worldPath = "/World" # Where collections are authored
         greenMat = "/World/Materials/blinn1SG"
         greenPaths = [
-                "/World/SimpleInstance1/Shape",
+                "/World/SimpleInstance1/SimpleInstanceShape1",
                 "/World/ComplexA/NestedA/Base1/BaseShape1",
                 "/World/ComplexA/NestedB/Base1/BaseShape1",
-                "/World/Extra/Base3/Shape",
+                "/World/Extra/Base3/BaseShape1",
                 "/World/ComplexB/NestedA/Base1/BaseShape1",
                 "/World/ComplexB/NestedB/Base1/BaseShape1"]
         blueMat = "/World/Materials/blinn2SG"
         bluePaths = [
-                "/World/SimpleInstance2/Shape",
+                "/World/SimpleInstance2/SimpleInstanceShape1",
                 "/World/ComplexA/NestedA/Base2/BaseShape1",
                 "/World/ComplexA/NestedB/Base2/BaseShape1",
                 "/World/ComplexB/NestedA/Base2/BaseShape1",
                 "/World/ComplexB/NestedB/Base2/BaseShape1"]
         instanceMasters = [
                 "/InstanceSources/World_ComplexA_NestedA_Base1_BaseShape1" +
-                    "/Shape",
+                    "/BaseShape1",
                 "/InstanceSources/World_SimpleInstance1_SimpleInstanceShape1" +
-                    "/Shape"]
+                    "/SimpleInstanceShape1"]
 
         for path in greenPaths:
             prim = self._nestedStage.GetPrimAtPath(path)

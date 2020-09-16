@@ -42,7 +42,7 @@ bool
 UsdMaya_ReadJobWithSceneAssembly::DoImport(
     UsdPrimRange& rootRange,
     const UsdPrim& usdRootPrim,
-    const UsdStageRefPtr& stage
+    const UsdStage& stage
 )
 {
     return mArgs.importWithProxyShapes ?

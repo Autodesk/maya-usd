@@ -359,9 +359,9 @@ static bool _pushUSDXformToMayaXform(
     std::vector<double> RxVal(timeCodes.size());
     std::vector<double> RyVal(timeCodes.size());
     std::vector<double> RzVal(timeCodes.size());
-    std::vector<double> SxVal(timeCodes.size());
-    std::vector<double> SyVal(timeCodes.size());
-    std::vector<double> SzVal(timeCodes.size());
+    std::vector<double> SxVal(timeCodes.size(), 1.0);
+    std::vector<double> SyVal(timeCodes.size(), 1.0);
+    std::vector<double> SzVal(timeCodes.size(), 1.0);
     std::vector<double> ShearXYVal(timeCodes.size());
     std::vector<double> ShearXZVal(timeCodes.size());
     std::vector<double> ShearYZVal(timeCodes.size());

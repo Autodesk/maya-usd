@@ -264,7 +264,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
-    DoImport(range, usdRootPrim, stage);
+    DoImport(range, usdRootPrim, *stage);
 
     SdfPathSet topImportedPaths;
     if (isImportingPseudoRoot) {
@@ -293,7 +293,7 @@ bool
 UsdMaya_ReadJob::DoImport(
     UsdPrimRange& rootRange,
     const UsdPrim& usdRootPrim,
-    const UsdStageRefPtr& stage
+    const UsdStage& stage
 )
 {
     return _DoImport(rootRange, usdRootPrim, stage);
@@ -352,27 +352,84 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
     }
 }
 
+void UsdMaya_ReadJob::_DoImportInstanceIt(
+    UsdPrimRange::iterator&   primIt,
+    const UsdPrim&            usdRootPrim,
+    UsdMayaPrimReaderContext& readCtx,
+    _PrimReaderMap&           primReaderMap)
+{
+    const UsdPrim& prim = *primIt;
+    if (!primIt.IsPostVisit()) {
+        return;
+    }
+    const UsdPrim master = prim.GetMaster();
+    if (!master) {
+        return;
+    }
+
+    const SdfPath masterPath = master.GetPath();
+    MObject       masterObject = readCtx.GetMayaNode(masterPath, false);
+    if (masterObject == MObject::kNullObj) {
+        _ImportMaster(master, usdRootPrim, readCtx);
+        masterObject = readCtx.GetMayaNode(masterPath, false);
+        if (masterObject == MObject::kNullObj) {
+            return;
+        }
+    }
+    MStatus    status;
+    MFnDagNode masterNode(masterObject, &status);
+    if (!status) {
+        return;
+    }
+    const auto primPath = prim.GetPath();
+    MObject    parentObject = readCtx.GetMayaNode(primPath.GetParentPath(), false);
+    MFnDagNode duplicateNode;
+    MObject    duplicateObject
+        = duplicateNode.create("transform", primPath.GetName().c_str(), parentObject, &status);
+    if (!status) {
+        return;
+    }
+
+    const unsigned int childCount = masterNode.childCount();
+    for (unsigned int child = 0; child < childCount; ++child) {
+        MObject childObject = masterNode.child(child);
+        duplicateNode.addChild(childObject, MFnDagNode::kNextPos, true);
+    }
+
+    // Read xformable attributes from the
+    // UsdPrim on to the transform node.
+    UsdGeomXformable      xformable(prim);
+    UsdMayaPrimReaderArgs readerArgs(prim, mArgs);
+    UsdMayaTranslatorXformable::Read(xformable, duplicateObject, readerArgs, &readCtx);
+}
+
+void UsdMaya_ReadJob::_ImportMaster(
+    const UsdPrim&            master,
+    const UsdPrim&            usdRootPrim,
+    UsdMayaPrimReaderContext& readCtx)
+{
+    _PrimReaderMap     primReaderMap;
+    const UsdPrimRange range = UsdPrimRange::PreAndPostVisit(master);
+    for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
+        const UsdPrim&           prim = *primIt;
+        UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
+        if (prim.IsInstance()) {
+            _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
+        } else {
+            _DoImportPrimIt(primIt, usdRootPrim, readCtx, primReaderMap);
+        }
+    }
+}
+
 bool
 UsdMaya_ReadJob::_DoImport(
     UsdPrimRange& rootRange,
     const UsdPrim& usdRootPrim,
-    const UsdStageRefPtr& stage
+    const UsdStage& stage
 )
 {
     const bool buildInstances = mArgs.instanceMode ==
                                 UsdMayaJobImportArgsTokens->buildInstances;
-    // Masters are not iterated when using UsdPrimRange
-    if (buildInstances) {
-        for (const auto& master: stage->GetMasters()) {
-            _PrimReaderMap primReaderMap;
-            const UsdPrimRange range = UsdPrimRange::PreAndPostVisit(master);
-            for (auto primIt = range.begin();
-                 primIt != range.end(); ++primIt) {
-                UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
-                _DoImportPrimIt(primIt, usdRootPrim, readCtx, primReaderMap);
-            }
-        }
-    }
 
     // We want both pre- and post- visit iterations over the prims in this
     // method. To do so, iterate over all the root prims of the input range,
@@ -392,49 +449,7 @@ UsdMaya_ReadJob::_DoImport(
             UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
 
             if (buildInstances && prim.IsInstance()) {
-                if (!primIt.IsPostVisit()) {
-                    continue;
-                }
-                const UsdPrim master = prim.GetMaster();
-                if (!master) {
-                    continue;
-                }
-
-                const SdfPath masterPath = master.GetPath();
-                MObject masterObject =
-                    readCtx.GetMayaNode(masterPath, false);
-                if (masterObject == MObject::kNullObj) {
-                    continue;
-                }
-                MStatus status;
-                MFnDagNode masterNode(masterObject, &status);
-                if (!status) {
-                    continue;
-                }
-                const auto primPath = prim.GetPath();
-                MObject parentObject =
-                    readCtx.GetMayaNode(primPath.GetParentPath(), false);
-                MFnDagNode duplicateNode;
-                MObject duplicateObject = duplicateNode.create(
-                    "transform", primPath.GetName().c_str(),
-                    parentObject, &status);
-                if (!status) {
-                    continue;
-                }
-
-                const unsigned int childCount = masterNode.childCount();
-                for (unsigned int child = 0; child < childCount; ++child) {
-                    MObject childObject = masterNode.child(child);
-                    duplicateNode.addChild(
-                        childObject, MFnDagNode::kNextPos, true);
-                }
-
-                // Read xformable attributes from the
-                // UsdPrim on to the transform node.
-                UsdGeomXformable xformable(prim);
-                UsdMayaPrimReaderArgs readerArgs(prim, mArgs);
-                UsdMayaTranslatorXformable::Read(
-                    xformable, duplicateObject, readerArgs, &readCtx);
+                _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
             } else {
                 _DoImportPrimIt(primIt, usdRootPrim, readCtx, primReaderMap);
             }
@@ -444,7 +459,7 @@ UsdMaya_ReadJob::_DoImport(
     if (buildInstances) {
         MDGModifier dgMod;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
-        for (const auto& master: stage->GetMasters()) {
+        for (const auto& master: stage.GetMasters()) {
             const SdfPath masterPath = master.GetPath();
             MObject masterObject =
                 readCtx.GetMayaNode(masterPath, false);
