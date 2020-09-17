@@ -124,7 +124,7 @@ int GetNearestHitIndex(
     double dist2_min = std::numeric_limits<double>::max();
     float  depth_min = std::numeric_limits<float>::max();
 
-    for (int i = 0; i < hits.size(); i++) {
+    for (unsigned int i = 0; i < hits.size(); i++) {
         const HdxPickHit& hit = hits[i];
         const MPoint      worldSpaceHitPoint(
             hit.worldSpaceHitPoint[0], hit.worldSpaceHitPoint[1], hit.worldSpaceHitPoint[2]);
@@ -142,7 +142,7 @@ int GetNearestHitIndex(
         if ((dist2 < dist2_min) || (dist2 == dist2_min && hit.normalizedDepth < depth_min)) {
             dist2_min = dist2;
             depth_min = hit.normalizedDepth;
-            nearestHitIndex = i;
+            nearestHitIndex = (int)i;
         }
     }
 
