@@ -46,8 +46,9 @@ MtohInitializeRenderPlugins() {
         for (const auto& pluginDesc : pluginDescs) {
             const TfToken renderer = pluginDesc.id;
             HdRendererPlugin* plugin = pluginRegistry.GetRendererPlugin(renderer);
-            if (!plugin)
+            if (!plugin) {
                 continue;
+            }
 
             // XXX: As of 22.02, this needs to be called for Storm
             if (pluginDesc.id == MtohTokens->HdStormRendererPlugin)
@@ -57,8 +58,9 @@ MtohInitializeRenderPlugins() {
                 plugin->CreateRenderDelegate() : nullptr;
 
             // No 'delete plugin', should plugin be cached as well?
-            if (!delegate)
+            if (!delegate) {
                 continue;
+            }
 
             auto& rendererSettingDescriptors = store.second.emplace(renderer,
                 delegate->GetRenderSettingDescriptors()).first->second;

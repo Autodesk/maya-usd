@@ -204,26 +204,28 @@ HdRenderDelegate* MtohRenderOverride::_GetRenderDelegate() {
     return _renderIndex ? _renderIndex->GetRenderDelegate() : nullptr;
 }
 
-void MtohRenderOverride::UpdateRenderGlobals(const MtohRenderGlobals& globals, const TfToken& filter) {
+void MtohRenderOverride::UpdateRenderGlobals(const MtohRenderGlobals& globals, const TfToken& attrName) {
     // If no attribute or attribute starts with 'mtoh', these setting wil be applied on the next
     // call to MtohRenderOverride::Render, so just force an invalidation
     // XXX: This will need to change if mtoh settings should ever make it to the delegate itself.
-    if (filter.GetString().find("mtoh") != 0) {
+    if (attrName.GetString().find("mtoh") != 0) {
         std::lock_guard<std::mutex> lock(_allInstancesMutex);
         for (auto* instance : _allInstances) {
             const auto& rendererName = instance->_rendererDesc.rendererName;
 
-            // If no filter or the filter is the renderer, then update everything
-            const size_t attrFilter = (filter.IsEmpty() || filter == rendererName) ? 0 : 1;
-            if (attrFilter && !instance->_globals.AffectsRenderer(filter, rendererName))
+            // If no attrName or the attrName is the renderer, then update everything
+            const size_t attrFilter = (attrName.IsEmpty() || attrName == rendererName) ? 0 : 1;
+            if (attrFilter && !instance->_globals.AffectsRenderer(attrName, rendererName)) {
                 continue;
+            }
 
             // Will be applied in _InitHydraResources later anyway
             if (auto* renderDelegate = instance->_GetRenderDelegate()) {
                 instance->_globals.ApplySettings(renderDelegate,
-                    instance->_rendererDesc.rendererName, &filter, attrFilter);
-                if (attrFilter)
+                    instance->_rendererDesc.rendererName, TfTokenVector(attrFilter, attrName));
+                if (attrFilter) {
                     break;
+                }
             }
         }
     }
@@ -800,8 +802,9 @@ void MtohRenderOverride::_PlayblastingChanged(bool playBlasting, void* userData)
 
 void MtohRenderOverride::_TimerCallback(float, float, void* data) {
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
-    if (instance->_playBlasting || instance->_isConverged)
+    if (instance->_playBlasting || instance->_isConverged) {
         return;
+    }
 
     std::lock_guard<std::mutex> lock(instance->_lastRenderTimeMutex);
     if ((std::chrono::system_clock::now() - instance->_lastRenderTime) <

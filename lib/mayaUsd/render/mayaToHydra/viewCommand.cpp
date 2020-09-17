@@ -50,9 +50,6 @@ constexpr auto _createRenderGlobalsLong = "-createRenderGlobals";
 constexpr auto _updateRenderGlobals = "-urg";
 constexpr auto _updateRenderGlobalsLong = "-updateRenderGlobals";
 
-constexpr auto _updateRenderSetting = "-urs";
-constexpr auto _updateRenderSettingLong = "-updateRenderSetting";
-
 constexpr auto _help = "-h";
 constexpr auto _helpLong = "-help";
 
@@ -159,8 +156,9 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         CHECK_MSTATUS_AND_RETURN_IT(db.getFlagArgument(_rendererId, 0, id));
 
         // Passing 'mtoh' as the renderer adresses all renderers
-        if (id != "mtoh")
+        if (id != "mtoh") {
             renderDelegateName = TfToken(id.asChar());
+        }
     }
 
     if (db.isFlagSet(_listRenderers)) {

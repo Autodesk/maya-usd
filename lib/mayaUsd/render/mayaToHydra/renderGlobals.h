@@ -40,7 +40,7 @@ public:
 
     struct GlobalParams {
         const TfToken filter = {};
-        // Is the filte above only a renderer, or a renderer.attribute
+        // Is the filter above only a renderer, or a renderer.attribute
         const bool filterIsRenderer = false;
         // If creating the attribute for the first time, immediately set to a user default
         const bool fallbackToUserDefaults = true;
@@ -67,9 +67,9 @@ public:
     static void BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
         const HdRenderSettingDescriptorList& rendererSettingDescriptors);
 
-    // Apply the given setting (or all of them when attrNames=null) to the given renderDelegate
+    // Apply the given setting (or all of a delegate's settings when attrNames is empty) to the given renderDelegate
     bool ApplySettings(HdRenderDelegate* delegate, const TfToken& rendererName,
-        const TfToken* attrNames = nullptr, size_t nSettings = 0) const;
+        const TfTokenVector& attrNames = {}) const;
 
 private:
     static const MtohRenderGlobals& GetInstance(const GlobalParams&,
