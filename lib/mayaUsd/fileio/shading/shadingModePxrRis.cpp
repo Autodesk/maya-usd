@@ -15,7 +15,7 @@
 //
 
 // Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
-#include "shadingModePxrRis_rfm_map.h"
+#include "rfmShaderMap.h"
 
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
