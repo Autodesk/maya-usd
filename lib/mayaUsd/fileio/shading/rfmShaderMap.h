@@ -19,6 +19,9 @@
 // We use this table both for export and for import when RIS mode is active.
 // XXX This should probably live in a xml or json file that can be easily updated without recompile
 
+#ifndef MAYAUSD_FILEIO_SHADING_RFM_SHADER_MAP_H
+#define MAYAUSD_FILEIO_SHADING_RFM_SHADER_MAP_H
+
 #include <utility>
 #include <vector>
 
@@ -78,3 +81,6 @@ static const std::vector<std::pair<TfToken, TfToken> > _RFM_RISNODE_TABLE = {
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+
+#endif
