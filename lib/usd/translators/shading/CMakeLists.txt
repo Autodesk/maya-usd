@@ -1,8 +1,9 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${TARGET_NAME} 
+target_sources(${TARGET_NAME}
     PRIVATE
+        symmetricShaderWriter.cpp
         usdBlinnReader.cpp
         usdBlinnWriter.cpp
         usdFileTextureWriter.cpp
@@ -19,7 +20,7 @@ target_sources(${TARGET_NAME}
 )
 
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
-    target_sources(${TARGET_NAME} 
+    target_sources(${TARGET_NAME}
         PRIVATE
             usdStandardSurfaceReader.cpp
             usdStandardSurfaceWriter.cpp
