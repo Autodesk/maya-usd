@@ -89,12 +89,6 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                 return nullptr;
             }
 
-            if (depNode.hasFn(MFn::kDagNode)) {
-                // XXX: Skip DAG nodes for now, but we may eventually want/need
-                // to consider them.
-                return nullptr;
-            }
-
             if (!UsdMayaUtil::isWritable(depNode)) {
                 return nullptr;
             }
