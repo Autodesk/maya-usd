@@ -96,7 +96,7 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
         log = self._StopRecording()
         self.assertEqual(len(log), 1)
         logText, logCode = log[0]
-        self.assertRegexpMatches(logText,
+        self.assertRegex(logText,
                 "^Python coding error: blah -- Coding Error in "
                 "__main__\.testError at line [0-9]+ of ")
         self.assertEqual(logCode, OM.MCommandMessage.kError)

@@ -64,14 +64,14 @@ class testUsdExportStripNamespaces(unittest.TestCase):
         #     ".+|cube1 - |foo:cube1.*"
         errorRegexp = 'Maya command error'
 
-        with self.assertRaisesRegexp(RuntimeError, errorRegexp) as cm:
+        with self.assertRaisesRegex(RuntimeError, errorRegexp) as cm:
             cmds.usdExport(mergeTransformAndShape=True,
                            selection=False,
                            stripNamespaces=True,
                            file=usdFilePath,
                            shadingMode='none')
 
-        with self.assertRaisesRegexp(RuntimeError,errorRegexp) as cm:
+        with self.assertRaisesRegex(RuntimeError,errorRegexp) as cm:
             cmds.usdExport(mergeTransformAndShape=False,
                            selection=False,
                            stripNamespaces=True,
