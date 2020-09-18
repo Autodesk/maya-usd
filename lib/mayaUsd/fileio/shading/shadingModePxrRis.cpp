@@ -14,9 +14,7 @@
 // limitations under the License.
 //
 
-// Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
-#include "rfmShaderMap.h"
-
+#include <mayaUsd/fileio/shading/rfmShaderMap.h>
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/shading/shadingModeImporter.h>
