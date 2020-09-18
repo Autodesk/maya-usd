@@ -266,14 +266,14 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                     // Maya plugs represent so that we can author the
                     // connection in USD.
 
-                    const TfToken srcPlugName =
-                        TfToken(context.GetStandardAttrName(srcPlug, false));
+                    const TfToken srcPlugName = TfToken(
+                        UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
                     UsdAttribute srcAttribute =
                         srcShaderInfo->GetShadingAttributeForMayaAttrName(
                             srcPlugName);
 
-                    const TfToken dstPlugName =
-                        TfToken(context.GetStandardAttrName(dstPlug, false));
+                    const TfToken dstPlugName = TfToken(
+                        UsdMayaShadingUtil::GetStandardAttrName(dstPlug, false));
                     UsdAttribute dstAttribute =
                         dstShaderInfo->GetShadingAttributeForMayaAttrName(
                             dstPlugName);

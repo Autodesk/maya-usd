@@ -23,6 +23,7 @@
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
@@ -225,7 +226,7 @@ private:
             // maybe that's OK?  nothing downstream cares about it.
 
             const TfToken attrName = TfToken(
-                context.GetStandardAttrName(attrPlug, false));
+                UsdMayaShadingUtil::GetStandardAttrName(attrPlug, false));
             if (attrName.IsEmpty()) {
                 continue;
             }
@@ -270,7 +271,7 @@ private:
                 UsdShadeConnectableAPI::ConnectToSource(
                     input,
                     UsdShadeShader(cPrim),
-                    TfToken(context.GetStandardAttrName(connectedPlug, false)));
+                    TfToken(UsdMayaShadingUtil::GetStandardAttrName(connectedPlug, false)));
             }
         }
 
