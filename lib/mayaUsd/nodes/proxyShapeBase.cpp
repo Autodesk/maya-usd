@@ -571,18 +571,14 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     }
     else {
         // Check if we have a Stage from the Cache Id
-#if defined(_WIN32)
-        const auto cacheIdNum = dataBlock.inputValue(stageCacheIdAttr, &retValue).asInt64();
-#else
         const auto cacheIdNum = dataBlock.inputValue(stageCacheIdAttr, &retValue).asInt();
-#endif
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
         UsdStageRefPtr usdStage;
         const auto     cacheId = UsdStageCache::Id::FromLongInt(cacheIdNum);
         const auto stageCached = cacheId.IsValid() && UsdUtilsStageCache::Get().Contains(cacheId);
         if (stageCached) {
             usdStage = UsdUtilsStageCache::Get().Find(cacheId);
-        } 
+        }
 		else {
             //
             // Calculate from USD filepath and primPath and variantKey
