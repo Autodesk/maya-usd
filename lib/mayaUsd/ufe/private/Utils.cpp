@@ -129,53 +129,61 @@ UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim)
 
 void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName)
 {
-    // early check to see if a particular node has any specs to contribute
-    // to the final composed prim. e.g (a node in payload)
-    if(!MayaUsdUtils::hasSpecs(prim)){
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    auto primStack = prim.GetPrimStack();
+    std::string layerDisplayName;
 
-        auto layers = MayaUsdUtils::layerInCompositionArcsWithSpec(prim);
-        std::string layerDisplayNames;
-        for (auto layer : layers) {
-            layerDisplayNames.append("[" + layer->GetDisplayName() + "]" + ",");
+    // check to see if there is a spec at the edit target layer. 
+    if (primSpec)
+    {
+        for (const auto& spec : primStack) 
+        {
+            // skip if the spec already exist
+            if (primSpec == spec && spec->GetSpecifier() == SdfSpecifierDef && primSpec->GetLayer() == spec->GetLayer()) {
+                continue;
+            }
+
+            // break out if we are dealing with an over that has a reference.
+            if(spec->GetSpecifier() == SdfSpecifierOver && spec->HasReferences()) {
+                break;
+            }
+
+            // if the over exist in the session layer
+            if (spec->GetSpecifier() == SdfSpecifierOver) {
+                auto sessionLayer = prim.GetStage()->GetSessionLayer();
+                if (sessionLayer == spec->GetLayer()){
+                    layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
+                }
+            }
+
+            // if the def primspec is in another layer other than current stage's local layer.
+            if (spec->GetSpecifier() == SdfSpecifierDef && primSpec->GetLayer() != spec->GetLayer()) {
+                layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
+                break;
+            }
         }
-        layerDisplayNames.pop_back();
-        std::string err = TfStringPrintf("Cannot %s [%s]. It does not make any contributions in the current layer "
-                                         "because its specs are in an external composition arc. Please open %s to make direct edits.",
-                                         commandName.c_str(),
-                                         prim.GetName().GetString().c_str(), 
-                                         layerDisplayNames.c_str());
-        throw std::runtime_error(err.c_str());
-    }
 
-    // if the current layer doesn't have any contributions
-    if (!MayaUsdUtils::doesEditTargetLayerContribute(prim)) {
-        auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
-        std::string err = TfStringPrintf("Cannot %s [%s]. It is defined on another layer. Please set [%s] as the target layer to proceed.", 
-                                         commandName.c_str(),
-                                         prim.GetName().GetString().c_str(),
-                                         strongestContributingLayer->GetDisplayName().c_str());
-        throw std::runtime_error(err.c_str());
+        if(!layerDisplayName.empty())
+        {
+            layerDisplayName.pop_back();
+            std::string err = TfStringPrintf("Cannot %s [%s]. It is defined on another layer. Please set %s as the target layer to proceed.",
+                                     commandName.c_str(),
+                                     prim.GetName().GetString().c_str(), 
+                                     layerDisplayName.c_str());
+            throw std::runtime_error(err.c_str());
+        }
     }
     else
     {
-        auto layers = MayaUsdUtils::layersWithContribution(prim);
-        // if we have more than 2 layers that contributes to the final composed prim
-        if (layers.size() > 1) {
-            std::string layerDisplayNames;
-
-            // skip the the first arc which is PcpArcTypeRoot
-            // we are interested in all the arcs after root
-            std::for_each(std::next(layers.begin()),layers.end(), [&](const auto& it) {
-                 layerDisplayNames.append("[" + it->GetDisplayName() + "]" + ",");
-            });
-
-            layerDisplayNames.pop_back();
-            std::string err = TfStringPrintf("Cannot %s [%s]. It has definitions or opinions on other layers. Opinions exist in %s",
-                                             commandName.c_str(),
-                                             prim.GetName().GetString().c_str(), 
-                                             layerDisplayNames.c_str());
-            throw std::runtime_error(err.c_str());
+        for (const auto& spec : primStack) {
+            layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
         }
+        layerDisplayName.pop_back();
+        std::string err = TfStringPrintf("Cannot %s [%s]. It is defined on another layer. Please set %s as the target layer to proceed.",
+                                 commandName.c_str(),
+                                 prim.GetName().GetString().c_str(), 
+                                 layerDisplayName.c_str());
+        throw std::runtime_error(err.c_str());
     }
 }
 
