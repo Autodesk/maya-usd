@@ -61,6 +61,12 @@ set(TEST_SCRIPT_FILES
     testUsdMayaAdaptorUndoRedo.py
 )
 
+if (BUILD_RFM_TRANSLATORS)
+    list(APPEND TEST_SCRIPT_FILES
+        testUsdExportRfMShaders.py
+    )
+endif()
+
 add_custom_target(${TARGET_NAME} ALL)
 
 # copy all the resources and python scripts to build directory
