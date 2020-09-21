@@ -67,10 +67,6 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
     const auto& childPrim = child->prim();
     const auto& parentPrim = parent->prim();
 
-    // Apply restriction rules
-    ufe::applyCommandRestriction(childPrim, "reparent");
-    ufe::applyCommandRestriction(parentPrim, "reparent");
-
     // First, check if we need to rename the child.
     const auto& childName = uniqueChildName(parent, child->path());
 
@@ -94,6 +90,12 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
     _parentLayer = parentPrim.IsPseudoRoot() 
         ? parent->prim().GetStage()->GetEditTarget().GetLayer() 
         : MayaUsdUtils::defPrimSpecLayer(parentPrim);
+
+    // Apply restriction rules
+    if(!parentPrim.IsPseudoRoot()){
+        ufe::applyCommandRestriction(childPrim, "reparent");
+        ufe::applyCommandRestriction(parentPrim, "reparent");
+    }
 }
 
 UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand()
