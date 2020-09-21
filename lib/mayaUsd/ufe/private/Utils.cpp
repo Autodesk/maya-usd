@@ -150,10 +150,7 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
 
             // if the over exist in the session layer
             if (spec->GetSpecifier() == SdfSpecifierOver) {
-                auto sessionLayer = prim.GetStage()->GetSessionLayer();
-                if (sessionLayer == spec->GetLayer()){
-                    layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
-                }
+                layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
             }
 
             // if the def primspec is in another layer other than current stage's local layer.
