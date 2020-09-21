@@ -1138,7 +1138,7 @@ void ProxyShape::loadStage()
   AL_BEGIN_PROFILE_SECTION(LoadStage);
   MDataBlock dataBlock = forceCache();
 
-  const auto stageIdVal = stageCacheIdPlug().asInt();
+  const int stageIdVal = inputInt32Value(dataBlock, stageCacheId());
   UsdStageCache::Id stageId = UsdStageCache::Id().FromLongInt(stageIdVal);
   MString file = inputStringValue(dataBlock, filePath());
 
