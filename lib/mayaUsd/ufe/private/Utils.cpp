@@ -142,11 +142,11 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
         else
         {
             // skip if the spec already exist
-            if (primSpec == spec && spec->GetSpecifier() == SdfSpecifierDef && primSpec->GetLayer() == spec->GetLayer()) {
+            if (primSpec == spec && spec->GetSpecifier() == SdfSpecifierDef) {
                 continue;
             }
 
-            // break out if we are dealing with an over that has a reference.
+            // break out if this an over that has a reference.
             if(spec->GetSpecifier() == SdfSpecifierOver && spec->HasReferences()) {
                 break;
             }
