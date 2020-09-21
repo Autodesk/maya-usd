@@ -134,9 +134,12 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     std::string layerDisplayName;
 
     // check to see if there is a spec at the edit target layer. 
-    if (primSpec)
+    for (const auto& spec : primStack) 
     {
-        for (const auto& spec : primStack) 
+        if (primSpec != spec) {
+            layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
+        }
+        else
         {
             // skip if the spec already exist
             if (primSpec == spec && spec->GetSpecifier() == SdfSpecifierDef && primSpec->GetLayer() == spec->GetLayer()) {
@@ -159,22 +162,10 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
                 break;
             }
         }
-
-        if(!layerDisplayName.empty())
-        {
-            layerDisplayName.pop_back();
-            std::string err = TfStringPrintf("Cannot %s [%s]. It is defined on another layer. Please set %s as the target layer to proceed.",
-                                     commandName.c_str(),
-                                     prim.GetName().GetString().c_str(), 
-                                     layerDisplayName.c_str());
-            throw std::runtime_error(err.c_str());
-        }
     }
-    else
+
+    if(!layerDisplayName.empty())
     {
-        for (const auto& spec : primStack) {
-            layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
-        }
         layerDisplayName.pop_back();
         std::string err = TfStringPrintf("Cannot %s [%s]. It is defined on another layer. Please set %s as the target layer to proceed.",
                                  commandName.c_str(),
