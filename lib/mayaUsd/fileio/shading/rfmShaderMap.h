@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const std::vector<std::pair<TfToken, TfToken> > _RFM_RISNODE_TABLE = {
+static const std::vector<std::pair<TfToken, TfToken> > RfmNodesToShaderIds = {
     { TfToken("blendColors", TfToken::Immortal), TfToken("PxrMayaBlendColors", TfToken::Immortal) },
     { TfToken("bulge", TfToken::Immortal), TfToken("PxrMayaBulge", TfToken::Immortal) },
     { TfToken("bump2d", TfToken::Immortal), TfToken("PxrMayaBump2d", TfToken::Immortal) },

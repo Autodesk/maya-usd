@@ -124,7 +124,7 @@ private:
 
         // Now look into the RIS TABLE if the typeName doesn't starts with Pxr.
         if (!TfStringStartsWith(mayaTypeName, _tokens->PxrShaderPrefix)) {
-            for (const auto& i : _RFM_RISNODE_TABLE) {
+            for (const auto& i : RfmNodesToShaderIds) {
                 if (i.first == mayaTypeName) {
                     return i.second;
                 }
@@ -454,7 +454,7 @@ _GetMayaTypeNameForShaderId(
         const TfToken& shaderId)
 {
     // Remap the mayaTypeName if found in the RIS table.
-    for (const auto & i : _RFM_RISNODE_TABLE) {
+    for (const auto & i : RfmNodesToShaderIds) {
         if (i.second == shaderId) {
             return i.first;
         }
