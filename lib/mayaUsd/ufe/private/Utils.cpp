@@ -136,39 +136,35 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) 
     {
+        const auto& layerName = spec->GetLayer()->GetDisplayName();
+
         if (primSpec != spec) {
-            layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
+            layerDisplayName.append("[" + layerName + "]" + ",");
         }
-        else
-        {
-            // if exists a def primSpec
-            if (spec->GetSpecifier() == SdfSpecifierDef) {
-                if(spec->HasReferences()) {
+        else {
+            // if exist a primSpec with reference
+            if(spec->HasReferences()) {
+                break;
+            }
+
+            // if exists a def sepc
+            if (spec->GetSpecifier() == SdfSpecifierDef) {   
+                // if exists a def spec is in another layer other than current stage's local layer.
+                if(primSpec->GetLayer() != spec->GetLayer()) {
+                    layerDisplayName.append("[" + layerName + "]" + ",");
                     break;
                 }
                 continue;
             }
 
-            // if exists an over that has a reference.
-            if(spec->GetSpecifier() == SdfSpecifierOver && spec->HasReferences()) {
-                break;
-            }
-
-            // if the over exist in the session layer
+            // if exists an over sepc
             if (spec->GetSpecifier() == SdfSpecifierOver) {
-                layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
-            }
-
-            // if the def primspec is in another layer other than current stage's local layer.
-            if (spec->GetSpecifier() == SdfSpecifierDef && primSpec->GetLayer() != spec->GetLayer()) {
-                layerDisplayName.append("[" + spec->GetLayer()->GetDisplayName() + "]" + ",");
-                break;
+                layerDisplayName.append("[" + layerName + "]" + ",");
             }
         }
     }
 
-    if(!layerDisplayName.empty())
-    {
+    if(!layerDisplayName.empty()) {
         layerDisplayName.pop_back();
         std::string err = TfStringPrintf("Cannot %s [%s]. It is defined on another layer. Please set %s as the target layer to proceed.",
                                  commandName.c_str(),
