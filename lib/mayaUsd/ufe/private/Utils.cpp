@@ -25,6 +25,8 @@
 
 #include <mayaUsdUtils/util.h>
 
+#include <iostream>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {
@@ -132,43 +134,46 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     auto primStack = prim.GetPrimStack();
     std::string layerDisplayName;
+    std::string message{"It is defined on another layer"};
 
     // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) 
     {
         const auto& layerName = spec->GetLayer()->GetDisplayName();
 
-        if (primSpec != spec) {
-            layerDisplayName.append("[" + layerName + "]" + ",");
+        // skip if there is no primSpec for the selected prim in the current stage's local layer.
+        if(!primSpec){
+            // add "," separator for multiple layers
+            if(!layerDisplayName.empty()) { layerDisplayName.append(","); }
+            layerDisplayName.append("[" + layerName + "]");
+            continue;
         }
-        else {
-            // if exist a primSpec with reference
-            if(spec->HasReferences()) {
+
+        // one reason for skipping the reference is to not clash 
+        // with the over that may be created in the stage's sessioLayer.
+        // another reason is that one should be able to edit a referenced prim that
+        // is tagged over/def as long as it has a primSpec in the selected edit target layer.
+        if(spec->HasReferences()) {
+            break;
+        }
+
+        // if exists a def/over specs
+        if (spec->GetSpecifier() == SdfSpecifierDef || spec->GetSpecifier() == SdfSpecifierOver) {
+            // if exists in another layer other than current stage's local layer.
+            if(primSpec->GetLayer() != spec->GetLayer()) {
+                layerDisplayName.append("[" + layerName + "]");
+                message = "It has a stronger opinion on another layer";
                 break;
             }
-
-            // if exists a def sepc
-            if (spec->GetSpecifier() == SdfSpecifierDef) {   
-                // if exists a def spec is in another layer other than current stage's local layer.
-                if(primSpec->GetLayer() != spec->GetLayer()) {
-                    layerDisplayName.append("[" + layerName + "]" + ",");
-                    break;
-                }
-                continue;
-            }
-
-            // if exists an over sepc
-            if (spec->GetSpecifier() == SdfSpecifierOver) {
-                layerDisplayName.append("[" + layerName + "]" + ",");
-            }
+            continue;
         }
     }
 
     if(!layerDisplayName.empty()) {
-        layerDisplayName.pop_back();
-        std::string err = TfStringPrintf("Cannot %s [%s]. It is defined on another layer. Please set %s as the target layer to proceed.",
+        std::string err = TfStringPrintf("Cannot %s [%s]. %s. Please set %s as the target layer to proceed.",
                                  commandName.c_str(),
-                                 prim.GetName().GetString().c_str(), 
+                                 prim.GetName().GetString().c_str(),
+                                 message.c_str(),
                                  layerDisplayName.c_str());
         throw std::runtime_error(err.c_str());
     }
