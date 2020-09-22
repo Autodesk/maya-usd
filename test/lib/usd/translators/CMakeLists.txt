@@ -64,6 +64,7 @@ set(TEST_SCRIPT_FILES
 if (BUILD_RFM_TRANSLATORS)
     list(APPEND TEST_SCRIPT_FILES
         testUsdExportRfMShaders.py
+        testUsdImportRfMShaders.py
     )
 endif()
 
