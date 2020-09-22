@@ -135,7 +135,19 @@ std::string uniqueChildName(const UsdSceneItem::Ptr& usdParent, const Ufe::Path&
 	if (!usdParent) return std::string();
 
 	TfToken::HashSet childrenNames;
-	for (auto child : usdParent->prim().GetChildren())
+
+	// The prim GetChildren method used the UsdPrimDefaultPredicate which includes
+	// active prims. We also need the inactive ones.
+	//
+	// const Usd_PrimFlagsConjunction UsdPrimDefaultPredicate = 
+	//			UsdPrimIsActive && UsdPrimIsDefined && 
+	//			UsdPrimIsLoaded && !UsdPrimIsAbstract;
+	// Note: removed 'UsdPrimIsLoaded' from the predicate. When it is present the
+	//		 filter doesn't properly return the inactive prims. UsdView doesn't
+	//		 use loaded either in _computeDisplayPredicate().
+	//
+	// Note: our UsdHierarchy uses instance proxies, so we also use them here.
+	for (auto child : usdParent->prim().GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract)))
 	{
 		childrenNames.insert(child.GetName());
 	}

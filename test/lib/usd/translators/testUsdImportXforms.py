@@ -15,9 +15,6 @@
 # limitations under the License.
 #
 
-from future.utils import iteritems
-from builtins import zip
-
 from pxr import Gf
 
 from maya import cmds
@@ -109,6 +106,8 @@ class testUsdImportXforms(unittest.TestCase):
             'rotatePivotTranslate': (.01, 5),
             'scalePivotTranslate': (.01, 5),
         }
+        # Lock in a fixed, if arbitrary, ordering of attr names.
+        ATTR_NAMES = list(ATTRS.keys())
         
         rand = Random(3)
 
@@ -125,7 +124,10 @@ class testUsdImportXforms(unittest.TestCase):
             attrVals = {}
             allNodes.append(node)
             allExpected[node] = attrVals
-            for enabled, (attr, (valMin, valMax)) in zip(enabledArray, iteritems(ATTRS)):
+            for attrIndex in range(len(ATTR_NAMES)):
+                enabled = enabledArray[attrIndex]
+                attr = ATTR_NAMES[attrIndex]
+                (valMin, valMax) = ATTRS[attr]
                 if not enabled:
                     if attr in ('rotateOrder', 'rotateX', 'rotateY', 'rotateZ'):
                         attrVals[attr] = 0
@@ -158,13 +160,15 @@ class testUsdImportXforms(unittest.TestCase):
         # Now import, and make sure it round-trips as expected
         cmds.file(new=1, f=1)
         cmds.usdImport(file=usdPath)
-        for node, attrVals in iteritems(allExpected):
+        for node in allExpected.keys():
+            attrVals = allExpected[node]
             # if only one (or less) of the three rotates is non-zero, then
             # the rotate order doesn't matter...
             nonZeroRotates = [attrVals['rotate' + dir] != 0 for dir in 'XYZ']
             skipRotateOrder = sum(int(x) for x in nonZeroRotates) <= 1 
             
-            for attr, expectedVal in iteritems(attrVals):
+            for attr in attrVals.keys():
+                expectedVal = attrVals[attr]
                 if attr == 'rotateOrder' and skipRotateOrder:
                     continue
                 attrName = "{}.{}".format(node, attr)
@@ -175,7 +179,9 @@ class testUsdImportXforms(unittest.TestCase):
                 else:
                     # cmds.getAttr('persp.scale') returns [(0, 0, 0)]... weird
                     actualVal = actualVal[0]
-                for expected, actual in zip(expectedVal, actualVal):
+                for valIndex in range(len(expectedVal)):
+                    expected = expectedVal[valIndex]
+                    actual = actualVal[valIndex]
                     try:
                         self.assertAlmostEqual(expected, actual,
                             msg="{} - expected {}, got {} (diff: {}".format(
@@ -208,7 +214,8 @@ class testUsdImportXforms(unittest.TestCase):
         expectedScale = (.5, .5, .5)
         expectedTranslation = (1.0, 2.0, 3.0)
         
-        for rotOrderName, expectedRotation in iteritems(expectedRotates):
+        for rotOrderName in expectedRotates.keys():
+            expectedRotation = expectedRotates[rotOrderName]
             mayaTransform = self._GetMayaTransform(rotOrderName)
             transformationMatrix = mayaTransform.transformation()
     

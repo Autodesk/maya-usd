@@ -13,18 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <string>
+#include <mayaUsd/fileio/shading/shadingModeExporter.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/utils/colorSpace.h>
 
-#include <maya/MColor.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MFnLambertShader.h>
-#include <maya/MFnSet.h>
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/gf/gamma.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/registryManager.h>
@@ -34,6 +29,7 @@
 #include <pxr/base/vt/array.h>
 #include <pxr/base/vt/types.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usd/prim.h>
@@ -48,11 +44,21 @@
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
-#include <mayaUsd/fileio/shading/shadingModeExporter.h>
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-#include <mayaUsd/fileio/translators/translatorMaterial.h>
-#include <mayaUsd/utils/colorSpace.h>
+#include <maya/MColor.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnLambertShader.h>
+#include <maya/MFnReflectShader.h>
+#include <maya/MFnSet.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+#if MAYA_API_VERSION >= 20200000
+#include <maya/MFnStandardSurfaceShader.h>
+#endif
+
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,7 +70,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (transmissionColor)
     (transparency)
 
-    ((MayaShaderName, "lambert"))
     ((DefaultShaderId, "PxrDiffuse"))
     ((DefaultShaderOutputName, "out"))
 );
@@ -85,10 +90,6 @@ private:
         if (status != MS::kSuccess) {
             return;
         }
-        const MFnLambertShader lambertFn(ssDepNode.object(), &status);
-        if (status != MS::kSuccess) {
-            return;
-        }
 
         const UsdMayaShadingModeExportContext::AssignmentVector& assignments =
             context.GetAssignments();
@@ -96,30 +97,58 @@ private:
             return;
         }
 
-        const UsdStageRefPtr& stage = context.GetUsdStage();
-        const MColor mayaColor = lambertFn.color();
-        const MColor mayaTransparency = lambertFn.transparency();
-        const float diffuseCoeff = lambertFn.diffuseCoeff();
-        const GfVec3f color = UsdMayaColorSpace::ConvertMayaToLinear(
-            diffuseCoeff*GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
-        const GfVec3f transparency = UsdMayaColorSpace::ConvertMayaToLinear(
-            GfVec3f(mayaTransparency[0], mayaTransparency[1], mayaTransparency[2]));
+        GfVec3f color;
+        GfVec3f transparency;
+
+        // We might use the Maya shading node's transparency to author a scalar
+        // displayOpacity value on the UsdGeomGprim, as well as an input on the
+        // shader prim. How we compute that value will depend on which Maya
+        // shading node we're working with.
+        float transparencyAvg;
+
+        const MFnLambertShader lambertFn(ssDepNode.object(), &status);
+        if (status == MS::kSuccess) {
+            const MColor mayaColor = lambertFn.color();
+            const MColor mayaTransparency = lambertFn.transparency();
+            const float diffuseCoeff = lambertFn.diffuseCoeff();
+            color = UsdMayaColorSpace::ConvertMayaToLinear(
+                diffuseCoeff*GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
+            transparency = UsdMayaColorSpace::ConvertMayaToLinear(
+                GfVec3f(mayaTransparency[0], mayaTransparency[1], mayaTransparency[2]));
+            // Compute the average transparency using the un-linearized Maya
+            // value.
+            transparencyAvg = (mayaTransparency[0] +
+                               mayaTransparency[1] +
+                               mayaTransparency[2]) / 3.0f;
+        } else {
+#if MAYA_API_VERSION >= 20200000
+            const MFnStandardSurfaceShader surfaceFn(ssDepNode.object(), &status);
+            if (status != MS::kSuccess) {
+                return;
+            }
+            const MColor mayaColor = surfaceFn.baseColor();
+            const float base = surfaceFn.base();
+            color = UsdMayaColorSpace::ConvertMayaToLinear(
+                base*GfVec3f(mayaColor[0], mayaColor[1], mayaColor[2]));
+            const float mayaTransparency = surfaceFn.transmission();
+            transparency = GfVec3f(mayaTransparency, mayaTransparency, mayaTransparency);
+            // We can directly use the scalar transmission value as the
+            // "average".
+            transparencyAvg = mayaTransparency;
+#else
+            return;
+#endif
+        }
 
         VtVec3fArray displayColorAry;
         displayColorAry.push_back(color);
 
-        // The simple UsdGeomGprim display shading schema only allows for a
-        // scalar opacity.  We compute it as the unweighted average of the
-        // components since it would be ridiculous to apply the inverse weighting
-        // (of the common graycale conversion) on re-import
-        // The average is compute from the Maya color as is
         VtFloatArray displayOpacityAry;
-        const float transparencyAvg = (mayaTransparency[0] +
-                                       mayaTransparency[1] +
-                                       mayaTransparency[2]) / 3.0f;
         if (transparencyAvg > 0.0f) {
             displayOpacityAry.push_back(1.0f - transparencyAvg);
         }
+
+        const UsdStageRefPtr& stage = context.GetUsdStage();
 
         TF_FOR_ALL(iter, assignments) {
             const SdfPath& boundPrimPath = iter->first;
@@ -233,6 +262,8 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, displayColor)
 {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
         "displayColor",
+        "Display Colors",
+        "Exports the diffuse color of the bound shader as a displayColor primvar on the USD mesh.",
         []() -> UsdMayaShadingModeExporterPtr {
             return UsdMayaShadingModeExporterPtr(
                 static_cast<UsdMayaShadingModeExporter*>(
@@ -241,7 +272,7 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, displayColor)
     );
 }
 
-DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
+DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(displayColor, context, jobArguments)
 {
     const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();
     const UsdGeomGprim& primSchema = context->GetBoundPrim();
@@ -304,40 +335,83 @@ DEFINE_SHADING_MODE_IMPORTER(displayColor, context)
     const GfVec3f transparencyColor =
         UsdMayaColorSpace::ConvertLinearToMaya(linearTransparency);
 
-    std::string shaderName(_tokens->MayaShaderName.GetText());
+    // We default to lambert if no conversion was requested:
+    const TfToken& shadingConversion
+        = jobArguments.shadingConversion != UsdMayaShadingConversionTokens->none
+        ? jobArguments.shadingConversion
+        : UsdMayaShadingConversionTokens->lambert;
+    std::string shaderName(shadingConversion.GetText());
     SdfPath shaderParentPath = SdfPath::AbsoluteRootPath();
     if (shadeMaterial) {
         const UsdPrim& shadeMaterialPrim = shadeMaterial.GetPrim();
         shaderName =
             TfStringPrintf("%s_%s",
                 shadeMaterialPrim.GetName().GetText(),
-                _tokens->MayaShaderName.GetText());
+                shadingConversion.GetText());
         shaderParentPath = shadeMaterialPrim.GetPath();
     }
 
-    // Construct the lambert shader.
-    MFnLambertShader lambertFn;
-    MObject shadingObj = lambertFn.create();
-    lambertFn.setName(shaderName.c_str());
-    lambertFn.setColor(
-        MColor(displayColor[0], displayColor[1], displayColor[2]));
-    lambertFn.setTransparency(
-        MColor(transparencyColor[0], transparencyColor[1], transparencyColor[2]));
-    
-    // We explicitly set diffuse coefficient to 1.0 here since new lamberts
-    // default to 0.8. This is to make sure the color value matches visually
-    // when roundtripping since we bake the diffuseCoeff into the diffuse color
-    // at export.
-    lambertFn.setDiffuseCoeff(1.0);
+    // Construct the selected shader.
+    MObject           shadingObj;
+    UsdMayaTranslatorUtil::CreateShaderNode(
+              MString(shaderName.c_str()),
+              shadingConversion.GetText(),
+              UsdMayaShadingNodeType::Shader,
+              &status,
+              &shadingObj);
+    if (status != MS::kSuccess) {
+        TF_RUNTIME_ERROR(
+            "Could not create node of type '%s' for prim '%s'.\n",
+            shadingConversion.GetText(),
+            primSchema.GetPath().GetText());
+        return MObject();
+    }
 
-    const SdfPath lambertPath =
-        shaderParentPath.AppendChild(TfToken(lambertFn.name().asChar()));
-    context->AddCreatedObject(lambertPath, shadingObj);
+    MPlug outputPlug;
+#if MAYA_API_VERSION >= 20200000
+    if (shadingConversion != UsdMayaShadingConversionTokens->standardSurface) {
+#endif
+        MFnLambertShader lambertFn;
+        lambertFn.setObject(shadingObj);
+        lambertFn.setColor(
+            MColor(displayColor[0], displayColor[1], displayColor[2]));
+        lambertFn.setTransparency(
+            MColor(transparencyColor[0], transparencyColor[1], transparencyColor[2]));
+        
+        // We explicitly set diffuse coefficient to 1.0 here since new lamberts
+        // default to 0.8. This is to make sure the color value matches visually
+        // when roundtripping since we bake the diffuseCoeff into the diffuse color
+        // at export.
+        lambertFn.setDiffuseCoeff(1.0);
 
-    // Find the outColor plug so we can connect it as the surface shader of the
-    // shading engine.
-    MPlug outputPlug = lambertFn.findPlug("outColor", &status);
-    CHECK_MSTATUS_AND_RETURN(status, MObject());
+        const SdfPath lambertPath =
+            shaderParentPath.AppendChild(TfToken(lambertFn.name().asChar()));
+        context->AddCreatedObject(lambertPath, shadingObj);
+
+        outputPlug = lambertFn.findPlug("outColor", &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+#if MAYA_API_VERSION >= 20200000
+    } else {
+        MFnStandardSurfaceShader surfaceFn;
+        surfaceFn.setObject(shadingObj);
+        surfaceFn.setBase(1.0f);
+        surfaceFn.setBaseColor(
+            MColor(displayColor[0], displayColor[1], displayColor[2]));
+
+        float transmission
+            = (transparencyColor[0] + transparencyColor[1] + transparencyColor[2]) / 3.0f;
+        surfaceFn.setTransmission(transmission);
+
+        const SdfPath surfacePath =
+            shaderParentPath.AppendChild(TfToken(surfaceFn.name().asChar()));
+        context->AddCreatedObject(surfacePath, shadingObj);
+
+        // Find the outColor plug so we can connect it as the surface shader of the
+        // shading engine.
+        outputPlug = surfaceFn.findPlug("outColor", &status);
+        CHECK_MSTATUS_AND_RETURN(status, MObject());
+    }
+#endif
 
     // Create the shading engine.
     MObject shadingEngine = context->CreateShadingEngine();

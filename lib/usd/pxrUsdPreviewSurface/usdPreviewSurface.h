@@ -37,7 +37,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 #define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS \
-    ((MayaTypeName, "pxrUsdPreviewSurface")) \
     ((ClearcoatAttrName, "clearcoat")) \
     ((ClearcoatRoughnessAttrName, "clearcoatRoughness")) \
     ((DiffuseColorAttrName, "diffuseColor")) \
@@ -63,50 +62,6 @@ TF_DECLARE_PUBLIC_TOKENS(
 class PxrMayaUsdPreviewSurface : public MPxNode
 {
     public:
-        PXRUSDPREVIEWSURFACE_API
-        static const MTypeId typeId;
-        PXRUSDPREVIEWSURFACE_API
-        static const MString typeName;
-
-        PXRUSDPREVIEWSURFACE_API
-        static const MString drawDbClassification;
-        PXRUSDPREVIEWSURFACE_API
-        static const MString fullClassification;
-
-        // Attributes
-        PXRUSDPREVIEWSURFACE_API
-        static MObject clearcoatAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject clearcoatRoughnessAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject diffuseColorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject displacementAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject emissiveColorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject iorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject metallicAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject normalAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject occlusionAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject opacityAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject roughnessAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject specularColorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject useSpecularWorkflowAttr;
-
-        // Output Attributes.
-        PXRUSDPREVIEWSURFACE_API
-        static MObject outColorAttr;
-        PXRUSDPREVIEWSURFACE_API
-        static MObject outTransparencyAttr;
-
         PXRUSDPREVIEWSURFACE_API
         static void* creator();
 

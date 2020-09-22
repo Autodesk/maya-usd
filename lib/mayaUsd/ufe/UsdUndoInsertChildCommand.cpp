@@ -54,9 +54,12 @@ namespace ufe {
 
 UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& parent,
                                                      const UsdSceneItem::Ptr& child,
-                                                     const UsdSceneItem::Ptr& /* pos */) 
+                                                     const UsdSceneItem::Ptr& /* pos */)
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    : Ufe::InsertChildCommand()
+    #else
     : Ufe::UndoableCommand()
-    , _ufeSrcItem(child)
+    #endif
     , _ufeDstItem(nullptr)
     , _ufeSrcPath(child->path())
     , _usdSrcPath(child->prim().GetPath())
@@ -123,7 +126,11 @@ bool UsdUndoInsertChildCommand::insertChildRedo()
         // remove all scene description for the given path and 
         // its subtree in the current UsdEditTarget 
         {
-            auto stage = _ufeSrcItem->prim().GetStage();
+            // we shouldn't rely on UsdSceneItem to access the UsdPrim since 
+            // it could be stale. Instead we should get the USDPrim from the Ufe::Path
+            const auto& usdSrcPrim = ufePathToPrim(_ufeSrcPath);
+
+            auto stage = usdSrcPrim.GetStage();
             UsdEditContext ctx(stage, _childLayer);
             status = stage->RemovePrim(_usdSrcPath);
         }
@@ -149,14 +156,18 @@ bool UsdUndoInsertChildCommand::insertChildUndo()
         // remove all scene description for the given path and 
         // its subtree in the current UsdEditTarget
         {
-            auto stage = _ufeDstItem->prim().GetStage();
+            // we shouldn't rely on UsdSceneItem to access the UsdPrim since 
+            // it could be stale. Instead we should get the USDPrim from the Ufe::Path
+            const auto& usdDstPrim = ufePathToPrim(_ufeDstPath);
+
+            auto stage = usdDstPrim.GetStage();
             UsdEditContext ctx(stage, _parentLayer);
             status = stage->RemovePrim(_usdDstPath);
         }
 
         if (status) {
-            _ufeSrcItem = UsdSceneItem::create(_ufeSrcPath, ufePathToPrim(_ufeSrcPath));
-            sendNotification<Ufe::ObjectReparent>(_ufeSrcItem, _ufeDstPath);
+            auto ufeSrcItem = UsdSceneItem::create(_ufeSrcPath, ufePathToPrim(_ufeSrcPath));
+            sendNotification<Ufe::ObjectReparent>(ufeSrcItem, _ufeDstPath);
         }
     }
     else {

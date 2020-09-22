@@ -15,7 +15,7 @@
 //
 #include "usdLambertWriter.h"
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/utils/util.h>
 
@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-PXRUSDMAYA_REGISTER_WRITER(lambert, PxrUsdTranslators_LambertWriter);
+PXRUSDMAYA_REGISTER_SHADER_WRITER(lambert, PxrUsdTranslators_LambertWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -111,11 +111,16 @@ void PxrUsdTranslators_LambertWriter::WriteSpecular(const UsdTimeCode& usdTime)
         .CreateInput(PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, SdfValueTypeNames->Float)
         .Set(1.0f, usdTime);
 
-    // Using specular workflow, but with default black specular color.
+    // Using specular workflow, but enforced black specular color.
     shaderSchema
         .CreateInput(
             PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
         .Set(1, usdTime);
+
+    shaderSchema
+        .CreateInput(PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName, SdfValueTypeNames->Color3f)
+        .Set(GfVec3f(0.0f, 0.0f, 0.0f), usdTime);
+
 }
 
 /* virtual */

@@ -54,7 +54,7 @@ struct UsdMaya_RegistryHelper
     /// Searches the plugInfos and looks for ShadingModePlugin.
     /// 
     /// "UsdMaya" : {
-    ///     "ShadingModeExport" : {
+    ///     "ShadingModePlugin" : {
     ///         "mayaPlugin" : "arnoldShaderExporter"
     ///     }
     /// }

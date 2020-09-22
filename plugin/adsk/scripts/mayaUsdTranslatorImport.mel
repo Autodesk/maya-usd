@@ -138,6 +138,19 @@ global proc int mayaUsdTranslatorImport (string $parent,
         }
         mayaUsdTranslatorImport_SetOptionMenuByAnnotation("useRegistry", "mayaUsdTranslator_MaterialsOptionMenu");
 
+        optionMenuGrp -l "Material Conversion:" -cw 1 $cw1 mayaUsdTranslator_MaterialsConversionMenu;
+        menuItem -l "No Conversion" -ann "none";
+        menuItem -l "To Lambert" -ann "lambert";
+        string $apiString = `about -q -apiVersion`;
+        $apiString = `substring $apiString 1 4`;
+        if ((int)$apiString >= 2020) {
+            menuItem -l "To Standard Surface" -ann "standardSurface";
+        }
+        menuItem -l "To Blinn" -ann "blinn";
+        menuItem -l "To Phong" -ann "phong";
+        menuItem -l "To Phong Explorer" -ann "phongE";
+        mayaUsdTranslatorImport_SetOptionMenuByAnnotation("none", "mayaUsdTranslator_MaterialsConversionMenu");
+
 //        checkBoxGrp -label "InstancedPrims: " -label1 "Convert to Instances" -cw 1 $cw1 mayaUsdTranslator_InstancedPrimsCheckBox;
 //
 //        optionMenuGrp -label "Include Metadata: " -cw 1 $cw1 mayaUsdTranslator_IncludeMetadataOptionMenu;
@@ -173,6 +186,8 @@ global proc int mayaUsdTranslatorImport (string $parent,
                 tokenize($optionList[$index], "=", $optionBreakDown);
                 if ($optionBreakDown[0] == "shadingMode") {
                     mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "mayaUsdTranslator_MaterialsOptionMenu");
+                } else if ($optionBreakDown[0] == "shadingConversion") {
+                    mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "mayaUsdTranslator_MaterialsConversionMenu");
                 } else if ($optionBreakDown[0] == "readAnimData") {
                     mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_AnimDataCheckBox");
                 } else if ($optionBreakDown[0] == "startTime") {
@@ -192,6 +207,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
     } else if ($action == "query") {
         string $currentOptions = "";
         $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "shadingMode", "mayaUsdTranslator_MaterialsOptionMenu");
+        $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "shadingConversion", "mayaUsdTranslator_MaterialsConversionMenu");
         $currentOptions = mayaUsdTranslatorImport_AppendFromDialog($currentOptions, "primPath", "-primPath");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "readAnimData", "mayaUsdTranslator_AnimDataCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "useCustomFrameRange", "mayaUsdTranslator_CustomFrameRangeCheckBox");

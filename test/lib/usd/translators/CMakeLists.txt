@@ -12,6 +12,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportFrameOffset.py
     testUsdExportInstances.py
     testUsdExportLocator.py
+    testUsdExportMayaInstancer.py
     testUsdExportMesh.py
     testUsdExportNurbsCurve.py
     testUsdExportOpenLayer.py
@@ -35,9 +36,11 @@ set(TEST_SCRIPT_FILES
     testUsdExportShadingModePxrRis.py
     testUsdExportSkeleton.py
     testUsdExportStripNamespaces.py
+    testUsdExportStroke.py
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
+    testUsdImportExportScope.py
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but
     # passes.  PPT, 17-Jun-20.
     testUsdImportFrameRange.py
@@ -74,8 +77,8 @@ foreach(script ${TEST_SCRIPT_FILES})
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
 
-    # Assign a ctest label to these tests for easy filtering.
-    set_tests_properties(${target} PROPERTIES LABELS translators)
+    # Add a ctest label to these tests for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS translators)
 endforeach()
 
 # testUsdExportUVSets and testUsdImportUVSets are run twice, with float writing
@@ -87,7 +90,7 @@ mayaUsd_add_test(testUsdExportUVSets
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
 )
-set_tests_properties(testUsdExportUVSets PROPERTIES LABELS translators)
+set_property(TEST testUsdExportUVSets APPEND PROPERTY LABELS translators)
 
 mayaUsd_add_test(testUsdExportUVSetsFloat
     PYTHON_MODULE testUsdExportUVSets
@@ -95,7 +98,7 @@ mayaUsd_add_test(testUsdExportUVSetsFloat
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=1"
 )
-set_tests_properties(testUsdExportUVSetsFloat PROPERTIES LABELS translators)
+set_property(TEST testUsdExportUVSetsFloat APPEND PROPERTY LABELS translators)
 
 mayaUsd_add_test(testUsdImportUVSets
     PYTHON_MODULE testUsdImportUVSets
@@ -103,7 +106,7 @@ mayaUsd_add_test(testUsdImportUVSets
     ENV
         "PIXMAYA_READ_FLOAT2_AS_UV=0"
 )
-set_tests_properties(testUsdImportUVSets PROPERTIES LABELS translators)
+set_property(TEST testUsdImportUVSets APPEND PROPERTY LABELS translators)
 
 mayaUsd_add_test(testUsdImportUVSetsFloat
     PYTHON_MODULE testUsdImportUVSets
@@ -111,4 +114,26 @@ mayaUsd_add_test(testUsdImportUVSetsFloat
     ENV
         "PIXMAYA_READ_FLOAT2_AS_UV=1"
 )
-set_tests_properties(testUsdImportUVSetsFloat PROPERTIES LABELS translators)
+set_property(TEST testUsdImportUVSetsFloat APPEND PROPERTY LABELS translators)
+
+# Test using standardSurface, which was introduced in Maya 2020.
+if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020) 
+    mayaUsd_add_test(testUsdExportCustomConverter
+        PYTHON_MODULE testUsdExportCustomConverter
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        ENV
+            "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+            "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+    )
+    set_property(TEST testUsdExportCustomConverter APPEND PROPERTY LABELS translators)
+endif()
+
+# We are explicitly not setting PXR_PLUGINPATH_NAME here. We want to test
+# manually loading the plugin that provides Maya export.
+mayaUsd_add_test(testUsdMayaListShadingModesCommand
+    PYTHON_MODULE testUsdMayaListShadingModesCommand
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+)
+set_property(TEST testUsdMayaListShadingModesCommand APPEND PROPERTY LABELS translators)

@@ -27,6 +27,28 @@ import ufe
 import unittest
 import os
 
+class TestAddPrimObserver(ufe.Observer):
+    def __init__(self):
+        super(TestAddPrimObserver, self).__init__()
+        self.deleteNotif = 0
+        self.addNotif = 0
+
+    def __call__(self, notification):
+        if isinstance(notification, ufe.ObjectDelete):
+            self.deleteNotif += 1
+        if isinstance(notification, ufe.ObjectAdd):
+            self.addNotif += 1
+
+    def nbDeleteNotif(self):
+        return self.deleteNotif
+
+    def nbAddNotif(self):
+        return self.addNotif
+
+    def reset(self):
+        self.addNotif = 0
+        self.deleteNotif = 0
+
 class ContextOpsTestCase(unittest.TestCase):
     '''Verify the ContextOps interface for the USD runtime.'''
 
@@ -41,13 +63,13 @@ class ContextOpsTestCase(unittest.TestCase):
         ''' Called initially to set up the maya test environment '''
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
-        
+
+        # These tests requires no additional setup.
+        if self._testMethodName in ['testAddNewPrim', 'testAddNewPrimWithDelete']:
+            return
+
         # Open top_layer.ma scene in test-samples
         mayaUtils.openTopLayerScene()
-
-        # Create a proxy shape with empty stage to start with.
-        import mayaUsd_createStageWithNewLayer
-        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Clear selection to start off.
         ufe.GlobalSelection.get().clear()
@@ -57,6 +79,7 @@ class ContextOpsTestCase(unittest.TestCase):
             mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         self.ball35Item = ufe.Hierarchy.createItem(ball35Path)
+        self.ball35Prim = usdUtils.getPrimFromSceneItem(self.ball35Item)
 
         ufe.GlobalSelection.get().append(self.ball35Item)
 
@@ -68,6 +91,7 @@ class ContextOpsTestCase(unittest.TestCase):
         # - visibility (for all prims with visibility attribute)
         # - variant sets, for those prims that have them (such as Ball_35)
         # - add new prim (for all prims)
+        # - prim activate/deactivate
         contextItems = self.contextOps.getItems([])
         contextItemStrings = [c.item for c in contextItems]
 
@@ -80,6 +104,7 @@ class ContextOpsTestCase(unittest.TestCase):
             self.assertIn('Toggle Visibility', contextItemStrings)
         else:
             self.assertNotIn('Toggle Visibility', contextItemStrings)
+        self.assertIn('Toggle Active State', contextItemStrings)
         self.assertIn('Add New Prim', contextItemStrings)
 
         # Ball_35 has a single variant set, which has children.
@@ -127,6 +152,22 @@ class ContextOpsTestCase(unittest.TestCase):
         
         cmds.undo()
 
+        # Active / Deactivate Prim
+        cmd = self.contextOps.doOpCmd(['Toggle Active State'])
+        self.assertIsNotNone(cmd)
+
+        # Initially, Ball_35 should be active.
+        self.assertTrue(self.ball35Prim.IsActive())
+
+        ufeCmd.execute(cmd)
+        self.assertFalse(self.ball35Prim.IsActive())
+
+        cmds.undo()
+        self.assertTrue(self.ball35Prim.IsActive())
+
+        cmds.redo()
+        self.assertFalse(self.ball35Prim.IsActive())
+
         # Change variant in variant set.
         def shadingVariant():
             contextItems = self.contextOps.getItems(
@@ -156,8 +197,21 @@ class ContextOpsTestCase(unittest.TestCase):
 
         cmds.undo()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrim only available in UFE preview version 0.2.15 and greater')
     def testAddNewPrim(self):
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create our UFE notification observer
+        ufeObs = TestAddPrimObserver()
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
+            ufe.Scene.addObjectDeleteObserver(ufeObs)
+            ufe.Scene.addObjectAddObserver(ufeObs)
+        else:
+            ufe.Scene.addObserver(ufeObs)
+
         # Create a ContextOps interface for the proxy shape.
         proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage1|stageShape1")])
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
@@ -166,7 +220,12 @@ class ContextOpsTestCase(unittest.TestCase):
         # Add a new prim.
         cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
         self.assertIsNotNone(cmd)
+        ufeObs.reset()
         ufeCmd.execute(cmd)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 1)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
 
         # The proxy shape should now have a single UFE child item.
         proxyShapehier = ufe.Hierarchy.hierarchy(proxyShapeItem)
@@ -186,7 +245,12 @@ class ContextOpsTestCase(unittest.TestCase):
         # Add a new prim.
         cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
         self.assertIsNotNone(cmd)
+        ufeObs.reset()
         ufeCmd.execute(cmd)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 1)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
 
         # The xform prim should now have a single UFE child item.
         xformHier = ufe.Hierarchy.hierarchy(xformItem)
@@ -196,25 +260,89 @@ class ContextOpsTestCase(unittest.TestCase):
         # Add another prim
         cmd = contextOps.doOpCmd(['Add New Prim', 'Capsule'])
         self.assertIsNotNone(cmd)
+        ufeObs.reset()
         ufeCmd.execute(cmd)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 1)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 0)
 
         # The xform prim should now have two UFE child items.
         self.assertTrue(xformHier.hasChildren())
         self.assertEqual(len(xformHier.children()), 2)
 
         # Undo will remove the new prim, meaning one less child.
+        ufeObs.reset()
         cmds.undo()
         self.assertTrue(xformHier.hasChildren())
         self.assertEqual(len(xformHier.children()), 1)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 0)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 1)
 
         # Undo again will remove the first added prim, meaning no children.
         cmds.undo()
         self.assertFalse(xformHier.hasChildren())
 
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 0)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
+
         cmds.redo()
         self.assertTrue(xformHier.hasChildren())
         self.assertEqual(len(xformHier.children()), 1)
 
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 1)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
+
         cmds.redo()
         self.assertTrue(xformHier.hasChildren())
         self.assertEqual(len(xformHier.children()), 2)
+
+        # Ensure we got the correct UFE notifs.
+        self.assertEqual(ufeObs.nbAddNotif(), 2)
+        self.assertEqual(ufeObs.nbDeleteNotif(), 2)
+
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrimWithDelete only available in UFE preview version 0.2.15 and greater')
+    def testAddNewPrimWithDelete(self):
+        cmds.file(new=True, force=True)
+
+        # Create a proxy shape with empty stage to start with.
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        # Create a ContextOps interface for the proxy shape.
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage1|stageShape1")])
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        # Add a new Xform prim.
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The proxy shape should now have a single UFE child item.
+        proxyShapehier = ufe.Hierarchy.hierarchy(proxyShapeItem)
+        self.assertTrue(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 1)
+
+        # Using UFE, delete this new prim (which doesn't actually delete it but
+        # instead makes it inactive).
+        cmds.pickWalk(d='down')
+        cmds.delete()
+
+        # The proxy shape should now have no UFE child items (since we skip inactive).
+        self.assertFalse(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 0)
+
+        # Add another Xform prim (which should get a unique name taking into
+        # account the prim we just made inactive).
+        cmd = contextOps.doOpCmd(['Add New Prim', 'Xform'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The proxy shape should now have a single UFE child item.
+        self.assertTrue(proxyShapehier.hasChildren())
+        self.assertEqual(len(proxyShapehier.children()), 1)

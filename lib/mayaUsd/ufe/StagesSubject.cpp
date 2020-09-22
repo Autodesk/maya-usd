@@ -40,9 +40,7 @@
 #include <ufe/transform3d.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/object3d.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2010
 #include <ufe/object3dNotification.h>
-#endif
 #include <unordered_map>
 #endif
 
@@ -219,34 +217,67 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			if (!sceneItem)
 				continue;
 
-			if (prim.IsActive())
+			// Special case when we know the operation came from either
+			// the add or delete of our UFE/USD implementation.
+			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
 			{
-				if (InAddOrRemoveReference::inAddOrRemoveReference())
+				if (prim.IsActive())
 				{
-#if UFE_PREVIEW_VERSION_NUM >= 2014
-					// When we are in an add or remove reference we send the
-					// UFE subtree invalidate notif instead.
-					auto notification = Ufe::SubtreeInvalidate(sceneItem);
-					Ufe::Scene::notifySubtreeInvalidate(notification);
-#endif
+					#if UFE_PREVIEW_VERSION_NUM >= 2021
+					Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
+					#else
+					auto notification = Ufe::ObjectAdd(sceneItem);
+					Ufe::Scene::notifyObjectAdd(notification);
+					#endif
 				}
 				else
 				{
-					auto notification = Ufe::ObjectAdd(sceneItem);
-					Ufe::Scene::notifyObjectAdd(notification);
+					#if UFE_PREVIEW_VERSION_NUM >= 2021
+					Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
+					#else
+					auto notification = Ufe::ObjectPostDelete(sceneItem);
+					Ufe::Scene::notifyObjectDelete(notification);
+					#endif
 				}
+			}
+#ifdef UFE_V2_FEATURES_AVAILABLE
+			else
+			{
+				// According to USD docs for GetResyncedPaths():
+				// - Resyncs imply entire subtree invalidation of all descendant prims and properties.
+				// So we send the UFE subtree invalidate notif.
+				#if UFE_PREVIEW_VERSION_NUM >= 2021
+				Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+				#else
+				auto notification = Ufe::SubtreeInvalidate(sceneItem);
+				Ufe::Scene::notifySubtreeInvalidate(notification);
+				#endif
+			}
+#endif
+		}
+#ifdef UFE_V2_FEATURES_AVAILABLE
+		else if (!prim.IsValid() && !InPathChange::inPathChange())
+		{
+			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
+			{
+				#if UFE_PREVIEW_VERSION_NUM >= 2021
+				Ufe::Scene::instance().notify(Ufe::ObjectDestroyed(ufePath));
+				#else
+				auto notification = Ufe::ObjectDestroyed(ufePath);
+				Ufe::Scene::notifyObjectDelete(notification);
+				#endif
 			}
 			else
 			{
-				auto notification = Ufe::ObjectPostDelete(sceneItem);
-				Ufe::Scene::notifyObjectDelete(notification);
+				#if UFE_PREVIEW_VERSION_NUM >= 2021
+				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
+				Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+				#else
+				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
+				auto notification = Ufe::SubtreeInvalidate(sceneItem);
+				Ufe::Scene::notifySubtreeInvalidate(notification);
+				#endif
 			}
-		}
-#if UFE_PREVIEW_VERSION_NUM >= 2015
-		else if (!prim.IsValid() && !InPathChange::inPathChange())
-		{
-			auto notification = Ufe::ObjectDestroyed(ufePath);
-			Ufe::Scene::notifyObjectDelete(notification);
 		}
 #endif
 	}
@@ -270,14 +301,12 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			}
 		}
 
-#if UFE_PREVIEW_VERSION_NUM >= 2010
 		// Send a special message when visibility has changed.
 		if (changedPath.GetNameToken() == UsdGeomTokens->visibility)
 		{
 			Ufe::VisibilityChanged vis(ufePath);
 			Ufe::Object3d::notify(vis);
 		}
-#endif
 #endif
 
 		// We need to determine if the change is a Transform3d change.
@@ -309,10 +338,14 @@ void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& n
 {
 	afterOpen();
 
-#if UFE_PREVIEW_VERSION_NUM >= 2014
+#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(notice.GetProxyShape().ufePath());
+	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+	#else
 	auto notification = Ufe::SubtreeInvalidate(sceneItem);
 	Ufe::Scene::notifySubtreeInvalidate(notification);
+	#endif
 #endif
 }
 
