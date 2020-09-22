@@ -81,9 +81,7 @@ global proc stageFromFile_UICommit(string $parent) {
 proc doCreateStage(string $fileName) {
     // actually load the file
     string $baseName = capitalizeString(`basenameEx $fileName`);
-    if( isValidObjectName($baseName) )
-        $baseName += "_usd";
-    else
+    if( ! isValidObjectName($baseName) )
         $baseName = "UsdStage";
 
     string $ppath = `optionVar -q stageFromFile_primPath`;

@@ -42,8 +42,12 @@ namespace {
 // Ufe::ContextItem strings
 // - the "Item" describe the operation to be performed.
 // - the "Label" is used in the context menu (can be localized).
+// - the "Image" is used for icon in the context menu. Directly used std::string
+//   for these so the emplace_back() will choose the right constructor. With char[]
+//   it would convert that param to a bool and choose the wrong constructor.
 static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
 static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor...";
+static const std::string kUSDLayerEditorImage{"USD_generic.png"};
 static constexpr char kUSDVariantSetsItem[] = "Variant Sets";
 static constexpr char kUSDVariantSetsLabel[] = "Variant Sets";
 static constexpr char kUSDToggleVisibilityItem[] = "Toggle Visibility";
@@ -56,20 +60,28 @@ static constexpr char kUSDAddNewPrimItem[] = "Add New Prim";
 static constexpr char kUSDAddNewPrimLabel[] = "Add New Prim";
 static constexpr char kUSDDefPrimItem[] = "Def";
 static constexpr char kUSDDefPrimLabel[] = "Def";
+static const std::string kUSDDefPrimImage{"out_USD_Def.png"};
 static constexpr char kUSDScopePrimItem[] = "Scope";
 static constexpr char kUSDScopePrimLabel[] = "Scope";
+static const std::string kUSDScopePrimImage{"out_USD_Scope.png"};
 static constexpr char kUSDXformPrimItem[] = "Xform";
 static constexpr char kUSDXformPrimLabel[] = "Xform";
+static const std::string kUSDXformPrimImage{"out_USD_UsdGeomXformable.png"};
 static constexpr char kUSDCapsulePrimItem[] = "Capsule";
 static constexpr char kUSDCapsulePrimLabel[] = "Capsule";
+static const std::string kUSDCapsulePrimImage{"out_USD_Capsule.png"};
 static constexpr char kUSDConePrimItem[] = "Cone";
 static constexpr char kUSDConePrimLabel[] = "Cone";
+static const std::string kUSDConePrimImage{"out_USD_Cone.png"};
 static constexpr char kUSDCubePrimItem[] = "Cube";
 static constexpr char kUSDCubePrimLabel[] = "Cube";
+static const std::string kUSDCubePrimImage{"out_USD_Cube.png"};
 static constexpr char kUSDCylinderPrimItem[] = "Cylinder";
 static constexpr char kUSDCylinderPrimLabel[] = "Cylinder";
+static const std::string kUSDCylinderPrimImage{"out_USD_Cylinder.png"};
 static constexpr char kUSDSpherePrimItem[] = "Sphere";
 static constexpr char kUSDSpherePrimLabel[] = "Sphere";
+static const std::string kUSDSpherePrimImage{"out_USD_Sphere.png"};
 
 //! \brief Undoable command for variant selection change
 class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand
@@ -275,7 +287,11 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
         int hasLayerEditorCmd{0};
         MGlobal::executeCommand("runTimeCommand -exists UsdLayerEditor", hasLayerEditorCmd);
         if (hasLayerEditorCmd) {
+#if UFE_PREVIEW_VERSION_NUM >= 2023
+            items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
+#else
             items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
+#endif
             items.emplace_back(Ufe::ContextItem::kSeparator);
         }
 
@@ -346,6 +362,17 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
             } // Variants of a variant set
         } // Variant sets
         else if (itemPath[0] == kUSDAddNewPrimItem) {
+#if UFE_PREVIEW_VERSION_NUM >= 2023
+            items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage);  // typeless prim
+            items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);
+            items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel, kUSDXformPrimImage);
+            items.emplace_back(Ufe::ContextItem::kSeparator);
+            items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel, kUSDCapsulePrimImage);
+            items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel, kUSDConePrimImage);
+            items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel, kUSDCubePrimImage);
+            items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
+            items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
+#else
             items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel);  // typeless prim
             items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel);
             items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel);
@@ -355,6 +382,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
             items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel);
             items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel);
             items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel);
+#endif
         }
     } // Top-level items
 
