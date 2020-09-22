@@ -133,7 +133,7 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
     auto primStack = prim.GetPrimStack();
     std::string layerDisplayName;
 
-    // check to see if there is a spec at the edit target layer. 
+    // iterate over the prim stack, starting at the highest-priority layer.
     for (const auto& spec : primStack) 
     {
         if (primSpec != spec) {
@@ -141,12 +141,15 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
         }
         else
         {
-            //  break out if the spec already exist
-            if (primSpec == spec && spec->GetSpecifier() == SdfSpecifierDef) {
-                break;
+            // if exists a def primSpec
+            if (spec->GetSpecifier() == SdfSpecifierDef) {
+                if(spec->HasReferences()) {
+                    break;
+                }
+                continue;
             }
 
-            // break out if this is an over that has a reference.
+            // if exists an over that has a reference.
             if(spec->GetSpecifier() == SdfSpecifierOver && spec->HasReferences()) {
                 break;
             }
