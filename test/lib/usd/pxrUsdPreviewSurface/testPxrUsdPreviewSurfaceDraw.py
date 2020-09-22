@@ -16,10 +16,12 @@
 #
 
 from maya import cmds
+from maya.app.general.mayaIsVP2Capable import mayaIsVP2Capable
 
 import os
+import sys
 import unittest
-from maya.app.general.mayaIsVP2Capable import mayaIsVP2Capable
+
 
 class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
 

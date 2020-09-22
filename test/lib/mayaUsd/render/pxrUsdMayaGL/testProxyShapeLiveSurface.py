@@ -30,6 +30,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testProxyShapeLiveSurface(unittest.TestCase):
 
@@ -39,8 +41,11 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
+        inputPath = fixturesUtils.readOnlySetUpClass(__file__,
+            initializeStandalone=False, loadPlugin=False)
+
         cls._testName = 'ProxyShapeLiveSurfaceTest'
-        cls._inputDir = os.path.abspath(cls._testName)
+        cls._inputDir = os.path.join(inputPath, cls._testName)
 
     def setUp(self):
         mayaSceneFile = '%s.ma' % self._testName

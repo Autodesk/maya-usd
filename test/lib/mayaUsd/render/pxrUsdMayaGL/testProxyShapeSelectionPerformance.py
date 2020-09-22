@@ -36,6 +36,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testProxyShapeSelectionPerformance(unittest.TestCase):
 
@@ -70,7 +72,11 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cls._inputDir = os.path.abspath('ProxyShapeSelectionPerformanceTest')
+        inputPath = fixturesUtils.setUpClass(__file__,
+            initializeStandalone=False, loadPlugin=False)
+
+        cls._inputDir = os.path.join(inputPath,
+            'ProxyShapeSelectionPerformanceTest')
 
         cls._testDir = os.path.abspath('.')
 

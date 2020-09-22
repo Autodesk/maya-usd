@@ -6,6 +6,7 @@ pxr_plugin(${PXR_PACKAGE}
     LIBRARIES
         arch
         basePxrUsdPreviewSurface
+        mayaUsd
         ${MAYA_Foundation_LIBRARY}
         ${MAYA_OpenMaya_LIBRARY}
 
@@ -23,7 +24,7 @@ pxr_plugin(${PXR_PACKAGE}
 
 set(PREVIEWSURFACE_MAYA_TYPE_NAME "pxrUsdPreviewSurface")
 
-configure_file("${CMAKE_SOURCE_DIR}/lib/usd/pxrUsdPreviewSurface/AEusdPreviewSurfaceTemplate.mel"
+configure_file("${PROJECT_SOURCE_DIR}/lib/usd/pxrUsdPreviewSurface/AEusdPreviewSurfaceTemplate.mel"
                "${CMAKE_CURRENT_BINARY_DIR}/AEpxrUsdPreviewSurfaceTemplate.mel"
 )
 

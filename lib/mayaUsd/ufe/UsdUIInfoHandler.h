@@ -45,6 +45,7 @@ public:
 
 	// Ufe::UIInfoHandler overrides
 	bool treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::CellInfo& info) const override;
+	std::string treeViewIcon(const Ufe::SceneItem::Ptr& item) const override;
 	std::string getLongRunTimeLabel() const override;
 }; // UsdUIInfoHandler
 

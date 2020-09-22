@@ -19,6 +19,8 @@
 #include <maya/MDoubleArray.h>
 #include <maya/MGlobal.h>
 
+#include <map>
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -69,6 +71,48 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
 	}
 
 	return changed;
+}
+
+std::string UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) const
+{
+	// Special case for nullptr input.
+	if (!item) {
+		return "out_USD_UsdTyped.png";	// Default USD icon
+	}
+
+	// We support these node types directly.
+	static const std::map<std::string, std::string> supportedTypes{
+		{"",					"out_USD_Def.png"},					// No node type
+		{"BlendShape",			"out_USD_BlendShape.png"},
+		{"Camera",				"out_USD_Camera.png"},
+		{"Capsule",				"out_USD_Capsule.png"},
+		{"Cone",				"out_USD_Cone.png"},
+		{"Cube",				"out_USD_Cube.png"},
+		{"Cylinder",			"out_USD_Cylinder.png"},
+		{"GeomSubset",			"out_USD_GeomSubset.png"},
+		{"LightFilter",			"out_USD_LightFilter.png"},
+		{"LightPortal",			"out_USD_LightPortal.png"},
+		{"mayaReference",		"out_USD_mayaReference.png"},
+		{"AL_MayaReference",	"out_USD_mayaReference.png"},		// Same as mayaRef
+		{"Mesh",				"out_USD_Mesh.png"},
+		{"NurbsPatch",			"out_USD_NurbsPatch.png"},
+		{"PointInstancer",		"out_USD_PointInstancer.png"},
+		{"Points",				"out_USD_Points.png"},
+		{"Scope",				"out_USD_Scope.png"},
+		{"SkelAnimation",		"out_USD_SkelAnimation.png"},
+		{"Skeleton",			"out_USD_Skeleton.png"},
+		{"SkelRoot",			"out_USD_SkelRoot.png"},
+		{"Sphere",				"out_USD_Sphere.png"},
+		{"Volume",				"out_USD_Volume.png"}
+	};
+
+	const auto search = supportedTypes.find(item->nodeType());
+	if (search != supportedTypes.cend()) {
+		return search->second;
+	}
+
+	// No specific node type icon was found.
+	return "";
 }
 
 std::string UsdUIInfoHandler::getLongRunTimeLabel() const
