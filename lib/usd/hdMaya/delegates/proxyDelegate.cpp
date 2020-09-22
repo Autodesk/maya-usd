@@ -328,8 +328,9 @@ void HdMayaProxyDelegate::PopulateSelectionList(
     MPointArray&                     worldSpaceHitPts)
 {
     if (selectInfo.pointSnapping()) {
+        std::lock_guard<std::mutex> lock(_allAdaptersMutex);
+
         for (const HdxPickHit& hit : hits) {
-            std::lock_guard<std::mutex> lock(_allAdaptersMutex);
             for (auto adapter : _allAdapters) {
                 const SdfPath& delegateId = adapter->GetUsdDelegateID();
                 if (hit.objectId.HasPrefix(delegateId)) {
@@ -353,11 +354,12 @@ void HdMayaProxyDelegate::PopulateSelectionList(
 
     const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
 
+    std::lock_guard<std::mutex> lock(_allAdaptersMutex);
+
     for (const HdxPickHit& hit : hits) {
         const SdfPath& objectId = hit.objectId;
         const int instanceIndex = hit.instanceIndex;
 
-        std::lock_guard<std::mutex> lock(_allAdaptersMutex);
         for (auto adapter : _allAdapters) {
             const SdfPath& delegateId = adapter->GetUsdDelegateID();
             if (!objectId.HasPrefix(delegateId)) {

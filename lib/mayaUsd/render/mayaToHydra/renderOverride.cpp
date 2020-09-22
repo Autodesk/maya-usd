@@ -850,11 +850,11 @@ bool MtohRenderOverride::nextRenderOperation() {
 
 #if MAYA_API_VERSION >= 20210000
 bool MtohRenderOverride::select(
-    const MHWRender::MFrameContext&  frameContext,
+    const MHWRender::MFrameContext& frameContext,
     const MHWRender::MSelectionInfo& selectInfo,
     bool /*useDepth*/,
     MSelectionList& selectionList,
-    MPointArray&    worldSpaceHitPts)
+    MPointArray& worldSpaceHitPts)
 {
     MStatus status = MStatus::kFailure;
 
