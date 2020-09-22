@@ -141,12 +141,12 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
         }
         else
         {
-            // skip if the spec already exist
+            //  break out if the spec already exist
             if (primSpec == spec && spec->GetSpecifier() == SdfSpecifierDef) {
-                continue;
+                break;
             }
 
-            // break out if this an over that has a reference.
+            // break out if this is an over that has a reference.
             if(spec->GetSpecifier() == SdfSpecifierOver && spec->HasReferences()) {
                 break;
             }
