@@ -131,13 +131,20 @@ UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim)
 
 void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName)
 {
+    // return early if prim is the pseudo-root.
+    // this is a special case and could happen when one tries to drag a prim under the 
+    // proxy shape in outliner. Also note if prim is the pseudo-root, no def primSpec will be found.
+    if (prim.IsPseudoRoot()){
+        return;
+    }
+
     auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
     auto primStack = prim.GetPrimStack();
     std::string layerDisplayName;
     std::string message{"It is defined on another layer"};
 
     // iterate over the prim stack, starting at the highest-priority layer.
-    for (const auto& spec : primStack) 
+    for (const auto& spec : primStack)
     {
         const auto& layerName = spec->GetLayer()->GetDisplayName();
 
