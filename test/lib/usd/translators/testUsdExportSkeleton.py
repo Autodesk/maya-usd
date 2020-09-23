@@ -108,7 +108,11 @@ class testUsdExportSkeleton(unittest.TestCase):
         self.assertTrue(root)
 
         skelCache = UsdSkel.Cache()
-        skelCache.Populate(root)
+
+        if Usd.GetVersion() > (0, 20, 8):
+            skelCache.Populate(root, Usd.PrimDefaultPredicate)
+        else:
+            skelCache.Populate(root)
 
         skel = UsdSkel.Skeleton.Get(stage, '/SkelChar/Hips')
         self.assertTrue(skel)

@@ -55,6 +55,9 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(kShadingModeFlag,
                    UsdMayaJobExportArgsTokens->shadingMode.GetText(),
                    MSyntax::kString);
+    syntax.addFlag(kConvertMaterialsToFlag,
+                   UsdMayaJobExportArgsTokens->convertMaterialsTo.GetText(),
+                   MSyntax::kString);
     syntax.addFlag(kMaterialsScopeNameFlag,
                    UsdMayaJobExportArgsTokens->materialsScopeName.GetText(),
                    MSyntax::kString);

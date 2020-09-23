@@ -48,6 +48,7 @@ public:
 
 	void setItem(const UsdSceneItem::Ptr& item);
 	const Ufe::Path& path() const;
+	inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 
 	// Ufe::SceneItemOps overrides
 	Ufe::SceneItem::Ptr sceneItem() const override;
@@ -60,7 +61,6 @@ public:
 
 private:
 	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
 
 }; // UsdSceneItemOps
 

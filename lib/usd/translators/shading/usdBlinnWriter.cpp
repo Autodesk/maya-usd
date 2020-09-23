@@ -15,7 +15,7 @@
 //
 #include "usdReflectWriter.h"
 
-#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/utils/util.h>
 
@@ -52,7 +52,7 @@ protected:
     void WriteSpecular(const UsdTimeCode& usdTime) override;
 };
 
-PXRUSDMAYA_REGISTER_WRITER(blinn, PxrUsdTranslators_BlinnWriter);
+PXRUSDMAYA_REGISTER_SHADER_WRITER(blinn, PxrUsdTranslators_BlinnWriter);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,

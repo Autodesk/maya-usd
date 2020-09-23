@@ -20,3 +20,14 @@ pxr_plugin(${PXR_PACKAGE}
 
     DISABLE_PRECOMPILED_HEADERS
 )
+
+set(PREVIEWSURFACE_MAYA_TYPE_NAME "pxrUsdPreviewSurface")
+
+configure_file("${CMAKE_SOURCE_DIR}/lib/usd/pxrUsdPreviewSurface/AEusdPreviewSurfaceTemplate.mel"
+               "${CMAKE_CURRENT_BINARY_DIR}/AEpxrUsdPreviewSurfaceTemplate.mel"
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AEpxrUsdPreviewSurfaceTemplate.mel
+    DESTINATION "${PXR_INSTALL_PREFIX}/${PXR_INSTALL_SUBDIR}/lib/usd/usdMaya/resources"
+)
+

@@ -22,14 +22,24 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+const MString PxrUsdPreviewSurface_typeName("pxrUsdPreviewSurface");
+const MTypeId PxrUsdPreviewSurface_typeId(0x00126403);
+const MString& PxrUsdPreviewSurface_registrantId = PxrUsdPreviewSurface_typeName;
+}
+
 PXRUSDPREVIEWSURFACE_API
 MStatus
 initializePlugin(MObject obj)
 {
     MStatus status;
     MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
-    
-    status = PxrMayaUsdPreviewSurfacePlugin::initialize(plugin);
+
+    status = PxrMayaUsdPreviewSurfacePlugin::initialize(
+        plugin,
+        PxrUsdPreviewSurface_typeName,
+        PxrUsdPreviewSurface_typeId,
+        PxrUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     return MS::kSuccess;
@@ -42,7 +52,11 @@ uninitializePlugin(MObject obj)
     MStatus status;
     MFnPlugin plugin(obj);
     
-    status = PxrMayaUsdPreviewSurfacePlugin::finalize(plugin);
+    status = PxrMayaUsdPreviewSurfacePlugin::finalize(
+        plugin,
+        PxrUsdPreviewSurface_typeName,
+        PxrUsdPreviewSurface_typeId,
+        PxrUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     return MS::kSuccess;

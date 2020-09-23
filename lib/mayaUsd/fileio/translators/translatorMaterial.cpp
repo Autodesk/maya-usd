@@ -59,8 +59,7 @@ UsdMayaTranslatorMaterial::Read(
         const UsdGeomGprim& boundPrim,
         UsdMayaPrimReaderContext* context)
 {
-    const TfToken& shadingMode = jobArguments.shadingMode;
-    if (shadingMode == UsdMayaShadingModeTokens->none) {
+    if (jobArguments.shadingMode == UsdMayaShadingModeTokens->none) {
         return MObject();
     }
 
@@ -73,7 +72,7 @@ UsdMayaTranslatorMaterial::Read(
     }
 
     if (UsdMayaShadingModeImporter importer =
-            UsdMayaShadingModeRegistry::GetImporter(shadingMode)) {
+            UsdMayaShadingModeRegistry::GetImporter(jobArguments.shadingMode)) {
         shadingEngine = importer(&c, jobArguments);
     }
 
@@ -261,7 +260,6 @@ UsdMayaTranslatorMaterial::ExportShadingEngines(
         const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap)
 {
     const TfToken& shadingMode = writeJobContext.GetArgs().shadingMode;
-
     if (shadingMode == UsdMayaShadingModeTokens->none) {
         return;
     }

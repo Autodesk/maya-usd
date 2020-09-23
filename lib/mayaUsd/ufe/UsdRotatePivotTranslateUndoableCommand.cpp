@@ -20,47 +20,89 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
-	: Ufe::TranslateUndoableCommand(item)
-	, fPrim(prim)
-	, fPath(ufePath)
-	, fNoPivotOp(false)
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path)
+    : Ufe::TranslateUndoableCommand(path)
+    , fPath(path)
+    , fNoPivotOp(false)
+#else
+UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& path, const Ufe::SceneItem::Ptr& item)
+    : Ufe::TranslateUndoableCommand(item)
+    , fPrim(prim)
+    , fPath(path)
+    , fNoPivotOp(false)
+#endif
 {
-	// Prim does not have a pivot translate attribute
-	const TfToken xpivot("xformOp:translate:pivot");
-	if (!fPrim.HasAttribute(xpivot))
-	{
-		fNoPivotOp = true;
-		// Add an empty pivot translate.
-		rotatePivotTranslateOp(fPrim, fPath, 0, 0, 0);
-	}
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    // create a sceneItem on first access
+    sceneItem();
+    #endif
 
-	fPivotAttrib = fPrim.GetAttribute(xpivot);
-	fPivotAttrib.Get<GfVec3f>(&fPrevPivotValue);
+    // Prim does not have a pivot translate attribute
+    const TfToken xpivot("xformOp:translate:pivot");
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    if (!prim().HasAttribute(xpivot))
+    #else
+    if (!fPrim.HasAttribute(xpivot))
+    #endif
+    {
+        fNoPivotOp = true;
+        // Add an empty pivot translate.
+        #if UFE_PREVIEW_VERSION_NUM >= 2021
+        rotatePivotTranslateOp(prim(), fPath, 0, 0, 0);
+        #else
+        rotatePivotTranslateOp(fPrim, fPath, 0, 0, 0);
+        #endif
+    }
+
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    fPivotAttrib = prim().GetAttribute(xpivot);
+    #else
+    fPivotAttrib = fPrim.GetAttribute(xpivot);
+    #endif
+
+    fPivotAttrib.Get<GfVec3f>(&fPrevPivotValue);
 }
 
 UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand()
 {
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+UsdSceneItem::Ptr
+UsdRotatePivotTranslateUndoableCommand::sceneItem() const {
+    if (!fItem) {
+        fItem = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(fPath));
+    }
+    return fItem;
+}
+#endif
+
 /*static*/
+#if UFE_PREVIEW_VERSION_NUM >= 2021
+UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const Ufe::Path& path)
+{
+    return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(path);
+}
+#else
 UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
 {
-	return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(prim, ufePath, item);
+    return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(prim, ufePath, item);
 }
+#endif
 
 void UsdRotatePivotTranslateUndoableCommand::undo()
 {
-	fPivotAttrib.Set(fPrevPivotValue);
-	// Todo : We would want to remove the xformOp
-	// (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
+    fPivotAttrib.Set(fPrevPivotValue);
+    // Todo : We would want to remove the xformOp
+    // (SD-06/07/2018) Haven't found a clean way to do it - would need to investigate
 }
 
 void UsdRotatePivotTranslateUndoableCommand::redo()
 {
-	// No-op, use move to translate the rotate pivot of the object.
-	// The Maya move command directly invokes our translate() method in its
-	// redoIt(), which is invoked both for the inital move and the redo.
+    // No-op, use move to translate the rotate pivot of the object.
+    // The Maya move command directly invokes our translate() method in its
+    // redoIt(), which is invoked both for the inital move and the redo.
 }
 
 //------------------------------------------------------------------------------
@@ -69,8 +111,13 @@ void UsdRotatePivotTranslateUndoableCommand::redo()
 
 bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)
 {
-	rotatePivotTranslateOp(fPrim, fPath, x, y, z);
-	return true;
+    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    rotatePivotTranslateOp(prim(), fPath, x, y, z);
+    #else
+    rotatePivotTranslateOp(fPrim, fPath, x, y, z);
+    #endif
+    
+    return true;
 }
 
 } // namespace ufe

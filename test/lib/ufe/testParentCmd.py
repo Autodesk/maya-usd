@@ -73,7 +73,6 @@ class ParentCmdTestCase(unittest.TestCase):
         # Clear selection to start off
         cmds.select(clear=True)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testParentRelative only available in UFE preview version 0.2.13 and greater')
     def testParentRelative(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
@@ -163,7 +162,6 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 0)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testParentAbsolute only available in UFE preview version 0.2.13 and greater')
     def testParentAbsolute(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
@@ -245,7 +243,6 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 0)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testParentToProxyShape only available in UFE preview version 0.2.13 and greater')
     def testParentToProxyShape(self):
 
         # Load a file with a USD hierarchy at least 2-levels deep.
@@ -314,7 +311,6 @@ class ParentCmdTestCase(unittest.TestCase):
             shapeChildren = shapeHier.children()
             self.assertNotIn("pSphere1", childrenNames(shapeChildren))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2013', 'testIllegalChild only available in UFE preview version 0.2.13 and greater')
     def testIllegalChild(self):
         '''Parenting an object to a descendant must report an error.'''
 
@@ -324,7 +320,6 @@ class ParentCmdTestCase(unittest.TestCase):
                     "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1",
                     "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1/pCube1")
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2016', 'testAlreadyChild only available in UFE preview version 0.2.16 and greater')
     def testAlreadyChild(self):
         '''Parenting an object to its current parent is a no-op.'''
 

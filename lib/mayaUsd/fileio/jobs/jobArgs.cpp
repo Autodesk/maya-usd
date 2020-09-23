@@ -34,6 +34,7 @@
 #include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usd/usd/usdaFileFormat.h>
 #include <pxr/usd/usd/usdcFileFormat.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <mayaUsd/fileio/registryHelper.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -337,6 +338,11 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
                 UsdMayaJobExportArgsTokens->shadingMode,
                 UsdMayaShadingModeTokens->none,
                 UsdMayaShadingModeRegistry::ListExporters())),
+        convertMaterialsTo(
+            _Token(userArgs,
+                UsdMayaJobExportArgsTokens->convertMaterialsTo,
+                UsdImagingTokens->UsdPreviewSurface,
+                UsdMayaShadingModeRegistry::ListExportConversions())),
         verbose(
             _Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose)),
 
@@ -388,6 +394,7 @@ operator <<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs)
         << "renderLayerMode: " << exportArgs.renderLayerMode << std::endl
         << "rootKind: " << exportArgs.rootKind << std::endl
         << "shadingMode: " << exportArgs.shadingMode << std::endl
+        << "convertMaterialsTo: " << exportArgs.convertMaterialsTo << std::endl
         << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
         << "timeSamples: " << exportArgs.timeSamples.size() << " sample(s)" << std::endl
         << "usdModelRootOverridePath: " << exportArgs.usdModelRootOverridePath << std::endl;
@@ -485,7 +492,9 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->renderLayerMode] =
                 UsdMayaJobExportArgsTokens->defaultLayer.GetString();
         d[UsdMayaJobExportArgsTokens->shadingMode] =
-                UsdMayaShadingModeTokens->displayColor.GetString();
+                UsdMayaShadingModeTokens->useRegistry.GetString();
+        d[UsdMayaJobExportArgsTokens->convertMaterialsTo] =
+                UsdImagingTokens->UsdPreviewSurface.GetString();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
 
@@ -561,6 +570,11 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
                 UsdMayaJobImportArgsTokens->shadingMode,
                 UsdMayaShadingModeTokens->none,
                 UsdMayaShadingModeRegistry::ListImporters())),
+        shadingConversion(
+            _Token(userArgs,
+                UsdMayaJobImportArgsTokens->shadingConversion,
+                UsdMayaShadingConversionTokens->none,
+                UsdMayaShadingConversionTokens->allTokens)),
         useAsAnimationCache(
             _Boolean(userArgs,
                 UsdMayaJobImportArgsTokens->useAsAnimationCache)),
@@ -601,6 +615,8 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
                 });
         d[UsdMayaJobImportArgsTokens->shadingMode] =
                 UsdMayaShadingModeTokens->displayColor.GetString();
+        d[UsdMayaJobImportArgsTokens->shadingConversion] =
+                UsdMayaShadingConversionTokens->lambert.GetString();
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
 
         // plugInfo.json site defaults.
@@ -619,6 +635,7 @@ std::ostream&
 operator <<(std::ostream& out, const UsdMayaJobImportArgs& importArgs)
 {
     out << "shadingMode: " << importArgs.shadingMode << std::endl
+        << "shadingConversion: " << importArgs.shadingConversion << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl

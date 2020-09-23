@@ -52,21 +52,19 @@ UsdShadeInput CreateMaterialInputAndConnectShader(
 /// Create an output on the given shader and material and create a connection
 /// between them.
 ///
-/// This creates an output on \p shader with name \p shaderOutputName and type
-/// \p inputTypeName. An output named \p materialOutputName is created on
-/// \p material, also with type \p outputTypeName. A connection is then created
-/// between the two such that the output of the shader propagates to the output
-/// of the material.
+/// This creates an output on \p shader with name \p terminalName. An output specific to the \p
+/// terminalName is created on \p material, using the provided \p renderContext. A connection is
+/// then created between the two such that the output of the shader propagates to the output of the
+/// material.
 ///
 /// Returns the shader output on success, or an invalid UsdShadeOutput
 /// otherwise.
 MAYAUSD_CORE_PUBLIC
 UsdShadeOutput CreateShaderOutputAndConnectMaterial(
         UsdShadeShader& shader,
-        const TfToken& shaderOutputName,
-        const SdfValueTypeName& outputTypeName,
         UsdShadeMaterial& material,
-        const TfToken& materialOutputName);
+        const TfToken& terminalName,
+        const TfToken& renderContext);
 
 
 } // namespace UsdMayaShadingUtil

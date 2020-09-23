@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from future.utils import iteritems
-
 from pxr import Gf
 from pxr import Usd
 
@@ -1116,7 +1114,8 @@ class testUsdMayaXformStack(unittest.TestCase):
         }
         
         expectedList = [mayaStack.FindOp('translate'), mayaStack.FindOp('rotate')]
-        for rotateOpName, expectedRotateOrder in iteritems(allRotates):
+        for rotateOpName in allRotates.keys():
+            expectedRotateOrder = allRotates[rotateOpName]
             orderedOps = [self.ops['translate'], self.ops[rotateOpName]]
             for stackList in (
                     [],

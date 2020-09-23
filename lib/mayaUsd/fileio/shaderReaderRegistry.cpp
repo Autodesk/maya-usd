@@ -28,8 +28,8 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 
-#include <map>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,51 +40,102 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ShaderReader)
 );
 
-typedef TfHashMap<TfToken, UsdMayaShaderReaderRegistry::ReaderFactoryFn, TfToken::HashFunctor>
-                 _Registry;
+namespace {
+struct _RegistryEntry {
+    UsdMayaShaderReaderRegistry::ContextPredicateFn _pred;
+    UsdMayaShaderReaderRegistry::ReaderFactoryFn    _fn;
+    int                                             _index;
+};
+
+typedef std::unordered_multimap<TfToken, _RegistryEntry, TfToken::HashFunctor> _Registry;
 static _Registry _reg;
+static int _indexCounter = 0;
 
-/* static */
-void UsdMayaShaderReaderRegistry::Register(
-    TfToken                                      usdInfoId,
-    UsdMayaShaderReaderRegistry::ReaderFactoryFn fn)
-{
-    TF_DEBUG(PXRUSDMAYA_REGISTRY)
-        .Msg("Registering UsdMayaShaderReader for info:id %s.\n", usdInfoId.GetText());
+_Registry::const_iterator _Find(
+    const TfToken&              usdInfoId,
+    const UsdMayaJobImportArgs& importArgs) {
+    using ContextSupport = UsdMayaShaderReader::ContextSupport;
 
-    std::pair<_Registry::iterator, bool> insertStatus = _reg.insert(std::make_pair(usdInfoId, fn));
-    if (insertStatus.second) {
-        UsdMaya_RegistryHelper::AddUnloader([usdInfoId]() { _reg.erase(usdInfoId); });
-    } else {
-        TF_CODING_ERROR("Multiple readers for id %s", usdInfoId.GetText());
-    }
-}
-
-/* static */
-UsdMayaShaderReaderRegistry::ReaderFactoryFn
-UsdMayaShaderReaderRegistry::Find(const TfToken& usdInfoId)
-{
-    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShaderReaderRegistry>();
-
-    ReaderFactoryFn ret = nullptr;
-    if (TfMapLookup(_reg, usdInfoId, &ret)) {
-        return ret;
-    }
-
-    static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->ShaderReader };
-    UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, usdInfoId);
-
-    // ideally something just registered itself.  if not, we at least put it in
-    // the registry in case we encounter it again.
-    if (!TfMapLookup(_reg, usdInfoId, &ret)) {
-        TF_DEBUG(PXRUSDMAYA_REGISTRY)
-            .Msg(
-                "No usdMaya reader plugin for info:id %s. No maya plugin found.\n",
-                usdInfoId.GetText());
-        _reg[usdInfoId] = nullptr;
+    _Registry::const_iterator ret = _reg.cend();
+    _Registry::const_iterator first, last;
+    std::tie(first, last) = _reg.equal_range(usdInfoId);
+    while (first != last) {
+        ContextSupport support = first->second._pred(importArgs);
+        if (support == ContextSupport::Supported) {
+            ret = first;
+            break;
+        } else if (support == ContextSupport::Fallback && ret == _reg.end()) {
+            ret = first;
+        }
+        ++first;
     }
 
     return ret;
+}
+} // namespace
+
+/* static */
+void UsdMayaShaderReaderRegistry::Register(
+    TfToken                                         usdInfoId,
+    UsdMayaShaderReaderRegistry::ContextPredicateFn pred,
+    UsdMayaShaderReaderRegistry::ReaderFactoryFn    fn)
+{
+    int index = _indexCounter++;
+    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+        .Msg(
+            "Registering UsdMayaShaderReader for info:id %s with index %d.\n",
+            usdInfoId.GetText(),
+            index);
+
+    _reg.insert(std::make_pair(usdInfoId, _RegistryEntry{pred, fn, index}));
+
+    // The unloader uses the index to know which entry to erase when there are
+    // more than one for the same usdInfoId.
+    UsdMaya_RegistryHelper::AddUnloader([usdInfoId, index]() { 
+        _Registry::const_iterator it, itEnd;
+        std::tie(it, itEnd) = _reg.equal_range(usdInfoId);
+        for (; it != itEnd; ++it) {
+            if (it->second._index == index) {
+                _reg.erase(it);
+                break;
+            }
+        }
+    });
+}
+
+/* static */
+UsdMayaShaderReaderRegistry::ReaderFactoryFn UsdMayaShaderReaderRegistry::Find(
+    const TfToken&              usdInfoId,
+    const UsdMayaJobImportArgs& importArgs)
+{
+    using ContextSupport = UsdMayaShaderReader::ContextSupport;
+    TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShaderReaderRegistry>();
+
+    _Registry::const_iterator it = _Find(usdInfoId, importArgs);
+    
+    if (it != _reg.end()) {
+        return it->second._fn;
+    }
+
+    // Try adding more writers via plugin load:
+    static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->ShaderReader };
+    UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, usdInfoId);
+
+    it = _Find(usdInfoId, importArgs);
+
+    if (it != _reg.end()) {
+        return it->second._fn;
+    }
+
+    if (_reg.count(usdInfoId) == 0) {
+        // Nothing registered at all, remember that:
+        Register(
+            usdInfoId,
+            [](const UsdMayaJobImportArgs&) { return ContextSupport::Fallback; },
+            nullptr);
+    }
+
+    return nullptr;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

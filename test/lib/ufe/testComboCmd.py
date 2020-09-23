@@ -327,7 +327,6 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestCombo(expectedTRS)
 
-    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 115, 'Requires Maya fixes only available in Maya Preview Release 115 or later.')
     def testComboUSD(self):
         '''Move, rotate, and scale USD object, read through the Transform3d interface.'''
 

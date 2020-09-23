@@ -80,6 +80,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (renderableOnly) \
     (renderLayerMode) \
     (shadingMode) \
+    (convertMaterialsTo) \
     (stripNamespaces) \
     (verbose) \
     /* Special "none" token */ \
@@ -106,6 +107,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (excludePrimvar) \
     (metadata) \
     (shadingMode) \
+    (shadingConversion) \
     (useAsAnimationCache) \
     /* assemblyRep values */ \
     (Collapsed) \
@@ -167,6 +169,7 @@ struct UsdMayaJobExportArgs
     const TfToken renderLayerMode;
     const TfToken rootKind;
     const TfToken shadingMode;
+    const TfToken convertMaterialsTo;
     const bool verbose;
 
     typedef std::map<std::string, std::string> ChaserArgs;
@@ -248,6 +251,7 @@ struct UsdMayaJobImportArgs
     const TfToken::Set includeAPINames;
     const TfToken::Set includeMetadataKeys;
     TfToken shadingMode; // XXX can we make this const?
+    const TfToken shadingConversion;
     const bool useAsAnimationCache;
 
     const bool importWithProxyShapes;

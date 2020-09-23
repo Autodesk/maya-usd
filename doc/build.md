@@ -31,7 +31,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          |        
 |:------------: |:---------------:                  |
-|  CommitID/Tags | release: [v19.07](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.07) or [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) <br> dev: [238d0f4](https://github.com/PixarAnimationStudios/USD/commit/238d0f4b09d595955d3b5819db427e270756cc24) |
+|  CommitID/Tags | release: [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) <br> dev: [ac8f6d4](https://github.com/PixarAnimationStudios/USD/commit/ac8f6d4be9bc20e7ff6ad98843d93e7a1cefca0b) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
@@ -183,14 +183,6 @@ Test project /Users/sabrih/Desktop/workspace/build/Debug/plugin/al
 8/8 Test #4: AL_USDMayaTestPlugin .............   Passed   27.43 sec
 100% tests passed, 0 tests failed out of 8
 ```
-
-***NOTE:*** As part of compatibility support for python 3 in maya-usd, there are number of python tests that require the use of python’s `future` module. While the `future` module is 
-available in our new preview releases of Maya, this package doesn't exist in the version of python in Maya 2018/2019/2020. Please follow the below steps in order to install the `future` package:
-
- 1. Download get-py.py from https://bootstrap.pypa.io/get-pip.py 
- 2. Open a command-line and navigate to `mayapy` executable for Maya version which needs future package.
- 3. Install pip: `mayapy <path_to_downloaded_file>/get-pip.py` 
- 3. Install the future package: `mayapy -m pip install future`
 
 # Additional Build Instruction
 

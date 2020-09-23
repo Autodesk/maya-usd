@@ -575,13 +575,8 @@ void HdVP2Material::Sync(
 
             HdMaterialNetwork bxdfNet, dispNet;
 
-#if USD_VERSION_NUM >= 1911
             TfMapLookup(networkMap.map, HdMaterialTerminalTokens->surface, &bxdfNet);
             TfMapLookup(networkMap.map, HdMaterialTerminalTokens->displacement, &dispNet);
-#else
-            TfMapLookup(networkMap.map, UsdImagingTokens->bxdf, &bxdfNet);
-            TfMapLookup(networkMap.map, UsdImagingTokens->displacement, &dispNet);
-#endif
 
             if (*dirtyBits & HdMaterial::DirtyResource) {
                 // Apply VP2 fixes to the material network
@@ -622,11 +617,6 @@ void HdVP2Material::Sync(
     }
 
     *dirtyBits = HdMaterial::Clean;
-}
-
-/*! \brief  Reload the shader
-*/
-void HdVP2Material::Reload() {
 }
 
 /*! \brief  Returns the minimal set of dirty bits to place in the
