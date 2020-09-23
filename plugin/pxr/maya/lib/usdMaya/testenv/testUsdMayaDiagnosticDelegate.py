@@ -31,6 +31,12 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
     def setUpClass(cls):
         standalone.initialize('usd')
 
+        # Deprecated since version 3.2: assertRegexpMatches and assertRaisesRegexp
+        # have been renamed to assertRegex() and assertRaisesRegex()
+        if sys.version_info.major < 3 or sys.version_info.minor < 2:
+            cls.assertRegex = cls.assertRegexpMatches
+            cls.assertRaisesRegex = cls.assertRaisesRegexp
+
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
