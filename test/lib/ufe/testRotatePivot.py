@@ -31,6 +31,10 @@ import unittest
 def v3dToMPoint(v):
     return om.MPoint(v.x(), v.y(), v.z())
 
+# Index into MMatrix linearly as a 16-element vector, starting at row 0.
+def ndx(i, j):
+    return i*4+j
+
 class RotatePivotTestCase(unittest.TestCase):
     '''Verify the Transform3d UFE rotate pivot interface.
 
@@ -65,6 +69,11 @@ class RotatePivotTestCase(unittest.TestCase):
         # Open twoSpheres.ma scene in test-samples
         mayaUtils.openTwoSpheresScene()
 
+    def checkPos(self, m, p):
+        self.assertAlmostEqual(m[ndx(3,0)], p[0])
+        self.assertAlmostEqual(m[ndx(3,1)], p[1])
+        self.assertAlmostEqual(m[ndx(3,2)], p[2])
+
     def testRotatePivot(self):
         # mayaSphere is at (10, 0, 10) in local space, and since it has no
         # parent, in world space as well.
@@ -82,23 +91,14 @@ class RotatePivotTestCase(unittest.TestCase):
         # computed MMatrix.
         xyWorldValue = sin(rotZ) * 10
         sphereMatrix = sphereFn.transformation().asMatrix()
-        # MMatrix is indexed linearly as a 16-element vector, starting at row 0.
-        def ndx(i, j):
-            return i*4+j
-        def checkPos(m, p):
-            self.assertAlmostEqual(m[ndx(3,0)], p[0])
-            self.assertAlmostEqual(m[ndx(3,1)], p[1])
-            self.assertAlmostEqual(m[ndx(3,2)], p[2])
 
-        checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 10])
+        self.checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 10])
 
         # Do the same with the USD object, through UFE.
         # USD sphere is at (10, 0, 0) in local space, and since its parents
         # have an identity transform, in world space as well.
-        usdSpherePath = ufe.Path([
-            mayaUtils.createUfePathSegment(
-                '|world|usdSphereParent|usdSphereParentShape'),
-            usdUtils.createUfePathSegment('/sphereXform/sphere')])
+        usdSpherePath = ufe.PathString.path(
+                '|usdSphereParent|usdSphereParentShape,/sphereXform/sphere')
         usdSphereItem = ufe.Hierarchy.createItem(usdSpherePath)
         t3d = ufe.Transform3d.transform3d(usdSphereItem)
 
@@ -108,16 +108,16 @@ class RotatePivotTestCase(unittest.TestCase):
 
         t3d.rotate(degrees(rot[0]), degrees(rot[1]), degrees(rot[2]))
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
-        checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 0])
+        self.checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 0])
 
-        # Use a UFE undoable command to set the pivot.
         t3d.rotatePivotTranslate(0, 0, 0)
         usdPivot = t3d.rotatePivot()
         self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
 
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
-        checkPos(sphereMatrix, [10, 0, 0])
+        self.checkPos(sphereMatrix, [10, 0, 0])
 
+        # Use a UFE undoable command to set the pivot.
         rotatePivotCmd = t3d.rotatePivotTranslateCmd()
         rotatePivotCmd.translate(pivot[0], pivot[1], pivot[2])
 
@@ -126,7 +126,7 @@ class RotatePivotTestCase(unittest.TestCase):
 
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
 
-        checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 0])
+        self.checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 0])
 
         rotatePivotCmd.undo()
 
@@ -134,6 +134,52 @@ class RotatePivotTestCase(unittest.TestCase):
         self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
 
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
-        checkPos(sphereMatrix, [10, 0, 0])
+        self.checkPos(sphereMatrix, [10, 0, 0])
 
-        # redo() cannot be tested, as it is not implemented.
+        # redo() cannot be tested, as it currently is intentionally not
+        # implemented, because the Maya move command handles undo by directly
+        # calling the translate() method.  This is fragile,
+        # implementation-specific, and should be changed.  PPT, 3-Sep-2020.
+
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 119, 'Requires Maya fixes only available in Maya Preview Release 119 or later.') 
+    def testRotatePivotCmd(self):
+        rotZ = radians(45)
+        rot = om.MEulerRotation(0, 0, rotZ)
+        # Pivot around x=0.
+        pivot = om.MPoint(-10, 0, 0)
+        xyWorldValue = sin(rotZ) * 10
+
+        # USD sphere is at (10, 0, 0) in local space, and since its parents
+        # have an identity transform, in world space as well.
+        spherePath = ufe.PathString.path(
+                '|usdSphereParent|usdSphereParentShape,/sphereXform/sphere')
+        sphereItem = ufe.Hierarchy.createItem(spherePath)
+        ufe.GlobalSelection.get().append(sphereItem)
+
+        # Create a Transform3d interface to read from USD.
+        t3d = ufe.Transform3d.transform3d(sphereItem)
+
+        # Start with a non-zero initial rotate pivot.  This is required to test
+        # MAYA-105345, otherwise a zero initial rotate pivot produces the
+        # correct result through an unintended code path.
+        t3d.rotatePivotTranslate(2, 0, 0)
+        usdPivot = t3d.rotatePivot()
+        self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(2, 0, 0))
+
+        cmds.move(-12, 0, 0, relative=True, ufeRotatePivot=True)
+        usdPivot = t3d.rotatePivot()
+        self.assertEqual(v3dToMPoint(usdPivot), pivot)
+
+        cmds.undo()
+
+        usdPivot = t3d.rotatePivot()
+        self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(2, 0, 0))
+
+        cmds.redo()
+
+        usdPivot = t3d.rotatePivot()
+        self.assertEqual(v3dToMPoint(usdPivot), pivot)
+
+        cmds.rotate(degrees(rot[0]), degrees(rot[1]), degrees(rot[2]))
+        sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
+        self.checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 0])

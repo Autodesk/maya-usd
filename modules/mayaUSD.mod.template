@@ -8,7 +8,7 @@ PYTHONPATH+:=lib/python
 USD_LOCATION:=
 
 + MayaUSD_LIB ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}
-icons: 
+icons: lib/icons
 plug-ins: 
 presets: 
 scripts: 

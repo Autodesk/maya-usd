@@ -62,8 +62,7 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 	const TfType& schemaType = fPrim.GetPrimTypeInfo().GetSchemaType();
 #endif
 	if (!schemaType) {
-		TF_CODING_ERROR("Could not find prim type '%s' for prim %s",
-			fPrim.GetTypeName().GetText(), UsdDescribe(fPrim).c_str());
+		// No schema type, return empty ancestor types.
 		return strAncestorTypes;
 	}
 

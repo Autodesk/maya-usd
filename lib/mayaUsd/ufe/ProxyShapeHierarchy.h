@@ -60,6 +60,9 @@ public:
 	Ufe::SceneItem::Ptr sceneItem() const override;
 	bool hasChildren() const override;
 	Ufe::SceneItemList children() const override;
+#if UFE_PREVIEW_VERSION_NUM >= 2022
+    UFE_V2(Ufe::SceneItemList filteredChildren(const ChildFilter&) const override;)
+#endif
 	Ufe::SceneItem::Ptr parent() const override;
 #ifndef UFE_V2_FEATURES_AVAILABLE
 	Ufe::AppendedChild appendChild(const Ufe::SceneItem::Ptr& child) override;
@@ -84,6 +87,7 @@ public:
 
 private:
 	const UsdPrim& getUsdRootPrim() const;
+	Ufe::SceneItemList createUFEChildList(const UsdPrimSiblingRange& range) const;
 
 private:
 	Ufe::SceneItem::Ptr fItem;

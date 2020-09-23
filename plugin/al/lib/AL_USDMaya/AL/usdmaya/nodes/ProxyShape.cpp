@@ -310,7 +310,6 @@ void ProxyShape::destroyGLImagingEngine()
   if(m_engine)
   {
     triggerEvent("DestroyGLEngine");
-    m_engine->InvalidateBuffers();
     delete m_engine;
     m_engine = nullptr;
   }

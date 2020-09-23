@@ -15,6 +15,9 @@
 //
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
+#include <mayaUsd/fileio/shaderReaderRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
+
 #include <maya/MFnPlugin.h>
 #include <maya/MString.h>
 
@@ -22,14 +25,29 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
+namespace {
+const MString PxrUsdPreviewSurface_typeName("pxrUsdPreviewSurface");
+const MTypeId PxrUsdPreviewSurface_typeId(0x00126403);
+const MString& PxrUsdPreviewSurface_registrantId = PxrUsdPreviewSurface_typeName;
+}
+
+TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
+{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(PxrUsdPreviewSurface_typeName); };
+TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
+{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(PxrUsdPreviewSurface_typeName); };
+
 PXRUSDPREVIEWSURFACE_API
 MStatus
 initializePlugin(MObject obj)
 {
     MStatus status;
     MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
-    
-    status = PxrMayaUsdPreviewSurfacePlugin::initialize(plugin);
+
+    status = PxrMayaUsdPreviewSurfacePlugin::initialize(
+        plugin,
+        PxrUsdPreviewSurface_typeName,
+        PxrUsdPreviewSurface_typeId,
+        PxrUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     return MS::kSuccess;
@@ -42,7 +60,11 @@ uninitializePlugin(MObject obj)
     MStatus status;
     MFnPlugin plugin(obj);
     
-    status = PxrMayaUsdPreviewSurfacePlugin::finalize(plugin);
+    status = PxrMayaUsdPreviewSurfacePlugin::finalize(
+        plugin,
+        PxrUsdPreviewSurface_typeName,
+        PxrUsdPreviewSurface_typeId,
+        PxrUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     return MS::kSuccess;
