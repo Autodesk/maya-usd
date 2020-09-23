@@ -21,8 +21,6 @@ set(HEADERS
 # compiler configuration
 # -----------------------------------------------------------------------------
 target_compile_definitions(${TARGET_NAME} 
-    PUBLIC
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
     PRIVATE 
         HDMAYA_EXPORT
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
