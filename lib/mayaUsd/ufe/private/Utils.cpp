@@ -150,16 +150,16 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
         }
 
         // one reason for skipping the reference is to not clash 
-        // with the over that may be created in the stage's sessioLayer.
+        // with the over that may be created in the stage's sessionLayer.
         // another reason is that one should be able to edit a referenced prim that
-        // is tagged over/def as long as it has a primSpec in the selected edit target layer.
+        // either as over/def as long as it has a primSpec in the selected edit target layer.
         if(spec->HasReferences()) {
             break;
         }
 
         // if exists a def/over specs
         if (spec->GetSpecifier() == SdfSpecifierDef || spec->GetSpecifier() == SdfSpecifierOver) {
-            // if exists in another layer other than current stage's local layer.
+            // if spec exists in another layer ( e.g sessionLayer or layer other than stage's local layers ).
             if(primSpec->GetLayer() != spec->GetLayer()) {
                 layerDisplayName.append("[" + layerName + "]");
                 message = "It has a stronger opinion on another layer";
