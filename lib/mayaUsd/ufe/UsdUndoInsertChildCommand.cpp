@@ -85,15 +85,11 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
         _ufeDstPath = parent->path() + Ufe::PathSegment(
             Ufe::PathComponent(childName), cRtId, cSep);
     }
-    _usdDstPath = parent->prim().GetPath().AppendChild(TfToken(childName));
+    _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
 
-    _childLayer = child->prim().GetStage()->GetEditTarget().GetLayer();
+    _childLayer = childPrim.GetStage()->GetEditTarget().GetLayer();
 
-    // If parent prim is the pseudo-root, no def primSpec will be found, so
-    // just use the edit target layer.
-    _parentLayer = parentPrim.IsPseudoRoot() 
-        ? parent->prim().GetStage()->GetEditTarget().GetLayer() 
-        : MayaUsdUtils::defPrimSpecLayer(parentPrim);
+    _parentLayer = parentPrim.GetStage()->GetEditTarget().GetLayer(); 
 }
 
 UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand()

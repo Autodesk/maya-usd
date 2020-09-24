@@ -93,53 +93,6 @@ defPrimSpecLayer(const UsdPrim& prim)
     return defLayer;
 }
 
-std::vector<SdfLayerHandle>
-layersWithContribution(const UsdPrim& prim)
-{
-    UsdPrimCompositionQuery query(prim);
-
-    std::vector<SdfLayerHandle> layersWithContribution;
-
-    for (const auto& arc : query.GetCompositionArcs()) {
-        layersWithContribution.emplace_back(arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer);
-    }
-
-    return layersWithContribution;
-}
-
-bool
-doesEditTargetLayerContribute(const UsdPrim& prim)
-{
-    auto editTarget = prim.GetStage()->GetEditTarget();
-    auto layer = editTarget.GetLayer();
-    auto primSpec = layer->GetPrimAtPath(prim.GetPath());
-
-    // to know whether the target layer can contribute to the 
-    // final composed prim, there must be a primSpec for that prim
-    if (!primSpec) {
-        return false;
-    }
-
-    return true;
-}
-
-SdfLayerHandle
-strongestContributingLayer(const UsdPrim& prim)
-{
-    SdfLayerHandle targetLayer;
-    auto layerStack = prim.GetStage()->GetLayerStack();
-    for (auto layer : layerStack)
-    {
-        // to know whether the target layer can contribute to the 
-        // final composed prim, there must be a primSpec for that prim
-        auto primSpec = layer->GetPrimAtPath(prim.GetPath());
-        if (primSpec) {
-            targetLayer = layer;
-            break;
-        }
-    }
-    return targetLayer;
-}
 
 SdfPrimSpecHandle 
 getPrimSpecAtEditTarget(const UsdPrim& prim)
@@ -163,40 +116,6 @@ isInternalReference(const SdfPrimSpecHandle& primSpec)
     }
 
     return isInternalRef;
-}
-
-bool 
-hasSpecs(const UsdPrim& prim)
-{
-    bool found{true};
-
-    UsdPrimCompositionQuery query(prim);
-
-    for (const auto& compQueryArc : query.GetCompositionArcs()) {
-        if (!compQueryArc.GetTargetNode().HasSpecs()) {
-            found = false; 
-            break;
-        }
-    }
-
-    return found;
-}
-
-std::vector<SdfLayerHandle>
-layerInCompositionArcsWithSpec(const UsdPrim& prim)
-{
-    UsdPrimCompositionQuery query(prim);
-
-    std::vector<SdfLayerHandle> layersWithContribution;
-
-    for (const auto& compQueryArc : query.GetCompositionArcs()) {
-        if (compQueryArc.GetTargetNode().HasSpecs()) {
-            layersWithContribution.emplace_back(
-                compQueryArc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer);
-        }
-    }
-
-    return layersWithContribution;
 }
 
 void
