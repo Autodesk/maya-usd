@@ -7,6 +7,8 @@ if (CMAKE_UFE_V2_FEATURES_AVAILABLE)
         BlendShape
         Camera
         Capsule
+        CompArcBadge
+        CompArcBadgeV
         Cone
         Cube
         Cylinder
