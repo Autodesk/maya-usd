@@ -25,8 +25,6 @@
 
 #include <mayaUsdUtils/util.h>
 
-#include <iostream>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 MAYAUSD_NS_DEF {

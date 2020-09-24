@@ -27,19 +27,24 @@ namespace MayaUsdUtils {
 
     //! Return the highest-priority layer where the prim has a def primSpec.
     MAYA_USD_UTILS_PUBLIC
-    SdfLayerHandle defPrimSpecLayer(const UsdPrim&);
+    SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim);
 
     //! Return a PrimSpec for the argument prim in the layer containing the stage's current edit target.
     MAYA_USD_UTILS_PUBLIC
-    SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim&);
+    SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim& prim);
 
     //! Returns true if the prim spec has an internal reference.
     MAYA_USD_UTILS_PUBLIC
-    bool isInternalReference(const SdfPrimSpecHandle&);
+    bool isInternalReference(const SdfPrimSpecHandle& primSpec);
 
     //! Convenience function for printing the list of queried composition arcs in order. 
     MAYA_USD_UTILS_PUBLIC
-    void printCompositionQuery(const UsdPrim&, std::ostream&);
+    void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
+
+    //! This function automatically updates the internal refrences path if 
+    //  the path that it references to has changed.
+    MAYA_USD_UTILS_PUBLIC
+    bool updateInternalReferences(const UsdPrim& oldPrim, const UsdPrim& newPrim);
 
 } // namespace MayaUsdUtils
 

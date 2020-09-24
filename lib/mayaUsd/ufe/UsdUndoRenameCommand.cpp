@@ -136,6 +136,12 @@ bool UsdUndoRenameCommand::renameRedo()
         _stage->SetDefaultPrim(_ufeDstItem->prim());
     }
 
+    // update internal references
+    status = MayaUsdUtils::updateInternalReferences(prim, _ufeDstItem->prim());
+    if (!status) {
+        return false;
+    }
+
     return true;
 }
 
@@ -172,7 +178,11 @@ bool UsdUndoRenameCommand::renameUndo()
         _stage->SetDefaultPrim(_ufeSrcItem->prim());
     }
 
-    _ufeDstItem = nullptr;
+    // update internal references
+    status = MayaUsdUtils::updateInternalReferences(prim, _ufeSrcItem->prim());
+    if (!status) {
+        return false;
+    }
 
     return true;
 }

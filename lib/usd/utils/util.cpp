@@ -21,6 +21,8 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/references.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -137,6 +139,50 @@ printCompositionQuery(const UsdPrim& prim, std::ostream& os)
     }
 
     os << "]\n\n";
+}
+
+bool
+updateInternalReferences(const UsdPrim& oldPrim, const UsdPrim& newPrim)
+{
+    for (const auto& p : newPrim.GetStage()->TraverseAll()) {
+
+        // check is this prim has a spec
+        if(p.HasAuthoredReferences()) {
+            auto primSpec = getPrimSpecAtEditTarget(p);
+            if (primSpec) {
+                for (const SdfReference &ref : primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
+                    if (ref.IsInternal())
+                    {
+                        SdfPath newPath;
+                        if(oldPrim.GetPrimPath() == ref.GetPrimPath()) {
+                            newPath = newPrim.GetPrimPath();
+                        }
+                        else if(ref.GetPrimPath().HasPrefix(oldPrim.GetPrimPath())) {
+                            newPath = ref.GetPrimPath().ReplacePrefix(oldPrim.GetPrimPath(), newPrim.GetPrimPath());
+                        }
+
+                        if(newPath.IsEmpty()){
+                            continue;
+                        }
+
+                        // clear the references first
+                        bool status = p.GetReferences().ClearReferences();
+                        if (!status) {
+                            return false;
+                        }
+
+                        // add the new internal reference
+                        status = p.GetReferences().AddInternalReference(newPath);
+                        if (!status) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return true;
 }
 
 } // MayaUsdUtils

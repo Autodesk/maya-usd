@@ -32,6 +32,7 @@ class UsdGeomCamera;
 class UsdLuxDistantLight;
 class UsdPrimCompositionQuery;
 class UsdPrimCompositionQueryArc;
+class UsdReferences;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
