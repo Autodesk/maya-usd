@@ -122,7 +122,7 @@ compileMode = \\\"exec\\\"\\\; \
 globals = {\\\"__file__\\\": file, \\\"__name__\\\": \\\"__main__\\\"}\\\; \
 exec(compile(open(file, openMode).read(), file, compileMode), globals)\
 \")")
-            set(COMMAND_CALL ${MAYA_EXECUTABLE} -c ${MEL_PY_EXEC_COMMAND})
+            set(COMMAND_CALL ${MAYA_EXECUTABLE} -pythonver ${Python_VERSION_MAJOR} -c ${MEL_PY_EXEC_COMMAND})
         else()
             set(COMMAND_CALL ${MAYA_PY_EXECUTABLE} ${PREFIX_PYTHON_SCRIPT})
         endif()
