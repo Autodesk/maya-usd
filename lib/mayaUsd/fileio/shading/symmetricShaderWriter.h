@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef USDTRANSLATORS_SHADING_SYMMETRIC_SHADER_WRITER_H
-#define USDTRANSLATORS_SHADING_SYMMETRIC_SHADER_WRITER_H
+#ifndef MAYAUSD_FILEIO_SHADING_SYMMETRIC_SHADER_WRITER_H
+#define MAYAUSD_FILEIO_SHADING_SYMMETRIC_SHADER_WRITER_H
 
 /// \file
 
@@ -37,7 +37,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdTranslators_SymmetricShaderWriter
+/// \class UsdMayaSymmetricShaderWriter
 /// \brief Provides "literal" translation of Maya shading nodes to USD Shader
 /// prims.
 ///
@@ -54,14 +54,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \code
 /// TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 /// {
-///     PxrUsdTranslators_SymmetricShaderWriter::RegisterWriter(
+///     UsdMayaSymmetricShaderWriter::RegisterWriter(
 ///         TfToken("myMayaNodeTypeName"),
 ///         TfToken("MyUsdShaderId"),
 ///         /* materialConversionName = */ TfToken("myMaterialConversionName"));
 /// };
 /// \endcode
 ///
-class PxrUsdTranslators_SymmetricShaderWriter : public UsdMayaShaderWriter
+class UsdMayaSymmetricShaderWriter : public UsdMayaShaderWriter
 {
 public:
     /// Register a shader writer to translate \p mayaNodeTypeName Maya nodes to
@@ -88,7 +88,7 @@ public:
             const TfToken& materialConversionName = TfToken());
 
     MAYAUSD_CORE_PUBLIC
-    PxrUsdTranslators_SymmetricShaderWriter(
+    UsdMayaSymmetricShaderWriter(
             const MFnDependencyNode& depNodeFn,
             const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx,

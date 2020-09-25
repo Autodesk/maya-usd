@@ -61,7 +61,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 /* static */
 void
-PxrUsdTranslators_SymmetricShaderReader::RegisterReader(
+UsdMayaSymmetricShaderReader::RegisterReader(
         const TfToken& usdShaderId,
         const TfToken& mayaNodeTypeName,
         const TfToken& shadingConversionName)
@@ -69,12 +69,12 @@ PxrUsdTranslators_SymmetricShaderReader::RegisterReader(
     UsdMayaShaderReaderRegistry::Register(
         usdShaderId,
         [shadingConversionName](const UsdMayaJobImportArgs& importArgs) {
-            return PxrUsdTranslators_SymmetricShaderReader::CanImport(
+            return UsdMayaSymmetricShaderReader::CanImport(
                 importArgs,
                 shadingConversionName);
         },
         [mayaNodeTypeName](const UsdMayaPrimReaderArgs& readerArgs) {
-            return std::make_shared<PxrUsdTranslators_SymmetricShaderReader>(
+            return std::make_shared<UsdMayaSymmetricShaderReader>(
                 readerArgs,
                 mayaNodeTypeName);
         });
@@ -82,7 +82,7 @@ PxrUsdTranslators_SymmetricShaderReader::RegisterReader(
 
 /* static */
 UsdMayaShaderReader::ContextSupport
-PxrUsdTranslators_SymmetricShaderReader::CanImport(
+UsdMayaSymmetricShaderReader::CanImport(
         const UsdMayaJobImportArgs& importArgs,
         const TfToken& shadingConversionName)
 {
@@ -150,7 +150,7 @@ _ComputeShadingNodeTypeForMayaTypeName(const TfToken& mayaNodeTypeName)
     return shadingNodeType;
 }
 
-PxrUsdTranslators_SymmetricShaderReader::PxrUsdTranslators_SymmetricShaderReader(
+UsdMayaSymmetricShaderReader::UsdMayaSymmetricShaderReader(
         const UsdMayaPrimReaderArgs& readerArgs,
         const TfToken& mayaNodeTypeName) :
     UsdMayaShaderReader(readerArgs),
@@ -162,7 +162,7 @@ PxrUsdTranslators_SymmetricShaderReader::PxrUsdTranslators_SymmetricShaderReader
 
 /* override */
 bool
-PxrUsdTranslators_SymmetricShaderReader::Read(UsdMayaPrimReaderContext* context)
+UsdMayaSymmetricShaderReader::Read(UsdMayaPrimReaderContext* context)
 {
     const UsdPrim& prim = _GetArgs().GetUsdPrim();
     const UsdShadeShader shaderSchema = UsdShadeShader(prim);
@@ -220,7 +220,7 @@ PxrUsdTranslators_SymmetricShaderReader::Read(UsdMayaPrimReaderContext* context)
 
 /* override */
 TfToken
-PxrUsdTranslators_SymmetricShaderReader::GetMayaNameForUsdAttrName(
+UsdMayaSymmetricShaderReader::GetMayaNameForUsdAttrName(
         const TfToken& usdAttrName) const
 {
     TfToken usdBaseName;

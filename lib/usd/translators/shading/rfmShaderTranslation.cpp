@@ -52,7 +52,7 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
 TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 {
     for (const auto& i : RfmNodesToShaderIds) {
-        PxrUsdTranslators_SymmetricShaderWriter::RegisterWriter(
+        UsdMayaSymmetricShaderWriter::RegisterWriter(
             i.first,
             i.second,
             _tokens->conversionName);
@@ -65,7 +65,7 @@ TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
 {
     for (const auto& i : RfmNodesToShaderIds) {
-        PxrUsdTranslators_SymmetricShaderReader::RegisterReader(
+        UsdMayaSymmetricShaderReader::RegisterReader(
             i.second,
             i.first);
     }

@@ -13,8 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef USDTRANSLATORS_SHADING_SYMMETRIC_SHADER_READER_H
-#define USDTRANSLATORS_SHADING_SYMMETRIC_SHADER_READER_H
+#ifndef MAYAUSD_FILEIO_SHADING_SYMMETRIC_SHADER_READER_H
+#define MAYAUSD_FILEIO_SHADING_SYMMETRIC_SHADER_READER_H
 
 /// \file
 
@@ -32,7 +32,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdTranslators_SymmetricShaderReader
+/// \class UsdMayaSymmetricShaderReader
 /// \brief Provides "literal" translation of USD Shader prims to Maya shading
 /// nodes.
 ///
@@ -49,14 +49,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \code
 /// TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
 /// {
-///     PxrUsdTranslators_SymmetricShaderReader::RegisterReader(
+///     UsdMayaSymmetricShaderReader::RegisterReader(
 ///         TfToken("MyUsdShaderId"),
 ///         TfToken("myMayaNodeTypeName"),
 ///         /* shadingConversionName = */ TfToken("myShadingConversionName"));
 /// };
 /// \endcode
 ///
-class PxrUsdTranslators_SymmetricShaderReader : public UsdMayaShaderReader
+class UsdMayaSymmetricShaderReader : public UsdMayaShaderReader
 {
 public:
     /// Register a shader reader to translate USD shaders with ID
@@ -83,7 +83,7 @@ public:
             const TfToken& shadingConversionName = TfToken());
 
     MAYAUSD_CORE_PUBLIC
-    PxrUsdTranslators_SymmetricShaderReader(
+    UsdMayaSymmetricShaderReader(
             const UsdMayaPrimReaderArgs& readerArgs,
             const TfToken& mayaNodeTypeName);
 
