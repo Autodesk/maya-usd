@@ -89,12 +89,6 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                 return nullptr;
             }
 
-            if (depNode.hasFn(MFn::kDagNode)) {
-                // XXX: Skip DAG nodes for now, but we may eventually want/need
-                // to consider them.
-                return nullptr;
-            }
-
             if (!UsdMayaUtil::isWritable(depNode)) {
                 return nullptr;
             }
@@ -266,14 +260,14 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                     // Maya plugs represent so that we can author the
                     // connection in USD.
 
-                    const TfToken srcPlugName =
-                        TfToken(context.GetStandardAttrName(srcPlug, false));
+                    const TfToken srcPlugName = TfToken(
+                        UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
                     UsdAttribute srcAttribute =
                         srcShaderInfo->GetShadingAttributeForMayaAttrName(
                             srcPlugName);
 
-                    const TfToken dstPlugName =
-                        TfToken(context.GetStandardAttrName(dstPlug, false));
+                    const TfToken dstPlugName = TfToken(
+                        UsdMayaShadingUtil::GetStandardAttrName(dstPlug, false));
                     UsdAttribute dstAttribute =
                         dstShaderInfo->GetShadingAttributeForMayaAttrName(
                             dstPlugName);

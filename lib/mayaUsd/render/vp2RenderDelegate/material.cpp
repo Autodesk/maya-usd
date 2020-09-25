@@ -445,8 +445,12 @@ MHWRender::MTexture* _LoadTexture(
     spec.width = image->GetWidth();
     spec.height = image->GetHeight();
     spec.depth = 1;
+#if USD_VERSION_NUM > 2008
+    spec.hioFormat = image->GetHioFormat();
+#else
     spec.format = image->GetFormat();
     spec.type = image->GetType();
+#endif
     spec.flipped = false;
 
     const int bpp = image->GetBytesPerPixel();
@@ -469,6 +473,65 @@ MHWRender::MTexture* _LoadTexture(
     desc.fBytesPerRow = bytesPerRow;
     desc.fBytesPerSlice = bytesPerSlice;
 
+#if USD_VERSION_NUM > 2008
+    switch (spec.hioFormat) {
+        // Single Channel
+        case HioFormatFloat32:
+            desc.fFormat = MHWRender::kR32_FLOAT;
+            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+            break;
+        case HioFormatUNorm8:
+            desc.fFormat = MHWRender::kR8_UNORM;
+            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+            break;
+
+        // 3-Channel
+        case HioFormatFloat32Vec3:
+            desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+            break;
+        case HioFormatUNorm8Vec3:
+        case HioFormatUNorm8Vec3srgb:
+            {
+            // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
+            constexpr int bpp_4 = 4;
+
+            desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+            desc.fBytesPerRow = spec.width * bpp_4;
+            desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+
+            std::vector<unsigned char> texels(desc.fBytesPerSlice);
+
+            for (int y = 0; y < spec.height; y++) {
+                for (int x = 0; x < spec.width; x++) {
+                    const int t = spec.width * y + x;
+                    texels[t*bpp_4]     = storage[t*bpp];
+                    texels[t*bpp_4 + 1] = storage[t*bpp + 1];
+                    texels[t*bpp_4 + 2] = storage[t*bpp + 2];
+                    texels[t*bpp_4 + 3] = 255;
+                }
+            }
+
+            texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+            isColorSpaceSRGB = image->IsColorSpaceSRGB();
+            break;
+            }
+
+        // 4-Channel
+        case HioFormatFloat32Vec4:
+            desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
+            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+            break;
+        case HioFormatUNorm8Vec4:
+        case HioFormatUNorm8Vec4srgb:
+            desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+            isColorSpaceSRGB = image->IsColorSpaceSRGB();
+            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+            break;
+        default:
+            break;
+    }
+#else
     switch (spec.format)
     {
     case GL_RED:
@@ -518,6 +581,7 @@ MHWRender::MTexture* _LoadTexture(
     default:
         break;
     }
+#endif
 
     return texture;
 }
