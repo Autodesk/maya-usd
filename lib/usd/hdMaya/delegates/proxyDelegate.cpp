@@ -305,10 +305,10 @@ void HdMayaProxyDelegate::PopulateSelectedPaths(
 
         auto proxyAdapter = findResult->second;
 
-        selectedSdfPaths.push_back(proxyAdapter->ConvertCachePathToIndexPath(
-            SdfPath(usdPathSegment.string())));
-        selection->AddRprim(
-            HdSelection::HighlightModeSelect, selectedSdfPaths.back());
+        const SdfPath usdPath(usdPathSegment.string());
+        selectedSdfPaths.push_back(proxyAdapter->ConvertCachePathToIndexPath(usdPath));
+        proxyAdapter->PopulateSelection(HdSelection::HighlightModeSelect,
+            usdPath, UsdImagingDelegate::ALL_INSTANCES, selection);
         TF_DEBUG(HDMAYA_AL_SELECTION)
             .Msg(
                 "HdMayaProxyDelegate::PopulateSelectedPaths - selecting %s\n",
