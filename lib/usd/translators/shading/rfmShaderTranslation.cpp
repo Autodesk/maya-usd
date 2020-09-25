@@ -13,13 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "symmetricShaderReader.h"
-#include "symmetricShaderWriter.h"
-
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/rfmShaderMap.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/shading/symmetricShaderReader.h>
+#include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 
 #include <pxr/pxr.h>
 #include <pxr/base/tf/registryManager.h>

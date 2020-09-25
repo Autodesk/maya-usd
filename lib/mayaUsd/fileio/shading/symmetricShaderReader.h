@@ -18,6 +18,7 @@
 
 /// \file
 
+#include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/shaderReader.h>
@@ -70,21 +71,26 @@ public:
     ///
     /// Note that this function should generally only be called inside a
     /// TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry) block.
+    MAYAUSD_CORE_PUBLIC
     static void RegisterReader(
             const TfToken& usdShaderId,
             const TfToken& mayaNodeTypeName,
             const TfToken& shadingConversionName = TfToken());
 
+    MAYAUSD_CORE_PUBLIC
     static ContextSupport CanImport(
             const UsdMayaJobImportArgs& importArgs,
             const TfToken& shadingConversionName = TfToken());
 
+    MAYAUSD_CORE_PUBLIC
     PxrUsdTranslators_SymmetricShaderReader(
             const UsdMayaPrimReaderArgs& readerArgs,
             const TfToken& mayaNodeTypeName);
 
+    MAYAUSD_CORE_PUBLIC
     bool Read(UsdMayaPrimReaderContext* context) override;
 
+    MAYAUSD_CORE_PUBLIC
     TfToken GetMayaNameForUsdAttrName(
             const TfToken& usdAttrName) const override;
 

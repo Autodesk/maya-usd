@@ -10,6 +10,8 @@ target_sources(${PROJECT_NAME}
         shadingModePxrRis.cpp
         shadingModeRegistry.cpp
         shadingModeUseRegistry.cpp
+        symmetricShaderReader.cpp
+        symmetricShaderWriter.cpp
 )
 
 set(HEADERS
@@ -18,6 +20,8 @@ set(HEADERS
     shadingModeExporterContext.h
     shadingModeImporter.h
     shadingModeRegistry.h
+    symmetricShaderReader.h
+    symmetricShaderWriter.h
 )
 
 # -----------------------------------------------------------------------------

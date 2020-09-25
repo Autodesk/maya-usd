@@ -18,6 +18,7 @@
 
 /// \file
 
+#include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
@@ -75,23 +76,28 @@ public:
     ///
     /// Note that this function should generally only be called inside a
     /// TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry) block.
+    MAYAUSD_CORE_PUBLIC
     static void RegisterWriter(
             const TfToken& mayaNodeTypeName,
             const TfToken& usdShaderId,
             const TfToken& materialConversionName = TfToken());
 
+    MAYAUSD_CORE_PUBLIC
     static ContextSupport CanExport(
             const UsdMayaJobExportArgs& exportArgs,
             const TfToken& materialConversionName = TfToken());
 
+    MAYAUSD_CORE_PUBLIC
     PxrUsdTranslators_SymmetricShaderWriter(
             const MFnDependencyNode& depNodeFn,
             const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx,
             const TfToken& usdShaderId);
 
+    MAYAUSD_CORE_PUBLIC
     void Write(const UsdTimeCode& usdTime) override;
 
+    MAYAUSD_CORE_PUBLIC
     TfToken GetShadingAttributeNameForMayaAttrName(
             const TfToken& mayaAttrName) override;
 
