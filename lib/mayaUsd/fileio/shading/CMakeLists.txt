@@ -13,6 +13,7 @@ target_sources(${PROJECT_NAME}
 )
 
 set(HEADERS
+    rfmShaderMap.h
     shadingModeExporter.h
     shadingModeExporterContext.h
     shadingModeImporter.h

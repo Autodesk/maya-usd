@@ -107,6 +107,7 @@ BUILD_ADSK_PLUGIN           | builds Autodesk USD plugin.                       
 BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.                 | ON
 BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON
 BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
+BUILD_RFM_TRANSLATORS       | builds translators for RenderMan for Maya shaders.         | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
 BUILD_STRICT_MODE           | enforces all warnings as errors.                           | ON
 BUILD_WITH_PYTHON_3			| build with python 3.										 | OFF

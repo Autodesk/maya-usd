@@ -511,29 +511,5 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
     return UsdPrim();
 }
 
-std::string
-UsdMayaShadingModeExportContext::GetStandardAttrName(
-        const MPlug& plug,
-        const bool allowMultiElementArrays) const
-{
-    if (plug.isElement()) {
-        MString mayaPlgName = plug.array().partialName(false, false, false, false, false, true);
-        unsigned int logicalIdx = plug.logicalIndex();
-        if (allowMultiElementArrays) {
-            return TfStringPrintf("%s_%d", mayaPlgName.asChar(), logicalIdx);
-        }
-        else if (logicalIdx == 0) {
-            return mayaPlgName.asChar();
-        }
-        else {
-            return TfToken();
-        }
-    }
-    else {
-        MString mayaPlgName = plug.partialName(false, false, false, false, false, true);
-        return mayaPlgName.asChar();
-    }
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
