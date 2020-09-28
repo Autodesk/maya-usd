@@ -35,6 +35,7 @@
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -178,8 +179,10 @@ UsdMayaShadingModeExporter::DoExport(
 
                     // Materials are named uniquely in maya, so we can
                     // skip passing in the 'bindingName' param.
-                    UsdShadeMaterialBindingAPI(materialCollectionsPrim).Bind(
-                        coll, mat);
+                    UsdShadeMaterialBindingAPI bindingAPI =
+                        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
+                            UsdShadeMaterialBindingAPI>(materialCollectionsPrim);
+                    bindingAPI.Bind(coll, mat);
                     continue;
                 }
 
@@ -194,7 +197,11 @@ UsdMayaShadingModeExporter::DoExport(
                         rootPath.GetText())) {
                         continue;
                     }
-                    UsdShadeMaterialBindingAPI(rootPrim).Bind(coll, mat);
+
+                    UsdShadeMaterialBindingAPI bindingAPI =
+                        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
+                            UsdShadeMaterialBindingAPI>(rootPrim);
+                    bindingAPI.Bind(coll, mat);
                 }
             }
         }
