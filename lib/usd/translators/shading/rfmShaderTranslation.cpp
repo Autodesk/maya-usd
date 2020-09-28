@@ -13,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "symmetricShaderReader.h"
 #include "symmetricShaderWriter.h"
 
+#include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/rfmShaderMap.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
@@ -55,6 +57,18 @@ TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
             i.first,
             i.second,
             _tokens->conversionName);
+    }
+};
+
+// Register a symmetric shader reader for each Maya node type name and USD
+// shader ID mapping. These will all apply as fallback readers for their
+// respective shader IDs.
+TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
+{
+    for (const auto& i : RfmNodesToShaderIds) {
+        PxrUsdTranslators_SymmetricShaderReader::RegisterReader(
+            i.second,
+            i.first);
     }
 };
 
