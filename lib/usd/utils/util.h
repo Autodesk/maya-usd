@@ -42,10 +42,11 @@ namespace MayaUsdUtils {
     void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
 
     //! This function automatically updates the internal refrences path if 
-    //  the path that it references to has changed.
+    //  the path that it has referenced is changed.
     MAYA_USD_UTILS_PUBLIC
-    bool updateInternalReferences(const UsdPrim& oldPrim, const UsdPrim& newPrim);
+    bool updateInternalReferencesPath(const UsdPrim& oldPrim, const SdfPath& newPath);
 
 } // namespace MayaUsdUtils
 
 #endif // MAYAUSDUTILS_UTIL_H
+

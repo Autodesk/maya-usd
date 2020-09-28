@@ -142,26 +142,26 @@ printCompositionQuery(const UsdPrim& prim, std::ostream& os)
 }
 
 bool
-updateInternalReferences(const UsdPrim& oldPrim, const UsdPrim& newPrim)
+updateInternalReferencesPath(const UsdPrim& oldPrim, const SdfPath& newPath)
 {
-    for (const auto& p : newPrim.GetStage()->TraverseAll()) {
-
-        // check is this prim has a spec
+    SdfChangeBlock changeBlock;
+    for (const auto& p : oldPrim.GetStage()->Traverse()) 
+    {
         if(p.HasAuthoredReferences()) {
             auto primSpec = getPrimSpecAtEditTarget(p);
             if (primSpec) {
                 for (const SdfReference &ref : primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
                     if (ref.IsInternal())
                     {
-                        SdfPath newPath;
-                        if(oldPrim.GetPrimPath() == ref.GetPrimPath()) {
-                            newPath = newPrim.GetPrimPath();
+                        SdfPath finalPath;
+                        if(oldPrim.GetPath() == ref.GetPrimPath()) {
+                            finalPath = newPath;
                         }
-                        else if(ref.GetPrimPath().HasPrefix(oldPrim.GetPrimPath())) {
-                            newPath = ref.GetPrimPath().ReplacePrefix(oldPrim.GetPrimPath(), newPrim.GetPrimPath());
+                        else if(ref.GetPrimPath().HasPrefix(oldPrim.GetPath())) {
+                            finalPath = ref.GetPrimPath().ReplacePrefix(oldPrim.GetPath(), newPath);
                         }
 
-                        if(newPath.IsEmpty()){
+                        if(finalPath.IsEmpty()){
                             continue;
                         }
 
@@ -171,8 +171,14 @@ updateInternalReferences(const UsdPrim& oldPrim, const UsdPrim& newPrim)
                             return false;
                         }
 
+                        // NOTE: currently there is no APIs either at 
+                        // Sdf or Usd level to help querying the "append" or 
+                        // "prepend" operations for the entries in the list. Therefore, UsdListPosition 
+                        // is always set by the default value UsdListPositionBackOfPrependList passed to
+                        // AddInternalReference
+
                         // add the new internal reference
-                        status = p.GetReferences().AddInternalReference(newPath);
+                        status = p.GetReferences().AddInternalReference(finalPath);
                         if (!status) {
                             return false;
                         }

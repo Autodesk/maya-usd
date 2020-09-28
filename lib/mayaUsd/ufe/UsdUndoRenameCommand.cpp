@@ -26,6 +26,7 @@
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/sdf/changeBlock.h>
 
 #include <mayaUsd/ufe/Utils.h>
 
@@ -66,35 +67,6 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
     ufe::applyCommandRestriction(prim, "rename");
-}
-
-UsdUndoRenameCommand::~UsdUndoRenameCommand()
-{
-}
-
-UsdUndoRenameCommand::Ptr UsdUndoRenameCommand::create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
-{
-    return std::make_shared<UsdUndoRenameCommand>(srcItem, newName);
-}
-
-UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const
-{
-    return _ufeDstItem;
-}
-
-bool UsdUndoRenameCommand::renameRedo()
-{
-    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
-
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    if(!primSpec) {
-        return false;
-    }
-
-    // these two lines MUST be called before the set name
-    // _stage->GetDefaultPrim() and prim after the rename can be invalid.
-    auto primPath = prim.GetPath();
-    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
     // handle unique name for _newName
     TfToken::HashSet childrenNames;
@@ -115,74 +87,101 @@ bool UsdUndoRenameCommand::renameRedo()
     std::replace_if(_newName.begin(), _newName.end(), [&](auto c){
         return std::string::npos != specialChars.find(c);
     }, '_');
+}
 
-    // set prim's name
-    // XXX: SetName successfuly returns true but when you examine the _prim.GetName()
-    // after the rename, the prim name shows the original name HS, 6-May-2020.
-    bool status = primSpec->SetName(_newName);
-    if (!status) {
-        return false;
+UsdUndoRenameCommand::~UsdUndoRenameCommand()
+{
+}
+
+UsdUndoRenameCommand::Ptr UsdUndoRenameCommand::create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
+{
+    return std::make_shared<UsdUndoRenameCommand>(srcItem, newName);
+}
+
+UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const
+{
+    return _ufeDstItem;
+}
+
+bool UsdUndoRenameCommand::renameRedo()
+{
+    // get the stage's default prim path
+    auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
+
+    // 1- open a changeblock to delay sending notifications.
+    // 2- update the Internal References paths (if any) first
+    // 3- set the new name 
+    {
+        SdfChangeBlock changeBlock;
+
+        const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
+
+        auto newSceneItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
+        auto newUfePath = Ufe::Path(newSceneItem->path().getSegments()[1]);
+        bool status = MayaUsdUtils::updateInternalReferencesPath(prim, SdfPath(newUfePath.string()));
+        if (!status) {
+            return false;
+        }
+
+        // set the new name
+        auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+        status = primSpec->SetName(_newName);
+        if (!status) {
+            return false;
+        }
     }
 
     // the renamed scene item is a "sibling" of its original name.
     _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
 
-    sendNotification<Ufe::ObjectRename>(_ufeDstItem, _ufeSrcItem->path());
-
-    // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
-    // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
-    // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
-    if(primPath == defaultPrimPath){
+    // update stage's default prim
+    if(_ufeSrcItem->prim().GetPath() == defaultPrimPath) {
         _stage->SetDefaultPrim(_ufeDstItem->prim());
     }
 
-    // update internal references
-    status = MayaUsdUtils::updateInternalReferences(prim, _ufeDstItem->prim());
-    if (!status) {
-        return false;
-    }
+    // send notification to update UFE data model
+    sendNotification<Ufe::ObjectRename>(_ufeDstItem, _ufeSrcItem->path());
 
     return true;
 }
 
 bool UsdUndoRenameCommand::renameUndo()
 {
-    const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
-
-    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
-    if(!primSpec) {
-        return false;
-    }
-
-    // these two lines MUST be called before the set name
-    // _stage->GetDefaultPrim() and prim after the rename can be invalid.
-    auto primPath = prim.GetPath();
+    // get the stage's default prim path
     auto defaultPrimPath = _stage->GetDefaultPrim().GetPath();
 
-    // set prim's name
-    bool status = primSpec->SetName(_ufeSrcItem->prim().GetName());
-    if (!status) {
-        return false;
+    // 1- open a changeblock to delay sending notifications.
+    // 2- update the Internal References paths (if any) first
+    // 3- set the new name 
+    {
+        SdfChangeBlock changeBlock;
+
+        const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
+
+        auto newSceneItem = createSiblingSceneItem(_ufeSrcItem->path(), _ufeSrcItem->prim().GetName());
+        auto newUfePath = Ufe::Path(newSceneItem->path().getSegments()[1]);
+        bool status = MayaUsdUtils::updateInternalReferencesPath(prim, SdfPath(newUfePath.string()));
+        if (!status) {
+            return false;
+        }
+
+        auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+        status = primSpec->SetName(_ufeSrcItem->prim().GetName());
+        if (!status) {
+            return false;
+        }
     }
 
-    // shouldn't have to again create a sibling sceneItem here since we already have a valid _ufeSrcItem
-    // however, I get random crashes if I don't which needs furthur investigation.  HS, 6-May-2020.
+    // the renamed scene item is a "sibling" of its original name.
     _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
 
-    sendNotification<Ufe::ObjectRename>(_ufeSrcItem, _ufeDstItem->path());
-
-    // SdfLayer is a "simple" container, and all it knows about defaultPrim is that it is a piece of token-valued layer metadata.  
-    // It is only the higher-level Usd and Pcp modules that know that it is identifying a prim on the stage.  
-    // One must use the SdfLayer API for setting the defaultPrim when you rename the prim it identifies.
-    if (primPath == defaultPrimPath) {
+    // update stage's default prim
+    if(_ufeDstItem->prim().GetPath() == defaultPrimPath) {
         _stage->SetDefaultPrim(_ufeSrcItem->prim());
     }
 
-    // update internal references
-    status = MayaUsdUtils::updateInternalReferences(prim, _ufeSrcItem->prim());
-    if (!status) {
-        return false;
-    }
+    // send notification to update UFE data model
+    sendNotification<Ufe::ObjectRename>(_ufeSrcItem, _ufeDstItem->path());
 
     return true;
 }
