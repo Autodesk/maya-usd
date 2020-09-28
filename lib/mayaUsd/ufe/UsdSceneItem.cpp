@@ -16,7 +16,7 @@
 #include "UsdSceneItem.h"
 
 #include <pxr/base/tf/type.h>
-#if USD_VERSION_NUM < 2005
+#if USD_VERSION_NUM < 2008
 #include <pxr/usd/usd/schemaBase.h>
 #else
 #include <pxr/usd/usd/primTypeInfo.h>
@@ -54,7 +54,7 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 {
 	std::vector<std::string> strAncestorTypes;
 
-#if USD_VERSION_NUM < 2005
+#if USD_VERSION_NUM < 2008
 	static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
 	const TfType schemaType = schemaBaseType.FindDerivedByName(fPrim.GetTypeName().GetString());
 #else
