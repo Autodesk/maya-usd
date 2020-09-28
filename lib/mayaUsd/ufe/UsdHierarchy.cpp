@@ -191,11 +191,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 Ufe::InsertChildCommand::Ptr UsdHierarchy::insertChildCmd(
-#else
-Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
-#endif
     const Ufe::SceneItem::Ptr& child,
     const Ufe::SceneItem::Ptr& pos
 )

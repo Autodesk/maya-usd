@@ -200,17 +200,10 @@ Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& c
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,
     const Ufe::SceneItem::Ptr& pos
 )
-#else
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
-    const Ufe::SceneItem::Ptr& child,
-    const Ufe::SceneItem::Ptr& pos
-)
-#endif
 {
     // UsdUndoInsertChildCommand expects a UsdSceneItem which wraps a prim, so
     // create one using the pseudo-root and our own path.

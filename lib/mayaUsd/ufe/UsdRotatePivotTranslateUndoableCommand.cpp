@@ -20,47 +20,24 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path)
     : Ufe::TranslateUndoableCommand(path)
     , fPath(path)
     , fNoPivotOp(false)
-#else
-UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& path, const Ufe::SceneItem::Ptr& item)
-    : Ufe::TranslateUndoableCommand(item)
-    , fPrim(prim)
-    , fPath(path)
-    , fNoPivotOp(false)
-#endif
 {
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     // create a sceneItem on first access
     sceneItem();
-    #endif
 
     // Prim does not have a pivot translate attribute
     const TfToken xpivot("xformOp:translate:pivot");
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     if (!prim().HasAttribute(xpivot))
-    #else
-    if (!fPrim.HasAttribute(xpivot))
-    #endif
     {
         fNoPivotOp = true;
         // Add an empty pivot translate.
-        #if UFE_PREVIEW_VERSION_NUM >= 2021
         rotatePivotTranslateOp(prim(), fPath, 0, 0, 0);
-        #else
-        rotatePivotTranslateOp(fPrim, fPath, 0, 0, 0);
-        #endif
     }
 
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     fPivotAttrib = prim().GetAttribute(xpivot);
-    #else
-    fPivotAttrib = fPrim.GetAttribute(xpivot);
-    #endif
-
     fPivotAttrib.Get<GfVec3f>(&fPrevPivotValue);
 }
 
@@ -68,7 +45,6 @@ UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand(
 {
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 UsdSceneItem::Ptr
 UsdRotatePivotTranslateUndoableCommand::sceneItem() const {
     if (!fItem) {
@@ -76,20 +52,11 @@ UsdRotatePivotTranslateUndoableCommand::sceneItem() const {
     }
     return fItem;
 }
-#endif
 
-/*static*/
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const Ufe::Path& path)
 {
     return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(path);
 }
-#else
-UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
-{
-    return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(prim, ufePath, item);
-}
-#endif
 
 void UsdRotatePivotTranslateUndoableCommand::undo()
 {
@@ -111,12 +78,7 @@ void UsdRotatePivotTranslateUndoableCommand::redo()
 
 bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)
 {
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     rotatePivotTranslateOp(prim(), fPath, x, y, z);
-    #else
-    rotatePivotTranslateOp(fPrim, fPath, x, y, z);
-    #endif
-    
     return true;
 }
 

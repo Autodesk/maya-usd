@@ -55,11 +55,7 @@ namespace ufe {
 UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& parent,
                                                      const UsdSceneItem::Ptr& child,
                                                      const UsdSceneItem::Ptr& /* pos */)
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     : Ufe::InsertChildCommand()
-    #else
-    : Ufe::UndoableCommand()
-    #endif
     , _ufeDstItem(nullptr)
     , _ufeSrcPath(child->path())
     , _usdSrcPath(child->prim().GetPath())

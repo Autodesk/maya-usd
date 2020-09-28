@@ -36,12 +36,7 @@ class MAYAUSD_CORE_PUBLIC UsdRotatePivotTranslateUndoableCommand : public Ufe::T
 public:
     typedef std::shared_ptr<UsdRotatePivotTranslateUndoableCommand> Ptr;
 
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path);
-    #else
-    UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
-    #endif
-
     ~UsdRotatePivotTranslateUndoableCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -51,11 +46,7 @@ public:
     UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&) = delete;
 
     //! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     static UsdRotatePivotTranslateUndoableCommand::Ptr create(const Ufe::Path& path);
-    #else
-    static UsdRotatePivotTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
-    #endif
 
     // Ufe::TranslateUndoableCommand overrides
     void undo() override;
@@ -65,14 +56,9 @@ public:
     inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 
 private:
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     UsdSceneItem::Ptr sceneItem() const;
-    #endif
 
 private:
-    #if UFE_PREVIEW_VERSION_NUM < 2021
-    UsdPrim fPrim;
-    #endif
     Ufe::Path fPath;
     mutable UsdSceneItem::Ptr fItem{nullptr};
     UsdAttribute fPivotAttrib;

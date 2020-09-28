@@ -105,11 +105,7 @@ void UsdUndoDuplicateCommand::undo()
 	Ufe::ObjectPreDelete notification(createSiblingSceneItem(
 										fUfeSrcPath, fUsdDstPath.GetElementString()));
 
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
 	Ufe::Scene::instance().notify(notification);
-	#else
-	Ufe::Scene::notifyObjectDelete(notification);
-	#endif
 
 	fStage->RemovePrim(fUsdDstPath);
 }

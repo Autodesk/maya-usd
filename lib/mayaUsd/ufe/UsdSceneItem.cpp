@@ -49,7 +49,6 @@ std::string UsdSceneItem::nodeType() const
 	return fPrim.GetTypeName();
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2020
 std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 {
 	std::vector<std::string> strAncestorTypes;
@@ -89,7 +88,6 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 	ancestorTypesCache[schemaType] = strAncestorTypes;
 	return strAncestorTypes;
 }
-#endif
 
 } // namespace ufe
 } // namespace MayaUsd

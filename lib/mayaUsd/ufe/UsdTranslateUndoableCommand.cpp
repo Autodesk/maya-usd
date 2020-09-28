@@ -22,24 +22,14 @@ namespace ufe {
 
 TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(const Ufe::Path& path, double x, double y, double z) 
     : Ufe::TranslateUndoableCommand(path)
     , UsdTRSUndoableCommandBase(x, y, z)
 {}
-#else
-UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-) : Ufe::TranslateUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, x, y, z)
-{}
-#endif
 
 UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
 {}
 
-/*static*/
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
     const Ufe::Path& path, double x, double y, double z
 )
@@ -49,17 +39,6 @@ UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
     cmd->initialize();
     return cmd;
 }
-#else
-UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-)
-{
-    auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(
-        item, x, y, z);
-    cmd->initialize();
-    return cmd;
-}
-#endif
 
 void UsdTranslateUndoableCommand::undo()
 {
