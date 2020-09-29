@@ -71,6 +71,49 @@ namespace
             {"nodePath", arc.GetTargetNode().GetPath().GetString()},
         };
     }
+
+    void replaceReferenceItems(const UsdPrim& oldPrim, 
+                               const SdfPath& newPath,
+                               const SdfReferencesProxy& referencesList,
+                               SdfListOpType op)
+    {
+        // set the itemVector based on the SdfListOpType
+        auto itemVector = referencesList.GetAppendedItems();
+        if (op == SdfListOpTypePrepended) {
+            itemVector = referencesList.GetPrependedItems();
+        } else if (op == SdfListOpTypeOrdered) {
+            itemVector = referencesList.GetOrderedItems();
+        } else if (op == SdfListOpTypeAdded) {
+            itemVector = referencesList.GetAddedItems();
+        } else if (op == SdfListOpTypeDeleted) {
+            itemVector = referencesList.GetDeletedItems();
+        }
+
+        // fetching the existing SdfReference items and using 
+        // the Replace() method to replace them with updated SdfReference items.
+        for (const SdfReference &ref : itemVector)
+        {
+            if (ref.IsInternal())
+            {
+                SdfPath finalPath;
+                if(oldPrim.GetPath() == ref.GetPrimPath()) {
+                    finalPath = newPath;
+                }
+                else if(ref.GetPrimPath().HasPrefix(oldPrim.GetPath())) {
+                    finalPath = ref.GetPrimPath().ReplacePrefix(oldPrim.GetPath(), newPath);
+                }
+
+                if(finalPath.IsEmpty()) {
+                    continue;
+                }
+
+                // replace the old reference with new one
+                SdfReference newRef;
+                newRef.SetPrimPath(finalPath);
+                itemVector.Replace(ref, newRef);
+            }
+        }
+    }
 }
 
 namespace MayaUsdUtils {
@@ -147,43 +190,16 @@ updateInternalReferencesPath(const UsdPrim& oldPrim, const SdfPath& newPath)
     SdfChangeBlock changeBlock;
     for (const auto& p : oldPrim.GetStage()->Traverse()) 
     {
-        if(p.HasAuthoredReferences()) {
+        if(p.HasAuthoredReferences())
+        {
             auto primSpec = getPrimSpecAtEditTarget(p);
-            if (primSpec) {
-                for (const SdfReference &ref : primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
-                    if (ref.IsInternal())
-                    {
-                        SdfPath finalPath;
-                        if(oldPrim.GetPath() == ref.GetPrimPath()) {
-                            finalPath = newPath;
-                        }
-                        else if(ref.GetPrimPath().HasPrefix(oldPrim.GetPath())) {
-                            finalPath = ref.GetPrimPath().ReplacePrefix(oldPrim.GetPath(), newPath);
-                        }
+            if (primSpec)
+            {
+                SdfReferencesProxy referencesList = primSpec->GetReferenceList();
 
-                        if(finalPath.IsEmpty()){
-                            continue;
-                        }
-
-                        // clear the references first
-                        bool status = p.GetReferences().ClearReferences();
-                        if (!status) {
-                            return false;
-                        }
-
-                        // NOTE: currently there is no APIs either at 
-                        // Sdf or Usd level to help querying the "append" or 
-                        // "prepend" operations for the entries in the list. Therefore, UsdListPosition 
-                        // is always set by the default value UsdListPositionBackOfPrependList passed to
-                        // AddInternalReference
-
-                        // add the new internal reference
-                        status = p.GetReferences().AddInternalReference(finalPath);
-                        if (!status) {
-                            return false;
-                        }
-                    }
-                }
+                // update append/prepend lists individually 
+                replaceReferenceItems(oldPrim, newPath, referencesList, SdfListOpTypeAppended);
+                replaceReferenceItems(oldPrim, newPath, referencesList, SdfListOpTypePrepended);
             }
         }
     }
