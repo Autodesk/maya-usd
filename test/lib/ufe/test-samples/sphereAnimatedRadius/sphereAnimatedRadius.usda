@@ -8,6 +8,7 @@
 )
 
 def Mesh "pSphere1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
     kind = "component"
 )
 {

@@ -64,6 +64,7 @@ class testUsdExportRfMShaders(unittest.TestCase):
         self.assertTrue(cubePrim)
 
         # Validate the Material prim bound to the Mesh prim.
+        self.assertTrue(cubePrim.HasAPI(UsdShade.MaterialBindingAPI))
         materialBindingAPI = UsdShade.MaterialBindingAPI(cubePrim)
         material = materialBindingAPI.ComputeBoundMaterial()[0]
         self.assertTrue(material)
