@@ -184,11 +184,15 @@ private:
     HdRprimCollection _selectionCollection{
         HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)
     };
+
+#if MAYA_API_VERSION >= 20210000
     HdRprimCollection _pointSnappingCollection{
         HdTokens->geometry,
         HdReprSelector(HdReprTokens->refined, TfToken(), HdReprTokens->points),
         SdfPath::AbsoluteRootPath()
     };
+#endif
+
     GlfSimpleLight _defaultLight;
 
     std::vector<HdMayaDelegatePtr> _delegates;
