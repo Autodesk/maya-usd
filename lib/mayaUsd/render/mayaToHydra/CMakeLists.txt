@@ -2,6 +2,17 @@ set(TARGET_NAME mtoh)
 
 add_library(${TARGET_NAME} SHARED)
 
+
+# -----------------------------------------------------------------------------
+# options
+# -----------------------------------------------------------------------------
+option(MTOH_QT_UPDATES "Use Qt to ensure viewport updates" ON)
+
+if (MTOH_QT_UPDATES AND NOT QT_LOCATION)
+  set(MTOH_QT_UPDATES OFF)
+  message("Disabling Qt updates because build does not have Qt enabled")
+endif()
+
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
@@ -29,6 +40,7 @@ target_compile_definitions(${TARGET_NAME}
         $<$<BOOL:${IS_LINUX}>:LINUX>
         # Not sure if msvcc sets this automatically, but won't hurt to redefine
         $<$<BOOL:${IS_WINDOWS}>:_WIN32>
+        $<$<BOOL:${MTOH_QT_UPDATES}>:MTOH_QT_UPDATES>
 )
 
 mayaUsd_compile_config(${TARGET_NAME})
@@ -38,7 +50,8 @@ mayaUsd_compile_config(${TARGET_NAME})
 # -----------------------------------------------------------------------------
 target_link_libraries(${TARGET_NAME} 
     PRIVATE 
-        hdMaya 
+        hdMaya
+        $<$<BOOL:${MTOH_QT_UPDATES}>:Qt5::Core>
 )
 
 # -----------------------------------------------------------------------------

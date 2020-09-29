@@ -27,7 +27,6 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MSceneMessage.h>
 #include <maya/MSelectionList.h>
-#include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
 #include <maya/MConditionMessage.h>
 
@@ -63,6 +62,17 @@
 #include <ufe/selectionNotification.h>
 #endif // WANT_UFE_BUILD
 
+#if MTOH_QT_UPDATES
+#include <QtCore/QThread>
+#include <QtCore/QTimer>
+#include <QtGui/QCursor>
+#include <QtGui/QGuiApplication>
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QWidget>
+#else
+#include <maya/MTimerMessage.h>
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -70,6 +80,8 @@ namespace {
 // Not sure if we actually need a mutex guarding _allInstances, but
 // everywhere that uses it isn't a "frequent" operation, so the
 // extra speed loss should be fine, and I'd rather be safe.
+// XXX: The mutex is also used in timer-setup operations,
+//      but the contention there will likely be small as well.
 std::mutex _allInstancesMutex;
 std::vector<MtohRenderOverride*> _allInstances;
 
@@ -106,7 +118,205 @@ private:
 
 #endif // WANT_UFE_BUILD
 
+static constexpr unsigned kMillisecondDelay = 16;
+
 } // namespace
+
+#if MTOH_QT_UPDATES
+
+struct MtohRenderOverride::AsynchronousUpdate {
+public:
+    static void schedule(MtohRenderOverride* o, bool converged) {
+        const bool mouseDown = AsynchronousUpdate::mouseDown();
+        std::lock_guard<std::mutex> lock(mutex());
+        if (!converged || mouseDown) {
+            if (!o->_asyncUpdater)
+                o->_asyncUpdater.reset(new AsynchronousUpdate);
+            o->_asyncUpdater->addOverride(o, mouseDown);
+        }
+        else if (o->_asyncUpdater) {
+            o->_asyncUpdater->removeOverride(o);
+            o->_asyncUpdater->_requireUpdates = false;
+        }
+    }
+
+    void stop(MtohRenderOverride* o) {
+        std::lock_guard<std::mutex> lock(mutex());
+        _requireUpdates = removeOverride(o) || _requireUpdates;
+    }
+
+    void resume(MtohRenderOverride* o) {
+        const bool mouseDown = AsynchronousUpdate::mouseDown();
+        std::lock_guard<std::mutex> lock(mutex());
+        if (_requireUpdates) {
+            _requireUpdates = false;
+            addOverride(o, mouseDown);
+        }
+    }
+
+private:
+    class MouseDownWorkaround;
+
+    // Shared variables
+    static std::unique_ptr<QTimer> _refreshTimer;
+    static MouseDownWorkaround *_mayaBug;
+    static std::unordered_set<MtohRenderOverride*> _overrides;
+
+    // Instance variables
+    bool _requireUpdates = false;
+
+    static bool mouseDown() {
+        const auto buttons = QGuiApplication::mouseButtons();
+        return buttons & Qt::LeftButton;
+    }
+    static std::mutex& mutex() {
+        return _allInstancesMutex;
+    }
+
+    class MouseDownWorkaround : public QThread {
+#ifndef NDEBUG
+        std::atomic_uint _counter = {0};
+#endif
+        void run() override {
+            QWidget* initialDown = nullptr;
+            QPoint lastPos = QCursor::pos();
+
+            while (!_exiting) {
+                if (!mouseDown()) {
+                    if (initialDown)
+                        initialDown = nullptr;
+                    continue;
+                }
+
+                QPoint curPos = QCursor::pos();
+                if (!initialDown) {
+                    if (!(initialDown = static_cast<QApplication *>(QCoreApplication::instance())->widgetAt(curPos)))
+                        continue;
+                }
+                if (lastPos == curPos)
+                    QMetaObject::invokeMethod(initialDown, "update", Qt::QueuedConnection);
+                else
+                    lastPos = curPos;
+
+                QThread::msleep(kMillisecondDelay);
+            }
+        }
+    public:
+        std::atomic_bool _exiting = {false};
+
+        MouseDownWorkaround() {
+            assert((++_counter == 1) && "Unbalanced QThread start");
+            QThread::start();
+        }
+        ~MouseDownWorkaround() { assert((--_counter == 0) && "Unbalanced QThread stop"); }
+    };
+
+    bool removeOverride(MtohRenderOverride* o) {
+        auto itr = _overrides.find(o);
+        bool erased = itr != _overrides.end();
+        if (erased) {
+            _overrides.erase(itr);
+        }
+        if (_overrides.empty()) {
+            if (_mayaBug) {
+                _mayaBug->_exiting = true;
+                _mayaBug = nullptr;
+            }
+            if (_refreshTimer) {
+                _refreshTimer->stop();
+                _refreshTimer.reset();
+            }
+        }
+        return erased;
+    }
+
+    void addOverride(MtohRenderOverride* o, bool mouseDown) {
+        _overrides.emplace(o);
+
+        if (!mouseDown && _mayaBug) {
+            // Remove the thread that is pushing updates to Maya
+            _mayaBug->_exiting = true;
+            _mayaBug = nullptr;
+        } else if (mouseDown && !_mayaBug) {
+            // Mouse is down, schedule asynch-updates through Qt first
+            _mayaBug = new MouseDownWorkaround;
+        }
+
+        if (!_refreshTimer) {
+            // May not need the timer 'right now', but probably will soon
+            _refreshTimer.reset(new QTimer);
+            _refreshTimer->setInterval(kMillisecondDelay);
+            QObject::connect(_refreshTimer.get(), &QTimer::timeout, _refreshTimer.get(),
+                []() {
+                    M3dView::scheduleRefreshAllViews();
+                });
+        }
+
+        // Don't bother scheduling the timer when the mouse is down
+        _mayaBug ? _refreshTimer->stop() : _refreshTimer->start();
+    }
+};
+std::unique_ptr<QTimer> MtohRenderOverride::AsynchronousUpdate::_refreshTimer;
+MtohRenderOverride::AsynchronousUpdate::MouseDownWorkaround* MtohRenderOverride::AsynchronousUpdate::_mayaBug = nullptr;
+
+#else
+
+class MtohRenderOverride::AsynchronousUpdate {
+public:
+    static bool schedule(MtohRenderOverride* o, bool converged) {
+        std::lock_guard<std::mutex> lock(mutex());
+
+        bool erased = false;
+        MStatus status = MStatus::kSuccess;
+        if (converged) {
+            if (!_timerCallback)
+                return false;
+
+            auto itr = _overrides.find(o);
+            erased = itr != _overrides.end();
+            if (erased) {
+                _overrides.erase(itr);
+            }
+            if (_overrides.empty()) {
+                status = MMessage::removeCallback(_timerCallback);
+                _timerCallback = 0;
+            }
+        } else {
+            _overrides.emplace(o);
+            if (!_timerCallback) {
+                _timerCallback = MTimerMessage::addTimerCallback(float(kMillisecondDelay)/1000.f, _TimerCallback, nullptr, &status);
+            }
+        }
+        CHECK_MSTATUS(status);
+        return erased;
+    }
+
+    void stop(MtohRenderOverride* o) {
+        _requireUpdates = schedule(o, true) || _requireUpdates;
+    }
+
+    void resume(MtohRenderOverride* o) {
+        if (_requireUpdates) {
+            _requireUpdates = false;
+            schedule(o, false);
+        }
+    }
+private:
+    static MCallbackId _timerCallback ;
+    static std::unordered_set<MtohRenderOverride*> _overrides;
+    bool _requireUpdates = false;
+
+    static std::mutex& mutex() {
+        return _allInstancesMutex;
+    }
+    static void _TimerCallback(float, float, void*) {
+        M3dView::scheduleRefreshAllViews();
+    }
+};
+MCallbackId MtohRenderOverride::AsynchronousUpdate::_timerCallback = 0;
+
+#endif
+std::unordered_set<MtohRenderOverride*> MtohRenderOverride::AsynchronousUpdate::_overrides;
 
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText()),
@@ -180,9 +390,6 @@ MtohRenderOverride::~MtohRenderOverride() {
             _rendererDesc.rendererName.GetText(),
             _rendererDesc.overrideName.GetText(),
             _rendererDesc.displayName.GetText());
-
-    if (_timerCallback)
-        MMessage::removeCallback(_timerCallback);
 
     ClearHydraResources();
 
@@ -348,7 +555,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // }
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RENDER)
         .Msg("MtohRenderOverride::Render()\n");
-    auto renderFrame = [&](bool markTime = false) {
+    auto renderFrame = [&]() {
         const auto originX = 0;
         const auto originY = 0;
         int width = 0;
@@ -404,15 +611,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         }
 
         _engine.Execute(_renderIndex, &tasks);
-
-        // HdTaskController will query al of the tasks it can for IsConverged.
-        // This includes HdRenderPass::IsConverged and HdRenderBuffer::IsConverged (via colorizer).
-        //
-        _isConverged = _taskController->IsConverged();
-        if (markTime) {
-            std::lock_guard<std::mutex> lock(_lastRenderTimeMutex);
-            _lastRenderTime = std::chrono::system_clock::now();
-        }
     };
 
     _UpdateRenderGlobals();
@@ -508,7 +706,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         // all the required states.
         HdMayaSetRenderGLState state;
 #endif
-        renderFrame(true);
+        renderFrame();
 
         // This causes issues with the embree delegate and potentially others.
         // (i.e. rendering a wireframe via collections isn't supported by other delegates)
@@ -519,7 +717,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
             _taskController->SetCollection(_renderCollection);
         }
     } else {
-        renderFrame(true);
+        renderFrame();
+        if (!_playBlasting)
+            AsynchronousUpdate::schedule(this, _taskController->IsConverged());
     }
 
     for (auto& it : _delegates) { it->PostFrame(); }
@@ -612,6 +812,10 @@ void MtohRenderOverride::ClearHydraResources() {
 
     _delegates.clear();
     _defaultLightDelegate.reset();
+    if (_asyncUpdater) {
+        _asyncUpdater->stop(this);
+        _asyncUpdater.reset();
+    }
 
     if (_taskController != nullptr) {
         delete _taskController;
@@ -781,29 +985,8 @@ void MtohRenderOverride::_PlayblastingChanged(bool playBlasting, void* userData)
     if (std::atomic_exchange(&instance->_playBlasting, playBlasting) == playBlasting)
         return;
 
-    MStatus status;
-    if (!playBlasting) {
-        assert(instance->_timerCallback == 0 && "Callback exists");
-        instance->_timerCallback = MTimerMessage::addTimerCallback(1.0f / 10.0f,
-            _TimerCallback, instance, &status);
-    }
-    else {
-        status = MMessage::removeCallback(instance->_timerCallback);
-        instance->_timerCallback= 0;
-    }
-    CHECK_MSTATUS(status);
-}
-
-void MtohRenderOverride::_TimerCallback(float, float, void* data) {
-    auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
-    if (instance->_playBlasting || instance->_isConverged)
-        return;
-
-    std::lock_guard<std::mutex> lock(instance->_lastRenderTimeMutex);
-    if ((std::chrono::system_clock::now() - instance->_lastRenderTime) <
-            std::chrono::seconds(5)) {
-        MGlobal::executeCommandOnIdle("refresh -f");
-    }
+    if (instance->_asyncUpdater)
+        playBlasting ? instance->_asyncUpdater->stop(instance) : instance->_asyncUpdater->resume(instance);
 }
 
 void MtohRenderOverride::_PanelDeletedCallback(
