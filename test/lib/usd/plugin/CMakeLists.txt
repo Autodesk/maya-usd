@@ -23,7 +23,7 @@ add_library(${TARGET_NAME} MODULE)
 target_sources(${TARGET_NAME} 
     PRIVATE
         plugin.cpp
-        mayaGenericWriter.cpp
+        mayaShaderTranslation.cpp
 )
 
 mayaUsd_compile_config(${TARGET_NAME})

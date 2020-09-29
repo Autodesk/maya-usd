@@ -13,11 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef USDTRANSLATORS_SHADING_SYMMETRIC_SHADER_READER_H
-#define USDTRANSLATORS_SHADING_SYMMETRIC_SHADER_READER_H
+#ifndef MAYAUSD_FILEIO_SHADING_SYMMETRIC_SHADER_READER_H
+#define MAYAUSD_FILEIO_SHADING_SYMMETRIC_SHADER_READER_H
 
 /// \file
 
+#include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/shaderReader.h>
@@ -31,7 +32,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdTranslators_SymmetricShaderReader
+/// \class UsdMayaSymmetricShaderReader
 /// \brief Provides "literal" translation of USD Shader prims to Maya shading
 /// nodes.
 ///
@@ -48,14 +49,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \code
 /// TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
 /// {
-///     PxrUsdTranslators_SymmetricShaderReader::RegisterReader(
+///     UsdMayaSymmetricShaderReader::RegisterReader(
 ///         TfToken("MyUsdShaderId"),
 ///         TfToken("myMayaNodeTypeName"),
 ///         /* shadingConversionName = */ TfToken("myShadingConversionName"));
 /// };
 /// \endcode
 ///
-class PxrUsdTranslators_SymmetricShaderReader : public UsdMayaShaderReader
+class UsdMayaSymmetricShaderReader : public UsdMayaShaderReader
 {
 public:
     /// Register a shader reader to translate USD shaders with ID
@@ -70,21 +71,26 @@ public:
     ///
     /// Note that this function should generally only be called inside a
     /// TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry) block.
+    MAYAUSD_CORE_PUBLIC
     static void RegisterReader(
             const TfToken& usdShaderId,
             const TfToken& mayaNodeTypeName,
             const TfToken& shadingConversionName = TfToken());
 
+    MAYAUSD_CORE_PUBLIC
     static ContextSupport CanImport(
             const UsdMayaJobImportArgs& importArgs,
             const TfToken& shadingConversionName = TfToken());
 
-    PxrUsdTranslators_SymmetricShaderReader(
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaSymmetricShaderReader(
             const UsdMayaPrimReaderArgs& readerArgs,
             const TfToken& mayaNodeTypeName);
 
+    MAYAUSD_CORE_PUBLIC
     bool Read(UsdMayaPrimReaderContext* context) override;
 
+    MAYAUSD_CORE_PUBLIC
     TfToken GetMayaNameForUsdAttrName(
             const TfToken& usdAttrName) const override;
 

@@ -3,8 +3,6 @@
 # -----------------------------------------------------------------------------
 target_sources(${TARGET_NAME}
     PRIVATE
-        symmetricShaderReader.cpp
-        symmetricShaderWriter.cpp
         usdBlinnReader.cpp
         usdBlinnWriter.cpp
         usdFileTextureWriter.cpp
