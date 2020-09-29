@@ -77,21 +77,21 @@ namespace
                                const SdfReferencesProxy& referencesList,
                                SdfListOpType op)
     {
-        // set the itemVector based on the SdfListOpType
-        auto itemVector = referencesList.GetAppendedItems();
+        // set the listProxy based on the SdfListOpType
+        SdfReferencesProxy::ListProxy listProxy = referencesList.GetAppendedItems();
         if (op == SdfListOpTypePrepended) {
-            itemVector = referencesList.GetPrependedItems();
+            listProxy = referencesList.GetPrependedItems();
         } else if (op == SdfListOpTypeOrdered) {
-            itemVector = referencesList.GetOrderedItems();
+            listProxy = referencesList.GetOrderedItems();
         } else if (op == SdfListOpTypeAdded) {
-            itemVector = referencesList.GetAddedItems();
+            listProxy = referencesList.GetAddedItems();
         } else if (op == SdfListOpTypeDeleted) {
-            itemVector = referencesList.GetDeletedItems();
+            listProxy = referencesList.GetDeletedItems();
         }
 
         // fetching the existing SdfReference items and using 
         // the Replace() method to replace them with updated SdfReference items.
-        for (const SdfReference &ref : itemVector)
+        for (const SdfReference &ref : listProxy)
         {
             if (ref.IsInternal())
             {
@@ -110,7 +110,7 @@ namespace
                 // replace the old reference with new one
                 SdfReference newRef;
                 newRef.SetPrimPath(finalPath);
-                itemVector.Replace(ref, newRef);
+                listProxy.Replace(ref, newRef);
             }
         }
     }
