@@ -210,6 +210,7 @@ void ProxyShape::constructExcludedPrims()
     auto excludedPaths = getExcludePrimPaths();
     if (m_excludedGeometry != excludedPaths) {
         std::swap(m_excludedGeometry, excludedPaths);
+        _IncreaseExcludePrimPathsVersion();
         constructGLImagingEngine();
     }
 }
