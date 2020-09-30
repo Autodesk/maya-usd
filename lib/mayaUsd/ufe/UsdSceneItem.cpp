@@ -21,9 +21,7 @@
 #else
 #include <pxr/usd/usd/primTypeInfo.h>
 #endif
-#if USD_VERSION_NUM >= 2008
 #include <pxr/usd/usd/schemaRegistry.h>
-#endif
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -73,18 +71,14 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 		return iter->second;
 	}
 
+	const auto& schemaReg = UsdSchemaRegistry::GetInstance();
 	std::vector<TfType> tfAncestorTypes;
 	schemaType.GetAllAncestorTypes(&tfAncestorTypes);
 	for (const TfType& ty : tfAncestorTypes)
 	{
-#if USD_VERSION_NUM >= 2008
 		// If there is a concrete schema type name, we'll return that since it is what
 		// is used/shown in the UI (ex: 'Xform' vs 'UsdGeomXform').
-		auto concreteType = UsdSchemaRegistry::GetConcreteSchemaTypeName(ty);
-		strAncestorTypes.emplace_back(!concreteType.IsEmpty() ? concreteType : ty.GetTypeName());
-#else
-		strAncestorTypes.emplace_back(ty.GetTypeName());
-#endif
+		strAncestorTypes.emplace_back(schemaReg.IsConcrete(ty) ? schemaReg.GetSchemaTypeName(ty) : ty.GetTypeName());
 	}
 	ancestorTypesCache[schemaType] = strAncestorTypes;
 	return strAncestorTypes;
