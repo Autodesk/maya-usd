@@ -24,8 +24,10 @@ import pxr
 from pxr import Usd, UsdGeom, UsdUtils
 
 from maya import cmds
+from maya import standalone
 from mayaUsd import lib as mayaUsdLib
 
+import fixturesUtils
 
 class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
     """
@@ -39,14 +41,12 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
 
     def setUp(self):
 
-        cmds.file(force=True, new=True)
-        cmds.loadPlugin("mayaUsdPlugin", quiet=True)
-        self.assertTrue(
-            cmds.pluginInfo("mayaUsdPlugin", query=True, loaded=True))
+        inputPath = fixturesUtils.setUpClass(__file__)
 
-        tmpfile = tempfile.NamedTemporaryFile(delete=True, suffix=".usda")
-        tmpfile.close()
-        self.filePath = tmpfile.name
+        filePath = os.path.join(inputPath, "MayaUsdPythonCacheIdTestCase", "MayaUsdPythonCacheIdTestCase.ma")
+        cmds.file(filePath, force=True, open=True)
+
+        self.filePath =  os.path.join(inputPath, "MayaUsdPythonCacheIdTestCase", "helloworld.usda")
 
         # Define a simple usd file for testing
         tempStage = Usd.Stage.CreateNew(self.filePath)
@@ -59,12 +59,9 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
 
     def tearDown(self):
         """Unload plugin, new Maya scene, reset class member variables."""
-
-        cmds.file(force=True, new=True)
-        cmds.unloadPlugin("mayaUsdPlugin", force=True)
-
         os.remove(self.filePath)
         self.filePath = None
+        standalone.uninitialize()
 
     def testCacheIdLoadFromFile(self):
         # Create the Proxy node and load the usd file
