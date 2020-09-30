@@ -48,7 +48,7 @@ public:
 
 	// Ufe::SceneItem overrides
 	std::string nodeType() const override;
-	#if UFE_PREVIEW_VERSION_NUM >= 2020
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	std::vector<std::string> ancestorNodeTypes() const override;
 	#endif
 

@@ -43,10 +43,17 @@ public:
 	UsdRotateUndoableCommand(UsdRotateUndoableCommand&&) = delete;
 	UsdRotateUndoableCommand& operator=(UsdRotateUndoableCommand&&) = delete;
 
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	//! Create a UsdRotateUndoableCommand from a UFE scene path.  The command is
     //! not executed.
 	static UsdRotateUndoableCommand::Ptr create(
         const Ufe::Path& path, double x, double y, double z);
+	#else
+	//! Create a UsdRotateUndoableCommand from a UFE scene item.  The command is
+    //! not executed.
+	static UsdRotateUndoableCommand::Ptr create(
+        const UsdSceneItem::Ptr& item, double x, double y, double z);
+	#endif
 
 	// Ufe::RotateUndoableCommand overrides.  rotate() sets the command's
 	// rotation value and executes the command.
@@ -54,12 +61,18 @@ public:
 	void redo() override;
 	bool rotate(double x, double y, double z) override;
 
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::Path getPath() const override { return path(); }
+	#endif
 
 protected:
 
     //! Construct a UsdRotateUndoableCommand.  The command is not executed.
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	UsdRotateUndoableCommand(const Ufe::Path& path, double x, double y, double z);
+	#else
+	UsdRotateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+	#endif
 	~UsdRotateUndoableCommand() override;
 
 private:

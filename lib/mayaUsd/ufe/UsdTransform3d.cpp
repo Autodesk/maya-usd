@@ -179,23 +179,23 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd(double x, double y, doub
 }
 
 #else
-
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateCmd()
 {
-    return UsdTranslateUndoableCommand::create(path(), 0, 0, 0);
+    return UsdTranslateUndoableCommand::create(fItem, 0, 0, 0);
 }
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3d::rotateCmd()
 {
-    return UsdRotateUndoableCommand::create(path(), 0, 0, 0);
+    return UsdRotateUndoableCommand::create(fItem, 0, 0, 0);
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 {
-    return UsdScaleUndoableCommand::create(path(), 1, 1, 1);
+    return UsdScaleUndoableCommand::create(fItem, 1, 1, 1);
 }
 #endif
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::SetMatrixUndoableCommand::Ptr UsdTransform3d::setMatrixCmd(const Ufe::Matrix4d& m)
 {
     // TODO: HS Aug25,2020 dummy code to pass the compiler errors
@@ -208,6 +208,7 @@ Ufe::Matrix4d UsdTransform3d::matrix() const
     Ufe::Matrix4d m{};
     return m;
 }
+#endif
 
 void UsdTransform3d::scale(double x, double y, double z)
 {
@@ -216,7 +217,12 @@ void UsdTransform3d::scale(double x, double y, double z)
 
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 {
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     return UsdRotatePivotTranslateUndoableCommand::create(fItem->path());
+    #else
+    auto translateCmd = UsdRotatePivotTranslateUndoableCommand::create(prim(), fItem->path(), fItem);
+    return translateCmd;
+    #endif
 }
 
 void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)

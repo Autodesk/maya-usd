@@ -30,18 +30,17 @@
 
 #include "private/UfeNotifGuard.h"
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/attributes.h>
-#endif
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/transform3d.h>
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/object3d.h>
 #include <ufe/object3dNotification.h>
 #include <unordered_map>
+#include <ufe/attributes.h>
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -223,11 +222,21 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			{
 				if (prim.IsActive())
 				{
+					#ifdef UFE_V2_FEATURES_AVAILABLE
 					Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
+					#else
+					auto notification = Ufe::ObjectAdd(sceneItem);
+					Ufe::Scene::notifyObjectAdd(notification);
+					#endif
 				}
 				else
 				{
+					#ifdef UFE_V2_FEATURES_AVAILABLE
 					Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
+					#else
+					auto notification = Ufe::ObjectPostDelete(sceneItem);
+					Ufe::Scene::notifyObjectDelete(notification);
+					#endif
 				}
 			}
 #ifdef UFE_V2_FEATURES_AVAILABLE

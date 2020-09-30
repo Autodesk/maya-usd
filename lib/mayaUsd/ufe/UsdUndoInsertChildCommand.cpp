@@ -30,12 +30,8 @@
 
 #include <mayaUsdUtils/util.h>
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
-#else
-#include <cassert>
-#endif
 
 namespace {
 // shared_ptr requires public ctor, dtor, so derive a class for it.

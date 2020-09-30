@@ -24,11 +24,18 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 template<class V>
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(double x, double y, double z)
     : fNewValue(x, y, z)
+#else
+UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(
+    const UsdSceneItem::Ptr& item, double x, double y, double z
+) : fItem(item), fNewValue(x, y, z)
+#endif
 {
 }
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
 template<class V>
 void UsdTRSUndoableCommandBase<V>::updateItem() const
 {
@@ -37,6 +44,7 @@ void UsdTRSUndoableCommandBase<V>::updateItem() const
         fItem = std::dynamic_pointer_cast<UsdSceneItem>(ufeSceneItemPtr);
     }
 }
+#endif
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::initialize()
@@ -53,11 +61,31 @@ void UsdTRSUndoableCommandBase<V>::initialize()
     }
 
     attribute().Get(&fPrevValue);
+
+    #if UFE_PREVIEW_VERSION_NUM < 2021
+    Ufe::Scene::instance().addObjectPathChangeObserver(this->shared_from_this());
+    #endif
 }
+
+#if UFE_PREVIEW_VERSION_NUM < 2021
+template<class V>
+void UsdTRSUndoableCommandBase<V>::operator()(
+    const Ufe::Notification& n
+)
+{
+    if (auto renamed = dynamic_cast<const Ufe::ObjectRename*>(&n)) {
+        checkNotification(renamed);
+    }
+    else if (auto reparented = dynamic_cast<const Ufe::ObjectReparent*>(&n)) {
+        checkNotification(reparented);
+    }
+}
+#endif
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::undoImp()
 {
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     // Set fItem to nullptr because the command does not know what can go on with the prim inside
     // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
     // that the next time the command is used, it will be forced to create a new item from the path, 
@@ -65,6 +93,7 @@ void UsdTRSUndoableCommandBase<V>::undoImp()
     fItem = nullptr;
 
     updateItem();
+    #endif
 
     attribute().Set(fPrevValue);
     // Todo : We would want to remove the xformOp
@@ -74,6 +103,7 @@ void UsdTRSUndoableCommandBase<V>::undoImp()
 template<class V>
 void UsdTRSUndoableCommandBase<V>::redoImp()
 {
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     // Set fItem to nullptr because the command does not know what can go on with the prim inside
     // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
     // that the next time the command is used, it will be forced to create a new item from the path, 
@@ -81,6 +111,7 @@ void UsdTRSUndoableCommandBase<V>::redoImp()
     fItem = nullptr;
 
     updateItem();
+    #endif
 
     // We must go through conversion to the common transform API by calling
     // perform(), otherwise we get "Empty typeName" USD assertions for rotate
@@ -92,6 +123,17 @@ void UsdTRSUndoableCommandBase<V>::redoImp()
 
     perform(fNewValue[0], fNewValue[1], fNewValue[2]);
 }
+
+#if UFE_PREVIEW_VERSION_NUM < 2021
+template<class V>
+template<class N>
+void UsdTRSUndoableCommandBase<V>::checkNotification(const N* notification)
+{
+    if (notification->previousPath() == path()) {
+        fItem = std::dynamic_pointer_cast<UsdSceneItem>(notification->item());
+    }
+}
+#endif
 
 template<class V>
 void UsdTRSUndoableCommandBase<V>::perform(double x, double y, double z)
