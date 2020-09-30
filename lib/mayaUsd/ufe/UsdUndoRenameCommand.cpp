@@ -110,15 +110,16 @@ bool UsdUndoRenameCommand::renameRedo()
 
     // 1- open a changeblock to delay sending notifications.
     // 2- update the Internal References paths (if any) first
-    // 3- set the new name 
+    // 3- set the new name
+    // Note: during the changeBlock scope we are still working with old items/paths/prims.
+    // it's only after the scope ends that we start working with new items/paths/prims
     {
         SdfChangeBlock changeBlock;
 
         const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
-        auto newSceneItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
-        auto newUfePath = Ufe::Path(newSceneItem->path().getSegments()[1]);
-        bool status = MayaUsdUtils::updateInternalReferencesPath(prim, SdfPath(newUfePath.string()));
+        auto ufeSiblingPath = _ufeSrcItem->path().sibling(Ufe::PathComponent(_newName));
+        bool status = MayaUsdUtils::updateInternalReferencesPath(prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
         if (!status) {
             return false;
         }
@@ -152,15 +153,16 @@ bool UsdUndoRenameCommand::renameUndo()
 
     // 1- open a changeblock to delay sending notifications.
     // 2- update the Internal References paths (if any) first
-    // 3- set the new name 
+    // 3- set the new name
+    // Note: during the changeBlock scope we are still working with old items/paths/prims.
+    // it's only after the scope ends that we start working with new items/paths/prims
     {
         SdfChangeBlock changeBlock;
 
         const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
 
-        auto newSceneItem = createSiblingSceneItem(_ufeSrcItem->path(), _ufeSrcItem->prim().GetName());
-        auto newUfePath = Ufe::Path(newSceneItem->path().getSegments()[1]);
-        bool status = MayaUsdUtils::updateInternalReferencesPath(prim, SdfPath(newUfePath.string()));
+        auto ufeSiblingPath = _ufeSrcItem->path().sibling(Ufe::PathComponent(_ufeSrcItem->prim().GetName()));
+        bool status = MayaUsdUtils::updateInternalReferencesPath(prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
         if (!status) {
             return false;
         }
