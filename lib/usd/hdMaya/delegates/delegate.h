@@ -18,8 +18,9 @@
 
 #include <memory>
 
-#include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
+#include <maya/MPointArray.h>
+#include <maya/MSelectionContext.h>
 #include <maya/MSelectionList.h>
 
 #include <pxr/pxr.h>
@@ -27,6 +28,7 @@
 #include <pxr/imaging/hd/engine.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/selection.h>
+#include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/taskController.h>
 #include <pxr/usd/sdf/path.h>
 
@@ -94,6 +96,16 @@ public:
 
     virtual bool SupportsUfeSelection() { return false; }
 #endif // WANT_UFE_BUILD
+
+#if MAYA_API_VERSION >= 20210000
+    virtual void PopulateSelectionList(
+        const HdxPickHitVector& hits,
+        const MHWRender::MSelectionInfo& selectInfo,
+        MSelectionList& mayaSelection,
+        MPointArray& worldSpaceHitPts)
+    {
+    }
+#endif
 
     void SetLightsEnabled(const bool enabled) { _lightsEnabled = enabled; }
     bool GetLightsEnabled() { return _lightsEnabled; }
