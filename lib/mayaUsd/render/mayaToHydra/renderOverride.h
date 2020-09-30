@@ -99,6 +99,15 @@ public:
     MHWRender::MRenderOperation* renderOperation() override;
     bool nextRenderOperation() override;
 
+#if MAYA_API_VERSION >= 20210000
+    bool select(
+        const MHWRender::MFrameContext& frameContext,
+        const MHWRender::MSelectionInfo& selectInfo,
+        bool useDepth,
+        MSelectionList& selectionList,
+        MPointArray& worldSpaceHitPts) override;
+#endif
+
 private:
     typedef std::pair<MString, MCallbackIdArray> PanelCallbacks;
     typedef std::vector<PanelCallbacks> PanelCallbacksList;
@@ -175,6 +184,15 @@ private:
     HdRprimCollection _selectionCollection{
         HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)
     };
+
+#if MAYA_API_VERSION >= 20210000
+    HdRprimCollection _pointSnappingCollection{
+        HdTokens->geometry,
+        HdReprSelector(HdReprTokens->refined, TfToken(), HdReprTokens->points),
+        SdfPath::AbsoluteRootPath()
+    };
+#endif
+
     GlfSimpleLight _defaultLight;
 
     std::vector<HdMayaDelegatePtr> _delegates;

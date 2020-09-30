@@ -20,7 +20,6 @@
 #include <exception>
 
 #include <maya/M3dView.h>
-#include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
 #include <maya/MEventMessage.h>
 #include <maya/MGlobal.h>
@@ -36,6 +35,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/hd/rprim.h>
+#include <pxr/imaging/hdx/pickTask.h>
 
 #include <hdMaya/delegates/delegateRegistry.h>
 #include <hdMaya/delegates/sceneDelegate.h>
@@ -50,6 +50,10 @@
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/imaging/hdx/renderTask.h>
+
+#include <boost/functional/hash.hpp>
+
+#include <limits>
 
 #if USD_VERSION_NUM > 2002
 #include <pxr/imaging/hgi/hgi.h>
@@ -105,6 +109,80 @@ private:
 };
 
 #endif // WANT_UFE_BUILD
+
+#if MAYA_API_VERSION >= 20210000
+
+//! \brief  Get the index of the hit nearest to a given cursor point.
+int GetNearestHitIndex(
+    const MHWRender::MFrameContext& frameContext,
+    const HdxPickHitVector&         hits,
+    int                             cursor_x,
+    int                             cursor_y)
+{
+    int nearestHitIndex = -1;
+
+    double dist2_min = std::numeric_limits<double>::max();
+    float  depth_min = std::numeric_limits<float>::max();
+
+    for (unsigned int i = 0; i < hits.size(); i++) {
+        const HdxPickHit& hit = hits[i];
+        const MPoint      worldSpaceHitPoint(
+            hit.worldSpaceHitPoint[0], hit.worldSpaceHitPoint[1], hit.worldSpaceHitPoint[2]);
+
+        // Calculate the (x, y) coordinate relative to the lower left corner of the viewport.
+        double hit_x, hit_y;
+        frameContext.worldToViewport(worldSpaceHitPoint, hit_x, hit_y);
+
+        // Calculate the 2D distance between the hit and the cursor
+        double dist_x = hit_x - (double)cursor_x;
+        double dist_y = hit_y - (double)cursor_y;
+        double dist2 = dist_x * dist_x + dist_y * dist_y;
+
+        // Find the hit nearest to the cursor.
+        if ((dist2 < dist2_min) || (dist2 == dist2_min && hit.normalizedDepth < depth_min)) {
+            dist2_min = dist2;
+            depth_min = hit.normalizedDepth;
+            nearestHitIndex = (int)i;
+        }
+    }
+
+    return nearestHitIndex;
+}
+
+//! \brief  workaround to remove duplicate hits and improve selection performance.
+void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVector& outHits)
+{
+    outHits.clear();
+
+    // hash -> hitIndex
+    std::unordered_map<size_t, size_t> hitIndices;
+
+    size_t previousHash = 0;
+
+    for (size_t i = 0; i < inHits.size(); i++) {
+        const HdxPickHit& hit = inHits[i];
+
+        size_t hash = 0;
+        boost::hash_combine(hash, hit.delegateId.GetHash());
+        boost::hash_combine(hash, hit.objectId.GetHash());
+        boost::hash_combine(hash, hit.instancerId.GetHash());
+        boost::hash_combine(hash, hit.instanceIndex);
+
+        // As an optimization, keep track of the previous hash value and
+        // reject indices that match it without performing a map lookup.
+        // Adjacent indices are likely enough to have the same prim,
+        // instance and element ids that this can be a significant
+        // improvement.
+        if (hitIndices.empty() || hash != previousHash) {
+            if (hitIndices.insert(std::make_pair(hash, i)).second) {
+                outHits.push_back(inHits[i]);
+            }
+            previousHash = hash;
+        }
+    }
+}
+
+#endif
 
 } // namespace
 
@@ -769,6 +847,110 @@ MHWRender::MRenderOperation* MtohRenderOverride::renderOperation() {
 bool MtohRenderOverride::nextRenderOperation() {
     return ++_currentOperation < static_cast<int>(_operations.size());
 }
+
+#if MAYA_API_VERSION >= 20210000
+bool MtohRenderOverride::select(
+    const MHWRender::MFrameContext& frameContext,
+    const MHWRender::MSelectionInfo& selectInfo,
+    bool /*useDepth*/,
+    MSelectionList& selectionList,
+    MPointArray& worldSpaceHitPts)
+{
+    MStatus status = MStatus::kFailure;
+
+    MMatrix viewMatrix = frameContext.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    MMatrix projMatrix = frameContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    int view_x, view_y, view_w, view_h;
+    status = frameContext.getViewportDimensions(view_x, view_y, view_w, view_h);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    unsigned int sel_x, sel_y, sel_w, sel_h;
+    status = selectInfo.selectRect(sel_x, sel_y, sel_w, sel_h);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    // Compute a pick matrix that, when it is post-multiplied with the projection matrix, will
+    // cause the picking region to fill the entire/ viewport for OpenGL selection.
+    {
+        MMatrix pickMatrix;
+        pickMatrix[0][0] = view_w / double(sel_w);
+        pickMatrix[1][1] = view_h / double(sel_h);
+        pickMatrix[3][0] = (view_w - (double)(sel_x * 2 + sel_w)) / double(sel_w);
+        pickMatrix[3][1] = (view_h - (double)(sel_y * 2 + sel_h)) / double(sel_h);
+
+        projMatrix *= pickMatrix;
+    }
+
+    const bool pointSnappingActive = selectInfo.pointSnapping();
+
+    // Set up picking params.
+    HdxPickTaskContextParams pickParams;
+    pickParams.resolution.Set(view_w, view_h);
+    pickParams.viewMatrix.Set(viewMatrix.matrix);
+    pickParams.projectionMatrix.Set(projMatrix.matrix);
+    pickParams.resolveMode = HdxPickTokens->resolveUnique;
+
+    if (pointSnappingActive) {
+        pickParams.pickTarget = HdxPickTokens->pickPoints;
+
+        // Exclude selected Rprims to avoid self-snapping issue.
+        pickParams.collection = _pointSnappingCollection;
+        pickParams.collection.SetExcludePaths(_selectionCollection.GetRootPaths());
+    } else {
+        pickParams.collection = _renderCollection;
+    }
+
+    HdxPickHitVector outHits;
+    pickParams.outHits = &outHits;
+
+    // Execute picking tasks.
+    HdTaskSharedPtrVector pickingTasks = _taskController->GetPickingTasks();
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, VtValue(pickParams));
+    _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+
+    if (pointSnappingActive) {
+        // Find the hit nearest to the cursor point and use it for point snapping.
+        int nearestHitIndex = -1;
+        int cursor_x, cursor_y;
+        if (selectInfo.cursorPoint(cursor_x, cursor_y)) {
+            nearestHitIndex = GetNearestHitIndex(frameContext, outHits, cursor_x, cursor_y);
+        }
+
+        if (nearestHitIndex >= 0) {
+            const HdxPickHit hit = outHits[nearestHitIndex];
+            outHits.clear();
+            outHits.push_back(hit);
+        } else {
+            outHits.clear();
+        }
+    } else {
+        // Multiple hits can be produced for a single object on marquee selection even pickTarget
+        // is the default "pickPrimsAndInstances" mode, and each hit is created for an "element"
+        // which I guess means a face id and should only be required when pickTarget is "pickFaces".
+        // I would expect only one hit to be created for object-level selection. Having duplicated
+        // hits for the same object would slow down selection performance, esp. for dense mesh.
+        // Some more details can be found: https://groups.google.com/g/usd-interest/c/Cgosy3r7Vv4
+        HdxPickHitVector uniqueHits;
+        ResolveUniqueHits_Workaround(outHits, uniqueHits);
+        outHits.swap(uniqueHits);
+    }
+
+    if (!outHits.empty()) {
+        for (auto& it : _delegates) {
+            it->PopulateSelectionList(outHits, selectInfo, selectionList, worldSpaceHitPts);
+        }
+    }
+
+    return true;
+}
+#endif
 
 void MtohRenderOverride::_ClearHydraCallback(void* data) {
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);

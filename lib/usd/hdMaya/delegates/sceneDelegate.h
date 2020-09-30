@@ -114,6 +114,15 @@ public:
         const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
 
+#if MAYA_API_VERSION >= 20210000
+    HDMAYA_API
+    void PopulateSelectionList(
+        const HdxPickHitVector& hits,
+        const MHWRender::MSelectionInfo& selectInfo,
+        MSelectionList& selectionList,
+        MPointArray& worldSpaceHitPts) override;
+#endif
+
 protected:
     HDMAYA_API
     HdMeshTopology GetMeshTopology(const SdfPath& id) override;

@@ -63,6 +63,14 @@ public:
         const HdSelectionSharedPtr& selection) override;
     bool SupportsUfeSelection() override;
 #endif // WANT_UFE_BUILD
+
+#if MAYA_API_VERSION >= 20210000
+    void PopulateSelectionList(
+        const HdxPickHitVector& hits,
+        const MHWRender::MSelectionInfo& selectInfo,
+        MSelectionList& selectionList,
+        MPointArray& worldSpaceHitPts) override;
+#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
