@@ -15,27 +15,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ========================================================================
 -->
-<fragment_graph name="BasisCurvesCubicFallbackShader" ref="BasisCurvesCubicFallbackShader" class="FragmentGraph" version="1.0" feature_level="0" >
+<fragment_graph name="BasisCurvesLinearCPVShader" ref="BasisCurvesLinearCPVShader" class="FragmentGraph" version="1.0" feature_level="0" >
     <fragments>
         <fragment_ref name="mayaBlinnSurface" ref="mayaBlinnSurface" />
         <fragment_ref name="opacityToTransparency" ref="opacityToTransparency" />
         <fragment_ref name="Float4ToFloat3" ref="Float4ToFloat3" />
         <fragment_ref name="Float4ToFloatW" ref="Float4ToFloatW" />
-        <fragment_ref name="Float4ToFloat4" ref="Float4ToFloat4" />
-        <fragment_ref name="BasisCurvesCubicHull" ref="BasisCurvesCubicHull" />
-        <fragment_ref name="BasisCurvesCubicDomain" ref="BasisCurvesCubicDomain" />
+        <fragment_ref name="BasisCurvesLinearCPVPassing" ref="BasisCurvesLinearCPVPassing" />
+        <fragment_ref name="BasisCurvesLinearCPVHull" ref="BasisCurvesLinearCPVHull" />
+        <fragment_ref name="BasisCurvesLinearDomain" ref="BasisCurvesLinearDomain" />
     </fragments>
     <connections>
         <connect from="Float4ToFloat3.output" to="mayaBlinnSurface.color" name="color" />
         <connect from="opacityToTransparency.transparency" to="mayaBlinnSurface.transparency" name="transparency" />
         <connect from="Float4ToFloatW.output" to="opacityToTransparency.opacity" name="opacity" />
-        <connect from="Float4ToFloat4.output" to="Float4ToFloat3.input" name="rgb" />
-        <connect from="Float4ToFloat4.output" to="Float4ToFloatW.input" name="a" />
-        <connect from="BasisCurvesCubicDomain.GPUStage" to="mayaBlinnSurface.GPUStage" name="DS_to_PS" />
-        <connect from="BasisCurvesCubicHull.GPUStage" to="BasisCurvesCubicDomain.GPUStage" name="HS_to_DS" />
+        <connect from="BasisCurvesLinearCPVPassing.BasisCurvesLinearColor" to="Float4ToFloat3.input" name="rgb" />
+        <connect from="BasisCurvesLinearCPVPassing.BasisCurvesLinearColor" to="Float4ToFloatW.input" name="a" />
+        <connect from="BasisCurvesLinearDomain.GPUStage" to="mayaBlinnSurface.GPUStage" name="DS_to_PS" />
+        <connect from="BasisCurvesLinearCPVHull.GPUStage" to="BasisCurvesLinearDomain.GPUStage" name="HS_to_DS" />
     </connections>
     <properties>
-        <undefined name="GPUStage" ref="BasisCurvesCubicHull.GPUStage" semantic="GPUStage" />
+        <undefined name="GPUStage" ref="BasisCurvesLinearCPVHull.GPUStage" semantic="GPUStage" />
         <float3 name="Nw" ref="mayaBlinnSurface.Nw" flags="varyingInputParam" />
         <float3 name="Lw" ref="mayaBlinnSurface.Lw" />
         <float3 name="Vw" ref="mayaBlinnSurface.Vw" flags="varyingInputParam" />
@@ -69,8 +69,7 @@ limitations under the License.
         <float name="fogDensity" ref="mayaBlinnSurface.fogDensity" />
         <float4 name="fogColor" ref="mayaBlinnSurface.fogColor" />
         <float name="fogMultiplier" ref="mayaBlinnSurface.fogMultiplier" />
-        <float4 name="diffuseColor" ref="Float4ToFloat4.input" />
-        <int name="curveBasis" ref="BasisCurvesCubicDomain.curveBasis" />
+        <float4 name="diffuseColor" ref="BasisCurvesLinearCPVPassing.colorIn" flags="varyingInputParam" />
     </properties>
     <values>
         <float3 name="Lw" value="0.000000,0.000000,0.000000"  />

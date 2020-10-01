@@ -700,6 +700,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
     const HdBasisCurvesTopology& topology = _curvesSharedData._topology;
     const TfToken type = topology.GetCurveType();
     const TfToken wrap = topology.GetCurveWrap();
+    const TfToken basis = topology.GetCurveBasis();
 
 #if defined(MAYA_ALLOW_PRIMITIVE_TYPE_SWITCH)
     const int refineLevel = _curvesSharedData._displayStyle.refineLevel;
@@ -924,22 +925,18 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     const GfVec3f& color = colorArray[0];
                     const MColor clr(color[0], color[1], color[2], alphaArray[0]);
 
-                    MHWRender::MShaderInstance* shader = nullptr;
-                    auto primitiveType = MHWRender::MGeometry::kLines;
-                    int primitiveStride = 0;
+                    MHWRender::MShaderInstance* shader;
+                    MHWRender::MGeometry::Primitive primitiveType;
+                    int primitiveStride;
 
                     if (refineLevel <= 0) {
                         shader = _delegate->Get3dSolidShader(clr);
-                    }
-                    else if (type == HdTokens->linear) {
-                        shader = _delegate->GetBasisCurvesLinearFallbackShader(clr);
+                        primitiveType = MHWRender::MGeometry::kLines;
+                        primitiveStride = 0;
+                    } else {
+                        shader = _delegate->GetBasisCurvesFallbackShader(type, basis, clr);
                         primitiveType = MHWRender::MGeometry::kPatch;
-                        primitiveStride = 2;
-                    }
-                    else {
-                        shader = _delegate->GetBasisCurvesCubicFallbackShader(clr);
-                        primitiveType = MHWRender::MGeometry::kPatch;
-                        primitiveStride = 4;
+                        primitiveStride = (type == HdTokens->linear ? 2 : 4);
                     }
 
                     if (shader != nullptr && shader != drawItemData._shader) {
@@ -1001,15 +998,24 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 // Use 3d CPV solid-color shader if there is no material binding or
                 // we failed to create a shader instance from the material.
                 if (!stateToCommit._shader) {
-                    MHWRender::MShaderInstance* shader = _delegate->Get3dCPVSolidShader();
+                    MHWRender::MShaderInstance* shader;
+                    MHWRender::MGeometry::Primitive primitiveType;
+                    int primitiveStride;
+
+                    if (refineLevel <= 0) {
+                        shader = _delegate->Get3dCPVSolidShader();
+                        primitiveType = MHWRender::MGeometry::kLines;
+                        primitiveStride = 0;
+                    } else {
+                        shader = _delegate->GetBasisCurvesCPVShader(type, basis);
+                        primitiveType = MHWRender::MGeometry::kPatch;
+                        primitiveStride = (type == HdTokens->linear ? 2 : 4);
+                    }
 
                     if (shader != nullptr && shader != drawItemData._shader) {
                         drawItemData._shader = shader;
                         stateToCommit._shader = shader;
                     }
-
-                    auto primitiveType = MHWRender::MGeometry::kLines;
-                    int primitiveStride = 0;
 
                     if (primitiveType != drawItemData._primitiveType ||
                         primitiveStride != drawItemData._primitiveStride) {
@@ -1178,16 +1184,10 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     if (_selectionStatus != kUnselected) {
                         if (refineLevel <= 0) {
                             shader = _delegate->Get3dSolidShader(color);
-                        }
-                        else if (type == HdTokens->linear) {
-                            shader = _delegate->GetBasisCurvesLinearFallbackShader(color);
+                        } else {
+                            shader = _delegate->GetBasisCurvesFallbackShader(type, basis, color);
                             primitiveType = MHWRender::MGeometry::kPatch;
-                            primitiveStride = 2;
-                        }
-                        else {
-                            shader = _delegate->GetBasisCurvesCubicFallbackShader(color);
-                            primitiveType = MHWRender::MGeometry::kPatch;
-                            primitiveStride = 4;
+                            primitiveStride = (type == HdTokens->linear ? 2 : 4);
                         }
                     }
                 }
@@ -1238,7 +1238,8 @@ HdVP2BasisCurves::_UpdateDrawItem(
         HdChangeTracker::DirtyPoints |
         HdChangeTracker::DirtyNormals |
         HdChangeTracker::DirtyPrimvar |
-        HdChangeTracker::DirtyTopology));
+        HdChangeTracker::DirtyTopology |
+        DirtySelectionHighlight));
 
     // Reset dirty bits because we've prepared commit state for this draw item.
     drawItem->ResetDirtyBits();
