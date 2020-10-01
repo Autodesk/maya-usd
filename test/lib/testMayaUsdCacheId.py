@@ -29,14 +29,18 @@ from mayaUsd import lib as mayaUsdLib
 
 import fixturesUtils
 
-class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
 
+class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
         cls.SC = pxr.UsdUtils.StageCache.Get()
-        cls.mayafilePath = os.path.join(inputPath, "MayaUsdPythonCacheIdTestCase", "MayaUsdPythonCacheIdTestCase.ma")
-        cls.usdfilePath =  os.path.join(inputPath, "MayaUsdPythonCacheIdTestCase", "helloworld.usda")
+        cls.mayafilePath = os.path.join(inputPath,
+                                        "MayaUsdPythonCacheIdTestCase",
+                                        "MayaUsdPythonCacheIdTestCase.ma")
+        cls.usdfilePath = os.path.join(inputPath,
+                                       "MayaUsdPythonCacheIdTestCase",
+                                       "helloworld.usda")
         cmds.file(new=True, force=True)
 
         # Define a simple usd file for testing
