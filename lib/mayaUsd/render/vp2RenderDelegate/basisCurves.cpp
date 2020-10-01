@@ -36,11 +36,9 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
-// MRenderItem supports primitive type switch on these Maya versions.
-#if ((MAYA_API_VERSION >= 20200100) || \
-    ((MAYA_API_VERSION >= 20190300) && (MAYA_API_VERSION < 20200000)) || \
-    ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000)))
-#define MAYA_ALLOW_PRIMITIVE_TYPE_SWITCH
+// Complete tessellation shader support is avaiable for basisCurves complexity levels
+#if MAYA_API_VERSION >= 20210000
+#define HDVP2_ENABLE_BASISCURVES_TESSELLATION
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -702,7 +700,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
     const TfToken wrap = topology.GetCurveWrap();
     const TfToken basis = topology.GetCurveBasis();
 
-#if defined(MAYA_ALLOW_PRIMITIVE_TYPE_SWITCH)
+#if defined(HDVP2_ENABLE_BASISCURVES_TESSELLATION)
     const int refineLevel = _curvesSharedData._displayStyle.refineLevel;
 #else
     const int refineLevel = 0;
@@ -1311,7 +1309,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
             renderItem->enable(*stateToCommit._enabled);
         }
 
-#if defined(MAYA_ALLOW_PRIMITIVE_TYPE_SWITCH)
+#if defined(HDVP2_ENABLE_BASISCURVES_TESSELLATION)
         // If the primitive type and stride are changed, then update them.
         if (stateToCommit._primitiveType != nullptr &&
             stateToCommit._primitiveStride != nullptr) {
