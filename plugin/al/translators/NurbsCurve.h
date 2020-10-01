@@ -17,6 +17,13 @@
 #pragma once
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+// forward declare usd types
+class UsdGeomNurbsCurves;
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
 namespace AL {
 namespace usdmaya {
 namespace fileio {
@@ -49,7 +56,7 @@ private:
     { return true; }
 
 private:
-  void writeEdits(UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& fnCurve, bool writeAll);
+  void writeEdits(PXR_NS::UsdGeomNurbsCurves& nurbsCurvesPrim, MFnNurbsCurve& fnCurve, bool writeAll);
 
   static MObject m_visible;
 };
