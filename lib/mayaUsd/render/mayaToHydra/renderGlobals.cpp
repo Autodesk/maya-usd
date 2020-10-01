@@ -92,8 +92,9 @@ R"mel(
 }
 
 global proc mtohRenderOverride_AEAttributesCallback(string $nodeName) {
-    if (`nodeType $nodeName` != "renderGlobals")
+    if (`nodeType $nodeName` != "renderGlobals") {
         return;
+    }
 
     editorTemplate -beginLayout "Hydra Settings" -collapse 1;
         mtohRenderOverride_AddMTOHAttributes(1);
@@ -145,13 +146,14 @@ global proc {{override}}OptionBox() {
 
 
 static constexpr const char* kMtohNSToken = "_mtohns_";
-static const std::string kMtohRenderePostFix("__");
+static const std::string kMtohRendererPostFix("__");
 
 static MString _MangleColorAttribute(const MString& attrName, unsigned i) {
     static const MString kMtohCmptToken("_mtohc_");
     static const std::array<MString, 4> kColorComponents = { "R", "G", "B", "A" };
-    if (i < kColorComponents.size())
+    if (i < kColorComponents.size()) {
         return attrName + kMtohCmptToken + kColorComponents[i];
+    }
 
     TF_CODING_ERROR("[mtoh] Cannot mangle component: %u", i);
     return attrName + kMtohCmptToken + MString("INVALID");
@@ -258,8 +260,9 @@ void _CreateStringAttribute(MFnDependencyNode& node, const MString& attrName,
     }
     node.addAttribute(obj);
 
-    if (!existed && useUserOptions)
+    if (!existed && useUserOptions) {
         _RestoreValue<MString>(node, attrName, MGlobal::optionVarStringValue);
+    }
 }
 
 template <typename T, typename MayaType>
@@ -286,8 +289,9 @@ void _CreateNumericAttribute(
     }
     node.addAttribute(obj);
 
-    if (!existed && useUserOptions)
+    if (!existed && useUserOptions) {
         _RestoreValue<T, MayaType>(node, attrName, getter);
+    }
 }
 
 template <typename T>
@@ -358,9 +362,9 @@ void _CreateBoolAttribute(MFnDependencyNode& node, const MString& attrName,
 
 void _CreateIntAttribute(MFnDependencyNode& node, const MString& attrName,
     int defValue, bool useUserOptions,
-    std::function<void(MFnNumericAttribute& nAttr)> minMaxOp = {}) {
+    std::function<void(MFnNumericAttribute& nAttr)> postCreate = {}) {
     _CreateNumericAttribute<int>(node, attrName, MFnNumericData::kInt,
-        defValue, useUserOptions, MGlobal::optionVarIntValue, std::move(minMaxOp));
+        defValue, useUserOptions, MGlobal::optionVarIntValue, std::move(postCreate));
 }
 
 void _CreateFloatAttribute(MFnDependencyNode& node, const MString& attrName,
@@ -451,8 +455,9 @@ void _GetColorAttribute(
     const MFnDependencyNode& node, const MString& attrName, GfVec3f& out,
     bool storeUserSetting, std::function<void(GfVec3f&, bool)> alphaOp = {}) {
     const auto plug = node.findPlug(attrName, true);
-    if (plug.isNull())
+    if (plug.isNull()) {
         return;
+    }
 
     out[0] = plug.child(0).asFloat();
     out[1] = plug.child(1).asFloat();
@@ -510,7 +515,7 @@ _MangleString(const std::string& settingKey, const std::string& token,
 
 std::string
 _MangleRenderer(const TfToken& rendererName) {
-    return rendererName.IsEmpty() ? "" : (rendererName.GetString() + kMtohRenderePostFix);
+    return rendererName.IsEmpty() ? "" : (rendererName.GetString() + kMtohRendererPostFix);
 }
 
 TfToken
@@ -521,7 +526,7 @@ _MangleString(const TfToken& settingKey, const TfToken& rendererName) {
 TfToken
 _DeMangleString(const TfToken& settingKey, const TfToken& rendererName) {
     assert(!rendererName.IsEmpty() && "No condition for this");
-    return _MangleString(settingKey.GetString().substr(rendererName.size()+kMtohRenderePostFix.size()),
+    return _MangleString(settingKey.GetString().substr(rendererName.size()+kMtohRendererPostFix.size()),
         kMtohNSToken, ":");
 }
 
@@ -548,8 +553,9 @@ bool MtohRenderGlobals::AffectsRenderer(const TfToken& mangledAttr, const TfToke
 bool MtohRenderGlobals::ApplySettings(HdRenderDelegate* delegate,
     const TfToken& rendererName, const TfTokenVector& attrNames) const {
     const auto* settings = TfMapLookupPtr(_rendererSettings, rendererName);
-    if (!settings)
+    if (!settings) {
         return false;
+    }
 
     bool appliedAny = false;
     if (!attrNames.empty()) {
@@ -573,8 +579,9 @@ bool MtohRenderGlobals::ApplySettings(HdRenderDelegate* delegate,
 
 void MtohRenderGlobals::OptionsPreamble() {
     MStatus status = MGlobal::executeCommand(_renderOverride_PreAmble);
-    if (status)
+    if (status) {
         return;
+    }
     TF_WARN("[mtoh] Error executing preamble:\n%s", _renderOverride_PreAmble);
 }
 
@@ -605,8 +612,9 @@ void MtohRenderGlobals::BuildOptionsMenu(const MtohRendererDescription& renderer
     std::stringstream ss;
     ss << "global proc " << rendererDesc.overrideName << "Options(int $fromAE) {\n";
     for (const auto& desc : rendererSettingDescriptors) {
-        if (!_IsSupportedAttribute(desc.defaultValue))
+        if (!_IsSupportedAttribute(desc.defaultValue)) {
             continue;
+        }
 
         ss << "\tmtohRenderOverride_AddAttribute("
            << quote(rendererDesc.rendererName.GetString())
@@ -645,12 +653,14 @@ public:
     bool operator() (const TfToken& attr, const TfToken& renderer = {}) {
         _attrName = _MangleName(attr, renderer);
         if (attributeFilter()) {
-            if (_inFilter != _attrName)
+            if (_inFilter != _attrName) {
                 return false;
+            }
         } else if (renderFilter()) {
             // Allow everything for all renderers through
-            if (!renderer.IsEmpty() && renderer != _inFilter)
+            if (!renderer.IsEmpty() && renderer != _inFilter) {
                 return false;
+            }
         }
         _mayaString = MString(_attrName.GetText());
         return true;
@@ -825,8 +835,9 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params) {
                 TF_WARN("[mtoh] Ignoring setting: '%s' for %s", attr.key.GetText(),
                     rendererName.GetText());
             }
-            if (filter.attributeFilter())
+            if (filter.attributeFilter()) {
                 break;
+            }
         }
     }
     return mayaObject;
@@ -859,8 +870,9 @@ const MtohRenderGlobals& MtohRenderGlobals::GetInstance(const GlobalParams& para
     if (filter(_tokens->mtohEnableMotionSamples)) {
         _GetAttribute(node, filter.mayaString(),
             globals.delegateParams.enableMotionSamples, storeUserSetting);
-        if (filter.attributeFilter())
+        if (filter.attributeFilter()) {
             return globals;
+        }
     }
     if (filter(MtohTokens->mtohMaximumShadowMapResolution)) {
         _GetAttribute(node, filter.mayaString(),
