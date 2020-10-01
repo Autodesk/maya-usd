@@ -62,20 +62,13 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
     , _ufeSrcItem(srcItem)
     , _ufeDstItem(nullptr)
     , _stage(_ufeSrcItem->prim().GetStage())
-    , _newName(newName.string())
 {
     const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
     ufe::applyCommandRestriction(prim, "rename");
 
     // handle unique name for _newName
-    TfToken::HashSet childrenNames;
-    for (auto child : prim.GetParent().GetChildren()){
-        childrenNames.insert(child.GetName());
-    }
-    if (childrenNames.find(TfToken(_newName)) != childrenNames.end()){
-        _newName = uniqueName(childrenNames, _newName);
-    }
+    _newName = uniqueChildName(prim.GetParent(), newName.string());
 
     // names are not allowed to start to digit numbers
     if(std::isdigit(_newName.at(0))){
