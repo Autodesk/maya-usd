@@ -24,47 +24,46 @@ class UsdGeomMesh;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-namespace AL {
-namespace usdmaya {
-namespace fileio {
-namespace translators {
+namespace AL{
+namespace usdmaya{
+namespace fileio{
+namespace translators{
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Class to translate a mesh in and out of maya.
 //----------------------------------------------------------------------------------------------------------------------
-class Mesh : public TranslatorBase {
+class Mesh : public TranslatorBase
+{
 public:
-    AL_USDMAYA_DECLARE_TRANSLATOR(Mesh);
+  AL_USDMAYA_DECLARE_TRANSLATOR(Mesh);
+private:
+  MStatus initialize() override;
+  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
+  UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
+                       const ExporterParams& params) override;
+  MStatus tearDown(const SdfPath& path) override;
+  MStatus update(const UsdPrim& path) override;
+  MStatus preTearDown(UsdPrim& prim) override;
+
+  bool supportsUpdate() const override
+    { return false; } // Turned off supportsUpdate to get tearDown working correctly
+  bool importableByDefault() const override
+    { return false; }
+
+  ExportFlag canExport(const MObject& obj) override
+    { return obj.hasFn(MFn::kMesh) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
+  bool canBeOverridden() override
+    { return true; }
 
 private:
-    MStatus initialize() override;
-    MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
-    UsdPrim exportObject(
-        UsdStageRefPtr        stage,
-        MDagPath              dagPath,
-        const SdfPath&        usdPath,
-        const ExporterParams& params) override;
-    MStatus tearDown(const SdfPath& path) override;
-    MStatus update(const UsdPrim& path) override;
-    MStatus preTearDown(UsdPrim& prim) override;
+  enum WriteOptions
+  {
+    kPerformDiff = 1 << 0,
+    kDynamicAttributes = 1 << 1
+  };
+  void writeEdits(MDagPath& dagPath, PXR_NS::UsdGeomMesh& geomPrim, uint32_t options = kDynamicAttributes);
+  static MObject m_visible;
 
-    bool supportsUpdate() const override
-    {
-        return false;
-    } // Turned off supportsUpdate to get tearDown working correctly
-    bool importableByDefault() const override { return false; }
-
-    ExportFlag canExport(const MObject& obj) override
-    {
-        return obj.hasFn(MFn::kMesh) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported;
-    }
-    bool canBeOverridden() override { return true; }
-
-private:
-    enum WriteOptions { kPerformDiff = 1 << 0, kDynamicAttributes = 1 << 1 };
-    void
-                   writeEdits(MDagPath& dagPath, PXR_NS::UsdGeomMesh& geomPrim, uint32_t options = kDynamicAttributes);
-    static MObject m_visible;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -73,3 +72,4 @@ private:
 } // namespace usdmaya
 } // namespace AL
 //----------------------------------------------------------------------------------------------------------------------
+
