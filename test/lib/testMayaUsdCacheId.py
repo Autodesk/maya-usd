@@ -30,44 +30,37 @@ from mayaUsd import lib as mayaUsdLib
 import fixturesUtils
 
 class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
-    """
-    Test cases for Cache Id
-    """
-    def __init__(self, *args, **kwargs):
-        super(MayaUsdPythonCacheIdTestCase, self).__init__(*args, **kwargs)
 
-        self.filePath = None
-        self.SC = pxr.UsdUtils.StageCache.Get()
-
-    def setUp(self):
-
+    @classmethod
+    def setUpClass(cls):
         inputPath = fixturesUtils.setUpClass(__file__)
-
-        filePath = os.path.join(inputPath, "MayaUsdPythonCacheIdTestCase", "MayaUsdPythonCacheIdTestCase.ma")
-        cmds.file(filePath, force=True, open=True)
-
-        self.filePath =  os.path.join(inputPath, "MayaUsdPythonCacheIdTestCase", "helloworld.usda")
+        cls.SC = pxr.UsdUtils.StageCache.Get()
+        cls.mayafilePath = os.path.join(inputPath, "MayaUsdPythonCacheIdTestCase", "MayaUsdPythonCacheIdTestCase.ma")
+        cls.usdfilePath =  os.path.join(inputPath, "MayaUsdPythonCacheIdTestCase", "helloworld.usda")
+        cmds.file(new=True, force=True)
 
         # Define a simple usd file for testing
-        tempStage = Usd.Stage.CreateNew(self.filePath)
+        tempStage = Usd.Stage.CreateNew(cls.usdfilePath)
         UsdGeom.Xform.Define(tempStage, '/hello')
         UsdGeom.Sphere.Define(tempStage, '/hello/world')
-        self.assertTrue(tempStage.GetRootLayer().Save())
+        tempStage.GetRootLayer().Save()
 
         # Clear the cache before testing
-        self.SC.Clear()
+        cls.SC.Clear()
 
-    def tearDown(self):
-        """Unload plugin, new Maya scene, reset class member variables."""
-        os.remove(self.filePath)
-        self.filePath = None
+    @classmethod
+    def tearDownClass(cls):
         standalone.uninitialize()
+        os.remove(cls.mayafilePath)
+        os.remove(cls.usdfilePath)
+        cls.mayafilePath = None
+        cls.usdfilePath = None
 
     def testCacheIdLoadFromFile(self):
         # Create the Proxy node and load the usd file
         shapeNode = cmds.createNode('mayaUsdProxyShape')
         cmds.setAttr('{}.filePath'.format(shapeNode),
-                     self.filePath,
+                     self.usdfilePath,
                      type='string')
         shapeStage = mayaUsdLib.GetPrim(shapeNode).GetStage()
 
@@ -83,7 +76,7 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
     def testCacheIdLoadFromCacheId(self):
         # Open the stage and get the cache Id
         with pxr.Usd.StageCacheContext(self.SC):
-            cachedStage = Usd.Stage.Open(self.filePath)
+            cachedStage = Usd.Stage.Open(self.usdfilePath)
         stageId = self.SC.GetId(cachedStage).ToLongInt()
 
         # Create the proxy node and load using the stage id
@@ -118,7 +111,7 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         # Create the 2 Proxy nodes and load a stage from file
         shapeNodeA = cmds.createNode('mayaUsdProxyShape')
         cmds.setAttr('{}.filePath'.format(shapeNodeA),
-                     self.filePath,
+                     self.usdfilePath,
                      type='string')
         shapeStageA = mayaUsdLib.GetPrim(shapeNodeA).GetStage()
         shapeNodeB = cmds.createNode('mayaUsdProxyShape')
@@ -145,7 +138,7 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         # Create the 2 Proxy nodes and load a stage from file
         shapeNodeA = cmds.createNode('mayaUsdProxyShape')
         cmds.setAttr('{}.filePath'.format(shapeNodeA),
-                     self.filePath,
+                     self.usdfilePath,
                      type='string')
         shapeStageA = mayaUsdLib.GetPrim(shapeNodeA).GetStage()
         shapeNodeB = cmds.createNode('mayaUsdProxyShape')
@@ -171,7 +164,7 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
     def testCacheIdNotStoredInFile(self):
         # Open the stage and get the cache Id
         with pxr.Usd.StageCacheContext(self.SC):
-            cachedStage = Usd.Stage.Open(self.filePath)
+            cachedStage = Usd.Stage.Open(self.usdfilePath)
         stageId = self.SC.GetId(cachedStage).ToLongInt()
 
         self.assertGreaterEqual(stageId, 0)
@@ -181,10 +174,10 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         cmds.setAttr('{}.stageCacheId'.format(shapeNode), stageId)
 
         # Save the file, reset and reopen it
-        cmds.file(rename=self.filePath)
+        cmds.file(rename=self.mayafilePath)
         cmds.file(save=True, force=True)
         cmds.file(new=True, force=True)
-        cmds.file(self.filePath, open=True)
+        cmds.file(self.mayafilePath, open=True)
 
         # Check that the stageCacheId reset to -1
         self.assertEqual(cmds.getAttr('{}.stageCacheId'.format(shapeNode)), -1)
@@ -193,7 +186,7 @@ class MayaUsdPythonCacheIdTestCase(unittest.TestCase):
         # Create the 2 Proxy nodes and load a stage from file
         shapeNodeA = cmds.createNode('mayaUsdProxyShape')
         cmds.setAttr('{}.filePath'.format(shapeNodeA),
-                     self.filePath,
+                     self.usdfilePath,
                      type='string')
         shapeStageA = mayaUsdLib.GetPrim(shapeNodeA).GetStage()
         shapeNodeB = cmds.createNode('mayaUsdProxyShape')
