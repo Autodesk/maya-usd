@@ -15,8 +15,6 @@
 #
 import json
 
-from pxr import UsdMaya
-
 import mayaUsd.lib as mayaUsdLib
 
 from pxr import UsdGeom
