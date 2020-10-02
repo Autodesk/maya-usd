@@ -65,19 +65,27 @@ constexpr auto _visibleOnlyLong = "-visibleOnly";
 constexpr auto _sceneDelegateId = "-sid";
 constexpr auto _sceneDelegateIdLong = "-sceneDelegateId";
 
+constexpr auto _rendererId = "-r";
+constexpr auto _rendererIdLong = "-renderer";
+
+constexpr auto _userDefaultsId = "-u";
+constexpr auto _userDefaultsIdLong = "-userDefaults";
+
 constexpr auto _helpText = R"HELP(
 Maya to Hydra utility function.
 Usage: mtoh [flags]
-
--getRendererDisplayName/-gn [RENDERER]: Returns the display name for the given
-    render delegate.
 -listDelegates/-ld : Returns the names of available scene delegates.
 -listRenderers/-lr : Returns the names of available render delegates.
 -listActiveRenderers/-lar : Returns the names of render delegates that are in
     use in at least one viewport.
--createRenderGlobals/-crg : Creates the render globals.
--updateRenderGlobals/-urg : Forces the update of the render globals for the
-    viewport.
+
+-renderer/-r [RENDERER]: Renderer to target for the commands below.
+-getRendererDisplayName/-gn : Returns the display name for the given render delegate.
+-createRenderGlobals/-crg: Creates the render globals, optionally targetting a
+    specific renderer.
+-userDefaults/-ud: Flag for createRenderGlobals to restore user defaults on create.
+-updateRenderGlobals/-urg [ATTRIBUTE]: Forces the update of the render globals
+    for the viewport, optionally targetting a specific renderer or setting.
 )HELP";
 
 constexpr auto _helpNonVerboseText = R"HELP(
@@ -88,13 +96,13 @@ Use -verbose/-v to see advanced / debugging flags
 constexpr auto _helpVerboseText = R"HELP(
 Debug flags:
 
--listRenderIndex/-lri [RENDERER]: Returns a list of all the rprims in the
+-listRenderIndex/-lri -r [RENDERER]: Returns a list of all the rprims in the
     render index for the given render delegate.
 
 -visibleOnly/-vo: Flag which affects the behavior of -listRenderIndex - if
     given, then only visible items in the render index are returned.
 
--sceneDelegateId/-sid [RENDERER] [SCENE_DELEGATE]: Returns the path id
+-sceneDelegateId/-sid [SCENE_DELEGATE] -r [RENDERER]: Returns the path id
     corresponding to the given render delegate / scene delegate pair.
 
 )HELP";
@@ -108,14 +116,17 @@ MSyntax MtohViewCmd::createSyntax() {
 
     syntax.addFlag(_listActiveRenderers, _listActiveRenderersLong);
 
-    syntax.addFlag(
-        _getRendererDisplayName, _getRendererDisplayNameLong, MSyntax::kString);
+    syntax.addFlag(_rendererId, _rendererIdLong, MSyntax::kString);
+
+    syntax.addFlag(_getRendererDisplayName, _getRendererDisplayNameLong);
 
     syntax.addFlag(_listDelegates, _listDelegatesLong);
 
     syntax.addFlag(_createRenderGlobals, _createRenderGlobalsLong);
 
-    syntax.addFlag(_updateRenderGlobals, _updateRenderGlobalsLong);
+    syntax.addFlag(_userDefaultsId, _userDefaultsIdLong);
+
+    syntax.addFlag(_updateRenderGlobals, _updateRenderGlobalsLong, MSyntax::kString);
 
     syntax.addFlag(_help, _helpLong);
 
@@ -123,12 +134,11 @@ MSyntax MtohViewCmd::createSyntax() {
 
     // Debug / testing flags
 
-    syntax.addFlag(_listRenderIndex, _listRenderIndexLong, MSyntax::kString);
+    syntax.addFlag(_listRenderIndex, _listRenderIndexLong);
 
     syntax.addFlag(_visibleOnly, _visibleOnlyLong);
 
-    syntax.addFlag(
-        _sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString,
+    syntax.addFlag(_sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString,
         MSyntax::kString);
 
     return syntax;
@@ -139,6 +149,17 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
 
     MArgDatabase db(syntax(), args, &status);
     if (!status) { return status; }
+
+    TfToken renderDelegateName;
+    if (db.isFlagSet(_rendererId)) {
+        MString id;
+        CHECK_MSTATUS_AND_RETURN_IT(db.getFlagArgument(_rendererId, 0, id));
+
+        // Passing 'mtoh' as the renderer adresses all renderers
+        if (id != "mtoh") {
+            renderDelegateName = TfToken(id.asChar());
+        }
+    }
 
     if (db.isFlagSet(_listRenderers)) {
         for (auto& plugin : MtohGetRendererDescriptions())
@@ -154,10 +175,11 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         // Want to return an empty list, not None
         if (!isCurrentResultArray()) { setResult(MStringArray()); }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
-        MString id;
-        CHECK_MSTATUS_AND_RETURN_IT(
-            db.getFlagArgument(_getRendererDisplayName, 0, id));
-        const auto dn = MtohGetRendererPluginDisplayName(TfToken(id.asChar()));
+        if (renderDelegateName.IsEmpty()) {
+            return MS::kInvalidParameter;
+        }
+
+        const auto dn = MtohGetRendererPluginDisplayName(renderDelegateName);
         setResult(MString(dn.c_str()));
     } else if (db.isFlagSet(_listDelegates)) {
         for (const auto& delegate :
@@ -175,32 +197,43 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         }
         MGlobal::displayInfo(helpText);
     } else if (db.isFlagSet(_createRenderGlobals)) {
-        MtohCreateRenderGlobals();
+        bool userDefaults = db.isFlagSet(_userDefaultsId);
+        MtohRenderGlobals::CreateAttributes({renderDelegateName, true, userDefaults});
     } else if (db.isFlagSet(_updateRenderGlobals)) {
-        MtohRenderOverride::UpdateRenderGlobals();
+        MString attrFlag;
+        const bool storeUserSettings = true;
+        if (db.getFlagArgument(_updateRenderGlobals, 0, attrFlag) == MS::kSuccess) {
+            bool userDefaults = db.isFlagSet(_userDefaultsId);
+            const TfToken attrName(attrFlag.asChar());
+            auto& inst = MtohRenderGlobals::GlobalChanged({attrName, false, userDefaults}, storeUserSettings);
+            MtohRenderOverride::UpdateRenderGlobals(inst, attrName);
+            return MS::kSuccess;
+        }
+        MtohRenderOverride::UpdateRenderGlobals(MtohRenderGlobals::GetInstance(storeUserSettings),
+            renderDelegateName);
     } else if (db.isFlagSet(_listRenderIndex)) {
-        MString id;
-        CHECK_MSTATUS_AND_RETURN_IT(
-            db.getFlagArgument(_listRenderIndex, 0, id));
-        const TfToken rendererName(id.asChar());
+        if (renderDelegateName.IsEmpty()) {
+            return MS::kInvalidParameter;
+        }
+
         auto rprimPaths = MtohRenderOverride::RendererRprims(
-            rendererName, db.isFlagSet(_visibleOnly));
+            renderDelegateName, db.isFlagSet(_visibleOnly));
         for (auto& rprimPath : rprimPaths) {
             appendToResult(rprimPath.GetText());
         }
         // Want to return an empty list, not None
         if (!isCurrentResultArray()) { setResult(MStringArray()); }
     } else if (db.isFlagSet(_sceneDelegateId)) {
-        MString renderDelegateName;
+        if (renderDelegateName.IsEmpty()) {
+            return MS::kInvalidParameter;
+        }
+
         MString sceneDelegateName;
         CHECK_MSTATUS_AND_RETURN_IT(
-            db.getFlagArgument(_sceneDelegateId, 0, renderDelegateName));
-        CHECK_MSTATUS_AND_RETURN_IT(
-            db.getFlagArgument(_sceneDelegateId, 1, sceneDelegateName));
+            db.getFlagArgument(_sceneDelegateId, 0, sceneDelegateName));
 
         SdfPath delegateId = MtohRenderOverride::RendererSceneDelegateId(
-            TfToken(renderDelegateName.asChar()),
-            TfToken(sceneDelegateName.asChar()));
+            renderDelegateName, TfToken(sceneDelegateName.asChar()));
         setResult(MString(delegateId.GetText()));
     }
     return MS::kSuccess;

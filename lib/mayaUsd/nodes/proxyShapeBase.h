@@ -104,6 +104,8 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         static MObject inStageDataCachedAttr;
         MAYAUSD_CORE_PUBLIC
+        static MObject stageCacheIdAttr;
+        MAYAUSD_CORE_PUBLIC
         static MObject drawRenderPurposeAttr;
         MAYAUSD_CORE_PUBLIC
         static MObject drawProxyPurposeAttr;
@@ -115,6 +117,8 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         static MObject outTimeAttr;
         MAYAUSD_CORE_PUBLIC
         static MObject outStageDataAttr;
+        MAYAUSD_CORE_PUBLIC
+        static MObject outStageCacheIdAttr;
 
         /// Delegate function for computing the closest point and surface normal
         /// on the proxy shape to a given ray.
@@ -315,6 +319,7 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MStatus computeOutputTime(MDataBlock& dataBlock);
         MStatus computeInStageDataCached(MDataBlock& dataBlock);
         MStatus computeOutStageData(MDataBlock& dataBlock);
+        MStatus computeOutStageCacheId(MDataBlock& dataBlock);
 
         SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
         int _GetComplexity(MDataBlock dataBlock) const;
