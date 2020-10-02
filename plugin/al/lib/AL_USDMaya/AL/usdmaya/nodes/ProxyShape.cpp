@@ -125,7 +125,6 @@ MObject ProxyShape::m_transformTranslate = MObject::kNullObj;
 MObject ProxyShape::m_transformRotate = MObject::kNullObj;
 MObject ProxyShape::m_transformScale = MObject::kNullObj;
 MObject ProxyShape::m_stageDataDirty = MObject::kNullObj;
-MObject ProxyShape::m_stageCacheId = MObject::kNullObj;
 MObject ProxyShape::m_assetResolverConfig = MObject::kNullObj;
 MObject ProxyShape::m_variantFallbacks = MObject::kNullObj;
 MObject ProxyShape::m_visibleInReflections = MObject::kNullObj;
@@ -133,7 +132,6 @@ MObject ProxyShape::m_visibleInRefractions = MObject::kNullObj;
 
 //----------------------------------------------------------------------------------------------------------------------
 std::vector<MObjectHandle> ProxyShape::m_unloadedProxyShapes;
-int m_stageCacheId;
 //----------------------------------------------------------------------------------------------------------------------
 UsdPrim ProxyShape::getUsdPrim(MDataBlock& dataBlock) const
 {
@@ -587,7 +585,7 @@ MStatus ProxyShape::initialise()
 
     m_stageDataDirty = addBoolAttr("stageDataDirty", "sdd", false, kWritable | kAffectsAppearance | kInternal);
 
-    m_stageCacheId = addInt32Attr("stageCacheId", "stcid", -1, kCached | kConnectable | kReadable | kInternal );
+    inheritInt32Attr("stageCacheId", kCached | kConnectable | kReadable | kInternal );
 
     m_assetResolverConfig = addStringAttr("assetResolverConfig", "arc", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
     m_variantFallbacks = addStringAttr("variantFallbacks", "vfs", kReadable | kWritable | kConnectable | kStorable | kAffectsAppearance | kInternal);
@@ -1140,7 +1138,7 @@ void ProxyShape::loadStage()
   AL_BEGIN_PROFILE_SECTION(LoadStage);
   MDataBlock dataBlock = forceCache();
 
-  const int stageIdVal = inputInt32Value(dataBlock, m_stageCacheId);
+  const int stageIdVal = inputInt32Value(dataBlock, stageCacheId());
   UsdStageCache::Id stageId = UsdStageCache::Id().FromLongInt(stageIdVal);
   MString file = inputStringValue(dataBlock, filePath());
 
@@ -1349,7 +1347,7 @@ void ProxyShape::loadStage()
           m_stage->ExpandPopulationMask();
 
           stageId = StageCache::Get().Insert(m_stage);
-          outputInt32Value(dataBlock, m_stageCacheId, stageId.ToLongInt());
+          outputInt32Value(dataBlock, stageCacheId(), stageId.ToLongInt());
 
           // Set the stage in datablock so it's ready in case it needs to be accessed
           MObject data;
@@ -1596,7 +1594,7 @@ bool ProxyShape::setInternalValue(const MPlug& plug, const MDataHandle& dataHand
   // the datablock for us, but this would be too late for these subfunctions
   TF_DEBUG(ALUSDMAYA_EVALUATION).Msg("ProxyShape::setInternalValue %s\n", plug.name().asChar());
 
-  if(plug == filePath() || plug == m_assetResolverConfig || plug == m_stageCacheId || plug == m_variantFallbacks)
+  if(plug == filePath() || plug == m_assetResolverConfig || plug == stageCacheId() || plug == m_variantFallbacks)
   {
     m_filePathDirty = true;
     
