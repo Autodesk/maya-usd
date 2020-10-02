@@ -22,7 +22,16 @@ from maya import cmds
 from maya.app.general import mayaMixin
 
 from PySide2 import QtCore
-from PySide2.QtGui import QStringListModel
+try:
+    # Maya 2020 and later use Qt/PySide2 5.12.5, where QStringListModel is
+    # exported with QtCore, which is also where it lives in C++.
+    from PySide2.QtCore import QStringListModel
+except ImportError:
+    # Maya 2019 and earlier use Qt 5.6.1 and PySide2 2.0.0-alpha, where
+    # QStringListModel was incorrectly exported with QtGui.
+    # See this bug for more detail:
+    # https://bugreports.qt.io/browse/PYSIDE-614
+    from PySide2.QtGui import QStringListModel
 from PySide2.QtWidgets import QAbstractItemView
 from PySide2.QtWidgets import QCheckBox
 from PySide2.QtWidgets import QComboBox
