@@ -25,55 +25,19 @@ from maya import OpenMaya as OM
 from maya import cmds
 from maya.app.general import mayaMixin
 
-# Maya 2017 and later use PyQt5/PySide2 while Maya 2016 and earlier use
-# PyQt4/PySide. We test whether we're running in Maya 2017+ by trying to import
-# PySide2, which should only be available there. If that succeeds, we import
-# the rest of the modules from PySide2. Otherwise, we assume we're in 2016 or
-# earlier and we import everything from PySide.
-#
-# Note also that the default signature for the dataChanged signal of
-# QAbstractTableModel and QStringListModel changed from two arguments to three
-# between PyQt4 and PyQt5, so we have to use PyQt's mechanism for explicitly
-# selecting the two-argument overload to support both versions of PyQt.
-#
-# See here for more info:
-# https://bugreports.qt.io/browse/PYSIDE-462
-# http://pyqt.sourceforge.net/Docs/PyQt5/signals_slots.html#connecting-disconnecting-and-emitting-signals
-#
-try:
-    import PySide2
-    usePySide2 = True
-except ImportError:
-    usePySide2 = False
+from PySide2 import QtCore
+from PySide2.QtGui import QStringListModel
+from PySide2.QtWidgets import QAbstractItemView
+from PySide2.QtWidgets import QCheckBox
+from PySide2.QtWidgets import QComboBox
+from PySide2.QtWidgets import QLabel
+from PySide2.QtWidgets import QListView
+from PySide2.QtWidgets import QPushButton
+from PySide2.QtWidgets import QStyledItemDelegate
+from PySide2.QtWidgets import QTableView
+from PySide2.QtWidgets import QVBoxLayout
+from PySide2.QtWidgets import QWidget
 
-if usePySide2:
-    # Maya 2017 and later
-    from PySide2 import QtCore
-    from PySide2.QtGui import QStringListModel
-    from PySide2.QtWidgets import QAbstractItemView
-    from PySide2.QtWidgets import QCheckBox
-    from PySide2.QtWidgets import QComboBox
-    from PySide2.QtWidgets import QLabel
-    from PySide2.QtWidgets import QListView
-    from PySide2.QtWidgets import QPushButton
-    from PySide2.QtWidgets import QStyledItemDelegate
-    from PySide2.QtWidgets import QTableView
-    from PySide2.QtWidgets import QVBoxLayout
-    from PySide2.QtWidgets import QWidget
-else:
-    # Maya 2016 and earlier
-    from PySide import QtCore
-    from PySide.QtGui import QAbstractItemView
-    from PySide.QtGui import QCheckBox
-    from PySide.QtGui import QComboBox
-    from PySide.QtGui import QLabel
-    from PySide.QtGui import QListView
-    from PySide.QtGui import QPushButton
-    from PySide.QtGui import QStringListModel
-    from PySide.QtGui import QStyledItemDelegate
-    from PySide.QtGui import QTableView
-    from PySide.QtGui import QVBoxLayout
-    from PySide.QtGui import QWidget
 
 EXPORTED_ATTRS_MAYA_ATTR_NAME = 'USD_UserExportedAttributesJson'
 
