@@ -53,7 +53,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdS
         _newUfePath = appendToPath(ufePath, name + '1');
 
         // Ensure the requested name is unique.
-        auto newPrimName = uniqueChildName(usdSceneItem, _newUfePath);
+        auto newPrimName = uniqueChildName(usdSceneItem->prim(), _newUfePath.back().string());
 
         // If the name had to change then we need to update the full ufe path.
         if (name != newPrimName) {
