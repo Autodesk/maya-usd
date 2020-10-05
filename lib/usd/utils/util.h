@@ -33,10 +33,6 @@ namespace MayaUsdUtils {
     MAYA_USD_UTILS_PUBLIC
     SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim& prim);
 
-    //! Returns true if the prim spec has an internal reference.
-    MAYA_USD_UTILS_PUBLIC
-    bool isInternalReference(const SdfPrimSpecHandle& primSpec);
-
     //! Convenience function for printing the list of queried composition arcs in order. 
     MAYA_USD_UTILS_PUBLIC
     void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
@@ -45,6 +41,10 @@ namespace MayaUsdUtils {
     //  the path that it has referenced is changed.
     MAYA_USD_UTILS_PUBLIC
     bool updateInternalReferencesPath(const UsdPrim& oldPrim, const SdfPath& newPath);
+
+    //! Returns true if reference is internal.
+    MAYA_USD_UTILS_PUBLIC
+    bool isInternalReference(const SdfReference&);
 
 } // namespace MayaUsdUtils
 

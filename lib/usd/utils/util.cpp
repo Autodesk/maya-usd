@@ -93,7 +93,7 @@ namespace
         // the Replace() method to replace them with updated SdfReference items.
         for (const SdfReference &ref : listProxy)
         {
-            if (ref.IsInternal())
+            if (MayaUsdUtils::isInternalReference(ref))
             {
                 SdfPath finalPath;
                 if(oldPrim.GetPath() == ref.GetPrimPath()) {
@@ -138,29 +138,11 @@ defPrimSpecLayer(const UsdPrim& prim)
     return defLayer;
 }
 
-
 SdfPrimSpecHandle 
 getPrimSpecAtEditTarget(const UsdPrim& prim)
 {
     auto stage = prim.GetStage();
     return stage->GetEditTarget().GetPrimSpecForScenePath(prim.GetPath());
-}
-
-bool
-isInternalReference(const SdfPrimSpecHandle& primSpec)
-{
-    bool isInternalRef{false};
-
-    for (const SdfReference& ref : primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
-        // GetAssetPath returns the asset path to the root layer of the referenced layer
-        // this will be empty in the case of an internal reference.
-        if (ref.GetAssetPath().empty()) {
-            isInternalRef = true;
-            break;
-        }
-    }
-
-    return isInternalRef;
 }
 
 void
@@ -205,6 +187,16 @@ updateInternalReferencesPath(const UsdPrim& oldPrim, const SdfPath& newPath)
     }
 
     return true;
+}
+
+bool
+isInternalReference(const SdfReference& ref)
+{
+    #if USD_VERSION_NUM >= 2008
+    return ref.IsInternal();
+    #else
+    return ref.GetAssetPath().empty();
+    #endif
 }
 
 } // MayaUsdUtils
