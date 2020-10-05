@@ -258,7 +258,13 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 #ifdef UFE_V2_FEATURES_AVAILABLE
 		else if (!prim.IsValid() && !InPathChange::inPathChange())
 		{
-			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
+			Ufe::SceneItem::Ptr sceneItem;
+			if (!InAddOrDeleteOperation::inAddOrDeleteOperation())
+			{
+				sceneItem = Ufe::Hierarchy::createItem(ufePath);
+			}
+			
+			if (!sceneItem)
 			{
 				#if UFE_PREVIEW_VERSION_NUM >= 2021
 				Ufe::Scene::instance().notify(Ufe::ObjectDestroyed(ufePath));
@@ -270,10 +276,8 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			else
 			{
 				#if UFE_PREVIEW_VERSION_NUM >= 2021
-				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
 				Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 				#else
-				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
 				auto notification = Ufe::SubtreeInvalidate(sceneItem);
 				Ufe::Scene::notifySubtreeInvalidate(notification);
 				#endif
