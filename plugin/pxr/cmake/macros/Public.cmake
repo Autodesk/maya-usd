@@ -162,10 +162,6 @@ macro(pxr_shared_library NAME)
     pxr_library(${NAME} TYPE "SHARED" ${ARGN})
 endmacro(pxr_shared_library)
 
-macro(pxr_static_library NAME)
-    pxr_library(${NAME} TYPE "STATIC" ${ARGN})
-endmacro(pxr_static_library)
-
 macro(pxr_plugin NAME)
     pxr_library(${NAME} TYPE "PLUGIN" ${ARGN})
 endmacro(pxr_plugin)
