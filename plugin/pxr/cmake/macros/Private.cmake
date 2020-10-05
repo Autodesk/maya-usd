@@ -722,17 +722,7 @@ function(_pxr_target_link_libraries NAME)
             add_dependencies(${NAME} ${internal})
         endif()
     else()
-        # If we use any internal libraries then just link against the
-        # monolithic library.
-        if(PXR_BUILD_MONOLITHIC)
-            if(internal)
-                if(TARGET usd_ms)
-                    set(internal usd_ms)
-                else()
-                    set(internal usd_m)
-                endif()
-            endif()
-        elseif(NOT BUILD_SHARED_LIBS)
+        if(NOT BUILD_SHARED_LIBS)
             # Indicate that all symbols should be pulled in from internal
             # static libraries.  This ensures we don't drop unused symbols
             # with dynamic initialization side effects.  The exceptions are
@@ -798,8 +788,7 @@ function(_pxr_target_link_libraries NAME)
 endfunction()
 
 # Add a python module for the target named NAME.  It implicitly links
-# against the library named NAME (or the monolithic library if
-# PXR_BUILD_MONOLITHIC is enabled).
+# against the library named NAME.
 function(_pxr_python_module NAME)
     set(oneValueArgs
         PRECOMPILED_HEADERS

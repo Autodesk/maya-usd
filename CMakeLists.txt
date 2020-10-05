@@ -31,7 +31,6 @@ option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
 option(BUILD_WITH_PYTHON_3 "Build with python 3." OFF)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
-option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
 
 #------------------------------------------------------------------------------
 # internal flags to control build
