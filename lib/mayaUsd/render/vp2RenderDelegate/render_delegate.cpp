@@ -353,7 +353,7 @@ namespace
         MShaderMap              _3dSolidShaders;
 
         //!< Fallback shaders with CPV support
-        MHWRender::MShaderInstance* _fallbackCPVShaders[FallbackShaderTypeCount];
+        MHWRender::MShaderInstance* _fallbackCPVShaders[FallbackShaderTypeCount] { nullptr };
 
         MHWRender::MShaderInstance* _3dFatPointShader { nullptr }; //!< 3d shader for points
         MHWRender::MShaderInstance* _3dCPVSolidShader { nullptr }; //!< 3d CPV solid-color shader
