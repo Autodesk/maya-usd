@@ -926,9 +926,7 @@ function(_pxr_python_module NAME)
         ${PXR_MALLOC_LIBRARY}
     )
 
-    # All Python modules require support code from tf.  Linking with the
-    # monolithic library will (deliberately) not pick up the dependency
-    # on tf.
+    # All Python modules require support code from tf.
     add_dependencies(${LIBRARY_NAME} tf)
 
     # Include headers from the build directory.
@@ -1114,7 +1112,7 @@ function(_pxr_library NAME)
     # API macros.
     set(apiPublic "")
     set(apiPrivate ${uppercaseName}_EXPORTS=1)
-    if(NOT _building_monolithic AND args_TYPE STREQUAL "STATIC")
+    if(args_TYPE STREQUAL "STATIC")
         set(apiPublic PXR_STATIC=1)
     endif()
 
@@ -1127,17 +1125,14 @@ function(_pxr_library NAME)
     # where we can find external resources for the library) to the
     # library's location.  This can be embedded into resource files.
     #
-    # If we're building a monolithic library or individual static libraries,
-    # these libraries are not separately loadable at runtime. In these cases,
-    # we don't need to specify the library's location, so we leave
-    # pluginToLibraryPath empty.
+    # If we're building individual static libraries, these libraries are not
+    # separately loadable at runtime. In these cases, we don't need to specify
+    # the library's location, so we leave pluginToLibraryPath empty.
     if(NOT args_TYPE STREQUAL "STATIC")
-   	if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
-            file(RELATIVE_PATH
-                pluginToLibraryPath
-                ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
-                ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
-        endif()
+        file(RELATIVE_PATH
+            pluginToLibraryPath
+            ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
+            ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
     endif()
 
     #

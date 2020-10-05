@@ -85,12 +85,6 @@ function(pxr_library NAME)
     _classes(${NAME} ${args_PRIVATE_CLASSES} PRIVATE)
     _classes(${NAME} ${args_PUBLIC_CLASSES} PUBLIC)
 
-    # If building a core plugin for a monolithic build then treat it almost
-    # like any other library and include it in the monolithic library.
-    if (_building_core AND _building_monolithic AND args_TYPE STREQUAL "PLUGIN")
-        set(args_TYPE "OBJECT_PLUGIN")
-    endif()
-
     # Custom tweaks.
     if(args_TYPE STREQUAL "PLUGIN")
         # We can't build plugins if we're not building shared libraries.
@@ -114,9 +108,7 @@ function(pxr_library NAME)
         # If the caller didn't specify the library type then choose the
         # type now.
         if("x${args_TYPE}" STREQUAL "x")
-            if(_building_monolithic)
-                set(args_TYPE "OBJECT")
-            elseif(BUILD_SHARED_LIBS)
+            if(BUILD_SHARED_LIBS)
                 set(args_TYPE "SHARED")
             else()
                 set(args_TYPE "STATIC")
