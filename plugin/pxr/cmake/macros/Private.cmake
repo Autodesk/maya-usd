@@ -1051,7 +1051,7 @@ function(_pxr_library NAME)
         # These can't be linked like other libraries and as a result we
         # don't automatically get transitive compiler definitions,
         # include directories or link libraries.  We have to do that
-        # manually.  See pxr_monolithic_epilogue().
+        # manually.
         add_library(${NAME}
             OBJECT
             ${args_CPPFILES}
