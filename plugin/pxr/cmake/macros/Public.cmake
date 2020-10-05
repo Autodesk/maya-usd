@@ -201,7 +201,7 @@ function (pxr_create_test_module MODULE_NAME)
         return()
     endif()
 
-    if (NOT PXR_BUILD_TESTS) 
+    if (NOT BUILD_TESTS)
         return()
     endif()
 
@@ -240,7 +240,7 @@ function (pxr_create_test_module MODULE_NAME)
 endfunction() # pxr_create_test_module
 
 function(pxr_build_test_shared_lib LIBRARY_NAME)
-    if (PXR_BUILD_TESTS)
+    if (BUILD_TESTS)
         cmake_parse_arguments(bt
             ""
             "INSTALL_PREFIX;SOURCE_DIR"
@@ -318,7 +318,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
 endfunction() # pxr_build_test_shared_lib
 
 function(pxr_build_test TEST_NAME)
-    if (PXR_BUILD_TESTS)
+    if (BUILD_TESTS)
         cmake_parse_arguments(bt
             "" ""
             "LIBRARIES;CPPFILES"
@@ -363,7 +363,7 @@ function(pxr_test_scripts)
         return()
     endif()
 
-    if (NOT PXR_BUILD_TESTS)
+    if (NOT BUILD_TESTS)
         return()
     endif()
 
@@ -379,7 +379,7 @@ function(pxr_test_scripts)
 endfunction() # pxr_test_scripts
 
 function(pxr_install_test_dir)
-    if (PXR_BUILD_TESTS)
+    if (BUILD_TESTS)
         cmake_parse_arguments(bt
             "" 
             "SRC;DEST"
@@ -396,7 +396,7 @@ function(pxr_install_test_dir)
 endfunction() # pxr_install_test_dir
 
 function(pxr_register_test TEST_NAME)
-    if (PXR_BUILD_TESTS)
+    if (BUILD_TESTS)
         cmake_parse_arguments(bt
             "RUN_SERIAL;PYTHON;REQUIRES_SHARED_LIBS;REQUIRES_PYTHON_MODULES" 
             "CUSTOM_PYTHON;COMMAND;STDOUT_REDIRECT;STDERR_REDIRECT;DIFF_COMPARE;POST_COMMAND;POST_COMMAND_STDOUT_REDIRECT;POST_COMMAND_STDERR_REDIRECT;PRE_COMMAND;PRE_COMMAND_STDOUT_REDIRECT;PRE_COMMAND_STDERR_REDIRECT;FILES_EXIST;FILES_DONT_EXIST;CLEAN_OUTPUT;EXPECTED_RETURN_CODE;TESTENV"
