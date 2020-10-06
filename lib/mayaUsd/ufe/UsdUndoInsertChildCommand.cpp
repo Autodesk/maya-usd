@@ -64,7 +64,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
     ufe::applyCommandRestriction(parentPrim, "reparent");
 
     // First, check if we need to rename the child.
-    const auto& childName = uniqueChildName(parent, child->path());
+    const auto childName = uniqueChildName(parent->prim(), child->path().back().string());
 
     // Create a new segment if parent and child are in different run-times.
     // parenting a USD node to the proxy shape node implies two different run-times

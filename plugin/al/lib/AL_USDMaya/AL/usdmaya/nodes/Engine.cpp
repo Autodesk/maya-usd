@@ -70,7 +70,6 @@ bool Engine::TestIntersectionBatch(
 
   HdxPickTaskContextParams pickParams;
   pickParams.resolution = GfVec2i(pickResolution, pickResolution);
-  pickParams.hitMode = HdxPickTokens->hitAll;
   pickParams.resolveMode = HdxPickTokens->resolveUnique;
   pickParams.viewMatrix = worldToLocalSpace * viewMatrix;
   pickParams.projectionMatrix = projectionMatrix;

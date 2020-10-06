@@ -252,13 +252,13 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 #ifdef UFE_V2_FEATURES_AVAILABLE
 		else if (!prim.IsValid() && !InPathChange::inPathChange())
 		{
-			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
+			Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufePath);
+			if (!sceneItem || InAddOrDeleteOperation::inAddOrDeleteOperation())
 			{
 				Ufe::Scene::instance().notify(Ufe::ObjectDestroyed(ufePath));
 			}
 			else
 			{
-				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
 				Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
 			}
 		}

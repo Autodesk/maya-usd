@@ -13,11 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#ifndef USDTRANSLATORS_SHADING_SYMMETRIC_SHADER_WRITER_H
-#define USDTRANSLATORS_SHADING_SYMMETRIC_SHADER_WRITER_H
+#ifndef MAYAUSD_FILEIO_SHADING_SYMMETRIC_SHADER_WRITER_H
+#define MAYAUSD_FILEIO_SHADING_SYMMETRIC_SHADER_WRITER_H
 
 /// \file
 
+#include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
@@ -36,7 +37,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class PxrUsdTranslators_SymmetricShaderWriter
+/// \class UsdMayaSymmetricShaderWriter
 /// \brief Provides "literal" translation of Maya shading nodes to USD Shader
 /// prims.
 ///
@@ -53,14 +54,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \code
 /// TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 /// {
-///     PxrUsdTranslators_SymmetricShaderWriter::RegisterWriter(
+///     UsdMayaSymmetricShaderWriter::RegisterWriter(
 ///         TfToken("myMayaNodeTypeName"),
 ///         TfToken("MyUsdShaderId"),
 ///         /* materialConversionName = */ TfToken("myMaterialConversionName"));
 /// };
 /// \endcode
 ///
-class PxrUsdTranslators_SymmetricShaderWriter : public UsdMayaShaderWriter
+class UsdMayaSymmetricShaderWriter : public UsdMayaShaderWriter
 {
 public:
     /// Register a shader writer to translate \p mayaNodeTypeName Maya nodes to
@@ -75,23 +76,28 @@ public:
     ///
     /// Note that this function should generally only be called inside a
     /// TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry) block.
+    MAYAUSD_CORE_PUBLIC
     static void RegisterWriter(
             const TfToken& mayaNodeTypeName,
             const TfToken& usdShaderId,
             const TfToken& materialConversionName = TfToken());
 
+    MAYAUSD_CORE_PUBLIC
     static ContextSupport CanExport(
             const UsdMayaJobExportArgs& exportArgs,
             const TfToken& materialConversionName = TfToken());
 
-    PxrUsdTranslators_SymmetricShaderWriter(
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaSymmetricShaderWriter(
             const MFnDependencyNode& depNodeFn,
             const SdfPath& usdPath,
             UsdMayaWriteJobContext& jobCtx,
             const TfToken& usdShaderId);
 
+    MAYAUSD_CORE_PUBLIC
     void Write(const UsdTimeCode& usdTime) override;
 
+    MAYAUSD_CORE_PUBLIC
     TfToken GetShadingAttributeNameForMayaAttrName(
             const TfToken& mayaAttrName) override;
 

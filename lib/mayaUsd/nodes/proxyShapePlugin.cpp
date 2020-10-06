@@ -102,24 +102,28 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
             MayaUsdProxyShapeBase::displayFilterLabel,
             UsdMayaProxyDrawOverride::drawDbClassification);
         CHECK_MSTATUS(status);
-
-        // Hybrid Hydra / VP2 rendering uses the PxrMayaHdImagingShape for draw
-        // aggregation of all proxy shapes.
-        status = plugin.registerShape(
-            PxrMayaHdImagingShape::typeName,
-            PxrMayaHdImagingShape::typeId,
-            PxrMayaHdImagingShape::creator,
-            PxrMayaHdImagingShape::initialize,
-            PxrMayaHdImagingShapeUI::creator,
-            &PxrMayaHdImagingShapeDrawOverride::drawDbClassification);
-        CHECK_MSTATUS(status);
-
-        status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
-            PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
-            _RegistrantId,
-            PxrMayaHdImagingShapeDrawOverride::creator);
-        CHECK_MSTATUS(status);
     }
+
+    // We register the PxrMayaHdImagingShape regardless of whether the Viewport
+    // 2.0 render delegate is enabled for the USD proxy shape node types. There
+    // may be other non-proxy shape node types in use that still want to
+    // leverage Hydra and aggregated drawing. Those shapes should call
+    // PxrMayaHdImagingShape::GetOrCreateInstance() in their postConstructor()
+    // override to create a Hydra imaging shape for drawing.
+    status = plugin.registerShape(
+        PxrMayaHdImagingShape::typeName,
+        PxrMayaHdImagingShape::typeId,
+        PxrMayaHdImagingShape::creator,
+        PxrMayaHdImagingShape::initialize,
+        PxrMayaHdImagingShapeUI::creator,
+        &PxrMayaHdImagingShapeDrawOverride::drawDbClassification);
+    CHECK_MSTATUS(status);
+
+    status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
+        PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
+        _RegistrantId,
+        PxrMayaHdImagingShapeDrawOverride::creator);
+    CHECK_MSTATUS(status);
 
     return status;
 }
@@ -145,7 +149,15 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 
     MStatus status = HdVP2ShaderFragments::deregisterFragments();
     CHECK_MSTATUS(status);
-    
+
+    status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
+        PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
+        _RegistrantId);
+    CHECK_MSTATUS(status);
+
+    status = plugin.deregisterNode(PxrMayaHdImagingShape::typeId);
+    CHECK_MSTATUS(status);
+
     if (_useVP2RenderDelegate) {
         status = MHWRender::MDrawRegistry::deregisterSubSceneOverrideCreator(
             ProxyRenderDelegate::drawDbClassification,
@@ -161,14 +173,6 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
         status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
             UsdMayaProxyDrawOverride::drawDbClassification,
             _RegistrantId);
-        CHECK_MSTATUS(status);
-
-        status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
-            PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
-            _RegistrantId);
-        CHECK_MSTATUS(status);
-
-        status = plugin.deregisterNode(PxrMayaHdImagingShape::typeId);
         CHECK_MSTATUS(status);
     }
 

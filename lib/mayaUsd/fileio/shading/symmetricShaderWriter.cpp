@@ -48,7 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
 void
-PxrUsdTranslators_SymmetricShaderWriter::RegisterWriter(
+UsdMayaSymmetricShaderWriter::RegisterWriter(
         const TfToken& mayaNodeTypeName,
         const TfToken& usdShaderId,
         const TfToken& materialConversionName)
@@ -56,7 +56,7 @@ PxrUsdTranslators_SymmetricShaderWriter::RegisterWriter(
     UsdMayaShaderWriterRegistry::Register(
         mayaNodeTypeName,
         [materialConversionName](const UsdMayaJobExportArgs& exportArgs) {
-            return PxrUsdTranslators_SymmetricShaderWriter::CanExport(
+            return UsdMayaSymmetricShaderWriter::CanExport(
                 exportArgs,
                 materialConversionName);
         },
@@ -64,7 +64,7 @@ PxrUsdTranslators_SymmetricShaderWriter::RegisterWriter(
                 const MFnDependencyNode& depNodeFn,
                 const SdfPath& usdPath,
                 UsdMayaWriteJobContext& jobCtx) {
-            return std::make_shared<PxrUsdTranslators_SymmetricShaderWriter>(
+            return std::make_shared<UsdMayaSymmetricShaderWriter>(
                 depNodeFn,
                 usdPath,
                 jobCtx,
@@ -74,7 +74,7 @@ PxrUsdTranslators_SymmetricShaderWriter::RegisterWriter(
 
 /* static */
 UsdMayaShaderWriter::ContextSupport
-PxrUsdTranslators_SymmetricShaderWriter::CanExport(
+UsdMayaSymmetricShaderWriter::CanExport(
         const UsdMayaJobExportArgs& exportArgs,
         const TfToken& materialConversionName)
 {
@@ -86,7 +86,7 @@ PxrUsdTranslators_SymmetricShaderWriter::CanExport(
     return ContextSupport::Unsupported;
 }
 
-PxrUsdTranslators_SymmetricShaderWriter::PxrUsdTranslators_SymmetricShaderWriter(
+UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
         const MFnDependencyNode& depNodeFn,
         const SdfPath& usdPath,
         UsdMayaWriteJobContext& jobCtx,
@@ -191,7 +191,7 @@ PxrUsdTranslators_SymmetricShaderWriter::PxrUsdTranslators_SymmetricShaderWriter
 
 /* override */
 void
-PxrUsdTranslators_SymmetricShaderWriter::Write(const UsdTimeCode& usdTime)
+UsdMayaSymmetricShaderWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaShaderWriter::Write(usdTime);
 
@@ -222,7 +222,7 @@ PxrUsdTranslators_SymmetricShaderWriter::Write(const UsdTimeCode& usdTime)
 
 /* override */
 TfToken
-PxrUsdTranslators_SymmetricShaderWriter::GetShadingAttributeNameForMayaAttrName(
+UsdMayaSymmetricShaderWriter::GetShadingAttributeNameForMayaAttrName(
         const TfToken& mayaAttrName)
 {
     UsdShadeShader shaderSchema(_usdPrim);

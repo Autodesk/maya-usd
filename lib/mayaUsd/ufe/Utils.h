@@ -63,7 +63,7 @@ std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcNam
 
 //! Return a unique child name.
 MAYAUSD_CORE_PUBLIC
-std::string uniqueChildName(const UsdSceneItem::Ptr& parent, const Ufe::Path& childPath);
+std::string uniqueChildName(const UsdPrim& parent, const std::string& name);
 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
