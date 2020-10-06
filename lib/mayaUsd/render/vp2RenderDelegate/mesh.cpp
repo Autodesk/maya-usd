@@ -1369,8 +1369,9 @@ void HdVP2Mesh::_UpdateDrawItem(
 
         if (isDedicatedSelectionHighlightItem) {
             enable = enable && (_selectionStatus != kUnselected);
-        }
-        else if (isBBoxItem) {
+        } else if (isPointSnappingItem) {
+            enable = enable && (_selectionStatus == kUnselected);
+        } else if (isBBoxItem) {
             enable = enable && !range.IsEmpty();
         }
 
