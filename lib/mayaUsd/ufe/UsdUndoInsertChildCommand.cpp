@@ -30,12 +30,8 @@
 
 #include <mayaUsdUtils/util.h>
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
-#else
-#include <cassert>
-#endif
 
 namespace {
 // shared_ptr requires public ctor, dtor, so derive a class for it.
@@ -55,11 +51,7 @@ namespace ufe {
 UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& parent,
                                                      const UsdSceneItem::Ptr& child,
                                                      const UsdSceneItem::Ptr& /* pos */)
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     : Ufe::InsertChildCommand()
-    #else
-    : Ufe::UndoableCommand()
-    #endif
     , _ufeDstItem(nullptr)
     , _ufeSrcPath(child->path())
     , _usdSrcPath(child->prim().GetPath())

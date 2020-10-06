@@ -445,7 +445,7 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
                 globalSelection->addObserver(_observer);
             }
 
-            #if UFE_PREVIEW_VERSION_NUM >= 2021
+            #ifdef UFE_V2_FEATURES_AVAILABLE
             Ufe::Scene::instance().addObserver(_observer);
             #else
             Ufe::Scene::instance().addObjectAddObserver(_observer);
