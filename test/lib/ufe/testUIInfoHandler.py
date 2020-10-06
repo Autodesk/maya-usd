@@ -75,3 +75,9 @@ class UIInfoHandlerTestCase(unittest.TestCase):
         # Strikeout should be be set and the text fg color changed.
         self.assertTrue(ci.fontStrikeout)
         self.assertTrue(initTextFgClr != ci.textFgColor)
+
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '2024'):
+            # Ball_3 should have a specific node type icon set and no badge.
+            icon = ufeUIInfo.treeViewIcon(ball3Hier)
+            self.assertEqual(icon.baseIcon, "out_USD_Sphere.png")
+            self.assertFalse(icon.badgeIcon)    # empty string
