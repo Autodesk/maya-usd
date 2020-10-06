@@ -710,8 +710,11 @@ HdVP2BasisCurves::_UpdateDrawItem(
     const MHWRender::MGeometry::DrawMode drawMode = renderItem->drawMode();
 
     // The bounding box item uses a globally-shared geometry data therefore it
-    // doesn't need to extract index data from the prim.
-    const bool requiresIndexUpdate = (drawMode != MHWRender::MGeometry::kBoundingBox);
+    // doesn't need to extract index data from topology. Points use non-indexed
+    // draw.
+    const bool isBoundingBoxItem = (drawMode == MHWRender::MGeometry::kBoundingBox);
+    const bool isPointSnappingItem = (renderItem->primitive() == MHWRender::MGeometry::kPoints);
+    const bool requiresIndexUpdate = !isBoundingBoxItem && !isPointSnappingItem;
 
     // Prepare index buffer.
     if (requiresIndexUpdate && (itemDirtyBits & HdChangeTracker::DirtyTopology)) {
@@ -1032,9 +1035,8 @@ HdVP2BasisCurves::_UpdateDrawItem(
     // which is expensive, so it is updated only when it gets expanded in order
     // to reduce calling frequence.
     if (itemDirtyBits & HdChangeTracker::DirtyExtent) {
-        const GfRange3d& rangeToUse =
-            (drawMode == MHWRender::MGeometry::kBoundingBox) ?
-            _delegate->GetSharedBBoxGeom().GetRange() : range;
+        const GfRange3d& rangeToUse
+            = isBoundingBoxItem ? _delegate->GetSharedBBoxGeom().GetRange() : range;
 
         bool boundingBoxExpanded = false;
 
@@ -1063,7 +1065,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
 
     // The bounding box draw item uses a globally-shared unit wire cube as the
     // geometry and transfers scale and offset of the bounds to world matrix.
-    if (drawMode == MHWRender::MGeometry::kBoundingBox) {
+    if (isBoundingBoxItem) {
         if ((itemDirtyBits & (HdChangeTracker::DirtyExtent | HdChangeTracker::DirtyTransform)) &&
             !range.IsEmpty()) {
             const GfVec3d midpoint = range.GetMidpoint();
@@ -1222,7 +1224,9 @@ HdVP2BasisCurves::_UpdateDrawItem(
                          DirtySelectionHighlight))) {
         bool enable = drawItem->GetVisible() && !_curvesSharedData._points.empty() && !instancerWithNoInstances;
 
-        if (drawMode == MHWRender::MGeometry::kBoundingBox) {
+        if (isPointSnappingItem) {
+            enable = enable && (_selectionStatus == kUnselected);
+        } else if (isBoundingBoxItem) {
             enable = enable && !range.IsEmpty();
         }
 
@@ -1247,7 +1251,7 @@ HdVP2BasisCurves::_UpdateDrawItem(
     MHWRender::MVertexBuffer* positionsBuffer = _curvesSharedData._positionsBuffer.get();
     MHWRender::MIndexBuffer* indexBuffer = drawItemData._indexBuffer.get();
 
-    if (drawMode == MHWRender::MGeometry::kBoundingBox) {
+    if (isBoundingBoxItem) {
         const HdVP2BBoxGeom& sharedBBoxGeom = _delegate->GetSharedBBoxGeom();
         positionsBuffer = const_cast<MHWRender::MVertexBuffer*>(
             sharedBBoxGeom.GetPositionBuffer());

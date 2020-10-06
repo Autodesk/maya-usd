@@ -722,17 +722,7 @@ function(_pxr_target_link_libraries NAME)
             add_dependencies(${NAME} ${internal})
         endif()
     else()
-        # If we use any internal libraries then just link against the
-        # monolithic library.
-        if(PXR_BUILD_MONOLITHIC)
-            if(internal)
-                if(TARGET usd_ms)
-                    set(internal usd_ms)
-                else()
-                    set(internal usd_m)
-                endif()
-            endif()
-        elseif(NOT BUILD_SHARED_LIBS)
+        if(NOT BUILD_SHARED_LIBS)
             # Indicate that all symbols should be pulled in from internal
             # static libraries.  This ensures we don't drop unused symbols
             # with dynamic initialization side effects.  The exceptions are
@@ -798,8 +788,7 @@ function(_pxr_target_link_libraries NAME)
 endfunction()
 
 # Add a python module for the target named NAME.  It implicitly links
-# against the library named NAME (or the monolithic library if
-# PXR_BUILD_MONOLITHIC is enabled).
+# against the library named NAME.
 function(_pxr_python_module NAME)
     set(oneValueArgs
         PRECOMPILED_HEADERS
@@ -937,9 +926,7 @@ function(_pxr_python_module NAME)
         ${PXR_MALLOC_LIBRARY}
     )
 
-    # All Python modules require support code from tf.  Linking with the
-    # monolithic library will (deliberately) not pick up the dependency
-    # on tf.
+    # All Python modules require support code from tf.
     add_dependencies(${LIBRARY_NAME} tf)
 
     # Include headers from the build directory.
@@ -1051,7 +1038,7 @@ function(_pxr_library NAME)
         # These can't be linked like other libraries and as a result we
         # don't automatically get transitive compiler definitions,
         # include directories or link libraries.  We have to do that
-        # manually.  See pxr_monolithic_epilogue().
+        # manually.
         add_library(${NAME}
             OBJECT
             ${args_CPPFILES}
@@ -1125,7 +1112,7 @@ function(_pxr_library NAME)
     # API macros.
     set(apiPublic "")
     set(apiPrivate ${uppercaseName}_EXPORTS=1)
-    if(NOT _building_monolithic AND args_TYPE STREQUAL "STATIC")
+    if(args_TYPE STREQUAL "STATIC")
         set(apiPublic PXR_STATIC=1)
     endif()
 
@@ -1138,17 +1125,14 @@ function(_pxr_library NAME)
     # where we can find external resources for the library) to the
     # library's location.  This can be embedded into resource files.
     #
-    # If we're building a monolithic library or individual static libraries,
-    # these libraries are not separately loadable at runtime. In these cases,
-    # we don't need to specify the library's location, so we leave
-    # pluginToLibraryPath empty.
+    # If we're building individual static libraries, these libraries are not
+    # separately loadable at runtime. In these cases, we don't need to specify
+    # the library's location, so we leave pluginToLibraryPath empty.
     if(NOT args_TYPE STREQUAL "STATIC")
-   	if(NOT (";${PXR_CORE_LIBS};" MATCHES ";${NAME};" AND _building_monolithic))
-            file(RELATIVE_PATH
-                pluginToLibraryPath
-                ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
-                ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
-        endif()
+        file(RELATIVE_PATH
+            pluginToLibraryPath
+            ${CMAKE_INSTALL_PREFIX}/${pluginInstallPrefix}/${NAME}
+            ${CMAKE_INSTALL_PREFIX}/${libInstallPrefix}/${libraryFilename})
     endif()
 
     #
