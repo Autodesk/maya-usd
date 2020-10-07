@@ -64,14 +64,14 @@ void
 UsdMayaSymmetricShaderReader::RegisterReader(
         const TfToken& usdShaderId,
         const TfToken& mayaNodeTypeName,
-        const TfToken& shadingConversionName)
+        const TfToken& materialConversion)
 {
     UsdMayaShaderReaderRegistry::Register(
         usdShaderId,
-        [shadingConversionName](const UsdMayaJobImportArgs& importArgs) {
+        [materialConversion](const UsdMayaJobImportArgs& importArgs) {
             return UsdMayaSymmetricShaderReader::CanImport(
                 importArgs,
-                shadingConversionName);
+                materialConversion);
         },
         [mayaNodeTypeName](const UsdMayaPrimReaderArgs& readerArgs) {
             return std::make_shared<UsdMayaSymmetricShaderReader>(
@@ -84,10 +84,10 @@ UsdMayaSymmetricShaderReader::RegisterReader(
 UsdMayaShaderReader::ContextSupport
 UsdMayaSymmetricShaderReader::CanImport(
         const UsdMayaJobImportArgs& importArgs,
-        const TfToken& shadingConversionName)
+        const TfToken& materialConversion)
 {
-    if (shadingConversionName.IsEmpty() ||
-            importArgs.shadingConversion == shadingConversionName) {
+    if (materialConversion.IsEmpty()
+        || importArgs.shadingModes.front().second == materialConversion) {
         // This shader reader advertises "Fallback" support so that any more
         // specialized readers for a particular shader ID can take precedence.
         return ContextSupport::Fallback;

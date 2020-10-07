@@ -207,6 +207,51 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
+// The shadingMode args are stored as vectors of vectors (since this is how you
+// would need to pass them in the Maya Python command API).
+static UsdMayaJobImportArgs::ShadingModes
+_shadingModesImportArgs(const VtDictionary& userArgs, const TfToken& key)
+{
+    const std::vector<std::vector<VtValue>> shadingModeArgs
+        = _Vector<std::vector<VtValue>>(userArgs, key);
+
+    TfTokenVector modes = UsdMayaShadingModeRegistry::ListImporters();
+
+    UsdMayaJobImportArgs::ShadingModes result;
+    for (const std::vector<VtValue>& argTuple : shadingModeArgs) {
+        if (argTuple.size() != 2) {
+            TF_CODING_ERROR(
+                "Each shadingMode arg must be a tuple (shadingMode, convertMaterialFrom)");
+            return UsdMayaJobImportArgs::ShadingModes();
+        }
+
+        TfToken shadingMode = TfToken(argTuple[0].Get<std::string>().c_str());
+        TfToken convertMaterialFrom = TfToken(argTuple[1].Get<std::string>().c_str());
+
+        if (shadingMode == UsdMayaShadingModeTokens->none) {
+            break;
+        }
+
+        if (std::find(modes.cbegin(), modes.cend(), shadingMode) == modes.cend()) {
+            TF_CODING_ERROR("Unknown shading mode '%s'", shadingMode.GetText());
+            return UsdMayaJobImportArgs::ShadingModes();
+        }
+
+        if (shadingMode == UsdMayaShadingModeTokens->useRegistry) {
+            auto const& info
+                = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(convertMaterialFrom);
+            if (!info.hasImporter) {
+                TF_CODING_ERROR("Unknown material conversion '%s'", convertMaterialFrom.GetText());
+                return UsdMayaJobImportArgs::ShadingModes();
+            }
+            // Do not validate second parameter if not in a useRegistry scenario.
+        }
+
+        result.emplace_back(shadingMode, convertMaterialFrom);
+    }
+    return result;
+}
+
 static
 TfToken
 _GetMaterialsScopeName(const std::string& materialsScopeName)
@@ -342,7 +387,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
             _Token(userArgs,
                 UsdMayaJobExportArgsTokens->convertMaterialsTo,
                 UsdImagingTokens->UsdPreviewSurface,
-                UsdMayaShadingModeRegistry::ListExportConversions())),
+                UsdMayaShadingModeRegistry::ListMaterialConversions())),
         verbose(
             _Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose)),
 
@@ -466,7 +511,7 @@ UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->eulerFilter] = false;
         d[UsdMayaJobExportArgsTokens->exportCollectionBasedBindings] = false;
         d[UsdMayaJobExportArgsTokens->exportColorSets] = true;
-        d[UsdMayaJobExportArgsTokens->exportDisplayColor] = true;
+        d[UsdMayaJobExportArgsTokens->exportDisplayColor] = false;
         d[UsdMayaJobExportArgsTokens->exportInstances] = true;
         d[UsdMayaJobExportArgsTokens->exportMaterialCollections] = false;
         d[UsdMayaJobExportArgsTokens->exportReferenceObjects] = false;
@@ -565,16 +610,13 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
             _TokenSet(userArgs, UsdMayaJobImportArgsTokens->apiSchema)),
         includeMetadataKeys(
             _TokenSet(userArgs, UsdMayaJobImportArgsTokens->metadata)),
-        shadingMode(
+        shadingModes(
+            _shadingModesImportArgs(userArgs, UsdMayaJobImportArgsTokens->shadingMode)),
+        preferredMaterial(
             _Token(userArgs,
-                UsdMayaJobImportArgsTokens->shadingMode,
-                UsdMayaShadingModeTokens->none,
-                UsdMayaShadingModeRegistry::ListImporters())),
-        shadingConversion(
-            _Token(userArgs,
-                UsdMayaJobImportArgsTokens->shadingConversion,
-                UsdMayaShadingConversionTokens->none,
-                UsdMayaShadingConversionTokens->allTokens)),
+                UsdMayaJobImportArgsTokens->preferredMaterial,
+                UsdMayaPreferredMaterialTokens->none,
+                UsdMayaPreferredMaterialTokens->allTokens)),
         useAsAnimationCache(
             _Boolean(userArgs,
                 UsdMayaJobImportArgsTokens->useAsAnimationCache)),
@@ -613,10 +655,11 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
                     VtValue(SdfFieldKeys->Instanceable.GetString()),
                     VtValue(SdfFieldKeys->Kind.GetString())
                 });
-        d[UsdMayaJobImportArgsTokens->shadingMode] =
-                UsdMayaShadingModeTokens->displayColor.GetString();
-        d[UsdMayaJobImportArgsTokens->shadingConversion] =
-                UsdMayaShadingConversionTokens->lambert.GetString();
+        d[UsdMayaJobImportArgsTokens->shadingMode] = std::vector<VtValue> { VtValue(
+            std::vector<VtValue> { VtValue(UsdMayaShadingModeTokens->useRegistry.GetString()),
+                                   VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) }) };
+        d[UsdMayaJobImportArgsTokens->preferredMaterial]
+            = UsdMayaPreferredMaterialTokens->none.GetString();
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
 
         // plugInfo.json site defaults.
@@ -634,8 +677,12 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
 std::ostream&
 operator <<(std::ostream& out, const UsdMayaJobImportArgs& importArgs)
 {
-    out << "shadingMode: " << importArgs.shadingMode << std::endl
-        << "shadingConversion: " << importArgs.shadingConversion << std::endl
+    out << "shadingModes (" << importArgs.shadingModes.size() << ")" << std::endl;
+    for (const auto& shadingMode : importArgs.shadingModes) {
+        out << "    " << TfStringify(shadingMode.first) << ", " << TfStringify(shadingMode.second)
+            << std::endl;
+    }
+    out << "preferredMaterial: " << importArgs.preferredMaterial << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl

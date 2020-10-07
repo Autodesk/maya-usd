@@ -38,7 +38,7 @@ class testUsdImportShadingModePxrRis(unittest.TestCase):
         # Import from USD.
         usdFilePath = os.path.join(inputPath, "UsdImportShadingModePxrRis", "MarbleCube.usda")
 
-        cmds.usdImport(file=usdFilePath, shadingMode='pxrRis')
+        cmds.usdImport(file=usdFilePath, shadingMode=[['pxrRis', 'default'], ])
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 

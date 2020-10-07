@@ -32,7 +32,6 @@ set(TEST_SCRIPT_FILES
     testUsdExportSelection.py
     testUsdExportSelectionHierarchy.py
     testUsdExportShadingInstanced.py
-    testUsdExportShadingModeDisplayColor.py
     testUsdExportShadingModePxrRis.py
     testUsdExportSkeleton.py
     testUsdExportStripNamespaces.py
@@ -124,15 +123,22 @@ mayaUsd_add_test(testUsdImportUVSetsFloat
 set_property(TEST testUsdImportUVSetsFloat APPEND PROPERTY LABELS translators)
 
 # Test using standardSurface, which was introduced in Maya 2020.
-if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020) 
-    mayaUsd_add_test(testUsdExportCustomConverter
-        PYTHON_MODULE testUsdExportCustomConverter
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        ENV
-            "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
-            "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
+    set(CUSTOM_TEST_SCRIPT_FILES
+        testUsdExportCustomConverter.py
+        testUsdImportCustomConverter.py
     )
-    set_property(TEST testUsdExportCustomConverter APPEND PROPERTY LABELS translators)
+    foreach(script ${CUSTOM_TEST_SCRIPT_FILES})
+        mayaUsd_get_unittest_target(target ${script})
+        mayaUsd_add_test(${target}
+            PYTHON_MODULE ${target}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            ENV
+                "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+                "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+        )
+        set_property(TEST ${target} APPEND PROPERTY LABELS translators)
+    endforeach()
 endif()
 
 # We are explicitly not setting PXR_PLUGINPATH_NAME here. We want to test

@@ -56,7 +56,7 @@ class testUsdImportXforms(unittest.TestCase):
         as inverse ops results in the correct transform when imported into Maya.
         """
         usdFile = os.path.join(self.inputPath, "UsdImportXformsTest", "UsdImportXformsTest.usda")
-        cmds.usdImport(file=usdFile, shadingMode='none')
+        cmds.usdImport(file=usdFile, shadingMode=[["none", "default"], ])
 
         mayaTransform = self._GetMayaTransform('InverseOpsOnlyCube')
         transformationMatrix = mayaTransform.transformation()
@@ -198,7 +198,7 @@ class testUsdImportXforms(unittest.TestCase):
         still imports correctly
         """
         usdFile = os.path.join(self.inputPath, "UsdImportXformsTest", "UsdImportXformsTestRotateAxis.usda")
-        cmds.usdImport(file=usdFile, shadingMode='none')
+        cmds.usdImport(file=usdFile, shadingMode=[["none", "default"], ])
         
         expectedRotates = {
             'X': (60, 0, 0),

@@ -51,7 +51,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((SpecularColorAttrName, "specularColor")) \
     ((UseSpecularWorkflowAttrName, "useSpecularWorkflow")) \
     ((OutColorAttrName, "outColor")) \
-    ((OutTransparencyAttrName, "outTransparency"))
+    ((OutTransparencyAttrName, "outTransparency")) \
+    ((niceName, "USD Preview Surface")) \
+    ((exportDescription, "Exports the bound shader as a USD preview surface UsdShade network.")) \
+    ((importDescription, "Search for a USD preview surface UsdShade network to import."))
+
 
 TF_DECLARE_PUBLIC_TOKENS(
     PxrMayaUsdPreviewSurfaceTokens,

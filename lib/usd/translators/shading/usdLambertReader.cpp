@@ -68,14 +68,14 @@ PxrUsdTranslators_LambertReader::PxrUsdTranslators_LambertReader(
 UsdMayaShaderReader::ContextSupport
 PxrUsdTranslators_LambertReader::CanImport(const UsdMayaJobImportArgs& importArgs)
 {
-    return importArgs.shadingConversion == UsdMayaShadingConversionTokens->lambert
+    return importArgs.preferredMaterial == UsdMayaPreferredMaterialTokens->lambert
         ? ContextSupport::Supported
         : ContextSupport::Unsupported;
 }
 
 const TfToken& PxrUsdTranslators_LambertReader::_GetMayaNodeTypeName() const
 {
-    return UsdMayaShadingConversionTokens->lambert;
+    return UsdMayaPreferredMaterialTokens->lambert;
 }
 
 void PxrUsdTranslators_LambertReader::_OnBeforeReadAttribute(

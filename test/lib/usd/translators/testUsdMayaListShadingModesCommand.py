@@ -48,19 +48,46 @@ class testUsdMayaListShadingModesCommand(unittest.TestCase):
         maya_shaders = "Maya Shaders"
         maya_options = ";".join(("shadingMode=useRegistry",
                                  "convertMaterialsTo=maya"))
+        none = "None"
+        none_options = "shadingMode=none"
 
-        # These 3 should always be there:
+        # These 2 should always be there:
         exporters = modes(ex=True)
         self.assertTrue("None" in exporters)
-        self.assertTrue("Display Colors" in exporters)
         self.assertTrue(preview in exporters)
+
+        # This one is no longer an exported shading mode:
+        self.assertFalse("Display Colors" in exporters)
 
         self.assertEqual(modes(findExportName="UsdPreviewSurface"), preview)
         self.assertTrue(len(modes(exportAnnotation=preview)) > 5)
         self.assertEqual(modes(exportOptions=preview), preview_option)
 
+        self.assertEqual(modes(findExportName="none"), none)
+        self.assertTrue(len(modes(exportAnnotation=none)) > 5)
+        self.assertEqual(modes(exportOptions=none), none_options)
+
         # And we should not have this one yet
         self.assertFalse(maya_shaders in exporters)
+
+        # Check importers:
+        importers = modes(im=True)
+        self.assertTrue("None" in importers)
+        self.assertTrue("Display Colors" in importers)
+        self.assertTrue(preview in importers)
+
+        self.assertEqual(modes(findImportName="UsdPreviewSurface"), preview)
+        self.assertTrue(len(modes(importAnnotation=preview)) > 5)
+        self.assertEqual(modes(importOptions=preview), ["useRegistry",
+                                                        "UsdPreviewSurface"])
+
+        self.assertEqual(modes(findImportName="none"), none)
+        self.assertTrue(len(modes(importAnnotation=none)) > 5)
+        self.assertEqual(modes(importOptions=none), ["none",
+                                                     "default"])
+
+        # And we should not have this one yet
+        self.assertFalse(maya_shaders in importers)
 
         # Load the test plugin directly to get the "Maya shading" export. This
         # plugin was not discoverable by USD so it was not loaded when asking
@@ -75,6 +102,13 @@ class testUsdMayaListShadingModesCommand(unittest.TestCase):
         self.assertEqual(modes(fen="maya"), maya_shaders)
         self.assertTrue(len(modes(ea=maya_shaders)) > 5)
         self.assertEqual(modes(eo=maya_shaders), maya_options)
+
+        importers = modes(im=True)
+
+        self.assertTrue(maya_shaders in importers)
+        self.assertEqual(modes(fin="maya"), maya_shaders)
+        self.assertTrue(len(modes(ia=maya_shaders)) > 5)
+        self.assertEqual(modes(io=maya_shaders), ["useRegistry", "maya"])
 
 
 if __name__ == '__main__':

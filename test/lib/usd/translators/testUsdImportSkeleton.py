@@ -231,7 +231,7 @@ class testUsdImportSkeleton(unittest.TestCase):
         path = os.path.join(self.inputPath, "UsdImportSkeleton", "skelCube.usda")
 
         cmds.usdImport(file=path, readAnimData=True, primPath="/Root",
-                       assemblyRep="Import", shadingMode="none")
+                       assemblyRep="Import", shadingMode=[["none", "default"], ])
 
         stage = Usd.Stage.Open(path)
         skelCache = UsdSkel.Cache()

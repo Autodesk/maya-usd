@@ -62,6 +62,7 @@
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
+#include <pxr/base/js/json.h>
 #include <pxr/base/tf/hashmap.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -825,7 +826,7 @@ _GetColorAndTransparencyFromLambert(
             MColor trn = lambertFn.transparency();
             // Assign Alpha as 1.0 - average of shader transparency
             // and check if they are all the same
-            *alpha = 1.0 - ((trn[0] + trn[1] + trn[2]) / 3.0);
+            *alpha = 1.0f - ((trn[0] + trn[1] + trn[2]) / 3.0f);
         }
         return true;
     }
@@ -869,16 +870,14 @@ _GetColorAndTransparencyFromDepNode(
 {
     MStatus status;
     MFnDependencyNode d(shaderObj);
-    MPlug colorPlug = d.findPlug("color", true, &status);
-    if (!status) {
-        return false;
-    }
-    MPlug transparencyPlug = d.findPlug("transparency", true, &status);
-    if (!status) {
-        return false;
-    }
-
     if (rgb) {
+        MPlug colorPlug = d.findPlug("color", true, &status);
+        if (!status) {
+            colorPlug = d.findPlug("diffuseColor", true, &status);
+            if (!status) {
+                return false;
+            }
+        }
         GfVec3f displayColor;
         for (int j=0; j<3; j++) {
             colorPlug.child(j).getValue(displayColor[j]);
@@ -887,13 +886,23 @@ _GetColorAndTransparencyFromDepNode(
     }
 
     if (alpha) {
-        float trans = 0.f;
-        for (int j=0; j<3; j++) {
-            float t = 0.f;
-            transparencyPlug.child(j).getValue(t);
-            trans += t/3.f;
+        MPlug transparencyPlug = d.findPlug("transparency", true, &status);
+        if (status) {
+            float trans = 0.f;
+            for (int j=0; j<3; j++) {
+                float t = 0.f;
+                transparencyPlug.child(j).getValue(t);
+                trans += t/3.f;
+            }
+            *alpha = 1.f - trans;
+        } else {
+            MPlug opacityPlug = d.findPlug("opacity", true, &status);
+            if (!status) {
+                *alpha = 1.f;
+                return false;
+            }
+            *alpha = opacityPlug.asFloat();
         }
-        (*alpha) = 1.f - trans;
     }
     return true;
 }
@@ -1590,7 +1599,23 @@ UsdMayaUtil::setPlugValue(
             }
         }
     }
-    else if (val.IsHolding<VtDoubleArray>()) {
+    else if (val.IsHolding<GfMatrix4d>()) {
+        MObject object = attrPlug.attribute();
+        if (object.hasFn(MFn::kTypedAttribute)
+            && MFnTypedAttribute(object).attrType() == MFnData::kMatrix) {
+            GfMatrix4d mat = val.Get<GfMatrix4d>();
+            MMatrix    mayaMat;
+            for (size_t i = 0; i < 4; ++i) {
+                for (size_t j = 0; j < 4; ++j) {
+                    mayaMat[i][j] = mat[i][j];
+                }
+            }
+            MFnMatrixData data;
+            MObject       dataObj = data.create();
+            data.set(mayaMat);
+            status = attrPlug.setValue(dataObj);
+        }
+    } else if (val.IsHolding<VtDoubleArray>()) {
         const VtDoubleArray& valArray = val.UncheckedGet<VtDoubleArray>();
         status = attrPlug.setNumElements(static_cast<unsigned int>(valArray.size()));
         CHECK_MSTATUS_AND_RETURN(status, false);
@@ -1953,33 +1978,141 @@ UsdMayaUtil::GetDictionaryFromArgDatabase(
     return args;
 }
 
-VtValue
-UsdMayaUtil::ParseArgumentValue(
-        const std::string& key,
-        const std::string& value,
-        const VtDictionary& guideDict)
+namespace {
+VtValue _ParseArgumentValue(const JsValue& jsValue, const VtValue& guideValue)
+{
+    if (guideValue.IsHolding<bool>()) {
+        if (jsValue.GetType() == JsValue::StringType) {
+            return VtValue(TfUnstringify<bool>(jsValue.GetString()));
+        } else {
+            return VtValue();
+        }
+    } else if (guideValue.IsHolding<std::string>()) {
+        if (jsValue.GetType() == JsValue::StringType) {
+            return VtValue(jsValue.GetString());
+        } else {
+            return VtValue();
+        }
+    } else if (guideValue.IsHolding<std::vector<VtValue>>()) {
+        if (jsValue.GetType() == JsValue::ArrayType) {
+            const JsArray&       jsArray = jsValue.GetJsArray();
+            std::vector<VtValue> guideVector = guideValue.Get<std::vector<VtValue>>();
+            std::vector<VtValue> vtValue;
+            if (guideVector.empty() && !jsArray.empty()) {
+                TF_CODING_ERROR("Guide vector is empty. Can not recursively parse.");
+                return VtValue(vtValue);
+            }
+            for (const JsValue& jsItem : jsArray) {
+                vtValue.push_back(_ParseArgumentValue(jsItem, guideVector.front()));
+            }
+            return VtValue(vtValue);
+        } else {
+            return VtValue();
+        }
+    }
+    return VtValue();
+}
+
+VtValue _ParseArgumentValue(const std::string& value, const VtValue& guideValue)
+{
+    // The export UI only has boolean and string parameters.
+    if (guideValue.IsHolding<bool>()) {
+        return VtValue(TfUnstringify<bool>(value));
+    } else if (guideValue.IsHolding<std::string>()) {
+        return VtValue(value);
+    } else if (guideValue.IsHolding<std::vector<VtValue>>()) {
+        // To prevent quoting issues in MEL scripts, we expect a string that is
+        // completely unquoted, containing an array of booleans, tokens, or
+        // other arrays:
+        //       [0,1,true,false]
+        //       [none,default]
+        //       [[useRegistry,UsdPreviewSurface],[displayColors,default]]
+        // So, to be able to parse this as valid JSON, we need to add quotes at
+        // each "[[," to alphanumeric transition. 
+        // NOTE: The array contains *tokens*, not freeform strings. So we can
+        //       skip spaces and consider all commas to be element separators.
+        bool wasArrayDelimiter = true;
+        std::string quotedString;
+        for (auto c = value.cbegin(); c != value.cend(); ++c) {
+            if (*c == ' ') {
+                continue;
+            }
+            bool isArrayDelimiter = *c == '[' || *c == ']' || *c == ',';
+            if (isArrayDelimiter != wasArrayDelimiter) {
+                quotedString += "\"";
+                wasArrayDelimiter = isArrayDelimiter;
+            }
+            quotedString += *c;
+        }
+
+        JsParseError  jsError;
+        const JsValue jsValue = JsParseString(quotedString, &jsError);
+        if (!jsValue) {
+            TF_CODING_ERROR(
+                "Failed to parse vector parameter '%s'. Invalid JSON: '%s'",
+                value.c_str(),
+                jsError.reason.c_str());
+            return VtValue();
+        }
+        return _ParseArgumentValue(jsValue, guideValue);
+    }
+
+    return VtValue();
+}
+} // namespace
+
+VtValue UsdMayaUtil::ParseArgumentValue(
+    const std::string&  key,
+    const std::string&  value,
+    const VtDictionary& guideDict)
 {
     // We handle two types of arguments:
     // 1 - bools: Should be encoded by translator UI as a "1" or "0" string.
     // 2 - strings: Just strings!
-    // We don't handle any vectors because none of the translator UIs currently
-    // pass around any of the vector flags.
+    // 3 - vectors: We expect [token1,token2] or [[token1,token2],[t3,t4]]
+    //     tokens are unquoted alphanumeric strings
+    //       vector<vector<string>> is passed for shadingMode
     auto iter = guideDict.find(key);
     if (iter != guideDict.end()) {
         const VtValue& guideValue = iter->second;
-        // The export UI only has boolean and string parameters.
-        if (guideValue.IsHolding<bool>()) {
-            return VtValue(TfUnstringify<bool>(value));
-        }
-        else if (guideValue.IsHolding<std::string>()) {
-            return VtValue(value);
-        }
-    }
-    else {
+        return _ParseArgumentValue(value, guideValue);
+    } else {
         TF_CODING_ERROR("Unknown flag '%s'", key.c_str());
     }
 
     return VtValue();
+}
+
+std::pair<bool, std::string>
+UsdMayaUtil::ValueToArgument(const VtValue& value) {
+    if (value.IsHolding<bool>()) {
+        return std::make_pair(true, std::string(value.Get<bool>() ? "1" : "0"));
+    }
+    else if (value.IsHolding<std::string>()) {
+        return std::make_pair(true, value.Get<std::string>());
+    }
+    else if (value.IsHolding<std::vector<VtValue>>()) {
+        std::string arrayValue{"["};
+        bool firstElement = true;
+        for (auto const & elemValue: value.Get<std::vector<VtValue>>()) {
+            if (firstElement) {
+                firstElement = false;
+            } else {
+                arrayValue += ",";
+            }
+            bool canConvert;
+            std::string elemString;
+            std::tie(canConvert, elemString) = ValueToArgument(elemValue);
+            if (canConvert) {
+                arrayValue += elemString;
+            } else {
+                return std::make_pair(false, std::string());
+            }
+        }
+        arrayValue += "]";
+        return std::make_pair(true, arrayValue);
+    }
+    return std::make_pair(false, std::string());
 }
 
 std::vector<std::string>

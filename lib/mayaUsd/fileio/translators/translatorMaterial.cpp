@@ -52,14 +52,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-MObject
-UsdMayaTranslatorMaterial::Read(
-        const UsdMayaJobImportArgs& jobArguments,
-        const UsdShadeMaterial& shadeMaterial,
-        const UsdGeomGprim& boundPrim,
-        UsdMayaPrimReaderContext* context)
+MObject UsdMayaTranslatorMaterial::Read(
+    const UsdMayaJobImportArgs& jobArguments,
+    const UsdShadeMaterial&     shadeMaterial,
+    const UsdGeomGprim&         boundPrim,
+    UsdMayaPrimReaderContext*   context)
 {
-    if (jobArguments.shadingMode == UsdMayaShadingModeTokens->none) {
+    if (jobArguments.shadingModes.empty()) {
         return MObject();
     }
 
@@ -71,15 +70,22 @@ UsdMayaTranslatorMaterial::Read(
         return shadingEngine;
     }
 
-    if (UsdMayaShadingModeImporter importer =
-            UsdMayaShadingModeRegistry::GetImporter(jobArguments.shadingMode)) {
-        shadingEngine = importer(&c, jobArguments);
-    }
+    UsdMayaJobImportArgs localArguments = jobArguments;
+    for (const auto& shadingMode : jobArguments.shadingModes) {
+        if (shadingMode.first == UsdMayaShadingModeTokens->none) {
+            break;
+        }
+        if (UsdMayaShadingModeImporter importer
+            = UsdMayaShadingModeRegistry::GetImporter(shadingMode.first)) {
+            localArguments.shadingModes = UsdMayaJobImportArgs::ShadingModes(1, shadingMode);
+            shadingEngine = importer(&c, localArguments);
+        }
 
-    if (!shadingEngine.isNull()) {
-        c.AddCreatedObject(shadeMaterial.GetPrim(), shadingEngine);
+        if (!shadingEngine.isNull()) {
+            c.AddCreatedObject(shadeMaterial.GetPrim(), shadingEngine);
+            return shadingEngine;
+        }
     }
-
     return shadingEngine;
 }
 

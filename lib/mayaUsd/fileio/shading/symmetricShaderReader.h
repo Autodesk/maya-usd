@@ -52,7 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     UsdMayaSymmetricShaderReader::RegisterReader(
 ///         TfToken("MyUsdShaderId"),
 ///         TfToken("myMayaNodeTypeName"),
-///         /* shadingConversionName = */ TfToken("myShadingConversionName"));
+///         TfToken("myMaterialConversion"));
 /// };
 /// \endcode
 ///
@@ -75,12 +75,12 @@ public:
     static void RegisterReader(
             const TfToken& usdShaderId,
             const TfToken& mayaNodeTypeName,
-            const TfToken& shadingConversionName = TfToken());
+            const TfToken& materialConversion);
 
     MAYAUSD_CORE_PUBLIC
     static ContextSupport CanImport(
             const UsdMayaJobImportArgs& importArgs,
-            const TfToken& shadingConversionName = TfToken());
+            const TfToken& materialConversion);
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaSymmetricShaderReader(

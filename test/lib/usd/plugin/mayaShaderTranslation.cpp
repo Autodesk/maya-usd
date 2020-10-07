@@ -13,8 +13,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/shading/symmetricShaderReader.h>
 #include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 
 #include <pxr/base/tf/registryManager.h>
@@ -39,26 +41,33 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((conversionName, "maya"))
     ((renderContext, "maya"))
     ((niceName, "Maya Shaders"))
-    ((description,
+    ((exportDescription,
         "Dumps the bound shader in a Maya UsdShade network that can only be "
         "used for import. Will not render in the Maya viewport or usdView."))
+    ((importDescription,
+        "Fetches back a Maya shader network dumped as UsdShade"))
 );
-
 
 REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     _tokens->conversionName,
     _tokens->renderContext,
     _tokens->niceName,
-    _tokens->description);
+    _tokens->exportDescription);
 
+REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION(
+    _tokens->conversionName,
+    _tokens->renderContext,
+    _tokens->niceName,
+    _tokens->importDescription);
 
-TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
+namespace {
+
+template<typename F>
+void _RegisterMayaNodes(F _registryFunction)
 {
     // All dependency nodes with a "drawdb/shader" classification are supported.
-    const MString nodeTypesCmd(
-        "stringArrayToString(listNodeTypes(\"drawdb/shader\"), \" \");");
-    const std::string cmdResult =
-        MGlobal::executeCommandStringResult(nodeTypesCmd).asChar();
+    const MString     nodeTypesCmd("stringArrayToString(listNodeTypes(\"drawdb/shader\"), \" \");");
+    const std::string cmdResult = MGlobal::executeCommandStringResult(nodeTypesCmd).asChar();
     std::vector<std::string> mayaNodeTypeNames = TfStringTokenize(cmdResult);
 
     // The "place3dTexture" node which has classification "drawdb/geometry" is
@@ -68,12 +77,19 @@ TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
     for (const std::string& mayaNodeTypeName : mayaNodeTypeNames) {
         const TfToken nodeTypeNameToken(mayaNodeTypeName);
 
-        UsdMayaSymmetricShaderWriter::RegisterWriter(
-            nodeTypeNameToken,
-            nodeTypeNameToken,
-            _tokens->conversionName);
+        _registryFunction(nodeTypeNameToken, nodeTypeNameToken, _tokens->conversionName);
     }
 }
+} // namespace
 
+TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
+{
+    _RegisterMayaNodes(UsdMayaSymmetricShaderWriter::RegisterWriter);
+}
+
+TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
+{
+    _RegisterMayaNodes(UsdMayaSymmetricShaderReader::RegisterReader);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -107,7 +107,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (excludePrimvar) \
     (metadata) \
     (shadingMode) \
-    (shadingConversion) \
+    (preferredMaterial) \
     (useAsAnimationCache) \
     /* assemblyRep values */ \
     (Collapsed) \
@@ -250,8 +250,9 @@ struct UsdMayaJobImportArgs
     const TfToken::Set excludePrimvarNames;
     const TfToken::Set includeAPINames;
     const TfToken::Set includeMetadataKeys;
-    TfToken shadingMode; // XXX can we make this const?
-    const TfToken shadingConversion;
+    using ShadingModes = std::vector<std::pair<TfToken, TfToken>>;
+    ShadingModes shadingModes; // XXX can we make this const?
+    const TfToken preferredMaterial;
     const bool useAsAnimationCache;
 
     const bool importWithProxyShapes;

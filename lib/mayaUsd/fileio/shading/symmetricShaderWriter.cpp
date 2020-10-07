@@ -115,8 +115,9 @@ UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
     for (unsigned int i = 0u; i < depNodeFn.attributeCount(); ++i) {
         const MObject attrObj = depNodeFn.reorderedAttribute(i);
         MPlug attrPlug = depNodeFn.findPlug(attrObj, true);
+        MFnAttribute attrFn(attrObj);
 
-        if (attrPlug.isProcedural()) {
+        if (attrPlug.isProcedural() || attrFn.isHidden()) {
             // The Maya docs say these should not be saved off.
             continue;
         }
