@@ -47,7 +47,7 @@ std::string UsdSceneItem::nodeType() const
 	return fPrim.GetTypeName();
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2020
+#ifdef UFE_V2_FEATURES_AVAILABLE
 std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 {
 	std::vector<std::string> strAncestorTypes;

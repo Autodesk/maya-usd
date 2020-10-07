@@ -85,7 +85,7 @@ template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
 {
     T notification(item, previousPath);
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::Scene::instance().notify(notification);
     #else
     Ufe::Scene::notifyObjectPathChange(notification);

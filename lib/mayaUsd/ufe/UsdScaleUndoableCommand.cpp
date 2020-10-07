@@ -22,7 +22,7 @@ namespace ufe {
 
 TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(
     const Ufe::Path& path, double x, double y, double z
 ) : Ufe::ScaleUndoableCommand(path),
@@ -40,7 +40,7 @@ UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
 {}
 
 /*static*/
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
     const Ufe::Path& path, double x, double y, double z
 )

@@ -22,7 +22,7 @@ namespace ufe {
 
 TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(const Ufe::Path& path, double x, double y, double z) 
     : Ufe::TranslateUndoableCommand(path)
     , UsdTRSUndoableCommandBase(x, y, z)
@@ -39,7 +39,7 @@ UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
 {}
 
 /*static*/
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
     const Ufe::Path& path, double x, double y, double z
 )
