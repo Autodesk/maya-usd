@@ -148,17 +148,18 @@ private:
     ProxyRenderDelegate(const ProxyRenderDelegate&) = delete;
     ProxyRenderDelegate& operator=(const ProxyRenderDelegate&) = delete;
 
-    void _InitRenderDelegate(MSubSceneContainer& container);
-    void _ClearRenderDelegate();
+    //! \brief The main stages of update
+    void _ClearInvalidData(MSubSceneContainer& container);
+    void _InitRenderDelegate();
     bool _Populate();
     void _UpdateSceneDelegate();
     void _Execute(const MHWRender::MFrameContext& frameContext);
 
     bool _isInitialized();
-
     void _PopulateSelection();
     void _UpdateSelectionStates();
     void _UpdateRenderTags();
+    void _ClearRenderDelegate();
     SdfPathVector _GetFilteredRprims(HdRprimCollection const& collection, TfTokenVector const& renderTags);
 
     /*! \brief  Hold all data related to the proxy shape.
