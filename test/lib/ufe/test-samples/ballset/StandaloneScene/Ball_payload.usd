@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    defaultPrim = "Ball"
+    upAxis = "Y"
+)
+
+def "Ball" (
+    assetInfo = {
+        asset identifier = @Ball.usd@
+        string name = "Ball"
+    }
+    add references = [
+        @./Ball.shadingVariants.usda@,
+        @./Ball.maya.usd@
+    ]
+)
+{
+}
