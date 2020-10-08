@@ -128,6 +128,55 @@ class testUsdImportCustomConverter(unittest.TestCase):
                     ["pCube3Shape", "phong"]]
         self.checkMaterials(expected)
 
+    def testAsMayaDoesItNoConversion(self):
+        """
+        Tests using the full importer list to make sure we get the expected
+        result.
+        """
+
+        nice_names = cmds.mayaUSDListShadingModes(im=True)
+        modes = []
+        for nice_name in nice_names:
+            shading_options = cmds.mayaUSDListShadingModes(io=nice_name)
+            modes.append("[%s,%s]" % tuple(shading_options))
+        modes = "[" + ",".join(modes) + "]"
+        import_options = ("shadingMode=%s" % modes,
+                          "primPath=/")
+        cmds.file(self.usd_path, i=True, type="USD Import", ignoreVersion=True,
+                  ra=True, mergeNamespacesOnClash=False, namespace="Test",
+                  pr=True, importTimeRange="combine",
+                  options=";".join(import_options))
+
+        expected = [["pCube1Shape", "lambert"],
+                    ["pCube2Shape", "standardSurface"],
+                    ["pCube3Shape", "usdPreviewSurface"]]
+        self.checkMaterials(expected)
+
+    def testAsMayaDoesItWithConversion(self):
+        """
+        Tests using the full importer list to make sure we get the expected
+        result.
+        """
+
+        nice_names = cmds.mayaUSDListShadingModes(im=True)
+        modes = []
+        for nice_name in nice_names:
+            shading_options = cmds.mayaUSDListShadingModes(io=nice_name)
+            modes.append("[%s,%s]" % tuple(shading_options))
+        modes = "[" + ",".join(modes) + "]"
+        import_options = ("shadingMode=%s" % modes,
+                          "preferredMaterial=phong",
+                          "primPath=/")
+        cmds.file(self.usd_path, i=True, type="USD Import", ignoreVersion=True,
+                  ra=True, mergeNamespacesOnClash=False, namespace="Test",
+                  pr=True, importTimeRange="combine",
+                  options=";".join(import_options))
+
+        expected = [["pCube1Shape", "phong"],
+                    ["pCube2Shape", "standardSurface"],
+                    ["pCube3Shape", "phong"]]
+        self.checkMaterials(expected)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

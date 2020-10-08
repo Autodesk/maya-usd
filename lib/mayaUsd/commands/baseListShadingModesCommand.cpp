@@ -119,13 +119,17 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
             }
         }
         for (const auto s : UsdMayaShadingModeRegistry::ListImporters()) {
-            if (s != UsdMayaShadingModeTokens->useRegistry) {
+            if (s != UsdMayaShadingModeTokens->useRegistry
+                && s != UsdMayaShadingModeTokens->displayColor) {
                 appendToResult(UsdMayaShadingModeRegistry::GetImporterNiceName(s).c_str());
             }
         }
         appendToResult(UsdMayaShadingModeRegistry::GetMaterialConversionInfo(
                            UsdImagingTokens->UsdPreviewSurface)
                            .niceName.GetText());
+        appendToResult(
+            UsdMayaShadingModeRegistry::GetImporterNiceName(UsdMayaShadingModeTokens->displayColor)
+                .c_str());
         appendToResult(_tokens->NoneNiceName.GetText());
     } else if (argData.isFlagSet("exportOptions")) {
         MString    niceName;
@@ -160,7 +164,7 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
         if (!materialConversion.IsEmpty()) {
             appendToResult(materialConversion.GetText());
         } else {
-            appendToResult(UsdMayaShadingModeTokens->default.GetText());
+            appendToResult(UsdMayaShadingModeTokens->none.GetText());
         }
     } else if (argData.isFlagSet("exportAnnotation") || argData.isFlagSet("importAnnotation")) {
         const bool isExport = argData.isFlagSet("exportAnnotation");

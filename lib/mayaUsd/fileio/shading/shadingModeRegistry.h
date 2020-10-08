@@ -37,8 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define PXRUSDMAYA_SHADINGMODE_TOKENS \
     (none) \
     (displayColor) \
-    (useRegistry) \
-    (default)
+    (useRegistry)
 
 TF_DECLARE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
     MAYAUSD_CORE_PUBLIC,

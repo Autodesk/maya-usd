@@ -97,7 +97,7 @@ void UsdMaya_ReadJobWithSceneAssembly::PreImport(Usd_PrimFlagsPredicate& returnP
     if (isSceneAssembly) {
         mArgs.shadingModes
             = UsdMayaJobImportArgs::ShadingModes { { UsdMayaShadingModeTokens->displayColor,
-                                                     UsdMayaShadingModeTokens->default } };
+                                                     UsdMayaShadingModeTokens->none } };
 
         // When importing on behalf of a scene assembly, we want to make sure
         // that we traverse down into instances. The expectation is that the

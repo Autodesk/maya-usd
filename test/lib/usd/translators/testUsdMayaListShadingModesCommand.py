@@ -84,7 +84,7 @@ class testUsdMayaListShadingModesCommand(unittest.TestCase):
         self.assertEqual(modes(findImportName="none"), none)
         self.assertTrue(len(modes(importAnnotation=none)) > 5)
         self.assertEqual(modes(importOptions=none), ["none",
-                                                     "default"])
+                                                     "none"])
 
         # And we should not have this one yet
         self.assertFalse(maya_shaders in importers)
