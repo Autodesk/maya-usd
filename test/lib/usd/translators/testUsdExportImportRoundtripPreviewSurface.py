@@ -44,9 +44,9 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testPxrUsdPreviewSurfaceRoundtrip(self):
+    def testUsdPreviewSurfaceRoundtrip(self):
         """
-        Tests that a pxrUsdPreviewSurface exports and imports correctly.
+        Tests that a usdPreviewSurface exports and imports correctly.
         """
         mayaUsdPluginName = "mayaUsdPlugin"
         if not cmds.pluginInfo(mayaUsdPluginName, query=True, loaded=True):
@@ -56,7 +56,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
 
         sphere_xform = cmds.polySphere()[0]
 
-        material_node = cmds.shadingNode("pxrUsdPreviewSurface", asShader=True)
+        material_node = cmds.shadingNode("usdPreviewSurface", asShader=True)
 
         material_sg = cmds.sets(renderable=True, noSurfaceShader=True,
                                 empty=True, name=material_node+"SG")
@@ -93,7 +93,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.setAttr(uv_node+".wrapU", 0)
 
         # Export to USD:
-        usd_path = os.path.abspath('PxrUsdPreviewSurfaceRoundtripTest.usda')
+        usd_path = os.path.abspath('UsdPreviewSurfaceRoundtripTest.usda')
 
         cmds.file(usd_path, force=True,
                   options="shadingMode=useRegistry;mergeTransformAndShape=1",
@@ -113,23 +113,23 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # Check the new sphere is in the new shading group:
         self.assertTrue(cmds.sets(
             "pSphere1Shape",
-            isMember="USD_Materials:pxrUsdPreviewSurface1SG"))
+            isMember="USD_Materials:usdPreviewSurface1SG"))
 
         # Check connections:
         self.assertEqual(
-            cmds.connectionInfo("pxrUsdPreviewSurface2.outColor", dfs=True),
-            ["USD_Materials:pxrUsdPreviewSurface1SG.surfaceShader"])
+            cmds.connectionInfo("usdPreviewSurface2.outColor", dfs=True),
+            ["USD_Materials:usdPreviewSurface1SG.surfaceShader"])
         self.assertEqual(
-            cmds.connectionInfo("pxrUsdPreviewSurface2.diffuseColor", sfd=True),
+            cmds.connectionInfo("usdPreviewSurface2.diffuseColor", sfd=True),
             "file2.outColor")
         self.assertEqual(
             cmds.connectionInfo("file2.wrapU", sfd=True),
             "place2dTexture.wrapU")
 
         # Check values:
-        self.assertAlmostEqual(cmds.getAttr("pxrUsdPreviewSurface2.roughness"),
+        self.assertAlmostEqual(cmds.getAttr("usdPreviewSurface2.roughness"),
                                0.25)
-        self.assertEqual(cmds.getAttr("pxrUsdPreviewSurface2.specularColor"),
+        self.assertEqual(cmds.getAttr("usdPreviewSurface2.specularColor"),
                          [(0.125, 0.25, 0.75)])
         self.assertEqual(cmds.getAttr("file2.defaultColor"),
                          [(0.5, 0.25, 0.125)])
@@ -146,7 +146,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # a file that exists.
         stage = Usd.Stage.Open(usd_path)
         texture_prim = stage.GetPrimAtPath(
-            "/pSphere1/Looks/pxrUsdPreviewSurface1SG/file1")
+            "/pSphere1/Looks/usdPreviewSurface1SG/file1")
         rel_texture_path = texture_prim.GetAttribute('inputs:file').Get().path
 
         usd_dir = os.path.dirname(usd_path)

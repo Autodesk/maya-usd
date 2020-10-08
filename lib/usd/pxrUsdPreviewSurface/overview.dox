@@ -7,7 +7,7 @@
 
 ## Overview
 
-This plugin contains a "pxrUsdPreviewSurface" Maya shader node that provides
+This plugin contains a "usdPreviewSurface" Maya shader node that provides
 the Maya-side equivalent of the UsdPreviewSurface shader in USD. The Maya
 shader has all of the same attributes as UsdPreviewSurface, and in fact uses
 much of the same code.

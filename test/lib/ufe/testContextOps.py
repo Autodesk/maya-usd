@@ -79,6 +79,7 @@ class ContextOpsTestCase(unittest.TestCase):
             mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         self.ball35Item = ufe.Hierarchy.createItem(ball35Path)
+        self.ball35Prim = usdUtils.getPrimFromSceneItem(self.ball35Item)
 
         ufe.GlobalSelection.get().append(self.ball35Item)
 
@@ -90,6 +91,7 @@ class ContextOpsTestCase(unittest.TestCase):
         # - visibility (for all prims with visibility attribute)
         # - variant sets, for those prims that have them (such as Ball_35)
         # - add new prim (for all prims)
+        # - prim activate/deactivate
         contextItems = self.contextOps.getItems([])
         contextItemStrings = [c.item for c in contextItems]
 
@@ -102,6 +104,7 @@ class ContextOpsTestCase(unittest.TestCase):
             self.assertIn('Toggle Visibility', contextItemStrings)
         else:
             self.assertNotIn('Toggle Visibility', contextItemStrings)
+        self.assertIn('Toggle Active State', contextItemStrings)
         self.assertIn('Add New Prim', contextItemStrings)
 
         # Ball_35 has a single variant set, which has children.
@@ -148,6 +151,22 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(visibility.get(), UsdGeom.Tokens.invisible)
         
         cmds.undo()
+
+        # Active / Deactivate Prim
+        cmd = self.contextOps.doOpCmd(['Toggle Active State'])
+        self.assertIsNotNone(cmd)
+
+        # Initially, Ball_35 should be active.
+        self.assertTrue(self.ball35Prim.IsActive())
+
+        ufeCmd.execute(cmd)
+        self.assertFalse(self.ball35Prim.IsActive())
+
+        cmds.undo()
+        self.assertTrue(self.ball35Prim.IsActive())
+
+        cmds.redo()
+        self.assertFalse(self.ball35Prim.IsActive())
 
         # Change variant in variant set.
         def shadingVariant():

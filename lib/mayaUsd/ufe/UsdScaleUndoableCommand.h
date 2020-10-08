@@ -41,7 +41,7 @@ public:
 	UsdScaleUndoableCommand(UsdScaleUndoableCommand&&) = delete;
 	UsdScaleUndoableCommand& operator=(UsdScaleUndoableCommand&&) = delete;
 
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	//! Create a UsdScaleUndoableCommand from a UFE scene path.  The command is
     //! not executed.
 	static UsdScaleUndoableCommand::Ptr create(
@@ -58,14 +58,14 @@ public:
 	void redo() override;
 	bool scale(double x, double y, double z) override;
 
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::Path getPath() const override { return path(); }
 	#endif
 
 protected:
 
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	UsdScaleUndoableCommand(const Ufe::Path& path, double x, double y, double z);
 	#else
 	UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);

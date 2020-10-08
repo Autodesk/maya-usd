@@ -20,6 +20,7 @@
 
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
+#include <ufe/log.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
@@ -41,7 +42,7 @@
 #endif
 
 namespace {
-	UsdPrimSiblingRange filteredChildren( const UsdPrim& prim )
+	UsdPrimSiblingRange getUSDFilteredChildren(const UsdPrim& prim, const Usd_PrimFlagsPredicate pred = UsdPrimDefaultPredicate)
 	{
 		// We need to be able to traverse down to instance proxies, so turn
 		// on that part of the predicate, since by default, it is off. Since
@@ -49,11 +50,8 @@ namespace {
 		// GetFilteredChildren( UsdPrimDefaultPredicate ),
 		// we will use that as the initial value.
 		//
-		Usd_PrimFlagsPredicate predicate = UsdPrimDefaultPredicate;
-		predicate = predicate.TraverseInstanceProxies(true);
-		return prim.GetFilteredChildren(predicate);
+		return prim.GetFilteredChildren(UsdTraverseInstanceProxies(pred));
 	}
-
 }
 
 MAYAUSD_NS_DEF {
@@ -101,18 +99,43 @@ Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const
 
 bool UsdHierarchy::hasChildren() const
 {
-	return !filteredChildren(prim()).empty();
+	return !getUSDFilteredChildren(prim()).empty();
 }
 
 Ufe::SceneItemList UsdHierarchy::children() const
 {
-	// Return USD children only, i.e. children within this run-time.
-	Ufe::SceneItemList children;
-	for (auto child : filteredChildren(prim()))
-	{
-		children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
-	}
-	return children;
+    return createUFEChildList(getUSDFilteredChildren(prim()));
+}
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2022
+Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter) const
+{
+    // Note: for now the only child filter flag we support is "Inactive Prims".
+    //       See UsdHierarchyHandler::childFilter()
+    if ((childFilter.size() == 1) && (childFilter.front().name == "InactivePrims"))
+    {
+        // See uniqueChildName() for explanation of USD filter predicate.
+        Usd_PrimFlagsPredicate flags = childFilter.front().value ? UsdPrimIsDefined && !UsdPrimIsAbstract
+                                                                 : UsdPrimDefaultPredicate;
+        return createUFEChildList(getUSDFilteredChildren(prim(), flags));
+    }
+
+    UFE_LOG("Unknown child filter");
+    return Ufe::SceneItemList();
+}
+#endif
+#endif
+
+Ufe::SceneItemList UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& range) const
+{
+    // Return UFE child list from input USD child list.
+    Ufe::SceneItemList children;
+    for (const auto& child : range)
+    {
+        children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
+    }
+    return children;
 }
 
 Ufe::SceneItem::Ptr UsdHierarchy::parent() const
@@ -130,7 +153,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 #endif
 
 	// First, check if we need to rename the child.
-	std::string childName = uniqueChildName(fItem, child->path());
+	std::string childName = uniqueChildName(fItem->prim(), child->path().back().string());
 
 	// Set up all paths to perform the reparent.
 	auto childPrim = usdChild->prim();
@@ -168,11 +191,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 Ufe::InsertChildCommand::Ptr UsdHierarchy::insertChildCmd(
-#else
-Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
-#endif
     const Ufe::SceneItem::Ptr& child,
     const Ufe::SceneItem::Ptr& pos
 )

@@ -31,6 +31,8 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
+#include <mayaUsd/fileio/shaderReaderRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/stageData.h>
@@ -64,6 +66,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
+const MTypeId MayaUsdPreviewSurface_typeId(0x58000096);
+const MString MayaUsdPreviewSurface_typeName("usdPreviewSurface");
+const MString MayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
+
 template <typename T> void registerCommandCheck(MFnPlugin& plugin)
 {
     auto status = plugin.registerCommand(T::commandName, T::creator, T::createSyntax);
@@ -80,6 +86,11 @@ template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
     }
 }
 } // namespace
+
+TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
+{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(MayaUsdPreviewSurface_typeName); };
+TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
+{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(MayaUsdPreviewSurface_typeName); };
 
 MAYAUSD_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
@@ -149,7 +160,11 @@ MStatus initializePlugin(MObject obj)
     }
 #endif
 
-    status = PxrMayaUsdPreviewSurfacePlugin::initialize(plugin);
+    status = PxrMayaUsdPreviewSurfacePlugin::initialize(
+        plugin,
+        MayaUsdPreviewSurface_typeName,
+        MayaUsdPreviewSurface_typeId,
+        MayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     plugin.registerUI("mayaUsd_pluginUICreation", "mayaUsd_pluginUIDeletion", 
@@ -190,7 +205,11 @@ MStatus uninitializePlugin(MObject obj)
     MFnPlugin plugin(obj);
     MStatus status;
 
-    status = PxrMayaUsdPreviewSurfacePlugin::finalize(plugin);
+    status = PxrMayaUsdPreviewSurfacePlugin::finalize(
+        plugin,
+        MayaUsdPreviewSurface_typeName,
+        MayaUsdPreviewSurface_typeId,
+        MayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);

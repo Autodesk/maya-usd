@@ -129,53 +129,58 @@ UsdGeomXformCommonAPI convertToCompatibleCommonAPI(const UsdPrim& prim)
 
 void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName)
 {
-    // early check to see if a particular node has any specs to contribute
-    // to the final composed prim. e.g (a node in payload)
-    if(!MayaUsdUtils::hasSpecs(prim)){
-
-        auto layers = MayaUsdUtils::layerInCompositionArcsWithSpec(prim);
-        std::string layerDisplayNames;
-        for (auto layer : layers) {
-            layerDisplayNames.append("[" + layer->GetDisplayName() + "]" + ",");
-        }
-        layerDisplayNames.pop_back();
-        std::string err = TfStringPrintf("Cannot %s [%s]. It does not make any contributions in the current layer "
-                                         "because its specs are in an external composition arc. Please open %s to make direct edits.",
-                                         commandName.c_str(),
-                                         prim.GetName().GetString().c_str(), 
-                                         layerDisplayNames.c_str());
-        throw std::runtime_error(err.c_str());
+    // return early if prim is the pseudo-root.
+    // this is a special case and could happen when one tries to drag a prim under the 
+    // proxy shape in outliner. Also note if prim is the pseudo-root, no def primSpec will be found.
+    if (prim.IsPseudoRoot()){
+        return;
     }
 
-    // if the current layer doesn't have any contributions
-    if (!MayaUsdUtils::doesEditTargetLayerContribute(prim)) {
-        auto strongestContributingLayer = MayaUsdUtils::strongestContributingLayer(prim);
-        std::string err = TfStringPrintf("Cannot %s [%s]. It is defined on another layer. Please set [%s] as the target layer to proceed.", 
-                                         commandName.c_str(),
-                                         prim.GetName().GetString().c_str(),
-                                         strongestContributingLayer->GetDisplayName().c_str());
-        throw std::runtime_error(err.c_str());
-    }
-    else
+    auto primSpec = MayaUsdUtils::getPrimSpecAtEditTarget(prim);
+    auto primStack = prim.GetPrimStack();
+    std::string layerDisplayName;
+    std::string message{"It is defined on another layer"};
+
+    // iterate over the prim stack, starting at the highest-priority layer.
+    for (const auto& spec : primStack)
     {
-        auto layers = MayaUsdUtils::layersWithContribution(prim);
-        // if we have more than 2 layers that contributes to the final composed prim
-        if (layers.size() > 1) {
-            std::string layerDisplayNames;
+        const auto& layerName = spec->GetLayer()->GetDisplayName();
 
-            // skip the the first arc which is PcpArcTypeRoot
-            // we are interested in all the arcs after root
-            std::for_each(std::next(layers.begin()),layers.end(), [&](const auto& it) {
-                 layerDisplayNames.append("[" + it->GetDisplayName() + "]" + ",");
-            });
-
-            layerDisplayNames.pop_back();
-            std::string err = TfStringPrintf("Cannot %s [%s]. It has definitions or opinions on other layers. Opinions exist in %s",
-                                             commandName.c_str(),
-                                             prim.GetName().GetString().c_str(), 
-                                             layerDisplayNames.c_str());
-            throw std::runtime_error(err.c_str());
+        // skip if there is no primSpec for the selected prim in the current stage's local layer.
+        if(!primSpec){
+            // add "," separator for multiple layers
+            if(!layerDisplayName.empty()) { layerDisplayName.append(","); }
+            layerDisplayName.append("[" + layerName + "]");
+            continue;
         }
+
+        // one reason for skipping the reference is to not clash 
+        // with the over that may be created in the stage's sessionLayer.
+        // another reason is that one should be able to edit a referenced prim that
+        // either as over/def as long as it has a primSpec in the selected edit target layer.
+        if(spec->HasReferences()) {
+            break;
+        }
+
+        // if exists a def/over specs
+        if (spec->GetSpecifier() == SdfSpecifierDef || spec->GetSpecifier() == SdfSpecifierOver) {
+            // if spec exists in another layer ( e.g sessionLayer or layer other than stage's local layers ).
+            if(primSpec->GetLayer() != spec->GetLayer()) {
+                layerDisplayName.append("[" + layerName + "]");
+                message = "It has a stronger opinion on another layer";
+                break;
+            }
+            continue;
+        }
+    }
+
+    if(!layerDisplayName.empty()) {
+        std::string err = TfStringPrintf("Cannot %s [%s]. %s. Please set %s as the target layer to proceed.",
+                                 commandName.c_str(),
+                                 prim.GetName().GetString().c_str(),
+                                 message.c_str(),
+                                 layerDisplayName.c_str());
+        throw std::runtime_error(err.c_str());
     }
 }
 

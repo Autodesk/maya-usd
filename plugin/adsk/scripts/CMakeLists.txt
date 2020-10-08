@@ -15,3 +15,13 @@ list(APPEND scripts_src
 install(FILES ${scripts_src}
     DESTINATION ${INSTALL_DIR_SUFFIX}/scripts
 )
+
+set(PREVIEWSURFACE_MAYA_TYPE_NAME "usdPreviewSurface")
+
+configure_file("${PROJECT_SOURCE_DIR}/lib/usd/pxrUsdPreviewSurface/AEusdPreviewSurfaceTemplate.mel"
+               "${CMAKE_CURRENT_BINARY_DIR}/AEusdPreviewSurfaceTemplate.mel"
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AEusdPreviewSurfaceTemplate.mel
+    DESTINATION ${INSTALL_DIR_SUFFIX}/scripts
+)

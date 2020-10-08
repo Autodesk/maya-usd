@@ -31,7 +31,7 @@ See Pixar's official github page for instructions on how to build USD: https://g
 
 |               |      ![](images/pxr.png)          |        
 |:------------: |:---------------:                  |
-|  CommitID/Tags | release: [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) <br> dev: [5d1771d](https://github.com/PixarAnimationStudios/USD/commit/5d1771d23b935740bcd5bfb985a92a6652e070c0) |
+|  CommitID/Tags | release: [v19.11](https://github.com/PixarAnimationStudios/USD/releases/tag/v19.11) or [v20.02](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.02) or [v20.05](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.05) or [v20.08](https://github.com/PixarAnimationStudios/USD/releases/tag/v20.08) <br> dev: [66f59e9](https://github.com/PixarAnimationStudios/USD/commit/66f59e903f9b454b59ecdf514d3c61d59f5bde10) |
 
 For additional information on building Pixar USD, see the ***Additional Build Instruction*** section below.
 
@@ -107,6 +107,7 @@ BUILD_ADSK_PLUGIN           | builds Autodesk USD plugin.                       
 BUILD_PXR_PLUGIN            | builds the Pixar USD plugin and libraries.                 | ON
 BUILD_AL_PLUGIN             | builds the Animal Logic USD plugin and libraries.          | ON
 BUILD_HDMAYA                | builds the Maya-To-Hydra plugin and scene delegate.        | ON
+BUILD_RFM_TRANSLATORS       | builds translators for RenderMan for Maya shaders.         | ON
 BUILD_TESTS                 | builds all unit tests.                                     | ON
 BUILD_STRICT_MODE           | enforces all warnings as errors.                           | ON
 BUILD_WITH_PYTHON_3			| build with python 3.										 | OFF

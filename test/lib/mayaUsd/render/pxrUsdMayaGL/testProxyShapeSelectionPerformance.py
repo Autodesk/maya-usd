@@ -36,6 +36,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testProxyShapeSelectionPerformance(unittest.TestCase):
 
@@ -70,7 +72,11 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
-        cls._inputDir = os.path.abspath('ProxyShapeSelectionPerformanceTest')
+        inputPath = fixturesUtils.setUpClass(__file__,
+            initializeStandalone=False, loadPlugin=False)
+
+        cls._inputDir = os.path.join(inputPath,
+            'ProxyShapeSelectionPerformanceTest')
 
         cls._testDir = os.path.abspath('.')
 
@@ -113,6 +119,8 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         cmds.workspace(self._testDir, o=True)
 
     def tearDown(self):
+        self._viewWidget = None
+        self._m3dView = None
         cmds.deleteUI(self._testWindow)
 
     def _GetViewportWidget(self, cameraName, rendererName):
@@ -125,8 +133,8 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
             displayAppearance='smoothShaded', rendererName=rendererName)
         cmds.showWindow(self._testWindow)
 
-        m3dView = OMUI.M3dView.getM3dViewFromModelPanel(testModelPanel)
-        viewWidget = wrapInstance(long(m3dView.widget()), QWidget)
+        self._m3dView = OMUI.M3dView.getM3dViewFromModelPanel(testModelPanel)
+        viewWidget = wrapInstance(long(self._m3dView.widget()), QWidget)
 
         return viewWidget
 

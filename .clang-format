@@ -25,6 +25,7 @@ IncludeBlocks: Regroup
 IncludeCategories:
 
   # Desired final ordering:
+  # 0. Glew must be included before any other GL header
   # 1. Related header
   # 2. All private headers
   # 3. All public headers from this repository (maya-usd)
@@ -35,6 +36,11 @@ IncludeCategories:
   # 8. C system headers
   # 9. Conditional includes
 
+  # 0. Glew must be included before any other GL header
+  # Negative priority puts it above the default IncludeIsMainRegex
+  - Regex:           '<pxr/imaging/glf/glew.h>'
+    Priority:        -1
+  
   # 1. Related header
   #    Handled  by the default IncludeIsMainRegex regex, and auto-assigned
   #    Priority 0

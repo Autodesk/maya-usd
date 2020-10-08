@@ -16,6 +16,7 @@
 #include "ProxyShapeHierarchy.h"
 
 #include <stdexcept>
+#include <cassert>
 
 #include <ufe/log.h>
 #include <ufe/pathComponent.h>
@@ -31,6 +32,17 @@
 #include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
 #endif
+
+namespace {
+	UsdPrimSiblingRange getUSDFilteredChildren(const UsdPrim& prim, const Usd_PrimFlagsPredicate pred = UsdPrimDefaultPredicate)
+	{
+		// Since the equivalent of GetChildren is
+		// GetFilteredChildren( UsdPrimDefaultPredicate ),
+		// we will use that as the initial value.
+		//
+		return prim.GetFilteredChildren(pred);
+	}
+}
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -119,7 +131,7 @@ bool ProxyShapeHierarchy::hasChildren() const
 		UFE_LOG("invalid root prim in ProxyShapeHierarchy::hasChildren()");
 		return false;
 	}
-	return !rootPrim.GetChildren().empty();
+	return !getUSDFilteredChildren(rootPrim).empty();
 }
 
 Ufe::SceneItemList ProxyShapeHierarchy::children() const
@@ -129,14 +141,43 @@ Ufe::SceneItemList ProxyShapeHierarchy::children() const
 	if (!rootPrim.IsValid())
 		return Ufe::SceneItemList();
 
-	auto usdChildren = rootPrim.GetChildren();
-	auto parentPath = fItem->path();
+	return createUFEChildList(getUSDFilteredChildren(rootPrim));
+}
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2022
+Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& childFilter) const
+{
+	// Return filtered children of the USD root.
+	const UsdPrim& rootPrim = getUsdRootPrim();
+	if (!rootPrim.IsValid())
+		return Ufe::SceneItemList();
+
+	// Note: for now the only child filter flag we support is "Inactive Prims".
+	//       See UsdHierarchyHandler::childFilter()
+	if ((childFilter.size() == 1) && (childFilter.front().name == "InactivePrims"))
+	{
+		// See uniqueChildName() for explanation of USD filter predicate.
+		Usd_PrimFlagsPredicate flags = childFilter.front().value ? UsdPrimIsDefined && !UsdPrimIsAbstract
+																 : UsdPrimDefaultPredicate;
+		return createUFEChildList(getUSDFilteredChildren(rootPrim, flags));
+	}
+
+	UFE_LOG("Unknown child filter");
+	return Ufe::SceneItemList();
+}
+#endif
+#endif
+
+// Return UFE child list from input USD child list.
+Ufe::SceneItemList ProxyShapeHierarchy::createUFEChildList(const UsdPrimSiblingRange& range) const
+{
 	// We must create selection items for our children.  These will have as
 	// path the path of the proxy shape, with a single path segment of a
 	// single component appended to it.
+	auto parentPath = fItem->path();
 	Ufe::SceneItemList children;
-	for (const auto& child : usdChildren)
+	for (const auto& child : range)
 	{
 		children.emplace_back(UsdSceneItem::create(parentPath + Ufe::PathSegment(
 			Ufe::PathComponent(child.GetName().GetString()), g_USDRtid, '/'), child));
@@ -159,17 +200,10 @@ Ufe::AppendedChild ProxyShapeHierarchy::appendChild(const Ufe::SceneItem::Ptr& c
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
     const Ufe::SceneItem::Ptr& child,
     const Ufe::SceneItem::Ptr& pos
 )
-#else
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
-    const Ufe::SceneItem::Ptr& child,
-    const Ufe::SceneItem::Ptr& pos
-)
-#endif
 {
     // UsdUndoInsertChildCommand expects a UsdSceneItem which wraps a prim, so
     // create one using the pseudo-root and our own path.

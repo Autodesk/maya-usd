@@ -18,9 +18,10 @@
 
 #include "api.h"
 
-#include <maya/MApiNamespace.h>
-
 #include <pxr/pxr.h>
+#include <pxr/base/tf/token.h>
+
+#include <maya/MApiNamespace.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -28,25 +29,39 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \brief Encapsulates plugin registration and deregistration of preview surface classes.
 ///
 /// Preview surface support requires plugin registration of node classes, node
-/// data, and draw support.  This class provides this service, including if
-/// multiple plugins that use preveiw surface are loaded: using reference
-/// counting, only the first registration and the last deregistration will
-/// be performed.  Note that because of Maya architecture requirements,
-/// deregistration will only be done if the deregistering plugin is the same as
-/// the registering plugin.  Otherwise, a warning is shown.
+/// data, and draw support.  This class provides this service. Each client is expected
+/// to provide a separate typeName and typeId to ensure proper plugin registration.
+class PxrMayaUsdPreviewSurfacePlugin {
+public:
+    /// Initialize a UsdPreviewSurface dependency node named \p typeName with a unique \p typeId for
+    /// the \p plugin using the registrant id \p registrantId for the render overrides.
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus initialize(
+        MFnPlugin&     plugin,
+        const MString& typeName,
+        MTypeId        typeId,
+        const MString& registrantId);
 
-class PxrMayaUsdPreviewSurfacePlugin
-{
-    public:
-        PXRUSDPREVIEWSURFACE_API
-        static MStatus initialize(MFnPlugin&);
+    /// Deinitialize a UsdPreviewSurface dependency node named \p typeName with unique \p typeId for
+    /// the \p plugin using the registrant id \p registrantId for the render overrides.
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus finalize(
+        MFnPlugin&     plugin,
+        const MString& typeName,
+        MTypeId        typeId,
+        const MString& registrantId);
 
-        PXRUSDPREVIEWSURFACE_API
-        static MStatus finalize(MFnPlugin&);
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus registerFragments();
 
-        static MStatus registerFragments();
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus deregisterFragments();
 
-        static MStatus deregisterFragments();
+    PXRUSDPREVIEWSURFACE_API
+    static void RegisterPreviewSurfaceReader(const MString& typeName);
+
+    PXRUSDPREVIEWSURFACE_API
+    static void RegisterPreviewSurfaceWriter(const MString& typeName);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

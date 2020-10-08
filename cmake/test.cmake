@@ -204,6 +204,8 @@ finally:
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/plugin")
     list(APPEND MAYAUSD_VARNAME_PYTHONPATH
          "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
+    list(APPEND MAYAUSD_VARNAME_MAYA_SCRIPT_PATH
+         "${CMAKE_INSTALL_PREFIX}/plugin/adsk/scripts")
 
     # pxr
     list(APPEND MAYAUSD_VARNAME_PYTHONPATH
@@ -300,11 +302,14 @@ finally:
             "${pathvar}=${MAYAUSD_VARNAME_${pathvar}}")
     endforeach()
 
+    # Set the Python major version in MAYA_PYTHON_VERSION. Maya 2020 and
+    # earlier that are Python 2 only will simply ignore it.
     # without "MAYA_NO_STANDALONE_ATEXIT=1", standalone.uninitialize() will
     # set exitcode to 0
     # MAYA_DISABLE_CIP=1  Avoid fatal crash on start-up.
     # MAYA_DISABLE_CER=1  Customer Error Reporting.
     set_property(TEST "${test_name}" APPEND PROPERTY ENVIRONMENT
+        "MAYA_PYTHON_VERSION=${MAYA_PY_VERSION}"
         "MAYA_NO_STANDALONE_ATEXIT=1"
         "MAYA_DISABLE_CIP=1"
         "MAYA_DISABLE_CER=1")

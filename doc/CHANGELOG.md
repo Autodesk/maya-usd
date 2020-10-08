@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.4.0] - 2020-09-22
+
+This release includes:
+* Completed materials interop via PreviewSurface
+* Improved rename and parenting workflows
+* Improved Outliner support
+
+**Build:**
+* Fixed build script with python 3 where each line starting with 'b and ends with \n' making it hard to read the log. [PR #768](https://github.com/Autodesk/maya-usd/pull/768)
+* Removed test dependencies on Python future past, and builtin.zip [PR #764](https://github.com/Autodesk/maya-usd/pull/764)
+* Added test for setting rotate pivot through move command. [PR #763](https://github.com/Autodesk/maya-usd/pull/763)
+* Migrated pxrUsdMayaGL and relevant pxrUsdTranslators tests from plugin/pxr/... to test/... [PR #762](https://github.com/Autodesk/maya-usd/pull/762) [PR #761](https://github.com/Autodesk/maya-usd/pull/761) [PR #759](https://github.com/Autodesk/maya-usd/pull/759) [PR #756](https://github.com/Autodesk/maya-usd/pull/756) [PR #741](https://github.com/Autodesk/maya-usd/pull/741) [PR #706](https://github.com/Autodesk/maya-usd/pull/706)
+* Replaced #pragma once with #ifndef include guards [PR #750](https://github.com/Autodesk/maya-usd/pull/750)
+* Removed old UFE condional compilation blocks [PR #746](https://github.com/Autodesk/maya-usd/pull/746)
+* Removed code blocks for USD 19.07 [PR #734](https://github.com/Autodesk/maya-usd/pull/734)
+* Split Maya module file into separate plugins [PR #731](https://github.com/Autodesk/maya-usd/pull/731)
+
+**Translation Framework:**
+* Fixed regression in displayColors shading mode to use the un-linearized lambert transparency to author displayOpacity [PR #751](https://github.com/Autodesk/maya-usd/pull/751)
+* Renamed pxrUsdPreviewSurface to usdPreviewSurface [PR #744](https://github.com/Autodesk/maya-usd/pull/744)
+* Fixed empty relative path handling for texture writer [PR #743](https://github.com/Autodesk/maya-usd/pull/743)
+* Added support for multiple export converters to co-exist in useRegistry export [PR #721](https://github.com/Autodesk/maya-usd/pull/721)
+* Cleaned-up export material UI [PR #709](https://github.com/Autodesk/maya-usd/pull/709)
+* Added preview surface to Maya native shaders converstion [PR #707](https://github.com/Autodesk/maya-usd/pull/707)
+
+**Workflow:**
+* Added support in the outliner for displaying activate and deactivate prims [PR #773](https://github.com/Autodesk/maya-usd/pull/773)
+* Fixed undo/redo re-parenting crash due to accessing a stale prim [PR #772](https://github.com/Autodesk/maya-usd/pull/772)
+* Fixed matrix converstion when reading/writing to data handles [PR #765](https://github.com/Autodesk/maya-usd/pull/765)
+* Fixed incorrect exception handling when setting variants in attribute editor for pxrUsdReferenceAssembly [PR #760](https://github.com/Autodesk/maya-usd/pull/760)
+* Added undo support for multiple parented items in outliner [PR #755](https://github.com/Autodesk/maya-usd/pull/755)
+* Fixed crash with undo redo in USD Layer Editor [PR #754](https://github.com/Autodesk/maya-usd/pull/754)
+* Fixed `add new prim` after delete [PR #742](https://github.com/Autodesk/maya-usd/pull/742)
+* Fixed crash after switching variant [PR #726](https://github.com/Autodesk/maya-usd/pull/726)
+* Added support in the outliner for prim type icons [PR #712](https://github.com/Autodesk/maya-usd/pull/712)
+
+**Render:**
+* Added mtoh support for standardSurface [PR #749](https://github.com/Autodesk/maya-usd/pull/749)
+* Fixed refresh with VP2RenderDelegate when the USD stage is cleared [PR #748](https://github.com/Autodesk/maya-usd/pull/748)
+* Improved draw performance for dense mesh [PR #715](https://github.com/Autodesk/maya-usd/pull/715)
+
+
 ## [0.3.0] - 2020-08-15
 
 ### Build

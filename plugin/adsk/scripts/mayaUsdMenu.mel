@@ -64,6 +64,7 @@ proc initRuntimeCommands() {
             -annotation "Create a new, empty USD Stage"
             -category "Menu items.Maya USD"
             -command "python(\"import mayaUsd_createStageWithNewLayer; mayaUsd_createStageWithNewLayer.createStageWithNewLayer()\")"
+            -image "USD_stage.png"
             mayaUsdCreateStageWithNewLayer;
     }
 
@@ -73,6 +74,7 @@ proc initRuntimeCommands() {
             -annotation "Create a USD Stage from an existing USD file"
             -category   "Menu items.Maya USD"
             -command    "mayaUsd_createStageFromFile"
+            -image      "USD_stage.png"
             mayaUsdCreateStageFromFile;
     }
 
@@ -111,6 +113,7 @@ global proc mayaUsdMenu_createMenuCallback() {
             $gMayaUsdCreateSubMenu = `menuItem -subMenu true -insertAfter $sceneManagementDivider -tearOff true
                 -label "Universal Scene Description (USD)" 
                 -annotation "Create a USD stage" 
+                -image "USD_generic.png"
                 -version $mayaVersion`;
             menuItem -runTimeCommand mayaUsdCreateStageWithNewLayer;
             menuItem -runTimeCommand mayaUsdCreateStageFromFile;

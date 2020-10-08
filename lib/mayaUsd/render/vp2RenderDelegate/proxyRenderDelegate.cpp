@@ -366,32 +366,46 @@ void ProxyRenderDelegate::_ClearRenderDelegate()
     _renderIndex.reset();
     _renderDelegate.reset();
 
+    _dummyTasks.clear();
+
     // reset any version ids or dirty information that doesn't make sense if we clear
     // the render index.
     _renderTagVersion = 0;
     _visibilityVersion = 0;
     _taskRenderTagsValid = false;
+    _isPopulated = false;
 }
 
-//! \brief  One time initialization of this drawing routine
-void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
+//! \brief  Clear data which is now stale because proxy shape attributes have changed
+void ProxyRenderDelegate::_ClearInvalidData(MSubSceneContainer& container)
+{
+    TF_VERIFY(_proxyShapeData->ProxyShape());
 
-    if (_proxyShapeData->ProxyShape() == nullptr)
-        return;
-
-    if (!_proxyShapeData->IsUsdStageUpToDate())
+    // We have to clear everything when the stage changes because the new stage doesn't necessarily
+    // have anything in common with the old stage.
+    // When excluded prims changes we don't have a way to know which (if any) prims were removed
+    // from excluded prims & so must be re-added to the render index, so we take the easy way out
+    // and clear everything. If this is a performance problem we can probably store the old value
+    // of excluded prims, compare it to the new value and only add back the difference.
+    if (!_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate())
     {
-        // delete everything so we stop drawing the old stage and draw the new one
+        // delete everything so we can re-initialize with the new stage
         _ClearRenderDelegate();
-        _dummyTasks.clear();
         container.clear();
-
-        _proxyShapeData->UpdateUsdStage();
     }
-    
+}
+
+//! \brief  Initialize the render delegate
+void ProxyRenderDelegate::_InitRenderDelegate()
+{
+    TF_VERIFY(_proxyShapeData->ProxyShape());
+
     // No need to run all the checks if we got till the end
     if (_isInitialized())
         return;
+
+    _proxyShapeData->UpdateUsdStage();
+    _proxyShapeData->UsdStageUpdated();
 
     if (!_renderDelegate) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
@@ -445,7 +459,7 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
                 globalSelection->addObserver(_observer);
             }
 
-            #if UFE_PREVIEW_VERSION_NUM >= 2021
+            #ifdef UFE_V2_FEATURES_AVAILABLE
             Ufe::Scene::instance().addObserver(_observer);
             #else
             Ufe::Scene::instance().addObjectAddObserver(_observer);
@@ -475,15 +489,18 @@ void ProxyRenderDelegate::_InitRenderDelegate(MSubSceneContainer& container) {
 
 //! \brief  Populate render index with prims coming from scene delegate.
 //! \return True when delegate is ready to draw
-bool ProxyRenderDelegate::_Populate() {
+bool ProxyRenderDelegate::_Populate()
+{
+    TF_VERIFY(_proxyShapeData->ProxyShape());
+    
     if (!_isInitialized())
         return false;
 
-    if (_proxyShapeData->UsdStage() && (!_isPopulated || !_proxyShapeData->IsUsdStageUpToDate() || !_proxyShapeData->IsExcludePrimsUpToDate()) ) {
+    if (_proxyShapeData->UsdStage() && !_isPopulated ) {
         MProfilingScope subProfilingScope(HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorD_L1, "Populate");
 
-        // It might have been already populated, clear it if so.
+        // Remove any excluded prims before populating
         SdfPathVector excludePrimPaths = _proxyShapeData->ProxyShape()->getExcludePrimPaths();
         for (auto& excludePrim : excludePrimPaths) {
             SdfPath indexPath = _sceneDelegate->ConvertCachePathToIndexPath(excludePrim);
@@ -491,12 +508,10 @@ bool ProxyRenderDelegate::_Populate() {
                 _renderIndex->RemoveRprim(indexPath);
             }
         }
+        _proxyShapeData->ExcludePrimsUpdated();
         
         _sceneDelegate->Populate(_proxyShapeData->UsdStage()->GetPseudoRoot(),excludePrimPaths);
-        
         _isPopulated = true;
-        _proxyShapeData->UsdStageUpdated();
-        _proxyShapeData->ExcludePrimsUpdated();
     }
 
     return _isPopulated;
@@ -505,9 +520,10 @@ bool ProxyRenderDelegate::_Populate() {
 //! \brief  Synchronize USD scene delegate with Maya's proxy shape.
 void ProxyRenderDelegate::_UpdateSceneDelegate()
 {
-    if (!_proxyShapeData->ProxyShape() || !_sceneDelegate) {
+    TF_VERIFY(_proxyShapeData->ProxyShape());
+
+    if (!_sceneDelegate)
         return;
-    }
 
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorC_L1, "UpdateSceneDelegate");
@@ -644,7 +660,13 @@ void ProxyRenderDelegate::update(MSubSceneContainer& container, const MFrameCont
     MProfilingScope profilingScope(HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorD_L1, "ProxyRenderDelegate::update");
 
-    _InitRenderDelegate(container);
+    // Without a proxy shape we can't do anything
+    if (_proxyShapeData->ProxyShape() == nullptr)
+        return;
+
+    _ClearInvalidData(container);
+
+    _InitRenderDelegate();
 
     // Give access to current time and subscene container to the rest of render delegate world via render param's.
     auto* param = reinterpret_cast<HdVP2RenderParam*>(_renderDelegate->GetRenderParam());

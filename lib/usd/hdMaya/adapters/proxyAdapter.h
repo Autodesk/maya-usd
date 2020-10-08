@@ -73,6 +73,16 @@ public:
         return _usdDelegate->ConvertCachePathToIndexPath(cachePath);
     }
 
+    bool PopulateSelection(
+        HdSelection::HighlightMode const& highlightMode,
+        const SdfPath& usdPath,
+        int instanceIndex,
+        HdSelectionSharedPtr const& result) {
+        return _usdDelegate->PopulateSelection(highlightMode, usdPath, instanceIndex, result);
+    }
+
+    const SdfPath& GetUsdDelegateID() const { return _usdDelegate->GetDelegateID(); }
+
 private:
     /// Notice listener method for proxy stage set
     void _OnStageSet(const MayaUsdProxyStageSetNotice& notice);

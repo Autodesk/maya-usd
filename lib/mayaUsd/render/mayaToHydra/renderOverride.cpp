@@ -20,7 +20,6 @@
 #include <exception>
 
 #include <maya/M3dView.h>
-#include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
 #include <maya/MEventMessage.h>
 #include <maya/MGlobal.h>
@@ -36,6 +35,7 @@
 #include <pxr/base/vt/value.h>
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/hd/rprim.h>
+#include <pxr/imaging/hdx/pickTask.h>
 
 #include <hdMaya/delegates/delegateRegistry.h>
 #include <hdMaya/delegates/sceneDelegate.h>
@@ -50,6 +50,10 @@
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
 #include <pxr/imaging/hdx/tokens.h>
 #include <pxr/imaging/hdx/renderTask.h>
+
+#include <boost/functional/hash.hpp>
+
+#include <limits>
 
 #if USD_VERSION_NUM > 2002
 #include <pxr/imaging/hgi/hgi.h>
@@ -106,11 +110,86 @@ private:
 
 #endif // WANT_UFE_BUILD
 
+#if MAYA_API_VERSION >= 20210000
+
+//! \brief  Get the index of the hit nearest to a given cursor point.
+int GetNearestHitIndex(
+    const MHWRender::MFrameContext& frameContext,
+    const HdxPickHitVector&         hits,
+    int                             cursor_x,
+    int                             cursor_y)
+{
+    int nearestHitIndex = -1;
+
+    double dist2_min = std::numeric_limits<double>::max();
+    float  depth_min = std::numeric_limits<float>::max();
+
+    for (unsigned int i = 0; i < hits.size(); i++) {
+        const HdxPickHit& hit = hits[i];
+        const MPoint      worldSpaceHitPoint(
+            hit.worldSpaceHitPoint[0], hit.worldSpaceHitPoint[1], hit.worldSpaceHitPoint[2]);
+
+        // Calculate the (x, y) coordinate relative to the lower left corner of the viewport.
+        double hit_x, hit_y;
+        frameContext.worldToViewport(worldSpaceHitPoint, hit_x, hit_y);
+
+        // Calculate the 2D distance between the hit and the cursor
+        double dist_x = hit_x - (double)cursor_x;
+        double dist_y = hit_y - (double)cursor_y;
+        double dist2 = dist_x * dist_x + dist_y * dist_y;
+
+        // Find the hit nearest to the cursor.
+        if ((dist2 < dist2_min) || (dist2 == dist2_min && hit.normalizedDepth < depth_min)) {
+            dist2_min = dist2;
+            depth_min = hit.normalizedDepth;
+            nearestHitIndex = (int)i;
+        }
+    }
+
+    return nearestHitIndex;
+}
+
+//! \brief  workaround to remove duplicate hits and improve selection performance.
+void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVector& outHits)
+{
+    outHits.clear();
+
+    // hash -> hitIndex
+    std::unordered_map<size_t, size_t> hitIndices;
+
+    size_t previousHash = 0;
+
+    for (size_t i = 0; i < inHits.size(); i++) {
+        const HdxPickHit& hit = inHits[i];
+
+        size_t hash = 0;
+        boost::hash_combine(hash, hit.delegateId.GetHash());
+        boost::hash_combine(hash, hit.objectId.GetHash());
+        boost::hash_combine(hash, hit.instancerId.GetHash());
+        boost::hash_combine(hash, hit.instanceIndex);
+
+        // As an optimization, keep track of the previous hash value and
+        // reject indices that match it without performing a map lookup.
+        // Adjacent indices are likely enough to have the same prim,
+        // instance and element ids that this can be a significant
+        // improvement.
+        if (hitIndices.empty() || hash != previousHash) {
+            if (hitIndices.insert(std::make_pair(hash, i)).second) {
+                outHits.push_back(inHits[i]);
+            }
+            previousHash = hash;
+        }
+    }
+}
+
+#endif
+
 } // namespace
 
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     : MHWRender::MRenderOverride(desc.overrideName.GetText()),
       _rendererDesc(desc),
+      _globals(MtohRenderGlobals::GetInstance()),
 #if USD_VERSION_NUM > 2002
 #if USD_VERSION_NUM > 2005
       _hgi(Hgi::CreatePlatformDefaultHgi()),
@@ -161,8 +240,6 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
         _allInstances.push_back(this);
     }
 
-    _globals = MtohGetRenderGlobals();
-
 #if WANT_UFE_BUILD
     const UFE_NS::GlobalSelection::Ptr& ufeSelection =
         UFE_NS::GlobalSelection::get();
@@ -201,11 +278,38 @@ MtohRenderOverride::~MtohRenderOverride() {
     }
 }
 
-void MtohRenderOverride::UpdateRenderGlobals() {
-    std::lock_guard<std::mutex> lock(_allInstancesMutex);
-    for (auto* instance : _allInstances) {
-        instance->_renderGlobalsHaveChanged = true;
+HdRenderDelegate* MtohRenderOverride::_GetRenderDelegate() {
+    return _renderIndex ? _renderIndex->GetRenderDelegate() : nullptr;
+}
+
+void MtohRenderOverride::UpdateRenderGlobals(const MtohRenderGlobals& globals, const TfToken& attrName) {
+    // If no attribute or attribute starts with 'mtoh', these setting wil be applied on the next
+    // call to MtohRenderOverride::Render, so just force an invalidation
+    // XXX: This will need to change if mtoh settings should ever make it to the delegate itself.
+    if (attrName.GetString().find("mtoh") != 0) {
+        std::lock_guard<std::mutex> lock(_allInstancesMutex);
+        for (auto* instance : _allInstances) {
+            const auto& rendererName = instance->_rendererDesc.rendererName;
+
+            // If no attrName or the attrName is the renderer, then update everything
+            const size_t attrFilter = (attrName.IsEmpty() || attrName == rendererName) ? 0 : 1;
+            if (attrFilter && !instance->_globals.AffectsRenderer(attrName, rendererName)) {
+                continue;
+            }
+
+            // Will be applied in _InitHydraResources later anyway
+            if (auto* renderDelegate = instance->_GetRenderDelegate()) {
+                instance->_globals.ApplySettings(renderDelegate,
+                    instance->_rendererDesc.rendererName, TfTokenVector(attrFilter, attrName));
+                if (attrFilter) {
+                    break;
+                }
+            }
+        }
     }
+
+    // Less than ideal still
+    MGlobal::executeCommandOnIdle("refresh -f");
 }
 
 std::vector<MString> MtohRenderOverride::AllActiveRendererNames() {
@@ -311,31 +415,6 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(
     }
 }
 
-void MtohRenderOverride::_UpdateRenderGlobals() {
-    if (!_renderGlobalsHaveChanged) { return; }
-    _renderGlobalsHaveChanged = false;
-    _globals = MtohGetRenderGlobals();
-    _UpdateRenderDelegateOptions();
-}
-
-void MtohRenderOverride::_UpdateRenderDelegateOptions() {
-    if (_renderIndex == nullptr) { return; }
-    auto* renderDelegate = _renderIndex->GetRenderDelegate();
-    if (renderDelegate == nullptr) { return; }
-    const auto* settings =
-        TfMapLookupPtr(_globals.rendererSettings, _rendererDesc.rendererName);
-    if (settings == nullptr) { return; }
-    // TODO: Which is better? Set everything blindly or only set settings that
-    //  have changed? This is not performance critical, and render delegates
-    //  might track changes internally.
-    for (const auto& setting : *settings) {
-        const auto v = renderDelegate->GetRenderSetting(setting.key);
-        if (v != setting.value) {
-            renderDelegate->SetRenderSetting(setting.key, setting.value);
-        }
-    }
-}
-
 MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     // It would be good to clear the resources of the overrides that are
     // not in active use, but I'm not sure if we have a better way than
@@ -415,8 +494,6 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         }
     };
 
-    _UpdateRenderGlobals();
-
     _DetectMayaDefaultLighting(drawContext);
     if (_needsClear.exchange(false)) { ClearHydraResources(); }
 
@@ -429,14 +506,14 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _SelectionChanged();
 
     const auto displayStyle = drawContext.getDisplayStyle();
-    _globals.delegateParams.displaySmoothMeshes =
-        !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
+    HdMayaParams delegateParams = _globals.delegateParams;
+    delegateParams.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
     if (_defaultLightDelegate != nullptr) {
         _defaultLightDelegate->SetDefaultLight(_defaultLight);
     }
     for (auto& it : _delegates) {
-        it->SetParams(_globals.delegateParams);
+        it->SetParams(delegateParams);
         it->PreFrame(drawContext);
     }
 
@@ -599,7 +676,15 @@ void MtohRenderOverride::_InitHydraResources() {
     _SelectionChanged();
 
     _initializedViewport = true;
-    _UpdateRenderDelegateOptions();
+    if (auto* renderDelegate = _GetRenderDelegate()) {
+        // Pull in any options that may have changed due file-open.
+        // If the currentScene has defaultRenderGlobals we'll absorb those new settings,
+        // but if not, fallback to user-defaults (current state) .
+        const bool filterRenderer = true;
+        const bool fallbackToUserDefaults = true;
+        _globals.GlobalChanged({_rendererDesc.rendererName, filterRenderer, fallbackToUserDefaults});
+        _globals.ApplySettings(renderDelegate, _rendererDesc.rendererName);
+    }
 }
 
 void MtohRenderOverride::ClearHydraResources() {
@@ -646,7 +731,6 @@ void MtohRenderOverride::_RemovePanel(MString panelName) {
 
     if (_renderPanelCallbacks.empty()) {
         ClearHydraResources();
-        _UpdateRenderGlobals();
     }
 }
 
@@ -770,6 +854,110 @@ bool MtohRenderOverride::nextRenderOperation() {
     return ++_currentOperation < static_cast<int>(_operations.size());
 }
 
+#if MAYA_API_VERSION >= 20210000
+bool MtohRenderOverride::select(
+    const MHWRender::MFrameContext& frameContext,
+    const MHWRender::MSelectionInfo& selectInfo,
+    bool /*useDepth*/,
+    MSelectionList& selectionList,
+    MPointArray& worldSpaceHitPts)
+{
+    MStatus status = MStatus::kFailure;
+
+    MMatrix viewMatrix = frameContext.getMatrix(MHWRender::MFrameContext::kViewMtx, &status);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    MMatrix projMatrix = frameContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx, &status);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    int view_x, view_y, view_w, view_h;
+    status = frameContext.getViewportDimensions(view_x, view_y, view_w, view_h);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    unsigned int sel_x, sel_y, sel_w, sel_h;
+    status = selectInfo.selectRect(sel_x, sel_y, sel_w, sel_h);
+    if (status != MStatus::kSuccess)
+        return false;
+
+    // Compute a pick matrix that, when it is post-multiplied with the projection matrix, will
+    // cause the picking region to fill the entire/ viewport for OpenGL selection.
+    {
+        MMatrix pickMatrix;
+        pickMatrix[0][0] = view_w / double(sel_w);
+        pickMatrix[1][1] = view_h / double(sel_h);
+        pickMatrix[3][0] = (view_w - (double)(sel_x * 2 + sel_w)) / double(sel_w);
+        pickMatrix[3][1] = (view_h - (double)(sel_y * 2 + sel_h)) / double(sel_h);
+
+        projMatrix *= pickMatrix;
+    }
+
+    const bool pointSnappingActive = selectInfo.pointSnapping();
+
+    // Set up picking params.
+    HdxPickTaskContextParams pickParams;
+    pickParams.resolution.Set(view_w, view_h);
+    pickParams.viewMatrix.Set(viewMatrix.matrix);
+    pickParams.projectionMatrix.Set(projMatrix.matrix);
+    pickParams.resolveMode = HdxPickTokens->resolveUnique;
+
+    if (pointSnappingActive) {
+        pickParams.pickTarget = HdxPickTokens->pickPoints;
+
+        // Exclude selected Rprims to avoid self-snapping issue.
+        pickParams.collection = _pointSnappingCollection;
+        pickParams.collection.SetExcludePaths(_selectionCollection.GetRootPaths());
+    } else {
+        pickParams.collection = _renderCollection;
+    }
+
+    HdxPickHitVector outHits;
+    pickParams.outHits = &outHits;
+
+    // Execute picking tasks.
+    HdTaskSharedPtrVector pickingTasks = _taskController->GetPickingTasks();
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, VtValue(pickParams));
+    _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
+
+    if (pointSnappingActive) {
+        // Find the hit nearest to the cursor point and use it for point snapping.
+        int nearestHitIndex = -1;
+        int cursor_x, cursor_y;
+        if (selectInfo.cursorPoint(cursor_x, cursor_y)) {
+            nearestHitIndex = GetNearestHitIndex(frameContext, outHits, cursor_x, cursor_y);
+        }
+
+        if (nearestHitIndex >= 0) {
+            const HdxPickHit hit = outHits[nearestHitIndex];
+            outHits.clear();
+            outHits.push_back(hit);
+        } else {
+            outHits.clear();
+        }
+    } else {
+        // Multiple hits can be produced for a single object on marquee selection even pickTarget
+        // is the default "pickPrimsAndInstances" mode, and each hit is created for an "element"
+        // which I guess means a face id and should only be required when pickTarget is "pickFaces".
+        // I would expect only one hit to be created for object-level selection. Having duplicated
+        // hits for the same object would slow down selection performance, esp. for dense mesh.
+        // Some more details can be found: https://groups.google.com/g/usd-interest/c/Cgosy3r7Vv4
+        HdxPickHitVector uniqueHits;
+        ResolveUniqueHits_Workaround(outHits, uniqueHits);
+        outHits.swap(uniqueHits);
+    }
+
+    if (!outHits.empty()) {
+        for (auto& it : _delegates) {
+            it->PopulateSelectionList(outHits, selectInfo, selectionList, worldSpaceHitPts);
+        }
+    }
+
+    return true;
+}
+#endif
+
 void MtohRenderOverride::_ClearHydraCallback(void* data) {
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
     if (!TF_VERIFY(instance)) { return; }
@@ -796,8 +984,9 @@ void MtohRenderOverride::_PlayblastingChanged(bool playBlasting, void* userData)
 
 void MtohRenderOverride::_TimerCallback(float, float, void* data) {
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
-    if (instance->_playBlasting || instance->_isConverged)
+    if (instance->_playBlasting || instance->_isConverged) {
         return;
+    }
 
     std::lock_guard<std::mutex> lock(instance->_lastRenderTimeMutex);
     if ((std::chrono::system_clock::now() - instance->_lastRenderTime) <

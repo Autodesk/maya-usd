@@ -44,6 +44,12 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
     )
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2022)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdUIInfoHandler.cpp
+        )
+    endif()
 endif()
 
 set(HEADERS
@@ -83,6 +89,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdContextOpsHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
+        UsdUIInfoHandler.h
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h

@@ -117,20 +117,6 @@ public:
             const std::string& name=std::string(),
             SdfPathSet* const boundPrimPaths=nullptr) const;
 
-    /// Use this function to get a "standard" usd attr name for \p attrPlug.
-    /// The definition of "standard" may depend on arguments passed to the
-    /// script (i.e. stripping namespaces, etc.).
-    ///
-    /// If attrPlug is an element in an array and if \p allowMultiElementArrays
-    /// is true, this will <attrName>_<idx>.
-    ///
-    /// If it's false, this will return <attrName> if it's the 0-th logical
-    /// element and an empty token otherwise.
-    MAYAUSD_CORE_PUBLIC
-    std::string GetStandardAttrName(
-            const MPlug& attrPlug,
-            const bool allowMultiElementArrays) const;
-
     MAYAUSD_CORE_PUBLIC
     UsdMayaShadingModeExportContext(
             const MObject& shadingEngine,

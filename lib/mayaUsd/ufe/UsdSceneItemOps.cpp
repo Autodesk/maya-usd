@@ -20,6 +20,21 @@
 #include <mayaUsd/ufe/UsdUndoRenameCommand.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <maya/MGlobal.h>
+
+namespace {
+// Warning: If a user tries to delete a prim that is deactivated (can be localized).
+static constexpr char kWarningCannotDeactivePrim[] = "Cannot deactivate \"^1s\" because it is already inactive.";
+
+void displayWarning(const UsdPrim& prim, const MString& fmt)
+{
+    MString msg, primArg(prim.GetName().GetText());
+    msg.format(fmt, primArg);
+    MGlobal::displayWarning(msg);
+}
+
+}
+
 MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -60,14 +75,24 @@ Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const
 
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
 {
-	auto deleteCmd = UsdUndoDeleteCommand::create(prim());
-	deleteCmd->execute();
-	return deleteCmd;
+	if (prim().IsActive()) {
+		auto deleteCmd = UsdUndoDeleteCommand::create(prim());
+		deleteCmd->execute();
+		return deleteCmd;
+	}
+
+	displayWarning(prim(), kWarningCannotDeactivePrim);
+	return nullptr;
 }
 
 bool UsdSceneItemOps::deleteItem()
 {
-	return prim().SetActive(false);
+	if (prim().IsActive()) {
+		return prim().SetActive(false);
+	}
+
+	displayWarning(prim(), kWarningCannotDeactivePrim);
+	return false;
 }
 
 Ufe::Duplicate UsdSceneItemOps::duplicateItemCmd()

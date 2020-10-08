@@ -15,11 +15,7 @@
 //
 #pragma once
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 #include <ufe/hierarchy.h>
-#else
-#include <ufe/undoableCommand.h>
-#endif
 
 #include <pxr/usd/usd/prim.h>
 
@@ -32,11 +28,7 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief UsdUndoInsertChildCommand
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 class MAYAUSD_CORE_PUBLIC UsdUndoInsertChildCommand : public Ufe::InsertChildCommand
-#else
-class MAYAUSD_CORE_PUBLIC UsdUndoInsertChildCommand : public Ufe::UndoableCommand
-#endif
 {
 public:
     using Ptr = std::shared_ptr<UsdUndoInsertChildCommand>;
@@ -55,9 +47,7 @@ public:
                                                  const UsdSceneItem::Ptr& child,
                                                  const UsdSceneItem::Ptr& pos);
 
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     Ufe::SceneItem::Ptr insertedChild() const override {return _ufeDstItem;}
-    #endif
 
 protected:
     //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
@@ -73,7 +63,6 @@ private:
     bool insertChildRedo();
     bool insertChildUndo();
 
-    UsdSceneItem::Ptr _ufeSrcItem;
     UsdSceneItem::Ptr _ufeDstItem;
 
     Ufe::Path _ufeSrcPath;

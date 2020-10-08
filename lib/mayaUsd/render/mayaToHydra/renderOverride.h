@@ -61,7 +61,9 @@ public:
     MtohRenderOverride(const MtohRendererDescription& desc);
     ~MtohRenderOverride() override;
 
-    static void UpdateRenderGlobals();
+    /// Mark a setting (or all settings when attrName is '') as out of date
+    static void UpdateRenderGlobals(const MtohRenderGlobals& globals,
+        const TfToken& attrName = {});
 
     /// The names of all render delegates that are being used by at least
     /// one modelEditor panel.
@@ -99,6 +101,15 @@ public:
     MHWRender::MRenderOperation* renderOperation() override;
     bool nextRenderOperation() override;
 
+#if MAYA_API_VERSION >= 20210000
+    bool select(
+        const MHWRender::MFrameContext& frameContext,
+        const MHWRender::MSelectionInfo& selectInfo,
+        bool useDepth,
+        MSelectionList& selectionList,
+        MPointArray& worldSpaceHitPts) override;
+#endif
+
 private:
     typedef std::pair<MString, MCallbackIdArray> PanelCallbacks;
     typedef std::vector<PanelCallbacks> PanelCallbacksList;
@@ -109,8 +120,7 @@ private:
     void _RemovePanel(MString panelName);
     void _SelectionChanged();
     void _DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext);
-    void _UpdateRenderGlobals();
-    void _UpdateRenderDelegateOptions();
+    HdRenderDelegate* _GetRenderDelegate();
 
     inline PanelCallbacksList::iterator _FindPanelCallbacks(MString panelName) {
         // There should never be that many render panels, so linear iteration
@@ -142,7 +152,7 @@ private:
     std::vector<MCallbackId> _callbacks;
     MCallbackId _timerCallback = 0;
     PanelCallbacksList _renderPanelCallbacks;
-    MtohRenderGlobals _globals;
+    const MtohRenderGlobals& _globals;
 
     std::mutex _lastRenderTimeMutex;
     std::chrono::system_clock::time_point _lastRenderTime;
@@ -175,6 +185,15 @@ private:
     HdRprimCollection _selectionCollection{
         HdReprTokens->wire, HdReprSelector(HdReprTokens->wire)
     };
+
+#if MAYA_API_VERSION >= 20210000
+    HdRprimCollection _pointSnappingCollection{
+        HdTokens->geometry,
+        HdReprSelector(HdReprTokens->refined, TfToken(), HdReprTokens->points),
+        SdfPath::AbsoluteRootPath()
+    };
+#endif
+
     GlfSimpleLight _defaultLight;
 
     std::vector<HdMayaDelegatePtr> _delegates;
@@ -186,7 +205,6 @@ private:
     const bool _isUsingHdSt = false;
     bool _initializedViewport = false;
     bool _hasDefaultLighting = false;
-    bool _renderGlobalsHaveChanged = false;
     bool _selectionChanged = true;
 
 #if WANT_UFE_BUILD

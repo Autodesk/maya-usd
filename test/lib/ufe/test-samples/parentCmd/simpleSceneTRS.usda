@@ -6,6 +6,7 @@
 )
 
 def Mesh "pSphere1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
     kind = "component"
 )
 {
@@ -31,6 +32,7 @@ def Mesh "pSphere1" (
 }
 
 def Mesh "pCube1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
     kind = "component"
 )
 {
@@ -58,6 +60,7 @@ def Mesh "pCube1" (
 }
 
 def Mesh "pCylinder1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
     kind = "component"
 )
 {

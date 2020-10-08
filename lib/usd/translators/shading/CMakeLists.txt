@@ -1,7 +1,7 @@
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
-target_sources(${TARGET_NAME} 
+target_sources(${TARGET_NAME}
     PRIVATE
         usdBlinnReader.cpp
         usdBlinnWriter.cpp
@@ -18,8 +18,15 @@ target_sources(${TARGET_NAME}
         usdUVTextureReader.cpp
 )
 
+if (BUILD_RFM_TRANSLATORS)
+    target_sources(${TARGET_NAME}
+        PRIVATE
+            rfmShaderTranslation.cpp
+    )
+endif()
+
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
-    target_sources(${TARGET_NAME} 
+    target_sources(${TARGET_NAME}
         PRIVATE
             usdStandardSurfaceReader.cpp
             usdStandardSurfaceWriter.cpp
