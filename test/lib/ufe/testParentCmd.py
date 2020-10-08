@@ -19,6 +19,8 @@
 from ufeTestUtils import mayaUtils, usdUtils
 from ufeTestUtils.testUtils import assertVectorAlmostEqual
 
+from pxr import UsdGeom
+
 import ufe
 import mayaUsd.ufe
 import maya.cmds as cmds
@@ -56,7 +58,7 @@ class ParentCmdTestCase(unittest.TestCase):
     def setUpClass(cls):
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
     @classmethod
     def tearDownClass(cls):
         cmds.file(new=True, force=True)
@@ -78,10 +80,10 @@ class ParentCmdTestCase(unittest.TestCase):
         shapeSegment = mayaUtils.createUfePathSegment(
             "|world|mayaUsdProxy1|mayaUsdProxyShape1")
         cubePath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/pCube1")])
+            [shapeSegment, usdUtils.createUfePathSegment("/cubeXform")])
         cubeItem = ufe.Hierarchy.createItem(cubePath)
         cylinderPath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1")])
+            [shapeSegment, usdUtils.createUfePathSegment("/cylinderXform")])
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         # get the USD stage
@@ -93,7 +95,7 @@ class ParentCmdTestCase(unittest.TestCase):
         # The cube is not a child of the cylinder.
         cylHier = ufe.Hierarchy.hierarchy(cylinderItem)
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 0)
+        self.assertEqual(len(cylChildren), 1)
 
         # Get the components of the cube's local transform.
         cubeT3d = ufe.Transform3d.transform3d(cubeItem)
@@ -102,32 +104,32 @@ class ParentCmdTestCase(unittest.TestCase):
         cubeS = cubeT3d.scale()
 
         # Parent cube to cylinder in relative mode, using UFE path strings.
-        cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/pCube1",
-                    "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1",
+        cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/cubeXform",
+                    "|mayaUsdProxy1|mayaUsdProxyShape1,/cylinderXform",
                     relative=True)
 
         # Confirm that the cube is now a child of the cylinder.
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 1)
-        self.assertIn("pCube1", childrenNames(cylChildren))
+        self.assertEqual(len(cylChildren), 2)
+        self.assertIn("cubeXform", childrenNames(cylChildren))
 
         # Undo: the cube is no longer a child of the cylinder.
         cmds.undo()
 
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 0)
+        self.assertEqual(len(cylChildren), 1)
 
         # Redo: confirm that the cube is again a child of the cylinder.
         cmds.redo()
 
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 1)
-        self.assertIn("pCube1", childrenNames(cylChildren))
+        self.assertEqual(len(cylChildren), 2)
+        self.assertIn("cubeXform", childrenNames(cylChildren))
 
         # Confirm that the cube's local transform has not changed.  Must
         # re-create the item, as its path has changed.
         cubeChildPath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1/pCube1")])
+            [shapeSegment, usdUtils.createUfePathSegment("/cylinderXform/cubeXform")])
         cubeChildItem = ufe.Hierarchy.createItem(cubeChildPath)
         cubeChildT3d = ufe.Transform3d.transform3d(cubeChildItem)
 
@@ -160,17 +162,18 @@ class ParentCmdTestCase(unittest.TestCase):
             cmds.undo()
 
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 0)
+        self.assertEqual(len(cylChildren), 1)
+
 
     def testParentAbsolute(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
             "|world|mayaUsdProxy1|mayaUsdProxyShape1")
         cubePath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/pCube1")])
+            [shapeSegment, usdUtils.createUfePathSegment("/cubeXform")])
         cubeItem = ufe.Hierarchy.createItem(cubePath)
         cylinderPath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1")])
+            [shapeSegment, usdUtils.createUfePathSegment("/cylinderXform")])
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         # get the USD stage
@@ -182,7 +185,7 @@ class ParentCmdTestCase(unittest.TestCase):
         # The cube is not a child of the cylinder.
         cylHier = ufe.Hierarchy.hierarchy(cylinderItem)
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 0)
+        self.assertEqual(len(cylChildren), 1)
 
         # Get its world space transform.
         cubeT3d = ufe.Transform3d.transform3d(cubeItem)
@@ -191,31 +194,31 @@ class ParentCmdTestCase(unittest.TestCase):
 
         # Parent cube to cylinder in absolute mode (default), using UFE
         # path strings.
-        cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/pCube1",
-                    "|mayaUsdProxy1|mayaUsdProxyShape1,/pCylinder1")
+        cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/cubeXform",
+                    "|mayaUsdProxy1|mayaUsdProxyShape1,/cylinderXform")
 
         # Confirm that the cube is now a child of the cylinder.
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 1)
-        self.assertIn("pCube1", childrenNames(cylChildren))
+        self.assertEqual(len(cylChildren), 2)
+        self.assertIn("cubeXform", childrenNames(cylChildren))
 
         # Undo: the cube is no longer a child of the cylinder.
         cmds.undo()
 
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 0)
+        self.assertEqual(len(cylChildren), 1)
 
         # Redo: confirm that the cube is again a child of the cylinder.
         cmds.redo()
 
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 1)
-        self.assertIn("pCube1", childrenNames(cylChildren))
+        self.assertEqual(len(cylChildren), 2)
+        self.assertIn("cubeXform", childrenNames(cylChildren))
 
         # Confirm that the cube's world transform has not changed.  Must
         # re-create the item, as its path has changed.
         cubeChildPath = ufe.Path(
-            [shapeSegment, usdUtils.createUfePathSegment("/pCylinder1/pCube1")])
+            [shapeSegment, usdUtils.createUfePathSegment("/cylinderXform/cubeXform")])
         cubeChildItem = ufe.Hierarchy.createItem(cubeChildPath)
         cubeChildT3d = ufe.Transform3d.transform3d(cubeChildItem)
 
@@ -241,7 +244,7 @@ class ParentCmdTestCase(unittest.TestCase):
             cmds.undo()
 
         cylChildren = cylHier.children()
-        self.assertEqual(len(cylChildren), 0)
+        self.assertEqual(len(cylChildren), 1)
 
     def testParentToProxyShape(self):
 
@@ -470,3 +473,14 @@ class ParentCmdTestCase(unittest.TestCase):
 
             cmds.redo()
             checkUnparent(done=True)
+
+    def testParentingToGPrim(self):
+        '''Parenting an object to UsdGeomGprim object is not allowed'''
+
+        # open tree scene
+        mayaUtils.openTreeScene()
+
+        with self.assertRaises(RuntimeError):
+            cmds.parent("|Tree_usd|Tree_usdShape,/TreeBase/trunk",
+                        "|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves")
+        
