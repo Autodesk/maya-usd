@@ -26,12 +26,15 @@
 #include <maya/MGlobal.h>
 #include <maya/MFnPlugin.h>
 #include <maya/MDrawRegistry.h>
+#include <maya/MPxNode.h>
 
 #include <pxr/base/tf/envSetting.h>
 
 #include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/pointBasedDeformerNode.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/nodes/stageNode.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -80,6 +83,23 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         nullptr,
         getProxyShapeClassification());
     CHECK_MSTATUS(status);
+
+    // Stage and point-based deformer node registration. These nodes are
+    // created when the "useAsAnimationCache" import argument is used.
+    status = plugin.registerNode(
+        UsdMayaStageNode::typeName,
+        UsdMayaStageNode::typeId,
+        UsdMayaStageNode::creator,
+        UsdMayaStageNode::initialize);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+
+    status = plugin.registerNode(
+        UsdMayaPointBasedDeformerNode::typeName,
+        UsdMayaPointBasedDeformerNode::typeId,
+        UsdMayaPointBasedDeformerNode::creator,
+        UsdMayaPointBasedDeformerNode::initialize,
+        MPxNode::kDeformerNode);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // Hybrid Hydra / VP2 rendering uses a draw override to draw the proxy
     // shape.  The Pixar and MayaUsd plugins use the UsdMayaProxyDrawOverride,
@@ -175,6 +195,12 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
             _RegistrantId);
         CHECK_MSTATUS(status);
     }
+
+    status = plugin.deregisterNode(UsdMayaPointBasedDeformerNode::typeId);
+    CHECK_MSTATUS(status);
+
+    status = plugin.deregisterNode(UsdMayaStageNode::typeId);
+    CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(MayaUsdProxyShapeBase::typeId);
     CHECK_MSTATUS(status);
