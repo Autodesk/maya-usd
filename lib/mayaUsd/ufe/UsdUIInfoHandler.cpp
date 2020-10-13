@@ -55,7 +55,7 @@ namespace
 	template<typename T>
 	void addMetadataCount(const T& op, std::string& tooltip, bool& needComma, const std::string& singular, const std::string& plural)
 	{
-		T::ItemVector refs;
+		typename T::ItemVector refs;
 		op.ApplyOperations(&refs);
 		if (!refs.empty()) {
 			addMetadataStrings(refs.size(), tooltip, needComma, singular, plural);
