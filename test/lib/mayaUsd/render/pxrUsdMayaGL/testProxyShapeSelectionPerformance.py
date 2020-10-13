@@ -22,6 +22,7 @@ from pxr import Trace
 from maya import cmds
 from maya.api import OpenMayaUI as OMUI
 
+import ufe
 
 from PySide2 import QtCore
 from PySide2.QtTest import QTest
@@ -320,6 +321,26 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
         self._WriteViewportImage(self._testName, 'selection_append_4')
 
+    def _ValidateSelection(self, expectedSelectionSet):
+        if Tf.GetEnvSetting('VP2_RENDER_DELEGATE_PROXY'):
+            # When the Viewport 2.0 render delegate is being used, we will have
+            # selected USD prims rather than proxy shape nodes or their
+            # transform nodes, so we query UFE for the selection and manipulate
+            # the paths of the selected scene items to yield the Maya-side
+            # selection.
+            ufeSelection = ufe.GlobalSelection.get()
+            self.assertEqual(len(ufeSelection), len(expectedSelectionSet))
+
+            # Pop the USD root prim name, and then the proxy shape name off of
+            # the UFE path to leave the name of the proxy shape's transform
+            # node at the end of the path.
+            ufePaths = [ufeItem.path().pop().pop() for ufeItem in ufeSelection]
+            actualSelectionSet = {str(ufePath.back()) for ufePath in ufePaths}
+        else:
+            actualSelectionSet = set(cmds.ls(selection=True) or [])
+
+        self.assertEqual(actualSelectionSet, expectedSelectionSet)
+
     def _RunPerfTest(self):
         mayaSceneFile = 'Grid_5_of_CubeGrid%s_10.ma' % self._testName
         mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
@@ -341,42 +362,37 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
         # Render an image and validate that nothing is selected to start.
         self._WriteViewportImage(self._testName, 'before_selection')
-        expectedSelection = set()
-        actualSelection = set(cmds.ls(selection=True) or [])
-        self.assertEqual(actualSelection, expectedSelection)
+        expectedSelectionSet = set()
+        self._ValidateSelection(expectedSelectionSet)
 
 
         self._TestSelectCenterSingle()
-        expectedSelection = set(['AssetRef_2_0_2'])
-        actualSelection = set(cmds.ls(selection=True) or [])
-        self.assertEqual(actualSelection, expectedSelection)
+        expectedSelectionSet = set(['AssetRef_2_0_2'])
+        self._ValidateSelection(expectedSelectionSet)
 
 
         self._TestSelectCenterArea()
-        expectedSelection = set([
+        expectedSelectionSet = set([
             'AssetRef_2_0_2',
             'AssetRef_2_1_2',
             'AssetRef_2_2_2',
             'AssetRef_2_3_2',
             'AssetRef_2_4_2'])
-        actualSelection = set(cmds.ls(selection=True) or [])
-        self.assertEqual(actualSelection, expectedSelection)
+        self._ValidateSelection(expectedSelectionSet)
 
 
         self._TestUnselect()
-        expectedSelection = set()
-        actualSelection = set(cmds.ls(selection=True) or [])
-        self.assertEqual(actualSelection, expectedSelection)
+        expectedSelectionSet = set()
+        self._ValidateSelection(expectedSelectionSet)
 
 
         self._TestSelectionAppend()
-        expectedSelection = set([
+        expectedSelectionSet = set([
             'AssetRef_0_0_4',
             'AssetRef_4_0_4',
             'AssetRef_4_0_0',
             'AssetRef_0_0_0'])
-        actualSelection = set(cmds.ls(selection=True) or [])
-        self.assertEqual(actualSelection, expectedSelection)
+        self._ValidateSelection(expectedSelectionSet)
 
     def testPerfGridOfCubeGridsCombinedMesh(self):
         """
