@@ -70,7 +70,8 @@ private:
         MDagPath      shapePath,
         MFnTransform& fnTransform,
         SdfPath&      usdPath,
-        ReferenceType refType);
+        ReferenceType refType,
+        bool          exportInWorldSpace);
     void    exportShapesOnlyUVProc(MDagPath shapePath, MFnTransform& fnTransform, SdfPath& usdPath);
     UsdPrim exportMeshUV(MDagPath path, const SdfPath& usdPath);
     UsdPrim exportAssembly(MDagPath path, const SdfPath& usdPath);
@@ -78,14 +79,15 @@ private:
     UsdPrim exportPluginShape(MDagPath path, const SdfPath& usdPath);
     void    exportIkChain(MDagPath effectorPath, const SdfPath& usdPath);
     void    exportGeometryConstraint(MDagPath effectorPath, const SdfPath& usdPath);
-    void    copyTransformParams(UsdPrim prim, MFnTransform& fnTransform);
+    void    copyTransformParams(UsdPrim prim, MFnTransform& fnTransform, bool exportInWorldSpace);
     SdfPath determineUsdPath(MDagPath path, const SdfPath& usdPath, ReferenceType refType);
     void    addReferences(
            MDagPath       shapePath,
            MFnTransform&  fnTransform,
            SdfPath&       usdPath,
            const SdfPath& instancePath,
-           ReferenceType  refType);
+           ReferenceType  refType,
+           bool           exportInWorldSpace);
     inline bool isPrimDefined(SdfPath& usdPath);
     struct Impl;
     void                               doExport();

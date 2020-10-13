@@ -661,7 +661,8 @@ MStatus TransformTranslator::copyAttributes(
     const MObject&        from,
     UsdPrim&              to,
     const ExporterParams& params,
-    const MDagPath&       path)
+    const MDagPath&       path,
+    bool                  exportInWorldSpace)
 {
     UsdGeomXform xformSchema(to);
     GfVec3f      scale;
@@ -698,7 +699,7 @@ MStatus TransformTranslator::copyAttributes(
         transformAnimated = animTranslator->isAnimatedTransform(from);
     }
 
-    if (!params.m_exportInWorldSpace) {
+    if (!exportInWorldSpace) {
         getBool(from, m_inheritsTransform, inheritsTransform);
         getBool(from, m_visible, visible);
         getVec3(from, m_scale, (float*)&scale);
