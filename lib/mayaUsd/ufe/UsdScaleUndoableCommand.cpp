@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -89,7 +89,11 @@ void UsdScaleUndoableCommand::performImp(double x, double y, double z)
 // Ufe::ScaleUndoableCommand overrides
 //------------------------------------------------------------------------------
 
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+bool UsdScaleUndoableCommand::set(double x, double y, double z)
+#else
 bool UsdScaleUndoableCommand::scale(double x, double y, double z)
+#endif
 {
 	perform(x, y, z);
 	return true;

@@ -100,7 +100,11 @@ void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 // Ufe::RotateUndoableCommand overrides
 //------------------------------------------------------------------------------
 
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+bool UsdRotateUndoableCommand::set(double x, double y, double z)
+#else
 bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
+#endif
 {
 	// Fail early - Initialization did not go as expected.
 	if (fFailedInit)

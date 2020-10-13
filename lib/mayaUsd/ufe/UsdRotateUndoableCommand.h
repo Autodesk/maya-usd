@@ -59,7 +59,11 @@ public:
 	// rotation value and executes the command.
 	void undo() override;
 	void redo() override;
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+	bool set(double x, double y, double z) override;
+#else
 	bool rotate(double x, double y, double z) override;
+#endif
 
 	#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::Path getPath() const override { return path(); }

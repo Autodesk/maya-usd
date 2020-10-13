@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,7 +60,11 @@ public:
     // Ufe::TranslateUndoableCommand overrides
     void undo() override;
     void redo() override;
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+    bool set(double x, double y, double z) override;
+#else
     bool translate(double x, double y, double z) override;
+#endif
 
     inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
 

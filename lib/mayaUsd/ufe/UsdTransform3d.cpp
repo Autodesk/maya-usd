@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -196,7 +196,11 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3d::scaleCmd()
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3d::setMatrixCmd(const Ufe::Matrix4d& m)
+#else
 Ufe::SetMatrixUndoableCommand::Ptr UsdTransform3d::setMatrixCmd(const Ufe::Matrix4d& m)
+#endif
 {
     // TODO: HS Aug25,2020 dummy code to pass the compiler errors
     return nullptr;
@@ -215,6 +219,19 @@ void UsdTransform3d::scale(double x, double y, double z)
     scaleOp(prim(), fItem->path(), x, y, z);
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotCmd(double, double, double)
+{
+    // As of 12-Oct-2020, setting rotate pivot on command creation
+    // unsupported.  Use translate() method on returned command.
+    return UsdRotatePivotTranslateUndoableCommand::create(fItem->path());
+}
+
+void UsdTransform3d::rotatePivot(double x, double y, double z)
+{
+    rotatePivotTranslateOp(prim(), path(), x, y, z);
+}
+#else
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
 {
     #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -229,6 +246,7 @@ void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)
 {
     rotatePivotTranslateOp(prim(), path(), x, y, z);
 }
+#endif
 
 Ufe::Vector3d UsdTransform3d::rotatePivot() const
 {
@@ -246,6 +264,17 @@ Ufe::Vector3d UsdTransform3d::rotatePivot() const
     return Ufe::Vector3d(x, y, z);
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotCmd(double, double, double)
+{
+    throw std::runtime_error("UsdTransform3d::scalePivotCmd() not implemented");
+}
+
+void UsdTransform3d::scalePivot(double x, double y, double z)
+{
+    return rotatePivot(x, y, z);
+}
+#else
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotTranslateCmd()
 {
     throw std::runtime_error("UsdTransform3d::scalePivotTranslateCmd() not implemented");
@@ -255,6 +284,7 @@ void UsdTransform3d::scalePivotTranslate(double x, double y, double z)
 {
     return rotatePivotTranslate(x, y, z);
 }
+#endif
 
 Ufe::Vector3d UsdTransform3d::scalePivot() const
 {
