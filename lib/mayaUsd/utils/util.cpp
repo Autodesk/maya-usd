@@ -873,6 +873,7 @@ _GetColorAndTransparencyFromDepNode(
     if (rgb) {
         MPlug colorPlug = d.findPlug("color", true, &status);
         if (!status) {
+            // For UsdPreviewSurface support:
             colorPlug = d.findPlug("diffuseColor", true, &status);
             if (!status) {
                 return false;
@@ -896,9 +897,9 @@ _GetColorAndTransparencyFromDepNode(
             }
             *alpha = 1.f - trans;
         } else {
+            // For UsdPreviewSurface support:
             MPlug opacityPlug = d.findPlug("opacity", true, &status);
             if (!status) {
-                *alpha = 1.f;
                 return false;
             }
             *alpha = opacityPlug.asFloat();

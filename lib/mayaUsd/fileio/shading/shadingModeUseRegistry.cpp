@@ -38,7 +38,6 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
-#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFn.h>
 #include <maya/MFnDependencyNode.h>
@@ -425,7 +424,7 @@ public:
             TF_CODING_ERROR("useRegistry importer can only handle a single shadingMode");
             return MObject();
         }
-        const TfToken& materialConversion = _jobArguments.shadingModes.front().second;
+        const TfToken& materialConversion = _jobArguments.GetMaterialConversion();
         TfToken renderContext = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(
             materialConversion).renderContext;
 

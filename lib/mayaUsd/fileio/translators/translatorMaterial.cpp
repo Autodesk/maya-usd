@@ -72,11 +72,11 @@ MObject UsdMayaTranslatorMaterial::Read(
 
     UsdMayaJobImportArgs localArguments = jobArguments;
     for (const auto& shadingMode : jobArguments.shadingModes) {
-        if (shadingMode.first == UsdMayaShadingModeTokens->none) {
+        if (shadingMode.mode == UsdMayaShadingModeTokens->none) {
             break;
         }
         if (UsdMayaShadingModeImporter importer
-            = UsdMayaShadingModeRegistry::GetImporter(shadingMode.first)) {
+            = UsdMayaShadingModeRegistry::GetImporter(shadingMode.mode)) {
             localArguments.shadingModes = UsdMayaJobImportArgs::ShadingModes(1, shadingMode);
             shadingEngine = importer(&c, localArguments);
         }

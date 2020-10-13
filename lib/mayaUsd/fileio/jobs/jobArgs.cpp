@@ -215,7 +215,7 @@ _shadingModesImportArgs(const VtDictionary& userArgs, const TfToken& key)
     const std::vector<std::vector<VtValue>> shadingModeArgs
         = _Vector<std::vector<VtValue>>(userArgs, key);
 
-    TfTokenVector modes = UsdMayaShadingModeRegistry::ListImporters();
+    const TfTokenVector modes = UsdMayaShadingModeRegistry::ListImporters();
 
     UsdMayaJobImportArgs::ShadingModes result;
     for (const std::vector<VtValue>& argTuple : shadingModeArgs) {
@@ -247,7 +247,7 @@ _shadingModesImportArgs(const VtDictionary& userArgs, const TfToken& key)
             // Do not validate second parameter if not in a useRegistry scenario.
         }
 
-        result.emplace_back(shadingMode, convertMaterialFrom);
+        result.push_back(UsdMayaJobImportArgs::ShadingMode{shadingMode, convertMaterialFrom});
     }
     return result;
 }
@@ -626,6 +626,11 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
 {
 }
 
+TfToken
+UsdMayaJobImportArgs::GetMaterialConversion() const {
+    return shadingModes.empty() ? TfToken() : shadingModes.front().materialConversion;
+}
+
 /* static */
 UsdMayaJobImportArgs UsdMayaJobImportArgs::CreateFromDictionary(
     const VtDictionary& userArgs,
@@ -679,8 +684,8 @@ operator <<(std::ostream& out, const UsdMayaJobImportArgs& importArgs)
 {
     out << "shadingModes (" << importArgs.shadingModes.size() << ")" << std::endl;
     for (const auto& shadingMode : importArgs.shadingModes) {
-        out << "    " << TfStringify(shadingMode.first) << ", " << TfStringify(shadingMode.second)
-            << std::endl;
+        out << "    " << TfStringify(shadingMode.mode) << ", "
+            << TfStringify(shadingMode.materialConversion) << std::endl;
     }
     out << "preferredMaterial: " << importArgs.preferredMaterial << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl

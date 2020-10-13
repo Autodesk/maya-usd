@@ -87,7 +87,7 @@ UsdMayaSymmetricShaderReader::CanImport(
         const TfToken& materialConversion)
 {
     if (materialConversion.IsEmpty()
-        || importArgs.shadingModes.front().second == materialConversion) {
+        || importArgs.GetMaterialConversion() == materialConversion) {
         // This shader reader advertises "Fallback" support so that any more
         // specialized readers for a particular shader ID can take precedence.
         return ContextSupport::Fallback;

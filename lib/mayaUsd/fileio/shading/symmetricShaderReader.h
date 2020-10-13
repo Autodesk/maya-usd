@@ -75,12 +75,12 @@ public:
     static void RegisterReader(
             const TfToken& usdShaderId,
             const TfToken& mayaNodeTypeName,
-            const TfToken& materialConversion);
+            const TfToken& materialConversion = TfToken());
 
     MAYAUSD_CORE_PUBLIC
     static ContextSupport CanImport(
             const UsdMayaJobImportArgs& importArgs,
-            const TfToken& materialConversion);
+            const TfToken& materialConversion = TfToken());
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaSymmetricShaderReader(

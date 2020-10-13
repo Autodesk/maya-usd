@@ -195,7 +195,9 @@ void UsdMayaShadingModeRegistry::RegisterExportConversion(
             ConversionInfo { renderContext, niceName, description, TfToken(), true, false }));
     if (!hasInserted) {
         // Update the info:
-        insertionPoint->second.exportDescription = description;
+        if (insertionPoint->second.exportDescription.IsEmpty()) {
+            insertionPoint->second.exportDescription = description;
+        }
         insertionPoint->second.hasExporter = true;
     }
 }
@@ -217,7 +219,9 @@ void UsdMayaShadingModeRegistry::RegisterImportConversion(
             ConversionInfo { renderContext, niceName, TfToken(), description, false, true }));
     if (!hasInserted) {
         // Update the info:
-        insertionPoint->second.importDescription = description;
+        if (insertionPoint->second.importDescription.IsEmpty()) {
+            insertionPoint->second.importDescription = description;
+        }
         insertionPoint->second.hasImporter = true;
     }
 }

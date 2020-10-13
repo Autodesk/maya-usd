@@ -180,7 +180,9 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
             return MS::kNotFound;
         } else if (materialConversion.IsEmpty()) {
             if (shadingMode == _tokens->NoneOption) {
-                setResult(_tokens->NoneExportDescription.GetText());
+                setResult(
+                    isExport ? _tokens->NoneExportDescription.GetText()
+                             : _tokens->NoneImportDescription.GetText());
             } else {
                 setResult(
                     isExport

@@ -15,10 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import Usd
-from pxr import UsdShade
-
-import json
 import os
 import unittest
 

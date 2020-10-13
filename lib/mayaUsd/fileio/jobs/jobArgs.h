@@ -250,7 +250,11 @@ struct UsdMayaJobImportArgs
     const TfToken::Set excludePrimvarNames;
     const TfToken::Set includeAPINames;
     const TfToken::Set includeMetadataKeys;
-    using ShadingModes = std::vector<std::pair<TfToken, TfToken>>;
+    struct ShadingMode {
+        TfToken mode;
+        TfToken materialConversion;
+    };
+    using ShadingModes = std::vector<ShadingMode>;
     ShadingModes shadingModes; // XXX can we make this const?
     const TfToken preferredMaterial;
     const bool useAsAnimationCache;
@@ -264,6 +268,10 @@ struct UsdMayaJobImportArgs
     /// special-cased because USD will accept full intervals like any other
     /// non-empty interval.
     const GfInterval timeInterval;
+
+    /// Get the current material conversion.
+    MAYAUSD_CORE_PUBLIC
+    TfToken GetMaterialConversion() const;
 
     /// Creates a UsdMayaJobImportArgs from the given \p dict, overlaid on
     /// top of the default dictionary given by GetDefaultDictionary().

@@ -148,7 +148,7 @@ public:
         bool hasImporter = false;
     };
 
-    /// Gets the conversion information associated with \p materialConversion on export
+    /// Gets the conversion information associated with \p materialConversion on export and import
     static const ConversionInfo& GetMaterialConversionInfo(const TfToken& materialConversion)
     {
         return GetInstance()._GetMaterialConversionInfo(materialConversion);
@@ -184,8 +184,8 @@ public:
     /// The \p materialConversion name will be used directly in the import option string as one of
     /// the valid values of the second parameter to the shadingMode list to search on import.
     ///
-    /// The \p renderContext will be used to locate the binding point used on export. See
-    /// RegisterExportConversion for more details.
+    /// The \p renderContext will be used to locate the specialized binding point in the USD data.
+    /// See UsdShadeMaterial documentation for details.
     /// 
     /// The \p niceName is the name to be displayed in the import options dialog.
     ///
