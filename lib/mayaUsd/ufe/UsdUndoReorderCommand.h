@@ -1,0 +1,63 @@
+//
+// Copyright 2020 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+#pragma once
+
+#include <ufe/path.h>
+#include <ufe/pathComponent.h>
+#include <ufe/undoableCommand.h>
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
+
+MAYAUSD_NS_DEF {
+namespace ufe {
+
+//! \brief UsdUndoReorderCommand
+class MAYAUSD_CORE_PUBLIC UsdUndoReorderCommand : public Ufe::UndoableCommand
+{
+public:
+    typedef std::shared_ptr<UsdUndoReorderCommand> Ptr;
+
+    UsdUndoReorderCommand(const UsdSceneItem::Ptr& child, const UsdSceneItem::Ptr& pos);
+    ~UsdUndoReorderCommand() override;
+
+    // Delete the copy/move constructors assignment operators.
+    UsdUndoReorderCommand(const UsdUndoReorderCommand&) = delete;
+    UsdUndoReorderCommand& operator=(const UsdUndoReorderCommand&) = delete;
+    UsdUndoReorderCommand(UsdUndoReorderCommand&&) = delete;
+    UsdUndoReorderCommand& operator=(UsdUndoReorderCommand&&) = delete;
+
+    //! Create a UsdUndoReorderCommand
+    static UsdUndoReorderCommand::Ptr create(const UsdSceneItem::Ptr& child, const UsdSceneItem::Ptr& pos);
+
+private:
+    bool reorderRedo();
+    bool reorderUndo();
+
+    void undo() override;
+    void redo() override;
+
+    Ufe::Path _childPath;
+    Ufe::Path _posPath;
+
+    SdfLayerHandle _layer;
+
+}; // UsdUndoReorderCommand
+
+} // namespace ufe
+} // namespace MayaUsd

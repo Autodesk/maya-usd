@@ -31,6 +31,7 @@
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
+#include <mayaUsd/ufe/UsdUndoReorderCommand.h>
 #endif
 
 namespace {
@@ -214,16 +215,16 @@ Ufe::InsertChildCommand::Ptr ProxyShapeHierarchy::insertChildCmd(
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::insertChild(
-        const Ufe::SceneItem::Ptr& ,
-        const Ufe::SceneItem::Ptr& 
+        const Ufe::SceneItem::Ptr& child,
+        const Ufe::SceneItem::Ptr& pos
 )
 {
-    // Should be possible to implement trivially when support for returning the
-    // result of the parent command (MAYA-105278) is implemented.  For now,
-    // Ufe::Hierarchy::insertChildCmd() returns a base class
-    // Ufe::UndoableCommand::Ptr object, from which we can't retrieve the added
-    // child.  PPT, 13-Jul-2020.
+    #ifdef UFE_V2_FEATURES_AVAILABLE
+    auto insertChildCommand = insertChildCmd(child, pos);
+    return insertChildCommand->insertedChild();
+    #else
     return nullptr;
+    #endif
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
@@ -245,6 +246,12 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(const Ufe::Selecti
 	auto usdItem = UsdSceneItem::create(sceneItem()->path(), getUsdRootPrim());
 
 	return UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
+}
+
+Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) const
+{
+	//TODO
+	return nullptr;
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
