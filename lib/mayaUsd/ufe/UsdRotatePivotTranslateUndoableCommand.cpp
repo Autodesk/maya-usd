@@ -110,6 +110,7 @@ void UsdRotatePivotTranslateUndoableCommand::redo()
 //------------------------------------------------------------------------------
 
 #if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
 bool UsdRotatePivotTranslateUndoableCommand::set(double x, double y, double z)
 #else
 bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)

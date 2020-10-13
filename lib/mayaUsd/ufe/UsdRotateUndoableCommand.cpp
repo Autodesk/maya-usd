@@ -101,6 +101,7 @@ void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 //------------------------------------------------------------------------------
 
 #if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
 bool UsdRotateUndoableCommand::set(double x, double y, double z)
 #else
 bool UsdRotateUndoableCommand::rotate(double x, double y, double z)

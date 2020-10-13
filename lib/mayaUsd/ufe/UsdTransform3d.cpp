@@ -220,6 +220,7 @@ void UsdTransform3d::scale(double x, double y, double z)
 }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotCmd(double, double, double)
 {
     // As of 12-Oct-2020, setting rotate pivot on command creation
@@ -265,6 +266,7 @@ Ufe::Vector3d UsdTransform3d::rotatePivot() const
 }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotCmd(double, double, double)
 {
     throw std::runtime_error("UsdTransform3d::scalePivotCmd() not implemented");

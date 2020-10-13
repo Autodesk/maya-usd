@@ -81,6 +81,7 @@ public:
 	void rotate(double x, double y, double z) override;
 	void scale(double x, double y, double z) override;
 #if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::TranslateUndoableCommand::Ptr rotatePivotCmd(double x, double y, double z) override;
 	void rotatePivot(double x, double y, double z) override;
 	Ufe::TranslateUndoableCommand::Ptr scalePivotCmd(double x, double y, double z) override;

@@ -90,6 +90,7 @@ void UsdScaleUndoableCommand::performImp(double x, double y, double z)
 //------------------------------------------------------------------------------
 
 #if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
 bool UsdScaleUndoableCommand::set(double x, double y, double z)
 #else
 bool UsdScaleUndoableCommand::scale(double x, double y, double z)
