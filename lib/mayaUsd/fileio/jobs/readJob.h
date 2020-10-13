@@ -73,8 +73,7 @@ protected:
         std::unordered_map<SdfPath, UsdMayaPrimReaderSharedPtr, SdfPath::Hash>;
 
     MAYAUSD_CORE_PUBLIC
-    virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim,
-        const UsdStage& stage);
+    virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
 
     // Hook for derived classes to override the prim reader.  Returns true if
     // override was done, false otherwise.  Implementation in this class
@@ -91,8 +90,7 @@ protected:
     // Engine method for DoImport().  Covers the functionality of a regular
     // usdImport.
     MAYAUSD_CORE_PUBLIC
-    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim,
-        const UsdStage& stage);
+    bool _DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
 
     // Hook for derived classes to perform processing before import.
     // Method in this class is a no-op.
@@ -112,12 +110,16 @@ protected:
 
 private:
     void _DoImportPrimIt(
-        UsdPrimRange::iterator& primIt, const UsdPrim& usdRootPrim,
-        UsdMayaPrimReaderContext& readCtx, _PrimReaderMap& primReaders);
+        UsdPrimRange::iterator&   primIt,
+        const UsdPrim&            usdRootPrim,
+        UsdMayaPrimReaderContext& readCtx,
+        _PrimReaderMap&           primReaders);
 
     void _DoImportInstanceIt(
-        UsdPrimRange::iterator& primIt, const UsdPrim& usdRootPrim,
-        UsdMayaPrimReaderContext& readCtx, _PrimReaderMap& primReaders);
+        UsdPrimRange::iterator&   primIt,
+        const UsdPrim&            usdRootPrim,
+        UsdMayaPrimReaderContext& readCtx,
+        _PrimReaderMap&           primReaders);
 
     void _ImportMaster(
         const UsdPrim&            master,

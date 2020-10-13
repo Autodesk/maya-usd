@@ -12,21 +12,21 @@ def Xform "pCube1" (
     double3 xformOp:translate = (-4, 2, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
 
-    def "pCubeShape1" (
+    def Scope "pCubeShape1" (
         instanceable = true
         prepend references = </InstanceSources/pCube1_pCubeShape1>
     )
     {
     }
 
-    def "pCube2" (
+    def Scope "pCube2" (
         instanceable = true
         prepend references = </InstanceSources/pCube1_pCube2>
     )
     {
     }
 
-    def "pCube3" (
+    def Scope "pCube3" (
         instanceable = true
         prepend references = </InstanceSources/pCube1_pCube3>
     )
@@ -41,21 +41,21 @@ def Xform "pCube4" (
     double3 xformOp:translate = (4, 2, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
 
-    def "pCubeShape1" (
+    def Scope "pCubeShape1" (
         instanceable = true
         prepend references = </InstanceSources/pCube1_pCubeShape1>
     )
     {
     }
 
-    def "pCube2" (
+    def Scope "pCube2" (
         instanceable = true
         prepend references = </InstanceSources/pCube1_pCube2>
     )
     {
     }
 
-    def "pCube3" (
+    def Scope "pCube3" (
         instanceable = true
         prepend references = </InstanceSources/pCube1_pCube3>
     )
@@ -83,7 +83,7 @@ over "InstanceSources"
         double3 xformOp:translate = (0, -3, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
 
-        def "pCubeShape2" (
+        def Scope "pCubeShape2" (
             instanceable = true
             prepend references = </InstanceSources/pCube1_pCube2_pCubeShape2>
         )
@@ -109,7 +109,7 @@ over "InstanceSources"
         double3 xformOp:translate = (0, -6, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
 
-        def "pCubeShape2" (
+        def Scope "pCubeShape2" (
             instanceable = true
             prepend references = </InstanceSources/pCube1_pCube2_pCubeShape2>
         )

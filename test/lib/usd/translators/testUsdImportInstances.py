@@ -15,17 +15,12 @@
 # limitations under the License.
 #
 
-
 import maya.api.OpenMaya as om
 import os
 import unittest
 
 from maya import cmds
 from maya import standalone
-
-from pxr import Kind
-from pxr import Usd
-from pxr import UsdGeom
 
 import fixturesUtils
 
@@ -41,6 +36,10 @@ class testUsdImportInstances(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
+
+    def setUp(self):
+        """Clear the scene"""
+        cmds.file(f=True, new=True)
 
     def sortedPathsTo(self, node):
         """Get a sorted list of paths going to the specified node"""
@@ -80,10 +79,8 @@ class testUsdImportInstances(unittest.TestCase):
         usd_file = os.path.join(self._path, "UsdImportInstancesTest",
                                 "SimpleScenario_unoptimized.usda")
 
-        cmds.file(f=True, new=True)
         cmds.mayaUSDImport(file=usd_file,
-                           primPath="/",
-                           instanceMode="buildInstances")
+                           primPath="/")
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
@@ -137,10 +134,8 @@ class testUsdImportInstances(unittest.TestCase):
         usd_file = os.path.join(self._path, "UsdImportInstancesTest",
                                 "SimpleScenario_optimized.usda")
 
-        cmds.file(f=True, new=True)
         cmds.mayaUSDImport(file=usd_file,
-                           primPath="/",
-                           instanceMode="buildInstances")
+                           primPath="/")
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
@@ -182,10 +177,8 @@ class testUsdImportInstances(unittest.TestCase):
         usd_file = os.path.join(self._path, "UsdImportInstancesTest",
                                 "UsdExportInstancesTest_original.usda")
 
-        cmds.file(f=True, new=True)
         cmds.mayaUSDImport(file=usd_file,
-                           primPath="/",
-                           instanceMode="buildInstances")
+                           primPath="/")
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
@@ -262,10 +255,8 @@ class testUsdImportInstances(unittest.TestCase):
         usd_file = os.path.join(self._path, "UsdImportInstancesTest",
                                 "UsdExportInstancesTest_unoptimized.usda")
 
-        cmds.file(f=True, new=True)
         cmds.mayaUSDImport(file=usd_file,
-                           primPath="/",
-                           instanceMode="buildInstances")
+                           primPath="/")
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
@@ -347,10 +338,8 @@ class testUsdImportInstances(unittest.TestCase):
         usd_file = os.path.join(self._path, "UsdImportInstancesTest",
                                 "UsdExportInstancesTest_optimized.usda")
 
-        cmds.file(f=True, new=True)
         cmds.mayaUSDImport(file=usd_file,
-                           primPath="/",
-                           instanceMode="buildInstances")
+                           primPath="/")
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
@@ -430,10 +419,8 @@ class testUsdImportInstances(unittest.TestCase):
         usd_file = os.path.join(self._path, "UsdImportInstancesTest",
                                 "ComplexScenario_unoptimized.usda")
 
-        cmds.file(f=True, new=True)
         cmds.mayaUSDImport(file=usd_file,
-                           primPath="/",
-                           instanceMode="buildInstances")
+                           primPath="/")
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [
@@ -527,10 +514,8 @@ class testUsdImportInstances(unittest.TestCase):
         usd_file = os.path.join(self._path, "UsdImportInstancesTest",
                                 "ComplexScenario_optimized.usda")
 
-        cmds.file(f=True, new=True)
         cmds.mayaUSDImport(file=usd_file,
-                           primPath="/",
-                           instanceMode="buildInstances")
+                           primPath="/")
 
         # Format is sorted all paths of an instance clique:
         expected_cliques = [

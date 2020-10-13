@@ -371,10 +371,8 @@ static bool _pushUSDXformToMayaXform(
 
         GfMatrix4d usdLocalTransform(1.0);
         bool resetsXformStack;
-        if (!xformSchema.GetLocalTransformation(
-                &usdLocalTransform,
-                &resetsXformStack,
-                timeCode)) {
+        if (!xformSchema.GetLocalTransformation(&usdLocalTransform, &resetsXformStack, timeCode)
+            && !xformSchema.GetPrim().IsInstance()) {
             if (timeCode.IsDefault()) {
                 TF_RUNTIME_ERROR(
                     "Missing xform data at the default time on USD prim <%s>",

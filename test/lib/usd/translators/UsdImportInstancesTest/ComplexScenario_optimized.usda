@@ -32,28 +32,29 @@ def Xform "pCube5" (
     double3 xformOp:translate = (0, 2, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
 
-    def "pCubeShape1" (
+    def Scope "pCubeShape1" (
         instanceable = true
         prepend references = </InstanceSources/pCube1_pCubeShape1>
     )
     {
     }
 
-    def "pCube2" (
+    def Scope "pCube2" (
         instanceable = true
         prepend references = </InstanceSources/pCube1_pCube2>
     )
     {
     }
 
-    def "pCube3" (
+    def Scope "pCube3" (
         instanceable = true
         prepend references = </InstanceSources/pCube1_pCube3>
     )
     {
     }
 
-    def Mesh "someUniqueChildOf_pCube5" {
+    def Mesh "someUniqueChildOf_pCube5"
+    {
         double3 xformOp:translate = (0, -9, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
 
@@ -68,7 +69,7 @@ def Xform "pCube5" (
 
 over "InstanceSources"
 {
-    def "pCube1_pCubeShape1"
+    def Scope "pCube1_pCubeShape1"
     {
         def Mesh "pCubeShape1"
         {
@@ -81,7 +82,7 @@ over "InstanceSources"
         }
     }
 
-    def "pCube1_pCube2"
+    def Scope "pCube1_pCube2"
     {
         def Xform "pCube2" (
             instanceable = true
@@ -93,7 +94,7 @@ over "InstanceSources"
         }
     }
 
-    def "pCube1_pCube3"
+    def Scope "pCube1_pCube3"
     {
         def Xform "pCube3" (
             instanceable = true
@@ -107,21 +108,21 @@ over "InstanceSources"
 
     def Xform "pCube1_instanceParent"
     {
-        def "pCubeShape1"  (
+        def Scope "pCubeShape1"  (
             instanceable = true
             prepend references = </InstanceSources/pCube1_pCubeShape1>
         )
         {
         }
 
-        def "pCube2" (
+        def Scope "pCube2" (
             instanceable = true
             prepend references = </InstanceSources/pCube1_pCube2>
         )
         {
         }
 
-        def "pCube3" (
+        def Scope "pCube3" (
             instanceable = true
             prepend references = </InstanceSources/pCube1_pCube3>
         )

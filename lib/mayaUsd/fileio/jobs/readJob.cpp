@@ -264,7 +264,7 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
-    DoImport(range, usdRootPrim, *stage);
+    DoImport(range, usdRootPrim);
 
     SdfPathSet topImportedPaths;
     if (isImportingPseudoRoot) {
@@ -290,13 +290,9 @@ UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 }
 
 bool
-UsdMaya_ReadJob::DoImport(
-    UsdPrimRange& rootRange,
-    const UsdPrim& usdRootPrim,
-    const UsdStage& stage
-)
+UsdMaya_ReadJob::DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
-    return _DoImport(rootRange, usdRootPrim, stage);
+    return _DoImport(rootRange, usdRootPrim);
 }
 
 bool UsdMaya_ReadJob::OverridePrimReader(
@@ -337,7 +333,7 @@ void UsdMaya_ReadJob::_DoImportPrimIt(
 
         TfToken typeName = prim.GetTypeName();
         if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
-            = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
+                = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
             UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
                 primReader->Read(&readCtx);
@@ -422,11 +418,7 @@ void UsdMaya_ReadJob::_ImportMaster(
 }
 
 bool
-UsdMaya_ReadJob::_DoImport(
-    UsdPrimRange& rootRange,
-    const UsdPrim& usdRootPrim,
-    const UsdStage& stage
-)
+UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
     const bool buildInstances = mArgs.instanceMode ==
                                 UsdMayaJobImportArgsTokens->buildInstances;
@@ -457,17 +449,23 @@ UsdMaya_ReadJob::_DoImport(
     }
 
     if (buildInstances) {
-        MDGModifier dgMod;
+        MDGModifier              deleteMasterMod;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
-        for (const auto& master: stage.GetMasters()) {
+        for (const auto& master : usdRootPrim.GetStage()->GetMasters()) {
             const SdfPath masterPath = master.GetPath();
-            MObject masterObject =
-                readCtx.GetMayaNode(masterPath, false);
+            MObject       masterObject = readCtx.GetMayaNode(masterPath, false);
             if (masterObject != MObject::kNullObj) {
-                dgMod.deleteNode(masterObject);
+                MStatus    status;
+                MFnDagNode masterNode(masterObject, &status);
+                if (status) {
+                    while (masterNode.childCount()) {
+                        masterNode.removeChildAt(masterNode.childCount() - 1);
+                    }
+                }
+                deleteMasterMod.deleteNode(masterObject);
             }
         }
-        dgMod.doIt();
+        deleteMasterMod.doIt();
     }
 
     return true;
