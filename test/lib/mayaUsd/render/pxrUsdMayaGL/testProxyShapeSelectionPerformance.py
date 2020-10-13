@@ -179,6 +179,16 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         cmds.setAttr('defaultRenderGlobals.imageFormat', 32)
         # Set the render mode to shaded and textured.
         cmds.setAttr('hardwareRenderingGlobals.renderMode', 4)
+        # Enable the UI object filter so that the rendered image includes
+        # selection highlighting when using the Viewport 2.0 render delegate.
+        filterNames = cmds.getAttr(
+            'hardwareRenderingGlobals.objectTypeFilterNameArray')
+        filterIndex = filterNames.index('UI')
+        filterValues = cmds.getAttr(
+            'hardwareRenderingGlobals.objectTypeFilterValueArray')
+        filterValues[filterIndex] = 1
+        cmds.setAttr('hardwareRenderingGlobals.objectTypeFilterValueArray',
+            filterValues, type='Int32Array')
         # Specify the output image prefix. The path to it is built from the
         # workspace directory.
         cmds.setAttr('defaultRenderGlobals.imageFilePrefix',
