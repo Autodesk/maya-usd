@@ -93,6 +93,15 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         cls._viewWindowWidth = cls._viewportWidth + 4
         cls._viewWindowHeight = cls._viewportHeight + 23
 
+        # Store the previous USD selection kind (or None if there wasn't one)
+        # so we can restore the state later.
+        cls._selKindOptionVarName = 'UsdSelectionKind'
+        cls._prevSelKind = cmds.optionVar(query=cls._selKindOptionVarName) or None
+
+        # Set the USD selection kind to "assembly" so that we select entire
+        # "assets" during the test.
+        cmds.optionVar(stringValue=(cls._selKindOptionVarName, 'assembly'))
+
     @classmethod
     def tearDownClass(cls):
         statsOutputLines = []
@@ -110,6 +119,14 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         perfStatsFilePath = os.path.join(cls._testDir, 'perfStats.raw')
         with open(perfStatsFilePath, 'w') as perfStatsFile:
             perfStatsFile.write(statsOutput)
+
+        # Restore the previous USD selection kind, or remove it if there wasn't
+        # one.
+        if cls._prevSelKind is None:
+            cmds.optionVar(remove=cls._selKindOptionVarName)
+        else:
+            cmds.optionVar(stringValue=
+                (cls._selKindOptionVarName, cls._prevSelKind))
 
     def setUp(self):
         cmds.file(new=True, force=True)
