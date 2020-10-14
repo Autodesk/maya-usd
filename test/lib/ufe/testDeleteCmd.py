@@ -18,7 +18,7 @@
 
 import maya.cmds as cmds
 
-from ufeTestUtils import ufeUtils, usdUtils, mayaUtils
+import ufeUtils, usdUtils, mayaUtils
 import ufe
 
 import unittest
@@ -77,7 +77,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
         
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
         # Create some extra Maya nodes

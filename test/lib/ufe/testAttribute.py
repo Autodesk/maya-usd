@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-from ufeTestUtils import usdUtils, mayaUtils
-import ufeTestUtils.testUtils
+import usdUtils, mayaUtils, testUtils
 import ufe
 from pxr import UsdGeom
 import random
@@ -51,7 +50,7 @@ class AttributeTestCase(unittest.TestCase):
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
 
         random.seed()
@@ -66,7 +65,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertTrue(self.pluginsLoaded)
 
     def assertVectorAlmostEqual(self, ufeVector, usdVector):
-        ufeTestUtils.testUtils.assertVectorAlmostEqual(
+        testUtils.assertVectorAlmostEqual(
             self, ufeVector.vector, usdVector)
 
     def assertColorAlmostEqual(self, ufeColor, usdColor):

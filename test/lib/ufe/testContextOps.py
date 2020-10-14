@@ -21,7 +21,7 @@ import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
 
 from pxr import UsdGeom
 
-from ufeTestUtils import usdUtils, mayaUtils
+import usdUtils, mayaUtils
 import ufe
 
 import unittest
@@ -68,7 +68,7 @@ class ContextOpsTestCase(unittest.TestCase):
         if self._testMethodName in ['testAddNewPrim', 'testAddNewPrimWithDelete']:
             return
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
 
         # Clear selection to start off.
