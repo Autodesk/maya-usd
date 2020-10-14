@@ -65,7 +65,6 @@ pxr_shared_library(${PXR_PACKAGE}
 )
 
 pxr_test_scripts(
-        testenv/testPointBasedDeformerNode.py
         testenv/testUsdExportAssembly.py
         testenv/testUsdExportAssemblyEdits.py
         # testUsdExportPackage input file PackageTest.ma has a requirement on
@@ -76,7 +75,6 @@ pxr_test_scripts(
         testenv/testUsdExportPointInstancer.py
         testenv/testUsdImportAsAssemblies.py
         testenv/testUsdImportNestedAssemblyAnimation.py
-        testenv/testUsdTranslateTypelessDefs.py
         testenv/testUsdMayaBlockSceneModificationContext.py
         testenv/testUsdMayaDiagnosticDelegate.py
         testenv/testUsdMayaGetVariantSetSelections.py
@@ -102,28 +100,12 @@ pxr_test_scripts(
 #   B) we don't know the absolute path to the test directory at cmake-compile
 #      time
 
-pxr_install_test_dir(
-    SRC testenv/PointBasedDeformerNodeTest
-    DEST testPointBasedDeformerNode
-)
-set(TEST_INSTALL_PREFIX "${PXR_INSTALL_PREFIX}")
-
 # MAYA-96273 (closed as by design) says that to obtain correct mayapy exit
 # codes starting with Maya 2018.4, the MAYA_NO_STANDALONE_ATEXIT environment
 # variable must be defined.  Otherwise, mayapy unconditionally exits with 0
 # (success), which completely masks test failures.
 
-pxr_register_test(testPointBasedDeformerNode
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testPointBasedDeformerNode"
-    TESTENV testPointBasedDeformerNode
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
+set(TEST_INSTALL_PREFIX "${PXR_INSTALL_PREFIX}")
 
 pxr_install_test_dir(
     SRC testenv/UsdExportAssemblyTest
@@ -213,22 +195,6 @@ pxr_register_test(testUsdImportNestedAssemblyAnimation
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdImportNestedAssemblyAnimation"
     TESTENV testUsdImportNestedAssemblyAnimation
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_install_test_dir(
-    SRC testenv/UsdTranslateTypelessDefs
-    DEST testUsdTranslateTypelessDefs
-)
-pxr_register_test(testUsdTranslateTypelessDefs
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdTranslateTypelessDefs"
-    TESTENV testUsdTranslateTypelessDefs
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources

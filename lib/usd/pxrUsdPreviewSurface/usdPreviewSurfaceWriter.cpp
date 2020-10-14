@@ -45,17 +45,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    ((niceName, "USD Preview Surface"))
-    ((description, "Exports the bound shader as a USD preview surface UsdShade network."))
-);
-
 REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     UsdImagingTokens->UsdPreviewSurface,
     UsdShadeTokens->universalRenderContext,
-    _tokens->niceName,
-    _tokens->description);
+    PxrMayaUsdPreviewSurfaceTokens->niceName,
+    PxrMayaUsdPreviewSurfaceTokens->exportDescription);
 
 UsdMayaShaderWriter::ContextSupport
 PxrMayaUsdPreviewSurface_Writer::CanExport(const UsdMayaJobExportArgs& exportArgs)

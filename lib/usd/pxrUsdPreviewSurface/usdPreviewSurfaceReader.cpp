@@ -15,6 +15,7 @@
 //
 #include "usdPreviewSurfaceReader.h"
 
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
@@ -31,6 +32,7 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
@@ -40,6 +42,12 @@
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION(
+    UsdImagingTokens->UsdPreviewSurface,
+    UsdShadeTokens->universalRenderContext,
+    PxrMayaUsdPreviewSurfaceTokens->niceName,
+    PxrMayaUsdPreviewSurfaceTokens->importDescription);
 
 PxrMayaUsdPreviewSurface_Reader::PxrMayaUsdPreviewSurface_Reader(
     const UsdMayaPrimReaderArgs& readArgs, const TfToken& mayaTypeName)

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -109,7 +109,12 @@ void UsdRotatePivotTranslateUndoableCommand::redo()
 // Ufe::TranslateUndoableCommand overrides
 //------------------------------------------------------------------------------
 
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
+bool UsdRotatePivotTranslateUndoableCommand::set(double x, double y, double z)
+#else
 bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)
+#endif
 {
     #ifdef UFE_V2_FEATURES_AVAILABLE
     rotatePivotTranslateOp(prim(), fPath, x, y, z);

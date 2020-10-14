@@ -87,14 +87,14 @@ PxrUsdTranslators_PhongReader::PxrUsdTranslators_PhongReader(const UsdMayaPrimRe
 UsdMayaShaderReader::ContextSupport
 PxrUsdTranslators_PhongReader::CanImport(const UsdMayaJobImportArgs& importArgs)
 {
-    return importArgs.shadingConversion == UsdMayaShadingConversionTokens->phong
+    return importArgs.preferredMaterial == UsdMayaPreferredMaterialTokens->phong
         ? ContextSupport::Supported
         : ContextSupport::Unsupported;
 }
 
 const TfToken& PxrUsdTranslators_PhongReader::_GetMayaNodeTypeName() const
 {
-    return UsdMayaShadingConversionTokens->phong;
+    return UsdMayaPreferredMaterialTokens->phong;
 }
 
 void PxrUsdTranslators_PhongReader::_ConvertToMaya(const TfToken& mayaAttrName, VtValue& usdValue)
