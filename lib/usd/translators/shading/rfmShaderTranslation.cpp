@@ -35,7 +35,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((conversionName, "rendermanForMaya"))
     ((renderContext, "ri"))
     ((niceName, "RenderMan for Maya"))
-    ((description, "Exports bound shaders as a RenderMan for Maya UsdShade network."))
+    ((exportDescription, "Exports bound shaders as a RenderMan for Maya UsdShade network."))
+    ((importDescription, "Imports a RenderMan UsdShade network."))
 );
 
 
@@ -43,8 +44,13 @@ REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     _tokens->conversionName,
     _tokens->renderContext,
     _tokens->niceName,
-    _tokens->description);
+    _tokens->exportDescription);
 
+REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION(
+    _tokens->conversionName,
+    _tokens->renderContext,
+    _tokens->niceName,
+    _tokens->importDescription);
 
 // Register a symmetric shader writer for each Maya node type name and USD
 // shader ID mapping. These writers will only apply when the applicable
@@ -67,7 +73,8 @@ TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
     for (const auto& i : RfmNodesToShaderIds) {
         UsdMayaSymmetricShaderReader::RegisterReader(
             i.second,
-            i.first);
+            i.first,
+            _tokens->conversionName);
     }
 };
 

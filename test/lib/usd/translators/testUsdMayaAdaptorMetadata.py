@@ -48,7 +48,7 @@ class testUsdMayaAdaptorMetadata(unittest.TestCase):
         hidden, instanceable, and kind metadata properly.
         """
         cmds.file(new=True, force=True)
-        cmds.usdImport(file=self.inputUsdFile, shadingMode='none')
+        cmds.usdImport(file=self.inputUsdFile, shadingMode=[["none", "default"], ])
 
         # pCube1 and pCube2 have USD_kind.
         self.assertEqual(cmds.getAttr('pCube1.USD_kind'), 'potato')
@@ -77,7 +77,8 @@ class testUsdMayaAdaptorMetadata(unittest.TestCase):
     def testImport_HiddenInstanceable(self):
         """Tests import with only hidden, instanceable metadata and not kind."""
         cmds.file(new=True, force=True)
-        cmds.usdImport(file=self.inputUsdFile, shadingMode='none',
+        cmds.usdImport(file=self.inputUsdFile, 
+                shadingMode=[["none", "default"], ],
                 metadata=['hidden', 'instanceable'])
 
         # pCube1 and pCube2 have USD_kind, but that shouldn't be imported.
@@ -99,7 +100,8 @@ class testUsdMayaAdaptorMetadata(unittest.TestCase):
     def testImport_TypeName(self):
         """Tests import with metadata=typeName manually specified."""
         cmds.file(new=True, force=True)
-        cmds.usdImport(file=self.inputUsdFile, shadingMode='none',
+        cmds.usdImport(file=self.inputUsdFile,
+                shadingMode=[["none", "default"], ],
                 metadata=["typeName"])
 
         # typeName metadata should come through.
@@ -121,7 +123,8 @@ class testUsdMayaAdaptorMetadata(unittest.TestCase):
     def testImport_GeomModelAPI(self):
         """Tests importing UsdGeomModelAPI attributes."""
         cmds.file(new=True, force=True)
-        cmds.usdImport(file=self.inputUsdFile, shadingMode='none',
+        cmds.usdImport(file=self.inputUsdFile,
+                shadingMode=[["none", "default"], ],
                 apiSchema=['GeomModelAPI'])
 
         worldProxy = mayaUsdLib.Adaptor('World')
@@ -154,7 +157,7 @@ class testUsdMayaAdaptorMetadata(unittest.TestCase):
         the correct metadata in the output USD file.
         """
         cmds.file(new=True, force=True)
-        cmds.usdImport(file=self.inputUsdFile, shadingMode='none')
+        cmds.usdImport(file=self.inputUsdFile, shadingMode=[["none", "default"], ])
 
         newUsdFilePath = os.path.abspath('UsdAttrsNew.usda')
         cmds.usdExport(file=newUsdFilePath, shadingMode='none')
@@ -184,7 +187,8 @@ class testUsdMayaAdaptorMetadata(unittest.TestCase):
     def testExport_GeomModelAPI(self):
         """Tests export with the GeomModelAPI."""
         cmds.file(new=True, force=True)
-        cmds.usdImport(file=self.inputUsdFile, shadingMode='none',
+        cmds.usdImport(file=self.inputUsdFile,
+                shadingMode=[["none", "default"], ],
                 apiSchema=['GeomModelAPI'])
 
         newUsdFilePath = os.path.abspath('UsdAttrsNew_GeomModelAPI.usda')
@@ -201,7 +205,8 @@ class testUsdMayaAdaptorMetadata(unittest.TestCase):
     def testExport_GeomModelAPI_MotionAPI(self):
         """Tests export with both the GeomModelAPI and MotionAPI."""
         cmds.file(new=True, force=True)
-        cmds.usdImport(file=self.inputUsdFile, shadingMode='none',
+        cmds.usdImport(file=self.inputUsdFile,
+                shadingMode=[["none", "default"], ],
                 apiSchema=['GeomModelAPI', 'MotionAPI'])
 
         newUsdFilePath = os.path.abspath('UsdAttrsNew_TwoAPIs.usda')

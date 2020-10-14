@@ -34,7 +34,7 @@ class testUsdImportMesh(unittest.TestCase):
         inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
         usdFile = os.path.join(inputPath, "UsdImportMeshTest", "Mesh.usda")
-        cmds.usdImport(file=usdFile, shadingMode='none')
+        cmds.usdImport(file=usdFile, shadingMode=[['none', 'default'], ])
 
     @classmethod
     def tearDownClass(cls):

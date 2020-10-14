@@ -12,7 +12,6 @@ target_sources(${TARGET_NAME}
         usdMaterialWriter.cpp
         usdPhongReader.cpp
         usdPhongWriter.cpp
-        usdPhongEReader.cpp
         usdPhongEWriter.cpp
         usdReflectWriter.cpp
         usdUVTextureReader.cpp

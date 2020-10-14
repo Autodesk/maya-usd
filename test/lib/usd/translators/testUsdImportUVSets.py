@@ -77,7 +77,7 @@ class testUsdImportUVSets(unittest.TestCase):
         else:
             usdFile = os.path.join(cls.inputPath, "UsdImportUVSetsTest", "UsdImportUVSetsTest.usda")
 
-        cmds.usdImport(file=usdFile, shadingMode='none')
+        cmds.usdImport(file=usdFile, shadingMode=[["none", "default"], ])
 
     def _GetMayaMesh(self, meshName):
         selectionList = OM.MSelectionList()
