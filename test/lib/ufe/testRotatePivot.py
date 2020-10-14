@@ -102,7 +102,11 @@ class RotatePivotTestCase(unittest.TestCase):
         usdSphereItem = ufe.Hierarchy.createItem(usdSpherePath)
         t3d = ufe.Transform3d.transform3d(usdSphereItem)
 
-        t3d.rotatePivotTranslate(pivot[0], pivot[1], pivot[2])
+        # if (ufeUtils.ufeFeatureSetVersion() >= 2):
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2025'):
+            t3d.rotatePivotTranslate(pivot[0], pivot[1], pivot[2])
+        else:
+            t3d.rotatePivot(pivot[0], pivot[1], pivot[2])
         usdPivot = t3d.rotatePivot()
         self.assertEqual(v3dToMPoint(usdPivot), pivot)
 
@@ -110,7 +114,11 @@ class RotatePivotTestCase(unittest.TestCase):
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
         self.checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 0])
 
-        t3d.rotatePivotTranslate(0, 0, 0)
+        # if (ufeUtils.ufeFeatureSetVersion() >= 2):
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2025'):
+            t3d.rotatePivotTranslate(0, 0, 0)
+        else:
+            t3d.rotatePivot(0, 0, 0)
         usdPivot = t3d.rotatePivot()
         self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(0, 0, 0))
 
@@ -118,8 +126,13 @@ class RotatePivotTestCase(unittest.TestCase):
         self.checkPos(sphereMatrix, [10, 0, 0])
 
         # Use a UFE undoable command to set the pivot.
-        rotatePivotCmd = t3d.rotatePivotTranslateCmd()
-        rotatePivotCmd.translate(pivot[0], pivot[1], pivot[2])
+        # if (ufeUtils.ufeFeatureSetVersion() >= 2):
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2025'):
+            rotatePivotCmd = t3d.rotatePivotTranslateCmd()
+            rotatePivotCmd.translate(pivot[0], pivot[1], pivot[2])
+        else:
+            rotatePivotCmd = t3d.rotatePivotCmd()
+            rotatePivotCmd.set(pivot[0], pivot[1], pivot[2])
 
         usdPivot = t3d.rotatePivot()
         self.assertEqual(v3dToMPoint(usdPivot), pivot)
@@ -162,7 +175,11 @@ class RotatePivotTestCase(unittest.TestCase):
         # Start with a non-zero initial rotate pivot.  This is required to test
         # MAYA-105345, otherwise a zero initial rotate pivot produces the
         # correct result through an unintended code path.
-        t3d.rotatePivotTranslate(2, 0, 0)
+        # if (ufeUtils.ufeFeatureSetVersion() >= 2):
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2025'):
+            t3d.rotatePivotTranslate(2, 0, 0)
+        else:
+            t3d.rotatePivot(2, 0, 0)
         usdPivot = t3d.rotatePivot()
         self.assertEqual(v3dToMPoint(usdPivot), om.MPoint(2, 0, 0))
 
