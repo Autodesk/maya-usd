@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,7 +68,11 @@ public:
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+	Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
+#else
 	Ufe::SetMatrixUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
+#endif
 	Ufe::Matrix4d matrix() const override;
 #endif
 
@@ -76,11 +80,19 @@ public:
 	Ufe::Vector3d translation() const override;
 	void rotate(double x, double y, double z) override;
 	void scale(double x, double y, double z) override;
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
+	Ufe::TranslateUndoableCommand::Ptr rotatePivotCmd(double x, double y, double z) override;
+	void rotatePivot(double x, double y, double z) override;
+	Ufe::TranslateUndoableCommand::Ptr scalePivotCmd(double x, double y, double z) override;
+	void scalePivot(double x, double y, double z) override;
+#else
 	Ufe::TranslateUndoableCommand::Ptr rotatePivotTranslateCmd() override;
 	void rotatePivotTranslate(double x, double y, double z) override;
-	Ufe::Vector3d rotatePivot() const override;
 	Ufe::TranslateUndoableCommand::Ptr scalePivotTranslateCmd() override;
 	void scalePivotTranslate(double x, double y, double z) override;
+#endif
+	Ufe::Vector3d rotatePivot() const override;
 	Ufe::Vector3d scalePivot() const override;
 	Ufe::Matrix4d segmentInclusiveMatrix() const override;
 	Ufe::Matrix4d segmentExclusiveMatrix() const override;

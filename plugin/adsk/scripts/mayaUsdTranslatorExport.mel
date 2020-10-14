@@ -85,12 +85,6 @@ proc string mayaUsdTranslatorExport_AppendFromPopup(string $currentOptions, stri
     return $currentOptions + ";" + $arg + "=" + $annotation;
 }
 
-proc string mayaUsdTranslatorExport_AppendFromMaterialPopup(string $currentOptions) {
-    string $niceName = `optionMenuGrp -q -value "shadingModePopup"`;
-    string $shadingOptions = `mayaUSDListShadingModes -eo $niceName`;
-    return $currentOptions + ";" + $shadingOptions;
-}
-
 proc string mayaUsdTranslatorExport_AppendFromBoolPopup(string $currentOptions, string $arg, string $widget) {
     int $index = `optionMenuGrp -q -select $widget` - 1;
     return $currentOptions + ";" + $arg + "=" + $index;
@@ -164,6 +158,20 @@ proc mayaUsdTranslatorExport_SetMaterialOptionMenu(string $shadingMode, string $
     optionMenuGrp -e -value $info[0] $widget;
 }
 
+proc string mayaUsdTranslatorExport_AppendFromMaterialPopup(string $currentOptions) {
+    string $shadingModeData[] = mayaUsdTranslatorExport_shadingModeData();
+    string $niceName = `optionMenuGrp -q -value "shadingModePopup"`;
+
+    if ($niceName == $shadingModeData[4]) {
+        // Display colors is a geometry option, not a material option:
+        $currentOptions = $currentOptions + ";exportDisplayColor=1;shadingMode=none";
+    } else {
+        string $shadingOptions = `mayaUSDListShadingModes -eo $niceName`;
+        $currentOptions = $currentOptions + ";exportDisplayColor=0;" + $shadingOptions;
+    }
+    return $currentOptions;
+}
+
 global proc int mayaUsdTranslatorExport (string $parent,
                                      string $action,
                                      string $initialSettings,
@@ -212,6 +220,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $frameSamplesAnn = "Specifies the value(s) used to multi-sample time frames during animation export. Multiple values separated by a space (-0.1 0.2) are supported.";
         string $defaultFormatAnn = "Select whether the .usd file is written out in binary or ASCII";
         string $defaultFormatStatus = "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary), or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.";
+        string $shadingModeData[] = mayaUsdTranslatorExport_shadingModeData();
 
         setParent $parent;
 
@@ -249,6 +258,10 @@ global proc int mayaUsdTranslatorExport (string $parent,
             for ($exporter in $exporters) {
                 string $ann = `mayaUSDListShadingModes -ea $exporter`;
                 menuItem -l $exporter -ann $ann;
+                if ($exporter == "USD Preview Surface") {
+                    // Insert exportDisplayColor geometry option in material menu:
+                    menuItem -l $shadingModeData[4] -ann $shadingModeData[5];
+                }
             }
 
             separator -style "none";
@@ -330,12 +343,31 @@ global proc int mayaUsdTranslatorExport (string $parent,
                 } else if ($optionBreakDown[0] == "shadingMode") {
                     string $niceName = `mayaUSDListShadingModes -fen $optionBreakDown[1]`;
                     if (size($niceName)) {
-                        optionMenuGrp -e -value $niceName "shadingModePopup";
+                        // Everything wins over displayColor except none.
+                        if ($niceName != $shadingModeData[7]) {
+                            optionMenuGrp -e -value $niceName "shadingModePopup";
+                        } else {
+                            string $currentName = `optionMenuGrp -q -value "shadingModePopup"`;
+                            // If not displayColor, then none wins:
+                            if ($currentName != $shadingModeData[4]) {
+                                optionMenuGrp -e -value $niceName "shadingModePopup";
+                            }
+                        }
                     }
                 } else if ($optionBreakDown[0] == "convertMaterialsTo") {
                     string $niceName = `mayaUSDListShadingModes -fen $optionBreakDown[1]`;
                     if (size($niceName)) {
                         optionMenuGrp -e -value $niceName "shadingModePopup";
+                    }
+                } else if ($optionBreakDown[0] == "exportDisplayColor") {
+                    if ("1" == $optionBreakDown[1]) {
+                        optionMenuGrp -e -value $shadingModeData[4] "shadingModePopup";
+                    } else {
+                        // If popup is displayColor, then set to None:
+                        string $niceName = `optionMenuGrp -q -value "shadingModePopup"`;
+                        if ($niceName == $shadingModeData[4]) {
+                            optionMenuGrp -e -value $shadingModeData[7] "shadingModePopup";
+                        }
                     }
                 } else if ($optionBreakDown[0] == "exportInstances") {
                     mayaUsdTranslatorExport_SetOptionMenuByBool($optionBreakDown[1], "exportInstancesPopup");

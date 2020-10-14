@@ -105,14 +105,14 @@ UsdMayaShaderReader::ContextSupport
 PxrUsdTranslators_StandardSurfaceReader::CanImport(const UsdMayaJobImportArgs& importArgs)
 {
     // Check to see if import requested conversion
-    return importArgs.shadingConversion == UsdMayaShadingConversionTokens->standardSurface
+    return importArgs.preferredMaterial == UsdMayaPreferredMaterialTokens->standardSurface
         ? ContextSupport::Supported
         : ContextSupport::Unsupported;
 }
 
 const TfToken& PxrUsdTranslators_StandardSurfaceReader::_GetMayaNodeTypeName() const
 {
-    return UsdMayaShadingConversionTokens->standardSurface;
+    return UsdMayaPreferredMaterialTokens->standardSurface;
 }
 
 void PxrUsdTranslators_StandardSurfaceReader::_ConvertToMaya(

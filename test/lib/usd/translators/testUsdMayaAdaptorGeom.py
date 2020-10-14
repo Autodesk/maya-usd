@@ -39,7 +39,7 @@ class testUsdMayaAdaptorGeom(unittest.TestCase):
 
         usdFile = os.path.join(cls.inputPath, 'UsdMayaAdaptorGeomTest',
             'UsdAttrs.usda')
-        cmds.usdImport(file=usdFile, shadingMode='none')
+        cmds.usdImport(file=usdFile, shadingMode=[["none", "default"], ])
 
     def testImportImageable(self):
         """

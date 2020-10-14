@@ -35,11 +35,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((NoneOption, "none"))
     ((NoneNiceName, "None"))
-    ((NoneDescription, "No material data gets exported."))
+    ((NoneExportDescription, "No material data gets exported."))
+    ((NoneImportDescription, 
+        "Stop the search for materials. Can signal that no materials are to be"
+        " imported when used alone."))
 );
 
 namespace {
-    std::pair<TfToken, TfToken> _GetOptions(const MString& niceName) {
+    std::pair<TfToken, TfToken> _GetOptions(const MString& niceName, bool isExport) {
         TfToken niceToken(niceName.asChar());
 
         TfToken shadingMode, convertMaterialsTo;
@@ -47,15 +50,19 @@ namespace {
             return std::make_pair(_tokens->NoneOption, convertMaterialsTo);
         }
 
-        for (auto const& e: UsdMayaShadingModeRegistry::ListExporters()) {
-            if (niceToken == UsdMayaShadingModeRegistry::GetExporterNiceName(e)) {
+        for (auto const& e : (isExport ? UsdMayaShadingModeRegistry::ListExporters()
+                                       : UsdMayaShadingModeRegistry::ListImporters())) {
+            if (niceToken == (isExport ? UsdMayaShadingModeRegistry::GetExporterNiceName(e)
+                                       : UsdMayaShadingModeRegistry::GetImporterNiceName(e))) {
                 shadingMode = e;
                 break;
             }
         }
         if (shadingMode.IsEmpty()) {
-            for (auto const& r: UsdMayaShadingModeRegistry::ListExportConversions()) {
-                if (niceToken == UsdMayaShadingModeRegistry::GetExportConversionInfo(r).niceName) {
+            for (auto const& r : UsdMayaShadingModeRegistry::ListMaterialConversions()) {
+                auto const& info = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(r);
+                if (niceToken == info.niceName
+                    && (isExport ? info.hasExporter : info.hasImporter)) {
                     shadingMode = UsdMayaShadingModeTokens->useRegistry;
                     convertMaterialsTo = r;
                 }
@@ -75,41 +82,63 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
     }
 
     if (argData.isFlagSet("export")) {
-        // We have these default exporters which are always 1-2-3 in the options:
-        appendToResult(UsdMayaShadingModeRegistry::GetExportConversionInfo(
+        // We have these default exporters which are always 1-2 in the options:
+        appendToResult(UsdMayaShadingModeRegistry::GetMaterialConversionInfo(
+                           UsdImagingTokens->UsdPreviewSurface)
+                           .niceName.GetText());
+        appendToResult(_tokens->NoneNiceName.GetText());
+        // Then we explore the registries:
+        for (auto const& s : UsdMayaShadingModeRegistry::ListExporters()) {
+            if (s != UsdMayaShadingModeTokens->useRegistry) {
+                appendToResult(UsdMayaShadingModeRegistry::GetExporterNiceName(s).c_str());
+            }
+        }
+        for (auto const& c : UsdMayaShadingModeRegistry::ListMaterialConversions()) {
+            if (c != UsdImagingTokens->UsdPreviewSurface) {
+                auto const& info = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(c);
+                if (info.hasExporter) {
+                    appendToResult(info.niceName.GetText());
+                }
+            }
+        }
+    } else if (argData.isFlagSet("import")) {
+        // Default priorities for searching for materials is defined here:
+        //    - Specialized importers using registry based import.
+        //    - Specialized importers, non-registry based.
+        //    - Universal importers (MaterialX? UsdPreviewSurface) using registry based import.
+        //    - Display colors as last resort
+        // This is to be used when importing via the dialog. Finer grained import is available at
+        // the command level.
+        //
+        for (const auto c : UsdMayaShadingModeRegistry::ListMaterialConversions()) {
+            if (c != UsdImagingTokens->UsdPreviewSurface) {
+                auto const& info = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(c);
+                if (info.hasImporter) {
+                    appendToResult(info.niceName.GetText());
+                }
+            }
+        }
+        for (const auto s : UsdMayaShadingModeRegistry::ListImporters()) {
+            if (s != UsdMayaShadingModeTokens->useRegistry
+                && s != UsdMayaShadingModeTokens->displayColor) {
+                appendToResult(UsdMayaShadingModeRegistry::GetImporterNiceName(s).c_str());
+            }
+        }
+        appendToResult(UsdMayaShadingModeRegistry::GetMaterialConversionInfo(
                            UsdImagingTokens->UsdPreviewSurface)
                            .niceName.GetText());
         appendToResult(
-            UsdMayaShadingModeRegistry::GetExporterNiceName(UsdMayaShadingModeTokens->displayColor)
+            UsdMayaShadingModeRegistry::GetImporterNiceName(UsdMayaShadingModeTokens->displayColor)
                 .c_str());
         appendToResult(_tokens->NoneNiceName.GetText());
-        // Then we explore the registries:
-        for (auto const& shadingMode : UsdMayaShadingModeRegistry::ListExporters()) {
-            if (shadingMode != UsdMayaShadingModeTokens->useRegistry
-                && shadingMode != UsdMayaShadingModeTokens->displayColor) {
-                appendToResult(
-                    UsdMayaShadingModeRegistry::GetExporterNiceName(shadingMode).c_str());
-            }
-        }
-        for (auto const& materialConversion : UsdMayaShadingModeRegistry::ListExportConversions()) {
-            appendToResult(
-                UsdMayaShadingModeRegistry::GetExportConversionInfo(materialConversion)
-                    .niceName.GetText());
-        }
-    } else if (argData.isFlagSet("import")) {
-        // Always include the "none" shading mode.
-        appendToResult(UsdMayaShadingModeTokens->none.GetText());
-        for (const auto& e : UsdMayaShadingModeRegistry::ListImporters()) {
-            appendToResult(e.GetText());
-        }
     } else if (argData.isFlagSet("exportOptions")) {
-        MString niceName;
+        MString    niceName;
         status = argData.getFlagArgument("exportOptions", 0, niceName);
         if (status != MS::kSuccess) {
             return status;
         }
         TfToken shadingMode, materialConversion;
-        std::tie(shadingMode, materialConversion) = _GetOptions(niceName);
+        std::tie(shadingMode, materialConversion) = _GetOptions(niceName, true);
         if (shadingMode.IsEmpty()) {
             return MS::kNotFound;
         }
@@ -120,29 +149,58 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
             options += materialConversion.GetText();
         }
         setResult(options);
-    } else if (argData.isFlagSet("exportAnnotation")) {
-        MString niceName;
-        status = argData.getFlagArgument("exportAnnotation", 0, niceName);
+    } else if (argData.isFlagSet("importOptions")) {
+        MString    niceName;
+        status = argData.getFlagArgument("importOptions", 0, niceName);
         if (status != MS::kSuccess) {
             return status;
         }
         TfToken shadingMode, materialConversion;
-        std::tie(shadingMode, materialConversion) = _GetOptions(niceName);
+        std::tie(shadingMode, materialConversion) = _GetOptions(niceName, false);
+        if (shadingMode.IsEmpty()) {
+            return MS::kNotFound;
+        }
+        appendToResult(shadingMode.GetText());
+        if (!materialConversion.IsEmpty()) {
+            appendToResult(materialConversion.GetText());
+        } else {
+            appendToResult(UsdMayaShadingModeTokens->none.GetText());
+        }
+    } else if (argData.isFlagSet("exportAnnotation") || argData.isFlagSet("importAnnotation")) {
+        const bool isExport = argData.isFlagSet("exportAnnotation");
+        MString    niceName;
+        status = argData.getFlagArgument(
+            isExport ? "exportAnnotation" : "importAnnotation", 0, niceName);
+        if (status != MS::kSuccess) {
+            return status;
+        }
+        TfToken shadingMode, materialConversion;
+        std::tie(shadingMode, materialConversion) = _GetOptions(niceName, isExport);
         if (shadingMode.IsEmpty()) {
             return MS::kNotFound;
         } else if (materialConversion.IsEmpty()) {
             if (shadingMode == _tokens->NoneOption) {
-                setResult(_tokens->NoneDescription.GetText());
+                setResult(
+                    isExport ? _tokens->NoneExportDescription.GetText()
+                             : _tokens->NoneImportDescription.GetText());
             } else {
-                setResult(UsdMayaShadingModeRegistry::GetExporterDescription(shadingMode).c_str());
+                setResult(
+                    isExport
+                        ? UsdMayaShadingModeRegistry::GetExporterDescription(shadingMode).c_str()
+                        : UsdMayaShadingModeRegistry::GetImporterDescription(shadingMode).c_str());
             }
         } else {
-            setResult(UsdMayaShadingModeRegistry::GetExportConversionInfo(materialConversion)
-                          .description.GetText());
+            auto const& info
+                = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(materialConversion);
+            setResult(
+                isExport ? info.exportDescription.GetText()
+                         : info.importDescription.GetText());
         }
-    } else if (argData.isFlagSet("findExportName")) {
-        MString optName;
-        status = argData.getFlagArgument("findExportName", 0, optName);
+    } else if (argData.isFlagSet("findExportName") || argData.isFlagSet("findImportName")) {
+        const bool isExport = argData.isFlagSet("findExportName");
+        MString    optName;
+        status
+            = argData.getFlagArgument(isExport ? "findExportName" : "findImportName", 0, optName);
         if (status != MS::kSuccess) {
             return status;
         }
@@ -151,16 +209,17 @@ MayaUSDListShadingModesCommand::doIt(const MArgList& args) {
             setResult(_tokens->NoneNiceName.GetText());
             return MS::kSuccess;
         }
-        for (auto const& r: UsdMayaShadingModeRegistry::ListExportConversions()) {
-            if (r == optToken) {
-                setResult(
-                    UsdMayaShadingModeRegistry::GetExportConversionInfo(r).niceName.GetText());
-                return MS::kSuccess;
-            }
+        auto const& info = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(optToken);
+        if (isExport ? info.hasExporter : info.hasImporter) {
+            setResult(info.niceName.GetText());
+            return MS::kSuccess;
         }
-        for (auto const& s: UsdMayaShadingModeRegistry::ListExporters()) {
-            if (s == optToken && s != UsdMayaShadingModeTokens->useRegistry) {
-                setResult(UsdMayaShadingModeRegistry::GetExporterNiceName(s).c_str());
+        if (optToken != UsdMayaShadingModeTokens->useRegistry) {
+            const std::string& niceName = isExport
+                ? UsdMayaShadingModeRegistry::GetExporterNiceName(optToken)
+                : UsdMayaShadingModeRegistry::GetImporterNiceName(optToken);
+            if (!niceName.empty()) {
+                setResult(niceName.c_str());
                 return MS::kSuccess;
             }
         }
@@ -176,8 +235,11 @@ MayaUSDListShadingModesCommand::createSyntax() {
     syntax.addFlag("-ex", "-export", MSyntax::kNoArg);
     syntax.addFlag("-im", "-import", MSyntax::kNoArg);
     syntax.addFlag("-eo", "-exportOptions", MSyntax::kString);
+    syntax.addFlag("-io", "-importOptions", MSyntax::kString);
     syntax.addFlag("-ea", "-exportAnnotation", MSyntax::kString);
+    syntax.addFlag("-ia", "-importAnnotation", MSyntax::kString);
     syntax.addFlag("-fen", "-findExportName", MSyntax::kString);
+    syntax.addFlag("-fin", "-findImportName", MSyntax::kString);
 
     syntax.enableQuery(false);
     syntax.enableEdit(false);

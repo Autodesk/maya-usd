@@ -40,7 +40,7 @@ class testUsdImportRfMShaders(unittest.TestCase):
 
         cmds.file(new=True, force=True)
 
-        cmds.mayaUSDImport(file=usdFilePath, shadingMode='useRegistry')
+        cmds.mayaUSDImport(file=usdFilePath, shadingMode=[['useRegistry', 'rendermanForMaya'], ])
 
     @classmethod
     def tearDownClass(cls):

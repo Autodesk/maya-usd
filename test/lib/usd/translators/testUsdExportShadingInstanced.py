@@ -39,7 +39,7 @@ class testUsdExportShadingInstanced(unittest.TestCase):
 
         usdFilePath = os.path.abspath('InstancedShading.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-                shadingMode='displayColor', exportInstances=True,
+                shadingMode='useRegistry', exportInstances=True,
                 materialsScopeName='Materials',
                 exportCollectionBasedBindings=True,
                 exportMaterialCollections=True,
@@ -53,7 +53,7 @@ class testUsdExportShadingInstanced(unittest.TestCase):
 
         usdFilePath = os.path.abspath('NestedInstancedShading.usda')
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-                shadingMode='displayColor', exportInstances=True,
+                shadingMode='useRegistry', exportInstances=True,
                 materialsScopeName='Materials',
                 exportCollectionBasedBindings=True,
                 exportMaterialCollections=True,

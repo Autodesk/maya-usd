@@ -39,7 +39,7 @@ class testUsdImportShadingModeDisplayColor(unittest.TestCase):
 
         # Import from USD.
         usdFilePath = os.path.join(inputPath, "UsdImportShadingModeDisplayColor", "RedCube.usda")
-        cmds.usdImport(file=usdFilePath, shadingMode='displayColor')
+        cmds.usdImport(file=usdFilePath, shadingMode=[['displayColor', 'default'], ])
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 

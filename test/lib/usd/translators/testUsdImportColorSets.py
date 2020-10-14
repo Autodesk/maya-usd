@@ -130,7 +130,8 @@ class testUsdImportColorSets(unittest.TestCase):
         inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
         usdFile = os.path.join(inputPath, "UsdImportColorSetsTest", "UsdImportColorSetsTest.usda")
-        cmds.usdImport(file=usdFile, shadingMode='none', excludePrimvar='ExcludeMe')
+        cmds.usdImport(file=usdFile, shadingMode=[['none', 'default'], ],
+                       excludePrimvar='ExcludeMe')
 
     def _GetMayaMesh(self, meshName):
         selectionList = OpenMaya.MSelectionList()

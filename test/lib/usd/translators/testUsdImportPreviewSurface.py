@@ -46,9 +46,9 @@ class testUsdImportPreviewSurface(unittest.TestCase):
         cmds.file(f=True, new=True)
 
         usd_path = os.path.join(self.test_dir, "world.usda")
-        options = ["shadingMode=useRegistry",
+        options = ["shadingMode=[[useRegistry,UsdPreviewSurface]]",
                    "primPath=/",
-                   "shadingConversion=none"]
+                   "preferredMaterial=none"]
         cmds.file(usd_path, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
                   namespace="Test", pr=True, importTimeRange="combine",
@@ -81,7 +81,7 @@ class testUsdImportPreviewSurface(unittest.TestCase):
         # Re-import, but with lamberts:
         lambert_before = len(cmds.ls(typ="lambert"))
         options = options[:-1]
-        options.append("shadingConversion=lambert")
+        options.append("preferredMaterial=lambert")
         cmds.file(usd_path, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
                   namespace="Test", pr=True, importTimeRange="combine",

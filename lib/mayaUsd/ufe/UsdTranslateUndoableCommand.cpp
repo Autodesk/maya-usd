@@ -85,7 +85,12 @@ void UsdTranslateUndoableCommand::performImp(double x, double y, double z)
 // Ufe::TranslateUndoableCommand overrides
 //------------------------------------------------------------------------------
 
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
+bool UsdTranslateUndoableCommand::set(double x, double y, double z)
+#else
 bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
+#endif
 {
     perform(x, y, z);
     return true;

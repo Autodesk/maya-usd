@@ -397,6 +397,23 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, pxrRis)
 namespace {
 
 static
+TfToken
+_GetMayaTypeNameForShaderId(
+        const TfToken& shaderId,
+        bool defaultToMayaNodes = true)
+{
+    // Remap the mayaTypeName if found in the RIS table.
+    for (const auto & i : RfmNodesToShaderIds) {
+        if (i.second == shaderId) {
+            return i.first;
+        }
+    }
+
+    // Otherwise, just return shaderId:
+    return defaultToMayaNodes ? shaderId : TfToken();
+}
+
+static
 MObject
 _CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
@@ -413,6 +430,16 @@ _GetOrCreateShaderObject(
     MObject shaderObj;
     if (!shaderSchema) {
         return shaderObj;
+    }
+
+    if (shadingNodeType == UsdMayaShadingNodeType::Shader) {
+        // We specifically reload only Pxr type shaders and let other importers
+        // work on unsupported nodes:
+        TfToken shaderId;
+        shaderSchema.GetIdAttr().Get(&shaderId);
+        if (_GetMayaTypeNameForShaderId(shaderId, false).IsEmpty()) {
+            return shaderObj;
+        }
     }
 
     if (context->GetCreatedObject(shaderSchema.GetPrim(), &shaderObj)) {
@@ -446,22 +473,6 @@ _ImportAttr(const UsdAttribute& usdAttr, const MFnDependencyNode& fnDep)
     UsdMayaUtil::setPlugValue(usdAttr, mayaAttrPlug);
 
     return mayaAttrPlug;
-}
-
-static
-TfToken
-_GetMayaTypeNameForShaderId(
-        const TfToken& shaderId)
-{
-    // Remap the mayaTypeName if found in the RIS table.
-    for (const auto & i : RfmNodesToShaderIds) {
-        if (i.second == shaderId) {
-            return i.first;
-        }
-    }
-
-    // Otherwise, just return shaderId
-    return shaderId;
 }
 
 static 
@@ -627,7 +638,7 @@ _CreateAndPopulateShaderObject(
 
 }; // anonymous namespace
 
-DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
+DEFINE_SHADING_MODE_IMPORTER(pxrRis, "RfM Shaders", "",context)
 {
     // RenderMan for Maya wants the shader nodes to get hooked into the shading
     // group via its own plugs.

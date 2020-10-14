@@ -15,15 +15,17 @@
 # limitations under the License.
 #
 
-import os
-import unittest
-
 from pxr import Gf
 
 from maya import OpenMaya as OM
 from maya import OpenMayaAnim as OMA
 from maya import cmds
 from maya import standalone
+
+import fixturesUtils
+
+import os
+import unittest
 
 
 class testPointBasedDeformerNode(unittest.TestCase):
@@ -36,11 +38,10 @@ class testPointBasedDeformerNode(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
+        inputPath = fixturesUtils.setUpClass(__file__)
 
-        cmds.loadPlugin('pxrUsd')
-
-        cls._deformingCubeUsdFilePath = os.path.abspath('DeformingCube.usda')
+        cls._deformingCubeUsdFilePath = os.path.join(inputPath,
+            'PointBasedDeformerNodeTest', 'DeformingCube.usda')
         cls._deformingCubePrimPath = '/DeformingCube/Geom/Cube'
 
     @classmethod

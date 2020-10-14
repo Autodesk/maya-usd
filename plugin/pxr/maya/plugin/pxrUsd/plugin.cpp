@@ -26,10 +26,8 @@
 #include "usdMaya/listShadingModesCommand.h"
 
 #include <mayaUsd/listeners/notice.h>
-#include <mayaUsd/nodes/pointBasedDeformerNode.h>
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
-#include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 
 #include <maya/MFnPlugin.h>
@@ -68,21 +66,6 @@ initializePlugin(MObject obj)
 #endif
 
     status = MayaUsdProxyShapePlugin::initialize(plugin);
-    CHECK_MSTATUS_AND_RETURN_IT(status);
-
-    status = plugin.registerNode(
-        UsdMayaStageNode::typeName,
-        UsdMayaStageNode::typeId,
-        UsdMayaStageNode::creator,
-        UsdMayaStageNode::initialize);
-    CHECK_MSTATUS_AND_RETURN_IT(status);
-
-    status = plugin.registerNode(
-        UsdMayaPointBasedDeformerNode::typeName,
-        UsdMayaPointBasedDeformerNode::typeId,
-        UsdMayaPointBasedDeformerNode::creator,
-        UsdMayaPointBasedDeformerNode::initialize,
-        MPxNode::kDeformerNode);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = plugin.registerShape(
@@ -263,12 +246,6 @@ uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(UsdMayaProxyShape::typeId);
-    CHECK_MSTATUS(status);
-
-    status = plugin.deregisterNode(UsdMayaPointBasedDeformerNode::typeId);
-    CHECK_MSTATUS(status);
-
-    status = plugin.deregisterNode(UsdMayaStageNode::typeId);
     CHECK_MSTATUS(status);
 
     status = MayaUsdProxyShapePlugin::finalize(plugin);
