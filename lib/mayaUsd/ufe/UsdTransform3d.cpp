@@ -269,7 +269,7 @@ Ufe::Vector3d UsdTransform3d::rotatePivot() const
 //#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotCmd(double, double, double)
 {
-    throw std::runtime_error("UsdTransform3d::scalePivotCmd() not implemented");
+    return nullptr;
 }
 
 void UsdTransform3d::scalePivot(double x, double y, double z)
