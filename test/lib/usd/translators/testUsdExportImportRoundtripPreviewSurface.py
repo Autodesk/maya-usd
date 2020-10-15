@@ -102,8 +102,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.file(defaultExtensions=default_ext_setting)
 
         # Import back:
-        import_options = ("shadingMode=useRegistry",
-                          "shadingConversion=none",
+        import_options = ("shadingMode=[[useRegistry,UsdPreviewSurface]]",
+                          "preferredMaterial=none",
                           "primPath=/")
         cmds.file(usd_path, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,

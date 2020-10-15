@@ -16,10 +16,53 @@
 #include "UsdUIInfoHandler.h"
 #include "UsdSceneItem.h"
 
+#if UFE_PREVIEW_VERSION_NUM >= 2024
+#include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/sdf/schema.h>		// SdfFieldKeys
+#include <pxr/usd/sdf/listOp.h>		// SdfReferenceListOp/SdfPayloadListOp/SdfPathListOp
+#endif
+
 #include <maya/MDoubleArray.h>
 #include <maya/MGlobal.h>
 
 #include <map>
+#include <vector>
+
+#if UFE_PREVIEW_VERSION_NUM >= 2024
+namespace
+{
+	// Simple helper to add the metadata strings to the end of the input tooltip string.
+	// Depending on the count, will add singular string or plural (with count).
+	void addMetadataStrings(const int nb, std::string& tooltip, bool& needComma, const std::string& singular, const std::string& plural)
+	{
+		if (nb <= 0) return;
+		if (tooltip.empty())
+			tooltip += "<b>Introduced Composition Arcs:</b> ";
+		if (needComma)
+			tooltip += ", ";
+		if (nb == 1) {
+			tooltip += singular;
+		}
+		else {
+			tooltip += std::to_string(nb);
+			tooltip += " ";
+			tooltip += plural;
+		}
+		needComma = true;
+	}
+
+	// Simple template helper function to handle all the various types of listOps.
+	template<typename T>
+	void addMetadataCount(const T& op, std::string& tooltip, bool& needComma, const std::string& singular, const std::string& plural)
+	{
+		typename T::ItemVector refs;
+		op.ApplyOperations(&refs);
+		if (!refs.empty()) {
+			addMetadataStrings(refs.size(), tooltip, needComma, singular, plural);
+		}
+	}
+}
+#endif
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -73,11 +116,19 @@ bool UsdUIInfoHandler::treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::Ce
 	return changed;
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2024
+Ufe::UIInfoHandler::Icon UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) const
+#else
 std::string UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) const
+#endif
 {
 	// Special case for nullptr input.
 	if (!item) {
+#if UFE_PREVIEW_VERSION_NUM >= 2024
+		return Ufe::UIInfoHandler::Icon("out_USD_UsdTyped.png");	// Default USD icon
+#else
 		return "out_USD_UsdTyped.png";	// Default USD icon
+#endif
 	}
 
 	// We support these node types directly.
@@ -106,14 +157,93 @@ std::string UsdUIInfoHandler::treeViewIcon(const Ufe::SceneItem::Ptr& item) cons
 		{"Volume",				"out_USD_Volume.png"}
 	};
 
+#if UFE_PREVIEW_VERSION_NUM >= 2024
+	Ufe::UIInfoHandler::Icon icon;		// Default is empty (no icon and no badge).
+#endif
+
 	const auto search = supportedTypes.find(item->nodeType());
 	if (search != supportedTypes.cend()) {
+#if UFE_PREVIEW_VERSION_NUM >= 2024
+		icon.baseIcon = search->second;
+#else
 		return search->second;
+#endif
 	}
 
+#if UFE_PREVIEW_VERSION_NUM >= 2024
+	// Check if we have any composition meta data - if yes we display a special badge.
+	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+	if (usdItem)
+	{
+		// Variants
+		if (!usdItem->prim().GetVariantSets().GetNames().empty())
+		{
+			icon.badgeIcon = "out_USD_CompArcBadgeV.png";
+			icon.pos = Ufe::UIInfoHandler::LowerRight;
+		}
+		else
+		{
+			// Composition related metadata.
+			static const std::vector<PXR_NS::TfToken> compKeys = {
+				PXR_NS::SdfFieldKeys->References, SdfFieldKeys->Payload, SdfFieldKeys->InheritPaths, SdfFieldKeys->Specializes};
+			for (const auto& k : compKeys)
+			{
+				if (usdItem->prim().HasMetadata(k))
+				{
+					icon.badgeIcon = "out_USD_CompArcBadge.png";
+					icon.pos = Ufe::UIInfoHandler::LowerRight;
+					break;
+				}
+			}
+		}
+	}
+
+	return icon;
+#else
 	// No specific node type icon was found.
 	return "";
+#endif
 }
+
+#if UFE_PREVIEW_VERSION_NUM >= 2024
+std::string UsdUIInfoHandler::treeViewTooltip(const Ufe::SceneItem::Ptr& item) const
+{
+	std::string tooltip;
+
+	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+	if (usdItem)
+	{
+		// Composition related metadata.
+		bool needComma = false;
+		PXR_NS::SdfReferenceListOp referenceOp;
+		if (usdItem->prim().GetMetadata(PXR_NS::SdfFieldKeys->References, &referenceOp)) {
+			addMetadataCount<PXR_NS::SdfReferenceListOp>(referenceOp, tooltip, needComma, "Reference", "References");
+		}
+
+		PXR_NS::SdfPayloadListOp payloadOp;
+		if (usdItem->prim().GetMetadata(PXR_NS::SdfFieldKeys->Payload, &payloadOp)) {
+			addMetadataCount<PXR_NS::SdfPayloadListOp>(payloadOp, tooltip, needComma, "Payload", "Payloads");
+		}
+
+		PXR_NS::SdfPathListOp inheritOp;
+		if (usdItem->prim().GetMetadata(PXR_NS::SdfFieldKeys->InheritPaths, &inheritOp)) {
+			addMetadataCount<PXR_NS::SdfPathListOp>(inheritOp, tooltip, needComma, "Inherit", "Inherits");
+		}
+
+		PXR_NS::SdfPathListOp specializeOp;
+		if (usdItem->prim().GetMetadata(PXR_NS::SdfFieldKeys->Specializes, &specializeOp)) {
+			addMetadataCount<PXR_NS::SdfPathListOp>(specializeOp, tooltip, needComma, "Specialize", "Specializes");
+		}
+
+		// Variants
+		const auto& variants = usdItem->prim().GetVariantSets().GetNames();
+		if (!variants.empty()) {
+			addMetadataStrings(variants.size(), tooltip, needComma, "Variant", "Variants");
+		}
+	}
+	return tooltip;
+}
+#endif
 
 std::string UsdUIInfoHandler::getLongRunTimeLabel() const
 {

@@ -105,6 +105,7 @@ createNode transform -n "directionalLight1";
 createNode directionalLight -n "directionalLightShape1" -p "directionalLight1";
 	rename -uid "6A99C900-0000-28A9-5AB9-7ECF00000267";
 	setAttr -k off ".v";
+	setAttr ".urs" no;
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "24A938C0-0000-731D-5A94-5B170000022C";
 	setAttr -s 2 ".lnk";

@@ -17,6 +17,12 @@
 #pragma once
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
+// forward declare usd types
+class UsdGeomMesh;
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 namespace AL{
 namespace usdmaya{
@@ -55,7 +61,7 @@ private:
     kPerformDiff = 1 << 0,
     kDynamicAttributes = 1 << 1
   };
-  void writeEdits(MDagPath& dagPath, UsdGeomMesh& geomPrim, uint32_t options = kDynamicAttributes);
+  void writeEdits(MDagPath& dagPath, PXR_NS::UsdGeomMesh& geomPrim, uint32_t options = kDynamicAttributes);
   static MObject m_visible;
 
 };

@@ -38,6 +38,7 @@
 #include "tokens.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/utils/colorSpace.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1013,7 +1014,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 // Use fallback shader if there is no material binding or we
                 // failed to create a shader instance from the material.
                 if (!stateToCommit._shader) {
-                    const GfVec3f& color = colorArray[0];
+                    const GfVec3f& color = UsdMayaColorSpace::ConvertLinearToMaya(colorArray[0]);
 
                     MHWRender::MShaderInstance* shader = _delegate->GetFallbackShader(
                         MColor(color[0], color[1], color[2], alphaArray[0]));
@@ -1369,8 +1370,9 @@ void HdVP2Mesh::_UpdateDrawItem(
 
         if (isDedicatedSelectionHighlightItem) {
             enable = enable && (_selectionStatus != kUnselected);
-        }
-        else if (isBBoxItem) {
+        } else if (isPointSnappingItem) {
+            enable = enable && (_selectionStatus == kUnselected);
+        } else if (isBBoxItem) {
             enable = enable && !range.IsEmpty();
         }
 

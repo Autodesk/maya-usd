@@ -25,14 +25,12 @@ option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
 option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
 option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
 option(BUILD_WITH_PYTHON_3 "Build with python 3." OFF)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
-option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
-option(PXR_BUILD_TESTS "Build tests" ON)
-option(PXR_BUILD_MONOLITHIC "Build a monolithic library." OFF)
 
 #------------------------------------------------------------------------------
 # internal flags to control build

@@ -132,9 +132,9 @@ std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcNam
 	return dstName;
 }
 
-std::string uniqueChildName(const UsdSceneItem::Ptr& usdParent, const Ufe::Path& childPath)
+std::string uniqueChildName(const UsdPrim& usdParent, const std::string& name)
 {
-	if (!usdParent) return std::string();
+	if (!usdParent.IsValid()) return std::string();
 
 	TfToken::HashSet childrenNames;
 
@@ -149,11 +149,11 @@ std::string uniqueChildName(const UsdSceneItem::Ptr& usdParent, const Ufe::Path&
 	//		 use loaded either in _computeDisplayPredicate().
 	//
 	// Note: our UsdHierarchy uses instance proxies, so we also use them here.
-	for (auto child : usdParent->prim().GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract)))
+	for (auto child : usdParent.GetFilteredChildren(UsdTraverseInstanceProxies(UsdPrimIsDefined && !UsdPrimIsAbstract)))
 	{
 		childrenNames.insert(child.GetName());
 	}
-	std::string childName = childPath.back().string();
+	std::string childName{name};
 	if (childrenNames.find(TfToken(childName)) != childrenNames.end())
 	{
 		childName = uniqueName(childrenNames, childName);

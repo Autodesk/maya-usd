@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ public:
 	UsdScaleUndoableCommand(UsdScaleUndoableCommand&&) = delete;
 	UsdScaleUndoableCommand& operator=(UsdScaleUndoableCommand&&) = delete;
 
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	//! Create a UsdScaleUndoableCommand from a UFE scene path.  The command is
     //! not executed.
 	static UsdScaleUndoableCommand::Ptr create(
@@ -56,16 +56,21 @@ public:
 	// Ufe::ScaleUndoableCommand overrides
 	void undo() override;
 	void redo() override;
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
+	bool set(double x, double y, double z) override;
+#else
 	bool scale(double x, double y, double z) override;
+#endif
 
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::Path getPath() const override { return path(); }
 	#endif
 
 protected:
 
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	UsdScaleUndoableCommand(const Ufe::Path& path, double x, double y, double z);
 	#else
 	UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);

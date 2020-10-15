@@ -10,6 +10,7 @@ set(TEST_SCRIPT_FILES
 if (MAYA_APP_VERSION VERSION_GREATER 2020)
     list(APPEND TEST_SCRIPT_FILES
         testMayaUsdProxyAccessor.py
+        testMayaUsdCacheId.py
     )
 endif()
 

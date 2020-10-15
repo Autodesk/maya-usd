@@ -47,6 +47,7 @@
 #include <pxr/usd/usdShade/shader.h>
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -475,7 +476,10 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                     }
                     else {
                         UsdPrim boundPrim = stage->OverridePrim(boundPrimPath);
-                        UsdShadeMaterialBindingAPI(boundPrim).Bind(material);
+                        UsdShadeMaterialBindingAPI bindingAPI =
+                            UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
+                                UsdShadeMaterialBindingAPI>(boundPrim);
+                        bindingAPI.Bind(material);
                     }
                 }
 
@@ -485,23 +489,27 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
             } else {
                 UsdPrim boundPrim = _UninstancePrim(
                         stage, boundPrimPath, "authoring per-face materials");
-                UsdGeomSubset faceSubset = UsdShadeMaterialBindingAPI(
-                        boundPrim).CreateMaterialBindSubset(
-                            /* subsetName */ TfToken(materialName),
-                            faceIndices,
-                            /* elementType */ UsdGeomTokens->face);
+                UsdShadeMaterialBindingAPI bindingAPI =
+                    UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
+                        UsdShadeMaterialBindingAPI>(boundPrim);
+                UsdGeomSubset faceSubset = bindingAPI.CreateMaterialBindSubset(
+                    /* subsetName */ TfToken(materialName),
+                    faceIndices,
+                    /* elementType */ UsdGeomTokens->face);
 
                 if (!GetExportArgs().exportCollectionBasedBindings) {
-                    UsdShadeMaterialBindingAPI(faceSubset.GetPrim()).
-                        Bind(material);
+                    UsdShadeMaterialBindingAPI subsetBindingAPI =
+                        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
+                            UsdShadeMaterialBindingAPI>(faceSubset.GetPrim());
+                    subsetBindingAPI.Bind(material);
                 }
 
                 if (boundPrimPaths) {
                     boundPrimPaths->insert(faceSubset.GetPath());
                 }
 
-                UsdShadeMaterialBindingAPI(boundPrim)
-                    .SetMaterialBindSubsetsFamilyType(UsdGeomTokens->partition);
+                bindingAPI.SetMaterialBindSubsetsFamilyType(
+                    UsdGeomTokens->partition);
             }
         }
 
@@ -509,30 +517,6 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
     }
 
     return UsdPrim();
-}
-
-std::string
-UsdMayaShadingModeExportContext::GetStandardAttrName(
-        const MPlug& plug,
-        const bool allowMultiElementArrays) const
-{
-    if (plug.isElement()) {
-        MString mayaPlgName = plug.array().partialName(false, false, false, false, false, true);
-        unsigned int logicalIdx = plug.logicalIndex();
-        if (allowMultiElementArrays) {
-            return TfStringPrintf("%s_%d", mayaPlgName.asChar(), logicalIdx);
-        }
-        else if (logicalIdx == 0) {
-            return mayaPlgName.asChar();
-        }
-        else {
-            return TfToken();
-        }
-    }
-    else {
-        MString mayaPlgName = plug.partialName(false, false, false, false, false, true);
-        return mayaPlgName.asChar();
-    }
 }
 
 

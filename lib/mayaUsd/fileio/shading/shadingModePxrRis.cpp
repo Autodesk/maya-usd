@@ -14,15 +14,14 @@
 // limitations under the License.
 //
 
-// Defines the RenderMan for Maya mapping between Pxr objects and Maya internal nodes
-#include "shadingModePxrRis_rfm_map.h"
-
+#include <mayaUsd/fileio/shading/rfmShaderMap.h>
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/shading/shadingModeImporter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
+#include <mayaUsd/fileio/utils/shadingUtil.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
@@ -125,7 +124,7 @@ private:
 
         // Now look into the RIS TABLE if the typeName doesn't starts with Pxr.
         if (!TfStringStartsWith(mayaTypeName, _tokens->PxrShaderPrefix)) {
-            for (const auto& i : _RFM_RISNODE_TABLE) {
+            for (const auto& i : RfmNodesToShaderIds) {
                 if (i.first == mayaTypeName) {
                     return i.second;
                 }
@@ -225,7 +224,7 @@ private:
             // maybe that's OK?  nothing downstream cares about it.
 
             const TfToken attrName = TfToken(
-                context.GetStandardAttrName(attrPlug, false));
+                UsdMayaShadingUtil::GetStandardAttrName(attrPlug, false));
             if (attrName.IsEmpty()) {
                 continue;
             }
@@ -270,7 +269,7 @@ private:
                 UsdShadeConnectableAPI::ConnectToSource(
                     input,
                     UsdShadeShader(cPrim),
-                    TfToken(context.GetStandardAttrName(connectedPlug, false)));
+                    TfToken(UsdMayaShadingUtil::GetStandardAttrName(connectedPlug, false)));
             }
         }
 
@@ -398,6 +397,23 @@ TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, pxrRis)
 namespace {
 
 static
+TfToken
+_GetMayaTypeNameForShaderId(
+        const TfToken& shaderId,
+        bool defaultToMayaNodes = true)
+{
+    // Remap the mayaTypeName if found in the RIS table.
+    for (const auto & i : RfmNodesToShaderIds) {
+        if (i.second == shaderId) {
+            return i.first;
+        }
+    }
+
+    // Otherwise, just return shaderId:
+    return defaultToMayaNodes ? shaderId : TfToken();
+}
+
+static
 MObject
 _CreateAndPopulateShaderObject(
         const UsdShadeShader& shaderSchema,
@@ -414,6 +430,16 @@ _GetOrCreateShaderObject(
     MObject shaderObj;
     if (!shaderSchema) {
         return shaderObj;
+    }
+
+    if (shadingNodeType == UsdMayaShadingNodeType::Shader) {
+        // We specifically reload only Pxr type shaders and let other importers
+        // work on unsupported nodes:
+        TfToken shaderId;
+        shaderSchema.GetIdAttr().Get(&shaderId);
+        if (_GetMayaTypeNameForShaderId(shaderId, false).IsEmpty()) {
+            return shaderObj;
+        }
     }
 
     if (context->GetCreatedObject(shaderSchema.GetPrim(), &shaderObj)) {
@@ -447,22 +473,6 @@ _ImportAttr(const UsdAttribute& usdAttr, const MFnDependencyNode& fnDep)
     UsdMayaUtil::setPlugValue(usdAttr, mayaAttrPlug);
 
     return mayaAttrPlug;
-}
-
-static
-TfToken
-_GetMayaTypeNameForShaderId(
-        const TfToken& shaderId)
-{
-    // Remap the mayaTypeName if found in the RIS table.
-    for (const auto & i : _RFM_RISNODE_TABLE) {
-        if (i.second == shaderId) {
-            return i.first;
-        }
-    }
-
-    // Otherwise, just return shaderId
-    return shaderId;
 }
 
 static 
@@ -628,7 +638,7 @@ _CreateAndPopulateShaderObject(
 
 }; // anonymous namespace
 
-DEFINE_SHADING_MODE_IMPORTER(pxrRis, context)
+DEFINE_SHADING_MODE_IMPORTER(pxrRis, "RfM Shaders", "",context)
 {
     // RenderMan for Maya wants the shader nodes to get hooked into the shading
     // group via its own plugs.

@@ -78,7 +78,7 @@ class testUsdExportOverImport(unittest.TestCase):
         """
         self._ValidateUsdBeforeExport()
 
-        cmds.usdImport(file=self.USD_FILE, shadingMode='none')
+        cmds.usdImport(file=self.USD_FILE, shadingMode=[["none", "default"], ])
 
         self._ModifyMayaScene()
 

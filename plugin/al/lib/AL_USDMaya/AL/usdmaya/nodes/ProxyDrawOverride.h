@@ -28,6 +28,8 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
+class ProxyShape;
+
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  This class provides the draw override for the USD proxy shape node.
 /// \ingroup nodes

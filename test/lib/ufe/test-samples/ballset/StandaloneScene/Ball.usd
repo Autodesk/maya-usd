@@ -6,16 +6,68 @@
 
 def Xform "Ball" (
     assetInfo = {
-        asset identifier = @Ball/Ball.usd@
+        asset identifier = @Ball.usd@
         string name = "Ball"
     }
     kind = "component"
-    add references = [
-        @./Ball.shadingVariants.usda@,
-        @./Ball.maya.usd@
-    ]
+    payload = @./Ball_payload.usd@</Ball>
+    variants = {
+        string shadingVariant = "Cue"
+    }
+    add variantSets = ["shadingVariant"]
 )
 {
+    variantSet "shadingVariant" = {
+        "Ball_1" {
+
+        }
+        "Ball_10" {
+
+        }
+        "Ball_11" {
+
+        }
+        "Ball_12" {
+
+        }
+        "Ball_13" {
+
+        }
+        "Ball_13" {
+
+        }
+        "Ball_14" {
+
+        }
+        "Ball_15" {
+
+        }
+        "Ball_2" {
+
+        }
+        "Ball_3" {
+
+        }
+        "Ball_4" {
+
+        }
+        "Ball_5" {
+
+        }
+        "Ball_6" {
+
+        }
+        "Ball_7" {
+
+        }
+        "Ball_8" {
+
+        }
+        "Ball_9" {
+
+        }
+        "Cue" {
+
+        }
+    }
 }
-
-

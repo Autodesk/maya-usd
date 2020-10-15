@@ -30,12 +30,8 @@
 
 #include <mayaUsdUtils/util.h>
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 #define UFE_ENABLE_ASSERTS
 #include <ufe/ufeAssert.h>
-#else
-#include <cassert>
-#endif
 
 namespace {
 // shared_ptr requires public ctor, dtor, so derive a class for it.
@@ -55,11 +51,7 @@ namespace ufe {
 UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& parent,
                                                      const UsdSceneItem::Ptr& child,
                                                      const UsdSceneItem::Ptr& /* pos */)
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
     : Ufe::InsertChildCommand()
-    #else
-    : Ufe::UndoableCommand()
-    #endif
     , _ufeDstItem(nullptr)
     , _ufeSrcPath(child->path())
     , _usdSrcPath(child->prim().GetPath())
@@ -72,7 +64,7 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
     ufe::applyCommandRestriction(parentPrim, "reparent");
 
     // First, check if we need to rename the child.
-    const auto& childName = uniqueChildName(parent, child->path());
+    const auto childName = uniqueChildName(parent->prim(), child->path().back().string());
 
     // Create a new segment if parent and child are in different run-times.
     // parenting a USD node to the proxy shape node implies two different run-times
@@ -85,15 +77,11 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
         _ufeDstPath = parent->path() + Ufe::PathSegment(
             Ufe::PathComponent(childName), cRtId, cSep);
     }
-    _usdDstPath = parent->prim().GetPath().AppendChild(TfToken(childName));
+    _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(childName));
 
-    _childLayer = child->prim().GetStage()->GetEditTarget().GetLayer();
+    _childLayer = childPrim.GetStage()->GetEditTarget().GetLayer();
 
-    // If parent prim is the pseudo-root, no def primSpec will be found, so
-    // just use the edit target layer.
-    _parentLayer = parentPrim.IsPseudoRoot() 
-        ? parent->prim().GetStage()->GetEditTarget().GetLayer() 
-        : MayaUsdUtils::defPrimSpecLayer(parentPrim);
+    _parentLayer = parentPrim.GetStage()->GetEditTarget().GetLayer(); 
 }
 
 UsdUndoInsertChildCommand::~UsdUndoInsertChildCommand()

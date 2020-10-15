@@ -47,7 +47,7 @@ namespace ufe {
 //   becomes stale, and the prim in the updated scene item should be used.
 //
 template<class V>
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase 
     : public std::enable_shared_from_this<UsdTRSUndoableCommandBase<V>>
 #else
@@ -56,7 +56,7 @@ class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase : public Ufe::Observer,
 #endif
 {
 protected:
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     UsdTRSUndoableCommandBase(double x, double y, double z);
     #else
     UsdTRSUndoableCommandBase(
@@ -79,7 +79,7 @@ protected:
     // parenting change caused by undo / redo of other commands in the undo
     // stack), so always return current data.
 
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     inline UsdPrim prim() const { updateItem(); return fItem->prim(); };
     #else
     inline UsdPrim prim() const { return fItem->prim(); }
@@ -94,7 +94,7 @@ protected:
     virtual void addEmptyAttribute() = 0;
     virtual bool cannotInit() const;
 
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     // Conditionally create a UsdSceneItem::Ptr from the Ufe::Path, if null.
     void updateItem() const;
 
@@ -127,7 +127,7 @@ private:
 template<class T>
 struct MakeSharedEnabler : public T {
     MakeSharedEnabler(
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
         const Ufe::Path& path, double x, double y, double z)
         : T(path, x, y, z) {}
 };

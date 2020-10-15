@@ -16,6 +16,7 @@
 #include "shadingUtil.h"
 
 #include <pxr/pxr.h>
+#include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/input.h>
@@ -23,7 +24,38 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 
+#include <maya/MPlug.h>
+#include <maya/MString.h>
+
+#include <string>
+
+
 PXR_NAMESPACE_USING_DIRECTIVE
+
+
+std::string
+UsdMayaShadingUtil::GetStandardAttrName(
+        const MPlug& attrPlug,
+        bool allowMultiElementArrays)
+{
+    if (!attrPlug.isElement()) {
+        const MString mayaPlugName =
+            attrPlug.partialName(false, false, false, false, false, true);
+        return mayaPlugName.asChar();
+    }
+
+    const MString mayaPlugName =
+        attrPlug.array().partialName(false, false, false, false, false, true);
+    const unsigned int logicalIndex = attrPlug.logicalIndex();
+
+    if (allowMultiElementArrays) {
+        return TfStringPrintf("%s_%d", mayaPlugName.asChar(), logicalIndex);
+    } else if (logicalIndex == 0) {
+        return mayaPlugName.asChar();
+    }
+
+    return std::string();
+}
 
 UsdShadeInput
 UsdMayaShadingUtil::CreateMaterialInputAndConnectShader(

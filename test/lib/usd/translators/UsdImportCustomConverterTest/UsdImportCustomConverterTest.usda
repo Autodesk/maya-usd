@@ -1,0 +1,182 @@
+#usda 1.0
+(
+    defaultPrim = "pCube1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Mesh "pCube1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+    color3f[] primvars:displayColor = [(0.6120656, 0, 0)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0.375, 0), (0.625, 0), (0.625, 0.25), (0.375, 0.25), (0.625, 0.5), (0.375, 0.5), (0.625, 0.75), (0.375, 0.75), (0.625, 1), (0.375, 1), (0.875, 0), (0.875, 0.25), (0.125, 0), (0.125, 0.25)] (
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 2, 3, 3, 2, 4, 5, 5, 4, 6, 7, 7, 6, 8, 9, 1, 10, 11, 2, 12, 0, 3, 13]
+    double3 xformOp:translate = (-2, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def Mesh "pCube2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+    rel material:binding = </pCube2/Looks/standardSurface3SG>
+    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+    color3f[] primvars:displayColor = [(0, 0.6120656, 0)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0.375, 0), (0.625, 0), (0.625, 0.25), (0.375, 0.25), (0.625, 0.5), (0.375, 0.5), (0.625, 0.75), (0.375, 0.75), (0.625, 1), (0.375, 1), (0.875, 0), (0.875, 0.25), (0.125, 0), (0.125, 0.25)] (
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 2, 3, 3, 2, 4, 5, 5, 4, 6, 7, 7, 6, 8, 9, 1, 10, 11, 2, 12, 0, 3, 13]
+
+    def Scope "Looks"
+    {
+        def Material "standardSurface3SG"
+        {
+            token outputs:maya:surface.connect = </pCube2/Looks/standardSurface3SG/standardSurface3.outputs:surface>
+
+            def Shader "standardSurface3"
+            {
+                uniform token info:id = "standardSurface"
+                color3f inputs:baseColor = (0, 0, 0)
+                color3f inputs:baseColor.connect = </pCube2/Looks/standardSurface3SG/file1.outputs:outColor>
+                token outputs:surface
+            }
+
+            def Shader "file1"
+            {
+                uniform token info:id = "file"
+                string inputs:colorSpace = "sRGB"
+                float2 inputs:coverage.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:coverage>
+                asset inputs:fileTextureName = @E:/Ws/UsdBuild/ecg-maya-usd/maya-usd/test/lib/usd/translators/UsdImportCustomConverterTest/Brazilian_rosewood_pxr128.png@
+                bool inputs:mirrorU.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:mirrorU>
+                bool inputs:mirrorV.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:mirrorV>
+                float2 inputs:noiseUV = (0, 0)
+                float2 inputs:noiseUV.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:noiseUV>
+                float2 inputs:offset.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:offset>
+                float2 inputs:repeatUV.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:repeatUV>
+                double inputs:rotateFrame.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:rotateFrame>
+                double inputs:rotateUV.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:rotateUV>
+                bool inputs:stagger.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:stagger>
+                float2 inputs:translateFrame.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:translateFrame>
+                float2 inputs:uvCoord = (0, 0)
+                float2 inputs:uvCoord.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.outputs:outUV>
+                float2 inputs:uvFilterSize.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.outputs:outUvFilterSize>
+                float3 inputs:vertexCameraOne.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:vertexCameraOne>
+                float2 inputs:vertexUvOne.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:vertexUvOne>
+                float2 inputs:vertexUvThree.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:vertexUvThree>
+                float2 inputs:vertexUvTwo.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:vertexUvTwo>
+                bool inputs:wrapU.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:wrapU>
+                bool inputs:wrapV.connect = </pCube2/Looks/standardSurface3SG/place2dTexture1.inputs:wrapV>
+                float3 outputs:outColor
+            }
+
+            def Shader "place2dTexture1"
+            {
+                uniform token info:id = "place2dTexture"
+                float2 inputs:coverage
+                bool inputs:mirrorU
+                bool inputs:mirrorV
+                float2 inputs:noiseUV
+                float2 inputs:offset
+                float2 inputs:repeatUV
+                double inputs:rotateFrame
+                double inputs:rotateUV
+                bool inputs:stagger
+                float2 inputs:translateFrame
+                float3 inputs:vertexCameraOne
+                float2 inputs:vertexUvOne
+                float2 inputs:vertexUvThree
+                float2 inputs:vertexUvTwo
+                bool inputs:wrapU
+                bool inputs:wrapV
+                float2 outputs:outUV
+                float2 outputs:outUvFilterSize
+            }
+        }
+    }
+}
+
+def Mesh "pCube3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 3, 2, 2, 3, 5, 4, 4, 5, 7, 6, 6, 7, 1, 0, 1, 7, 5, 3, 6, 0, 2, 4]
+    rel material:binding = </pCube3/Looks/usdPreviewSurface1SG>
+    point3f[] points = [(-0.5, -0.5, 0.5), (0.5, -0.5, 0.5), (-0.5, 0.5, 0.5), (0.5, 0.5, 0.5), (-0.5, 0.5, -0.5), (0.5, 0.5, -0.5), (-0.5, -0.5, -0.5), (0.5, -0.5, -0.5)]
+    color3f[] primvars:displayColor = [(1, 1, 0.6120656)] (
+        customData = {
+            dictionary Maya = {
+                bool generated = 1
+            }
+        }
+    )
+    texCoord2f[] primvars:st = [(0.375, 0), (0.625, 0), (0.625, 0.25), (0.375, 0.25), (0.625, 0.5), (0.375, 0.5), (0.625, 0.75), (0.375, 0.75), (0.625, 1), (0.375, 1), (0.875, 0), (0.875, 0.25), (0.125, 0), (0.125, 0.25)] (
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 2, 3, 3, 2, 4, 5, 5, 4, 6, 7, 7, 6, 8, 9, 1, 10, 11, 2, 12, 0, 3, 13]
+    double3 xformOp:translate = (2, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "Looks"
+    {
+        def Material "usdPreviewSurface1SG"
+        {
+            token outputs:surface.connect = </pCube3/Looks/usdPreviewSurface1SG/usdPreviewSurface1.outputs:surface>
+
+            def Shader "usdPreviewSurface1"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </pCube3/Looks/usdPreviewSurface1SG/file2.outputs:rgb>
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file2"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @E:/Ws/UsdBuild/ecg-maya-usd/maya-usd/test/lib/usd/translators/UsdImportCustomConverterTest/Brazilian_rosewood_pxr128.png@
+                float2 inputs:st.connect = </pCube3/Looks/usdPreviewSurface1SG/file2/TexCoordReader.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+}
