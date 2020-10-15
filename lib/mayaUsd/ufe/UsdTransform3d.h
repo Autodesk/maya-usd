@@ -96,6 +96,14 @@ public:
 #endif
 	Ufe::Vector3d rotatePivot() const override;
 	Ufe::Vector3d scalePivot() const override;
+	
+	Ufe::TranslateUndoableCommand::Ptr translateRotatePivotCmd(
+		double x, double y, double z) override;
+	Ufe::Vector3d rotatePivotTranslation() const override;
+	Ufe::TranslateUndoableCommand::Ptr translateScalePivotCmd(
+		double x, double y, double z) override;
+	Ufe::Vector3d scalePivotTranslation() const override;
+
 	Ufe::Matrix4d segmentInclusiveMatrix() const override;
 	Ufe::Matrix4d segmentExclusiveMatrix() const override;
 

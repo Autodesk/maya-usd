@@ -53,7 +53,7 @@ public:
         const UsdSceneItem::Ptr& item, double x, double y, double z);
 	#endif
 
-	// Ufe::TranslateUndoableCommand overrides.  translate() sets the command's
+	// Ufe::TranslateUndoableCommand overrides.  set() sets the command's
 	// translation value and executes the command.
 	void undo() override;
 	void redo() override;

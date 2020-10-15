@@ -395,3 +395,79 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestCombo(expectedTRS)
 
+    def testRotateScalePivotCompensation(self):
+        '''Test that rotate and scale pivot compensation match Maya object.'''
+
+        cmds.file(new=True, force=True)
+        mayaSphere = cmds.polySphere()[0]
+        mayaSpherePath = ufe.PathString.path('|pSphere1')
+        mayaSphereItem = ufe.Hierarchy.createItem(mayaSpherePath)
+
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
+
+        usdSpherePath = ufe.PathString.path('|stage1|stageShape1,/Sphere1')
+        usdSphereItem = ufe.Hierarchy.createItem(usdSpherePath)
+        usdSphereT3d = ufe.Transform3d.transform3d(usdSphereItem)
+
+        # If the Transform3d interface can't handle rotate or scale pivot
+        # compensation, skip this test.
+        if usdSphereT3d.translateRotatePivotCmd() is None or \
+           usdSphereT3d.translateScalePivotCmd() is None:
+            raise unittest.SkipTest("Rotate or scale pivot compensation unsupported.")
+
+        # Select both spheres.
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(mayaSphereItem)
+        sn.append(usdSphereItem)
+
+        # Rotate both spheres around X, and scale them.
+        cmds.rotate(30, 0, 0, r=True, os=True, fo=True)
+        cmds.scale(1, 1, 2, r=True)
+
+        # Move pivots in world space.  At time of writing (20-Oct-20) UFE
+        # rotate pivot and scale pivot arguments to move command doesn't accept
+        # an object argument, so use the selection.
+        cmds.move(0, -2.104143, 3.139701, "pSphere1.scalePivot", "pSphere1.rotatePivot", r=True)
+        sn.remove(mayaSphereItem)
+        cmds.move(0, -2.104143, 3.139701, r=True, urp=True, usp=True)        
+
+        # Confirm the local space pivots and pivot compensations are the same
+        # for both objects.  getAttr() returns a single-element vector that
+        # holds a 3-element tuple.
+        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.rp")[0],
+                                usdSphereT3d.rotatePivot().vector, places=6)
+        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.sp")[0],
+                                usdSphereT3d.scalePivot().vector, places=6)
+
+        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.rpt")[0],
+                                usdSphereT3d.rotatePivotTranslation().vector)
+        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.spt")[0],
+                                usdSphereT3d.scalePivotTranslation().vector)
+
+        # Scale the spheres again
+        sn.append(mayaSphereItem)
+        cmds.scale(1, 1, 2, r=True)
+
+        # Move the pivots again.
+        cmds.move(0, 5.610465, 3.239203, "pSphere1.scalePivot", "pSphere1.rotatePivot", r=True)
+        sn.remove(mayaSphereItem)
+        cmds.move(0, 5.610465, 3.239203, r=True, urp=True, usp=True)        
+
+        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.rp")[0],
+                                usdSphereT3d.rotatePivot().vector, places=6)
+        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.sp")[0],
+                                usdSphereT3d.scalePivot().vector, places=6)
+
+        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.rpt")[0],
+                                usdSphereT3d.rotatePivotTranslation().vector)
+        # Fails as of 21-Oct-2020
+        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.spt")[0],
+                                usdSphereT3d.scalePivotTranslation().vector,
+                                places=6)

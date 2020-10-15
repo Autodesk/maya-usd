@@ -54,6 +54,7 @@
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
+#include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 
 #include <ufe/runTimeMgr.h>
 #endif
@@ -152,7 +153,8 @@ MStatus initializePlugin(MObject obj)
     g_Transform3dHandler = runTimeMgr.transform3dHandler(usdRtid);
 	auto matrixHandler = MAYAUSD_NS::ufe::UsdTransform3dMatrixOpHandler::create(
 		g_Transform3dHandler);
-	runTimeMgr.setTransform3dHandler(usdRtid, matrixHandler);
+	auto mayaStackHandler = MAYAUSD_NS::ufe::UsdTransform3dMayaXformStackHandler::create(matrixHandler);
+	runTimeMgr.setTransform3dHandler(usdRtid, mayaStackHandler);
 #endif
 
     status = plugin.registerShape(
