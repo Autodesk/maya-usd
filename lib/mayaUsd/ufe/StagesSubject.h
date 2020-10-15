@@ -15,18 +15,17 @@
 //
 #pragma once
 
-#include <maya/MCallbackIdArray.h>
-
-#include <ufe/ufe.h>            // For UFE_V2_FEATURES_AVAILABLE
-
-#include <pxr/base/tf/weakBase.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/base/tf/hash.h>
-#include <pxr/base/tf/notice.h>
-#include <pxr/usd/usd/notice.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
+
+#include <pxr/base/tf/hash.h>
+#include <pxr/base/tf/notice.h>
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/usd/usd/notice.h>
+#include <pxr/usd/usd/stage.h>
+
+#include <maya/MCallbackIdArray.h>
+#include <ufe/ufe.h> // For UFE_V2_FEATURES_AVAILABLE
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -35,85 +34,86 @@ namespace ufe {
 
 //! \brief Subject class to observe Maya scene.
 /*!
-	This class observes Maya file open, to register a USD observer on each
-	stage the Maya scene contains.  This USD observer translates USD
-	notifications into UFE notifications.
+        This class observes Maya file open, to register a USD observer on each
+        stage the Maya scene contains.  This USD observer translates USD
+        notifications into UFE notifications.
  */
 class MAYAUSD_CORE_PUBLIC StagesSubject : public TfWeakBase
 {
 public:
-	typedef TfWeakPtr<StagesSubject> Ptr;
+    typedef TfWeakPtr<StagesSubject> Ptr;
 
-	//! Constructor
-	StagesSubject();
+    //! Constructor
+    StagesSubject();
 
-	//! Destructor
-	~StagesSubject();
+    //! Destructor
+    ~StagesSubject();
 
-	//! Create the StagesSubject.
-	static StagesSubject::Ptr create();
+    //! Create the StagesSubject.
+    static StagesSubject::Ptr create();
 
-	// Delete the copy/move constructors assignment operators.
-	StagesSubject(const StagesSubject&) = delete;
-	StagesSubject& operator=(const StagesSubject&) = delete;
-	StagesSubject(StagesSubject&&) = delete;
-	StagesSubject& operator=(StagesSubject&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    StagesSubject(const StagesSubject&) = delete;
+    StagesSubject& operator=(const StagesSubject&) = delete;
+    StagesSubject(StagesSubject&&) = delete;
+    StagesSubject& operator=(StagesSubject&&) = delete;
 
-	bool beforeNewCallback() const;
-	void beforeNewCallback(bool b);
+    bool beforeNewCallback() const;
+    void beforeNewCallback(bool b);
 
-	void afterOpen();
-
-private:
-	// Maya scene message callbacks
-	static void beforeNewCallback(void* clientData);
-	static void beforeOpenCallback(void* clientData);
-	static void afterNewCallback(void* clientData);
-	static void afterOpenCallback(void* clientData);
-
-	//! Call the stageChanged() methods on stage observers.
-	void stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender);
+    void afterOpen();
 
 private:
-	// Notice listener method for proxy stage set
-	void onStageSet(const MayaUsdProxyStageSetNotice& notice);
+    // Maya scene message callbacks
+    static void beforeNewCallback(void* clientData);
+    static void beforeOpenCallback(void* clientData);
+    static void afterNewCallback(void* clientData);
+    static void afterOpenCallback(void* clientData);
 
-	// Notice listener method for proxy stage invalidate.
-	void onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice);
+    //! Call the stageChanged() methods on stage observers.
+    void stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender);
 
-	// Map of per-stage listeners, indexed by stage.
-	typedef TfHashMap<UsdStageWeakPtr, TfNotice::Key, TfHash> StageListenerMap;
-	StageListenerMap fStageListeners;
+private:
+    // Notice listener method for proxy stage set
+    void onStageSet(const MayaUsdProxyStageSetNotice& notice);
 
-	bool fBeforeNewCallback = false;
+    // Notice listener method for proxy stage invalidate.
+    void onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice);
 
-	MCallbackIdArray fCbIds;
+    // Map of per-stage listeners, indexed by stage.
+    typedef TfHashMap<UsdStageWeakPtr, TfNotice::Key, TfHash> StageListenerMap;
+    StageListenerMap                                          fStageListeners;
+
+    bool fBeforeNewCallback = false;
+
+    MCallbackIdArray fCbIds;
 
 }; // StagesSubject
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 //! \brief Guard to delay attribute changed notifications.
 /*!
-	Instantiating an object of this class allows the attribute changed
-	notifications to be delayed until the guard expires.
+        Instantiating an object of this class allows the attribute changed
+        notifications to be delayed until the guard expires.
 
     The guard collapses down notifications for a given UFE path, which is
-	desirable to avoid duplicate notifications.  However, it is an error to
-	have notifications for more than one attribute within a single guard.
+        desirable to avoid duplicate notifications.  However, it is an error to
+        have notifications for more than one attribute within a single guard.
  */
-class MAYAUSD_CORE_PUBLIC AttributeChangedNotificationGuard {
+class MAYAUSD_CORE_PUBLIC AttributeChangedNotificationGuard
+{
 public:
-
     AttributeChangedNotificationGuard();
     ~AttributeChangedNotificationGuard();
 
     //@{
     //! Cannot be copied or assigned.
     AttributeChangedNotificationGuard(const AttributeChangedNotificationGuard&) = delete;
-    const AttributeChangedNotificationGuard& operator&(const AttributeChangedNotificationGuard&) = delete;
+    const AttributeChangedNotificationGuard& operator&(const AttributeChangedNotificationGuard&)
+        = delete;
     //@}
 };
 #endif
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 #pragma once
-#include <pxr/pxr.h>
 #include <pxr/imaging/glf/glew.h>
+
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
 #include "AL/usdmaya/Global.h"
@@ -36,25 +36,26 @@
 #include "AL/usdmaya/nodes/LayerManager.h"
 #include "AL/usdmaya/nodes/MeshAnimCreator.h"
 #include "AL/usdmaya/nodes/MeshAnimDeformer.h"
-#include "AL/usdmaya/nodes/ProxyUsdGeomCamera.h"
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
+#include "AL/usdmaya/nodes/ProxyUsdGeomCamera.h"
 #include "AL/usdmaya/nodes/RendererManager.h"
+#include "AL/usdmaya/nodes/Scope.h"
 #include "AL/usdmaya/nodes/Transform.h"
 #include "AL/usdmaya/nodes/TransformationMatrix.h"
-#include "AL/usdmaya/nodes/Scope.h"
+
+#include <mayaUsd/nodes/proxyShapePlugin.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/glContext.h>
+#include <pxr/pxr.h>
 
 #include <maya/MDrawRegistry.h>
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
-
-#include <mayaUsd/nodes/proxyShapePlugin.h>
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
@@ -66,8 +67,9 @@ namespace AL {
 namespace usdmaya {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  Short term fix to enable meshes to connect directly to USD prims. This will be removed once the plugin
-///         translator API has been updated to allow custom import/export options. 
+/// \brief  Short term fix to enable meshes to connect directly to USD prims. This will be removed
+/// once the plugin
+///         translator API has been updated to allow custom import/export options.
 //----------------------------------------------------------------------------------------------------------------------
 static const char* const g_geom_deformer_code = R"(
 global proc AL_usdmaya_meshStaticImport()
@@ -160,318 +162,333 @@ global proc AL_usdmaya_meshAnimImport()
 )";
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  This method is basically the main initializePlugin routine. The reason for it being a template is simply
+/// \brief  This method is basically the main initializePlugin routine. The reason for it being a
+/// template is simply
 ///         a historical artifact.
 /// \param  plugin the MFnPlugin
 /// \todo   Move this code into initializePlugin
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
-template<typename AFnPlugin>
-MStatus registerPlugin(AFnPlugin& plugin)
+template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
 {
-  GlfGlewInit();
+    GlfGlewInit();
 
-  // We may be in a non-gui maya... if so,
-  // GlfContextCaps::InitInstance() will error
-  if (GlfGLContext::GetCurrentGLContext()->IsValid()) {
-    GlfContextCaps::InitInstance();
-  }
-
-  if(!MGlobal::optionVarExists("AL_usdmaya_selectMode"))
-  {
-    MGlobal::setOptionVarValue("AL_usdmaya_selectMode", 0);
-  }
-
-  if(!MGlobal::optionVarExists("AL_usdmaya_selectResolution"))
-  {
-    MGlobal::setOptionVarValue("AL_usdmaya_selectResolution", 10);
-  }
-
-  if(!MGlobal::optionVarExists("AL_usdmaya_pickMode"))
-  {
-    MGlobal::setOptionVarValue("AL_usdmaya_pickMode", static_cast<int>(nodes::ProxyShape::PickMode::kPrims));
-  }
-
-  if(!MGlobal::optionVarExists("AL_usdmaya_readAnimatedValues"))
-  {
-    MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", false);
-  }
-
-  if(!MGlobal::optionVarExists("AL_usdmaya_selectionEnabled"))
-  {
-    MGlobal::setOptionVarValue("AL_usdmaya_selectionEnabled", true);
-  }
-
-  if(!MGlobal::optionVarExists("AL_usdmaya_pushToPrim"))
-  {
-    MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", true);
-  }
-
-  if(!MGlobal::optionVarExists("AL_usdmaya_ignoreLockPrims"))
-  {
-    MGlobal::setOptionVarValue("AL_usdmaya_ignoreLockPrims", false);
-  }
-
-  MStatus status;
-
-  // gpuCachePluginMain used as an example.
-  if (MGlobal::kInteractive == MGlobal::mayaState()) {
-    const auto otherPriority = MSelectionMask::getSelectionTypePriority("polymesh");
-    if (!MSelectionMask::registerSelectionType(AL::usdmaya::nodes::ProxyShape::s_selectionMaskName, otherPriority)) {
-      status.perror("Error registering selection mask!");
-      return MS::kFailure;
+    // We may be in a non-gui maya... if so,
+    // GlfContextCaps::InitInstance() will error
+    if (GlfGLContext::GetCurrentGLContext()->IsValid()) {
+        GlfContextCaps::InitInstance();
     }
 
-    MString cmd = "addSelectTypeItem(\"Surface\",\"";
-    cmd += AL::usdmaya::nodes::ProxyShape::s_selectionMaskName;
-    cmd += "\",\"";
-    cmd += "AL Proxy Shape";
-    cmd += "\")";
-
-    status = MGlobal::executeCommand(cmd);
-    if (!status) {
-      status.perror("Error adding al_ProxyShape selection type!");
-      return status;
+    if (!MGlobal::optionVarExists("AL_usdmaya_selectMode")) {
+        MGlobal::setOptionVarValue("AL_usdmaya_selectMode", 0);
     }
-  }
 
-  AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerGetLayers);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCurrentEditTarget);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSave);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSetMuted);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ManageRenderer);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImport);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeFindLoadable);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportAllTransforms);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeRemoveAllTransforms);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeResync);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportPrimPathAsMaya);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePrintRefCountState);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ChangeVariant);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ActivatePrim);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListTranslators);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
-  AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
-  AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
-  AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
-  AL_REGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
-  
-  status = MayaUsdProxyShapePlugin::initialize(plugin);
-  CHECK_MSTATUS(status);
+    if (!MGlobal::optionVarExists("AL_usdmaya_selectResolution")) {
+        MGlobal::setOptionVarValue("AL_usdmaya_selectResolution", 10);
+    }
 
-  if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
-      status = plugin.registerShape(
-          AL::usdmaya::nodes::ProxyShape::kTypeName,
-          AL::usdmaya::nodes::ProxyShape::kTypeId,
-          AL::usdmaya::nodes::ProxyShape::creator,
-          AL::usdmaya::nodes::ProxyShape::initialise,
-          AL::usdmaya::nodes::ProxyShapeUI::creator,
-          MayaUsdProxyShapePlugin::getProxyShapeClassification()
-      );
-      CHECK_MSTATUS(status);
-  }
-  else {
-      AL_REGISTER_SHAPE_NODE(plugin, AL::usdmaya::nodes::ProxyShape, AL::usdmaya::nodes::ProxyShapeUI, AL::usdmaya::nodes::ProxyDrawOverride);
-  }
+    if (!MGlobal::optionVarExists("AL_usdmaya_pickMode")) {
+        MGlobal::setOptionVarValue(
+            "AL_usdmaya_pickMode", static_cast<int>(nodes::ProxyShape::PickMode::kPrims));
+    }
+
+    if (!MGlobal::optionVarExists("AL_usdmaya_readAnimatedValues")) {
+        MGlobal::setOptionVarValue("AL_usdmaya_readAnimatedValues", false);
+    }
+
+    if (!MGlobal::optionVarExists("AL_usdmaya_selectionEnabled")) {
+        MGlobal::setOptionVarValue("AL_usdmaya_selectionEnabled", true);
+    }
+
+    if (!MGlobal::optionVarExists("AL_usdmaya_pushToPrim")) {
+        MGlobal::setOptionVarValue("AL_usdmaya_pushToPrim", true);
+    }
+
+    if (!MGlobal::optionVarExists("AL_usdmaya_ignoreLockPrims")) {
+        MGlobal::setOptionVarValue("AL_usdmaya_ignoreLockPrims", false);
+    }
+
+    MStatus status;
+
+    // gpuCachePluginMain used as an example.
+    if (MGlobal::kInteractive == MGlobal::mayaState()) {
+        const auto otherPriority = MSelectionMask::getSelectionTypePriority("polymesh");
+        if (!MSelectionMask::registerSelectionType(
+                AL::usdmaya::nodes::ProxyShape::s_selectionMaskName, otherPriority)) {
+            status.perror("Error registering selection mask!");
+            return MS::kFailure;
+        }
+
+        MString cmd = "addSelectTypeItem(\"Surface\",\"";
+        cmd += AL::usdmaya::nodes::ProxyShape::s_selectionMaskName;
+        cmd += "\",\"";
+        cmd += "AL Proxy Shape";
+        cmd += "\")";
+
+        status = MGlobal::executeCommand(cmd);
+        if (!status) {
+            status.perror("Error adding al_ProxyShape selection type!");
+            return status;
+        }
+    }
+
+    AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerGetLayers);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCurrentEditTarget);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSave);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSetMuted);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ManageRenderer);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImport);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeFindLoadable);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportAllTransforms);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeRemoveAllTransforms);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeResync);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportPrimPathAsMaya);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePrintRefCountState);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ChangeVariant);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ActivatePrim);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListTranslators);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
+    AL_REGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
+    AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
+    AL_REGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
+    AL_REGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
+
+    status = MayaUsdProxyShapePlugin::initialize(plugin);
+    CHECK_MSTATUS(status);
+
+    if (MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
+        status = plugin.registerShape(
+            AL::usdmaya::nodes::ProxyShape::kTypeName,
+            AL::usdmaya::nodes::ProxyShape::kTypeId,
+            AL::usdmaya::nodes::ProxyShape::creator,
+            AL::usdmaya::nodes::ProxyShape::initialise,
+            AL::usdmaya::nodes::ProxyShapeUI::creator,
+            MayaUsdProxyShapePlugin::getProxyShapeClassification());
+        CHECK_MSTATUS(status);
+    } else {
+        AL_REGISTER_SHAPE_NODE(
+            plugin,
+            AL::usdmaya::nodes::ProxyShape,
+            AL::usdmaya::nodes::ProxyShapeUI,
+            AL::usdmaya::nodes::ProxyDrawOverride);
+    }
 
 #if defined(WANT_UFE_BUILD)
-  status = MayaUsd::ufe::initialize();
-  if (!status) {
-    status.perror("Unable to initialize ufe.");
-  }
+    status = MayaUsd::ufe::initialize();
+    if (!status) {
+        status.perror("Unable to initialize ufe.");
+    }
 #endif
 
-  AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Scope, AL::usdmaya::nodes::BasicTransformationMatrix);
-  AL_REGISTER_TRANSFORM_NODE(plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
-  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
-  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
-  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
-  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
-  AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::ProxyUsdGeomCamera);
+    AL_REGISTER_TRANSFORM_NODE(
+        plugin, AL::usdmaya::nodes::Scope, AL::usdmaya::nodes::BasicTransformationMatrix);
+    AL_REGISTER_TRANSFORM_NODE(
+        plugin, AL::usdmaya::nodes::Transform, AL::usdmaya::nodes::TransformationMatrix);
+    AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::RendererManager);
+    AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::Layer);
+    AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
+    AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
+    AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::ProxyUsdGeomCamera);
 
-  // Since AL_MAYA_DECLARE_NODE / AL_MAYA_DEFINE_NODE declare/define "creator"
-  // method, and AL_REGISTER_DEPEND_NODE registers "creator", in order to
-  // define custom creator, need to either 'override' one of those... chose to
-  // replace AL_REGISTER_DEPEND_NODE
-  //AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-  {
-    MStatus status = plugin.registerNode(
-        AL::usdmaya::nodes::LayerManager::kTypeName,
-        AL::usdmaya::nodes::LayerManager::kTypeId,
-        AL::usdmaya::nodes::LayerManager::conditionalCreator,
-        AL::usdmaya::nodes::LayerManager::initialise);
-    if(!status) {
-      status.perror("unable to register depend node LayerManager");
-      return status;
+    // Since AL_MAYA_DECLARE_NODE / AL_MAYA_DEFINE_NODE declare/define "creator"
+    // method, and AL_REGISTER_DEPEND_NODE registers "creator", in order to
+    // define custom creator, need to either 'override' one of those... chose to
+    // replace AL_REGISTER_DEPEND_NODE
+    // AL_REGISTER_DEPEND_NODE(plugin, AL::usdmaya::nodes::LayerManager);
+    {
+        MStatus status = plugin.registerNode(
+            AL::usdmaya::nodes::LayerManager::kTypeName,
+            AL::usdmaya::nodes::LayerManager::kTypeId,
+            AL::usdmaya::nodes::LayerManager::conditionalCreator,
+            AL::usdmaya::nodes::LayerManager::initialise);
+        if (!status) {
+            status.perror("unable to register depend node LayerManager");
+            return status;
+        }
     }
-  }
 
-  // generate the menu GUI + option boxes
-  AL::usdmaya::cmds::constructLayerCommandGuis();
-  AL::usdmaya::cmds::constructProxyShapeCommandGuis();
-  AL::usdmaya::cmds::constructDebugCommandGuis();
-  AL::usdmaya::cmds::constructRendererCommandGuis();
-  AL::usdmaya::cmds::constructPickModeCommandGuis();
+    // generate the menu GUI + option boxes
+    AL::usdmaya::cmds::constructLayerCommandGuis();
+    AL::usdmaya::cmds::constructProxyShapeCommandGuis();
+    AL::usdmaya::cmds::constructDebugCommandGuis();
+    AL::usdmaya::cmds::constructRendererCommandGuis();
+    AL::usdmaya::cmds::constructPickModeCommandGuis();
 
-  MGlobal::executeCommand(g_geom_deformer_code);
-  AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (static)", "AL_usdmaya_meshStaticImport");
-  AL::maya::utils::MenuBuilder::addEntry("USD/Animated Geometry/Connect selected meshes to USD (animated)", "AL_usdmaya_meshAnimImport");
-  AL::maya::utils::MenuBuilder::addEntry("USD/Selection Enabled", "optionVar -iv \\\"AL_usdmaya_selectionEnabled\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"));
-  AL::maya::utils::MenuBuilder::addEntry("USD/Enable pushToPrim", "optionVar -iv \\\"AL_usdmaya_pushToPrim\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"));
-  AL::maya::utils::MenuBuilder::addEntry("USD/Selection Ignore Lock Prims Enabled", "optionVar -iv \\\"AL_usdmaya_ignoreLockPrims\\\" #1", true, MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims"));
-  CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
-  AL::usdmaya::Global::onPluginLoad();
+    MGlobal::executeCommand(g_geom_deformer_code);
+    AL::maya::utils::MenuBuilder::addEntry(
+        "USD/Animated Geometry/Connect selected meshes to USD (static)",
+        "AL_usdmaya_meshStaticImport");
+    AL::maya::utils::MenuBuilder::addEntry(
+        "USD/Animated Geometry/Connect selected meshes to USD (animated)",
+        "AL_usdmaya_meshAnimImport");
+    AL::maya::utils::MenuBuilder::addEntry(
+        "USD/Selection Enabled",
+        "optionVar -iv \\\"AL_usdmaya_selectionEnabled\\\" #1",
+        true,
+        MGlobal::optionVarIntValue("AL_usdmaya_selectionEnabled"));
+    AL::maya::utils::MenuBuilder::addEntry(
+        "USD/Enable pushToPrim",
+        "optionVar -iv \\\"AL_usdmaya_pushToPrim\\\" #1",
+        true,
+        MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"));
+    AL::maya::utils::MenuBuilder::addEntry(
+        "USD/Selection Ignore Lock Prims Enabled",
+        "optionVar -iv \\\"AL_usdmaya_ignoreLockPrims\\\" #1",
+        true,
+        MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims"));
+    CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "AL_usdmaya"));
+    AL::usdmaya::Global::onPluginLoad();
 
-  // As of 2-Aug-2019, these PlugPlugin translators are not loaded
-  // automatically.  To be investigated.  A duplicate of this code is in the
-  // Autodesk plugin.cpp.
-  const std::vector<std::string> translatorPluginNames{
-      "mayaUsd_Schemas", "mayaUsd_Translators" };
-  const auto& plugRegistry = PlugRegistry::GetInstance();
-  std::stringstream msg("mayaUsdPlugin: ");
-  for (const auto& pluginName : translatorPluginNames) {
-      auto plugin = plugRegistry.GetPluginWithName(pluginName);
-      if (!plugin) {
-          status = MStatus::kFailure;
-          msg << "translator " << pluginName << " not found.";
-          status.perror(msg.str().c_str());
-      }
-      else {
-          // Load is a no-op if already loaded.
-          if (!plugin->Load()) {
-              status = MStatus::kFailure;
-              msg << pluginName << " translator load failed.";
-              status.perror(msg.str().c_str());
-          }
-      }
-  }
+    // As of 2-Aug-2019, these PlugPlugin translators are not loaded
+    // automatically.  To be investigated.  A duplicate of this code is in the
+    // Autodesk plugin.cpp.
+    const std::vector<std::string> translatorPluginNames { "mayaUsd_Schemas",
+                                                           "mayaUsd_Translators" };
+    const auto&                    plugRegistry = PlugRegistry::GetInstance();
+    std::stringstream              msg("mayaUsdPlugin: ");
+    for (const auto& pluginName : translatorPluginNames) {
+        auto plugin = plugRegistry.GetPluginWithName(pluginName);
+        if (!plugin) {
+            status = MStatus::kFailure;
+            msg << "translator " << pluginName << " not found.";
+            status.perror(msg.str().c_str());
+        } else {
+            // Load is a no-op if already loaded.
+            if (!plugin->Load()) {
+                status = MStatus::kFailure;
+                msg << pluginName << " translator load failed.";
+                status.perror(msg.str().c_str());
+            }
+        }
+    }
 
-  // Force all plugins to be loaded at startup time. Unless we load plugins upfront
-  // options will not be registered until the start of import or export, and won't be available in the GUI
-  const TfType& translatorType = TfType::Find<AL::usdmaya::fileio::translators::TranslatorBase>();
-  PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
-  for(auto& plugin : plugins)
-  {
-    if(!plugin->IsLoaded() && plugin->DeclaresType(translatorType, true))
-      plugin->Load();
-  }
+    // Force all plugins to be loaded at startup time. Unless we load plugins upfront
+    // options will not be registered until the start of import or export, and won't be available in
+    // the GUI
+    const TfType& translatorType = TfType::Find<AL::usdmaya::fileio::translators::TranslatorBase>();
+    PlugPluginPtrVector plugins = PlugRegistry::GetInstance().GetAllPlugins();
+    for (auto& plugin : plugins) {
+        if (!plugin->IsLoaded() && plugin->DeclaresType(translatorType, true))
+            plugin->Load();
+    }
 
-  return status;
+    return status;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  This method is basically the main uninitializePlugin routine. The reason for it being a template is simply
+/// \brief  This method is basically the main uninitializePlugin routine. The reason for it being a
+/// template is simply
 ///         a historical artifact.
 /// \param  plugin the MFnPlugin
 /// \todo   Move this code into uninitializePlugin
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
-template<typename AFnPlugin>
-MStatus unregisterPlugin(AFnPlugin& plugin)
+template <typename AFnPlugin> MStatus unregisterPlugin(AFnPlugin& plugin)
 {
-  MStatus status;
+    MStatus status;
 
 #if defined(WANT_UFE_BUILD)
-  status = MayaUsd::ufe::finalize();
-  CHECK_MSTATUS(status);
+    status = MayaUsd::ufe::finalize();
+    CHECK_MSTATUS(status);
 #endif
 
-  // gpuCachePluginMain used as an example.
-  if (MGlobal::kInteractive == MGlobal::mayaState()) {
-    MString cmd = "deleteSelectTypeItem(\"Surface\",\"";
-    cmd += AL::usdmaya::nodes::ProxyShape::s_selectionMaskName;
-    cmd += "\")";
+    // gpuCachePluginMain used as an example.
+    if (MGlobal::kInteractive == MGlobal::mayaState()) {
+        MString cmd = "deleteSelectTypeItem(\"Surface\",\"";
+        cmd += AL::usdmaya::nodes::ProxyShape::s_selectionMaskName;
+        cmd += "\")";
 
-    status = MGlobal::executeCommand(cmd);
-    if (!status) {
-      status.perror("Error removing al_ProxyShape selection type!");
-      return status;
+        status = MGlobal::executeCommand(cmd);
+        if (!status) {
+            status.perror("Error removing al_ProxyShape selection type!");
+            return status;
+        }
+
+        if (!MSelectionMask::deregisterSelectionType(
+                AL::usdmaya::nodes::ProxyShape::s_selectionMaskName)) {
+            status.perror("Error deregistering selection mask!");
+            return MS::kFailure;
+        }
     }
 
-    if (!MSelectionMask::deregisterSelectionType(AL::usdmaya::nodes::ProxyShape::s_selectionMaskName)) {
-      status.perror("Error deregistering selection mask!");
-      return MS::kFailure;
-    }
-  }
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
+    AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ActivatePrim);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ChangeVariant);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCurrentEditTarget);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerGetLayers);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSave);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSetMuted);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ManageRenderer);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImport);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeFindLoadable);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportAllTransforms);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeRemoveAllTransforms);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeResync);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportPrimPathAsMaya);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePrintRefCountState);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListTranslators);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
+    AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
+    AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
+    AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
+    AL_UNREGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
+    AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
+    AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
+    AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
 
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::SyncFileIOGui);
-  AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::InternalProxyShapeSelect);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePostSelect);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeSelect);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ActivatePrim);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ChangeVariant);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCreateLayer);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerCurrentEditTarget);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerGetLayers);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSave);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerSetMuted);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ManageRenderer);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImport);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeFindLoadable);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportAllTransforms);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeRemoveAllTransforms);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeResync);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapeImportPrimPathAsMaya);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ProxyShapePrintRefCountState);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::Callback);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListCallbacks);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListEvents);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::ListTranslators);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TriggerEvent);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::DeleteCallbacks);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CallbackQuery);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::Event);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventQuery);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::EventLookup);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::UsdDebugCommand);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ImportCommand);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::fileio::ExportCommand);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::TranslatePrim);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::LayerManager);
-  AL_UNREGISTER_COMMAND(plugin, AL::usdmaya::cmds::CreateUsdPrim);
-  AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ImportTranslator);
-  AL_UNREGISTER_TRANSLATOR(plugin, AL::usdmaya::fileio::ExportTranslator);
-  AL_UNREGISTER_DRAW_OVERRIDE(plugin, AL::usdmaya::nodes::ProxyDrawOverride);
-  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimDeformer);
-  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::MeshAnimCreator);
-  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::ProxyShape);
+    status = MayaUsdProxyShapePlugin::finalize(plugin);
+    CHECK_MSTATUS(status);
 
-  status = MayaUsdProxyShapePlugin::finalize(plugin);
-  CHECK_MSTATUS(status);
+    AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
+    AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Scope);
+    AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
+    AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
+    AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
 
-  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Transform);
-  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Scope);
-  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::RendererManager);
-  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::Layer);
-  AL_UNREGISTER_NODE(plugin, AL::usdmaya::nodes::LayerManager);
-
-  AL::usdmaya::Global::onPluginUnload();
-  return status;
+    AL::usdmaya::Global::onPluginUnload();
+    return status;
 }
 
 #undef AL_RUN_TESTS
 
 //----------------------------------------------------------------------------------------------------------------------
-} // usdmaya
-} // AL
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

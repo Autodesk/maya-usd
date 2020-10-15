@@ -32,7 +32,8 @@ class TfToken;
 class UsdMayaPrimReaderArgs;
 
 /// Base class for USD prim readers that import USD shader prims as Maya shading nodes.
-class UsdMayaShaderReader : public UsdMayaPrimReader {
+class UsdMayaShaderReader : public UsdMayaPrimReader
+{
 public:
     MAYAUSD_CORE_PUBLIC
     UsdMayaShaderReader(const UsdMayaPrimReaderArgs&);
@@ -43,7 +44,12 @@ public:
     /// report `Fallback`, while a specialized reader that really shines in a
     /// given context should report `Supported` when the context is right and
     /// `Unsupported` if the context is not as expected.
-    enum class ContextSupport { Supported, Fallback, Unsupported };
+    enum class ContextSupport
+    {
+        Supported,
+        Fallback,
+        Unsupported
+    };
 
     /// This static function is expected for all shader readers and allows
     /// declaring how well this class can support the current context:

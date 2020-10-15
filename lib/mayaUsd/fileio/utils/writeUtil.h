@@ -16,17 +16,12 @@
 #ifndef PXRUSDMAYA_WRITEUTIL_H
 #define PXRUSDMAYA_WRITEUTIL_H
 
-#include <string>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
 
-#include <maya/MFnArrayAttrsData.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
-#include <maya/MString.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/types.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
@@ -36,8 +31,13 @@
 #include <pxr/usd/usdGeom/primvar.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
+#include <maya/MFnArrayAttrsData.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MString.h>
+
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,12 +65,12 @@ struct UsdMayaWriteUtil
     /// float-based type. Otherwise, their type will be double-based.
     MAYAUSD_CORE_PUBLIC
     static UsdAttribute GetOrCreateUsdAttr(
-            const MPlug& attrPlug,
-            const UsdPrim& usdPrim,
-            const std::string& attrName,
-            const bool custom = false,
-            const bool translateMayaDoubleToUsdSinglePrecision =
-                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+        const MPlug&       attrPlug,
+        const UsdPrim&     usdPrim,
+        const std::string& attrName,
+        const bool         custom = false,
+        const bool         translateMayaDoubleToUsdSinglePrecision
+        = UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a primvar on \p imageable with
     /// the name \p primvarName. Note, it's value will not be set.
@@ -80,13 +80,13 @@ struct UsdMayaWriteUtil
     /// float-based type. Otherwise, their type will be double-based.
     MAYAUSD_CORE_PUBLIC
     static UsdGeomPrimvar GetOrCreatePrimvar(
-            const MPlug& attrPlug,
-            UsdGeomImageable& imageable,
-            const std::string& primvarName,
-            const TfToken& interpolation = TfToken(),
-            const int elementSize = -1,
-            const bool translateMayaDoubleToUsdSinglePrecision =
-                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+        const MPlug&       attrPlug,
+        UsdGeomImageable&  imageable,
+        const std::string& primvarName,
+        const TfToken&     interpolation = TfToken(),
+        const int          elementSize = -1,
+        const bool         translateMayaDoubleToUsdSinglePrecision
+        = UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, try to create a UsdRi attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
@@ -96,12 +96,12 @@ struct UsdMayaWriteUtil
     /// float-based type. Otherwise, their type will be double-based.
     MAYAUSD_CORE_PUBLIC
     static UsdAttribute GetOrCreateUsdRiAttribute(
-            const MPlug& attrPlug,
-            const UsdPrim& usdPrim,
-            const std::string& attrName,
-            const std::string& nameSpace = "user",
-            const bool translateMayaDoubleToUsdSinglePrecision =
-                UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+        const MPlug&       attrPlug,
+        const UsdPrim&     usdPrim,
+        const std::string& attrName,
+        const std::string& nameSpace = "user",
+        const bool         translateMayaDoubleToUsdSinglePrecision
+        = UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// Given an \p attrPlug, reads its value and returns it as a wrapped
     /// VtValue. The type of the value is determined by consulting the given
@@ -112,9 +112,9 @@ struct UsdMayaWriteUtil
     /// converted to a linear color value if \p linearizeColors is true.
     MAYAUSD_CORE_PUBLIC
     static VtValue GetVtValue(
-            const MPlug& attrPlug,
-            const SdfValueTypeName& typeName,
-            const bool linearizeColors = true);
+        const MPlug&            attrPlug,
+        const SdfValueTypeName& typeName,
+        const bool              linearizeColors = true);
 
     /// Given an \p attrPlug, reads its value and returns it as a wrapped
     /// VtValue. The type of the value is determined by consulting the given
@@ -125,10 +125,10 @@ struct UsdMayaWriteUtil
     /// to a linear color value if \p linearizeColors is true.
     MAYAUSD_CORE_PUBLIC
     static VtValue GetVtValue(
-            const MPlug& attrPlug,
-            const TfType& type,
-            const TfToken& role,
-            const bool linearizeColors = true);
+        const MPlug&   attrPlug,
+        const TfType&  type,
+        const TfToken& role,
+        const bool     linearizeColors = true);
 
     /// Given an \p attrPlug, determine it's value and set it on \p usdAttr at
     /// \p usdTime.
@@ -138,27 +138,25 @@ struct UsdMayaWriteUtil
     /// name of the USD attribute.
     MAYAUSD_CORE_PUBLIC
     static bool SetUsdAttr(
-            const MPlug& attrPlug,
-            const UsdAttribute& usdAttr,
-            const UsdTimeCode& usdTime,
-            UsdUtilsSparseValueWriter *valueWriter=nullptr);
+        const MPlug&               attrPlug,
+        const UsdAttribute&        usdAttr,
+        const UsdTimeCode&         usdTime,
+        UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
     /// Given a Maya node \p mayaNode, inspect it for attributes tagged by
     /// the user for export to USD and write them onto \p usdPrim at time
     /// \p usdTime.
     MAYAUSD_CORE_PUBLIC
     static bool WriteUserExportedAttributes(
-            const MObject& mayaNode,
-            const UsdPrim& usdPrim,
-            const UsdTimeCode& usdTime,
-            UsdUtilsSparseValueWriter *valueWriter=nullptr);
+        const MObject&             mayaNode,
+        const UsdPrim&             usdPrim,
+        const UsdTimeCode&         usdTime,
+        UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
     /// Writes all of the adaptor metadata from \p mayaObject onto the \p prim.
     /// Returns true if successful (even if there was nothing to export).
     MAYAUSD_CORE_PUBLIC
-    static bool WriteMetadataToPrim(
-            const MObject& mayaObject,
-            const UsdPrim& prim);
+    static bool WriteMetadataToPrim(const MObject& mayaObject, const UsdPrim& prim);
 
     /// Writes all of the adaptor API schema attributes from \p mayaObject onto
     /// the \p prim. Only attributes on applied schemas will be written to
@@ -167,25 +165,20 @@ struct UsdMayaWriteUtil
     /// \sa UsdMayaAdaptor::GetAppliedSchemas
     MAYAUSD_CORE_PUBLIC
     static bool WriteAPISchemaAttributesToPrim(
-            const MObject& mayaObject,
-            const UsdPrim& prim,
-            UsdUtilsSparseValueWriter *valueWriter=nullptr);
+        const MObject&             mayaObject,
+        const UsdPrim&             prim,
+        UsdUtilsSparseValueWriter* valueWriter = nullptr);
 
     template <typename T>
     static size_t WriteSchemaAttributesToPrim(
-            const MObject& object,
-            const UsdPrim& prim,
-            const std::vector<TfToken>& attributeNames,
-            const UsdTimeCode& usdTime = UsdTimeCode::Default(),
-            UsdUtilsSparseValueWriter *valueWriter=nullptr)
+        const MObject&              object,
+        const UsdPrim&              prim,
+        const std::vector<TfToken>& attributeNames,
+        const UsdTimeCode&          usdTime = UsdTimeCode::Default(),
+        UsdUtilsSparseValueWriter*  valueWriter = nullptr)
     {
         return WriteSchemaAttributesToPrim(
-                object,
-                prim,
-                TfType::Find<T>(),
-                attributeNames,
-                usdTime,
-                valueWriter);
+            object, prim, TfType::Find<T>(), attributeNames, usdTime, valueWriter);
     }
 
     /// Writes schema attributes specified by \attributeNames for the schema
@@ -195,20 +188,19 @@ struct UsdMayaWriteUtil
     /// it will be used to write the values.
     /// Returns the number of attributes actually written to the USD stage.
     static size_t WriteSchemaAttributesToPrim(
-            const MObject& object,
-            const UsdPrim& prim,
-            const TfType& schemaType,
-            const std::vector<TfToken>& attributeNames,
-            const UsdTimeCode& usdTime = UsdTimeCode::Default(),
-            UsdUtilsSparseValueWriter *valueWriter=nullptr);
+        const MObject&              object,
+        const UsdPrim&              prim,
+        const TfType&               schemaType,
+        const std::vector<TfToken>& attributeNames,
+        const UsdTimeCode&          usdTime = UsdTimeCode::Default(),
+        UsdUtilsSparseValueWriter*  valueWriter = nullptr);
 
     /// Authors class inherits on \p usdPrim.  \p inheritClassNames are
     /// specified as names (not paths).  For example, they should be
     /// ["_class_Special", ...].
     MAYAUSD_CORE_PUBLIC
-    static bool WriteClassInherits(
-            const UsdPrim& usdPrim,
-            const std::vector<std::string>& inheritClassNames);
+    static bool
+    WriteClassInherits(const UsdPrim& usdPrim, const std::vector<std::string>& inheritClassNames);
 
     /// Given \p inputPointsData (native Maya particle data), writes the
     /// arrays as point-instancer attributes on the given \p instancer
@@ -216,11 +208,11 @@ struct UsdMayaWriteUtil
     /// Returns true if successful.
     MAYAUSD_CORE_PUBLIC
     static bool WriteArrayAttrsToInstancer(
-            MFnArrayAttrsData& inputPointsData,
-            const UsdGeomPointInstancer& instancer,
-            const size_t numPrototypes,
-            const UsdTimeCode& usdTime,
-            UsdUtilsSparseValueWriter *valueWriter=nullptr);
+        MFnArrayAttrsData&           inputPointsData,
+        const UsdGeomPointInstancer& instancer,
+        const size_t                 numPrototypes,
+        const UsdTimeCode&           usdTime,
+        UsdUtilsSparseValueWriter*   valueWriter = nullptr);
 
     /// \}
 
@@ -229,37 +221,29 @@ struct UsdMayaWriteUtil
 
     /// \brief Reads attribute \p name on \p depNode into \p val.
     MAYAUSD_CORE_PUBLIC
-    static bool ReadMayaAttribute(
-            const MFnDependencyNode& depNode,
-            const MString& name,
-            std::string* val);
+    static bool
+    ReadMayaAttribute(const MFnDependencyNode& depNode, const MString& name, std::string* val);
 
     MAYAUSD_CORE_PUBLIC
     static bool ReadMayaAttribute(
-            const MFnDependencyNode& depNode,
-            const MString& name,
-            std::vector<std::string>* val);
+        const MFnDependencyNode&  depNode,
+        const MString&            name,
+        std::vector<std::string>* val);
 
     /// \brief Reads attribute \p name on \p depNode into \p val.
     MAYAUSD_CORE_PUBLIC
-    static bool ReadMayaAttribute(
-            const MFnDependencyNode& depNode,
-            const MString& name,
-            VtIntArray* val);
+    static bool
+    ReadMayaAttribute(const MFnDependencyNode& depNode, const MString& name, VtIntArray* val);
 
     /// \brief Reads attribute \p name on \p depNode into \p val.
     MAYAUSD_CORE_PUBLIC
-    static bool ReadMayaAttribute(
-            const MFnDependencyNode& depNode,
-            const MString& name,
-            VtFloatArray* val);
+    static bool
+    ReadMayaAttribute(const MFnDependencyNode& depNode, const MString& name, VtFloatArray* val);
 
     /// \brief Reads attribute \p name on \p depNode into \p val.
     MAYAUSD_CORE_PUBLIC
-    static bool ReadMayaAttribute(
-            const MFnDependencyNode& depNode,
-            const MString& name,
-            VtVec3fArray* val);
+    static bool
+    ReadMayaAttribute(const MFnDependencyNode& depNode, const MString& name, VtVec3fArray* val);
     /// \}
 
     /// \name Frame/time utilities {
@@ -286,9 +270,9 @@ struct UsdMayaWriteUtil
     ///     _outside_ the specified \p frameRange.
     MAYAUSD_CORE_PUBLIC
     static std::vector<double> GetTimeSamples(
-            const GfInterval& frameRange,
-            const std::set<double>& subframeOffsets,
-            const double stride = 1.0);
+        const GfInterval&       frameRange,
+        const std::set<double>& subframeOffsets,
+        const double            stride = 1.0);
 
     /// \}
 
@@ -301,14 +285,13 @@ struct UsdMayaWriteUtil
     /// if provided.
     template <typename T>
     static bool SetAttribute(
-            const UsdAttribute& attr,
-            const T& value,
-            const UsdTimeCode time = UsdTimeCode::Default(),
-            UsdUtilsSparseValueWriter* valueWriter = nullptr)
+        const UsdAttribute&        attr,
+        const T&                   value,
+        const UsdTimeCode          time = UsdTimeCode::Default(),
+        UsdUtilsSparseValueWriter* valueWriter = nullptr)
     {
-        return valueWriter ?
-            valueWriter->SetAttribute(attr, VtValue(value), time) :
-            attr.Set(value, time);
+        return valueWriter ? valueWriter->SetAttribute(attr, VtValue(value), time)
+                           : attr.Set(value, time);
     }
 
     /// \overload
@@ -318,17 +301,15 @@ struct UsdMayaWriteUtil
     /// leaving it in default-constructed state (value-initialized).
     template <typename T>
     static bool SetAttribute(
-            const UsdAttribute& attr,
-            T* value,
-            const UsdTimeCode time = UsdTimeCode::Default(),
-            UsdUtilsSparseValueWriter* valueWriter = nullptr)
+        const UsdAttribute&        attr,
+        T*                         value,
+        const UsdTimeCode          time = UsdTimeCode::Default(),
+        UsdUtilsSparseValueWriter* valueWriter = nullptr)
     {
-        return valueWriter ?
-            valueWriter->SetAttribute(attr, VtValue::Take(*value), time) :
-            attr.Set(*value, time);
+        return valueWriter ? valueWriter->SetAttribute(attr, VtValue::Take(*value), time)
+                           : attr.Set(*value, time);
     }
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

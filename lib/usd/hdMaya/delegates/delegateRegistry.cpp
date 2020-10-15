@@ -15,21 +15,21 @@
 //
 #include "delegateRegistry.h"
 
-#include <mutex>
+#include <hdMaya/delegates/delegateDebugCodes.h>
 
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/instantiateSingleton.h>
 #include <pxr/base/tf/type.h>
 
-#include <hdMaya/delegates/delegateDebugCodes.h>
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(HdMayaDelegateRegistry);
 
-void HdMayaDelegateRegistry::RegisterDelegate(
-    const TfToken& name, DelegateCreator creator) {
+void HdMayaDelegateRegistry::RegisterDelegate(const TfToken& name, DelegateCreator creator)
+{
     auto& instance = GetInstance();
     for (auto it : instance._delegates) {
         if (name == std::get<0>(it)) {
@@ -43,48 +43,55 @@ void HdMayaDelegateRegistry::RegisterDelegate(
     }
 
     TF_DEBUG(HDMAYA_DELEGATE_REGISTRY)
-        .Msg(
-            "HdMayaDelegateRegistry::RegisterDelegate(%s) - new delegate\n",
-            name.GetText());
+        .Msg("HdMayaDelegateRegistry::RegisterDelegate(%s) - new delegate\n", name.GetText());
     instance._delegates.emplace_back(name, creator);
 }
 
-std::vector<TfToken> HdMayaDelegateRegistry::GetDelegateNames() {
+std::vector<TfToken> HdMayaDelegateRegistry::GetDelegateNames()
+{
     LoadAllDelegates();
-    const auto& instance = GetInstance();
+    const auto&          instance = GetInstance();
     std::vector<TfToken> ret;
     ret.reserve(instance._delegates.size());
-    for (auto it : instance._delegates) { ret.push_back(std::get<0>(it)); }
+    for (auto it : instance._delegates) {
+        ret.push_back(std::get<0>(it));
+    }
     return ret;
 }
 
-std::vector<HdMayaDelegateRegistry::DelegateCreator>
-HdMayaDelegateRegistry::GetDelegateCreators() {
+std::vector<HdMayaDelegateRegistry::DelegateCreator> HdMayaDelegateRegistry::GetDelegateCreators()
+{
     LoadAllDelegates();
-    const auto& instance = GetInstance();
+    const auto&                                          instance = GetInstance();
     std::vector<HdMayaDelegateRegistry::DelegateCreator> ret;
     ret.reserve(instance._delegates.size());
-    for (auto it : instance._delegates) { ret.push_back(std::get<1>(it)); }
+    for (auto it : instance._delegates) {
+        ret.push_back(std::get<1>(it));
+    }
     return ret;
 }
 
-void HdMayaDelegateRegistry::SignalDelegatesChanged() {
-    for (const auto& s : GetInstance()._signals) { s(); }
+void HdMayaDelegateRegistry::SignalDelegatesChanged()
+{
+    for (const auto& s : GetInstance()._signals) {
+        s();
+    }
 }
 
-void HdMayaDelegateRegistry::LoadAllDelegates() {
+void HdMayaDelegateRegistry::LoadAllDelegates()
+{
     static std::once_flag loadAllOnce;
     std::call_once(loadAllOnce, _LoadAllDelegates);
 }
 
-void HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
-    DelegatesChangedSignal signal) {
+void HdMayaDelegateRegistry::InstallDelegatesChangedSignal(DelegatesChangedSignal signal)
+{
     GetInstance()._signals.emplace_back(signal);
 }
 
-void HdMayaDelegateRegistry::_LoadAllDelegates() {
-    TF_DEBUG(HDMAYA_DELEGATE_REGISTRY)
-        .Msg("HdMayaDelegateRegistry::_LoadAllDelegates()\n");
+void HdMayaDelegateRegistry::_LoadAllDelegates()
+{
+    TF_DEBUG(HDMAYA_DELEGATE_REGISTRY).Msg("HdMayaDelegateRegistry::_LoadAllDelegates()\n");
 
     TfRegistryManager::GetInstance().SubscribeTo<HdMayaDelegateRegistry>();
 
@@ -102,9 +109,7 @@ void HdMayaDelegateRegistry::_LoadAllDelegates() {
     for (auto& subType : delegateTypes) {
         const PlugPluginPtr pluginForType = plugReg.GetPluginForType(subType);
         if (!pluginForType) {
-            TF_CODING_ERROR(
-                "Could not find plugin for '%s'",
-                subType.GetTypeName().c_str());
+            TF_CODING_ERROR("Could not find plugin for '%s'", subType.GetTypeName().c_str());
             return;
         }
         pluginForType->Load();

@@ -15,13 +15,13 @@
 //
 #include "defaultLightDelegate.h"
 
+#include <hdMaya/delegates/delegateDebugCodes.h>
+
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
-
-#include <hdMaya/delegates/delegateDebugCodes.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -34,40 +34,44 @@ TF_DEFINE_PRIVATE_TOKENS(
 // clang-format on
 
 MtohDefaultLightDelegate::MtohDefaultLightDelegate(const InitData& initData)
-    : HdSceneDelegate(initData.renderIndex, initData.delegateID),
-      HdMayaDelegate(initData),
-      _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight))
-{}
+    : HdSceneDelegate(initData.renderIndex, initData.delegateID)
+    , HdMayaDelegate(initData)
+    , _lightPath(initData.delegateID.AppendChild(_tokens->DefaultMayaLight))
+{
+}
 
-MtohDefaultLightDelegate::~MtohDefaultLightDelegate() {
-    if (ARCH_UNLIKELY(!_isSupported)) { return; }
+MtohDefaultLightDelegate::~MtohDefaultLightDelegate()
+{
+    if (ARCH_UNLIKELY(!_isSupported)) {
+        return;
+    }
     if (IsHdSt()) {
         GetRenderIndex().RemoveSprim(HdPrimTypeTokens->simpleLight, _lightPath);
     } else {
-        GetRenderIndex().RemoveSprim(
-            HdPrimTypeTokens->distantLight, _lightPath);
+        GetRenderIndex().RemoveSprim(HdPrimTypeTokens->distantLight, _lightPath);
     }
 }
 
-void MtohDefaultLightDelegate::Populate() {
-    _isSupported = IsHdSt() ? GetRenderIndex().IsSprimTypeSupported(
-                                  HdPrimTypeTokens->simpleLight)
-                            : GetRenderIndex().IsSprimTypeSupported(
-                                  HdPrimTypeTokens->distantLight);
-    if (ARCH_UNLIKELY(!_isSupported)) { return; }
+void MtohDefaultLightDelegate::Populate()
+{
+    _isSupported = IsHdSt() ? GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->simpleLight)
+                            : GetRenderIndex().IsSprimTypeSupported(HdPrimTypeTokens->distantLight);
+    if (ARCH_UNLIKELY(!_isSupported)) {
+        return;
+    }
     if (IsHdSt()) {
-        GetRenderIndex().InsertSprim(
-            HdPrimTypeTokens->simpleLight, this, _lightPath);
+        GetRenderIndex().InsertSprim(HdPrimTypeTokens->simpleLight, this, _lightPath);
     } else {
-        GetRenderIndex().InsertSprim(
-            HdPrimTypeTokens->distantLight, this, _lightPath);
+        GetRenderIndex().InsertSprim(HdPrimTypeTokens->distantLight, this, _lightPath);
     }
-    GetRenderIndex().GetChangeTracker().SprimInserted(
-        _lightPath, HdLight::AllDirty);
+    GetRenderIndex().GetChangeTracker().SprimInserted(_lightPath, HdLight::AllDirty);
 }
 
-void MtohDefaultLightDelegate::SetDefaultLight(const GlfSimpleLight& light) {
-    if (ARCH_UNLIKELY(!_isSupported)) { return; }
+void MtohDefaultLightDelegate::SetDefaultLight(const GlfSimpleLight& light)
+{
+    if (ARCH_UNLIKELY(!_isSupported)) {
+        return;
+    }
     if (_light != light) {
         _light = light;
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
@@ -75,7 +79,8 @@ void MtohDefaultLightDelegate::SetDefaultLight(const GlfSimpleLight& light) {
     }
 }
 
-GfMatrix4d MtohDefaultLightDelegate::GetTransform(const SdfPath& id) {
+GfMatrix4d MtohDefaultLightDelegate::GetTransform(const SdfPath& id)
+{
     TF_UNUSED(id);
 
     TF_DEBUG(HDMAYA_DELEGATE_GET_TRANSFORM)
@@ -85,23 +90,21 @@ GfMatrix4d MtohDefaultLightDelegate::GetTransform(const SdfPath& id) {
     // stored in it's position. Otherwise, the matrix needs to be an identity
     // matrix.
     if (!IsHdSt()) {
-        const auto position = _light.GetPosition();
+        const auto  position = _light.GetPosition();
         GfTransform transform;
-        transform.SetRotation(GfRotation(
-            GfVec3d(0.0, 0.0, -1.0),
-            GfVec3d(-position[0], -position[1], -position[2])));
+        transform.SetRotation(
+            GfRotation(GfVec3d(0.0, 0.0, -1.0), GfVec3d(-position[0], -position[1], -position[2])));
         return transform.GetMatrix();
     }
     return GfMatrix4d(1.0);
 }
 
-VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key) {
+VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key)
+{
     TF_UNUSED(id);
 
     TF_DEBUG(HDMAYA_DELEGATE_GET)
-        .Msg(
-            "MtohDefaultLightDelegate::Get(%s, %s)\n", id.GetText(),
-            key.GetText());
+        .Msg("MtohDefaultLightDelegate::Get(%s, %s)\n", id.GetText(), key.GetText());
 
     if (key == HdLightTokens->params) {
         return VtValue(_light);
@@ -110,8 +113,7 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key) {
         return VtValue(GfMatrix4d(1.0));
         // Hydra might crash when this is an empty VtValue.
     } else if (key == HdLightTokens->shadowCollection) {
-        HdRprimCollection coll(
-            HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
+        HdRprimCollection coll(HdTokens->geometry, HdReprSelector(HdReprTokens->refined));
         return VtValue(coll);
     } else if (key == HdLightTokens->shadowParams) {
         HdxShadowParams shadowParams;
@@ -121,17 +123,17 @@ VtValue MtohDefaultLightDelegate::Get(const SdfPath& id, const TfToken& key) {
     return {};
 }
 
-VtValue MtohDefaultLightDelegate::GetLightParamValue(
-    const SdfPath& id, const TfToken& paramName) {
+VtValue MtohDefaultLightDelegate::GetLightParamValue(const SdfPath& id, const TfToken& paramName)
+{
     TF_UNUSED(id);
 
     TF_DEBUG(HDMAYA_DELEGATE_GET_LIGHT_PARAM_VALUE)
         .Msg(
             "MtohDefaultLightDelegate::GetLightParamValue(%s, %s)\n",
-            id.GetText(), paramName.GetText());
+            id.GetText(),
+            paramName.GetText());
 
-    if (paramName == HdLightTokens->color ||
-        paramName == HdTokens->displayColor) {
+    if (paramName == HdLightTokens->color || paramName == HdTokens->displayColor) {
         const auto diffuse = _light.GetDiffuse();
         return VtValue(GfVec3f(diffuse[0], diffuse[1], diffuse[2]));
     } else if (paramName == HdLightTokens->intensity) {
@@ -156,7 +158,8 @@ VtValue MtohDefaultLightDelegate::GetLightParamValue(
     return {};
 }
 
-bool MtohDefaultLightDelegate::GetVisible(const SdfPath& id) {
+bool MtohDefaultLightDelegate::GetVisible(const SdfPath& id)
+{
     TF_UNUSED(id);
     TF_DEBUG(HDMAYA_DELEGATE_GET_VISIBLE)
         .Msg("MtohDefaultLightDelegate::GetVisible(%s)\n", id.GetText());

@@ -15,12 +15,12 @@
 //
 #pragma once
 
-#include <ufe/hierarchy.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <ufe/hierarchy.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -43,18 +43,20 @@ public:
 
     //! Create a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
     //! pos argument is ignored, and only append is supported.
-    static UsdUndoInsertChildCommand::Ptr create(const UsdSceneItem::Ptr& parent,
-                                                 const UsdSceneItem::Ptr& child,
-                                                 const UsdSceneItem::Ptr& pos);
+    static UsdUndoInsertChildCommand::Ptr create(
+        const UsdSceneItem::Ptr& parent,
+        const UsdSceneItem::Ptr& child,
+        const UsdSceneItem::Ptr& pos);
 
-    Ufe::SceneItem::Ptr insertedChild() const override {return _ufeDstItem;}
+    Ufe::SceneItem::Ptr insertedChild() const override { return _ufeDstItem; }
 
 protected:
     //! Construct a UsdUndoInsertChildCommand.  Note that as of 4-May-2020 the
     //! pos argument is ignored, and only append is supported.
-    UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& parent,
-                              const UsdSceneItem::Ptr& child,
-                              const UsdSceneItem::Ptr& pos);
+    UsdUndoInsertChildCommand(
+        const UsdSceneItem::Ptr& parent,
+        const UsdSceneItem::Ptr& child,
+        const UsdSceneItem::Ptr& pos);
 
 private:
     void undo() override;
@@ -77,4 +79,4 @@ private:
 }; // UsdUndoInsertChildCommand
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

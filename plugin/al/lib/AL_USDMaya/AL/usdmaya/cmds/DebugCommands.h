@@ -21,7 +21,6 @@
 
 #include <maya/MPxCommand.h>
 
-
 namespace AL {
 namespace usdmaya {
 namespace cmds {
@@ -30,23 +29,20 @@ namespace cmds {
 /// \brief  A command that allows you to query and modify the current status of the TfDebug symbols.
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class UsdDebugCommand
-  : public MPxCommand
+class UsdDebugCommand : public MPxCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
 };
 
 /// builds the GUI for the TfDebug notices
 AL_USDMAYA_PUBLIC
 void constructDebugCommandGuis();
 
-} // cmds
-} // usdmaya
-} // AL
-
-
-
+} // namespace cmds
+} // namespace usdmaya
+} // namespace AL

@@ -16,42 +16,39 @@
 #ifndef PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
 #define PXRUSDMAYA_USER_TAGGED_ATTRIBUTE_H
 
-#include <map>
-#include <string>
-#include <vector>
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/tf/iterator.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/iterator.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/token.h>
-
-#include <mayaUsd/base/api.h>
+#include <map>
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_ATTR_TOKENS \
-    ((USDAttrTypePrimvar, "primvar")) \
-    ((USDAttrTypeUsdRi, "usdRi"))
+#define PXRUSDMAYA_ATTR_TOKENS ((USDAttrTypePrimvar, "primvar"))((USDAttrTypeUsdRi, "usdRi"))
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaUserTaggedAttributeTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_ATTR_TOKENS);
 
-
 /// \brief Represents a single attribute tagged for translation between Maya
 /// and USD, and describes how it will be exported from/imported into Maya.
 class UsdMayaUserTaggedAttribute
 {
 private:
-    MPlug _plug;
+    MPlug             _plug;
     const std::string _name;
-    const TfToken _type;
-    const TfToken _interpolation;
-    const bool _translateMayaDoubleToUsdSinglePrecision;
+    const TfToken     _type;
+    const TfToken     _interpolation;
+    const bool        _translateMayaDoubleToUsdSinglePrecision;
 
 public:
     /// \brief Gets the fallback value for whether attribute types should be
@@ -60,23 +57,21 @@ public:
     /// By default, the fallback value for this property is false so that
     /// double precision data is preserved in the translation back and forth
     /// between Maya and USD.
-    static bool GetFallbackTranslateMayaDoubleToUsdSinglePrecision() {
-        return false;
-    };
+    static bool GetFallbackTranslateMayaDoubleToUsdSinglePrecision() { return false; };
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaUserTaggedAttribute(
-            const MPlug& plug,
-            const std::string& name,
-            const TfToken& type,
-            const TfToken& interpolation,
-            const bool translateMayaDoubleToUsdSinglePrecision =
-                GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
+        const MPlug&       plug,
+        const std::string& name,
+        const TfToken&     type,
+        const TfToken&     interpolation,
+        const bool         translateMayaDoubleToUsdSinglePrecision
+        = GetFallbackTranslateMayaDoubleToUsdSinglePrecision());
 
     /// \brief Gets all of the exported attributes for the given node.
     MAYAUSD_CORE_PUBLIC
     static std::vector<UsdMayaUserTaggedAttribute>
-            GetUserTaggedAttributesForNode(const MObject& mayaNode);
+    GetUserTaggedAttributesForNode(const MObject& mayaNode);
 
     /// \brief Gets the plug for the Maya attribute to be exported.
     MAYAUSD_CORE_PUBLIC
@@ -119,8 +114,6 @@ public:
     bool GetTranslateMayaDoubleToUsdSinglePrecision() const;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

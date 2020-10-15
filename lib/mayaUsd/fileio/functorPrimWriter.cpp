@@ -15,15 +15,6 @@
 //
 #include "functorPrimWriter.h"
 
-#include <functional>
-
-#include <maya/MFnDependencyNode.h>
-
-#include <pxr/pxr.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/timeCode.h>
-
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterArgs.h>
 #include <mayaUsd/fileio/primWriterContext.h>
@@ -31,34 +22,38 @@
 #include <mayaUsd/fileio/transformWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+
+#include <maya/MFnDependencyNode.h>
+
+#include <functional>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMaya_FunctorPrimWriter::UsdMaya_FunctorPrimWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx,
-        UsdMayaPrimWriterRegistry::WriterFn plugFn) :
-    UsdMayaTransformWriter(depNodeFn, usdPath, jobCtx),
-    _plugFn(plugFn),
-    _exportsGprims(false),
-    _pruneChildren(false)
+    const MFnDependencyNode&            depNodeFn,
+    const SdfPath&                      usdPath,
+    UsdMayaWriteJobContext&             jobCtx,
+    UsdMayaPrimWriterRegistry::WriterFn plugFn)
+    : UsdMayaTransformWriter(depNodeFn, usdPath, jobCtx)
+    , _plugFn(plugFn)
+    , _exportsGprims(false)
+    , _pruneChildren(false)
 {
 }
 
 /* virtual */
-UsdMaya_FunctorPrimWriter::~UsdMaya_FunctorPrimWriter()
-{
-}
+UsdMaya_FunctorPrimWriter::~UsdMaya_FunctorPrimWriter() { }
 
 /* virtual */
-void
-UsdMaya_FunctorPrimWriter::Write(const UsdTimeCode& usdTime)
+void UsdMaya_FunctorPrimWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaTransformWriter::Write(usdTime);
 
-    const UsdMayaPrimWriterArgs args(
-        GetDagPath(),
-        _GetExportArgs().exportRefsAsInstanceable);
+    const UsdMayaPrimWriterArgs args(GetDagPath(), _GetExportArgs().exportRefsAsInstanceable);
 
     UsdMayaPrimWriterContext ctx(usdTime, GetUsdPath(), GetUsdStage());
 
@@ -70,33 +65,20 @@ UsdMaya_FunctorPrimWriter::Write(const UsdTimeCode& usdTime)
 }
 
 /* virtual */
-bool
-UsdMaya_FunctorPrimWriter::ExportsGprims() const
-{
-    return _exportsGprims;
-}
+bool UsdMaya_FunctorPrimWriter::ExportsGprims() const { return _exportsGprims; }
 
 /* virtual */
-bool
-UsdMaya_FunctorPrimWriter::ShouldPruneChildren() const
-{
-    return _pruneChildren;
-}
+bool UsdMaya_FunctorPrimWriter::ShouldPruneChildren() const { return _pruneChildren; }
 
 /* virtual */
-const SdfPathVector&
-UsdMaya_FunctorPrimWriter::GetModelPaths() const
-{
-    return _modelPaths;
-}
+const SdfPathVector& UsdMaya_FunctorPrimWriter::GetModelPaths() const { return _modelPaths; }
 
 /* static */
-UsdMayaPrimWriterSharedPtr
-UsdMaya_FunctorPrimWriter::Create(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx,
-        UsdMayaPrimWriterRegistry::WriterFn plugFn)
+UsdMayaPrimWriterSharedPtr UsdMaya_FunctorPrimWriter::Create(
+    const MFnDependencyNode&            depNodeFn,
+    const SdfPath&                      usdPath,
+    UsdMayaWriteJobContext&             jobCtx,
+    UsdMayaPrimWriterRegistry::WriterFn plugFn)
 {
     return UsdMayaPrimWriterSharedPtr(
         new UsdMaya_FunctorPrimWriter(depNodeFn, usdPath, jobCtx, plugFn));
@@ -104,15 +86,11 @@ UsdMaya_FunctorPrimWriter::Create(
 
 /* static */
 UsdMayaPrimWriterRegistry::WriterFactoryFn
-UsdMaya_FunctorPrimWriter::CreateFactory(
-        UsdMayaPrimWriterRegistry::WriterFn fn)
+UsdMaya_FunctorPrimWriter::CreateFactory(UsdMayaPrimWriterRegistry::WriterFn fn)
 {
-    return [=](const MFnDependencyNode& depNodeFn, 
-               const SdfPath& usdPath, 
-               UsdMayaWriteJobContext& jobCtx) { 
-        return Create(depNodeFn, usdPath, jobCtx, fn); 
-    };
+    return [=](const MFnDependencyNode& depNodeFn,
+               const SdfPath&           usdPath,
+               UsdMayaWriteJobContext&  jobCtx) { return Create(depNodeFn, usdPath, jobCtx, fn); };
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

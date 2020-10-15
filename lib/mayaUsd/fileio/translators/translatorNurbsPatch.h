@@ -16,14 +16,14 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H
 #define PXRUSDMAYA_TRANSLATOR_NURBSPATCH_H
 
-#include <maya/MObject.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/nurbsPatch.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primReaderArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -31,13 +31,11 @@ struct UsdMayaTranslatorNurbsPatch
 {
     MAYAUSD_CORE_PUBLIC
     static bool Read(
-            const UsdGeomNurbsPatch& usdNurbsPatch,
-            MObject parentNode,
-            const UsdMayaPrimReaderArgs& args,
-            UsdMayaPrimReaderContext* context);
+        const UsdGeomNurbsPatch&     usdNurbsPatch,
+        MObject                      parentNode,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext*    context);
 };
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

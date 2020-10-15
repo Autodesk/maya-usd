@@ -19,15 +19,14 @@
 /// \file usdMaya/translatorModelAssembly.h
 
 #include "usdMaya/api.h"
+
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primWriterArgs.h>
 #include <mayaUsd/fileio/primWriterContext.h>
 
-#include <pxr/pxr.h>
-
 #include <pxr/base/tf/token.h>
-
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 
@@ -36,9 +35,7 @@
 #include <map>
 #include <string>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 struct UsdMayaTranslatorModelAssembly
 {
@@ -46,9 +43,7 @@ struct UsdMayaTranslatorModelAssembly
     /// when provided args and a context that identify a Maya
     /// assembly node.
     PXRUSDMAYA_API
-    static bool Create(
-            const UsdMayaPrimWriterArgs& args,
-            UsdMayaPrimWriterContext* context);
+    static bool Create(const UsdMayaPrimWriterArgs& args, UsdMayaPrimWriterContext* context);
 
     /// This method returns true if \p prim being considered for import under
     /// \p usdImportRootPrim should be imported into Maya as an assembly.
@@ -59,10 +54,10 @@ struct UsdMayaTranslatorModelAssembly
     //  want to customize.
     PXRUSDMAYA_API
     static bool ShouldImportAsAssembly(
-            const UsdPrim& usdImportRootPrim,
-            const UsdPrim& prim,
-            std::string* assetIdentifier,
-            SdfPath* assetPrimPath);
+        const UsdPrim& usdImportRootPrim,
+        const UsdPrim& prim,
+        std::string*   assetIdentifier,
+        SdfPath*       assetPrimPath);
 
     /// Imports the model at \p prim as a new Maya assembly under
     /// \p parentNode. A USD reference assembly node will be created, and if
@@ -71,28 +66,26 @@ struct UsdMayaTranslatorModelAssembly
     /// Returns true if this succeeds in creating an assembly for \p prim.
     PXRUSDMAYA_API
     static bool Read(
-            const UsdPrim& prim,
-            const std::string& assetIdentifier,
-            const SdfPath& assetPrimPath,
-            const MObject& parentNode,
-            const UsdMayaPrimReaderArgs& args,
-            UsdMayaPrimReaderContext* context,
-            const TfToken& assemblyRep);
+        const UsdPrim&               prim,
+        const std::string&           assetIdentifier,
+        const SdfPath&               assetPrimPath,
+        const MObject&               parentNode,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext*    context,
+        const TfToken&               assemblyRep);
 
     /// Creates a Maya USD proxy shape node for the USD prim \p prim under
     /// \p parentNode. A USD proxy shape node will be created.
     /// Returns true if this succeeds in creating a proxy shape for \p prim.
     PXRUSDMAYA_API
     static bool ReadAsProxy(
-            const UsdPrim& prim,
-            const std::map<std::string, std::string>& variantSetSelections,
-            MObject parentNode,
-            const UsdMayaPrimReaderArgs& args,
-            UsdMayaPrimReaderContext* context);
+        const UsdPrim&                            prim,
+        const std::map<std::string, std::string>& variantSetSelections,
+        MObject                                   parentNode,
+        const UsdMayaPrimReaderArgs&              args,
+        UsdMayaPrimReaderContext*                 context);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

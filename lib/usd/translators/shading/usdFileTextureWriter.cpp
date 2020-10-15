@@ -48,18 +48,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class PxrUsdTranslators_FileTextureWriter : public UsdMayaShaderWriter
 {
-    public:
-        PxrUsdTranslators_FileTextureWriter(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrUsdTranslators_FileTextureWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        static ContextSupport CanExport(const UsdMayaJobExportArgs&);
+    static ContextSupport CanExport(const UsdMayaJobExportArgs&);
 
-        void Write(const UsdTimeCode& usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 
-        TfToken GetShadingAttributeNameForMayaAttrName(
-                const TfToken& mayaAttrName) override;
+    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 };
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(file, PxrUsdTranslators_FileTextureWriter);
@@ -68,30 +67,15 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya "file" node attribute names
-    (alphaGain)
-    (alphaOffset)
-    (colorGain)
-    (colorOffset)
-    (defaultColor)
-    (fileTextureName)
-    (outAlpha)
-    (outColor)
-    (outColorR)
-    (outColorG)
-    (outColorB)
-    (outTransparency)
-    (outTransparencyR)
-    (outTransparencyG)
-    (outTransparencyB)
-    (wrapU)
-    (wrapV)
+    (alphaGain)(alphaOffset)(colorGain)(colorOffset)(defaultColor)(fileTextureName)(outAlpha)(
+        outColor)(outColorR)(outColorG)(outColorB)(outTransparency)(outTransparencyR)(
+        outTransparencyG)(outTransparencyB)(wrapU)(wrapV)
 
     // XXX: We duplicate these tokens here rather than create a dependency on
     // usdImaging in case the plugin is being built with imaging disabled.
     // If/when they move out of usdImaging to a place that is always available,
     // they should be pulled from there instead.
-    (UsdUVTexture)
-    (UsdPrimvarReader_float2)
+    (UsdUVTexture)(UsdPrimvarReader_float2)
 
     // UsdPrimvarReader_float2 Prim Name
     ((PrimvarReaderShaderName, "TexCoordReader"))
@@ -103,25 +87,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (result)
 
     // UsdUVTexture Input Names
-    (bias)
-    (fallback)
-    (file)
-    (scale)
-    (st)
-    (wrapS)
-    (wrapT)
+    (bias)(fallback)(file)(scale)(st)(wrapS)(wrapT)
 
     // Values for wrapS and wrapT
-    (black)
-    (repeat)
+    (black)(repeat)
 
     // UsdUVTexture Output Names
-    ((RGBOutputName, "rgb"))
-    ((RedOutputName, "r"))
-    ((GreenOutputName, "g"))
-    ((BlueOutputName, "b"))
-    ((AlphaOutputName, "a"))
-);
+    ((RGBOutputName, "rgb"))((RedOutputName, "r"))((GreenOutputName, "g"))((BlueOutputName, "b"))(
+        (AlphaOutputName, "a")));
 
 UsdMayaShaderWriter::ContextSupport
 PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)
@@ -132,14 +105,13 @@ PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& expor
 }
 
 PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaShaderWriter(depNodeFn, usdPath, jobCtx)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaShaderWriter(depNodeFn, usdPath, jobCtx)
 {
     // Create a UsdUVTexture shader as the "primary" shader for this writer.
-    UsdShadeShader texShaderSchema =
-        UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
+    UsdShadeShader texShaderSchema = UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
     if (!TF_VERIFY(
             texShaderSchema,
             "Could not define UsdShadeShader at path '%s'\n",
@@ -159,35 +131,29 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
 
     // Now create a UsdPrimvarReader shader that the UsdUvTexture shader will
     // use.
-    const SdfPath primvarReaderShaderPath =
-        texShaderSchema.GetPath().AppendChild(_tokens->PrimvarReaderShaderName);
-    UsdShadeShader primvarReaderShaderSchema =
-        UsdShadeShader::Define(GetUsdStage(), primvarReaderShaderPath);
+    const SdfPath primvarReaderShaderPath
+        = texShaderSchema.GetPath().AppendChild(_tokens->PrimvarReaderShaderName);
+    UsdShadeShader primvarReaderShaderSchema
+        = UsdShadeShader::Define(GetUsdStage(), primvarReaderShaderPath);
 
-    primvarReaderShaderSchema.CreateIdAttr(
-        VtValue(_tokens->UsdPrimvarReader_float2));
+    primvarReaderShaderSchema.CreateIdAttr(VtValue(_tokens->UsdPrimvarReader_float2));
 
     // XXX: We'll eventually need to to determine which UV set to use if we're
     // not using the default (i.e. "map1" in Maya -> "st" in USD).
-    primvarReaderShaderSchema.CreateInput(
-        _tokens->varname,
-        SdfValueTypeNames->Token).Set(UsdUtilsGetPrimaryUVSetName());
+    primvarReaderShaderSchema.CreateInput(_tokens->varname, SdfValueTypeNames->Token)
+        .Set(UsdUtilsGetPrimaryUVSetName());
 
-    UsdShadeOutput primvarReaderOutput =
-        primvarReaderShaderSchema.CreateOutput(
-            _tokens->result,
-            SdfValueTypeNames->Float2);
+    UsdShadeOutput primvarReaderOutput
+        = primvarReaderShaderSchema.CreateOutput(_tokens->result, SdfValueTypeNames->Float2);
 
     // Connect the output of the primvar reader to the texture coordinate
     // input of the UV texture.
-    texShaderSchema.CreateInput(
-        _tokens->st,
-        SdfValueTypeNames->Float2).ConnectToSource(primvarReaderOutput);
+    texShaderSchema.CreateInput(_tokens->st, SdfValueTypeNames->Float2)
+        .ConnectToSource(primvarReaderOutput);
 }
 
 /* virtual */
-void
-PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaShaderWriter::Write(usdTime);
 
@@ -207,11 +173,10 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     // File
-    const MPlug fileTextureNamePlug =
-        depNodeFn.findPlug(
-            _tokens->fileTextureName.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug fileTextureNamePlug = depNodeFn.findPlug(
+        _tokens->fileTextureName.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -233,23 +198,19 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         fileTextureName = relativePath.generic_string();
     }
 
-    shaderSchema.CreateInput(
-        _tokens->file,
-        SdfValueTypeNames->Asset).Set(
-            SdfAssetPath(fileTextureName.c_str()),
-            usdTime);
+    shaderSchema.CreateInput(_tokens->file, SdfValueTypeNames->Asset)
+        .Set(SdfAssetPath(fileTextureName.c_str()), usdTime);
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the
     // UsdUVTexture's scale input.
-    bool isScaleAuthored = false;
+    bool    isScaleAuthored = false;
     GfVec4f scale(1.0f, 1.0f, 1.0f, 1.0f);
 
     // Color Gain
-    const MPlug colorGainPlug =
-        depNodeFn.findPlug(
-            _tokens->colorGain.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug colorGainPlug = depNodeFn.findPlug(
+        _tokens->colorGain.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -266,11 +227,10 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     // Alpha Gain
-    const MPlug alphaGainPlug =
-        depNodeFn.findPlug(
-            _tokens->alphaGain.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug alphaGainPlug = depNodeFn.findPlug(
+        _tokens->alphaGain.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -285,22 +245,19 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     if (isScaleAuthored) {
-        shaderSchema.CreateInput(
-            _tokens->scale,
-            SdfValueTypeNames->Float4).Set(scale, usdTime);
+        shaderSchema.CreateInput(_tokens->scale, SdfValueTypeNames->Float4).Set(scale, usdTime);
     }
 
     // The Maya file node's 'colorOffset' and 'alphaOffset' attributes map to
     // the UsdUVTexture's bias input.
-    bool isBiasAuthored = false;
+    bool    isBiasAuthored = false;
     GfVec4f bias(0.0f, 0.0f, 0.0f, 0.0f);
 
     // Color Offset
-    const MPlug colorOffsetPlug =
-        depNodeFn.findPlug(
-            _tokens->colorOffset.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug colorOffsetPlug = depNodeFn.findPlug(
+        _tokens->colorOffset.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -317,11 +274,10 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     // Alpha Offset
-    const MPlug alphaOffsetPlug =
-        depNodeFn.findPlug(
-            _tokens->alphaOffset.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug alphaOffsetPlug = depNodeFn.findPlug(
+        _tokens->alphaOffset.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -336,17 +292,14 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     }
 
     if (isBiasAuthored) {
-        shaderSchema.CreateInput(
-            _tokens->bias,
-            SdfValueTypeNames->Float4).Set(bias, usdTime);
+        shaderSchema.CreateInput(_tokens->bias, SdfValueTypeNames->Float4).Set(bias, usdTime);
     }
 
     // Default Color
-    const MPlug defaultColorPlug =
-        depNodeFn.findPlug(
-            _tokens->defaultColor.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug defaultColorPlug = depNodeFn.findPlug(
+        _tokens->defaultColor.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -364,16 +317,13 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         }
     }
 
-    shaderSchema.CreateInput(
-        _tokens->fallback,
-        SdfValueTypeNames->Float4).Set(fallback, usdTime);
+    shaderSchema.CreateInput(_tokens->fallback, SdfValueTypeNames->Float4).Set(fallback, usdTime);
 
     // Wrap U
-    const MPlug wrapUPlug =
-        depNodeFn.findPlug(
-            _tokens->wrapU.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug wrapUPlug = depNodeFn.findPlug(
+        _tokens->wrapU.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -385,17 +335,14 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         }
 
         const TfToken wrapS = wrapU ? _tokens->repeat : _tokens->black;
-        shaderSchema.CreateInput(
-            _tokens->wrapS,
-            SdfValueTypeNames->Token).Set(wrapS, usdTime);
+        shaderSchema.CreateInput(_tokens->wrapS, SdfValueTypeNames->Token).Set(wrapS, usdTime);
     }
 
     // Wrap V
-    const MPlug wrapVPlug =
-        depNodeFn.findPlug(
-            _tokens->wrapV.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug wrapVPlug = depNodeFn.findPlug(
+        _tokens->wrapV.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return;
     }
@@ -407,18 +354,15 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         }
 
         const TfToken wrapT = wrapV ? _tokens->repeat : _tokens->black;
-        shaderSchema.CreateInput(
-            _tokens->wrapT,
-            SdfValueTypeNames->Token).Set(wrapT, usdTime);
+        shaderSchema.CreateInput(_tokens->wrapT, SdfValueTypeNames->Token).Set(wrapT, usdTime);
     }
 }
 
 /* virtual */
-TfToken
-PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+TfToken PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
+    const TfToken& mayaAttrName)
 {
-    TfToken usdAttrName;
+    TfToken          usdAttrName;
     SdfValueTypeName usdTypeName = SdfValueTypeNames->Float;
 
     if (mayaAttrName == _tokens->outColor) {
@@ -430,11 +374,10 @@ PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
         usdAttrName = _tokens->GreenOutputName;
     } else if (mayaAttrName == _tokens->outColorB) {
         usdAttrName = _tokens->BlueOutputName;
-    } else if (mayaAttrName == _tokens->outAlpha ||
-            mayaAttrName == _tokens->outTransparency ||
-            mayaAttrName == _tokens->outTransparencyR ||
-            mayaAttrName == _tokens->outTransparencyG ||
-            mayaAttrName == _tokens->outTransparencyB) {
+    } else if (
+        mayaAttrName == _tokens->outAlpha || mayaAttrName == _tokens->outTransparency
+        || mayaAttrName == _tokens->outTransparencyR || mayaAttrName == _tokens->outTransparencyG
+        || mayaAttrName == _tokens->outTransparencyB) {
         usdAttrName = _tokens->AlphaOutputName;
     }
 
@@ -451,6 +394,5 @@ PxrUsdTranslators_FileTextureWriter::GetShadingAttributeNameForMayaAttrName(
 
     return usdAttrName;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

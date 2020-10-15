@@ -15,10 +15,10 @@
 //
 #include "usdMaya/instancerShapeAdapterWithSceneAssembly.h"
 
+#include "usdMaya/referenceAssembly.h"
+
 #include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
 #include <mayaUsd/utils/util.h>
-
-#include "usdMaya/referenceAssembly.h"
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMatrixData.h>
@@ -26,28 +26,26 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::UsdMayaGL_InstancerShapeAdapterWithSceneAssembly(
-        bool isViewport2) :
-    UsdMayaGL_InstancerShapeAdapter(isViewport2)
+    bool isViewport2)
+    : UsdMayaGL_InstancerShapeAdapter(isViewport2)
 {
-    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Constructing UsdMayaGL_InstancerShapeAdapterWithSceneAssembly: %p\n",
-        this);
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)
+        .Msg("Constructing UsdMayaGL_InstancerShapeAdapterWithSceneAssembly: %p\n", this);
 }
 
 /* virtual */
-UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::~UsdMayaGL_InstancerShapeAdapterWithSceneAssembly()
+UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::
+    ~UsdMayaGL_InstancerShapeAdapterWithSceneAssembly()
 {
-    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Destructing UsdMayaGL_InstancerShapeAdapterWithSceneAssembly: %p\n",
-        this);
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)
+        .Msg("Destructing UsdMayaGL_InstancerShapeAdapterWithSceneAssembly: %p\n", this);
 }
 
 /* virtual */
 void UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::SyncInstancerPerPrototypePostHook(
     const MPlug&              hierarchyPlug,
     UsdPrim&                  prototypePrim,
-    std::vector<std::string>& layerIdsToMute
-)
+    std::vector<std::string>& layerIdsToMute)
 {
     UsdReferences prototypeRefs = prototypePrim.GetReferences();
     prototypeRefs.ClearReferences();
@@ -58,7 +56,7 @@ void UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::SyncInstancerPerPrototype
         return;
     }
 
-    MStatus status;
+    MStatus           status;
     MFnDependencyNode sourceNode(source.node(), &status);
     if (!status) {
         return;
@@ -70,15 +68,13 @@ void UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::SyncInstancerPerPrototype
         return;
     }
 
-    UsdMayaReferenceAssembly* usdRefAssem =
-        dynamic_cast<UsdMayaReferenceAssembly*>(
-            sourceNode.userNode());
+    UsdMayaReferenceAssembly* usdRefAssem
+        = dynamic_cast<UsdMayaReferenceAssembly*>(sourceNode.userNode());
     if (!usdRefAssem) {
         return;
     }
 
-    if (usdRefAssem->getActive() ==
-        UsdMayaRepresentationFull::_assemblyType) {
+    if (usdRefAssem->getActive() == UsdMayaRepresentationFull::_assemblyType) {
         return;
     }
 
@@ -88,9 +84,8 @@ void UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::SyncInstancerPerPrototype
     }
 
     // Add main reference data.
-    const std::string& layerId =
-        prim.GetStage()->GetRootLayer()->GetIdentifier();
-    const SdfPath primPath = prim.GetPath();
+    const std::string& layerId = prim.GetStage()->GetRootLayer()->GetIdentifier();
+    const SdfPath      primPath = prim.GetPath();
     prototypeRefs.AddReference(SdfReference(layerId, primPath));
 
     // Reference session data.
@@ -106,27 +101,24 @@ void UsdMayaGL_InstancerShapeAdapterWithSceneAssembly::SyncInstancerPerPrototype
             prototypeRefs.AddReference(
                 SdfReference(sessionLayer->GetIdentifier(), primPath),
                 UsdListPositionFrontOfPrependList);
-            const SdfSubLayerProxy subLayers =
-                sessionLayer->GetSubLayerPaths();
-            layerIdsToMute.insert(
-                layerIdsToMute.end(),
-                subLayers.begin(),
-                subLayers.end());
+            const SdfSubLayerProxy subLayers = sessionLayer->GetSubLayerPaths();
+            layerIdsToMute.insert(layerIdsToMute.end(), subLayers.begin(), subLayers.end());
         }
     }
 
     // Also handles instancerTranslate.
     // These are all in "physical", not "logical" indices.
-    auto holder = UsdMayaUtil::GetPlugDataHandle(hierarchyPlug);
-    MMatrix mMat = MFnMatrixData(holder->GetDataHandle().data()).matrix();
+    auto       holder = UsdMayaUtil::GetPlugDataHandle(hierarchyPlug);
+    MMatrix    mMat = MFnMatrixData(holder->GetDataHandle().data()).matrix();
     GfMatrix4d gfMat(mMat.matrix);
 
     MPlug translatePlug = sourceNode.findPlug("translate", &status);
     if (status) {
         // OK if we didn't find plug, assume instancerTranslate is zero.
-        GfVec3d tr(translatePlug.child(0).asDouble(),
-                   translatePlug.child(1).asDouble(),
-                   translatePlug.child(2).asDouble());
+        GfVec3d tr(
+            translatePlug.child(0).asDouble(),
+            translatePlug.child(1).asDouble(),
+            translatePlug.child(2).asDouble());
         gfMat = gfMat * GfMatrix4d().SetTranslate(-tr);
     }
 

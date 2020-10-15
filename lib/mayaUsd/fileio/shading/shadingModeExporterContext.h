@@ -16,54 +16,42 @@
 #ifndef PXRUSDMAYA_SHADING_MODE_EXPORTER_CONTEXT_H
 #define PXRUSDMAYA_SHADING_MODE_EXPORTER_CONTEXT_H
 
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/types.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
+
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+
+#include <string>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMayaShadingModeExportContext
 {
 public:
-    void SetShadingEngine(const MObject& shadingEngine) {
-        _shadingEngine = shadingEngine;
-    }
+    void    SetShadingEngine(const MObject& shadingEngine) { _shadingEngine = shadingEngine; }
     MObject GetShadingEngine() const { return _shadingEngine; }
 
     const UsdStageRefPtr& GetUsdStage() const { return _stage; }
 
-    UsdMayaWriteJobContext& GetWriteJobContext() const {
-        return _writeJobContext;
-    }
+    UsdMayaWriteJobContext& GetWriteJobContext() const { return _writeJobContext; }
 
-    const UsdMayaJobExportArgs& GetExportArgs() const {
-        return _writeJobContext.GetArgs();
-    }
+    const UsdMayaJobExportArgs& GetExportArgs() const { return _writeJobContext.GetArgs(); }
 
-    bool GetMergeTransformAndShape() const {
-        return GetExportArgs().mergeTransformAndShape;
-    }
-    const SdfPath& GetOverrideRootPath() const {
-        return GetExportArgs().usdModelRootOverridePath;
-    }
-    const SdfPathSet& GetBindableRoots() const {
-        return _bindableRoots;
-    }
+    bool GetMergeTransformAndShape() const { return GetExportArgs().mergeTransformAndShape; }
+    const SdfPath& GetOverrideRootPath() const { return GetExportArgs().usdModelRootOverridePath; }
+    const SdfPathSet& GetBindableRoots() const { return _bindableRoots; }
 
     MAYAUSD_CORE_PUBLIC
     void SetSurfaceShaderPlugName(const TfToken& surfaceShaderPlugName);
@@ -72,9 +60,7 @@ public:
     MAYAUSD_CORE_PUBLIC
     void SetDisplacementShaderPlugName(const TfToken& displacementShaderPlugName);
 
-    const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdMap() const {
-        return _dagPathToUsdMap;
-    }
+    const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagPathToUsdMap() const { return _dagPathToUsdMap; }
 
     MAYAUSD_CORE_PUBLIC
     MPlug GetSurfaceShaderPlug() const;
@@ -113,32 +99,30 @@ public:
     /// given \p assignmentsToBind.
     MAYAUSD_CORE_PUBLIC
     UsdPrim MakeStandardMaterialPrim(
-            const AssignmentVector& assignmentsToBind,
-            const std::string& name=std::string(),
-            SdfPathSet* const boundPrimPaths=nullptr) const;
+        const AssignmentVector& assignmentsToBind,
+        const std::string&      name = std::string(),
+        SdfPathSet* const       boundPrimPaths = nullptr) const;
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaShadingModeExportContext(
-            const MObject& shadingEngine,
-            UsdMayaWriteJobContext& writeJobContext,
-            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap);
+        const MObject&                           shadingEngine,
+        UsdMayaWriteJobContext&                  writeJobContext,
+        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap);
 
 private:
-    MObject _shadingEngine;
-    const UsdStageRefPtr& _stage;
+    MObject                                  _shadingEngine;
+    const UsdStageRefPtr&                    _stage;
     const UsdMayaUtil::MDagPathMap<SdfPath>& _dagPathToUsdMap;
-    UsdMayaWriteJobContext& _writeJobContext;
-    TfToken _surfaceShaderPlugName;
-    TfToken _volumeShaderPlugName;
-    TfToken _displacementShaderPlugName;
+    UsdMayaWriteJobContext&                  _writeJobContext;
+    TfToken                                  _surfaceShaderPlugName;
+    TfToken                                  _volumeShaderPlugName;
+    TfToken                                  _displacementShaderPlugName;
 
     /// Shaders that are bound to prims under \p _bindableRoot paths will get
     /// exported. If \p bindableRoots is empty, it will export all.
     SdfPathSet _bindableRoots;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

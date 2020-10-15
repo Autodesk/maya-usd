@@ -15,7 +15,6 @@
 //
 // GENERATED FILE.  DO NOT EDIT.
 #include <boost/python/class.hpp>
-
 #include <mayaUsd_Schemas/tokens.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -26,37 +25,36 @@ namespace {
 // strings and for some reason simply wrapping the token using def_readonly
 // bypasses to-Python conversion, leading to the error that there's no
 // Python type for the C++ TfToken type.  So we wrap this functor instead.
-class _WrapStaticToken {
+class _WrapStaticToken
+{
 public:
-    _WrapStaticToken(const TfToken* token) : _token(token) { }
-
-    std::string operator()() const
+    _WrapStaticToken(const TfToken* token)
+        : _token(token)
     {
-        return _token->GetString();
     }
+
+    std::string operator()() const { return _token->GetString(); }
 
 private:
     const TfToken* _token;
 };
 
-template <typename T>
-void
-_AddToken(T& cls, const char* name, const TfToken& token)
+template <typename T> void _AddToken(T& cls, const char* name, const TfToken& token)
 {
-    cls.add_static_property(name,
-                            boost::python::make_function(
-                                _WrapStaticToken(&token),
-                                boost::python::return_value_policy<
-                                    boost::python::return_by_value>(),
-                                boost::mpl::vector1<std::string>()));
+    cls.add_static_property(
+        name,
+        boost::python::make_function(
+            _WrapStaticToken(&token),
+            boost::python::return_value_policy<boost::python::return_by_value>(),
+            boost::mpl::vector1<std::string>()));
 }
 
-} // anonymous
+} // namespace
 
 void wrapMayaUsd_SchemasTokens()
 {
-    boost::python::class_<MayaUsd_SchemasTokensType, boost::noncopyable>
-        cls("Tokens", boost::python::no_init);
+    boost::python::class_<MayaUsd_SchemasTokensType, boost::noncopyable> cls(
+        "Tokens", boost::python::no_init);
     _AddToken(cls, "mayaNamespace", MayaUsd_SchemasTokens->mayaNamespace);
     _AddToken(cls, "mayaReference", MayaUsd_SchemasTokens->mayaReference);
 }

@@ -15,11 +15,12 @@
 //
 #pragma once
 
-#include <maya/MFnReference.h>
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/utils/ForwardDeclares.h"
 
 #include <pxr/usd/usd/stage.h>
+
+#include <maya/MFnReference.h>
 
 namespace AL {
 namespace usdmaya {
@@ -32,18 +33,16 @@ namespace translators {
 class MayaReference : public TranslatorBase
 {
 public:
-  AL_USDMAYA_DECLARE_TRANSLATOR(MayaReference);
+    AL_USDMAYA_DECLARE_TRANSLATOR(MayaReference);
 
 protected:
-  MStatus initialize() override;
-  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
-  MStatus tearDown(const SdfPath& path) override;
-  MStatus update(const UsdPrim& path) override;
-  bool supportsUpdate() const override 
-    { return true; }
+    MStatus initialize() override;
+    MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
+    MStatus tearDown(const SdfPath& path) override;
+    MStatus update(const UsdPrim& path) override;
+    bool    supportsUpdate() const override { return true; }
 
-  bool canBeOverridden() override
-    { return true; }
+    bool canBeOverridden() override { return true; }
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -52,12 +51,12 @@ protected:
 class ALMayaReference : public MayaReference
 {
 public:
-  AL_USDMAYA_DECLARE_TRANSLATOR(ALMayaReference);
+    AL_USDMAYA_DECLARE_TRANSLATOR(ALMayaReference);
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-} // translators
-} // fileio
-} // usdmaya
-} // AL
+} // namespace translators
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

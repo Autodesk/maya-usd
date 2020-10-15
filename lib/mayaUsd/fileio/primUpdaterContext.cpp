@@ -19,17 +19,13 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaPrimUpdaterContext::UsdMayaPrimUpdaterContext(
-        const UsdTimeCode& timeCode,
-        const UsdStageRefPtr& stage) : 
-    _timeCode(timeCode),
-    _stage(stage)
+    const UsdTimeCode&    timeCode,
+    const UsdStageRefPtr& stage)
+    : _timeCode(timeCode)
+    , _stage(stage)
 {
 }
 
-void
-UsdMayaPrimUpdaterContext::Clear(const SdfPath&)
-{
-}
+void UsdMayaPrimUpdaterContext::Clear(const SdfPath&) { }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

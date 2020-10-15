@@ -15,14 +15,14 @@
 //
 #pragma once
 
-#include <mayaUsdUtils/ForwardDeclares.h>
-
+#include "AL/maya/utils/ForwardDeclares.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/fileio/translators/TranslatorContext.h"
-#include "AL/maya/utils/ForwardDeclares.h"
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+
+#include <mayaUsdUtils/ForwardDeclares.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -47,12 +47,13 @@ extern const TfToken assetType;
 /// \ingroup   fileio
 //----------------------------------------------------------------------------------------------------------------------
 bool importSchemaPrim(
-    const UsdPrim& usdPrim,
-    MObject& parent,
-    MObject& created,
-    translators::TranslatorContextPtr context = TfNullPtr,
-    const translators::TranslatorRefPtr translator = TfNullPtr,
-    const fileio::translators::TranslatorParameters& param = fileio::translators::TranslatorParameters());
+    const UsdPrim&                                   usdPrim,
+    MObject&                                         parent,
+    MObject&                                         created,
+    translators::TranslatorContextPtr                context = TfNullPtr,
+    const translators::TranslatorRefPtr              translator = TfNullPtr,
+    const fileio::translators::TranslatorParameters& param
+    = fileio::translators::TranslatorParameters());
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  utility class to determine whether a usd transform chain should be created
@@ -61,28 +62,26 @@ bool importSchemaPrim(
 class SchemaPrimsUtils
 {
 public:
+    /// \brief  ctor
+    /// \param  manufacture the translator registry
+    SchemaPrimsUtils(fileio::translators::TranslatorManufacture& manufacture);
 
-  /// \brief  ctor
-  /// \param  manufacture the translator registry
-  SchemaPrimsUtils(fileio::translators::TranslatorManufacture& manufacture);
+    /// \brief  utility function to determine if a prim is one of our custom schema prims
+    /// \param  prim the USD prim to test
+    /// \return the corresponding translator of the schema prim
+    fileio::translators::TranslatorRefPtr isSchemaPrim(const UsdPrim& prim);
 
-  /// \brief  utility function to determine if a prim is one of our custom schema prims
-  /// \param  prim the USD prim to test
-  /// \return the corresponding translator of the schema prim
-  fileio::translators::TranslatorRefPtr isSchemaPrim(const UsdPrim& prim);
+    /// \brief  returns true if the prim specified requires a transform when importing custom nodes
+    /// into the maya scene \param  prim the USD prim to check \return true if the prim requires a
+    /// parent transform on import, false otherwise
+    bool needsTransformParent(const UsdPrim& prim);
 
-  /// \brief  returns true if the prim specified requires a transform when importing custom nodes into the maya scene
-  /// \param  prim the USD prim to check
-  /// \return true if the prim requires a parent transform on import, false otherwise
-  bool needsTransformParent(const UsdPrim& prim);
-  
 private:
-  fileio::translators::TranslatorManufacture& m_manufacture;
+    fileio::translators::TranslatorManufacture& m_manufacture;
 };
 
-
 //----------------------------------------------------------------------------------------------------------------------
-} // fileio
-} // usdmaya
-} // AL
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

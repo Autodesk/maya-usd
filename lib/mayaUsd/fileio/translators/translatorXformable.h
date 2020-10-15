@@ -17,40 +17,38 @@
 #define PXRUSDMAYA_TRANSLATOR_XFORMABLE_H
 
 #include <mayaUsd/base/api.h>
-
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/gf/vec3d.h>
-#include <pxr/usd/usdGeom/xformable.h>
-
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/xformable.h>
+
+#include <maya/MObject.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \brief Provides helper functions for reading UsdGeomXformable.  
+/// \brief Provides helper functions for reading UsdGeomXformable.
 struct UsdMayaTranslatorXformable
 {
     /// \brief reads xform attributes from \p xformable and converts them into
     /// maya transform values.
     MAYAUSD_CORE_PUBLIC
     static void Read(
-            const UsdGeomXformable& xformable, 
-            MObject mayaNode,
-            const UsdMayaPrimReaderArgs& args,
-            UsdMayaPrimReaderContext* context);
+        const UsdGeomXformable&      xformable,
+        MObject                      mayaNode,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext*    context);
 
     /// \brief Convenince function for decomposing \p usdMatrix.
     MAYAUSD_CORE_PUBLIC
     static bool ConvertUsdMatrixToComponents(
-            const GfMatrix4d &usdMatrix, 
-            GfVec3d *trans, 
-            GfVec3d *rot,
-            GfVec3d *scale);
+        const GfMatrix4d& usdMatrix,
+        GfVec3d*          trans,
+        GfVec3d*          rot,
+        GfVec3d*          scale);
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

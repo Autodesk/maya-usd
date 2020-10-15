@@ -15,123 +15,127 @@
 //
 #pragma once
 
-
-#include <maya/MPxCommand.h>
 #include "AL/event/EventHandler.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
+
+#include <maya/MPxCommand.h>
 
 namespace AL {
 namespace usdmaya {
 namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  The base class for all commands that need to create/delete callbacks in some way. Fill m_callbacksToDelete
-///         with the CallbackIds you want to delete, and fill the m_callbacksToInsert array with the callbacks returned
-///         from AL::AL::event::EventScheduler::buildCallback. Within the undo/redo implementation of a mel command, simply
-///         call redoItImplementation. This method will destroy the callbacks requested, and insert the created callbacks.
-///         Once called, the values of the m_callbacksToDelete and m_callbacksToInsert will be swapped, therefore calling
-///         redoItImplementation again will undo the previous action.
+/// \brief  The base class for all commands that need to create/delete callbacks in some way. Fill
+/// m_callbacksToDelete
+///         with the CallbackIds you want to delete, and fill the m_callbacksToInsert array with the
+///         callbacks returned from AL::AL::event::EventScheduler::buildCallback. Within the
+///         undo/redo implementation of a mel command, simply call redoItImplementation. This method
+///         will destroy the callbacks requested, and insert the created callbacks. Once called, the
+///         values of the m_callbacksToDelete and m_callbacksToInsert will be swapped, therefore
+///         calling redoItImplementation again will undo the previous action.
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
 struct BaseCallbackCommand
 {
-  /// call within both the undo and redo methods
-  MStatus redoItImplementation();
-  /// the callback ids that need to be deleted
-  std::vector<AL::event::CallbackId> m_callbacksToDelete;
-  /// the callback structures generated from EventScheduler::buildCallback
-  AL::event::Callbacks m_callbacksToInsert;
+    /// call within both the undo and redo methods
+    MStatus redoItImplementation();
+    /// the callback ids that need to be deleted
+    std::vector<AL::event::CallbackId> m_callbacksToDelete;
+    /// the callback structures generated from EventScheduler::buildCallback
+    AL::event::Callbacks m_callbacksToInsert;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief   A command that allows you to register and unregister new Event types from script.
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class Event
-  : public MPxCommand
+class Event : public MPxCommand
 {
-  MString m_eventName;
-  AL::event::NodeEvents* m_associatedData = 0;
-  AL::event::CallbackId m_parentEvent = 0;
-  bool m_deleting = false;
+    MString                m_eventName;
+    AL::event::NodeEvents* m_associatedData = 0;
+    AL::event::CallbackId  m_parentEvent = 0;
+    bool                   m_deleting = false;
+
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
-  MStatus redoIt() override;
-  MStatus undoIt() override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
+    MStatus redoIt() override;
+    MStatus undoIt() override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief   A command that allows you to query information about a specific event
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class EventQuery
-  : public MPxCommand
+class EventQuery : public MPxCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  MStatus doIt(const MArgList& args) override;
+    MStatus doIt(const MArgList& args) override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief   A command that allows you to query information about an event
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class EventLookup
-  : public MPxCommand
+class EventLookup : public MPxCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  MStatus doIt(const MArgList& args) override;
+    MStatus doIt(const MArgList& args) override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief   A command that allows you to create / delete callbacks assigned to a specific event within AL_usdmaya
-/// \ingroup commands
+/// \brief   A command that allows you to create / delete callbacks assigned to a specific event
+/// within AL_usdmaya \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
 class Callback
-  : public MPxCommand,
-    public BaseCallbackCommand
+    : public MPxCommand
+    , public BaseCallbackCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
-  MStatus redoIt() override;
-  MStatus undoIt() override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
+    MStatus redoIt() override;
+    MStatus undoIt() override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A command that lists the events available on either a particular node, or the global set of events
-/// \ingroup commands
+/// \brief  A command that lists the events available on either a particular node, or the global set
+/// of events \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class ListEvents
-  : public MPxCommand
+class ListEvents : public MPxCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A command that will trigger all callbacks on an event
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class TriggerEvent
-  : public MPxCommand
+class TriggerEvent : public MPxCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -139,54 +143,52 @@ private:
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
 class DeleteCallbacks
-  : public MPxCommand,
-    public BaseCallbackCommand
+    : public MPxCommand
+    , public BaseCallbackCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
-  MStatus redoIt() override;
-  MStatus undoIt() override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
+    MStatus redoIt() override;
+    MStatus undoIt() override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A command that lists the events available on either a particular node, or the global set of events
-/// \ingroup commands
+/// \brief  A command that lists the events available on either a particular node, or the global set
+/// of events \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class ListCallbacks
-  : public MPxCommand
+class ListCallbacks : public MPxCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A command that lists the events available on either a particular node, or the global set of events
-/// \ingroup commands
+/// \brief  A command that lists the events available on either a particular node, or the global set
+/// of events \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class CallbackQuery
-  : public MPxCommand
+class CallbackQuery : public MPxCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
 };
 
 /// builds the GUI for the TfDebug notices
 extern void constructEventCommandGuis();
 
 //----------------------------------------------------------------------------------------------------------------------
-} // cmds
-} // usdmaya
-} // AL
+} // namespace cmds
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------
-
-
-

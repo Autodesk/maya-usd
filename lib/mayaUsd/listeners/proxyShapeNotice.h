@@ -16,11 +16,11 @@
 #ifndef MAYAUSD_PROXYSTAGE_NOTICE_H
 #define MAYAUSD_PROXYSTAGE_NOTICE_H
 
-#include <maya/MObject.h>
+#include <mayaUsd/base/api.h>
 
 #include <pxr/base/tf/notice.h>
 
-#include <mayaUsd/base/api.h>
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

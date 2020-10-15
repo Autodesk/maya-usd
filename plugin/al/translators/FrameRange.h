@@ -17,6 +17,7 @@
 
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
 #include "AL/usdmaya/utils/ForwardDeclares.h"
+
 #include <maya/MStatus.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -33,37 +34,32 @@ namespace translators {
 class FrameRange : public TranslatorBase
 {
 public:
-  
-  AL_USDMAYA_DECLARE_TRANSLATOR(FrameRange);
+    AL_USDMAYA_DECLARE_TRANSLATOR(FrameRange);
 
 private:
-  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
-  MStatus postImport(const UsdPrim& prim) override;
-  MStatus preTearDown(UsdPrim& prim) override;
-  MStatus tearDown(const SdfPath& path) override;
-  MStatus update(const UsdPrim& prim) override;
+    MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
+    MStatus postImport(const UsdPrim& prim) override;
+    MStatus preTearDown(UsdPrim& prim) override;
+    MStatus tearDown(const SdfPath& path) override;
+    MStatus update(const UsdPrim& prim) override;
 
-  bool supportsUpdate() const override
-    { return true; }
+    bool supportsUpdate() const override { return true; }
 
-  bool supportsInactive() const
-    { return true; }
+    bool supportsInactive() const { return true; }
 
-  bool needsTransformParent() const override
-    { return false; }
+    bool needsTransformParent() const override { return false; }
 
-  MStatus setFrameRange(const UsdPrim& prim, bool setCurrentFrame);
-  MStatus getFrame(const UsdStageWeakPtr &stage,
-                  const UsdPrim &prim,
-                  const UsdAttribute &attr,
-                  const TfToken &fallbackMetadataKey,
-                  double *frame)const;
-  bool canBeOverridden() override
-    { return true; }
+    MStatus setFrameRange(const UsdPrim& prim, bool setCurrentFrame);
+    MStatus getFrame(
+        const UsdStageWeakPtr& stage,
+        const UsdPrim&         prim,
+        const UsdAttribute&    attr,
+        const TfToken&         fallbackMetadataKey,
+        double*                frame) const;
+    bool canBeOverridden() override { return true; }
 };
 
-} // translators
-} // fileio
-} // usdmaya
-} // AL
-
+} // namespace translators
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL

@@ -19,8 +19,14 @@
 #ifndef HDMAYA_UTILS_H
 #define HDMAYA_UTILS_H
 
-#include <functional>
-#include <tuple>
+#include <hdMaya/adapters/mayaAttrs.h>
+#include <hdMaya/api.h>
+
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/imaging/hd/textureResource.h>
+#include <pxr/imaging/hd/types.h>
+#include <pxr/pxr.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -32,21 +38,16 @@
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/imaging/hd/textureResource.h>
-#include <pxr/imaging/hd/types.h>
-
-#include <hdMaya/api.h>
-#include <hdMaya/adapters/mayaAttrs.h>
+#include <functional>
+#include <tuple>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \brief Converts a Maya matrix to a double precision GfMatrix.
 /// \param mayaMat Maya `MMatrix` to be converted.
 /// \return `GfMatrix4d` equal to \p mayaMat.
-inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat) {
+inline GfMatrix4d GetGfMatrixFromMaya(const MMatrix& mayaMat)
+{
     GfMatrix4d mat;
     memcpy(mat.GetArray(), mayaMat[0], sizeof(double) * 16);
     return mat;
@@ -70,8 +71,7 @@ MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName);
 /// \return Maya object to a "file" shader node, `MObject::kNullObj` if there is
 ///  no valid connection.
 HDMAYA_API
-MObject GetConnectedFileNode(
-    const MFnDependencyNode& node, const TfToken& paramName);
+MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& paramName);
 
 /// \brief Returns the texture file path from a "file" shader node.
 /// \param fileNode "file" shader node.
@@ -90,8 +90,9 @@ TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
 /// \return Pointer to the Hydra Texture resource.
 HDMAYA_API
 HdTextureResourceSharedPtr GetFileTextureResource(
-    const MObject& fileObj, const TfToken& filePath,
-    int maxTextureMemory = 4 * 1024 * 1024);
+    const MObject& fileObj,
+    const TfToken& filePath,
+    int            maxTextureMemory = 4 * 1024 * 1024);
 
 /// \brief Returns the texture wrapping parameters from a "file" shader node.
 /// \param fileObj "file" shader object.
@@ -104,11 +105,11 @@ std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj);
 ///  May optionally filter by node type. The items in the list are also included
 ///  in the set of items that are iterated over (assuming they pass the filter).
 template <typename FUNC>
-inline void MapSelectionDescendents(
-    const MSelectionList& sel, FUNC func,
-    MFn::Type filterType = MFn::kInvalid) {
-    MStatus status;
-    MItDag itDag;
+inline void
+MapSelectionDescendents(const MSelectionList& sel, FUNC func, MFn::Type filterType = MFn::kInvalid)
+{
+    MStatus  status;
+    MItDag   itDag;
     MDagPath currentSelDag;
     MDagPath currentDescendentDag;
     for (MItSelectionList itSel(sel); !itSel.isDone(); itSel.next()) {
@@ -125,7 +126,7 @@ inline void MapSelectionDescendents(
         // We make sure that no parent of the selected item is
         // also selected - otherwise, we would end up re-traversing the
         // same subtree
-        bool parentSelected = false;
+        bool     parentSelected = false;
         MDagPath parentDag = currentSelDag;
         parentDag.pop();
         for (; parentDag.length() > 0; parentDag.pop()) {
@@ -134,7 +135,9 @@ inline void MapSelectionDescendents(
                 break;
             }
         }
-        if (parentSelected) { continue; }
+        if (parentSelected) {
+            continue;
+        }
 
         // Now we iterate through all dag descendents of the current
         // selected item

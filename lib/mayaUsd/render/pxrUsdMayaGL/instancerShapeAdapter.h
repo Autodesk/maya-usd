@@ -30,18 +30,17 @@
 //
 // The X11 include appears to have been removed in Maya 2020+, so this should
 // no longer be an issue with later versions.
-#include <pxr/usd/sdf/types.h>
-
-#include <maya/M3dView.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
+#include <maya/M3dView.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,113 +51,107 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// that are not reference assemblies.
 class UsdMayaGL_InstancerShapeAdapter : public PxrMayaHdShapeAdapter
 {
-    public:
+public:
+    /// Update the shape adapter's visibility state from the display status
+    /// of its shape.
+    ///
+    /// When a Maya shape is made invisible, it may no longer be included
+    /// in the "prepare" phase of a viewport render (i.e. we get no
+    /// getDrawRequests() or prepareForDraw() callbacks for that shape).
+    /// This method can be called on demand to ensure that the shape
+    /// adapter is updated with the current visibility state of the shape.
+    ///
+    /// The optional \p view parameter can be passed to have view-based
+    /// state such as view and/or plugin object filtering factor into the
+    /// shape's visibility.
+    ///
+    /// Returns true if the visibility state was changed, or false
+    /// otherwise.
+    MAYAUSD_CORE_PUBLIC
+    bool UpdateVisibility(const M3dView* view = nullptr) override;
 
-        /// Update the shape adapter's visibility state from the display status
-        /// of its shape.
-        ///
-        /// When a Maya shape is made invisible, it may no longer be included
-        /// in the "prepare" phase of a viewport render (i.e. we get no
-        /// getDrawRequests() or prepareForDraw() callbacks for that shape).
-        /// This method can be called on demand to ensure that the shape
-        /// adapter is updated with the current visibility state of the shape.
-        ///
-        /// The optional \p view parameter can be passed to have view-based
-        /// state such as view and/or plugin object filtering factor into the
-        /// shape's visibility.
-        ///
-        /// Returns true if the visibility state was changed, or false
-        /// otherwise.
-        MAYAUSD_CORE_PUBLIC
-        bool UpdateVisibility(const M3dView* view = nullptr) override;
+    /// Gets whether the shape adapter's shape is visible.
+    ///
+    /// This should be called after a call to UpdateVisibility() to ensure
+    /// that the returned value is correct.
+    MAYAUSD_CORE_PUBLIC
+    bool IsVisible() const override;
 
-        /// Gets whether the shape adapter's shape is visible.
-        ///
-        /// This should be called after a call to UpdateVisibility() to ensure
-        /// that the returned value is correct.
-        MAYAUSD_CORE_PUBLIC
-        bool IsVisible() const override;
+    MAYAUSD_CORE_PUBLIC
+    void SetRootXform(const GfMatrix4d& transform) override;
 
-        MAYAUSD_CORE_PUBLIC
-        void SetRootXform(const GfMatrix4d& transform) override;
+    MAYAUSD_CORE_PUBLIC
+    ~UsdMayaGL_InstancerShapeAdapter() override;
 
-        MAYAUSD_CORE_PUBLIC
-        ~UsdMayaGL_InstancerShapeAdapter() override;
+protected:
+    /// Update the shape adapter's state from the shape with the given
+    /// \p dagPath and display state.
+    ///
+    /// This method should be called by both public versions of Sync() and
+    /// should perform shape data updates that are common to both the
+    /// legacy viewport and Viewport 2.0. The legacy viewport Sync() method
+    /// "promotes" the display state parameters to their Viewport 2.0
+    /// equivalents before calling this method.
+    MAYAUSD_CORE_PUBLIC
+    bool _Sync(
+        const MDagPath&                shapeDagPath,
+        const unsigned int             displayStyle,
+        const MHWRender::DisplayStatus displayStatus) override;
 
-    protected:
+    /// Construct a new uninitialized UsdMayaGL_InstancerShapeAdapter.
+    ///
+    /// Note that only friends of this class are able to construct
+    /// instances of this class.
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaGL_InstancerShapeAdapter(bool isViewport2);
 
-        /// Update the shape adapter's state from the shape with the given
-        /// \p dagPath and display state.
-        ///
-        /// This method should be called by both public versions of Sync() and
-        /// should perform shape data updates that are common to both the
-        /// legacy viewport and Viewport 2.0. The legacy viewport Sync() method
-        /// "promotes" the display state parameters to their Viewport 2.0
-        /// equivalents before calling this method.
-        MAYAUSD_CORE_PUBLIC
-        bool _Sync(
-                const MDagPath& shapeDagPath,
-                const unsigned int displayStyle,
-                const MHWRender::DisplayStatus displayStatus) override;
+    // Derived class hook to allow derived classes to augment
+    // _SyncInstancerPrototypes(), for each prototype.  The implementation
+    // in this class clears references on the argument prototypePrim.
+    MAYAUSD_CORE_PUBLIC
+    virtual void SyncInstancerPerPrototypePostHook(
+        const MPlug&              hierarchyPlug,
+        UsdPrim&                  prototypePrim,
+        std::vector<std::string>& layerIdsToMute);
 
-        /// Construct a new uninitialized UsdMayaGL_InstancerShapeAdapter.
-        ///
-        /// Note that only friends of this class are able to construct
-        /// instances of this class.
-        MAYAUSD_CORE_PUBLIC
-        UsdMayaGL_InstancerShapeAdapter(bool isViewport2);
+private:
+    /// Initialize the shape adapter using the given \p renderIndex.
+    ///
+    /// This method is called automatically during Sync() when the shape
+    /// adapter's "identity" changes. This can happen when the shape
+    /// managed by this adapter is changed by setting a new DAG path, or
+    /// otherwise when there is some other fundamental change to the shape
+    /// or to the delegate or render index.
+    /// The shape adapter will then query the batch renderer for its render
+    /// index and use that to re-create its delegate and re-add its rprim
+    /// collection, if necessary.
+    bool _Init(HdRenderIndex* renderIndex);
 
-        // Derived class hook to allow derived classes to augment
-        // _SyncInstancerPrototypes(), for each prototype.  The implementation
-        // in this class clears references on the argument prototypePrim.
-        MAYAUSD_CORE_PUBLIC
-        virtual void SyncInstancerPerPrototypePostHook(
-            const MPlug&              hierarchyPlug,
-            UsdPrim&                  prototypePrim,
-            std::vector<std::string>& layerIdsToMute
-        );
+    /// Updates the prototypes prims and the corresponding prototypes rel on
+    /// the point instancer. Errored or untranslatable prototypes are left
+    /// as empty prims in the prototype order. Returns the total number of
+    /// prototypes (including errored or untranslatable prototypes).
+    size_t _SyncInstancerPrototypes(
+        const UsdGeomPointInstancer& usdInstancer,
+        const MPlug&                 inputHierarchy);
 
-    private:
+    /// Updates all of the attributes on the \p usdInstancer from the native
+    /// Maya instancer given by \p mayaInstancerPath.
+    /// If there was a problem reading prototypes or there are no
+    /// prototypes, then the whole instancer will be emptied out.
+    void
+    _SyncInstancer(const UsdGeomPointInstancer& usdInstancer, const MDagPath& mayaInstancerPath);
 
-        /// Initialize the shape adapter using the given \p renderIndex.
-        ///
-        /// This method is called automatically during Sync() when the shape
-        /// adapter's "identity" changes. This can happen when the shape
-        /// managed by this adapter is changed by setting a new DAG path, or
-        /// otherwise when there is some other fundamental change to the shape
-        /// or to the delegate or render index.
-        /// The shape adapter will then query the batch renderer for its render
-        /// index and use that to re-create its delegate and re-add its rprim
-        /// collection, if necessary.
-        bool _Init(HdRenderIndex* renderIndex);
+    UsdStageRefPtr _instancerStage;
 
-        /// Updates the prototypes prims and the corresponding prototypes rel on
-        /// the point instancer. Errored or untranslatable prototypes are left
-        /// as empty prims in the prototype order. Returns the total number of
-        /// prototypes (including errored or untranslatable prototypes).
-        size_t _SyncInstancerPrototypes(
-                const UsdGeomPointInstancer& usdInstancer,
-                const MPlug& inputHierarchy);
+    std::shared_ptr<UsdImagingDelegate> _delegate;
 
-        /// Updates all of the attributes on the \p usdInstancer from the native
-        /// Maya instancer given by \p mayaInstancerPath.
-        /// If there was a problem reading prototypes or there are no
-        /// prototypes, then the whole instancer will be emptied out.
-        void _SyncInstancer(
-                const UsdGeomPointInstancer& usdInstancer,
-                const MDagPath& mayaInstancerPath);
-
-        UsdStageRefPtr _instancerStage;
-
-        std::shared_ptr<UsdImagingDelegate> _delegate;
-
-        /// The classes that maintain ownership of and are responsible for
-        /// updating the shape adapter for their shape are made friends of
-        /// UsdMayaGL_InstancerShapeAdapter so that they alone can set
-        /// properties on the shape adapter.
-        friend class UsdMayaGL_InstancerImager;
+    /// The classes that maintain ownership of and are responsible for
+    /// updating the shape adapter for their shape are made friends of
+    /// UsdMayaGL_InstancerShapeAdapter so that they alone can set
+    /// properties on the shape adapter.
+    friend class UsdMayaGL_InstancerImager;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

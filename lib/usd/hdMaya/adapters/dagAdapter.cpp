@@ -15,27 +15,25 @@
 //
 #include "dagAdapter.h"
 
+#include <hdMaya/adapters/adapterDebugCodes.h>
+#include <hdMaya/adapters/mayaAttrs.h>
+
+#include <pxr/base/tf/type.h>
+#include <pxr/imaging/hd/tokens.h>
+
 #include <maya/MAnimControl.h>
-#include <maya/MDagMessage.h>
-#include <maya/MDagPathArray.h>
 #include <maya/MDGContext.h>
 #include <maya/MDGContextGuard.h>
+#include <maya/MDagMessage.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 #include <maya/MTransformationMatrix.h>
 
-#include <pxr/base/tf/type.h>
-#include <pxr/imaging/hd/tokens.h>
-
-#include <hdMaya/adapters/adapterDebugCodes.h>
-#include <hdMaya/adapters/mayaAttrs.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType) {
-    TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter> >();
-}
+TF_REGISTRY_FUNCTION(TfType) { TfType::Define<HdMayaDagAdapter, TfType::Bases<HdMayaAdapter>>(); }
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
@@ -51,17 +49,18 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 namespace {
 
-void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
+void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData)
+{
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
         .Msg(
             "Dag adapter marking prim (%s) dirty because .%s plug was "
             "dirtied.\n",
-            adapter->GetID().GetText(), plug.partialName().asChar());
-    if (plug == MayaAttrs::dagNode::visibility ||
-        plug == MayaAttrs::dagNode::intermediateObject ||
-        plug == MayaAttrs::dagNode::overrideEnabled ||
-        plug == MayaAttrs::dagNode::overrideVisibility) {
+            adapter->GetID().GetText(),
+            plug.partialName().asChar());
+    if (plug == MayaAttrs::dagNode::visibility || plug == MayaAttrs::dagNode::intermediateObject
+        || plug == MayaAttrs::dagNode::overrideEnabled
+        || plug == MayaAttrs::dagNode::overrideVisibility) {
         // Unfortunately, during this callback, we can't actually
         // query the new object's visiblity - the plug dirty hasn't
         // really propagated yet. So we just mark our own _visibility
@@ -72,9 +71,7 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
         // that dirty as well...
         if (adapter->IsVisible(false)) {
             // Transform can change while dag path is hidden.
-            adapter->MarkDirty(
-                HdChangeTracker::DirtyVisibility |
-                HdChangeTracker::DirtyTransform);
+            adapter->MarkDirty(HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyTransform);
             adapter->InvalidateTransform();
         } else {
             adapter->MarkDirty(HdChangeTracker::DirtyVisibility);
@@ -88,50 +85,57 @@ void _TransformNodeDirty(MObject& node, MPlug& plug, void* clientData) {
     }
 }
 
-void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData) {
+void _HierarchyChanged(MDagPath& child, MDagPath& parent, void* clientData)
+{
     TF_UNUSED(child);
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     TF_DEBUG(HDMAYA_ADAPTER_DAG_HIERARCHY)
         .Msg(
             "Dag hierarchy changed for prim (%s) because %s had parent %s "
             "added/removed.\n",
-            adapter->GetID().GetText(), child.partialPathName().asChar(),
+            adapter->GetID().GetText(),
+            child.partialPathName().asChar(),
             parent.partialPathName().asChar());
     adapter->RemoveCallbacks();
     adapter->RemovePrim();
-    adapter->GetDelegate()->RecreateAdapterOnIdle(
-        adapter->GetID(), adapter->GetNode());
+    adapter->GetDelegate()->RecreateAdapterOnIdle(adapter->GetID(), adapter->GetNode());
 }
 
-void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData) {
+void _InstancerNodeDirty(MObject& node, MPlug& plug, void* clientData)
+{
     auto* adapter = reinterpret_cast<HdMayaDagAdapter*>(clientData);
     TF_DEBUG(HDMAYA_ADAPTER_DAG_PLUG_DIRTY)
         .Msg(
             "Dag instancer adapter marking prim (%s) dirty because %s plug was "
             "dirtied.\n",
-            adapter->GetID().GetText(), plug.partialName().asChar());
+            adapter->GetID().GetText(),
+            plug.partialName().asChar());
     adapter->MarkDirty(
-        HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex |
-        HdChangeTracker::DirtyPrimvar);
+        HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyPrimvar);
 }
 
-const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector{
-    {_tokens->instanceTransform, HdInterpolationInstance,
-     HdPrimvarRoleTokens->none},
+const auto _instancePrimvarDescriptors = HdPrimvarDescriptorVector {
+    { _tokens->instanceTransform, HdInterpolationInstance, HdPrimvarRoleTokens->none },
 };
 
 } // namespace
 
 HdMayaDagAdapter::HdMayaDagAdapter(
-    const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
-    : HdMayaAdapter(dagPath.node(), id, delegate), _dagPath(dagPath) {
+    const SdfPath&     id,
+    HdMayaDelegateCtx* delegate,
+    const MDagPath&    dagPath)
+    : HdMayaAdapter(dagPath.node(), id, delegate)
+    , _dagPath(dagPath)
+{
     // We shouldn't call virtual functions in constructors.
     _isVisible = GetDagPath().isVisible();
     _visibilityDirty = false;
     _isInstanced = _dagPath.isInstanced() && _dagPath.instanceNumber() == 0;
 }
 
-void HdMayaDagAdapter::_CalculateTransform() {
+void HdMayaDagAdapter::_CalculateTransform()
+{
     if (_invalidTransform) {
         if (IsInstanced()) {
             _transform[0].SetIdentity();
@@ -149,23 +153,23 @@ void HdMayaDagAdapter::_CalculateTransform() {
     }
 };
 
-const GfMatrix4d& HdMayaDagAdapter::GetTransform() {
+const GfMatrix4d& HdMayaDagAdapter::GetTransform()
+{
     TF_DEBUG(HDMAYA_ADAPTER_GET)
-        .Msg(
-            "Called HdMayaDagAdapter::GetTransform() - %s\n",
-            _dagPath.partialPathName().asChar());
+        .Msg("Called HdMayaDagAdapter::GetTransform() - %s\n", _dagPath.partialPathName().asChar());
     _CalculateTransform();
     return _transform[0];
 }
 
-size_t HdMayaDagAdapter::SampleTransform(
-    size_t maxSampleCount, float* times, GfMatrix4d* samples) {
+size_t HdMayaDagAdapter::SampleTransform(size_t maxSampleCount, float* times, GfMatrix4d* samples)
+{
     _CalculateTransform();
-    if (maxSampleCount < 1) { return 0; }
+    if (maxSampleCount < 1) {
+        return 0;
+    }
     times[0] = 0.0f;
     samples[0] = _transform[0];
-    if (maxSampleCount == 1 ||
-        !GetDelegate()->GetParams().enableMotionSamples) {
+    if (maxSampleCount == 1 || !GetDelegate()->GetParams().enableMotionSamples) {
         return 1;
     } else {
         times[1] = 1.0f;
@@ -174,27 +178,27 @@ size_t HdMayaDagAdapter::SampleTransform(
     }
 }
 
-void HdMayaDagAdapter::CreateCallbacks() {
+void HdMayaDagAdapter::CreateCallbacks()
+{
     MStatus status;
 
     TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
-        .Msg(
-            "Creating dag adapter callbacks for prim (%s).\n",
-            GetID().GetText());
+        .Msg("Creating dag adapter callbacks for prim (%s).\n", GetID().GetText());
 
     MDagPathArray dags;
     if (MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
         const auto numDags = dags.length();
-        auto dagNodeDirtyCallback =
-            numDags > 1 ? _InstancerNodeDirty : _TransformNodeDirty;
-        for (auto i = decltype(numDags){0}; i < numDags; ++i) {
+        auto       dagNodeDirtyCallback = numDags > 1 ? _InstancerNodeDirty : _TransformNodeDirty;
+        for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
             auto dag = dags[i];
             for (; dag.length() > 0; dag.pop()) {
                 MObject obj = dag.node();
                 if (obj != MObject::kNullObj) {
                     auto id = MNodeMessage::addNodeDirtyPlugCallback(
                         obj, dagNodeDirtyCallback, this, &status);
-                    if (status) { AddCallback(id); }
+                    if (status) {
+                        AddCallback(id);
+                    }
                     TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
                         .Msg(
                             "- Added _InstancerNodeDirty callback for "
@@ -208,12 +212,12 @@ void HdMayaDagAdapter::CreateCallbacks() {
     HdMayaAdapter::CreateCallbacks();
 }
 
-void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
+void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits)
+{
     if (dirtyBits != 0) {
         GetDelegate()->GetChangeTracker().MarkRprimDirty(GetID(), dirtyBits);
         if (IsInstanced()) {
-            GetDelegate()->GetChangeTracker().MarkInstancerDirty(
-                GetInstancerID(), dirtyBits);
+            GetDelegate()->GetChangeTracker().MarkInstancerDirty(GetInstancerID(), dirtyBits);
         }
         if (dirtyBits & HdChangeTracker::DirtyVisibility) {
             _visibilityDirty = true;
@@ -221,18 +225,23 @@ void HdMayaDagAdapter::MarkDirty(HdDirtyBits dirtyBits) {
     }
 }
 
-void HdMayaDagAdapter::RemovePrim() {
-    if (!_isPopulated) { return; }
+void HdMayaDagAdapter::RemovePrim()
+{
+    if (!_isPopulated) {
+        return;
+    }
     GetDelegate()->RemoveRprim(GetID());
     if (_isInstanced) {
-        GetDelegate()->RemoveInstancer(
-            GetID().AppendProperty(_tokens->instancer));
+        GetDelegate()->RemoveInstancer(GetID().AppendProperty(_tokens->instancer));
     }
     _isPopulated = false;
 }
 
-bool HdMayaDagAdapter::UpdateVisibility() {
-    if (ARCH_UNLIKELY(!GetDagPath().isValid())) { return false; }
+bool HdMayaDagAdapter::UpdateVisibility()
+{
+    if (ARCH_UNLIKELY(!GetDagPath().isValid())) {
+        return false;
+    }
     const auto visible = _GetVisibility();
     _visibilityDirty = false;
     if (visible != _isVisible) {
@@ -242,19 +251,27 @@ bool HdMayaDagAdapter::UpdateVisibility() {
     return false;
 }
 
-bool HdMayaDagAdapter::IsVisible(bool checkDirty) {
-    if (checkDirty && _visibilityDirty) { UpdateVisibility(); }
+bool HdMayaDagAdapter::IsVisible(bool checkDirty)
+{
+    if (checkDirty && _visibilityDirty) {
+        UpdateVisibility();
+    }
     return _isVisible;
 }
 
-VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId) {
-    if (!IsInstanced()) { return {}; }
+VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId)
+{
+    if (!IsInstanced()) {
+        return {};
+    }
     MDagPathArray dags;
-    if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) { return {}; }
+    if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
+        return {};
+    }
     const auto numDags = dags.length();
     VtIntArray ret;
     ret.reserve(numDags);
-    for (auto i = decltype(numDags){0}; i < numDags; ++i) {
+    for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
         if (dags[i].isValid() && dags[i].isVisible()) {
             ret.push_back(static_cast<int>(ret.size()));
         }
@@ -262,15 +279,15 @@ VtIntArray HdMayaDagAdapter::GetInstanceIndices(const SdfPath& prototypeId) {
     return ret;
 }
 
-void HdMayaDagAdapter::_AddHierarchyChangedCallbacks(MDagPath& dag) {
+void HdMayaDagAdapter::_AddHierarchyChangedCallbacks(MDagPath& dag)
+{
     MStatus status;
-    auto id = MDagMessage::addParentAddedDagPathCallback(
-        dag, _HierarchyChanged, this, &status);
-    if (status) { AddCallback(id); }
+    auto    id = MDagMessage::addParentAddedDagPathCallback(dag, _HierarchyChanged, this, &status);
+    if (status) {
+        AddCallback(id);
+    }
     TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
-        .Msg(
-            "- Added parent added callback for dagPath (%s).\n",
-            dag.partialPathName().asChar());
+        .Msg("- Added parent added callback for dagPath (%s).\n", dag.partialPathName().asChar());
 
     // We need a parent removed callback, even for non-instances,
     // because when an object is removed from the scene due to an
@@ -278,23 +295,26 @@ void HdMayaDagAdapter::_AddHierarchyChangedCallbacks(MDagPath& dag) {
     // callbacks are triggered. The parent-removed callback IS
     // triggered, though, so it's a way to catch deletion due to
     // undo...
-    id = MDagMessage::addParentRemovedDagPathCallback(
-        dag, _HierarchyChanged, this, &status);
-    if (status) { AddCallback(id); }
+    id = MDagMessage::addParentRemovedDagPathCallback(dag, _HierarchyChanged, this, &status);
+    if (status) {
+        AddCallback(id);
+    }
     TF_DEBUG(HDMAYA_ADAPTER_CALLBACKS)
-        .Msg(
-            "- Added parent removed callback for dagPath (%s).\n",
-            dag.partialPathName().asChar());
+        .Msg("- Added parent removed callback for dagPath (%s).\n", dag.partialPathName().asChar());
 }
 
-SdfPath HdMayaDagAdapter::GetInstancerID() const {
-    if (!_isInstanced) { return {}; }
+SdfPath HdMayaDagAdapter::GetInstancerID() const
+{
+    if (!_isInstanced) {
+        return {};
+    }
 
     return GetID().AppendProperty(_tokens->instancer);
 }
 
-HdPrimvarDescriptorVector HdMayaDagAdapter::GetInstancePrimvarDescriptors(
-    HdInterpolation interpolation) const {
+HdPrimvarDescriptorVector
+HdMayaDagAdapter::GetInstancePrimvarDescriptors(HdInterpolation interpolation) const
+{
     if (interpolation == HdInterpolationInstance) {
         return _instancePrimvarDescriptors;
     } else {
@@ -302,18 +322,19 @@ HdPrimvarDescriptorVector HdMayaDagAdapter::GetInstancePrimvarDescriptors(
     }
 }
 
-bool HdMayaDagAdapter::_GetVisibility() const {
-    return GetDagPath().isVisible();
-}
+bool HdMayaDagAdapter::_GetVisibility() const { return GetDagPath().isVisible(); }
 
-VtValue HdMayaDagAdapter::GetInstancePrimvar(const TfToken& key) {
+VtValue HdMayaDagAdapter::GetInstancePrimvar(const TfToken& key)
+{
     if (key == _tokens->instanceTransform) {
         MDagPathArray dags;
-        if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) { return {}; }
-        const auto numDags = dags.length();
+        if (!MDagPath::getAllPathsTo(GetDagPath().node(), dags)) {
+            return {};
+        }
+        const auto          numDags = dags.length();
         VtArray<GfMatrix4d> ret;
         ret.reserve(numDags);
-        for (auto i = decltype(numDags){0}; i < numDags; ++i) {
+        for (auto i = decltype(numDags) { 0 }; i < numDags; ++i) {
             if (dags[i].isValid() && dags[i].isVisible()) {
                 ret.push_back(GetGfMatrixFromMaya(dags[i].inclusiveMatrix()));
             }

@@ -16,18 +16,18 @@
 #ifndef PXRUSDMAYA_READUTIL_H
 #define PXRUSDMAYA_READUTIL_H
 
-#include <string>
+#include <mayaUsd/base/api.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/attributeSpec.h>
+#include <pxr/usd/usd/attribute.h>
 
 #include <maya/MDGModifier.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 
-#include <pxr/pxr.h>
-#include <pxr/usd/sdf/attributeSpec.h>
-#include <pxr/usd/usd/attribute.h>
-
-#include <mayaUsd/base/api.h>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,7 +37,7 @@ struct UsdMayaReadUtil
     /// \name Helpers for reading USD
     /// \{
 
-    /// Returns whether the environment setting for reading Float2 types as UV 
+    /// Returns whether the environment setting for reading Float2 types as UV
     /// sets is set to true
     MAYAUSD_CORE_PUBLIC
     static bool ReadFloat2AsUV();
@@ -53,33 +53,33 @@ struct UsdMayaReadUtil
     /// attribute object.
     MAYAUSD_CORE_PUBLIC
     static MObject FindOrCreateMayaAttr(
-            const SdfValueTypeName& typeName,
-            const SdfVariability variability,
-            MFnDependencyNode& depNode,
-            const std::string& attrName,
-            const std::string& attrNiceName = std::string());
+        const SdfValueTypeName& typeName,
+        const SdfVariability    variability,
+        MFnDependencyNode&      depNode,
+        const std::string&      attrName,
+        const std::string&      attrNiceName = std::string());
 
     /// An overload of FindOrCreateMayaAttr that takes an MDGModifier.
     /// \note This function will call doIt() on the MDGModifier; thus the
     /// actions will have been committed when the function returns.
     MAYAUSD_CORE_PUBLIC
     static MObject FindOrCreateMayaAttr(
-            const SdfValueTypeName& typeName,
-            const SdfVariability variability,
-            MFnDependencyNode& depNode,
-            const std::string& attrName,
-            const std::string& attrNiceName,
-            MDGModifier& modifier);
+        const SdfValueTypeName& typeName,
+        const SdfVariability    variability,
+        MFnDependencyNode&      depNode,
+        const std::string&      attrName,
+        const std::string&      attrNiceName,
+        MDGModifier&            modifier);
 
     MAYAUSD_CORE_PUBLIC
     static MObject FindOrCreateMayaAttr(
-            const TfType& type,
-            const TfToken& role,
-            const SdfVariability variability,
-            MFnDependencyNode& depNode,
-            const std::string& attrName,
-            const std::string& attrNiceName,
-            MDGModifier& modifier);
+        const TfType&        type,
+        const TfToken&       role,
+        const SdfVariability variability,
+        MFnDependencyNode&   depNode,
+        const std::string&   attrName,
+        const std::string&   attrNiceName,
+        MDGModifier&         modifier);
 
     /// Sets a Maya plug using the value on a USD attribute at default time.
     /// If the variability of the USD attribute doesn't match the keyable state
@@ -89,10 +89,8 @@ struct UsdMayaReadUtil
     /// For plugs with color roles, the value will be converted from a linear
     /// color value before being set if \p unlinearizeColors is true.
     MAYAUSD_CORE_PUBLIC
-    static bool SetMayaAttr(
-            MPlug& attrPlug,
-            const UsdAttribute& usdAttr,
-            const bool unlinearizeColors = true);
+    static bool
+    SetMayaAttr(MPlug& attrPlug, const UsdAttribute& usdAttr, const bool unlinearizeColors = true);
 
     /// Sets a Maya plug using the given VtValue. The plug keyable state won't
     /// be affected.
@@ -101,10 +99,8 @@ struct UsdMayaReadUtil
     /// For plugs with color roles, the value will be converted from a linear
     /// color value before being set if \p unlinearizeColors is true.
     MAYAUSD_CORE_PUBLIC
-    static bool SetMayaAttr(
-            MPlug& attrPlug,
-            const VtValue& newValue,
-            const bool unlinearizeColors = true);
+    static bool
+    SetMayaAttr(MPlug& attrPlug, const VtValue& newValue, const bool unlinearizeColors = true);
 
     /// An overload of SetMayaAttr that takes an MDGModifier.
     /// \note This function will call doIt() on the MDGModifier; thus the
@@ -114,26 +110,24 @@ struct UsdMayaReadUtil
     /// color value before being set if \p unlinearizeColors is true.
     MAYAUSD_CORE_PUBLIC
     static bool SetMayaAttr(
-            MPlug& attrPlug,
-            const VtValue& newValue,
-            MDGModifier& modifier,
-            const bool unlinearizeColors = true);
+        MPlug&         attrPlug,
+        const VtValue& newValue,
+        MDGModifier&   modifier,
+        const bool     unlinearizeColors = true);
 
     /// Sets the plug's keyable state based on whether the variability is
     /// varying or uniform.
     MAYAUSD_CORE_PUBLIC
-    static void SetMayaAttrKeyableState(
-            MPlug& attrPlug,
-            const SdfVariability variability);
+    static void SetMayaAttrKeyableState(MPlug& attrPlug, const SdfVariability variability);
 
     /// An overload of SetMayaAttrKeyableState that takes an MDGModifier.
     /// \note This function will call doIt() on the MDGModifier; thus the
     /// actions will have been committed when the function returns.
     MAYAUSD_CORE_PUBLIC
     static void SetMayaAttrKeyableState(
-            MPlug& attrPlug,
-            const SdfVariability variability,
-            MDGModifier& modifier);
+        MPlug&               attrPlug,
+        const SdfVariability variability,
+        MDGModifier&         modifier);
 
     /// \}
 
@@ -145,9 +139,9 @@ struct UsdMayaReadUtil
     /// Returns true if successful (even if there was nothing to import).
     MAYAUSD_CORE_PUBLIC
     static bool ReadMetadataFromPrim(
-            const TfToken::Set& includeMetadataKeys,
-            const UsdPrim& prim,
-            const MObject& mayaObject);
+        const TfToken::Set& includeMetadataKeys,
+        const UsdPrim&      prim,
+        const MObject&      mayaObject);
 
     /// Reads the attributes from the non-excluded schemas applied to \p prim,
     /// and uses adaptors to write them onto attributes of \p mayaObject.
@@ -156,9 +150,9 @@ struct UsdMayaReadUtil
     /// function, then this function won't recognize it.
     MAYAUSD_CORE_PUBLIC
     static bool ReadAPISchemaAttributesFromPrim(
-            const TfToken::Set& includeAPINames,
-            const UsdPrim& prim,
-            const MObject& mayaObject);
+        const TfToken::Set& includeAPINames,
+        const UsdPrim&      prim,
+        const MObject&      mayaObject);
 
     /// \}
 
@@ -167,17 +161,13 @@ struct UsdMayaReadUtil
 
     template <typename T>
     static size_t ReadSchemaAttributesFromPrim(
-            const UsdPrim& prim,
-            const MObject& mayaObject,
-            const std::vector<TfToken>& attributeNames,
-            const UsdTimeCode& usdTime = UsdTimeCode::Default())
+        const UsdPrim&              prim,
+        const MObject&              mayaObject,
+        const std::vector<TfToken>& attributeNames,
+        const UsdTimeCode&          usdTime = UsdTimeCode::Default())
     {
         return ReadSchemaAttributesFromPrim(
-                prim,
-                mayaObject,
-                TfType::Find<T>(),
-                attributeNames,
-                usdTime);
+            prim, mayaObject, TfType::Find<T>(), attributeNames, usdTime);
     }
 
     /// Reads schema attributes specified by \attributeNames for the schema
@@ -189,11 +179,11 @@ struct UsdMayaReadUtil
     /// provided, it will be used to write the values.
     /// Returns the number of attributes that were read into Maya.
     static size_t ReadSchemaAttributesFromPrim(
-            const UsdPrim& prim,
-            const MObject& mayaObject,
-            const TfType& schemaType,
-            const std::vector<TfToken>& attributeNames,
-            const UsdTimeCode& usdTime = UsdTimeCode::Default());
+        const UsdPrim&              prim,
+        const MObject&              mayaObject,
+        const TfType&               schemaType,
+        const std::vector<TfToken>& attributeNames,
+        const UsdTimeCode&          usdTime = UsdTimeCode::Default());
 
     /// \}
 };

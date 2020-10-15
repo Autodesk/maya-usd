@@ -5,15 +5,15 @@
 
 \section events_MayaEvents Maya Event System
 
-As a direct replacement to MMessage (and related classes) the class AL::maya::MayaEventManager provides an interface
-to register your own C++ callback functions. All of the static methods AL::maya::MayaEventManager::registerCallback take
-the following arguments:
+As a direct replacement to MMessage (and related classes) the class AL::maya::MayaEventManager
+provides an interface to register your own C++ callback functions. All of the static methods
+AL::maya::MayaEventManager::registerCallback take the following arguments:
 
 \li func - the C++ function pointer
 \li eventName - the name of the the event (see list below)
 \li tag - a unique a tag string to identify the creator of the callback
-\li weight - the event weight (lowest weights are executed first, highest last, all usdmaya weights are 0x1000)
-\li userData - an optional user data pointer
+\li weight - the event weight (lowest weights are executed first, highest last, all usdmaya weights
+are 0x1000) \li userData - an optional user data pointer
 
 The list of registered event names can be queried by running the mel command:
 
@@ -21,7 +21,8 @@ The list of registered event names can be queried by running the mel command:
 print `AL_usdmaya_ListEvents`;
 \endcode
 
-The following table lists the registered event name, and the type of callback function required to handle that callback.
+The following table lists the registered event name, and the type of callback function required to
+handle that callback.
 
 \li \b "AnimCurveEdited" - AL::maya::event::MayaCallbackType::kObjArrayFunction
 \li \b "AnimKeyFrameEdited" - AL::maya::event::MayaCallbackType::kObjArrayFunction
@@ -113,8 +114,10 @@ A quick example of replacing a MSceneMessage::kAfterNew message with the events 
 
 \code
 
-#include <maya/MFnPlugin.h>
 #include "AL/maya/event/MayaEventManager.h"
+
+#include <maya/MFnPlugin.h>
+
 #include <iostream>
 
 void onFileNewCallback()
