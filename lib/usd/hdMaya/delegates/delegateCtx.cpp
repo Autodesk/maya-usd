@@ -85,7 +85,6 @@ void HdMayaDelegateCtx::InsertRprim(
 {
     if (!instancerId.IsEmpty()) {
         GetRenderIndex().InsertInstancer(this, instancerId);
-        GetChangeTracker().InstancerInserted(id);
     }
     GetRenderIndex().InsertRprim(typeId, this, id, instancerId);
 }
