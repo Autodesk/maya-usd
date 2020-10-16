@@ -16,6 +16,13 @@ AllowShortLoopsOnASingleLine: 'true'
 AlwaysBreakTemplateDeclarations: MultiLine
 BinPackArguments: 'false'
 BinPackParameters: 'false'
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: 'true'
+  AfterEnum: 'true'
+  AfterFunction: 'true'
+  AfterStruct: 'true'
+  AfterUnion: 'true'
 BreakBeforeTernaryOperators: 'true'
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeComma
@@ -40,7 +47,7 @@ IncludeCategories:
   # Negative priority puts it above the default IncludeIsMainRegex
   - Regex:           '<pxr/imaging/glf/glew.h>'
     Priority:        -1
-  
+
   # 1. Related header
   #    Handled  by the default IncludeIsMainRegex regex, and auto-assigned
   #    Priority 0
