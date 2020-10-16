@@ -152,9 +152,9 @@ _FindOrCreateMayaNumericAttr(
         }
 
         const unsigned int numChildren = MFnCompoundAttribute(attrObj).numChildren();
-        if(numChildren < 4) {
+        if(numChildren < 4u) {
             static MString suffix[4] = {" X", " Y", " Z", " W"};
-            for(int i = 0; i < numChildren; i++) {
+            for(unsigned int i = 0; i < numChildren; i++) {
                 MFnAttribute(attr.child(i)).setNiceNameOverride(niceName+suffix[i]);
             }
         } else {
