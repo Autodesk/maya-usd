@@ -29,6 +29,7 @@
 
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReader.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -67,6 +68,9 @@ public:
     const MDagPath& GetMayaRootDagPath() const;
 
 protected:
+    // Types
+    using _PrimReaderMap =
+        std::unordered_map<SdfPath, UsdMayaPrimReaderSharedPtr, SdfPath::Hash>;
 
     MAYAUSD_CORE_PUBLIC
     virtual bool DoImport(UsdPrimRange& range, const UsdPrim& usdRootPrim);
@@ -105,6 +109,22 @@ protected:
     MDagPath mMayaRootDagPath;
 
 private:
+    void _DoImportPrimIt(
+        UsdPrimRange::iterator&   primIt,
+        const UsdPrim&            usdRootPrim,
+        UsdMayaPrimReaderContext& readCtx,
+        _PrimReaderMap&           primReaders);
+
+    void _DoImportInstanceIt(
+        UsdPrimRange::iterator&   primIt,
+        const UsdPrim&            usdRootPrim,
+        UsdMayaPrimReaderContext& readCtx,
+        _PrimReaderMap&           primReaders);
+
+    void _ImportMaster(
+        const UsdPrim&            master,
+        const UsdPrim&            usdRootPrim,
+        UsdMayaPrimReaderContext& readCtx);
 
     // Data
     MDagModifier mDagModifierUndo;
