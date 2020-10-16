@@ -23,7 +23,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_REGISTRY, "UsdMaya registration for usd types.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        PXRUSDMAYA_DIAGNOSTICS, "Debugging of the the diagnostics batching system in UsdMaya.");
+        PXRUSDMAYA_DIAGNOSTICS, "Debugging of the the diagnostics batching system in UsdMaya. Foo the bars!");
     TF_DEBUG_ENVIRONMENT_SYMBOL(PXRUSDMAYA_TRANSLATORS, "Debugging of translators.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDMAYA_PROXYSHAPEBASE, "Base proxy shape evaluation");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
