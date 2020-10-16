@@ -20,6 +20,8 @@
 
 #include "usdMaterialReader.h"
 
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
 #include <pxr/pxr.h>
 
 #include <maya/MFnDependencyNode.h>
@@ -47,6 +49,10 @@ protected:
     /// setting back values in \p shaderFn that were lost during the export phase.
     void
     _OnBeforeReadAttribute(const TfToken& mayaAttrName, MFnDependencyNode& shaderFn) const override;
+
+    /// Convert the value in \p usdValue from USD back to Maya following rules
+    /// for attribute \p mayaAttrName
+    void _ConvertToMaya(const TfToken& mayaAttrName, VtValue& usdValue) const override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

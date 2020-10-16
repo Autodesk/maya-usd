@@ -42,6 +42,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Maya material nodes attribute names
     (color)
+    (transparency)
     (diffuse)
     (incandescence)
     (normalCamera)
@@ -82,6 +83,32 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName,
         usdTime,
         _tokens->diffuse);
+
+    const MPlug transparencyPlug =
+        depNodeFn.findPlug(
+            depNodeFn.attribute(_tokens->transparency.GetText()),
+            /* wantNetworkedPlug = */ true,
+            &status);
+    if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(transparencyPlug)) {
+        UsdShadeInput opacityInput =
+            shaderSchema.CreateInput(
+                PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName,
+                SdfValueTypeNames->Float);
+
+        // For attributes that are the destination of a connection, we create
+        // the input on the shader but we do *not* author a value for it. We
+        // expect its actual value to come from the source of its connection.
+        // We'll leave it to the shading export to handle creating the
+        // connections in USD.
+        if (!transparencyPlug.isDestination(&status)) {
+            const float transparencyAvg =
+                (transparencyPlug.child(0u).asFloat() +
+                 transparencyPlug.child(1u).asFloat() +
+                 transparencyPlug.child(2u).asFloat()) / 3.0f;
+
+            opacityInput.Set(1.0f - transparencyAvg, usdTime);
+        }
+    }
 
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
@@ -131,6 +158,8 @@ PxrUsdTranslators_LambertWriter::GetShadingAttributeNameForMayaAttrName(const Tf
 
     if (mayaAttrName == _tokens->color) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName;
+    } else if (mayaAttrName == _tokens->transparency) {
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName;
     } else if (mayaAttrName == _tokens->incandescence) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName;
     } else if (mayaAttrName == _tokens->normalCamera) {

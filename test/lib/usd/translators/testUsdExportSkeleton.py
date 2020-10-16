@@ -149,7 +149,8 @@ class testUsdExportSkeleton(unittest.TestCase):
         Tests export of a Skeleton when a bindPose is not fully setup.
         """
 
-        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonWithoutBindPose.ma")
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest",
+            "UsdExportSkeletonWithoutBindPose.ma")
         cmds.file(mayaFile, force=True, open=True)
 
         frameRange = [1, 5]
@@ -157,6 +158,52 @@ class testUsdExportSkeleton(unittest.TestCase):
         cmds.usdExport(mergeTransformAndShape=True, file=usdFile,
                        shadingMode='none', frameRange=frameRange,
                        exportSkels='auto')
+
+        stage = Usd.Stage.Open(usdFile)
+
+        skeleton = UsdSkel.Skeleton.Get(stage, '/cubeRig/skel/joint1')
+        self.assertEqual(skeleton.GetBindTransformsAttr().Get(),
+            Vt.Matrix4dArray([Gf.Matrix4d(1.0)]))
+        self.assertEqual(skeleton.GetJointsAttr().Get(),
+            Vt.TokenArray(['joint1']))
+        self.assertEqual(skeleton.GetRestTransformsAttr().Get(),
+            Vt.Matrix4dArray([Gf.Matrix4d(1.0)]))
+
+        self.assertTrue(skeleton.GetPrim().HasAPI(UsdSkel.BindingAPI))
+        skelBindingAPI = UsdSkel.BindingAPI(skeleton)
+        self.assertTrue(skelBindingAPI)
+
+        animSourcePrim = skelBindingAPI.GetAnimationSource()
+        self.assertEqual(animSourcePrim.GetPath(),
+            '/cubeRig/skel/joint1/Animation')
+        animSource = UsdSkel.Animation(animSourcePrim)
+        self.assertTrue(animSource)
+
+        self.assertEqual(skeleton.GetJointsAttr().Get(),
+            Vt.TokenArray(['joint1']))
+        self.assertEqual(animSource.GetRotationsAttr().Get(),
+            Vt.QuatfArray([Gf.Quatf(1.0, Gf.Vec3f(0.0))]))
+        self.assertEqual(animSource.GetScalesAttr().Get(),
+            Vt.Vec3hArray([Gf.Vec3h(1.0)]))
+        self.assertEqual(
+            animSource.GetTranslationsAttr().Get(Usd.TimeCode.Default()),
+            Vt.Vec3fArray([Gf.Vec3f(5.0, 5.0, 0.0)]))
+
+        self.assertEqual(
+            animSource.GetTranslationsAttr().Get(1.0),
+            Vt.Vec3fArray([Gf.Vec3f(0.0, 0.0, 0.0)]))
+        self.assertEqual(
+            animSource.GetTranslationsAttr().Get(2.0),
+            Vt.Vec3fArray([Gf.Vec3f(1.25, 1.25, 0.0)]))
+        self.assertEqual(
+            animSource.GetTranslationsAttr().Get(3.0),
+            Vt.Vec3fArray([Gf.Vec3f(2.5, 2.5, 0.0)]))
+        self.assertEqual(
+            animSource.GetTranslationsAttr().Get(4.0),
+            Vt.Vec3fArray([Gf.Vec3f(3.75, 3.75, 0.0)]))
+        self.assertEqual(
+            animSource.GetTranslationsAttr().Get(5.0),
+            Vt.Vec3fArray([Gf.Vec3f(5.0, 5.0, 0.0)]))
 
     def testSkelWithJointsAtSceneRoot(self):
         """
