@@ -28,7 +28,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 /// Provides helper functions for translating UsdGeomMesh prims into Maya
 /// meshes.

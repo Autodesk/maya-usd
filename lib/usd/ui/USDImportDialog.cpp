@@ -24,7 +24,7 @@
 
 #include "ui_USDImportDialog.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 // We need an implementation because the derived class invokes the destructor
 // and without it we have an undefined symbol.

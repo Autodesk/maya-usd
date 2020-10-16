@@ -17,7 +17,7 @@
 
 #include "private/Utils.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 #ifdef UFE_V2_FEATURES_AVAILABLE

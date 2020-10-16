@@ -62,7 +62,7 @@ Useful links when adding new types to the converter:
 */
 // clang-format on
 
-MAYAUSD_NS_DEF
+namespace MAYAUSD_NS_DEF
 {
 
     namespace {

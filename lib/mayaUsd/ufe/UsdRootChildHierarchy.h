@@ -20,7 +20,7 @@
 
 //PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief USD run-time hierarchy interface for children of the USD root prim.

@@ -27,7 +27,7 @@
 
 #include <mayaUsd/fileio/jobs/writeJob.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_CORE_PUBLIC MayaUSDExportCommand : public MPxCommand
 {

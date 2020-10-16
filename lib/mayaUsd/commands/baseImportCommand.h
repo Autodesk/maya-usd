@@ -25,7 +25,7 @@
 
 #include <mayaUsd/fileio/jobs/readJob.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand
 {

@@ -15,7 +15,7 @@
 //
 #include "UsdSceneItemOpsHandler.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdSceneItemOpsHandler::UsdSceneItemOpsHandler()
