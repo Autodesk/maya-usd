@@ -66,7 +66,7 @@ MObject createNurbStage(bool useSingleWidth=false)
   VtVec3fArray points = VtVec3fArray(5);
   for(uint32_t i = 0 ; i< pointsa.size(); ++i)
   {
-    memcpy(&points[i], &pointsa[i], 3*sizeof(float));
+    memcpy((void*)&points[i], &pointsa[i], 3*sizeof(float));
   }
 
   std::vector<std::array<double,2> > rangesa = {{0.,2.}};
@@ -74,7 +74,7 @@ MObject createNurbStage(bool useSingleWidth=false)
 
   for(uint32_t i = 0 ; i< rangesa.size(); ++i)
   {
-    memcpy(&ranges[i], &rangesa[i], 2*sizeof(double));
+    memcpy((void*)&ranges[i], &rangesa[i], 2*sizeof(double));
   }
 
   if(useSingleWidth)

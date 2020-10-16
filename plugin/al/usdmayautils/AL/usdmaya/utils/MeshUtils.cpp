@@ -844,7 +844,7 @@ void MeshImportContext::applyColourSetData()
           {
             const VtArray<GfVec4f> rawVal = vtValue.UncheckedGet<VtArray<GfVec4f> >();
             colours.setLength(rawVal.size());
-            memcpy(&colours[0], (const float*) rawVal.cdata(), sizeof(float) * 4 * rawVal.size());
+            memcpy((void*)&colours[0], (const float*) rawVal.cdata(), sizeof(float) * 4 * rawVal.size());
             representation = MFnMesh::kRGBA;
           }
         
@@ -1990,7 +1990,7 @@ void MeshExportContext::copyVertexData(UsdTimeCode time)
       const float* pointsData = fnMesh.getRawPoints(&status);
       if(status)
       {
-        memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+        memcpy((void*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
         pointsAttr.Set(points, time);
       }
@@ -2015,7 +2015,7 @@ void MeshExportContext::copyExtentData(UsdTimeCode time)
       {
         const uint32_t numVertices = fnMesh.numVertices();
         VtArray<GfVec3f> points(numVertices);
-        memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+        memcpy((void*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
         VtArray<GfVec3f> extent(2);
         UsdGeomPointBased::ComputeExtent(points, &extent);
@@ -2048,7 +2048,7 @@ void MeshExportContext::copyBindPoseData(UsdTimeCode time)
       const float* pointsData = fnMesh.getRawPoints(&status);
       if(status)
       {
-        memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+        memcpy((void*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
         pRefPrimVarAttr.Set(points, time);
       }
@@ -2121,7 +2121,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
               mesh.SetNormalsInterpolation(UsdGeomTokens->vertex);
             }
 
-            memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+            memcpy((void*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
             normalsAttr.Set(normals, time);
           }
           else
@@ -2148,7 +2148,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
             if(isPerVertex)
             {
               VtArray<GfVec3f> normals(numNormals);
-              memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+              memcpy((void*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
               for(auto& c : missing)
               {
                 const uint32_t orig = c.first;
@@ -2220,7 +2220,7 @@ void MeshExportContext::copyNormalData(UsdTimeCode time, bool copyAsPrimvar)
               mesh.SetNormalsInterpolation(UsdGeomTokens->faceVarying);
             }
             VtArray<GfVec3f> normals(numNormals);
-            memcpy((GfVec3f*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
+            memcpy((void*)normals.data(), normalsData, sizeof(float) * 3 * numNormals);
             normalsAttr.Set(normals, time);
           }
           else

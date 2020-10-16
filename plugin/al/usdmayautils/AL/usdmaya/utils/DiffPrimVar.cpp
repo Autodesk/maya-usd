@@ -64,7 +64,7 @@ uint32_t diffGeom(UsdGeomPointBased& geom, MFnMesh& mesh, UsdTimeCode timeCode, 
     {
       const uint32_t numVertices = mesh.numVertices();
       VtArray<GfVec3f> points(numVertices);
-      memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+      memcpy((void*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
       VtArray<GfVec3f> mayaExtent(2);
       UsdGeomPointBased::ComputeExtent(points, &mayaExtent);

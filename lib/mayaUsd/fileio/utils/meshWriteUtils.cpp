@@ -579,7 +579,7 @@ UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
     const int numVertices = referenceMesh.numVertices();
     VtVec3fArray points(numVertices);
 
-    memcpy(points.data(), mayaRawPoints, numVertices * sizeof(float) * 3);
+    memcpy((void*)points.data(), mayaRawPoints, numVertices * sizeof(float) * 3);
 
     UsdGeomPrimvar primVar = primSchema.CreatePrimvar(
         UsdUtilsGetPrefName(),
@@ -687,7 +687,7 @@ UsdMayaMeshWriteUtils::writePointsData(const MFnMesh& meshFn,
     }
 
     // use memcpy() to copy the data. HS April 09, 2020
-    memcpy((GfVec3f*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
+    memcpy((void*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
 
     VtVec3fArray extent(2);
     // Compute the extent using the raw points
