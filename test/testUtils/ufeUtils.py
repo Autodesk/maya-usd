@@ -55,7 +55,7 @@ def selectPath(path, replace=False):
     else:
         ufeSelectCmd.append(sceneItem)
 
-def makeUfePath(dagPath, sdfPath=None):
+def createUfeSceneItem(dagPath, sdfPath=None):
     """
     Make ufe item out of dag path and sdfpath
     """

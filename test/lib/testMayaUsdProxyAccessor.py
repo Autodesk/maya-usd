@@ -26,7 +26,7 @@ import maya.cmds as cmds
 import usdUtils, mayaUtils, testUtils
 
 from cachingUtils import NonCachingScope, CachingScope
-from ufeUtils import makeUfePath, selectUfeItems
+from ufeUtils import createUfeSceneItem, selectUfeItems
 from mayaUtils import createProxyAndStage, createProxyFromFile, createAnimatedHierarchy
 
 from mayaUsd import lib as mayaUsdLib
@@ -109,8 +109,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE items
-        ufeParentItemA = makeUfePath(nodeDagPath,'/ParentA')
-        ufeChildItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
+        ufeParentItemA = createUfeSceneItem(nodeDagPath,'/ParentA')
+        ufeChildItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
         
         # Create accessor plugs
         worldMatrixPlugA = pa.getOrCreateAccessPlug(ufeParentItemA, '', Sdf.ValueTypeNames.Matrix4d )
@@ -146,7 +146,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         createAnimatedHierarchy(stage)
         
         # Get UFE items
-        ufeParentItemA = makeUfePath(nodeDagPath,'/ParentA')
+        ufeParentItemA = createUfeSceneItem(nodeDagPath,'/ParentA')
         
         # Create accessor plugs
         worldMatrixPlugA = pa.getOrCreateAccessPlug(ufeParentItemA, '', Sdf.ValueTypeNames.Matrix4d )
@@ -175,7 +175,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.setKeyframe( '{}.ry'.format(transform), time=100.0, value=90 )
         
         # Get UFE items
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
         worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         
         cachingScope.waitForCache()
@@ -199,9 +199,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE items
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        ufeItemCube = makeUfePath(nodeDagPath,'/ParentA/Cube')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
+        ufeItemCube = createUfeSceneItem(nodeDagPath,'/ParentA/Cube')
         
         # Create accessor plugs
         translatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
@@ -255,8 +255,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.setAttr('{}.ty'.format(childNodeDagPath), 3)
         
         # Get UFE items
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        ufeItemChild = makeUfePath(childNodeDagPath)
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
+        ufeItemChild = createUfeSceneItem(childNodeDagPath)
         
         # Parent
         pa.parentItems([ufeItemChild],ufeItemSphere)
@@ -288,10 +288,10 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.setAttr('{}.ty'.format(locatorNodeDagPath), 3)
         
         # Get UFE items
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        ufeItemCube = makeUfePath(nodeDagPath,'/ParentA/Cube')
-        ufeItemLocator = makeUfePath(locatorNodeDagPath)
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
+        ufeItemCube = createUfeSceneItem(nodeDagPath,'/ParentA/Cube')
+        ufeItemLocator = createUfeSceneItem(locatorNodeDagPath)
         
         translatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
         rotatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
@@ -352,7 +352,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE item and select it
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
         selectUfeItems(ufeItemParent)
         
         # We are going to manipulate animated prim. Let's make sure this opinion can be authored
@@ -425,7 +425,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         transform = cmds.listRelatives(nodeDagPath,parent=True)[0]
         
         # Get UFE items
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
         worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         
         cachingScope.waitForCache()
@@ -470,7 +470,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE item and select it
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
         selectUfeItems(ufeItemParent)
 
         # We are going to manipulate animated prim. Let's make sure this opinion can be authored
@@ -555,7 +555,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE item and select it
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
         
         # Current limitation requires access plugs to be created before we start manipulating and keying
         translatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
@@ -641,7 +641,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE item and select it
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
         
         path = Sdf.Path('/ParentA')
         usdPrim = stage.GetPrimAtPath(path)
@@ -733,9 +733,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.setKeyframe( '{}.tz'.format(srcLocatorDagPath), time=100.0, value=10.0)
         
         # Get UFE items
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        ufeItemSrcLocator = makeUfePath(srcLocatorDagPath)
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
+        ufeItemSrcLocator = createUfeSceneItem(srcLocatorDagPath)
         
         # Create accessor plugs
         translatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
@@ -792,7 +792,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ''')
 
         # Get UFE items
-        ufeItem = makeUfePath(nodeDagPath,'/pCube1')
+        ufeItem = createUfeSceneItem(nodeDagPath,'/pCube1')
 
         # Create accessor plugs
         matrixPlug = pa.getOrCreateAccessPlug(ufeItem, usdAttrName='xformOp:transform:offset')
