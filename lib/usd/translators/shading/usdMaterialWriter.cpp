@@ -109,11 +109,17 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromShadingNodeAttr(
         const TfToken& shadingNodeAttrName,
         UsdShadeShader& shaderSchema,
         const TfToken& shaderInputName,
-        const UsdTimeCode usdTime)
+        const UsdTimeCode usdTime,
+        const SdfValueTypeName& inputTypeName)
 {
     return AuthorShaderInputFromScaledShadingNodeAttr(
-        depNodeFn, shadingNodeAttrName, shaderSchema, shaderInputName,
-        usdTime, TfToken());
+        depNodeFn,
+        shadingNodeAttrName,
+        shaderSchema,
+        shaderInputName,
+        usdTime,
+        TfToken(),
+        inputTypeName);
 }
 
 bool
@@ -123,7 +129,8 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
         UsdShadeShader& shaderSchema,
         const TfToken& shaderInputName,
         const UsdTimeCode usdTime,
-        const TfToken& scalingAttrName)
+        const TfToken& scalingAttrName,
+        const SdfValueTypeName& inputTypeName)
 {
     MStatus status;
 
@@ -141,7 +148,10 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
         return false;
     }
 
-    auto shaderInputTypeName = Converter::getUsdTypeName(shadingNodePlug);
+    const SdfValueTypeName shaderInputTypeName =
+        bool(inputTypeName) ?
+            inputTypeName :
+            Converter::getUsdTypeName(shadingNodePlug);
 
     // Are color values are all linear on the shader?
     // Do we need to re-linearize them?
