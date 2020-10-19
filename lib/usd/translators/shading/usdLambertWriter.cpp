@@ -125,6 +125,7 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
         usdTime,
+        /* ignoreIfUnauthored = */ false,
         /* inputTypeName = */ SdfValueTypeNames->Normal3f);
 
     WriteSpecular(usdTime);
