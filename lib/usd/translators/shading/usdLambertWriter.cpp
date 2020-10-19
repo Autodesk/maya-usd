@@ -140,16 +140,12 @@ void PxrUsdTranslators_LambertWriter::WriteSpecular(const UsdTimeCode& usdTime)
         .CreateInput(PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, SdfValueTypeNames->Float)
         .Set(1.0f, usdTime);
 
-    // Using specular workflow, but enforced black specular color.
+    // Using specular workflow. There is no need to author the specular color
+    // since UsdPreviewSurface uses black as a fallback value.
     shaderSchema
         .CreateInput(
             PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
         .Set(1, usdTime);
-
-    shaderSchema
-        .CreateInput(PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName, SdfValueTypeNames->Color3f)
-        .Set(GfVec3f(0.0f, 0.0f, 0.0f), usdTime);
-
 }
 
 /* virtual */
