@@ -28,6 +28,7 @@
 #include <pxr/usd/usdShade/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
@@ -111,12 +112,15 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         }
     }
 
+    // Since incandescence in Maya and emissiveColor in UsdPreviewSurface are
+    // both black by default, only author it in USD if it is authored in Maya.
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
         _tokens->incandescence,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName,
-        usdTime);
+        usdTime,
+        /* ignoreIfUnauthored = */ true);
 
     // Exported, but unsupported in hdStorm.
     AuthorShaderInputFromShadingNodeAttr(
