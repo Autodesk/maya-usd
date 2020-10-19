@@ -705,7 +705,7 @@ MStatus DgNodeHelper::setMatrix4x4Array(MObject node, MObject attribute, const d
     MStatus status;
     MMatrixArray arrayData;
     arrayData.setLength(count);
-    memcpy((void*)&arrayData[0], values, sizeof(MMatrix) * count);
+    memcpy(arrayData[0][0], values, sizeof(MMatrix) * count);
 
     MFnMatrixArrayData fn;
     MObject data = fn.create(arrayData, &status);

@@ -576,10 +576,9 @@ UsdMayaMeshWriteUtils::exportReferenceMesh(UsdGeomMesh& primSchema, MObject obj)
     }
 
     const float* mayaRawPoints = referenceMesh.getRawPoints(&status);
+    const GfVec3f* mayaRawVec3 = reinterpret_cast<const GfVec3f*>(mayaRawPoints);
     const int numVertices = referenceMesh.numVertices();
-    VtVec3fArray points(numVertices);
-
-    memcpy((void*)points.data(), mayaRawPoints, numVertices * sizeof(float) * 3);
+    VtVec3fArray points(mayaRawVec3, mayaRawVec3 + numVertices);
 
     UsdGeomPrimvar primVar = primSchema.CreatePrimvar(
         UsdUtilsGetPrefName(),
@@ -678,17 +677,14 @@ UsdMayaMeshWriteUtils::writePointsData(const MFnMesh& meshFn,
     MStatus status{MS::kSuccess};
 
     const uint32_t numVertices = meshFn.numVertices();
-    VtVec3fArray points(numVertices);
     const float* pointsData = meshFn.getRawPoints(&status);
-
     if(!status) {
         MGlobal::displayError(MString("Unable to access mesh vertices on mesh: ") + meshFn.fullPathName());
         return;
     }
 
-    // use memcpy() to copy the data. HS April 09, 2020
-    memcpy((void*)points.data(), pointsData, sizeof(float) * 3 * numVertices);
-
+    const GfVec3f* vecData = reinterpret_cast<const GfVec3f*>(pointsData);
+    VtVec3fArray points(vecData, vecData + numVertices);
     VtVec3fArray extent(2);
     // Compute the extent using the raw points
     UsdGeomPointBased::ComputeExtent(points, &extent);
