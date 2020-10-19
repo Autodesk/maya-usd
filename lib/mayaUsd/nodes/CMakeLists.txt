@@ -4,6 +4,7 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         hdImagingShape.cpp
+        layerManager.cpp
         pointBasedDeformerNode.cpp
         proxyAccessor.cpp
         proxyShapeBase.cpp
@@ -15,6 +16,7 @@ target_sources(${PROJECT_NAME}
 
 set(HEADERS
     hdImagingShape.h
+    layerManager.h
     pointBasedDeformerNode.h
     proxyAccessor.h
     proxyShapeBase.h

@@ -44,6 +44,13 @@ class ProxyShape : public MayaUsdProxyShapeBase
 
         void postConstructor() override;
 
+    protected:
+		MAYAUSD_PLUGIN_PUBLIC
+		SdfLayerRefPtr computeRootLayer(MDataBlock&, const std::string&) override;
+
+        MAYAUSD_PLUGIN_PUBLIC
+        SdfLayerRefPtr computeSessionLayer(MDataBlock&) override;
+
     private:
         ProxyShape();
 

@@ -17,6 +17,10 @@
 
 #include <mayaUsd/nodes/hdImagingShape.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/nodes/layerManager.h>
+#include <mayaUsd/utils/util.h>
+
+#include <iostream>
 
 MAYAUSD_NS_DEF {
 
@@ -72,6 +76,20 @@ void ProxyShape::postConstructor()
 #if MAYA_API_VERSION >= 20210000
     enableProxyAccessor();
 #endif
+}
+
+SdfLayerRefPtr 
+ProxyShape::computeRootLayer(MDataBlock& dataBlock, const std::string& filePath)
+{
+    auto rootLayerName = dataBlock.inputValue(rootLayerNameAttr).asString();
+    return LayerManager::findLayer(UsdMayaUtil::convert(rootLayerName));
+}
+
+SdfLayerRefPtr
+ProxyShape::computeSessionLayer(MDataBlock& dataBlock)
+{
+    auto sessionLayerName = dataBlock.inputValue(sessionLayerNameAttr).asString();
+    return LayerManager::findLayer(UsdMayaUtil::convert(sessionLayerName));
 }
 
 } // MayaUsd

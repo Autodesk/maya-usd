@@ -81,6 +81,7 @@
 #include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/utilFileSystem.h>
@@ -128,6 +129,10 @@ MObject MayaUsdProxyShapeBase::stageCacheIdAttr;
 MObject MayaUsdProxyShapeBase::drawRenderPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawProxyPurposeAttr;
 MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
+
+MObject MayaUsdProxyShapeBase::sessionLayerNameAttr;
+MObject MayaUsdProxyShapeBase::rootLayerNameAttr;
+
 // Output attributes
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
@@ -354,6 +359,29 @@ MayaUsdProxyShapeBase::initialize()
     retValue = addAttribute(outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
+	sessionLayerNameAttr = typedAttrFn.create(
+		"serializedSessionLayerAttr",
+		"sat",
+		MFnData::kString,
+		MObject::kNullObj,
+		&retValue);
+	typedAttrFn.setInternal(true);
+	typedAttrFn.setHidden(true);
+	CHECK_MSTATUS_AND_RETURN_IT(retValue);
+	retValue = addAttribute(sessionLayerNameAttr);
+	CHECK_MSTATUS_AND_RETURN_IT(retValue);
+
+	rootLayerNameAttr = typedAttrFn.create(
+		"rootLayerAttr",
+		"rln",
+		MFnData::kString,
+		MObject::kNullObj,
+		&retValue);
+	typedAttrFn.setInternal(true);
+	typedAttrFn.setHidden(true);
+	CHECK_MSTATUS_AND_RETURN_IT(retValue);
+	retValue = addAttribute(rootLayerNameAttr);
+	CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     //
     // add attribute dependencies
@@ -502,9 +530,52 @@ MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
 
 /* virtual */
 SdfLayerRefPtr
+MayaUsdProxyShapeBase::computeRootLayer(MDataBlock&, const std::string&)
+{
+	return nullptr;
+}
+
+/* virtual */
+SdfLayerRefPtr
 MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock&)
 {
     return nullptr;
+}
+
+MStatus
+MayaUsdProxyShapeBase::computeSessionLayerAttr()
+{
+    MString idString;
+    UsdStageRefPtr usdStage = getUsdStage();
+    if (usdStage)
+    {
+        auto sessionLayer = usdStage->GetSessionLayer();
+        auto identifier = sessionLayer->GetIdentifier();
+		idString = UsdMayaUtil::convert(identifier);
+    }
+
+	MPlug sessionLayerPlug(thisMObject(), sessionLayerNameAttr);
+	sessionLayerPlug.setValue(idString);
+
+    return MS::kSuccess;
+}
+
+MStatus
+MayaUsdProxyShapeBase::computeRootLayerAttr()
+{
+    MString idString;
+    UsdStageRefPtr usdStage = getUsdStage();
+    if (usdStage)
+    {
+        auto rootLayer = usdStage->GetRootLayer();
+        auto identifier = rootLayer->GetIdentifier();
+		idString = UsdMayaUtil::convert(identifier);
+    }
+
+	MPlug rootLayerPlug(thisMObject(), rootLayerNameAttr);
+	rootLayerPlug.setValue(idString);
+
+    return MS::kSuccess;
 }
 
 MStatus
@@ -630,9 +701,13 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
                 // more information.
                 UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
-                
-                if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-                    SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+                SdfLayerRefPtr sessionLayer = nullptr;
+                SdfLayerRefPtr rootLayer = computeRootLayer(dataBlock, fileString);
+                if (nullptr == rootLayer)
+                    rootLayer = SdfLayer::FindOrOpen(fileString);
+
+                if (rootLayer) {
+                    sessionLayer = computeSessionLayer(dataBlock);
                     if (sessionLayer) {
                         usdStage = UsdStage::Open(rootLayer,
                                 sessionLayer,
@@ -680,6 +755,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         inDataCachedHandle.set(stageData);
         inDataCachedHandle.setClean();
+
         return MS::kSuccess;
     }
 }
@@ -789,6 +865,9 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 
         MayaUsdProxyStageSetNotice(*this).Send();
     }
+
+    computeSessionLayerAttr();
+    computeRootLayerAttr();
 
     return MS::kSuccess;
 }

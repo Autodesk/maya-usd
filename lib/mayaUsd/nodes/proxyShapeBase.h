@@ -112,6 +112,11 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MAYAUSD_CORE_PUBLIC
         static MObject drawGuidePurposeAttr;
 
+        MAYAUSD_CORE_PUBLIC
+        static MObject sessionLayerNameAttr;
+        MAYAUSD_CORE_PUBLIC
+        static MObject rootLayerNameAttr;
+
         // Output attributes
         MAYAUSD_CORE_PUBLIC
         static MObject outTimeAttr;
@@ -281,6 +286,10 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
     
         // Hook method for derived classes.  This class returns a nullptr.
         MAYAUSD_CORE_PUBLIC
+        virtual SdfLayerRefPtr computeRootLayer(MDataBlock&, const std::string&);
+
+        // Hook method for derived classes.  This class returns a nullptr.
+        MAYAUSD_CORE_PUBLIC
         virtual SdfLayerRefPtr computeSessionLayer(MDataBlock&);
 
         // Hook method for derived classes: can this object be soft selected?
@@ -320,6 +329,8 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         MStatus computeInStageDataCached(MDataBlock& dataBlock);
         MStatus computeOutStageData(MDataBlock& dataBlock);
         MStatus computeOutStageCacheId(MDataBlock& dataBlock);
+        MStatus computeSessionLayerAttr();
+        MStatus computeRootLayerAttr();
 
         SdfPathVector _GetExcludePrimPaths(MDataBlock dataBlock) const;
         int _GetComplexity(MDataBlock dataBlock) const;

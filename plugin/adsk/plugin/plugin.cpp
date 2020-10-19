@@ -38,6 +38,7 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/nodes/layerManager.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
@@ -196,6 +197,8 @@ MStatus initializePlugin(MObject obj)
 
     UsdMayaSceneResetNotice::InstallListener();
 
+    MayaUsd::LayerManager::addSupportForNodeType(MAYAUSD_NS::ProxyShape::typeId);
+
     return status;
 }
 
@@ -252,6 +255,8 @@ MStatus uninitializePlugin(MObject obj)
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();
-    
+
+    MayaUsd::LayerManager::removeSupportForNodeType(MAYAUSD_NS::ProxyShape::typeId);
+
     return status;
 }
