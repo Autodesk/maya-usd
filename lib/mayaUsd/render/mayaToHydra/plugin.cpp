@@ -37,7 +37,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     MStatus ret = MS::kSuccess;
 
     // Call one time registration of plugins compiled for same USD version as MayaUSD plugin.
-    MAYAUSD_NS::registerVersionedPlugins();
+    MayaUsd::registerVersionedPlugins();
     
     ret = HdMayaAdapter::Initialize();
     if (!ret) { return ret; }

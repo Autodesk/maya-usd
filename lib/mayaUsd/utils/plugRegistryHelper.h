@@ -21,7 +21,7 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/getenv.h>
 #include <pxr/base/tf/pathUtils.h>
-#include "pxr/base/tf/stringUtils.h"
+#include <pxr/base/tf/stringUtils.h>
 
 #include <string>
 
