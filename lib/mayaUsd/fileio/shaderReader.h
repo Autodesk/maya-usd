@@ -50,6 +50,18 @@ public:
     MAYAUSD_CORE_PUBLIC
     static ContextSupport CanImport(const UsdMayaJobImportArgs& importArgs);
 
+    /// Get the name of the Maya shading plug that corresponds to the
+    /// USD attribute named \p usdAttrName on \p mayaObject.
+    ///
+    /// The default implementation always returns an empty plug, which
+    /// effectively prevents any connections from being authored to or from
+    /// the imported shader nodes. Derived classes should override this and
+    /// return the corresponding attribute names for the USD attributes
+    /// that should be considered for connections.
+    MAYAUSD_CORE_PUBLIC
+    virtual MPlug
+    GetMayaPlugForUsdAttrName(const TfToken& usdAttrName, const MObject& mayaObject) const;
+
     /// Get the name of the Maya shading attribute that corresponds to the
     /// USD attribute named \p usdAttrName.
     ///
