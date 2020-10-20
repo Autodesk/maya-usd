@@ -27,6 +27,8 @@
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/tf/type.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
@@ -36,6 +38,7 @@
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/utils/util.h>
 
@@ -379,10 +382,18 @@ UsdMayaTranslatorCamera::ReadToCamera(
         const UsdGeomCamera& usdCamera,
         MFnCamera& cameraObject)
 {
-    UsdMayaJobImportArgs defaultJobArgs =
-            UsdMayaJobImportArgs::CreateFromDictionary(
-                UsdMayaJobImportArgs::GetDefaultDictionary());
-    UsdMayaPrimReaderArgs args(usdCamera.GetPrim(), defaultJobArgs);
+    VtDictionary userArgsDict;
+
+    // Disable shading import since we're only interested in the camera.
+    userArgsDict[UsdMayaJobImportArgsTokens->shadingMode] =
+        std::vector<VtValue> { VtValue(
+            std::vector<VtValue> {
+                VtValue(UsdMayaShadingModeTokens->none.GetString()),
+                VtValue(std::string("default")) }) };
+
+    UsdMayaJobImportArgs importArgs =
+        UsdMayaJobImportArgs::CreateFromDictionary(userArgsDict);
+    UsdMayaPrimReaderArgs args(usdCamera.GetPrim(), importArgs);
     return _ReadToCamera(usdCamera, cameraObject, args, nullptr);
 }
 

@@ -63,13 +63,13 @@ MAYAUSD_NS_DEF
     );
 
     //! \brief  Test if given plug name is matching the convention used by accessor plugs
-    bool isAccessorValuePlugName(const char* plugName)
+    bool isAccessorPlugName(const char* plugName)
     {
-        return (strncmp(plugName, "AccessValue_", 12) == 0);
+        return (strncmp(plugName, "AP_", 3) == 0);
     }
 
     //! \brief  Returns True is given plug is categorized as input plug, or False if output plug
-    bool isAccessorValueInputPlug(const MPlug& plug)
+    bool isAccessorInputPlug(const MPlug& plug)
     {
         if (plug.isDestination())
             return true;
@@ -117,7 +117,7 @@ MAYAUSD_NS_DEF
             object,
             [](MNodeMessage::AttributeMessage msg, MPlug& plug, void* clientData) {
                 if (clientData) {
-                    if (isAccessorValuePlugName(plug.partialName().asChar())) {
+                    if (isAccessorPlugName(plug.partialName().asChar())) {
                         static_cast<ProxyAccessor*>(clientData)->invalidateAccessorItems();
                     }
                 }
@@ -135,7 +135,7 @@ MAYAUSD_NS_DEF
                         == 0)
                     return;
 
-                if (isAccessorValuePlugName(plug.partialName().asChar())) {
+                if (isAccessorPlugName(plug.partialName().asChar())) {
                     auto* accessor = static_cast<ProxyAccessor*>(clientData);
                     accessor->invalidateAccessorItems();
 
@@ -218,7 +218,7 @@ MAYAUSD_NS_DEF
                 continue;
 
             MString name = attr.name();
-            if (!isAccessorValuePlugName(name.asChar()))
+            if (!isAccessorPlugName(name.asChar()))
                 continue;
 
             MPlug   valuePlug(node, attr.object());
@@ -268,7 +268,7 @@ MAYAUSD_NS_DEF
                 continue;
             }
 
-            if (isAccessorValueInputPlug(valuePlug)) {
+            if (isAccessorInputPlug(valuePlug)) {
                 TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added INPUT '%s'\n", path.GetText());
                 _accessorInputItems.emplace_back(valuePlug, path, converter);
             } else {
@@ -293,10 +293,10 @@ MAYAUSD_NS_DEF
         if (_accessorInputItems.size() == 0 && _accessorOutputItems.size() == 0)
             return MS::kUnknownParameter;
 
-        const bool accessorValuePlug = isAccessorValuePlugName(plug.partialName().asChar());
-        const bool isInputValuePlug = accessorValuePlug && isAccessorValueInputPlug(plug);
+        const bool accessorPlug = isAccessorPlugName(plug.partialName().asChar());
+        const bool isInputPlug = accessorPlug && isAccessorInputPlug(plug);
 
-        if (isInputValuePlug || !plug.isDynamic() || plug == _forceCompute) {
+        if (isInputPlug || !plug.isDynamic() || plug == _forceCompute) {
             TF_DEBUG(USDMAYA_PROXYACCESSOR)
                 .Msg("Dirty all outputs from '%s'\n", plug.name().asChar());
 

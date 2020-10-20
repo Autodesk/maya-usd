@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from ufeTestUtils import mayaUtils, usdUtils, ufeUtils
+import mayaUtils, usdUtils, ufeUtils
 
 import ufe
 
@@ -51,7 +51,7 @@ class SelectTestCase(unittest.TestCase):
 
         # Load a file that has the same scene in both the Maya Dag
         # hierarchy and the USD hierarchy.
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test-samples", "parentCmd", "simpleSceneMayaPlusUSD_TRS.ma" )
+        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..", "testSamples", "parentCmd", "simpleSceneMayaPlusUSD_TRS.ma" )
         cmds.file(filePath, force=True, open=True)
 
         # Clear selection to start off

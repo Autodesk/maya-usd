@@ -37,12 +37,14 @@ limitations under the License.
         <string  name="tessprimitives" semantic="controlParam" flags="isRequirementOnly" />
         <string  name="patchspacing" semantic="controlParam" flags="isRequirementOnly" />
         <int  name="barriers" semantic="controlParam" flags="isRequirementOnly" />
+        <int  name="curveBasis" />
     </properties>
     <values>
         <int name="outputpatchsize" value="4"/>
         <string name="tessprimitives" value="quad"/>
         <string name="patchspacing" value="fractional_odd"/>
         <int name="barriers" value="0"/>
+        <int name="curveBasis" value="0"/>
     </values>
     <outputs>
         <struct  name="structDomain" size="4" struct_name="structDomain" />
@@ -81,10 +83,7 @@ float3 evaluateNormal(hullOutS patch[4], float4 basis, float u)
     float4 n2 = mul(float4(patch[2].Nm, 1.0f), worldViewIT);
     float4 n3 = mul(float4(patch[3].Nm, 1.0f), worldViewIT);
 
-    float3 normal = n0.xyz * basis.x
-                  + n1.xyz * basis.y
-                  + n2.xyz * basis.z
-                  + n3.xyz * basis.w;
+    float3 normal = mul(basis, float4x4(n0, n1, n2, n3)).xyz;
 
     // A zero vector is passed in to indicate requirement of camera-facing normal.
     if (length(normal) < 0.00001f)
@@ -97,44 +96,68 @@ float3 evaluateNormal(hullOutS patch[4], float4 basis, float u)
 
 // line 676 ".../lib/usd/hdSt/resources/shaders/basisCurves.glslfx"
 
-Coeffs evaluateBasis(float u, float u2, float u3)
+Coeffs evaluateBasis(int curveBasis, float u, float u2, float u3)
 {
-    float4 basis;
-    basis[0] = u3;
-    basis[1] = -3.0*u3 + 3.0*u2;
-    basis[2] = 3.0*u3 - 6.0*u2 + 3.0*u;
-    basis[3] = -1.0*u3 + 3.0*u2 - 3.0*u + 1.0;
+    Coeffs result;
 
-    float4 tangent_basis;
-    tangent_basis[0] = 3.0*u2;
-    tangent_basis[1] = -9.0*u2 + 6.0*u;
-    tangent_basis[2] = 9.0*u2 - 12.0*u + 3.0;
-    tangent_basis[3] = -3.0*u2 + 6.0*u - 3.0;
+    if (curveBasis == 0) // Curves.BezierBasis
+    {
+        result.basis = float4(u3,
+                              -3.0*u3 + 3.0*u2,
+                              3.0*u3 - 6.0*u2 + 3.0*u,
+                              -1.0*u3 + 3.0*u2 - 3.0*u + 1.0);
 
-    Coeffs outputS;
-    outputS.basis = basis;
-    outputS.tangent_basis = tangent_basis;
-    return outputS;
+        result.tangent_basis = float4(3.0*u2,
+                                      -9.0*u2 + 6.0*u,
+                                      9.0*u2 - 12.0*u + 3.0,
+                                      -3.0*u2 + 6.0*u - 3.0);
+    }
+    else if (curveBasis == 1) // Curves.BsplineBasis
+    {
+        result.basis = float4((1.0/6.0)*u3,
+                              -0.5*u3 + 0.5*u2 + 0.5*u + (1.0/6.0),
+                              0.5*u3 - u2 + (2.0/3.0),
+                              -(1.0/6.0)*u3 + 0.5*u2 - 0.5*u + (1.0/6.0));
+
+        result.tangent_basis = float4(0.5*u2,
+                                      -1.5*u2 + u + 0.5,
+                                      1.5*u2 - 2.0*u,
+                                      -0.5*u2 + u - 0.5);
+    }
+    else if (curveBasis == 2) // Curves.CatmullRomBasis
+    {
+        result.basis = float4(0.5*u3 - 0.5*u2,
+                              -1.5*u3 + 2.0*u2 + 0.5*u,
+                              1.5*u3 - 2.5*u2 + 1.0,
+                              -0.5*u3 + u2 - 0.5*u);
+
+        result.tangent_basis = float4(1.5*u2 - u,
+                                      -4.5*u2 + 4.0*u + 0.5,
+                                      4.5*u2 - 5.0*u,
+                                      -1.5*u2 + 2.0*u - 0.5);
+    }
+    else // Unexpected value
+    {
+        result.basis = float4(0.0, 0.0, 0.0, 0.0);
+
+        result.tangent_basis = float4(0.0, 0.0, 0.0, 0.0);
+    }
+    
+    return result;
 }
 
-void evaluate(hullOutS patch[4], float u, float v, out float4 position, out float4 tangent,
+void evaluate(hullOutS patch[4], int curveBasis, float u, float v, out float4 position, out float4 tangent,
               out float width, out float3 normal){
     float4 p0 = mul(float4(patch[0].Pm, 1.0f), worldView);
     float4 p1 = mul(float4(patch[1].Pm, 1.0f), worldView);
     float4 p2 = mul(float4(patch[2].Pm, 1.0f), worldView);
     float4 p3 = mul(float4(patch[3].Pm, 1.0f), worldView);
 
-    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    Coeffs coeffs = evaluateBasis(curveBasis, u, u*u, u*u*u);
 
-    position = coeffs.basis[0] * p0 +
-               coeffs.basis[1] * p1 +
-               coeffs.basis[2] * p2 +
-               coeffs.basis[3] * p3;
-
-    tangent = coeffs.tangent_basis[0] * p0 +
-              coeffs.tangent_basis[1] * p1 +
-              coeffs.tangent_basis[2] * p2 +
-              coeffs.tangent_basis[3] * p3;
+    float4x4 pmat = float4x4(p0, p1, p2, p3);
+    position = mul(coeffs.basis, pmat);
+    tangent = mul(coeffs.tangent_basis, pmat);
 
     width = evaluateWidths(patch, coeffs.basis, u);
     normal = normalize(evaluateNormal(patch, coeffs.basis, u));
@@ -156,20 +179,18 @@ float3 orient(float v, float4 position, float4 tangent, float3 normal)
 structDomain BasisCurvesCubicDomain(
     hullConstantsOutS patchConstants,
     hullOutS patch[4],
-    float2 domainCoord)
+    float2 domainCoord,
+    int curveBasis)
 {
     float u = domainCoord.y;
     float v = domainCoord.x;
-
-    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
-    float4 basis = coeffs.basis;
 
     float4 position;
     float4 tangent;
     float width;
     float3 normal;
 
-    evaluate(patch, u, v, position, tangent, width, normal);
+    evaluate(patch, curveBasis, u, v, position, tangent, width, normal);
     float3 direction = orient(v, position, tangent, normal);
 
     float4 scaledDirection = mul(float4(direction, 0.0f), worldView);

@@ -23,6 +23,7 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
@@ -123,7 +124,8 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         _tokens->normalCamera,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
-        usdTime);
+        usdTime,
+        /* inputTypeName = */ SdfValueTypeNames->Normal3f);
 
     WriteSpecular(usdTime);
 }

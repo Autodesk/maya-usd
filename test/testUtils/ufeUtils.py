@@ -55,6 +55,26 @@ def selectPath(path, replace=False):
     else:
         ufeSelectCmd.append(sceneItem)
 
+def createUfeSceneItem(dagPath, sdfPath=None):
+    """
+    Make ufe item out of dag path and sdfpath
+    """
+    ufePath = ufe.PathString.path('{},{}'.format(dagPath,sdfPath) if sdfPath != None else '{}'.format(dagPath))
+    ufeItem = ufe.Hierarchy.createItem(ufePath)
+    return ufeItem
+
+def selectUfeItems(selectItems):
+    """
+    Add given UFE item or list of items to a UFE global selection list
+    """
+    ufeSelectionList = ufe.Selection()
+    
+    realListToSelect = selectItems if type(selectItems) is list else [selectItems]
+    for item in realListToSelect:
+        ufeSelectionList.append(item)
+    
+    ufe.GlobalSelection.get().replaceWith(ufeSelectionList)
+
 def ufeFeatureSetVersion():
     '''Return the UFE feature set version taking into account rollback to using
     0 for unreleased version after we ship a UFE.

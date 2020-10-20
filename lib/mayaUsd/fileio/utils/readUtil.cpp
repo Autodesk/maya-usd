@@ -18,6 +18,7 @@
 #include <maya/MDoubleArray.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFnAttribute.h>
+#include <maya/MFnCompoundAttribute.h>
 #include <maya/MFnDoubleArrayData.h>
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnFloatArrayData.h>
@@ -150,6 +151,16 @@ _FindOrCreateMayaNumericAttr(
             attr.setUsedAsColor(true);
         }
 
+        const unsigned int numChildren = MFnCompoundAttribute(attrObj).numChildren();
+        if(numChildren < 5u) {
+            static MString suffix[4] = {" X", " Y", " Z", " W"};
+            for(unsigned int i = 0; i < numChildren; i++) {
+                MFnAttribute(attr.child(i)).setNiceNameOverride(niceName+suffix[i]);
+            }
+        } else {
+            TF_CODING_ERROR("Unexpected number of children on numeric attribute");
+        }
+        
         modifier.addAttribute(depNode.object(), attrObj);
         modifier.doIt();
         return attrObj;
