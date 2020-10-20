@@ -153,7 +153,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 #endif
 
 	// First, check if we need to rename the child.
-	std::string childName = uniqueChildName(fItem, child->path());
+	std::string childName = uniqueChildName(fItem->prim(), child->path().back().string());
 
 	// Set up all paths to perform the reparent.
 	auto childPrim = usdChild->prim();
@@ -191,11 +191,7 @@ Ufe::AppendedChild UsdHierarchy::appendChild(const Ufe::SceneItem::Ptr& child)
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2021
 Ufe::InsertChildCommand::Ptr UsdHierarchy::insertChildCmd(
-#else
-Ufe::UndoableCommand::Ptr UsdHierarchy::insertChildCmd(
-#endif
     const Ufe::SceneItem::Ptr& child,
     const Ufe::SceneItem::Ptr& pos
 )

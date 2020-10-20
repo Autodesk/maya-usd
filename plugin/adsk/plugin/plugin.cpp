@@ -31,6 +31,8 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
+#include <mayaUsd/fileio/shaderReaderRegistry.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/stageData.h>
@@ -84,6 +86,11 @@ template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
     }
 }
 } // namespace
+
+TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
+{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(MayaUsdPreviewSurface_typeName); };
+TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
+{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(MayaUsdPreviewSurface_typeName); };
 
 MAYAUSD_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)

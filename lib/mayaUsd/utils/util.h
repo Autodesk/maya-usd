@@ -530,6 +530,13 @@ VtValue ParseArgumentValue(
         const std::string& value,
         const VtDictionary& guideDict);
 
+/// Converts a value into a string that can be parsed back using ParseArgumentValue.
+/// Should be used when generating argument strings that are to be used by translators.
+/// Has the same rules and limitations as the former function.
+/// Will return false if the variant type is not supported.
+MAYAUSD_CORE_PUBLIC
+std::pair<bool, std::string> ValueToArgument(const VtValue& value);
+
 /// Gets all Maya node types that are ancestors of the given Maya node type
 /// \p ty. If \p ty isn't registered in Maya's type system, issues a runtime
 /// error and returns an empty string.

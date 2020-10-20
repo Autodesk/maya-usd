@@ -63,7 +63,7 @@ std::string uniqueName(const TfToken::HashSet& existingNames, std::string srcNam
 
 //! Return a unique child name.
 MAYAUSD_CORE_PUBLIC
-std::string uniqueChildName(const UsdSceneItem::Ptr& parent, const Ufe::Path& childPath);
+std::string uniqueChildName(const UsdPrim& parent, const std::string& name);
 
 //! Return if a Maya node type is derived from the gateway node type.
 MAYAUSD_CORE_PUBLIC
@@ -85,7 +85,7 @@ template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
 {
     T notification(item, previousPath);
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::Scene::instance().notify(notification);
     #else
     Ufe::Scene::notifyObjectPathChange(notification);

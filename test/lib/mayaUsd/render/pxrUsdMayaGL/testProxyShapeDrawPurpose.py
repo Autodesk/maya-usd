@@ -21,6 +21,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testProxyShapeDrawPurpose(unittest.TestCase):
 
@@ -29,6 +31,12 @@ class testProxyShapeDrawPurpose(unittest.TestCase):
         # The test USD data is authored Z-up, so make sure Maya is configured
         # that way too.
         cmds.upAxis(axis='z')
+
+        inputPath = fixturesUtils.setUpClass(__file__,
+            initializeStandalone=False, loadPlugin=False)
+
+        cls._testName = 'ProxyShapeDrawPurposeTest'
+        cls._inputDir = os.path.join(inputPath, cls._testName)
 
         cls._testDir = os.path.abspath('.')
 
@@ -72,11 +80,8 @@ class testProxyShapeDrawPurpose(unittest.TestCase):
         Tests drawing USD proxy shapes while changing their purpose-based draw
         attributes.
         """
-        self._testName = 'ProxyShapeDrawPurposeTest'
-
         mayaSceneFile = '%s.ma' % self._testName
-        mayaSceneFullPath = os.path.abspath(
-            os.path.join('ProxyShapeDrawPurposeTest', mayaSceneFile))
+        mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         cmds.file(mayaSceneFullPath, open=True, force=True)
 
         # Force an initial draw to complete by switching frames.

@@ -13,7 +13,9 @@ def Xform "RfMLightsTest" (
 {
     def Xform "Geom"
     {
-        def Mesh "Plane"
+        def Mesh "Plane" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             uniform bool doubleSided = 1
             float3[] extent = [(-10, -2.220446e-15, -10), (10, 2.220446e-15, 10)]
@@ -36,7 +38,9 @@ def Xform "RfMLightsTest" (
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }
 
-        def Mesh "Cube"
+        def Mesh "Cube" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             uniform bool doubleSided = 1
             float3[] extent = [(-2.5, -2.5, -2.5), (2.5, 2.5, 2.5)]

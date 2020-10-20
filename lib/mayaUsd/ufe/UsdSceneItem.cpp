@@ -16,14 +16,12 @@
 #include "UsdSceneItem.h"
 
 #include <pxr/base/tf/type.h>
-#if USD_VERSION_NUM < 2005
+#if USD_VERSION_NUM < 2008
 #include <pxr/usd/usd/schemaBase.h>
 #else
 #include <pxr/usd/usd/primTypeInfo.h>
 #endif
-#if USD_VERSION_NUM >= 2008
 #include <pxr/usd/usd/schemaRegistry.h>
-#endif
 
 MAYAUSD_NS_DEF {
 namespace ufe {
@@ -49,12 +47,12 @@ std::string UsdSceneItem::nodeType() const
 	return fPrim.GetTypeName();
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2020
+#ifdef UFE_V2_FEATURES_AVAILABLE
 std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 {
 	std::vector<std::string> strAncestorTypes;
 
-#if USD_VERSION_NUM < 2005
+#if USD_VERSION_NUM < 2008
 	static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
 	const TfType schemaType = schemaBaseType.FindDerivedByName(fPrim.GetTypeName().GetString());
 #else
@@ -62,8 +60,7 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 	const TfType& schemaType = fPrim.GetPrimTypeInfo().GetSchemaType();
 #endif
 	if (!schemaType) {
-		TF_CODING_ERROR("Could not find prim type '%s' for prim %s",
-			fPrim.GetTypeName().GetText(), UsdDescribe(fPrim).c_str());
+		// No schema type, return empty ancestor types.
 		return strAncestorTypes;
 	}
 
@@ -74,18 +71,14 @@ std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 		return iter->second;
 	}
 
+	const auto& schemaReg = UsdSchemaRegistry::GetInstance();
 	std::vector<TfType> tfAncestorTypes;
 	schemaType.GetAllAncestorTypes(&tfAncestorTypes);
 	for (const TfType& ty : tfAncestorTypes)
 	{
-#if USD_VERSION_NUM >= 2008
 		// If there is a concrete schema type name, we'll return that since it is what
 		// is used/shown in the UI (ex: 'Xform' vs 'UsdGeomXform').
-		auto concreteType = UsdSchemaRegistry::GetConcreteSchemaTypeName(ty);
-		strAncestorTypes.emplace_back(!concreteType.IsEmpty() ? concreteType : ty.GetTypeName());
-#else
-		strAncestorTypes.emplace_back(ty.GetTypeName());
-#endif
+		strAncestorTypes.emplace_back(schemaReg.IsConcrete(ty) ? schemaReg.GetSchemaTypeName(ty) : ty.GetTypeName());
 	}
 	ancestorTypesCache[schemaType] = strAncestorTypes;
 	return strAncestorTypes;

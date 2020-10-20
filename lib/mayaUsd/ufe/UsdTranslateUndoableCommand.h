@@ -41,7 +41,7 @@ public:
 	UsdTranslateUndoableCommand(UsdTranslateUndoableCommand&&) = delete;
 	UsdTranslateUndoableCommand& operator=(UsdTranslateUndoableCommand&&) = delete;
 
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	//! Create a UsdTranslateUndoableCommand from a UFE scene path. The
 	//! command is not executed.
 	static UsdTranslateUndoableCommand::Ptr create(
@@ -57,16 +57,21 @@ public:
 	// translation value and executes the command.
 	void undo() override;
 	void redo() override;
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
+	bool set(double x, double y, double z) override;
+#else
 	bool translate(double x, double y, double z) override;
+#endif
 
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::Path getPath() const override { return path(); }
 	#endif
 
 protected:
 
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
+	#ifdef UFE_V2_FEATURES_AVAILABLE
 	UsdTranslateUndoableCommand(const Ufe::Path& path, double x, double y, double z);
 	#else
 	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);

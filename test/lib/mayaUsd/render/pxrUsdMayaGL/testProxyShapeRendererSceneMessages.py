@@ -23,6 +23,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testProxyShapeRendererSceneMessages(unittest.TestCase):
 
@@ -32,8 +34,11 @@ class testProxyShapeRendererSceneMessages(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
+        inputPath = fixturesUtils.setUpClass(__file__,
+            initializeStandalone=False, loadPlugin=False)
+
         cls._testName = 'ProxyShapeRendererSceneMessagesTest'
-        cls._inputDir = os.path.abspath(cls._testName)
+        cls._inputDir = os.path.join(inputPath, cls._testName)
 
     def setUp(self):
         cmds.file(new=True, force=True)

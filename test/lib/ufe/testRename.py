@@ -270,29 +270,6 @@ class RenameTestCase(unittest.TestCase):
             newName = 'Ball_35_Renamed'
             cmds.rename(newName)
 
-    def testRenameRestrictionOtherLayerOpinions(self):
-        '''Restrict renaming USD node. Cannot rename a prim with definitions or opinions on other layers.'''
-
-        # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|transform1|proxyShape1')
-        usdPathSegment = usdUtils.createUfePathSegment('/Room_set/Props/Ball_35')
-        ball35Path = ufe.Path([mayaPathSegment, usdPathSegment])
-        ball35Item = ufe.Hierarchy.createItem(ball35Path)
-
-        ufe.GlobalSelection.get().append(ball35Item)
-
-        # get the USD stage
-        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
-
-        # set the edit target to Assembly_room_set.usda
-        stage.SetEditTarget(stage.GetLayerStack()[2])
-        self.assertEqual(stage.GetEditTarget().GetLayer().GetDisplayName(), "Assembly_room_set.usda")
-
-        # expect the exception happens
-        with self.assertRaises(RuntimeError):
-           newName = 'Ball_35_Renamed'
-           cmds.rename(newName)
-
     def testRenameRestrictionHasSpecs(self):
         '''Restrict renaming USD node. Cannot rename a node that doesn't contribute to the final composed prim'''
 

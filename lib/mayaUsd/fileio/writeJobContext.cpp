@@ -59,12 +59,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    (Shape)
-);
-
 namespace {
 
 inline
@@ -114,7 +108,7 @@ UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
     // If we're instancing, and the transform is instanced, then we want it
     // to stay a plain old Xform at the root of the master. Thus, we disallow
     // merging as a special case.
-    // (See also: in _FindOrCreateInstanceMaster, we insert a dummy "Shape" prim
+    // (See also: in _FindOrCreateInstanceMaster, we insert a dummy prim
     // before any bare gprims, which we can avoid for transforms by not merging
     // here.)
     if (mArgs.exportInstances) {
@@ -218,8 +212,9 @@ UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) co
     }
     else {
         // Cannot directly instance gprims, so this must be exported underneath
-        // a fake scope.
-        return std::make_pair(path.AppendChild(_tokens->Shape), path);
+        // a fake scope using the gprim name.
+        MFnDagNode primNode(instancePath.node());
+        return std::make_pair(path.AppendChild(TfToken(primNode.name().asChar())), path);
     }
 }
 

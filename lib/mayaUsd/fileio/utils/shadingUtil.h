@@ -16,6 +16,10 @@
 #ifndef PXRUSDMAYA_SHADING_UTIL_H
 #define PXRUSDMAYA_SHADING_UTIL_H
 
+/// \file
+
+#include <mayaUsd/base/api.h>
+
 #include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -24,12 +28,30 @@
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
 
-#include <mayaUsd/base/api.h>
+#include <maya/MPlug.h>
+
+#include <string>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 namespace UsdMayaShadingUtil
 {
+/// Get a "standard" USD attribute name for \p attrPlug.
+///
+/// If \p attrPlug is not an element in a Maya array attribute, then its name
+/// is simply returned.
+///
+/// If \p attrPlug is an element in an array and if \p allowMultiElementArrays
+/// is true, this will return a name of the form "<attrName>_<index>". If
+/// \p allowMultiElementArrays is false, this will return <attrName> if it's
+/// the 0-th logical element. Otherwise it will return an empty string.
+MAYAUSD_CORE_PUBLIC
+std::string GetStandardAttrName(
+        const MPlug& attrPlug,
+        bool allowMultiElementArrays);
+
 /// Create an input on the given material and shader and create a connection
 /// between them.
 ///

@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ namespace ufe {
 
 TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(
     const Ufe::Path& path, double x, double y, double z
 ) : Ufe::ScaleUndoableCommand(path),
@@ -40,7 +40,7 @@ UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
 {}
 
 /*static*/
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
     const Ufe::Path& path, double x, double y, double z
 )
@@ -89,7 +89,12 @@ void UsdScaleUndoableCommand::performImp(double x, double y, double z)
 // Ufe::ScaleUndoableCommand overrides
 //------------------------------------------------------------------------------
 
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+//#ifdef UFE_V2_FEATURES_AVAILABLE
+bool UsdScaleUndoableCommand::set(double x, double y, double z)
+#else
 bool UsdScaleUndoableCommand::scale(double x, double y, double z)
+#endif
 {
 	perform(x, y, z);
 	return true;

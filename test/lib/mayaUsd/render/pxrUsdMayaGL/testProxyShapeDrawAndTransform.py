@@ -23,6 +23,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testProxyShapeDrawAndTransform(unittest.TestCase):
 
@@ -32,8 +34,11 @@ class testProxyShapeDrawAndTransform(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
+        inputPath = fixturesUtils.setUpClass(__file__,
+            initializeStandalone=False, loadPlugin=False)
+
         cls._testName = 'ProxyShapeDrawAndTransformTest'
-        cls._inputDir = os.path.abspath(cls._testName)
+        cls._inputDir = os.path.join(inputPath, cls._testName)
 
         cls._testDir = os.path.abspath('.')
 

@@ -196,11 +196,11 @@ UsdMayaExportTranslator::GetDefaultOptions()
         std::ostringstream optionsStream;
         for (const std::pair<std::string, VtValue> keyValue :
                 PXR_NS::UsdMayaJobExportArgs::GetDefaultDictionary()) {
-            if (keyValue.second.IsHolding<bool>()) {
-                optionsStream << keyValue.first.c_str() << "=" << static_cast<int>(keyValue.second.Get<bool>()) << ";";
-            }
-            else if (keyValue.second.IsHolding<std::string>()) {
-                optionsStream << keyValue.first.c_str() << "=" << keyValue.second.Get<std::string>().c_str() << ";";
+            bool canConvert;
+            std::string valueStr;
+            std::tie(canConvert, valueStr) = UsdMayaUtil::ValueToArgument(keyValue.second);
+            if (canConvert) {
+                optionsStream << keyValue.first.c_str() << "=" << valueStr.c_str() << ";";
             }
         }
         optionsStream << "animation=0;";

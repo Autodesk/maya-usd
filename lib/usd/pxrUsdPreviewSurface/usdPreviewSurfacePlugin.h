@@ -56,6 +56,12 @@ public:
 
     PXRUSDPREVIEWSURFACE_API
     static MStatus deregisterFragments();
+
+    PXRUSDPREVIEWSURFACE_API
+    static void RegisterPreviewSurfaceReader(const MString& typeName);
+
+    PXRUSDPREVIEWSURFACE_API
+    static void RegisterPreviewSurfaceWriter(const MString& typeName);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
