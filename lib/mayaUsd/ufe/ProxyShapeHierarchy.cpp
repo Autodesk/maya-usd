@@ -248,7 +248,7 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(const Ufe::Selecti
 	return UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
 }
 
-Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) const
+Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItemList& orderedList) const
 {
 	//TODO
 	return nullptr;

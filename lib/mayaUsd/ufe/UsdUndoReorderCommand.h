@@ -33,7 +33,7 @@ class MAYAUSD_CORE_PUBLIC UsdUndoReorderCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoReorderCommand> Ptr;
 
-    UsdUndoReorderCommand(const UsdSceneItem::Ptr& child, const UsdSceneItem::Ptr& pos);
+    UsdUndoReorderCommand(const UsdSceneItem::Ptr& child, const std::vector<TfToken>& orderedTokens);
     ~UsdUndoReorderCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -43,7 +43,7 @@ public:
     UsdUndoReorderCommand& operator=(UsdUndoReorderCommand&&) = delete;
 
     //! Create a UsdUndoReorderCommand
-    static UsdUndoReorderCommand::Ptr create(const UsdSceneItem::Ptr& child, const UsdSceneItem::Ptr& pos);
+    static UsdUndoReorderCommand::Ptr create(const UsdSceneItem::Ptr& child, const std::vector<TfToken>& orderedTokens);
 
 private:
     bool reorderRedo();
@@ -53,9 +53,8 @@ private:
     void redo() override;
 
     Ufe::Path _childPath;
-    Ufe::Path _posPath;
 
-    SdfLayerHandle _layer;
+    std::vector<TfToken> _orderedTokens;
 
 }; // UsdUndoReorderCommand
 

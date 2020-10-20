@@ -39,42 +39,45 @@
 MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoReorderCommand::UsdUndoReorderCommand(const UsdSceneItem::Ptr& child,const UsdSceneItem::Ptr& pos)
+UsdUndoReorderCommand::UsdUndoReorderCommand(const UsdSceneItem::Ptr& child, const std::vector<TfToken>& tokenList)
     : Ufe::UndoableCommand()
     , _childPath(child->path())
-    , _posPath(pos->path())
-    , _layer(child->prim().GetStage()->GetEditTarget().GetLayer())
+    , _orderedTokens(tokenList)
 {
-    std::cout << "child path = " << child->path().string() << '\n';
-    std::cout << "pos path = " << pos->path().string() << '\n';
 }
 
 UsdUndoReorderCommand::~UsdUndoReorderCommand()
 {
 }
 
-UsdUndoReorderCommand::Ptr UsdUndoReorderCommand::create(const UsdSceneItem::Ptr& child,const UsdSceneItem::Ptr& pos)
+UsdUndoReorderCommand::Ptr UsdUndoReorderCommand::create(const UsdSceneItem::Ptr& child, const std::vector<TfToken>& tokenList)
 {
     if (!child) {
         return nullptr;
     }
-    return std::make_shared<UsdUndoReorderCommand>(child, pos);
+    return std::make_shared<UsdUndoReorderCommand>(child, tokenList);
 }
 
 bool UsdUndoReorderCommand::reorderRedo()
 {
+    const auto& childPrim = ufePathToPrim(_childPath);
+    const auto& parentPrim = childPrim.GetParent();
+    const auto& parentPrimSpec = MayaUsdUtils::getPrimSpecAtEditTarget(parentPrim);
+
+    parentPrimSpec->SetNameChildrenOrder(_orderedTokens);
+
     return true;
 }
 
 bool UsdUndoReorderCommand::reorderUndo()
 {
+    /*TODO*/
     return true;
 }
 
 void UsdUndoReorderCommand::undo()
 {
     try {
-        InPathChange pc;
         if (!reorderUndo()) {
             UFE_LOG("reorder undo failed");
         }
@@ -87,7 +90,6 @@ void UsdUndoReorderCommand::undo()
 
 void UsdUndoReorderCommand::redo()
 {
-    InPathChange pc;
     if (!reorderRedo()) {
         UFE_LOG("reorder redo failed");
     }

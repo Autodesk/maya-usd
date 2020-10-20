@@ -76,7 +76,7 @@ public:
 
     Ufe::SceneItem::Ptr defaultParent() const override;
     Ufe::SceneItem::Ptr insertChild(const Ufe::SceneItem::Ptr& child,const Ufe::SceneItem::Ptr& pos) override;
-    Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItem::Ptr& child,const Ufe::SceneItem::Ptr& pos) const override;
+    Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItemList& orderedList) const override;
 #endif
 
 private:

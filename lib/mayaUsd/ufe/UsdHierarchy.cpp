@@ -247,9 +247,15 @@ Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
     return createItem(proxyShapePath);
 }
 
-Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) const
+Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItemList& orderedList) const
 {
-    return UsdUndoReorderCommand::create(downcast(child), downcast(pos));
+    std::vector<TfToken> orderedTokens;
+
+    for (const auto& item : orderedList) {
+        orderedTokens.emplace_back(downcast(item)->prim().GetPath().GetNameToken());
+    }
+
+    return UsdUndoReorderCommand::create(downcast(child), orderedTokens);
 }
 
 #endif // UFE_V2_FEATURES_AVAILABLE
