@@ -293,7 +293,7 @@ struct Export::Impl
 
   void createInstancesPrim()
   {
-    m_instancesPrim = m_stage->OverridePrim(SdfPath("/InstanceSources"));
+    m_instancesPrim = m_stage->OverridePrim(SdfPath("/MayaExportedInstanceSources"));
   }
 
   void processInstances()

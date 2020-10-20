@@ -74,7 +74,7 @@ _GetRootOverridePath(const UsdMayaJobExportArgs& args, const SdfPath& path)
     return path;
 }
 
-const SdfPath INSTANCES_SCOPE_PATH("/InstanceSources");
+const SdfPath INSTANCES_SCOPE_PATH("/MayaExportedInstanceSources");
 
 } // anonymous namespace
 
@@ -431,7 +431,7 @@ UsdMayaWriteJobContext::_PostProcess()
         if (_objectsToMasterWriters.empty()) {
             mStage->RemovePrim(mInstancesPrim.GetPrimPath());
         } else {
-            // The InstanceSources group should be an over and moved to the
+            // The MayaExportedInstanceSources group should be an over and moved to the
             // end of the layer.
             mInstancesPrim.SetSpecifier(SdfSpecifierOver);
 

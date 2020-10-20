@@ -139,7 +139,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         menuItem -l "Blinn" -ann "blinn";
         menuItem -l "Phong" -ann "phong";
 
-        optionMenuGrp -l "Instance Mode:" -cw 1 $cw1 mayaUsdTranslator_InstanceModePopup;
+        optionMenuGrp -l "Instance Mode:" -cw 1 $cw1 mayaUsdTranslator_ImportInstancesPopup;
             menuItem -l "Flatten" -ann "flatten";
             menuItem -l "Build Instances" -ann "buildInstances";
 
@@ -191,8 +191,8 @@ global proc int mayaUsdTranslatorImport (string $parent,
                     intFieldGrp -e -value2 $endTime mayaUsdTranslator_CustomFrameRange;
                 } else if ($optionBreakDown[0] == "useCustomFrameRange") {
                     mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_CustomFrameRangeCheckBox");
-                } else if ($optionBreakDown[0] == "instanceMode") {
-                    mayaUsdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "mayaUsdTranslator_InstanceModePopup");
+                } else if ($optionBreakDown[0] == "importInstances") {
+                    mayaUsdTranslatorImport_SetOptionMenuByBool($optionBreakDown[1], "mayaUsdTranslator_ImportInstancesPopup");
                 }
             }
         }
@@ -208,7 +208,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "useCustomFrameRange", "mayaUsdTranslator_CustomFrameRangeCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "startTime", 1, "mayaUsdTranslator_CustomFrameRange");
         $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "endTime", 2, "mayaUsdTranslator_CustomFrameRange");
-        $currentOptions = mayaUsdTranslatorImport_AppendFromPopup($currentOptions, "instanceMode", "mayaUsdTranslator_InstanceModePopup");
+        $currentOptions = mayaUsdTranslatorImport_AppendFromBoolPopup($currentOptions, "importInstances", "mayaUsdTranslator_ImportInstancesPopup");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
@@ -275,6 +275,19 @@ global proc mayaUsdTranslatorImport_SetOptionMenuByAnnotation(
     }
 }
 
+global proc mayaUsdTranslatorImport_SetOptionMenuByBool (
+        string $ann, string $widget) {
+    // Mapping between a boolean option and an option menu with two choices.
+    // False maps to the first menu item, which is index 1.
+    // True maps to the second menu item, which is index 2.
+    int $optionAsBool = 1;
+    if ("1" == $ann)
+    {
+        $optionAsBool = 2;
+    }
+    optionMenuGrp -e -select $optionAsBool $widget;
+}
+
 global proc mayaUsdTranslatorImport_SetCheckBoxGrp(string $arg, string $widget)
 {
     checkBoxGrp -e -value1 ($arg != "0") $widget;
@@ -339,6 +352,11 @@ global proc string mayaUsdTranslatorImport_AppendFromPopup(string $currentOption
     string $item = $allItems[$index];
     string $annotation = `menuItem -q -ann $item`;
     return $currentOptions + ";" + $arg + "=" + $annotation;
+}
+
+global proc string mayaUsdTranslatorImport_AppendFromBoolPopup(string $currentOptions, string $arg, string $widget) {
+    int $index = `optionMenuGrp -q -select $widget` - 1;
+    return $currentOptions + ";" + $arg + "=" + $index;
 }
 
 global proc string mayaUsdTranslatorImport_AppendFromIntFieldGrp(string $currentOptions, string $arg, int $index, string $widget)

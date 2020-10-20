@@ -19,6 +19,19 @@ global proc usdTranslatorImport_SetOptionMenuByAnnotation(
     }
 }
 
+global proc usdTranslatorImport_SetOptionMenuByBool (
+        string $ann, string $widget) {
+    // Mapping between a boolean option and an option menu with two choices.
+    // False maps to the first menu item, which is index 1.
+    // True maps to the second menu item, which is index 2.
+    int $optionAsBool = 1;
+    if ("1" == $ann)
+    {
+        $optionAsBool = 2;
+    }
+    optionMenuGrp -e -select $optionAsBool $widget;
+}
+
 global proc string usdTranslatorImport_AppendFromCheckbox(string $currentOptions, string $arg, string $widget) {
     if (`checkBox -q -v $widget` == 1) {
         return $currentOptions + ";" + $arg + "=1";
@@ -33,6 +46,11 @@ global proc string usdTranslatorImport_AppendFromPopup(string $currentOptions, s
     string $item = $allItems[$index];
     string $annotation = `menuItem -q -ann $item`;
     return $currentOptions + ";" + $arg + "=" + $annotation;
+}
+
+global proc string usdTranslatorImport_AppendFromBoolPopup(string $currentOptions, string $arg, string $widget) {
+    int $index = `optionMenuGrp -q -select $widget` - 1;
+    return $currentOptions + ";" + $arg + "=" + $index;
 }
 
 global proc string usdTranslatorImport_AppendFromIntField(string $currentOptions, string $arg, string $widget) {
@@ -119,7 +137,7 @@ global proc int usdTranslatorImport (string $parent,
             menuItem -l "Full" -ann "Full";
             menuItem -l "Import" -ann "Import";
 
-        optionMenuGrp -l "Instance Mode:" instanceModePopup;
+        optionMenuGrp -l "Instance Mode:" importInstancesPopup;
             menuItem -l "Flatten" -ann "flatten";
             menuItem -l "Build Instances" -ann "buildInstances";
 
@@ -147,8 +165,8 @@ global proc int usdTranslatorImport (string $parent,
                     intFieldGrp -e -v1 $endTime endTimeField;
                 } else if ($optionBreakDown[0] == "useCustomFrameRange") {
                     usdTranslatorImport_SetCheckbox($optionBreakDown[1], "customFrameRangeCheckBox");
-                } else if ($optionBreakDown[0] == "instanceMode") {
-                    usdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "instanceModePopup");
+                } else if ($optionBreakDown[0] == "importInstances") {
+                    usdTranslatorImport_SetOptionMenuByBool($optionBreakDown[1], "importInstancesPopup");
                 }
             }
         }
@@ -164,7 +182,7 @@ global proc int usdTranslatorImport (string $parent,
         $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorImport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
         $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "useCustomFrameRange", "customFrameRangeCheckBox");
-        $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "instanceMode", "instanceModePopup");
+        $currentOptions = usdTranslatorImport_AppendFromBoolPopup($currentOptions, "importInstances", "importInstancesPopup");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;
