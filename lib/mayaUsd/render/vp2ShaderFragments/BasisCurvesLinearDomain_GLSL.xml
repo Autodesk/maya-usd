@@ -55,12 +55,6 @@ limitations under the License.
             <function_name val="BasisCurvesLinearDomain" />
             <source>
                 <![CDATA[
-struct Coeffs
-{
-    vec4 basis;
-    vec4 tangent_basis;
-};
-
 // line 520 ".../lib/usd/hdSt/resources/shaders/basisCurves.glslfx"
 
 vec3 evaluateNormal(float u)
@@ -78,25 +72,6 @@ vec3 evaluateNormal(float u)
         normal = vec3(0.0f, 0.0f, 1.0f);
     }
     return normal;
-}
-
-// line 676 ".../lib/usd/hdSt/resources/shaders/basisCurves.glslfx"
-
-Coeffs evaluateBasis(float u, float u2, float u3)
-{
-    vec4 basis;
-    basis[0] = u3;
-    basis[1] = -3.0*u3 + 3.0*u2;
-    basis[2] = 3.0*u3 - 6.0*u2 + 3.0*u;
-    basis[3] = -1.0*u3 + 3.0*u2 - 3.0*u + 1.0;
-
-    vec4 tangent_basis;
-    tangent_basis[0] = 3.0*u2;
-    tangent_basis[1] = -9.0*u2 + 6.0*u;
-    tangent_basis[2] = 9.0*u2 - 12.0*u + 3.0;
-    tangent_basis[3] = -3.0*u2 + 6.0*u - 3.0;
-
-    return Coeffs(basis, tangent_basis);
 }
 
 void evaluate(float u, float v, out vec4 position, out vec4 tangent,
@@ -129,9 +104,6 @@ structDomain BasisCurvesLinearDomain()
 {
     float u = gl_TessCoord.y;
     float v = gl_TessCoord.x;
-
-    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
-    vec4 basis = coeffs.basis;
 
     vec4 position;
     vec4 tangent;

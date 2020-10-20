@@ -25,6 +25,9 @@
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
+#include <utility>
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(
@@ -34,9 +37,17 @@ TF_DEFINE_PUBLIC_TOKENS(
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
+    (BasisCurvesCubicColorDomain)
+    (BasisCurvesCubicCPVHull)
+    (BasisCurvesCubicCPVPassing)
+    (BasisCurvesCubicCPVShader)
     (BasisCurvesCubicDomain)
     (BasisCurvesCubicFallbackShader)
     (BasisCurvesCubicHull)
+    (BasisCurvesLinearColorDomain)
+    (BasisCurvesLinearCPVHull)
+    (BasisCurvesLinearCPVPassing)
+    (BasisCurvesLinearCPVShader)
     (BasisCurvesLinearDomain)
     (BasisCurvesLinearFallbackShader)
     (BasisCurvesLinearHull)
@@ -60,6 +71,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (usdPreviewSurfaceLighting)
     (usdPreviewSurfaceCombiner)
 
+    (UsdPrimvarColor)
+
     (UsdUVTexture)
 
     (UsdPrimvarReader_color)
@@ -76,8 +89,16 @@ static const TfTokenVector _LanguageSpecificFragmentNames = {
 };
 
 static const TfTokenVector _FragmentNames = {
-    _tokens->BasisCurvesLinearHull,
+    _tokens->BasisCurvesCubicColorDomain,
+    _tokens->BasisCurvesCubicCPVHull,
+    _tokens->BasisCurvesCubicCPVPassing,
     _tokens->BasisCurvesCubicHull,
+    _tokens->BasisCurvesLinearColorDomain,
+    _tokens->BasisCurvesLinearCPVHull,
+    _tokens->BasisCurvesLinearCPVPassing,
+    _tokens->BasisCurvesLinearHull,
+
+    _tokens->UsdPrimvarColor,
 
     _tokens->UsdUVTexture,
 
@@ -106,7 +127,9 @@ static const TfTokenVector _FragmentNames = {
 };
 
 static const TfTokenVector _FragmentGraphNames = {
+    _tokens->BasisCurvesCubicCPVShader,
     _tokens->BasisCurvesCubicFallbackShader,
+    _tokens->BasisCurvesLinearCPVShader,
     _tokens->BasisCurvesLinearFallbackShader,
     _tokens->FallbackCPVShader,
     _tokens->FallbackShader,
@@ -115,9 +138,9 @@ static const TfTokenVector _FragmentGraphNames = {
 };
 
 
-// Helper methods
 namespace
 {
+    //! Get the file path of the shader fragment.
     std::string _GetResourcePath(const std::string& resource)
     {
         static PlugPluginPtr plugin =
@@ -131,7 +154,54 @@ namespace
 
         return path;
     }
-}
+
+#if MAYA_API_VERSION >= 20210000
+
+    //! Structure for Automatic shader stage input parameter to register in VP2.
+    struct AutomaticShaderStageInput {
+        MHWRender::MFragmentManager::ShaderStage  _shaderStage;
+        MString                                   _parameterName;
+        MString                                   _parameterSemantic;
+        MHWRender::MShaderInstance::ParameterType _parameterType;
+        bool                                      _isVaryingInput;
+    };
+
+    //! List of automatic shader stage input parameters to register in VP2.
+    std::vector<AutomaticShaderStageInput> _automaticShaderStageInputs
+        = { { MHWRender::MFragmentManager::kVertexShader,
+              "UsdPrimvarColor",
+              "COLOR0",
+              MHWRender::MShaderInstance::kFloat4,
+              true },
+            { MHWRender::MFragmentManager::kHullShader,
+              "UsdPrimvarColor",
+              "COLOR0",
+              MHWRender::MShaderInstance::kFloat4,
+              true },
+            { MHWRender::MFragmentManager::kDomainShader,
+              "UsdPrimvarColor",
+              "COLOR0",
+              MHWRender::MShaderInstance::kFloat4,
+              false },
+            { MHWRender::MFragmentManager::kPixelShader,
+              "BasisCurvesCubicColor",
+              "COLOR0",
+              MHWRender::MShaderInstance::kFloat4,
+              true },
+            { MHWRender::MFragmentManager::kPixelShader,
+              "BasisCurvesLinearColor",
+              "COLOR0",
+              MHWRender::MShaderInstance::kFloat4,
+              true } };
+
+    //! Name mapping between a parameter and a desired domain shader fragment to register in VP2.
+    std::vector<std::pair<MString, MString>> _domainShaderInputNameMappings
+        = { { "BasisCurvesCubicColor", "BasisCurvesCubicColorDomain" },
+            { "BasisCurvesLinearColor", "BasisCurvesLinearColorDomain" } };
+
+#endif
+
+} // anonymous namespace
 
 namespace {
 int _registrationCount = 0;
@@ -241,6 +311,26 @@ MStatus HdVP2ShaderFragments::registerFragments()
         }
     }
 
+#if MAYA_API_VERSION >= 20210000
+
+    // Register automatic shader stage input parameters.
+    for (const auto& input : _automaticShaderStageInputs) {
+        fragmentManager->addAutomaticShaderStageInput(
+            input._shaderStage,
+            input._parameterName,
+            input._parameterSemantic,
+            input._parameterType,
+            input._isVaryingInput);
+    }
+
+    // Register a desired domain shader fragment for each input parameter.
+    for (const auto& mapping : _domainShaderInputNameMappings) {
+        fragmentManager->addDomainShaderInputNameMapping(
+            mapping.first, mapping.second);
+    }
+
+#endif
+
     _registrationCount++;
 
     return MS::kSuccess;
@@ -269,6 +359,20 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
     if (!fragmentManager) {
         return MS::kFailure;
     }
+
+#if MAYA_API_VERSION >= 20210000
+
+    // De-register a desired domain shader fragment for each input parameter.
+    for (const auto& mapping : _domainShaderInputNameMappings) {
+        fragmentManager->removeDomainShaderInputNameMapping(mapping.first);
+    }
+
+    // De-register automatic shader stage input parameters.
+    for (const auto& input : _automaticShaderStageInputs) {
+        fragmentManager->removeAutomaticShaderStageInput(input._shaderStage, input._parameterName);
+    }
+
+#endif
 
     // De-register all fragment graphs.
     for (const TfToken& fragGraphNameToken : _FragmentGraphNames) {

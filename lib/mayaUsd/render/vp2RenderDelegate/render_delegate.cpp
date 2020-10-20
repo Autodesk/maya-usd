@@ -73,24 +73,62 @@ namespace
     const MString _diffuseColorParameterName = "diffuseColor";    //!< Shader parameter name
     const MString _solidColorParameterName   = "solidColor";      //!< Shader parameter name
     const MString _pointSizeParameterName    = "pointSize";       //!< Shader parameter name
+    const MString _curveBasisParameterName   = "curveBasis";      //!< Shader parameter name
     const MString _structOutputName          = "outSurfaceFinal"; //!< Output struct name of the fallback shader
 
     //! Enum class for fallback shader types
-    enum class FallbackShaderType
-    {
+    enum class FallbackShaderType {
         kCommon = 0,
         kBasisCurvesLinear,
-        kBasisCurvesCubic,
+        kBasisCurvesCubicBezier,
+        kBasisCurvesCubicBSpline,
+        kBasisCurvesCubicCatmullRom,
         kCount
     };
 
-    //! Array of shader fragment names indexed by FallbackShaderType
-    const MString _fallbackShaderNames[] =
+    //! Total number of fallback shader types
+    constexpr size_t FallbackShaderTypeCount = static_cast<size_t>(FallbackShaderType::kCount);
+
+    //! Array of constant-color shader fragment names indexed by FallbackShaderType
+    const MString _fallbackShaderNames[] = { "FallbackShader",
+                                             "BasisCurvesLinearFallbackShader",
+                                             "BasisCurvesCubicFallbackShader",
+                                             "BasisCurvesCubicFallbackShader",
+                                             "BasisCurvesCubicFallbackShader" };
+
+    //! Array of varying-color shader fragment names indexed by FallbackShaderType
+    const MString _cpvFallbackShaderNames[] = { "FallbackCPVShader",
+                                                "BasisCurvesLinearCPVShader",
+                                                "BasisCurvesCubicCPVShader",
+                                                "BasisCurvesCubicCPVShader",
+                                                "BasisCurvesCubicCPVShader" };
+
+    //! "curveBasis" parameter values for three different cubic curves
+    const std::unordered_map<FallbackShaderType, int> _curveBasisParameterValueMapping
+        = { { FallbackShaderType::kBasisCurvesCubicBezier, 0 },
+            { FallbackShaderType::kBasisCurvesCubicBSpline, 1 },
+            { FallbackShaderType::kBasisCurvesCubicCatmullRom, 2 } };
+
+    //! Get the shader type needed by the given curveType and curveBasis
+    FallbackShaderType
+    GetBasisCurvesShaderType(const TfToken& curveType, const TfToken& curveBasis)
     {
-        "FallbackShader",
-        "BasisCurvesLinearFallbackShader",
-        "BasisCurvesCubicFallbackShader"
-    };
+        FallbackShaderType type = FallbackShaderType::kCount;
+
+        if (curveType == HdTokens->linear) {
+            type = FallbackShaderType::kBasisCurvesLinear;
+        } else if (curveType == HdTokens->cubic) {
+            if (curveBasis == HdTokens->bezier) {
+                type = FallbackShaderType::kBasisCurvesCubicBezier;
+            } else if (curveBasis == HdTokens->bSpline) {
+                type = FallbackShaderType::kBasisCurvesCubicBSpline;
+            } else if (curveBasis == HdTokens->catmullRom) {
+                type = FallbackShaderType::kBasisCurvesCubicCatmullRom;
+            }
+        }
+
+        return type;
+    }
 
     /*! \brief  Color hash helper class, used by shader registry
     */
@@ -136,11 +174,6 @@ namespace
             if (!TF_VERIFY(shaderMgr))
                 return;
 
-            _fallbackCPVShader = shaderMgr->getFragmentShader(
-                "FallbackCPVShader", _structOutputName, true);
-
-            TF_VERIFY(_fallbackCPVShader);
-
             _3dCPVSolidShader = shaderMgr->getStockShader(
                 MHWRender::MShaderManager::k3dCPVSolidShader);
 
@@ -157,13 +190,33 @@ namespace
                 _3dFatPointShader->setParameter(_pointSizeParameterName, size);
             }
 
+            for (size_t i = 0; i < FallbackShaderTypeCount; i++) {
+                MHWRender::MShaderInstance* shader = shaderMgr->getFragmentShader(
+                    _cpvFallbackShaderNames[i], _structOutputName, true);
+
+                if (TF_VERIFY(shader)) {
+                    FallbackShaderType type = static_cast<FallbackShaderType>(i);
+                    const auto it = _curveBasisParameterValueMapping.find(type);
+                    if (it != _curveBasisParameterValueMapping.end()) {
+                        shader->setParameter(_curveBasisParameterName, it->second);
+                    }
+                }
+
+                _fallbackCPVShaders[i] = shader;
+            }
+
             _isInitialized = true;
         }
 
         /*! \brief  Returns a fallback CPV shader instance when no material is bound.
         */
-        MHWRender::MShaderInstance* GetFallbackCPVShader() const {
-            return _fallbackCPVShader;
+        MHWRender::MShaderInstance* GetFallbackCPVShader(FallbackShaderType type) const {
+            if (type >= FallbackShaderType::kCount) {
+                return nullptr;
+            }
+
+            const size_t index = static_cast<size_t>(type);
+            return _fallbackCPVShaders[index];
         }
 
         /*! \brief  Returns a white 3d fat point shader.
@@ -272,6 +325,13 @@ namespace
                 if (TF_VERIFY(shaderMgr)) {
                     shader = shaderMgr->getFragmentShader(
                         _fallbackShaderNames[index], _structOutputName, true);
+
+                    if (TF_VERIFY(shader)) {
+                        const auto it = _curveBasisParameterValueMapping.find(type);
+                        if (it != _curveBasisParameterValueMapping.end()) {
+                            shader->setParameter(_curveBasisParameterName, it->second);
+                        }
+                    }
                 }
             }
 
@@ -289,12 +349,14 @@ namespace
         bool                    _isInitialized { false };  //!< Whether the shader cache is initialized
 
         //! Shader registry used by fallback shaders
-        MShaderMap              _fallbackShaders[static_cast<size_t>(FallbackShaderType::kCount)];
+        MShaderMap              _fallbackShaders[FallbackShaderTypeCount];
         MShaderMap              _3dSolidShaders;
 
-        MHWRender::MShaderInstance*  _fallbackCPVShader { nullptr }; //!< Fallback shader with CPV support
-        MHWRender::MShaderInstance*  _3dFatPointShader { nullptr };  //!< 3d shader for points
-        MHWRender::MShaderInstance*  _3dCPVSolidShader { nullptr };  //!< 3d CPV solid-color shader
+        //!< Fallback shaders with CPV support
+        MHWRender::MShaderInstance* _fallbackCPVShaders[FallbackShaderTypeCount] { nullptr };
+
+        MHWRender::MShaderInstance* _3dFatPointShader { nullptr }; //!< 3d shader for points
+        MHWRender::MShaderInstance* _3dCPVSolidShader { nullptr }; //!< 3d CPV solid-color shader
     };
 
     MShaderCache sShaderCache;  //!< Global shader cache to minimize the number of unique shaders.
@@ -712,41 +774,51 @@ MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackShader(
     return sShaderCache.GetFallbackShader(color, FallbackShaderType::kCommon);
 }
 
-/*! \brief  Returns a fallback shader instance when no material is bound.
+/*! \brief  Returns a constant-color fallback shader instance for basisCurves when no material is
+   bound.
 
-    This method is keeping registry of all fallback shaders generated, keeping minimal
-    number of shader instances.
+    This method is keeping registry of all fallback shaders generated, keeping minimal number of
+    shader instances.
 
-    \param color    Color to set on given shader instance
+    \param curveType    The curve type
+    \param curveBasis   The curve basis
+    \param color        Color to set on given shader instance
 
     \return A new or existing copy of shader instance with given color parameter set
 */
-MHWRender::MShaderInstance*
-HdVP2RenderDelegate::GetBasisCurvesLinearFallbackShader(const MColor& color) const
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetBasisCurvesFallbackShader(
+    const TfToken& curveType,
+    const TfToken& curveBasis,
+    const MColor&  color) const
 {
-    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kBasisCurvesLinear);
+    FallbackShaderType type = GetBasisCurvesShaderType(curveType, curveBasis);
+    return sShaderCache.GetFallbackShader(color, type);
 }
 
-/*! \brief  Returns a fallback shader instance when no material is bound.
+/*! \brief  Returns a varying-color fallback shader instance for basisCurves when no material is
+   bound.
 
-    This method is keeping registry of all fallback shaders generated, keeping minimal
-    number of shader instances.
+    This method is keeping registry of all fallback shaders generated, keeping minimal number of
+    shader instances.
 
-    \param color    Color to set on given shader instance
+    \param curveType    The curve type
+    \param curveBasis   The curve basis
 
     \return A new or existing copy of shader instance with given color parameter set
 */
-MHWRender::MShaderInstance*
-HdVP2RenderDelegate::GetBasisCurvesCubicFallbackShader(const MColor& color) const
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetBasisCurvesCPVShader(
+    const TfToken& curveType,
+    const TfToken& curveBasis) const
 {
-    return sShaderCache.GetFallbackShader(color, FallbackShaderType::kBasisCurvesCubic);
+    FallbackShaderType type = GetBasisCurvesShaderType(curveType, curveBasis);
+    return sShaderCache.GetFallbackCPVShader(type);
 }
 
 /*! \brief  Returns a fallback CPV shader instance when no material is bound.
 */
 MHWRender::MShaderInstance* HdVP2RenderDelegate::GetFallbackCPVShader() const
 {
-    return sShaderCache.GetFallbackCPVShader();
+    return sShaderCache.GetFallbackCPVShader(FallbackShaderType::kCommon);
 }
 
 /*! \brief  Returns a 3d solid-color shader.
