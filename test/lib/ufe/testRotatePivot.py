@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from ufeTestUtils import usdUtils, mayaUtils
+import usdUtils, mayaUtils
 
 import ufe
 
@@ -66,7 +66,7 @@ class RotatePivotTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
 
-        # Open twoSpheres.ma scene in test-samples
+        # Open twoSpheres.ma scene in testSamples
         mayaUtils.openTwoSpheresScene()
 
     def checkPos(self, m, p):

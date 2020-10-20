@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from ufeTestUtils import usdUtils, mayaUtils
+import usdUtils, mayaUtils
 import ufe
 from pxr import UsdGeom
 
@@ -37,7 +37,7 @@ class AttributesTestCase(unittest.TestCase):
         ''' Called initially to set up the maya test environment '''
         self.assertTrue(self.pluginsLoaded)
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
 
     def testAttributes(self):

@@ -20,8 +20,8 @@ import maya.api.OpenMaya as om
 import maya.cmds as cmds
 from math import radians
 
-from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
-from ufeTestUtils.testUtils import assertVectorAlmostEqual
+import usdUtils, mayaUtils, ufeUtils
+from testUtils import assertVectorAlmostEqual
 import testTRSBase
 import ufe
 
@@ -85,7 +85,7 @@ class RotateCmdTestCase(testTRSBase.TRSTestCaseBase):
         self.runTimeRotation = None
         self.ufeRotation = None
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
         # Create some extra Maya nodes
