@@ -21,6 +21,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testProxyShapeDrawLighting(unittest.TestCase):
 
@@ -30,18 +32,21 @@ class testProxyShapeDrawLighting(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
+        inputPath = fixturesUtils.setUpClass(__file__,
+            initializeStandalone=False, loadPlugin=False)
+
         cls._testDir = os.path.abspath('.')
 
-        cls._testRootNodeName = 'ProxyShapeDrawLightingTest'
-        cls._testSceneName = '%s.ma' % cls._testRootNodeName
-        cls._testSceneFullPath = os.path.abspath(
-            os.path.join('ProxyShapeDrawLightingTest', cls._testSceneName))
+        cls._testName = 'ProxyShapeDrawLightingTest'
+        cls._testSceneName = '%s.ma' % cls._testName
+        cls._testSceneFullPath = os.path.join(inputPath, cls._testName,
+            cls._testSceneName)
 
-        cls._nativeNodePathName = '|%s|Native' % cls._testRootNodeName
+        cls._nativeNodePathName = '|%s|Native' % cls._testName
         cls._nativeTorusPathName = '%s|Torus' % cls._nativeNodePathName
         cls._nativePlanePathName = '%s|Plane' % cls._nativeNodePathName
 
-        cls._hydraNodePathName = '|%s|Hydra' % cls._testRootNodeName
+        cls._hydraNodePathName = '|%s|Hydra' % cls._testName
         cls._hydraTorusPathName = '%s|Torus' % cls._hydraNodePathName
         cls._hydraPlanePathName = '%s|Plane' % cls._hydraNodePathName
 

@@ -20,6 +20,7 @@
 #include <pxr/imaging/glf/contextCaps.h>
 
 #include "tokens.h"
+#include "renderGlobals.h"
 
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
@@ -27,102 +28,6 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-constexpr auto _renderOverrideOptionBoxTemplate = R"mel(
-global proc {{override}}OptionBox() {
-    string $windowName = "{{override}}OptionsWindow";
-    if (`window -exists $windowName`) {
-        showWindow $windowName;
-        return;
-    }
-    string $cc = "mtoh -updateRenderGlobals; refresh -f";
-
-    mtoh -createRenderGlobals;
-
-    window -title "Maya to Hydra Settings" "{{override}}OptionsWindow";
-    scrollLayout;
-    frameLayout -label "Hydra Settings";
-    columnLayout;
-    attrControlGrp -label "Enable Motion Samples" -attribute "defaultRenderGlobals.mtohEnableMotionSamples" -changeCommand $cc;
-    attrControlGrp -label "Texture Memory Per Texture (KB)" -attribute "defaultRenderGlobals.mtohTextureMemoryPerTexture" -changeCommand $cc;
-    attrControlGrp -label "Show Wireframe on Selected Objects" -attribute "defaultRenderGlobals.mtohWireframeSelectionHighlight" -changeCommand $cc;
-    attrControlGrp -label "Highlight Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlight" -changeCommand $cc;
-    attrControlGrp -label "Highlight Color for Selected Objects" -attribute "defaultRenderGlobals.mtohColorSelectionHighlightColor" -changeCommand $cc;
-)mel"
-#if USD_VERSION_NUM >= 2005
-R"mel(
-    attrControlGrp -label "Highlight outline (in pixels, 0 to disable)" -attribute "defaultRenderGlobals.mtohSelectionOutline" -changeCommand $cc;
-)mel"
-#endif
-#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
-R"mel(
-    attrControlGrp -label "Enable color quantization" -attribute "defaultRenderGlobals.mtohColorQuantization" -changeCommand $cc;
-)mel"
-#endif
-R"mel(
-    setParent ..;
-    setParent ..;
-    {{override}}Options();
-    setParent ..;
-
-    showWindow $windowName;
-}
-)mel";
-
-bool _IsSupportedAttribute(const VtValue& v) {
-    return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
-           v.IsHolding<GfVec4f>() || v.IsHolding<std::string>() ||
-           v.IsHolding<TfEnum>();
-}
-
-static void _BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
-    const HdRenderSettingDescriptorList& rendererSettingDescriptors)
-{
-    const auto optionBoxCommand = TfStringReplace(
-        _renderOverrideOptionBoxTemplate, "{{override}}",
-        rendererDesc.overrideName.GetText());
-
-    auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
-    if (!status) {
-        TF_WARN(
-            "Error in render override option box command function: \n%s",
-            status.errorString().asChar());
-    }
-
-    std::stringstream ss;
-    ss << "global proc " << rendererDesc.overrideName << "Options() {\n";
-    ss << "\tstring $cc = \"mtoh -updateRenderGlobals; refresh -f\";\n";
-    ss << "\tframeLayout -label \"" << rendererDesc.displayName
-       << "Options\" -collapsable true;\n";
-    ss << "\tcolumnLayout;\n";
-    for (const auto& desc : rendererSettingDescriptors) {
-        if (!_IsSupportedAttribute(desc.defaultValue))
-            continue;
-
-        const auto attrName = TfStringPrintf(
-            "%s%s", rendererDesc.rendererName.GetText(),
-            desc.key.GetText());
-        ss << "\tattrControlGrp -label \"" << desc.name
-           << "\" -attribute \"defaultRenderGlobals." << attrName
-           << "\" -changeCommand $cc;\n";
-    }
-    if (rendererDesc.rendererName == MtohTokens->HdStormRendererPlugin) {
-        ss << "\tattrControlGrp -label \"Maximum shadow map size"
-           << "\" -attribute \"defaultRenderGlobals."
-           << MtohTokens->mtohMaximumShadowMapResolution.GetString()
-           << "\" -changeCommand $cc;\n";
-    }
-    ss << "\tsetParent ..;\n";
-    ss << "\tsetParent ..;\n";
-    ss << "}\n";
-
-    const auto optionsCommand = ss.str();
-    status = MGlobal::executeCommand(optionsCommand.c_str());
-    if (!status) {
-        TF_WARN(
-            "Error in render delegate options function: \n%s",
-            status.errorString().asChar());
-    }
-}
 
 std::pair<const MtohRendererDescriptionVector&, const MtohRendererSettings&>
 MtohInitializeRenderPlugins() {
@@ -136,11 +41,14 @@ MtohInitializeRenderPlugins() {
         Storage store;
         store.first.reserve(pluginDescs.size());
 
+        MtohRenderGlobals::OptionsPreamble();
+
         for (const auto& pluginDesc : pluginDescs) {
             const TfToken renderer = pluginDesc.id;
             HdRendererPlugin* plugin = pluginRegistry.GetRendererPlugin(renderer);
-            if (!plugin)
+            if (!plugin) {
                 continue;
+            }
 
             // XXX: As of 22.02, this needs to be called for Storm
             if (pluginDesc.id == MtohTokens->HdStormRendererPlugin)
@@ -150,8 +58,9 @@ MtohInitializeRenderPlugins() {
                 plugin->CreateRenderDelegate() : nullptr;
 
             // No 'delete plugin', should plugin be cached as well?
-            if (!delegate)
+            if (!delegate) {
                 continue;
+            }
 
             auto& rendererSettingDescriptors = store.second.emplace(renderer,
                 delegate->GetRenderSettingDescriptors()).first->second;
@@ -170,8 +79,7 @@ MtohInitializeRenderPlugins() {
                     TfStringPrintf("%s (Hydra)", pluginDesc.displayName.c_str())
                 )
             );
-
-            _BuildOptionsMenu(store.first.back(), rendererSettingDescriptors);
+            MtohRenderGlobals::BuildOptionsMenu(store.first.back(), rendererSettingDescriptors);
         }
 
         // Make sure the static's size doesn't have any extra overhead

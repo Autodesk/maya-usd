@@ -44,12 +44,16 @@ MayaUSDImportCommand::createSyntax()
     // UsdMayaJobImportArgs::GetDefaultDictionary.
     syntax.addFlag(kShadingModeFlag,
                    UsdMayaJobImportArgsTokens->shadingMode.GetText(),
-                   MSyntax::kString);
-    syntax.addFlag(kShadingConversionFlag,
-                   UsdMayaJobImportArgsTokens->shadingConversion.GetText(),
+                   MSyntax::kString, MSyntax::kString);
+    syntax.makeFlagMultiUse(kShadingModeFlag);
+    syntax.addFlag(kPreferredMaterialFlag,
+                   UsdMayaJobImportArgsTokens->preferredMaterial.GetText(),
                    MSyntax::kString);
     syntax.addFlag(kAssemblyRepFlag,
                    UsdMayaJobImportArgsTokens->assemblyRep.GetText(),
+                   MSyntax::kString);
+    syntax.addFlag(kInstanceModeFlag,
+                   UsdMayaJobImportArgsTokens->instanceMode.GetText(),
                    MSyntax::kString);
     syntax.addFlag(kMetadataFlag,
                    UsdMayaJobImportArgsTokens->metadata.GetText(),

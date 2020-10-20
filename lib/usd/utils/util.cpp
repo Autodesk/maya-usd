@@ -21,6 +21,8 @@
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/references.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -69,6 +71,49 @@ namespace
             {"nodePath", arc.GetTargetNode().GetPath().GetString()},
         };
     }
+
+    void replaceReferenceItems(const UsdPrim& oldPrim, 
+                               const SdfPath& newPath,
+                               const SdfReferencesProxy& referencesList,
+                               SdfListOpType op)
+    {
+        // set the listProxy based on the SdfListOpType
+        SdfReferencesProxy::ListProxy listProxy = referencesList.GetAppendedItems();
+        if (op == SdfListOpTypePrepended) {
+            listProxy = referencesList.GetPrependedItems();
+        } else if (op == SdfListOpTypeOrdered) {
+            listProxy = referencesList.GetOrderedItems();
+        } else if (op == SdfListOpTypeAdded) {
+            listProxy = referencesList.GetAddedItems();
+        } else if (op == SdfListOpTypeDeleted) {
+            listProxy = referencesList.GetDeletedItems();
+        }
+
+        // fetching the existing SdfReference items and using 
+        // the Replace() method to replace them with updated SdfReference items.
+        for (const SdfReference &ref : listProxy)
+        {
+            if (MayaUsdUtils::isInternalReference(ref))
+            {
+                SdfPath finalPath;
+                if(oldPrim.GetPath() == ref.GetPrimPath()) {
+                    finalPath = newPath;
+                }
+                else if(ref.GetPrimPath().HasPrefix(oldPrim.GetPath())) {
+                    finalPath = ref.GetPrimPath().ReplacePrefix(oldPrim.GetPath(), newPath);
+                }
+
+                if(finalPath.IsEmpty()) {
+                    continue;
+                }
+
+                // replace the old reference with new one
+                SdfReference newRef;
+                newRef.SetPrimPath(finalPath);
+                listProxy.Replace(ref, newRef);
+            }
+        }
+    }
 }
 
 namespace MayaUsdUtils {
@@ -93,110 +138,11 @@ defPrimSpecLayer(const UsdPrim& prim)
     return defLayer;
 }
 
-std::vector<SdfLayerHandle>
-layersWithContribution(const UsdPrim& prim)
-{
-    UsdPrimCompositionQuery query(prim);
-
-    std::vector<SdfLayerHandle> layersWithContribution;
-
-    for (const auto& arc : query.GetCompositionArcs()) {
-        layersWithContribution.emplace_back(arc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer);
-    }
-
-    return layersWithContribution;
-}
-
-bool
-doesEditTargetLayerContribute(const UsdPrim& prim)
-{
-    auto editTarget = prim.GetStage()->GetEditTarget();
-    auto layer = editTarget.GetLayer();
-    auto primSpec = layer->GetPrimAtPath(prim.GetPath());
-
-    // to know whether the target layer can contribute to the 
-    // final composed prim, there must be a primSpec for that prim
-    if (!primSpec) {
-        return false;
-    }
-
-    return true;
-}
-
-SdfLayerHandle
-strongestContributingLayer(const UsdPrim& prim)
-{
-    SdfLayerHandle targetLayer;
-    auto layerStack = prim.GetStage()->GetLayerStack();
-    for (auto layer : layerStack)
-    {
-        // to know whether the target layer can contribute to the 
-        // final composed prim, there must be a primSpec for that prim
-        auto primSpec = layer->GetPrimAtPath(prim.GetPath());
-        if (primSpec) {
-            targetLayer = layer;
-            break;
-        }
-    }
-    return targetLayer;
-}
-
 SdfPrimSpecHandle 
 getPrimSpecAtEditTarget(const UsdPrim& prim)
 {
     auto stage = prim.GetStage();
     return stage->GetEditTarget().GetPrimSpecForScenePath(prim.GetPath());
-}
-
-bool
-isInternalReference(const SdfPrimSpecHandle& primSpec)
-{
-    bool isInternalRef{false};
-
-    for (const SdfReference& ref : primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
-        // GetAssetPath returns the asset path to the root layer of the referenced layer
-        // this will be empty in the case of an internal reference.
-        if (ref.GetAssetPath().empty()) {
-            isInternalRef = true;
-            break;
-        }
-    }
-
-    return isInternalRef;
-}
-
-bool 
-hasSpecs(const UsdPrim& prim)
-{
-    bool found{true};
-
-    UsdPrimCompositionQuery query(prim);
-
-    for (const auto& compQueryArc : query.GetCompositionArcs()) {
-        if (!compQueryArc.GetTargetNode().HasSpecs()) {
-            found = false; 
-            break;
-        }
-    }
-
-    return found;
-}
-
-std::vector<SdfLayerHandle>
-layerInCompositionArcsWithSpec(const UsdPrim& prim)
-{
-    UsdPrimCompositionQuery query(prim);
-
-    std::vector<SdfLayerHandle> layersWithContribution;
-
-    for (const auto& compQueryArc : query.GetCompositionArcs()) {
-        if (compQueryArc.GetTargetNode().HasSpecs()) {
-            layersWithContribution.emplace_back(
-                compQueryArc.GetTargetNode().GetLayerStack()->GetIdentifier().rootLayer);
-        }
-    }
-
-    return layersWithContribution;
 }
 
 void
@@ -218,6 +164,39 @@ printCompositionQuery(const UsdPrim& prim, std::ostream& os)
     }
 
     os << "]\n\n";
+}
+
+bool
+updateInternalReferencesPath(const UsdPrim& oldPrim, const SdfPath& newPath)
+{
+    SdfChangeBlock changeBlock;
+    for (const auto& p : oldPrim.GetStage()->Traverse()) 
+    {
+        if(p.HasAuthoredReferences())
+        {
+            auto primSpec = getPrimSpecAtEditTarget(p);
+            if (primSpec)
+            {
+                SdfReferencesProxy referencesList = primSpec->GetReferenceList();
+
+                // update append/prepend lists individually 
+                replaceReferenceItems(oldPrim, newPath, referencesList, SdfListOpTypeAppended);
+                replaceReferenceItems(oldPrim, newPath, referencesList, SdfListOpTypePrepended);
+            }
+        }
+    }
+
+    return true;
+}
+
+bool
+isInternalReference(const SdfReference& ref)
+{
+    #if USD_VERSION_NUM >= 2008
+    return ref.IsInternal();
+    #else
+    return ref.GetAssetPath().empty();
+    #endif
 }
 
 } // MayaUsdUtils

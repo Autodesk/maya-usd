@@ -18,6 +18,7 @@
 #include <AL/maya/utils/FileTranslatorBase.h>
 #include <AL/maya/utils/PluginTranslatorOptions.h>
 #include <AL/usdmaya/Api.h>
+#include <AL/usdmaya/fileio/ExportParams.h>
 
 namespace AL {
 namespace usdmaya {

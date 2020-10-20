@@ -1,0 +1,120 @@
+#usda 1.0
+(
+    defaultPrim = "pCube1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Xform "pCube1" (
+    kind = "component"
+)
+{
+    double3 xformOp:translate = (-4, 2, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "pCubeShape1" (
+        instanceable = true
+        prepend references = </InstanceSources/pCube1_pCubeShape1>
+    )
+    {
+    }
+
+    def Scope "pCube2" (
+        instanceable = true
+        prepend references = </InstanceSources/pCube1_pCube2>
+    )
+    {
+    }
+
+    def Scope "pCube3" (
+        instanceable = true
+        prepend references = </InstanceSources/pCube1_pCube3>
+    )
+    {
+    }
+}
+
+def Xform "pCube4" (
+    kind = "component"
+)
+{
+    double3 xformOp:translate = (4, 2, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Scope "pCubeShape1" (
+        instanceable = true
+        prepend references = </InstanceSources/pCube1_pCubeShape1>
+    )
+    {
+    }
+
+    def Scope "pCube2" (
+        instanceable = true
+        prepend references = </InstanceSources/pCube1_pCube2>
+    )
+    {
+    }
+
+    def Scope "pCube3" (
+        instanceable = true
+        prepend references = </InstanceSources/pCube1_pCube3>
+    )
+    {
+    }
+}
+
+over "InstanceSources"
+{
+    def Xform "pCube1_pCubeShape1"
+    {
+        def Mesh "pCubeShape1"
+        {
+            uniform bool doubleSided = 1
+            float3[] extent = [(-1, -1, 0), (1, 1, 0)]
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            point3f[] points = [(-1, -1, 0), (1, -1, 0), (0, 1, 0)]
+            color3f[] primvars:displayColor = [(0.2, 0, 0)]
+        }
+    }
+
+    def Xform "pCube1_pCube2"
+    {
+        double3 xformOp:translate = (0, -3, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Scope "pCubeShape2" (
+            instanceable = true
+            prepend references = </InstanceSources/pCube1_pCube2_pCubeShape2>
+        )
+        {
+        }
+    }
+
+    def Xform "pCube1_pCube2_pCubeShape2"
+    {
+        def Mesh "pCubeShape2"
+        {
+            uniform bool doubleSided = 1
+            float3[] extent = [(-1, -1, 0), (1, 1, 0)]
+            int[] faceVertexCounts = [3]
+            int[] faceVertexIndices = [0, 1, 2]
+            point3f[] points = [(-1, -1, 0), (1, -1, 0), (0, 1, 0)]
+            color3f[] primvars:displayColor = [(0, 0.2, 0)]
+        }
+    }
+
+    def Xform "pCube1_pCube3"
+    {
+        double3 xformOp:translate = (0, -6, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+
+        def Scope "pCubeShape2" (
+            instanceable = true
+            prepend references = </InstanceSources/pCube1_pCube2_pCubeShape2>
+        )
+        {
+        }
+    }
+}
+

@@ -56,6 +56,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((ArgName, "useRegistry"))
+    ((NiceName, "Use Registry"))
+    ((ExportDescription, "Use a registry based mechanism, complemented with material conversions,"
+                         " to export to a UsdShade network"))
+    ((ImportDescription, "Use a registry based mechanism, complemented with material conversions,"
+                         " to import from a UsdShade network"))
+);
+
 using _NodeHandleToShaderWriterMap =
     UsdMayaUtil::MObjectHandleUnorderedMap<UsdMayaShaderWriterSharedPtr>;
 
@@ -86,12 +96,6 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                 // depNode is the material itself, so we don't need to create a
                 // new shader. Connections between it and the top-level shader
                 // will be handled by the main Export() method.
-                return nullptr;
-            }
-
-            if (depNode.hasFn(MFn::kDagNode)) {
-                // XXX: Skip DAG nodes for now, but we may eventually want/need
-                // to consider them.
                 return nullptr;
             }
 
@@ -266,14 +270,14 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                     // Maya plugs represent so that we can author the
                     // connection in USD.
 
-                    const TfToken srcPlugName =
-                        TfToken(context.GetStandardAttrName(srcPlug, false));
+                    const TfToken srcPlugName = TfToken(
+                        UsdMayaShadingUtil::GetStandardAttrName(srcPlug, false));
                     UsdAttribute srcAttribute =
                         srcShaderInfo->GetShadingAttributeForMayaAttrName(
                             srcPlugName);
 
-                    const TfToken dstPlugName =
-                        TfToken(context.GetStandardAttrName(dstPlug, false));
+                    const TfToken dstPlugName = TfToken(
+                        UsdMayaShadingUtil::GetStandardAttrName(dstPlug, false));
                     UsdAttribute dstAttribute =
                         dstShaderInfo->GetShadingAttributeForMayaAttrName(
                             dstPlugName);
@@ -341,7 +345,7 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
 
             const TfToken& convertMaterialsTo = context.GetExportArgs().convertMaterialsTo;
             const TfToken& renderContext
-                = UsdMayaShadingModeRegistry::GetExportConversionInfo(convertMaterialsTo)
+                = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(convertMaterialsTo)
                       .renderContext;
             SdfPath materialExportPath = materialPrim.GetPath();
 
@@ -385,10 +389,9 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
 TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaShadingModeExportContext, useRegistry)
 {
     UsdMayaShadingModeRegistry::GetInstance().RegisterExporter(
-        "useRegistry",
-        "Use Registry",
-        "Use a registry based mechanism, complemented with material conversions, to export to a "
-        "UsdShade network",
+        _tokens->ArgName.GetString(),
+        _tokens->NiceName.GetString(),
+        _tokens->ExportDescription.GetString(),
         []() -> UsdMayaShadingModeExporterPtr {
             return UsdMayaShadingModeExporterPtr(
                 static_cast<UsdMayaShadingModeExporter*>(
@@ -415,12 +418,29 @@ public:
     /// shading network.
     MObject Read()
     {
+        if (_jobArguments.shadingModes.size() != 1) {
+            // The material translator will make sure we only get a single shading mode
+            // at a time.
+            TF_CODING_ERROR("useRegistry importer can only handle a single shadingMode");
+            return MObject();
+        }
+        const TfToken& materialConversion = _jobArguments.GetMaterialConversion();
+        TfToken renderContext = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(
+            materialConversion).renderContext;
+
         const UsdShadeMaterial& shadeMaterial = _context->GetShadeMaterial();
         if (!shadeMaterial) {
             return MObject();
         }
 
-        UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource();
+        // ComputeSurfaceSource will default to the universal render context if
+        // renderContext is not found. Therefore we need to test first that the
+        // render context output we are looking for really exists:
+        if (!shadeMaterial.GetSurfaceOutput(renderContext)) {
+            return MObject();
+        }
+
+        UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource(renderContext);
         if (!surfaceShader) {
             return MObject();
         }
@@ -602,7 +622,12 @@ private:
 
 }; // anonymous namespace
 
-DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(useRegistry, context, jobArguments)
+DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
+    useRegistry,
+    _tokens->NiceName.GetString(),
+    _tokens->ImportDescription.GetString(),
+    context,
+    jobArguments)
 {
     UseRegistryShadingModeImporter importer(context, jobArguments);
     return importer.Read();

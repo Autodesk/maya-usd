@@ -13,7 +13,6 @@ There is a cmake option to disable building of the plugin entirely, BUILD_USDMAY
 ## Supported Maya Versions 
 + maya-2016 extension 2
   - have done limited testing (via docker). Selection probably broken. Does it work in VP1?
-  - USD built with PXR_MAYA_TBB_BUG_WORKAROUND turned on might be needed if deadlocks happen
 + maya-2017
   - Update 3 recommended for viewport selection fixes
 + maya-2018

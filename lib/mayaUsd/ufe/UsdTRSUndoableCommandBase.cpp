@@ -24,7 +24,7 @@ MAYAUSD_NS_DEF {
 namespace ufe {
 
 template<class V>
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(double x, double y, double z)
     : fNewValue(x, y, z)
 #else
@@ -35,7 +35,7 @@ UsdTRSUndoableCommandBase<V>::UsdTRSUndoableCommandBase(
 {
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 template<class V>
 void UsdTRSUndoableCommandBase<V>::updateItem() const
 {
@@ -85,7 +85,7 @@ void UsdTRSUndoableCommandBase<V>::operator()(
 template<class V>
 void UsdTRSUndoableCommandBase<V>::undoImp()
 {
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     // Set fItem to nullptr because the command does not know what can go on with the prim inside
     // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
     // that the next time the command is used, it will be forced to create a new item from the path, 
@@ -103,7 +103,7 @@ void UsdTRSUndoableCommandBase<V>::undoImp()
 template<class V>
 void UsdTRSUndoableCommandBase<V>::redoImp()
 {
-    #if UFE_PREVIEW_VERSION_NUM >= 2021
+    #ifdef UFE_V2_FEATURES_AVAILABLE
     // Set fItem to nullptr because the command does not know what can go on with the prim inside
     // its item after their own undo() or redo(). Setting it back to nullptr is safer because it means 
     // that the next time the command is used, it will be forced to create a new item from the path, 

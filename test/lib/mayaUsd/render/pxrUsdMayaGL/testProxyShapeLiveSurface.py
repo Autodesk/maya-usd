@@ -30,6 +30,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testProxyShapeLiveSurface(unittest.TestCase):
 
@@ -39,27 +41,25 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         # that way too.
         cmds.upAxis(axis='z')
 
+        inputPath = fixturesUtils.readOnlySetUpClass(__file__,
+            initializeStandalone=False, loadPlugin=False)
+
         cls._testName = 'ProxyShapeLiveSurfaceTest'
-        cls._inputDir = os.path.abspath(cls._testName)
+        cls._inputDir = os.path.join(inputPath, cls._testName)
 
     def setUp(self):
         mayaSceneFile = '%s.ma' % self._testName
         mayaSceneFullPath = os.path.join(self._inputDir, mayaSceneFile)
         cmds.file(mayaSceneFullPath, open=True, force=True)
 
-    def testObjectPosition(self):
-        """
-        Tests that an object created interactively is positioned correctly on
-        the live surface.
-        """
         # Create a new custom viewport.
-        window = cmds.window(widthHeight=(500, 400))
+        self._window = cmds.window(widthHeight=(500, 400))
         cmds.paneLayout()
-        panel = cmds.modelPanel()
-        cmds.modelPanel(panel, edit=True, camera='persp')
-        cmds.modelEditor(cmds.modelPanel(panel, q=True, modelEditor=True),
+        self._panel = cmds.modelPanel()
+        cmds.modelPanel(self._panel, edit=True, camera='persp')
+        cmds.modelEditor(cmds.modelPanel(self._panel, q=True, modelEditor=True),
             edit=True, displayAppearance='smoothShaded', rnm='vp2Renderer')
-        cmds.showWindow(window)
+        cmds.showWindow(self._window)
 
         # Force all views to re-draw. This causes us to block until the
         # geometry we're making live has actually been evaluated and is present
@@ -69,9 +69,20 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         cmds.refresh()
 
         # Get the viewport widget.
-        view = OMUI.M3dView()
-        OMUI.M3dView.getM3dViewFromModelPanel(panel, view)
-        viewWidget = wrapInstance(long(view.widget()), QWidget)
+        self._view = OMUI.M3dView()
+        OMUI.M3dView.getM3dViewFromModelPanel(self._panel, self._view)
+        self._viewWidget = wrapInstance(long(self._view.widget()), QWidget)
+
+    def tearDown(self):
+        self._viewWidget = None
+        self._view = None
+        cmds.deleteUI(self._window)
+
+    def testObjectPosition(self):
+        """
+        Tests that an object created interactively is positioned correctly on
+        the live surface.
+        """
 
         # Make our proxy shape live.
         cmds.makeLive('Block_1')
@@ -80,8 +91,8 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         cmds.setToolTo('CreatePolyTorusCtx')
 
         # Click in the center of the viewport widget.
-        QTest.mouseClick(viewWidget, QtCore.Qt.LeftButton,
-            QtCore.Qt.NoModifier, viewWidget.rect().center())
+        QTest.mouseClick(self._viewWidget, QtCore.Qt.LeftButton,
+            QtCore.Qt.NoModifier, self._viewWidget.rect().center())
 
         # Find the torus (it should be called pTorus1).
         self.assertTrue(cmds.ls('pTorus1'))
@@ -100,26 +111,6 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         Tests that an object created interactively by dragging in the viewport
         has the correct orientation based on the live surface normal.
         """
-        # Create a new custom viewport.
-        window = cmds.window(widthHeight=(500, 400))
-        cmds.paneLayout()
-        panel = cmds.modelPanel()
-        cmds.modelPanel(panel, edit=True, camera='persp')
-        cmds.modelEditor(cmds.modelPanel(panel, q=True, modelEditor=True),
-            edit=True, displayAppearance='smoothShaded', rnm='vp2Renderer')
-        cmds.showWindow(window)
-
-        # Force all views to re-draw. This causes us to block until the
-        # geometry we're making live has actually been evaluated and is present
-        # in the viewport. Otherwise execution of the test may continue and the
-        # create tool may be invoked before there's any geometry there, in
-        # which case the tool won't create anything.
-        cmds.refresh()
-
-        # Get the viewport widget.
-        view = OMUI.M3dView()
-        OMUI.M3dView.getM3dViewFromModelPanel(panel, view)
-        viewWidget = wrapInstance(long(view.widget()), QWidget)
 
         # Make our proxy shape live.
         cmds.makeLive('Block_2')
@@ -128,8 +119,8 @@ class testProxyShapeLiveSurface(unittest.TestCase):
         cmds.setToolTo('CreatePolyConeCtx')
 
         # Click in the center of the viewport widget.
-        QTest.mouseClick(viewWidget, QtCore.Qt.LeftButton,
-            QtCore.Qt.NoModifier, viewWidget.rect().center())
+        QTest.mouseClick(self._viewWidget, QtCore.Qt.LeftButton,
+            QtCore.Qt.NoModifier, self._viewWidget.rect().center())
 
         # Find the cone (it should be called pCone1).
         self.assertTrue(cmds.ls('pCone1'))

@@ -15,16 +15,19 @@
 #
 
 from maya import cmds
-from maya import standalone
 
 import os
 import shutil
 
 _exportTranslatorName = "USD Export"
 
-def _setUpClass(modulePathName, loadPlugin):
-    '''Common code for setUpClass() and readOnlySetUpClass()'''
-    standalone.initialize('usd')
+def _setUpClass(modulePathName, initializeStandalone, loadPlugin):
+    '''
+    Common code for setUpClass() and readOnlySetUpClass()
+    '''
+    if initializeStandalone:
+        from maya import standalone
+        standalone.initialize('usd')
 
     if loadPlugin:
         cmds.loadPlugin('mayaUsdPlugin', quiet=True)
@@ -41,17 +44,20 @@ def _setUpClass(modulePathName, loadPlugin):
 def exportTranslatorName():
     return _exportTranslatorName
 
-def setUpClass(modulePathName, suffix='', loadPlugin=True):
-    '''Test class setup.
+def setUpClass(modulePathName, suffix='', initializeStandalone=True,
+        loadPlugin=True):
+    '''
+    Test class setup.
 
     This function:
-    - Initializes Maya standalone use.
+    - (Optionally) Initializes Maya standalone use.
     - Creates (or empties) a test output directory based on the argument.
     - Changes the current working directory to the test output directory.
-    - Loads the plugin
+    - (Optionally) Loads the plugin
     - Returns the original directory from the argument.
     '''
-    (testDir, testFile) = _setUpClass(modulePathName, loadPlugin)
+    (testDir, testFile) = _setUpClass(modulePathName, initializeStandalone,
+        loadPlugin)
     outputName = os.path.splitext(testFile)[0]+suffix+'Output'
 
     outputPath = os.path.join(testDir, outputName)
@@ -64,14 +70,17 @@ def setUpClass(modulePathName, suffix='', loadPlugin=True):
 
     return testDir
 
-def readOnlySetUpClass(modulePathName, loadPlugin=True):
-    '''Test class import setup for tests that do not write to the file system.
+def readOnlySetUpClass(modulePathName, initializeStandalone=True,
+        loadPlugin=True):
+    '''
+    Test class import setup for tests that do not write to the file system.
 
     This function:
-    - Initializes Maya standalone use.
-    - Loads the plugin
+    - (Optionally) Initializes Maya standalone use.
+    - (Optionally) Loads the plugin
     - Returns the original directory from the argument.
     '''
-    (testDir, testFile) = _setUpClass(modulePathName, loadPlugin)
+    (testDir, testFile) = _setUpClass(modulePathName, initializeStandalone,
+        loadPlugin)
 
     return testDir

@@ -359,9 +359,9 @@ static bool _pushUSDXformToMayaXform(
     std::vector<double> RxVal(timeCodes.size());
     std::vector<double> RyVal(timeCodes.size());
     std::vector<double> RzVal(timeCodes.size());
-    std::vector<double> SxVal(timeCodes.size());
-    std::vector<double> SyVal(timeCodes.size());
-    std::vector<double> SzVal(timeCodes.size());
+    std::vector<double> SxVal(timeCodes.size(), 1.0);
+    std::vector<double> SyVal(timeCodes.size(), 1.0);
+    std::vector<double> SzVal(timeCodes.size(), 1.0);
     std::vector<double> ShearXYVal(timeCodes.size());
     std::vector<double> ShearXZVal(timeCodes.size());
     std::vector<double> ShearYZVal(timeCodes.size());
@@ -371,10 +371,8 @@ static bool _pushUSDXformToMayaXform(
 
         GfMatrix4d usdLocalTransform(1.0);
         bool resetsXformStack;
-        if (!xformSchema.GetLocalTransformation(
-                &usdLocalTransform,
-                &resetsXformStack,
-                timeCode)) {
+        if (!xformSchema.GetLocalTransformation(&usdLocalTransform, &resetsXformStack, timeCode)
+            && !xformSchema.GetPrim().IsInstance()) {
             if (timeCode.IsDefault()) {
                 TF_RUNTIME_ERROR(
                     "Missing xform data at the default time on USD prim <%s>",

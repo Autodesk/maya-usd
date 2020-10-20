@@ -88,6 +88,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
     def testGetItems(self):
         # The top-level context items are:
+        # - working set management for loadable prims and descendants
         # - visibility (for all prims with visibility attribute)
         # - variant sets, for those prims that have them (such as Ball_35)
         # - add new prim (for all prims)
@@ -99,6 +100,10 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertIsNotNone(attrs)
         hasVisibility = attrs.hasAttribute(UsdGeom.Tokens.visibility)
 
+        # The proxy shape specifies loading all payloads, so Ball_35 should be
+        # loaded, and since it has a payload, there should be an item for
+        # unloading it.
+        self.assertIn('Unload', contextItemStrings)
         self.assertIn('Variant Sets', contextItemStrings)
         if hasVisibility:
             self.assertIn('Toggle Visibility', contextItemStrings)
@@ -346,3 +351,118 @@ class ContextOpsTestCase(unittest.TestCase):
         # The proxy shape should now have a single UFE child item.
         self.assertTrue(proxyShapehier.hasChildren())
         self.assertEqual(len(proxyShapehier.children()), 1)
+
+    def testLoadAndUnload(self):
+        '''
+        Tests the working set management contextOps "Load", "Load with
+        Descendants", and "Unload".
+        '''
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(
+            '|world|transform1|proxyShape1')
+
+        propsPath = ufe.Path([
+            proxyShapePathSegment,
+            usdUtils.createUfePathSegment('/Room_set/Props')])
+        propsItem = ufe.Hierarchy.createItem(propsPath)
+        ball1Path = ufe.Path([
+            proxyShapePathSegment,
+            usdUtils.createUfePathSegment('/Room_set/Props/Ball_1')])
+        ball1Item = ufe.Hierarchy.createItem(ball1Path)
+        ball15Path = ufe.Path([
+            proxyShapePathSegment,
+            usdUtils.createUfePathSegment('/Room_set/Props/Ball_15')])
+        ball15Item = ufe.Hierarchy.createItem(ball15Path)
+
+        def _validateLoadAndUnloadItems(hierItem, itemStrings):
+            ALL_ITEM_STRINGS = set([
+                'Load',
+                'Load with Descendants',
+                'Unload'
+            ])
+
+            expectedItemStrings = set(itemStrings or [])
+            expectedAbsentItemStrings = ALL_ITEM_STRINGS - expectedItemStrings
+
+            contextOps = ufe.ContextOps.contextOps(hierItem)
+            contextItems = contextOps.getItems([])
+            contextItemStrings = [c.item for c in contextItems]
+
+            for itemString in expectedItemStrings:
+                self.assertIn(itemString, contextItemStrings)
+
+            for itemString in expectedAbsentItemStrings:
+                self.assertNotIn(itemString, contextItemStrings)
+
+        # The stage is fully loaded, so all items should have "Unload" items.
+        _validateLoadAndUnloadItems(propsItem, ['Unload'])
+        _validateLoadAndUnloadItems(ball1Item, ['Unload'])
+        _validateLoadAndUnloadItems(ball15Item, ['Unload'])
+
+        # The mesh prim path under each Ball asset prim has nothing loadable at
+        # or below it, so it should not have any load or unload items.
+        ball15meshPath = ufe.Path([
+            proxyShapePathSegment,
+            usdUtils.createUfePathSegment('/Room_set/Props/Ball_15/mesh')])
+        ball15meshItem = ufe.Hierarchy.createItem(ball15meshPath)
+        _validateLoadAndUnloadItems(ball15meshItem, [])
+
+        # Unload Ball_1.
+        contextOps = ufe.ContextOps.contextOps(ball1Item)
+        cmd = contextOps.doOpCmd(['Unload'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # Only Ball_1 should have been unloaded, and since it has a payload, it
+        # should now have "Load" and "Load with Descendants" context items.
+        # "Props" will now also have "Load with Descendants" because something
+        # loadable below it is unloaded.
+        _validateLoadAndUnloadItems(propsItem, ['Load with Descendants', 'Unload'])
+        _validateLoadAndUnloadItems(ball1Item, ['Load', 'Load with Descendants'])
+        _validateLoadAndUnloadItems(ball15Item, ['Unload'])
+
+        cmds.undo()
+
+        _validateLoadAndUnloadItems(propsItem, ['Unload'])
+        _validateLoadAndUnloadItems(ball1Item, ['Unload'])
+        _validateLoadAndUnloadItems(ball15Item, ['Unload'])
+
+        # Unload Props.
+        contextOps = ufe.ContextOps.contextOps(propsItem)
+        cmd = contextOps.doOpCmd(['Unload'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        # The "Props" prim does not have a payload of its own, so it should
+        # only have the "Load with Descendants" item. The Ball assets will also
+        # have been unloaded.
+        _validateLoadAndUnloadItems(propsItem, ['Load with Descendants'])
+        _validateLoadAndUnloadItems(ball1Item, ['Load', 'Load with Descendants'])
+        _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
+
+        cmds.undo()
+
+        _validateLoadAndUnloadItems(propsItem, ['Unload'])
+        _validateLoadAndUnloadItems(ball1Item, ['Unload'])
+        _validateLoadAndUnloadItems(ball15Item, ['Unload'])
+
+        cmds.redo()
+
+        _validateLoadAndUnloadItems(propsItem, ['Load with Descendants'])
+        _validateLoadAndUnloadItems(ball1Item, ['Load', 'Load with Descendants'])
+        _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
+
+        # Load Props.
+        contextOps = ufe.ContextOps.contextOps(propsItem)
+        cmd = contextOps.doOpCmd(['Load with Descendants'])
+        self.assertIsNotNone(cmd)
+        ufeCmd.execute(cmd)
+
+        _validateLoadAndUnloadItems(propsItem, ['Unload'])
+        _validateLoadAndUnloadItems(ball1Item, ['Unload'])
+        _validateLoadAndUnloadItems(ball15Item, ['Unload'])
+
+        cmds.undo()
+
+        _validateLoadAndUnloadItems(propsItem, ['Load with Descendants'])
+        _validateLoadAndUnloadItems(ball1Item, ['Load', 'Load with Descendants'])
+        _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])

@@ -42,7 +42,7 @@ class testUsdImportRfMLight(unittest.TestCase):
 
         # Import from USD.
         usdFilePath = os.path.join(inputPath, "UsdImportRfMLightTest", "RfMLightsTest.usda")
-        cmds.usdImport(file=usdFilePath, shadingMode='pxrRis', readAnimData=True)
+        cmds.usdImport(file=usdFilePath, shadingMode=[['pxrRis', 'default'], ], readAnimData=True)
 
         cls._stage = Usd.Stage.Open(usdFilePath)
 

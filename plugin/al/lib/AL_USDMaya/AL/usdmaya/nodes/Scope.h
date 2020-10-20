@@ -15,7 +15,9 @@
 //
 #pragma once
 
+#include "AL/maya/utils/MayaHelperMacros.h"
 #include "AL/maya/utils/NodeHelper.h"
+#include "AL/usdmaya/TypeIDs.h"
 
 #include <maya/MObjectHandle.h>
 #include <maya/MPxTransform.h>

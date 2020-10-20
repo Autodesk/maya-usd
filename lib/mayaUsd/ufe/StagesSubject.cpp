@@ -30,18 +30,17 @@
 
 #include "private/UfeNotifGuard.h"
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/attributes.h>
-#endif
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/transform3d.h>
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/object3d.h>
 #include <ufe/object3dNotification.h>
 #include <unordered_map>
+#include <ufe/attributes.h>
 #endif
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -223,7 +222,7 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 			{
 				if (prim.IsActive())
 				{
-					#if UFE_PREVIEW_VERSION_NUM >= 2021
+					#ifdef UFE_V2_FEATURES_AVAILABLE
 					Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
 					#else
 					auto notification = Ufe::ObjectAdd(sceneItem);
@@ -232,7 +231,7 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 				}
 				else
 				{
-					#if UFE_PREVIEW_VERSION_NUM >= 2021
+					#ifdef UFE_V2_FEATURES_AVAILABLE
 					Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
 					#else
 					auto notification = Ufe::ObjectPostDelete(sceneItem);
@@ -246,37 +245,21 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 				// According to USD docs for GetResyncedPaths():
 				// - Resyncs imply entire subtree invalidation of all descendant prims and properties.
 				// So we send the UFE subtree invalidate notif.
-				#if UFE_PREVIEW_VERSION_NUM >= 2021
 				Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-				#else
-				auto notification = Ufe::SubtreeInvalidate(sceneItem);
-				Ufe::Scene::notifySubtreeInvalidate(notification);
-				#endif
 			}
 #endif
 		}
 #ifdef UFE_V2_FEATURES_AVAILABLE
 		else if (!prim.IsValid() && !InPathChange::inPathChange())
 		{
-			if (InAddOrDeleteOperation::inAddOrDeleteOperation())
+			Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(ufePath);
+			if (!sceneItem || InAddOrDeleteOperation::inAddOrDeleteOperation())
 			{
-				#if UFE_PREVIEW_VERSION_NUM >= 2021
 				Ufe::Scene::instance().notify(Ufe::ObjectDestroyed(ufePath));
-				#else
-				auto notification = Ufe::ObjectDestroyed(ufePath);
-				Ufe::Scene::notifyObjectDelete(notification);
-				#endif
 			}
 			else
 			{
-				#if UFE_PREVIEW_VERSION_NUM >= 2021
-				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
 				Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-				#else
-				auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
-				auto notification = Ufe::SubtreeInvalidate(sceneItem);
-				Ufe::Scene::notifySubtreeInvalidate(notification);
-				#endif
 			}
 		}
 #endif
@@ -340,12 +323,7 @@ void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& n
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(notice.GetProxyShape().ufePath());
-	#if UFE_PREVIEW_VERSION_NUM >= 2021
 	Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-	#else
-	auto notification = Ufe::SubtreeInvalidate(sceneItem);
-	Ufe::Scene::notifySubtreeInvalidate(notification);
-	#endif
 #endif
 }
 

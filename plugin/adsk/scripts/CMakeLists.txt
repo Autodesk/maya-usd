@@ -18,7 +18,7 @@ install(FILES ${scripts_src}
 
 set(PREVIEWSURFACE_MAYA_TYPE_NAME "usdPreviewSurface")
 
-configure_file("${CMAKE_SOURCE_DIR}/lib/usd/pxrUsdPreviewSurface/AEusdPreviewSurfaceTemplate.mel"
+configure_file("${PROJECT_SOURCE_DIR}/lib/usd/pxrUsdPreviewSurface/AEusdPreviewSurfaceTemplate.mel"
                "${CMAKE_CURRENT_BINARY_DIR}/AEusdPreviewSurfaceTemplate.mel"
 )
 

@@ -17,6 +17,7 @@
 
 
 import os
+import sys
 import unittest
 
 from maya import cmds
@@ -31,6 +32,12 @@ class testUsdExportStripNamespaces(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         fixturesUtils.setUpClass(__file__)
+
+        # Deprecated since version 3.2: assertRegexpMatches and assertRaisesRegexp
+        # have been renamed to assertRegex() and assertRaisesRegex()
+        if sys.version_info.major < 3 or sys.version_info.minor < 2:
+            cls.assertRegex = cls.assertRegexpMatches
+            cls.assertRaisesRegex = cls.assertRaisesRegexp
 
     @classmethod
     def tearDownClass(cls):
@@ -64,14 +71,14 @@ class testUsdExportStripNamespaces(unittest.TestCase):
         #     ".+|cube1 - |foo:cube1.*"
         errorRegexp = 'Maya command error'
 
-        with self.assertRaisesRegexp(RuntimeError, errorRegexp) as cm:
+        with self.assertRaisesRegex(RuntimeError, errorRegexp) as cm:
             cmds.usdExport(mergeTransformAndShape=True,
                            selection=False,
                            stripNamespaces=True,
                            file=usdFilePath,
                            shadingMode='none')
 
-        with self.assertRaisesRegexp(RuntimeError,errorRegexp) as cm:
+        with self.assertRaisesRegex(RuntimeError,errorRegexp) as cm:
             cmds.usdExport(mergeTransformAndShape=False,
                            selection=False,
                            stripNamespaces=True,

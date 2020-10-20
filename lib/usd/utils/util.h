@@ -27,40 +27,26 @@ namespace MayaUsdUtils {
 
     //! Return the highest-priority layer where the prim has a def primSpec.
     MAYA_USD_UTILS_PUBLIC
-    SdfLayerHandle defPrimSpecLayer(const UsdPrim&);
-
-    //! Return a list of layers in no strength order that can contribute to the argument prim.
-    MAYA_USD_UTILS_PUBLIC
-    std::vector<SdfLayerHandle> layersWithContribution(const UsdPrim&);
-
-    //! Check if a layer has any contributions towards the argument prim.
-    MAYA_USD_UTILS_PUBLIC
-    bool doesEditTargetLayerContribute(const UsdPrim&);
-
-    //! Return the strongest layer that can contribute to the argument prim.
-    MAYA_USD_UTILS_PUBLIC
-    SdfLayerHandle strongestContributingLayer(const UsdPrim&);
+    SdfLayerHandle defPrimSpecLayer(const UsdPrim& prim);
 
     //! Return a PrimSpec for the argument prim in the layer containing the stage's current edit target.
     MAYA_USD_UTILS_PUBLIC
-    SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim&);
-
-    //! Returns true if the prim spec has an internal reference.
-    MAYA_USD_UTILS_PUBLIC
-    bool isInternalReference(const SdfPrimSpecHandle&);
-
-    //! Returns true if the target node has any specs to contribute to the composed prim.
-    MAYA_USD_UTILS_PUBLIC
-    bool hasSpecs(const UsdPrim&);
-
-    //! Returns the layer in composition arc where HasSpecs is set to true
-    MAYA_USD_UTILS_PUBLIC
-    std::vector<SdfLayerHandle> layerInCompositionArcsWithSpec(const UsdPrim& prim);
+    SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim& prim);
 
     //! Convenience function for printing the list of queried composition arcs in order. 
     MAYA_USD_UTILS_PUBLIC
-    void printCompositionQuery(const UsdPrim&, std::ostream&);
+    void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
+
+    //! This function automatically updates the internal refrences path if 
+    //  the path that it has referenced is changed.
+    MAYA_USD_UTILS_PUBLIC
+    bool updateInternalReferencesPath(const UsdPrim& oldPrim, const SdfPath& newPath);
+
+    //! Returns true if reference is internal.
+    MAYA_USD_UTILS_PUBLIC
+    bool isInternalReference(const SdfReference&);
 
 } // namespace MayaUsdUtils
 
 #endif // MAYAUSDUTILS_UTIL_H
+

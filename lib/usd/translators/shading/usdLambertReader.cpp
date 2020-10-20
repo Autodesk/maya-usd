@@ -22,6 +22,7 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
@@ -53,6 +54,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Maya material nodes attribute names
     (color)
+    (transparency)
     (incandescence)
     (normalCamera)
 );
@@ -68,14 +70,14 @@ PxrUsdTranslators_LambertReader::PxrUsdTranslators_LambertReader(
 UsdMayaShaderReader::ContextSupport
 PxrUsdTranslators_LambertReader::CanImport(const UsdMayaJobImportArgs& importArgs)
 {
-    return importArgs.shadingConversion == UsdMayaShadingConversionTokens->lambert
+    return importArgs.preferredMaterial == UsdMayaPreferredMaterialTokens->lambert
         ? ContextSupport::Supported
         : ContextSupport::Unsupported;
 }
 
 const TfToken& PxrUsdTranslators_LambertReader::_GetMayaNodeTypeName() const
 {
-    return UsdMayaShadingConversionTokens->lambert;
+    return UsdMayaPreferredMaterialTokens->lambert;
 }
 
 void PxrUsdTranslators_LambertReader::_OnBeforeReadAttribute(
@@ -95,6 +97,21 @@ void PxrUsdTranslators_LambertReader::_OnBeforeReadAttribute(
     }
 }
 
+/* override */
+void
+PxrUsdTranslators_LambertReader::_ConvertToMaya(
+        const TfToken& mayaAttrName,
+        VtValue& usdValue) const
+{
+    if (mayaAttrName == _tokens->transparency && usdValue.IsHolding<float>()) {
+        const float opacity = usdValue.UncheckedGet<float>();
+        usdValue = GfVec3f(1.0f - opacity);
+        return;
+    }
+
+    PxrUsdTranslators_MaterialReader::_ConvertToMaya(mayaAttrName, usdValue);
+}
+
 /* virtual */
 TfToken PxrUsdTranslators_LambertReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
@@ -105,6 +122,8 @@ TfToken PxrUsdTranslators_LambertReader::GetMayaNameForUsdAttrName(const TfToken
     if (attrType == UsdShadeAttributeType::Input) {
         if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName) {
             return _tokens->color;
+        } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName) {
+            return _tokens->transparency;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName) {
             return _tokens->incandescence;
         } else if (usdInputName == PxrMayaUsdPreviewSurfaceTokens->NormalAttrName) {
