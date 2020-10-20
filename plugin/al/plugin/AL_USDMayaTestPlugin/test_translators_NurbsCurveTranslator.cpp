@@ -54,28 +54,15 @@ MObject createNurbStage(bool useSingleWidth=false)
   VtArray<int32_t> curveVertextCounts;
   curveVertextCounts.push_back(5);
 
-  std::array<double, 7> knotsa = {0., 0., 0., 1., 2., 2., 2.};
-  VtDoubleArray knots = VtDoubleArray(7);
-  memcpy(knots.data(), &knotsa, sizeof(double)*7);
+  VtDoubleArray knots = VtDoubleArray{0., 0., 0., 1., 2., 2., 2.};
 
-  std::vector<std::array<float, 3>> pointsa = { {-1.5079714f, 44.28195f, 5.781988f},
+  VtVec3fArray points = VtVec3fArray{ {-1.5079714f, 44.28195f, 5.781988f},
                             {-1.5784601f, 44.300205f, 5.813314f},
                             {-2.4803247f, 44.201904f, 6.2143235f},
                             {-3.9173129f, 43.33975f, 6.475575f},
                             {-5.2281976f, 42.145287f, 6.6371536f} };
-  VtVec3fArray points = VtVec3fArray(5);
-  for(uint32_t i = 0 ; i< pointsa.size(); ++i)
-  {
-    memcpy(&points[i], &pointsa[i], 3*sizeof(float));
-  }
 
-  std::vector<std::array<double,2> > rangesa = {{0.,2.}};
-  VtVec2dArray ranges = VtVec2dArray(2);
-
-  for(uint32_t i = 0 ; i< rangesa.size(); ++i)
-  {
-    memcpy(&ranges[i], &rangesa[i], 2*sizeof(double));
-  }
+  VtVec2dArray ranges = VtVec2dArray{{0.,2.}};
 
   if(useSingleWidth)
   {
