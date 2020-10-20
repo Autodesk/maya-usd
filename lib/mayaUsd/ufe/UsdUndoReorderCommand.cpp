@@ -71,7 +71,12 @@ bool UsdUndoReorderCommand::reorderRedo()
 
 bool UsdUndoReorderCommand::reorderUndo()
 {
-    /*TODO*/
+    const auto& childPrim = ufePathToPrim(_childPath);
+    const auto& parentPrim = childPrim.GetParent();
+    const auto& parentPrimSpec = MayaUsdUtils::getPrimSpecAtEditTarget(parentPrim);
+
+    parentPrimSpec->SetNameChildrenOrder(_orderedTokens);
+
     return true;
 }
 
