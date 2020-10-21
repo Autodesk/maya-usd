@@ -135,6 +135,7 @@ target_sources(${UFE_PYTHON_TARGET_NAME}
     PRIVATE
         module.cpp
         wrapUtils.cpp
+        wrapNotice.cpp
 )
 
 # -----------------------------------------------------------------------------
