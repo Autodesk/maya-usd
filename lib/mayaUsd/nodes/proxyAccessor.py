@@ -29,6 +29,7 @@ from mayaUsd import lib as mayaUsdLib
 import maya.cmds as cmds
 import maya.OpenMaya as om
 import ufe
+import re
 
 def getUfeSelection():
     try:
@@ -57,7 +58,7 @@ def getSelectedDagAndPrim():
     return getDagAndPrimFromUfe(getUfeSelection())
 
 def getAccessPlugName(sdfPath):
-    plugNameValueAttr = 'AccessValue_' + str(sdfPath.__hash__())
+    plugNameValueAttr = 'AP_' + re.sub(r'[^a-zA-Z0-9_]',r'_',str(sdfPath))
     
     return plugNameValueAttr
 

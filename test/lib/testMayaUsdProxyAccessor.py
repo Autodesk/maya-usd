@@ -23,289 +23,17 @@ import unittest
 
 import maya.cmds as cmds
 
+import usdUtils, mayaUtils, testUtils
+
+from cachingUtils import NonCachingScope, CachingScope
+from ufeUtils import createUfeSceneItem, selectUfeItems
+from mayaUtils import createProxyAndStage, createProxyFromFile, createAnimatedHierarchy
+
 from mayaUsd import lib as mayaUsdLib
 from mayaUsd.lib import GetPrim
 from mayaUsd.lib import proxyAccessor as pa
 
 from pxr import Usd, UsdGeom, Sdf, Tf, Vt
-
-from maya.debug.emModeManager import emModeManager
-from maya.plugin.evaluator.CacheEvaluatorManager import CacheEvaluatorManager, CACHE_STANDARD_MODE_EVAL
-
-class NonCachingScope(object):
-    '''
-    Scope object responsible for setting up non cached mode and restoring default settings after
-    '''
-    def __enter__(self):
-        '''Enter the scope, setting up the evaluator managers and initial states'''
-        self.em_mgr = emModeManager()
-        self.em_mgr.setMode('emp')
-        self.em_mgr.setMode('-cache')
-
-        return self
-
-    def __init__(self, unit_test):
-        '''Initialize everything to be empty - only use the "with" syntax with this object'''
-        self.em_mgr = None
-        self.unit_test = unit_test
-
-    def __exit__(self,exit_type,value,traceback):
-        '''Exit the scope, restoring all of the state information'''
-        if self.em_mgr:
-            self.em_mgr.restore_state()
-            self.em_mgr = None
-
-    def verifyScopeSetup(self):
-        '''
-        Meta-test to check that the scope was defined correctly
-        :param unit_test: The test object from which this method was called
-        '''
-        self.unit_test.assertTrue( cmds.evaluationManager( mode=True, query=True )[0] == 'parallel' )
-        if cmds.pluginInfo('cacheEvaluator', loaded=True, query=True):
-            self.unit_test.assertFalse( cmds.evaluator( query=True, en=True, name='cache' ) )
-
-    def checkValidFrames(self, expected_valid_frames, layers_mask = 0b01):
-        return True
-
-    def waitForCache(self, wait_time=5):
-        return
-
-    @staticmethod
-    def is_caching_scope():
-        '''
-        Method to determine whether caching is on or off in this object's scope
-        :return: False, since this is the non-caching scope
-        '''
-        return False
-
-class CachingScope(object):
-    '''
-    Scope object responsible for setting up caching and restoring original setup after
-    '''
-    def __enter__(self):
-        '''Enter the scope, setting up the evaluator managers and initial states'''
-        self.em_mgr = emModeManager()
-        self.em_mgr.setMode('emp')
-        self.em_mgr.setMode('+cache')
-        # Enable idle build to make sure we can rebuild the graph when waiting.
-        self.em_mgr.idle_action = emModeManager.idle_action_build
-
-        # Setup caching options
-        self.cache_mgr = CacheEvaluatorManager()
-        self.cache_mgr.save_state()
-        self.cache_mgr.plugin_loaded = True
-        self.cache_mgr.enabled = True
-        self.cache_mgr.cache_mode = CACHE_STANDARD_MODE_EVAL
-        self.cache_mgr.resource_guard = False
-        self.cache_mgr.fill_mode = 'syncAsync'
-
-        # Setup autokey options
-        self.auto_key_state = cmds.autoKeyframe(q=True, state=True)
-        self.auto_key_chars = cmds.autoKeyframe(q=True, characterOption=True)
-        cmds.autoKeyframe(e=True, state=False)
-
-        self.waitForCache()
-
-        return self
-
-    def __init__(self, unit_test):
-        '''Initialize everything to be empty - only use the "with" syntax with this object'''
-        self.em_mgr = None
-        self.cache_mgr = None
-        self.auto_key_state = None
-        self.auto_key_chars = None
-        self.unit_test = unit_test
-
-    def __exit__(self,exit_type,value,traceback):
-        '''Exit the scope, restoring all of the state information'''
-        if self.cache_mgr:
-            self.cache_mgr.restore_state()
-        if self.em_mgr:
-            self.em_mgr.restore_state()
-        cmds.autoKeyframe(e=True, state=self.auto_key_state, characterOption=self.auto_key_chars)
-
-    def verifyScopeSetup(self):
-        '''
-        Meta-test to check that the scope was defined correctly
-        :param unit_test: The test object from which this method was called
-        '''
-        self.unit_test.assertTrue( cmds.evaluationManager( mode=True, query=True )[0] == 'parallel' )
-        self.unit_test.assertTrue( cmds.pluginInfo('cacheEvaluator', loaded=True, query=True) )
-        self.unit_test.assertTrue( cmds.evaluator( query=True, en=True, name='cache' ) )
-
-    def checkValidFrames(self, expected_valid_frames, layers_mask = 0b01):
-        '''
-        :param unit_test: The test object from which this method was called
-        :param expected_valid_frames: The list of frames the text expected to be cached
-        :return: True if the cached frame list matches the expected frame list
-        '''
-        current_valid_frames = list(self.cache_mgr.get_valid_frames(layers_mask))
-        if len(expected_valid_frames) == len(current_valid_frames):
-            for current, expected in zip(current_valid_frames,expected_valid_frames):
-                if current[0] != expected[0] or current[1] != expected[1]:
-                    self.unit_test.fail( "{} != {} (current,expected)".format( current_valid_frames, expected_valid_frames) )
-                    return False
-
-            return True
-        self.unit_test.fail( "{} != {} (current,expected)".format( current_valid_frames, expected_valid_frames) )
-        return False
-
-    def waitForCache(self, wait_time=5):
-        '''
-        Fill the cache in the background, waiting for a maximum time
-        :param unit_test: The test object from which this method was called
-        :param wait_time: Time the test is willing to wait for cache completion (in seconds)
-        '''
-        cmds.currentTime( cmds.currentTime(q=True) )
-        cmds.currentTime( cmds.currentTime(q=True) )
-        cache_is_ready = cmds.cacheEvaluator( waitForCache=wait_time )
-        self.unit_test.assertTrue( cache_is_ready )
-
-    @staticmethod
-    def is_caching_scope():
-        '''
-        Method to determine whether caching is on or off in this object's scope
-        :return: True, since this is the caching scope
-        '''
-        return True
-
-def isPluginLoaded(pluginName):
-    """
-    Verifies that the given plugin is loaded
-    Args:
-        pluginName (str): The plugin name to verify
-    Returns:
-        True if the plugin is loaded. False if a plugin failed to load
-    """
-    return cmds.pluginInfo( pluginName, loaded=True, query=True)
-
-def loadPlugin(pluginName):
-    """
-    Load all given plugins created or needed by maya-ufe-plugin
-    Args:
-        pluginName (str): The plugin name to load
-    Returns:
-        True if all plugins are loaded. False if a plugin failed to load
-    """
-    try:
-        if not isPluginLoaded(pluginName):
-            cmds.loadPlugin( pluginName, quiet = True )
-        return True
-    except:
-        print(sys.exc_info()[1])
-        print("Unable to load %s" % pluginName)
-        return False
-
-def isMayaUsdPluginLoaded():
-    """
-    Load plugins needed by tests.
-    Returns:
-        True if plugins loaded successfully. False if a plugin failed to load
-    """
-    # Load the mayaUsdPlugin first.
-    if not loadPlugin("mayaUsdPlugin"):
-        return False
-
-    # Load the UFE support plugin, for ufeSelectCmd support.  If this plugin
-    # isn't included in the distribution of Maya (e.g. Maya 2019 or 2020), use
-    # fallback test plugin.
-    if not (loadPlugin("ufeSupport") or loadPlugin("ufeTestCmdsPlugin")):
-        return False
-
-    # The renderSetup Python plugin registers a file new callback to Maya.  On
-    # test application exit (in TbaseApp::cleanUp()), a file new is done and
-    # thus the file new callback is invoked.  Unfortunately, this occurs after
-    # the Python interpreter has been finalized, which causes a crash.  Since
-    # renderSetup is not needed for mayaUsd tests, unload it.
-    rs = 'renderSetup'
-    if cmds.pluginInfo(rs, q=True, loaded=True):
-        unloaded = cmds.unloadPlugin(rs)
-        return (unloaded[0] == rs)
-
-    return True
-
-def makeUfePath(dagPath, sdfPath=None):
-    """
-    Make ufe item out of dag path and sdfpath
-    """
-    ufePath = ufe.PathString.path('{},{}'.format(dagPath,sdfPath) if sdfPath != None else '{}'.format(dagPath))
-    ufeItem = ufe.Hierarchy.createItem(ufePath)
-    return ufeItem
-
-def selectUfeItems(selectItems):
-    """
-    Add given UFE item or list of items to a UFE global selection list
-    """
-    ufeSelectionList = ufe.Selection()
-    
-    realListToSelect = selectItems if type(selectItems) is list else [selectItems]
-    for item in realListToSelect:
-        ufeSelectionList.append(item)
-    
-    ufe.GlobalSelection.get().replaceWith(ufeSelectionList)
-
-def createProxyAndStage():
-    """
-    Create in-memory stage
-    """
-    cmds.createNode('mayaUsdProxyShape', name='stageShape')
-
-    shapeNode = cmds.ls(sl=True,l=True)[0]
-    shapeStage = mayaUsdLib.GetPrim(shapeNode).GetStage()
-    
-    cmds.select( clear=True )
-    cmds.connectAttr('time1.outTime','{}.time'.format(shapeNode))
-
-    return shapeNode,shapeStage
-
-def createProxyFromFile(filePath):
-    """
-    Load stage from file
-    """
-    cmds.createNode('mayaUsdProxyShape', name='stageShape')
-
-    shapeNode = cmds.ls(sl=True,l=True)[0]
-    cmds.setAttr('{}.filePath'.format(shapeNode), filePath, type='string')
-    
-    shapeStage = mayaUsdLib.GetPrim(shapeNode).GetStage()
-    
-    cmds.select( clear=True )
-    cmds.connectAttr('time1.outTime','{}.time'.format(shapeNode))
-
-    return shapeNode,shapeStage
-
-def createAnimatedHierarchy(stage):
-    """
-    Create simple hierarchy in the stage:
-    /ParentA
-        /Sphere
-        /Cube
-    /ParenB
-    
-    Entire ParentA hierarchy will receive time samples on translate for time 1 and 100
-    """
-    parentA = "/ParentA"
-    parentB = "/ParentB"
-    childSphere = "/ParentA/Sphere"
-    childCube = "/ParentA/Cube"
-    
-    parentPrimA = stage.DefinePrim(parentA, 'Xform')
-    parentPrimB = stage.DefinePrim(parentB, 'Xform')
-    childPrimSphere = stage.DefinePrim(childSphere, 'Sphere')
-    childPrimCube = stage.DefinePrim(childCube, 'Cube')
-    
-    UsdGeom.XformCommonAPI(parentPrimA).SetRotate((0,0,0))
-    UsdGeom.XformCommonAPI(parentPrimB).SetTranslate((1,10,0))
-    
-    time1 = Usd.TimeCode(1.)
-    UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,0,0),time1)
-    UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((5,0,0),time1)
-    UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,5),time1)
-    
-    time2 = Usd.TimeCode(100.)
-    UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,5,0),time2)
-    UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((-5,0,0),time2)
-    UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,-5),time2)
 
 class MayaUsdProxyAccessorTestCase(unittest.TestCase):
     """
@@ -324,7 +52,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         Load mayaUsdPlugin on class initialization (before any test is executed)
         """
         if not cls.pluginsLoaded:
-            cls.pluginsLoaded = isMayaUsdPluginLoaded()
+            cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
         
         # Useful for debugging accessor
         #Tf.Debug.SetDebugSymbolsByName("USDMAYA_PROXYACCESSOR", 1)
@@ -381,8 +109,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE items
-        ufeParentItemA = makeUfePath(nodeDagPath,'/ParentA')
-        ufeChildItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
+        ufeParentItemA = createUfeSceneItem(nodeDagPath,'/ParentA')
+        ufeChildItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
         
         # Create accessor plugs
         worldMatrixPlugA = pa.getOrCreateAccessPlug(ufeParentItemA, '', Sdf.ValueTypeNames.Matrix4d )
@@ -418,7 +146,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         createAnimatedHierarchy(stage)
         
         # Get UFE items
-        ufeParentItemA = makeUfePath(nodeDagPath,'/ParentA')
+        ufeParentItemA = createUfeSceneItem(nodeDagPath,'/ParentA')
         
         # Create accessor plugs
         worldMatrixPlugA = pa.getOrCreateAccessPlug(ufeParentItemA, '', Sdf.ValueTypeNames.Matrix4d )
@@ -447,7 +175,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.setKeyframe( '{}.ry'.format(transform), time=100.0, value=90 )
         
         # Get UFE items
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
         worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         
         cachingScope.waitForCache()
@@ -471,9 +199,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE items
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        ufeItemCube = makeUfePath(nodeDagPath,'/ParentA/Cube')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
+        ufeItemCube = createUfeSceneItem(nodeDagPath,'/ParentA/Cube')
         
         # Create accessor plugs
         translatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
@@ -527,8 +255,8 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.setAttr('{}.ty'.format(childNodeDagPath), 3)
         
         # Get UFE items
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        ufeItemChild = makeUfePath(childNodeDagPath)
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
+        ufeItemChild = createUfeSceneItem(childNodeDagPath)
         
         # Parent
         pa.parentItems([ufeItemChild],ufeItemSphere)
@@ -560,10 +288,10 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.setAttr('{}.ty'.format(locatorNodeDagPath), 3)
         
         # Get UFE items
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        ufeItemCube = makeUfePath(nodeDagPath,'/ParentA/Cube')
-        ufeItemLocator = makeUfePath(locatorNodeDagPath)
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
+        ufeItemCube = createUfeSceneItem(nodeDagPath,'/ParentA/Cube')
+        ufeItemLocator = createUfeSceneItem(locatorNodeDagPath)
         
         translatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
         rotatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
@@ -624,7 +352,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE item and select it
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
         selectUfeItems(ufeItemParent)
         
         # We are going to manipulate animated prim. Let's make sure this opinion can be authored
@@ -697,7 +425,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         transform = cmds.listRelatives(nodeDagPath,parent=True)[0]
         
         # Get UFE items
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
         worldMatrixPlugSphere = pa.getOrCreateAccessPlug(ufeItemSphere, '', Sdf.ValueTypeNames.Matrix4d )
         
         cachingScope.waitForCache()
@@ -742,7 +470,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE item and select it
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
         selectUfeItems(ufeItemParent)
 
         # We are going to manipulate animated prim. Let's make sure this opinion can be authored
@@ -827,7 +555,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE item and select it
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
         
         # Current limitation requires access plugs to be created before we start manipulating and keying
         translatePlug = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
@@ -913,7 +641,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         nodeDagPath, stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
         
         # Get UFE item and select it
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
         
         path = Sdf.Path('/ParentA')
         usdPrim = stage.GetPrimAtPath(path)
@@ -1005,9 +733,9 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.setKeyframe( '{}.tz'.format(srcLocatorDagPath), time=100.0, value=10.0)
         
         # Get UFE items
-        ufeItemParent = makeUfePath(nodeDagPath,'/ParentA')
-        ufeItemSphere = makeUfePath(nodeDagPath,'/ParentA/Sphere')
-        ufeItemSrcLocator = makeUfePath(srcLocatorDagPath)
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
+        ufeItemSphere = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
+        ufeItemSrcLocator = createUfeSceneItem(srcLocatorDagPath)
         
         # Create accessor plugs
         translatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:translate')
@@ -1064,7 +792,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         ''')
 
         # Get UFE items
-        ufeItem = makeUfePath(nodeDagPath,'/pCube1')
+        ufeItem = createUfeSceneItem(nodeDagPath,'/pCube1')
 
         # Create accessor plugs
         matrixPlug = pa.getOrCreateAccessPlug(ufeItem, usdAttrName='xformOp:transform:offset')

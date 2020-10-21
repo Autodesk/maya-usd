@@ -115,8 +115,9 @@ UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
     for (unsigned int i = 0u; i < depNodeFn.attributeCount(); ++i) {
         const MObject attrObj = depNodeFn.reorderedAttribute(i);
         MPlug attrPlug = depNodeFn.findPlug(attrObj, true);
+        const MFnAttribute attrFn(attrObj);
 
-        if (attrPlug.isProcedural()) {
+        if (attrPlug.isProcedural() || attrFn.isHidden()) {
             // The Maya docs say these should not be saved off.
             continue;
         }
@@ -159,7 +160,7 @@ UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
         }
 
         const SdfValueTypeName valueTypeName =
-            MAYAUSD_NS::Converter::getUsdTypeName(attrPlug);
+            MayaUsd::Converter::getUsdTypeName(attrPlug);
         if (!valueTypeName) {
             // Unsupported Maya attribute type (e.g. "message" attributes).
             continue;
@@ -167,7 +168,7 @@ UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
 
         // If the Maya attribute is writable, we assume it must be an input.
         // Inputs can still be connected as sources to inputs on other shaders.
-        if (MFnAttribute(attrPlug.attribute()).isWritable()) {
+        if (attrFn.isWritable()) {
             UsdShadeInput input =
                 shaderSchema.CreateInput(usdAttrName, valueTypeName);
             if (!input) {

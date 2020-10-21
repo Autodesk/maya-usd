@@ -42,8 +42,9 @@ class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand
     //
     // The list of short forms of flags defined as Arg Tokens:
     static constexpr auto kShadingModeFlag = "shd";
-    static constexpr auto kShadingConversionFlag = "shc";
+    static constexpr auto kPreferredMaterialFlag = "prm";
     static constexpr auto kAssemblyRepFlag = "ar";
+    static constexpr auto kInstanceModeFlag = "im";
     static constexpr auto kMetadataFlag = "md";
     static constexpr auto kApiSchemaFlag = "api";
     static constexpr auto kExcludePrimvarFlag = "epv";

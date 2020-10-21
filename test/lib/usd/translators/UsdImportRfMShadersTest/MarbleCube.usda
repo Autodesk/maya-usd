@@ -40,13 +40,7 @@ def Xform "MarbleCube" (
     {
         def Material "MarbleCubeSG"
         {
-            # XXX: Note that the rendermanForMaya material conversion at export
-            # will create this surface terminal output using the "ri"
-            # renderContext as opposed to using the universal renderContext as
-            # we do here. Further work is needed in the "useRegistry"
-            # shadingMode to be able to support finding materials in
-            # renderContexts other than universal.
-            token outputs:surface.connect = </MarbleCube/Materials/MarbleCubeSG/MarbleLambert.outputs:surface>
+            token outputs:ri:surface.connect = </MarbleCube/Materials/MarbleCubeSG/MarbleLambert.outputs:surface>
 
             def Shader "MarbleLambert"
             {

@@ -16,9 +16,8 @@
 # limitations under the License.
 #
 
-from ufeTestUtils import mayaUtils
-from ufeTestUtils import usdUtils
-from ufeTestUtils.testUtils import assertVectorAlmostEqual, assertVectorEqual
+import mayaUtils, usdUtils
+from testUtils import assertVectorAlmostEqual, assertVectorEqual
 
 import ufe
 
@@ -140,7 +139,7 @@ class Object3dTestCase(unittest.TestCase):
     def testAnimatedBoundingBox(self):
         '''Test the Object3d bounding box interface for animated geometry.'''
 
-        # Open sphereAnimatedRadiusProxyShape.ma scene in test-samples
+        # Open sphereAnimatedRadiusProxyShape.ma scene in testSamples
         mayaUtils.openSphereAnimatedRadiusScene()
 
         # The extents of the sphere are copied from the .usda file.
@@ -182,7 +181,7 @@ class Object3dTestCase(unittest.TestCase):
     def testVisibility(self):
         '''Test the Object3d visibility methods.'''
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
 
         # Get a scene item for Ball_35.

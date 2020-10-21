@@ -24,21 +24,30 @@ list(APPEND SHADERFRAGMENTS_XMLS
     usdPreviewSurfaceCombiner.xml
     usdPreviewSurfaceLighting.xml
     # New fragments
-    BasisCurvesLinearDomain_GLSL.xml
-    BasisCurvesLinearDomain_HLSL.xml
-    BasisCurvesLinearDomain_Cg.xml
-    BasisCurvesLinearFallbackShader.xml
-    BasisCurvesLinearHull.xml
+    BasisCurvesCubicColorDomain.xml
+    BasisCurvesCubicCPVHull.xml
+    BasisCurvesCubicCPVPassing.xml
+    BasisCurvesCubicCPVShader.xml
     BasisCurvesCubicDomain_GLSL.xml
     BasisCurvesCubicDomain_HLSL.xml
     BasisCurvesCubicDomain_Cg.xml
     BasisCurvesCubicFallbackShader.xml
     BasisCurvesCubicHull.xml
+    BasisCurvesLinearColorDomain.xml
+    BasisCurvesLinearCPVHull.xml
+    BasisCurvesLinearCPVPassing.xml
+    BasisCurvesLinearCPVShader.xml
+    BasisCurvesLinearDomain_GLSL.xml
+    BasisCurvesLinearDomain_HLSL.xml
+    BasisCurvesLinearDomain_Cg.xml
+    BasisCurvesLinearFallbackShader.xml
+    BasisCurvesLinearHull.xml
     FallbackCPVShader.xml
     FallbackShader.xml
     Float4ToFloat3.xml
     Float4ToFloat4.xml
     NwFaceCameraIfNAN.xml
+    UsdPrimvarColor.xml
     UsdPrimvarReader_color.xml
     UsdPrimvarReader_float.xml
     UsdPrimvarReader_float2.xml

@@ -23,6 +23,8 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/envSetting.h>
 
+#include <mayaUsd/utils/plugRegistryHelper.h>
+
 #include <hdMaya/adapters/adapter.h>
 
 #include "renderGlobals.h"
@@ -34,6 +36,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     MStatus ret = MS::kSuccess;
 
+    // Call one time registration of plugins compiled for same USD version as MayaUSD plugin.
+    MayaUsd::registerVersionedPlugins();
+    
     ret = HdMayaAdapter::Initialize();
     if (!ret) { return ret; }
 

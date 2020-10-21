@@ -37,12 +37,14 @@ limitations under the License.
         <string  name="tessprimitives" semantic="controlParam" flags="isRequirementOnly" />
         <string  name="patchspacing" semantic="controlParam" flags="isRequirementOnly" />
         <int  name="barriers" semantic="controlParam" flags="isRequirementOnly" />
+        <int  name="curveBasis" />
     </properties>
     <values>
         <int name="outputpatchsize" value="4"/>
         <string name="tessprimitives" value="quads"/>
         <string name="patchspacing" value="fractional_odd_spacing"/>
         <int name="barriers" value="0"/>
+        <int name="curveBasis" value="0"/>
     </values>
     <outputs>
         <struct  name="structDomain" size="4" struct_name="structDomain" />
@@ -81,10 +83,7 @@ vec3 evaluateNormal(vec4 basis, float u)
     vec4 n2 = worldViewIT * vec4(DS_IN[2].Nm, 1.0f);
     vec4 n3 = worldViewIT * vec4(DS_IN[3].Nm, 1.0f);
 
-    vec3 normal = n0.xyz * basis.x
-                + n1.xyz * basis.y
-                + n2.xyz * basis.z
-                + n3.xyz * basis.w;
+    vec3 normal = (mat4(n0, n1, n2, n3) * basis).xyz;
 
     // A zero vector is passed in to indicate requirement of camera-facing normal.
     if (length(normal) < 0.00001f)
@@ -96,41 +95,69 @@ vec3 evaluateNormal(vec4 basis, float u)
 
 // line 676 ".../lib/usd/hdSt/resources/shaders/basisCurves.glslfx"
 
-Coeffs evaluateBasis(float u, float u2, float u3)
+Coeffs evaluateBasis(int curveBasis, float u, float u2, float u3)
 {
-    vec4 basis;
-    basis[0] = u3;
-    basis[1] = -3.0*u3 + 3.0*u2;
-    basis[2] = 3.0*u3 - 6.0*u2 + 3.0*u;
-    basis[3] = -1.0*u3 + 3.0*u2 - 3.0*u + 1.0;
+    Coeffs result;
 
-    vec4 tangent_basis;
-    tangent_basis[0] = 3.0*u2;
-    tangent_basis[1] = -9.0*u2 + 6.0*u;
-    tangent_basis[2] = 9.0*u2 - 12.0*u + 3.0;
-    tangent_basis[3] = -3.0*u2 + 6.0*u - 3.0;
+    if (curveBasis == 0) // Curves.BezierBasis
+    {
+        result.basis = vec4(u3,
+                            -3.0*u3 + 3.0*u2,
+                            3.0*u3 - 6.0*u2 + 3.0*u,
+                            -1.0*u3 + 3.0*u2 - 3.0*u + 1.0);
 
-    return Coeffs(basis, tangent_basis);
+        result.tangent_basis = vec4(3.0*u2,
+                                    -9.0*u2 + 6.0*u,
+                                    9.0*u2 - 12.0*u + 3.0,
+                                    -3.0*u2 + 6.0*u - 3.0);
+    }
+    else if (curveBasis == 1) // Curves.BsplineBasis
+    {
+        result.basis = vec4((1.0/6.0)*u3,
+                            -0.5*u3 + 0.5*u2 + 0.5*u + (1.0/6.0),
+                            0.5*u3 - u2 + (2.0/3.0),
+                            -(1.0/6.0)*u3 + 0.5*u2 - 0.5*u + (1.0/6.0));
+
+        result.tangent_basis = vec4(0.5*u2,
+                                    -1.5*u2 + u + 0.5,
+                                    1.5*u2 - 2.0*u,
+                                    -0.5*u2 + u - 0.5);
+    }
+    else if (curveBasis == 2) // Curves.CatmullRomBasis
+    {
+        result.basis = vec4(0.5*u3 - 0.5*u2,
+                            -1.5*u3 + 2.0*u2 + 0.5*u,
+                            1.5*u3 - 2.5*u2 + 1.0,
+                            -0.5*u3 + u2 - 0.5*u);
+
+        result.tangent_basis = vec4(1.5*u2 - u,
+                                    -4.5*u2 + 4.0*u + 0.5,
+                                    4.5*u2 - 5.0*u,
+                                    -1.5*u2 + 2.0*u - 0.5);
+    }
+    else // Unexpected value
+    {
+        result.basis = vec4(0.0, 0.0, 0.0, 0.0);
+
+        result.tangent_basis = vec4(0.0, 0.0, 0.0, 0.0);
+    }
+
+    return result;
 }
 
-void evaluate(float u, float v, out vec4 position, out vec4 tangent,
-              out float width, out vec3 normal){
+void evaluate(int curveBasis, float u, float v, out vec4 position, out vec4 tangent,
+              out float width, out vec3 normal)
+{
     vec4 p0 = worldView * vec4(DS_IN[0].Pm, 1.0f);
     vec4 p1 = worldView * vec4(DS_IN[1].Pm, 1.0f);
     vec4 p2 = worldView * vec4(DS_IN[2].Pm, 1.0f);
     vec4 p3 = worldView * vec4(DS_IN[3].Pm, 1.0f);
 
-    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    Coeffs coeffs = evaluateBasis(curveBasis, u, u*u, u*u*u);
 
-    position = coeffs.basis[0] * p0 +
-               coeffs.basis[1] * p1 +
-               coeffs.basis[2] * p2 +
-               coeffs.basis[3] * p3;
-
-    tangent = coeffs.tangent_basis[0] * p0 +
-              coeffs.tangent_basis[1] * p1 +
-              coeffs.tangent_basis[2] * p2 +
-              coeffs.tangent_basis[3] * p3;
+    mat4 pmat = mat4(p0, p1, p2, p3);
+    position = pmat * coeffs.basis;
+    tangent = pmat * coeffs.tangent_basis;
 
     width = evaluateWidths(coeffs.basis, u);
     normal = normalize(evaluateNormal(coeffs.basis, u));
@@ -149,20 +176,17 @@ vec3 orient(float v, vec4 position, vec4 tangent, vec3 normal)
     return normalize(cross(tangent.xyz, normal)  * (v - 0.5));
 }
 
-structDomain BasisCurvesCubicDomain()
+structDomain BasisCurvesCubicDomain(int curveBasis)
 {
     float u = gl_TessCoord.y;
     float v = gl_TessCoord.x;
-
-    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
-    vec4 basis = coeffs.basis;
 
     vec4 position;
     vec4 tangent;
     float width;
     vec3 normal;
 
-    evaluate(u, v, position, tangent, width, normal);
+    evaluate(curveBasis, u, v, position, tangent, width, normal);
     vec3 direction = orient(v, position, tangent, normal);
 
     vec4 scaledDirection = worldView * vec4(direction, 0.0f);

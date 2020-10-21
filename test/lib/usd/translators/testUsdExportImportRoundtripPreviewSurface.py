@@ -67,6 +67,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.setAttr(material_node + ".roughness", 0.25)
         cmds.setAttr(material_node + ".specularColor", 0.125, 0.25, 0.75,
                      type="double3")
+        cmds.setAttr(material_node + ".useSpecularWorkflow", True)
 
         file_node = cmds.shadingNode("file", asTexture=True,
                                      isColorManaged=True)
@@ -102,8 +103,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.file(defaultExtensions=default_ext_setting)
 
         # Import back:
-        import_options = ("shadingMode=useRegistry",
-                          "shadingConversion=none",
+        import_options = ("shadingMode=[[useRegistry,UsdPreviewSurface]]",
+                          "preferredMaterial=none",
                           "primPath=/")
         cmds.file(usd_path, i=True, type="USD Import",
                   ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
@@ -131,6 +132,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
                                0.25)
         self.assertEqual(cmds.getAttr("usdPreviewSurface2.specularColor"),
                          [(0.125, 0.25, 0.75)])
+        self.assertTrue(cmds.getAttr("usdPreviewSurface2.useSpecularWorkflow"))
         self.assertEqual(cmds.getAttr("file2.defaultColor"),
                          [(0.5, 0.25, 0.125)])
         original_path = cmds.getAttr(file_node+".fileTextureName")

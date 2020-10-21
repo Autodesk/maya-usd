@@ -21,7 +21,7 @@ import unittest
 import maya.cmds as cmds
 import sys, os
 
-from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
+import usdUtils, mayaUtils, ufeUtils
 import ufe
 
 class MayaUFEPickWalkTesting(unittest.TestCase):
@@ -70,7 +70,7 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
         # Set up memento - [[mayaSelection, ufeSelection], ...]
         self.memento = []
         
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
         # Create some extra Maya nodes

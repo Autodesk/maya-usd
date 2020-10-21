@@ -15,25 +15,25 @@
 # limitations under the License.
 #
 
-
-import os
-import unittest
+from pxr import Usd
 
 from maya import cmds
 from maya import standalone
 
-from pxr import Usd
+import fixturesUtils
+
+import os
+import unittest
 
 
-class testUsdTranslateTypelessDefs(unittest.TestCase):
-
-    USD_FILE = os.path.abspath('ExoticTypeNames.usda')
-    USD_FILE_OUT = os.path.abspath('ExoticTypeNames.reexported.usda')
+class testUsdImportExportTypelessDefs(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
-        cmds.loadPlugin('pxrUsd')
+        inputPath = fixturesUtils.setUpClass(__file__)
+
+        cls._usdFile = os.path.join(inputPath,
+            "UsdImportExportTypelessDefsTest", "ExoticTypeNames.usda")
 
     @classmethod
     def tearDownClass(cls):
@@ -43,7 +43,7 @@ class testUsdTranslateTypelessDefs(unittest.TestCase):
         cmds.file(new=True, force=True)
 
     def testImport(self):
-        cmds.usdImport(file=self.USD_FILE, primPath='/')
+        cmds.mayaUSDImport(file=self._usdFile, primPath='/')
         dagObjects = cmds.ls(long=True, dag=True)
 
         self.assertIn('|A', dagObjects)
@@ -89,10 +89,12 @@ class testUsdTranslateTypelessDefs(unittest.TestCase):
         self.assertFalse(cmds.getAttr('|B|B_1.tx', lock=True))
 
     def testReexport(self):
-        cmds.usdImport(file=self.USD_FILE, primPath='/')
-        cmds.usdExport(file=self.USD_FILE_OUT)
+        cmds.mayaUSDImport(file=self._usdFile, primPath='/')
 
-        stage = Usd.Stage.Open(self.USD_FILE_OUT)
+        exportedUsdFile = os.path.abspath('ExoticTypeNames.reexported.usda')
+        cmds.mayaUSDExport(file=exportedUsdFile)
+
+        stage = Usd.Stage.Open(exportedUsdFile)
         self.assertTrue(stage)
 
         self.assertTrue(stage.GetPrimAtPath('/A'))

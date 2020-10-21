@@ -70,7 +70,8 @@ class testUsdExportRenderLayerMode(unittest.TestCase):
 
         # Export to USD.
         cmds.usdExport(mergeTransformAndShape=True, file=usdFilePath,
-            shadingMode='none', renderLayerMode=renderLayerMode, **kwargs)
+            shadingMode='none', exportDisplayColor=True,
+            renderLayerMode=renderLayerMode, **kwargs)
 
         stage = Usd.Stage.Open(usdFilePath)
         self.assertTrue(stage)

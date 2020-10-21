@@ -1,0 +1,68 @@
+<!--
+========================================================================
+Copyright 2020 Autodesk
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment  uiName="BasisCurvesLinearCPVPassing" name="BasisCurvesLinearCPVPassing" type="interpolant" class="ShadeFragment" version="1.0" feature_level="0" >
+    <description>
+        <![CDATA[Pass primvars:displayColor and primvars::displayOpacity through shader stages]]>
+    </description>
+    <properties>
+        <float4 name="colorIn" semantic="fcolor" flags="varyingInputParam" />
+    </properties>
+    <outputs>
+        <float4 name="BasisCurvesLinearColor" />
+    </outputs>
+    <implementation  >
+        <implementation  render="OGSRenderer" language="GLSL" lang_version="3.000000" >
+            <function_name val="BasisCurvesLinearCPVPassing" />
+            <source>
+                <![CDATA[
+vec4 BasisCurvesLinearCPVPassing(vec4 inColor)
+{
+    return inColor;
+}
+                ]]>
+            </source>
+            <vertex_source>
+                <![CDATA[
+vec4 iBasisCurvesLinearCPVPassing(vec4 inColor)
+{
+    return inColor;
+}
+                ]]>
+            </vertex_source>
+        </implementation>
+        <implementation  render="OGSRenderer" language="HLSL" lang_version="11.000000" >
+            <function_name val="BasisCurvesLinearCPVPassing" />
+            <source>
+                <![CDATA[
+float4 BasisCurvesLinearCPVPassing(float4 inColor)
+{
+    return inColor;
+}
+                ]]>
+            </source>
+            <vertex_source>
+                <![CDATA[
+float4 iBasisCurvesLinearCPVPassing(float4 inColor)
+{
+    return inColor;
+}
+                ]]>
+            </vertex_source>
+        </implementation>
+    </implementation>
+</fragment>

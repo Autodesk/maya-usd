@@ -196,7 +196,8 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         _tokens->normalCamera,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
-        usdTime);
+        usdTime,
+        /* inputTypeName = */ SdfValueTypeNames->Normal3f);
 }
 
 /* virtual */

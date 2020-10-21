@@ -89,14 +89,14 @@ PxrUsdTranslators_BlinnReader::PxrUsdTranslators_BlinnReader(const UsdMayaPrimRe
 UsdMayaShaderReader::ContextSupport
 PxrUsdTranslators_BlinnReader::CanImport(const UsdMayaJobImportArgs& importArgs)
 {
-    return importArgs.shadingConversion == UsdMayaShadingConversionTokens->blinn
+    return importArgs.preferredMaterial == UsdMayaPreferredMaterialTokens->blinn
         ? ContextSupport::Supported
         : ContextSupport::Unsupported;
 }
 
 const TfToken& PxrUsdTranslators_BlinnReader::_GetMayaNodeTypeName() const
 {
-    return UsdMayaShadingConversionTokens->blinn;
+    return UsdMayaPreferredMaterialTokens->blinn;
 }
 
 void PxrUsdTranslators_BlinnReader::_OnBeforeReadAttribute(
