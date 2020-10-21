@@ -31,6 +31,13 @@
 #include "renderOverride.h"
 #include "viewCommand.h"
 
+#if defined(MAYAUSD_VERSION)
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#else
+#error "MAYAUSD_VERSION is not defined"
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
@@ -51,7 +58,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
     snprintf(envVarData.data(), envVarSize, "%s", envVarSet);
     putenv(envVarData.data());
 
-    MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
+    MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
 
     if (!plugin.registerCommand(
             MtohViewCmd::name, MtohViewCmd::creator,
@@ -74,7 +81,7 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj) {
 }
 
 PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj) {
-    MFnPlugin plugin(obj, "Luma Pictures", "2018", "Any");
+    MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
     MStatus ret = MS::kSuccess;
 
     auto* renderer = MHWRender::MRenderer::theRenderer();

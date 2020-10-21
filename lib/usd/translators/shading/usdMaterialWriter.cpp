@@ -110,6 +110,7 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromShadingNodeAttr(
         UsdShadeShader& shaderSchema,
         const TfToken& shaderInputName,
         const UsdTimeCode usdTime,
+        bool ignoreIfUnauthored,
         const SdfValueTypeName& inputTypeName)
 {
     return AuthorShaderInputFromScaledShadingNodeAttr(
@@ -119,6 +120,7 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromShadingNodeAttr(
         shaderInputName,
         usdTime,
         TfToken(),
+        ignoreIfUnauthored,
         inputTypeName);
 }
 
@@ -130,6 +132,7 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
         const TfToken& shaderInputName,
         const UsdTimeCode usdTime,
         const TfToken& scalingAttrName,
+        bool ignoreIfUnauthored,
         const SdfValueTypeName& inputTypeName)
 {
     MStatus status;
@@ -141,6 +144,11 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
             &status);
     if (status != MS::kSuccess) {
         return false;
+    }
+
+    if (ignoreIfUnauthored && !UsdMayaUtil::IsAuthored(shadingNodePlug)) {
+        // Ignore this unauthored Maya attribute and return success.
+        return true;
     }
 
     const bool isDestination = shadingNodePlug.isDestination(&status);

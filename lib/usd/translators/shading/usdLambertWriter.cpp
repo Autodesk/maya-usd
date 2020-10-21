@@ -28,6 +28,7 @@
 #include <pxr/usd/usdShade/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
@@ -111,12 +112,15 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         }
     }
 
+    // Since incandescence in Maya and emissiveColor in UsdPreviewSurface are
+    // both black by default, only author it in USD if it is authored in Maya.
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
         _tokens->incandescence,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName,
-        usdTime);
+        usdTime,
+        /* ignoreIfUnauthored = */ true);
 
     // Exported, but unsupported in hdStorm.
     AuthorShaderInputFromShadingNodeAttr(
@@ -125,6 +129,7 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
         usdTime,
+        /* ignoreIfUnauthored = */ false,
         /* inputTypeName = */ SdfValueTypeNames->Normal3f);
 
     WriteSpecular(usdTime);
@@ -140,16 +145,12 @@ void PxrUsdTranslators_LambertWriter::WriteSpecular(const UsdTimeCode& usdTime)
         .CreateInput(PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, SdfValueTypeNames->Float)
         .Set(1.0f, usdTime);
 
-    // Using specular workflow, but enforced black specular color.
+    // Using specular workflow. There is no need to author the specular color
+    // since UsdPreviewSurface uses black as a fallback value.
     shaderSchema
         .CreateInput(
             PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
         .Set(1, usdTime);
-
-    shaderSchema
-        .CreateInput(PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName, SdfValueTypeNames->Color3f)
-        .Set(GfVec3f(0.0f, 0.0f, 0.0f), usdTime);
-
 }
 
 /* virtual */

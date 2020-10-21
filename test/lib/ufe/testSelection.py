@@ -66,13 +66,14 @@ class SelectTestCase(unittest.TestCase):
         # time, so we select 6 different items, one at a time.
         shapeSegment = mayaUtils.createUfePathSegment(
             "|world|mayaUsdProxy1|mayaUsdProxyShape1")
-        names = ["pCube1", "pCylinder1", "pSphere1"]
+        ufeNames = ["cubeXform", "cylinderXform", "sphereXform"]
+        mayaNames = ["pCube1", "pCylinder1", "pSphere1"]
         usdPaths = []
-        for n in ["/" + o for o in names]:
+        for n in ["/" + o for o in ufeNames]:
             usdPaths.append(ufe.Path(
                 [shapeSegment, usdUtils.createUfePathSegment(n)]))
         mayaPaths = []
-        for n in ["|world|" + o for o in names]:
+        for n in ["|world|" + o for o in mayaNames]:
             mayaPaths.append(ufe.Path(mayaUtils.createUfePathSegment(n)))
 
         # Create a list of paths by alternating USD objects and Maya objects
