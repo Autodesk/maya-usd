@@ -55,12 +55,12 @@ class testUsdImportInstances(unittest.TestCase):
         scenario:
 
         pCube1 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
         pCube2 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
         pCube3 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
-        InstanceSources
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
+        MayaExportedInstanceSources
             pCube1_pCubeShape1 [Scope]
                 pCubeShape1 [Mesh]
 
@@ -108,10 +108,10 @@ class testUsdImportInstances(unittest.TestCase):
         """
         Test importing the following optimized USD simple instancing scenario:
 
-        pCube1 [Xform] (instance /InstanceSources/pCube1_instanceParent)
-        pCube2 [Xform] (instance /InstanceSources/pCube1_instanceParent)
-        pCube3 [Xform] (instance /InstanceSources/pCube1_instanceParent)
-        InstanceSources
+        pCube1 [Xform] (instance /MayaExportedInstanceSources/pCube1_instanceParent)
+        pCube2 [Xform] (instance /MayaExportedInstanceSources/pCube1_instanceParent)
+        pCube3 [Xform] (instance /MayaExportedInstanceSources/pCube1_instanceParent)
+        MayaExportedInstanceSources
             pCube1_instanceParent [Xform]
                 pCubeShape1 [Mesh]
 
@@ -209,26 +209,26 @@ class testUsdImportInstances(unittest.TestCase):
         be easier to re-read. We would export unoptimized to:
 
         pCube1 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
-            pCube2 [Scope] (instance /InstanceSources/pCube1_pCube2)
-            pCube3 [Scope] (instance /InstanceSources/pCube1_pCube3)
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
+            pCube2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2)
+            pCube3 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube3)
         pCube4 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
-            pCube2 [Scope] (instance /InstanceSources/pCube1_pCube2)
-            pCube3 [Scope] (instance /InstanceSources/pCube1_pCube3)
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
+            pCube2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2)
+            pCube3 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube3)
         pCube5 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
-            pCube2 [Scope] (instance /InstanceSources/pCube1_pCube2)
-            pCube3 [Scope] (instance /InstanceSources/pCube1_pCube3)
-        InstanceSources
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
+            pCube2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2)
+            pCube3 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube3)
+        MayaExportedInstanceSources
             pCube1_pCubeShape1 [Scope]
                 pCubeShape1 [Mesh]
             pCube1_pCube2 [Scope]
                 pCube2 [Xform]
-                    pCubeShape2 [Scope] (instance /InstanceSources/pCube1_pCube2_pCubeShape2)
+                    pCubeShape2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2)
             pCube1_pCube3 [Scope]
                 pCube3 [Xform]
-                    pCubeShape2 [Scope] (instance /InstanceSources/pCube1_pCube2_pCubeShape2)
+                    pCubeShape2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2)
             pCube1_pCube2_pCubeShape2 [Scope]
                 pCubeShape2 [Mesh]
 
@@ -301,14 +301,14 @@ class testUsdImportInstances(unittest.TestCase):
         Testing another way testExportInstances could export to USD that would
         be easier to re-read. We would export optimized to:
 
-        pCube1 [Xform] (instance /InstanceSources/pCube1_instanceParent)
-        pCube4 [Xform] (instance /InstanceSources/pCube1_instanceParent)
-        pCube5 [Xform] (instance /InstanceSources/pCube1_instanceParent)
-        InstanceSources
+        pCube1 [Xform] (instance /MayaExportedInstanceSources/pCube1_instanceParent)
+        pCube4 [Xform] (instance /MayaExportedInstanceSources/pCube1_instanceParent)
+        pCube5 [Xform] (instance /MayaExportedInstanceSources/pCube1_instanceParent)
+        MayaExportedInstanceSources
             pCube1_instanceParent [Xform]
                 pCubeShape1 [Mesh]
-                pCube2 [Xform] (instance /InstanceSources/pCube1_pCube2_instancedParent)
-                pCube3 [Xform] (instance /InstanceSources/pCube1_pCube2_instancedParent)
+                pCube2 [Xform] (instance /MayaExportedInstanceSources/pCube1_pCube2_instancedParent)
+                pCube3 [Xform] (instance /MayaExportedInstanceSources/pCube1_pCube2_instancedParent)
             pCube1_pCube2_instancedParent [Xform]
                 pCubeShape2 [Mesh]
 
@@ -390,27 +390,27 @@ class testUsdImportInstances(unittest.TestCase):
         correctly:
 
         pCube1 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
-            pCube2 [Scope] (instance /InstanceSources/pCube1_pCube2)
-            pCube3 [Scope] (instance /InstanceSources/pCube1_pCube3)
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
+            pCube2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2)
+            pCube3 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube3)
         pCube4 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
-            pCube2 [Scope] (instance /InstanceSources/pCube1_pCube2)
-            pCube3 [Scope] (instance /InstanceSources/pCube1_pCube3)
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
+            pCube2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2)
+            pCube3 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube3)
         pCube5 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
-            pCube2 [Scope] (instance /InstanceSources/pCube1_pCube2)
-            pCube3 [Scope] (instance /InstanceSources/pCube1_pCube3)
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
+            pCube2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2)
+            pCube3 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube3)
             someUniqueChildOf_pCube5 [Mesh]
-        InstanceSources
+        MayaExportedInstanceSources
             pCube1_pCubeShape1 [Scope]
                 pCubeShape1 [Mesh]
             pCube1_pCube2 [Scope]
                 pCube2 [Xform]
-                    pCubeShape2 [Scope] (instance /InstanceSources/pCube1_pCube2_pCubeShape2)
+                    pCubeShape2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2)
             pCube1_pCube3 [Scope]
                 pCube3 [Xform]
-                    pCubeShape2 [Scope] (instance /InstanceSources/pCube1_pCube2_pCubeShape2)
+                    pCubeShape2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2)
             pCube1_pCube2_pCubeShape2 [Scope]
                 pCubeShape2 [Mesh]
 
@@ -486,24 +486,24 @@ class testUsdImportInstances(unittest.TestCase):
         We would expect the following unoptimized USD export to reload
         correctly:
 
-        pCube1 [Xform] (instance /InstanceSources/pCube1_instanceParent)
-        pCube4 [Xform] (instance /InstanceSources/pCube1_instanceParent)
+        pCube1 [Xform] (instance /MayaExportedInstanceSources/pCube1_instanceParent)
+        pCube4 [Xform] (instance /MayaExportedInstanceSources/pCube1_instanceParent)
         pCube5 [Xform]
-            pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
-            pCube2 [Scope] (instance /InstanceSources/pCube1_pCube2)
-            pCube3 [Scope] (instance /InstanceSources/pCube1_pCube3)
+            pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
+            pCube2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2)
+            pCube3 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube3)
             someUniqueChildOf_pCube5 [Xform]
-        InstanceSources
+        MayaExportedInstanceSources
             pCube1_pCubeShape1 [Scope]
                 pCubeShape1 [Mesh]
             pCube1_pCube2 [Scope]
-                pCube2 [Xform] (instance /InstanceSources/pCube1_pCube2_instancedParent)
+                pCube2 [Xform] (instance /MayaExportedInstanceSources/pCube1_pCube2_instancedParent)
             pCube1_pCube3 [Scope]
-                pCube3 [Xform] (instance /InstanceSources/pCube1_pCube2_instancedParent)
+                pCube3 [Xform] (instance /MayaExportedInstanceSources/pCube1_pCube2_instancedParent)
             pCube1_instanceParent [Xform]
-                pCubeShape1 [Scope] (instance /InstanceSources/pCube1_pCubeShape1)
-                pCube2 [Scope] (instance /InstanceSources/pCube1_pCube2)
-                pCube3 [Scope] (instance /InstanceSources/pCube1_pCube3)
+                pCubeShape1 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCubeShape1)
+                pCube2 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube2)
+                pCube3 [Scope] (instance /MayaExportedInstanceSources/pCube1_pCube3)
             pCube1_pCube2_instancedParent [Xform]
                 pCubeShape2 [Mesh]
 
