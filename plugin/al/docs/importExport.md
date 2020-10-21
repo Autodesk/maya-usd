@@ -118,7 +118,7 @@ AL_usdmaya_ExportCommand -f "<path/to/out/file.usd>" -mergeTransforms 0 -duplica
 ```
 Which will generate the following instanced structure within the exported USD file:
 ```
-over "MayaExportedInstanceSources"
+over "InstanceSources"
 {
     def Xform "pSphere1"
     {
@@ -138,7 +138,7 @@ over "MayaExportedInstanceSources"
 def Xform "pSphere1" (
     al_usdmaya_mergedTransform = "unmerged"
     instanceable = true
-    prepend references = </MayaExportedInstanceSources/pSphere1>
+    prepend references = </InstanceSources/pSphere1>
 )
 {
 }
@@ -146,7 +146,7 @@ def Xform "pSphere1" (
 def Xform "pSphere2" (
     al_usdmaya_mergedTransform = "unmerged"
     instanceable = true
-    prepend references = </MayaExportedInstanceSources/pSphere1>
+    prepend references = </InstanceSources/pSphere1>
 )
 {
     float3 xformOp:translate:translate = (0, 0, 5)
@@ -156,7 +156,7 @@ def Xform "pSphere2" (
 def Xform "nurbsCircle1" (
     al_usdmaya_mergedTransform = "unmerged"
     instanceable = true
-    prepend references = </MayaExportedInstanceSources/nurbsCircle1>
+    prepend references = </InstanceSources/nurbsCircle1>
 )
 {
     float3 xformOp:translate:translate = (5, 0, 0)
@@ -170,7 +170,7 @@ def Xform "parentTransform" (
     def Xform "nurbsCircle2" (
         al_usdmaya_mergedTransform = "unmerged"
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/nurbsCircle1>
+        prepend references = </InstanceSources/nurbsCircle1>
     )
     {
         float3 xformOp:translate:translate = (0, 0, 5)
@@ -178,7 +178,7 @@ def Xform "parentTransform" (
     }
 }
 ```
-All geometry prims of instanced shapes are gathered under an override prim ```MayaExportedInstanceSources``` with USD hierarchy:
+All geometry prims of instanced shapes are gathered under an override prim ```InstanceSources``` with USD hierarchy:
 ```
 --Xform
  --Mesh/NurbsCurves
@@ -191,7 +191,7 @@ AL_usdmaya_ImportCommand -f "<path/to/out/file.usd>"
 ```
 When "duplicateInstances" is disabled and "mergeTransforms" is on, exported USD file will look like:
 ```
-over "MayaExportedInstanceSources"
+over "InstanceSources"
 {
     def Mesh "pSphere1_pSphereShape1"
     {
@@ -203,13 +203,13 @@ over "MayaExportedInstanceSources"
 }
 
 def Mesh "pSphere1" (
-    prepend references = </MayaExportedInstanceSources/pSphere1_pSphereShape1>
+    prepend references = </InstanceSources/pSphere1_pSphereShape1>
 )
 {
 }
 
 def Mesh "pSphere2" (
-    prepend references = </MayaExportedInstanceSources/pSphere1_pSphereShape1>
+    prepend references = </InstanceSources/pSphere1_pSphereShape1>
 )
 {
     float3 xformOp:translate:translate = (0, 0, 5)
@@ -217,7 +217,7 @@ def Mesh "pSphere2" (
 }
 
 def NurbsCurves "nurbsCircle1" (
-    prepend references = </MayaExportedInstanceSources/nurbsCircle1_nurbsCircleShape1>
+    prepend references = </InstanceSources/nurbsCircle1_nurbsCircleShape1>
 )
 {
     float3 xformOp:translate:translate = (5, 0, 0)
@@ -227,7 +227,7 @@ def NurbsCurves "nurbsCircle1" (
 def Xform "parentTransform"
 {
     def NurbsCurves "nurbsCircle2" (
-        prepend references = </MayaExportedInstanceSources/nurbsCircle1_nurbsCircleShape1>
+        prepend references = </InstanceSources/nurbsCircle1_nurbsCircleShape1>
     )
     {
         float3 xformOp:translate:translate = (0, 0, 5)

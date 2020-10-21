@@ -14,21 +14,21 @@ def Xform "pCube1" (
 
     def Scope "pCubeShape1" (
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/pCube1_pCubeShape1>
+        prepend references = </InstanceSources/pCube1_pCubeShape1>
     )
     {
     }
 
     def Scope "pCube2" (
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/pCube1_pCube2>
+        prepend references = </InstanceSources/pCube1_pCube2>
     )
     {
     }
 
     def Scope "pCube3" (
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/pCube1_pCube3>
+        prepend references = </InstanceSources/pCube1_pCube3>
     )
     {
     }
@@ -43,21 +43,21 @@ def Xform "pCube4" (
 
     def Scope "pCubeShape1" (
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/pCube1_pCubeShape1>
+        prepend references = </InstanceSources/pCube1_pCubeShape1>
     )
     {
     }
 
     def Scope "pCube2" (
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/pCube1_pCube2>
+        prepend references = </InstanceSources/pCube1_pCube2>
     )
     {
     }
 
     def Scope "pCube3" (
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/pCube1_pCube3>
+        prepend references = </InstanceSources/pCube1_pCube3>
     )
     {
     }
@@ -72,27 +72,27 @@ def Xform "pCube5" (
 
     def Scope "pCubeShape1" (
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/pCube1_pCubeShape1>
+        prepend references = </InstanceSources/pCube1_pCubeShape1>
     )
     {
     }
 
     def Scope "pCube2" (
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/pCube1_pCube2>
+        prepend references = </InstanceSources/pCube1_pCube2>
     )
     {
     }
 
     def Scope "pCube3" (
         instanceable = true
-        prepend references = </MayaExportedInstanceSources/pCube1_pCube3>
+        prepend references = </InstanceSources/pCube1_pCube3>
     )
     {
     }
 }
 
-over "MayaExportedInstanceSources"
+over "InstanceSources"
 {
     def Scope "pCube1_pCubeShape1"
     {
@@ -116,7 +116,7 @@ over "MayaExportedInstanceSources"
 
             def Scope "pCubeShape2" (
                 instanceable = true
-                prepend references = </MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2>
+                prepend references = </InstanceSources/pCube1_pCube2_pCubeShape2>
             )
             {
             }
@@ -132,7 +132,7 @@ over "MayaExportedInstanceSources"
 
             def Scope "pCubeShape2" (
                 instanceable = true
-                prepend references = </MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2>
+                prepend references = </InstanceSources/pCube1_pCube2_pCubeShape2>
             )
             {
             }
