@@ -342,7 +342,7 @@ class MayaUsdProxyShapeBase : public MPxSurfaceShape,
         size_t                              _excludePrimPathsVersion{ 1 };
         size_t                              _UsdStageVersion{ 1 };
 
-        MAYAUSD_NS::ProxyAccessor::Owner    _usdAccessor;
+        MayaUsd::ProxyAccessor::Owner    _usdAccessor;
 
         static ClosestPointDelegate _sharedClosestPointDelegate;
 

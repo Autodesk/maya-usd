@@ -160,7 +160,7 @@ UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
         }
 
         const SdfValueTypeName valueTypeName =
-            MAYAUSD_NS::Converter::getUsdTypeName(attrPlug);
+            MayaUsd::Converter::getUsdTypeName(attrPlug);
         if (!valueTypeName) {
             // Unsupported Maya attribute type (e.g. "message" attributes).
             continue;
