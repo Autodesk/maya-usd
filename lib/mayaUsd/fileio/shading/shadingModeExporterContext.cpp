@@ -498,7 +498,7 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 
                 // Try to re-use existing subset if any:
                 for (auto subset : bindingAPI.GetMaterialBindSubsets()) {
-                    TfToken elementType, familyName;
+                    TfToken elementType;
                     if (subset.GetPrim().GetName() == materialNameToken
                         && subset.GetElementTypeAttr().Get(&elementType)
                         && elementType == UsdGeomTokens->face) {
