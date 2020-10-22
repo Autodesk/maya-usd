@@ -203,7 +203,7 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		// each Maya Dag path instancing the proxy shape / stage.
 		Ufe::Path ufePath;
 		UsdPrim prim;
-		if (changedPath.GetString() == "/")
+		if (changedPath.IsAbsoluteRootPath())
 		{
 			ufePath = stagePath(sender);
 			prim = stage->GetPseudoRoot();
