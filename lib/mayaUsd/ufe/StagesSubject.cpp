@@ -194,16 +194,27 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		// don't care about it. In those cases, the changePath will contain something like:
 		//   "/<prim>.visibility"
 		//   "/<prim>.xformOp:translate"
-		if (!changedPath.IsPrimPath())
+		if (changedPath.IsPropertyPath())
 			continue;
 
-		const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
 		// Assume proxy shapes (and thus stages) cannot be instanced.  We can
 		// therefore map the stage to a single UFE path.  Lifting this
 		// restriction would mean sending one add or delete notification for
 		// each Maya Dag path instancing the proxy shape / stage.
-		Ufe::Path ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
-		auto prim = stage->GetPrimAtPath(changedPath);
+		Ufe::Path ufePath;
+		UsdPrim prim;
+		if (changedPath.GetString() == "/")
+		{
+			ufePath = stagePath(sender);
+			prim = stage->GetPseudoRoot();
+		}
+		else 
+		{
+			const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
+			ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+			prim = stage->GetPrimAtPath(changedPath);
+		}
+
 		if (prim.IsValid() && !InPathChange::inPathChange())
 		{
 			auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
