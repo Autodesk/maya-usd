@@ -420,8 +420,7 @@ void UsdMaya_ReadJob::_ImportMaster(
 bool
 UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
-    const bool buildInstances = mArgs.instanceMode ==
-                                UsdMayaJobImportArgsTokens->buildInstances;
+    const bool buildInstances = mArgs.importInstances;
 
     // We want both pre- and post- visit iterations over the prims in this
     // method. To do so, iterate over all the root prims of the input range,
@@ -431,11 +430,10 @@ UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
         rootIt.PruneChildren();
 
         _PrimReaderMap primReaderMap;
-        const UsdPrimRange range =
-            mArgs.instanceMode == UsdMayaJobImportArgsTokens->flatten ?
-                UsdPrimRange::PreAndPostVisit(rootPrim,
-                    UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate)) :
-                UsdPrimRange::PreAndPostVisit(rootPrim);
+        const UsdPrimRange range = buildInstances
+            ? UsdPrimRange::PreAndPostVisit(rootPrim)
+            : UsdPrimRange::PreAndPostVisit(
+                rootPrim, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate));
         for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
             const UsdPrim& prim = *primIt;
             UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);

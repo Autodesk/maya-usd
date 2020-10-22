@@ -52,8 +52,8 @@ MayaUSDImportCommand::createSyntax()
     syntax.addFlag(kAssemblyRepFlag,
                    UsdMayaJobImportArgsTokens->assemblyRep.GetText(),
                    MSyntax::kString);
-    syntax.addFlag(kInstanceModeFlag,
-                   UsdMayaJobImportArgsTokens->instanceMode.GetText(),
+    syntax.addFlag(kImportInstancesFlag,
+                   UsdMayaJobImportArgsTokens->importInstances.GetText(),
                    MSyntax::kString);
     syntax.addFlag(kMetadataFlag,
                    UsdMayaJobImportArgsTokens->metadata.GetText(),

@@ -617,14 +617,9 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
                 UsdMayaJobImportArgsTokens->preferredMaterial,
                 UsdMayaPreferredMaterialTokens->none,
                 UsdMayaPreferredMaterialTokens->allTokens)),
-        instanceMode(
-            _Token(userArgs,
-                UsdMayaJobImportArgsTokens->instanceMode,
-                UsdMayaJobImportArgsTokens->buildInstances,
-                {
-                    UsdMayaJobImportArgsTokens->buildInstances,
-                    UsdMayaJobImportArgsTokens->flatten,
-                })),
+        importInstances(
+            _Boolean(userArgs,
+                UsdMayaJobImportArgsTokens->importInstances)),
         useAsAnimationCache(
             _Boolean(userArgs,
                 UsdMayaJobImportArgsTokens->useAsAnimationCache)),
@@ -673,8 +668,7 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
                                    VtValue(UsdImagingTokens->UsdPreviewSurface.GetString()) }) };
         d[UsdMayaJobImportArgsTokens->preferredMaterial]
             = UsdMayaPreferredMaterialTokens->none.GetString();
-        d[UsdMayaJobImportArgsTokens->instanceMode] =
-                UsdMayaJobImportArgsTokens->buildInstances.GetString();
+        d[UsdMayaJobImportArgsTokens->importInstances] = true;
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
 
         // plugInfo.json site defaults.
@@ -699,7 +693,7 @@ operator <<(std::ostream& out, const UsdMayaJobImportArgs& importArgs)
     }
     out << "preferredMaterial: " << importArgs.preferredMaterial << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl
-        << "instanceMode: " << importArgs.instanceMode << std::endl
+        << "importInstances: " << TfStringify(importArgs.importInstances) << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
         << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl;

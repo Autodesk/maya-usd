@@ -76,8 +76,8 @@ class testUsdExportShadingInstanced(unittest.TestCase):
         bluePaths = [
                 "/World/blueCube", "/World/blueSphere", "/World/blueSphere2"]
         instanceMasters = [
-                "/InstanceSources/World_redSphere_blueSphereMultiAssignShape",
-                "/InstanceSources/World_blueCube_blueCubeShape"]
+                "/MayaExportedInstanceSources/World_redSphere_blueSphereMultiAssignShape",
+                "/MayaExportedInstanceSources/World_blueCube_blueCubeShape"]
 
         for path in redPaths:
             prim = self._simpleStage.GetPrimAtPath(path)
@@ -153,9 +153,9 @@ class testUsdExportShadingInstanced(unittest.TestCase):
                 "/World/ComplexB/NestedA/Base2/BaseShape1",
                 "/World/ComplexB/NestedB/Base2/BaseShape1"]
         instanceMasters = [
-                "/InstanceSources/World_ComplexA_NestedA_Base1_BaseShape1" +
+                "/MayaExportedInstanceSources/World_ComplexA_NestedA_Base1_BaseShape1" +
                     "/BaseShape1",
-                "/InstanceSources/World_SimpleInstance1_SimpleInstanceShape1" +
+                "/MayaExportedInstanceSources/World_SimpleInstance1_SimpleInstanceShape1" +
                     "/SimpleInstanceShape1"]
 
         for path in greenPaths:
