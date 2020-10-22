@@ -1529,8 +1529,7 @@ bool UsdMayaRepresentationHierBase::activate()
     }
     // For assemblies, use the "old" default of flattening instances, for backward
     // compatibility
-    userArgs[UsdMayaJobImportArgsTokens->instanceMode] =
-            UsdMayaJobImportArgsTokens->flatten.GetString();
+    userArgs[UsdMayaJobImportArgsTokens->importInstances] = false;
 
     UsdMayaJobImportArgs importArgs =
             UsdMayaJobImportArgs::CreateFromDictionary(
