@@ -35,14 +35,13 @@
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
 
-#include <cmath>
-
 using namespace MAYAUSD_NS;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdTranslators_DisplacementShaderWriter : public UsdMayaShaderWriter {
-    typedef UsdMayaShaderWriter BaseClass;
+class PxrUsdTranslators_DisplacementShaderWriter : public UsdMayaShaderWriter
+{
+    using BaseClass = UsdMayaShaderWriter;
 
 public:
     PxrUsdTranslators_DisplacementShaderWriter(
@@ -71,28 +70,51 @@ PxrUsdTranslators_DisplacementShaderWriter::PxrUsdTranslators_DisplacementShader
     UsdMayaWriteJobContext&  jobCtx)
     : BaseClass(depNodeFn, usdPath, jobCtx)
 {
-    // This node will search for the surface output of the material because this
-    // is where the UsdPreviewSurface we want to write to is. It is possible that
-    // we do not find one on scenes where the surface shader did not translate into
-    // UsdPreviewSurface. We will not create a UsdPreviewSurface just to handle
-    // displacement in this situation.
+    // This node will search for the surface output of the material and if it
+    // finds an existing UsdPreviewSurface, it will merge the displacement in.
     UsdShadeMaterial shadeMaterial = UsdShadeMaterial::Get(GetUsdStage(), usdPath.GetParentPath());
-    if (!shadeMaterial) {
+    if (shadeMaterial) {
+        UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource();
+        if (surfaceShader) {
+            TfToken shaderId;
+            surfaceShader.GetIdAttr().Get(&shaderId);
+            if (shaderId == UsdImagingTokens->UsdPreviewSurface) {
+                _usdPrim = surfaceShader.GetPrim();
+                return;
+            }
+        }
+    }
+
+    // Existing UsdPreviewSurface not found. Create one.
+    UsdShadeShader shaderSchema =
+        UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
+    if (!TF_VERIFY(
+            shaderSchema,
+            "Could not define UsdShadeShader at path '%s'\n",
+            GetUsdPath().GetText())) {
         return;
     }
 
-    UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource();
-    if (!surfaceShader) {
+    UsdAttribute idAttr = 
+        shaderSchema.CreateIdAttr(VtValue(UsdImagingTokens->UsdPreviewSurface));
+
+    _usdPrim = shaderSchema.GetPrim();
+    if (!TF_VERIFY(
+            _usdPrim,
+            "Could not get UsdPrim for UsdShadeShader at path '%s'\n",
+            shaderSchema.GetPath().GetText())) {
         return;
     }
 
-    TfToken shaderId;
-    surfaceShader.GetIdAttr().Get(&shaderId);
-    if (shaderId != UsdImagingTokens->UsdPreviewSurface) {
-        return;
-    }
+    // Surface Output
+    shaderSchema.CreateOutput(
+        UsdShadeTokens->surface,
+        SdfValueTypeNames->Token);
 
-    _usdPrim = surfaceShader.GetPrim();
+    // Displacement Output
+    shaderSchema.CreateOutput(
+        UsdShadeTokens->displacement,
+        SdfValueTypeNames->Token);
 }
 
 /* virtual */

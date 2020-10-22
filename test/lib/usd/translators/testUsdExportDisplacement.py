@@ -61,33 +61,14 @@ class testUsdExportDisplacementShaders(unittest.TestCase):
         setups results in the expected USD data:
         '''
 
-        expected = [
-            # Mesh, Blinn, Image, Channel
-            ("13", "3", "RGBA", "r"),
-            ("14", "4", "RGBA", "g"),
-            ("15", "5", "RGBA", "b"),
-            ("16", "6", "RGBA", "a"),
-            ("17", "19", "RGBA", "a"),
-            ("9", "7", "RGB", "r"),
-            ("10", "8", "RGB", "g"),
-            ("11", "9", "RGB", "b"),
-            ("12", "10", "RGB", "a"),
-            ("20", "20", "RGB", "a"),
-            ("5", "11", "MonoA", "r"),
-            ("6", "12", "MonoA", "g"),
-            ("7", "13", "MonoA", "b"),
-            ("8", "14", "MonoA", "a"),
-            ("18", "21", "MonoA", "a"),
-            ("1", "15", "Mono", "r"),
-            ("2", "16", "Mono", "g"),
-            ("3", "17", "Mono", "b"),
-            ("4", "18", "Mono", "a"),
-            ("19", "22", "Mono", "a")
-        ]
+        textures = ["RGBA", "RGB", "MonoA", "Mono"]
+        channels = ["r", "g", "b", "a", "a"]
 
-        for mesh_suffix, blinn_suffix, image, channel in expected:
+        for suffix in range(1, 21):
+            image = textures[int((suffix-1) / 5)]
+            channel = channels[(suffix-1) % 5]
 
-            mesh_prim = self._stage.GetPrimAtPath('/pPlane%s' % mesh_suffix)
+            mesh_prim = self._stage.GetPrimAtPath('/pPlane%i' % suffix)
             self.assertTrue(mesh_prim)
 
             # Validate the Material prim bound to the Mesh prim.
@@ -95,14 +76,13 @@ class testUsdExportDisplacementShaders(unittest.TestCase):
             mat_binding = UsdShade.MaterialBindingAPI(mesh_prim)
             material = mat_binding.ComputeBoundMaterial()[0]
             self.assertTrue(material)
-            materialPath = material.GetPath().pathString
-            self.assertEqual(materialPath,
-                             '/pPlane%s/Materials/blinn%sSG' % (mesh_suffix,
-                                                                blinn_suffix))
+            material_path = material.GetPath().pathString
+            self.assertEqual(material_path,
+                             '/pPlane%i/Materials/blinn%iSG' % (suffix,
+                                                                suffix))
 
-            # We expect two outputs on the material: surface + displacement
-            mat_outs = material.GetOutputs()
-            self.assertEqual(len(mat_outs), 3)
+            self.assertTrue(material.ComputeSurfaceSource())
+            self.assertTrue(material.ComputeDisplacementSource())
 
             # Validate the shader that is connected to the material.
             mat_out = material.GetOutput(UsdShade.Tokens.displacement)
@@ -113,7 +93,7 @@ class testUsdExportDisplacementShaders(unittest.TestCase):
             shader_id = shader.GetIdAttr().Get()
             self.assertEqual(shader_id, 'UsdPreviewSurface')
 
-            # Validate the connected input on the lambert surface shader.
+            # Validate the connected input on the displacement shader.
             in_displacement = shader.GetInput('displacement')
             self.assertTrue(in_displacement)
             (connect_api, out_name, _) = in_displacement.GetConnectedSource()
