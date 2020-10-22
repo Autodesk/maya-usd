@@ -48,7 +48,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-MAYAUSD_NS_DEF
+namespace MAYAUSD_NS_DEF
 {
 
     namespace {

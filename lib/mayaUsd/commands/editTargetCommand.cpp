@@ -36,7 +36,7 @@ void reportError(const MString& errorString) { MGlobal::displayError(errorString
 
 } // namespace
 
-namespace MAYAUSD_NS {
+namespace MAYAUSD_NS_DEF {
 
 namespace Impl {
 class SetEditTarget {
@@ -195,4 +195,4 @@ MStatus EditTargetCommand::undoIt()
     return MS::kSuccess;
 }
 
-} //  namespace MAYAUSD_NS
+} //  namespace MAYAUSD_NS_DEF

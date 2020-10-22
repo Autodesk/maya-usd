@@ -19,7 +19,7 @@
 
 #include <ufe/runTimeMgr.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------

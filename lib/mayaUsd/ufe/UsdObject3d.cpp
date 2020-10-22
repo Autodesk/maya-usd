@@ -51,7 +51,7 @@ Ufe::AttributeEnumString::Ptr getVisibilityAttribute(Ufe::SceneItem::Ptr item)
 
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdObject3d::UsdObject3d(const UsdSceneItem::Ptr& item)

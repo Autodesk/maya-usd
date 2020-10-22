@@ -12,7 +12,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdObject3d.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief USD run-time 3D object handler.

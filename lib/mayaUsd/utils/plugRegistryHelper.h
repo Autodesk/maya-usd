@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF
+namespace MAYAUSD_NS_DEF
 {
     /*! \brief  Register USD plugins matching USD version distributed with MayaUSD.
 
@@ -42,9 +42,9 @@ MAYAUSD_NS_DEF
         static std::once_flag once;
         std::call_once(once, [](){
             static std::string usd_version = std::to_string(PXR_VERSION);
-            
+
             std::vector<std::string> pluginsToRegister;
-            
+
             const std::string paths = TfGetenv("MAYA_PXR_PLUGINPATH_NAME");
             for (const auto& path: TfStringSplit(paths, ARCH_PATH_LIST_SEP)) {
                 if (path.empty()) {
@@ -55,10 +55,10 @@ MAYAUSD_NS_DEF
                     TF_CODING_ERROR("Relative paths are unsupported for MAYA_PXR_PLUGINPATH_NAME: '%s'", path.c_str());
                     continue;
                 }
-                
+
                 pluginsToRegister.push_back(TfStringCatPaths(path, usd_version));
             }
-            
+
             PlugRegistry::GetInstance().RegisterPlugins(pluginsToRegister);
         });
     }

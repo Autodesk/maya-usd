@@ -33,7 +33,7 @@
 #include <mayaUsdUI/ui/TreeItem.h>
 #include <mayaUsdUI/ui/TreeModel.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 QWidget* ItemDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {

@@ -23,7 +23,7 @@
 #include <mayaUsdUI/ui/ItemDelegate.h>
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 QPixmap* TreeItem::fsCheckBoxOn = nullptr;
 QPixmap* TreeItem::fsCheckBoxOnDisabled = nullptr;
