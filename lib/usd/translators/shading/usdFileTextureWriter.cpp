@@ -223,11 +223,6 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    MString colorRuleCmd;
-    colorRuleCmd.format(
-        "colorManagementFileRules -evaluate \"^1s\";", fileTextureNamePlug.asString());
-    const MString colorSpaceByRule = MGlobal::executeCommandStringResult(colorRuleCmd);
-
     // WARNING: This extremely minimal attempt at making the file path relative
     //          to the USD stage is a stopgap measure intended to provide
     //          minimal interop. It will be replaced by proper use of Maya and
@@ -245,6 +240,10 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 
     MPlug colorSpacePlug = depNodeFn.findPlug(_tokens->colorSpace.GetText(), true, &status);
     if (status == MS::kSuccess) {
+        MString colorRuleCmd;
+        colorRuleCmd.format(
+            "colorManagementFileRules -evaluate \"^1s\";", fileTextureNamePlug.asString());
+        const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
         const MString colorSpace(colorSpacePlug.asString(&status));
         if (status == MS::kSuccess && colorSpace != colorSpaceByRule) {
             fileInput.GetAttr().SetColorSpace(TfToken(colorSpace.asChar()));
