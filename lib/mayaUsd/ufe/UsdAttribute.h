@@ -29,7 +29,7 @@
 	std::string documentation() const override { return UsdAttribute::documentation(); }	\
 	std::string string() const override { return UsdAttribute::string(Ufe::Attribute::sceneItem()); }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Internal helper class to implement the pure virtual methods from Ufe::Attribute.

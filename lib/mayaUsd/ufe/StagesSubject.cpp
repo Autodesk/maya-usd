@@ -60,7 +60,7 @@ std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
 }
 #endif
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------

@@ -23,7 +23,7 @@
 #include <mayaUsdUI/ui/api.h>
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_UI_PUBLIC USDQtUtil : public IMayaMQtUtil
 {

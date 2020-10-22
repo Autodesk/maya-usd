@@ -139,7 +139,7 @@ void setUsdAttributeVectorFromUfe(PXR_NS::UsdAttribute& attr, const U& value, co
 
 } // end namespace
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------

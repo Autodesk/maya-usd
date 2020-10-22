@@ -27,7 +27,7 @@
 
 #include "base/api.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 /// File translator for USD files. Handles the USD option in the Export window.
 class UsdMayaExportTranslator : public MPxFileTranslator

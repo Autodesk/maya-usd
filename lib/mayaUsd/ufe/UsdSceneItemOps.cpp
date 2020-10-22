@@ -35,7 +35,7 @@ void displayWarning(const UsdPrim& prim, const MString& fmt)
 
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdSceneItemOps::UsdSceneItemOps(const UsdSceneItem::Ptr& item)

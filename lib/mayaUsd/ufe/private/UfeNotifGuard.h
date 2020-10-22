@@ -18,7 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Helper class to scope when we are in a path change operation.

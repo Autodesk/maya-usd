@@ -36,7 +36,7 @@ Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
 
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdSceneItem,

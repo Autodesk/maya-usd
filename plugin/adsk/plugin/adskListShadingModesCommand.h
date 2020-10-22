@@ -20,7 +20,7 @@
 
 #include <mayaUsd/commands/baseListShadingModesCommand.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDListShadingModesCommand : public MayaUsd::MayaUSDListShadingModesCommand
 {

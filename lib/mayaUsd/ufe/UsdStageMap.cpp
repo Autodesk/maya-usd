@@ -55,7 +55,7 @@ Ufe::Path firstPath(const MObjectHandle& handle)
 
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------

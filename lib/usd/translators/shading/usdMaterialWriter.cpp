@@ -47,7 +47,7 @@
 
 #include <cmath>
 
-using namespace MAYAUSD_NS;
+using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

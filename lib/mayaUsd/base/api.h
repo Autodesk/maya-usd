@@ -15,6 +15,7 @@
 //
 #include <pxr/base/arch/export.h>
 
+// clang-format off
 #if defined _WIN32 || defined __CYGWIN__
 
   // The main export symbol used for the core library.
@@ -71,6 +72,7 @@
   #define MAYAUSD_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
   #define MAYAUSD_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
 #endif
+// clang-format on
 
 // Convenience symbol versioning include: because api.h is widely
 // included, this reduces the need to explicitly include mayaUsd.h.

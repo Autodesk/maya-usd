@@ -26,7 +26,7 @@
 
 class QPixmap;
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 /**
  * \class IMayaMQtUtil
