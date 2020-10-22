@@ -10,6 +10,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportFileFormat.py
     testUsdExportFilterTypes.py
     testUsdExportFrameOffset.py
+    testUsdExportGeomSubset.py
     testUsdExportInstances.py
     testUsdExportLocator.py
     testUsdExportMayaInstancer.py

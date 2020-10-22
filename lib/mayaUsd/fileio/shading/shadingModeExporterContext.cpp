@@ -492,8 +492,35 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                 UsdShadeMaterialBindingAPI bindingAPI =
                     UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
                         UsdShadeMaterialBindingAPI>(boundPrim);
-                UsdGeomSubset faceSubset = bindingAPI.CreateMaterialBindSubset(
-                    /* subsetName */ TfToken(materialName),
+
+                UsdGeomSubset faceSubset;
+                TfToken materialNameToken = TfToken(materialName);
+
+                // Try to re-use existing subset if any:
+                for (auto subset : bindingAPI.GetMaterialBindSubsets()) {
+                    TfToken elementType;
+                    if (subset.GetPrim().GetName() == materialNameToken
+                        && subset.GetElementTypeAttr().Get(&elementType)
+                        && elementType == UsdGeomTokens->face) {
+                        faceSubset = subset;
+                        break;
+                    }
+                }
+
+                if (faceSubset) {
+                    // Update and continue:
+                    VtIntArray mergedIndices;
+                    UsdAttribute indicesAttribute = faceSubset.GetIndicesAttr();
+                    indicesAttribute.Get(&mergedIndices);
+                    std::set<int> uniqueIndices(mergedIndices.cbegin(), mergedIndices.cend());
+                    uniqueIndices.insert(faceIndices.cbegin(), faceIndices.cend());
+                    mergedIndices.assign(uniqueIndices.cbegin(), uniqueIndices.cend());
+                    indicesAttribute.Set(mergedIndices);
+                    continue;
+                } 
+
+                faceSubset = bindingAPI.CreateMaterialBindSubset(
+                    /* subsetName */ materialNameToken,
                     faceIndices,
                     /* elementType */ UsdGeomTokens->face);
 
