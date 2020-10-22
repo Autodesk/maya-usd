@@ -52,10 +52,11 @@ class testUsdExportGeomSubset(unittest.TestCase):
         stage = Usd.Stage.Open(usdFile)
 
         expected = [
-            ('/pPlane1/blinn1SG', [0, 3]),
-            ('/pPlane1/lambert2SG', [1, 2]),
-            ('/pPlane2/blinn1SG', [1, 2]),
-            ('/pPlane2/lambert2SG', [0, 3]),
+            ('/pPlane1/initialShadingGroup', [1, ]),
+            ('/pPlane1/blinn1SG', [2, ]),
+            ('/pPlane1/phong1SG', [0, 3]),
+            ('/pPlane2/blinn1SG', [0, 3]),
+            ('/pPlane2/phong1SG', [1, 2]),
         ]
 
         for subset_path, indices in expected:

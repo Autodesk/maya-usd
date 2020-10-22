@@ -511,11 +511,11 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
                     // Update and continue:
                     VtIntArray mergedIndices;
                     UsdAttribute indicesAttribute = faceSubset.GetIndicesAttr();
-                    indicesAttribute.Get(&mergedIndices, UsdTimeCode::Default());
+                    indicesAttribute.Get(&mergedIndices);
                     std::set<int> uniqueIndices(mergedIndices.cbegin(), mergedIndices.cend());
                     uniqueIndices.insert(faceIndices.cbegin(), faceIndices.cend());
                     mergedIndices.assign(uniqueIndices.cbegin(), uniqueIndices.cend());
-                    indicesAttribute.Set(mergedIndices, UsdTimeCode::Default());
+                    indicesAttribute.Set(mergedIndices);
                     continue;
                 } 
 
