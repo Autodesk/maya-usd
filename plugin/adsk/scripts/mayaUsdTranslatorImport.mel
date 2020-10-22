@@ -129,7 +129,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         string $apiString = `about -q -apiVersion`;
         $apiString = `substring $apiString 1 4`;
         string $convertAnn = "Select the preferred conversion method for inbound USD shading data to bind with Maya geometry";
-        optionMenuGrp -l "Convert to:" -cw 1 $cw1 -ann $convertAnn mayaUsdTranslator_MaterialsConversionMenu;
+        optionMenuGrp -l "Convert to:" -cw 1 $cw2 -ann $convertAnn mayaUsdTranslator_MaterialsConversionMenu;
         menuItem -l "No Conversion" -ann "none";
         if ((int)$apiString >= 2020) {
             menuItem -l "Standard Surface" -ann "standardSurface";
