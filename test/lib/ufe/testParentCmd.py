@@ -42,8 +42,7 @@ class OpenFileCtx(object):
         self._fileName = fileName
 
     def __enter__(self):
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..", "testSamples", "parentCmd", self._fileName)
-        cmds.file(filePath, force=True, open=True)
+        mayaUtils.openTestScene("parentCmd", self._fileName)
 
     def __exit__(self, type, value, traceback):
         # Close the file.
@@ -69,8 +68,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         # Load a file that has the same scene in both the Maya Dag
         # hierarchy and the USD hierarchy.
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..", "testSamples", "parentCmd", "simpleSceneMayaPlusUSD_TRS.ma" )
-        cmds.file(filePath, force=True, open=True)
+        mayaUtils.openTestScene("parentCmd", "simpleSceneMayaPlusUSD_TRS.ma" )
 
         # Clear selection to start off
         cmds.select(clear=True)
@@ -426,7 +424,7 @@ class ParentCmdTestCase(unittest.TestCase):
             # opened file.  Layers are then shared between the stages, because
             # they come from the same USD file, causing changes done below one
             # proxy shape to be seen in the other.  Import from another file.
-            filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..", "testSamples", "parentCmd", "simpleSceneUSD_TRS.ma")
+            filePath = mayaUtils.getTestScene("parentCmd", "simpleSceneUSD_TRS.ma")
             cmds.file(filePath, i=True)
 
             # Unparent a USD node in each stage.  Unparenting Lambert node is
