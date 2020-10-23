@@ -25,9 +25,6 @@ import re
 
 import ufe
 
-from mayaUsd import lib as mayaUsdLib
-from pxr import Usd, UsdGeom
-
 mayaRuntimeID = 1
 mayaSeparator = "|"
 
@@ -164,6 +161,10 @@ def openGroupBallsScene():
     filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "groupBalls", "ballset.ma" )
     cmds.file(filePath, force=True, open=True)
 
+def openPrimitivesScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "reorderCmd", "primitives.ma" )
+    cmds.file(filePath, force=True, open=True)
+
 def createProxyAndStage():
     """
     Create in-memory stage
@@ -172,7 +173,7 @@ def createProxyAndStage():
 
     shapeNode = cmds.ls(sl=True,l=True)[0]
     shapeStage = mayaUsdLib.GetPrim(shapeNode).GetStage()
-    
+
     cmds.select( clear=True )
     cmds.connectAttr('time1.outTime','{}.time'.format(shapeNode))
 
@@ -186,9 +187,9 @@ def createProxyFromFile(filePath):
 
     shapeNode = cmds.ls(sl=True,l=True)[0]
     cmds.setAttr('{}.filePath'.format(shapeNode), filePath, type='string')
-    
+
     shapeStage = mayaUsdLib.GetPrim(shapeNode).GetStage()
-    
+
     cmds.select( clear=True )
     cmds.connectAttr('time1.outTime','{}.time'.format(shapeNode))
 
@@ -201,27 +202,27 @@ def createAnimatedHierarchy(stage):
         /Sphere
         /Cube
     /ParenB
-    
+
     Entire ParentA hierarchy will receive time samples on translate for time 1 and 100
     """
     parentA = "/ParentA"
     parentB = "/ParentB"
     childSphere = "/ParentA/Sphere"
     childCube = "/ParentA/Cube"
-    
+
     parentPrimA = stage.DefinePrim(parentA, 'Xform')
     parentPrimB = stage.DefinePrim(parentB, 'Xform')
     childPrimSphere = stage.DefinePrim(childSphere, 'Sphere')
     childPrimCube = stage.DefinePrim(childCube, 'Cube')
-    
+
     UsdGeom.XformCommonAPI(parentPrimA).SetRotate((0,0,0))
     UsdGeom.XformCommonAPI(parentPrimB).SetTranslate((1,10,0))
-    
+
     time1 = Usd.TimeCode(1.)
     UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,0,0),time1)
     UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((5,0,0),time1)
     UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,5),time1)
-    
+
     time2 = Usd.TimeCode(100.)
     UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,5,0),time2)
     UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((-5,0,0),time2)
