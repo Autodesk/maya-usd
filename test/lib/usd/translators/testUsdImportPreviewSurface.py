@@ -89,5 +89,26 @@ class testUsdImportPreviewSurface(unittest.TestCase):
 
         self.assertEqual(len(cmds.ls(typ="lambert")), lambert_before + 8)
 
+    def testImportUSDZWithUnresolvableRelativeFilePath(self):
+        """
+        Tests that a USDZ texture path does not resolve as
+            usdz_file[path_in_archive]
+        """
+        cmds.file(f=True, new=True)
+
+        usd_path = os.path.join(self.test_dir, "Tiny.usdz")
+        options = ["shadingMode=[[useRegistry,UsdPreviewSurface]]",
+                   "primPath=/",
+                   "preferredMaterial=none"]
+        cmds.file(usd_path, i=True, type="USD Import",
+                  ignoreVersion=True, ra=True, mergeNamespacesOnClash=False,
+                  namespace="Test", pr=True, importTimeRange="combine",
+                  options=";".join(options))
+
+        # Check that the texture path stayed relative:
+        filename = cmds.getAttr("file1.fileTextureName")
+        self.assertEqual(filename.replace("\\", "/"), "0/Tiny.png")
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)
