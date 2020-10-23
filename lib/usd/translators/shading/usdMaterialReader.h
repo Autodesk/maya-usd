@@ -36,8 +36,8 @@ class PxrUsdTranslators_MaterialReader : public UsdMayaShaderReader {
 public:
     PxrUsdTranslators_MaterialReader(const UsdMayaPrimReaderArgs&);
 
-    /// Get the name of the Maya shading plug that corresponds to the
-    /// USD attribute named \p usdAttrName on \p mayaObject.
+    /// Get the Maya shading plug on \p mayaObject that corresponds to the USD
+    /// attribute named \p usdAttrName.
     MPlug
     GetMayaPlugForUsdAttrName(const TfToken& usdAttrName, const MObject& mayaObject) const override;
 

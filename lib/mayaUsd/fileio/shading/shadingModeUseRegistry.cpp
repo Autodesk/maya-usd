@@ -471,43 +471,44 @@ public:
             }
         }
 
-        if (!surfaceOutputPlug.isNull() || !volumeOutputPlug.isNull()
-            || !displacementOutputPlug.isNull()) {
-            // Create the shading engine.
-            MObject shadingEngine = _context->CreateShadingEngine();
-            if (shadingEngine.isNull()) {
-                return MObject();
-            }
-            MStatus status;
-            MFnSet  fnSet(shadingEngine, &status);
-            if (status != MS::kSuccess) {
-                return MObject();
-            }
-
-            if (!surfaceOutputPlug.isNull()) {
-                MPlug seInputPlug
-                    = fnSet.findPlug(_context->GetSurfaceShaderPlugName().GetText(), &status);
-                CHECK_MSTATUS_AND_RETURN(status, MObject());
-                UsdMayaUtil::Connect(surfaceOutputPlug, seInputPlug, true);
-            }
-
-            if (!volumeOutputPlug.isNull()) {
-                MPlug veInputPlug
-                    = fnSet.findPlug(_context->GetVolumeShaderPlugName().GetText(), &status);
-                CHECK_MSTATUS_AND_RETURN(status, MObject());
-                UsdMayaUtil::Connect(volumeOutputPlug, veInputPlug, true);
-            }
-
-            if (!displacementOutputPlug.isNull()) {
-                MPlug deInputPlug
-                    = fnSet.findPlug(_context->GetDisplacementShaderPlugName().GetText(), &status);
-                CHECK_MSTATUS_AND_RETURN(status, MObject());
-                UsdMayaUtil::Connect(displacementOutputPlug, deInputPlug, true);
-            }
-
-            return shadingEngine;
+        if (surfaceOutputPlug.isNull() && volumeOutputPlug.isNull()
+            && displacementOutputPlug.isNull()) {
+            return MObject();
         }
-        return MObject();
+
+        // Create the shading engine.
+        MObject shadingEngine = _context->CreateShadingEngine();
+        if (shadingEngine.isNull()) {
+            return MObject();
+        }
+        MStatus status;
+        MFnSet  fnSet(shadingEngine, &status);
+        if (status != MS::kSuccess) {
+            return MObject();
+        }
+
+        if (!surfaceOutputPlug.isNull()) {
+            MPlug seInputPlug
+                = fnSet.findPlug(_context->GetSurfaceShaderPlugName().GetText(), &status);
+            CHECK_MSTATUS_AND_RETURN(status, MObject());
+            UsdMayaUtil::Connect(surfaceOutputPlug, seInputPlug, true);
+        }
+
+        if (!volumeOutputPlug.isNull()) {
+            MPlug veInputPlug
+                = fnSet.findPlug(_context->GetVolumeShaderPlugName().GetText(), &status);
+            CHECK_MSTATUS_AND_RETURN(status, MObject());
+            UsdMayaUtil::Connect(volumeOutputPlug, veInputPlug, true);
+        }
+
+        if (!displacementOutputPlug.isNull()) {
+            MPlug deInputPlug
+                = fnSet.findPlug(_context->GetDisplacementShaderPlugName().GetText(), &status);
+            CHECK_MSTATUS_AND_RETURN(status, MObject());
+            UsdMayaUtil::Connect(displacementOutputPlug, deInputPlug, true);
+        }
+
+        return shadingEngine;
     }
 
 private:
