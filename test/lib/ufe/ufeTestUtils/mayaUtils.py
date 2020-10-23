@@ -161,6 +161,10 @@ def openGroupBallsScene():
     filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "groupBalls", "ballset.ma" )
     cmds.file(filePath, force=True, open=True)
 
+def openPrimitivesScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "reorderCmd", "primitives.ma" )
+    cmds.file(filePath, force=True, open=True)
+
 def previewReleaseVersion():
     '''Return the Maya Preview Release version.
 
