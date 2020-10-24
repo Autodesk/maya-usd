@@ -433,25 +433,46 @@ public:
             return MObject();
         }
 
+        MPlug surfaceOutputPlug, volumeOutputPlug, displacementOutputPlug;
+
         // ComputeSurfaceSource will default to the universal render context if
         // renderContext is not found. Therefore we need to test first that the
         // render context output we are looking for really exists:
-        if (!shadeMaterial.GetSurfaceOutput(renderContext)) {
-            return MObject();
+        if (shadeMaterial.GetSurfaceOutput(renderContext)) {
+            UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource(renderContext);
+            if (surfaceShader) {
+                const TfToken surfaceShaderPlugName = _context->GetSurfaceShaderPlugName();
+                if (!surfaceShaderPlugName.IsEmpty()) {
+                    surfaceOutputPlug = _GetSourcePlug(surfaceShader, UsdShadeTokens->surface);
+                }
+            }
         }
 
-        UsdShadeShader surfaceShader = shadeMaterial.ComputeSurfaceSource(renderContext);
-        if (!surfaceShader) {
-            return MObject();
+        if (shadeMaterial.GetVolumeOutput(renderContext)) {
+            UsdShadeShader volumeShader = shadeMaterial.ComputeVolumeSource(renderContext);
+            if (volumeShader) {
+                const TfToken volumeShaderPlugName = _context->GetVolumeShaderPlugName();
+                if (!volumeShaderPlugName.IsEmpty()) {
+                    volumeOutputPlug = _GetSourcePlug(volumeShader, UsdShadeTokens->volume);
+                }
+            }
         }
 
-        const TfToken surfaceShaderPlugName = _context->GetSurfaceShaderPlugName();
-        if (surfaceShaderPlugName.IsEmpty()) {
-            return MObject();
+        if (shadeMaterial.GetDisplacementOutput(renderContext)) {
+            UsdShadeShader displacementShader
+                = shadeMaterial.ComputeDisplacementSource(renderContext);
+            if (displacementShader) {
+                const TfToken displacementShaderPlugName
+                    = _context->GetDisplacementShaderPlugName();
+                if (!displacementShaderPlugName.IsEmpty()) {
+                    displacementOutputPlug
+                        = _GetSourcePlug(displacementShader, UsdShadeTokens->displacement);
+                }
+            }
         }
 
-        MPlug shaderOutputPlug = _GetSourcePlug(surfaceShader, UsdShadeTokens->surface);
-        if (shaderOutputPlug.isNull()) {
+        if (surfaceOutputPlug.isNull() && volumeOutputPlug.isNull()
+            && displacementOutputPlug.isNull()) {
             return MObject();
         }
 
@@ -466,13 +487,26 @@ public:
             return MObject();
         }
 
-        MPlug seInputPlug = fnSet.findPlug(surfaceShaderPlugName.GetText(), &status);
-        CHECK_MSTATUS_AND_RETURN(status, MObject());
+        if (!surfaceOutputPlug.isNull()) {
+            MPlug seInputPlug
+                = fnSet.findPlug(_context->GetSurfaceShaderPlugName().GetText(), &status);
+            CHECK_MSTATUS_AND_RETURN(status, MObject());
+            UsdMayaUtil::Connect(surfaceOutputPlug, seInputPlug, true);
+        }
 
-        UsdMayaUtil::Connect(
-            shaderOutputPlug,
-            seInputPlug,
-            /* clearDstPlug = */ true);
+        if (!volumeOutputPlug.isNull()) {
+            MPlug veInputPlug
+                = fnSet.findPlug(_context->GetVolumeShaderPlugName().GetText(), &status);
+            CHECK_MSTATUS_AND_RETURN(status, MObject());
+            UsdMayaUtil::Connect(volumeOutputPlug, veInputPlug, true);
+        }
+
+        if (!displacementOutputPlug.isNull()) {
+            MPlug deInputPlug
+                = fnSet.findPlug(_context->GetDisplacementShaderPlugName().GetText(), &status);
+            CHECK_MSTATUS_AND_RETURN(status, MObject());
+            UsdMayaUtil::Connect(displacementOutputPlug, deInputPlug, true);
+        }
 
         return shadingEngine;
     }
@@ -524,18 +558,11 @@ private:
             }
         }
 
-        MStatus status;
-        MFnDependencyNode sourceDepFn(sourceObj, &status);
-        if (status != MS::kSuccess) {
-            return MPlug();
-        }
-
         TfToken sourceOutputName
             = TfToken(TfStringPrintf(
                             "%s%s", UsdShadeTokens->outputs.GetText(), outputName.GetText())
                             .c_str());
-        auto  srcAttrName = shaderReader->GetMayaNameForUsdAttrName(sourceOutputName);
-        MPlug sourcePlug = sourceDepFn.findPlug(srcAttrName.GetText());
+        MPlug sourcePlug = shaderReader->GetMayaPlugForUsdAttrName(sourceOutputName, sourceObj);
         if (sourcePlug.isArray()) {
             const unsigned int numElements = sourcePlug.evaluateNumElements();
             if (numElements > 0u) {
@@ -574,18 +601,12 @@ private:
             return MObject();
         }
 
-        MStatus           status;
-        MFnDependencyNode depFn(shaderObj, &status);
-        if (status != MS::kSuccess) {
-            return MObject();
-        }
-
         for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
-            auto mayaAttrName = shaderReader.GetMayaNameForUsdAttrName(input.GetFullName());
-            if (mayaAttrName.IsEmpty()) {
+            MPlug mayaAttr = shaderReader.GetMayaPlugForUsdAttrName(input.GetFullName(), shaderObj);
+            if (mayaAttr.isNull()) {
                 continue;
             }
-            MPlug                  mayaAttr = depFn.findPlug(mayaAttrName.GetText());
+
             UsdShadeConnectableAPI source;
             TfToken                sourceOutputName;
             UsdShadeAttributeType  sourceType;
