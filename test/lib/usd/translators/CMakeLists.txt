@@ -5,6 +5,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportCamera.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
+    testUsdExportDisplacement.py
     testUsdExportDisplayColor.py
     testUsdExportEulerFilter.py
     testUsdExportFileFormat.py
@@ -40,6 +41,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
+    testUsdImportDisplacement.py
     testUsdImportExportScope.py
     testUsdImportExportTypelessDefs.py
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but

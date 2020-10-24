@@ -36,6 +36,11 @@ class PxrUsdTranslators_MaterialReader : public UsdMayaShaderReader {
 public:
     PxrUsdTranslators_MaterialReader(const UsdMayaPrimReaderArgs&);
 
+    /// Get the Maya shading plug on \p mayaObject that corresponds to the USD
+    /// attribute named \p usdAttrName.
+    MPlug
+    GetMayaPlugForUsdAttrName(const TfToken& usdAttrName, const MObject& mayaObject) const override;
+
     /// Get the name of the Maya shading attribute that corresponds to the
     /// USD attribute named \p usdAttrName.
     TfToken GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const override;
@@ -55,6 +60,9 @@ protected:
     /// Convert the value in \p usdValue from USD back to Maya following rules
     /// for attribute \p mayaAttrName
     virtual void _ConvertToMaya(const TfToken& mayaAttrName, VtValue& usdValue) const;
+
+private:
+    MObject _displacementShader;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
