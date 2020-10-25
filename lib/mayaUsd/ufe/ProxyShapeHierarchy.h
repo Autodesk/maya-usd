@@ -77,7 +77,9 @@ public:
     Ufe::SceneItem::Ptr insertChild(const Ufe::SceneItem::Ptr& child,const Ufe::SceneItem::Ptr& pos) override;
     Ufe::InsertChildCommand::Ptr insertChildCmd(const Ufe::SceneItem::Ptr& child, const Ufe::SceneItem::Ptr& pos) override;
 
+#if UFE_PREVIEW_VERSION_NUM >= 2026
     Ufe::UndoableCommand::Ptr reorderCmd(const Ufe::SceneItemList& orderedList) const override;
+#endif
 #endif
 
 private:

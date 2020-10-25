@@ -245,6 +245,7 @@ Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
     return createItem(proxyShapePath);
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2026
 Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 {
     std::vector<TfToken> orderedTokens;
@@ -259,6 +260,7 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& ord
 
     return UsdUndoReorderCommand::create(childPrim, orderedTokens);
 }
+#endif
 
 #endif // UFE_V2_FEATURES_AVAILABLE
 

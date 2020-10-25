@@ -248,6 +248,7 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(const Ufe::Selecti
 	return UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2026
 Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 {
 	std::vector<TfToken> orderedTokens;
@@ -262,6 +263,7 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemLi
 
 	return UsdUndoReorderCommand::create(childPrim, orderedTokens);
 }
+#endif
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 {
