@@ -25,6 +25,9 @@ import re
 
 import ufe
 
+from mayaUsd import lib as mayaUsdLib
+from pxr import Usd, UsdGeom
+
 mayaRuntimeID = 1
 mayaSeparator = "|"
 
