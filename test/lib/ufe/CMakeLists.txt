@@ -27,6 +27,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testObject3d.py
         testRename.py
         testParentCmd.py
+        testReorderCmd.py
         testRotateCmd.py
         testRotatePivot.py
         testScaleCmd.py

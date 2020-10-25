@@ -25,9 +25,6 @@ import re
 
 import ufe
 
-from mayaUsd import lib as mayaUsdLib
-from pxr import Usd, UsdGeom
-
 mayaRuntimeID = 1
 mayaSeparator = "|"
 
@@ -162,6 +159,10 @@ def openAppleBiteScene():
 
 def openGroupBallsScene():
     filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "groupBalls", "ballset.ma" )
+    cmds.file(filePath, force=True, open=True)
+
+def openPrimitivesScene():
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "reorderCmd", "primitives.ma" )
     cmds.file(filePath, force=True, open=True)
 
 def createProxyAndStage():
