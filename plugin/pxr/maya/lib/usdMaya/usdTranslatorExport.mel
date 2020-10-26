@@ -64,6 +64,15 @@ global proc string usdTranslatorExport_AppendFromPopup(string $currentOptions, s
     return $currentOptions + ";" + $arg + "=" + $annotation;
 }
 
+global proc string usdTranslatorExport_AppendFromShadingModePopup(string $currentOptions, string $arg, string $widget) {
+    int $index = `optionMenuGrp -q -select $widget` - 1;
+    string $allItems[] = `optionMenuGrp -q -itemListLong $widget`;
+    string $item = $allItems[$index];
+    string $annotation = `menuItem -q -ann $item`;
+    string $options = `usdListShadingModes -eo $annotation`;
+    return $currentOptions + ";" + $options;
+}
+
 global proc string usdTranslatorExport_AppendFromIntField(string $currentOptions, string $arg, string $widget) {
     string $value = `intFieldGrp -q -value1 $widget`;
     return $currentOptions + ";" + $arg + "=" + $value;
@@ -276,7 +285,7 @@ global proc int usdTranslatorExport (string $parent,
 
     } else if ($action == "query") {
 
-        $currentOptions = usdTranslatorExport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
+        $currentOptions = usdTranslatorExport_AppendFromShadingModePopup($currentOptions, "shadingMode", "shadingModePopup");
         $currentOptions = usdTranslatorExport_AppendFromTextField($currentOptions, "materialsScopeName", "materialsScopeNameField");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportDisplayColor", "exportDisplayColorCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "exportRefsAsInstanceable", "exportRefsAsInstanceableCheckBox");
