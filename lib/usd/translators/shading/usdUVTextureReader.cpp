@@ -24,6 +24,7 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/usd/ar/packageUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -179,12 +180,13 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     UsdShadeInput usdInput = shaderSchema.GetInput(_tokens->file);
     if (usdInput && usdInput.Get(&val) && val.IsHolding<SdfAssetPath>()) {
         std::string filePath = val.UncheckedGet<SdfAssetPath>().GetResolvedPath();
-        if (!filePath.empty()) {
+        if (!filePath.empty() && !ArIsPackageRelativePath(filePath)) {
             // Maya has issues with relative paths, especially if deep inside a
             // nesting of referenced assets. Use absolute path instead if USD was
             // able to resolve. A better fix will require providing an asset
             // resolver to Maya that can resolve the file correctly using the
-            // MPxFileResolver API.
+            // MPxFileResolver API. We also make sure the path is not expressed
+            // as a relationship like texture paths inside USDZ assets.
             val = SdfAssetPath(filePath);
         }
         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);

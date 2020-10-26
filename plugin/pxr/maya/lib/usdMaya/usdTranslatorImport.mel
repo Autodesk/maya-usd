@@ -48,6 +48,16 @@ global proc string usdTranslatorImport_AppendFromPopup(string $currentOptions, s
     return $currentOptions + ";" + $arg + "=" + $annotation;
 }
 
+global proc string usdTranslatorImport_AppendFromShadingModePopup(string $currentOptions, string $arg, string $widget) {
+    int $index = `optionMenuGrp -q -select $widget` - 1;
+    string $allItems[] = `optionMenuGrp -q -itemListLong $widget`;
+    string $item = $allItems[$index];
+    string $annotation = `menuItem -q -ann $item`;
+    string $options[] = `usdListShadingModes -io $annotation`;
+    return $currentOptions + ";" + $arg + "=[[" + stringArrayToString($options, ",") + "]]";
+}
+
+
 global proc string usdTranslatorImport_AppendFromBoolPopup(string $currentOptions, string $arg, string $widget) {
     int $index = `optionMenuGrp -q -select $widget` - 1;
     return $currentOptions + ";" + $arg + "=" + $index;
@@ -150,7 +160,7 @@ global proc int usdTranslatorImport (string $parent,
             for ($index = 0; $index < size($optionList); $index++) {
                 tokenize($optionList[$index], "=", $optionBreakDown);
                 if ($optionBreakDown[0] == "shadingMode") {
-                    usdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
+                    usdTranslatorImport_SetShadingOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
                 } else if ($optionBreakDown[0] == "readAnimData") {
                     usdTranslatorImport_SetCheckbox($optionBreakDown[1], "readAnimDataCheckBox");
                 } else if ($optionBreakDown[0] == "useAsAnimationCache") {
@@ -175,7 +185,7 @@ global proc int usdTranslatorImport (string $parent,
 
     } else if ($action == "query") {
 
-        $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "shadingMode", "shadingModePopup");
+        $currentOptions = usdTranslatorImport_AppendFromShadingModePopup($currentOptions, "shadingMode", "shadingModePopup");
         $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "readAnimData", "readAnimDataCheckBox");
         $currentOptions = usdTranslatorImport_AppendFromCheckbox($currentOptions, "useAsAnimationCache", "useAsAnimationCacheCheckBox");
         $currentOptions = usdTranslatorImport_AppendFromPopup($currentOptions, "assemblyRep", "assemblyRepPopup");
