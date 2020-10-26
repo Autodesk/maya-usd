@@ -21,7 +21,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to transform objects in 3D.
@@ -63,12 +63,6 @@ public:
     Ufe::Vector3d rotation() const override;
     Ufe::Vector3d scale() const override;
 
-    /* FIXME  Implement.  PPT, 10-Aug-2020.
-    void translate(double x, double y, double z) override;
-    void rotate(double x, double y, double z) override;
-    void scale(double x, double y, double z) override;
-    */
-
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
     Ufe::RotateUndoableCommand::Ptr rotateCmd(double x, double y, double z) override;
     Ufe::ScaleUndoableCommand::Ptr scaleCmd(double x, double y, double z) override;
@@ -85,8 +79,8 @@ private:
 //! \brief Factory to create a UsdTransform3dMatrixOp interface object.
 //
 // 
-class MAYAUSD_CORE_PUBLIC UsdTransform3dMatrixOpHandler : 
-    public UsdTransform3dBaseHandler
+class MAYAUSD_CORE_PUBLIC UsdTransform3dMatrixOpHandler
+  : public Ufe::Transform3dHandler
 {
 public:
     typedef std::shared_ptr<UsdTransform3dMatrixOpHandler> Ptr;

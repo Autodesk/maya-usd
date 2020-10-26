@@ -25,15 +25,13 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Read-only implementation for USD object 3D transform information.
 // 
 // Methods in the interface which return a command to change the object's 3D
 // transformation return a null pointer.
-//
-// Methods in the interface which change the object directly raise an exception.
 //
 // Note that all calls to specify time use the default time, but this
 // could be changed to use the current time, using getTime(path()).
@@ -52,9 +50,6 @@ public:
     UsdTransform3dBase(UsdTransform3dBase&&) = delete;
     UsdTransform3dBase& operator=(UsdTransform3dBase&&) = delete;
 
-    //! Create a UsdTransform3dBase.
-    static UsdTransform3dBase::Ptr create(const UsdSceneItem::Ptr& item);
-
     // Ufe::Transform3d overrides
     const Ufe::Path& path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
@@ -62,27 +57,25 @@ public:
     inline UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
     inline UsdPrim prim() const { return fPrim; }
 
-    Ufe::Vector3d translation() const override;
-    Ufe::Vector3d rotation() const override;
-    Ufe::Vector3d scale() const override;
-
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
     Ufe::RotateUndoableCommand::Ptr rotateCmd(double x, double y, double z) override;
     Ufe::ScaleUndoableCommand::Ptr scaleCmd(double x, double y, double z) override;
-    void translate(double x, double y, double z) override;
-    void rotate(double x, double y, double z) override;
-    void scale(double x, double y, double z) override;
 
-    Ufe::TranslateUndoableCommand::Ptr rotatePivotTranslateCmd() override;
-    void rotatePivotTranslate(double x, double y, double z) override;
+    Ufe::TranslateUndoableCommand::Ptr rotatePivotCmd(double x, double y, double z) override;
     Ufe::Vector3d rotatePivot() const override;
 
-    Ufe::TranslateUndoableCommand::Ptr scalePivotTranslateCmd() override;
-    void scalePivotTranslate(double x, double y, double z) override;
+    Ufe::TranslateUndoableCommand::Ptr scalePivotCmd(double x, double y, double z) override;
     Ufe::Vector3d scalePivot() const override;
 
+    Ufe::TranslateUndoableCommand::Ptr translateRotatePivotCmd(
+        double x, double y, double z) override;
+    Ufe::Vector3d rotatePivotTranslation() const override;
+    Ufe::TranslateUndoableCommand::Ptr translateScalePivotCmd(
+        double x, double y, double z) override;
+    Ufe::Vector3d scalePivotTranslation() const override;
+
 #if UFE_PREVIEW_VERSION_NUM >= 2021
-    Ufe::SetMatrixUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
+    Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
     Ufe::Matrix4d matrix() const override;
 #endif
 
@@ -98,30 +91,6 @@ private:
     UsdPrim fPrim;
 
 }; // UsdTransform3dBase
-
-//! \brief Factory to create a UsdTransform3dBase interface object.
-//
-// 
-class MAYAUSD_CORE_PUBLIC UsdTransform3dBaseHandler : public Ufe::Transform3dHandler
-{
-public:
-    typedef std::shared_ptr<UsdTransform3dBaseHandler> Ptr;
-
-    UsdTransform3dBaseHandler();
-
-    // Delete the copy/move constructors assignment operators.
-    UsdTransform3dBaseHandler(const UsdTransform3dBaseHandler&) = delete;
-    UsdTransform3dBaseHandler& operator=(const UsdTransform3dBaseHandler&) = delete;
-    UsdTransform3dBaseHandler(UsdTransform3dBaseHandler&&) = delete;
-    UsdTransform3dBaseHandler& operator=(UsdTransform3dBaseHandler&&) = delete;
-
-    //! Create a UsdTransform3dBaseHandler.
-    static Ptr create();
-
-    // Ufe::Transform3dHandler overrides
-    Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
-
-}; // UsdTransform3dBaseHandler
 
 } // namespace ufe
 } // namespace MayaUsd

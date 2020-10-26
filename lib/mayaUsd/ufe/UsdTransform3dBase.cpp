@@ -22,21 +22,14 @@
 
 namespace {
 const char* const kLocalTransformFailed = "Obtaining local transform failed for object %s";
-const char* const kReadOnly = "Illegal %s call on read-only interface UsdTransform3dBase for object %s";
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdTransform3dBase::UsdTransform3dBase(const UsdSceneItem::Ptr& item)
     : Transform3d(), fItem(item), fPrim(item->prim())
 {}
-
-/* static */
-UsdTransform3dBase::Ptr UsdTransform3dBase::create(const UsdSceneItem::Ptr& item)
-{
-    return std::make_shared<UsdTransform3dBase>(item);
-}
 
 const Ufe::Path& UsdTransform3dBase::path() const
 {
@@ -54,64 +47,12 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::translateCmd(
     return nullptr;
 }
 
-void UsdTransform3dBase::translate(double /* x */, double /* y */, double /* z */)
-{
-    TF_CODING_ERROR(kReadOnly, "translate()", pathCStr());
-}
-
-Ufe::Vector3d UsdTransform3dBase::translation() const
-{
-    UsdGeomXformable xformable(prim());
-    GfMatrix4d m;
-    bool unused;
-    if (!xformable.GetLocalTransformation(&m, &unused, getTime(path()))) {
-        TF_WARN(kLocalTransformFailed, pathCStr());
-        return Ufe::Vector3d(0, 0, 0);
-    }
-    return toUfe(m.ExtractTranslation());
-}
-
-Ufe::Vector3d UsdTransform3dBase::rotation() const
-{
-    UsdGeomXformable xformable(prim());
-    GfMatrix4d m;
-    bool unused;
-    if (!xformable.GetLocalTransformation(&m, &unused, getTime(path()))) {
-        TF_WARN(kLocalTransformFailed, pathCStr());
-        return Ufe::Vector3d(0, 0, 0);
-    }
-    return toUfe(m.DecomposeRotation(GfVec3d::XAxis(), GfVec3d::YAxis(), GfVec3d::ZAxis()));
-}
-
-Ufe::Vector3d UsdTransform3dBase::scale() const
-{
-    UsdGeomXformable xformable(prim());
-    GfMatrix4d m;
-    bool unused;
-    if (!xformable.GetLocalTransformation(&m, &unused, getTime(path()))) {
-        TF_WARN(kLocalTransformFailed, pathCStr());
-        return Ufe::Vector3d(1, 1, 1);
-    }
-    GfMatrix4d unusedR, unusedP, unusedU;
-    GfVec3d    s, unusedT;
-    if (!m.Factor(&unusedR, &s, &unusedU, &unusedT, &unusedP)) {
-        TF_WARN("Cannot decompose local transform for %s", pathCStr());
-        return Ufe::Vector3d(1, 1, 1);
-    }
-    
-    return toUfe(s);
-}
 
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dBase::rotateCmd(
     double /* x */, double /* y */, double /* z */
 )
 {
     return nullptr;
-}
-
-void UsdTransform3dBase::rotate(double /* x */, double /* y */, double /* z */)
-{
-    TF_CODING_ERROR(kReadOnly, "rotate()", pathCStr());
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dBase::scaleCmd(
@@ -121,21 +62,9 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dBase::scaleCmd(
     return nullptr;
 }
 
-void UsdTransform3dBase::scale(double /* x */, double /* y */, double /* z */)
-{
-    TF_CODING_ERROR(kReadOnly, "scale()", pathCStr());
-}
-
-Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::rotatePivotTranslateCmd()
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::rotatePivotCmd(double x, double y, double z)
 {
     return nullptr;
-}
-
-void UsdTransform3dBase::rotatePivotTranslate(
-    double /* x */, double /* y */, double /* z */
-)
-{
-    TF_CODING_ERROR(kReadOnly, "rotatePivotTranslate()", pathCStr());
 }
 
 Ufe::Vector3d UsdTransform3dBase::rotatePivot() const
@@ -144,14 +73,9 @@ Ufe::Vector3d UsdTransform3dBase::rotatePivot() const
     return Ufe::Vector3d(0, 0, 0);
 }
 
-Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::scalePivotTranslateCmd()
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::scalePivotCmd(double x, double y, double z)
 {
     return nullptr;
-}
-
-void UsdTransform3dBase::scalePivotTranslate(double x, double y, double z)
-{
-    TF_CODING_ERROR(kReadOnly, "scalePivotTranslate()", pathCStr());
 }
 
 Ufe::Vector3d UsdTransform3dBase::scalePivot() const
@@ -160,8 +84,30 @@ Ufe::Vector3d UsdTransform3dBase::scalePivot() const
     return Ufe::Vector3d(0, 0, 0);
 }
 
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::translateRotatePivotCmd(
+    double, double, double)
+{
+    return nullptr;
+}
+
+Ufe::Vector3d UsdTransform3dBase::rotatePivotTranslation() const
+{
+    return Ufe::Vector3d(0, 0, 0);
+}
+
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::translateScalePivotCmd(
+    double, double, double)
+{
+    return nullptr;
+}
+
+Ufe::Vector3d UsdTransform3dBase::scalePivotTranslation() const
+{
+    return Ufe::Vector3d(0, 0, 0);
+}
+
 #if UFE_PREVIEW_VERSION_NUM >= 2021
-Ufe::SetMatrixUndoableCommand::Ptr UsdTransform3dBase::setMatrixCmd(const Ufe::Matrix4d& m)
+Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dBase::setMatrixCmd(const Ufe::Matrix4d& m)
 {
     // TODO: HS Aug25,2020 dummy code to pass the compiler errors
     return nullptr;
@@ -189,33 +135,7 @@ Ufe::Matrix4d UsdTransform3dBase::segmentExclusiveMatrix() const
 
 const char* UsdTransform3dBase::pathCStr() const
 {
-    return sceneItem()->path().string().c_str();
-}
-
-//------------------------------------------------------------------------------
-// UsdTransform3dBaseHandler
-//------------------------------------------------------------------------------
-
-UsdTransform3dBaseHandler::UsdTransform3dBaseHandler() 
-  : Ufe::Transform3dHandler()
-{}
-
-/*static*/
-UsdTransform3dBaseHandler::Ptr UsdTransform3dBaseHandler::create()
-{
-    return std::make_shared<UsdTransform3dBaseHandler>();
-}
-
-Ufe::Transform3d::Ptr UsdTransform3dBaseHandler::transform3d(
-    const Ufe::SceneItem::Ptr& item
-) const
-{
-    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-#if !defined(NDEBUG)
-    assert(usdItem);
-#endif
-
-    return UsdTransform3dBase::create(usdItem);
+    return path().string().c_str();
 }
 
 } // namespace ufe

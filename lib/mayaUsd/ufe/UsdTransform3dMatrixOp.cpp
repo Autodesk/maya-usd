@@ -141,7 +141,7 @@ public:
     void redo() override { UsdTRSUndoableCmdBase::redo(); }
 
     // Executes the command by setting the translation onto the transform op.
-    bool translate(double x, double y, double z) override
+    bool set(double x, double y, double z) override
     {
         fOpTransform.SetTranslateOnly(GfVec3d(x, y, z));
         fNewOpValue = fOpTransform;
@@ -191,7 +191,7 @@ public:
     void redo() override { UsdTRSUndoableCmdBase::redo(); }
 
     // Executes the command by setting the rotation onto the transform op.
-    bool rotate(double x, double y, double z) override
+    bool set(double x, double y, double z) override
     {
         // Expect XYZ Euler angles in degrees.
         GfMatrix3d r(GfRotation(GfVec3d::XAxis(),x) *
@@ -247,7 +247,7 @@ public:
     void redo() override { UsdTRSUndoableCmdBase::redo(); }
 
     // Executes the command by setting the rotation onto the transform op.
-    bool scale(double x, double y, double z) override
+    bool set(double x, double y, double z) override
     {
         GfMatrix4d opTransform = (GfMatrix4d(GfVec4d(x, y, z, 1.0)) * fU).SetTranslateOnly(fT);
         fNewOpValue = opTransform;
@@ -263,7 +263,7 @@ private:
 
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdTransform3dMatrixOp::UsdTransform3dMatrixOp(
@@ -370,7 +370,7 @@ Ufe::Matrix4d UsdTransform3dMatrixOp::segmentExclusiveMatrix() const
 
 UsdTransform3dMatrixOpHandler::UsdTransform3dMatrixOpHandler(
     const Ufe::Transform3dHandler::Ptr& nextHandler
-) : UsdTransform3dBaseHandler(), _nextHandler(nextHandler)
+) : Ufe::Transform3dHandler(), _nextHandler(nextHandler)
 {}
 
 /*static*/
