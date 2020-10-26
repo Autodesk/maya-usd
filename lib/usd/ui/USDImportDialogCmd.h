@@ -24,7 +24,7 @@
 
 #include <mayaUsdUI/ui/api.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_UI_PUBLIC USDImportDialogCmd : public MPxCommand {
 public:

@@ -26,7 +26,7 @@
 #include <string>
 #include <vector>
 
-namespace MAYAUSD_NS {
+namespace MAYAUSD_NS_DEF {
 
 namespace Impl {
 class BaseCmd;
@@ -56,4 +56,4 @@ private:
     std::vector<std::shared_ptr<Impl::BaseCmd>> _subCommands;
 };
 
-} // namespace MAYAUSD_NS
+} // namespace MAYAUSD_NS_DEF

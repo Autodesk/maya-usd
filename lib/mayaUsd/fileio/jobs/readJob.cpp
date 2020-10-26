@@ -306,9 +306,122 @@ bool UsdMaya_ReadJob::OverridePrimReader(
     return false;
 }
 
+void UsdMaya_ReadJob::_DoImportPrimIt(
+    UsdPrimRange::iterator& primIt,
+    const UsdPrim& usdRootPrim,
+    UsdMayaPrimReaderContext& readCtx,
+    _PrimReaderMap& primReaderMap
+)
+{
+    const UsdPrim& prim = *primIt;
+    // The iterator will hit each prim twice. IsPostVisit tells us if
+    // this is the pre-visit (Read) step or post-visit (PostReadSubtree)
+    // step.
+    if (primIt.IsPostVisit()) {
+        // This is the PostReadSubtree step, if the PrimReader has
+        // specified one.
+        auto primReaderIt = primReaderMap.find(prim.GetPath());
+        if (primReaderIt != primReaderMap.end()) {
+            primReaderIt->second->PostReadSubtree(&readCtx);
+        }
+    } else {
+        // This is the normal Read step (pre-visit).
+        UsdMayaPrimReaderArgs args(prim, mArgs);
+        if (OverridePrimReader(usdRootPrim, prim, args, readCtx, primIt)) {
+            return;
+        }
+
+        TfToken typeName = prim.GetTypeName();
+        if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
+                = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
+            UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
+            if (primReader) {
+                primReader->Read(&readCtx);
+                if (primReader->HasPostReadSubtree()) {
+                    primReaderMap[prim.GetPath()] = primReader;
+                }
+                if (readCtx.GetPruneChildren()) {
+                    primIt.PruneChildren();
+                }
+            }
+        }
+    }
+}
+
+void UsdMaya_ReadJob::_DoImportInstanceIt(
+    UsdPrimRange::iterator&   primIt,
+    const UsdPrim&            usdRootPrim,
+    UsdMayaPrimReaderContext& readCtx,
+    _PrimReaderMap&           primReaderMap)
+{
+    const UsdPrim& prim = *primIt;
+    if (!primIt.IsPostVisit()) {
+        return;
+    }
+    const UsdPrim master = prim.GetMaster();
+    if (!master) {
+        return;
+    }
+
+    const SdfPath masterPath = master.GetPath();
+    MObject       masterObject = readCtx.GetMayaNode(masterPath, false);
+    if (masterObject == MObject::kNullObj) {
+        _ImportMaster(master, usdRootPrim, readCtx);
+        masterObject = readCtx.GetMayaNode(masterPath, false);
+        if (masterObject == MObject::kNullObj) {
+            return;
+        }
+    }
+    MStatus    status;
+    MFnDagNode masterNode(masterObject, &status);
+    if (!status) {
+        return;
+    }
+    const auto primPath = prim.GetPath();
+    MObject    parentObject = readCtx.GetMayaNode(primPath.GetParentPath(), false);
+    MFnDagNode duplicateNode;
+    MObject    duplicateObject
+        = duplicateNode.create("transform", primPath.GetName().c_str(), parentObject, &status);
+    if (!status) {
+        return;
+    }
+
+    const unsigned int childCount = masterNode.childCount();
+    for (unsigned int child = 0; child < childCount; ++child) {
+        MObject childObject = masterNode.child(child);
+        duplicateNode.addChild(childObject, MFnDagNode::kNextPos, true);
+    }
+
+    // Read xformable attributes from the
+    // UsdPrim on to the transform node.
+    UsdGeomXformable      xformable(prim);
+    UsdMayaPrimReaderArgs readerArgs(prim, mArgs);
+    UsdMayaTranslatorXformable::Read(xformable, duplicateObject, readerArgs, &readCtx);
+}
+
+void UsdMaya_ReadJob::_ImportMaster(
+    const UsdPrim&            master,
+    const UsdPrim&            usdRootPrim,
+    UsdMayaPrimReaderContext& readCtx)
+{
+    _PrimReaderMap     primReaderMap;
+    const UsdPrimRange range = UsdPrimRange::PreAndPostVisit(master);
+    for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
+        const UsdPrim&           prim = *primIt;
+        UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
+        if (prim.IsInstance()) {
+            _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
+        } else {
+            _DoImportPrimIt(primIt, usdRootPrim, readCtx, primReaderMap);
+        }
+    }
+}
+
 bool
 UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
+    const bool buildInstances = mArgs.importInstances;
+
     // We want both pre- and post- visit iterations over the prims in this
     // method. To do so, iterate over all the root prims of the input range,
     // and create new PrimRanges to iterate over their subtrees.
@@ -316,49 +429,41 @@ UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
         const UsdPrim& rootPrim = *rootIt;
         rootIt.PruneChildren();
 
-        std::unordered_map<SdfPath, UsdMayaPrimReaderSharedPtr,
-                SdfPath::Hash> primReaders;
-        const UsdPrimRange range = UsdPrimRange::PreAndPostVisit(rootPrim);
+        _PrimReaderMap primReaderMap;
+        const UsdPrimRange range = buildInstances
+            ? UsdPrimRange::PreAndPostVisit(rootPrim)
+            : UsdPrimRange::PreAndPostVisit(
+                rootPrim, UsdTraverseInstanceProxies(UsdPrimAllPrimsPredicate));
         for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
             const UsdPrim& prim = *primIt;
+            UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
 
-            // The iterator will hit each prim twice. IsPostVisit tells us if
-            // this is the pre-visit (Read) step or post-visit (PostReadSubtree)
-            // step.
-            if (!primIt.IsPostVisit()) {
-                // This is the normal Read step (pre-visit).
-                UsdMayaPrimReaderArgs args(prim, mArgs);
-                UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
-
-                if (OverridePrimReader(usdRootPrim, prim, args, readCtx, primIt)) {
-                    continue;
-                }
-
-                TfToken typeName = prim.GetTypeName();
-                if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
-                        = UsdMayaPrimReaderRegistry::FindOrFallback(typeName)) {
-                    UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
-                    if (primReader) {
-                        primReader->Read(&readCtx);
-                        if (primReader->HasPostReadSubtree()) {
-                            primReaders[prim.GetPath()] = primReader;
-                        }
-                        if (readCtx.GetPruneChildren()) {
-                            primIt.PruneChildren();
-                        }
-                    }
-                }
-            }
-            else {
-                // This is the PostReadSubtree step, if the PrimReader has
-                // specified one.
-                UsdMayaPrimReaderContext postReadCtx(&mNewNodeRegistry);
-                auto primReaderIt = primReaders.find(prim.GetPath());
-                if (primReaderIt != primReaders.end()) {
-                    primReaderIt->second->PostReadSubtree(&postReadCtx);
-                }
+            if (buildInstances && prim.IsInstance()) {
+                _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
+            } else {
+                _DoImportPrimIt(primIt, usdRootPrim, readCtx, primReaderMap);
             }
         }
+    }
+
+    if (buildInstances) {
+        MDGModifier              deleteMasterMod;
+        UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
+        for (const auto& master : usdRootPrim.GetStage()->GetMasters()) {
+            const SdfPath masterPath = master.GetPath();
+            MObject       masterObject = readCtx.GetMayaNode(masterPath, false);
+            if (masterObject != MObject::kNullObj) {
+                MStatus    status;
+                MFnDagNode masterNode(masterObject, &status);
+                if (status) {
+                    while (masterNode.childCount()) {
+                        masterNode.removeChildAt(masterNode.childCount() - 1);
+                    }
+                }
+                deleteMasterMod.deleteNode(masterObject);
+            }
+        }
+        deleteMasterMod.doIt();
     }
 
     return true;

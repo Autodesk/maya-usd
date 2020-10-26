@@ -46,7 +46,7 @@ const char kAddAnonSublayerFlagL[] = "addAnonymous";
 
 } // namespace
 
-namespace MAYAUSD_NS {
+namespace MAYAUSD_NS_DEF {
 
 namespace Impl {
 
@@ -481,4 +481,4 @@ MStatus LayerEditorCommand::undoIt()
     return MS::kSuccess;
 }
 
-} // namespace MAYAUSD_NS
+} // namespace MAYAUSD_NS_DEF

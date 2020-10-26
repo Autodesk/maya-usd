@@ -37,7 +37,7 @@ UFE_NS_DEF {
 class PathSegment;
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------

@@ -19,7 +19,7 @@
 
 #include <mayaUsd/base/api.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Maya run-time hierarchy handler with support for USD gateway node.

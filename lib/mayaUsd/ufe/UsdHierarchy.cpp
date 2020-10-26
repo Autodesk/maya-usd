@@ -54,7 +54,7 @@ namespace {
 	}
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdHierarchy::UsdHierarchy(const UsdSceneItem::Ptr& item)

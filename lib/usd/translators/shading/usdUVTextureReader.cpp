@@ -60,6 +60,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (alphaOffset)
     (colorGain)
     (colorOffset)
+    (colorSpace)
     (defaultColor)
     (fileTextureName)
     (outAlpha)
@@ -189,6 +190,15 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
         if (status == MS::kSuccess) {
             UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
+        }
+
+        // colorSpace:
+        if (usdInput.GetAttr().HasColorSpace()) {
+            MString colorSpace = usdInput.GetAttr().GetColorSpace().GetText();
+            mayaAttr = depFn.findPlug(_tokens->colorSpace.GetText(), true, &status);
+            if (status == MS::kSuccess) {
+                mayaAttr.setString(colorSpace);
+            }
         }
     }
 

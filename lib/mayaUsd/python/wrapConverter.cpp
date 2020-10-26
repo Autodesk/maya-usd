@@ -30,7 +30,7 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
-using namespace MAYAUSD_NS;
+using namespace MAYAUSD_NS_DEF;
 
 namespace {
 constexpr auto find1

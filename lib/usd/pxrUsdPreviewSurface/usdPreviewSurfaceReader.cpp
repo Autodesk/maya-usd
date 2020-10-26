@@ -95,7 +95,28 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
         if (status != MS::kSuccess) {
             continue;
         }
-        UsdMayaReadUtil::SetMayaAttr(mayaAttr, input, /*unlinearizeColors*/ false);
+
+        VtValue inputVal;
+        if (!input.GetAttr().Get(&inputVal)) {
+            continue;
+        }
+
+        // "useSpecularWorkflow" is an int in USD, but a boolean in Maya.
+        if (baseName == PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName &&
+                inputVal.IsHolding<int>()) {
+            inputVal = (inputVal.UncheckedGet<int>() == 0) ?
+                false :
+                true;
+        }
+
+        if (UsdMayaReadUtil::SetMayaAttr(
+                mayaAttr,
+                inputVal,
+                /* unlinearizeColors = */ false)) {
+            UsdMayaReadUtil::SetMayaAttrKeyableState(
+                mayaAttr,
+                input.GetAttr().GetVariability());
+        }
     }
 
     return true;

@@ -19,8 +19,8 @@
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
-from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
-from ufeTestUtils.testUtils import assertVectorAlmostEqual
+import usdUtils, mayaUtils, ufeUtils
+from testUtils import assertVectorAlmostEqual
 import ufe
 
 import unittest
@@ -97,7 +97,7 @@ class Transform3dTranslateTestCase(unittest.TestCase):
         # interface.
         self.setRunTimeTranslation = None
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
         # Create some extra Maya nodes

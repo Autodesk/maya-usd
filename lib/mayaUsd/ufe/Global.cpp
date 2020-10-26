@@ -48,7 +48,7 @@ namespace {
 	int gRegistrationCount = 0;
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------

@@ -27,6 +27,7 @@
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/gprim.h>
 
 #include <mayaUsdUtils/util.h>
 
@@ -45,7 +46,7 @@ struct MakeSharedEnabler : public T {
 };
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& parent,
@@ -58,6 +59,17 @@ UsdUndoInsertChildCommand::UsdUndoInsertChildCommand(const UsdSceneItem::Ptr& pa
 {
     const auto& childPrim = child->prim();
     const auto& parentPrim = parent->prim();
+
+    // Don't allow parenting to a Gprim.
+    // USD strongly discourages parenting of one gprim to another.
+    // https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Gprim
+    if (parentPrim.IsA<UsdGeomGprim>()) {
+        std::string err = TfStringPrintf("Parenting geometric prim [%s] under geometric prim [%s] is not allowed "
+                                         "Please parent geometric prims under separate XForms and reparent between XForms.",
+                                         childPrim.GetName().GetString().c_str(),
+                                         parentPrim.GetName().GetString().c_str());
+        throw std::runtime_error(err.c_str());
+    }
 
     // Apply restriction rules
     ufe::applyCommandRestriction(childPrim, "reparent");

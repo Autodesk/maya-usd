@@ -72,7 +72,8 @@ class testProxyShapeDrawColors(unittest.TestCase):
         x = self._PlaneWithColor((0.55, 0.55, 0.55))
         cmds.select(x)
         usdFile = os.path.join(self._testDir, 'plane.usd')
-        cmds.mayaUSDExport(file=usdFile, selection=True, shadingMode='displayColor')
+        cmds.mayaUSDExport(file=usdFile, selection=True, shadingMode='none',
+            exportDisplayColor=True)
         proxyShape = cmds.createNode('mayaUsdProxyShape', name='usdProxyShape')
         proxyTransform = cmds.listRelatives(proxyShape, parent=True,
             fullPath=True)[0]

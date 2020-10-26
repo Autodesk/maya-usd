@@ -26,7 +26,7 @@
 #include <mayaUsdUI/ui/TreeItem.h>
 #include <mayaUsdUI/ui/TreeModel.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 // Ensure the TreeModelFactory is not constructible, as it is intended to be used only through static factory methods.
 //

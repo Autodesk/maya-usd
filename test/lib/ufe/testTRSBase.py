@@ -20,7 +20,7 @@ import unittest
 
 import maya.cmds as cmds
 
-from ufeTestUtils.testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorAlmostEqual
 
 class TRSTestCaseBase(unittest.TestCase):
     '''Base class for translate (move), rotate, scale command tests.'''

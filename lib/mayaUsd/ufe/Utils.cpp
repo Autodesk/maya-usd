@@ -53,7 +53,7 @@ namespace std
 }
 #endif
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------

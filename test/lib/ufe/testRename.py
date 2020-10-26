@@ -18,7 +18,7 @@
 
 import maya.cmds as cmds
 
-from ufeTestUtils import usdUtils, mayaUtils
+import usdUtils, mayaUtils
 import ufe
 import mayaUsd.ufe
 
@@ -66,7 +66,7 @@ class RenameTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
         
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
         # Clear selection to start off
@@ -116,7 +116,7 @@ class RenameTestCase(unittest.TestCase):
         assertStageAndPrimAccess(mayaSegment, ball35PathStr, usdSegment)
 
     def testRename(self):
-        # open tree.ma scene in test-samples
+        # open tree.ma scene in testSamples
         mayaUtils.openTreeScene()
 
         # clear selection to start off
@@ -176,7 +176,7 @@ class RenameTestCase(unittest.TestCase):
     def testRenameUndo(self):
         '''Rename USD node.'''
 
-        # open usdCylinder.ma scene in test-samples
+        # open usdCylinder.ma scene in testSamples
         mayaUtils.openCylinderScene()
 
         # clear selection to start off
@@ -273,7 +273,7 @@ class RenameTestCase(unittest.TestCase):
     def testRenameRestrictionHasSpecs(self):
         '''Restrict renaming USD node. Cannot rename a node that doesn't contribute to the final composed prim'''
 
-        # open appleBite.ma scene in test-samples
+        # open appleBite.ma scene in testSamples
         mayaUtils.openAppleBiteScene()
 
         # clear selection to start off
@@ -296,7 +296,7 @@ class RenameTestCase(unittest.TestCase):
             cmds.rename("geo_renamed")
 
     def testRenameUniqueName(self):
-        # open tree.ma scene in test-samples
+        # open tree.ma scene in testSamples
         mayaUtils.openTreeScene()
 
         # clear selection to start off
@@ -331,7 +331,7 @@ class RenameTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/TreeBase/leavesXform1"),])
 
     def testRenameSpecialCharacter(self):
-        # open twoSpheres.ma scene in test-samples
+        # open twoSpheres.ma scene in testSamples
         mayaUtils.openTwoSpheresScene()
 
         # clear selection to start off
@@ -373,7 +373,7 @@ class RenameTestCase(unittest.TestCase):
     def testRenameNotifications(self):
         '''Rename a USD node and test for the UFE notifications.'''
 
-        # open usdCylinder.ma scene in test-samples
+        # open usdCylinder.ma scene in testSamples
         mayaUtils.openCylinderScene()
 
         # clear selection to start off

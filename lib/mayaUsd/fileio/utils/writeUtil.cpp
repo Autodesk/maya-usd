@@ -69,7 +69,7 @@
 #include <mayaUsd/utils/colorSpace.h>
 #include <mayaUsd/utils/converter.h>
 
-using namespace MAYAUSD_NS;
+using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 

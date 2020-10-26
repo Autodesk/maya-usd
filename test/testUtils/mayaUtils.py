@@ -25,6 +25,9 @@ import re
 
 import ufe
 
+from mayaUsd import lib as mayaUsdLib
+from pxr import Usd, UsdGeom
+
 mayaRuntimeID = 1
 mayaSeparator = "|"
 
@@ -130,36 +133,99 @@ def openTopLayerScene():
                                     /Ball_35
     '''
     # Open top_layer file which contains the USD scene
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "ballset", "StandaloneScene", "top_layer.ma" )
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "ballset", "StandaloneScene", "top_layer.ma" )
     cmds.file(filePath, force=True, open=True)
 
 def openCylinderScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "cylinder", "usdCylinder.ma" )
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "cylinder", "usdCylinder.ma" )
     cmds.file(filePath, force=True, open=True)
 
 def openTwoSpheresScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "twoSpheres", "twoSpheres.ma" )
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "twoSpheres", "twoSpheres.ma" )
     cmds.file(filePath, force=True, open=True)
 
 def openSphereAnimatedRadiusScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
     cmds.file(filePath, force=True, open=True)
 
 def openTreeScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "tree", "tree.ma" )
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "tree", "tree.ma" )
     cmds.file(filePath, force=True, open=True)
 
 def openTreeRefScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "tree", "treeRef.ma" )
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "tree", "treeRef.ma" )
     cmds.file(filePath, force=True, open=True)
 
 def openAppleBiteScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "appleBite", "appleBite.ma" )
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "appleBite", "appleBite.ma" )
     cmds.file(filePath, force=True, open=True)
 
 def openGroupBallsScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "test-samples", "groupBalls", "ballset.ma" )
+    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "groupBalls", "ballset.ma" )
     cmds.file(filePath, force=True, open=True)
+
+def createProxyAndStage():
+    """
+    Create in-memory stage
+    """
+    cmds.createNode('mayaUsdProxyShape', name='stageShape')
+
+    shapeNode = cmds.ls(sl=True,l=True)[0]
+    shapeStage = mayaUsdLib.GetPrim(shapeNode).GetStage()
+    
+    cmds.select( clear=True )
+    cmds.connectAttr('time1.outTime','{}.time'.format(shapeNode))
+
+    return shapeNode,shapeStage
+
+def createProxyFromFile(filePath):
+    """
+    Load stage from file
+    """
+    cmds.createNode('mayaUsdProxyShape', name='stageShape')
+
+    shapeNode = cmds.ls(sl=True,l=True)[0]
+    cmds.setAttr('{}.filePath'.format(shapeNode), filePath, type='string')
+    
+    shapeStage = mayaUsdLib.GetPrim(shapeNode).GetStage()
+    
+    cmds.select( clear=True )
+    cmds.connectAttr('time1.outTime','{}.time'.format(shapeNode))
+
+    return shapeNode,shapeStage
+
+def createAnimatedHierarchy(stage):
+    """
+    Create simple hierarchy in the stage:
+    /ParentA
+        /Sphere
+        /Cube
+    /ParenB
+    
+    Entire ParentA hierarchy will receive time samples on translate for time 1 and 100
+    """
+    parentA = "/ParentA"
+    parentB = "/ParentB"
+    childSphere = "/ParentA/Sphere"
+    childCube = "/ParentA/Cube"
+    
+    parentPrimA = stage.DefinePrim(parentA, 'Xform')
+    parentPrimB = stage.DefinePrim(parentB, 'Xform')
+    childPrimSphere = stage.DefinePrim(childSphere, 'Sphere')
+    childPrimCube = stage.DefinePrim(childCube, 'Cube')
+    
+    UsdGeom.XformCommonAPI(parentPrimA).SetRotate((0,0,0))
+    UsdGeom.XformCommonAPI(parentPrimB).SetTranslate((1,10,0))
+    
+    time1 = Usd.TimeCode(1.)
+    UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,0,0),time1)
+    UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((5,0,0),time1)
+    UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,5),time1)
+    
+    time2 = Usd.TimeCode(100.)
+    UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,5,0),time2)
+    UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((-5,0,0),time2)
+    UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,-5),time2)
 
 def previewReleaseVersion():
     '''Return the Maya Preview Release version.

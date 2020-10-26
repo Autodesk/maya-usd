@@ -1,0 +1,131 @@
+﻿<!--
+========================================================================
+Copyright 2020 Autodesk
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment uiName="BasisCurvesLinearCPVHull" name="BasisCurvesLinearCPVHull" type="hullShader" class="ShadeFragment" version="1.0" feature_level="0">
+    <description>
+        <![CDATA[Hull shader for basisCurves]]>
+    </description>
+    <keyword value="tessellation" />
+    <properties>
+        <float  name="tessLevel" semantic="TESSLEVEL" flags="isRequirementOnly" />
+        <struct  name="inputs" semantic="SV_PATCH" size="2" struct_name="vertOutS" flags="varyingInputParam" />
+        <int  name="primitiveID" semantic="SV_PrimitiveID" flags="varyingInputParam" />
+        <int  name="patchID" semantic="SV_OutputControlPointID" flags="varyingInputParam" />
+        <undefined name="GPUStage" semantic="GPUStage" />
+        <float3  name="Pm" semantic="POSITION" flags="isRequirementOnly,varyingInputParam" />
+        <float3  name="Nm" semantic="NORMAL" flags="isRequirementOnly,varyingInputParam" />
+        <float  name="U0_1" semantic="TEXCOORD0" flags="isRequirementOnly,varyingInputParam" />
+        <float4  name="UsdPrimvarColor" semantic="COLOR0" flags="isRequirementOnly,varyingInputParam" />
+    </properties>
+    <values>
+    </values>
+    <outputs>
+        <struct  name="outS" size="2" struct_name="hullOutS" />
+        <undefined name="GPUStage" semantic="hullShader" />
+        <float4  name="tessOuterLo" semantic="patchConstantParam" flags="isRequirementOnly,varyingInputParam" />
+        <float4  name="tessOuterHi" semantic="patchConstantParam" flags="isRequirementOnly,varyingInputParam" />
+    </outputs>
+    <implementation>
+        <implementation render="OGSRenderer" language="GLSL" lang_version="3.0">
+            <function_name val="BasisCurvesLinearCPVHull" />
+            <source>
+                <![CDATA[
+// line 185 ".../lib/usd/hdSt/resources/shaders/basisCurves.glslfx"
+
+// Use the length of the control points in screen space to determine how many
+// times to subdivide the curve.
+void determineLODSettings()
+{
+    gl_TessLevelOuter[0] = 1;
+    gl_TessLevelOuter[1] = 1;
+    gl_TessLevelOuter[2] = 1;
+    gl_TessLevelOuter[3] = 1;
+
+    gl_TessLevelInner[0] = 1;
+    gl_TessLevelInner[1] = 1;
+}
+
+// line 154 ".../lib/usd/hdSt/resources/shaders/basisCurves.glslfx"
+
+void BasisCurvesLinearCPVHull()
+{
+    if (gl_InvocationID == 0) {
+        determineLODSettings();
+    }
+
+    HS_OUT[gl_InvocationID].U0_1 = HS_IN[gl_InvocationID].U0_1; // U0_1 being used as widths.
+    HS_OUT[gl_InvocationID].UsdPrimvarColor = HS_IN[gl_InvocationID].UsdPrimvarColor;
+}
+                ]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="HLSL" lang_version="11.0">
+            <function_name val="BasisCurvesLinearCPVHull" />
+            <declaration name="hullConstantsOutS" >
+                <![CDATA[
+struct hullConstantsOutS
+{
+    float tessLevelInner[2] : SV_InsideTessFactor;
+    float tessLevelOuter[4] : SV_TessFactor;
+};
+                ]]>
+            </declaration>
+            <source>
+                <![CDATA[
+// line 154 ".../lib/usd/hdSt/resources/shaders/basisCurves.glslfx"
+
+hullOutS BasisCurvesLinearCPVHull(
+    InputPatch<vertOutS, 2> inputs,
+    uint primitiveID,
+    uint patchID)
+{
+    hullOutS output;
+
+    output.Pm   = inputs[patchID].Pm;
+    output.Nm   = inputs[patchID].Nm;
+    output.U0_1 = inputs[patchID].U0_1; // U0_1 being used as widths.
+    output.UsdPrimvarColor = inputs[patchID].UsdPrimvarColor;
+
+    return output;
+}
+
+// line 185 ".../lib/usd/hdSt/resources/shaders/basisCurves.glslfx"
+
+// Use the length of the control points in screen space to determine how many
+// times to subdivide the curve.
+hullConstantsOutS BasisCurvesLinearCPVHullConstants(
+    InputPatch<vertOutS, 2> inPatch,
+    OutputPatch<hullOutS, 2> outPatch,
+    uint primitiveID : SV_PrimitiveID)
+{
+    hullConstantsOutS output;
+
+    output.tessLevelOuter[0] = 1;
+    output.tessLevelOuter[1] = 1;
+    output.tessLevelOuter[2] = 1;
+    output.tessLevelOuter[3] = 1;
+
+    output.tessLevelInner[0] = 1;
+    output.tessLevelInner[1] = 1;
+    
+    return output;
+}
+                ]]>
+            </source>
+        </implementation>
+        <implementation render="OGSRenderer" language="Cg" lang_version="2.1">
+            <function_name val="NOTIMPLEMENTED" />
+        </implementation>
+    </implementation>
+</fragment>

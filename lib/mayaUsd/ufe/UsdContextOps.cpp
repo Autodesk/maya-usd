@@ -397,7 +397,7 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
 
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)

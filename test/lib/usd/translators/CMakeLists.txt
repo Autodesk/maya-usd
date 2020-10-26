@@ -5,11 +5,13 @@ set(TEST_SCRIPT_FILES
     testUsdExportCamera.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
+    testUsdExportDisplacement.py
     testUsdExportDisplayColor.py
     testUsdExportEulerFilter.py
     testUsdExportFileFormat.py
     testUsdExportFilterTypes.py
     testUsdExportFrameOffset.py
+    testUsdExportGeomSubset.py
     testUsdExportInstances.py
     testUsdExportLocator.py
     testUsdExportMayaInstancer.py
@@ -39,11 +41,13 @@ set(TEST_SCRIPT_FILES
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
+    testUsdImportDisplacement.py
     testUsdImportExportScope.py
     testUsdImportExportTypelessDefs.py
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but
     # passes.  PPT, 17-Jun-20.
     testUsdImportFrameRange.py
+    testUsdImportInstances.py
     testUsdImportMayaReference.py
     testUsdImportMesh.py
     testUsdImportPreviewSurface.py

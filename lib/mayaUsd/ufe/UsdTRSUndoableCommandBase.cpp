@@ -20,7 +20,7 @@
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 template<class V>

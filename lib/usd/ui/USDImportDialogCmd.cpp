@@ -44,7 +44,7 @@
 #include <QtGui/QCursor>
 #include <QtWidgets/QApplication>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 const MString USDImportDialogCmd::fsName("usdImportDialog");
 

@@ -111,8 +111,13 @@ public:
     MHWRender::MShaderInstance* Get3dCPVSolidShader() const;
     MHWRender::MShaderInstance* Get3dFatPointShader() const;
 
-    MHWRender::MShaderInstance* GetBasisCurvesLinearFallbackShader(const MColor& color) const;
-    MHWRender::MShaderInstance* GetBasisCurvesCubicFallbackShader(const MColor& color) const;
+    MHWRender::MShaderInstance* GetBasisCurvesFallbackShader(
+        const TfToken& curveType,
+        const TfToken& curveBasis,
+        const MColor&  color) const;
+
+    MHWRender::MShaderInstance*
+    GetBasisCurvesCPVShader(const TfToken& curveType, const TfToken& curveBasis) const;
 
     const MHWRender::MSamplerState* GetSamplerState(
         const MHWRender::MSamplerStateDesc& desc) const;
