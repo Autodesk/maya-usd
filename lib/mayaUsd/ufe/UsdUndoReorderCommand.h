@@ -44,8 +44,7 @@ public:
     static UsdUndoReorderCommand::Ptr create(const UsdPrim& child, const std::vector<TfToken>& orderedTokens);
 
 private:
-    bool reorderRedo();
-    bool reorderUndo();
+    bool reorder();
 
     void undo() override;
     void redo() override;

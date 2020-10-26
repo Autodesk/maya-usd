@@ -41,17 +41,7 @@ UsdUndoReorderCommand::Ptr UsdUndoReorderCommand::create(const UsdPrim& child, c
     return std::make_shared<UsdUndoReorderCommand>(child, tokenList);
 }
 
-bool UsdUndoReorderCommand::reorderRedo()
-{
-    const auto& parentPrim = _childPrim.GetParent();
-    const auto& parentPrimSpec = MayaUsdUtils::getPrimSpecAtEditTarget(parentPrim);
-
-    parentPrimSpec->SetNameChildrenOrder(_orderedTokens);
-
-    return true;
-}
-
-bool UsdUndoReorderCommand::reorderUndo()
+bool UsdUndoReorderCommand::reorder()
 {
     const auto& parentPrim = _childPrim.GetParent();
     const auto& parentPrimSpec = MayaUsdUtils::getPrimSpecAtEditTarget(parentPrim);
@@ -64,7 +54,7 @@ bool UsdUndoReorderCommand::reorderUndo()
 void UsdUndoReorderCommand::undo()
 {
     try {
-        if (!reorderUndo()) {
+        if (!reorder()) {
             UFE_LOG("reorder undo failed");
         }
     }
@@ -76,7 +66,7 @@ void UsdUndoReorderCommand::undo()
 
 void UsdUndoReorderCommand::redo()
 {
-    if (!reorderRedo()) {
+    if (!reorder()) {
         UFE_LOG("reorder redo failed");
     }
 }
