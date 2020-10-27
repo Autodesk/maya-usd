@@ -19,16 +19,21 @@
 """
     Helper functions regarding Maya that will be used throughout the test.
 """
-import maya.cmds as cmds
-import sys, os
-import re
+
+from mayaUsd import lib as mayaUsdLib
+from mayaUsd import ufe as mayaUsdUfe
+
+from pxr import Usd
+from pxr import UsdGeom
+
+from maya import cmds
 
 import ufe
 
-from mayaUsd import lib as mayaUsdLib
-from pxr import Usd, UsdGeom
+import os
+import re
+import sys
 
-mayaRuntimeID = 1
 mayaSeparator = "|"
 
 prRe = re.compile('Preview Release ([0-9]+)')
@@ -100,7 +105,8 @@ def createUfePathSegment(mayaPath):
     """
     if not mayaPath.startswith("|world"):
         mayaPath = "|world" + mayaPath
-    return ufe.PathSegment(mayaPath, mayaRuntimeID, mayaSeparator)
+    return ufe.PathSegment(mayaPath, mayaUsdUfe.getMayaRunTimeId(),
+        mayaSeparator)
 
     
 def getMayaSelectionList():
