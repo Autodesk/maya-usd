@@ -251,10 +251,7 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& ord
 	}
 
 	// create a reorder command and pass in the parent and its reordered children list
-    const auto& childPrim = downcast((*orderedList.begin()))->prim();
-    const auto& parentPrim = childPrim.GetParent();
-
-	return UsdUndoReorderCommand::create(parentPrim, orderedTokens);
+	return UsdUndoReorderCommand::create(downcast(sceneItem())->prim(), orderedTokens);
 }
 #endif
 

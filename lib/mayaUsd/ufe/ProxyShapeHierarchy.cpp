@@ -254,10 +254,7 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemLi
 	}
 
 	// create a reorder command and pass in the parent and its ordered children list
-    const auto& childPrim = downcast((*orderedList.begin()))->prim();
-    const auto& parentPrim = childPrim.GetParent();
-
-	return UsdUndoReorderCommand::create(parentPrim, orderedTokens);
+	return UsdUndoReorderCommand::create(getUsdRootPrim(), orderedTokens);
 }
 #endif
 
