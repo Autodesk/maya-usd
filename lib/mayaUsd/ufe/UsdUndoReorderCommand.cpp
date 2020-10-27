@@ -22,9 +22,9 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoReorderCommand::UsdUndoReorderCommand(const UsdPrim& child, const std::vector<TfToken>& tokenList)
+UsdUndoReorderCommand::UsdUndoReorderCommand(const UsdPrim& parentPrim, const std::vector<TfToken>& tokenList)
     : Ufe::UndoableCommand()
-    , _childPrim(child)
+    , _parentPrim(parentPrim)
     , _orderedTokens(tokenList)
 {
 }
@@ -33,18 +33,17 @@ UsdUndoReorderCommand::~UsdUndoReorderCommand()
 {
 }
 
-UsdUndoReorderCommand::Ptr UsdUndoReorderCommand::create(const UsdPrim& child, const std::vector<TfToken>& tokenList)
+UsdUndoReorderCommand::Ptr UsdUndoReorderCommand::create(const UsdPrim& parentPrim, const std::vector<TfToken>& tokenList)
 {
-    if (!child) {
+    if (!parentPrim) {
         return nullptr;
     }
-    return std::make_shared<UsdUndoReorderCommand>(child, tokenList);
+    return std::make_shared<UsdUndoReorderCommand>(parentPrim, tokenList);
 }
 
 bool UsdUndoReorderCommand::reorder()
 {
-    const auto& parentPrim = _childPrim.GetParent();
-    const auto& parentPrimSpec = MayaUsdUtils::getPrimSpecAtEditTarget(parentPrim);
+    const auto& parentPrimSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_parentPrim);
 
     parentPrimSpec->SetNameChildrenOrder(_orderedTokens);
 

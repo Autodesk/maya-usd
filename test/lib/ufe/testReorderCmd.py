@@ -61,8 +61,7 @@ class ReorderCmdTestCase(unittest.TestCase):
         ''' Reorder (a.k.a move) objects relative to their siblings.
            For relative moves, both positive and negative numbers may be specified.
         '''
-        shapeSegment = mayaUtils.createUfePathSegment("|world|Primitives_usd|Primitives_usdShape")
-        cylinderPath = ufe.Path([shapeSegment, usdUtils.createUfePathSegment("/Xform1/Cylinder1")])
+        cylinderPath = ufe.PathString.path("|Primitives_usd|Primitives_usdShape,/Xform1/Cylinder1")
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         # start by getting the children from the parent node ( Xform1 )
@@ -89,18 +88,17 @@ class ReorderCmdTestCase(unittest.TestCase):
         '''
             Reorder (a.k.a move) to front and back of the sibling list
         '''
-        shapeSegment = mayaUtils.createUfePathSegment("|world|Primitives_usd|Primitives_usdShape")
-        cylinderPath = ufe.Path([shapeSegment, usdUtils.createUfePathSegment("/Xform1/Cylinder1")])
+        cylinderPath = ufe.PathString.path("|Primitives_usd|Primitives_usdShape,/Xform1/Cylinder1")
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
 
         # make Cylinder1 the first sibling ( front )
-        cmds.reorder("|Primitives_usd|Primitives_usdShape,/Xform1/Cylinder1", front=True)
+        cmds.reorder(ufe.PathString.string(cylinderPath), front=True)
 
         # check Cylinder1 position ( index ) after the move
         self.assertEqual(findIndex(cylinderItem), 0)
 
         # make Cylinder1 the last sibling ( back )
-        cmds.reorder("|Primitives_usd|Primitives_usdShape,/Xform1/Cylinder1", back=True)
+        cmds.reorder(ufe.PathString.string(cylinderPath), back=True)
 
         # check Cylinder1 position ( index ) after the move
         self.assertEqual(findIndex(cylinderItem), 7) 
@@ -109,22 +107,20 @@ class ReorderCmdTestCase(unittest.TestCase):
         ''' 
             Undo/Redo reorder command
         '''
-        # create multiple items
-        shapeSegment = mayaUtils.createUfePathSegment("|world|Primitives_usd|Primitives_usdShape")
-
-        capsulePath = ufe.Path([shapeSegment, usdUtils.createUfePathSegment("/Xform1/Capsule1")])
+        # create multiple item
+        capsulePath = ufe.PathString.path("|Primitives_usd|Primitives_usdShape,/Xform1/Capsule1")
         capsuleItem = ufe.Hierarchy.createItem(capsulePath)
         
-        conePath = ufe.Path([shapeSegment, usdUtils.createUfePathSegment("/Xform1/Cone1")])
+        conePath = ufe.PathString.path("|Primitives_usd|Primitives_usdShape,/Xform1/Cone1")
         coneItem = ufe.Hierarchy.createItem(conePath)
         
-        cubePath = ufe.Path([shapeSegment, usdUtils.createUfePathSegment("/Xform1/Cube1")])
+        cubePath = ufe.PathString.path("|Primitives_usd|Primitives_usdShape,/Xform1/Cube1")
         cubeItem = ufe.Hierarchy.createItem(cubePath)
 
         # move items forward ( + )
-        cmds.reorder("|Primitives_usd|Primitives_usdShape,/Xform1/Capsule1", r=3)
-        cmds.reorder("|Primitives_usd|Primitives_usdShape,/Xform1/Cone1",    r=3)
-        cmds.reorder("|Primitives_usd|Primitives_usdShape,/Xform1/Cube1",    r=3)
+        cmds.reorder(ufe.PathString.string(capsulePath), r=3)
+        cmds.reorder(ufe.PathString.string(conePath),    r=3)
+        cmds.reorder(ufe.PathString.string(cubePath),    r=3)
 
         # check positions
         self.assertEqual(findIndex(capsuleItem), 1)

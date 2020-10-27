@@ -206,12 +206,8 @@ Ufe::SceneItem::Ptr UsdHierarchy::insertChild(
         const Ufe::SceneItem::Ptr& pos 
 )
 {
-    #ifdef UFE_V2_FEATURES_AVAILABLE
     auto insertChildCommand = insertChildCmd(child, pos);
     return insertChildCommand->insertedChild();
-    #else
-    return nullptr;
-    #endif
 }
 
 // Create a transform.
@@ -248,17 +244,17 @@ Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
 #if UFE_PREVIEW_VERSION_NUM >= 2026
 Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 {
-    std::vector<TfToken> orderedTokens;
+	std::vector<TfToken> orderedTokens;
 
-    for (const auto& item : orderedList) {
-        orderedTokens.emplace_back(downcast(item)->prim().GetPath().GetNameToken());
-    }
+	for (const auto& item : orderedList) {
+	    orderedTokens.emplace_back(downcast(item)->prim().GetPath().GetNameToken());
+	}
 
-    // TODO HS Oct 23, 2020, grab any child and pass it to UsdUndoReorderCommand
-    // in order to get the parent out of it.
+	// create a reorder command and pass in the parent and its reordered children list
     const auto& childPrim = downcast((*orderedList.begin()))->prim();
+    const auto& parentPrim = childPrim.GetParent();
 
-    return UsdUndoReorderCommand::create(childPrim, orderedTokens);
+	return UsdUndoReorderCommand::create(parentPrim, orderedTokens);
 }
 #endif
 

@@ -18,7 +18,8 @@
 #include <ufe/undoableCommand.h>
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,7 +32,7 @@ class MAYAUSD_CORE_PUBLIC UsdUndoReorderCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoReorderCommand> Ptr;
 
-    UsdUndoReorderCommand(const UsdPrim& child, const std::vector<TfToken>& orderedTokens);
+    UsdUndoReorderCommand(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
     ~UsdUndoReorderCommand() override;
 
     // Delete the copy/move constructors assignment operators.
@@ -41,7 +42,7 @@ public:
     UsdUndoReorderCommand& operator=(UsdUndoReorderCommand&&) = delete;
 
     //! Create a UsdUndoReorderCommand
-    static UsdUndoReorderCommand::Ptr create(const UsdPrim& child, const std::vector<TfToken>& orderedTokens);
+    static UsdUndoReorderCommand::Ptr create(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
 
 private:
     bool reorder();
@@ -49,7 +50,7 @@ private:
     void undo() override;
     void redo() override;
 
-    UsdPrim _childPrim;
+    UsdPrim _parentPrim;
 
     std::vector<TfToken> _orderedTokens;
 

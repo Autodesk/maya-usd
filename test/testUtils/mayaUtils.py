@@ -170,8 +170,7 @@ def openGroupBallsScene():
     return openTestScene("groupBalls", "ballset.ma" )
 
 def openPrimitivesScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "reorderCmd", "primitives.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("reorderCmd", "primitives.ma" )
 
 def createProxyAndStage():
     """

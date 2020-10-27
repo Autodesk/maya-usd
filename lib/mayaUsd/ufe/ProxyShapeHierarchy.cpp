@@ -219,12 +219,8 @@ Ufe::SceneItem::Ptr ProxyShapeHierarchy::insertChild(
         const Ufe::SceneItem::Ptr& pos
 )
 {
-    #ifdef UFE_V2_FEATURES_AVAILABLE
     auto insertChildCommand = insertChildCmd(child, pos);
     return insertChildCommand->insertedChild();
-    #else
-    return nullptr;
-    #endif
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::createGroup(const Ufe::Selection& selection, const Ufe::PathComponent& name) const
@@ -257,11 +253,11 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemLi
 	    orderedTokens.emplace_back(downcast(item)->prim().GetPath().GetNameToken());
 	}
 
-	// TODO HS Oct 23, 2020, grab any child and pass it to UsdUndoReorderCommand
-	// in order to get the parent out of it.
+	// create a reorder command and pass in the parent and its ordered children list
     const auto& childPrim = downcast((*orderedList.begin()))->prim();
+    const auto& parentPrim = childPrim.GetParent();
 
-	return UsdUndoReorderCommand::create(childPrim, orderedTokens);
+	return UsdUndoReorderCommand::create(parentPrim, orderedTokens);
 }
 #endif
 
