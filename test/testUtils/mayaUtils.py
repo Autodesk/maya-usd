@@ -117,6 +117,13 @@ def getMayaSelectionList():
     else:
         return [x for x in cmds.ls(sl=True)]
 
+def getTestScene(*args):
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", *args)
+
+def openTestScene(*args):
+    filePath = getTestScene(*args)
+    cmds.file(filePath, force=True, open=True)
+
 def openTopLayerScene():
     '''
         The test scene hierarchy is represented as :
@@ -133,36 +140,28 @@ def openTopLayerScene():
                                     /Ball_35
     '''
     # Open top_layer file which contains the USD scene
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "ballset", "StandaloneScene", "top_layer.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("ballset", "StandaloneScene", "top_layer.ma" )
 
 def openCylinderScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "cylinder", "usdCylinder.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("cylinder", "usdCylinder.ma" )
 
 def openTwoSpheresScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "twoSpheres", "twoSpheres.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("twoSpheres", "twoSpheres.ma" )
 
 def openSphereAnimatedRadiusScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
 
 def openTreeScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "tree", "tree.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("tree", "tree.ma" )
 
 def openTreeRefScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "tree", "treeRef.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("tree", "treeRef.ma" )
 
 def openAppleBiteScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "appleBite", "appleBite.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("appleBite", "appleBite.ma" )
 
 def openGroupBallsScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "groupBalls", "ballset.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("groupBalls", "ballset.ma" )
 
 def createProxyAndStage():
     """
