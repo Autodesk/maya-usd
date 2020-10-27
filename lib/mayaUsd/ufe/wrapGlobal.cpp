@@ -13,13 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/pxr.h>
-#include <pxr/base/tf/pyModule.h>
+#include <mayaUsd/ufe/Global.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+#include <boost/python.hpp>
 
-TF_WRAP_MODULE {
-    TF_WRAP(Global);
-    TF_WRAP(Utils);
-    TF_WRAP(Notice);
+using namespace MayaUsd;
+using namespace boost::python;
+
+
+void
+wrapGlobal()
+{
+    def("getMayaRunTimeId", ufe::getMayaRunTimeId);
+
+    def("getUsdRunTimeId", ufe::getUsdRunTimeId);
 }
