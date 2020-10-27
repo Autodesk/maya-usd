@@ -51,8 +51,7 @@ class SelectTestCase(unittest.TestCase):
 
         # Load a file that has the same scene in both the Maya Dag
         # hierarchy and the USD hierarchy.
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../..", "testSamples", "parentCmd", "simpleSceneMayaPlusUSD_TRS.ma" )
-        cmds.file(filePath, force=True, open=True)
+        mayaUtils.openTestScene("parentCmd", "simpleSceneMayaPlusUSD_TRS.ma")
 
         # Clear selection to start off
         cmds.select(clear=True)

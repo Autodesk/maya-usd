@@ -136,6 +136,7 @@ add_library(${UFE_PYTHON_TARGET_NAME} SHARED)
 target_sources(${UFE_PYTHON_TARGET_NAME} 
     PRIVATE
         module.cpp
+        wrapGlobal.cpp
         wrapUtils.cpp
         wrapNotice.cpp
 )

@@ -20,10 +20,12 @@
     Helper functions regarding USD that will be used throughout the test.
 """
 
-usdSeparator = '/'
-usdRuntimeID = 2
-import ufe
 import mayaUsd.ufe
+
+import ufe
+
+usdSeparator = '/'
+
 
 def createUfePathSegment(usdPath):
     """
@@ -33,7 +35,7 @@ def createUfePathSegment(usdPath):
         Returns :
             PathSegment of the given usdPath
     """
-    return ufe.PathSegment(usdPath, usdRuntimeID, usdSeparator)
+    return ufe.PathSegment(usdPath, mayaUsd.ufe.getUsdRunTimeId(), usdSeparator)
 
 def getPrimFromSceneItem(item):
     rawItem = item.getRawAddress()
