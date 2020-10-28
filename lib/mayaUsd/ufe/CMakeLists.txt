@@ -43,6 +43,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
+            UsdUndoReorderCommand.cpp
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2022)
         target_sources(${PROJECT_NAME}
@@ -93,6 +94,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
+        UsdUndoReorderCommand.h
     )
 endif()
 
