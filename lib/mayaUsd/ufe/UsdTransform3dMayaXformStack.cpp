@@ -446,6 +446,8 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dMayaXformStack::rotateCmd(double x
     GfVec3f v(x, y, z);
     CvtRotXYZToAttrFn cvt = toXYZ; // No conversion is default.
     if (!hasOp(NdxRotate)) {
+        // Use notification guard, otherwise will generate one notification for
+        // the xform op add, and another for the reorder.
         InTransform3dChange guard(path());
         r = _xformable.AddRotateXYZOp();
         if (!TF_VERIFY(r)) {

@@ -26,6 +26,7 @@ import testTRSBase
 import ufe
 
 import unittest
+import os
 
 from functools import partial
 
@@ -50,6 +51,24 @@ def addVec(mayaVec, usdVec):
 def combineScales(scale1, scale2):
     return [scale1[0]*scale2[0], scale1[1]*scale2[1], scale1[2]*scale2[2] ]
     
+def nameToPlug(nodeName):
+    selection = om.MSelectionList()
+    selection.add(nodeName)
+    return selection.getPlug(0)
+
+def checkPivotsAndCompensations(testCase, mayaObjName, usdT3d):
+    '''Confirm matching Maya and UFE object pivots and pivot compensations.'''
+
+    # getAttr() returns a single-element vector that holds a 3-element tuple.
+    assertVectorAlmostEqual(testCase, cmds.getAttr(mayaObjName+".rp")[0],
+                            usdT3d.rotatePivot().vector, places=6)
+    assertVectorAlmostEqual(testCase, cmds.getAttr(mayaObjName+".sp")[0],
+                            usdT3d.scalePivot().vector, places=6)
+    assertVectorAlmostEqual(testCase, cmds.getAttr(mayaObjName+".rpt")[0],
+                            usdT3d.rotatePivotTranslation().vector, places=6)
+    assertVectorAlmostEqual(testCase, cmds.getAttr(mayaObjName+".spt")[0],
+                            usdT3d.scalePivotTranslation().vector, places=6)
+
 class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
     '''Verify the Transform3d UFE interface, for multiple runtimes.
 
@@ -438,18 +457,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         sn.remove(mayaSphereItem)
         cmds.move(0, -2.104143, 3.139701, r=True, urp=True, usp=True)        
 
-        # Confirm the local space pivots and pivot compensations are the same
-        # for both objects.  getAttr() returns a single-element vector that
-        # holds a 3-element tuple.
-        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.rp")[0],
-                                usdSphereT3d.rotatePivot().vector, places=6)
-        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.sp")[0],
-                                usdSphereT3d.scalePivot().vector, places=6)
-
-        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.rpt")[0],
-                                usdSphereT3d.rotatePivotTranslation().vector)
-        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.spt")[0],
-                                usdSphereT3d.scalePivotTranslation().vector)
+        checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
 
         # Scale the spheres again
         sn.append(mayaSphereItem)
@@ -458,16 +466,70 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         # Move the pivots again.
         cmds.move(0, 5.610465, 3.239203, "pSphere1.scalePivot", "pSphere1.rotatePivot", r=True)
         sn.remove(mayaSphereItem)
-        cmds.move(0, 5.610465, 3.239203, r=True, urp=True, usp=True)        
+        cmds.move(0, 5.610465, 3.239203, r=True, urp=True, usp=True)  
 
-        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.rp")[0],
-                                usdSphereT3d.rotatePivot().vector, places=6)
-        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.sp")[0],
-                                usdSphereT3d.scalePivot().vector, places=6)
+        checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
 
-        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.rpt")[0],
-                                usdSphereT3d.rotatePivotTranslation().vector)
-        # Fails as of 21-Oct-2020
-        assertVectorAlmostEqual(self, cmds.getAttr("pSphere1.spt")[0],
-                                usdSphereT3d.scalePivotTranslation().vector,
-                                places=6)
+        # Move only the rotate pivot.
+        cmds.move(0, 0, 3, r=True, urp=True)
+        cmds.move(0, 0, 3, "pSphere1.rotatePivot", r=True)        
+
+        checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
+
+        # Move only the scale pivot.
+        cmds.move(0, 0, -4, r=True, usp=True)
+        cmds.move(0, 0, -4, "pSphere1.scalePivot", r=True)
+
+        checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
+
+    def testRotateScalePivotCompensationAfterExport(self):
+        '''Rotate and scale pivots must match after export.'''
+
+        cmds.file(new=True, force=True)
+        mayaSphere = cmds.polySphere()[0]
+        
+        cmds.rotate(0, 0, -45, r=True, os=True, fo=True)
+        cmds.scale(4, 3, 2, r=True)
+        cmds.move(-2, -3, -4, "pSphere1.rotatePivot", r=True)
+        cmds.move(7, 6, 5, "pSphere1.scalePivot", r=True)
+
+        # Export out, reference back in using proxy shape.
+        usdFilePath = os.path.abspath('UsdExportMayaXformStack.usda')
+        cmds.mayaUSDExport(file=usdFilePath)
+
+        # Reference it back in.
+        proxyShape = cmds.createNode('mayaUsdProxyShape')
+        cmds.setAttr('mayaUsdProxyShape1.filePath', usdFilePath, type='string')
+
+        # MAYA-101766: awkward plug access for non-interactive stage loading.
+        outStageData = nameToPlug('mayaUsdProxyShape1.outStageData')
+        outStageData.asMDataHandle()
+
+        proxyShapeMayaPath = cmds.ls(proxyShape, long=True)[0]
+        proxyShapePathSegment = mayaUtils.createUfePathSegment(
+            proxyShapeMayaPath)
+        
+        spherePathSegment = usdUtils.createUfePathSegment('/pSphere1')
+        spherePath = ufe.Path([proxyShapePathSegment, spherePathSegment])
+        sphereItem = ufe.Hierarchy.createItem(spherePath)
+        usdSphereT3d = ufe.Transform3d.transform3d(sphereItem)
+        
+        # Maya object and its exported USD object twin should have the
+        # same pivots and pivot compensations.
+        checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(sphereItem)
+
+        # Move only the rotate pivot.
+        cmds.move(-1, -2, -3, r=True, urp=True)
+        cmds.move(-1, -2, -3, "pSphere1.rotatePivot", r=True)        
+
+        checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
+
+        # Move only the scale pivot.
+        cmds.move(-4, -3, -2, r=True, usp=True)
+        cmds.move(-4, -3, -2, "pSphere1.scalePivot", r=True)
+
+        checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
