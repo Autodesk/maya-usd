@@ -38,6 +38,8 @@
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
+#include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
@@ -84,13 +86,27 @@ bool PxrUsdTranslators_MaterialReader::Read(UsdMayaPrimReaderContext* context)
     context->RegisterNewMayaNode(prim.GetPath().GetString(), mayaObject);
 
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
+        if (input.GetBaseName() == PxrMayaUsdPreviewSurfaceTokens->DisplacementAttrName) {
+            // We need a displacementShader:
+            std::string shaderName = prim.GetName().GetString();
+            shaderName += "_displacement";
+            UsdMayaTranslatorUtil::CreateShaderNode(
+                shaderName.c_str(),
+                "displacementShader",
+                UsdMayaShadingNodeType::Shader,
+                &status,
+                &_displacementShader);
+            // this displacement shader will get connected as we explore
+            // the displacement input of the UsdShadeMaterial.
+        }
+
         TfToken baseName = GetMayaNameForUsdAttrName(input.GetFullName());
         if (baseName.IsEmpty()) {
             continue;
         }
         _OnBeforeReadAttribute(baseName, depFn);
-        MPlug mayaAttr = depFn.findPlug(baseName.GetText(), true, &status);
-        if (status != MS::kSuccess) {
+        MPlug mayaAttr = GetMayaPlugForUsdAttrName(input.GetFullName(), mayaObject);
+        if (mayaAttr.isNull()) {
             continue;
         }
         VtValue val;
@@ -104,6 +120,27 @@ bool PxrUsdTranslators_MaterialReader::Read(UsdMayaPrimReaderContext* context)
 }
 
 /* virtual */
+MPlug PxrUsdTranslators_MaterialReader::GetMayaPlugForUsdAttrName(
+    const TfToken& usdAttrName,
+    const MObject& mayaObject) const
+{
+    TfToken baseName = UsdShadeUtils::GetBaseNameAndType(usdAttrName).first;
+    // We return the same R/W plug for input and output if it is the displacement attribute.
+    if (baseName == PxrMayaUsdPreviewSurfaceTokens->DisplacementAttrName
+        && !_displacementShader.isNull()) {
+        MStatus           status;
+        MFnDependencyNode depFn(_displacementShader, &status);
+        if (status != MS::kSuccess) {
+            return MPlug();
+        }
+
+        return depFn.findPlug(GetMayaNameForUsdAttrName(usdAttrName).GetText());
+    }
+
+    return UsdMayaShaderReader::GetMayaPlugForUsdAttrName(usdAttrName, mayaObject);
+}
+
+/* virtual */
 TfToken
 PxrUsdTranslators_MaterialReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
@@ -111,7 +148,9 @@ PxrUsdTranslators_MaterialReader::GetMayaNameForUsdAttrName(const TfToken& usdAt
     UsdShadeAttributeType attrType;
     std::tie(usdOutputName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 
-    if (attrType == UsdShadeAttributeType::Output) {
+    if (usdOutputName == UsdShadeTokens->displacement && !_displacementShader.isNull()) {
+        return usdOutputName;
+    } else if (attrType == UsdShadeAttributeType::Output) {
         if (usdOutputName == UsdShadeTokens->surface) {
             return _tokens->outColor;
         }

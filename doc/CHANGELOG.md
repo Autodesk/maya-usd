@@ -1,5 +1,47 @@
 # Changelog
 
+## [0.5.0] - 2020-10-20
+
+**Build:**
+* Added validation of exported USD in testUsdExportSkeleton for case without bind pose [#839](https://github.com/Autodesk/maya-usd/pull/839)
+* Added support for core USD release 20.11 [#835](https://github.com/Autodesk/maya-usd/pull/835) [#808](https://github.com/Autodesk/maya-usd/pull/808) [#775](https://github.com/Autodesk/maya-usd/pull/775)
+* Continue pxr tests migration and fixes [#828](https://github.com/Autodesk/maya-usd/pull/828) [#825](https://github.com/Autodesk/maya-usd/pull/825) [#815](https://github.com/Autodesk/maya-usd/pull/815) [#806](https://github.com/Autodesk/maya-usd/pull/806) [#779](https://github.com/Autodesk/maya-usd/pull/779)
+* Cleaned up pxr CMake and remove irrelevant build options [#818](https://github.com/Autodesk/maya-usd/pull/818)
+* Made necessary fixes required before we can apply clang format [#807](https://github.com/Autodesk/maya-usd/pull/807)
+* Fixed Python 3 warnings [#783](https://github.com/Autodesk/maya-usd/pull/783)
+* Fixed PROJECT_SOURCE_DIR use for nested projects. [#780](https://github.com/Autodesk/maya-usd/pull/780)
+* Fixed namespace migration of QStringListModel between Maya 2019 and Maya 2020 in userExportedAttributesUI [#812](https://github.com/Autodesk/maya-usd/pull/812)
+
+
+**Translation Framework:**
+* Fixed import of "useSpecularWorkflow" input on UsdPreviewSurface shaders [#837](https://github.com/Autodesk/maya-usd/pull/837)
+* Added translation support between lambert transparency and UsdPreviewSurface opacity 
+* Material import options rework [#822](https://github.com/Autodesk/maya-usd/pull/822) [#831](https://github.com/Autodesk/maya-usd/pull/831) [#832](https://github.com/Autodesk/maya-usd/pull/832) [#833](https://github.com/Autodesk/maya-usd/pull/833) [#836](https://github.com/Autodesk/maya-usd/pull/836)
+* Ensure UsdShadeMaterialBindingAPI schema is applied when authoring bindings during export [#804](https://github.com/Autodesk/maya-usd/pull/804)
+* Updated custom converter test plugin to use symmetric writer [#803](https://github.com/Autodesk/maya-usd/pull/803)
+* Added instance import support [#794](https://github.com/Autodesk/maya-usd/pull/794)
+* Extracted RenderMan for Maya shading export from "pxrRis" shadingMode for use with "useRegistry" [#787](https://github.com/Autodesk/maya-usd/pull/787) [#799](https://github.com/Autodesk/maya-usd/pull/799)
+* Fixed registry errors for preview surface readers and writers [#778](https://github.com/Autodesk/maya-usd/pull/778)
+
+**Workflow:**
+* Added prim type icons support in outliner [#782](https://github.com/Autodesk/maya-usd/pull/782)
+* Made absence of scale pivot support is not an error in transform3d [#834](https://github.com/Autodesk/maya-usd/pull/834)
+* Adapt to changes in UFE interface to support Maya transform stacks [#827](https://github.com/Autodesk/maya-usd/pull/827)
+* Added UFE contextOps for working set management (loading and unloading) [#823](https://github.com/Autodesk/maya-usd/pull/823)
+* Fixed crash after discarding edits on an anon layer [#817](https://github.com/Autodesk/maya-usd/pull/817)
+* Added display for outliner to show which prims have a composition arc including a variant [#816](https://github.com/Autodesk/maya-usd/pull/816)
+* Added support for automatic update of internal references when the path they are referencing has changed. [#797](https://github.com/Autodesk/maya-usd/pull/797)
+* Rewrote the rename restriction algorithm from scratch to cover more edge cases. [#786](https://github.com/Autodesk/maya-usd/pull/786)
+* Added Cache Id In/Out attributes to the Base Proxy Shape [#785](https://github.com/Autodesk/maya-usd/pull/785)
+
+**Render:**
+* Fixed refresh after change to excluded prims attribute [#821](https://github.com/Autodesk/maya-usd/pull/821)
+* Fixed snapping to prevent snap to active objects when using point snapping [#819](https://github.com/Autodesk/maya-usd/pull/819)
+* Always register and de-register the PxrMayaHdImagingShape and its draw override [#810](https://github.com/Autodesk/maya-usd/pull/810)
+* Added selection and point snapping support for mtoh [#776](https://github.com/Autodesk/maya-usd/pull/776)
+* Refactored settings / defaultRenderGlobals storage for mtoh [#758](https://github.com/Autodesk/maya-usd/pull/758)
+
+
 ## [0.4.0] - 2020-09-22
 
 This release includes:

@@ -20,7 +20,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdAttributes.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to create the USD Attributes interface objects.

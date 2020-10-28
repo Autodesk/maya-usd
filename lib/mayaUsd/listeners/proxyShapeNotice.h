@@ -16,9 +16,12 @@
 #ifndef MAYAUSD_PROXYSTAGE_NOTICE_H
 #define MAYAUSD_PROXYSTAGE_NOTICE_H
 
+#include <string>
+
 #include <maya/MObject.h>
 
 #include <pxr/base/tf/notice.h>
+#include <pxr/usd/usd/stage.h>
 
 #include <mayaUsd/base/api.h>
 
@@ -36,6 +39,12 @@ public:
     /// Get proxy shape which had stage set
     MAYAUSD_CORE_PUBLIC
     const MayaUsdProxyShapeBase& GetProxyShape() const;
+
+    MAYAUSD_CORE_PUBLIC
+    const std::string GetShapePath() const;
+
+    MAYAUSD_CORE_PUBLIC
+    UsdStageRefPtr GetStage() const;
 
 private:
     const MayaUsdProxyShapeBase& _proxy;

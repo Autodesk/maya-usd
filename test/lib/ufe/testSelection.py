@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from ufeTestUtils import mayaUtils, usdUtils, ufeUtils
+import mayaUtils, usdUtils, ufeUtils
 
 import ufe
 
@@ -51,8 +51,7 @@ class SelectTestCase(unittest.TestCase):
 
         # Load a file that has the same scene in both the Maya Dag
         # hierarchy and the USD hierarchy.
-        filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "test-samples", "parentCmd", "simpleSceneMayaPlusUSD_TRS.ma" )
-        cmds.file(filePath, force=True, open=True)
+        mayaUtils.openTestScene("parentCmd", "simpleSceneMayaPlusUSD_TRS.ma")
 
         # Clear selection to start off
         cmds.select(clear=True)
@@ -66,13 +65,14 @@ class SelectTestCase(unittest.TestCase):
         # time, so we select 6 different items, one at a time.
         shapeSegment = mayaUtils.createUfePathSegment(
             "|world|mayaUsdProxy1|mayaUsdProxyShape1")
-        names = ["pCube1", "pCylinder1", "pSphere1"]
+        ufeNames = ["cubeXform", "cylinderXform", "sphereXform"]
+        mayaNames = ["pCube1", "pCylinder1", "pSphere1"]
         usdPaths = []
-        for n in ["/" + o for o in names]:
+        for n in ["/" + o for o in ufeNames]:
             usdPaths.append(ufe.Path(
                 [shapeSegment, usdUtils.createUfePathSegment(n)]))
         mayaPaths = []
-        for n in ["|world|" + o for o in names]:
+        for n in ["|world|" + o for o in mayaNames]:
             mayaPaths.append(ufe.Path(mayaUtils.createUfePathSegment(n)))
 
         # Create a list of paths by alternating USD objects and Maya objects

@@ -45,7 +45,7 @@
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/utils/util.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh, 
                                        const UsdPrim& prim, 

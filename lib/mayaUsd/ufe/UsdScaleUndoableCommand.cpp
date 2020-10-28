@@ -17,7 +17,7 @@
 
 #include "private/Utils.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");

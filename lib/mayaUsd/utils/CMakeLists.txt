@@ -20,6 +20,7 @@ set(HEADERS
     converter.h
     diagnosticDelegate.h
     query.h
+    plugRegistryHelper.h
     stageCache.h
     undoHelperCommand.h
     util.h

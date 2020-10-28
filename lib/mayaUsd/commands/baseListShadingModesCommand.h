@@ -22,7 +22,7 @@
 
 #include <maya/MPxCommand.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_CORE_PUBLIC MayaUSDListShadingModesCommand : public MPxCommand
 {

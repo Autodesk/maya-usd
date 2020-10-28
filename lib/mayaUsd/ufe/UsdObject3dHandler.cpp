@@ -12,7 +12,7 @@
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdObject3dHandler::UsdObject3dHandler() : Ufe::Object3dHandler() {}

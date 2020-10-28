@@ -23,7 +23,7 @@
 #endif
 #include <pxr/usd/usd/schemaRegistry.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdSceneItem::UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim)

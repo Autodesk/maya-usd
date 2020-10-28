@@ -15,26 +15,34 @@
 //
 #include "proxyShapeNotice.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+
 #include <pxr/base/tf/instantiateType.h>
+
+#include <maya/MDagPath.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_INSTANTIATE_TYPE(MayaUsdProxyStageSetNotice,
-                    TfType::CONCRETE, TF_1_PARENT(TfNotice));
-TF_INSTANTIATE_TYPE(MayaUsdProxyStageInvalidateNotice,
-                    TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(MayaUsdProxyStageSetNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(MayaUsdProxyStageInvalidateNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
 
-MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice(
-        const MayaUsdProxyShapeBase& proxy)
-        : _proxy(proxy)
+MayaUsdProxyStageBaseNotice::MayaUsdProxyStageBaseNotice(const MayaUsdProxyShapeBase& proxy)
+    : _proxy(proxy)
 {
 }
 
-const MayaUsdProxyShapeBase&
-MayaUsdProxyStageBaseNotice::GetProxyShape() const
+const MayaUsdProxyShapeBase& MayaUsdProxyStageBaseNotice::GetProxyShape() const { return _proxy; }
+
+const std::string MayaUsdProxyStageBaseNotice::GetShapePath() const
 {
-    return _proxy;
+    std::string path;
+    MDagPath    shapeDagPath;
+    if (MDagPath::getAPathTo(_proxy.thisMObject(), shapeDagPath)) {
+        path = shapeDagPath.fullPathName().asChar();
+    }
+    return path;
 }
 
+UsdStageRefPtr MayaUsdProxyStageBaseNotice::GetStage() const { return _proxy.getUsdStage(); }
 
 PXR_NAMESPACE_CLOSE_SCOPE

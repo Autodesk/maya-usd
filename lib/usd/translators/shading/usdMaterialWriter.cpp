@@ -47,7 +47,7 @@
 
 #include <cmath>
 
-using namespace MAYAUSD_NS;
+using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -109,11 +109,19 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromShadingNodeAttr(
         const TfToken& shadingNodeAttrName,
         UsdShadeShader& shaderSchema,
         const TfToken& shaderInputName,
-        const UsdTimeCode usdTime)
+        const UsdTimeCode usdTime,
+        bool ignoreIfUnauthored,
+        const SdfValueTypeName& inputTypeName)
 {
     return AuthorShaderInputFromScaledShadingNodeAttr(
-        depNodeFn, shadingNodeAttrName, shaderSchema, shaderInputName,
-        usdTime, TfToken());
+        depNodeFn,
+        shadingNodeAttrName,
+        shaderSchema,
+        shaderInputName,
+        usdTime,
+        TfToken(),
+        ignoreIfUnauthored,
+        inputTypeName);
 }
 
 bool
@@ -123,7 +131,9 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
         UsdShadeShader& shaderSchema,
         const TfToken& shaderInputName,
         const UsdTimeCode usdTime,
-        const TfToken& scalingAttrName)
+        const TfToken& scalingAttrName,
+        bool ignoreIfUnauthored,
+        const SdfValueTypeName& inputTypeName)
 {
     MStatus status;
 
@@ -136,12 +146,20 @@ PxrUsdTranslators_MaterialWriter::AuthorShaderInputFromScaledShadingNodeAttr(
         return false;
     }
 
+    if (ignoreIfUnauthored && !UsdMayaUtil::IsAuthored(shadingNodePlug)) {
+        // Ignore this unauthored Maya attribute and return success.
+        return true;
+    }
+
     const bool isDestination = shadingNodePlug.isDestination(&status);
     if (status != MS::kSuccess) {
         return false;
     }
 
-    auto shaderInputTypeName = Converter::getUsdTypeName(shadingNodePlug);
+    const SdfValueTypeName shaderInputTypeName =
+        bool(inputTypeName) ?
+            inputTypeName :
+            Converter::getUsdTypeName(shadingNodePlug);
 
     // Are color values are all linear on the shader?
     // Do we need to re-linearize them?

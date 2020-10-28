@@ -31,7 +31,7 @@ static constexpr char kErrorMsgUnknown[] = "Unknown UFE attribute type encounter
 static constexpr char kErrorMsgInvalidAttribute[] = "Invalid USDAttribute!";
 #endif
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdAttributes::UsdAttributes(const UsdSceneItem::Ptr& item)

@@ -18,7 +18,7 @@
 
 import maya.cmds as cmds
 
-from ufeTestUtils import usdUtils, mayaUtils
+import usdUtils, mayaUtils
 import ufe
 
 import unittest
@@ -51,7 +51,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
         
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
         # Create some extra Maya nodes

@@ -30,6 +30,7 @@
 #include <pxr/usd/usdShade/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
@@ -196,7 +197,9 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         _tokens->normalCamera,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
-        usdTime);
+        usdTime,
+        /* ignoreIfUnauthored = */ false,
+        /* inputTypeName = */ SdfValueTypeNames->Normal3f);
 }
 
 /* virtual */

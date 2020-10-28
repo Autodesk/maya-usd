@@ -92,7 +92,7 @@
 #include <ufe/path.h>
 #endif
 
-using MAYAUSD_NS_DEF;
+using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -610,7 +610,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         MayaUsdStageData* outData =
             reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
-        
+
         // When evaluating in background we should point to the same stage as in normal context
         // This way we will share the stage between all evaluation context and avoid losing data
         // in case of dirty stage, i.e. stage with new or modified layers.
@@ -618,7 +618,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
         {
             MDGContextGuard contextGuard(normalContext);
             MDataBlock dataBlockForNormalContext = forceCache();
-            
+
             MDataHandle inDataCachedHandleForNormalContext =
             dataBlockForNormalContext.inputValue(inStageDataCachedAttr, &retValue);
             CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -630,7 +630,7 @@ MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
             outData->stage = inData->stage;
             outData->primPath = inData->primPath;
         }
-        
+
         // Retrieve data handle for stage data cache
         MDataHandle outDataCachedHandle =
             dataBlock.outputValue(inStageDataCachedAttr, &retValue);
@@ -855,11 +855,11 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     {
         // Start listening for notices for the USD stage.
         _stageNoticeListener.SetStage(usdStage);
-        _stageNoticeListener.SetStageContentsChangedCallback([this](const UsdNotice::StageContentsChanged& notice) { 
+        _stageNoticeListener.SetStageContentsChangedCallback([this](const UsdNotice::StageContentsChanged& notice) {
             return _OnStageContentsChanged(notice);
         });
 
-        _stageNoticeListener.SetStageObjectsChangedCallback([this](const UsdNotice::ObjectsChanged& notice) { 
+        _stageNoticeListener.SetStageObjectsChangedCallback([this](const UsdNotice::ObjectsChanged& notice) {
             return _OnStageObjectsChanged(notice);
         });
 
@@ -872,13 +872,13 @@ MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
     return MS::kSuccess;
 }
 
-MStatus 
+MStatus
 MayaUsdProxyShapeBase::computeOutputTime(MDataBlock& dataBlock)
 {
     MStatus retValue = MS::kSuccess;
     MDataHandle inDataHandle = dataBlock.inputValue(timeAttr, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    
+
     MTime inTime = inDataHandle.asTime();
 
     MDataHandle outDataHandle = dataBlock.outputValue(outTimeAttr, &retValue);
@@ -1080,7 +1080,7 @@ MayaUsdProxyShapeBase::postEvaluation(const  MDGContext& context, const MEvaluat
         MDataBlock dataBlock = forceCache();
         ProxyAccessor::syncCache(_usdAccessor, thisMObject(), dataBlock);
     }
-    
+
     return MPxSurfaceShape::postEvaluation(context,evaluationNode,evalType);
 }
 
@@ -1221,7 +1221,7 @@ MayaUsdProxyShapeBase::getUsdStage() const
 
     MayaUsdStageData* outData =
         dynamic_cast<MayaUsdStageData*>(outDataHandle.asPluginData());
-    
+
     if (outData && outData->stage)
         return outData->stage;
     else
@@ -1343,7 +1343,7 @@ MayaUsdProxyShapeBase::usdPrim() const
     return _GetUsdPrim( const_cast<MayaUsdProxyShapeBase*>(this)->forceCache() );
 }
 
-MDagPath 
+MDagPath
 MayaUsdProxyShapeBase::parentTransform()
 {
     MFnDagNode fn(thisMObject());
@@ -1408,10 +1408,10 @@ MayaUsdProxyShapeBase::_OnStageContentsChanged(
 {
     // If the USD stage this proxy represents changes without Maya's knowledge,
     // we need to inform Maya that the shape is dirty and needs to be redrawn.
-    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());   
+    MHWRender::MRenderer::setGeometryDrawDirty(thisMObject());
 }
 
-void 
+void
 MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)
 {
     ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);

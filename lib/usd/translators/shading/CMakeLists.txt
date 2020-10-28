@@ -5,6 +5,7 @@ target_sources(${TARGET_NAME}
     PRIVATE
         usdBlinnReader.cpp
         usdBlinnWriter.cpp
+        usdDisplacementShaderWriter.cpp
         usdFileTextureWriter.cpp
         usdLambertReader.cpp
         usdLambertWriter.cpp

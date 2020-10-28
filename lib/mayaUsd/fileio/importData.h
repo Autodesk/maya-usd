@@ -27,7 +27,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 /*!
  *  \brief Singleton class to hold USD UI import data.

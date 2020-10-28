@@ -36,6 +36,7 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/nodes/layerManager.h>
+#include <mayaUsd/utils/plugRegistryHelper.h>
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -64,6 +65,9 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         return MS::kSuccess;
     }
 
+    // Call one time registration of plugins compiled for same USD version as MayaUSD plugin.
+    MayaUsd::registerVersionedPlugins();
+    
     _registrantPluginName = plugin.name();
 
     _useVP2RenderDelegate = TfGetEnvSetting(VP2_RENDER_DELEGATE_PROXY);

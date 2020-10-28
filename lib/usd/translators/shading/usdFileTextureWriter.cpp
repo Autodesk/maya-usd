@@ -22,6 +22,7 @@
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
@@ -37,6 +38,7 @@
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -72,6 +74,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (alphaOffset)
     (colorGain)
     (colorOffset)
+    (colorSpace)
     (defaultColor)
     (fileTextureName)
     (outAlpha)
@@ -224,20 +227,34 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     // WARNING: This extremely minimal attempt at making the file path relative
     //          to the USD stage is a stopgap measure intended to provide
     //          minimal interop. It will be replaced by proper use of Maya and
-    //          USD asset resolvers.
-    boost::filesystem::path usdDir(GetUsdStage()->GetRootLayer()->GetRealPath());
-    usdDir = usdDir.parent_path();
-    boost::system::error_code ec;
-    boost::filesystem::path relativePath = boost::filesystem::relative(fileTextureName, usdDir, ec);
-    if (!ec && !relativePath.empty()) {
-        fileTextureName = relativePath.generic_string();
+    //          USD asset resolvers. For package files, the exporter needs full
+    //          paths.
+    const std::string& fileName = GetUsdStage()->GetRootLayer()->GetRealPath();
+    TfToken fileExt(TfGetExtension(fileName));
+    if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
+        boost::filesystem::path usdDir(fileName);
+        usdDir = usdDir.parent_path();
+        boost::system::error_code ec;
+        boost::filesystem::path relativePath = boost::filesystem::relative(fileTextureName, usdDir, ec);
+        if (!ec && !relativePath.empty()) {
+            fileTextureName = relativePath.generic_string();
+        }
     }
 
-    shaderSchema.CreateInput(
-        _tokens->file,
-        SdfValueTypeNames->Asset).Set(
-            SdfAssetPath(fileTextureName.c_str()),
-            usdTime);
+    UsdShadeInput fileInput = shaderSchema.CreateInput(_tokens->file, SdfValueTypeNames->Asset);
+    fileInput.Set(SdfAssetPath(fileTextureName.c_str()), usdTime);
+
+    MPlug colorSpacePlug = depNodeFn.findPlug(_tokens->colorSpace.GetText(), true, &status);
+    if (status == MS::kSuccess) {
+        MString colorRuleCmd;
+        colorRuleCmd.format(
+            "colorManagementFileRules -evaluate \"^1s\";", fileTextureNamePlug.asString());
+        const MString colorSpaceByRule(MGlobal::executeCommandStringResult(colorRuleCmd));
+        const MString colorSpace(colorSpacePlug.asString(&status));
+        if (status == MS::kSuccess && colorSpace != colorSpaceByRule) {
+            fileInput.GetAttr().SetColorSpace(TfToken(colorSpace.asChar()));
+        }
+    }
 
     // The Maya file node's 'colorGain' and 'alphaGain' attributes map to the
     // UsdUVTexture's scale input.

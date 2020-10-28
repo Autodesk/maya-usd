@@ -129,7 +129,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         string $apiString = `about -q -apiVersion`;
         $apiString = `substring $apiString 1 4`;
         string $convertAnn = "Select the preferred conversion method for inbound USD shading data to bind with Maya geometry";
-        optionMenuGrp -l "Convert to:" -cw 1 $cw1 -ann $convertAnn mayaUsdTranslator_MaterialsConversionMenu;
+        optionMenuGrp -l "Convert to:" -cw 1 $cw2 -ann $convertAnn mayaUsdTranslator_MaterialsConversionMenu;
         menuItem -l "No Conversion" -ann "none";
         if ((int)$apiString >= 2020) {
             menuItem -l "Standard Surface" -ann "standardSurface";
@@ -139,8 +139,9 @@ global proc int mayaUsdTranslatorImport (string $parent,
         menuItem -l "Blinn" -ann "blinn";
         menuItem -l "Phong" -ann "phong";
 
-//        checkBoxGrp -label "InstancedPrims: " -label1 "Convert to Instances" -cw 1 $cw1 mayaUsdTranslator_InstancedPrimsCheckBox;
-//
+        string $instancedAnn = "Converts instanced prims to Maya instances. Instanced prims share parts of\nthe USD scenegraph through instancing. Each instanced prim is associated\nwith a master prim that serves as the root of the scenegraph. This hierarchy\nreduces the time needed to load the file. Instanced prims must be manually\ntagged.";
+        checkBoxGrp -label "Instanced Prims: " -label1 "Convert to Instances" -cw 1 $cw1 -value1 1 -ann $instancedAnn mayaUsdTranslator_ImportInstancesCheckBox;
+
 //        optionMenuGrp -label "Include Metadata: " -cw 1 $cw1 mayaUsdTranslator_IncludeMetadataOptionMenu;
 //            menuItem "All";
 //            menuItem "None";
@@ -187,6 +188,8 @@ global proc int mayaUsdTranslatorImport (string $parent,
                     intFieldGrp -e -value2 $endTime mayaUsdTranslator_CustomFrameRange;
                 } else if ($optionBreakDown[0] == "useCustomFrameRange") {
                     mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_CustomFrameRangeCheckBox");
+                } else if ($optionBreakDown[0] == "importInstances") {
+                    mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_ImportInstancesCheckBox");
                 }
             }
         }
@@ -202,6 +205,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "useCustomFrameRange", "mayaUsdTranslator_CustomFrameRangeCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "startTime", 1, "mayaUsdTranslator_CustomFrameRange");
         $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "endTime", 2, "mayaUsdTranslator_CustomFrameRange");
+        $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importInstances", "mayaUsdTranslator_ImportInstancesCheckBox");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

@@ -23,7 +23,7 @@
 #include <memory>
 #include <string>
 
-namespace MAYAUSD_NS {
+namespace MAYAUSD_NS_DEF {
 
 namespace Impl {
 class SetEditTarget;
@@ -65,4 +65,4 @@ private:
     std::unique_ptr<Impl::SetEditTarget> _setEditTarget;
 };
 
-} // namespace MAYAUSD_NS
+} // namespace MAYAUSD_NS_DEF

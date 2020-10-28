@@ -25,7 +25,7 @@
 
 #include <mayaUsd/fileio/jobs/readJob.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand
 {
@@ -44,6 +44,7 @@ class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand
     static constexpr auto kShadingModeFlag = "shd";
     static constexpr auto kPreferredMaterialFlag = "prm";
     static constexpr auto kAssemblyRepFlag = "ar";
+    static constexpr auto kImportInstancesFlag = "ii";
     static constexpr auto kMetadataFlag = "md";
     static constexpr auto kApiSchemaFlag = "api";
     static constexpr auto kExcludePrimvarFlag = "epv";

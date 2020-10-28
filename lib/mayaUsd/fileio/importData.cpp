@@ -17,7 +17,7 @@
 
 #include <type_traits>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 //------------------------------------------------------------------------------
 // ImportData:

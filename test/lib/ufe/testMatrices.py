@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-from ufeTestUtils import usdUtils, mayaUtils
+import usdUtils, mayaUtils
 
 import ufe
 
@@ -62,7 +62,7 @@ class Transform3dMatricesTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
 
-        # Open usdCylinder.ma scene in test-samples
+        # Open usdCylinder.ma scene in testSamples
         mayaUtils.openCylinderScene()
 
     def assertMatrixAlmostEqual(self, ma, mb):

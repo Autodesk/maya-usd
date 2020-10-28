@@ -17,7 +17,7 @@
 
 #include "private/UfeNotifGuard.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdUndoDeleteCommand::UsdUndoDeleteCommand(const UsdPrim& prim)

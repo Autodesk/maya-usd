@@ -23,10 +23,12 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
@@ -42,6 +44,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Maya material nodes attribute names
     (color)
+    (transparency)
     (diffuse)
     (incandescence)
     (normalCamera)
@@ -83,12 +86,41 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         usdTime,
         _tokens->diffuse);
 
+    const MPlug transparencyPlug =
+        depNodeFn.findPlug(
+            depNodeFn.attribute(_tokens->transparency.GetText()),
+            /* wantNetworkedPlug = */ true,
+            &status);
+    if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(transparencyPlug)) {
+        UsdShadeInput opacityInput =
+            shaderSchema.CreateInput(
+                PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName,
+                SdfValueTypeNames->Float);
+
+        // For attributes that are the destination of a connection, we create
+        // the input on the shader but we do *not* author a value for it. We
+        // expect its actual value to come from the source of its connection.
+        // We'll leave it to the shading export to handle creating the
+        // connections in USD.
+        if (!transparencyPlug.isDestination(&status)) {
+            const float transparencyAvg =
+                (transparencyPlug.child(0u).asFloat() +
+                 transparencyPlug.child(1u).asFloat() +
+                 transparencyPlug.child(2u).asFloat()) / 3.0f;
+
+            opacityInput.Set(1.0f - transparencyAvg, usdTime);
+        }
+    }
+
+    // Since incandescence in Maya and emissiveColor in UsdPreviewSurface are
+    // both black by default, only author it in USD if it is authored in Maya.
     AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
         _tokens->incandescence,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName,
-        usdTime);
+        usdTime,
+        /* ignoreIfUnauthored = */ true);
 
     // Exported, but unsupported in hdStorm.
     AuthorShaderInputFromShadingNodeAttr(
@@ -96,7 +128,9 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         _tokens->normalCamera,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
-        usdTime);
+        usdTime,
+        /* ignoreIfUnauthored = */ false,
+        /* inputTypeName = */ SdfValueTypeNames->Normal3f);
 
     WriteSpecular(usdTime);
 }
@@ -111,16 +145,12 @@ void PxrUsdTranslators_LambertWriter::WriteSpecular(const UsdTimeCode& usdTime)
         .CreateInput(PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, SdfValueTypeNames->Float)
         .Set(1.0f, usdTime);
 
-    // Using specular workflow, but enforced black specular color.
+    // Using specular workflow. There is no need to author the specular color
+    // since UsdPreviewSurface uses black as a fallback value.
     shaderSchema
         .CreateInput(
             PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName, SdfValueTypeNames->Int)
         .Set(1, usdTime);
-
-    shaderSchema
-        .CreateInput(PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName, SdfValueTypeNames->Color3f)
-        .Set(GfVec3f(0.0f, 0.0f, 0.0f), usdTime);
-
 }
 
 /* virtual */
@@ -131,6 +161,8 @@ PxrUsdTranslators_LambertWriter::GetShadingAttributeNameForMayaAttrName(const Tf
 
     if (mayaAttrName == _tokens->color) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->DiffuseColorAttrName;
+    } else if (mayaAttrName == _tokens->transparency) {
+        usdAttrName = PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName;
     } else if (mayaAttrName == _tokens->incandescence) {
         usdAttrName = PxrMayaUsdPreviewSurfaceTokens->EmissiveColorAttrName;
     } else if (mayaAttrName == _tokens->normalCamera) {
