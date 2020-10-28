@@ -169,6 +169,9 @@ def openAppleBiteScene():
 def openGroupBallsScene():
     return openTestScene("groupBalls", "ballset.ma" )
 
+def openPrimitivesScene():
+    return openTestScene("reorderCmd", "primitives.ma" )
+
 def createProxyAndStage():
     """
     Create in-memory stage
