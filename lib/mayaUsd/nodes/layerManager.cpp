@@ -211,7 +211,7 @@ namespace {
 
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class LayerDatabase : public TfWeakBase
 {

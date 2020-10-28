@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
     /*! \brief Maya dependency node responsible for serializing unsaved Usd edits to a Maya file.
 
