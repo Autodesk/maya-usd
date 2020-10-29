@@ -514,6 +514,12 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         sphereItem = ufe.Hierarchy.createItem(spherePath)
         usdSphereT3d = ufe.Transform3d.transform3d(sphereItem)
         
+        # If the Transform3d interface can't handle rotate or scale pivot
+        # compensation, skip this test.
+        if usdSphereT3d.translateRotatePivotCmd() is None or \
+           usdSphereT3d.translateScalePivotCmd() is None:
+            raise unittest.SkipTest("Rotate or scale pivot compensation unsupported.")
+
         # Maya object and its exported USD object twin should have the
         # same pivots and pivot compensations.
         checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)

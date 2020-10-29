@@ -108,6 +108,7 @@ auto toYZX = to<MEulerRotation::kYZX>;
 auto toZXY = to<MEulerRotation::kZXY>;
 auto toZYX = to<MEulerRotation::kZYX>;
 
+// Scalar float is the proper type for single-axis rotations.
 VtValue toX(double x, double, double) {
     VtValue v;
     v = float(x);
@@ -422,7 +423,7 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::rotation() const
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::scale() const
 {
-    if (!hasOp(NdxRotate)) {
+    if (!hasOp(NdxScale)) {
         return Ufe::Vector3d(1, 1, 1);
     }
     UsdGeomXformOp s = getOp(NdxScale);
