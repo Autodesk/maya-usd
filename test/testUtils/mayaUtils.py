@@ -19,16 +19,21 @@
 """
     Helper functions regarding Maya that will be used throughout the test.
 """
-import maya.cmds as cmds
-import sys, os
-import re
+
+from mayaUsd import lib as mayaUsdLib
+from mayaUsd import ufe as mayaUsdUfe
+
+from pxr import Usd
+from pxr import UsdGeom
+
+from maya import cmds
 
 import ufe
 
-from mayaUsd import lib as mayaUsdLib
-from pxr import Usd, UsdGeom
+import os
+import re
+import sys
 
-mayaRuntimeID = 1
 mayaSeparator = "|"
 
 prRe = re.compile('Preview Release ([0-9]+)')
@@ -100,7 +105,8 @@ def createUfePathSegment(mayaPath):
     """
     if not mayaPath.startswith("|world"):
         mayaPath = "|world" + mayaPath
-    return ufe.PathSegment(mayaPath, mayaRuntimeID, mayaSeparator)
+    return ufe.PathSegment(mayaPath, mayaUsdUfe.getMayaRunTimeId(),
+        mayaSeparator)
 
     
 def getMayaSelectionList():
@@ -116,6 +122,13 @@ def getMayaSelectionList():
         return [x.encode('UTF8') for x in cmds.ls(sl=True)]
     else:
         return [x for x in cmds.ls(sl=True)]
+
+def getTestScene(*args):
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", *args)
+
+def openTestScene(*args):
+    filePath = getTestScene(*args)
+    cmds.file(filePath, force=True, open=True)
 
 def openTopLayerScene():
     '''
@@ -133,36 +146,31 @@ def openTopLayerScene():
                                     /Ball_35
     '''
     # Open top_layer file which contains the USD scene
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "ballset", "StandaloneScene", "top_layer.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("ballset", "StandaloneScene", "top_layer.ma" )
 
 def openCylinderScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "cylinder", "usdCylinder.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("cylinder", "usdCylinder.ma" )
 
 def openTwoSpheresScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "twoSpheres", "twoSpheres.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("twoSpheres", "twoSpheres.ma" )
 
 def openSphereAnimatedRadiusScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("sphereAnimatedRadius", "sphereAnimatedRadiusProxyShape.ma" )
 
 def openTreeScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "tree", "tree.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("tree", "tree.ma" )
 
 def openTreeRefScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "tree", "treeRef.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("tree", "treeRef.ma" )
 
 def openAppleBiteScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "appleBite", "appleBite.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("appleBite", "appleBite.ma" )
 
 def openGroupBallsScene():
-    filePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", "groupBalls", "ballset.ma" )
-    cmds.file(filePath, force=True, open=True)
+    return openTestScene("groupBalls", "ballset.ma" )
+
+def openPrimitivesScene():
+    return openTestScene("reorderCmd", "primitives.ma" )
 
 def createProxyAndStage():
     """

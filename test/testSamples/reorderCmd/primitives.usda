@@ -1,0 +1,53 @@
+#usda 1.0
+
+def Xform "Xform1"
+{
+    def Capsule "Capsule1"
+    {
+        double3 xformOp:translate = (-7.607727590772411, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cone "Cone1"
+    {
+        double3 xformOp:translate = (-2.986010731900584, -3.534467217462761, -0.5436290254897678)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cube "Cube1"
+    {
+        double3 xformOp:translate = (3.970508182982382, -2.7311656363302603, 1.1741844108896409)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cylinder "Cylinder1"
+    {
+        double3 xformOp:translate = (5.009519938016915, 1.2977105186817894, 2.4365802837636696)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "Sphere1"
+    {
+        double3 xformOp:translate = (-4.965455570134174, -0.09389110573597037, 4.443657435819965)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "Sphere2"
+    {
+        double3 xformOp:translate = (-0.5527416759188446, 0.6708366258753031, 6.8059410098320825)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "Sphere3"
+    {
+        double3 xformOp:translate = (-0.606326554504018, -0.7060700109306381, 1.9297408220127679)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "Sphere4"
+    {
+        double3 xformOp:translate = (1.3242755094579097, 2.6282557204081325, 3.771510933679874)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
