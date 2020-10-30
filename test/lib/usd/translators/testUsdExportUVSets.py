@@ -105,17 +105,17 @@ class testUsdExportUVSets(unittest.TestCase):
     def testExportEmptyDefaultUVSet(self):
         """
         Tests that a cube mesh with an empty default UV set (named 'map1' in
-        Maya) does NOT get exported as 'st'.
+        Maya) does NOT get exported as 'map1'.
         """
         usdCubeMesh = self._GetCubeUsdMesh('EmptyDefaultUVSetCube')
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = usdCubeMesh.GetPrimvar('map1')
         self.assertFalse(primvar)
 
     def testExportDefaultUVSet(self):
         """
         Tests that a cube mesh with the default values for the default UV set
-        (named 'map1' in Maya) gets exported correctly as 'st'.
+        (named 'map1' in Maya) gets exported correctly as 'map1'.
         """
         usdCubeMesh = self._GetCubeUsdMesh('DefaultUVSetCube')
 
@@ -150,7 +150,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = usdCubeMesh.GetPrimvar('map1')
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
             expectedInterpolation=expectedInterpolation,
@@ -159,7 +159,7 @@ class testUsdExportUVSets(unittest.TestCase):
     def testExportOneMissingFaceUVSet(self):
         """
         Tests that a cube mesh with values for all but one face in the default
-        UV set (named 'map1' in Maya) gets exported correctly as 'st'.
+        UV set (named 'map1' in Maya) gets exported correctly as 'map1'.
         """
         usdCubeMesh = self._GetCubeUsdMesh('OneMissingFaceCube')
 
@@ -192,7 +192,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = usdCubeMesh.GetPrimvar('map1')
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
             expectedInterpolation=expectedInterpolation,
@@ -202,7 +202,7 @@ class testUsdExportUVSets(unittest.TestCase):
     def testExportOneAssignedFaceUVSet(self):
         """
         Tests that a cube mesh with values for only one face in the default
-        UV set (named 'map1' in Maya) gets exported correctly as 'st'.
+        UV set (named 'map1' in Maya) gets exported correctly as 'map1'.
         """
         usdCubeMesh = self._GetCubeUsdMesh('OneAssignedFaceCube')
 
@@ -225,7 +225,7 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        primvar = usdCubeMesh.GetPrimvar('map1')
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
             expectedInterpolation=expectedInterpolation,
@@ -350,7 +350,7 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         brokenBoxMesh = UsdGeom.Mesh(self._stage.GetPrimAtPath(
                 "/UsdExportUVSetsTest/Geom/BrokenUVs/box"))
-        stPrimvar = brokenBoxMesh.GetPrimvar("st").ComputeFlattened()
+        stPrimvar = brokenBoxMesh.GetPrimvar("map1").ComputeFlattened()
         self.assertEqual(stPrimvar[0], Gf.Vec2f(1.0, 1.0))
 
 if __name__ == '__main__':
