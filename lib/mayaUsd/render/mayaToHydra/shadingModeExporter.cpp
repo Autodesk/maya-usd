@@ -132,7 +132,7 @@ public:
             context.GetAssignments();
         if (assignments.empty()) { return; }
 
-        UsdPrim materialPrim = context.MakeStandardMaterialPrim(
+        UsdPrim materialPrim = context.MakeAndBindStandardMaterialPrim(
             assignments, std::string(), boundPrimPaths);
         UsdShadeMaterial material(materialPrim);
         if (!material) { return; }

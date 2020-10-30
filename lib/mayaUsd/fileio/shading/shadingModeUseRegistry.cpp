@@ -329,11 +329,7 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                 return;
             }
 
-            UsdPrim materialPrim =
-                context.MakeStandardMaterialPrim(
-                    assignments,
-                    std::string(),
-                    boundPrimPaths);
+            UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments, std::string());
             UsdShadeMaterial material(materialPrim);
             if (!material) {
                 return;
@@ -381,6 +377,8 @@ class UseRegistryShadingModeExporter : public UsdMayaShadingModeExporter
                 material,
                 UsdShadeTokens->displacement,
                 renderContext);
+
+            context.BindStandardMaterialPrim(materialPrim, assignments, boundPrimPaths);
         }
 };
 

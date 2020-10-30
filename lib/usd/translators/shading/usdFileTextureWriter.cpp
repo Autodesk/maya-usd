@@ -33,6 +33,7 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/output.h>
+#include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
@@ -170,11 +171,35 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
     primvarReaderShaderSchema.CreateIdAttr(
         VtValue(_tokens->UsdPrimvarReader_float2));
 
-    // XXX: We'll eventually need to to determine which UV set to use if we're
-    // not using the default (i.e. "map1" in Maya -> "st" in USD).
-    primvarReaderShaderSchema.CreateInput(
+    UsdShadeInput varnameInput = primvarReaderShaderSchema.CreateInput(
         _tokens->varname,
-        SdfValueTypeNames->Token).Set(UsdUtilsGetPrimaryUVSetName());
+        SdfValueTypeNames->Token);
+
+    // We expose the primvar reader varname attribute to the material to allow
+    // easy specialization based on UV mappings to geometries:
+    SdfPath          materialPath = GetUsdPath().GetParentPath();
+    UsdShadeMaterial materialSchema(GetUsdStage()->GetPrimAtPath(materialPath));
+    while (!materialSchema && !materialPath.IsEmpty()) {
+        materialPath = materialPath.GetParentPath();
+        materialSchema = UsdShadeMaterial(GetUsdStage()->GetPrimAtPath(materialPath));
+    }
+
+    if (materialSchema) {
+        TfToken inputName(
+            TfStringPrintf("%s:%s", depNodeFn.name().asChar(), _tokens->varname.GetText()));
+        UsdShadeInput materialInput
+            = materialSchema.CreateInput(inputName, SdfValueTypeNames->Token);
+        materialInput.Set(UsdUtilsGetPrimaryUVSetName());
+        varnameInput.ConnectToSource(materialInput);
+        // Note: This needs to be done for all nodes that require UV input. In
+        // the UsdPreviewSurface case, the file node is the only one, but for
+        // other Maya nodes like cloth, checker, mandelbrot, we will also need
+        // to resolve the UV channels. This means traversing UV inputs until we
+        // find the unconnected one that implicitly connects to uvSet[0] of the
+        // geometry, or an explicit uvChooser node connecting to alternate uvSets.
+    } else {
+        varnameInput.Set(UsdUtilsGetPrimaryUVSetName());
+    }
 
     UsdShadeOutput primvarReaderOutput =
         primvarReaderShaderSchema.CreateOutput(

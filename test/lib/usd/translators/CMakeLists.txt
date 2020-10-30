@@ -38,6 +38,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportSkeleton.py
     testUsdExportStripNamespaces.py
     testUsdExportStroke.py
+    testUsdExportUVSetMappings.py
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py

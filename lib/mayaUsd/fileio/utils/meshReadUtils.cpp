@@ -245,12 +245,7 @@ namespace
         MString uvSetName(primvarName.GetText());
         bool createUVSet = true;
 
-        if (primvarName == UsdUtilsGetPrimaryUVSetName()) {
-            // We assume that the primary USD UV set maps to Maya's default 'map1'
-            // set which always exists, so we shouldn't try to create it.
-            uvSetName = UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText();
-            createUVSet = false;
-        } else if (!hasDefaultUVSet) {
+        if (!hasDefaultUVSet) {
             // If map1 still exists, we rename and re-use it:
             MStringArray uvSetNames;
             meshFn.getUVSetNames(uvSetNames);
@@ -632,8 +627,7 @@ UsdMayaMeshReadUtils::assignPrimvarsToMesh(const UsdGeomMesh& mesh,
         if (typeName == SdfValueTypeNames->TexCoord2fArray
             || (UsdMayaReadUtil::ReadFloat2AsUV() && typeName == SdfValueTypeNames->Float2Array)) {
             const TfToken fullName = primvar.GetPrimvarName();
-            if (fullName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName
-                || fullName == UsdUtilsGetPrimaryUVSetName()) {
+            if (fullName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName) {
                 hasDefaultUVSet = true;
             }
         }
