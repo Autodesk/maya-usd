@@ -322,7 +322,6 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 	bool expectedState = false;
 	if (stageSetGuardCount.compare_exchange_strong(expectedState,true))
 	{
-		stageSetGuardCount = true;
 		// We should have no listeners and stage map is dirty.
 		TF_VERIFY(g_StageMap.isDirty());
 		TF_VERIFY(fStageListeners.empty());
