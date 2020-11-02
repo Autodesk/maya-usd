@@ -319,7 +319,8 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
 	// Handle re-entrant onStageSet
-	if (!stageSetGuardCount.load())
+	bool expectedState = false;
+	if (stageSetGuardCount.compare_exchange_strong(expectedState,true))
 	{
 		stageSetGuardCount = true;
 		// We should have no listeners and stage map is dirty.
