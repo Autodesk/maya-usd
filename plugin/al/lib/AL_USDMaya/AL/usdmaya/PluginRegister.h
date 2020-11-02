@@ -346,7 +346,7 @@ template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
         true,
         MGlobal::optionVarIntValue("AL_usdmaya_pushToPrim"));
     AL::maya::utils::MenuBuilder::addEntry(
-        "USD/Selection Ignore Lock Prims Enabled",
+        "USD/Ignore Lock Prims",
         "optionVar -iv \\\"AL_usdmaya_ignoreLockPrims\\\" #1",
         true,
         MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims"));

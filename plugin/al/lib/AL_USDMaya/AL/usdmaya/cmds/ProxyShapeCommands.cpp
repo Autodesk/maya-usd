@@ -1039,8 +1039,7 @@ MStatus TranslatePrim::redoIt()
 
     // construct locks and selectability for imported prims
     if (m_proxy->isLockPrimFeatureActive()) {
-        m_proxy->removeMetaData(m_teardownPaths);
-        m_proxy->processChangedMetaData(SdfPathVector(), newImportPaths);
+        m_proxy->constructLockPrims();
     }
 
     if (!m_updatePaths.empty()) {

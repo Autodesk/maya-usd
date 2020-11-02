@@ -2088,12 +2088,104 @@ void ProxyShape::setChangedSelectionState(const bool hasSelectabilityChanged)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-AL::usdmaya::SelectabilityDB& ProxyShape::selectabilityDB() { return m_selectabilityDB; }
+bool ProxyShape::isPathUnselectable(const SdfPath& path) const
+{
+  if (!m_stage)
+  {
+    return false;
+  }
+  auto prim(m_stage->GetPrimAtPath(path));
+  if (!prim)
+  {
+    return false;
+  }
+  UnselectablePrimCache cache;
+  return isPrimUnselectable(prim, cache);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
-const AL::usdmaya::SelectabilityDB& ProxyShape::selectabilityDB() const
+bool ProxyShape::isPrimUnselectable(const UsdPrim& prim, UnselectablePrimCache& cache) const
 {
-    return const_cast<ProxyShape*>(this)->selectabilityDB();
+  TfHashSet<UsdPrim, boost::hash<UsdPrim>> cachedPrims;
+  auto updateCache = [&cache, &cachedPrims](bool value) {
+    for (auto &&cachedPrim: cachedPrims)
+    {
+      cache.insert(std::make_pair(cachedPrim, value));
+    }
+    return value;
+  };
+
+  auto parent(prim);
+  while(parent.IsValid() && !parent.IsPseudoRoot())
+  {
+    auto it = cache.find(parent);
+    if (it != cache.end())
+    {
+      return it->second;
+    }
+    cachedPrims.insert(parent);
+    TfToken token;
+    if(parent.GetMetadata<TfToken>(Metadata::selectability, &token) && token == Metadata::unselectable)
+    {
+      return updateCache(true);
+    }
+    parent = parent.GetParent();
+  }
+  return updateCache(false);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::isPathLocked(const SdfPath& path) const
+{
+  if (!m_stage)
+  {
+    return false;
+  }
+  auto prim(m_stage->GetPrimAtPath(path));
+  if (!prim)
+  {
+    return false;
+  }
+  LockPrimCache cache;
+  return isPrimLocked(prim, cache);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+bool ProxyShape::isPrimLocked(const UsdPrim& prim, LockPrimCache& cache) const
+{
+  TfHashSet<UsdPrim, boost::hash<UsdPrim>> cachedPrims;
+  auto updateCache = [&cache, &cachedPrims](bool value) {
+    for (auto &&cachedPrim: cachedPrims)
+    {
+      cache.insert(std::make_pair(cachedPrim, value));
+    }
+    return value;
+  };
+
+  auto parent(prim);
+  while(parent.IsValid() && !parent.IsPseudoRoot())
+  {
+    auto it = cache.find(parent);
+    if (it != cache.end())
+    {
+      return it->second;
+    }
+    cachedPrims.insert(parent);
+    TfToken token;
+    if (parent.GetMetadata<TfToken>(Metadata::locked, &token))
+    {
+      if (token == Metadata::lockTransform)
+      {
+        return updateCache(true);
+      }
+      else if (token == Metadata::lockUnlocked)
+      {
+        return updateCache(false);
+      }
+    }
+    parent = parent.GetParent();
+  }
+  return updateCache(false);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

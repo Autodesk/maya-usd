@@ -251,30 +251,28 @@ TEST(Selectability, selectableMetaData)
     ASSERT_TRUE(world);
     ASSERT_TRUE(cam);
 
-    AL::usdmaya::SelectabilityDB& db = proxy->selectabilityDB();
-
-    EXPECT_FALSE(db.isPathUnselectable(SdfPath("/hello")));
-    EXPECT_TRUE(db.isPathUnselectable(SdfPath("/hello/world")));
-    EXPECT_TRUE(db.isPathUnselectable(SdfPath("/hello/world/cam")));
+    EXPECT_FALSE(proxy->isPathUnselectable(SdfPath("/hello")));
+    EXPECT_TRUE(proxy->isPathUnselectable(SdfPath("/hello/world")));
+    EXPECT_TRUE(proxy->isPathUnselectable(SdfPath("/hello/world/cam")));
 
     UsdVariantSets sets = hello.GetVariantSets();
     EXPECT_TRUE(sets.SetSelection("slVariant", "selectable"));
 
-    EXPECT_FALSE(db.isPathUnselectable(SdfPath("/hello")));
-    EXPECT_FALSE(db.isPathUnselectable(SdfPath("/hello/world")));
-    EXPECT_FALSE(db.isPathUnselectable(SdfPath("/hello/world/cam")));
+    EXPECT_FALSE(proxy->isPathUnselectable(SdfPath("/hello")));
+    EXPECT_FALSE(proxy->isPathUnselectable(SdfPath("/hello/world")));
+    EXPECT_FALSE(proxy->isPathUnselectable(SdfPath("/hello/world/cam")));
 
     EXPECT_TRUE(sets.SetSelection("slVariant", "unselectable"));
 
-    EXPECT_FALSE(db.isPathUnselectable(SdfPath("/hello")));
-    EXPECT_TRUE(db.isPathUnselectable(SdfPath("/hello/world")));
-    EXPECT_TRUE(db.isPathUnselectable(SdfPath("/hello/world/cam")));
+    EXPECT_FALSE(proxy->isPathUnselectable(SdfPath("/hello")));
+    EXPECT_TRUE(proxy->isPathUnselectable(SdfPath("/hello/world")));
+    EXPECT_TRUE(proxy->isPathUnselectable(SdfPath("/hello/world/cam")));
 
     EXPECT_TRUE(sets.SetSelection("slVariant", "selectable_cam"));
 
-    EXPECT_FALSE(db.isPathUnselectable(SdfPath("/hello")));
-    EXPECT_TRUE(db.isPathUnselectable(SdfPath("/hello/world")));
-    EXPECT_TRUE(db.isPathUnselectable(SdfPath("/hello/world/cam")));
+    EXPECT_FALSE(proxy->isPathUnselectable(SdfPath("/hello")));
+    EXPECT_TRUE(proxy->isPathUnselectable(SdfPath("/hello/world")));
+    EXPECT_TRUE(proxy->isPathUnselectable(SdfPath("/hello/world/cam")));
 }
 
 // This test loads a usda file containing variants for the permutations of the excludedGeom tag.

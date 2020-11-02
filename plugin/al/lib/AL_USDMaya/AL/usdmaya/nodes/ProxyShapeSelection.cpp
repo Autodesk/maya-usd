@@ -533,20 +533,6 @@ MObject ProxyShape::makeUsdTransformChain(
         pushToPrim,
         readAnimatedValues);
 
-    // build up new lock-prim list
-    TfToken lockPropertyToken;
-    if (usdPrim.GetMetadata<TfToken>(Metadata::locked, &lockPropertyToken)) {
-        if (lockPropertyToken == Metadata::lockTransform) {
-            m_lockManager.setLocked(usdPrim.GetPath());
-        } else if (lockPropertyToken == Metadata::lockUnlocked) {
-            m_lockManager.setUnlocked(usdPrim.GetPath());
-        } else if (lockPropertyToken == Metadata::lockInherited) {
-            m_lockManager.setInherited(usdPrim.GetPath());
-        }
-    } else {
-        m_lockManager.setInherited(usdPrim.GetPath());
-    }
-
     if (resultingPath)
         *resultingPath = recordUsdPrimToMayaPath(usdPrim, node);
     else
@@ -677,7 +663,6 @@ void ProxyShape::removeUsdTransformChain_internal(
                 modifier.reparentNode(object);
                 modifier.deleteNode(object);
             }
-            m_lockManager.setInherited(primPath);
         }
 
         parentPrim = parentPrim.GetParent();
@@ -701,8 +686,6 @@ void ProxyShape::removeUsdTransformChain(
     MObject parentTM = MObject::kNullObj;
     MObject object = MObject::kNullObj;
 
-    // ensure the transforms have been removed from the selectability and lock db's.
-    m_lockManager.setInherited(path);
     while (!parentPrim.IsEmpty()) {
         auto it = m_requiredPaths.find(parentPrim);
         if (it == m_requiredPaths.end()) {
@@ -717,8 +700,6 @@ void ProxyShape::removeUsdTransformChain(
                 if (h.isAlive() && h.isValid()) {
                     modifier.reparentNode(object);
                     modifier.deleteNode(object);
-
-                    m_lockManager.setInherited(parentPrim);
                 }
             }
 
@@ -888,7 +869,7 @@ void SelectionUndoHelper::doIt()
         MGlobal::setActiveSelectionList(m_newSelection, MGlobal::kReplaceList);
     }
     m_proxy->m_pleaseIgnoreSelection = false;
-    if (!MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims")) {
+    if (m_proxy->isLockPrimFeatureActive()) {
         m_proxy->constructLockPrims();
     }
 }
@@ -911,7 +892,7 @@ void SelectionUndoHelper::undoIt()
         MGlobal::setActiveSelectionList(m_previousSelection, MGlobal::kReplaceList);
     }
     m_proxy->m_pleaseIgnoreSelection = false;
-    if (!MGlobal::optionVarIntValue("AL_usdmaya_ignoreLockPrims")) {
+    if (m_proxy->isLockPrimFeatureActive()) {
         m_proxy->constructLockPrims();
     }
 }
@@ -938,7 +919,6 @@ void ProxyShape::removeTransformRefs(
                             "TransformReference: %s\n",
                             it->first.GetText());
                     m_requiredPaths.erase(it);
-                    m_lockManager.setInherited(iter.first);
                 }
             }
 
