@@ -45,6 +45,7 @@
 #include <maya/MString.h>
 
 #include <boost/filesystem.hpp>
+#include <regex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -86,6 +87,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outTransparencyR)
     (outTransparencyG)
     (outTransparencyB)
+    (uvTilingMode)
     (wrapU)
     (wrapV)
 
@@ -124,6 +126,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((GreenOutputName, "g"))
     ((BlueOutputName, "b"))
     ((AlphaOutputName, "a"))
+    ((UDIMTag, "<UDIM>"))
 );
 
 UsdMayaShaderWriter::ContextSupport
@@ -188,6 +191,12 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
         SdfValueTypeNames->Float2).ConnectToSource(primvarReaderOutput);
 }
 
+namespace {
+// Match UDIM pattern, from 1001 to 1999
+const std::regex
+    _udimRegex(".*[^\\d](1(?:[0-9][0-9][1-9]|[1-9][1-9]0|0[1-9]0|[1-9]00))(?:[^\\d].*|$)");
+}
+
 /* virtual */
 void
 PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
@@ -238,6 +247,16 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         boost::filesystem::path relativePath = boost::filesystem::relative(fileTextureName, usdDir, ec);
         if (!ec && !relativePath.empty()) {
             fileTextureName = relativePath.generic_string();
+        }
+    }
+
+    // Update filename in case of UDIM
+    const MPlug tilingAttr = depNodeFn.findPlug(_tokens->uvTilingMode.GetText(), true, &status);
+    if (status == MS::kSuccess && tilingAttr.asInt() == 3) {
+        std::smatch match;
+        if (std::regex_search(fileTextureName, match, _udimRegex) && match.size() == 2) {
+            fileTextureName = std::string(match[0].first, match[1].first)
+                + _tokens->UDIMTag.GetString() + std::string(match[1].second, match[0].second);
         }
     }
 
