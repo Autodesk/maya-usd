@@ -44,12 +44,15 @@
 #include <ufe/attributes.h>
 #endif
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 namespace {
 
+// Prevent re-entrant stage set.
+std::atomic_bool stageSetGuardCount{false};
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
 // The attribute change notification guard is not meant to be nested, but
 // use a counter nonetheless to provide consistent behavior in such cases.
-	std::atomic_int attributeChangedNotificationGuardCount{0};
+std::atomic_int attributeChangedNotificationGuardCount{0};
 
 bool inAttributeChangedNotificationGuard()
 {
@@ -58,9 +61,8 @@ bool inAttributeChangedNotificationGuard()
 
 std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
 
-std::atomic_bool stageSetGuardCount{false};
-}
 #endif
+}
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
