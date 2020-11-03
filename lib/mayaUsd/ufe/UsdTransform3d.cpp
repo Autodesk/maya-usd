@@ -243,7 +243,7 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::rotatePivotTranslateCmd()
     #endif
 }
 
-void UsdTransform3d::rotatePivotTranslate(double x, double y, double z)
+void UsdTransform3d::rotatePivot(double x, double y, double z)
 {
     rotatePivotTranslateOp(prim(), path(), x, y, z);
 }
@@ -282,15 +282,41 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::scalePivotTranslateCmd()
     throw std::runtime_error("UsdTransform3d::scalePivotTranslateCmd() not implemented");
 }
 
-void UsdTransform3d::scalePivotTranslate(double x, double y, double z)
+void UsdTransform3d::scalePivot(double x, double y, double z)
 {
-    return rotatePivotTranslate(x, y, z);
+    throw std::runtime_error("UsdTransform3d::scalePivot() not implemented");
 }
 #endif
 
 Ufe::Vector3d UsdTransform3d::scalePivot() const
 {
     return rotatePivot();
+}
+
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateRotatePivotCmd(
+    double, double, double)
+{
+	// USD common transform API does not support rotate pivot correction.
+	return nullptr;
+}
+
+Ufe::Vector3d UsdTransform3d::rotatePivotTranslation() const
+{
+	// USD common transform API does not support rotate pivot correction.
+	return Ufe::Vector3d(0, 0, 0);
+}
+
+Ufe::TranslateUndoableCommand::Ptr UsdTransform3d::translateScalePivotCmd(
+    double, double, double)
+{
+	// USD common transform API does not support scale pivot correction.
+	return nullptr;
+}
+
+Ufe::Vector3d UsdTransform3d::scalePivotTranslation() const
+{
+	// USD common transform API does not support scale pivot correction.
+	return Ufe::Vector3d(0, 0, 0);
 }
 
 Ufe::Matrix4d UsdTransform3d::segmentInclusiveMatrix() const
