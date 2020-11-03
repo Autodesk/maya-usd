@@ -21,6 +21,8 @@ from pxr import UsdShade
 from maya import cmds
 from maya import standalone
 
+import mayaUsd.lib as mayaUsdLib
+
 import os
 import unittest
 
@@ -31,7 +33,11 @@ class testUsdExportUVSetMappings(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        inputPath = fixturesUtils.setUpClass(__file__)
+        suffix = ""
+        if mayaUsdLib.WriteUtil.WriteMap1AsST():
+            suffix += "ST"
+
+        inputPath = fixturesUtils.setUpClass(__file__, suffix)
 
         mayaFile = os.path.join(inputPath, 'UsdExportUVSetMappingsTest',
             'UsdExportUVSetMappingsTest.ma')
@@ -69,6 +75,15 @@ class testUsdExportUVSetMappings(unittest.TestCase):
             ("/pPlane6", "/blinn1SG_p62_p63_p61", "p62", "p63", "p61"),
             ("/pPlane7", "/blinn1SG_p7r_p7p_p7q", "p7r", "p7p", "p7q"),
         ]
+
+        if mayaUsdLib.WriteUtil.WriteMap1AsST():
+            # map1 renaming has almost no impact here. Getting better results
+            # for that test would require something more radical, possibly
+            #    uvSet[0] is always renamed to "st"
+            # Which would reuse a single material for the first four planes.
+            #
+            # As currently implemented, the renaming affects only one material:
+            expected[0] = ("/pPlane1", "/blinn1SG_st_st_st", "st", "st", "st")
 
         for mesh_name, mat_name, f1_name, f2_name, f3_name in expected:
             plane_prim = self._stage.GetPrimAtPath(mesh_name)

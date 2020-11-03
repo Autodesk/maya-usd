@@ -109,22 +109,6 @@ public:
     MAYAUSD_CORE_PUBLIC
     AssignmentVector GetAssignments() const;
 
-    /// Use this function to create a UsdShadeMaterial prim at the "standard"
-    /// location and bind it to all assignments provided. The "standard" location
-    /// may change depending on arguments that are passed to the export script.
-    ///
-    /// Note: Call this function if correct UV linking is not a requirement. Use
-    ///       the two-stage version otherwise.
-    ///
-    /// If \p boundPrimPaths is not NULL, it is populated with the set of
-    /// prim paths that were bound to the created material prim, based on the
-    /// given \p assignmentsToBind.
-    MAYAUSD_CORE_PUBLIC
-    UsdPrim MakeAndBindStandardMaterialPrim(
-            const AssignmentVector& assignmentsToBind,
-            const std::string& name=std::string(),
-            SdfPathSet* const boundPrimPaths=nullptr) const;
-
     /// Use this function to create a UsdShadeMaterial prim at a "standard"
     /// location computed by browsing the \p assignmentsToBind
     MAYAUSD_CORE_PUBLIC

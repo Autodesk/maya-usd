@@ -70,6 +70,10 @@ class testUsdImportUVSets(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.asFloat2 = mayaUsdLib.ReadUtil.ReadFloat2AsUV()
+        cls.defaultUVName = "st"
+        if mayaUsdLib.ReadUtil.ReadSTAsMap1():
+            cls.defaultUVName = "map1"
+
         cls.inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
         if cls.asFloat2: 
@@ -98,7 +102,7 @@ class testUsdImportUVSets(unittest.TestCase):
     def testImportDefaultUVSet(self):
         """
         Tests that a USD cube mesh with the Maya default values for the default
-        UV set (named 'st' in USD) gets imported correctly as 'map1'.
+        UV set (named 'st' in USD) gets imported correctly.
         """
         mayaCubeMesh = self._GetMayaMesh('DefaultUVSetCubeShape')
 
@@ -130,13 +134,13 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'st', expectedValues,
+        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
             expectedNumValues=14)
 
     def testImportOneMissingFaceUVSet(self):
         """
         Tests that a USD cube mesh with values for all but one face in the
-        default UV set (named 'st' in USD) gets imported correctly as 'st'.
+        default UV set (named 'st' in USD) gets imported correctly.
         """
         mayaCubeMesh = self._GetMayaMesh('OneMissingFaceCubeShape')
 
@@ -163,13 +167,13 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'st', expectedValues,
+        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
             expectedNumValues=14)
 
     def testImportOneAssignedFaceUVSet(self):
         """
         Tests that a USD cube mesh with values for only one face in the default
-        UV set (named 'st' in USD) gets imported correctly as 'st'.
+        UV set (named 'st' in USD) gets imported correctly.
         """
         mayaCubeMesh = self._GetMayaMesh('OneAssignedFaceCubeShape')
 
@@ -180,7 +184,7 @@ class testUsdImportUVSets(unittest.TestCase):
             11: Gf.Vec2f(0.375, 0.75)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'st', expectedValues,
+        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
             expectedNumValues=4)
 
     def testImportCompressibleUVSets(self):
@@ -344,7 +348,7 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'st', expectedValues,
+        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
             expectedNumValues=14)
 
 if __name__ == '__main__':

@@ -315,6 +315,7 @@ pxr_register_test(testUsdMayaUserExportedAttributes
         MAYA_DISABLE_CIP=1
         MAYA_NO_STANDALONE_ATEXIT=1
         MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
+        MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET=1
 )
 
 pxr_install_test_dir(

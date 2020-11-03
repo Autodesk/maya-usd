@@ -237,8 +237,8 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         }
         expectedPrimvarNames = set(expectedPrimvars.keys())
         # Getting all primvars will also include the built-in displayColor,
-        # displayOpacity, and map1.
-        expectedPrimvarNames.update(['displayColor', 'displayOpacity', 'map1'])
+        # displayOpacity, and st.
+        expectedPrimvarNames.update(['displayColor', 'displayOpacity', 'st'])
 
         gprim = UsdGeom.Gprim(prim)
         self.assertTrue(gprim)
@@ -390,7 +390,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         # by counting the primvars (which include the Ri attributes,
         # encoded in USD as primvars).
         # Getting all primvars will also include the built-in displayColor,
-        # displayOpacity, and map1, so we add 3 to the length of the
+        # displayOpacity, and st, so we add 3 to the length of the
         # exportedAttrsDict for that check.
         primvars = gprim.GetPrimvars()
         self.assertEqual(len(primvars), len(exportedAttrsDict)*2 + 3)

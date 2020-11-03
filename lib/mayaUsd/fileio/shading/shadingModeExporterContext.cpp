@@ -47,9 +47,11 @@
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/materialBindingAPI.h>
 #include <pxr/usd/usdShade/shader.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
@@ -62,6 +64,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (volumeShader)
     (displacementShader)
     (varname)
+    (map1)
 );
 
 
@@ -422,16 +425,6 @@ _UninstancePrim(
     return stage->OverridePrim(path);
 }
 
-UsdPrim UsdMayaShadingModeExportContext::MakeAndBindStandardMaterialPrim(
-    const AssignmentVector& assignmentsToBind,
-    const std::string&      name,
-    SdfPathSet* const       boundPrimPaths) const
-{
-    UsdPrim materialPrim = MakeStandardMaterialPrim(assignmentsToBind, name);
-    BindStandardMaterialPrim(materialPrim, assignmentsToBind, boundPrimPaths);
-    return materialPrim;
-}
-
 UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
     const AssignmentVector& assignmentsToBind,
     const std::string&      name) const
@@ -476,6 +469,18 @@ public:
         : _material(material)
     {
         // Find out the nodes requiring mapping:
+        //
+        // The following naming convention is used on UsdShadeMaterial inputs to declare Maya
+        // shader nodes contained in the material that have UV inputs that requires mapping:
+        //
+        //      token inputs:node_with_uv_input:varname = "st"
+        //
+        // The "node_with_uv_input" is a dependency node which is a valid target for the Maya
+        // "uvLink" command, which describes UV linkage for all shapes in the scene that reference
+        // the material containing the exported shader node.
+        //
+        // See lib\usd\translators\shading\usdFileTextureWriter.cpp for an example of an exporter
+        // declaring UV inputs that require linking.
         for (const UsdShadeInput& input : material.GetInputs()) {
             const UsdAttribute&      usdAttr = input.GetAttr();
             std::vector<std::string> splitName = usdAttr.SplitName();
@@ -504,22 +509,28 @@ public:
                 MString getAttrCmd;
                 getAttrCmd.format("getAttr \"^1s\";", uvSetRef.c_str());
                 TfToken getAttrResult(MGlobal::executeCommandStringResult(getAttrCmd).asChar());
+
+                // Check if map1 should export as st:
+                if (getAttrResult == _tokens->map1 && UsdMayaWriteUtil::WriteMap1AsST()) {
+                    getAttrResult = UsdUtilsGetPrimaryUVSetName();
+                }
+
                 _shapeNameToUVNames[shapeName].push_back(getAttrResult);
             }
         }
 
         // Group the shapes by UV mappings:
-        using MappingGroups = std::map<NameVec, NameVec>;
+        using MappingGroups = std::map<TfTokenVector, TfTokenVector>;
         MappingGroups mappingGroups;
         for (const auto& iter : _shapeNameToUVNames) {
             const TfToken& shapeName = iter.first;
-            const NameVec& streams = iter.second;
+            const TfTokenVector& streams = iter.second;
             mappingGroups[streams].push_back(shapeName);
         }
 
         // Find out the most common one, which will take over the unspecialized material:
         size_t  largestSize = 0;
-        NameVec largestSet;
+        TfTokenVector largestSet;
         for (const auto& iter : mappingGroups) {
             if (iter.second.size() > largestSize) {
                 largestSize = iter.second.size();
@@ -529,8 +540,8 @@ public:
 
         // Update the original material with the most common mapping:
         if (largestSize) {
-            NameVec::const_iterator itNode = _nodesWithUVInput.cbegin();
-            NameVec::const_iterator itName = largestSet.cbegin();
+            TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
+            TfTokenVector::const_iterator itName = largestSet.cbegin();
             for (; itNode != _nodesWithUVInput.cend(); ++itNode, ++itName) {
                 TfToken inputName(
                     TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
@@ -544,7 +555,7 @@ public:
     const UsdShadeMaterial& getMaterial(const TfToken& shapeName)
     {
         // Look for an existing material for the requested shape:
-        const NameVec&                   uvNames = _shapeNameToUVNames[shapeName];
+        const TfTokenVector&                   uvNames = _shapeNameToUVNames[shapeName];
         MaterialMappings::const_iterator iter = _uvNamesToMaterial.find(uvNames);
         if (iter != _uvNamesToMaterial.end()) {
             return iter->second;
@@ -562,8 +573,8 @@ public:
             = UsdShadeMaterial::Define(_material.GetPrim().GetStage(), newPath);
         newMaterial.GetPrim().GetSpecializes().AddSpecialize(_material.GetPrim().GetPath());
 
-        NameVec::const_iterator itNode = _nodesWithUVInput.cbegin();
-        NameVec::const_iterator itName = uvNames.cbegin();
+        TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
+        TfTokenVector::const_iterator itName = uvNames.cbegin();
         for (; itNode != _nodesWithUVInput.cend(); ++itNode, ++itName) {
             TfToken inputName(
                 TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
@@ -580,11 +591,10 @@ private:
     /// The original material:
     const UsdShadeMaterial& _material;
     /// Helper structures for UV set mappings:
-    using NameVec = std::vector<TfToken>;
-    NameVec _nodesWithUVInput;
-    using ShapeToStreams = std::map<TfToken, NameVec>;
+    TfTokenVector _nodesWithUVInput;
+    using ShapeToStreams = std::map<TfToken, TfTokenVector>;
     ShapeToStreams _shapeNameToUVNames;
-    using MaterialMappings = std::map<NameVec, UsdShadeMaterial>;
+    using MaterialMappings = std::map<TfTokenVector, UsdShadeMaterial>;
     MaterialMappings _uvNamesToMaterial;
 };
 } // namespace

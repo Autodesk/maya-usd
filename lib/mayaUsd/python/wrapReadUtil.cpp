@@ -92,6 +92,8 @@ void wrapReadUtil()
     class_<This>("ReadUtil", no_init)
         .def("ReadFloat2AsUV", This::ReadFloat2AsUV)
         .staticmethod("ReadFloat2AsUV")
+        .def("ReadSTAsMap1", This::ReadSTAsMap1)
+        .staticmethod("ReadSTAsMap1")
         .def("FindOrCreateMayaAttr", _FindOrCreateMayaAttr,
             (arg("typeName"), arg("variability"), arg("nodeName"),
              arg("attrName"), arg("attrNiceName")=std::string()))

@@ -828,9 +828,16 @@ UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn,
             continue;
         }
 
+        // Rename "map1" as "st" to follow Pixar/USD convention if requested.
+        TfToken setName(uvSetNames[i].asChar());
+        if (setName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()
+            && UsdMayaWriteUtil::WriteMap1AsST()) {
+            setName = UsdUtilsGetPrimaryUVSetName();
+        }
+
         // create UV PrimVar
         createUVPrimVar(primSchema,
-                        TfToken(uvSetNames[i].asChar()),
+                        setName,
                         usdTime,
                         uvValues,
                         interpolation,

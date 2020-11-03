@@ -54,6 +54,11 @@ struct UsdMayaWriteUtil
     MAYAUSD_CORE_PUBLIC
     static bool WriteUVAsFloat2();
 
+    /// Returns whether the environment setting for renaming map1 TexCoord to st
+    /// is set to true
+    MAYAUSD_CORE_PUBLIC
+    static bool WriteMap1AsST();
+
     /// Given an \p attrPlug, try to create a USD attribute on \p usdPrim with
     /// the name \p attrName. Note, it's value will not be set.
     ///
