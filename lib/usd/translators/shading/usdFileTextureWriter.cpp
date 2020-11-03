@@ -87,9 +87,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outTransparencyR)
     (outTransparencyG)
     (outTransparencyB)
-    (uvTilingMode)
     (wrapU)
     (wrapV)
+
+    // UDIM handling:
+    (uvTilingMode)
+    ((UDIMTag, "<UDIM>"))
 
     // XXX: We duplicate these tokens here rather than create a dependency on
     // usdImaging in case the plugin is being built with imaging disabled.
@@ -126,7 +129,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((GreenOutputName, "g"))
     ((BlueOutputName, "b"))
     ((AlphaOutputName, "a"))
-    ((UDIMTag, "<UDIM>"))
 );
 
 UsdMayaShaderWriter::ContextSupport
