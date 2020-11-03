@@ -1009,22 +1009,31 @@ void HdVP2Mesh::_UpdateDrawItem(
                 alphaInterp = HdInterpolationConstant;
             }
 
-            if (colorInterp == HdInterpolationConstant &&
-                alphaInterp == HdInterpolationConstant) {
-                // Use fallback shader if there is no material binding or we
-                // failed to create a shader instance from the material.
-                if (!stateToCommit._shader) {
-                    const GfVec3f& color = UsdMayaColorSpace::ConvertLinearToMaya(colorArray[0]);
+            bool prepareCPVBuffer = true;
 
-                    MHWRender::MShaderInstance* shader = _delegate->GetFallbackShader(
-                        MColor(color[0], color[1], color[2], alphaArray[0]));
-                    if (shader != nullptr && shader != drawItemData._shader) {
-                        drawItemData._shader = shader;
-                        stateToCommit._shader = shader;
-                    }
+            // Use fallback shader if there is no material binding or we failed to create a shader
+            // instance for the material.
+            if (!stateToCommit._shader) {
+                MHWRender::MShaderInstance* shader = nullptr;
+
+                if (colorInterp == HdInterpolationConstant
+                    && alphaInterp == HdInterpolationConstant) {
+                    prepareCPVBuffer = false;
+
+                    const GfVec3f& clr3f = UsdMayaColorSpace::ConvertLinearToMaya(colorArray[0]);
+                    const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
+                    shader = _delegate->GetFallbackShader(color);
+                } else {
+                    shader = _delegate->GetFallbackCPVShader();
+                }
+
+                if (shader != nullptr && shader != drawItemData._shader) {
+                    drawItemData._shader = shader;
+                    stateToCommit._shader = shader;
                 }
             }
-            else {
+
+            if (prepareCPVBuffer) {
                 if (!drawItemData._colorBuffer) {
                     const MHWRender::MVertexBufferDescriptor vbDesc("",
                         MHWRender::MGeometry::kColor,
@@ -1049,16 +1058,6 @@ void HdVP2Mesh::_UpdateDrawItem(
                         _rprimId, topology, HdTokens->displayOpacity, alphaArray, alphaInterp);
 
                     stateToCommit._colorBufferData = bufferData;
-                }
-
-                // Use fallback CPV shader if there is no material binding or
-                // we failed to create a shader instance from the material.
-                if (!stateToCommit._shader) {
-                    MHWRender::MShaderInstance* shader = _delegate->GetFallbackCPVShader();
-                    if (shader != nullptr && shader != drawItemData._shader) {
-                        drawItemData._shader = shader;
-                        stateToCommit._shader = shader;
-                    }
                 }
             }
 

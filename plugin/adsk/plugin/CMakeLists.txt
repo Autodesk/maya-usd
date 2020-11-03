@@ -38,7 +38,6 @@ target_compile_definitions(${TARGET_NAME}
     PRIVATE
         MAYAUSD_PLUGIN_EXPORT
         $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
 if(DEFINED MAYAUSD_VERSION)

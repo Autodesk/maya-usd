@@ -171,7 +171,6 @@ target_compile_definitions(${LIBRARY_NAME}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
 target_include_directories(
