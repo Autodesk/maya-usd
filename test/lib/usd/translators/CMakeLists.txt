@@ -100,6 +100,7 @@ mayaUsd_add_test(testUsdExportUVSets
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
+        "MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET=0"
 )
 set_property(TEST testUsdExportUVSets APPEND PROPERTY LABELS translators)
 
@@ -108,14 +109,43 @@ mayaUsd_add_test(testUsdExportUVSetsFloat
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_WRITE_UV_AS_FLOAT2=1"
+        "MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET=0"
 )
 set_property(TEST testUsdExportUVSetsFloat APPEND PROPERTY LABELS translators)
+
+mayaUsd_add_test(testUsdExportUVSetsST
+    PYTHON_MODULE testUsdExportUVSets
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
+        "MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET=1"
+)
+set_property(TEST testUsdExportUVSetsST APPEND PROPERTY LABELS translators)
+
+mayaUsd_add_test(testUsdExportUVSetMappings
+    PYTHON_MODULE testUsdExportUVSetMappings
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
+        "MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET=0"
+)
+set_property(TEST testUsdExportUVSetMappings APPEND PROPERTY LABELS translators)
+
+mayaUsd_add_test(testUsdExportUVSetMappingsST
+    PYTHON_MODULE testUsdExportUVSetMappings
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "PIXMAYA_WRITE_UV_AS_FLOAT2=0"
+        "MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET=1"
+)
+set_property(TEST testUsdExportUVSetMappingsST APPEND PROPERTY LABELS translators)
 
 mayaUsd_add_test(testUsdImportUVSets
     PYTHON_MODULE testUsdImportUVSets
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_READ_FLOAT2_AS_UV=0"
+        "MAYAUSD_IMPORT_PRIMARY_UV_SET_AS_MAP1=0"
 )
 set_property(TEST testUsdImportUVSets APPEND PROPERTY LABELS translators)
 
@@ -124,8 +154,18 @@ mayaUsd_add_test(testUsdImportUVSetsFloat
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
         "PIXMAYA_READ_FLOAT2_AS_UV=1"
+        "MAYAUSD_IMPORT_PRIMARY_UV_SET_AS_MAP1=0"
 )
 set_property(TEST testUsdImportUVSetsFloat APPEND PROPERTY LABELS translators)
+
+mayaUsd_add_test(testUsdImportUVSetsST
+    PYTHON_MODULE testUsdImportUVSets
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "PIXMAYA_READ_FLOAT2_AS_UV=0"
+        "MAYAUSD_IMPORT_PRIMARY_UV_SET_AS_MAP1=1"
+)
+set_property(TEST testUsdImportUVSetsST APPEND PROPERTY LABELS translators)
 
 # Test using standardSurface, which was introduced in Maya 2020.
 if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)

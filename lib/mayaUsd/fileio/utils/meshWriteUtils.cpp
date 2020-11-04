@@ -828,11 +828,10 @@ UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(const MFnMesh& meshFn,
             continue;
         }
 
-        // XXX: We should be able to configure the UV map name that triggers this
-        // behavior, and the name to which it exports.
-        // The UV Set "map1" is renamed st. This is a Pixar/USD convention.
+        // Rename "map1" as "st" to follow Pixar/USD convention if requested.
         TfToken setName(uvSetNames[i].asChar());
-        if (setName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()) {
+        if (setName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()
+            && UsdMayaWriteUtil::WriteMap1AsST()) {
             setName = UsdUtilsGetPrimaryUVSetName();
         }
 

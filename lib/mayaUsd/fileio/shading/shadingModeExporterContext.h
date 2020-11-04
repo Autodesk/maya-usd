@@ -94,7 +94,12 @@ public:
     /// targeting a subset of the bound prim's faces.
     /// If the list of faceIndices is empty, it means the assignment targets
     /// all the faces in the bound prim or the entire bound prim.
-    typedef std::pair<SdfPath, VtIntArray> Assignment;
+    struct Assignment
+    {
+        SdfPath    boundPrimPath;
+        VtIntArray faceIndices;
+        TfToken    shapeName;
+    };
 
     /// Vector of assignments.
     typedef std::vector<Assignment> AssignmentVector;
@@ -104,17 +109,22 @@ public:
     MAYAUSD_CORE_PUBLIC
     AssignmentVector GetAssignments() const;
 
-    /// Use this function to create a UsdShadeMaterial prim at the "standard"
-    /// location.  The "standard" location may change depending on arguments
-    /// that are passed to the export script.
+    /// Use this function to create a UsdShadeMaterial prim at a "standard"
+    /// location computed by browsing the \p assignmentsToBind
+    MAYAUSD_CORE_PUBLIC
+    UsdPrim MakeStandardMaterialPrim(
+        const AssignmentVector& assignmentsToBind,
+        const std::string&      name = std::string()) const;
+
+    /// Use this function to bind a UsdShadeMaterial prim to all assignments provided.
     ///
     /// If \p boundPrimPaths is not NULL, it is populated with the set of
     /// prim paths that were bound to the created material prim, based on the
     /// given \p assignmentsToBind.
     MAYAUSD_CORE_PUBLIC
-    UsdPrim MakeStandardMaterialPrim(
+    void BindStandardMaterialPrim(
+            const UsdPrim & materialPrim,
             const AssignmentVector& assignmentsToBind,
-            const std::string& name=std::string(),
             SdfPathSet* const boundPrimPaths=nullptr) const;
 
     MAYAUSD_CORE_PUBLIC
