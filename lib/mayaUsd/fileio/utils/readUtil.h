@@ -42,6 +42,11 @@ struct UsdMayaReadUtil
     MAYAUSD_CORE_PUBLIC
     static bool ReadFloat2AsUV();
 
+    /// Returns whether the environment setting for renaming st TexCoord to map1
+    /// is set to true
+    MAYAUSD_CORE_PUBLIC
+    static bool ReadSTAsMap1();
+
     /// Given the \p typeName and \p variability, try to create a Maya attribute
     /// on \p depNode with the name \p attrName.
     /// If the \p typeName isn't supported by this function, raises a runtime

@@ -301,9 +301,8 @@ private:
             return;
         }
 
-        UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments,
-                                                                std::string(),
-                                                                boundPrimPaths);
+        UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments);
+        context.BindStandardMaterialPrim(materialPrim, assignments, boundPrimPaths);
         UsdShadeMaterial material(materialPrim);
         if (!material) {
             return;

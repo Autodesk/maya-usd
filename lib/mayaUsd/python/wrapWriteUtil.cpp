@@ -50,6 +50,8 @@ void wrapWriteUtil()
     class_<This>("WriteUtil", no_init)
         .def("WriteUVAsFloat2", This::WriteUVAsFloat2)
         .staticmethod("WriteUVAsFloat2")
+        .def("WriteMap1AsST", This::WriteMap1AsST)
+        .staticmethod("WriteMap1AsST")
         .def("GetVtValue", _GetVtValue)
         .staticmethod("GetVtValue")
     ;
