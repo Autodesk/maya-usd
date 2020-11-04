@@ -22,17 +22,16 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdHierarchyHandler::UsdHierarchyHandler()
-	: Ufe::HierarchyHandler()
-{}
-
-UsdHierarchyHandler::~UsdHierarchyHandler()
+    : Ufe::HierarchyHandler()
 {
 }
+
+UsdHierarchyHandler::~UsdHierarchyHandler() { }
 
 /*static*/
 UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()
 {
-	return std::make_shared<UsdHierarchyHandler>();
+    return std::make_shared<UsdHierarchyHandler>();
 }
 
 //------------------------------------------------------------------------------
@@ -41,27 +40,27 @@ UsdHierarchyHandler::Ptr UsdHierarchyHandler::create()
 
 Ufe::Hierarchy::Ptr UsdHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-	return isRootChild(usdItem->path()) ?
-        UsdRootChildHierarchy::create(usdItem) : UsdHierarchy::create(usdItem);
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    return isRootChild(usdItem->path()) ? UsdRootChildHierarchy::create(usdItem)
+                                        : UsdHierarchy::create(usdItem);
 }
 
 Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const
 {
-	const UsdPrim prim = ufePathToPrim(path);
-	return prim.IsValid() ? UsdSceneItem::create(path, prim) : nullptr;
+    const UsdPrim prim = ufePathToPrim(path);
+    return prim.IsValid() ? UsdSceneItem::create(path, prim) : nullptr;
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #if UFE_PREVIEW_VERSION_NUM >= 2022
 Ufe::Hierarchy::ChildFilter UsdHierarchyHandler::childFilter() const
 {
-	Ufe::Hierarchy::ChildFilter childFilters;
-	childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
-	return childFilters;
+    Ufe::Hierarchy::ChildFilter childFilters;
+    childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
+    return childFilters;
 }
 #endif
 #endif
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

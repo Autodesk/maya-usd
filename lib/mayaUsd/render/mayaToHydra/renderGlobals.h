@@ -16,29 +16,31 @@
 #ifndef MTOH_RENDER_GLOBALS_H
 #define MTOH_RENDER_GLOBALS_H
 
-#include <unordered_map>
-#include <vector>
-
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec4f.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/value.h>
-
-#include <hdMaya/delegates/params.h>
-
 #include "tokens.h"
 #include "utils.h"
 
+#include <hdMaya/delegates/params.h>
+
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
+
+#include <maya/MObject.h>
+
+#include <unordered_map>
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MtohRenderGlobals {
+class MtohRenderGlobals
+{
 public:
     MtohRenderGlobals();
     ~MtohRenderGlobals() = default;
 
-    struct GlobalParams {
+    struct GlobalParams
+    {
         const TfToken filter = {};
         // Is the filter above only a renderer, or a renderer.attribute
         const bool filterIsRenderer = false;
@@ -54,8 +56,8 @@ public:
     static const MtohRenderGlobals& GetInstance(bool storeUserSettings = false);
 
     // Inform mtoh one of the settings stored on "defaultRenderGlobals" has changed
-    static const MtohRenderGlobals& GlobalChanged(const GlobalParams&,
-        bool storeUserSetting = false);
+    static const MtohRenderGlobals&
+    GlobalChanged(const GlobalParams&, bool storeUserSetting = false);
 
     // Check that the attribute given affects the renderer given.
     static bool AffectsRenderer(const TfToken& mangledAttr, const TfToken& rendererName);
@@ -64,27 +66,29 @@ public:
     static void OptionsPreamble();
 
     // Build a UI options menu for the renderer and it's settings list
-    static void BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
+    static void BuildOptionsMenu(
+        const MtohRendererDescription&       rendererDesc,
         const HdRenderSettingDescriptorList& rendererSettingDescriptors);
 
-    // Apply the given setting (or all of a delegate's settings when attrNames is empty) to the given renderDelegate
-    bool ApplySettings(HdRenderDelegate* delegate, const TfToken& rendererName,
+    // Apply the given setting (or all of a delegate's settings when attrNames is empty) to the
+    // given renderDelegate
+    bool ApplySettings(
+        HdRenderDelegate*    delegate,
+        const TfToken&       rendererName,
         const TfTokenVector& attrNames = {}) const;
 
 private:
-    static const MtohRenderGlobals& GetInstance(const GlobalParams&,
-        bool storeUserSetting);
+    static const MtohRenderGlobals& GetInstance(const GlobalParams&, bool storeUserSetting);
 
     class MtohSettingFilter;
     using RendererSettings = std::unordered_map<TfToken, VtValue, TfToken::HashFunctor>;
-    std::unordered_map<TfToken, RendererSettings, TfToken::HashFunctor>
-        _rendererSettings;
+    std::unordered_map<TfToken, RendererSettings, TfToken::HashFunctor> _rendererSettings;
 
 public:
     HdMayaParams delegateParams;
-    GfVec4f colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
-    bool colorSelectionHighlight = true;
-    bool wireframeSelectionHighlight = true;
+    GfVec4f      colorSelectionHighlightColor = GfVec4f(1.0f, 1.0f, 0.0f, 0.5f);
+    bool         colorSelectionHighlight = true;
+    bool         wireframeSelectionHighlight = true;
 #if USD_VERSION_NUM >= 2005
     float outlineSelectionWidth = 4.f;
 #endif
@@ -92,7 +96,6 @@ public:
     float enableColorQuantization = false;
 #endif
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

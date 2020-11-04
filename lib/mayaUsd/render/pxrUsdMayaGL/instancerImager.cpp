@@ -15,6 +15,12 @@
 //
 #include "instancerImager.h"
 
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+
+#include <pxr/base/tf/instantiateSingleton.h>
+
 #include <maya/MDagMessage.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
@@ -22,49 +28,40 @@
 #include <maya/MNodeMessage.h>
 #include <maya/MObjectHandle.h>
 
-#include <pxr/base/tf/instantiateSingleton.h>
-
-#include <mayaUsd/nodes/hdImagingShape.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_INSTANTIATE_SINGLETON(UsdMayaGL_InstancerImager);
 
 UsdMayaGL_InstancerImager::ContinueTrackingOnDisconnectDelegate
-UsdMayaGL_InstancerImager::_continueTrackingOnDisconnectDelegate = nullptr;
+    UsdMayaGL_InstancerImager::_continueTrackingOnDisconnectDelegate
+    = nullptr;
 
 UsdMayaGL_InstancerImager::InstancerShapeAdapterFactory
-UsdMayaGL_InstancerImager::_instancerShapeAdapterFactory = nullptr;
+    UsdMayaGL_InstancerImager::_instancerShapeAdapterFactory
+    = nullptr;
 
 /* static */
-UsdMayaGL_InstancerImager&
-UsdMayaGL_InstancerImager::GetInstance()
+UsdMayaGL_InstancerImager& UsdMayaGL_InstancerImager::GetInstance()
 {
     return TfSingleton<UsdMayaGL_InstancerImager>::GetInstance();
 }
 
-void
-UsdMayaGL_InstancerImager::SyncShapeAdapters(const unsigned int displayStyle)
+void UsdMayaGL_InstancerImager::SyncShapeAdapters(const unsigned int displayStyle)
 {
     // Viewport 2.0 sync.
     _SyncShapeAdapters(true, displayStyle, M3dView::DisplayStyle::kBoundingBox);
 }
 
-void
-UsdMayaGL_InstancerImager::SyncShapeAdapters(
-        const M3dView::DisplayStyle legacyDisplayStyle)
+void UsdMayaGL_InstancerImager::SyncShapeAdapters(const M3dView::DisplayStyle legacyDisplayStyle)
 {
     // Legacy sync.
     _SyncShapeAdapters(false, 0, legacyDisplayStyle);
 }
 
-void
-UsdMayaGL_InstancerImager::_SyncShapeAdapters(
-        bool vp2,
-        const unsigned int vp2DisplayStyle,
-        const M3dView::DisplayStyle legacyDisplayStyle)
+void UsdMayaGL_InstancerImager::_SyncShapeAdapters(
+    bool                        vp2,
+    const unsigned int          vp2DisplayStyle,
+    const M3dView::DisplayStyle legacyDisplayStyle)
 {
     // Clean up any instancers scheduled for deletion, and remove their shape
     // adapters.
@@ -75,8 +72,8 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
 
     // Sync all of the shape adapters.
     // This will create the shape adapters if they don't yet exist.
-    UsdMayaUtil::MObjectHandleUnorderedSet& dirtyInstancers =
-            vp2 ? _dirtyInstancersVp2 : _dirtyInstancersLegacy;
+    UsdMayaUtil::MObjectHandleUnorderedSet& dirtyInstancers
+        = vp2 ? _dirtyInstancersVp2 : _dirtyInstancersLegacy;
     for (const MObjectHandle& handle : dirtyInstancers) {
         auto iter = _instancers.find(handle);
         if (iter == _instancers.end()) {
@@ -90,41 +87,27 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
             continue;
         }
 
-        const MDagPath firstInstancePath =
-                MDagPath::getAPathTo(handle.object());
+        const MDagPath firstInstancePath = MDagPath::getAPathTo(handle.object());
 
         // Create the adapter if it doesn't exist yet.
         _InstancerEntry& entry = iter->second;
         if (vp2) {
-            std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter =
-                    entry.adapterVp2;
+            std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter = entry.adapterVp2;
             if (!adapter) {
-                adapter.reset(
-                    CreateInstancerShapeAdapter(/* isViewport2 = */ true));
+                adapter.reset(CreateInstancerShapeAdapter(/* isViewport2 = */ true));
             }
 
-            if (adapter->Sync(
-                    firstInstancePath,
-                    vp2DisplayStyle,
-                    MHWRender::kDormant)) {
-                UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(
-                        adapter.get());
+            if (adapter->Sync(firstInstancePath, vp2DisplayStyle, MHWRender::kDormant)) {
+                UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(adapter.get());
             }
-        }
-        else {
-            std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter =
-                    entry.adapterLegacy;
+        } else {
+            std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter = entry.adapterLegacy;
             if (!adapter) {
-                adapter.reset(
-                    CreateInstancerShapeAdapter(/* isViewport2 = */ false));
+                adapter.reset(CreateInstancerShapeAdapter(/* isViewport2 = */ false));
             }
 
-            if (adapter->Sync(
-                    firstInstancePath,
-                    legacyDisplayStyle,
-                    M3dView::kDormant)) {
-                UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(
-                        adapter.get());
+            if (adapter->Sync(firstInstancePath, legacyDisplayStyle, M3dView::kDormant)) {
+                UsdMayaGLBatchRenderer::GetInstance().AddShapeAdapter(adapter.get());
             }
         }
     }
@@ -132,8 +115,8 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
 
     // Sync all of the dirty root transforms now.
     // The shape adapters should already have been created above.
-    UsdMayaUtil::MObjectHandleUnorderedSet& dirtyInstancerXforms =
-            vp2 ? _dirtyInstancerXformsVp2 : _dirtyInstancerXformsLegacy;
+    UsdMayaUtil::MObjectHandleUnorderedSet& dirtyInstancerXforms
+        = vp2 ? _dirtyInstancerXformsVp2 : _dirtyInstancerXformsLegacy;
     for (const MObjectHandle& handle : dirtyInstancerXforms) {
         auto iter = _instancers.find(handle);
         if (iter == _instancers.end()) {
@@ -147,22 +130,21 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
             continue;
         }
 
-        const MDagPath firstInstancePath =
-                MDagPath::getAPathTo(handle.object());
+        const MDagPath firstInstancePath = MDagPath::getAPathTo(handle.object());
 
         // *Don't* create the adapter if it doesn't exist.
         // Logically, it should have already been created.
-        _InstancerEntry& entry = iter->second;
-        std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter =
-                vp2 ? entry.adapterVp2 : entry.adapterLegacy;
+        _InstancerEntry&                                  entry = iter->second;
+        std::unique_ptr<UsdMayaGL_InstancerShapeAdapter>& adapter
+            = vp2 ? entry.adapterVp2 : entry.adapterLegacy;
         if (!adapter) {
             TF_CODING_ERROR(
-                    "Trying to update xform for '%s' but can't find adapter",
-                    firstInstancePath.fullPathName().asChar());
+                "Trying to update xform for '%s' but can't find adapter",
+                firstInstancePath.fullPathName().asChar());
             continue;
         }
 
-        MStatus status;
+        MStatus       status;
         const MMatrix transform = firstInstancePath.inclusiveMatrix(&status);
         CHECK_MSTATUS(status);
         adapter->SetRootXform(GfMatrix4d(transform.matrix));
@@ -170,14 +152,12 @@ UsdMayaGL_InstancerImager::_SyncShapeAdapters(
     dirtyInstancerXforms.clear();
 }
 
-void
-UsdMayaGL_InstancerImager::RemoveShapeAdapters(bool vp2)
+void UsdMayaGL_InstancerImager::RemoveShapeAdapters(bool vp2)
 {
-    UsdMayaGLBatchRenderer& renderer =
-            UsdMayaGLBatchRenderer::GetInstance();
+    UsdMayaGLBatchRenderer& renderer = UsdMayaGLBatchRenderer::GetInstance();
     for (auto& handleAndEntry : _instancers) {
         const MObjectHandle& handle = handleAndEntry.first;
-        _InstancerEntry& entry = handleAndEntry.second;
+        _InstancerEntry&     entry = handleAndEntry.second;
 
         // After deleting the shape adapters, insert the handles into the
         // appropriate dirty queues so that the shape adapters get properly
@@ -188,8 +168,7 @@ UsdMayaGL_InstancerImager::RemoveShapeAdapters(bool vp2)
 
             _dirtyInstancersVp2.insert(handle);
             _dirtyInstancerXformsVp2.insert(handle);
-        }
-        else if (!vp2 && entry.adapterLegacy) {
+        } else if (!vp2 && entry.adapterLegacy) {
             renderer.RemoveShapeAdapter(entry.adapterLegacy.get());
             entry.adapterLegacy.reset();
 
@@ -199,14 +178,12 @@ UsdMayaGL_InstancerImager::RemoveShapeAdapters(bool vp2)
     }
 }
 
-void
-UsdMayaGL_InstancerImager::_DirtyHdImagingShape(bool createIfNeeded)
+void UsdMayaGL_InstancerImager::_DirtyHdImagingShape(bool createIfNeeded)
 {
     MObject hdImagingShape;
     if (_cachedHdImagingShape.isAlive()) {
         hdImagingShape = _cachedHdImagingShape.object();
-    }
-    else if (createIfNeeded) {
+    } else if (createIfNeeded) {
         hdImagingShape = PxrMayaHdImagingShape::GetOrCreateInstance();
         _cachedHdImagingShape = MObjectHandle(hdImagingShape);
     }
@@ -216,13 +193,12 @@ UsdMayaGL_InstancerImager::_DirtyHdImagingShape(bool createIfNeeded)
     }
 }
 
-void
-UsdMayaGL_InstancerImager::_StartTrackingInstancer(const MObject& instancer)
+void UsdMayaGL_InstancerImager::_StartTrackingInstancer(const MObject& instancer)
 {
-    MObject nonConstInstancer = instancer;
-    MObjectHandle instancerHandle(instancer);
+    MObject          nonConstInstancer = instancer;
+    MObjectHandle    instancerHandle(instancer);
     _InstancerEntry& entry = _instancers[instancerHandle];
-    const auto iter = _instancers.find(instancerHandle);
+    const auto       iter = _instancers.find(instancerHandle);
 
     MDagPath firstInstancePath = MDagPath::getAPathTo(instancer);
 
@@ -235,11 +211,12 @@ UsdMayaGL_InstancerImager::_StartTrackingInstancer(const MObject& instancer)
     // _any instance_, not just the instance specified by firstInstancePath.
     // (That's good in this case!)
     entry.callbacks.append(MDagMessage::addWorldMatrixModifiedCallback(
-            firstInstancePath, _OnWorldMatrixChanged, &*iter));
-    entry.callbacks.append(MNodeMessage::addNodeDirtyCallback(
-            nonConstInstancer, _OnNodeDirty, nullptr));
+        firstInstancePath, _OnWorldMatrixChanged, &*iter));
+    entry.callbacks.append(
+        MNodeMessage::addNodeDirtyCallback(nonConstInstancer, _OnNodeDirty, nullptr));
 
-    TF_DEBUG(PXRUSDMAYAGL_INSTANCER_TRACKING).Msg(
+    TF_DEBUG(PXRUSDMAYAGL_INSTANCER_TRACKING)
+        .Msg(
             "Started tracking instancer '%s' (%u)\n",
             firstInstancePath.fullPathName().asChar(),
             instancerHandle.hashCode());
@@ -252,9 +229,7 @@ UsdMayaGL_InstancerImager::_StartTrackingInstancer(const MObject& instancer)
     _DirtyHdImagingShape(true);
 }
 
-void
-UsdMayaGL_InstancerImager::_StopTrackingInstancer(
-    const MObjectHandle& instancerHandle)
+void UsdMayaGL_InstancerImager::_StopTrackingInstancer(const MObjectHandle& instancerHandle)
 {
     auto iter = _instancers.find(instancerHandle);
     if (iter == _instancers.end()) {
@@ -265,20 +240,17 @@ UsdMayaGL_InstancerImager::_StopTrackingInstancer(
     // Remove shape adapters from batch renderer.
     _InstancerEntry& entry = iter->second;
     if (entry.adapterVp2) {
-        UsdMayaGLBatchRenderer::GetInstance().RemoveShapeAdapter(
-                entry.adapterVp2.get());
+        UsdMayaGLBatchRenderer::GetInstance().RemoveShapeAdapter(entry.adapterVp2.get());
     }
     if (entry.adapterLegacy) {
-        UsdMayaGLBatchRenderer::GetInstance().RemoveShapeAdapter(
-                entry.adapterLegacy.get());
+        UsdMayaGLBatchRenderer::GetInstance().RemoveShapeAdapter(entry.adapterLegacy.get());
     }
 
     // Remove it from the master list. This will also remove all callbacks.
     _instancers.erase(instancerHandle);
 
-    TF_DEBUG(PXRUSDMAYAGL_INSTANCER_TRACKING).Msg(
-            "Stopped tracking instancer (%u)\n",
-            instancerHandle.hashCode());
+    TF_DEBUG(PXRUSDMAYAGL_INSTANCER_TRACKING)
+        .Msg("Stopped tracking instancer (%u)\n", instancerHandle.hashCode());
 
     // Remove it from any dirty lists so that we don't try to sync it again.
     _dirtyInstancersVp2.erase(instancerHandle);
@@ -288,11 +260,10 @@ UsdMayaGL_InstancerImager::_StopTrackingInstancer(
 }
 
 /* static */
-void
-UsdMayaGL_InstancerImager::_OnNodeDirty(MObject& node, void* clientData)
+void UsdMayaGL_InstancerImager::_OnNodeDirty(MObject& node, void* clientData)
 {
     UsdMayaGL_InstancerImager& me = GetInstance();
-    const MObjectHandle handle(node);
+    const MObjectHandle        handle(node);
 
     bool inserted = false;
     inserted |= me._dirtyInstancersVp2.insert(handle).second;
@@ -303,15 +274,14 @@ UsdMayaGL_InstancerImager::_OnNodeDirty(MObject& node, void* clientData)
 }
 
 /* static */
-void
-UsdMayaGL_InstancerImager::_OnWorldMatrixChanged(
-        MObject &transformNode,
-        MDagMessage::MatrixModifiedFlags &modified,
-        void *clientData)
+void UsdMayaGL_InstancerImager::_OnWorldMatrixChanged(
+    MObject&                          transformNode,
+    MDagMessage::MatrixModifiedFlags& modified,
+    void*                             clientData)
 {
     UsdMayaGL_InstancerImager& me = GetInstance();
-    const auto handleEntryPair =
-            static_cast<std::pair<MObjectHandle, _InstancerEntry>*>(clientData);
+    const auto                 handleEntryPair
+        = static_cast<std::pair<MObjectHandle, _InstancerEntry>*>(clientData);
     const MObjectHandle& handle = handleEntryPair->first;
 
     bool inserted = false;
@@ -322,22 +292,20 @@ UsdMayaGL_InstancerImager::_OnWorldMatrixChanged(
     }
 }
 
-void
-UsdMayaGL_InstancerImager::_OnSceneReset(const UsdMayaSceneResetNotice& notice)
+void UsdMayaGL_InstancerImager::_OnSceneReset(const UsdMayaSceneResetNotice& notice)
 {
     TfSingleton<UsdMayaGL_InstancerImager>::DeleteInstance();
     TfSingleton<UsdMayaGL_InstancerImager>::GetInstance();
 }
 
-void
-UsdMayaGL_InstancerImager::_OnConnection(
-        const UsdMayaAssemblyConnectedToInstancerNotice& notice)
+void UsdMayaGL_InstancerImager::_OnConnection(
+    const UsdMayaAssemblyConnectedToInstancerNotice& notice)
 {
     if (MGlobal::mayaState() != MGlobal::kInteractive) {
         return;
     }
 
-    MObject instancer = notice.GetInstancer();
+    MObject             instancer = notice.GetInstancer();
     const MObjectHandle instancerHandle(instancer);
 
     // Remove the instancer from the removal list, if it was previously
@@ -351,18 +319,17 @@ UsdMayaGL_InstancerImager::_OnConnection(
     }
 }
 
-void
-UsdMayaGL_InstancerImager::_OnDisconnection(
-        const UsdMayaAssemblyDisconnectedFromInstancerNotice& notice)
+void UsdMayaGL_InstancerImager::_OnDisconnection(
+    const UsdMayaAssemblyDisconnectedFromInstancerNotice& notice)
 {
     if (MGlobal::mayaState() != MGlobal::kInteractive) {
         return;
     }
 
-    MObject instancer = notice.GetInstancer();
+    MObject             instancer = notice.GetInstancer();
     const MObjectHandle instancerHandle(instancer);
 
-    MStatus status;
+    MStatus           status;
     MFnDependencyNode instancerDepNode(instancer, &status);
     if (!status) {
         return;
@@ -413,7 +380,8 @@ UsdMayaGL_InstancerImager::UsdMayaGL_InstancerImager()
 
 UsdMayaGL_InstancerImager::~UsdMayaGL_InstancerImager()
 {
-    TF_DEBUG(PXRUSDMAYAGL_INSTANCER_TRACKING).Msg(
+    TF_DEBUG(PXRUSDMAYAGL_INSTANCER_TRACKING)
+        .Msg(
             "UsdMayaGL_InstancerImager dying; stopped tracking remaining "
             " %zu instancers\n",
             _instancers.size());
@@ -425,9 +393,7 @@ void UsdMayaGL_InstancerImager::SetContinueTrackingOnDisconnectDelegate(
     _continueTrackingOnDisconnectDelegate = delegate;
 }
 
-bool UsdMayaGL_InstancerImager::ContinueTrackingOnDisconnect(
-    const MFnDependencyNode& fn
-)
+bool UsdMayaGL_InstancerImager::ContinueTrackingOnDisconnect(const MFnDependencyNode& fn)
 {
     if (!_continueTrackingOnDisconnectDelegate) {
         return false;

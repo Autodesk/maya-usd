@@ -18,18 +18,17 @@
 #define MAYA_IMPORT_COMMAND_H
 
 #include <mayaUsd/base/api.h>
-
-#include <memory>
+#include <mayaUsd/fileio/jobs/readJob.h>
 
 #include <maya/MPxCommand.h>
 
-#include <mayaUsd/fileio/jobs/readJob.h>
+#include <memory>
 
 namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand
 {
-  public:
+public:
     //
     // Command flags are a mix of Arg Tokens defined in readJob.h
     // and some that are defined by this command itself.
@@ -52,7 +51,7 @@ class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kFileFlag = "f";
-    static constexpr auto kFileFlagLong = "file";    
+    static constexpr auto kFileFlagLong = "file";
     static constexpr auto kParentFlag = "p";
     static constexpr auto kParentFlagLong = "parent";
     static constexpr auto kReadAnimDataFlag = "ani";
@@ -69,19 +68,19 @@ class MAYAUSD_CORE_PUBLIC MayaUSDImportCommand : public MPxCommand
     MStatus doIt(const MArgList& args) override;
     MStatus redoIt() override;
     MStatus undoIt() override;
-    bool isUndoable() const override { return true; };
+    bool    isUndoable() const override { return true; };
 
     static MSyntax createSyntax();
-    static void* creator();
+    static void*   creator();
 
-  protected:
-    virtual std::unique_ptr<UsdMaya_ReadJob> initializeReadJob(const MayaUsd::ImportData &, 
-        const UsdMayaJobImportArgs &);
+protected:
+    virtual std::unique_ptr<UsdMaya_ReadJob>
+    initializeReadJob(const MayaUsd::ImportData&, const UsdMayaJobImportArgs&);
 
-  private:
+private:
     std::unique_ptr<UsdMaya_ReadJob> _readJob;
 };
 
-}
+} // namespace MAYAUSD_NS_DEF
 
 #endif

@@ -15,21 +15,19 @@
 //
 #include "debugCodes.h"
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/registryManager.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        PXRUSDMAYAGL_BATCHED_DRAWING,
-        "Prints out batched drawing event info.");
+        PXRUSDMAYAGL_BATCHED_DRAWING, "Prints out batched drawing event info.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        PXRUSDMAYAGL_BATCHED_SELECTION,
-        "Prints out batched selection event info.");
+        PXRUSDMAYAGL_BATCHED_SELECTION, "Prints out batched selection event info.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         PXRUSDMAYAGL_INSTANCER_TRACKING,
@@ -42,9 +40,7 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "batch renderer.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE,
-        "Report Maya Hydra shape adapter lifecycle events.");
+        PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE, "Report Maya Hydra shape adapter lifecycle events.");
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

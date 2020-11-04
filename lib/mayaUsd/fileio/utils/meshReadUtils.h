@@ -18,62 +18,60 @@
 #ifndef PXRUSDMAYA_MESH_READ_UTILS_H
 #define PXRUSDMAYA_MESH_READ_UTILS_H
 
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/mesh.h>
+
 #include <maya/MDagPath.h>
 #include <maya/MFnMesh.h>
 #include <maya/MObject.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usdGeom/mesh.h>
-
-#include <mayaUsd/base/api.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomMesh;
 
-#define PXRUSDMAYA_MESH_PRIMVAR_TOKENS \
-    ((DisplayColorColorSetName, "displayColor")) \
-    ((DisplayOpacityColorSetName, "displayOpacity")) \
-    ((DefaultMayaTexcoordName, "map1"))
-    
+#define PXRUSDMAYA_MESH_PRIMVAR_TOKENS                                                            \
+    ((DisplayColorColorSetName, "displayColor"))((DisplayOpacityColorSetName, "displayOpacity"))( \
+        (DefaultMayaTexcoordName, "map1"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaMeshPrimvarTokens,
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdMayaMeshPrimvarTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_MESH_PRIMVAR_TOKENS);
 
 /// Utilities for dealing with USD and RenderMan for Maya mesh/subdiv tags.
-namespace UsdMayaMeshReadUtils
-{
-    /// Gets the internal emit-normals tag on the Maya \p mesh, placing it in
-    /// \p value. Returns true if the tag exists on the mesh, and false if not.
-    MAYAUSD_CORE_PUBLIC
-    bool getEmitNormalsTag(const MFnMesh &mesh, bool* value);
+namespace UsdMayaMeshReadUtils {
+/// Gets the internal emit-normals tag on the Maya \p mesh, placing it in
+/// \p value. Returns true if the tag exists on the mesh, and false if not.
+MAYAUSD_CORE_PUBLIC
+bool getEmitNormalsTag(const MFnMesh& mesh, bool* value);
 
-    /// Sets the internal emit-normals tag on the Maya \p mesh.
-    /// This value indicates to the exporter whether it should write out the
-    /// normals for the mesh to USD.
-    MAYAUSD_CORE_PUBLIC
-    void setEmitNormalsTag(MFnMesh &meshFn, const bool emitNormals);
+/// Sets the internal emit-normals tag on the Maya \p mesh.
+/// This value indicates to the exporter whether it should write out the
+/// normals for the mesh to USD.
+MAYAUSD_CORE_PUBLIC
+void setEmitNormalsTag(MFnMesh& meshFn, const bool emitNormals);
 
-    MAYAUSD_CORE_PUBLIC
-    void assignPrimvarsToMesh(const UsdGeomMesh& mesh, 
-                              const MObject& meshObj, 
-                              const TfToken::Set& excludePrimvarSet);
+MAYAUSD_CORE_PUBLIC
+void assignPrimvarsToMesh(
+    const UsdGeomMesh&  mesh,
+    const MObject&      meshObj,
+    const TfToken::Set& excludePrimvarSet);
 
-    MAYAUSD_CORE_PUBLIC
-    void assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj);
+MAYAUSD_CORE_PUBLIC
+void assignInvisibleFaces(const UsdGeomMesh& mesh, const MObject& meshObj);
 
-    MAYAUSD_CORE_PUBLIC
-    MStatus assignSubDivTagsToMesh(const UsdGeomMesh&, MObject&, MFnMesh&);
+MAYAUSD_CORE_PUBLIC
+MStatus assignSubDivTagsToMesh(const UsdGeomMesh&, MObject&, MFnMesh&);
 
 } // namespace UsdMayaMeshReadUtils
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

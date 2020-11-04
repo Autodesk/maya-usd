@@ -16,15 +16,16 @@
 #ifndef MTOH_CMD_H
 #define MTOH_CMD_H
 
-#include <maya/MPxCommand.h>
-
 #include <pxr/pxr.h>
+
+#include <maya/MPxCommand.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MtohViewCmd : public MPxCommand {
+class MtohViewCmd : public MPxCommand
+{
 public:
-    static void* creator() { return new MtohViewCmd(); }
+    static void*   creator() { return new MtohViewCmd(); }
     static MSyntax createSyntax();
 
     static const MString name;

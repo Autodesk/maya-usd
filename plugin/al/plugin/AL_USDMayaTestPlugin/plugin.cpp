@@ -14,29 +14,28 @@
 // limitations under the License.
 //
 
+#include "AL/maya/test/testHarness.h"
+#include "AL/usdmaya/PluginRegister.h"
 #include "Api.h"
 
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
-#include "AL/usdmaya/PluginRegister.h" 
-#include "AL/maya/test/testHarness.h"
 
 using AL::maya::test::UnitTestHarness;
 
 AL_USDMAYATEST_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
-  MFnPlugin plugin(obj, "Animal Logic", "1.0", "Any");
-  AL_REGISTER_COMMAND(plugin, UnitTestHarness);
-  return AL::usdmaya::registerPlugin(plugin);
+    MFnPlugin plugin(obj, "Animal Logic", "1.0", "Any");
+    AL_REGISTER_COMMAND(plugin, UnitTestHarness);
+    return AL::usdmaya::registerPlugin(plugin);
 }
 
 AL_USDMAYATEST_PLUGIN_PUBLIC
 MStatus uninitializePlugin(MObject obj)
 {
-  MFnPlugin plugin(obj);
-  AL_UNREGISTER_COMMAND(plugin, UnitTestHarness);
-  return AL::usdmaya::unregisterPlugin(plugin);
+    MFnPlugin plugin(obj);
+    AL_UNREGISTER_COMMAND(plugin, UnitTestHarness);
+    return AL::usdmaya::unregisterPlugin(plugin);
 }
-

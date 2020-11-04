@@ -46,22 +46,22 @@ namespace ufe {
 //   reparented.  In such a case, the prim in the command's scene item
 //   becomes stale, and the prim in the updated scene item should be used.
 //
-template<class V>
+template <class V>
 #ifdef UFE_V2_FEATURES_AVAILABLE
-class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase 
+class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase
     : public std::enable_shared_from_this<UsdTRSUndoableCommandBase<V>>
 #else
-class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase : public Ufe::Observer,
-        public std::enable_shared_from_this<UsdTRSUndoableCommandBase<V> >
+class MAYAUSD_CORE_PUBLIC UsdTRSUndoableCommandBase
+    : public Ufe::Observer
+    , public std::enable_shared_from_this<UsdTRSUndoableCommandBase<V>>
 #endif
 {
 protected:
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     UsdTRSUndoableCommandBase(double x, double y, double z);
-    #else
-    UsdTRSUndoableCommandBase(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
-    #endif
+#else
+    UsdTRSUndoableCommandBase(const UsdSceneItem::Ptr& item, double x, double y, double z);
+#endif
 
     ~UsdTRSUndoableCommandBase() = default;
 
@@ -79,62 +79,73 @@ protected:
     // parenting change caused by undo / redo of other commands in the undo
     // stack), so always return current data.
 
-    #ifdef UFE_V2_FEATURES_AVAILABLE
-    inline UsdPrim prim() const { updateItem(); return fItem->prim(); };
-    #else
-    inline UsdPrim prim() const { return fItem->prim(); }
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    inline UsdPrim prim() const
+    {
+        updateItem();
+        return fItem->prim();
+    };
+#else
+    inline UsdPrim   prim() const { return fItem->prim(); }
     inline Ufe::Path path() const { return fItem->path(); }
-    #endif
+#endif
 
     // Hooks to be implemented by the derived class: name of the attribute set
     // by the command, implementation of perform(), and add empty attribute.
     // Implementation of cannotInit() in this class returns false.
     virtual TfToken attributeName() const = 0;
-    virtual void performImp(double x, double y, double z) = 0;
-    virtual void addEmptyAttribute() = 0;
-    virtual bool cannotInit() const;
+    virtual void    performImp(double x, double y, double z) = 0;
+    virtual void    addEmptyAttribute() = 0;
+    virtual bool    cannotInit() const;
 
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     // Conditionally create a UsdSceneItem::Ptr from the Ufe::Path, if null.
     void updateItem() const;
 
     // Returns the new Ufe::Path overriden by derived classes (e.g TRS)
     virtual Ufe::Path getPath() const = 0;
-    #endif
+#endif
 
 private:
-
-    #if UFE_PREVIEW_VERSION_NUM < 2021
+#if UFE_PREVIEW_VERSION_NUM < 2021
     // Overridden from Ufe::Observer
     void operator()(const Ufe::Notification& notification) override;
 
-    template<class N> void checkNotification(const N* notification);
-    #endif
+    template <class N> void checkNotification(const N* notification);
+#endif
 
-    inline UsdAttribute attribute() const {
-        return prim().GetAttribute(attributeName());
-    }
+    inline UsdAttribute attribute() const { return prim().GetAttribute(attributeName()); }
 
-    mutable UsdSceneItem::Ptr fItem{nullptr};
+    mutable UsdSceneItem::Ptr fItem { nullptr };
     V                         fPrevValue;
     V                         fNewValue;
-    bool                      fOpAdded{false};
-    bool                      fDoneOnce{false};
+    bool                      fOpAdded { false };
+    bool                      fDoneOnce { false };
 
 }; // UsdTRSUndoableCommandBase
 
 // shared_ptr requires public ctor, dtor, so derive a class for it.
-template<class T>
-struct MakeSharedEnabler : public T {
+template <class T> struct MakeSharedEnabler : public T
+{
     MakeSharedEnabler(
 #ifdef UFE_V2_FEATURES_AVAILABLE
-        const Ufe::Path& path, double x, double y, double z)
-        : T(path, x, y, z) {}
+        const Ufe::Path& path,
+        double           x,
+        double           y,
+        double           z)
+        : T(path, x, y, z)
+    {
+    }
 };
 #else
-        const UsdSceneItem::Ptr& item, double x, double y, double z)
-        : T(item, x, y, z) {}
+        const UsdSceneItem::Ptr& item,
+        double                   x,
+        double                   y,
+        double                   z)
+        : T(item, x, y, z)
+    {
+    }
 };
 #endif
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

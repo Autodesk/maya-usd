@@ -16,42 +16,36 @@
 #ifndef PXRUSDMAYA_SHADING_MODE_REGISTRY_H
 #define PXRUSDMAYA_SHADING_MODE_REGISTRY_H
 
-#include <string>
-
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/registryManager.h>
-#include <pxr/base/tf/singleton.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/tf/weakBase.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
 #include <mayaUsd/fileio/shading/shadingModeImporter.h>
 
+#include <pxr/base/tf/registryManager.h>
+#include <pxr/base/tf/singleton.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/tf/weakBase.h>
+#include <pxr/pxr.h>
+
+#include <maya/MObject.h>
+
+#include <string>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_SHADINGMODE_TOKENS \
-    (none) \
-    (displayColor) \
-    (useRegistry)
+#define PXRUSDMAYA_SHADINGMODE_TOKENS (none)(displayColor)(useRegistry)
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaShadingModeTokens,
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdMayaShadingModeTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_SHADINGMODE_TOKENS);
 
 #define PXRUSDMAYA_SHADINGCONVERSION_TOKENS \
-    (none) \
-    (lambert) \
-    (standardSurface) \
-    (usdPreviewSurface) \
-    (blinn) \
-    (phong)
+    (none)(lambert)(standardSurface)(usdPreviewSurface)(blinn)(phong)
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaPreferredMaterialTokens,
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdMayaPreferredMaterialTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_SHADINGCONVERSION_TOKENS);
 
@@ -66,19 +60,16 @@ TF_DECLARE_WEAK_PTRS(UsdMayaShadingModeRegistry);
 class UsdMayaShadingModeRegistry : public TfWeakBase
 {
 public:
-
-    static UsdMayaShadingModeExporterCreator GetExporter(const TfToken& name) {
+    static UsdMayaShadingModeExporterCreator GetExporter(const TfToken& name)
+    {
         return GetInstance()._GetExporter(name);
     }
-    static UsdMayaShadingModeImporter GetImporter(const TfToken& name) {
+    static UsdMayaShadingModeImporter GetImporter(const TfToken& name)
+    {
         return GetInstance()._GetImporter(name);
     }
-    static TfTokenVector ListExporters() {
-        return GetInstance()._ListExporters();
-    }
-    static TfTokenVector ListImporters() {
-        return GetInstance()._ListImporters();
-    }
+    static TfTokenVector ListExporters() { return GetInstance()._ListExporters(); }
+    static TfTokenVector ListImporters() { return GetInstance()._ListImporters(); }
 
     /// Gets the nice name of an exporter. Used for the UI label of the export options
     static const std::string& GetExporterNiceName(const TfToken& name)
@@ -109,17 +100,17 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     bool RegisterExporter(
-            const std::string& name,
-            std::string niceName,
-            std::string description,
-            UsdMayaShadingModeExporterCreator fn);
+        const std::string&                name,
+        std::string                       niceName,
+        std::string                       description,
+        UsdMayaShadingModeExporterCreator fn);
 
     MAYAUSD_CORE_PUBLIC
     bool RegisterImporter(
-            const std::string& name,
-            std::string niceName,
-            std::string description,
-            UsdMayaShadingModeImporter fn);
+        const std::string&         name,
+        std::string                niceName,
+        std::string                description,
+        UsdMayaShadingModeImporter fn);
 
     /// The useRegistry exporters and importers can be specialized to support material conversions.
     /// The most well known is the default conversion to UsdPreviewSurface shaders. This registry
@@ -136,16 +127,20 @@ public:
     /// REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION macro for each material conversion.
 
     /// Get all registered export conversions:
-    static TfTokenVector ListMaterialConversions() { return GetInstance()._ListMaterialConversions(); }
+    static TfTokenVector ListMaterialConversions()
+    {
+        return GetInstance()._ListMaterialConversions();
+    }
 
     /// All the information registered for a specific material conversion.
-    struct ConversionInfo {
+    struct ConversionInfo
+    {
         TfToken renderContext;
         TfToken niceName;
         TfToken exportDescription;
         TfToken importDescription;
-        bool hasExporter = false;
-        bool hasImporter = false;
+        bool    hasExporter = false;
+        bool    hasImporter = false;
     };
 
     /// Gets the conversion information associated with \p materialConversion on export and import
@@ -164,7 +159,7 @@ public:
     /// used if the resulting UsdShade nodes are written using an API shared by multiple renderers,
     /// like UsdPreviewSurface or MaterialX. For UsdShade nodes targetting a specific rendering
     /// engine, please define a custom render context understood by the renderer.
-    /// 
+    ///
     /// The \p niceName is the name displayed in the render options dialog.
     ///
     /// The \p description is displayed as a tooltip in the render options dialog.
@@ -186,7 +181,7 @@ public:
     ///
     /// The \p renderContext will be used to locate the specialized binding point in the USD data.
     /// See UsdShadeMaterial documentation for details.
-    /// 
+    ///
     /// The \p niceName is the name to be displayed in the import options dialog.
     ///
     /// The \p description is displayed as a tooltip in the import options dialog.
@@ -243,23 +238,22 @@ private:
         UsdMayaShadingModeImportContext* contextName,                    \
         const UsdMayaJobImportArgs&      jobArgumentsName)
 
-#define REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(                           \
-    name, renderContext, niceName, description)                                     \
-    TF_REGISTRY_FUNCTION(UsdMayaShadingModeExportContext)                           \
-    {                                                                               \
-        UsdMayaShadingModeRegistry::GetInstance().RegisterExportConversion(         \
-            name, renderContext, niceName, description);                            \
+#define REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(                   \
+    name, renderContext, niceName, description)                             \
+    TF_REGISTRY_FUNCTION(UsdMayaShadingModeExportContext)                   \
+    {                                                                       \
+        UsdMayaShadingModeRegistry::GetInstance().RegisterExportConversion( \
+            name, renderContext, niceName, description);                    \
     }
 
-#define REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION(                           \
-    name, renderContext, niceName, description)                                     \
-    TF_REGISTRY_FUNCTION(UsdMayaShadingModeImportContext)                           \
-    {                                                                               \
-        UsdMayaShadingModeRegistry::GetInstance().RegisterImportConversion(         \
-            name, renderContext, niceName, description);                            \
+#define REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION(                   \
+    name, renderContext, niceName, description)                             \
+    TF_REGISTRY_FUNCTION(UsdMayaShadingModeImportContext)                   \
+    {                                                                       \
+        UsdMayaShadingModeRegistry::GetInstance().RegisterImportConversion( \
+            name, renderContext, niceName, description);                    \
     }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

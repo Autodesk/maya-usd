@@ -20,11 +20,11 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <maya/MObject.h>
-#include <maya/MString.h>
-
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/mesh.h>
+
+#include <maya/MObject.h>
+#include <maya/MString.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -35,13 +35,14 @@ namespace MAYAUSD_NS_DEF {
 class MAYAUSD_CORE_PUBLIC TranslatorMeshRead
 {
 public:
-    TranslatorMeshRead(const UsdGeomMesh& mesh,
-                       const UsdPrim& prim, 
-                       const MObject& transformObj,
-                       const MObject& stageNode,
-                       const GfInterval& frameRange,
-                       bool wantCacheAnimation,
-                       MStatus * status = nullptr);
+    TranslatorMeshRead(
+        const UsdGeomMesh& mesh,
+        const UsdPrim&     prim,
+        const MObject&     transformObj,
+        const MObject&     stageNode,
+        const GfInterval&  frameRange,
+        bool               wantCacheAnimation,
+        MStatus*           status = nullptr);
 
     ~TranslatorMeshRead() = default;
 
@@ -55,21 +56,20 @@ public:
     MObject blendObject() const;
     MObject pointBasedDeformerNode() const;
     MString pointBasedDeformerName() const;
-    size_t pointsNumTimeSamples() const;
+    size_t  pointsNumTimeSamples() const;
 
     SdfPath shapePath() const;
 
 private:
-    MStatus setPointBasedDeformerForMayaNode(const MObject&, 
-                                             const MObject&, 
-                                             const UsdPrim&);
+    MStatus setPointBasedDeformerForMayaNode(const MObject&, const MObject&, const UsdPrim&);
+
 private:
     MObject m_meshObj;
     MObject m_meshBlendObj;
     MObject m_pointBasedDeformerNode;
     MString m_newPointBasedDeformerName;
-    bool m_wantCacheAnimation;
-    size_t m_pointsNumTimeSamples;
+    bool    m_wantCacheAnimation;
+    size_t  m_pointsNumTimeSamples;
 
     SdfPath m_shapePath;
 };
@@ -77,10 +77,11 @@ private:
 class MAYAUSD_CORE_PUBLIC TranslatorMeshWrite
 {
 public:
-    TranslatorMeshWrite(const MFnDependencyNode&,
-                        const UsdStageRefPtr&,
-                        const SdfPath&,
-                        const MDagPath&);
+    TranslatorMeshWrite(
+        const MFnDependencyNode&,
+        const UsdStageRefPtr&,
+        const SdfPath&,
+        const MDagPath&);
 
     ~TranslatorMeshWrite() = default;
 
@@ -95,4 +96,4 @@ private:
     UsdGeomMesh m_usdMesh;
 };
 
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

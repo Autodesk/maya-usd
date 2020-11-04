@@ -15,14 +15,14 @@
 //
 #include "usdLambertWriter.h"
 
-#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
@@ -43,12 +43,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (color)
-    (transparency)
-    (diffuse)
-    (incandescence)
-    (normalCamera)
-);
+    (color)(transparency)(diffuse)(incandescence)(normalCamera));
 
 PxrUsdTranslators_LambertWriter::PxrUsdTranslators_LambertWriter(
     const MFnDependencyNode& depNodeFn,
@@ -86,16 +81,13 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         usdTime,
         _tokens->diffuse);
 
-    const MPlug transparencyPlug =
-        depNodeFn.findPlug(
-            depNodeFn.attribute(_tokens->transparency.GetText()),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug transparencyPlug = depNodeFn.findPlug(
+        depNodeFn.attribute(_tokens->transparency.GetText()),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status == MS::kSuccess && UsdMayaUtil::IsAuthored(transparencyPlug)) {
-        UsdShadeInput opacityInput =
-            shaderSchema.CreateInput(
-                PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName,
-                SdfValueTypeNames->Float);
+        UsdShadeInput opacityInput = shaderSchema.CreateInput(
+            PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName, SdfValueTypeNames->Float);
 
         // For attributes that are the destination of a connection, we create
         // the input on the shader but we do *not* author a value for it. We
@@ -103,10 +95,10 @@ void PxrUsdTranslators_LambertWriter::Write(const UsdTimeCode& usdTime)
         // We'll leave it to the shading export to handle creating the
         // connections in USD.
         if (!transparencyPlug.isDestination(&status)) {
-            const float transparencyAvg =
-                (transparencyPlug.child(0u).asFloat() +
-                 transparencyPlug.child(1u).asFloat() +
-                 transparencyPlug.child(2u).asFloat()) / 3.0f;
+            const float transparencyAvg
+                = (transparencyPlug.child(0u).asFloat() + transparencyPlug.child(1u).asFloat()
+                   + transparencyPlug.child(2u).asFloat())
+                / 3.0f;
 
             opacityInput.Set(1.0f - transparencyAvg, usdTime);
         }

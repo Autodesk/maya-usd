@@ -16,12 +16,12 @@
 #ifndef PXRUSDMAYA_CHASER_H
 #define PXRUSDMAYA_CHASER_H
 
-#include <pxr/pxr.h>
+#include <mayaUsd/base/api.h>
+
 #include <pxr/base/tf/declarePtrs.h>
 #include <pxr/base/tf/refPtr.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/timeCode.h>
-
-#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,7 +70,6 @@ public:
     MAYAUSD_CORE_PUBLIC
     virtual bool PostExport();
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

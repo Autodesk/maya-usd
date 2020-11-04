@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <boost/noncopyable.hpp>
-#include <boost/python.hpp>
+#include <mayaUsd/utils/diagnosticDelegate.h>
 
 #include <pxr/pxr.h>
 
-#include <mayaUsd/utils/diagnosticDelegate.h>
+#include <boost/noncopyable.hpp>
+#include <boost/python.hpp>
 
 using namespace boost::python;
 
@@ -28,14 +28,11 @@ namespace {
 
 // This exposes UsdMayaDiagnosticBatchContext as a Python "context manager"
 // object that can be used with the "with"-statement.
-class _PyDiagnosticBatchContext {
+class _PyDiagnosticBatchContext
+{
 public:
-    void __enter__() {
-        _context.reset(new UsdMayaDiagnosticBatchContext());
-    }
-    void __exit__(object, object, object) {
-        _context.reset();
-    }
+    void __enter__() { _context.reset(new UsdMayaDiagnosticBatchContext()); }
+    void __exit__(object, object, object) { _context.reset(); }
 
 private:
     std::unique_ptr<UsdMayaDiagnosticBatchContext> _context;
@@ -48,12 +45,10 @@ void wrapDiagnosticDelegate()
     typedef UsdMayaDiagnosticDelegate This;
     class_<This, boost::noncopyable>("DiagnosticDelegate", no_init)
         .def("GetBatchCount", &This::GetBatchCount)
-        .staticmethod("GetBatchCount")
-        ;
+        .staticmethod("GetBatchCount");
 
     typedef _PyDiagnosticBatchContext Context;
     class_<Context, boost::noncopyable>("DiagnosticBatchContext")
         .def("__enter__", &Context::__enter__, return_self<>())
-        .def("__exit__", &Context::__exit__)
-        ;
+        .def("__exit__", &Context::__exit__);
 }

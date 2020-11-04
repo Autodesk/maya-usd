@@ -19,12 +19,12 @@
 #ifndef __PX_VP20_GLSL_PROGRAM_H__
 #define __PX_VP20_GLSL_PROGRAM_H__
 
-#include <string>
-
-#include <pxr/pxr.h>
-#include <pxr/imaging/garch/gl.h>
-
 #include <mayaUsd/base/api.h>
+
+#include <pxr/imaging/garch/gl.h>
+#include <pxr/pxr.h>
+
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,35 +35,31 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class PxrMayaGLSLProgram
 {
-    public:
-        MAYAUSD_CORE_PUBLIC
-        PxrMayaGLSLProgram();
-        MAYAUSD_CORE_PUBLIC
-        virtual ~PxrMayaGLSLProgram();
+public:
+    MAYAUSD_CORE_PUBLIC
+    PxrMayaGLSLProgram();
+    MAYAUSD_CORE_PUBLIC
+    virtual ~PxrMayaGLSLProgram();
 
-        /// Compile a shader of type \p type with the given \p source.
-        MAYAUSD_CORE_PUBLIC
-        bool CompileShader(const GLenum type, const std::string& source);
+    /// Compile a shader of type \p type with the given \p source.
+    MAYAUSD_CORE_PUBLIC
+    bool CompileShader(const GLenum type, const std::string& source);
 
-        /// Link the compiled shaders together.
-        MAYAUSD_CORE_PUBLIC
-        bool Link();
+    /// Link the compiled shaders together.
+    MAYAUSD_CORE_PUBLIC
+    bool Link();
 
-        /// Validate whether this program is valid in the current context.
-        MAYAUSD_CORE_PUBLIC
-        bool Validate() const;
+    /// Validate whether this program is valid in the current context.
+    MAYAUSD_CORE_PUBLIC
+    bool Validate() const;
 
-        /// Get the ID of the OpenGL program object.
-        GLuint GetProgramId() const {
-            return mProgramId;
-        };
+    /// Get the ID of the OpenGL program object.
+    GLuint GetProgramId() const { return mProgramId; };
 
-    private:
-        GLuint mProgramId;
+private:
+    GLuint mProgramId;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-
-#endif  // __PX_VP20_GLSL_PROGRAM_H__
+#endif // __PX_VP20_GLSL_PROGRAM_H__

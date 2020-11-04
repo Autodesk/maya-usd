@@ -16,18 +16,18 @@
 #ifndef HD_VP2_SHADER_FRAGMENTS
 #define HD_VP2_SHADER_FRAGMENTS
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/staticTokens.h>
-
 #include <mayaUsd/base/api.h>
+
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/pxr.h>
 
 #include <maya/MStatus.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS \
-    ((CoreFragmentGraphName, "UsdPreviewSurfaceCore")) \
-    ((SurfaceFragmentGraphName, "UsdPreviewSurface"))
+#define MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS  \
+    ((CoreFragmentGraphName, "UsdPreviewSurfaceCore"))( \
+        (SurfaceFragmentGraphName, "UsdPreviewSurface"))
 
 TF_DECLARE_PUBLIC_TOKENS(
     HdVP2ShaderFragmentsTokens,

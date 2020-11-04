@@ -14,8 +14,9 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/cmds/RendererCommands.h"
-#include "AL/usdmaya/nodes/RendererManager.h"
+
 #include "AL/maya/utils/CommandGuiHelper.h"
+#include "AL/usdmaya/nodes/RendererManager.h"
 
 #include <maya/MArgDatabase.h>
 #include <maya/MGlobal.h>
@@ -33,78 +34,69 @@ AL_MAYA_DEFINE_COMMAND(ManageRenderer, AL_usdmaya);
 //----------------------------------------------------------------------------------------------------------------------
 MSyntax ManageRenderer::createSyntax()
 {
-  MSyntax syn;
-  syn.addFlag("-h", "-help", MSyntax::kNoArg);
-  syn.addFlag("-sp", "-setPlugin", MSyntax::kString);
-  return syn;
+    MSyntax syn;
+    syn.addFlag("-h", "-help", MSyntax::kNoArg);
+    syn.addFlag("-sp", "-setPlugin", MSyntax::kString);
+    return syn;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool ManageRenderer::isUndoable() const
-{
-  return false;
-}
+bool ManageRenderer::isUndoable() const { return false; }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus ManageRenderer::doIt(const MArgList& argList)
 {
-  try
-  {
-    MStatus status;
-    MArgDatabase args(syntax(), argList, &status);
-    if(!status)
-      return status;
+    try {
+        MStatus      status;
+        MArgDatabase args(syntax(), argList, &status);
+        if (!status)
+            return status;
 
-    AL_MAYA_COMMAND_HELP(args, g_helpText);
+        AL_MAYA_COMMAND_HELP(args, g_helpText);
 
-    if(args.isFlagSet("-sp"))
-    {
-      MString name;
-      args.getFlagArgument("-sp", 0, name);
-      bool result = nodes::RendererManager::findOrCreateManager()->setRendererPlugin(name);
-      setResult(result);
+        if (args.isFlagSet("-sp")) {
+            MString name;
+            args.getFlagArgument("-sp", 0, name);
+            bool result = nodes::RendererManager::findOrCreateManager()->setRendererPlugin(name);
+            setResult(result);
+        }
+    } catch (const MStatus& status) {
+        return status;
     }
-  }
-  catch(const MStatus& status)
-  {
-    return status;
-  }
-  return MS::kSuccess;
+    return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStringArray buildRendererPluginsList(const MString&)
 {
-  nodes::RendererManager* RendererManager = nodes::RendererManager::findManager();
-  if(RendererManager)
-  {
-    int index = RendererManager->getRendererPluginIndex();
-    if (index > 0)
-    {
-      // swap items so current plugin is first and active in the list
-      MStringArray result = AL::usdmaya::nodes::RendererManager::getRendererPluginList();
-      MString temp = result[0];
-      result[0] = result[index];
-      result[index] = temp;
-      return result;
+    nodes::RendererManager* RendererManager = nodes::RendererManager::findManager();
+    if (RendererManager) {
+        int index = RendererManager->getRendererPluginIndex();
+        if (index > 0) {
+            // swap items so current plugin is first and active in the list
+            MStringArray result = AL::usdmaya::nodes::RendererManager::getRendererPluginList();
+            MString      temp = result[0];
+            result[0] = result[index];
+            result[index] = temp;
+            return result;
+        }
     }
-  }
-  return AL::usdmaya::nodes::RendererManager::getRendererPluginList();
+    return AL::usdmaya::nodes::RendererManager::getRendererPluginList();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void constructRendererCommandGuis()
 {
-  /// It makes little sense to add this menu when there's just one option
-  if (AL::usdmaya::nodes::RendererManager::getRendererPluginList().length() > 1)
-  {
-    {
-      AL::maya::utils::CommandGuiHelper manageRenderer("AL_usdmaya_ManageRenderer", "Hydra Renderer Plugin", "Set", "USD/Renderer", false);
-      manageRenderer.addListOption("sp", "Plugin Name", (AL::maya::utils::GenerateListFn)buildRendererPluginsList);
+    /// It makes little sense to add this menu when there's just one option
+    if (AL::usdmaya::nodes::RendererManager::getRendererPluginList().length() > 1) {
+        {
+            AL::maya::utils::CommandGuiHelper manageRenderer(
+                "AL_usdmaya_ManageRenderer", "Hydra Renderer Plugin", "Set", "USD/Renderer", false);
+            manageRenderer.addListOption(
+                "sp", "Plugin Name", (AL::maya::utils::GenerateListFn)buildRendererPluginsList);
+        }
     }
-  }
 }
-
 
 //----------------------------------------------------------------------------------------------------------------------
 // Documentation strings.
@@ -121,7 +113,7 @@ ManageRenderer Overview:
 )";
 
 //----------------------------------------------------------------------------------------------------------------------
-} // cmds
-} // usdmaya
-} // AL
+} // namespace cmds
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

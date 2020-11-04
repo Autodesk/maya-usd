@@ -13,42 +13,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include "AL/maya/test/testHarness.h"
+#include "AL/maya/tests/mayaplugintest/utils/CommandGuiHelperTest.h"
+#include "AL/maya/tests/mayaplugintest/utils/NodeHelperUnitTest.h"
+#include "AL/maya/utils/CommandGuiHelper.h"
+#include "AL/maya/utils/MayaHelperMacros.h"
+#include "AL/maya/utils/MenuBuilder.h"
+
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 #include <maya/MStatus.h>
-#include "AL/maya/utils/MayaHelperMacros.h"
-#include "AL/maya/utils/CommandGuiHelper.h"
-#include "AL/maya/utils/MenuBuilder.h"
-#include "AL/maya/test/testHarness.h"
-#include "AL/maya/tests/mayaplugintest/utils/NodeHelperUnitTest.h"
-#include "AL/maya/tests/mayaplugintest/utils/CommandGuiHelperTest.h"
 
 using AL::maya::test::UnitTestHarness;
 
 MStatus initializePlugin(MObject obj)
 {
-  MStatus status;
-  MFnPlugin plugin(obj, "Animal Logic", "1.0", "Any");
+    MStatus   status;
+    MFnPlugin plugin(obj, "Animal Logic", "1.0", "Any");
 
-  AL_REGISTER_DEPEND_NODE(plugin, AL::maya::tests::utils::NodeHelperUnitTest);
-  AL_REGISTER_COMMAND(plugin, AL::maya::tests::utils::CommandGuiHelperTestCMD);
-  AL_REGISTER_COMMAND(plugin, UnitTestHarness);
-  AL::maya::tests::utils::CommandGuiHelperTestCMD::makeGUI();
+    AL_REGISTER_DEPEND_NODE(plugin, AL::maya::tests::utils::NodeHelperUnitTest);
+    AL_REGISTER_COMMAND(plugin, AL::maya::tests::utils::CommandGuiHelperTestCMD);
+    AL_REGISTER_COMMAND(plugin, UnitTestHarness);
+    AL::maya::tests::utils::CommandGuiHelperTestCMD::makeGUI();
 
-  AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
-  CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "mayaplugintest"));
-  return status;
+    AL_REGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
+    CHECK_MSTATUS(AL::maya::utils::MenuBuilder::generatePluginUI(plugin, "mayaplugintest"));
+    return status;
 }
 
 MStatus uninitializePlugin(MObject obj)
 {
-  MFnPlugin plugin(obj);
-  AL_UNREGISTER_NODE(plugin, AL::maya::tests::utils::NodeHelperUnitTest);
-  AL_UNREGISTER_COMMAND(plugin, AL::maya::tests::utils::CommandGuiHelperTestCMD);
-  AL_UNREGISTER_COMMAND(plugin, UnitTestHarness);
+    MFnPlugin plugin(obj);
+    AL_UNREGISTER_NODE(plugin, AL::maya::tests::utils::NodeHelperUnitTest);
+    AL_UNREGISTER_COMMAND(plugin, AL::maya::tests::utils::CommandGuiHelperTestCMD);
+    AL_UNREGISTER_COMMAND(plugin, UnitTestHarness);
 
-  MStatus status;
-  AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
-  return status;
+    MStatus status;
+    AL_UNREGISTER_COMMAND(plugin, AL::maya::utils::CommandGuiListGen);
+    return status;
 }
-

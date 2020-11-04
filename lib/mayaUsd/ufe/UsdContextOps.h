@@ -15,13 +15,13 @@
 //
 #pragma once
 
-#include <ufe/path.h>
-#include <ufe/contextOps.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <ufe/contextOps.h>
+#include <ufe/path.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -40,40 +40,44 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdContextOps : public Ufe::ContextOps
 {
 public:
-	typedef std::shared_ptr<UsdContextOps> Ptr;
+    typedef std::shared_ptr<UsdContextOps> Ptr;
 
-	UsdContextOps(const UsdSceneItem::Ptr& item);
-	~UsdContextOps() override;
+    UsdContextOps(const UsdSceneItem::Ptr& item);
+    ~UsdContextOps() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdContextOps(const UsdContextOps&) = delete;
-	UsdContextOps& operator=(const UsdContextOps&) = delete;
-	UsdContextOps(UsdContextOps&&) = delete;
-	UsdContextOps& operator=(UsdContextOps&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdContextOps(const UsdContextOps&) = delete;
+    UsdContextOps& operator=(const UsdContextOps&) = delete;
+    UsdContextOps(UsdContextOps&&) = delete;
+    UsdContextOps& operator=(UsdContextOps&&) = delete;
 
-	//! Create a UsdContextOps.
-	static UsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
+    //! Create a UsdContextOps.
+    static UsdContextOps::Ptr create(const UsdSceneItem::Ptr& item);
 
-	void setItem(const UsdSceneItem::Ptr& item);
-	const Ufe::Path& path() const;
-	inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
+    void             setItem(const UsdSceneItem::Ptr& item);
+    const Ufe::Path& path() const;
+    inline UsdPrim   prim() const
+    {
+        TF_AXIOM(fItem != nullptr);
+        return fItem->prim();
+    }
 
-	// When we are created from the ProxyShapeContextOpsHandler we do not have the proper
-	// Maya UFE scene item. So it won't return the correct node type. Therefore we set
-	// this flag directly.
-	void setIsAGatewayType(bool t) { fIsAGatewayType = t; }
-	bool isAGatewayType() const { return fIsAGatewayType; }
+    // When we are created from the ProxyShapeContextOpsHandler we do not have the proper
+    // Maya UFE scene item. So it won't return the correct node type. Therefore we set
+    // this flag directly.
+    void setIsAGatewayType(bool t) { fIsAGatewayType = t; }
+    bool isAGatewayType() const { return fIsAGatewayType; }
 
-	// Ufe::ContextOps overrides
-	Ufe::SceneItem::Ptr sceneItem() const override;
-    Items getItems(const ItemPath& itemPath) const override;
+    // Ufe::ContextOps overrides
+    Ufe::SceneItem::Ptr       sceneItem() const override;
+    Items                     getItems(const ItemPath& itemPath) const override;
     Ufe::UndoableCommand::Ptr doOpCmd(const ItemPath& itemPath) override;
 
 private:
-	UsdSceneItem::Ptr fItem;
-	bool fIsAGatewayType{false};
+    UsdSceneItem::Ptr fItem;
+    bool              fIsAGatewayType { false };
 
 }; // UsdContextOps
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

@@ -18,17 +18,17 @@
 
 /// \file pxrUsdMayaGL/softSelectHelper.h
 
-#include <unordered_map>
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/tf/hash.h>
+#include <pxr/pxr.h>
 
 #include <maya/MColor.h>
 #include <maya/MDagPath.h>
 #include <maya/MRampAttribute.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/hash.h>
-
-#include <mayaUsd/base/api.h>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -74,24 +74,23 @@ public:
     bool GetFalloffColor(const MDagPath& dagPath, MColor* falloffColor) const;
 
 private:
-
     void _PopulateWeights();
     void _PopulateSoftSelectColorRamp();
 
-    struct _MDagPathHash {
-        inline size_t operator()(const MDagPath& dagPath) const {
+    struct _MDagPathHash
+    {
+        inline size_t operator()(const MDagPath& dagPath) const
+        {
             return TfHash()(std::string(dagPath.fullPathName().asChar()));
         }
     };
     typedef std::unordered_map<MDagPath, float, _MDagPathHash> _MDagPathsToWeights;
 
     _MDagPathsToWeights _dagPathsToWeight;
-    MColor _wireColor;
-    bool _populated;
+    MColor              _wireColor;
+    bool                _populated;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif // PXRUSDMAYAGL_SOFT_SELECT_HELPER_H

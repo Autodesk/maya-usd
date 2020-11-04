@@ -20,9 +20,7 @@
 using namespace MayaUsd;
 using namespace boost::python;
 
-
-void
-wrapGlobal()
+void wrapGlobal()
 {
     def("getMayaRunTimeId", ufe::getMayaRunTimeId);
 

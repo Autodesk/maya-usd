@@ -21,18 +21,16 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdAttributesHandler::UsdAttributesHandler()
-	: Ufe::AttributesHandler()
+    : Ufe::AttributesHandler()
 {
 }
 
-UsdAttributesHandler::~UsdAttributesHandler()
-{
-}
+UsdAttributesHandler::~UsdAttributesHandler() { }
 
 /*static*/
 UsdAttributesHandler::Ptr UsdAttributesHandler::create()
 {
-	return std::make_shared<UsdAttributesHandler>();
+    return std::make_shared<UsdAttributesHandler>();
 }
 
 //------------------------------------------------------------------------------
@@ -41,13 +39,13 @@ UsdAttributesHandler::Ptr UsdAttributesHandler::create()
 
 Ufe::Attributes::Ptr UsdAttributesHandler::attributes(const Ufe::SceneItem::Ptr& item) const
 {
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-	assert(usdItem);
+    assert(usdItem);
 #endif
-	auto usdAttributes = UsdAttributes::create(usdItem);
-	return usdAttributes;
+    auto usdAttributes = UsdAttributes::create(usdItem);
+    return usdAttributes;
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF
