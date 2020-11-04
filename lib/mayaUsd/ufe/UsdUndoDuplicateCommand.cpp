@@ -27,6 +27,8 @@
 
 #include <mayaUsdUtils/util.h>
 
+#include "private/UfeNotifGuard.h"
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -88,6 +90,7 @@ bool UsdUndoDuplicateCommand::duplicate(const SdfLayerHandle& layer, const SdfPa
 	// We use the source layer as the destination.  An alternate workflow
 	// would be the edit target layer be the destination:
 	// layer = self._stage.GetEditTarget().GetLayer()
+	MayaUsd::ufe::InAddOrDeleteOperation ad;
 	return SdfCopySpec(layer, usdSrcPath, layer, usdDstPath);
 }
 
@@ -105,11 +108,11 @@ void UsdUndoDuplicateCommand::undo()
 	Ufe::ObjectPreDelete notification(createSiblingSceneItem(
 										fUfeSrcPath, fUsdDstPath.GetElementString()));
 
-	#ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
 	Ufe::Scene::instance().notify(notification);
-	#else
+#else
 	Ufe::Scene::notifyObjectDelete(notification);
-	#endif
+#endif
 
 	fStage->RemovePrim(fUsdDstPath);
 }
