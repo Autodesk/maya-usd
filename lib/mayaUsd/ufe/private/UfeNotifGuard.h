@@ -25,42 +25,41 @@ namespace ufe {
 class InPathChange
 {
 public:
-	InPathChange() { inGuard = true; }
-	~InPathChange() { inGuard = false; }
+    InPathChange() { inGuard = true; }
+    ~InPathChange() { inGuard = false; }
 
-	// Delete the copy/move constructors assignment operators.
-	InPathChange(const InPathChange&) = delete;
-	InPathChange& operator=(const InPathChange&) = delete;
-	InPathChange(InPathChange&&) = delete;
-	InPathChange& operator=(InPathChange&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    InPathChange(const InPathChange&) = delete;
+    InPathChange& operator=(const InPathChange&) = delete;
+    InPathChange(InPathChange&&) = delete;
+    InPathChange& operator=(InPathChange&&) = delete;
 
-	static bool inPathChange() { return inGuard; }
+    static bool inPathChange() { return inGuard; }
 
 private:
-	static bool inGuard;
+    static bool inGuard;
 };
 
 //! \brief Helper class to scope when we are in an add or delete operation.
 class InAddOrDeleteOperation
 {
 public:
-	InAddOrDeleteOperation() { inGuard = true; }
-	~InAddOrDeleteOperation() { inGuard = false; }
+    InAddOrDeleteOperation() { inGuard = true; }
+    ~InAddOrDeleteOperation() { inGuard = false; }
 
-	// Delete the copy/move constructors assignment operators.
-	InAddOrDeleteOperation(const InAddOrDeleteOperation&) = delete;
-	InAddOrDeleteOperation& operator=(const InAddOrDeleteOperation&) = delete;
-	InAddOrDeleteOperation(InAddOrDeleteOperation&&) = delete;
-	InAddOrDeleteOperation& operator=(InAddOrDeleteOperation&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    InAddOrDeleteOperation(const InAddOrDeleteOperation&) = delete;
+    InAddOrDeleteOperation& operator=(const InAddOrDeleteOperation&) = delete;
+    InAddOrDeleteOperation(InAddOrDeleteOperation&&) = delete;
+    InAddOrDeleteOperation& operator=(InAddOrDeleteOperation&&) = delete;
 
-	static bool inAddOrDeleteOperation() { return inGuard; }
+    static bool inAddOrDeleteOperation() { return inGuard; }
 
 private:
-	static bool inGuard;
+    static bool inGuard;
 };
 
-
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF
 
 #endif // UFENOTIFGUARD_H

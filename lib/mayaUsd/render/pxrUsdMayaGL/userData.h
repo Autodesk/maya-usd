@@ -18,15 +18,15 @@
 
 /// \file pxrUsdMayaGL/userData.h
 
-#include <memory>
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/pxr.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MUserData.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec4f.h>
-
-#include <mayaUsd/base/api.h>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,20 +39,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// renderer.
 class PxrMayaHdUserData : public MUserData
 {
-    public:
+public:
+    std::unique_ptr<MBoundingBox> boundingBox;
+    std::unique_ptr<GfVec4f>      wireframeColor;
 
-        std::unique_ptr<MBoundingBox> boundingBox;
-        std::unique_ptr<GfVec4f> wireframeColor;
+    MAYAUSD_CORE_PUBLIC
+    PxrMayaHdUserData();
 
-        MAYAUSD_CORE_PUBLIC
-        PxrMayaHdUserData();
-
-        MAYAUSD_CORE_PUBLIC
-        ~PxrMayaHdUserData() override;
+    MAYAUSD_CORE_PUBLIC
+    ~PxrMayaHdUserData() override;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

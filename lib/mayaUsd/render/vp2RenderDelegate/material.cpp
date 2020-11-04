@@ -15,10 +15,13 @@
 //
 #include "material.h"
 
-#include <iostream>
-#include <string>
-
-#include <boost/filesystem.hpp>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/matrix4f.h>
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/imaging/glf/image.h>
 
 #include <maya/MFragmentManager.h>
 #include <maya/MProfiler.h>
@@ -30,13 +33,10 @@
 #include <maya/MUintArray.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/gf/matrix4f.h>
-#include <pxr/base/gf/vec2f.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/gf/vec4f.h>
-#include <pxr/base/tf/diagnostic.h>
-#include <pxr/imaging/glf/image.h>
+#include <boost/filesystem.hpp>
+
+#include <iostream>
+#include <string>
 #if USD_VERSION_NUM >= 2002
 #include <pxr/imaging/glf/udimTexture.h>
 #endif
@@ -58,45 +58,28 @@ namespace {
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (file)
-    (opacity)
-    (st)
-    (varname)
+    (file)(opacity)(st)(varname)
 
-    (input)
-    (output)
+        (input)(output)
 
-    (rgb)
-    (r)
-    (g)
-    (b)
-    (a)
+            (rgb)(r)(g)(b)(a)
 
-    (xyz)
-    (x)
-    (y)
-    (z)
-    (w)
+                (xyz)(x)(y)(z)(w)
 
-    (Float4ToFloatX)
-    (Float4ToFloatY)
-    (Float4ToFloatZ)
-    (Float4ToFloatW)
-    (Float4ToFloat3)
+                    (Float4ToFloatX)(Float4ToFloatY)(Float4ToFloatZ)(Float4ToFloatW)(Float4ToFloat3)
 
-    (UsdPrimvarReader_color)
-    (UsdPrimvarReader_vector)
-);
+                        (UsdPrimvarReader_color)(UsdPrimvarReader_vector));
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
 bool _IsUsdPrimvarReader(const HdMaterialNode& node)
 {
     const TfToken& id = node.identifier;
-    return (id == UsdImagingTokens->UsdPrimvarReader_float ||
-            id == UsdImagingTokens->UsdPrimvarReader_float2 ||
-            id == UsdImagingTokens->UsdPrimvarReader_float3 ||
-            id == UsdImagingTokens->UsdPrimvarReader_float4 ||
-            id == _tokens->UsdPrimvarReader_vector);
+    return (
+        id == UsdImagingTokens->UsdPrimvarReader_float
+        || id == UsdImagingTokens->UsdPrimvarReader_float2
+        || id == UsdImagingTokens->UsdPrimvarReader_float3
+        || id == UsdImagingTokens->UsdPrimvarReader_float4
+        || id == _tokens->UsdPrimvarReader_vector);
 }
 
 //! Helper utility function to test whether a node is a UsdShade UV texture.
@@ -108,31 +91,30 @@ inline bool _IsUsdUVTexture(const HdMaterialNode& node)
 //! Helper utility function to print nodes, connections and primvars in the
 //! specified material network.
 void _PrintMaterialNetwork(
-    const std::string& label,
-    const SdfPath& id,
+    const std::string&       label,
+    const SdfPath&           id,
     const HdMaterialNetwork& mat)
 {
     std::cout << label << " material network for " << id << "\n";
 
     std::cout << "  --Node--\n";
-    for (HdMaterialNode const& node: mat.nodes) {
+    for (HdMaterialNode const& node : mat.nodes) {
         std::cout << "    " << node.path << "\n";
         std::cout << "    " << node.identifier << "\n";
 
-        for (auto const& entry: node.parameters) {
-            std::cout << "      param " << entry.first << ": "
-                << TfStringify(entry.second) << "\n";
+        for (auto const& entry : node.parameters) {
+            std::cout << "      param " << entry.first << ": " << TfStringify(entry.second) << "\n";
         }
     }
 
     std::cout << "  --Connections--\n";
-    for (const HdMaterialRelationship& rel: mat.relationships) {
-        std::cout << "    " << rel.inputId << "." << rel.inputName
-            << "->" << rel.outputId << "." << rel.outputName << "\n";
+    for (const HdMaterialRelationship& rel : mat.relationships) {
+        std::cout << "    " << rel.inputId << "." << rel.inputName << "->" << rel.outputId << "."
+                  << rel.outputName << "\n";
     }
 
     std::cout << "  --Primvars--\n";
-    for (TfToken const& primvar: mat.primvars) {
+    for (TfToken const& primvar : mat.primvars) {
         std::cout << "    " << primvar << "\n";
     }
 }
@@ -153,8 +135,7 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
     outNet.relationships.reserve(numRelationships * 2);
     outNet.primvars.reserve(numNodes);
 
-    for (const HdMaterialNode &node : inNet.nodes)
-    {
+    for (const HdMaterialNode& node : inNet.nodes) {
         TfToken primvarToRead;
 
         const bool isUsdPrimvarReader = _IsUsdPrimvarReader(node);
@@ -170,8 +151,7 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
         // If the primvar reader is reading color or opacity, change it to
         // UsdPrimvarReader_color which can create COLOR stream requirement
         // instead of generic TEXCOORD stream.
-        if (primvarToRead == HdTokens->displayColor ||
-            primvarToRead == HdTokens->displayOpacity) {
+        if (primvarToRead == HdTokens->displayColor || primvarToRead == HdTokens->displayOpacity) {
             auto& nodeToChange = outNet.nodes.back();
             nodeToChange.identifier = _tokens->UsdPrimvarReader_color;
         }
@@ -185,46 +165,34 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
             TfToken passThroughId;
             if (rel.inputName == _tokens->rgb || rel.inputName == _tokens->xyz) {
                 passThroughId = _tokens->Float4ToFloat3;
-            }
-            else if (rel.inputName == _tokens->r || rel.inputName == _tokens->x) {
+            } else if (rel.inputName == _tokens->r || rel.inputName == _tokens->x) {
                 passThroughId = _tokens->Float4ToFloatX;
-            }
-            else if (rel.inputName == _tokens->g || rel.inputName == _tokens->y) {
+            } else if (rel.inputName == _tokens->g || rel.inputName == _tokens->y) {
                 passThroughId = _tokens->Float4ToFloatY;
-            }
-            else if (rel.inputName == _tokens->b || rel.inputName == _tokens->z) {
+            } else if (rel.inputName == _tokens->b || rel.inputName == _tokens->z) {
                 passThroughId = _tokens->Float4ToFloatZ;
-            }
-            else if (rel.inputName == _tokens->a || rel.inputName == _tokens->w) {
+            } else if (rel.inputName == _tokens->a || rel.inputName == _tokens->w) {
                 passThroughId = _tokens->Float4ToFloatW;
-            }
-            else if (primvarToRead == HdTokens->displayColor) {
+            } else if (primvarToRead == HdTokens->displayColor) {
                 passThroughId = _tokens->Float4ToFloat3;
-            }
-            else if (primvarToRead == HdTokens->displayOpacity) {
+            } else if (primvarToRead == HdTokens->displayOpacity) {
                 passThroughId = _tokens->Float4ToFloatW;
-            }
-            else {
+            } else {
                 outNet.relationships.push_back(rel);
                 continue;
             }
 
-            const SdfPath passThroughPath = rel.inputId.ReplaceName(TfToken(
-                TfStringPrintf("HdVP2PassThrough%d", numPassThroughNodes++)));
+            const SdfPath passThroughPath = rel.inputId.ReplaceName(
+                TfToken(TfStringPrintf("HdVP2PassThrough%d", numPassThroughNodes++)));
 
-            const HdMaterialNode passThroughNode = {
-                passThroughPath, passThroughId, {}
-            };
+            const HdMaterialNode passThroughNode = { passThroughPath, passThroughId, {} };
             outNet.nodes.push_back(passThroughNode);
 
-            HdMaterialRelationship newRel = {
-                rel.inputId, _tokens->output, passThroughPath, _tokens->input
-            };
+            HdMaterialRelationship newRel
+                = { rel.inputId, _tokens->output, passThroughPath, _tokens->input };
             outNet.relationships.push_back(newRel);
 
-            newRel = {
-                passThroughPath, _tokens->output, rel.outputId, rel.outputName
-            };
+            newRel = { passThroughPath, _tokens->output, rel.outputId, rel.outputName };
             outNet.relationships.push_back(newRel);
         }
 
@@ -246,21 +214,17 @@ void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
 }
 
 //! Helper utility function to convert Hydra texture addressing token to VP2 enum.
-MHWRender::MSamplerState::TextureAddress _ConvertToTextureSamplerAddressEnum(
-    const TfToken& token)
+MHWRender::MSamplerState::TextureAddress _ConvertToTextureSamplerAddressEnum(const TfToken& token)
 {
     MHWRender::MSamplerState::TextureAddress address;
 
     if (token == UsdHydraTokens->clamp) {
         address = MHWRender::MSamplerState::kTexClamp;
-    }
-    else if (token == UsdHydraTokens->mirror) {
+    } else if (token == UsdHydraTokens->mirror) {
         address = MHWRender::MSamplerState::kTexMirror;
-    }
-    else if (token == UsdHydraTokens->black) {
+    } else if (token == UsdHydraTokens->black) {
         address = MHWRender::MSamplerState::kTexBorder;
-    }
-    else {
+    } else {
         address = MHWRender::MSamplerState::kTexWrap;
     }
 
@@ -297,8 +261,8 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
 }
 
 #if USD_VERSION_NUM >= 2002
-MHWRender::MTexture* _LoadUdimTexture(
-    const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
+MHWRender::MTexture*
+_LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
 {
     /*
         For this method to work path needs to be an absolute file path, not an asset path.
@@ -313,7 +277,7 @@ MHWRender::MTexture* _LoadUdimTexture(
     // test for a UDIM texture
     if (!GlfIsSupportedUdimTexture(path))
         return nullptr;
-    
+
     /*
         Maya's tiled texture support is implemented quite differently from Usd's UDIM support.
         In Maya the texture tiles get combined into a single big texture, downscaling each tile
@@ -322,26 +286,25 @@ MHWRender::MTexture* _LoadUdimTexture(
         In USD the UDIM textures are stored in a texture array that the shader uses to draw.
     */
 
-    MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
-    MHWRender::MTextureManager* const textureMgr =
-        renderer ? renderer->getTextureManager() : nullptr;
+    MHWRender::MRenderer* const       renderer = MHWRender::MRenderer::theRenderer();
+    MHWRender::MTextureManager* const textureMgr
+        = renderer ? renderer->getTextureManager() : nullptr;
     if (!TF_VERIFY(textureMgr)) {
         return nullptr;
     }
 
-    // HdSt sets the tile limit to the max number of textures in an array of 2d textures. OpenGL says
-    // the minimum number of layers in 2048 so I'll use that.
-    int tileLimit = 2048;
+    // HdSt sets the tile limit to the max number of textures in an array of 2d textures. OpenGL
+    // says the minimum number of layers in 2048 so I'll use that.
+    int                                   tileLimit = 2048;
     std::vector<std::tuple<int, TfToken>> tiles = UsdImaging_GetUdimTiles(path, tileLimit);
-    if (tiles.size() == 0)
-    {
+    if (tiles.size() == 0) {
         TF_WARN("Unable to find UDIM tiles for %s", path.c_str());
         return nullptr;
     }
 
     // I don't think there is a downside to setting a very high limit.
     // Maya will clamp the texture size to the VP2 texture clamp resolution and the hardware's
-    // max texture size. And Maya doesn't make the tiled texture unnecessarily large. When I 
+    // max texture size. And Maya doesn't make the tiled texture unnecessarily large. When I
     // try loading two 1k textures I end up with a tiled texture that is 2k x 1k.
     unsigned int maxWidth = 0;
     unsigned int maxHeight = 0;
@@ -363,50 +326,52 @@ MHWRender::MTexture* _LoadUdimTexture(
         int maxU = maxTileId % 10;
         int maxV = (maxTileId - maxU) / 10;
         if ((tileWidth * maxU > maxWidth) || (tileHeight * maxV > maxHeight))
-            TF_WARN("UDIM texture %s creates a tiled texture larger than the maximum texture size. Some"
-                "resolution will be lost.", path.c_str());
+            TF_WARN(
+                "UDIM texture %s creates a tiled texture larger than the maximum texture size. Some"
+                "resolution will be lost.",
+                path.c_str());
     }
 
-    MString textureName(path.c_str()); // used for caching, using the string with <UDIM> in it is fine
+    MString textureName(
+        path.c_str()); // used for caching, using the string with <UDIM> in it is fine
     MStringArray tilePaths;
-    MFloatArray tilePositions;
-    for(auto& tile : tiles)
-    {
+    MFloatArray  tilePositions;
+    for (auto& tile : tiles) {
         tilePaths.append(MString(std::get<1>(tile).GetText()));
 
         GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tile).GetString());
         if (!TF_VERIFY(image)) {
             return nullptr;
         }
-        if (isColorSpaceSRGB != image->IsColorSpaceSRGB())
-        {
-            TF_WARN("UDIM texture %s color space doesn't match %s color space",
-                std::get<1>(tile).GetText(), std::get<1>(tiles[0]).GetText());
+        if (isColorSpaceSRGB != image->IsColorSpaceSRGB()) {
+            TF_WARN(
+                "UDIM texture %s color space doesn't match %s color space",
+                std::get<1>(tile).GetText(),
+                std::get<1>(tiles[0]).GetText());
         }
 
         // The image labeled 1001 will have id 0, 1002 will have id 1, 1011 will have id 10.
         // image 1001 starts with UV (0.0f, 0.0f), 1002 is (1.0f, 0.0f) and 1011 is (0.0f, 1.0f)
-        int tileId = std::get<0>(tile);
+        int   tileId = std::get<0>(tile);
         float u = (float)(tileId % 10);
         float v = (float)((tileId - u) / 10);
         tilePositions.append(u);
         tilePositions.append(v);
     }
 
-    MColor undefinedColor(0.0f, 1.0f, 0.0f, 1.0f);
-    MStringArray failedTilePaths;
+    MColor               undefinedColor(0.0f, 1.0f, 0.0f, 1.0f);
+    MStringArray         failedTilePaths;
     MHWRender::MTexture* texture = textureMgr->acquireTiledTexture(
         textureName,
         tilePaths,
         tilePositions,
         undefinedColor,
-        maxWidth, maxHeight,
+        maxWidth,
+        maxHeight,
         failedTilePaths,
-        uvScaleOffset
-    );
+        uvScaleOffset);
 
-    for(unsigned int i=0; i<failedTilePaths.length(); i++)
-    {
+    for (unsigned int i = 0; i < failedTilePaths.length(); i++) {
         TF_WARN("Failed to load <UDIM> texture tile %s", failedTilePaths[i].asChar());
     }
 
@@ -415,10 +380,8 @@ MHWRender::MTexture* _LoadUdimTexture(
 #endif
 
 //! Load texture from the specified path
-MHWRender::MTexture* _LoadTexture(
-    const std::string& path,
-    bool& isColorSpaceSRGB,
-    MFloatArray& uvScaleOffset)
+MHWRender::MTexture*
+_LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
 {
 #if USD_VERSION_NUM >= 2002
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
@@ -426,9 +389,9 @@ MHWRender::MTexture* _LoadTexture(
         return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
 #endif
 
-    MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
-    MHWRender::MTextureManager* const textureMgr =
-        renderer ? renderer->getTextureManager() : nullptr;
+    MHWRender::MRenderer* const       renderer = MHWRender::MRenderer::theRenderer();
+    MHWRender::MTextureManager* const textureMgr
+        = renderer ? renderer->getTextureManager() : nullptr;
     if (!TF_VERIFY(textureMgr)) {
         return nullptr;
     }
@@ -475,76 +438,71 @@ MHWRender::MTexture* _LoadTexture(
 
 #if USD_VERSION_NUM > 2008
     switch (spec.hioFormat) {
-        // Single Channel
-        case HioFormatFloat32:
-            desc.fFormat = MHWRender::kR32_FLOAT;
-            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-            break;
-        case HioFormatUNorm8:
-            desc.fFormat = MHWRender::kR8_UNORM;
-            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-            break;
+    // Single Channel
+    case HioFormatFloat32:
+        desc.fFormat = MHWRender::kR32_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    case HioFormatUNorm8:
+        desc.fFormat = MHWRender::kR8_UNORM;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
 
-        // 3-Channel
-        case HioFormatFloat32Vec3:
-            desc.fFormat = MHWRender::kR32G32B32_FLOAT;
-            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-            break;
-        case HioFormatUNorm8Vec3:
-        case HioFormatUNorm8Vec3srgb:
-            {
-            // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
-            constexpr int bpp_4 = 4;
+    // 3-Channel
+    case HioFormatFloat32Vec3:
+        desc.fFormat = MHWRender::kR32G32B32_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    case HioFormatUNorm8Vec3:
+    case HioFormatUNorm8Vec3srgb: {
+        // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
+        constexpr int bpp_4 = 4;
 
-            desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
-            desc.fBytesPerRow = spec.width * bpp_4;
-            desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
+        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+        desc.fBytesPerRow = spec.width * bpp_4;
+        desc.fBytesPerSlice = desc.fBytesPerRow * spec.height;
 
-            std::vector<unsigned char> texels(desc.fBytesPerSlice);
+        std::vector<unsigned char> texels(desc.fBytesPerSlice);
 
-            for (int y = 0; y < spec.height; y++) {
-                for (int x = 0; x < spec.width; x++) {
-                    const int t = spec.width * y + x;
-                    texels[t*bpp_4]     = storage[t*bpp];
-                    texels[t*bpp_4 + 1] = storage[t*bpp + 1];
-                    texels[t*bpp_4 + 2] = storage[t*bpp + 2];
-                    texels[t*bpp_4 + 3] = 255;
-                }
+        for (int y = 0; y < spec.height; y++) {
+            for (int x = 0; x < spec.width; x++) {
+                const int t = spec.width * y + x;
+                texels[t * bpp_4] = storage[t * bpp];
+                texels[t * bpp_4 + 1] = storage[t * bpp + 1];
+                texels[t * bpp_4 + 2] = storage[t * bpp + 2];
+                texels[t * bpp_4 + 3] = 255;
             }
+        }
 
-            texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
-            isColorSpaceSRGB = image->IsColorSpaceSRGB();
-            break;
-            }
+        texture = textureMgr->acquireTexture(path.c_str(), desc, texels.data());
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+        break;
+    }
 
-        // 4-Channel
-        case HioFormatFloat32Vec4:
-            desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
-            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-            break;
-        case HioFormatUNorm8Vec4:
-        case HioFormatUNorm8Vec4srgb:
-            desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
-            isColorSpaceSRGB = image->IsColorSpaceSRGB();
-            texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-            break;
-        default:
-            break;
+    // 4-Channel
+    case HioFormatFloat32Vec4:
+        desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    case HioFormatUNorm8Vec4:
+    case HioFormatUNorm8Vec4srgb:
+        desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
+        isColorSpaceSRGB = image->IsColorSpaceSRGB();
+        texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
+        break;
+    default: break;
     }
 #else
-    switch (spec.format)
-    {
+    switch (spec.format) {
     case GL_RED:
-        desc.fFormat = (spec.type == GL_FLOAT ?
-            MHWRender::kR32_FLOAT : MHWRender::kR8_UNORM);
+        desc.fFormat = (spec.type == GL_FLOAT ? MHWRender::kR32_FLOAT : MHWRender::kR8_UNORM);
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
     case GL_RGB:
         if (spec.type == GL_FLOAT) {
             desc.fFormat = MHWRender::kR32G32B32_FLOAT;
             texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
-        }
-        else {
+        } else {
             // R8G8B8 is not supported by VP2. Converted to R8G8B8A8.
             constexpr int bpp_4 = 4;
 
@@ -557,10 +515,10 @@ MHWRender::MTexture* _LoadTexture(
             for (int y = 0; y < spec.height; y++) {
                 for (int x = 0; x < spec.width; x++) {
                     const int t = spec.width * y + x;
-                    texels[t*bpp_4]     = storage[t*bpp];
-                    texels[t*bpp_4 + 1] = storage[t*bpp + 1];
-                    texels[t*bpp_4 + 2] = storage[t*bpp + 2];
-                    texels[t*bpp_4 + 3] = 255;
+                    texels[t * bpp_4] = storage[t * bpp];
+                    texels[t * bpp_4 + 1] = storage[t * bpp + 1];
+                    texels[t * bpp_4 + 2] = storage[t * bpp + 2];
+                    texels[t * bpp_4 + 3] = 255;
                 }
             }
 
@@ -571,51 +529,46 @@ MHWRender::MTexture* _LoadTexture(
     case GL_RGBA:
         if (spec.type == GL_FLOAT) {
             desc.fFormat = MHWRender::kR32G32B32A32_FLOAT;
-        }
-        else {
+        } else {
             desc.fFormat = MHWRender::kR8G8B8A8_UNORM;
             isColorSpaceSRGB = image->IsColorSpaceSRGB();
         }
         texture = textureMgr->acquireTexture(path.c_str(), desc, spec.data);
         break;
-    default:
-        break;
+    default: break;
     }
 #endif
 
     return texture;
 }
 
-} //anonymous namespace
+} // anonymous namespace
 
 /*! \brief  Releases the reference to the shader owned by a smart pointer.
-*/
-void
-HdVP2ShaderDeleter::operator()(MHWRender::MShaderInstance* shader)
+ */
+void HdVP2ShaderDeleter::operator()(MHWRender::MShaderInstance* shader)
 {
-    MRenderer* const renderer = MRenderer::theRenderer();
-    const MShaderManager* const shaderMgr =
-        renderer ? renderer->getShaderManager() : nullptr;
+    MRenderer* const            renderer = MRenderer::theRenderer();
+    const MShaderManager* const shaderMgr = renderer ? renderer->getShaderManager() : nullptr;
     if (TF_VERIFY(shaderMgr)) {
         shaderMgr->releaseShader(shader);
     }
 }
 
 /*! \brief  Releases the reference to the texture owned by a smart pointer.
-*/
-void
-HdVP2TextureDeleter::operator()(MHWRender::MTexture* texture)
+ */
+void HdVP2TextureDeleter::operator()(MHWRender::MTexture* texture)
 {
-    MRenderer* const renderer = MRenderer::theRenderer();
-    MHWRender::MTextureManager* const textureMgr =
-        renderer ? renderer->getTextureManager() : nullptr;
+    MRenderer* const                  renderer = MRenderer::theRenderer();
+    MHWRender::MTextureManager* const textureMgr
+        = renderer ? renderer->getTextureManager() : nullptr;
     if (TF_VERIFY(textureMgr)) {
         textureMgr->releaseTexture(texture);
     }
 }
 
 /*! \brief  Constructor
-*/
+ */
 HdVP2Material::HdVP2Material(HdVP2RenderDelegate* renderDelegate, const SdfPath& id)
     : HdMaterial(id)
     , _renderDelegate(renderDelegate)
@@ -623,7 +576,7 @@ HdVP2Material::HdVP2Material(HdVP2RenderDelegate* renderDelegate, const SdfPath&
 }
 
 /*! \brief  Synchronize VP2 state with scene delegate state based on dirty bits
-*/
+ */
 void HdVP2Material::Sync(
     HdSceneDelegate* sceneDelegate,
     HdRenderParam* /*renderParam*/,
@@ -631,11 +584,11 @@ void HdVP2Material::Sync(
 {
     if (*dirtyBits & (HdMaterial::DirtyResource | HdMaterial::DirtyParams)) {
         const SdfPath& id = GetId();
-        VtValue vtMatResource = sceneDelegate->GetMaterialResource(id);
+        VtValue        vtMatResource = sceneDelegate->GetMaterialResource(id);
 
         if (vtMatResource.IsHolding<HdMaterialNetworkMap>()) {
-            const HdMaterialNetworkMap& networkMap =
-                vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
+            const HdMaterialNetworkMap& networkMap
+                = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
 
             HdMaterialNetwork bxdfNet, dispNet;
 
@@ -672,11 +625,12 @@ void HdVP2Material::Sync(
             }
 
             _UpdateShaderInstance(bxdfNet);
-        }
-        else {
-            TF_WARN("Expected material resource for <%s> to hold HdMaterialNetworkMap,"
+        } else {
+            TF_WARN(
+                "Expected material resource for <%s> to hold HdMaterialNetworkMap,"
                 "but found %s instead.",
-                id.GetText(), vtMatResource.GetTypeName().c_str());
+                id.GetText(),
+                vtMatResource.GetTypeName().c_str());
         }
     }
 
@@ -686,15 +640,12 @@ void HdVP2Material::Sync(
 /*! \brief  Returns the minimal set of dirty bits to place in the
 change tracker for use in the first sync of this prim.
 */
-HdDirtyBits
-HdVP2Material::GetInitialDirtyBitsMask() const {
-    return HdMaterial::AllDirty;
-}
+HdDirtyBits HdVP2Material::GetInitialDirtyBitsMask() const { return HdMaterial::AllDirty; }
 
 /*! \brief  Creates a shader instance for the surface shader.
-*/
-MHWRender::MShaderInstance*
-HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
+ */
+MHWRender::MShaderInstance* HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat)
+{
     MHWRender::MRenderer* const renderer = MHWRender::MRenderer::theRenderer();
     if (!TF_VERIFY(renderer)) {
         return nullptr;
@@ -709,7 +660,8 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 
     // MShaderInstance supports multiple connections between shaders on Maya 2018.7, 2019.3, 2020
     // and above.
-#if (MAYA_API_VERSION >= 20190300) || ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000))
+#if (MAYA_API_VERSION >= 20190300) \
+    || ((MAYA_API_VERSION >= 20180700) && (MAYA_API_VERSION < 20190000))
 
     // UsdImagingMaterialAdapter has walked the shader graph and emitted nodes
     // and relationships in topological order to avoid forward-references, thus
@@ -745,8 +697,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
                     std::string str = rel.outputId.GetName();
                     str += rel.outputName.GetString();
                     inputNames.append(str.c_str());
-                }
-                else {
+                } else {
                     inputNames.append(rel.outputName.GetText());
 
                     if (rel.outputName == _tokens->opacity) {
@@ -758,16 +709,18 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 
         if (outputNames.length() > 0) {
             MUintArray invalidParamIndices;
-            MStatus status = shaderInstance->addInputFragmentForMultiParams(
+            MStatus    status = shaderInstance->addInputFragmentForMultiParams(
                 nodeId, nodeName, outputNames, inputNames, &invalidParamIndices);
 
             if (!status && TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
-                TF_WARN("Error %s happened when connecting shader %s",
-                    status.errorString().asChar(), node.path.GetText());
+                TF_WARN(
+                    "Error %s happened when connecting shader %s",
+                    status.errorString().asChar(),
+                    node.path.GetText());
 
                 const unsigned int len = invalidParamIndices.length();
                 for (unsigned int i = 0; i < len; i++) {
-                    unsigned int index = invalidParamIndices[i];
+                    unsigned int   index = invalidParamIndices[i];
                     const MString& outputName = outputNames[index];
                     const MString& inputName = inputNames[index];
                     TF_WARN("  %s -> %s", outputName.asChar(), inputName.asChar());
@@ -782,10 +735,9 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
                     shaderInstance->renameParameter(paramName, varname);
                 }
             }
-        }
-        else {
-            TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg("Failed to connect shader %s\n",
-                node.path.GetText());
+        } else {
+            TF_DEBUG(HDVP2_DEBUG_MATERIAL)
+                .Msg("Failed to connect shader %s\n", node.path.GetText());
         }
     }
 
@@ -829,8 +781,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
             }
 
             if (_IsUsdUVTexture(node)) {
-                if (rel.outputId == node.path &&
-                    rel.outputName == _tokens->st) {
+                if (rel.outputId == node.path && rel.outputName == _tokens->st) {
                     for (const HdMaterialNode& n : mat.nodes) {
                         if (n.path == rel.inputId && _IsUsdPrimvarReader(n)) {
                             auto it = n.parameters.find(_tokens->varname);
@@ -849,19 +800,20 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
         // a UsdUVTexture is connected to a single input of a USD Preview Surface.
         // More generic fix is coming.
         if (outputNames.length() == 1) {
-            MStatus status = shaderInstance->addInputFragment(
-                nodeId, outputNames[0], inputNames[0]);
+            MStatus status
+                = shaderInstance->addInputFragment(nodeId, outputNames[0], inputNames[0]);
 
             if (!status) {
-                TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
-                    "Error %s happened when connecting shader %s\n",
-                    status.errorString().asChar(), node.path.GetText());
+                TF_DEBUG(HDVP2_DEBUG_MATERIAL)
+                    .Msg(
+                        "Error %s happened when connecting shader %s\n",
+                        status.errorString().asChar(),
+                        node.path.GetText());
             }
 
             if (_IsUsdUVTexture(node)) {
-                const MString paramNames[] = {
-                    "file", "fileSampler", "isColorSpaceSRGB", "fallback", "scale", "bias"
-                };
+                const MString paramNames[]
+                    = { "file", "fileSampler", "isColorSpaceSRGB", "fallback", "scale", "bias" };
 
                 for (const MString& paramName : paramNames) {
                     const MString resolvedName = nodeName + paramName;
@@ -873,14 +825,14 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
                 shaderInstance->setAsVarying(paramName, true);
                 shaderInstance->renameParameter(paramName, primvarname.c_str());
             }
-        }
-        else {
-            TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
-                "Failed to connect shader %s\n", node.path.GetText());
+        } else {
+            TF_DEBUG(HDVP2_DEBUG_MATERIAL)
+                .Msg("Failed to connect shader %s\n", node.path.GetText());
 
             if (outputNames.length() > 1) {
-                TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg("MShaderInstance doesn't support "
-                    "multiple connections between shaders on the current Maya version.\n");
+                TF_DEBUG(HDVP2_DEBUG_MATERIAL)
+                    .Msg("MShaderInstance doesn't support "
+                         "multiple connections between shaders on the current Maya version.\n");
             }
         }
     }
@@ -891,7 +843,7 @@ HdVP2Material::_CreateShaderInstance(const HdMaterialNetwork& mat) {
 }
 
 /*! \brief  Updates parameters for the surface shader.
-*/
+ */
 void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 {
     if (!_surfaceShader) {
@@ -899,22 +851,20 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
     }
 
     for (const HdMaterialNode& node : mat.nodes) {
-        const MString nodeName =
-            node.path != _surfaceShaderId ? node.path.GetName().c_str() : "";
+        const MString nodeName = node.path != _surfaceShaderId ? node.path.GetName().c_str() : "";
 
         MStatus samplerStatus = MStatus::kFailure;
 
         if (_IsUsdUVTexture(node)) {
             const MHWRender::MSamplerStateDesc desc = _GetSamplerStateDesc(node);
-            const MHWRender::MSamplerState* sampler =
-                _renderDelegate->GetSamplerState(desc);
+            const MHWRender::MSamplerState*    sampler = _renderDelegate->GetSamplerState(desc);
             if (sampler) {
                 const MString paramName = nodeName + "fileSampler";
                 samplerStatus = _surfaceShader->setParameter(paramName, *sampler);
             }
         }
 
-        for (auto const& entry: node.parameters) {
+        for (auto const& entry : node.parameters) {
             const TfToken& token = entry.first;
             const VtValue& value = entry.second;
 
@@ -932,35 +882,29 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 if (nodeName.length() == 0 && token == _tokens->opacity) {
                     _surfaceShader->setIsTransparent(!status || val < 0.999f);
                 }
-            }
-            else if (value.IsHolding<GfVec2f>()) {
+            } else if (value.IsHolding<GfVec2f>()) {
                 const float* val = value.UncheckedGet<GfVec2f>().data();
                 status = _surfaceShader->setParameter(paramName, val);
-            }
-            else if (value.IsHolding<GfVec3f>()) {
+            } else if (value.IsHolding<GfVec3f>()) {
                 const float* val = value.UncheckedGet<GfVec3f>().data();
                 status = _surfaceShader->setParameter(paramName, val);
-            }
-            else if (value.IsHolding<GfVec4f>()) {
+            } else if (value.IsHolding<GfVec4f>()) {
                 const float* val = value.UncheckedGet<GfVec4f>().data();
                 status = _surfaceShader->setParameter(paramName, val);
-            }
-            else if (value.IsHolding<TfToken>()) {
+            } else if (value.IsHolding<TfToken>()) {
                 // The two parameters have been converted to sampler state
                 // before entering this loop.
-                if (_IsUsdUVTexture(node) &&
-                    (token == UsdHydraTokens->wrapS ||
-                     token == UsdHydraTokens->wrapT)) {
+                if (_IsUsdUVTexture(node)
+                    && (token == UsdHydraTokens->wrapS || token == UsdHydraTokens->wrapT)) {
                     status = samplerStatus;
                 }
-            }
-            else if (value.IsHolding<SdfAssetPath>()) {
+            } else if (value.IsHolding<SdfAssetPath>()) {
                 const SdfAssetPath& val = value.UncheckedGet<SdfAssetPath>();
-                const std::string& resolvedPath = val.GetResolvedPath();
-                const std::string& assetPath = val.GetAssetPath();
+                const std::string&  resolvedPath = val.GetResolvedPath();
+                const std::string&  assetPath = val.GetAssetPath();
                 if (_IsUsdUVTexture(node) && token == _tokens->file) {
-                    const HdVP2TextureInfo& info = _AcquireTexture(
-                        !resolvedPath.empty() ? resolvedPath : assetPath);
+                    const HdVP2TextureInfo& info
+                        = _AcquireTexture(!resolvedPath.empty() ? resolvedPath : assetPath);
 
                     MHWRender::MTextureAssignment assignment;
                     assignment.texture = info._texture.get();
@@ -968,8 +912,7 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 
                     if (status) {
                         paramName = nodeName + "isColorSpaceSRGB";
-                        status = _surfaceShader->setParameter(paramName,
-                            info._isColorSpaceSRGB);
+                        status = _surfaceShader->setParameter(paramName, info._isColorSpaceSRGB);
                     }
                     if (status) {
                         paramName = nodeName + "stScale";
@@ -980,45 +923,40 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                         status = _surfaceShader->setParameter(paramName, info._stOffset.data());
                     }
                 }
-            }
-            else if (value.IsHolding<int>()) {
+            } else if (value.IsHolding<int>()) {
                 const int& val = value.UncheckedGet<int>();
                 status = _surfaceShader->setParameter(paramName, val);
-            }
-            else if (value.IsHolding<bool>()) {
+            } else if (value.IsHolding<bool>()) {
                 const bool& val = value.UncheckedGet<bool>();
                 status = _surfaceShader->setParameter(paramName, val);
-            }
-            else if (value.IsHolding<GfMatrix4d>()) {
+            } else if (value.IsHolding<GfMatrix4d>()) {
                 MMatrix matrix;
                 value.UncheckedGet<GfMatrix4d>().Get(matrix.matrix);
                 status = _surfaceShader->setParameter(paramName, matrix);
-            }
-            else if (value.IsHolding<GfMatrix4f>()) {
+            } else if (value.IsHolding<GfMatrix4f>()) {
                 MFloatMatrix matrix;
                 value.UncheckedGet<GfMatrix4f>().Get(matrix.matrix);
                 status = _surfaceShader->setParameter(paramName, matrix);
             }
 
             if (!status) {
-                TF_DEBUG(HDVP2_DEBUG_MATERIAL).Msg(
-                    "Failed to set shader parameter %s\n", paramName.asChar());
+                TF_DEBUG(HDVP2_DEBUG_MATERIAL)
+                    .Msg("Failed to set shader parameter %s\n", paramName.asChar());
             }
         }
     }
 }
 
 /*! \brief  Acquires a texture for the given image path.
-*/
-const HdVP2TextureInfo&
-HdVP2Material::_AcquireTexture(const std::string& path)
+ */
+const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(const std::string& path)
 {
     const auto it = _textureMap.find(path);
     if (it != _textureMap.end()) {
         return it->second;
     }
 
-    bool isSRGB = false;
+    bool                 isSRGB = false;
     MFloatArray          uvScaleOffset;
     MHWRender::MTexture* texture = _LoadTexture(path, isSRGB, uvScaleOffset);
 
@@ -1028,7 +966,8 @@ HdVP2Material::_AcquireTexture(const std::string& path)
     if (uvScaleOffset.length() > 0) {
         TF_VERIFY(uvScaleOffset.length() == 4);
         info._stScale.Set(uvScaleOffset[0], uvScaleOffset[1]); // The first 2 elements are the scale
-        info._stOffset.Set(uvScaleOffset[2], uvScaleOffset[3]);// The next two elements are the offset
+        info._stOffset.Set(
+            uvScaleOffset[2], uvScaleOffset[3]); // The next two elements are the offset
     }
     return info;
 }

@@ -14,12 +14,13 @@
 // limitations under the License.
 //
 #pragma once
-#include <maya/MDagPath.h>
-#include <maya/MString.h>
-#include <maya/MObjectArray.h>
+#include "AL/maya/utils/FileTranslatorOptions.h"
 
 #include <pxr/usd/sdf/layer.h>
-#include "AL/maya/utils/FileTranslatorOptions.h"
+
+#include <maya/MDagPath.h>
+#include <maya/MObjectArray.h>
+#include <maya/MString.h>
 
 #include <mayaUsdUtils/ForwardDeclares.h>
 
@@ -35,77 +36,81 @@ namespace fileio {
 //----------------------------------------------------------------------------------------------------------------------
 struct ImporterParams
 {
-  AL::maya::utils::OptionsParser* m_parser = 0;
-  MDagPath m_parentPath; ///< the parent transform under which the USD file will be imported
-  MString m_primPath; ///< the prim path which importing will start from
-  MString m_fileName; ///< the name of the file to import
-  bool m_animations = true; ///< true to import animation data, false to ignore animation data import
-  bool m_dynamicAttributes = true; ///< if true, attributes in the USD file marked as 'custom' will be imported as dynamic attributes.
-  bool m_stageUnloaded = true; ///< if true, the USD stage will be opened with the UsdStage::LoadNone flag. If false the stage will be loaded with the UsdStage::LoadAll flag
-  bool m_forceDefaultRead = false; ///< true to explicit read default values
-  SdfLayerRefPtr m_rootLayer; ///< \todo  Remove?
-  SdfLayerRefPtr m_sessionLayer; ///< \todo  Remove?
+    AL::maya::utils::OptionsParser* m_parser = 0;
+    MDagPath m_parentPath; ///< the parent transform under which the USD file will be imported
+    MString  m_primPath;   ///< the prim path which importing will start from
+    MString  m_fileName;   ///< the name of the file to import
+    bool     m_animations
+        = true; ///< true to import animation data, false to ignore animation data import
+    bool m_dynamicAttributes = true; ///< if true, attributes in the USD file marked as 'custom'
+                                     ///< will be imported as dynamic attributes.
+    bool m_stageUnloaded
+        = true; ///< if true, the USD stage will be opened with the UsdStage::LoadNone flag. If
+                ///< false the stage will be loaded with the UsdStage::LoadAll flag
+    bool           m_forceDefaultRead = false; ///< true to explicit read default values
+    SdfLayerRefPtr m_rootLayer;                ///< \todo  Remove?
+    SdfLayerRefPtr m_sessionLayer;             ///< \todo  Remove?
 
-  bool m_activateAllTranslators = true;
-  TfTokenVector m_activePluginTranslators;
-  TfTokenVector m_inactivePluginTranslators;
-  
-  mutable MObjectArray m_newAnimCurves; ///< to contain the possible created new animCurves for future management.
+    bool          m_activateAllTranslators = true;
+    TfTokenVector m_activePluginTranslators;
+    TfTokenVector m_inactivePluginTranslators;
 
-  /// \brief  Given the text name of an option, returns the boolean value for that option.
-  /// \param  str the name of the option
-  /// \return the option value
-  bool getBool(const char* const str) const
-  {
-    if(m_parser)
+    mutable MObjectArray
+        m_newAnimCurves; ///< to contain the possible created new animCurves for future management.
+
+    /// \brief  Given the text name of an option, returns the boolean value for that option.
+    /// \param  str the name of the option
+    /// \return the option value
+    bool getBool(const char* const str) const
     {
-      return m_parser->getBool(str);
+        if (m_parser) {
+            return m_parser->getBool(str);
+        }
+        return false;
     }
-    return false;
-  }
 
-  /// \brief  Given the text name of an option, returns the integer value for that option.
-  /// \param  str the name of the option
-  /// \return the option value
-  int getInt(const char* const str) const
-  {
-    if(m_parser)
-      return m_parser->getInt(str);
-    return 0;
-  }
+    /// \brief  Given the text name of an option, returns the integer value for that option.
+    /// \param  str the name of the option
+    /// \return the option value
+    int getInt(const char* const str) const
+    {
+        if (m_parser)
+            return m_parser->getInt(str);
+        return 0;
+    }
 
-  /// \brief  Given the text name of an option, returns the floating point value for that option.
-  /// \param  str the name of the option
-  /// \return the option value
-  float getFloat(const char* const str) const
-  {
-    if(m_parser)
-      return m_parser->getFloat(str);
-    return 0.0f;
-  }
+    /// \brief  Given the text name of an option, returns the floating point value for that option.
+    /// \param  str the name of the option
+    /// \return the option value
+    float getFloat(const char* const str) const
+    {
+        if (m_parser)
+            return m_parser->getFloat(str);
+        return 0.0f;
+    }
 
-  /// \brief  Given the text name of an option, returns the string value for that option.
-  /// \param  str the name of the option
-  /// \return the option value
-  MString getString(const char* const str) const
-  {
-    if(m_parser)
-      return m_parser->getString(str);
-    return MString();
-  }
+    /// \brief  Given the text name of an option, returns the string value for that option.
+    /// \param  str the name of the option
+    /// \return the option value
+    MString getString(const char* const str) const
+    {
+        if (m_parser)
+            return m_parser->getString(str);
+        return MString();
+    }
 
-  /// \brief  Sets the value of a boolean option
-  /// \param  str the name of the option to set
-  /// \param  value the new value for the option
-  void setBool(const char* const str, bool value)
-  {
-    if(m_parser)
-      m_parser->setBool(str, value);
-  }
+    /// \brief  Sets the value of a boolean option
+    /// \param  str the name of the option to set
+    /// \param  value the new value for the option
+    void setBool(const char* const str, bool value)
+    {
+        if (m_parser)
+            m_parser->setBool(str, value);
+    }
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-} // fileio
-} // usdmaya
-} // AL
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

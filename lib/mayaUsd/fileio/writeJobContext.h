@@ -16,19 +16,19 @@
 #ifndef PXRUSDMAYA_WRITE_JOB_CONTEXT_H
 #define PXRUSDMAYA_WRITE_JOB_CONTEXT_H
 
-#include <memory>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObjectHandle.h>
 
-#include <pxr/pxr.h>
-#include <pxr/usd/sdf/path.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -53,15 +53,9 @@ protected:
     ~UsdMayaWriteJobContext();
 
 public:
-    const UsdMayaJobExportArgs& GetArgs() const
-    {
-        return mArgs;
-    }
+    const UsdMayaJobExportArgs& GetArgs() const { return mArgs; }
 
-    const UsdStageRefPtr& GetUsdStage() const
-    {
-        return mStage;
-    }
+    const UsdStageRefPtr& GetUsdStage() const { return mStage; }
 
     /// Whether we will merge the transform at \p path with its single
     /// exportable child shape, given its hierarchy and the current path
@@ -95,9 +89,9 @@ public:
     /// writer in order to author its USD attributes.
     MAYAUSD_CORE_PUBLIC
     UsdMayaPrimWriterSharedPtr CreatePrimWriter(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdPath = SdfPath(),
-            const bool forceUninstance = false);
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath = SdfPath(),
+        const bool               forceUninstance = false);
 
     /// Creates all prim writers necessary for writing the Maya node hierarchy
     /// rooted at \p rootDag to the USD namespace hierarchy rooted at
@@ -116,10 +110,10 @@ public:
     /// writers in order to author their USD attributes.
     MAYAUSD_CORE_PUBLIC
     void CreatePrimWriterHierarchy(
-        const MDagPath& rootDag,
-        const SdfPath& rootUsdPath,
-        const bool forceUninstance,
-        const bool exportRootVisibility,
+        const MDagPath&                          rootDag,
+        const SdfPath&                           rootUsdPath,
+        const bool                               forceUninstance,
+        const bool                               exportRootVisibility,
         std::vector<UsdMayaPrimWriterSharedPtr>* primWritersOut);
 
     /// Mark \p path as containing bindings utilizing the skeleton
@@ -131,10 +125,7 @@ public:
     /// UsdMayaJobExportArgsTokens->none is not valid for \p config; it will
     /// mark an invalid binding.
     MAYAUSD_CORE_PUBLIC
-    void MarkSkelBindings(
-            const SdfPath& path,
-            const SdfPath& skelPath,
-            const TfToken& config);
+    void MarkSkelBindings(const SdfPath& path, const SdfPath& skelPath, const TfToken& config);
 
 protected:
     /// Opens the stage with the given \p filename for writing.
@@ -169,14 +160,12 @@ private:
     /// In most cases, the two paths are the same, but is \p instancePath
     /// represents a directly-instanced gprim, the two paths may be different.
     /// The reference path is _always_ a prefix of the export path.
-    _ExportAndRefPaths _GetInstanceMasterPaths(
-            const MDagPath& instancePath) const;
+    _ExportAndRefPaths _GetInstanceMasterPaths(const MDagPath& instancePath) const;
 
     /// If the instance master for \p instancePath already exists, returns its
     /// USD path pair. Otherwise, creates the instance master (including its
     /// descendants) and returns the new USD path pair.
-    _ExportAndRefPaths _FindOrCreateInstanceMaster(
-            const MDagPath& instancePath);
+    _ExportAndRefPaths _FindOrCreateInstanceMaster(const MDagPath& instancePath);
 
     /// Gets the existing prim writers for the instance master of
     /// \p instancePath if that instance master has already been created.
@@ -184,16 +173,17 @@ private:
     /// requested prim writers are in the range [\p begin, \p end).
     /// Otherwise, returns \c false and does nothing with the iterators.
     bool _GetInstanceMasterPrimWriters(
-            const MDagPath& instancePath,
-            std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* begin,
-            std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* end) const;
+        const MDagPath&                                          instancePath,
+        std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* begin,
+        std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* end) const;
 
     /// Prim writer search with ancestor type resolution behavior.
-    UsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(
-            const std::string& mayaNodeType);
+    UsdMayaPrimWriterRegistry::WriterFactoryFn _FindWriter(const std::string& mayaNodeType);
 
-    struct MObjectHandleComp {
-        bool operator()(const MObjectHandle& rhs, const MObjectHandle& lhs) const {
+    struct MObjectHandleComp
+    {
+        bool operator()(const MObjectHandle& rhs, const MObjectHandle& lhs) const
+        {
             return rhs.hashCode() < lhs.hashCode();
         }
     };
@@ -201,16 +191,14 @@ private:
     /// Mapping of Maya object handles to the corresponding instance master's
     /// USD export path and reference path. A pair of empty USD paths means that
     /// we previously tried, but failed, to create the instance master.
-    std::map<MObjectHandle, _ExportAndRefPaths, MObjectHandleComp>
-            _objectsToMasterPaths;
+    std::map<MObjectHandle, _ExportAndRefPaths, MObjectHandleComp> _objectsToMasterPaths;
 
     // Mapping of Maya object handles to the indices of the instance master's
     // prim writers in mMayaPrimWriterList. An instance master has a prim writer
     // for each node in its hierarchy; thus, the value represents an interval
     // of indices [first, last) in mMayaPrimWriterList. This avoids having to
     // manage two containers of shared pointers.
-    std::map<MObjectHandle, std::pair<size_t, size_t>, MObjectHandleComp>
-            _objectsToMasterWriters;
+    std::map<MObjectHandle, std::pair<size_t, size_t>, MObjectHandleComp> _objectsToMasterWriters;
 
     UsdPrim mInstancesPrim;
     SdfPath mParentScopePath;
@@ -221,16 +209,13 @@ private:
     // taking into account Maya's type hierarchy (note that this means that
     // some types not resolved by the UsdMayaPrimWriterRegistry will get
     // resolved in this map).
-    std::map<std::string, UsdMayaPrimWriterRegistry::WriterFactoryFn>
-            mWriterFactoryCache;
+    std::map<std::string, UsdMayaPrimWriterRegistry::WriterFactoryFn> mWriterFactoryCache;
 
     // UsdMaya_InstancedNodeWriter is in a separate file, but functions as
     // an internal helper for UsdMayaWriteJobContext.
     friend class UsdMaya_InstancedNodeWriter;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

@@ -32,15 +32,15 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_GPRIM_H
 #define PXRUSDMAYA_TRANSLATOR_GPRIM_H
 
-#include <maya/MObject.h>
-#include <maya/MFnReference.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primWriterContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/primWriterContext.h>
+#include <maya/MFnReference.h>
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -48,11 +48,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct UsdMayaTranslatorMayaReference
 {
     MAYAUSD_CORE_PUBLIC
-    static MStatus LoadMayaReference(const UsdPrim& prim, MObject& parent, MString& mayaReferencePath, MString& rigNamespaceM);
-    
+    static MStatus LoadMayaReference(
+        const UsdPrim& prim,
+        MObject&       parent,
+        MString&       mayaReferencePath,
+        MString&       rigNamespaceM);
+
     MAYAUSD_CORE_PUBLIC
     static MStatus UnloadMayaReference(const MObject& parent);
-    
+
     MAYAUSD_CORE_PUBLIC
     static MStatus update(const UsdPrim& prim, MObject parent);
 
@@ -66,4 +70,3 @@ private:
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
-

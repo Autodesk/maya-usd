@@ -14,15 +14,16 @@
 // limitations under the License.
 //
 #include "AL/usdmaya/cmds/DebugCommands.h"
-#include "AL/usdmaya/DebugCodes.h"
+
 #include "AL/maya/utils/MenuBuilder.h"
+#include "AL/usdmaya/DebugCodes.h"
 
 #include <pxr/base/tf/debug.h>
 
-#include <maya/MSyntax.h>
-#include <maya/MGlobal.h>
 #include <maya/MArgDatabase.h>
+#include <maya/MGlobal.h>
 #include <maya/MStringArray.h>
+#include <maya/MSyntax.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -35,73 +36,55 @@ AL_MAYA_DEFINE_COMMAND(UsdDebugCommand, AL_usdmaya);
 //----------------------------------------------------------------------------------------------------------------------
 MSyntax UsdDebugCommand::createSyntax()
 {
-  MSyntax syn;
-  syn.addFlag("-h", "-help", MSyntax::kNoArg);
-  syn.addFlag("-ls", "-listSymbols", MSyntax::kNoArg);
-  syn.addFlag("-en", "-enable", MSyntax::kString);
-  syn.addFlag("-ds", "-disable", MSyntax::kString);
-  syn.addFlag("-st", "-state", MSyntax::kString);
-  return syn;
+    MSyntax syn;
+    syn.addFlag("-h", "-help", MSyntax::kNoArg);
+    syn.addFlag("-ls", "-listSymbols", MSyntax::kNoArg);
+    syn.addFlag("-en", "-enable", MSyntax::kString);
+    syn.addFlag("-ds", "-disable", MSyntax::kString);
+    syn.addFlag("-st", "-state", MSyntax::kString);
+    return syn;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool UsdDebugCommand::isUndoable() const
-{
-  return false;
-}
+bool UsdDebugCommand::isUndoable() const { return false; }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus UsdDebugCommand::doIt(const MArgList& argList)
 {
-  TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("AL_usdmaya_UsdDebugCommand::doIt\n");
-  try
-  {
-    MStatus status;
-    MArgDatabase args(syntax(), argList, &status);
-    if(!status)
-      return status;
+    TF_DEBUG(ALUSDMAYA_COMMANDS).Msg("AL_usdmaya_UsdDebugCommand::doIt\n");
+    try {
+        MStatus      status;
+        MArgDatabase args(syntax(), argList, &status);
+        if (!status)
+            return status;
 
-    AL_MAYA_COMMAND_HELP(args, g_helpText);
+        AL_MAYA_COMMAND_HELP(args, g_helpText);
 
-    const bool listSymbols = args.isFlagSet("-ls");
-    if(listSymbols)
-    {
-      MStringArray returned;
-      auto symbols = TfDebug::GetDebugSymbolNames();
-      for(auto symbol : symbols)
-      {
-        returned.append(MString(symbol.c_str(), symbol.size()));
-      }
-      setResult(returned);
+        const bool listSymbols = args.isFlagSet("-ls");
+        if (listSymbols) {
+            MStringArray returned;
+            auto         symbols = TfDebug::GetDebugSymbolNames();
+            for (auto symbol : symbols) {
+                returned.append(MString(symbol.c_str(), symbol.size()));
+            }
+            setResult(returned);
+        } else if (args.isFlagSet("-en")) {
+            MString arg;
+            args.getFlagArgument("-en", 0, arg);
+            TfDebug::SetDebugSymbolsByName(arg.asChar(), true);
+        } else if (args.isFlagSet("-ds")) {
+            MString arg;
+            args.getFlagArgument("-ds", 0, arg);
+            TfDebug::SetDebugSymbolsByName(arg.asChar(), false);
+        } else if (args.isFlagSet("-st")) {
+            MString arg;
+            args.getFlagArgument("-st", 0, arg);
+            bool state = TfDebug::IsDebugSymbolNameEnabled(arg.asChar());
+            setResult(state);
+        }
+    } catch (const MStatus&) {
     }
-    else
-    if(args.isFlagSet("-en"))
-    {
-      MString arg;
-      args.getFlagArgument("-en", 0, arg);
-      TfDebug::SetDebugSymbolsByName(arg.asChar(), true);
-    }
-    else
-    if(args.isFlagSet("-ds"))
-    {
-      MString arg;
-      args.getFlagArgument("-ds", 0, arg);
-      TfDebug::SetDebugSymbolsByName(arg.asChar(), false);
-    }
-    else
-    if(args.isFlagSet("-st"))
-    {
-      MString arg;
-      args.getFlagArgument("-st", 0, arg);
-      bool state = TfDebug::IsDebugSymbolNameEnabled(arg.asChar());
-      setResult(state);
-    }
-  }
-  catch(const MStatus&)
-  {
-
-  }
-  return MS::kSuccess;
+    return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -193,11 +176,11 @@ global proc AL_usdmaya_debug_gui()
 //----------------------------------------------------------------------------------------------------------------------
 void constructDebugCommandGuis()
 {
-  MGlobal::executeCommand(g_usdmaya_debug_gui);
-  AL::maya::utils::MenuBuilder::addEntry("USD/Debug/TfDebug Options", "AL_usdmaya_debug_gui");
+    MGlobal::executeCommand(g_usdmaya_debug_gui);
+    AL::maya::utils::MenuBuilder::addEntry("USD/Debug/TfDebug Options", "AL_usdmaya_debug_gui");
 }
 
-const char* const UsdDebugCommand::g_helpText =  R"(
+const char* const UsdDebugCommand::g_helpText = R"(
     AL_usdmaya_UsdDebugCommand Overview:
 
       This command allows you to modify the enabled/disabled state of the various TfDebug notifications. To retrieve a
@@ -220,7 +203,7 @@ const char* const UsdDebugCommand::g_helpText =  R"(
 )";
 
 //----------------------------------------------------------------------------------------------------------------------
-}
-}
-}
+} // namespace cmds
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

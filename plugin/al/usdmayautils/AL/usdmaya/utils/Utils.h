@@ -16,8 +16,9 @@
 
 #pragma once
 
-#include "AL/usdmaya/utils/Api.h"
 #include "AL/maya/utils/ForwardDeclares.h"
+#include "AL/usdmaya/utils/Api.h"
+
 #include <maya/MString.h>
 
 #include <mayaUsdUtils/ForwardDeclares.h>
@@ -29,9 +30,10 @@ namespace usdmaya {
 namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  Helper class used to stop proxy shape from processing any USD notifications (this affects all threads)
-/// \ingroup usdmaya
-class BlockNotifications {
+/// \brief  Helper class used to stop proxy shape from processing any USD notifications (this
+/// affects all threads) \ingroup usdmaya
+class BlockNotifications
+{
 public:
     AL_USDMAYA_UTILS_PUBLIC
     BlockNotifications();
@@ -45,9 +47,10 @@ public:
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Returns the dagPath result of mapping UsdPrim -> Maya Object.
-///         proxyShapeNode is an optional argument, if it is passed and the passed in mayaObject's path couldn't be determined,
-///         then the corresponding maya path is determined using this AL::usdmaya::nodes::ProxyShape and the usdPrim path.
-///         It is to get around the delayed creation of nodes using a Modifier.
+///         proxyShapeNode is an optional argument, if it is passed and the passed in mayaObject's
+///         path couldn't be determined, then the corresponding maya path is determined using this
+///         AL::usdmaya::nodes::ProxyShape and the usdPrim path. It is to get around the delayed
+///         creation of nodes using a Modifier.
 /// \param  usdPrim the prim to map to the mayaObject
 /// \param  mayaObject the maya node to map
 /// \param  proxyShapeNode pointer to the dag path for the proxy shape
@@ -55,9 +58,10 @@ public:
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
 AL_USDMAYA_UTILS_PUBLIC
-MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
-                             const MObject& mayaObject,
-                             const MDagPath* const proxyShapeNode = nullptr);
+MString mapUsdPrimToMayaNode(
+    const UsdPrim&        usdPrim,
+    const MObject&        mayaObject,
+    const MDagPath* const proxyShapeNode = nullptr);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  convert a 4x4 matrix to an SRT transformation. Assumes that there is no shearing.
@@ -68,10 +72,7 @@ MString mapUsdPrimToMayaNode(const UsdPrim& usdPrim,
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
 AL_USDMAYA_UTILS_PUBLIC
-void matrixToSRT(const GfMatrix4d& value,
-                 double S[3],
-                 MEulerRotation& R,
-                 double T[3]);
+void matrixToSRT(const GfMatrix4d& value, double S[3], MEulerRotation& R, double T[3]);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to convert double vec4 array to float vec3 array
@@ -80,7 +81,10 @@ void matrixToSRT(const GfMatrix4d& value,
 /// \param  count number of elements
 //----------------------------------------------------------------------------------------------------------------------
 AL_USDMAYA_UTILS_PUBLIC
-void convertDoubleVec4ArrayToFloatVec3Array(const double* const input, float* const output, size_t count);
+void convertDoubleVec4ArrayToFloatVec3Array(
+    const double* const input,
+    float* const        output,
+    size_t              count);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  convert string types
@@ -88,13 +92,10 @@ void convertDoubleVec4ArrayToFloatVec3Array(const double* const input, float* co
 /// \return the MString
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
-inline MString convert(const TfToken& token)
-{
-  return MString(token.GetText(), token.size());
-}
+inline MString convert(const TfToken& token) { return MString(token.GetText(), token.size()); }
 
 //----------------------------------------------------------------------------------------------------------------------
-}// utils
-}// usdmaya
-}// AL
+} // namespace utils
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

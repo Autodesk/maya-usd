@@ -15,10 +15,24 @@
 //
 #include "proxyShapeUI.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/px_vp20/utils_legacy.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
+
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/trace/trace.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
+
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
-#include <maya/MDagPath.h>
 #include <maya/MDGMessage.h>
+#include <maya/MDagPath.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
@@ -33,36 +47,20 @@
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/gf/vec4f.h>
-#include <pxr/base/trace/trace.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/timeCode.h>
-
-#include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/render/px_vp20/utils_legacy.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
-#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-void*
-UsdMayaProxyShapeUI::creator()
+void* UsdMayaProxyShapeUI::creator()
 {
     UsdMayaGLBatchRenderer::Init();
     return new UsdMayaProxyShapeUI();
 }
 
 /* virtual */
-void
-UsdMayaProxyShapeUI::getDrawRequests(
-        const MDrawInfo& drawInfo,
-        bool /* objectAndActiveOnly */,
-        MDrawRequestQueue& requests)
+void UsdMayaProxyShapeUI::getDrawRequests(
+    const MDrawInfo& drawInfo,
+    bool /* objectAndActiveOnly */,
+    MDrawRequestQueue& requests)
 {
     TRACE_FUNCTION();
 
@@ -71,16 +69,13 @@ UsdMayaProxyShapeUI::getDrawRequests(
         MProfiler::kColorE_L2,
         "USD Proxy Shape getDrawRequests() (Legacy Viewport)");
 
-    const MDagPath shapeDagPath = drawInfo.multiPath();
-    MayaUsdProxyShapeBase* shape =
-        MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
+    const MDagPath         shapeDagPath = drawInfo.multiPath();
+    MayaUsdProxyShapeBase* shape = MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
     if (!shape) {
         return;
     }
 
-    if (!_shapeAdapter.Sync(shapeDagPath,
-                            drawInfo.displayStyle(),
-                            drawInfo.displayStatus())) {
+    if (!_shapeAdapter.Sync(shapeDagPath, drawInfo.displayStyle(), drawInfo.displayStatus())) {
         return;
     }
 
@@ -97,8 +92,7 @@ UsdMayaProxyShapeUI::getDrawRequests(
 }
 
 /* virtual */
-void
-UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
+void UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
     TRACE_FUNCTION();
 
@@ -124,11 +118,10 @@ UsdMayaProxyShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 }
 
 /* virtual */
-bool
-UsdMayaProxyShapeUI::select(
-        MSelectInfo& selectInfo,
-        MSelectionList& selectionList,
-        MPointArray& worldSpaceSelectedPoints) const
+bool UsdMayaProxyShapeUI::select(
+    MSelectInfo&    selectInfo,
+    MSelectionList& selectionList,
+    MPointArray&    worldSpaceSelectedPoints) const
 {
     TRACE_FUNCTION();
 
@@ -163,26 +156,22 @@ UsdMayaProxyShapeUI::select(
         return false;
     }
 
-    if (!_shapeAdapter.Sync(shapeDagPath,
-                            view.displayStyle(),
-                            view.displayStatus(selectInfo.selectPath()))) {
+    if (!_shapeAdapter.Sync(
+            shapeDagPath, view.displayStyle(), view.displayStatus(selectInfo.selectPath()))) {
         return false;
     }
 
-    const HdxPickHitVector* hitSet =
-        UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
-            &_shapeAdapter,
-            selectInfo);
+    const HdxPickHitVector* hitSet
+        = UsdMayaGLBatchRenderer::GetInstance().TestIntersection(&_shapeAdapter, selectInfo);
 
-    const HdxPickHit* nearestHit =
-        UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
+    const HdxPickHit* nearestHit = UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
 
     if (!nearestHit) {
         return false;
     }
 
     const GfVec3f& gfHitPoint = nearestHit->worldSpaceHitPoint;
-    const MPoint mayaHitPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
+    const MPoint   mayaHitPoint(gfHitPoint[0], gfHitPoint[1], gfHitPoint[2]);
 
     MSelectionList newSelectionList;
     newSelectionList.add(selectInfo.selectPath());
@@ -203,16 +192,13 @@ UsdMayaProxyShapeUI::select(
     return true;
 }
 
-UsdMayaProxyShapeUI::UsdMayaProxyShapeUI() :
-        MPxSurfaceShapeUI(),
-        _shapeAdapter(/* isViewport2 = */ false)
+UsdMayaProxyShapeUI::UsdMayaProxyShapeUI()
+    : MPxSurfaceShapeUI()
+    , _shapeAdapter(/* isViewport2 = */ false)
 {
     MStatus status;
     _onNodeRemovedCallbackId = MDGMessage::addNodeRemovedCallback(
-        _OnNodeRemoved,
-        MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText(),
-        this,
-        &status);
+        _OnNodeRemoved, MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText(), this, &status);
     CHECK_MSTATUS(status);
 }
 
@@ -224,21 +210,17 @@ UsdMayaProxyShapeUI::~UsdMayaProxyShapeUI()
 }
 
 /* static */
-void
-UsdMayaProxyShapeUI::_OnNodeRemoved(MObject& node, void* clientData)
+void UsdMayaProxyShapeUI::_OnNodeRemoved(MObject& node, void* clientData)
 {
-    UsdMayaProxyShapeUI* proxyShapeUI =
-        static_cast<UsdMayaProxyShapeUI*>(clientData);
+    UsdMayaProxyShapeUI* proxyShapeUI = static_cast<UsdMayaProxyShapeUI*>(clientData);
     if (!proxyShapeUI) {
         return;
     }
 
     const MObject shapeObj = proxyShapeUI->surfaceShape()->thisMObject();
     if (shapeObj == node && UsdMayaGLBatchRenderer::CurrentlyExists()) {
-        UsdMayaGLBatchRenderer::GetInstance().RemoveShapeAdapter(
-            &proxyShapeUI->_shapeAdapter);
+        UsdMayaGLBatchRenderer::GetInstance().RemoveShapeAdapter(&proxyShapeUI->_shapeAdapter);
     }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

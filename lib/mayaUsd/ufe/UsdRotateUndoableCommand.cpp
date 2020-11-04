@@ -24,76 +24,73 @@ TfToken UsdRotateUndoableCommand::rotXYZ("xformOp:rotateXYZ");
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 UsdRotateUndoableCommand::UsdRotateUndoableCommand(
-    const Ufe::Path& path, double x, double y, double z)
-	: Ufe::RotateUndoableCommand(path),
-      UsdTRSUndoableCommandBase(x, y, z)
+    const Ufe::Path& path,
+    double           x,
+    double           y,
+    double           z)
+    : Ufe::RotateUndoableCommand(path)
+    , UsdTRSUndoableCommandBase(x, y, z)
 #else
 UsdRotateUndoableCommand::UsdRotateUndoableCommand(
-    const UsdSceneItem::Ptr& item, double x, double y, double z)
-	: Ufe::RotateUndoableCommand(item),
-      UsdTRSUndoableCommandBase(item, x, y, z)
+    const UsdSceneItem::Ptr& item,
+    double                   x,
+    double                   y,
+    double                   z)
+    : Ufe::RotateUndoableCommand(item)
+    , UsdTRSUndoableCommandBase(item, x, y, z)
 #endif
 {
-	// Since we want to change xformOp:rotateXYZ, and we need to store the
-	// prevRotate for undo purposes, we need to make sure we convert it to
-	// common API xformOps (In case we have rotateX, rotateY or rotateZ ops)
-	try {
-        if(!UsdGeomXformCommonAPI(prim()))
+    // Since we want to change xformOp:rotateXYZ, and we need to store the
+    // prevRotate for undo purposes, we need to make sure we convert it to
+    // common API xformOps (In case we have rotateX, rotateY or rotateZ ops)
+    try {
+        if (!UsdGeomXformCommonAPI(prim()))
             convertToCompatibleCommonAPI(prim());
-	}
-	catch (...) {
-		// Since Maya cannot catch this error at this moment, store it until we
-		// actually rotate.
-		fFailedInit = std::current_exception(); // capture
-	}
+    } catch (...) {
+        // Since Maya cannot catch this error at this moment, store it until we
+        // actually rotate.
+        fFailedInit = std::current_exception(); // capture
+    }
 }
 
-UsdRotateUndoableCommand::~UsdRotateUndoableCommand()
-{}
+UsdRotateUndoableCommand::~UsdRotateUndoableCommand() { }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
-    const Ufe::Path& path, double x, double y, double z)
+UsdRotateUndoableCommand::Ptr
+UsdRotateUndoableCommand::create(const Ufe::Path& path, double x, double y, double z)
 {
-	auto cmd = std::make_shared<MakeSharedEnabler<UsdRotateUndoableCommand>>(
-        path, x, y, z);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdRotateUndoableCommand>>(path, x, y, z);
     cmd->initialize();
     return cmd;
 }
 #else
-UsdRotateUndoableCommand::Ptr UsdRotateUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, double x, double y, double z)
+UsdRotateUndoableCommand::Ptr
+UsdRotateUndoableCommand::create(const UsdSceneItem::Ptr& item, double x, double y, double z)
 {
-	auto cmd = std::make_shared<MakeSharedEnabler<UsdRotateUndoableCommand>>(
-        item, x, y, z);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdRotateUndoableCommand>>(item, x, y, z);
     cmd->initialize();
     return cmd;
 }
 #endif
-
 
 void UsdRotateUndoableCommand::undo()
 {
-	// Check if initialization went ok.
-	if (!fFailedInit)
-	{
+    // Check if initialization went ok.
+    if (!fFailedInit) {
         UsdTRSUndoableCommandBase::undoImp();
-	}
+    }
 }
 
-void UsdRotateUndoableCommand::redo()
-{
-    redoImp();
-}
+void UsdRotateUndoableCommand::redo() { redoImp(); }
 
 void UsdRotateUndoableCommand::addEmptyAttribute()
 {
-    performImp(0, 0, 0);	// Add an empty rotate
+    performImp(0, 0, 0); // Add an empty rotate
 }
 
 void UsdRotateUndoableCommand::performImp(double x, double y, double z)
 {
-	rotateOp(prim(), path(), x, y, z);
+    rotateOp(prim(), path(), x, y, z);
 }
 
 //------------------------------------------------------------------------------
@@ -107,14 +104,13 @@ bool UsdRotateUndoableCommand::set(double x, double y, double z)
 bool UsdRotateUndoableCommand::rotate(double x, double y, double z)
 #endif
 {
-	// Fail early - Initialization did not go as expected.
-	if (fFailedInit)
-	{
-		std::rethrow_exception(fFailedInit);
-	}
-	perform(x, y, z);
-	return true;
+    // Fail early - Initialization did not go as expected.
+    if (fFailedInit) {
+        std::rethrow_exception(fFailedInit);
+    }
+    perform(x, y, z);
+    return true;
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

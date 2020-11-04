@@ -18,19 +18,19 @@
 
 /// \file
 
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/xform.h>
-#include <pxr/usd/usdSkel/animation.h>
 #include <pxr/usd/usdSkel/animMapper.h>
+#include <pxr/usd/usdSkel/animation.h>
 #include <pxr/usd/usdSkel/skeleton.h>
 #include <pxr/usd/usdSkel/topology.h>
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <maya/MFnDependencyNode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,9 +50,9 @@ class PxrUsdTranslators_JointWriter : public UsdMayaPrimWriter
 {
 public:
     PxrUsdTranslators_JointWriter(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdPath,
-            UsdMayaWriteJobContext& jobCtx);
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
     void Write(const UsdTimeCode& usdTime) override;
     bool ExportsGprims() const override;
@@ -61,8 +61,8 @@ public:
 private:
     bool _WriteRestState();
 
-    bool _valid;
-    UsdSkelSkeleton _skel;
+    bool             _valid;
+    UsdSkelSkeleton  _skel;
     UsdSkelAnimation _skelAnim;
 
     /// The dag path defining the root transform of the Skeleton.
@@ -71,15 +71,13 @@ private:
     /// The common parent path of all proper joints.
     MDagPath _jointHierarchyRootPath;
 
-    UsdSkelTopology _topology;
-    UsdSkelAnimMapper _skelToAnimMapper;
+    UsdSkelTopology       _topology;
+    UsdSkelAnimMapper     _skelToAnimMapper;
     std::vector<MDagPath> _joints, _animatedJoints;
-    UsdAttribute _skelXformAttr;
-    bool _skelXformIsAnimated;
+    UsdAttribute          _skelXformAttr;
+    bool                  _skelXformIsAnimated;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

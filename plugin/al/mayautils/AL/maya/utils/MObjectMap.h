@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <maya/MObject.h>
-#include <maya/MFnDependencyNode.h>
-
 #include "AL/maya/utils/Utils.h"
+
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
 
 #include <map>
 
@@ -27,69 +27,69 @@ namespace AL {
 namespace maya {
 namespace utils {
 
-
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A class that acts as a lookup table for dependency nodes. It works by storing a sorted map based on the
+/// \brief  A class that acts as a lookup table for dependency nodes. It works by storing a sorted
+/// map based on the
 ///         uuid of each node.
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
 struct MObjectMap
 {
-  /// \brief  insert a node into the map.
-  /// \param  fn the function set attached to the node to insert
-  /// \return true if the node had already been added, false if the node was added.
-  inline bool insert(const MFnDependencyNode& fn)
-  {
-    #if AL_UTILS_ENABLE_SIMD
-    union
+    /// \brief  insert a node into the map.
+    /// \param  fn the function set attached to the node to insert
+    /// \return true if the node had already been added, false if the node was added.
+    inline bool insert(const MFnDependencyNode& fn)
     {
-      __m128i sse;
-      guid uuid;
+#if AL_UTILS_ENABLE_SIMD
+        union
+        {
+            __m128i sse;
+            guid    uuid;
+        };
+        fn.uuid().get(uuid.uuid);
+        bool contains = m_nodeMap.find(sse) != m_nodeMap.end();
+        if (!contains)
+            m_nodeMap.insert(std::make_pair(sse, fn.object()));
+#else
+        guid uuid;
+        fn.uuid().get(uuid.uuid);
+        bool contains = m_nodeMap.find(uuid) != m_nodeMap.end();
+        if (!contains)
+            m_nodeMap.insert(std::make_pair(uuid, fn.object()));
+#endif
+        return contains;
     };
-    fn.uuid().get(uuid.uuid);
-    bool contains = m_nodeMap.find(sse) != m_nodeMap.end();
-    if(!contains)
-      m_nodeMap.insert(std::make_pair(sse, fn.object()));
-    #else
-    guid uuid;
-    fn.uuid().get(uuid.uuid);
-    bool contains = m_nodeMap.find(uuid) != m_nodeMap.end();
-    if(!contains)
-      m_nodeMap.insert(std::make_pair(uuid, fn.object()));
-    #endif
-    return contains;
-  };
 
-  /// \brief  returns true if the dependency node is in the map
-  /// \param  fn the function set attached to the node to find in the map
-  /// \return true if the node exists in the map
-  inline bool contains(const MFnDependencyNode& fn)
-  {
-    #if AL_UTILS_ENABLE_SIMD
-    union
+    /// \brief  returns true if the dependency node is in the map
+    /// \param  fn the function set attached to the node to find in the map
+    /// \return true if the node exists in the map
+    inline bool contains(const MFnDependencyNode& fn)
     {
-      __m128i sse;
-      guid uuid;
+#if AL_UTILS_ENABLE_SIMD
+        union
+        {
+            __m128i sse;
+            guid    uuid;
+        };
+        fn.uuid().get(uuid.uuid);
+        bool contains = m_nodeMap.find(sse) != m_nodeMap.end();
+#else
+        guid uuid;
+        fn.uuid().get(uuid.uuid);
+        bool contains = m_nodeMap.find(uuid) != m_nodeMap.end();
+#endif
+        return contains;
     };
-    fn.uuid().get(uuid.uuid);
-    bool contains = m_nodeMap.find(sse) != m_nodeMap.end();
-    #else
-    guid uuid;
-    fn.uuid().get(uuid.uuid);
-    bool contains = m_nodeMap.find(uuid) != m_nodeMap.end();
-    #endif
-    return contains;
-  };
 
 private:
-  #if AL_UTILS_ENABLE_SIMD
-  std::map<i128, MObject, guid_compare> m_nodeMap;
-  #else
-  std::map<guid, MObject, guid_compare> m_nodeMap;
-  #endif
+#if AL_UTILS_ENABLE_SIMD
+    std::map<i128, MObject, guid_compare> m_nodeMap;
+#else
+    std::map<guid, MObject, guid_compare> m_nodeMap;
+#endif
 };
 //----------------------------------------------------------------------------------------------------------------------
-} // utils
-} // maya
-} // AL
+} // namespace utils
+} // namespace maya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

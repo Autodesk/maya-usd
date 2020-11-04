@@ -25,10 +25,10 @@
 #include <mayaUsd/utils/converter.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usd/timeCode.h>
@@ -42,44 +42,35 @@
 
 #include <utility>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 /* static */
-void
-UsdMayaSymmetricShaderWriter::RegisterWriter(
-        const TfToken& mayaNodeTypeName,
-        const TfToken& usdShaderId,
-        const TfToken& materialConversionName)
+void UsdMayaSymmetricShaderWriter::RegisterWriter(
+    const TfToken& mayaNodeTypeName,
+    const TfToken& usdShaderId,
+    const TfToken& materialConversionName)
 {
     UsdMayaShaderWriterRegistry::Register(
         mayaNodeTypeName,
         [materialConversionName](const UsdMayaJobExportArgs& exportArgs) {
-            return UsdMayaSymmetricShaderWriter::CanExport(
-                exportArgs,
-                materialConversionName);
+            return UsdMayaSymmetricShaderWriter::CanExport(exportArgs, materialConversionName);
         },
         [usdShaderId](
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx) {
+            const MFnDependencyNode& depNodeFn,
+            const SdfPath&           usdPath,
+            UsdMayaWriteJobContext&  jobCtx) {
             return std::make_shared<UsdMayaSymmetricShaderWriter>(
-                depNodeFn,
-                usdPath,
-                jobCtx,
-                usdShaderId);
+                depNodeFn, usdPath, jobCtx, usdShaderId);
         });
 }
 
 /* static */
-UsdMayaShaderWriter::ContextSupport
-UsdMayaSymmetricShaderWriter::CanExport(
-        const UsdMayaJobExportArgs& exportArgs,
-        const TfToken& materialConversionName)
+UsdMayaShaderWriter::ContextSupport UsdMayaSymmetricShaderWriter::CanExport(
+    const UsdMayaJobExportArgs& exportArgs,
+    const TfToken&              materialConversionName)
 {
-    if (materialConversionName.IsEmpty() ||
-            exportArgs.convertMaterialsTo == materialConversionName) {
+    if (materialConversionName.IsEmpty()
+        || exportArgs.convertMaterialsTo == materialConversionName) {
         return ContextSupport::Supported;
     }
 
@@ -87,14 +78,13 @@ UsdMayaSymmetricShaderWriter::CanExport(
 }
 
 UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx,
-        const TfToken& usdShaderId) :
-    UsdMayaShaderWriter(depNodeFn, usdPath, jobCtx)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx,
+    const TfToken&           usdShaderId)
+    : UsdMayaShaderWriter(depNodeFn, usdPath, jobCtx)
 {
-    UsdShadeShader shaderSchema =
-        UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
+    UsdShadeShader shaderSchema = UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
     if (!TF_VERIFY(
             shaderSchema,
             "Could not define UsdShadeShader at path '%s'\n",
@@ -113,8 +103,8 @@ UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
     shaderSchema.CreateIdAttr(VtValue(usdShaderId));
 
     for (unsigned int i = 0u; i < depNodeFn.attributeCount(); ++i) {
-        const MObject attrObj = depNodeFn.reorderedAttribute(i);
-        MPlug attrPlug = depNodeFn.findPlug(attrObj, true);
+        const MObject      attrObj = depNodeFn.reorderedAttribute(i);
+        MPlug              attrPlug = depNodeFn.findPlug(attrObj, true);
         const MFnAttribute attrFn(attrObj);
 
         if (attrPlug.isProcedural() || attrFn.isHidden()) {
@@ -153,14 +143,13 @@ UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
             continue;
         }
 
-        const TfToken usdAttrName = TfToken(
-            UsdMayaShadingUtil::GetStandardAttrName(attrPlug, false));
+        const TfToken usdAttrName
+            = TfToken(UsdMayaShadingUtil::GetStandardAttrName(attrPlug, false));
         if (usdAttrName.IsEmpty()) {
             continue;
         }
 
-        const SdfValueTypeName valueTypeName =
-            MayaUsd::Converter::getUsdTypeName(attrPlug);
+        const SdfValueTypeName valueTypeName = MayaUsd::Converter::getUsdTypeName(attrPlug);
         if (!valueTypeName) {
             // Unsupported Maya attribute type (e.g. "message" attributes).
             continue;
@@ -169,8 +158,7 @@ UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
         // If the Maya attribute is writable, we assume it must be an input.
         // Inputs can still be connected as sources to inputs on other shaders.
         if (attrFn.isWritable()) {
-            UsdShadeInput input =
-                shaderSchema.CreateInput(usdAttrName, valueTypeName);
+            UsdShadeInput input = shaderSchema.CreateInput(usdAttrName, valueTypeName);
             if (!input) {
                 continue;
             }
@@ -191,8 +179,7 @@ UsdMayaSymmetricShaderWriter::UsdMayaSymmetricShaderWriter(
 }
 
 /* override */
-void
-UsdMayaSymmetricShaderWriter::Write(const UsdTimeCode& usdTime)
+void UsdMayaSymmetricShaderWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaShaderWriter::Write(usdTime);
 
@@ -206,25 +193,20 @@ UsdMayaSymmetricShaderWriter::Write(const UsdTimeCode& usdTime)
 
     for (const auto& inputAttrPair : _inputNameAttrMap) {
         const TfToken& inputName = inputAttrPair.first;
-        const MPlug& attrPlug = inputAttrPair.second;
+        const MPlug&   attrPlug = inputAttrPair.second;
 
         UsdShadeInput input = shaderSchema.GetInput(inputName);
         if (!input) {
             continue;
         }
 
-        UsdMayaWriteUtil::SetUsdAttr(
-            attrPlug,
-            input.GetAttr(),
-            usdTime,
-            _GetSparseValueWriter());
+        UsdMayaWriteUtil::SetUsdAttr(attrPlug, input.GetAttr(), usdTime, _GetSparseValueWriter());
     }
 }
 
 /* override */
 TfToken
-UsdMayaSymmetricShaderWriter::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+UsdMayaSymmetricShaderWriter::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
     UsdShadeShader shaderSchema(_usdPrim);
     if (!shaderSchema) {
@@ -246,6 +228,5 @@ UsdMayaSymmetricShaderWriter::GetShadingAttributeNameForMayaAttrName(
 
     return TfToken();
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -17,23 +17,21 @@
 #ifndef MAYAUSDUI_USD_IMPORT_DIALOG_H
 #define MAYAUSDUI_USD_IMPORT_DIALOG_H
 
-
-#include <memory>
-
-#include <QtWidgets/QDialog>
-#include <QtCore/QSortFilterProxyModel>
+#include <mayaUsd/mayaUsd.h>
 
 #include <pxr/usd/usd/stage.h>
 
-#include <mayaUsd/mayaUsd.h>
-
-#include <mayaUsdUI/ui/api.h>
+#include <QtCore/QSortFilterProxyModel>
+#include <QtWidgets/QDialog>
 #include <mayaUsdUI/ui/IUSDImportView.h>
-#include <mayaUsdUI/ui/TreeModel.h>
 #include <mayaUsdUI/ui/ItemDelegate.h>
+#include <mayaUsdUI/ui/TreeModel.h>
+#include <mayaUsdUI/ui/api.h>
+
+#include <memory>
 
 namespace Ui {
-	class ImportDialog;
+class ImportDialog;
 }
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -46,62 +44,65 @@ class IMayaMQtUtil;
  * \brief USD file import dialog.
  */
 class MAYAUSD_UI_PUBLIC USDImportDialog
-		: public QDialog
-		, public IUSDImportView
+    : public QDialog
+    , public IUSDImportView
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	/**
-	 * \brief Constructor.
-	 * \param filename Absolute file path of a USD file to import.
-	 * \param parent A reference to the parent widget of the dialog.
-	 */
-	explicit USDImportDialog(const std::string& filename, const ImportData* importData, const IMayaMQtUtil& mayaQtUtil, QWidget* parent = nullptr);
+    /**
+     * \brief Constructor.
+     * \param filename Absolute file path of a USD file to import.
+     * \param parent A reference to the parent widget of the dialog.
+     */
+    explicit USDImportDialog(
+        const std::string&  filename,
+        const ImportData*   importData,
+        const IMayaMQtUtil& mayaQtUtil,
+        QWidget*            parent = nullptr);
 
-	//! Destructor.
-	~USDImportDialog();
+    //! Destructor.
+    ~USDImportDialog();
 
-	// IUSDImportView overrides
-	const std::string& filename() const override;
-	const std::string& rootPrimPath() const override;
-	UsdStagePopulationMask stagePopulationMask() const override;
-	UsdStage::InitialLoadSet stageInitialLoadSet() const override;
-	ImportData::PrimVariantSelections primVariantSelections() const override;
-	bool execute() override;
+    // IUSDImportView overrides
+    const std::string&                filename() const override;
+    const std::string&                rootPrimPath() const override;
+    UsdStagePopulationMask            stagePopulationMask() const override;
+    UsdStage::InitialLoadSet          stageInitialLoadSet() const override;
+    ImportData::PrimVariantSelections primVariantSelections() const override;
+    bool                              execute() override;
 
-	int primsInScopeCount() const;
-	int switchedVariantCount() const;
+    int primsInScopeCount() const;
+    int switchedVariantCount() const;
 
 private Q_SLOTS:
-	void onItemClicked(const QModelIndex&);
-	void onResetFileTriggered();
-	void onHierarchyViewHelpTriggered();
-	void onCheckedStateChanged(int);
-	void onModifiedVariantsChanged(int);
+    void onItemClicked(const QModelIndex&);
+    void onResetFileTriggered();
+    void onHierarchyViewHelpTriggered();
+    void onCheckedStateChanged(int);
+    void onModifiedVariantsChanged(int);
 
 protected:
-	// Reference to the Qt UI View of the dialog:
-	std::unique_ptr<Ui::ImportDialog> fUI;
+    // Reference to the Qt UI View of the dialog:
+    std::unique_ptr<Ui::ImportDialog> fUI;
 
-	// Reference to the Model holding the structure of the USD file hierarchy:
-	std::unique_ptr<TreeModel> fTreeModel;
-	// Reference to the Proxy Model used to sort and filter the USD file hierarchy:
-	std::unique_ptr<QSortFilterProxyModel> fProxyModel;
-	// Reference to the delegate we set on the tree view:
-	std::unique_ptr<ItemDelegate> fItemDelegate;
+    // Reference to the Model holding the structure of the USD file hierarchy:
+    std::unique_ptr<TreeModel> fTreeModel;
+    // Reference to the Proxy Model used to sort and filter the USD file hierarchy:
+    std::unique_ptr<QSortFilterProxyModel> fProxyModel;
+    // Reference to the delegate we set on the tree view:
+    std::unique_ptr<ItemDelegate> fItemDelegate;
 
-	// Reference to the USD Stage holding the list of Prims which could be imported:
-	UsdStageRefPtr fStage;
+    // Reference to the USD Stage holding the list of Prims which could be imported:
+    UsdStageRefPtr fStage;
 
-	// The filename for the USD stage we opened.
-	std::string fFilename;
+    // The filename for the USD stage we opened.
+    std::string fFilename;
 
-	// The root prim path.
-	mutable std::string fRootPrimPath;
+    // The root prim path.
+    mutable std::string fRootPrimPath;
 };
 
-} // namespace MayaUsd
-
+} // namespace MAYAUSD_NS_DEF
 
 #endif

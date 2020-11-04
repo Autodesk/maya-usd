@@ -15,42 +15,53 @@
 //
 #include "shapeAdapter.h"
 
-#include <maya/MPlug.h>
-#include <maya/MPlugArray.h>
-
-#include <pxr/base/tf/type.h>
-
 #include <hdMaya/adapters/adapterDebugCodes.h>
 #include <hdMaya/adapters/mayaAttrs.h>
 
+#include <pxr/base/tf/type.h>
+
+#include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfType) {
-    TfType::Define<HdMayaShapeAdapter, TfType::Bases<HdMayaDagAdapter> >();
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaShapeAdapter, TfType::Bases<HdMayaDagAdapter>>();
 }
 
 HdMayaShapeAdapter::HdMayaShapeAdapter(
-    const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath)
-    : HdMayaDagAdapter(id, delegate, dagPath) {
+    const SdfPath&     id,
+    HdMayaDelegateCtx* delegate,
+    const MDagPath&    dagPath)
+    : HdMayaDagAdapter(id, delegate, dagPath)
+{
     _CalculateExtent();
 }
 
-void HdMayaShapeAdapter::_CalculateExtent() {
-    MStatus status;
+void HdMayaShapeAdapter::_CalculateExtent()
+{
+    MStatus    status;
     MFnDagNode dagNode(GetDagPath(), &status);
     if (ARCH_LIKELY(status)) {
         const auto bb = dagNode.boundingBox();
         const auto mn = bb.min();
         const auto mx = bb.max();
-        _extent.SetMin({mn.x, mn.y, mn.z});
-        _extent.SetMax({mx.x, mx.y, mx.z});
+        _extent.SetMin({ mn.x, mn.y, mn.z });
+        _extent.SetMax({ mx.x, mx.y, mx.z });
         _extentDirty = false;
     }
 };
 
 size_t HdMayaShapeAdapter::SamplePrimvar(
-    const TfToken& key, size_t maxSampleCount, float* times, VtValue* samples) {
-    if (maxSampleCount < 1) { return 0; }
+    const TfToken& key,
+    size_t         maxSampleCount,
+    float*         times,
+    VtValue*       samples)
+{
+    if (maxSampleCount < 1) {
+        return 0;
+    }
     times[0] = 0.0f;
     samples[0] = Get(key);
     return 1;
@@ -58,60 +69,72 @@ size_t HdMayaShapeAdapter::SamplePrimvar(
 
 HdMeshTopology HdMayaShapeAdapter::GetMeshTopology() { return {}; };
 
-HdBasisCurvesTopology HdMayaShapeAdapter::GetBasisCurvesTopology() {
-    return {};
-};
+HdBasisCurvesTopology HdMayaShapeAdapter::GetBasisCurvesTopology() { return {}; };
 
-HdDisplayStyle HdMayaShapeAdapter::GetDisplayStyle() {
-    return {0, false, false};
-}
+HdDisplayStyle HdMayaShapeAdapter::GetDisplayStyle() { return { 0, false, false }; }
 
 PxOsdSubdivTags HdMayaShapeAdapter::GetSubdivTags() { return {}; }
 
-void HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits) {
+void HdMayaShapeAdapter::MarkDirty(HdDirtyBits dirtyBits)
+{
     HdMayaDagAdapter::MarkDirty(dirtyBits);
-    if (dirtyBits & HdChangeTracker::DirtyPoints) { _extentDirty = true; }
+    if (dirtyBits & HdChangeTracker::DirtyPoints) {
+        _extentDirty = true;
+    }
 }
 
-MObject HdMayaShapeAdapter::GetMaterial() {
+MObject HdMayaShapeAdapter::GetMaterial()
+{
     TF_DEBUG(HDMAYA_ADAPTER_GET)
         .Msg(
             "Called HdMayaShapeAdapter::GetMaterial() - %s\n",
             GetDagPath().partialPathName().asChar());
 
-    MStatus status;
+    MStatus    status;
     MFnDagNode dagNode(GetDagPath(), &status);
-    if (!status) { return MObject::kNullObj; }
+    if (!status) {
+        return MObject::kNullObj;
+    }
 
-    auto instObjGroups =
-        dagNode.findPlug(MayaAttrs::dagNode::instObjGroups, true);
-    if (instObjGroups.isNull()) { return MObject::kNullObj; }
+    auto instObjGroups = dagNode.findPlug(MayaAttrs::dagNode::instObjGroups, true);
+    if (instObjGroups.isNull()) {
+        return MObject::kNullObj;
+    }
 
     MPlugArray conns;
     // TODO: deal with instancing properly.
     instObjGroups.elementByLogicalIndex(0).connectedTo(conns, false, true);
 
     const auto numConnections = conns.length();
-    if (numConnections == 0) { return MObject::kNullObj; }
-    for (auto i = decltype(numConnections){0}; i < numConnections; ++i) {
+    if (numConnections == 0) {
+        return MObject::kNullObj;
+    }
+    for (auto i = decltype(numConnections) { 0 }; i < numConnections; ++i) {
         auto sg = conns[i].node();
-        if (sg.apiType() == MFn::kShadingEngine) { return sg; }
+        if (sg.apiType() == MFn::kShadingEngine) {
+            return sg;
+        }
     }
 
     return MObject::kNullObj;
 }
 
-const GfRange3d& HdMayaShapeAdapter::GetExtent() {
-    if (_extentDirty) { _CalculateExtent(); }
+const GfRange3d& HdMayaShapeAdapter::GetExtent()
+{
+    if (_extentDirty) {
+        _CalculateExtent();
+    }
     return _extent;
 }
 
 TfToken HdMayaShapeAdapter::GetRenderTag() const { return HdTokens->geometry; }
 
 void HdMayaShapeAdapter::PopulateSelectedPaths(
-    const MDagPath& selectedDag, SdfPathVector& selectedSdfPaths,
+    const MDagPath&                             selectedDag,
+    SdfPathVector&                              selectedSdfPaths,
     std::unordered_set<SdfPath, SdfPath::Hash>& selectedMasters,
-    const HdSelectionSharedPtr& selection) {
+    const HdSelectionSharedPtr&                 selection)
+{
     VtIntArray indices(1);
     if (IsInstanced()) {
         indices[0] = selectedDag.instanceNumber();

@@ -31,64 +31,66 @@ namespace translators {
 /// \brief  A class to transfer dag node data between Usd <--> Maya
 /// \ingroup   translators
 //----------------------------------------------------------------------------------------------------------------------
-class DagNodeTranslator
-  : public DgNodeTranslator
+class DagNodeTranslator : public DgNodeTranslator
 {
 public:
+    /// \brief  static type registration
+    /// \return MS::kSuccess if ok
+    AL_USDMAYA_PUBLIC
+    static MStatus registerType();
 
-  /// \brief  static type registration
-  /// \return MS::kSuccess if ok
-  AL_USDMAYA_PUBLIC
-  static MStatus registerType();
+    /// \brief  Creates a new maya node of the given type and set attributes based on input prim
+    /// \param  from the UsdPrim to copy the data from
+    /// \param  parent the parent Dag node to parent the newly created object under
+    /// \param  nodeType the maya node type to create
+    /// \param  params the importer params that determines what will be imported
+    /// \return the newly created node
+    AL_USDMAYA_PUBLIC
+    MObject createNode(
+        const UsdPrim&        from,
+        MObject               parent,
+        const char*           nodeType,
+        const ImporterParams& params) override;
 
-  /// \brief  Creates a new maya node of the given type and set attributes based on input prim
-  /// \param  from the UsdPrim to copy the data from
-  /// \param  parent the parent Dag node to parent the newly created object under
-  /// \param  nodeType the maya node type to create
-  /// \param  params the importer params that determines what will be imported
-  /// \return the newly created node
-  AL_USDMAYA_PUBLIC
-  MObject createNode(const UsdPrim& from, MObject parent, const char* nodeType, const ImporterParams& params) override;
+    /// \brief  helper method to copy attributes from the UsdPrim to the Maya node
+    /// \param  from the UsdPrim to copy the data from
+    /// \param  to the maya node to copy the data to
+    /// \param  params the importer params to determine what to import
+    /// \return MS::kSuccess if ok
+    AL_USDMAYA_PUBLIC
+    MStatus copyAttributes(const UsdPrim& from, MObject to, const ImporterParams& params);
 
-  /// \brief  helper method to copy attributes from the UsdPrim to the Maya node
-  /// \param  from the UsdPrim to copy the data from
-  /// \param  to the maya node to copy the data to
-  /// \param  params the importer params to determine what to import
-  /// \return MS::kSuccess if ok
-  AL_USDMAYA_PUBLIC
-  MStatus copyAttributes(const UsdPrim& from, MObject to, const ImporterParams& params);
+    /// \brief  Copies data from the maya node onto the usd primitive
+    /// \param  from the maya node to copy the data from
+    /// \param  to the USD prim to copy the attributes to
+    /// \param  params the exporter params to determine what should be exported
+    /// \return MS::kSuccess if ok
+    static MStatus copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params)
+    {
+        return MS::kSuccess;
+    }
 
-  /// \brief  Copies data from the maya node onto the usd primitive
-  /// \param  from the maya node to copy the data from
-  /// \param  to the USD prim to copy the attributes to
-  /// \param  params the exporter params to determine what should be exported
-  /// \return MS::kSuccess if ok
-  static MStatus copyAttributes(const MObject& from, UsdPrim& to, const ExporterParams& params)
-    { return MS::kSuccess; }
+    /// \brief  assign the default material to the shape specified
+    /// \param  shape the maya shape to assign a material to
+    /// \return MS::kSuccess if ok
+    AL_USDMAYA_PUBLIC
+    MStatus applyDefaultMaterialOnShape(MObject shape);
 
-  /// \brief  assign the default material to the shape specified
-  /// \param  shape the maya shape to assign a material to
-  /// \return MS::kSuccess if ok
-  AL_USDMAYA_PUBLIC
-  MStatus applyDefaultMaterialOnShape(MObject shape);
-
-  AL_USDMAYA_PUBLIC
-  static void initialiseDefaultShadingGroup(MObject& target);
+    AL_USDMAYA_PUBLIC
+    static void initialiseDefaultShadingGroup(MObject& target);
 
 protected:
-  /// an MObject handle to the initial shading group, which can be assigned to newly imported geometry so that
-  /// default shading is applied to the shading group
-  static MObject m_initialShadingGroup;
+    /// an MObject handle to the initial shading group, which can be assigned to newly imported
+    /// geometry so that default shading is applied to the shading group
+    static MObject m_initialShadingGroup;
 
-  /// the visibility attribute common to all dag nodes
-  static MObject m_visible;
-
-
+    /// the visibility attribute common to all dag nodes
+    static MObject m_visible;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-} // translators
-} // fileio
-} // usdmaya
-} // AL
+} // namespace translators
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

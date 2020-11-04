@@ -18,14 +18,12 @@
 
 /// \file pxrUsdMayaGL/renderParams.h
 
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/pxr.h>
+
 #include <boost/functional/hash.hpp>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec4f.h>
-
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 struct PxrMayaHdRenderParams
 {
@@ -35,7 +33,7 @@ struct PxrMayaHdRenderParams
 
     // Color Params
     //
-    bool useWireframe = false;
+    bool    useWireframe = false;
     GfVec4f wireframeColor = GfVec4f(0.0f);
 
     /// Helper function to find a batch key for the render params
@@ -49,8 +47,6 @@ struct PxrMayaHdRenderParams
     }
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

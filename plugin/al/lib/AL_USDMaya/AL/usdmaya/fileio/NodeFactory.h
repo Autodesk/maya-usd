@@ -14,9 +14,10 @@
 // limitations under the License.
 //
 #pragma once
+#include "AL/usdmaya/ForwardDeclares.h"
+
 #include <string>
 #include <unordered_map>
-#include "AL/usdmaya/ForwardDeclares.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,31 +32,36 @@ namespace fileio {
 //----------------------------------------------------------------------------------------------------------------------
 struct NodeFactory
 {
-  /// \brief  ctor. Currently initialises the inbuilt translators.
-  NodeFactory();
+    /// \brief  ctor. Currently initialises the inbuilt translators.
+    NodeFactory();
 
-  /// \brief  dtor
-  ~NodeFactory();
+    /// \brief  dtor
+    ~NodeFactory();
 
-  /// \brief  create a node
-  /// \param  from the prim we are copying the data from
-  /// \param  nodeType can be one of "transform", "mesh", "nurbsCurve", or "camera".
-  /// \param  parent the parent transform for the Maya data
-  /// \param  parentUnmerged if false, the parent transform will be merged with a shape. If true, the nodes will remain
-  ///         separate
-  MObject createNode(const UsdPrim& from, const char* const nodeType, MObject parent, bool parentUnmerged = false);
+    /// \brief  create a node
+    /// \param  from the prim we are copying the data from
+    /// \param  nodeType can be one of "transform", "mesh", "nurbsCurve", or "camera".
+    /// \param  parent the parent transform for the Maya data
+    /// \param  parentUnmerged if false, the parent transform will be merged with a shape. If true,
+    /// the nodes will remain
+    ///         separate
+    MObject createNode(
+        const UsdPrim&    from,
+        const char* const nodeType,
+        MObject           parent,
+        bool              parentUnmerged = false);
 
-  static void setupNode(const UsdPrim& from, MObject obj, MObject parent, bool parentUnmerged);
+    static void setupNode(const UsdPrim& from, MObject obj, MObject parent, bool parentUnmerged);
 
-  /// \brief  Some of the translators rely on import settings specified in the import params. Prior to use of this factory,
-  ///         you should set the import params for it to use.
-  /// \param  params the import params
-  void setImportParams(const ImporterParams* params)
-    { m_params = params; }
+    /// \brief  Some of the translators rely on import settings specified in the import params.
+    /// Prior to use of this factory,
+    ///         you should set the import params for it to use.
+    /// \param  params the import params
+    void setImportParams(const ImporterParams* params) { m_params = params; }
 
 private:
-  std::unordered_map<std::string, translators::DgNodeTranslator*> m_builders;
-  const ImporterParams* m_params;
+    std::unordered_map<std::string, translators::DgNodeTranslator*> m_builders;
+    const ImporterParams*                                           m_params;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -70,7 +76,7 @@ NodeFactory& getNodeFactory();
 void freeNodeFactory();
 
 //----------------------------------------------------------------------------------------------------------------------
-} // fileio
-} // usdmaya
-} // AL
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

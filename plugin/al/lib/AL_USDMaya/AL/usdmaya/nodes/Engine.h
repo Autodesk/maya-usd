@@ -24,30 +24,32 @@ namespace AL {
 namespace usdmaya {
 namespace nodes {
 
-class Engine : public UsdImagingGLEngine {
+class Engine : public UsdImagingGLEngine
+{
 public:
-  Engine(const SdfPath& rootPath,
-         const SdfPathVector& excludedPaths);
+    Engine(const SdfPath& rootPath, const SdfPathVector& excludedPaths);
 
-  struct HitInfo {
-    GfVec3d worldSpaceHitPoint;
-    int hitInstanceIndex;
-  };
-  typedef TfHashMap<SdfPath, HitInfo, SdfPath::Hash> HitBatch;
+    struct HitInfo
+    {
+        GfVec3d worldSpaceHitPoint;
+        int     hitInstanceIndex;
+    };
+    typedef TfHashMap<SdfPath, HitInfo, SdfPath::Hash> HitBatch;
 
-  typedef std::function<SdfPath(const SdfPath&, const SdfPath&, const int)> PathTranslatorCallback;
+    typedef std::function<SdfPath(const SdfPath&, const SdfPath&, const int)>
+        PathTranslatorCallback;
 
-  bool TestIntersectionBatch(
-    const GfMatrix4d &viewMatrix,
-    const GfMatrix4d &projectionMatrix,
-    const GfMatrix4d &worldToLocalSpace,
-    const SdfPathVector& paths,
-    UsdImagingGLRenderParams params,
-    unsigned int pickResolution,
-    PathTranslatorCallback pathTranslator,
-    HitBatch *outHit);
+    bool TestIntersectionBatch(
+        const GfMatrix4d&        viewMatrix,
+        const GfMatrix4d&        projectionMatrix,
+        const GfMatrix4d&        worldToLocalSpace,
+        const SdfPathVector&     paths,
+        UsdImagingGLRenderParams params,
+        unsigned int             pickResolution,
+        PathTranslatorCallback   pathTranslator,
+        HitBatch*                outHit);
 };
 
-}
-}
-}
+} // namespace nodes
+} // namespace usdmaya
+} // namespace AL

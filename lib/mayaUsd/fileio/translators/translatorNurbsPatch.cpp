@@ -15,6 +15,14 @@
 //
 #include "translatorNurbsPatch.h"
 
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/translators/translatorGprim.h>
+#include <mayaUsd/fileio/translators/translatorMaterial.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+
+#include <pxr/usd/usdGeom/nurbsPatch.h>
+
 #include <maya/MDoubleArray.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnBlendShapeDeformer.h>
@@ -30,23 +38,14 @@
 #include <maya/MTimeArray.h>
 #include <maya/MTrimBoundaryArray.h>
 
-#include <pxr/usd/usdGeom/nurbsPatch.h>
-
-#include <mayaUsd/fileio/primReaderArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/translators/translatorGprim.h>
-#include <mayaUsd/fileio/translators/translatorMaterial.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-bool 
-UsdMayaTranslatorNurbsPatch::Read(
-        const UsdGeomNurbsPatch& usdNurbsPatch,
-        MObject parentNode,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context)
+bool UsdMayaTranslatorNurbsPatch::Read(
+    const UsdGeomNurbsPatch&     usdNurbsPatch,
+    MObject                      parentNode,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     if (!usdNurbsPatch) {
         return false;
@@ -58,31 +57,28 @@ UsdMayaTranslatorNurbsPatch::Read(
 
     // Create the transform node for the patch.
     MObject mayaNode;
-    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
-                                                       parentNode,
-                                                       args,
-                                                       context,
-                                                       &status,
-                                                       &mayaNode)) {
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(
+            prim, parentNode, args, context, &status, &mayaNode)) {
         return false;
     }
 
     // Since we are "decollapsing", we will create a xform and a shape node for each USD prim
     std::string usdPrimName(prim.GetName().GetText());
-    std::string shapeName(usdPrimName); shapeName += "Shape";
+    std::string shapeName(usdPrimName);
+    shapeName += "Shape";
     std::string usdPrimPath(prim.GetPath().GetText());
     std::string shapePath(usdPrimPath);
     shapePath += "/";
     shapePath += shapeName;
 
-    int numCVsInU, numCVsInV;
-    int orderInU, orderInV;
-    VtArray<double> knotsInU;
-    VtArray<double> knotsInV;
-    GfVec2d rangeInU, rangeInV;
+    int              numCVsInU, numCVsInV;
+    int              orderInU, orderInV;
+    VtArray<double>  knotsInU;
+    VtArray<double>  knotsInV;
+    GfVec2d          rangeInU, rangeInV;
     VtArray<GfVec3f> points;
-    VtArray<double> weights;
-    
+    VtArray<double>  weights;
+
     // NurbsPatch
     usdNurbsPatch.GetUVertexCountAttr().Get(&numCVsInU);
     usdNurbsPatch.GetVVertexCountAttr().Get(&numCVsInV);
@@ -97,110 +93,113 @@ UsdMayaTranslatorNurbsPatch::Read(
     // Gather points.
     // If timeInterval is non-empty, pick the first available sample in the
     // timeInterval or default.
-    UsdTimeCode pointsTimeSample=UsdTimeCode::EarliestTime();
+    UsdTimeCode         pointsTimeSample = UsdTimeCode::EarliestTime();
     std::vector<double> pointsTimeSamples;
-    size_t numTimeSamples = 0;
+    size_t              numTimeSamples = 0;
     if (!args.GetTimeInterval().IsEmpty()) {
         usdNurbsPatch.GetPointsAttr().GetTimeSamplesInInterval(
-                args.GetTimeInterval(), &pointsTimeSamples);
+            args.GetTimeInterval(), &pointsTimeSamples);
         numTimeSamples = pointsTimeSamples.size();
-        if (numTimeSamples>0) {
+        if (numTimeSamples > 0) {
             pointsTimeSample = pointsTimeSamples[0];
         }
     }
     usdNurbsPatch.GetPointsAttr().Get(&points, pointsTimeSample);
-    
+
     if (points.empty()) {
         TF_RUNTIME_ERROR(
-                "points array is empty on NurbsPatch <%s>. Skipping...", 
-                usdPrimPath.c_str());
+            "points array is empty on NurbsPatch <%s>. Skipping...", usdPrimPath.c_str());
         return false; // invalid nurbs, so exit
     }
-    
+
     if (points.size() != static_cast<size_t>((numCVsInU * numCVsInV))) {
         TF_RUNTIME_ERROR(
-                "points array size != uVertexCount * vVertexCount on "
-                "NurbsPatch <%s>. Skipping...",
-                usdPrimPath.c_str());
+            "points array size != uVertexCount * vVertexCount on "
+            "NurbsPatch <%s>. Skipping...",
+            usdPrimPath.c_str());
         return false; // Bad CV data, so exit
     }
 
     // Maya stores the data where v varies the fastest (v,u order)
     // so we need to unpack the data differently u,v order
     // WE DIFFER FROM ALEMBIC READER, WE DON'T FLIP V
-    
+
     bool rationalSurface = false, hasWeights = false;
-    if (points.size()==weights.size()) hasWeights=true;
-    int cvIndex=0;
+    if (points.size() == weights.size())
+        hasWeights = true;
+    int         cvIndex = 0;
     MPointArray mayaPoints;
-    mayaPoints.setLength(numCVsInV*numCVsInU);
-    for (int v = 0; v < numCVsInV; v++)
-    {
-        for (int u = 0; u < numCVsInU; u++)
-        {
+    mayaPoints.setLength(numCVsInV * numCVsInU);
+    for (int v = 0; v < numCVsInV; v++) {
+        for (int u = 0; u < numCVsInU; u++) {
             int index = u * numCVsInV + v;
             if (hasWeights && !GfIsClose(weights[cvIndex], 1.0, 1e-9)) {
-                rationalSurface=true;
-                mayaPoints.set( index, points[cvIndex][0], points[cvIndex][1], points[cvIndex][2], weights[cvIndex] );
+                rationalSurface = true;
+                mayaPoints.set(
+                    index,
+                    points[cvIndex][0],
+                    points[cvIndex][1],
+                    points[cvIndex][2],
+                    weights[cvIndex]);
             } else {
-                mayaPoints.set( index, points[cvIndex][0], points[cvIndex][1], points[cvIndex][2] );
+                mayaPoints.set(index, points[cvIndex][0], points[cvIndex][1], points[cvIndex][2]);
             }
             cvIndex++;
         }
     }
 
-    double *knotsU=knotsInU.data();
-    MDoubleArray mayaKnotsInU( &knotsU[1], knotsInU.size()-2);
-    double *knotsV=knotsInV.data();
-    MDoubleArray mayaKnotsInV( &knotsV[1], knotsInV.size()-2);
+    double*      knotsU = knotsInU.data();
+    MDoubleArray mayaKnotsInU(&knotsU[1], knotsInU.size() - 2);
+    double*      knotsV = knotsInV.data();
+    MDoubleArray mayaKnotsInV(&knotsV[1], knotsInV.size() - 2);
 
     MFnNurbsSurface::Form formInU = MFnNurbsSurface::kOpen;
     MFnNurbsSurface::Form formInV = MFnNurbsSurface::kOpen;
-    TfToken form;
+    TfToken               form;
     usdNurbsPatch.GetUFormAttr().Get(&form);
-    if (form == UsdGeomTokens->closed ) formInU = MFnNurbsSurface::kClosed;
-    else if (form == UsdGeomTokens->periodic ) formInU = MFnNurbsSurface::kPeriodic;
-    
+    if (form == UsdGeomTokens->closed)
+        formInU = MFnNurbsSurface::kClosed;
+    else if (form == UsdGeomTokens->periodic)
+        formInU = MFnNurbsSurface::kPeriodic;
+
     usdNurbsPatch.GetVFormAttr().Get(&form);
-    if (form == UsdGeomTokens->closed ) formInV = MFnNurbsSurface::kClosed;
-    else if (form == UsdGeomTokens->periodic ) formInV = MFnNurbsSurface::kPeriodic;
+    if (form == UsdGeomTokens->closed)
+        formInV = MFnNurbsSurface::kClosed;
+    else if (form == UsdGeomTokens->periodic)
+        formInV = MFnNurbsSurface::kPeriodic;
 
     // NOTE: In certain cases (i.e. linear cyilnder) Maya can't set the form
     // back to Closed when importing back an exported model. Seems a Maya bug
-    
+
     // == Create NurbsSurface Shape Node
     MFnNurbsSurface surfaceFn;
-      
-    MObject surfaceObj = surfaceFn.create(mayaPoints,
-                                        mayaKnotsInU,
-                                        mayaKnotsInV,
-                                        orderInU-1,
-                                        orderInV-1,
-                                        formInU,
-                                        formInV,
-                                        rationalSurface,
-                                        mayaNode,
-                                        &status);
+
+    MObject surfaceObj = surfaceFn.create(
+        mayaPoints,
+        mayaKnotsInU,
+        mayaKnotsInV,
+        orderInU - 1,
+        orderInV - 1,
+        formInU,
+        formInV,
+        rationalSurface,
+        mayaNode,
+        &status);
     if (status != MS::kSuccess) {
         TF_RUNTIME_ERROR(
-                "Unable to create Maya Nurbs for USD NurbsPatch <%s>",
-                usdPrimPath.c_str());
+            "Unable to create Maya Nurbs for USD NurbsPatch <%s>", usdPrimPath.c_str());
         return false;
     }
-    
+
     surfaceFn.setName(MString(shapeName.c_str()), false, &status);
     if (context) {
-        context->RegisterNewMayaNode( shapePath, surfaceObj ); // used for undo/redo
+        context->RegisterNewMayaNode(shapePath, surfaceObj); // used for undo/redo
     }
 
     // If a material is bound, create (or reuse if already present) and assign it
     // If no binding is present, assign the nurbs surface to the default shader
-    const UsdMayaJobImportArgs& jobArguments = args.GetJobArguments();  
-    UsdMayaTranslatorMaterial::AssignMaterial(
-            jobArguments,
-            usdNurbsPatch,
-            surfaceObj,
-            context);
+    const UsdMayaJobImportArgs& jobArguments = args.GetJobArguments();
+    UsdMayaTranslatorMaterial::AssignMaterial(jobArguments, usdNurbsPatch, surfaceObj, context);
 
     // NurbsSurface is a shape, so read Gprim properties
     UsdMayaTranslatorGprim::Read(usdNurbsPatch, surfaceObj, context);
@@ -213,41 +212,42 @@ UsdMayaTranslatorNurbsPatch::Read(
         MObject surfaceAnimObj;
 
         MFnBlendShapeDeformer blendFn;
-        MObject blendObj = blendFn.create(surfaceObj);
+        MObject               blendObj = blendFn.create(surfaceObj);
         if (context) {
-            context->RegisterNewMayaNode(blendFn.name().asChar(), blendObj ); // used for undo/redo
+            context->RegisterNewMayaNode(blendFn.name().asChar(), blendObj); // used for undo/redo
         }
-        
-        for (unsigned int ti=0; ti < numTimeSamples; ++ti) {
+
+        for (unsigned int ti = 0; ti < numTimeSamples; ++ti) {
             usdNurbsPatch.GetPointsAttr().Get(&points, pointsTimeSamples[ti]);
 
-            cvIndex=0;
+            cvIndex = 0;
             for (int v = 0; v < numCVsInV; v++) {
                 for (int u = 0; u < numCVsInU; u++) {
                     int index = u * numCVsInV + v;
-                    mayaPoints.set( index, points[cvIndex][0], points[cvIndex][1], points[cvIndex][2] );
+                    mayaPoints.set(
+                        index, points[cvIndex][0], points[cvIndex][1], points[cvIndex][2]);
                     cvIndex++;
                 }
             }
 
             // == Create NurbsSurface Shape Node
             MFnNurbsSurface surfaceFn;
-            if ( surfaceAnimObj.isNull() ) {
-                surfaceAnimObj = surfaceFn.create(mayaPoints,
-                                        mayaKnotsInU,
-                                        mayaKnotsInV,
-                                        orderInU-1,
-                                        orderInV-1,
-                                        formInU,
-                                        formInV,
-                                        rationalSurface,
-                                        mayaNode,
-                                        &status);
+            if (surfaceAnimObj.isNull()) {
+                surfaceAnimObj = surfaceFn.create(
+                    mayaPoints,
+                    mayaKnotsInU,
+                    mayaKnotsInV,
+                    orderInU - 1,
+                    orderInV - 1,
+                    formInU,
+                    formInV,
+                    rationalSurface,
+                    mayaNode,
+                    &status);
                 if (status != MS::kSuccess) {
                     continue;
                 }
-            }
-            else {
+            } else {
                 // Reuse the already created surface by copying it and then setting the points
                 surfaceAnimObj = surfaceFn.copy(surfaceAnimObj, mayaNode, &status);
                 surfaceFn.setCVs(mayaPoints);
@@ -255,7 +255,8 @@ UsdMayaTranslatorNurbsPatch::Read(
             blendFn.addTarget(surfaceObj, ti, surfaceAnimObj, 1.0);
             surfaceFn.setIntermediateObject(true);
             if (context) {
-                context->RegisterNewMayaNode( surfaceFn.fullPathName().asChar(), surfaceAnimObj ); // used for undo/redo
+                context->RegisterNewMayaNode(
+                    surfaceFn.fullPathName().asChar(), surfaceAnimObj); // used for undo/redo
             }
         }
 
@@ -265,47 +266,48 @@ UsdMayaTranslatorNurbsPatch::Read(
         // Construct the time array to be used for all the keys
         MTimeArray timeArray;
         timeArray.setLength(numTimeSamples);
-        for (unsigned int ti=0; ti < numTimeSamples; ++ti) {
-            timeArray.set( MTime(pointsTimeSamples[ti]), ti);
+        for (unsigned int ti = 0; ti < numTimeSamples; ++ti) {
+            timeArray.set(MTime(pointsTimeSamples[ti]), ti);
         }
 
         // Key/Animate the weights
-        MPlug plgAry = blendFn.findPlug( "weight" );
-        if ( !plgAry.isNull() && plgAry.isArray() ) {
-            for (unsigned int ti=0; ti < numTimeSamples; ++ti) {
-                MPlug plg = plgAry.elementByLogicalIndex(ti, &status);
+        MPlug plgAry = blendFn.findPlug("weight");
+        if (!plgAry.isNull() && plgAry.isArray()) {
+            for (unsigned int ti = 0; ti < numTimeSamples; ++ti) {
+                MPlug        plg = plgAry.elementByLogicalIndex(ti, &status);
                 MDoubleArray valueArray(numTimeSamples, 0.0);
                 valueArray[ti] = 1.0; // Set the time value where this curve's weight should be 1.0
                 MObject animObj = animFn.create(plg, nullptr, &status);
                 animFn.addKeys(&timeArray, &valueArray);
                 if (context) {
-                    context->RegisterNewMayaNode(animFn.name().asChar(), animObj ); // used for undo/redo
+                    context->RegisterNewMayaNode(
+                        animFn.name().asChar(), animObj); // used for undo/redo
                 }
             }
         }
     }
 
     // Look for trim curves
-    
-    VtArray<int> trimNumCurves;
-    VtArray<int> trimNumPos;
-    VtArray<int> trimOrder;
-    VtArray<double> trimKnot;
+
+    VtArray<int>     trimNumCurves;
+    VtArray<int>     trimNumPos;
+    VtArray<int>     trimOrder;
+    VtArray<double>  trimKnot;
     VtArray<GfVec2d> trimRange;
     VtArray<GfVec3d> trimPoint;
-    usdNurbsPatch.GetTrimCurveCountsAttr().Get(&trimNumCurves);    
-    usdNurbsPatch.GetTrimCurveOrdersAttr().Get(&trimOrder);    
-    usdNurbsPatch.GetTrimCurveVertexCountsAttr().Get(&trimNumPos);    
-    usdNurbsPatch.GetTrimCurveKnotsAttr().Get(&trimKnot);    
-    usdNurbsPatch.GetTrimCurveRangesAttr().Get(&trimRange);    
-    usdNurbsPatch.GetTrimCurvePointsAttr().Get(&trimPoint);    
+    usdNurbsPatch.GetTrimCurveCountsAttr().Get(&trimNumCurves);
+    usdNurbsPatch.GetTrimCurveOrdersAttr().Get(&trimOrder);
+    usdNurbsPatch.GetTrimCurveVertexCountsAttr().Get(&trimNumPos);
+    usdNurbsPatch.GetTrimCurveKnotsAttr().Get(&trimKnot);
+    usdNurbsPatch.GetTrimCurveRangesAttr().Get(&trimRange);
+    usdNurbsPatch.GetTrimCurvePointsAttr().Get(&trimPoint);
 
-    int numLoops=trimNumCurves.size();
+    int numLoops = trimNumCurves.size();
     if (numLoops == 0)
         return true;
 
     MTrimBoundaryArray trimBoundaryArray;
-    MObjectArray deleteAfterTrim;
+    MObjectArray       deleteAfterTrim;
 
     int curCurve = 0;
     int curPos = 0;
@@ -317,13 +319,13 @@ UsdMayaTranslatorNurbsPatch::Read(
         int numCurves = trimNumCurves[i];
         for (int j = 0; j < numCurves; ++j, ++curCurve) {
             unsigned int degree = trimOrder[curCurve] - 1;
-            int numVerts = trimNumPos[curCurve];
-            int numKnots = numVerts + degree + 1;
+            int          numVerts = trimNumPos[curCurve];
+            int          numKnots = numVerts + degree + 1;
 
             MPointArray cvs;
             cvs.setLength(numVerts);
             // WE DIFFER FROM ALEMBIC READER, WE DON'T FLIP V
-            for (int k=0 ; k<numVerts; ++k, ++curPos) {
+            for (int k = 0; k < numVerts; ++k, ++curPos) {
                 double x = trimPoint[curPos][0];
                 double y = trimPoint[curPos][1];
                 double w = trimPoint[curPos][2];
@@ -345,8 +347,8 @@ UsdMayaTranslatorNurbsPatch::Read(
             // The transform node as well as the curve node need to be
             // deleted once the trim is done, because after all this is not
             // the equivalent of "curveOnSurface" command
-            MObject curve2D = fnCurve.create(cvs, dknots, degree,
-                    MFnNurbsCurve::kOpen, true, true, MObject::kNullObj, &status);
+            MObject curve2D = fnCurve.create(
+                cvs, dknots, degree, MFnNurbsCurve::kOpen, true, true, MObject::kNullObj, &status);
 
             if (status == MS::kSuccess) {
                 MFnTransform trans(curve2D, &status);
@@ -370,15 +372,17 @@ UsdMayaTranslatorNurbsPatch::Read(
     oneRegion.append(trimBoundaryArray[0]);
     for (unsigned int i = 1; i < trimBoundaryArray.length(); i++) {
         MObject loopData = trimBoundaryArray.getMergedBoundary(i, &status);
-        if (status != MS::kSuccess) continue;
+        if (status != MS::kSuccess)
+            continue;
 
         MFnNurbsCurve loop(loopData, &status);
-        if (status != MS::kSuccess) continue;
+        if (status != MS::kSuccess)
+            continue;
 
         // Check whether this loop is an outer boundary.
         bool isOuterBoundary = false;
 
-        double length  = loop.length();
+        double       length = loop.length();
         unsigned int segment = std::max(loop.numCVs(), 10);
 
         MPointArray curvePoints;
@@ -391,7 +395,7 @@ UsdMayaTranslatorNurbsPatch::Read(
 
         // Find the right most curve point
         MPoint rightMostPoint = curvePoints[0];
-        int rightMostIndex = 0;
+        int    rightMostIndex = 0;
         for (unsigned int j = 0; j < curvePoints.length(); j++) {
             if (rightMostPoint.x < curvePoints[j].x) {
                 rightMostPoint = curvePoints[j];
@@ -401,7 +405,9 @@ UsdMayaTranslatorNurbsPatch::Read(
 
         // Find the vertex just before and after the right most vertex
         int beforeIndex = (rightMostIndex == 0) ? curvePoints.length() - 1 : rightMostIndex - 1;
-        int afterIndex  = (static_cast<size_t>(rightMostIndex) == curvePoints.length() - 1) ? 0 : rightMostIndex + 1;
+        int afterIndex = (static_cast<size_t>(rightMostIndex) == curvePoints.length() - 1)
+            ? 0
+            : rightMostIndex + 1;
 
         for (unsigned int j = 0; j < curvePoints.length(); j++) {
             if (fabs(curvePoints[beforeIndex].x - curvePoints[rightMostIndex].x) < 1e-5) {
@@ -410,25 +416,29 @@ UsdMayaTranslatorNurbsPatch::Read(
         }
 
         for (unsigned int j = 0; j < curvePoints.length(); j++) {
-                if (fabs(curvePoints[afterIndex].x - curvePoints[rightMostIndex].x) < 1e-5) {
-                    afterIndex = (afterIndex == (int)(curvePoints.length()) - 1) ? 0 : afterIndex + 1;
-                }
+            if (fabs(curvePoints[afterIndex].x - curvePoints[rightMostIndex].x) < 1e-5) {
+                afterIndex = (afterIndex == (int)(curvePoints.length()) - 1) ? 0 : afterIndex + 1;
+            }
         }
 
         // failed. not a closed curve.
-        if (fabs(curvePoints[afterIndex].x - curvePoints[rightMostIndex].x) < 1e-5 &&
-                fabs(curvePoints[beforeIndex].x - curvePoints[rightMostIndex].x) < 1e-5) {
+        if (fabs(curvePoints[afterIndex].x - curvePoints[rightMostIndex].x) < 1e-5
+            && fabs(curvePoints[beforeIndex].x - curvePoints[rightMostIndex].x) < 1e-5) {
             continue;
         }
 
-        if (beforeIndex < 0) beforeIndex += curvePoints.length();
-        if (beforeIndex >= (int)(curvePoints.length())) beforeIndex = beforeIndex & curvePoints.length();
-        if (afterIndex < 0) afterIndex += curvePoints.length();
-        if (afterIndex >= (int)(curvePoints.length())) afterIndex = afterIndex & curvePoints.length();
+        if (beforeIndex < 0)
+            beforeIndex += curvePoints.length();
+        if (beforeIndex >= (int)(curvePoints.length()))
+            beforeIndex = beforeIndex & curvePoints.length();
+        if (afterIndex < 0)
+            afterIndex += curvePoints.length();
+        if (afterIndex >= (int)(curvePoints.length()))
+            afterIndex = afterIndex & curvePoints.length();
 
         // Compute the cross product
         MVector vector1 = curvePoints[beforeIndex] - curvePoints[rightMostIndex];
-        MVector vector2 = curvePoints[afterIndex]  - curvePoints[rightMostIndex];
+        MVector vector2 = curvePoints[afterIndex] - curvePoints[rightMostIndex];
         if ((vector1 ^ vector2).z < 0) {
             isOuterBoundary = true;
         }
@@ -437,31 +447,26 @@ UsdMayaTranslatorNurbsPatch::Read(
         if (isOuterBoundary) {
             status = surfaceFn.trimWithBoundaries(oneRegion, false, 1e-3, 1e-5, true);
             if (status != MS::kSuccess) {
-                TF_RUNTIME_ERROR(
-                        "Trimming failed on NURBS for <%s>",
-                        usdPrimPath.c_str());
+                TF_RUNTIME_ERROR("Trimming failed on NURBS for <%s>", usdPrimPath.c_str());
             }
             oneRegion.clear();
         }
         oneRegion.append(trimBoundaryArray[i]);
     }
 
-    if (oneRegion.length()>0) {
+    if (oneRegion.length() > 0) {
         status = surfaceFn.trimWithBoundaries(oneRegion, false, 1e-3, 1e-5, true);
     }
     if (status != MS::kSuccess) {
-        TF_RUNTIME_ERROR(
-                "Trimming failed on NURBS for <%s>",
-                usdPrimPath.c_str());
+        TF_RUNTIME_ERROR("Trimming failed on NURBS for <%s>", usdPrimPath.c_str());
     }
     // Deleted collected curves since they are not needed anymore
     unsigned int length = deleteAfterTrim.length();
-    for (unsigned int l=0; l<length; l++) {
+    for (unsigned int l = 0; l < length; l++) {
         MGlobal::deleteNode(deleteAfterTrim[l]);
     }
-         
+
     return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

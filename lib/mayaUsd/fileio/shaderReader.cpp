@@ -47,7 +47,7 @@ MPlug UsdMayaShaderReader::GetMayaPlugForUsdAttrName(
     const TfToken& usdAttrName,
     const MObject& mayaObject) const
 {
-    MStatus status;
+    MStatus           status;
     MFnDependencyNode depFn(mayaObject, &status);
     if (status != MS::kSuccess) {
         return MPlug();

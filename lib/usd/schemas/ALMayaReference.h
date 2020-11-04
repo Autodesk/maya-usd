@@ -18,18 +18,18 @@
 
 /// \file mayaUsd_Schemas/ALMayaReference.h
 
-#include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/tf/type.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
-#include <mayaUsd_Schemas/api.h>
 #include <mayaUsd_Schemas/MayaReference.h>
+#include <mayaUsd_Schemas/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,7 +55,7 @@ public:
     /// Equivalent to MayaUsd_SchemasALMayaReference::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit MayaUsd_SchemasALMayaReference(const UsdPrim& prim=UsdPrim())
+    explicit MayaUsd_SchemasALMayaReference(const UsdPrim& prim = UsdPrim())
         : MayaUsd_SchemasMayaReference(prim)
     {
     }
@@ -76,8 +76,7 @@ public:
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
     MAYAUSD_SCHEMAS_API
-    static const TfTokenVector &
-    GetSchemaAttributeNames(bool includeInherited=true);
+    static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
     /// Return a MayaUsd_SchemasALMayaReference holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
@@ -89,8 +88,7 @@ public:
     /// \endcode
     ///
     MAYAUSD_SCHEMAS_API
-    static MayaUsd_SchemasALMayaReference
-    Get(const UsdStagePtr &stage, const SdfPath &path);
+    static MayaUsd_SchemasALMayaReference Get(const UsdStagePtr& stage, const SdfPath& path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
@@ -115,8 +113,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     MAYAUSD_SCHEMAS_API
-    static MayaUsd_SchemasALMayaReference
-    Define(const UsdStagePtr &stage, const SdfPath &path);
+    static MayaUsd_SchemasALMayaReference Define(const UsdStagePtr& stage, const SdfPath& path);
 
 protected:
     /// Returns the type of schema this class belongs to.
@@ -129,21 +126,21 @@ private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
     MAYAUSD_SCHEMAS_API
-    static const TfType &_GetStaticTfType();
+    static const TfType& _GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
     MAYAUSD_SCHEMAS_API
-    const TfType &_GetTfType() const override;
+    const TfType& _GetTfType() const override;
 
 public:
     // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
+    // Feel free to add custom code below this line, it will be preserved by
+    // the code generator.
     //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
+    // Just remember to:
+    //  - Close the class declaration with };
     //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
     //  - Close the include guard with #endif
     // ===================================================================== //

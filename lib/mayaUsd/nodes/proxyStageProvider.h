@@ -17,28 +17,24 @@
 #define MAYAUSD_PROXY_STAGE_PROVIDER_H
 
 #include "../base/api.h"
-
 #include "pxr/pxr.h"
-
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/timeCode.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-// Interface class 
+// Interface class
 class ProxyStageProvider
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    virtual UsdTimeCode     getTime() const = 0;
+    virtual UsdTimeCode getTime() const = 0;
     MAYAUSD_CORE_PUBLIC
-    virtual UsdStageRefPtr  getUsdStage() const = 0;
+    virtual UsdStageRefPtr getUsdStage() const = 0;
 
     MAYAUSD_CORE_PUBLIC
     virtual ~ProxyStageProvider() = default;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -19,8 +19,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-  TfType::Define<AL::usd::transaction::OpenNotice, TfType::Bases<TfNotice> >();
-  TfType::Define<AL::usd::transaction::CloseNotice, TfType::Bases<TfNotice> >();
+    TfType::Define<AL::usd::transaction::OpenNotice, TfType::Bases<TfNotice>>();
+    TfType::Define<AL::usd::transaction::CloseNotice, TfType::Bases<TfNotice>>();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

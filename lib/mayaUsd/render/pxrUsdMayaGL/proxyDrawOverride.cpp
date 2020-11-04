@@ -15,6 +15,18 @@
 //
 #include "proxyDrawOverride.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/px_vp20/utils.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
+
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/trace/trace.h>
+#include <pxr/pxr.h>
+
 #include <maya/M3dView.h>
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -32,38 +44,27 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/base/trace/trace.h>
-
-#include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/render/px_vp20/utils.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
-#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 const MString UsdMayaProxyDrawOverride::drawDbClassification(
-    TfStringPrintf("drawdb/geometry/pxrUsdMayaGL/%s",
-                   MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText()).c_str());
+    TfStringPrintf(
+        "drawdb/geometry/pxrUsdMayaGL/%s",
+        MayaUsdProxyShapeBaseTokens->MayaTypeName.GetText())
+        .c_str());
 
 /* static */
-MHWRender::MPxDrawOverride*
-UsdMayaProxyDrawOverride::Creator(const MObject& obj)
+MHWRender::MPxDrawOverride* UsdMayaProxyDrawOverride::Creator(const MObject& obj)
 {
     UsdMayaGLBatchRenderer::Init();
     return new UsdMayaProxyDrawOverride(obj);
 }
 
-UsdMayaProxyDrawOverride::UsdMayaProxyDrawOverride(const MObject& obj) :
-    MHWRender::MPxDrawOverride(
+UsdMayaProxyDrawOverride::UsdMayaProxyDrawOverride(const MObject& obj)
+    : MHWRender::MPxDrawOverride(
         obj,
         UsdMayaProxyDrawOverride::draw,
-        /* isAlwaysDirty = */ false),
-    _shapeAdapter(/* isViewport2 = */ true)
+        /* isAlwaysDirty = */ false)
+    , _shapeAdapter(/* isViewport2 = */ true)
 {
 }
 
@@ -74,35 +75,31 @@ UsdMayaProxyDrawOverride::~UsdMayaProxyDrawOverride()
 }
 
 /* virtual */
-MHWRender::DrawAPI
-UsdMayaProxyDrawOverride::supportedDrawAPIs() const
+MHWRender::DrawAPI UsdMayaProxyDrawOverride::supportedDrawAPIs() const
 {
     return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile;
 }
 
 /* virtual */
 MMatrix
-UsdMayaProxyDrawOverride::transform(
-        const MDagPath& objPath,
-        const MDagPath& cameraPath) const
+UsdMayaProxyDrawOverride::transform(const MDagPath& objPath, const MDagPath& cameraPath) const
 {
     // Propagate changes in the proxy shape's transform to the shape adapter's
     // delegate.
-    MStatus status;
+    MStatus       status;
     const MMatrix transform = objPath.inclusiveMatrix(&status);
     if (status == MS::kSuccess) {
-        const_cast<PxrMayaHdUsdProxyShapeAdapter&>(_shapeAdapter).SetRootXform(
-            GfMatrix4d(transform.matrix));
+        const_cast<PxrMayaHdUsdProxyShapeAdapter&>(_shapeAdapter)
+            .SetRootXform(GfMatrix4d(transform.matrix));
     }
 
     return MHWRender::MPxDrawOverride::transform(objPath, cameraPath);
 }
 
 /* virtual */
-MBoundingBox
-UsdMayaProxyDrawOverride::boundingBox(
-        const MDagPath& objPath,
-        const MDagPath& /* cameraPath */) const
+MBoundingBox UsdMayaProxyDrawOverride::boundingBox(
+    const MDagPath& objPath,
+    const MDagPath& /* cameraPath */) const
 {
     TRACE_FUNCTION();
 
@@ -128,10 +125,8 @@ UsdMayaProxyDrawOverride::boundingBox(
 }
 
 /* virtual */
-bool
-UsdMayaProxyDrawOverride::isBounded(
-        const MDagPath& objPath,
-        const MDagPath& /* cameraPath */) const
+bool UsdMayaProxyDrawOverride::isBounded(const MDagPath& objPath, const MDagPath& /* cameraPath */)
+    const
 {
     // XXX: Ideally, we'd be querying the shape itself using the code below to
     // determine whether the object is bounded or not. Unfortunately, the
@@ -162,8 +157,7 @@ UsdMayaProxyDrawOverride::isBounded(
 }
 
 /* virtual */
-bool
-UsdMayaProxyDrawOverride::disableInternalBoundingBoxDraw() const
+bool UsdMayaProxyDrawOverride::disableInternalBoundingBoxDraw() const
 {
     // Hydra performs its own high-performance frustum culling, so we don't
     // want to rely on Maya to do it on the CPU. As such, the best performance
@@ -172,12 +166,11 @@ UsdMayaProxyDrawOverride::disableInternalBoundingBoxDraw() const
 }
 
 /* virtual */
-MUserData*
-UsdMayaProxyDrawOverride::prepareForDraw(
-        const MDagPath& objPath,
-        const MDagPath& /* cameraPath */,
-        const MHWRender::MFrameContext& frameContext,
-        MUserData* oldData)
+MUserData* UsdMayaProxyDrawOverride::prepareForDraw(
+    const MDagPath& objPath,
+    const MDagPath& /* cameraPath */,
+    const MHWRender::MFrameContext& frameContext,
+    MUserData*                      oldData)
 {
     TRACE_FUNCTION();
 
@@ -214,8 +207,7 @@ UsdMayaProxyDrawOverride::prepareForDraw(
 }
 
 /* virtual */
-bool
-UsdMayaProxyDrawOverride::wantUserSelection() const
+bool UsdMayaProxyDrawOverride::wantUserSelection() const
 {
     const MHWRender::MRenderer* renderer = MHWRender::MRenderer::theRenderer();
     if (!renderer) {
@@ -226,12 +218,11 @@ UsdMayaProxyDrawOverride::wantUserSelection() const
 }
 
 /* virtual */
-bool
-UsdMayaProxyDrawOverride::userSelect(
-        MHWRender::MSelectionInfo& selectionInfo,
-        const MHWRender::MDrawContext& context,
-        MPoint& hitPoint,
-        const MUserData* data)
+bool UsdMayaProxyDrawOverride::userSelect(
+    MHWRender::MSelectionInfo&     selectionInfo,
+    const MHWRender::MDrawContext& context,
+    MPoint&                        hitPoint,
+    const MUserData*               data)
 {
     TRACE_FUNCTION();
 
@@ -240,10 +231,9 @@ UsdMayaProxyDrawOverride::userSelect(
         MProfiler::kColorE_L2,
         "USD Proxy Shape userSelect() (Viewport 2.0)");
 
-    M3dView view;
+    M3dView    view;
     const bool hasView = px_vp20Utils::GetViewFromDrawContext(context, view);
-    if (hasView &&
-            !view.pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
+    if (hasView && !view.pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
         return false;
     }
 
@@ -252,9 +242,9 @@ UsdMayaProxyDrawOverride::userSelect(
         return false;
     }
 
-    const unsigned int displayStyle = context.getDisplayStyle();
-    const MHWRender::DisplayStatus displayStatus =
-        MHWRender::MGeometryUtilities::displayStatus(_shapeAdapter.GetDagPath());
+    const unsigned int             displayStyle = context.getDisplayStyle();
+    const MHWRender::DisplayStatus displayStatus
+        = MHWRender::MGeometryUtilities::displayStatus(_shapeAdapter.GetDagPath());
 
     // At this point, we expect the shape to have already been drawn and our
     // shape adapter to have been added to the batch renderer, but just in
@@ -262,19 +252,14 @@ UsdMayaProxyDrawOverride::userSelect(
     // first time. We do not add it to the batch renderer though, since that
     // must have already been done to have caused the shape to be drawn and
     // become eligible for selection.
-    if (!_shapeAdapter.Sync(
-            _shapeAdapter.GetDagPath(), displayStyle, displayStatus)) {
+    if (!_shapeAdapter.Sync(_shapeAdapter.GetDagPath(), displayStyle, displayStatus)) {
         return false;
     }
 
-    const HdxPickHitVector* hitSet =
-        UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
-            &_shapeAdapter,
-            selectionInfo,
-            context);
+    const HdxPickHitVector* hitSet = UsdMayaGLBatchRenderer::GetInstance().TestIntersection(
+        &_shapeAdapter, selectionInfo, context);
 
-    const HdxPickHit* nearestHit =
-        UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
+    const HdxPickHit* nearestHit = UsdMayaGLBatchRenderer::GetNearestHit(hitSet);
 
     if (!nearestHit) {
         return false;
@@ -287,10 +272,7 @@ UsdMayaProxyDrawOverride::userSelect(
 }
 
 /* static */
-void
-UsdMayaProxyDrawOverride::draw(
-        const MHWRender::MDrawContext& context,
-        const MUserData* data)
+void UsdMayaProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUserData* data)
 {
     TRACE_FUNCTION();
 
@@ -306,6 +288,5 @@ UsdMayaProxyDrawOverride::draw(
 
     UsdMayaGLBatchRenderer::GetInstance().DrawBoundingBox(context, data);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

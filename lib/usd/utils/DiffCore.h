@@ -15,10 +15,10 @@
 //
 #pragma once
 
-#include <cstdint>
-
 #include <mayaUsdUtils/ALHalf.h>
 #include <mayaUsdUtils/Api.h>
+
+#include <cstdint>
 
 namespace MayaUsdUtils {
 
@@ -99,10 +99,10 @@ bool vec4AreAllTheSame(const double* array, size_t count);
 MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const GfHalf* const input0,
-    const float* const input1,
-    const size_t count0,
-    const size_t count1,
-    const float eps = 1e-3f);
+    const float* const  input1,
+    const size_t        count0,
+    const size_t        count1,
+    const float         eps = 1e-3f);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -115,11 +115,14 @@ bool compareArray(
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
 inline bool compareArray(
-    const float* const input0,
+    const float* const  input0,
     const GfHalf* const input1,
-    const size_t count0,
-    const size_t count1,
-    const float eps = 1e-3f) { return compareArray(input1, input0, count1, count0, eps); }
+    const size_t        count0,
+    const size_t        count1,
+    const float         eps = 1e-3f)
+{
+    return compareArray(input1, input0, count1, count0, eps);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -135,9 +138,9 @@ MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const GfHalf* const input0,
     const double* const input1,
-    const size_t count0,
-    const size_t count1,
-    const double eps = 1e-5f);
+    const size_t        count0,
+    const size_t        count1,
+    const double        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -152,9 +155,12 @@ bool compareArray(
 inline bool compareArray(
     const double* const input0,
     const GfHalf* const input1,
-    const size_t count0,
-    const size_t count1,
-    const float eps = 1e-3f) { return compareArray(input1, input0, count1, count0, eps); }
+    const size_t        count0,
+    const size_t        count1,
+    const float         eps = 1e-3f)
+{
+    return compareArray(input1, input0, count1, count0, eps);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -170,12 +176,13 @@ MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const float* const input0,
     const float* const input1,
-    const size_t count0,
-    const size_t count1,
-    const float eps = 1e-5f);
+    const size_t       count0,
+    const size_t       count1,
+    const float        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  Compares a vector 3 array against a vector 4D array, ignoring the 4d component, and checking for equality
+/// \brief  Compares a vector 3 array against a vector 4D array, ignoring the 4d component, and
+/// checking for equality
 ///         in all of the remaining 3d components.
 /// \param  input3d the first input array to test
 /// \param  input4d the second input array to test
@@ -189,18 +196,18 @@ MAYA_USD_UTILS_PUBLIC
 bool compareArray3Dto4D(
     const float* const input3d,
     const float* const input4d,
-    const size_t count3d,
-    const size_t count4d,
-    const float eps = 1e-5f);
+    const size_t       count3d,
+    const size_t       count4d,
+    const float        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 bool compareArrayFloat3DtoDouble4D(
-    const float* const input3d,
+    const float* const  input3d,
     const double* const input4d,
-    const size_t count3d,
-    const size_t count4d,
-    const float eps = 1e-5f);
+    const size_t        count3d,
+    const size_t        count4d,
+    const float         eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -216,9 +223,9 @@ MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const double* const input0,
     const double* const input1,
-    const size_t count0,
-    const size_t count1,
-    const double eps = 1e-5);
+    const size_t        count0,
+    const size_t        count1,
+    const double        eps = 1e-5);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -233,10 +240,10 @@ bool compareArray(
 MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const double* const input0,
-    const float* const input1,
-    const size_t count0,
-    const size_t count1,
-    const float eps = 1e-5f);
+    const float* const  input1,
+    const size_t        count0,
+    const size_t        count1,
+    const float         eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -249,11 +256,14 @@ bool compareArray(
 ///         or the contents of the arrays differ
 //----------------------------------------------------------------------------------------------------------------------
 inline bool compareArray(
-    const float* const input0,
+    const float* const  input0,
     const double* const input1,
-    const size_t count0,
-    const size_t count1,
-    const float eps = 1e-5f) { return compareArray(input1, input0, count1, count0, eps); }
+    const size_t        count0,
+    const size_t        count1,
+    const float         eps = 1e-5f)
+{
+    return compareArray(input1, input0, count1, count0, eps);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -269,8 +279,8 @@ MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const int8_t* const input0,
     const int8_t* const input1,
-    const size_t count0,
-    const size_t count1);
+    const size_t        count0,
+    const size_t        count1);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -285,8 +295,11 @@ bool compareArray(
 inline bool compareArray(
     const uint8_t* const input0,
     const uint8_t* const input1,
-    const size_t count0,
-    const size_t count1) { return compareArray((const int8_t*)input0, (const int8_t*)input1, count0, count1); }
+    const size_t         count0,
+    const size_t         count1)
+{
+    return compareArray((const int8_t*)input0, (const int8_t*)input1, count0, count1);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -301,8 +314,11 @@ inline bool compareArray(
 inline bool compareArray(
     const int16_t* const input0,
     const int16_t* const input1,
-    const size_t count0,
-    const size_t count1) { return compareArray((const int8_t*)input0, (const int8_t*)input1, count0 << 1, count1 << 1); }
+    const size_t         count0,
+    const size_t         count1)
+{
+    return compareArray((const int8_t*)input0, (const int8_t*)input1, count0 << 1, count1 << 1);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -317,8 +333,11 @@ inline bool compareArray(
 inline bool compareArray(
     const uint16_t* const input0,
     const uint16_t* const input1,
-    const size_t count0,
-    const size_t count1) { return compareArray((const int8_t*)input0, (const int8_t*)input1, count0 << 1, count1 << 1); }
+    const size_t          count0,
+    const size_t          count1)
+{
+    return compareArray((const int8_t*)input0, (const int8_t*)input1, count0 << 1, count1 << 1);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -334,8 +353,8 @@ MAYA_USD_UTILS_PUBLIC
 bool compareArray(
     const int32_t* const input0,
     const int32_t* const input1,
-    const size_t count0,
-    const size_t count1);
+    const size_t         count0,
+    const size_t         count1);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -350,8 +369,11 @@ bool compareArray(
 inline bool compareArray(
     const uint32_t* const input0,
     const uint32_t* const input1,
-    const size_t count0,
-    const size_t count1) { return compareArray((const int32_t*)input0, (const int32_t*)input1, count0, count1); }
+    const size_t          count0,
+    const size_t          count1)
+{
+    return compareArray((const int32_t*)input0, (const int32_t*)input1, count0, count1);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -366,8 +388,11 @@ inline bool compareArray(
 inline bool compareArray(
     const int64_t* const input0,
     const int64_t* const input1,
-    const size_t count0,
-    const size_t count1) { return compareArray((const int32_t*)input0, (const int32_t*)input1, count0 << 1, count1 << 1); }
+    const size_t         count0,
+    const size_t         count1)
+{
+    return compareArray((const int32_t*)input0, (const int32_t*)input1, count0 << 1, count1 << 1);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -382,8 +407,11 @@ inline bool compareArray(
 inline bool compareArray(
     const uint64_t* const input0,
     const uint64_t* const input1,
-    const size_t count0,
-    const size_t count1) { return compareArray((const int32_t*)input0, (const int32_t*)input1, count0 << 1, count1 << 1); }
+    const size_t          count0,
+    const size_t          count1)
+{
+    return compareArray((const int32_t*)input0, (const int32_t*)input1, count0 << 1, count1 << 1);
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -400,9 +428,9 @@ bool compareUvArray(
     const float* const u0,
     const float* const v0,
     const float* const uv1,
-    const size_t count0,
-    const size_t count1,
-    const float eps = 1e-5f);
+    const size_t       count0,
+    const size_t       count1,
+    const float        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -416,12 +444,12 @@ bool compareUvArray(
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 bool compareUvArray(
-    const float u0,
-    const float v0,
+    const float        u0,
+    const float        v0,
     const float* const u1,
     const float* const v1,
-    const size_t count,
-    const float eps = 1e-5f);
+    const size_t       count,
+    const float        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  a simple method to check for differences between a pair of arrays.
@@ -435,13 +463,13 @@ bool compareUvArray(
 //----------------------------------------------------------------------------------------------------------------------
 MAYA_USD_UTILS_PUBLIC
 bool compareRGBAArray(
-    const float r,
-    const float g,
-    const float b,
-    const float a,
+    const float        r,
+    const float        g,
+    const float        b,
+    const float        a,
     const float* const rgba,
-    const size_t count,
-    const float eps = 1e-5f);
+    const size_t       count,
+    const float        eps = 1e-5f);
 
 //----------------------------------------------------------------------------------------------------------------------
-} // MayaUsdUtils
+} // namespace MayaUsdUtils

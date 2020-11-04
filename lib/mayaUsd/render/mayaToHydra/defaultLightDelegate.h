@@ -16,18 +16,21 @@
 #ifndef MTOH_DEFAULT_LIGHT_DELEGATE_H
 #define MTOH_DEFAULT_LIGHT_DELEGATE_H
 
-#include <pxr/pxr.h>
+#include <hdMaya/delegates/delegateCtx.h>
+
 #include <pxr/imaging/glf/simpleLight.h>
 #include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include <hdMaya/delegates/delegateCtx.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-class MtohDefaultLightDelegate : public HdSceneDelegate, public HdMayaDelegate {
+class MtohDefaultLightDelegate
+    : public HdSceneDelegate
+    , public HdMayaDelegate
+{
 public:
     MtohDefaultLightDelegate(const InitData& initData);
 
@@ -38,15 +41,14 @@ public:
 
 protected:
     GfMatrix4d GetTransform(const SdfPath& id) override;
-    VtValue Get(const SdfPath& id, const TfToken& key) override;
-    VtValue GetLightParamValue(
-        const SdfPath& id, const TfToken& paramName) override;
-    bool GetVisible(const SdfPath& id) override;
+    VtValue    Get(const SdfPath& id, const TfToken& key) override;
+    VtValue    GetLightParamValue(const SdfPath& id, const TfToken& paramName) override;
+    bool       GetVisible(const SdfPath& id) override;
 
 private:
     GlfSimpleLight _light;
-    SdfPath _lightPath;
-    bool _isSupported = false;
+    SdfPath        _lightPath;
+    bool           _isSupported = false;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

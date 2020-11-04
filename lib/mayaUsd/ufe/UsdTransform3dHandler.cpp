@@ -20,17 +20,17 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTransform3dHandler::UsdTransform3dHandler() : Ufe::Transform3dHandler()
-{}
-
-UsdTransform3dHandler::~UsdTransform3dHandler()
+UsdTransform3dHandler::UsdTransform3dHandler()
+    : Ufe::Transform3dHandler()
 {
 }
+
+UsdTransform3dHandler::~UsdTransform3dHandler() { }
 
 /*static*/
 UsdTransform3dHandler::Ptr UsdTransform3dHandler::create()
 {
-	return std::make_shared<UsdTransform3dHandler>();
+    return std::make_shared<UsdTransform3dHandler>();
 }
 
 //------------------------------------------------------------------------------
@@ -39,12 +39,12 @@ UsdTransform3dHandler::Ptr UsdTransform3dHandler::create()
 
 Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-	assert(usdItem);
+    assert(usdItem);
 #endif
-	return UsdTransform3d::create(usdItem);
+    return UsdTransform3d::create(usdItem);
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF
