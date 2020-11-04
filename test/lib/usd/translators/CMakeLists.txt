@@ -57,6 +57,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportShadingModeDisplayColor.py
     testUsdImportShadingModePxrRis.py
     testUsdExportImportRoundtripPreviewSurface.py
+    testUsdExportImportUDIM.py
     testUsdImportSkeleton.py
     testUsdImportXforms.py
     testUsdMayaAdaptor.py

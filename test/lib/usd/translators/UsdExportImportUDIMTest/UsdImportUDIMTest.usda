@@ -1,0 +1,61 @@
+#usda 1.0
+(
+    defaultPrim = "pPlane1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Mesh "pPlane1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+    rel material:binding = </pPlane1/Looks/lambert2SG>
+    point3f[] points = [(-0.5, 0, 0.5), (0, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 0, -0.5), (0, 0, -0.5), (0.5, 0, -0.5)]
+    texCoord2f[] primvars:st = [(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5), (2.0072787, 0.010615766), (2.9889996, 0.010615766), (2.9889996, 0.99233615), (2.0072787, 0.99233615), (1.0052618, 0.0040266514), (1.9973047, 0.0040266514), (1.9973047, 0.9960696), (1.0052618, 0.9960696), (1, 0.5), (1, 1), (0.5, 1)] (
+        interpolation = "faceVarying"
+    )
+    int[] primvars:st:indices = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 2, 12, 13, 14]
+
+    def Scope "Looks"
+    {
+        def Material "lambert2SG"
+        {
+            token outputs:surface.connect = </pPlane1/Looks/lambert2SG/lambert2.outputs:surface>
+
+            def Shader "lambert2"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor.connect = </pPlane1/Looks/lambert2SG/file1.outputs:rgb>
+                normal3f inputs:normal = (1, 1, 1)
+                float inputs:roughness = 1
+                int inputs:useSpecularWorkflow = 1
+                token outputs:displacement
+                token outputs:surface
+            }
+
+            def Shader "file1"
+            {
+                uniform token info:id = "UsdUVTexture"
+                float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+                asset inputs:file = @UdimTest_<UDIM>_color.png@
+                float2 inputs:st.connect = </pPlane1/Looks/lambert2SG/file1/TexCoordReader.outputs:result>
+                token inputs:wrapS = "repeat"
+                token inputs:wrapT = "repeat"
+                float3 outputs:rgb
+
+                def Shader "TexCoordReader"
+                {
+                    uniform token info:id = "UsdPrimvarReader_float2"
+                    token inputs:varname = "st"
+                    float2 outputs:result
+                }
+            }
+        }
+    }
+}
+
