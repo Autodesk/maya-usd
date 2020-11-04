@@ -303,11 +303,13 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 		}
 #endif
 
-		// Is the change a Transform3d change?
-		const TfToken nameToken = changedPath.GetNameToken();
-		if(nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken))
-		{
-			Ufe::Transform3d::notify(ufePath);
+		if (!InTransform3dChange::inTransform3dChange()) {
+			// Is the change a Transform3d change?
+			const TfToken nameToken = changedPath.GetNameToken();
+			if(nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken))
+			{
+				Ufe::Transform3d::notify(ufePath);
+			}
 		}
 	}
 }
