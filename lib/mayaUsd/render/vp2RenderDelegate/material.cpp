@@ -15,6 +15,9 @@
 //
 #include "material.h"
 
+#include "debugCodes.h"
+#include "render_delegate.h"
+
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/gf/vec2f.h>
@@ -22,6 +25,11 @@
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/imaging/glf/image.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/usd/ar/packageUtils.h>
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/usdHydra/tokens.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFragmentManager.h>
 #include <maya/MProfiler.h>
@@ -37,19 +45,11 @@
 
 #include <iostream>
 #include <string>
+
 #if USD_VERSION_NUM >= 2002
 #include <pxr/imaging/glf/udimTexture.h>
-#endif
-#include <pxr/imaging/hd/sceneDelegate.h>
-#include <pxr/usd/ar/packageUtils.h>
-#include <pxr/usd/sdf/assetPath.h>
-#include <pxr/usd/usdHydra/tokens.h>
-#include <pxr/usdImaging/usdImaging/tokens.h>
-#if USD_VERSION_NUM >= 2002
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #endif
-#include "debugCodes.h"
-#include "render_delegate.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
