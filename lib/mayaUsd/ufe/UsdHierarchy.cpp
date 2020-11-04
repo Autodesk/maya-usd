@@ -39,6 +39,7 @@
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
 #include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>
+#include <mayaUsd/ufe/UsdUndoReorderCommand.h>
 #endif
 
 namespace {
@@ -201,16 +202,12 @@ Ufe::InsertChildCommand::Ptr UsdHierarchy::insertChildCmd(
 }
 
 Ufe::SceneItem::Ptr UsdHierarchy::insertChild(
-        const Ufe::SceneItem::Ptr& ,
-        const Ufe::SceneItem::Ptr& 
+        const Ufe::SceneItem::Ptr& child,
+        const Ufe::SceneItem::Ptr& pos 
 )
 {
-    // Should be possible to implement trivially when support for returning the
-    // result of the parent command (MAYA-105278) is implemented.  For now,
-    // Ufe::Hierarchy::insertChildCmd() returns a base class
-    // Ufe::UndoableCommand::Ptr object, from which we can't retrieve the added
-    // child.  PPT, 13-Jul-2020.
-    return nullptr;
+    auto insertChildCommand = insertChildCmd(child, pos);
+    return insertChildCommand->insertedChild();
 }
 
 // Create a transform.
@@ -243,6 +240,20 @@ Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
     auto proxyShapePath = path.popSegment();
     return createItem(proxyShapePath);
 }
+
+#if UFE_PREVIEW_VERSION_NUM >= 2026
+Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
+{
+	std::vector<TfToken> orderedTokens;
+
+	for (const auto& item : orderedList) {
+	    orderedTokens.emplace_back(downcast(item)->prim().GetPath().GetNameToken());
+	}
+
+	// create a reorder command and pass in the parent and its reordered children list
+	return UsdUndoReorderCommand::create(downcast(sceneItem())->prim(), orderedTokens);
+}
+#endif
 
 #endif // UFE_V2_FEATURES_AVAILABLE
 

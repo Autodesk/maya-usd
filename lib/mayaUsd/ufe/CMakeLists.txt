@@ -46,6 +46,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
+            UsdUndoReorderCommand.cpp
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2022)
         target_sources(${PROJECT_NAME}
@@ -99,6 +100,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
+        UsdUndoReorderCommand.h
     )
 endif()
 
@@ -140,6 +142,7 @@ add_library(${UFE_PYTHON_TARGET_NAME} SHARED)
 target_sources(${UFE_PYTHON_TARGET_NAME} 
     PRIVATE
         module.cpp
+        wrapGlobal.cpp
         wrapUtils.cpp
         wrapNotice.cpp
 )
