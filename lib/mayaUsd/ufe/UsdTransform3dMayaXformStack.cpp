@@ -282,8 +282,8 @@ public:
         fReadTime(getTime(path)),
         fWriteTime(writeTime_),
         fPrevOpValue(getValue(op.GetAttr(), readTime())),
-        fNewOpValue(newOpValue),
-        fAttrName(op.GetOpName())
+        fAttrName(op.GetOpName()),
+        fNewOpValue(newOpValue)
     {}
 
     // Have separate execute override which is value-only, as default execute()
