@@ -26,6 +26,8 @@ set(MSVC_FLAGS
     /MP
     # enable exception handling.
     /EHsc
+    # enable initialization order as a level 3 warning
+    /w35038
     # disable warnings
     /wd4244
     /wd4267
