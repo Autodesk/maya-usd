@@ -16,18 +16,19 @@
 #ifndef HDMAYA_DELEGATE_REGISTRY_H
 #define HDMAYA_DELEGATE_REGISTRY_H
 
+#include <hdMaya/delegates/delegate.h>
+
+#include <pxr/base/tf/singleton.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+
 #include <tuple>
 #include <vector>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/singleton.h>
-#include <pxr/usd/sdf/path.h>
-
-#include <hdMaya/delegates/delegate.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry> {
+class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry>
+{
     friend class TfSingleton<HdMayaDelegateRegistry>;
     HDMAYA_API
     HdMayaDelegateRegistry() = default;
@@ -35,8 +36,7 @@ class HdMayaDelegateRegistry : public TfSingleton<HdMayaDelegateRegistry> {
 public:
     // function creates and returns a pointer to a HdMayaDelegate - may return
     // a nullptr indicate failure, or that the delegate is currently disabled
-    using DelegateCreator =
-        std::function<HdMayaDelegatePtr(const HdMayaDelegate::InitData&)>;
+    using DelegateCreator = std::function<HdMayaDelegatePtr(const HdMayaDelegate::InitData&)>;
 
     HDMAYA_API
     static void RegisterDelegate(const TfToken& name, DelegateCreator creator);
@@ -65,7 +65,7 @@ private:
     static void _LoadAllDelegates();
 
     std::vector<std::tuple<TfToken, DelegateCreator>> _delegates;
-    std::vector<DelegatesChangedSignal> _signals;
+    std::vector<DelegatesChangedSignal>               _signals;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

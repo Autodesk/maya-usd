@@ -15,23 +15,20 @@
 //
 #include "skelBindingsProcessor.h"
 
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdSkel/bindingAPI.h>
 #include <pxr/usd/usdSkel/root.h>
 #include <pxr/usd/usdUtils/authoring.h>
 
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMaya_SkelBindingsProcessor::UsdMaya_SkelBindingsProcessor()
-{
-}
+UsdMaya_SkelBindingsProcessor::UsdMaya_SkelBindingsProcessor() { }
 
 /// Finds the rootmost ancestor of the prim at \p path that is an Xform
 /// or SkelRoot type prim. The result may be the prim itself.
-static UsdPrim
-_FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfPath& path)
+static UsdPrim _FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfPath& path)
 {
     UsdPrim currentPrim = stage->GetPrimAtPath(path);
     UsdPrim rootmost;
@@ -47,7 +44,6 @@ _FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfPath& path)
     return rootmost;
 }
 
-
 /// Finds the existing SkelRoot which is shared by all \p paths.
 /// If no SkelRoot is found, and \p config is "auto", then attempts to
 /// find a common ancestor of \p paths which can be converted to SkelRoot.
@@ -57,12 +53,10 @@ _FindRootmostXformOrSkelRoot(const UsdStagePtr& stage, const SdfPath& path)
 /// If an existing, common SkelRoot cannot be found for all paths, and if
 /// it's not possible to create one, returns an empty SdfPath.
 static SdfPath
-_VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
-                      const SdfPath& path,
-                      const TfToken& config)
+_VerifyOrMakeSkelRoot(const UsdStagePtr& stage, const SdfPath& path, const TfToken& config)
 {
-    if (config != UsdMayaJobExportArgsTokens->auto_ &&
-        config != UsdMayaJobExportArgsTokens->explicit_) {
+    if (config != UsdMayaJobExportArgsTokens->auto_
+        && config != UsdMayaJobExportArgsTokens->explicit_) {
         return SdfPath();
     }
 
@@ -76,15 +70,16 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
         // This is necessary because UsdSkel doesn't handle nested skel roots
         // very well currently; this restriction may be loosened in the future.
         if (UsdSkelRoot root2 = UsdSkelRoot::Find(root.GetPrim().GetParent())) {
-            TF_RUNTIME_ERROR("The SkelRoot <%s> is nested inside another "
-                    "SkelRoot <%s>. This might cause unexpected behavior.",
-                    root.GetPath().GetText(), root2.GetPath().GetText());
+            TF_RUNTIME_ERROR(
+                "The SkelRoot <%s> is nested inside another "
+                "SkelRoot <%s>. This might cause unexpected behavior.",
+                root.GetPath().GetText(),
+                root2.GetPath().GetText());
             return SdfPath();
-        }
-        else {
+        } else {
             return root.GetPath();
         }
-    } else if(config == UsdMayaJobExportArgsTokens->auto_) {
+    } else if (config == UsdMayaJobExportArgsTokens->auto_) {
         // If auto-generating the SkelRoot, find the rootmost
         // UsdGeomXform and turn it into a SkelRoot.
         // XXX: It might be good to also consider model hierarchy here, and not
@@ -96,27 +91,27 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
         if (UsdPrim root = _FindRootmostXformOrSkelRoot(stage, path)) {
             UsdSkelRoot::Define(stage, root.GetPath());
             return root.GetPath();
-        }
-        else {
+        } else {
             if (path.IsRootPrimPath()) {
                 // This is the most common problem when we can't obtain a
                 // SkelRoot.
                 // Show a nice error with useful information about root prims.
-                TF_RUNTIME_ERROR("The prim <%s> is a root prim, so it has no "
-                        "ancestors that can be converted to a SkelRoot. (USD "
-                        "requires that skinned meshes and skeletons be "
-                        "encapsulated under a SkelRoot.) Try grouping this "
-                        "prim under a parent group.",
-                        path.GetText());
-            }
-            else {
+                TF_RUNTIME_ERROR(
+                    "The prim <%s> is a root prim, so it has no "
+                    "ancestors that can be converted to a SkelRoot. (USD "
+                    "requires that skinned meshes and skeletons be "
+                    "encapsulated under a SkelRoot.) Try grouping this "
+                    "prim under a parent group.",
+                    path.GetText());
+            } else {
                 // Show generic error as a last resort if we don't know exactly
                 // what went wrong.
-                TF_RUNTIME_ERROR("Could not find an ancestor of the prim <%s> "
-                        "that can be converted to a SkelRoot. (USD requires "
-                        "that skinned meshes and skeletons be encapsulated "
-                        "under a SkelRoot.)",
-                        path.GetText());
+                TF_RUNTIME_ERROR(
+                    "Could not find an ancestor of the prim <%s> "
+                    "that can be converted to a SkelRoot. (USD requires "
+                    "that skinned meshes and skeletons be encapsulated "
+                    "under a SkelRoot.)",
+                    path.GetText());
             }
             return SdfPath();
         }
@@ -124,10 +119,7 @@ _VerifyOrMakeSkelRoot(const UsdStagePtr& stage,
     return SdfPath();
 }
 
-
-
-void
-UsdMaya_SkelBindingsProcessor::MarkBindings(
+void UsdMaya_SkelBindingsProcessor::MarkBindings(
     const SdfPath& path,
     const SdfPath& skelPath,
     const TfToken& config)
@@ -135,25 +127,18 @@ UsdMaya_SkelBindingsProcessor::MarkBindings(
     _bindingToSkelMap[path] = _Entry(skelPath, config);
 }
 
-
-bool
-UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(
-    const UsdStagePtr& stage) const
+bool UsdMaya_SkelBindingsProcessor::_VerifyOrMakeSkelRoots(const UsdStagePtr& stage) const
 {
     bool success = true;
     for (const auto& pair : _bindingToSkelMap) {
         const _Entry& entry = pair.second;
-        SdfPath skelRootPath =
-            _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
+        SdfPath       skelRootPath = _VerifyOrMakeSkelRoot(stage, pair.first, entry.second);
         success = success && !skelRootPath.IsEmpty();
     }
     return success;
 }
 
-
-bool
-UsdMaya_SkelBindingsProcessor::PostProcessSkelBindings(
-    const UsdStagePtr& stage) const
+bool UsdMaya_SkelBindingsProcessor::PostProcessSkelBindings(const UsdStagePtr& stage) const
 {
     bool success = _VerifyOrMakeSkelRoots(stage);
 
@@ -162,6 +147,5 @@ UsdMaya_SkelBindingsProcessor::PostProcessSkelBindings(
     // to simplify this.
     return success;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

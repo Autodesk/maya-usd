@@ -15,42 +15,53 @@
 //
 #include "proxyUsdImagingDelegate.h"
 
-#include <maya/MMatrix.h>
-
 #include <mayaUsd/nodes/proxyShapeBase.h>
+
+#include <maya/MMatrix.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdMayaProxyUsdImagingDelegate::HdMayaProxyUsdImagingDelegate(
-    HdRenderIndex* parentIndex, SdfPath const& delegateID,
-    MayaUsdProxyShapeBase* proxy, const MDagPath& dagPath)
-    : UsdImagingDelegate(parentIndex, delegateID),
-      _dagPath(dagPath),
-      _proxy(proxy) {
+    HdRenderIndex*         parentIndex,
+    SdfPath const&         delegateID,
+    MayaUsdProxyShapeBase* proxy,
+    const MDagPath&        dagPath)
+    : UsdImagingDelegate(parentIndex, delegateID)
+    , _dagPath(dagPath)
+    , _proxy(proxy)
+{
     // TODO Auto-generated constructor stub
 }
 
-HdMayaProxyUsdImagingDelegate::~HdMayaProxyUsdImagingDelegate() {
+HdMayaProxyUsdImagingDelegate::~HdMayaProxyUsdImagingDelegate()
+{
     // TODO Auto-generated destructor stub
 }
 
-GfMatrix4d HdMayaProxyUsdImagingDelegate::GetTransform(SdfPath const& id) {
-    if (_rootTransformDirty) { UpdateRootTransform(); }
+GfMatrix4d HdMayaProxyUsdImagingDelegate::GetTransform(SdfPath const& id)
+{
+    if (_rootTransformDirty) {
+        UpdateRootTransform();
+    }
     return UsdImagingDelegate::GetTransform(id);
 }
 
-bool HdMayaProxyUsdImagingDelegate::GetVisible(SdfPath const& id) {
-    if (_rootVisibilityDirty) { UpdateRootVisibility(); }
+bool HdMayaProxyUsdImagingDelegate::GetVisible(SdfPath const& id)
+{
+    if (_rootVisibilityDirty) {
+        UpdateRootVisibility();
+    }
     return UsdImagingDelegate::GetVisible(id);
 }
 
-void HdMayaProxyUsdImagingDelegate::UpdateRootTransform() {
-    SetRootTransform(
-        GfMatrix4d(_proxy->parentTransform().inclusiveMatrix().matrix));
+void HdMayaProxyUsdImagingDelegate::UpdateRootTransform()
+{
+    SetRootTransform(GfMatrix4d(_proxy->parentTransform().inclusiveMatrix().matrix));
     _rootTransformDirty = false;
 }
 
-void HdMayaProxyUsdImagingDelegate::UpdateRootVisibility() {
+void HdMayaProxyUsdImagingDelegate::UpdateRootVisibility()
+{
     SetRootVisibility(_dagPath.isVisible());
     _rootVisibilityDirty = false;
 }

@@ -15,7 +15,7 @@
 //
 #include "shaderWriter.h"
 
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -23,39 +23,33 @@
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <maya/MFnDependencyNode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaShaderWriter::UsdMayaShaderWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
 }
 
 /* virtual */
-TfToken
-UsdMayaShaderWriter::GetShadingAttributeNameForMayaAttrName(
-        const TfToken& mayaAttrName)
+TfToken UsdMayaShaderWriter::GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName)
 {
     return TfToken();
 }
 
 /* virtual */
-UsdAttribute
-UsdMayaShaderWriter::GetShadingAttributeForMayaAttrName(
-        const TfToken& mayaAttrName)
+UsdAttribute UsdMayaShaderWriter::GetShadingAttributeForMayaAttrName(const TfToken& mayaAttrName)
 {
-    const TfToken attrName =
-        GetShadingAttributeNameForMayaAttrName(mayaAttrName);
+    const TfToken attrName = GetShadingAttributeNameForMayaAttrName(mayaAttrName);
     if (attrName.IsEmpty()) {
         return UsdAttribute();
     }
 
     return _usdPrim.GetAttribute(attrName);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

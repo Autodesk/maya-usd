@@ -16,14 +16,14 @@
 #ifndef PXRUSDMAYA_PRIMWRITERERARGS_H
 #define PXRUSDMAYA_PRIMWRITERERARGS_H
 
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
+
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/base/gf/vec3f.h>
-
-#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -38,11 +38,9 @@ class UsdMayaPrimWriterArgs
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMayaPrimWriterArgs(
-            const MDagPath& dagPath,
-            const bool exportRefsAsInstanceable);
+    UsdMayaPrimWriterArgs(const MDagPath& dagPath, const bool exportRefsAsInstanceable);
 
-    /// \brief returns the MObject that should be exported. 
+    /// \brief returns the MObject that should be exported.
     MAYAUSD_CORE_PUBLIC
     MObject GetMObject() const;
 
@@ -53,7 +51,7 @@ public:
     bool GetExportRefsAsInstanceable() const;
 
     /// helper functions to get data from attribute named \p from the current
-    /// MObject.  
+    /// MObject.
     /// \{
     MAYAUSD_CORE_PUBLIC
     bool ReadAttribute(const std::string& name, std::string* val) const;
@@ -67,11 +65,9 @@ public:
 
 private:
     MDagPath _dagPath;
-    bool _exportRefsAsInstanceable;
+    bool     _exportRefsAsInstanceable;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
-

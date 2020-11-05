@@ -33,50 +33,44 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 /// File translator for USD files. Handles the USD option in the Import window.
 class UsdMayaImportTranslator : public MPxFileTranslator
 {
-    public:
+public:
+    PXRUSDMAYA_API
+    static void* creator();
 
-        PXRUSDMAYA_API
-        static void* creator();
+    PXRUSDMAYA_API
+    MStatus reader(
+        const MFileObject&                file,
+        const MString&                    optionsString,
+        MPxFileTranslator::FileAccessMode mode) override;
 
-        PXRUSDMAYA_API
-        MStatus reader(
-                const MFileObject& file,
-                const MString& optionsString,
-                MPxFileTranslator::FileAccessMode mode) override;
+    bool haveReadMethod() const override { return true; }
+    bool haveWriteMethod() const override { return false; }
 
-        bool haveReadMethod() const override { return true; }
-        bool haveWriteMethod() const override { return false; }
+    PXRUSDMAYA_API
+    MFileKind identifyFile(const MFileObject& file, const char* buffer, short size) const override;
 
-        PXRUSDMAYA_API
-        MFileKind identifyFile(
-                const MFileObject& file,
-                const char* buffer,
-                short size) const override;
+    MString defaultExtension() const override
+    {
+        return UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
+    }
+    MString filter() const override
+    {
+        return UsdMayaTranslatorTokens->UsdReadableFileFilter.GetText();
+    }
 
-        MString defaultExtension() const override {
-            return UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
-        }
-        MString filter() const override {
-            return UsdMayaTranslatorTokens->UsdReadableFileFilter.GetText();
-        }
+    PXRUSDMAYA_API
+    static const std::string& GetDefaultOptions();
 
-        PXRUSDMAYA_API
-        static const std::string& GetDefaultOptions();
-
-    private:
-
-        UsdMayaImportTranslator();
-        UsdMayaImportTranslator(const UsdMayaImportTranslator&);
-        ~UsdMayaImportTranslator() override;
-        UsdMayaImportTranslator& operator=(const UsdMayaImportTranslator&);
+private:
+    UsdMayaImportTranslator();
+    UsdMayaImportTranslator(const UsdMayaImportTranslator&);
+    ~UsdMayaImportTranslator() override;
+    UsdMayaImportTranslator& operator=(const UsdMayaImportTranslator&);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

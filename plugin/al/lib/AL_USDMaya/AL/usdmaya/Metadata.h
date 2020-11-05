@@ -31,58 +31,62 @@ namespace usdmaya {
 /// \brief  The MetaData tokens we attach to various prims
 struct Metadata
 {
-  /// MetaData token that allows the overriding of the transform type from the default AL_usdmaya_Transform on import.
-  AL_USDMAYA_PUBLIC
-  static const TfToken transformType;
+    /// MetaData token that allows the overriding of the transform type from the default
+    /// AL_usdmaya_Transform on import.
+    AL_USDMAYA_PUBLIC
+    static const TfToken transformType;
 
-  /// MetaData token that can be applied to a prim which will add it to the UsdImaging ignore list (so that it will not
-  /// be rendered in Hydra).
-  AL_USDMAYA_PUBLIC
-  static const TfToken excludeFromProxyShape;
+    /// MetaData token that can be applied to a prim which will add it to the UsdImaging ignore list
+    /// (so that it will not be rendered in Hydra).
+    AL_USDMAYA_PUBLIC
+    static const TfToken excludeFromProxyShape;
 
-  /// MetaData token that controls whether a prim will be imported as Maya geometry
-  AL_USDMAYA_PUBLIC
-  static const TfToken importAsNative;
+    /// MetaData token that controls whether a prim will be imported as Maya geometry
+    AL_USDMAYA_PUBLIC
+    static const TfToken importAsNative;
 
-  /// Name of the property that determines if the prim is selectable or not
-  AL_USDMAYA_PUBLIC
-  static const TfToken selectability;
+    /// Name of the property that determines if the prim is selectable or not
+    AL_USDMAYA_PUBLIC
+    static const TfToken selectability;
 
-  /// Value used in the selectibility property that tags the prim as selectable
-  AL_USDMAYA_PUBLIC
-  static const TfToken selectable;
+    /// Value used in the selectibility property that tags the prim as selectable
+    AL_USDMAYA_PUBLIC
+    static const TfToken selectable;
 
-  /// Value used in the selectibility property that tags the prim as unselectable
-  AL_USDMAYA_PUBLIC
-  static const TfToken unselectable;
+    /// Value used in the selectibility property that tags the prim as unselectable
+    AL_USDMAYA_PUBLIC
+    static const TfToken unselectable;
 
-  AL_USDMAYA_PUBLIC
-  static const TfToken mergedTransform;
-  AL_USDMAYA_PUBLIC
-  static const TfToken unmerged;
+    AL_USDMAYA_PUBLIC
+    static const TfToken mergedTransform;
+    AL_USDMAYA_PUBLIC
+    static const TfToken unmerged;
 
-  /// Name of the property that determines if attributes on corresponding Maya object of the prim are locked or not.
-  AL_USDMAYA_PUBLIC
-  static const TfToken locked;
+    /// Name of the property that determines if attributes on corresponding Maya object of the prim
+    /// are locked or not.
+    AL_USDMAYA_PUBLIC
+    static const TfToken locked;
 
-  /// Value used in the lock property that tags transform (including children) attributes are locked
-  AL_USDMAYA_PUBLIC
-  static const TfToken lockTransform;
+    /// Value used in the lock property that tags transform (including children) attributes are
+    /// locked
+    AL_USDMAYA_PUBLIC
+    static const TfToken lockTransform;
 
-  /// Value used in the lock property that tags prim inherits its parent state
-  AL_USDMAYA_PUBLIC
-  static const TfToken lockInherited;
+    /// Value used in the lock property that tags prim inherits its parent state
+    AL_USDMAYA_PUBLIC
+    static const TfToken lockInherited;
 
-  /// Value used in the lock property that tags prim unlocked regardless of its parent state
-  AL_USDMAYA_PUBLIC
-  static const TfToken lockUnlocked;
+    /// Value used in the lock property that tags prim unlocked regardless of its parent state
+    AL_USDMAYA_PUBLIC
+    static const TfToken lockUnlocked;
 
-  /// This represents the medata key that plugins can be registered against as an alternative to typed schemas
-  AL_USDMAYA_PUBLIC
-  static const TfToken assetType;
+    /// This represents the medata key that plugins can be registered against as an alternative to
+    /// typed schemas
+    AL_USDMAYA_PUBLIC
+    static const TfToken assetType;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-} // usdmaya
-} // AL
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

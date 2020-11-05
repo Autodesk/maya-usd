@@ -13,12 +13,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <maya/MFileIO.h>
-#include <maya/MSceneMessage.h>
+#include <mayaUsd/listeners/notice.h>
 
 #include <pxr/base/tf/instantiateType.h>
 
-#include <mayaUsd/listeners/notice.h>
+#include <maya/MFileIO.h>
+#include <maya/MSceneMessage.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -29,9 +29,7 @@ namespace {
 // to be removed.
 static int _newOrOpenRegistrationCount = 0;
 
-static
-void
-_OnMayaNewOrOpenSceneCallback(void* /*clientData*/)
+static void _OnMayaNewOrOpenSceneCallback(void* /*clientData*/)
 {
     // kBeforeFileRead messages are emitted when importing/referencing files,
     // which we don't consider a "scene reset".
@@ -44,19 +42,15 @@ _OnMayaNewOrOpenSceneCallback(void* /*clientData*/)
 
 } // anonymous namespace
 
-TF_INSTANTIATE_TYPE(UsdMayaSceneResetNotice,
-                    TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(UsdMayaSceneResetNotice, TfType::CONCRETE, TF_1_PARENT(TfNotice));
 
 MCallbackId UsdMayaSceneResetNotice::_afterNewCallbackId = 0;
 MCallbackId UsdMayaSceneResetNotice::_beforeFileReadCallbackId = 0;
 
-UsdMayaSceneResetNotice::UsdMayaSceneResetNotice()
-{
-}
+UsdMayaSceneResetNotice::UsdMayaSceneResetNotice() { }
 
 /* static */
-void
-UsdMayaSceneResetNotice::InstallListener()
+void UsdMayaSceneResetNotice::InstallListener()
 {
     if (_newOrOpenRegistrationCount++ > 0) {
         return;
@@ -72,21 +66,18 @@ UsdMayaSceneResetNotice::InstallListener()
     // file is imported or referenced, so we check for that and do *not* send
     // a scene reset notice.
     if (_afterNewCallbackId == 0) {
-        _afterNewCallbackId =
-            MSceneMessage::addCallback(MSceneMessage::kAfterNew,
-                                       _OnMayaNewOrOpenSceneCallback);
+        _afterNewCallbackId
+            = MSceneMessage::addCallback(MSceneMessage::kAfterNew, _OnMayaNewOrOpenSceneCallback);
     }
 
     if (_beforeFileReadCallbackId == 0) {
-        _beforeFileReadCallbackId =
-            MSceneMessage::addCallback(MSceneMessage::kBeforeFileRead,
-                                       _OnMayaNewOrOpenSceneCallback);
+        _beforeFileReadCallbackId = MSceneMessage::addCallback(
+            MSceneMessage::kBeforeFileRead, _OnMayaNewOrOpenSceneCallback);
     }
 }
 
 /* static */
-void
-UsdMayaSceneResetNotice::RemoveListener()
+void UsdMayaSceneResetNotice::RemoveListener()
 {
     if (_newOrOpenRegistrationCount-- > 1) {
         return;
@@ -101,47 +92,40 @@ UsdMayaSceneResetNotice::RemoveListener()
     }
 }
 
-
 UsdMaya_AssemblyInstancerNoticeBase::UsdMaya_AssemblyInstancerNoticeBase(
-        const MObject& assembly,
-        const MObject& instancer)
-        : _assembly(assembly), _instancer(instancer)
+    const MObject& assembly,
+    const MObject& instancer)
+    : _assembly(assembly)
+    , _instancer(instancer)
 {
 }
 
-MObject
-UsdMaya_AssemblyInstancerNoticeBase::GetAssembly() const
-{
-    return _assembly;
-}
+MObject UsdMaya_AssemblyInstancerNoticeBase::GetAssembly() const { return _assembly; }
 
-MObject
-UsdMaya_AssemblyInstancerNoticeBase::GetInstancer() const
-{
-    return _instancer;
-}
+MObject UsdMaya_AssemblyInstancerNoticeBase::GetInstancer() const { return _instancer; }
 
-
-TF_INSTANTIATE_TYPE(UsdMayaAssemblyConnectedToInstancerNotice,
-                    TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(
+    UsdMayaAssemblyConnectedToInstancerNotice,
+    TfType::CONCRETE,
+    TF_1_PARENT(TfNotice));
 
 UsdMayaAssemblyConnectedToInstancerNotice::UsdMayaAssemblyConnectedToInstancerNotice(
-        const MObject& assembly,
-        const MObject& instancer)
-        : UsdMaya_AssemblyInstancerNoticeBase(assembly, instancer)
+    const MObject& assembly,
+    const MObject& instancer)
+    : UsdMaya_AssemblyInstancerNoticeBase(assembly, instancer)
 {
 }
 
-
-TF_INSTANTIATE_TYPE(UsdMayaAssemblyDisconnectedFromInstancerNotice,
-                    TfType::CONCRETE, TF_1_PARENT(TfNotice));
+TF_INSTANTIATE_TYPE(
+    UsdMayaAssemblyDisconnectedFromInstancerNotice,
+    TfType::CONCRETE,
+    TF_1_PARENT(TfNotice));
 
 UsdMayaAssemblyDisconnectedFromInstancerNotice::UsdMayaAssemblyDisconnectedFromInstancerNotice(
-        const MObject& assembly,
-        const MObject& instancer)
-        : UsdMaya_AssemblyInstancerNoticeBase(assembly, instancer)
+    const MObject& assembly,
+    const MObject& instancer)
+    : UsdMaya_AssemblyInstancerNoticeBase(assembly, instancer)
 {
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -15,9 +15,9 @@
 //
 #include "usdReflectWriter.h"
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
@@ -32,8 +32,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (specularColor)
-);
+    (specularColor));
 
 PxrUsdTranslators_ReflectWriter::PxrUsdTranslators_ReflectWriter(
     const MFnDependencyNode& depNodeFn,

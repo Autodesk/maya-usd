@@ -25,9 +25,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<MayaUsd_SchemasMayaReference,
-        TfType::Bases< UsdGeomXformable > >();
-    
+    TfType::Define<MayaUsd_SchemasMayaReference, TfType::Bases<UsdGeomXformable>>();
+
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
     // TfType::Find<UsdSchemaBase>().FindDerivedByName("MayaReference")
@@ -37,13 +36,11 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 /* virtual */
-MayaUsd_SchemasMayaReference::~MayaUsd_SchemasMayaReference()
-{
-}
+MayaUsd_SchemasMayaReference::~MayaUsd_SchemasMayaReference() { }
 
 /* static */
 MayaUsd_SchemasMayaReference
-MayaUsd_SchemasMayaReference::Get(const UsdStagePtr &stage, const SdfPath &path)
+MayaUsd_SchemasMayaReference::Get(const UsdStagePtr& stage, const SdfPath& path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
@@ -54,83 +51,78 @@ MayaUsd_SchemasMayaReference::Get(const UsdStagePtr &stage, const SdfPath &path)
 
 /* static */
 MayaUsd_SchemasMayaReference
-MayaUsd_SchemasMayaReference::Define(
-    const UsdStagePtr &stage, const SdfPath &path)
+MayaUsd_SchemasMayaReference::Define(const UsdStagePtr& stage, const SdfPath& path)
 {
     static TfToken usdPrimTypeName("MayaReference");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return MayaUsd_SchemasMayaReference();
     }
-    return MayaUsd_SchemasMayaReference(
-        stage->DefinePrim(path, usdPrimTypeName));
+    return MayaUsd_SchemasMayaReference(stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* virtual */
-UsdSchemaType MayaUsd_SchemasMayaReference::_GetSchemaType() const {
+UsdSchemaType MayaUsd_SchemasMayaReference::_GetSchemaType() const
+{
     return MayaUsd_SchemasMayaReference::schemaType;
 }
 
 /* static */
-const TfType &
-MayaUsd_SchemasMayaReference::_GetStaticTfType()
+const TfType& MayaUsd_SchemasMayaReference::_GetStaticTfType()
 {
     static TfType tfType = TfType::Find<MayaUsd_SchemasMayaReference>();
     return tfType;
 }
 
 /* static */
-bool 
-MayaUsd_SchemasMayaReference::_IsTypedSchema()
+bool MayaUsd_SchemasMayaReference::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
 }
 
 /* virtual */
-const TfType &
-MayaUsd_SchemasMayaReference::_GetTfType() const
-{
-    return _GetStaticTfType();
-}
+const TfType& MayaUsd_SchemasMayaReference::_GetTfType() const { return _GetStaticTfType(); }
 
-UsdAttribute
-MayaUsd_SchemasMayaReference::GetMayaReferenceAttr() const
+UsdAttribute MayaUsd_SchemasMayaReference::GetMayaReferenceAttr() const
 {
     return GetPrim().GetAttribute(MayaUsd_SchemasTokens->mayaReference);
 }
 
-UsdAttribute
-MayaUsd_SchemasMayaReference::CreateMayaReferenceAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdAttribute MayaUsd_SchemasMayaReference::CreateMayaReferenceAttr(
+    VtValue const& defaultValue,
+    bool           writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(MayaUsd_SchemasTokens->mayaReference,
-                       SdfValueTypeNames->Asset,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        MayaUsd_SchemasTokens->mayaReference,
+        SdfValueTypeNames->Asset,
+        /* custom = */ false,
+        SdfVariabilityVarying,
+        defaultValue,
+        writeSparsely);
 }
 
-UsdAttribute
-MayaUsd_SchemasMayaReference::GetMayaNamespaceAttr() const
+UsdAttribute MayaUsd_SchemasMayaReference::GetMayaNamespaceAttr() const
 {
     return GetPrim().GetAttribute(MayaUsd_SchemasTokens->mayaNamespace);
 }
 
-UsdAttribute
-MayaUsd_SchemasMayaReference::CreateMayaNamespaceAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdAttribute MayaUsd_SchemasMayaReference::CreateMayaNamespaceAttr(
+    VtValue const& defaultValue,
+    bool           writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(MayaUsd_SchemasTokens->mayaNamespace,
-                       SdfValueTypeNames->String,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        MayaUsd_SchemasTokens->mayaNamespace,
+        SdfValueTypeNames->String,
+        /* custom = */ false,
+        SdfVariabilityVarying,
+        defaultValue,
+        writeSparsely);
 }
 
 namespace {
 static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+_ConcatenateAttributeNames(const TfTokenVector& left, const TfTokenVector& right)
 {
     TfTokenVector result;
     result.reserve(left.size() + right.size());
@@ -138,20 +130,17 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
     result.insert(result.end(), right.begin(), right.end());
     return result;
 }
-}
+} // namespace
 
 /*static*/
-const TfTokenVector&
-MayaUsd_SchemasMayaReference::GetSchemaAttributeNames(bool includeInherited)
+const TfTokenVector& MayaUsd_SchemasMayaReference::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         MayaUsd_SchemasTokens->mayaReference,
         MayaUsd_SchemasTokens->mayaNamespace,
     };
-    static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdGeomXformable::GetSchemaAttributeNames(true),
-            localNames);
+    static TfTokenVector allNames
+        = _ConcatenateAttributeNames(UsdGeomXformable::GetSchemaAttributeNames(true), localNames);
 
     if (includeInherited)
         return allNames;

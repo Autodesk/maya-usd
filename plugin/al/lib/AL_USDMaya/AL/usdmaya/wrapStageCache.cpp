@@ -15,23 +15,25 @@
 //
 #include "AL/usdmaya/StageCache.h"
 
-#include <boost/python/args.hpp>
-#include <boost/python/def.hpp>
-#include <boost/python.hpp>
-
 #include <pxr/base/tf/pyResultConversions.h>
 
-//using namespace std;
-//using namespace boost::python;
-//using namespace boost;
+#include <boost/python.hpp>
+#include <boost/python/args.hpp>
+#include <boost/python/def.hpp>
+
+// using namespace std;
+// using namespace boost::python;
+// using namespace boost;
 
 void wrapStageCache()
 {
-  boost::python::class_<AL::usdmaya::StageCache>("StageCache")
+    boost::python::class_<AL::usdmaya::StageCache>("StageCache")
 
-    .def("Get", &AL::usdmaya::StageCache::Get,
-       boost::python::return_value_policy<boost::python::reference_existing_object>())
-    .staticmethod("Get")
-    .def("Clear", &AL::usdmaya::StageCache::Clear)
-    .staticmethod("Clear");
+        .def(
+            "Get",
+            &AL::usdmaya::StageCache::Get,
+            boost::python::return_value_policy<boost::python::reference_existing_object>())
+        .staticmethod("Get")
+        .def("Clear", &AL::usdmaya::StageCache::Clear)
+        .staticmethod("Clear");
 }

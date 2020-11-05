@@ -20,13 +20,14 @@
 
 /*
 #include "AL/usdmaya/fileio/ImportParams.h"
-#include <maya/MPxCommand.h>
-#include <maya/MDagModifier.h>
-#include <maya/MObject.h>
-#include <maya/MObjectArray.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
+
+#include <maya/MDagModifier.h>
+#include <maya/MObject.h>
+#include <maya/MObjectArray.h>
+#include <maya/MPxCommand.h>
 PXR_NAMESPACE_USING_DIRECTIVE
 
 */
@@ -36,36 +37,35 @@ namespace usdmaya {
 namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A command to force a variant switch - just a maya convenience wrapper around USD functionality
-/// \ingroup commands
+/// \brief  A command to force a variant switch - just a maya convenience wrapper around USD
+/// functionality \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class ChangeVariant
-  : public ProxyShapeCommandBase
+class ChangeVariant : public ProxyShapeCommandBase
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A command to activate / deactivate a prim - just a maya convenience wrapper around USD functionality
-/// \ingroup commands
+/// \brief  A command to activate / deactivate a prim - just a maya convenience wrapper around USD
+/// functionality \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class ActivatePrim
-  : public ProxyShapeCommandBase
+class ActivatePrim : public ProxyShapeCommandBase
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
 };
 
-
 //----------------------------------------------------------------------------------------------------------------------
-} // cmds
-} // usdmaya
-} // AL
+} // namespace cmds
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

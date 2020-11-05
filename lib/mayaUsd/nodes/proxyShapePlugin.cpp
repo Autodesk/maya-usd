@@ -15,48 +15,48 @@
 //
 #include "proxyShapePlugin.h"
 
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/nodes/pointBasedDeformerNode.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/nodes/stageData.h>
+#include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeDrawOverride.h>
 #include <mayaUsd/render/pxrUsdMayaGL/hdImagingShapeUI.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyDrawOverride.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
-
-#include <maya/MStatus.h>
-#include <maya/MGlobal.h>
-#include <maya/MFnPlugin.h>
-#include <maya/MDrawRegistry.h>
-#include <maya/MPxNode.h>
+#include <mayaUsd/utils/plugRegistryHelper.h>
 
 #include <pxr/base/tf/envSetting.h>
 
-#include <mayaUsd/nodes/hdImagingShape.h>
-#include <mayaUsd/nodes/pointBasedDeformerNode.h>
-#include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/nodes/stageData.h>
-#include <mayaUsd/nodes/stageNode.h>
-#include <mayaUsd/utils/plugRegistryHelper.h>
+#include <maya/MDrawRegistry.h>
+#include <maya/MFnPlugin.h>
+#include <maya/MGlobal.h>
+#include <maya/MPxNode.h>
+#include <maya/MStatus.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 const MString _RegistrantId("mayaUsd");
-int _registrationCount = 0;
+int           _registrationCount = 0;
 
 // Name of the plugin registering the proxy shape base class.
 MString _registrantPluginName;
 
 bool _useVP2RenderDelegate = false;
 
-TF_DEFINE_ENV_SETTING(VP2_RENDER_DELEGATE_PROXY, false,
+TF_DEFINE_ENV_SETTING(
+    VP2_RENDER_DELEGATE_PROXY,
+    false,
     "Switch proxy shape rendering to VP2 render delegate.");
-}
+} // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-MStatus
-MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
+MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
 {
     // If we're already registered, do nothing.
     if (_registrationCount++ > 0) {
@@ -65,7 +65,7 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
 
     // Call one time registration of plugins compiled for same USD version as MayaUSD plugin.
     MayaUsd::registerVersionedPlugins();
-    
+
     _registrantPluginName = plugin.name();
 
     _useVP2RenderDelegate = TfGetEnvSetting(VP2_RENDER_DELEGATE_PROXY);
@@ -74,9 +74,7 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
 
     // Proxy shape initialization.
     status = plugin.registerData(
-        MayaUsdStageData::typeName,
-        MayaUsdStageData::mayaTypeId,
-        MayaUsdStageData::creator);
+        MayaUsdStageData::typeName, MayaUsdStageData::mayaTypeId, MayaUsdStageData::creator);
     CHECK_MSTATUS(status);
 
     status = plugin.registerShape(
@@ -110,9 +108,7 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
     // so register it here.  Native USD VP2 rendering uses a sub-scene override.
     if (_useVP2RenderDelegate) {
         status = MHWRender::MDrawRegistry::registerSubSceneOverrideCreator(
-            ProxyRenderDelegate::drawDbClassification,
-            _RegistrantId,
-            ProxyRenderDelegate::Creator);
+            ProxyRenderDelegate::drawDbClassification, _RegistrantId, ProxyRenderDelegate::Creator);
         CHECK_MSTATUS(status);
     } else {
         status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
@@ -153,8 +149,7 @@ MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
 }
 
 /* static */
-MStatus
-MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
+MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 {
     // If more than one plugin still has us registered, do nothing.
     if (_registrationCount == 0 || _registrationCount-- > 1) {
@@ -175,8 +170,7 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
     CHECK_MSTATUS(status);
 
     status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
-        PxrMayaHdImagingShapeDrawOverride::drawDbClassification,
-        _RegistrantId);
+        PxrMayaHdImagingShapeDrawOverride::drawDbClassification, _RegistrantId);
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(PxrMayaHdImagingShape::typeId);
@@ -184,19 +178,14 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 
     if (_useVP2RenderDelegate) {
         status = MHWRender::MDrawRegistry::deregisterSubSceneOverrideCreator(
-            ProxyRenderDelegate::drawDbClassification,
-            _RegistrantId);
+            ProxyRenderDelegate::drawDbClassification, _RegistrantId);
         CHECK_MSTATUS(status);
-    }
-    else
-    {
-        status = plugin.deregisterDisplayFilter(
-            MayaUsdProxyShapeBase::displayFilterName);
+    } else {
+        status = plugin.deregisterDisplayFilter(MayaUsdProxyShapeBase::displayFilterName);
         CHECK_MSTATUS(status);
 
         status = MHWRender::MDrawRegistry::deregisterDrawOverrideCreator(
-            UsdMayaProxyDrawOverride::drawDbClassification,
-            _RegistrantId);
+            UsdMayaProxyDrawOverride::drawDbClassification, _RegistrantId);
         CHECK_MSTATUS(status);
     }
 
@@ -208,7 +197,7 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 
     status = plugin.deregisterNode(MayaUsdProxyShapeBase::typeId);
     CHECK_MSTATUS(status);
-    
+
     status = plugin.deregisterData(MayaUsdStageData::mayaTypeId);
     CHECK_MSTATUS(status);
 
@@ -217,13 +206,10 @@ MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 
 const MString* MayaUsdProxyShapePlugin::getProxyShapeClassification()
 {
-    return _useVP2RenderDelegate ? &ProxyRenderDelegate::drawDbClassification : 
-        &UsdMayaProxyDrawOverride::drawDbClassification;
+    return _useVP2RenderDelegate ? &ProxyRenderDelegate::drawDbClassification
+                                 : &UsdMayaProxyDrawOverride::drawDbClassification;
 }
 
-bool MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()
-{
-    return _useVP2RenderDelegate;
-}
+bool MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering() { return _useVP2RenderDelegate; }
 
 PXR_NAMESPACE_CLOSE_SCOPE
