@@ -67,6 +67,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     // UsdUVTexture Input Names
     (bias)(fallback)(scale)(wrapS)(wrapT)
 
+    // uv connections:
+    (outUvFilterSize)(uvFilterSize)(outUV)(uvCoord)
+
     // Values for wrapS and wrapT
     (black)(repeat)
 
@@ -137,6 +140,16 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     }
 
     // Connect manually (fileTexturePlacementConnect is not available in batch):
+    {
+        MPlug uvPlug = uvDepFn.findPlug(_tokens->outUV.GetText(), true, &status);
+        MPlug filePlug = depFn.findPlug(_tokens->uvCoord.GetText(), true, &status);
+        UsdMayaUtil::Connect(uvPlug, filePlug, false);
+    }
+    {
+        MPlug uvPlug = uvDepFn.findPlug(_tokens->outUvFilterSize.GetText(), true, &status);
+        MPlug filePlug = depFn.findPlug(_tokens->uvFilterSize.GetText(), true, &status);
+        UsdMayaUtil::Connect(uvPlug, filePlug, false);
+    }
     MString connectCmd;
     for (const TfToken& uvName : _Place2dTextureConnections) {
         MPlug uvPlug = uvDepFn.findPlug(uvName.GetText(), true, &status);

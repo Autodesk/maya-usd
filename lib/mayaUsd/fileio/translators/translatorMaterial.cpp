@@ -27,7 +27,12 @@
 #include <pxr/base/tf/iterator.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/types.h>
+#include <pxr/usd/pcp/layerStack.h>
+#include <pxr/usd/pcp/node.h>
+#include <pxr/usd/pcp/primIndex.h>
 #include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/layerTree.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
@@ -38,8 +43,10 @@
 
 #include <maya/MDagPath.h>
 #include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
 #include <maya/MFnSet.h>
 #include <maya/MFnSingleIndexedComponent.h>
+#include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MObject.h>
 #include <maya/MSelectionList.h>
@@ -50,6 +57,48 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (inputs)(varname));
+
+namespace {
+// We want to know if this material is a specialization that was created to handle UV mappings on
+// export. For details, see the _UVMappingManager class in ..\shading\shadingModeExporterContext.cpp
+//
+// If the root layer contains anything that is not a varname input, we do not consider it a
+// mergeable material.
+bool _IsMergeableMaterial(const UsdShadeMaterial& shadeMaterial)
+{
+    if (!shadeMaterial || !shadeMaterial.HasBaseMaterial()) {
+        return false;
+    }
+    const PcpPrimIndex&   primIndex = shadeMaterial.GetPrim().GetPrimIndex();
+    PcpNodeRef            primRoot = primIndex.GetRootNode();
+    SdfPath               primPath = primIndex.GetPath();
+    const SdfLayerHandle& layer = primRoot.GetLayerStack()->GetLayerTree()->GetLayer();
+
+    bool retVal = true;
+    auto testFunction = [&](const SdfPath& path) {
+        // If we traverse anything that is not a varname specialization, we return false.
+        if (path == primPath) {
+            return;
+        }
+        if (path.GetParentPath() != primPath || !path.IsPrimPropertyPath()) {
+            retVal = false;
+            return;
+        }
+        std::vector<std::string> splitName = SdfPath::TokenizeIdentifier(path.GetName());
+        // We allow only ["inputs", "XXX", "varname"]
+        if (splitName.size() != 3 || splitName[0] != _tokens->inputs.GetString()
+            || splitName[2] != _tokens->varname.GetString()) {
+            retVal = false;
+        }
+    };
+
+    layer->Traverse(primPath, testFunction);
+
+    return retVal;
+}
+} // namespace
 
 /* static */
 MObject UsdMayaTranslatorMaterial::Read(
@@ -68,6 +117,11 @@ MObject UsdMayaTranslatorMaterial::Read(
 
     if (c.GetCreatedObject(shadeMaterial.GetPrim(), &shadingEngine)) {
         return shadingEngine;
+    }
+
+    if (_IsMergeableMaterial(shadeMaterial)) {
+        // Use the base material instead
+        return Read(jobArguments, shadeMaterial.GetBaseMaterial(), boundPrim, context);
     }
 
     UsdMayaJobImportArgs localArguments = jobArguments;
@@ -89,10 +143,87 @@ MObject UsdMayaTranslatorMaterial::Read(
     return shadingEngine;
 }
 
+namespace {
+using _UVBindings = std::map<TfToken, TfToken>;
+}
+
+static _UVBindings
+_GetUVBindingsFromMaterial(const UsdShadeMaterial& material, UsdMayaPrimReaderContext* context)
+{
+    _UVBindings retVal;
+
+    if (!material || !context) {
+        return retVal;
+    }
+    const bool isMergeable = _IsMergeableMaterial(material);
+    // Find out the nodes requiring mapping. This code has deep knowledge of how the mappings are
+    // exported. See the _UVMappingManager class in ..\shading\shadingModeExporterContext.cpp for
+    // details.
+    for (const UsdShadeInput& input : material.GetInputs()) {
+        const UsdAttribute&      usdAttr = input.GetAttr();
+        std::vector<std::string> splitName = usdAttr.SplitName();
+        if (splitName.size() != 3 || splitName[2] != _tokens->varname.GetString()) {
+            continue;
+        }
+        VtValue val;
+        usdAttr.Get(&val);
+        if (!val.IsHolding<TfToken>()) {
+            continue;
+        }
+        SdfPath nodePath = isMergeable
+            ? material.GetBaseMaterial().GetPath().AppendChild(TfToken(splitName[1]))
+            : material.GetPath().AppendChild(TfToken(splitName[1]));
+        MObject           mayaNode = context->GetMayaNode(nodePath, false);
+        MStatus           status;
+        MFnDependencyNode depFn(mayaNode, &status);
+        if (!status) {
+            continue;
+        }
+        retVal[val.UncheckedGet<TfToken>()] = TfToken(depFn.name().asChar());
+    }
+
+    return retVal;
+}
+
+static void _BindUVs(const MDagPath& shapeDagPath, const _UVBindings& uvBindings)
+{
+    if (uvBindings.empty()) {
+        return;
+    }
+
+    MStatus status;
+    MFnMesh meshFn(shapeDagPath.node(), &status);
+    if (!status) {
+        return;
+    }
+
+    MStringArray uvSets;
+    meshFn.getUVSetNames(uvSets);
+
+    // We explicitly skip uvSet[0] since it is the default in Maya and does not require explicit
+    // linking:
+    for (unsigned int uvSetIndex = 1; uvSetIndex < uvSets.length(); uvSetIndex++) {
+        TfToken                     uvSetName(uvSets[uvSetIndex].asChar());
+        _UVBindings::const_iterator iter = uvBindings.find(uvSetName);
+        if (iter == uvBindings.cend()) {
+            continue;
+        }
+        MString uvLinkCommand("uvLink -make -uvs \"");
+        uvLinkCommand += shapeDagPath.fullPathName();
+        uvLinkCommand += ".uvSet[";
+        uvLinkCommand += uvSetIndex;
+        uvLinkCommand += "].uvSetName\" -t \"";
+        uvLinkCommand += iter->second.GetText(); // texture name
+        uvLinkCommand += "\";";
+        status = MGlobal::executeCommand(uvLinkCommand);
+    }
+}
+
 static bool _AssignMaterialFaceSet(
-    const MObject&    shadingEngine,
-    const MDagPath&   shapeDagPath,
-    const VtIntArray& faceIndices)
+    const MObject&     shadingEngine,
+    const MDagPath&    shapeDagPath,
+    const VtIntArray&  faceIndices,
+    const _UVBindings& faceUVBindings)
 {
     MStatus status;
 
@@ -117,6 +248,7 @@ static bool _AssignMaterialFaceSet(
                 "Could not add component to shadingEngine %s.", seFnSet.name().asChar());
             return false;
         }
+        _BindUVs(shapeDagPath, faceUVBindings);
     }
 
     return true;
@@ -141,14 +273,18 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
 
     MStatus                          status;
     const UsdShadeMaterialBindingAPI bindingAPI(primSchema.GetPrim());
-    MObject                          shadingEngine = UsdMayaTranslatorMaterial::Read(
-        jobArguments, bindingAPI.ComputeBoundMaterial(), primSchema, context);
+    UsdShadeMaterial                 meshMaterial = bindingAPI.ComputeBoundMaterial();
+    _UVBindings                      uvBindings;
+    MObject                          shadingEngine
+        = UsdMayaTranslatorMaterial::Read(jobArguments, meshMaterial, primSchema, context);
 
     if (shadingEngine.isNull()) {
         status = UsdMayaUtil::GetMObjectByName("initialShadingGroup", shadingEngine);
         if (status != MS::kSuccess) {
             return false;
         }
+    } else {
+        uvBindings = _GetUVBindingsFromMaterial(meshMaterial, context);
     }
 
     // If the gprim does not have a material faceSet which represents per-face
@@ -164,6 +300,7 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                 TF_RUNTIME_ERROR(
                     "Could not add shadingEngine for '%s'.", shapeDagPath.fullPathName().asChar());
             }
+            _BindUVs(shapeDagPath, uvBindings);
         }
 
         return true;
@@ -197,7 +334,8 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
 
             VtIntArray unassignedIndices
                 = UsdGeomSubset::GetUnassignedIndices(faceSubsets, faceCount);
-            if (!_AssignMaterialFaceSet(shadingEngine, shapeDagPath, unassignedIndices)) {
+            if (!_AssignMaterialFaceSet(
+                    shadingEngine, shapeDagPath, unassignedIndices, uvBindings)) {
                 return false;
             }
         }
@@ -208,12 +346,16 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
             if (boundMaterial) {
                 MObject faceSubsetShadingEngine = UsdMayaTranslatorMaterial::Read(
                     jobArguments, boundMaterial, UsdGeomGprim(), context);
+
+                _UVBindings faceUVBindings;
                 if (faceSubsetShadingEngine.isNull()) {
                     status = UsdMayaUtil::GetMObjectByName(
                         "initialShadingGroup", faceSubsetShadingEngine);
                     if (status != MS::kSuccess) {
                         return false;
                     }
+                } else {
+                    faceUVBindings = _GetUVBindingsFromMaterial(boundMaterial, context);
                 }
 
                 // Only transfer the first timeSample or default indices, if
@@ -221,7 +363,8 @@ bool UsdMayaTranslatorMaterial::AssignMaterial(
                 VtIntArray indices;
                 subset.GetIndicesAttr().Get(&indices, UsdTimeCode::EarliestTime());
 
-                if (!_AssignMaterialFaceSet(faceSubsetShadingEngine, shapeDagPath, indices)) {
+                if (!_AssignMaterialFaceSet(
+                        faceSubsetShadingEngine, shapeDagPath, indices, faceUVBindings)) {
                     return false;
                 }
             }
