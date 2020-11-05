@@ -64,8 +64,13 @@ class testUsdExportUVSets(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         asFloat2 = mayaUsdLib.WriteUtil.WriteUVAsFloat2()
-        inputPath = fixturesUtils.setUpClass(__file__, 
-                                             "Float" if asFloat2 else "")
+        suffix = ""
+        if asFloat2:
+            suffix += "Float"
+        if mayaUsdLib.WriteUtil.WriteMap1AsST():
+            suffix += "ST"
+
+        inputPath = fixturesUtils.setUpClass(__file__, suffix)
 
         if asFloat2:
             filePath = os.path.join(inputPath, 'UsdExportUVSetsFloatTest', 'UsdExportUVSetsTest_Float.ma')
@@ -105,17 +110,19 @@ class testUsdExportUVSets(unittest.TestCase):
     def testExportEmptyDefaultUVSet(self):
         """
         Tests that a cube mesh with an empty default UV set (named 'map1' in
-        Maya) does NOT get exported as 'st'.
+        Maya) gets renamed if requested.
         """
         usdCubeMesh = self._GetCubeUsdMesh('EmptyDefaultUVSetCube')
 
-        primvar = usdCubeMesh.GetPrimvar('st')
-        self.assertFalse(primvar)
+        if mayaUsdLib.WriteUtil.WriteMap1AsST():
+            self.assertFalse(usdCubeMesh.GetPrimvar('map1'))
+        else:
+            self.assertFalse(usdCubeMesh.GetPrimvar('st'))
 
     def testExportDefaultUVSet(self):
         """
         Tests that a cube mesh with the default values for the default UV set
-        (named 'map1' in Maya) gets exported correctly as 'st'.
+        (named 'map1' in Maya) gets renamed if requested.
         """
         usdCubeMesh = self._GetCubeUsdMesh('DefaultUVSetCube')
 
@@ -150,7 +157,11 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        if mayaUsdLib.WriteUtil.WriteMap1AsST():
+            primvar = usdCubeMesh.GetPrimvar('st')
+        else:
+            primvar = usdCubeMesh.GetPrimvar('map1')
+
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
             expectedInterpolation=expectedInterpolation,
@@ -159,7 +170,7 @@ class testUsdExportUVSets(unittest.TestCase):
     def testExportOneMissingFaceUVSet(self):
         """
         Tests that a cube mesh with values for all but one face in the default
-        UV set (named 'map1' in Maya) gets exported correctly as 'st'.
+        UV set (named 'map1' in Maya) gets renamed if requested.
         """
         usdCubeMesh = self._GetCubeUsdMesh('OneMissingFaceCube')
 
@@ -192,7 +203,11 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        if mayaUsdLib.WriteUtil.WriteMap1AsST():
+            primvar = usdCubeMesh.GetPrimvar('st')
+        else:
+            primvar = usdCubeMesh.GetPrimvar('map1')
+
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
             expectedInterpolation=expectedInterpolation,
@@ -202,7 +217,7 @@ class testUsdExportUVSets(unittest.TestCase):
     def testExportOneAssignedFaceUVSet(self):
         """
         Tests that a cube mesh with values for only one face in the default
-        UV set (named 'map1' in Maya) gets exported correctly as 'st'.
+        UV set (named 'map1' in Maya) gets renamed if requested.
         """
         usdCubeMesh = self._GetCubeUsdMesh('OneAssignedFaceCube')
 
@@ -225,7 +240,11 @@ class testUsdExportUVSets(unittest.TestCase):
 
         expectedInterpolation = UsdGeom.Tokens.faceVarying
 
-        primvar = usdCubeMesh.GetPrimvar('st')
+        if mayaUsdLib.WriteUtil.WriteMap1AsST():
+            primvar = usdCubeMesh.GetPrimvar('st')
+        else:
+            primvar = usdCubeMesh.GetPrimvar('map1')
+
         self._AssertUVPrimvar(primvar,
             expectedValues=expectedValues,
             expectedInterpolation=expectedInterpolation,
@@ -350,7 +369,11 @@ class testUsdExportUVSets(unittest.TestCase):
         """
         brokenBoxMesh = UsdGeom.Mesh(self._stage.GetPrimAtPath(
                 "/UsdExportUVSetsTest/Geom/BrokenUVs/box"))
-        stPrimvar = brokenBoxMesh.GetPrimvar("st").ComputeFlattened()
+        if mayaUsdLib.WriteUtil.WriteMap1AsST():
+            stPrimvar = brokenBoxMesh.GetPrimvar("st").ComputeFlattened()
+        else:
+            stPrimvar = brokenBoxMesh.GetPrimvar("map1").ComputeFlattened()
+
         self.assertEqual(stPrimvar[0], Gf.Vec2f(1.0, 1.0))
 
 if __name__ == '__main__':

@@ -16,6 +16,7 @@
 #include "StagesSubject.h"
 
 #include <vector>
+#include <atomic>
 
 #include <maya/MSceneMessage.h>
 #include <maya/MMessage.h>
@@ -43,22 +44,25 @@
 #include <ufe/attributes.h>
 #endif
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 namespace {
 
+// Prevent re-entrant stage set.
+std::atomic_bool stageSetGuardCount{false};
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
 // The attribute change notification guard is not meant to be nested, but
 // use a counter nonetheless to provide consistent behavior in such cases.
-int attributeChangedNotificationGuardCount = 0;
+std::atomic_int attributeChangedNotificationGuardCount{0};
 
 bool inAttributeChangedNotificationGuard()
 {
-    return attributeChangedNotificationGuardCount > 0;
+    return attributeChangedNotificationGuardCount.load() > 0;
 }
 
 std::unordered_map<Ufe::Path, std::string> pendingAttributeChangedNotifications;
 
-}
 #endif
+}
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -316,15 +320,21 @@ void StagesSubject::stageChanged(UsdNotice::ObjectsChanged const& notice, UsdSta
 
 void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
-	// We should have no listerners and stage map is dirty.
-	TF_VERIFY(g_StageMap.isDirty());
-	TF_VERIFY(fStageListeners.empty());
-
-	StagesSubject::Ptr me(this);
-	for (auto stage : ProxyShapeHandler::getAllStages())
+	// Handle re-entrant onStageSet
+	bool expectedState = false;
+	if (stageSetGuardCount.compare_exchange_strong(expectedState,true))
 	{
-		fStageListeners[stage] = TfNotice::Register(
-			me, &StagesSubject::stageChanged, stage);
+		// We should have no listeners and stage map is dirty.
+		TF_VERIFY(g_StageMap.isDirty());
+		TF_VERIFY(fStageListeners.empty());
+
+		StagesSubject::Ptr me(this);
+		for (auto stage : ProxyShapeHandler::getAllStages())
+		{
+			fStageListeners[stage] = TfNotice::Register(
+				me, &StagesSubject::stageChanged, stage);
+		}
+		stageSetGuardCount = false;
 	}
 }
 
@@ -345,7 +355,7 @@ AttributeChangedNotificationGuard::AttributeChangedNotificationGuard()
 		TF_CODING_ERROR("Attribute changed notification guard cannot be nested.");
 	}
 
-	if (attributeChangedNotificationGuardCount == 0 &&
+	if (attributeChangedNotificationGuardCount.load() == 0 &&
 		!pendingAttributeChangedNotifications.empty()) {
 		TF_CODING_ERROR("Stale pending attribute changed notifications.");
 	}
@@ -360,7 +370,7 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
 		TF_CODING_ERROR("Corrupt attribute changed notification guard.");
 	}
 
-	if (attributeChangedNotificationGuardCount > 0 ) {
+	if (attributeChangedNotificationGuardCount.load() > 0 ) {
 		return;
 	}
 

@@ -33,6 +33,7 @@
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/output.h>
+#include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
@@ -45,6 +46,7 @@
 #include <maya/MString.h>
 
 #include <boost/filesystem.hpp>
+#include <regex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -88,6 +90,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outTransparencyB)
     (wrapU)
     (wrapV)
+
+    // UDIM handling:
+    (uvTilingMode)
+    ((UDIMTag, "<UDIM>"))
 
     // XXX: We duplicate these tokens here rather than create a dependency on
     // usdImaging in case the plugin is being built with imaging disabled.
@@ -170,11 +176,35 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
     primvarReaderShaderSchema.CreateIdAttr(
         VtValue(_tokens->UsdPrimvarReader_float2));
 
-    // XXX: We'll eventually need to to determine which UV set to use if we're
-    // not using the default (i.e. "map1" in Maya -> "st" in USD).
-    primvarReaderShaderSchema.CreateInput(
+    UsdShadeInput varnameInput = primvarReaderShaderSchema.CreateInput(
         _tokens->varname,
-        SdfValueTypeNames->Token).Set(UsdUtilsGetPrimaryUVSetName());
+        SdfValueTypeNames->Token);
+
+    // We expose the primvar reader varname attribute to the material to allow
+    // easy specialization based on UV mappings to geometries:
+    SdfPath          materialPath = GetUsdPath().GetParentPath();
+    UsdShadeMaterial materialSchema(GetUsdStage()->GetPrimAtPath(materialPath));
+    while (!materialSchema && !materialPath.IsEmpty()) {
+        materialPath = materialPath.GetParentPath();
+        materialSchema = UsdShadeMaterial(GetUsdStage()->GetPrimAtPath(materialPath));
+    }
+
+    if (materialSchema) {
+        TfToken inputName(
+            TfStringPrintf("%s:%s", depNodeFn.name().asChar(), _tokens->varname.GetText()));
+        UsdShadeInput materialInput
+            = materialSchema.CreateInput(inputName, SdfValueTypeNames->Token);
+        materialInput.Set(UsdUtilsGetPrimaryUVSetName());
+        varnameInput.ConnectToSource(materialInput);
+        // Note: This needs to be done for all nodes that require UV input. In
+        // the UsdPreviewSurface case, the file node is the only one, but for
+        // other Maya nodes like cloth, checker, mandelbrot, we will also need
+        // to resolve the UV channels. This means traversing UV inputs until we
+        // find the unconnected one that implicitly connects to uvSet[0] of the
+        // geometry, or an explicit uvChooser node connecting to alternate uvSets.
+    } else {
+        varnameInput.Set(UsdUtilsGetPrimaryUVSetName());
+    }
 
     UsdShadeOutput primvarReaderOutput =
         primvarReaderShaderSchema.CreateOutput(
@@ -186,6 +216,12 @@ PxrUsdTranslators_FileTextureWriter::PxrUsdTranslators_FileTextureWriter(
     texShaderSchema.CreateInput(
         _tokens->st,
         SdfValueTypeNames->Float2).ConnectToSource(primvarReaderOutput);
+}
+
+namespace {
+// Match UDIM pattern, from 1001 to 1999
+const std::regex
+    _udimRegex(".*[^\\d](1(?:[0-9][0-9][1-9]|[1-9][1-9]0|0[1-9]0|[1-9]00))(?:[^\\d].*|$)");
 }
 
 /* virtual */
@@ -238,6 +274,16 @@ PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         boost::filesystem::path relativePath = boost::filesystem::relative(fileTextureName, usdDir, ec);
         if (!ec && !relativePath.empty()) {
             fileTextureName = relativePath.generic_string();
+        }
+    }
+
+    // Update filename in case of UDIM
+    const MPlug tilingAttr = depNodeFn.findPlug(_tokens->uvTilingMode.GetText(), true, &status);
+    if (status == MS::kSuccess && tilingAttr.asInt() == 3) {
+        std::smatch match;
+        if (std::regex_search(fileTextureName, match, _udimRegex) && match.size() == 2) {
+            fileTextureName = std::string(match[0].first, match[1].first)
+                + _tokens->UDIMTag.GetString() + std::string(match[1].second, match[0].second);
         }
     }
 

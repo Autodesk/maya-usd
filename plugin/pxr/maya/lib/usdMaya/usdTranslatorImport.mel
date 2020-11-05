@@ -160,7 +160,7 @@ global proc int usdTranslatorImport (string $parent,
             for ($index = 0; $index < size($optionList); $index++) {
                 tokenize($optionList[$index], "=", $optionBreakDown);
                 if ($optionBreakDown[0] == "shadingMode") {
-                    usdTranslatorImport_SetShadingOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
+                    usdTranslatorImport_SetOptionMenuByAnnotation($optionBreakDown[1], "shadingModePopup");
                 } else if ($optionBreakDown[0] == "readAnimData") {
                     usdTranslatorImport_SetCheckbox($optionBreakDown[1], "readAnimDataCheckBox");
                 } else if ($optionBreakDown[0] == "useAsAnimationCache") {

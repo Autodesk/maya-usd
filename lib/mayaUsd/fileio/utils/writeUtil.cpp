@@ -81,6 +81,11 @@ TF_DEFINE_ENV_SETTING(
     "TexCoord2d, TexCoord3h, TexCoord3f, TexCoord3d and their associated "
     "Array types)");
 
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET,
+    false,
+    "Translates the map1 UV set in Maya to the primary UV set in USD. "
+    "When disabled, UV set names are translated directly (map1 in Maya becomes map1 in USD).");
 
 static
 bool
@@ -128,6 +133,14 @@ UsdMayaWriteUtil::WriteUVAsFloat2()
     static const bool writeUVAsFloat2 =
         TfGetEnvSetting(PIXMAYA_WRITE_UV_AS_FLOAT2);
     return writeUVAsFloat2;
+}
+
+bool
+UsdMayaWriteUtil::WriteMap1AsST()
+{
+    static const bool writeMap1AsST =
+        TfGetEnvSetting(MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET);
+    return writeMap1AsST;
 }
 
 /* static */

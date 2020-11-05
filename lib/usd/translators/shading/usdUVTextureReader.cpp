@@ -25,9 +25,11 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
 #include <pxr/usd/ar/packageUtils.h>
+#include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/usd/resolver.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
@@ -104,6 +106,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((GreenOutputName, "g"))
     ((BlueOutputName, "b"))
     ((AlphaOutputName, "a"))
+
+    // UDIM detection
+    ((UDIMTag, "<UDIM>"))
+    (uvTilingMode)
 );
 
 static const TfTokenVector _Place2dTextureConnections = {
@@ -189,8 +195,40 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             // as a relationship like texture paths inside USDZ assets.
             val = SdfAssetPath(filePath);
         }
+
+        // Re-fetch the file name in case it is UDIM-tagged
+        filePath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
         if (status == MS::kSuccess) {
+
+            // Handle UDIM dexture files:
+            std::string::size_type udimPos = filePath.rfind(_tokens->UDIMTag.GetString());
+            if (udimPos != std::string::npos) {
+                MPlug tilingAttr = depFn.findPlug(_tokens->uvTilingMode.GetText(), true, &status);
+                if (status == MS::kSuccess) {
+                    tilingAttr.setInt(3);
+
+                    // USD did not resolve the path to absolute because the file name was not an
+                    // actual file on disk. We need to find the first tile to help Maya find the
+                    // other ones.
+                    std::string udimPath(filePath.substr(0, udimPos));
+                    udimPath += "1001";
+                    udimPath += filePath.substr(udimPos + _tokens->UDIMTag.GetString().size());
+
+                    Usd_Resolver res(&prim.GetPrimIndex());
+                    for (; res.IsValid(); res.NextLayer()) {
+                        std::string resolvedName
+                            = SdfComputeAssetPathRelativeToLayer(res.GetLayer(), udimPath);
+
+                        if (!resolvedName.empty() && !ArIsPackageRelativePath(resolvedName)
+                            && resolvedName != udimPath) {
+                            udimPath = resolvedName;
+                            break;
+                        }
+                    }
+                    val = SdfAssetPath(udimPath);
+                }
+            }
             UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
         }
 

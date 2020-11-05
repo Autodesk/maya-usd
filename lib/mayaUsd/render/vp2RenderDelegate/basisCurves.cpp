@@ -919,43 +919,52 @@ HdVP2BasisCurves::_UpdateDrawItem(
                 alphaArray.push_back(1.0f);
             }
 
-            if (colorArray.size() == 1 && alphaArray.size() == 1) {
-                // Use fallback shader if there is no material binding or we
-                // failed to create a shader instance from the material.
-                if (!stateToCommit._shader) {
-                    const GfVec3f& color = colorArray[0];
-                    const MColor clr(color[0], color[1], color[2], alphaArray[0]);
+            bool prepareCPVBuffer = true;
 
-                    MHWRender::MShaderInstance* shader;
-                    MHWRender::MGeometry::Primitive primitiveType;
-                    int primitiveStride;
+            // Use fallback shader if there is no material binding or we failed to create a shader
+            // instance from the material.
+            if (!stateToCommit._shader) {
+                MHWRender::MShaderInstance*     shader = nullptr;
+                MHWRender::MGeometry::Primitive primitiveType = MHWRender::MGeometry::kLines;
+                int                             primitiveStride = 0;
 
-                    if (refineLevel <= 0) {
-                        shader = _delegate->Get3dSolidShader(clr);
-                        primitiveType = MHWRender::MGeometry::kLines;
-                        primitiveStride = 0;
-                    } else {
-                        shader = _delegate->GetBasisCurvesFallbackShader(type, basis, clr);
+                if (colorArray.size() == 1 && alphaArray.size() == 1) {
+                    prepareCPVBuffer = false;
+
+                    const GfVec3f& clr3f = colorArray[0];
+                    const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
+
+                    if (refineLevel > 0) {
+                        shader = _delegate->GetBasisCurvesFallbackShader(type, basis, color);
                         primitiveType = MHWRender::MGeometry::kPatch;
                         primitiveStride = (type == HdTokens->linear ? 2 : 4);
+                    } else {
+                        shader = _delegate->Get3dSolidShader(color);
                     }
+                } else if (refineLevel > 0) {
+                    shader = _delegate->GetBasisCurvesCPVShader(type, basis);
+                    primitiveType = MHWRender::MGeometry::kPatch;
+                    primitiveStride = (type == HdTokens->linear ? 2 : 4);
+                } else {
+                    shader = _delegate->Get3dCPVSolidShader();
+                }
 
-                    if (shader != nullptr && shader != drawItemData._shader) {
-                        drawItemData._shader = shader;
-                        stateToCommit._shader = shader;
-                    }
+                if (shader != nullptr && shader != drawItemData._shader) {
+                    drawItemData._shader = shader;
+                    stateToCommit._shader = shader;
+                }
 
-                    if (primitiveType != drawItemData._primitiveType ||
-                        primitiveStride != drawItemData._primitiveStride) {
-                        drawItemData._primitiveType = primitiveType;
-                        stateToCommit._primitiveType = &drawItemData._primitiveType;
+                if (primitiveType != drawItemData._primitiveType
+                    || primitiveStride != drawItemData._primitiveStride) {
+                    drawItemData._primitiveType = primitiveType;
+                    stateToCommit._primitiveType = &drawItemData._primitiveType;
 
-                        drawItemData._primitiveStride = primitiveStride;
-                        stateToCommit._primitiveStride = &drawItemData._primitiveStride;
-                    }
+                    drawItemData._primitiveStride = primitiveStride;
+                    stateToCommit._primitiveStride = &drawItemData._primitiveStride;
                 }
             }
-            else {
+
+            if (prepareCPVBuffer) {
                 colorArray = _BuildInterpolatedArray(topology, colorArray);
                 alphaArray = _BuildInterpolatedArray(topology, alphaArray);
 
@@ -994,39 +1003,6 @@ HdVP2BasisCurves::_UpdateDrawItem(
                     }
 
                     stateToCommit._colorBufferData = bufferData;
-                }
-
-                // Use 3d CPV solid-color shader if there is no material binding or
-                // we failed to create a shader instance from the material.
-                if (!stateToCommit._shader) {
-                    MHWRender::MShaderInstance* shader;
-                    MHWRender::MGeometry::Primitive primitiveType;
-                    int primitiveStride;
-
-                    if (refineLevel <= 0) {
-                        shader = _delegate->Get3dCPVSolidShader();
-                        primitiveType = MHWRender::MGeometry::kLines;
-                        primitiveStride = 0;
-                    } else {
-                        shader = _delegate->GetBasisCurvesCPVShader(type, basis);
-                        primitiveType = MHWRender::MGeometry::kPatch;
-                        primitiveStride = (type == HdTokens->linear ? 2 : 4);
-                    }
-
-                    if (shader != nullptr && shader != drawItemData._shader) {
-                        drawItemData._shader = shader;
-                        stateToCommit._shader = shader;
-                    }
-
-                    if (primitiveType != drawItemData._primitiveType ||
-                        primitiveStride != drawItemData._primitiveStride) {
-
-                        drawItemData._primitiveType = primitiveType;
-                        stateToCommit._primitiveType = &drawItemData._primitiveType;
-
-                        drawItemData._primitiveStride = primitiveStride;
-                        stateToCommit._primitiveStride = &drawItemData._primitiveStride;
-                    }
                 }
             }
         }
