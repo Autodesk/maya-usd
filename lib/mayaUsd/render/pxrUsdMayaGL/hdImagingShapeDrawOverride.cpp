@@ -15,9 +15,21 @@
 //
 #include "hdImagingShapeDrawOverride.h"
 
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
+
+#include <pxr/base/gf/vec2i.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/trace/trace.h>
+#include <pxr/pxr.h>
+
 #include <maya/MBoundingBox.h>
-#include <maya/MDagPath.h>
 #include <maya/MDGContext.h>
+#include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFrameContext.h>
@@ -30,27 +42,16 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec2i.h>
-#include <pxr/base/tf/debug.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/base/trace/trace.h>
-
-#include <mayaUsd/nodes/hdImagingShape.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
-#include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
-#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 const MString PxrMayaHdImagingShapeDrawOverride::drawDbClassification(
-    TfStringPrintf("drawdb/geometry/pxrUsdMayaGL/%s",
-                   PxrMayaHdImagingShapeTokens->MayaTypeName.GetText()).c_str());
+    TfStringPrintf(
+        "drawdb/geometry/pxrUsdMayaGL/%s",
+        PxrMayaHdImagingShapeTokens->MayaTypeName.GetText())
+        .c_str());
 
 /* static */
-MHWRender::MPxDrawOverride*
-PxrMayaHdImagingShapeDrawOverride::creator(const MObject& obj)
+MHWRender::MPxDrawOverride* PxrMayaHdImagingShapeDrawOverride::creator(const MObject& obj)
 {
     UsdMayaGLBatchRenderer::Init();
     return new PxrMayaHdImagingShapeDrawOverride(obj);
@@ -63,17 +64,15 @@ PxrMayaHdImagingShapeDrawOverride::~PxrMayaHdImagingShapeDrawOverride()
 }
 
 /* virtual */
-MHWRender::DrawAPI
-PxrMayaHdImagingShapeDrawOverride::supportedDrawAPIs() const
+MHWRender::DrawAPI PxrMayaHdImagingShapeDrawOverride::supportedDrawAPIs() const
 {
     return MHWRender::kOpenGL | MHWRender::kOpenGLCoreProfile;
 }
 
 /* virtual */
-MMatrix
-PxrMayaHdImagingShapeDrawOverride::transform(
-        const MDagPath& /* objPath */,
-        const MDagPath& /* cameraPath */) const
+MMatrix PxrMayaHdImagingShapeDrawOverride::transform(
+    const MDagPath& /* objPath */,
+    const MDagPath& /* cameraPath */) const
 {
     // Always ignore any transform on the pxrHdImagingShape and use an identity
     // transform instead.
@@ -81,10 +80,9 @@ PxrMayaHdImagingShapeDrawOverride::transform(
 }
 
 /* virtual */
-MBoundingBox
-PxrMayaHdImagingShapeDrawOverride::boundingBox(
-        const MDagPath& objPath,
-        const MDagPath& /* cameraPath */) const
+MBoundingBox PxrMayaHdImagingShapeDrawOverride::boundingBox(
+    const MDagPath& objPath,
+    const MDagPath& /* cameraPath */) const
 {
     TRACE_FUNCTION();
 
@@ -93,8 +91,7 @@ PxrMayaHdImagingShapeDrawOverride::boundingBox(
         MProfiler::kColorE_L1,
         "Hydra Imaging Shape Computing Bounding Box (Viewport 2.0)");
 
-    const PxrMayaHdImagingShape* imagingShape =
-        PxrMayaHdImagingShape::GetShapeAtDagPath(objPath);
+    const PxrMayaHdImagingShape* imagingShape = PxrMayaHdImagingShape::GetShapeAtDagPath(objPath);
     if (!imagingShape) {
         return MBoundingBox();
     }
@@ -103,13 +100,11 @@ PxrMayaHdImagingShapeDrawOverride::boundingBox(
 }
 
 /* virtual */
-bool
-PxrMayaHdImagingShapeDrawOverride::isBounded(
-        const MDagPath& objPath,
-        const MDagPath& /* cameraPath */) const
+bool PxrMayaHdImagingShapeDrawOverride::isBounded(
+    const MDagPath& objPath,
+    const MDagPath& /* cameraPath */) const
 {
-    const PxrMayaHdImagingShape* imagingShape =
-        PxrMayaHdImagingShape::GetShapeAtDagPath(objPath);
+    const PxrMayaHdImagingShape* imagingShape = PxrMayaHdImagingShape::GetShapeAtDagPath(objPath);
     if (!imagingShape) {
         return false;
     }
@@ -118,19 +113,14 @@ PxrMayaHdImagingShapeDrawOverride::isBounded(
 }
 
 /* virtual */
-bool
-PxrMayaHdImagingShapeDrawOverride::disableInternalBoundingBoxDraw() const
-{
-    return true;
-}
+bool PxrMayaHdImagingShapeDrawOverride::disableInternalBoundingBoxDraw() const { return true; }
 
 /* virtual */
-MUserData*
-PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
-        const MDagPath& objPath,
-        const MDagPath& /* cameraPath */,
-        const MHWRender::MFrameContext& frameContext,
-        MUserData* oldData)
+MUserData* PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
+    const MDagPath& objPath,
+    const MDagPath& /* cameraPath */,
+    const MHWRender::MFrameContext& frameContext,
+    MUserData*                      oldData)
 {
     TRACE_FUNCTION();
 
@@ -139,44 +129,38 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
         MProfiler::kColorE_L2,
         "Hydra Imaging Shape prepareForDraw() (Viewport 2.0)");
 
-    const PxrMayaHdImagingShape* imagingShape =
-        PxrMayaHdImagingShape::GetShapeAtDagPath(objPath);
+    const PxrMayaHdImagingShape* imagingShape = PxrMayaHdImagingShape::GetShapeAtDagPath(objPath);
     if (!imagingShape) {
         return nullptr;
     }
 
-    TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
-        "PxrMayaHdImagingShapeDrawOverride::prepareForDraw(), objPath: %s\n",
-        objPath.fullPathName().asChar());
+    TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING)
+        .Msg(
+            "PxrMayaHdImagingShapeDrawOverride::prepareForDraw(), objPath: %s\n",
+            objPath.fullPathName().asChar());
 
     // The HdImagingShape is very rarely marked dirty, but one of the things
     // that does so is changing batch renderer settings attributes, so we grab
     // the values from the shape here and pass them along to the batch
     // renderer. Settings that affect selection should then be set
     // appropriately for subsequent selections.
-    MStatus status;
+    MStatus                 status;
     const MFnDependencyNode depNodeFn(imagingShape->thisMObject(), &status);
     if (status == MS::kSuccess) {
-        const MPlug selectionResolutionPlug =
-            depNodeFn.findPlug(
-                PxrMayaHdImagingShape::selectionResolutionAttr,
-                &status);
+        const MPlug selectionResolutionPlug
+            = depNodeFn.findPlug(PxrMayaHdImagingShape::selectionResolutionAttr, &status);
         if (status == MS::kSuccess) {
-            const short selectionResolution =
-                selectionResolutionPlug.asShort(&status);
+            const short selectionResolution = selectionResolutionPlug.asShort(&status);
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetSelectionResolution(
                     GfVec2i(selectionResolution));
             }
         }
 
-        const MPlug enableDepthSelectionPlug =
-            depNodeFn.findPlug(
-                PxrMayaHdImagingShape::enableDepthSelectionAttr,
-                &status);
+        const MPlug enableDepthSelectionPlug
+            = depNodeFn.findPlug(PxrMayaHdImagingShape::enableDepthSelectionAttr, &status);
         if (status == MS::kSuccess) {
-            const bool enableDepthSelection =
-                enableDepthSelectionPlug.asBool(&status);
+            const bool enableDepthSelection = enableDepthSelectionPlug.asBool(&status);
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetDepthSelectionEnabled(
                     enableDepthSelection);
@@ -185,8 +169,7 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
     }
 
     // Sync any instancers that need Hydra drawing.
-    UsdMayaGL_InstancerImager::GetInstance().SyncShapeAdapters(
-            frameContext.getDisplayStyle());
+    UsdMayaGL_InstancerImager::GetInstance().SyncShapeAdapters(frameContext.getDisplayStyle());
 
     PxrMayaHdUserData* newData = dynamic_cast<PxrMayaHdUserData*>(oldData);
     if (!newData) {
@@ -197,10 +180,9 @@ PxrMayaHdImagingShapeDrawOverride::prepareForDraw(
 }
 
 /* static */
-void
-PxrMayaHdImagingShapeDrawOverride::draw(
-        const MHWRender::MDrawContext& context,
-        const MUserData* data)
+void PxrMayaHdImagingShapeDrawOverride::draw(
+    const MHWRender::MDrawContext& context,
+    const MUserData*               data)
 {
     TRACE_FUNCTION();
 
@@ -209,20 +191,17 @@ PxrMayaHdImagingShapeDrawOverride::draw(
         MProfiler::kColorC_L1,
         "Hydra Imaging Shape draw() (Viewport 2.0)");
 
-    TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
-        "PxrMayaHdImagingShapeDrawOverride::draw()\n");
+    TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg("PxrMayaHdImagingShapeDrawOverride::draw()\n");
 
     UsdMayaGLBatchRenderer::GetInstance().Draw(context, data);
 }
 
-PxrMayaHdImagingShapeDrawOverride::PxrMayaHdImagingShapeDrawOverride(
-        const MObject& obj) :
-    MHWRender::MPxDrawOverride(
+PxrMayaHdImagingShapeDrawOverride::PxrMayaHdImagingShapeDrawOverride(const MObject& obj)
+    : MHWRender::MPxDrawOverride(
         obj,
         PxrMayaHdImagingShapeDrawOverride::draw,
         /* isAlwaysDirty = */ false)
 {
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

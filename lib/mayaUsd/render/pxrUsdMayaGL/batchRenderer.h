@@ -33,19 +33,15 @@
 //
 // The X11 include appears to have been removed in Maya 2020+, so this should
 // no longer be an issue with later versions.
-#include <pxr/usd/sdf/types.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/sceneDelegate.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
+#include <mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
+#include <mayaUsd/utils/util.h>
 
-#include <maya/M3dView.h>
-#include <maya/MDrawContext.h>
-#include <maya/MDrawRequest.h>
-#include <maya/MMessage.h>
-#include <maya/MObjectHandle.h>
-#include <maya/MSelectInfo.h>
-#include <maya/MSelectionContext.h>
-#include <maya/MTypes.h>
-#include <maya/MUserData.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/vec2i.h>
 #include <pxr/base/gf/vec3f.h>
@@ -59,16 +55,19 @@
 #include <pxr/imaging/hdSt/renderDelegate.h>
 #include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/imaging/hdx/selectionTracker.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/types.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/listeners/notice.h>
-#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
-#include <mayaUsd/render/pxrUsdMayaGL/sceneDelegate.h>
-#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
-#include <mayaUsd/render/pxrUsdMayaGL/softSelectHelper.h>
-#include <mayaUsd/utils/diagnosticDelegate.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/M3dView.h>
+#include <maya/MDrawContext.h>
+#include <maya/MDrawRequest.h>
+#include <maya/MMessage.h>
+#include <maya/MObjectHandle.h>
+#include <maya/MSelectInfo.h>
+#include <maya/MSelectionContext.h>
+#include <maya/MTypes.h>
+#include <maya/MUserData.h>
 
 #if USD_VERSION_NUM > 2002
 #include <pxr/imaging/hd/driver.h>
@@ -104,10 +103,10 @@ using HgiUniquePtr = std::unique_ptr<class Hgi>;
 /// for their shape to participate in batched drawing and selection.
 ///
 class UsdMayaGLBatchRenderer
-        : public TfSingleton<UsdMayaGLBatchRenderer>, public TfWeakBase
+    : public TfSingleton<UsdMayaGLBatchRenderer>
+    , public TfWeakBase
 {
 public:
-
     /// Maya profiler category ID
     MAYAUSD_CORE_PUBLIC
     static const int ProfilerCategory;
@@ -177,9 +176,7 @@ public:
     /// Legacy shape adapters. You cannot rely on the shape adapters being
     /// associated with a specific viewport.
     MAYAUSD_CORE_PUBLIC
-    bool PopulateCustomPrimFilter(
-            const MDagPath& dagPath,
-            PxrMayaHdPrimFilter& primFilter);
+    bool PopulateCustomPrimFilter(const MDagPath& dagPath, PxrMayaHdPrimFilter& primFilter);
 
     /// Render batch in the legacy viewport based on \p request
     MAYAUSD_CORE_PUBLIC
@@ -187,9 +184,7 @@ public:
 
     /// Render batch in Viewport 2.0 based on \p userData
     MAYAUSD_CORE_PUBLIC
-    void Draw(
-            const MHWRender::MDrawContext& context,
-            const MUserData* userData);
+    void Draw(const MHWRender::MDrawContext& context, const MUserData* userData);
 
     /// Render bounding box in the legacy viewport based on \p request
     MAYAUSD_CORE_PUBLIC
@@ -197,9 +192,7 @@ public:
 
     /// Render bounding box in Viewport 2.0 based on \p userData
     MAYAUSD_CORE_PUBLIC
-    void DrawBoundingBox(
-            const MHWRender::MDrawContext& context,
-            const MUserData* userData);
+    void DrawBoundingBox(const MHWRender::MDrawContext& context, const MUserData* userData);
 
     /// Gets the resolution of the draw target used for computing selections.
     ///
@@ -235,9 +228,8 @@ public:
     /// erased at the next selection, so clients should make copies if they
     /// need the data to persist.
     MAYAUSD_CORE_PUBLIC
-    const HdxPickHitVector* TestIntersection(
-            const PxrMayaHdShapeAdapter* shapeAdapter,
-            MSelectInfo& selectInfo);
+    const HdxPickHitVector*
+    TestIntersection(const PxrMayaHdShapeAdapter* shapeAdapter, MSelectInfo& selectInfo);
 
     /// Tests the object from the given shape adapter for intersection with
     /// a given draw context in Viewport 2.0.
@@ -250,9 +242,9 @@ public:
     /// need the data to persist.
     MAYAUSD_CORE_PUBLIC
     const HdxPickHitVector* TestIntersection(
-            const PxrMayaHdShapeAdapter* shapeAdapter,
-            const MHWRender::MSelectionInfo& selectionInfo,
-            const MHWRender::MDrawContext& context);
+        const PxrMayaHdShapeAdapter*     shapeAdapter,
+        const MHWRender::MSelectionInfo& selectionInfo,
+        const MHWRender::MDrawContext&   context);
 
     /// Tests the contents of the given prim filter (previously obtained
     /// via PopulateCustomFilter) for intersection with the current OpenGL
@@ -265,10 +257,10 @@ public:
     /// the intersection result.
     MAYAUSD_CORE_PUBLIC
     bool TestIntersectionCustomPrimFilter(
-            const PxrMayaHdPrimFilter& primFilter,
-            const GfMatrix4d& viewMatrix,
-            const GfMatrix4d& projectionMatrix,
-            HdxPickHitVector* outResult);
+        const PxrMayaHdPrimFilter& primFilter,
+        const GfMatrix4d&          viewMatrix,
+        const GfMatrix4d&          projectionMatrix,
+        HdxPickHitVector*          outResult);
 
     /// Utility function for finding the nearest hit (in terms of
     /// normalizedDepth) in the given \p hitSet.
@@ -276,13 +268,11 @@ public:
     /// If \p hitSet is nullptr or is empty, nullptr is returned. Otherwise a
     /// pointer to the nearest hit in \p hitSet is returned.
     MAYAUSD_CORE_PUBLIC
-    static const HdxPickHit* GetNearestHit(
-            const HdxPickHitVector* hitSet);
+    static const HdxPickHit* GetNearestHit(const HdxPickHitVector* hitSet);
 
     /// Returns whether soft selection for proxy shapes is currently enabled.
     MAYAUSD_CORE_PUBLIC
-    inline bool GetObjectSoftSelectEnabled()
-    { return _objectSoftSelectEnabled; }
+    inline bool GetObjectSoftSelectEnabled() { return _objectSoftSelectEnabled; }
 
     /// Starts batching all diagnostics until the end of the current frame draw.
     /// The batch renderer will automatically release the diagnostics when Maya
@@ -291,7 +281,6 @@ public:
     void StartBatchingFrameDiagnostics();
 
 private:
-
     friend class TfSingleton<UsdMayaGLBatchRenderer>;
 
     MAYAUSD_CORE_PUBLIC
@@ -309,18 +298,17 @@ private:
     /// Allow shape adapters access to the soft selection helper.
     friend PxrMayaHdShapeAdapter;
 
-    typedef std::pair<PxrMayaHdRenderParams, PxrMayaHdPrimFilterVector>
-            _RenderItem;
+    typedef std::pair<PxrMayaHdRenderParams, PxrMayaHdPrimFilterVector> _RenderItem;
 
     /// Private helper function to render the given list of render items.
     /// Note that this doesn't set lighting, so if you need to update the
     /// lighting from the scene, you need to do that beforehand.
     void _Render(
-            const GfMatrix4d& worldToViewMatrix,
-            const GfMatrix4d& projectionMatrix,
-            const GfVec4d& viewport,
-            unsigned int displayStyle,
-            const std::vector<_RenderItem>& items);
+        const GfMatrix4d&               worldToViewMatrix,
+        const GfMatrix4d&               projectionMatrix,
+        const GfVec4d&                  viewport,
+        unsigned int                    displayStyle,
+        const std::vector<_RenderItem>& items);
 
     /// Call to render all queued batches. May be called safely without
     /// performance hit when no batches are queued.
@@ -328,23 +316,23 @@ private:
     /// when determining visibility. If it's null, then assumes that there's no
     /// isolated selection.
     void _RenderBatches(
-            const MHWRender::MDrawContext* vp2Context,
-            const M3dView* view3d,
-            const GfMatrix4d& worldToViewMatrix,
-            const GfMatrix4d& projectionMatrix,
-            const GfVec4d& viewport);
+        const MHWRender::MDrawContext* vp2Context,
+        const M3dView*                 view3d,
+        const GfMatrix4d&              worldToViewMatrix,
+        const GfMatrix4d&              projectionMatrix,
+        const GfVec4d&                 viewport);
 
     /// Private helper function for testing intersection on a single collection
     /// only.
     /// \returns True if there was at least one hit. All hits are returned in
     /// the \p *result.
     bool _TestIntersection(
-            const HdRprimCollection& rprimCollection,
-            const TfTokenVector& renderTags,
-            const GfMatrix4d& viewMatrix,
-            const GfMatrix4d& projectionMatrix,
-            const bool singleSelection,
-            HdxPickHitVector* result);
+        const HdRprimCollection& rprimCollection,
+        const TfTokenVector&     renderTags,
+        const GfMatrix4d&        viewMatrix,
+        const GfMatrix4d&        projectionMatrix,
+        const bool               singleSelection,
+        HdxPickHitVector*        result);
 
     // Handler for Maya scene resets (e.g. new scene or switch scenes).
     void _OnMayaSceneReset(const UsdMayaSceneResetNotice& notice);
@@ -357,9 +345,7 @@ private:
     /// some state in the batch renderer and prepare it for subsequent
     /// selection.
     /// For the legacy viewport, there is no such notification sent by Maya.
-    static void _OnMayaEndRenderCallback(
-            MHWRender::MDrawContext& context,
-            void* clientData);
+    static void _OnMayaEndRenderCallback(MHWRender::MDrawContext& context, void* clientData);
 
     /// Record changes to soft select options
     ///
@@ -386,7 +372,7 @@ private:
     /// selection as pending.
     bool _isSelectionPending;
 
-    bool _objectSoftSelectEnabled;
+    bool        _objectSoftSelectEnabled;
     MCallbackId _softSelectOptionsCallbackId;
 
     /// Type definition for a set of pointers to shape adapters.
@@ -411,8 +397,7 @@ private:
 
     /// Mapping of Maya object handles to their shape adapters.
     /// This is a "secondary" container for storing shape adapters.
-    typedef UsdMayaUtil::MObjectHandleUnorderedMap<PxrMayaHdShapeAdapter*>
-            _ShapeAdapterHandleMap;
+    typedef UsdMayaUtil::MObjectHandleUnorderedMap<PxrMayaHdShapeAdapter*> _ShapeAdapterHandleMap;
 
     /// We maintain separate object handle path maps for Viewport 2.0 and the
     /// legacy viewport.
@@ -433,9 +418,9 @@ private:
     /// Otherwise, we test each shape adapter's prim filter individually so that
     /// occluded shapes will be included in the selection.
     PxrMayaHdPrimFilterVector _GetIntersectionPrimFilters(
-            _ShapeAdapterBucketsMap& bucketsMap,
-            const M3dView* view,
-            const bool useDepthSelection) const;
+        _ShapeAdapterBucketsMap& bucketsMap,
+        const M3dView*           view,
+        const bool               useDepthSelection) const;
 
     /// Populates the selection results using the given parameters by
     /// performing intersection tests against all of the shapes in the given
@@ -444,11 +429,11 @@ private:
     /// when determining visibility. If it's null, then assumes that there's no
     /// isolated selection.
     void _ComputeSelection(
-            _ShapeAdapterBucketsMap& bucketsMap,
-            const M3dView* view3d,
-            const GfMatrix4d& viewMatrix,
-            const GfMatrix4d& projectionMatrix,
-            const bool singleSelection);
+        _ShapeAdapterBucketsMap& bucketsMap,
+        const M3dView*           view3d,
+        const GfMatrix4d&        viewMatrix,
+        const GfMatrix4d&        projectionMatrix,
+        const bool               singleSelection);
 
     /// A cache of all selection results gathered since the last selection was
     /// computed. It maps delegate IDs to a HitSet of all of the intersection
@@ -459,7 +444,7 @@ private:
     /// This is used to determine if the results can be shared among multiple
     /// shapes calling TestIntersection.
     typedef std::tuple<GfMatrix4d, GfMatrix4d, bool> _SelectResultsKey;
-    _SelectResultsKey _selectResultsKey;
+    _SelectResultsKey                                _selectResultsKey;
 
     /// Hydra engine objects used to render batches.
     ///
@@ -473,10 +458,10 @@ private:
     /// Hgi and HdDriver should be constructed before HdEngine to ensure they
     /// are destructed last. Hgi may be used during engine/delegate destruction.
     HgiUniquePtr _hgi;
-    HdDriver _hgiDriver;
+    HdDriver     _hgiDriver;
 #endif
-    HdEngine _hdEngine;
-    HdStRenderDelegate _renderDelegate;
+    HdEngine                       _hdEngine;
+    HdStRenderDelegate             _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
 
     /// The root ID of the batch renderer itself, and the top of the path
@@ -494,7 +479,7 @@ private:
     PxrMayaHdSceneDelegateSharedPtr _taskDelegate;
 
     GfVec2i _selectionResolution;
-    bool _enableDepthSelection;
+    bool    _enableDepthSelection;
 
     HdxSelectionTrackerSharedPtr _selectionTracker;
 
@@ -509,8 +494,6 @@ private:
 
 MAYAUSD_TEMPLATE_CLASS(TfSingleton<UsdMayaGLBatchRenderer>);
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

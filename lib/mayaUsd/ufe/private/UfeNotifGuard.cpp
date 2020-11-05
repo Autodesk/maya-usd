@@ -15,20 +15,17 @@
 //
 #include "UfeNotifGuard.h"
 
-#include <ufe/transform3d.h>
 #include <ufe/path.h>
+#include <ufe/transform3d.h>
 
 namespace {
-    Ufe::Path transform3dPath;
+Ufe::Path transform3dPath;
 }
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-InTransform3dChange::InTransform3dChange(const Ufe::Path& path)
-{
-    transform3dPath = path;
-}
+InTransform3dChange::InTransform3dChange(const Ufe::Path& path) { transform3dPath = path; }
 
 InTransform3dChange::~InTransform3dChange()
 {
@@ -37,10 +34,7 @@ InTransform3dChange::~InTransform3dChange()
 }
 
 /* static */
-bool InTransform3dChange::inTransform3dChange()
-{
-    return !transform3dPath.empty();
-}
+bool InTransform3dChange::inTransform3dChange() { return !transform3dPath.empty(); }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

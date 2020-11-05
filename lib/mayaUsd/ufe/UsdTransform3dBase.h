@@ -15,13 +15,13 @@
 //
 #pragma once
 
-#include <ufe/transform3d.h>
-#include <ufe/transform3dHandler.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <ufe/transform3d.h>
+#include <ufe/transform3dHandler.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -29,7 +29,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Read-only implementation for USD object 3D transform information.
-// 
+//
 // Methods in the interface which return a command to change the object's 3D
 // transformation return a null pointer.
 //
@@ -51,32 +51,32 @@ public:
     UsdTransform3dBase& operator=(UsdTransform3dBase&&) = delete;
 
     // Ufe::Transform3d overrides
-    const Ufe::Path& path() const override;
+    const Ufe::Path&    path() const override;
     Ufe::SceneItem::Ptr sceneItem() const override;
 
     inline UsdSceneItem::Ptr usdSceneItem() const { return fItem; }
-    inline UsdPrim prim() const { return fPrim; }
+    inline UsdPrim           prim() const { return fPrim; }
 
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
-    Ufe::RotateUndoableCommand::Ptr rotateCmd(double x, double y, double z) override;
-    Ufe::ScaleUndoableCommand::Ptr scaleCmd(double x, double y, double z) override;
+    Ufe::RotateUndoableCommand::Ptr    rotateCmd(double x, double y, double z) override;
+    Ufe::ScaleUndoableCommand::Ptr     scaleCmd(double x, double y, double z) override;
 
     Ufe::TranslateUndoableCommand::Ptr rotatePivotCmd(double x, double y, double z) override;
-    Ufe::Vector3d rotatePivot() const override;
+    Ufe::Vector3d                      rotatePivot() const override;
 
     Ufe::TranslateUndoableCommand::Ptr scalePivotCmd(double x, double y, double z) override;
-    Ufe::Vector3d scalePivot() const override;
+    Ufe::Vector3d                      scalePivot() const override;
 
-    Ufe::TranslateUndoableCommand::Ptr translateRotatePivotCmd(
-        double x, double y, double z) override;
+    Ufe::TranslateUndoableCommand::Ptr
+                  translateRotatePivotCmd(double x, double y, double z) override;
     Ufe::Vector3d rotatePivotTranslation() const override;
-    Ufe::TranslateUndoableCommand::Ptr translateScalePivotCmd(
-        double x, double y, double z) override;
+    Ufe::TranslateUndoableCommand::Ptr
+                  translateScalePivotCmd(double x, double y, double z) override;
     Ufe::Vector3d scalePivotTranslation() const override;
 
 #if UFE_PREVIEW_VERSION_NUM >= 2021
     Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
-    Ufe::Matrix4d matrix() const override;
+    Ufe::Matrix4d                        matrix() const override;
 #endif
 
     Ufe::Matrix4d segmentInclusiveMatrix() const override;
@@ -86,11 +86,10 @@ protected:
     const char* pathCStr() const;
 
 private:
-
     UsdSceneItem::Ptr fItem;
-    UsdPrim fPrim;
+    UsdPrim           fPrim;
 
 }; // UsdTransform3dBase
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

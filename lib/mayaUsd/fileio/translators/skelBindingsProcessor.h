@@ -16,17 +16,17 @@
 #ifndef PXRUSDMAYA_SKEL_BINDINGS_PROCESSOR_H
 #define PXRUSDMAYA_SKEL_BINDINGS_PROCESSOR_H
 
-#include <set>
-#include <unordered_map>
-
-#include <maya/MDagPath.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/pathTable.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MDagPath.h>
+
+#include <set>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -45,22 +45,18 @@ public:
     /// - UsdMayaJobExportArgsTokens->auto_: create a SkelRoot if needed
     /// UsdMayaJobExportArgsTokens->none is not valid for \p config; it will
     /// mark an invalid binding.
-    void MarkBindings(const SdfPath& path,
-                      const SdfPath& skelPath,
-                      const TfToken& config);
+    void MarkBindings(const SdfPath& path, const SdfPath& skelPath, const TfToken& config);
 
     /// Performs final processing for skel bindings.
     bool PostProcessSkelBindings(const UsdStagePtr& stage) const;
 
 private:
-
     bool _VerifyOrMakeSkelRoots(const UsdStagePtr& stage) const;
 
-    using _Entry = std::pair<SdfPath,TfToken>;
+    using _Entry = std::pair<SdfPath, TfToken>;
 
     std::unordered_map<SdfPath, _Entry, SdfPath::Hash> _bindingToSkelMap;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

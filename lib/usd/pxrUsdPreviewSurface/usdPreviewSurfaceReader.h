@@ -21,13 +21,15 @@
 #include <mayaUsd/fileio/shaderReader.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrMayaUsdPreviewSurface_Reader : public UsdMayaShaderReader {
+class PxrMayaUsdPreviewSurface_Reader : public UsdMayaShaderReader
+{
     TfToken _mayaTypeName;
+
 public:
     PxrMayaUsdPreviewSurface_Reader(const UsdMayaPrimReaderArgs&, const TfToken& mayaTypeName);
 
@@ -37,6 +39,5 @@ public:
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

@@ -16,27 +16,27 @@
 #ifndef HDMAYA_ADAPTER_H
 #define HDMAYA_ADAPTER_H
 
-#include <vector>
-
-#include <maya/MMessage.h>
+#include <hdMaya/api.h>
+#include <hdMaya/delegates/delegateCtx.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <hdMaya/api.h>
-#include <hdMaya/delegates/delegateCtx.h>
+#include <maya/MMessage.h>
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaAdapter {
+class HdMayaAdapter
+{
 public:
     HDMAYA_API
-    HdMayaAdapter(
-        const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate);
+    HdMayaAdapter(const MObject& node, const SdfPath& id, HdMayaDelegateCtx* delegate);
     HDMAYA_API
     virtual ~HdMayaAdapter();
 
-    const SdfPath& GetID() const { return _id; }
+    const SdfPath&     GetID() const { return _id; }
     HdMayaDelegateCtx* GetDelegate() const { return _delegate; }
     HDMAYA_API
     void AddCallback(MCallbackId callbackId);
@@ -44,7 +44,7 @@ public:
     virtual void RemoveCallbacks();
     HDMAYA_API
     virtual VtValue Get(const TfToken& key);
-    const MObject& GetNode() const { return _node; }
+    const MObject&  GetNode() const { return _node; }
     HDMAYA_API
     virtual bool IsSupported() const = 0;
     HDMAYA_API
@@ -62,10 +62,10 @@ public:
     bool IsPopulated() const { return _isPopulated; }
 
 protected:
-    SdfPath _id;
+    SdfPath                  _id;
     std::vector<MCallbackId> _callbacks;
-    HdMayaDelegateCtx* _delegate;
-    MObject _node;
+    HdMayaDelegateCtx*       _delegate;
+    MObject                  _node;
 
     bool _isPopulated = false;
 };

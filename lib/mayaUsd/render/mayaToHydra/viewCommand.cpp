@@ -15,16 +15,15 @@
 //
 #include "viewCommand.h"
 
-#include <maya/MArgDatabase.h>
-#include <maya/MGlobal.h>
-#include <maya/MSyntax.h>
+#include "renderGlobals.h"
+#include "renderOverride.h"
+#include "utils.h"
 
 #include <hdMaya/delegates/delegateRegistry.h>
 
-#include "renderGlobals.h"
-#include "renderOverride.h"
-#include "renderOverride.h"
-#include "utils.h"
+#include <maya/MArgDatabase.h>
+#include <maya/MGlobal.h>
+#include <maya/MSyntax.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -109,7 +108,8 @@ Debug flags:
 
 } // namespace
 
-MSyntax MtohViewCmd::createSyntax() {
+MSyntax MtohViewCmd::createSyntax()
+{
     MSyntax syntax;
 
     syntax.addFlag(_listRenderers, _listRenderersLong);
@@ -138,17 +138,19 @@ MSyntax MtohViewCmd::createSyntax() {
 
     syntax.addFlag(_visibleOnly, _visibleOnlyLong);
 
-    syntax.addFlag(_sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString,
-        MSyntax::kString);
+    syntax.addFlag(_sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString, MSyntax::kString);
 
     return syntax;
 }
 
-MStatus MtohViewCmd::doIt(const MArgList& args) {
+MStatus MtohViewCmd::doIt(const MArgList& args)
+{
     MStatus status;
 
     MArgDatabase db(syntax(), args, &status);
-    if (!status) { return status; }
+    if (!status) {
+        return status;
+    }
 
     TfToken renderDelegateName;
     if (db.isFlagSet(_rendererId)) {
@@ -166,14 +168,17 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
             appendToResult(plugin.rendererName.GetText());
 
         // Want to return an empty list, not None
-        if (!isCurrentResultArray()) { setResult(MStringArray()); }
+        if (!isCurrentResultArray()) {
+            setResult(MStringArray());
+        }
     } else if (db.isFlagSet(_listActiveRenderers)) {
-        for (const auto& renderer :
-             MtohRenderOverride::AllActiveRendererNames()) {
+        for (const auto& renderer : MtohRenderOverride::AllActiveRendererNames()) {
             appendToResult(renderer);
         }
         // Want to return an empty list, not None
-        if (!isCurrentResultArray()) { setResult(MStringArray()); }
+        if (!isCurrentResultArray()) {
+            setResult(MStringArray());
+        }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         if (renderDelegateName.IsEmpty()) {
             return MS::kInvalidParameter;
@@ -182,12 +187,13 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         const auto dn = MtohGetRendererPluginDisplayName(renderDelegateName);
         setResult(MString(dn.c_str()));
     } else if (db.isFlagSet(_listDelegates)) {
-        for (const auto& delegate :
-             HdMayaDelegateRegistry::GetDelegateNames()) {
+        for (const auto& delegate : HdMayaDelegateRegistry::GetDelegateNames()) {
             appendToResult(delegate.GetText());
         }
         // Want to return an empty list, not None
-        if (!isCurrentResultArray()) { setResult(MStringArray()); }
+        if (!isCurrentResultArray()) {
+            setResult(MStringArray());
+        }
     } else if (db.isFlagSet(_help)) {
         MString helpText = _helpText;
         if (db.isFlagSet(_verbose)) {
@@ -198,39 +204,41 @@ MStatus MtohViewCmd::doIt(const MArgList& args) {
         MGlobal::displayInfo(helpText);
     } else if (db.isFlagSet(_createRenderGlobals)) {
         bool userDefaults = db.isFlagSet(_userDefaultsId);
-        MtohRenderGlobals::CreateAttributes({renderDelegateName, true, userDefaults});
+        MtohRenderGlobals::CreateAttributes({ renderDelegateName, true, userDefaults });
     } else if (db.isFlagSet(_updateRenderGlobals)) {
-        MString attrFlag;
+        MString    attrFlag;
         const bool storeUserSettings = true;
         if (db.getFlagArgument(_updateRenderGlobals, 0, attrFlag) == MS::kSuccess) {
-            bool userDefaults = db.isFlagSet(_userDefaultsId);
+            bool          userDefaults = db.isFlagSet(_userDefaultsId);
             const TfToken attrName(attrFlag.asChar());
-            auto& inst = MtohRenderGlobals::GlobalChanged({attrName, false, userDefaults}, storeUserSettings);
+            auto&         inst = MtohRenderGlobals::GlobalChanged(
+                { attrName, false, userDefaults }, storeUserSettings);
             MtohRenderOverride::UpdateRenderGlobals(inst, attrName);
             return MS::kSuccess;
         }
-        MtohRenderOverride::UpdateRenderGlobals(MtohRenderGlobals::GetInstance(storeUserSettings),
-            renderDelegateName);
+        MtohRenderOverride::UpdateRenderGlobals(
+            MtohRenderGlobals::GetInstance(storeUserSettings), renderDelegateName);
     } else if (db.isFlagSet(_listRenderIndex)) {
         if (renderDelegateName.IsEmpty()) {
             return MS::kInvalidParameter;
         }
 
-        auto rprimPaths = MtohRenderOverride::RendererRprims(
-            renderDelegateName, db.isFlagSet(_visibleOnly));
+        auto rprimPaths
+            = MtohRenderOverride::RendererRprims(renderDelegateName, db.isFlagSet(_visibleOnly));
         for (auto& rprimPath : rprimPaths) {
             appendToResult(rprimPath.GetText());
         }
         // Want to return an empty list, not None
-        if (!isCurrentResultArray()) { setResult(MStringArray()); }
+        if (!isCurrentResultArray()) {
+            setResult(MStringArray());
+        }
     } else if (db.isFlagSet(_sceneDelegateId)) {
         if (renderDelegateName.IsEmpty()) {
             return MS::kInvalidParameter;
         }
 
         MString sceneDelegateName;
-        CHECK_MSTATUS_AND_RETURN_IT(
-            db.getFlagArgument(_sceneDelegateId, 0, sceneDelegateName));
+        CHECK_MSTATUS_AND_RETURN_IT(db.getFlagArgument(_sceneDelegateId, 0, sceneDelegateName));
 
         SdfPath delegateId = MtohRenderOverride::RendererSceneDelegateId(
             renderDelegateName, TfToken(sceneDelegateName.asChar()));

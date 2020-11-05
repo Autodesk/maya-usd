@@ -37,5 +37,5 @@ class UsdReferences;
 PXR_NAMESPACE_CLOSE_SCOPE
 
 namespace MayaUsdUtils {
-  typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
-} // MayaUsdUtils
+typedef std::vector<PXR_NS::UsdPrim> UsdPrimVector;
+} // namespace MayaUsdUtils

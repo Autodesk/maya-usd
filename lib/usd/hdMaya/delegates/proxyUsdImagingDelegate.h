@@ -16,19 +16,22 @@
 #ifndef HDMAYA_AL_PROXY_USDIMAGING_DELEGATE_H
 #define HDMAYA_AL_PROXY_USDIMAGING_DELEGATE_H
 
-#include <maya/MDagPath.h>
-
 #include <pxr/usdImaging/usdImaging/delegate.h>
+
+#include <maya/MDagPath.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class MayaUsdProxyShapeBase;
 
-class HdMayaProxyUsdImagingDelegate : public UsdImagingDelegate {
+class HdMayaProxyUsdImagingDelegate : public UsdImagingDelegate
+{
 public:
     HdMayaProxyUsdImagingDelegate(
-        HdRenderIndex* parentIndex, SdfPath const& delegateID,
-        MayaUsdProxyShapeBase* proxy, const MDagPath& dagPath);
+        HdRenderIndex*         parentIndex,
+        SdfPath const&         delegateID,
+        MayaUsdProxyShapeBase* proxy,
+        const MDagPath&        dagPath);
     virtual ~HdMayaProxyUsdImagingDelegate();
 
     // We override this just because it's point that we can
@@ -59,10 +62,10 @@ public:
     void UpdateRootVisibility();
 
 private:
-    const MDagPath& _dagPath;
-    MayaUsdProxyShapeBase* _proxy{ nullptr };
-    bool _rootTransformDirty{ false };
-    bool _rootVisibilityDirty{ false };
+    const MDagPath&        _dagPath;
+    MayaUsdProxyShapeBase* _proxy { nullptr };
+    bool                   _rootTransformDirty { false };
+    bool                   _rootVisibilityDirty { false };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

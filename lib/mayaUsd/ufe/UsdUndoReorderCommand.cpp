@@ -15,25 +15,26 @@
 //
 #include "UsdUndoReorderCommand.h"
 
-#include <ufe/log.h>
-
 #include <mayaUsdUtils/util.h>
+
+#include <ufe/log.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoReorderCommand::UsdUndoReorderCommand(const UsdPrim& parentPrim, const std::vector<TfToken>& tokenList)
+UsdUndoReorderCommand::UsdUndoReorderCommand(
+    const UsdPrim&              parentPrim,
+    const std::vector<TfToken>& tokenList)
     : Ufe::UndoableCommand()
     , _parentPrim(parentPrim)
     , _orderedTokens(tokenList)
 {
 }
 
-UsdUndoReorderCommand::~UsdUndoReorderCommand()
-{
-}
+UsdUndoReorderCommand::~UsdUndoReorderCommand() { }
 
-UsdUndoReorderCommand::Ptr UsdUndoReorderCommand::create(const UsdPrim& parentPrim, const std::vector<TfToken>& tokenList)
+UsdUndoReorderCommand::Ptr
+UsdUndoReorderCommand::create(const UsdPrim& parentPrim, const std::vector<TfToken>& tokenList)
 {
     if (!parentPrim) {
         return nullptr;
@@ -56,10 +57,9 @@ void UsdUndoReorderCommand::undo()
         if (!reorder()) {
             UFE_LOG("reorder undo failed");
         }
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         UFE_LOG(e.what());
-        throw;  // re-throw the same exception
+        throw; // re-throw the same exception
     }
 }
 
@@ -71,4 +71,4 @@ void UsdUndoReorderCommand::redo()
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

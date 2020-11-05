@@ -47,40 +47,33 @@ class MAYAUSD_CORE_PUBLIC UsdTransform3dMatrixOp : public UsdTransform3dBase
 public:
     typedef std::shared_ptr<UsdTransform3dMatrixOp> Ptr;
 
-    UsdTransform3dMatrixOp(
-        const UsdSceneItem::Ptr& item,
-        const UsdGeomXformOp&    op
-    );
+    UsdTransform3dMatrixOp(const UsdSceneItem::Ptr& item, const UsdGeomXformOp& op);
     ~UsdTransform3dMatrixOp() override = default;
 
     //! Create a UsdTransform3dMatrixOp.
-    static UsdTransform3dMatrixOp::Ptr create(
-        const UsdSceneItem::Ptr& item,
-        const UsdGeomXformOp&    op
-    );
+    static UsdTransform3dMatrixOp::Ptr
+    create(const UsdSceneItem::Ptr& item, const UsdGeomXformOp& op);
 
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;
     Ufe::Vector3d scale() const override;
 
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
-    Ufe::RotateUndoableCommand::Ptr rotateCmd(double x, double y, double z) override;
-    Ufe::ScaleUndoableCommand::Ptr scaleCmd(double x, double y, double z) override;
+    Ufe::RotateUndoableCommand::Ptr    rotateCmd(double x, double y, double z) override;
+    Ufe::ScaleUndoableCommand::Ptr     scaleCmd(double x, double y, double z) override;
 
     Ufe::Matrix4d segmentInclusiveMatrix() const override;
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
 private:
-
     const UsdGeomXformOp _op;
 
 }; // UsdTransform3dMatrixOp
 
 //! \brief Factory to create a UsdTransform3dMatrixOp interface object.
 //
-// 
-class MAYAUSD_CORE_PUBLIC UsdTransform3dMatrixOpHandler
-  : public Ufe::Transform3dHandler
+//
+class MAYAUSD_CORE_PUBLIC UsdTransform3dMatrixOpHandler : public Ufe::Transform3dHandler
 {
 public:
     typedef std::shared_ptr<UsdTransform3dMatrixOpHandler> Ptr;
@@ -100,4 +93,4 @@ private:
 }; // UsdTransform3dMatrixOpHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

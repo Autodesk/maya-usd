@@ -25,9 +25,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<MayaUsd_SchemasALMayaReference,
-        TfType::Bases< MayaUsd_SchemasMayaReference > >();
-    
+    TfType::Define<MayaUsd_SchemasALMayaReference, TfType::Bases<MayaUsd_SchemasMayaReference>>();
+
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
     // TfType::Find<UsdSchemaBase>().FindDerivedByName("ALMayaReference")
@@ -37,13 +36,11 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 /* virtual */
-MayaUsd_SchemasALMayaReference::~MayaUsd_SchemasALMayaReference()
-{
-}
+MayaUsd_SchemasALMayaReference::~MayaUsd_SchemasALMayaReference() { }
 
 /* static */
 MayaUsd_SchemasALMayaReference
-MayaUsd_SchemasALMayaReference::Get(const UsdStagePtr &stage, const SdfPath &path)
+MayaUsd_SchemasALMayaReference::Get(const UsdStagePtr& stage, const SdfPath& path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
@@ -54,53 +51,44 @@ MayaUsd_SchemasALMayaReference::Get(const UsdStagePtr &stage, const SdfPath &pat
 
 /* static */
 MayaUsd_SchemasALMayaReference
-MayaUsd_SchemasALMayaReference::Define(
-    const UsdStagePtr &stage, const SdfPath &path)
+MayaUsd_SchemasALMayaReference::Define(const UsdStagePtr& stage, const SdfPath& path)
 {
     static TfToken usdPrimTypeName("ALMayaReference");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return MayaUsd_SchemasALMayaReference();
     }
-    return MayaUsd_SchemasALMayaReference(
-        stage->DefinePrim(path, usdPrimTypeName));
+    return MayaUsd_SchemasALMayaReference(stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* virtual */
-UsdSchemaType MayaUsd_SchemasALMayaReference::_GetSchemaType() const {
+UsdSchemaType MayaUsd_SchemasALMayaReference::_GetSchemaType() const
+{
     return MayaUsd_SchemasALMayaReference::schemaType;
 }
 
 /* static */
-const TfType &
-MayaUsd_SchemasALMayaReference::_GetStaticTfType()
+const TfType& MayaUsd_SchemasALMayaReference::_GetStaticTfType()
 {
     static TfType tfType = TfType::Find<MayaUsd_SchemasALMayaReference>();
     return tfType;
 }
 
 /* static */
-bool 
-MayaUsd_SchemasALMayaReference::_IsTypedSchema()
+bool MayaUsd_SchemasALMayaReference::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
 }
 
 /* virtual */
-const TfType &
-MayaUsd_SchemasALMayaReference::_GetTfType() const
-{
-    return _GetStaticTfType();
-}
+const TfType& MayaUsd_SchemasALMayaReference::_GetTfType() const { return _GetStaticTfType(); }
 
 /*static*/
-const TfTokenVector&
-MayaUsd_SchemasALMayaReference::GetSchemaAttributeNames(bool includeInherited)
+const TfTokenVector& MayaUsd_SchemasALMayaReference::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames;
-    static TfTokenVector allNames =
-        MayaUsd_SchemasMayaReference::GetSchemaAttributeNames(true);
+    static TfTokenVector allNames = MayaUsd_SchemasMayaReference::GetSchemaAttributeNames(true);
 
     if (includeInherited)
         return allNames;

@@ -20,12 +20,12 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTransform3dHandler::UsdTransform3dHandler() : Ufe::Transform3dHandler()
-{}
-
-UsdTransform3dHandler::~UsdTransform3dHandler()
+UsdTransform3dHandler::UsdTransform3dHandler()
+    : Ufe::Transform3dHandler()
 {
 }
+
+UsdTransform3dHandler::~UsdTransform3dHandler() { }
 
 /*static*/
 UsdTransform3dHandler::Ptr UsdTransform3dHandler::create()
@@ -48,4 +48,4 @@ Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::P
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

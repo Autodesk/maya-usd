@@ -16,5 +16,5 @@
 #pragma once
 
 #ifndef AL_MAYAUTILS_DEBUG
-# define AL_MAYAUTILS_DEBUG 0
+#define AL_MAYAUTILS_DEBUG 0
 #endif

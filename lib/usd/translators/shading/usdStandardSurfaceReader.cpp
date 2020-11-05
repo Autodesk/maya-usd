@@ -46,7 +46,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Shader reader for importing UsdPreviewSurface to Maya's standardSurface material nodes
-class PxrUsdTranslators_StandardSurfaceReader : public PxrUsdTranslators_MaterialReader {
+class PxrUsdTranslators_StandardSurfaceReader : public PxrUsdTranslators_MaterialReader
+{
     using _BaseClass = PxrUsdTranslators_MaterialReader;
 
 public:

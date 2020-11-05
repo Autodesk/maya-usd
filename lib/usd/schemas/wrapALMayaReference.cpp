@@ -13,9 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <string>
-
-#include <boost/python.hpp>
+#include <mayaUsd_Schemas/ALMayaReference.h>
 
 #include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyResultConversions.h>
@@ -25,7 +23,9 @@
 #include <pxr/usd/usd/pyConversions.h>
 #include <pxr/usd/usd/schemaBase.h>
 
-#include <mayaUsd_Schemas/ALMayaReference.h>
+#include <boost/python.hpp>
+
+#include <string>
 
 using namespace boost::python;
 
@@ -33,12 +33,10 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-#define WRAP_CUSTOM                                                     \
-    template <class Cls> static void _CustomWrapCode(Cls &_class)
+#define WRAP_CUSTOM template <class Cls> static void _CustomWrapCode(Cls& _class)
 
 // fwd decl.
 WRAP_CUSTOM;
-
 
 } // anonymous namespace
 
@@ -46,11 +44,9 @@ void wrapMayaUsd_SchemasALMayaReference()
 {
     typedef MayaUsd_SchemasALMayaReference This;
 
-    class_<This, bases<MayaUsd_SchemasMayaReference> >
-        cls("ALMayaReference");
+    class_<This, bases<MayaUsd_SchemasMayaReference>> cls("ALMayaReference");
 
-    cls
-        .def(init<UsdPrim>(arg("prim")))
+    cls.def(init<UsdPrim>(arg("prim")))
         .def(init<UsdSchemaBase const&>(arg("schemaObj")))
         .def(TfTypePythonClass())
 
@@ -60,26 +56,28 @@ void wrapMayaUsd_SchemasALMayaReference()
         .def("Define", &This::Define, (arg("stage"), arg("path")))
         .staticmethod("Define")
 
-        .def("GetSchemaAttributeNames",
-             &This::GetSchemaAttributeNames,
-             arg("includeInherited")=true,
-             return_value_policy<TfPySequenceToList>())
+        .def(
+            "GetSchemaAttributeNames",
+            &This::GetSchemaAttributeNames,
+            arg("includeInherited") = true,
+            return_value_policy<TfPySequenceToList>())
         .staticmethod("GetSchemaAttributeNames")
 
-        .def("_GetStaticTfType", (TfType const &(*)()) TfType::Find<This>,
-             return_value_policy<return_by_value>())
+        .def(
+            "_GetStaticTfType",
+            (TfType const& (*)())TfType::Find<This>,
+            return_value_policy<return_by_value>())
         .staticmethod("_GetStaticTfType")
 
         .def(!self)
 
-
-    ;
+        ;
 
     _CustomWrapCode(cls);
 }
 
 // ===================================================================== //
-// Feel free to add custom code below this line, it will be preserved by 
+// Feel free to add custom code below this line, it will be preserved by
 // the code generator.  The entry point for your custom code should look
 // minimally like the following:
 //
@@ -90,7 +88,7 @@ void wrapMayaUsd_SchemasALMayaReference()
 // }
 //
 // Of course any other ancillary or support code may be provided.
-// 
+//
 // Just remember to wrap code in the appropriate delimiters:
 // 'namespace {', '}'.
 //
@@ -99,7 +97,6 @@ void wrapMayaUsd_SchemasALMayaReference()
 
 namespace {
 
-WRAP_CUSTOM {
-}
+WRAP_CUSTOM { }
 
-}
+} // namespace

@@ -16,17 +16,17 @@
 #ifndef PXRUSDMAYA_SHADING_MODE_EXPORTER_H
 #define PXRUSDMAYA_SHADING_MODE_EXPORTER_H
 
-#include <functional>
-#include <memory>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usdShade/material.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <functional>
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,8 +40,8 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     void DoExport(
-            UsdMayaWriteJobContext& writeJobContext,
-            const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap);
+        UsdMayaWriteJobContext&                  writeJobContext,
+        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap);
 
     /// Called once, before any exports are started.
     ///
@@ -54,9 +54,10 @@ public:
     /// Called inside of a loop, per-shading-engine
     MAYAUSD_CORE_PUBLIC
     virtual void Export(
-            const UsdMayaShadingModeExportContext& context,
-            UsdShadeMaterial* const mat,
-            SdfPathSet* const boundPrimPaths) = 0;
+        const UsdMayaShadingModeExportContext& context,
+        UsdShadeMaterial* const                mat,
+        SdfPathSet* const                      boundPrimPaths)
+        = 0;
 
     /// Called once, after Export is called for all shading engines.
     ///
@@ -68,10 +69,9 @@ public:
 };
 
 using UsdMayaShadingModeExporterPtr = std::shared_ptr<UsdMayaShadingModeExporter>;
-using UsdMayaShadingModeExporterCreator = std::function<std::shared_ptr<UsdMayaShadingModeExporter>()>;
-
+using UsdMayaShadingModeExporterCreator
+    = std::function<std::shared_ptr<UsdMayaShadingModeExporter>()>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

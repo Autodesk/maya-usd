@@ -24,13 +24,12 @@ namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_PLUGIN_PUBLIC ADSKMayaUSDImportCommand : public MayaUsd::MayaUSDImportCommand
 {
-  public:
-
+public:
     static const MString commandName;
 
     static void* creator();
 };
 
-}
+} // namespace MAYAUSD_NS_DEF
 
 #endif

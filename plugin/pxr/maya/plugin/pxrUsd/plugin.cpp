@@ -13,22 +13,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/pxr.h>
-
-#include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
-#include <mayaUsd/nodes/proxyShapePlugin.h>
-
-#include <mayaUsd/utils/diagnosticDelegate.h>
 #include "usdMaya/exportCommand.h"
 #include "usdMaya/exportTranslator.h"
 #include "usdMaya/importCommand.h"
 #include "usdMaya/importTranslator.h"
 #include "usdMaya/listShadingModesCommand.h"
-
-#include <mayaUsd/listeners/notice.h>
 #include "usdMaya/proxyShape.h"
 #include "usdMaya/referenceAssembly.h"
+
+#include <mayaUsd/listeners/notice.h>
+#include <mayaUsd/nodes/proxyShapePlugin.h>
+#include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
+
+#include <pxr/pxr.h>
 
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
@@ -40,22 +39,19 @@
 #include <mayaUsd/ufe/Global.h>
 #endif
 
+#include "api.h"
+
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/registry.h>
 
-#include "api.h"
-
 PXR_NAMESPACE_USING_DIRECTIVE
-
 
 static const MString _RegistrantId("pxrUsdPlugin");
 
-
 PXRUSD_API
-MStatus
-initializePlugin(MObject obj)
+MStatus initializePlugin(MObject obj)
 {
-    MStatus status;
+    MStatus   status;
     MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
 
 #if defined(WANT_UFE_BUILD)
@@ -92,40 +88,38 @@ initializePlugin(MObject obj)
     // Set the label for the assembly node type so that it appears correctly
     // in the 'Create -> Scene Assembly' menu.
     const MString assemblyTypeLabel("UsdReferenceAssembly");
-    MString setLabelCmd;
-    status = setLabelCmd.format("assembly -e -type ^1s -label ^2s",
-                                UsdMayaReferenceAssembly::typeName,
-                                assemblyTypeLabel);
+    MString       setLabelCmd;
+    status = setLabelCmd.format(
+        "assembly -e -type ^1s -label ^2s", UsdMayaReferenceAssembly::typeName, assemblyTypeLabel);
     CHECK_MSTATUS_AND_RETURN_IT(status);
     status = MGlobal::executeCommand(setLabelCmd);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // Procs stored in usdMaya.mel
     // Add assembly callbacks for accessing data without creating an MPxAssembly instance
-    status = MGlobal::executeCommand("assembly -e -repTypeLabelProc usdMaya_UsdMayaReferenceAssembly_repTypeLabel -type " + UsdMayaReferenceAssembly::typeName);
+    status = MGlobal::executeCommand(
+        "assembly -e -repTypeLabelProc usdMaya_UsdMayaReferenceAssembly_repTypeLabel -type "
+        + UsdMayaReferenceAssembly::typeName);
     CHECK_MSTATUS_AND_RETURN_IT(status);
-    status = MGlobal::executeCommand("assembly -e -listRepTypesProc usdMaya_UsdMayaReferenceAssembly_listRepTypes -type " + UsdMayaReferenceAssembly::typeName);
+    status = MGlobal::executeCommand(
+        "assembly -e -listRepTypesProc usdMaya_UsdMayaReferenceAssembly_listRepTypes -type "
+        + UsdMayaReferenceAssembly::typeName);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     // Attribute Editor Templates
-    MString attribEditorCmd(
-        "from pxr.UsdMaya import AEpxrUsdReferenceAssemblyTemplate\n"
-        "AEpxrUsdReferenceAssemblyTemplate.addMelFunctionStubs()");
+    MString attribEditorCmd("from pxr.UsdMaya import AEpxrUsdReferenceAssemblyTemplate\n"
+                            "AEpxrUsdReferenceAssemblyTemplate.addMelFunctionStubs()");
     status = MGlobal::executePythonCommand(attribEditorCmd);
     CHECK_MSTATUS_AND_RETURN_IT(status);
 
     status = plugin.registerCommand(
-        "usdExport",
-        PxrMayaUSDExportCommand::creator,
-        PxrMayaUSDExportCommand::createSyntax);
+        "usdExport", PxrMayaUSDExportCommand::creator, PxrMayaUSDExportCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdExport");
     }
 
     status = plugin.registerCommand(
-        "usdImport",
-        PxrMayaUSDImportCommand::creator,
-        PxrMayaUSDImportCommand::createSyntax);
+        "usdImport", PxrMayaUSDImportCommand::creator, PxrMayaUSDImportCommand::createSyntax);
     if (!status) {
         status.perror("registerCommand usdImport");
     }
@@ -140,8 +134,8 @@ initializePlugin(MObject obj)
 
     status = UsdMayaUndoHelperCommand::initialize(plugin);
     if (!status) {
-        status.perror(std::string("registerCommand ").append(
-                          UsdMayaUndoHelperCommand::name()).c_str());
+        status.perror(
+            std::string("registerCommand ").append(UsdMayaUndoHelperCommand::name()).c_str());
     }
 
     status = plugin.registerFileTranslator(
@@ -172,18 +166,17 @@ initializePlugin(MObject obj)
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
     // automatically.  To be investigated.  A duplicate of this code is in the
     // Autodesk plugin.cpp.
-    const std::vector<std::string> translatorPluginNames{
-        "mayaUsd_Schemas", "mayaUsd_Translators"};
-    const auto& plugRegistry = PlugRegistry::GetInstance();
-    std::stringstream msg("mayaUsdPlugin: ");
+    const std::vector<std::string> translatorPluginNames { "mayaUsd_Schemas",
+                                                           "mayaUsd_Translators" };
+    const auto&                    plugRegistry = PlugRegistry::GetInstance();
+    std::stringstream              msg("mayaUsdPlugin: ");
     for (const auto& pluginName : translatorPluginNames) {
         auto plugin = plugRegistry.GetPluginWithName(pluginName);
         if (!plugin) {
             status = MStatus::kFailure;
             msg << "translator " << pluginName << " not found.";
             status.perror(msg.str().c_str());
-        }
-        else {
+        } else {
             // Load is a no-op if already loaded.
             if (!plugin->Load()) {
                 status = MStatus::kFailure;
@@ -197,10 +190,9 @@ initializePlugin(MObject obj)
 }
 
 PXRUSD_API
-MStatus
-uninitializePlugin(MObject obj)
+MStatus uninitializePlugin(MObject obj)
 {
-    MStatus status;
+    MStatus   status;
     MFnPlugin plugin(obj);
 
 #if defined(WANT_UFE_BUILD)
@@ -225,8 +217,8 @@ uninitializePlugin(MObject obj)
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);
     if (!status) {
-        status.perror(std::string("deregisterCommand ").append(
-                          UsdMayaUndoHelperCommand::name()).c_str());
+        status.perror(
+            std::string("deregisterCommand ").append(UsdMayaUndoHelperCommand::name()).c_str());
     }
 
     status = plugin.deregisterFileTranslator("pxrUsdImport");
@@ -239,7 +231,8 @@ uninitializePlugin(MObject obj)
         status.perror("pxrUsd: unable to deregister USD Export translator.");
     }
 
-    status = MGlobal::executeCommand("assembly -e -deregister " + UsdMayaReferenceAssembly::typeName);
+    status
+        = MGlobal::executeCommand("assembly -e -deregister " + UsdMayaReferenceAssembly::typeName);
     CHECK_MSTATUS(status);
 
     status = plugin.deregisterNode(UsdMayaReferenceAssembly::typeId);

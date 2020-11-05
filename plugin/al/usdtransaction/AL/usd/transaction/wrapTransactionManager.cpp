@@ -15,8 +15,8 @@
 //
 #include "AL/usd/transaction/TransactionManager.h"
 
-#include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/makePyConstructor.h>
+#include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/pyResultConversions.h>
 
 #include <boost/python.hpp>
@@ -27,40 +27,35 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 typedef AL::usd::transaction::TransactionManager This;
 
-static bool InProgressStage(const UsdStageWeakPtr& stage)
-{
-  return This::InProgress(stage);
-}
+static bool InProgressStage(const UsdStageWeakPtr& stage) { return This::InProgress(stage); }
 
 static bool InProgressStageLayer(const UsdStageWeakPtr& stage, const SdfLayerHandle& layer)
 {
-  return This::InProgress(stage, layer);
+    return This::InProgress(stage, layer);
 }
 
 static bool OpenStageLayer(const UsdStageWeakPtr& stage, const SdfLayerHandle& layer)
 {
-  return This::Open(stage, layer);
+    return This::Open(stage, layer);
 }
 
 static bool CloseStageLayer(const UsdStageWeakPtr& stage, const SdfLayerHandle& layer)
 {
-  return This::Close(stage, layer);
+    return This::Close(stage, layer);
 }
 
 void wrapTransactionManager()
 {
-  {
-    class_<This>("TransactionManager", no_init)
-      .def("InProgress", InProgressStage, (arg("stage")))
-      .def("InProgress", InProgressStageLayer, (arg("stage"), arg("layer")))
-      .staticmethod("InProgress")
+    {
+        class_<This>("TransactionManager", no_init)
+            .def("InProgress", InProgressStage, (arg("stage")))
+            .def("InProgress", InProgressStageLayer, (arg("stage"), arg("layer")))
+            .staticmethod("InProgress")
 
-      .def("Open", OpenStageLayer, (arg("stage"), arg("layer")))
-      .staticmethod("Open")
+            .def("Open", OpenStageLayer, (arg("stage"), arg("layer")))
+            .staticmethod("Open")
 
-      .def("Close", CloseStageLayer, (arg("stage"), arg("layer")))
-      .staticmethod("Close")
-    ;
-  }
+            .def("Close", CloseStageLayer, (arg("stage"), arg("layer")))
+            .staticmethod("Close");
+    }
 }
-

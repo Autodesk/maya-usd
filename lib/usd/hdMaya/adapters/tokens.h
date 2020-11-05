@@ -16,10 +16,10 @@
 #ifndef HDMAYA_ADAPTER_TOKENS_H
 #define HDMAYA_ADAPTER_TOKENS_H
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/staticTokens.h>
-
 #include <hdMaya/api.h>
+
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -75,8 +75,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pxrUsdPreviewSurface)
 // clang-format on
 
-TF_DECLARE_PUBLIC_TOKENS(
-    HdMayaAdapterTokens, HDMAYA_API, HDMAYA_ADAPTER_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdMayaAdapterTokens, HDMAYA_API, HDMAYA_ADAPTER_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -41,222 +41,226 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace MAYAUSD_NS_DEF
+namespace MAYAUSD_NS_DEF {
+struct ConverterArgs;
+class Converter;
+
+/*! \brief Proxy accessor class enables an MPxNode node with ProxyStageProvider interface to
+ write and read data from the USD stage.
+
+ Proxy accessor will discover accessor dynamic attributes on MPxNode and categorize them as
+ inputs or outputs.
+
+ During compute, proxy accessor will read all inputs, i.e. accessor attributes which have source
+ connection and write them to the stage and time provided by the ProxyStageProvider interface of
+ the owning node. Output attributes are then read from the stage and written to the data block.
+
+ Accessor attributes are dynamic attributes created on owning MPxNode and having the following
+ characteristics:
+ - attribute name is created using following formula - "AccessValue_" + hash(SdfPath)
+ - attribute nice name is used to store SdfPath to prim or prim property
+ - when no property is provided in the SdfPath, we assume the world matrix is requested. This
+ makes only sense for output plugs.
+
+ A proxy accessor is owned by MPxNode and extends base class methods. For more information read
+ the documentation for the public interface of this class.
+
+ \note Currently the only class leveraging proxy accessor is the proxy shape.
+*/
+class ProxyAccessor
 {
-    struct ConverterArgs;
-    class Converter;
+public:
+    using Owner = std::unique_ptr<ProxyAccessor>;
 
-    /*! \brief Proxy accessor class enables an MPxNode node with ProxyStageProvider interface to
-     write and read data from the USD stage.
+    /*! \brief  Construct ProxyAccessor for a given MPxNode with ProxyStageProvider interface
+        \note   Call from MPxNode::postConstructor()
+     */
+    template <
+        typename ProxyClass,
+        typename std::enable_if<
+            (std::is_base_of<MPxNode, ProxyClass>::value
+             && std::is_base_of<ProxyStageProvider, ProxyClass>::value),
+            int>::type
+        = 0>
+    static Owner createAndRegister(ProxyClass& proxyNode)
+    {
+        MPxNode&            node = static_cast<MPxNode&>(proxyNode);
+        ProxyStageProvider& stageProvider = static_cast<ProxyStageProvider&>(proxyNode);
 
-     Proxy accessor will discover accessor dynamic attributes on MPxNode and categorize them as
-     inputs or outputs.
+        auto accessor = Owner(new ProxyAccessor(stageProvider));
 
-     During compute, proxy accessor will read all inputs, i.e. accessor attributes which have source
-     connection and write them to the stage and time provided by the ProxyStageProvider interface of
-     the owning node. Output attributes are then read from the stage and written to the data block.
+        // add hidden attribute to force compute when USD changes
+        MFnDependencyNode fnDep(node.thisMObject());
+        {
+            MFnNumericAttribute attr;
 
-     Accessor attributes are dynamic attributes created on owning MPxNode and having the following
-     characteristics:
-     - attribute name is created using following formula - "AccessValue_" + hash(SdfPath)
-     - attribute nice name is used to store SdfPath to prim or prim property
-     - when no property is provided in the SdfPath, we assume the world matrix is requested. This
-     makes only sense for output plugs.
+            accessor->_forceCompute
+                = attr.create("forceCompute", "forceCompute", MFnNumericData::kBoolean);
 
-     A proxy accessor is owned by MPxNode and extends base class methods. For more information read
-     the documentation for the public interface of this class.
+            attr.setReadable(false);
+            attr.setWritable(true);
+            attr.setKeyable(false);
+            attr.setHidden(true);
+            attr.setConnectable(false);
 
-     \note Currently the only class leveraging proxy accessor is the proxy shape.
+            fnDep.addAttribute(accessor->_forceCompute);
+        }
+
+        accessor->addCallbacks(node.thisMObject());
+
+        return accessor;
+    }
+
+    /*! \brief  Insert extra plug level dependencies for accessor plugs
+        \note   Call from MPxNode::setDependentsDirty()
+     */
+    static MStatus
+    addDependentsDirty(const Owner& accessor, const MPlug& plug, MPlugArray& plugArray)
+    {
+        if (accessor)
+            return accessor->addDependentsDirty(plug, plugArray);
+        else
+            return MStatus::kFailure;
+    }
+
+    /*! \brief  Compute will write input accessor plugs and write converted data to the stage.
+       Once completed, all output accessor plugs will be provided with data. \note   Call from
+       MPxNode::compute()
+     */
+    static MStatus compute(const Owner& accessor, const MPlug& plug, MDataBlock& dataBlock)
+    {
+        if (accessor)
+            return accessor->compute(plug, dataBlock);
+        else
+            return MStatus::kFailure;
+    }
+
+    /*! \brief  Proxy accessor is creating acceleration structure to avoid the discovery of
+     accessor plugs at each compute. This accelleration structure has to be invalidate when
+     stage changes.
     */
-    class ProxyAccessor {
+    static MStatus stageChanged(
+        const Owner&                     accessor,
+        const MObject&                   node,
+        const UsdNotice::ObjectsChanged& notice)
+    {
+        if (accessor && !accessor->inCompute())
+            return accessor->stageChanged(node, notice);
+        else
+            return MStatus::kFailure;
+    }
+
+    /*! \brief  Update USD state to match what is stored in evaluation cache (when cached
+       playback is on) \note   Call from MPxNode::postEvaluation()
+     */
+    static MStatus syncCache(const Owner& accessor, const MObject& node, MDataBlock& dataBlock)
+    {
+        if (accessor && !accessor->inCompute())
+            return accessor->syncCache(node, dataBlock);
+        else
+            return MStatus::kFailure;
+    }
+
+    //! \brief  Clear all callback when destroying this object
+    virtual ~ProxyAccessor() { removeCallbacks(); }
+
+private:
+    /*! \brief  Single item in acceleration structure holding.
+        To avoid expensive searches during compute, we cache MPlug, SdfPath and converter needed
+       to translate values between data models.
+     */
+    using Item = std::tuple<MPlug, SdfPath, const Converter*>;
+    using Container = std::vector<Item>;
+
+    ProxyAccessor(ProxyStageProvider& provider)
+        : _stageProvider(provider)
+    {
+    }
+    ProxyAccessor() = delete;
+    ProxyAccessor(const ProxyAccessor&) = delete;
+    ProxyAccessor& operator=(const ProxyAccessor&) = delete;
+
+    //! \brief  Makes access to current stage time easier
+    UsdTimeCode getTime() const { return _stageProvider.getTime(); }
+    //! \brief  Makes access to the stage easier
+    UsdStageRefPtr getUsdStage() const { return _stageProvider.getUsdStage(); }
+
+    //! \brief  Register necessary callbacks
+    MStatus addCallbacks(MObject object);
+    //! \brief  Remove all registered callbacks
+    MStatus removeCallbacks();
+
+    //! \brief  Populate acceleration structure
+    void collectAccessorItems(MObject node);
+    //! \brief  Invalidate acceleration structure
+    void invalidateAccessorItems() { _validAccessorItems = false; }
+
+    //! \brief  Notification from MPxNode to insert accessor plugs dependencies
+    MStatus addDependentsDirty(const MPlug& plug, MPlugArray& plugArray);
+    //! \brief  Notification from MPxNode to compute accessor plugs.
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock);
+    //! \brief  Using acceleration structure, do computation of accessor input plugs.
+    MStatus
+    computeInputs(const UsdStageRefPtr stage, MDataBlock& dataBlock, const ConverterArgs& args);
+    //! \brief  Using acceleration structure, do computation of accessor output plugs.
+    MStatus computeOutputs(
+        const MObject&       ownerNode,
+        const UsdStageRefPtr stage,
+        MDataBlock&          dataBlock,
+        const ConverterArgs& args);
+    /*! \brief  Notification from MPxNode to synchronize evaluation cache with USD stage
+        Each manipulation can mutate the state of USD, but not every manipulation will
+       invalidate the cache. In order to keep USD state in sync with what was stored in
+       evaluation cache, we leverage postEvaluation notification.
+    */
+    MStatus syncCache(const MObject& node, MDataBlock& dataBlock);
+
+    //! \brief  Something in USD changed and we may have to set it on plugs.
+    MStatus stageChanged(const MObject& node, const UsdNotice::ObjectsChanged& notice);
+    //! \brief  Trigger computation of accessor plugs
+    MStatus forceCompute(const MObject& node);
+
+    //! \brief  Is accessor compute started
+    bool inCompute() const { return _inCompute; }
+
+    ProxyStageProvider& _stageProvider; //!< Accessor holds reference to stage provider in order
+                                        //!< to query the stage and time
+
+    MObject _forceCompute; //!< Special attribute used to force computation of accessor plugs.
+                           //!< Needed when USD changes directly.
+
+    MCallbackIdArray _callbackIds; //!< List of registered callbacks
+
+    //! \brief  Acceleration structure holding all input accessor plugs
+    Container _accessorInputItems;
+    //! \brief  Acceleration structure holding all output accessor plugs
+    Container _accessorOutputItems;
+    //! \brief  Flag to indicate if acceleration structure is valid or needs to be recreated
+    bool _validAccessorItems { false };
+    bool _inCompute { false }; //!< Prevent nested compute
+
+    //! \brief  Helper scoped object to prevent nested compute
+    class Scoped_InCompute
+    {
     public:
-        using Owner = std::unique_ptr<ProxyAccessor>;
-
-        /*! \brief  Construct ProxyAccessor for a given MPxNode with ProxyStageProvider interface
-            \note   Call from MPxNode::postConstructor()
-         */
-        template <
-            typename ProxyClass,
-            typename std::enable_if<
-                (std::is_base_of<MPxNode, ProxyClass>::value
-                 && std::is_base_of<ProxyStageProvider, ProxyClass>::value),
-                int>::type
-            = 0>
-        static Owner createAndRegister(ProxyClass& proxyNode)
+        Scoped_InCompute(ProxyAccessor& accessor)
+            : _accessor(accessor)
+            , _restoreState(accessor._inCompute)
         {
-            MPxNode&            node = static_cast<MPxNode&>(proxyNode);
-            ProxyStageProvider& stageProvider = static_cast<ProxyStageProvider&>(proxyNode);
-
-            auto accessor = Owner(new ProxyAccessor(stageProvider));
-
-            // add hidden attribute to force compute when USD changes
-            MFnDependencyNode fnDep(node.thisMObject());
-            {
-                MFnNumericAttribute attr;
-
-                accessor->_forceCompute
-                    = attr.create("forceCompute", "forceCompute", MFnNumericData::kBoolean);
-
-                attr.setReadable(false);
-                attr.setWritable(true);
-                attr.setKeyable(false);
-                attr.setHidden(true);
-                attr.setConnectable(false);
-
-                fnDep.addAttribute(accessor->_forceCompute);
-            }
-
-            accessor->addCallbacks(node.thisMObject());
-
-            return accessor;
+            _accessor._inCompute = true;
         }
 
-        /*! \brief  Insert extra plug level dependencies for accessor plugs
-            \note   Call from MPxNode::setDependentsDirty()
-         */
-        static MStatus addDependentsDirty(const Owner& accessor, const MPlug& plug, MPlugArray& plugArray)
-        {
-            if (accessor)
-                return accessor->addDependentsDirty(plug, plugArray);
-            else
-                return MStatus::kFailure;
-        }
+        ~Scoped_InCompute() { _accessor._inCompute = _restoreState; }
 
-        /*! \brief  Compute will write input accessor plugs and write converted data to the stage.
-           Once completed, all output accessor plugs will be provided with data. \note   Call from
-           MPxNode::compute()
-         */
-        static MStatus compute(const Owner& accessor, const MPlug& plug, MDataBlock& dataBlock)
-        {
-            if (accessor)
-                return accessor->compute(plug, dataBlock);
-            else
-                return MStatus::kFailure;
-        }
-
-        /*! \brief  Proxy accessor is creating acceleration structure to avoid the discovery of
-         accessor plugs at each compute. This accelleration structure has to be invalidate when
-         stage changes.
-        */
-        static MStatus
-        stageChanged(const Owner& accessor, const MObject& node, const UsdNotice::ObjectsChanged& notice)
-        {
-            if (accessor && !accessor->inCompute())
-                return accessor->stageChanged(node, notice);
-            else
-                return MStatus::kFailure;
-        }
-
-        /*! \brief  Update USD state to match what is stored in evaluation cache (when cached
-           playback is on) \note   Call from MPxNode::postEvaluation()
-         */
-        static MStatus syncCache(const Owner& accessor, const MObject& node, MDataBlock& dataBlock)
-        {
-            if (accessor && !accessor->inCompute())
-                return accessor->syncCache(node, dataBlock);
-            else
-                return MStatus::kFailure;
-        }
-
-        //! \brief  Clear all callback when destroying this object
-        virtual ~ProxyAccessor() { removeCallbacks(); }
+        Scoped_InCompute(const Scoped_InCompute&) = delete;
+        Scoped_InCompute& operator=(const Scoped_InCompute&) = delete;
 
     private:
-        /*! \brief  Single item in acceleration structure holding.
-            To avoid expensive searches during compute, we cache MPlug, SdfPath and converter needed
-           to translate values between data models.
-         */
-        using Item = std::tuple<MPlug, SdfPath, const Converter*>;
-        using Container = std::vector<Item>;
-
-        ProxyAccessor(ProxyStageProvider& provider)
-            : _stageProvider(provider)
-        {
-        }
-        ProxyAccessor() = delete;
-        ProxyAccessor(const ProxyAccessor&) = delete;
-        ProxyAccessor& operator=(const ProxyAccessor&) = delete;
-
-        //! \brief  Makes access to current stage time easier
-        UsdTimeCode getTime() const { return _stageProvider.getTime(); }
-        //! \brief  Makes access to the stage easier
-        UsdStageRefPtr getUsdStage() const { return _stageProvider.getUsdStage(); }
-
-        //! \brief  Register necessary callbacks
-        MStatus addCallbacks(MObject object);
-        //! \brief  Remove all registered callbacks
-        MStatus removeCallbacks();
-
-        //! \brief  Populate acceleration structure
-        void collectAccessorItems(MObject node);
-        //! \brief  Invalidate acceleration structure
-        void invalidateAccessorItems() { _validAccessorItems = false; }
-
-        //! \brief  Notification from MPxNode to insert accessor plugs dependencies
-        MStatus addDependentsDirty(const MPlug& plug, MPlugArray& plugArray);
-        //! \brief  Notification from MPxNode to compute accessor plugs.
-        MStatus compute(const MPlug& plug, MDataBlock& dataBlock);
-        //! \brief  Using acceleration structure, do computation of accessor input plugs.
-        MStatus
-        computeInputs(const UsdStageRefPtr stage, MDataBlock& dataBlock, const ConverterArgs& args);
-        //! \brief  Using acceleration structure, do computation of accessor output plugs.
-        MStatus computeOutputs(
-            const MObject&       ownerNode,
-            const UsdStageRefPtr stage,
-            MDataBlock&          dataBlock,
-            const ConverterArgs& args);
-        /*! \brief  Notification from MPxNode to synchronize evaluation cache with USD stage
-            Each manipulation can mutate the state of USD, but not every manipulation will
-           invalidate the cache. In order to keep USD state in sync with what was stored in
-           evaluation cache, we leverage postEvaluation notification.
-        */
-        MStatus syncCache(const MObject& node, MDataBlock& dataBlock);
-
-        //! \brief  Something in USD changed and we may have to set it on plugs.
-        MStatus stageChanged(const MObject& node, const UsdNotice::ObjectsChanged& notice);
-        //! \brief  Trigger computation of accessor plugs
-        MStatus forceCompute(const MObject& node);
-
-        //! \brief  Is accessor compute started
-        bool inCompute() const { return _inCompute; }
-
-        ProxyStageProvider& _stageProvider; //!< Accessor holds reference to stage provider in order
-                                            //!< to query the stage and time
-
-        MObject _forceCompute; //!< Special attribute used to force computation of accessor plugs.
-                               //!< Needed when USD changes directly.
-
-        MCallbackIdArray _callbackIds; //!< List of registered callbacks
-        
-        //! \brief  Acceleration structure holding all input accessor plugs
-        Container _accessorInputItems;
-        //! \brief  Acceleration structure holding all output accessor plugs
-        Container _accessorOutputItems;
-        //! \brief  Flag to indicate if acceleration structure is valid or needs to be recreated
-        bool _validAccessorItems { false };
-        bool _inCompute { false }; //!< Prevent nested compute
-
-        //! \brief  Helper scoped object to prevent nested compute
-        class Scoped_InCompute {
-        public:
-            Scoped_InCompute(ProxyAccessor& accessor)
-                : _accessor(accessor)
-                , _restoreState(accessor._inCompute)
-            {
-                _accessor._inCompute = true;
-            }
-
-            ~Scoped_InCompute() { _accessor._inCompute = _restoreState; }
-
-            Scoped_InCompute(const Scoped_InCompute&) = delete;
-            Scoped_InCompute& operator=(const Scoped_InCompute&) = delete;
-
-        private:
-            ProxyAccessor& _accessor;
-            bool           _restoreState { false };
-        };
+        ProxyAccessor& _accessor;
+        bool           _restoreState { false };
     };
+};
 
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF
 
 #endif

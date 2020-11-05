@@ -16,8 +16,18 @@
 #ifndef PXRUSDMAYA_TRANSFORM_WRITER_H
 #define PXRUSDMAYA_TRANSFORM_WRITER_H
 
-#include <unordered_map>
-#include <vector>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+
+#include <pxr/base/gf/vec3d.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/xformOp.h>
+#include <pxr/usd/usdGeom/xformable.h>
+#include <pxr/usd/usdUtils/sparseValueWriter.h>
 
 #include <maya/MEulerRotation.h>
 #include <maya/MFnDependencyNode.h>
@@ -25,18 +35,8 @@
 #include <maya/MPlug.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec3d.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/xformable.h>
-#include <pxr/usd/usdGeom/xformOp.h>
-#include <pxr/usd/usdUtils/sparseValueWriter.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,9 +47,9 @@ class UsdMayaTransformWriter : public UsdMayaPrimWriter
 public:
     MAYAUSD_CORE_PUBLIC
     UsdMayaTransformWriter(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdPath,
-            UsdMayaWriteJobContext& jobCtx);
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
     /// Main export function that runs when the traversal hits the node.
     /// This extends UsdMayaPrimWriter::Write() by exporting xform ops for
@@ -58,67 +58,78 @@ public:
     void Write(const UsdTimeCode& usdTime) override;
 
 private:
-    using _TokenRotationMap = std::unordered_map<
-            const TfToken, MEulerRotation, TfToken::HashFunctor>;
+    using _TokenRotationMap
+        = std::unordered_map<const TfToken, MEulerRotation, TfToken::HashFunctor>;
 
-    enum class _XformType { Translate, Rotate, Scale, Shear };
-    enum class _SampleType { None, Static, Animated };
+    enum class _XformType
+    {
+        Translate,
+        Rotate,
+        Scale,
+        Shear
+    };
+    enum class _SampleType
+    {
+        None,
+        Static,
+        Animated
+    };
 
     // This may not be the best name here as it isn't necessarily animated.
     struct _AnimChannel
     {
-        MPlug plug[3];
+        MPlug       plug[3];
         _SampleType sampleType[3];
         // defValue should always be in "maya" space.  that is, if it's a
         // rotation it should be radians, not degrees. (This is done so we only
         // need to do conversion in one place, and so that, if we need to do
         // euler filtering, we don't do conversions, and then undo them to use
         // MEulerRotation).
-        GfVec3d defValue;
-        _XformType opType;
-        UsdGeomXformOp::Type usdOpType;
+        GfVec3d                   defValue;
+        _XformType                opType;
+        UsdGeomXformOp::Type      usdOpType;
         UsdGeomXformOp::Precision precision;
-        TfToken opName;
-        bool isInverse;
-        UsdGeomXformOp op;
+        TfToken                   opName;
+        bool                      isInverse;
+        UsdGeomXformOp            op;
     };
 
     // For a given array of _AnimChannels and time, compute the xformOp data if
     // needed and set the xformOps' values.
     static void _ComputeXformOps(
-            const std::vector<_AnimChannel>& animChanList,
-            const UsdTimeCode& usdTime,
-            const bool eulerFilter,
-            UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
-            UsdUtilsSparseValueWriter* valueWriter);
+        const std::vector<_AnimChannel>&           animChanList,
+        const UsdTimeCode&                         usdTime,
+        const bool                                 eulerFilter,
+        UsdMayaTransformWriter::_TokenRotationMap* previousRotates,
+        UsdUtilsSparseValueWriter*                 valueWriter);
 
     // Creates an _AnimChannel from a Maya compound attribute if there is
     // meaningful data. This means we found data that is non-identity.
     // Returns true if we extracted an _AnimChannel and false otherwise (e.g.
     // the data was identity).
     static bool _GatherAnimChannel(
-            const _XformType opType,
-            const MFnTransform& iTrans,
-            const TfToken& parentName,
-            const MString& xName, const MString& yName, const MString& zName,
-            std::vector<_AnimChannel>* oAnimChanList,
-            const bool isWritingAnimation,
-            const bool setOpName);
+        const _XformType           opType,
+        const MFnTransform&        iTrans,
+        const TfToken&             parentName,
+        const MString&             xName,
+        const MString&             yName,
+        const MString&             zName,
+        std::vector<_AnimChannel>* oAnimChanList,
+        const bool                 isWritingAnimation,
+        const bool                 setOpName);
 
     /// Populates the AnimChannel vector with various ops based on
     /// the Maya transformation logic. If scale and/or rotate pivot are
     /// declared, creates inverse ops in the appropriate order.
     void _PushTransformStack(
-            const MFnTransform& iTrans,
-            const UsdGeomXformable& usdXForm,
-            const bool writeAnim);
+        const MFnTransform&     iTrans,
+        const UsdGeomXformable& usdXForm,
+        const bool              writeAnim);
 
     std::vector<_AnimChannel> _animChannels;
-    _TokenRotationMap _previousRotates;
+    _TokenRotationMap         _previousRotates;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

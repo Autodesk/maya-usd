@@ -17,12 +17,11 @@
 #define PXRUSDMAYA_TRANSLATOR_SKEL_H
 
 #include <mayaUsd/base/api.h>
-
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -52,44 +51,47 @@ struct UsdMayaTranslatorSkel
     /// Create joint nodes for each joint in \p skelQuery.
     /// Animation is applied to the joints if \p args enable it.
     MAYAUSD_CORE_PUBLIC
-    static bool CreateJointHierarchy(const UsdSkelSkeletonQuery& skelQuery,
-                                     MObject& parentNode,
-                                     const UsdMayaPrimReaderArgs& args,
-                                     UsdMayaPrimReaderContext* context,
-                                     VtArray<MObject>* joints);
+    static bool CreateJointHierarchy(
+        const UsdSkelSkeletonQuery&  skelQuery,
+        MObject&                     parentNode,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext*    context,
+        VtArray<MObject>*            joints);
 
     /// Find the set of MObjects joint objects for a skeleton.
     MAYAUSD_CORE_PUBLIC
-    static bool GetJoints(const UsdSkelSkeletonQuery& skelQuery,
-                          UsdMayaPrimReaderContext* context,
-                          VtArray<MObject>* joints);
+    static bool GetJoints(
+        const UsdSkelSkeletonQuery& skelQuery,
+        UsdMayaPrimReaderContext*   context,
+        VtArray<MObject>*           joints);
 
     /// Create a dagPose node holding a bind pose for skel \p skelQuery.
     MAYAUSD_CORE_PUBLIC
-    static bool CreateBindPose(const UsdSkelSkeletonQuery& skelQuery,
-                               const VtArray<MObject>& joints,
-                               UsdMayaPrimReaderContext* context,
-                               MObject* bindPoseNode);
+    static bool CreateBindPose(
+        const UsdSkelSkeletonQuery& skelQuery,
+        const VtArray<MObject>&     joints,
+        UsdMayaPrimReaderContext*   context,
+        MObject*                    bindPoseNode);
 
     /// Find the bind pose for a Skeleton.
     MAYAUSD_CORE_PUBLIC
-    static MObject GetBindPose(const UsdSkelSkeletonQuery& skelQuery,
-                               UsdMayaPrimReaderContext* context);
+    static MObject
+    GetBindPose(const UsdSkelSkeletonQuery& skelQuery, UsdMayaPrimReaderContext* context);
 
     /// Create a skin cluster for skinning \p primToSkin.
     /// The skinning cluster is wired up to be driven by the joints
     /// created by CreateJoints().
     /// This currently only supports mesh objects.
     MAYAUSD_CORE_PUBLIC
-    static bool CreateSkinCluster(const UsdSkelSkeletonQuery& skelQuery,
-                                  const UsdSkelSkinningQuery& skinningQuery,
-                                  const VtArray<MObject>& joints,
-                                  const UsdPrim& primToSkin,
-                                  const UsdMayaPrimReaderArgs& args,
-                                  UsdMayaPrimReaderContext* context,
-                                  const MObject& bindPose=MObject());
+    static bool CreateSkinCluster(
+        const UsdSkelSkeletonQuery&  skelQuery,
+        const UsdSkelSkinningQuery&  skinningQuery,
+        const VtArray<MObject>&      joints,
+        const UsdPrim&               primToSkin,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext*    context,
+        const MObject&               bindPose = MObject());
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

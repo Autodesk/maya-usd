@@ -35,48 +35,46 @@ namespace usdmaya {
 //----------------------------------------------------------------------------------------------------------------------
 enum TransformOperation : uint8_t
 {
-  kTranslate = 0,
-  kPivot,
-  kRotatePivotTranslate,
-  kRotatePivot,
-  kRotate,
-  kRotateAxis,
-  kRotatePivotInv,
-  kScalePivotTranslate,
-  kScalePivot,
-  kShear,
-  kScale,
-  kScalePivotInv,
-  kPivotInv,
-  kTransform,
-  kUnknownOp
+    kTranslate = 0,
+    kPivot,
+    kRotatePivotTranslate,
+    kRotatePivot,
+    kRotate,
+    kRotateAxis,
+    kRotatePivotInv,
+    kScalePivotTranslate,
+    kScalePivot,
+    kShear,
+    kScale,
+    kScalePivotInv,
+    kPivotInv,
+    kTransform,
+    kUnknownOp
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  Convert the textual name of a transformation operation into an easier to handle enum value
-/// \param  opName
-/// \return the transform op enum
-/// \ingroup usdmaya
+/// \brief  Convert the textual name of a transformation operation into an easier to handle enum
+/// value \param  opName \return the transform op enum \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
 AL_USDMAYA_PUBLIC
 TransformOperation xformOpToEnum(const std::string& opName);
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  a function to check to see if the incoming transform operations are compatible with the maya transform
+/// \brief  a function to check to see if the incoming transform operations are compatible with the
+/// maya transform
 ///         types.
 /// \param  it the start of the transform operations
 /// \param  end the end of the transform operations
-/// \param  output a simpler set of sorted enums, which are used later as a quicker way to index the transform ops.
-/// \return true if the type is compatible with maya
-/// \ingroup usdmaya
+/// \param  output a simpler set of sorted enums, which are used later as a quicker way to index the
+/// transform ops. \return true if the type is compatible with maya \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
 AL_USDMAYA_PUBLIC
 bool matchesMayaProfile(
     std::vector<UsdGeomXformOp>::const_iterator it,
     std::vector<UsdGeomXformOp>::const_iterator end,
-    std::vector<TransformOperation>::iterator output);
+    std::vector<TransformOperation>::iterator   output);
 
 //----------------------------------------------------------------------------------------------------------------------
-} // usdmaya
-} // AL
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

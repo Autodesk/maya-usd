@@ -15,10 +15,10 @@
 //
 #include "UsdUndoAddNewPrimCommand.h"
 
+#include "private/UfeNotifGuard.h"
+
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
-
-#include "private/UfeNotifGuard.h"
 
 namespace {
 
@@ -26,22 +26,24 @@ Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
 {
     Ufe::Path newUfePath;
     if (1 == path.getSegments().size()) {
-        newUfePath = path + Ufe::PathSegment(
-        Ufe::PathComponent(name), MayaUsd::ufe::getUsdRunTimeId(), '/');
+        newUfePath = path
+            + Ufe::PathSegment(Ufe::PathComponent(name), MayaUsd::ufe::getUsdRunTimeId(), '/');
     } else {
         newUfePath = path + name;
     }
     return newUfePath;
 }
 
-}
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdSceneItem,
-                            const std::string& name, const std::string& type)
-: Ufe::UndoableCommand()
+UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
+    const UsdSceneItem::Ptr& usdSceneItem,
+    const std::string&       name,
+    const std::string&       type)
+    : Ufe::UndoableCommand()
 {
     // First get the stage from the proxy shape.
     auto ufePath = usdSceneItem->path();
@@ -82,32 +84,31 @@ void UsdUndoAddNewPrimCommand::redo()
 {
     if (_stage) {
         MayaUsd::ufe::InAddOrDeleteOperation ad;
-        auto prim = _stage->DefinePrim(_primPath, _primToken);
+        auto                                 prim = _stage->DefinePrim(_primPath, _primToken);
         if (!prim.IsValid())
             TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
     }
 }
 
-const Ufe::Path& UsdUndoAddNewPrimCommand::newUfePath() const
-{
-    return _newUfePath;
-}
+const Ufe::Path& UsdUndoAddNewPrimCommand::newUfePath() const { return _newUfePath; }
 
 PXR_NS::UsdPrim UsdUndoAddNewPrimCommand::newPrim() const
 {
     if (!_stage) {
         return UsdPrim();
     }
-    
+
     return _stage->GetPrimAtPath(_primPath);
 }
 
 /*static*/
-UsdUndoAddNewPrimCommand::Ptr UsdUndoAddNewPrimCommand::create(const UsdSceneItem::Ptr& usdSceneItem,
-                            const std::string& name, const std::string& type)
+UsdUndoAddNewPrimCommand::Ptr UsdUndoAddNewPrimCommand::create(
+    const UsdSceneItem::Ptr& usdSceneItem,
+    const std::string&       name,
+    const std::string&       type)
 {
-	return std::make_shared<UsdUndoAddNewPrimCommand>(usdSceneItem, name, type);
+    return std::make_shared<UsdUndoAddNewPrimCommand>(usdSceneItem, name, type);
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

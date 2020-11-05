@@ -17,6 +17,7 @@
 
 #include <pxr/base/tf/pyModuleNotice.h>
 #include <pxr/base/tf/pyNoticeWrapper.h>
+
 #include <boost/python/copy_const_reference.hpp>
 
 //#include <boost/python.hpp>
@@ -27,25 +28,28 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-  TF_INSTANTIATE_NOTICE_WRAPPER(AL::usd::transaction::OpenNotice, TfNotice);
-  TF_INSTANTIATE_NOTICE_WRAPPER(AL::usd::transaction::CloseNotice, TfNotice);
+TF_INSTANTIATE_NOTICE_WRAPPER(AL::usd::transaction::OpenNotice, TfNotice);
+TF_INSTANTIATE_NOTICE_WRAPPER(AL::usd::transaction::CloseNotice, TfNotice);
 
-}
+} // namespace
 
 void wrapNotice()
 {
-  {
-    typedef AL::usd::transaction::OpenNotice This;
-    TfPyNoticeWrapper<This, TfNotice>::Wrap()
-    ;
-  }
-  {
-    typedef AL::usd::transaction::CloseNotice This;
-    TfPyNoticeWrapper<This, TfNotice>::Wrap()
-      .def("GetChangedInfoOnlyPaths", &This::GetChangedInfoOnlyPaths, return_value_policy<copy_const_reference>())
-      .def("GetResyncedPaths", &This::GetResyncedPaths, return_value_policy<copy_const_reference>())
-      .def("AnyChanges", &This::AnyChanges)
-    ;
-  }
+    {
+        typedef AL::usd::transaction::OpenNotice This;
+        TfPyNoticeWrapper<This, TfNotice>::Wrap();
+    }
+    {
+        typedef AL::usd::transaction::CloseNotice This;
+        TfPyNoticeWrapper<This, TfNotice>::Wrap()
+            .def(
+                "GetChangedInfoOnlyPaths",
+                &This::GetChangedInfoOnlyPaths,
+                return_value_policy<copy_const_reference>())
+            .def(
+                "GetResyncedPaths",
+                &This::GetResyncedPaths,
+                return_value_policy<copy_const_reference>())
+            .def("AnyChanges", &This::AnyChanges);
+    }
 }
-

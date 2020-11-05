@@ -13,40 +13,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <sstream>
-
+#include "ProxyShape.h"
 #include "adskExportCommand.h"
 #include "adskImportCommand.h"
 #include "adskListShadingModesCommand.h"
+#include "base/api.h"
+#include "exportTranslator.h"
+#include "importTranslator.h"
 
-#include <maya/MFnPlugin.h>
-#include <maya/MStatus.h>
-#include <maya/MDrawRegistry.h>
-
-#include <pxr/base/tf/envSetting.h>
-#include <pxr/base/plug/plugin.h>
-#include <pxr/base/plug/registry.h>
-
-#include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
+#include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <mayaUsd/utils/undoHelperCommand.h>
+
+#include <pxr/base/plug/plugin.h>
+#include <pxr/base/plug/registry.h>
+#include <pxr/base/tf/envSetting.h>
+
+#include <maya/MDrawRegistry.h>
+#include <maya/MFnPlugin.h>
+#include <maya/MStatus.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
-#include "base/api.h"
-#include "exportTranslator.h"
-#include "importTranslator.h"
-#include "ProxyShape.h"
-
-#include <mayaUsd/utils/undoHelperCommand.h>
+#include <sstream>
 #if defined(WANT_QT_BUILD)
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
 #endif
@@ -61,7 +59,7 @@
 
 #if defined(MAYAUSD_VERSION)
 #define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
+#define TOSTRING(x)  STRINGIFY(x)
 #else
 #error "MAYAUSD_VERSION is not defined"
 #endif
@@ -97,14 +95,18 @@ Ufe::Transform3dHandler::Ptr g_Transform3dHandler;
 } // namespace
 
 TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
-{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(MayaUsdPreviewSurface_typeName); };
+{
+    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(MayaUsdPreviewSurface_typeName);
+};
 TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
-{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(MayaUsdPreviewSurface_typeName); };
+{
+    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(MayaUsdPreviewSurface_typeName);
+};
 
 MAYAUSD_PLUGIN_PUBLIC
 MStatus initializePlugin(MObject obj)
 {
-    MStatus status;
+    MStatus   status;
     MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
 
     status = plugin.registerFileTranslator(
@@ -148,13 +150,14 @@ MStatus initializePlugin(MObject obj)
     // the transform stack, then pass it off to the core maya-usd
     // Transform3dHandler (which at time of writing converts to the USD common
     // transform API).
-	auto& runTimeMgr = Ufe::RunTimeMgr::instance();
-	auto usdRtid = MAYAUSD_NS::ufe::getUsdRunTimeId();
+    auto& runTimeMgr = Ufe::RunTimeMgr::instance();
+    auto  usdRtid = MAYAUSD_NS::ufe::getUsdRunTimeId();
     g_Transform3dHandler = runTimeMgr.transform3dHandler(usdRtid);
-	auto matrixHandler = MAYAUSD_NS::ufe::UsdTransform3dMatrixOpHandler::create(
-		g_Transform3dHandler);
-	auto mayaStackHandler = MAYAUSD_NS::ufe::UsdTransform3dMayaXformStackHandler::create(matrixHandler);
-	runTimeMgr.setTransform3dHandler(usdRtid, mayaStackHandler);
+    auto matrixHandler
+        = MAYAUSD_NS::ufe::UsdTransform3dMatrixOpHandler::create(g_Transform3dHandler);
+    auto mayaStackHandler
+        = MAYAUSD_NS::ufe::UsdTransform3dMayaXformStackHandler::create(matrixHandler);
+    runTimeMgr.setTransform3dHandler(usdRtid, mayaStackHandler);
 #endif
 
     status = plugin.registerShape(
@@ -170,14 +173,15 @@ MStatus initializePlugin(MObject obj)
 
     status = UsdMayaUndoHelperCommand::initialize(plugin);
     if (!status) {
-        status.perror(std::string("registerCommand ").append(
-                          UsdMayaUndoHelperCommand::name()).c_str());
+        status.perror(
+            std::string("registerCommand ").append(UsdMayaUndoHelperCommand::name()).c_str());
     }
 
 #if defined(WANT_QT_BUILD)
     status = MayaUsd::USDImportDialogCmd::initialize(plugin);
     if (!status) {
-        MString err("registerCommand" ); err += MayaUsd::USDImportDialogCmd::fsName;
+        MString err("registerCommand");
+        err += MayaUsd::USDImportDialogCmd::fsName;
         status.perror(err);
     }
 #endif
@@ -189,24 +193,26 @@ MStatus initializePlugin(MObject obj)
         MayaUsdPreviewSurface_registrantId);
     CHECK_MSTATUS(status);
 
-    plugin.registerUI("mayaUsd_pluginUICreation", "mayaUsd_pluginUIDeletion", 
-        "mayaUsd_pluginBatchLoad", "mayaUsd_pluginBatchUnload");
+    plugin.registerUI(
+        "mayaUsd_pluginUICreation",
+        "mayaUsd_pluginUIDeletion",
+        "mayaUsd_pluginBatchLoad",
+        "mayaUsd_pluginBatchUnload");
 
     // As of 2-Aug-2019, these PlugPlugin translators are not loaded
     // automatically.  To be investigated.  A duplicate of this code is in the
     // Pixar plugin.cpp.
-    const std::vector<std::string> translatorPluginNames{
-        "mayaUsd_Schemas", "mayaUsd_Translators"};
-    const auto& plugRegistry = PlugRegistry::GetInstance();
-    std::stringstream msg("mayaUsdPlugin: ");
+    const std::vector<std::string> translatorPluginNames { "mayaUsd_Schemas",
+                                                           "mayaUsd_Translators" };
+    const auto&                    plugRegistry = PlugRegistry::GetInstance();
+    std::stringstream              msg("mayaUsdPlugin: ");
     for (const auto& pluginName : translatorPluginNames) {
         auto plugin = plugRegistry.GetPluginWithName(pluginName);
         if (!plugin) {
             status = MStatus::kFailure;
             msg << "translator " << pluginName << " not found.";
             status.perror(msg.str().c_str());
-        }
-        else {
+        } else {
             // Load is a no-op if already loaded.
             if (!plugin->Load()) {
                 status = MStatus::kFailure;
@@ -225,7 +231,7 @@ MAYAUSD_PLUGIN_PUBLIC
 MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj);
-    MStatus status;
+    MStatus   status;
 
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(
         plugin,
@@ -236,8 +242,8 @@ MStatus uninitializePlugin(MObject obj)
 
     status = UsdMayaUndoHelperCommand::finalize(plugin);
     if (!status) {
-        status.perror(std::string("deregisterCommand ").append(
-                          UsdMayaUndoHelperCommand::name()).c_str());
+        status.perror(
+            std::string("deregisterCommand ").append(UsdMayaUndoHelperCommand::name()).c_str());
     }
 
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDListShadingModesCommand>(plugin);
@@ -245,7 +251,8 @@ MStatus uninitializePlugin(MObject obj)
 #if defined(WANT_QT_BUILD)
     status = MayaUsd::USDImportDialogCmd::finalize(plugin);
     if (!status) {
-        MString err("deregisterCommand" ); err += MayaUsd::USDImportDialogCmd::fsName;
+        MString err("deregisterCommand");
+        err += MayaUsd::USDImportDialogCmd::fsName;
         status.perror(err);
     }
 #endif
@@ -278,6 +285,6 @@ MStatus uninitializePlugin(MObject obj)
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();
-    
+
     return status;
 }
