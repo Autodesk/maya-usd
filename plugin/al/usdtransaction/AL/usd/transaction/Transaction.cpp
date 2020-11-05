@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/usd/transaction/Transaction.h"
+
 #include "AL/usd/transaction/TransactionManager.h"
 
 #include <iostream>
@@ -24,28 +25,22 @@ namespace usd {
 namespace transaction {
 
 Transaction::Transaction(const UsdStageWeakPtr& stage, const SdfLayerHandle& layer)
-  :m_manager(TransactionManager::Get(stage)), m_layer(layer) {}
-
-//----------------------------------------------------------------------------------------------------------------------
-bool Transaction::Open() const
+    : m_manager(TransactionManager::Get(stage))
+    , m_layer(layer)
 {
-  return m_manager.Open(m_layer);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool Transaction::Close() const
-{
-  return m_manager.Close(m_layer);
-}
+bool Transaction::Open() const { return m_manager.Open(m_layer); }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool Transaction::InProgress() const
-{
-  return m_manager.InProgress(m_layer);
-}
+bool Transaction::Close() const { return m_manager.Close(m_layer); }
 
 //----------------------------------------------------------------------------------------------------------------------
-} // transaction
-} // usd
-} // AL
+bool Transaction::InProgress() const { return m_manager.InProgress(m_layer); }
+
+//----------------------------------------------------------------------------------------------------------------------
+} // namespace transaction
+} // namespace usd
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

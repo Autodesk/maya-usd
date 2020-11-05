@@ -15,12 +15,12 @@
 //
 #pragma once
 
-#include <ufe/sceneItemOpsHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItemOps.h>
 
-//PXR_NAMESPACE_USING_DIRECTIVE
+#include <ufe/sceneItemOpsHandler.h>
+
+// PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -29,23 +29,23 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdSceneItemOpsHandler : public Ufe::SceneItemOpsHandler
 {
 public:
-	typedef std::shared_ptr<UsdSceneItemOpsHandler> Ptr;
+    typedef std::shared_ptr<UsdSceneItemOpsHandler> Ptr;
 
-	UsdSceneItemOpsHandler();
-	~UsdSceneItemOpsHandler() override;
+    UsdSceneItemOpsHandler();
+    ~UsdSceneItemOpsHandler() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdSceneItemOpsHandler(const UsdSceneItemOpsHandler&) = delete;
-	UsdSceneItemOpsHandler& operator=(const UsdSceneItemOpsHandler&) = delete;
-	UsdSceneItemOpsHandler(UsdSceneItemOpsHandler&&) = delete;
-	UsdSceneItemOpsHandler& operator=(UsdSceneItemOpsHandler&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdSceneItemOpsHandler(const UsdSceneItemOpsHandler&) = delete;
+    UsdSceneItemOpsHandler& operator=(const UsdSceneItemOpsHandler&) = delete;
+    UsdSceneItemOpsHandler(UsdSceneItemOpsHandler&&) = delete;
+    UsdSceneItemOpsHandler& operator=(UsdSceneItemOpsHandler&&) = delete;
 
-	//! Create a UsdSceneItemOpsHandler.
-	static UsdSceneItemOpsHandler::Ptr create();
+    //! Create a UsdSceneItemOpsHandler.
+    static UsdSceneItemOpsHandler::Ptr create();
 
-	// Ufe::SceneItemOpsHandler overrides
-	Ufe::SceneItemOps::Ptr sceneItemOps(const Ufe::SceneItem::Ptr& item) const override;
+    // Ufe::SceneItemOpsHandler overrides
+    Ufe::SceneItemOps::Ptr sceneItemOps(const Ufe::SceneItem::Ptr& item) const override;
 }; // UsdSceneItemOpsHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

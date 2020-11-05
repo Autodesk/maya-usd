@@ -15,15 +15,15 @@
 //
 #pragma once
 
-#include <unordered_map>
-
-#include <ufe/attributes.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdAttribute.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/ufe/UsdAttribute.h>
+#include <ufe/attributes.h>
+
+#include <unordered_map>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -32,38 +32,38 @@ namespace ufe {
 class UsdAttributes : public Ufe::Attributes
 {
 public:
-	typedef std::shared_ptr<UsdAttributes> Ptr;
+    typedef std::shared_ptr<UsdAttributes> Ptr;
 
-	UsdAttributes(const UsdSceneItem::Ptr& item);
-	~UsdAttributes() override;
+    UsdAttributes(const UsdSceneItem::Ptr& item);
+    ~UsdAttributes() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdAttributes(const UsdAttributes&) = delete;
-	UsdAttributes& operator=(const UsdAttributes&) = delete;
-	UsdAttributes(UsdAttributes&&) = delete;
-	UsdAttributes& operator=(UsdAttributes&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdAttributes(const UsdAttributes&) = delete;
+    UsdAttributes& operator=(const UsdAttributes&) = delete;
+    UsdAttributes(UsdAttributes&&) = delete;
+    UsdAttributes& operator=(UsdAttributes&&) = delete;
 
-	//! Create a UsdAttributes.
-	static UsdAttributes::Ptr create(const UsdSceneItem::Ptr& item);
+    //! Create a UsdAttributes.
+    static UsdAttributes::Ptr create(const UsdSceneItem::Ptr& item);
 
-	// Ufe::Attributes overrides
-	Ufe::SceneItem::Ptr sceneItem() const override;
-	Ufe::Attribute::Type attributeType(const std::string& name) override;
-	Ufe::Attribute::Ptr attribute(const std::string& name) override;
-	std::vector<std::string> attributeNames() const override;
-	bool hasAttribute(const std::string& name) const override;
-
-private:
-	Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const;
+    // Ufe::Attributes overrides
+    Ufe::SceneItem::Ptr      sceneItem() const override;
+    Ufe::Attribute::Type     attributeType(const std::string& name) override;
+    Ufe::Attribute::Ptr      attribute(const std::string& name) override;
+    std::vector<std::string> attributeNames() const override;
+    bool                     hasAttribute(const std::string& name) const override;
 
 private:
-	UsdSceneItem::Ptr fItem;
-	PXR_NS::UsdPrim fPrim;
+    Ufe::Attribute::Type getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const;
 
-	typedef std::unordered_map<std::string, Ufe::Attribute::Ptr> AttributeMap;
-	AttributeMap fAttributes;
+private:
+    UsdSceneItem::Ptr fItem;
+    PXR_NS::UsdPrim   fPrim;
+
+    typedef std::unordered_map<std::string, Ufe::Attribute::Ptr> AttributeMap;
+    AttributeMap                                                 fAttributes;
 
 }; // UsdAttributes
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

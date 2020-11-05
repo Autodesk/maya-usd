@@ -16,12 +16,12 @@
 #ifndef USDMAYA_NOTICE_H
 #define USDMAYA_NOTICE_H
 
-#include <maya/MMessage.h>
-#include <maya/MObject.h>
+#include <mayaUsd/base/api.h>
 
 #include <pxr/base/tf/notice.h>
 
-#include <mayaUsd/base/api.h>
+#include <maya/MMessage.h>
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -62,9 +62,7 @@ public:
 
 protected:
     MAYAUSD_CORE_PUBLIC
-    UsdMaya_AssemblyInstancerNoticeBase(
-            const MObject& assembly,
-            const MObject& instancer);
+    UsdMaya_AssemblyInstancerNoticeBase(const MObject& assembly, const MObject& instancer);
 
 private:
     MObject _assembly;
@@ -73,26 +71,22 @@ private:
 
 /// Notice sent when any reference assembly is connected as a prototype of a
 /// native Maya instancer.
-class UsdMayaAssemblyConnectedToInstancerNotice
-        : public UsdMaya_AssemblyInstancerNoticeBase
+class UsdMayaAssemblyConnectedToInstancerNotice : public UsdMaya_AssemblyInstancerNoticeBase
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMayaAssemblyConnectedToInstancerNotice(
-            const MObject& assembly,
-            const MObject& instancer);
+    UsdMayaAssemblyConnectedToInstancerNotice(const MObject& assembly, const MObject& instancer);
 };
 
 /// Notice sent when any reference assembly was previously a prototype of a
 /// native Maya instancer but has now been disconnected from it.
-class UsdMayaAssemblyDisconnectedFromInstancerNotice
-        : public UsdMaya_AssemblyInstancerNoticeBase
+class UsdMayaAssemblyDisconnectedFromInstancerNotice : public UsdMaya_AssemblyInstancerNoticeBase
 {
 public:
     MAYAUSD_CORE_PUBLIC
     UsdMayaAssemblyDisconnectedFromInstancerNotice(
-            const MObject& assembly,
-            const MObject& instancer);
+        const MObject& assembly,
+        const MObject& instancer);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

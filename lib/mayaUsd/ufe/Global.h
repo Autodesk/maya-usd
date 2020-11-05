@@ -15,11 +15,10 @@
 //
 #pragma once
 
-#include <maya/MStatus.h>
-
-#include <ufe/rtid.h>
-
 #include <mayaUsd/base/api.h>
+
+#include <maya/MStatus.h>
+#include <ufe/rtid.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -43,4 +42,4 @@ MAYAUSD_CORE_PUBLIC
 Ufe::Rtid getMayaRunTimeId();
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

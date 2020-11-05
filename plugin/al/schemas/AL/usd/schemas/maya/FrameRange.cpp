@@ -25,9 +25,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Register the schema with the TfType system.
 TF_REGISTRY_FUNCTION(TfType)
 {
-    TfType::Define<AL_usd_FrameRange,
-        TfType::Bases< UsdTyped > >();
-    
+    TfType::Define<AL_usd_FrameRange, TfType::Bases<UsdTyped>>();
+
     // Register the usd prim typename as an alias under UsdSchemaBase. This
     // enables one to call
     // TfType::Find<UsdSchemaBase>().FindDerivedByName("ALFrameRange")
@@ -37,13 +36,10 @@ TF_REGISTRY_FUNCTION(TfType)
 }
 
 /* virtual */
-AL_usd_FrameRange::~AL_usd_FrameRange()
-{
-}
+AL_usd_FrameRange::~AL_usd_FrameRange() { }
 
 /* static */
-AL_usd_FrameRange
-AL_usd_FrameRange::Get(const UsdStagePtr &stage, const SdfPath &path)
+AL_usd_FrameRange AL_usd_FrameRange::Get(const UsdStagePtr& stage, const SdfPath& path)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
@@ -53,135 +49,126 @@ AL_usd_FrameRange::Get(const UsdStagePtr &stage, const SdfPath &path)
 }
 
 /* static */
-AL_usd_FrameRange
-AL_usd_FrameRange::Define(
-    const UsdStagePtr &stage, const SdfPath &path)
+AL_usd_FrameRange AL_usd_FrameRange::Define(const UsdStagePtr& stage, const SdfPath& path)
 {
     static TfToken usdPrimTypeName("ALFrameRange");
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return AL_usd_FrameRange();
     }
-    return AL_usd_FrameRange(
-        stage->DefinePrim(path, usdPrimTypeName));
+    return AL_usd_FrameRange(stage->DefinePrim(path, usdPrimTypeName));
 }
 
 /* virtual */
-UsdSchemaType AL_usd_FrameRange::_GetSchemaType() const {
-    return AL_usd_FrameRange::schemaType;
-}
+UsdSchemaType AL_usd_FrameRange::_GetSchemaType() const { return AL_usd_FrameRange::schemaType; }
 
 /* static */
-const TfType &
-AL_usd_FrameRange::_GetStaticTfType()
+const TfType& AL_usd_FrameRange::_GetStaticTfType()
 {
     static TfType tfType = TfType::Find<AL_usd_FrameRange>();
     return tfType;
 }
 
 /* static */
-bool 
-AL_usd_FrameRange::_IsTypedSchema()
+bool AL_usd_FrameRange::_IsTypedSchema()
 {
     static bool isTyped = _GetStaticTfType().IsA<UsdTyped>();
     return isTyped;
 }
 
 /* virtual */
-const TfType &
-AL_usd_FrameRange::_GetTfType() const
-{
-    return _GetStaticTfType();
-}
+const TfType& AL_usd_FrameRange::_GetTfType() const { return _GetStaticTfType(); }
 
-UsdAttribute
-AL_usd_FrameRange::GetAnimationStartFrameAttr() const
+UsdAttribute AL_usd_FrameRange::GetAnimationStartFrameAttr() const
 {
     return GetPrim().GetAttribute(AL_USDMayaSchemasTokens->animationStartFrame);
 }
 
-UsdAttribute
-AL_usd_FrameRange::CreateAnimationStartFrameAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdAttribute AL_usd_FrameRange::CreateAnimationStartFrameAttr(
+    VtValue const& defaultValue,
+    bool           writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(AL_USDMayaSchemasTokens->animationStartFrame,
-                       SdfValueTypeNames->Double,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        AL_USDMayaSchemasTokens->animationStartFrame,
+        SdfValueTypeNames->Double,
+        /* custom = */ false,
+        SdfVariabilityVarying,
+        defaultValue,
+        writeSparsely);
 }
 
-UsdAttribute
-AL_usd_FrameRange::GetStartFrameAttr() const
+UsdAttribute AL_usd_FrameRange::GetStartFrameAttr() const
 {
     return GetPrim().GetAttribute(AL_USDMayaSchemasTokens->startFrame);
 }
 
 UsdAttribute
-AL_usd_FrameRange::CreateStartFrameAttr(VtValue const &defaultValue, bool writeSparsely) const
+AL_usd_FrameRange::CreateStartFrameAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(AL_USDMayaSchemasTokens->startFrame,
-                       SdfValueTypeNames->Double,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        AL_USDMayaSchemasTokens->startFrame,
+        SdfValueTypeNames->Double,
+        /* custom = */ false,
+        SdfVariabilityVarying,
+        defaultValue,
+        writeSparsely);
 }
 
-UsdAttribute
-AL_usd_FrameRange::GetEndFrameAttr() const
+UsdAttribute AL_usd_FrameRange::GetEndFrameAttr() const
 {
     return GetPrim().GetAttribute(AL_USDMayaSchemasTokens->endFrame);
 }
 
 UsdAttribute
-AL_usd_FrameRange::CreateEndFrameAttr(VtValue const &defaultValue, bool writeSparsely) const
+AL_usd_FrameRange::CreateEndFrameAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(AL_USDMayaSchemasTokens->endFrame,
-                       SdfValueTypeNames->Double,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        AL_USDMayaSchemasTokens->endFrame,
+        SdfValueTypeNames->Double,
+        /* custom = */ false,
+        SdfVariabilityVarying,
+        defaultValue,
+        writeSparsely);
 }
 
-UsdAttribute
-AL_usd_FrameRange::GetAnimationEndFrameAttr() const
+UsdAttribute AL_usd_FrameRange::GetAnimationEndFrameAttr() const
 {
     return GetPrim().GetAttribute(AL_USDMayaSchemasTokens->animationEndFrame);
 }
 
-UsdAttribute
-AL_usd_FrameRange::CreateAnimationEndFrameAttr(VtValue const &defaultValue, bool writeSparsely) const
+UsdAttribute AL_usd_FrameRange::CreateAnimationEndFrameAttr(
+    VtValue const& defaultValue,
+    bool           writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(AL_USDMayaSchemasTokens->animationEndFrame,
-                       SdfValueTypeNames->Double,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        AL_USDMayaSchemasTokens->animationEndFrame,
+        SdfValueTypeNames->Double,
+        /* custom = */ false,
+        SdfVariabilityVarying,
+        defaultValue,
+        writeSparsely);
 }
 
-UsdAttribute
-AL_usd_FrameRange::GetCurrentFrameAttr() const
+UsdAttribute AL_usd_FrameRange::GetCurrentFrameAttr() const
 {
     return GetPrim().GetAttribute(AL_USDMayaSchemasTokens->currentFrame);
 }
 
 UsdAttribute
-AL_usd_FrameRange::CreateCurrentFrameAttr(VtValue const &defaultValue, bool writeSparsely) const
+AL_usd_FrameRange::CreateCurrentFrameAttr(VtValue const& defaultValue, bool writeSparsely) const
 {
-    return UsdSchemaBase::_CreateAttr(AL_USDMayaSchemasTokens->currentFrame,
-                       SdfValueTypeNames->Double,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
+    return UsdSchemaBase::_CreateAttr(
+        AL_USDMayaSchemasTokens->currentFrame,
+        SdfValueTypeNames->Double,
+        /* custom = */ false,
+        SdfVariabilityVarying,
+        defaultValue,
+        writeSparsely);
 }
 
 namespace {
 static inline TfTokenVector
-_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+_ConcatenateAttributeNames(const TfTokenVector& left, const TfTokenVector& right)
 {
     TfTokenVector result;
     result.reserve(left.size() + right.size());
@@ -189,11 +176,10 @@ _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
     result.insert(result.end(), right.begin(), right.end());
     return result;
 }
-}
+} // namespace
 
 /*static*/
-const TfTokenVector&
-AL_usd_FrameRange::GetSchemaAttributeNames(bool includeInherited)
+const TfTokenVector& AL_usd_FrameRange::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
         AL_USDMayaSchemasTokens->animationStartFrame,
@@ -202,10 +188,8 @@ AL_usd_FrameRange::GetSchemaAttributeNames(bool includeInherited)
         AL_USDMayaSchemasTokens->animationEndFrame,
         AL_USDMayaSchemasTokens->currentFrame,
     };
-    static TfTokenVector allNames =
-        _ConcatenateAttributeNames(
-            UsdTyped::GetSchemaAttributeNames(true),
-            localNames);
+    static TfTokenVector allNames
+        = _ConcatenateAttributeNames(UsdTyped::GetSchemaAttributeNames(true), localNames);
 
     if (includeInherited)
         return allNames;

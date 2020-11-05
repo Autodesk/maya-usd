@@ -17,16 +17,16 @@
 #ifndef PXRUSDMAYA_MAYAPRIMUPDATER_H
 #define PXRUSDMAYA_MAYAPRIMUPDATER_H
 
-#include <maya/MDagPath.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primUpdaterContext.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primUpdaterContext.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MDagPath.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -34,24 +34,24 @@ class UsdMayaPrimUpdater
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn,
-                       const SdfPath& usdPath);
-    
+    UsdMayaPrimUpdater(const MFnDependencyNode& depNodeFn, const SdfPath& usdPath);
+
     // clang errors if you use "= default" here, due to const SdfPath member
     //    see: http://open-std.org/jtc1/sc22/wg21/docs/cwg_defects.html#253
     // ...which it seems clang only implements if using newer version + cpp std
-    UsdMayaPrimUpdater() {}
+    UsdMayaPrimUpdater() { }
 
     virtual ~UsdMayaPrimUpdater() = default;
 
-    enum class Supports {
+    enum class Supports
+    {
         Invalid = 0,
-        Push    = 1 << 0,
-        Pull    = 1 << 1,
-        Clear   = 1 << 2,
-        All     = Push | Pull | Clear
+        Push = 1 << 0,
+        Pull = 1 << 1,
+        Clear = 1 << 2,
+        All = Push | Pull | Clear
     };
-    
+
     MAYAUSD_CORE_PUBLIC
     virtual bool Push(UsdMayaPrimUpdaterContext* context);
 
@@ -77,8 +77,7 @@ public:
     const SdfPath& GetUsdPath() const;
 
     /// The destination USD prim which we are updating.
-    template<typename T>
-    UsdPrim GetUsdPrim(UsdMayaPrimUpdaterContext& context) const
+    template <typename T> UsdPrim GetUsdPrim(UsdMayaPrimUpdaterContext& context) const
     {
         UsdPrim usdPrim;
 
@@ -86,19 +85,18 @@ public:
             return usdPrim;
         }
 
-        T primSchema =
-            T::Define(context.GetUsdStage(), GetUsdPath());
+        T primSchema = T::Define(context.GetUsdStage(), GetUsdPath());
         if (!TF_VERIFY(
-            primSchema,
-            "Could not define given updater type at path '%s'\n",
-            GetUsdPath().GetText())) {
+                primSchema,
+                "Could not define given updater type at path '%s'\n",
+                GetUsdPath().GetText())) {
             return usdPrim;
         }
         usdPrim = primSchema.GetPrim();
         if (!TF_VERIFY(
-            usdPrim,
-            "Could not get UsdPrim for given updater type at path '%s'\n",
-            primSchema.GetPath().GetText())) {
+                usdPrim,
+                "Could not get UsdPrim for given updater type at path '%s'\n",
+                primSchema.GetPath().GetText())) {
             return usdPrim;
         }
 
@@ -114,23 +112,23 @@ private:
     /// node prim updaters.
     const MObject _mayaObject;
 
-    const SdfPath _usdPath;
+    const SdfPath                           _usdPath;
     const UsdMayaUtil::MDagPathMap<SdfPath> _baseDagToUsdPaths;
-
 };
 
 using UsdMayaPrimUpdaterSharedPtr = std::shared_ptr<UsdMayaPrimUpdater>;
 
-inline UsdMayaPrimUpdater::Supports operator|(UsdMayaPrimUpdater::Supports a, UsdMayaPrimUpdater::Supports b)
+inline UsdMayaPrimUpdater::Supports
+operator|(UsdMayaPrimUpdater::Supports a, UsdMayaPrimUpdater::Supports b)
 {
     return static_cast<UsdMayaPrimUpdater::Supports>(static_cast<int>(a) | static_cast<int>(b));
 }
 
-inline UsdMayaPrimUpdater::Supports operator&(UsdMayaPrimUpdater::Supports a, UsdMayaPrimUpdater::Supports b)
+inline UsdMayaPrimUpdater::Supports
+operator&(UsdMayaPrimUpdater::Supports a, UsdMayaPrimUpdater::Supports b)
 {
     return static_cast<UsdMayaPrimUpdater::Supports>(static_cast<int>(a) & static_cast<int>(b));
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

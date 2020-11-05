@@ -15,56 +15,50 @@
 //
 #include "translatorGprim.h"
 
-#include <maya/MFnDagNode.h>
-
 #include <mayaUsd/utils/util.h>
+
+#include <maya/MFnDagNode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-void
-UsdMayaTranslatorGprim::Read(
-        const UsdGeomGprim& gprim,
-        MObject mayaNode,
-        UsdMayaPrimReaderContext* )
+void UsdMayaTranslatorGprim::Read(
+    const UsdGeomGprim& gprim,
+    MObject             mayaNode,
+    UsdMayaPrimReaderContext*)
 {
     MFnDagNode fnGprim(mayaNode);
 
     TfToken orientation;
-    if (gprim.GetOrientationAttr().Get(&orientation)){
-        UsdMayaUtil::setPlugValue(fnGprim, "opposite", (orientation ==
-                                                 UsdGeomTokens->leftHanded));
+    if (gprim.GetOrientationAttr().Get(&orientation)) {
+        UsdMayaUtil::setPlugValue(fnGprim, "opposite", (orientation == UsdGeomTokens->leftHanded));
     }
 
     bool doubleSided;
-    if (gprim.GetDoubleSidedAttr().Get(&doubleSided)){
+    if (gprim.GetDoubleSidedAttr().Get(&doubleSided)) {
         UsdMayaUtil::setPlugValue(fnGprim, "doubleSided", doubleSided);
     }
 }
 
-void
-UsdMayaTranslatorGprim::Write(
-        const MObject& mayaNode,
-        const UsdGeomGprim& gprim, 
-        UsdMayaPrimWriterContext*)
+void UsdMayaTranslatorGprim::Write(
+    const MObject&      mayaNode,
+    const UsdGeomGprim& gprim,
+    UsdMayaPrimWriterContext*)
 {
     MFnDependencyNode depFn(mayaNode);
 
     bool doubleSided = false;
-    if (UsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided)){
+    if (UsdMayaUtil::getPlugValue(depFn, "doubleSided", &doubleSided)) {
         gprim.CreateDoubleSidedAttr(VtValue(doubleSided), true);
     }
 
     bool opposite = false;
     // Gprim properties always authored on the shape
-    if (UsdMayaUtil::getPlugValue(depFn, "opposite", &opposite)){
+    if (UsdMayaUtil::getPlugValue(depFn, "opposite", &opposite)) {
         // If mesh is double sided in maya, opposite is disregarded
-        TfToken orientation = (opposite && !doubleSided ? UsdGeomTokens->leftHanded :
-                                                          UsdGeomTokens->rightHanded);
+        TfToken orientation
+            = (opposite && !doubleSided ? UsdGeomTokens->leftHanded : UsdGeomTokens->rightHanded);
         gprim.CreateOrientationAttr(VtValue(orientation), true);
     }
-
 }
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-

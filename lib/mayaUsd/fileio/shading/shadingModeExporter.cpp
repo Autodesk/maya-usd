@@ -15,12 +15,11 @@
 //
 #include "shadingModeExporter.h"
 
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <maya/MItDependencyNodes.h>
-#include <maya/MObject.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -33,48 +32,35 @@
 #include <pxr/usd/usdShade/materialBindingAPI.h>
 #include <pxr/usd/usdUtils/authoring.h>
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/shading/shadingModeExporterContext.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MObject.h>
+
+#include <string>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    ((materialNamespace, "material:"))
-);
+TF_DEFINE_PRIVATE_TOKENS(_tokens, ((materialNamespace, "material:")));
 
-UsdMayaShadingModeExporter::UsdMayaShadingModeExporter()
-{
-}
+UsdMayaShadingModeExporter::UsdMayaShadingModeExporter() { }
 
 /* virtual */
-UsdMayaShadingModeExporter::~UsdMayaShadingModeExporter()
-{
-}
+UsdMayaShadingModeExporter::~UsdMayaShadingModeExporter() { }
 
-static
-TfToken
-_GetCollectionName(const UsdShadeMaterial& mat)
+static TfToken _GetCollectionName(const UsdShadeMaterial& mat)
 {
-    return TfToken(_tokens->materialNamespace.GetString() +
-                   mat.GetPrim().GetName().GetString());
+    return TfToken(_tokens->materialNamespace.GetString() + mat.GetPrim().GetName().GetString());
 }
 
 // Returns the set of root prim paths present in the given path-set.
-static
-SdfPathSet
-_GetRootPaths(const SdfPathSet& paths)
+static SdfPathSet _GetRootPaths(const SdfPathSet& paths)
 {
     SdfPathSet result;
-    for (const auto &p : paths) {
-        const std::string &pathString = p.GetString();
+    for (const auto& p : paths) {
+        const std::string& pathString = p.GetString();
         // Skip pseudo-root.
-        if (!TF_VERIFY(pathString.size() > 1u,
-                       "Invalid path '%s'",
-                       pathString.c_str())) {
+        if (!TF_VERIFY(pathString.size() > 1u, "Invalid path '%s'", pathString.c_str())) {
             continue;
         }
 
@@ -85,20 +71,18 @@ _GetRootPaths(const SdfPathSet& paths)
     return result;
 }
 
-void
-UsdMayaShadingModeExporter::DoExport(
-        UsdMayaWriteJobContext& writeJobContext,
-        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap)
+void UsdMayaShadingModeExporter::DoExport(
+    UsdMayaWriteJobContext&                  writeJobContext,
+    const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap)
 {
     const UsdMayaJobExportArgs& exportArgs = writeJobContext.GetArgs();
-    const UsdStageRefPtr& stage = writeJobContext.GetUsdStage();
+    const UsdStageRefPtr&       stage = writeJobContext.GetUsdStage();
 
     MItDependencyNodes shadingEngineIter(MFn::kShadingEngine);
 
-    const SdfPath& materialCollectionsPath =
-        exportArgs.exportMaterialCollections ?
-            exportArgs.materialCollectionsPath :
-            SdfPath::EmptyPath();
+    const SdfPath& materialCollectionsPath = exportArgs.exportMaterialCollections
+        ? exportArgs.materialCollectionsPath
+        : SdfPath::EmptyPath();
 
     UsdPrim materialCollectionsPrim;
     if (!materialCollectionsPath.IsEmpty()) {
@@ -112,15 +96,11 @@ UsdMayaShadingModeExporter::DoExport(
         }
     }
 
-    UsdMayaShadingModeExportContext context(
-        MObject(),
-        writeJobContext,
-        dagPathToUsdMap);
+    UsdMayaShadingModeExportContext context(MObject(), writeJobContext, dagPathToUsdMap);
 
     PreExport(&context);
 
-    using MaterialAssignments = std::vector<std::pair<TfToken,
-        SdfPathSet>>;
+    using MaterialAssignments = std::vector<std::pair<TfToken, SdfPathSet>>;
     MaterialAssignments matAssignments;
 
     std::vector<UsdShadeMaterial> exportedMaterials;
@@ -129,13 +109,12 @@ UsdMayaShadingModeExporter::DoExport(
         context.SetShadingEngine(shadingEngine);
 
         UsdShadeMaterial mat;
-        SdfPathSet boundPrimPaths;
+        SdfPathSet       boundPrimPaths;
         Export(context, &mat, &boundPrimPaths);
 
         if (mat && !boundPrimPaths.empty()) {
             exportedMaterials.push_back(mat);
-            matAssignments.push_back(std::make_pair(
-                _GetCollectionName(mat), boundPrimPaths));
+            matAssignments.push_back(std::make_pair(_GetCollectionName(mat), boundPrimPaths));
         }
     }
 
@@ -143,8 +122,7 @@ UsdMayaShadingModeExporter::DoExport(
     PostExport(context);
 
     if ((materialCollectionsPrim || exportArgs.exportCollectionBasedBindings)
-        && !matAssignments.empty())
-    {
+        && !matAssignments.empty()) {
         if (!materialCollectionsPrim) {
             // Find a place to export the material collections. The collections
             // can live anywhere in the scene, but the collection-based bindings
@@ -152,35 +130,36 @@ UsdMayaShadingModeExporter::DoExport(
             //
             // This computes the first root prim below which a material has
             // been exported.
-            SdfPath rootPrimPath =
-                exportedMaterials[0].GetPath().GetPrefixes()[0];
+            SdfPath rootPrimPath = exportedMaterials[0].GetPath().GetPrefixes()[0];
             materialCollectionsPrim = stage->GetPrimAtPath(rootPrimPath);
-            TF_VERIFY(materialCollectionsPrim,
+            TF_VERIFY(
+                materialCollectionsPrim,
                 "Could not get prim at path <%s>. Not exporting material "
-                "collections / bindings.", rootPrimPath.GetText());
+                "collections / bindings.",
+                rootPrimPath.GetText());
             return;
         }
 
-        std::vector<UsdCollectionAPI> collections =
-            UsdUtilsCreateCollections(matAssignments, materialCollectionsPrim);
+        std::vector<UsdCollectionAPI> collections
+            = UsdUtilsCreateCollections(matAssignments, materialCollectionsPrim);
 
         if (exportArgs.exportCollectionBasedBindings) {
             for (size_t i = 0u; i < exportedMaterials.size(); ++i) {
-                const UsdShadeMaterial &mat = exportedMaterials[i];
-                const UsdCollectionAPI &coll = collections[i];
+                const UsdShadeMaterial& mat = exportedMaterials[i];
+                const UsdCollectionAPI& coll = collections[i];
 
                 // If the all the paths are under the prim with the materialBind
                 // collections, export the binding on the prim.
-                const SdfPathSet &paths = matAssignments[i].second;
-                if (std::all_of(paths.begin(), paths.end(),
-                        [materialCollectionsPrim](const SdfPath &p) {
-                        return p.HasPrefix(materialCollectionsPrim.GetPath());
+                const SdfPathSet& paths = matAssignments[i].second;
+                if (std::all_of(
+                        paths.begin(), paths.end(), [materialCollectionsPrim](const SdfPath& p) {
+                            return p.HasPrefix(materialCollectionsPrim.GetPath());
                         })) {
 
                     // Materials are named uniquely in maya, so we can
                     // skip passing in the 'bindingName' param.
-                    UsdShadeMaterialBindingAPI bindingAPI =
-                        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
+                    UsdShadeMaterialBindingAPI bindingAPI
+                        = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
                             UsdShadeMaterialBindingAPI>(materialCollectionsPrim);
                     bindingAPI.Bind(coll, mat);
                     continue;
@@ -189,17 +168,16 @@ UsdMayaShadingModeExporter::DoExport(
                 // If all the paths are not under materialCollectionsPrim, then
                 // figure out the set of root paths at which to export the
                 // collection-based bindings.
-                const SdfPathSet rootPaths =
-                    _GetRootPaths(matAssignments[i].second);
-                for (auto &rootPath : rootPaths) {
+                const SdfPathSet rootPaths = _GetRootPaths(matAssignments[i].second);
+                for (auto& rootPath : rootPaths) {
                     auto rootPrim = stage->GetPrimAtPath(rootPath);
-                    if (!TF_VERIFY(rootPrim, "Could not get prim at path <%s>",
-                        rootPath.GetText())) {
+                    if (!TF_VERIFY(
+                            rootPrim, "Could not get prim at path <%s>", rootPath.GetText())) {
                         continue;
                     }
 
-                    UsdShadeMaterialBindingAPI bindingAPI =
-                        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
+                    UsdShadeMaterialBindingAPI bindingAPI
+                        = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
                             UsdShadeMaterialBindingAPI>(rootPrim);
                     bindingAPI.Bind(coll, mat);
                 }
@@ -207,6 +185,5 @@ UsdMayaShadingModeExporter::DoExport(
         }
     }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

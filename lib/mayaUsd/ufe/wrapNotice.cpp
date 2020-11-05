@@ -35,13 +35,13 @@ void wrapNotice()
     {
         typedef MayaUsdProxyStageSetNotice This;
         TfPyNoticeWrapper<This, TfNotice>::Wrap()
-        .add_property("shapePath", &This::GetShapePath)
-        .add_property("stage", &This::GetStage);
+            .add_property("shapePath", &This::GetShapePath)
+            .add_property("stage", &This::GetStage);
     }
     {
         typedef MayaUsdProxyStageInvalidateNotice This;
         TfPyNoticeWrapper<This, TfNotice>::Wrap()
-        .add_property("shapePath", &This::GetShapePath)
-        .add_property("stage", &This::GetStage);
+            .add_property("shapePath", &This::GetShapePath)
+            .add_property("stage", &This::GetStage);
     }
 }

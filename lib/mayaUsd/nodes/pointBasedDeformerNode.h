@@ -16,6 +16,11 @@
 #ifndef PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_H
 #define PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_H
 
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/pxr.h>
+
 #include <maya/MDataBlock.h>
 #include <maya/MItGeometry.h>
 #include <maya/MMatrix.h>
@@ -25,20 +30,14 @@
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/staticTokens.h>
-
-#include <mayaUsd/base/api.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS \
-    ((MayaTypeName, "pxrUsdPointBasedDeformerNode"))
+#define PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS ((MayaTypeName, "pxrUsdPointBasedDeformerNode"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaPointBasedDeformerNodeTokens,
-                         MAYAUSD_CORE_PUBLIC,
-                         PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS);
-
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdMayaPointBasedDeformerNodeTokens,
+    MAYAUSD_CORE_PUBLIC,
+    PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS);
 
 /// Maya deformer that uses the points of a UsdGeomPointBased prim to deform
 /// the geometry.
@@ -52,45 +51,40 @@ TF_DECLARE_PUBLIC_TOKENS(UsdMayaPointBasedDeformerNodeTokens,
 /// being deformed.
 class UsdMayaPointBasedDeformerNode : public MPxDeformerNode
 {
-    public:
-        MAYAUSD_CORE_PUBLIC
-        static const MTypeId typeId;
-        MAYAUSD_CORE_PUBLIC
-        static const MString typeName;
+public:
+    MAYAUSD_CORE_PUBLIC
+    static const MTypeId typeId;
+    MAYAUSD_CORE_PUBLIC
+    static const MString typeName;
 
-        // Attributes
-        MAYAUSD_CORE_PUBLIC
-        static MObject inUsdStageAttr;
-        MAYAUSD_CORE_PUBLIC
-        static MObject primPathAttr;
-        MAYAUSD_CORE_PUBLIC
-        static MObject timeAttr;
+    // Attributes
+    MAYAUSD_CORE_PUBLIC
+    static MObject inUsdStageAttr;
+    MAYAUSD_CORE_PUBLIC
+    static MObject primPathAttr;
+    MAYAUSD_CORE_PUBLIC
+    static MObject timeAttr;
 
-        MAYAUSD_CORE_PUBLIC
-        static void* creator();
+    MAYAUSD_CORE_PUBLIC
+    static void* creator();
 
-        MAYAUSD_CORE_PUBLIC
-        static MStatus initialize();
+    MAYAUSD_CORE_PUBLIC
+    static MStatus initialize();
 
-        // MPxGeometryFilter overrides
-        MAYAUSD_CORE_PUBLIC
-        MStatus deform(
-                MDataBlock& block,
-                MItGeometry& iter,
-                const MMatrix& mat,
-                unsigned int multiIndex) override;
+    // MPxGeometryFilter overrides
+    MAYAUSD_CORE_PUBLIC
+    MStatus
+    deform(MDataBlock& block, MItGeometry& iter, const MMatrix& mat, unsigned int multiIndex)
+        override;
 
-    private:
-        UsdMayaPointBasedDeformerNode();
-        ~UsdMayaPointBasedDeformerNode() override;
+private:
+    UsdMayaPointBasedDeformerNode();
+    ~UsdMayaPointBasedDeformerNode() override;
 
-        UsdMayaPointBasedDeformerNode(const UsdMayaPointBasedDeformerNode&);
-        UsdMayaPointBasedDeformerNode& operator=(
-                const UsdMayaPointBasedDeformerNode&);
+    UsdMayaPointBasedDeformerNode(const UsdMayaPointBasedDeformerNode&);
+    UsdMayaPointBasedDeformerNode& operator=(const UsdMayaPointBasedDeformerNode&);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

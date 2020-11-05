@@ -16,49 +16,47 @@
 #ifndef PXRUSDMAYA_SHADING_MODE_IMPORTER_H
 #define PXRUSDMAYA_SHADING_MODE_IMPORTER_H
 
-#include <functional>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdShade/material.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
+#include <maya/MObject.h>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS \
-    ((MayaMaterialNamespace, "USD_Materials"))
+#define PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS ((MayaMaterialNamespace, "USD_Materials"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaShadingModeImporterTokens,
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdMayaShadingModeImporterTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS);
-
 
 class UsdMayaShadingModeImportContext
 {
 public:
-
     const UsdShadeMaterial& GetShadeMaterial() const { return _shadeMaterial; }
-    const UsdGeomGprim& GetBoundPrim() const { return _boundPrim; }
+    const UsdGeomGprim&     GetBoundPrim() const { return _boundPrim; }
 
     UsdMayaShadingModeImportContext(
-            const UsdShadeMaterial& shadeMaterial,
-            const UsdGeomGprim& boundPrim,
-            UsdMayaPrimReaderContext* context) :
-        _shadeMaterial(shadeMaterial),
-        _boundPrim(boundPrim),
-        _context(context),
-        _surfaceShaderPlugName("surfaceShader"),
-        _volumeShaderPlugName("volumeShader"),
-        _displacementShaderPlugName("displacementShader")
+        const UsdShadeMaterial&   shadeMaterial,
+        const UsdGeomGprim&       boundPrim,
+        UsdMayaPrimReaderContext* context)
+        : _shadeMaterial(shadeMaterial)
+        , _boundPrim(boundPrim)
+        , _context(context)
+        , _surfaceShaderPlugName("surfaceShader")
+        , _volumeShaderPlugName("volumeShader")
+        , _displacementShaderPlugName("displacementShader")
     {
     }
 
@@ -137,8 +135,8 @@ public:
     UsdMayaPrimReaderContext* GetPrimReaderContext() const;
 
 private:
-    const UsdShadeMaterial& _shadeMaterial;
-    const UsdGeomGprim& _boundPrim;
+    const UsdShadeMaterial&   _shadeMaterial;
+    const UsdGeomGprim&       _boundPrim;
     UsdMayaPrimReaderContext* _context;
 
     TfToken _shadingEngineName;
@@ -151,6 +149,5 @@ typedef std::function<MObject(UsdMayaShadingModeImportContext*, const UsdMayaJob
     UsdMayaShadingModeImporter;
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

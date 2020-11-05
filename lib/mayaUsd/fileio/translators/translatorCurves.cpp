@@ -15,6 +15,11 @@
 //
 #include "translatorCurves.h"
 
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+
+#include <pxr/usd/usdGeom/basisCurves.h>
+#include <pxr/usd/usdGeom/nurbsCurves.h>
+
 #include <maya/MDoubleArray.h>
 #include <maya/MFnAnimCurve.h>
 #include <maya/MFnBlendShapeDeformer.h>
@@ -26,20 +31,14 @@
 #include <maya/MTime.h>
 #include <maya/MTimeArray.h>
 
-#include <pxr/usd/usdGeom/basisCurves.h>
-#include <pxr/usd/usdGeom/nurbsCurves.h>
-
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-bool
-UsdMayaTranslatorCurves::Create(
-        const UsdGeomCurves& curves,
-        MObject parentNode,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context)
+bool UsdMayaTranslatorCurves::Create(
+    const UsdGeomCurves&         curves,
+    MObject                      parentNode,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     if (!curves) {
         return false;
@@ -51,12 +50,8 @@ UsdMayaTranslatorCurves::Create(
 
     // Create node (transform)
     MObject mayaNodeTransformObj;
-    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
-                                                          parentNode,
-                                                          args,
-                                                          context,
-                                                          &status,
-                                                          &mayaNodeTransformObj)) {
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(
+            prim, parentNode, args, context, &status, &mayaNodeTransformObj)) {
         return false;
     }
 
@@ -79,12 +74,11 @@ UsdMayaTranslatorCurves::Create(
     // Sanity Checks
     if (curveVertexCounts.empty()) {
         TF_RUNTIME_ERROR(
-                "vertexCount array is empty on NurbsCurves <%s>. Skipping...",
-                prim.GetPath().GetText());
+            "vertexCount array is empty on NurbsCurves <%s>. Skipping...",
+            prim.GetPath().GetText());
         return false; // No verts for the curve, so exit
     } else if (curveVertexCounts.size() > 1) {
-        TF_WARN("Multiple curves in <%s>. Only reading the first one...", 
-                prim.GetPath().GetText());
+        TF_WARN("Multiple curves in <%s>. Only reading the first one...", prim.GetPath().GetText());
     }
 
     int curveIndex = 0;
@@ -92,23 +86,21 @@ UsdMayaTranslatorCurves::Create(
 
     // Gather points. If timeInterval is non-empty, pick the first available
     // sample in the timeInterval or default.
-    UsdTimeCode pointsTimeSample=UsdTimeCode::EarliestTime();
+    UsdTimeCode         pointsTimeSample = UsdTimeCode::EarliestTime();
     std::vector<double> pointsTimeSamples;
-    size_t numTimeSamples = 0;
+    size_t              numTimeSamples = 0;
     if (!args.GetTimeInterval().IsEmpty()) {
-        curves.GetPointsAttr().GetTimeSamplesInInterval(
-                args.GetTimeInterval(), &pointsTimeSamples);
+        curves.GetPointsAttr().GetTimeSamplesInInterval(args.GetTimeInterval(), &pointsTimeSamples);
         numTimeSamples = pointsTimeSamples.size();
-        if (numTimeSamples>0) {
+        if (numTimeSamples > 0) {
             pointsTimeSample = pointsTimeSamples[0];
         }
     }
     curves.GetPointsAttr().Get(&points, pointsTimeSample);
-    
+
     if (points.empty()) {
         TF_RUNTIME_ERROR(
-                "points array is empty on NurbsCurves <%s>. Skipping...",
-                prim.GetPath().GetText());
+            "points array is empty on NurbsCurves <%s>. Skipping...", prim.GetPath().GetText());
         return false; // invalid nurbscurves, so exit
     }
 
@@ -122,12 +114,12 @@ UsdMayaTranslatorCurves::Create(
 
         curveOrder.resize(1);
         UsdGeomBasisCurves basisSchema = UsdGeomBasisCurves(prim);
-        TfToken typeToken;
+        TfToken            typeToken;
         basisSchema.GetTypeAttr().Get(&typeToken);
         if (typeToken == UsdGeomTokens->linear) {
             curveOrder[0] = 2;
             curveKnots.resize(points.size());
-            for (size_t i=0; i < curveKnots.size(); ++i) {
+            for (size_t i = 0; i < curveKnots.size(); ++i) {
                 curveKnots[i] = i;
             }
         } else {
@@ -141,9 +133,9 @@ UsdMayaTranslatorCurves::Create(
             // Cubic curves in Maya have numSpans + 2*3 - 1, and for geometry
             // that came in as basis curves, we have numCV's - 3 spans. See the
             // MFnNurbsCurve documentation for more details.
-            curveKnots.resize(points.size() -3 + 5);
+            curveKnots.resize(points.size() - 3 + 5);
             int knotIdx = 0;
-            for (size_t i=0; i < curveKnots.size(); ++i) {
+            for (size_t i = 0; i < curveKnots.size(); ++i) {
                 if (i < 3) {
                     curveKnots[i] = 0.0;
                 } else {
@@ -151,50 +143,50 @@ UsdMayaTranslatorCurves::Create(
                         ++knotIdx;
                     }
                     curveKnots[i] = double(knotIdx);
-                } 
+                }
             }
         }
     }
 
     // == Convert data
-    size_t mayaNumVertices = points.size();
+    size_t      mayaNumVertices = points.size();
     MPointArray mayaPoints(mayaNumVertices);
-    for (size_t i=0; i < mayaNumVertices; i++) {
-        mayaPoints.set( i, points[i][0], points[i][1], points[i][2] );
+    for (size_t i = 0; i < mayaNumVertices; i++) {
+        mayaPoints.set(i, points[i][0], points[i][1], points[i][2]);
     }
 
-    double *knots=curveKnots.data();
-    MDoubleArray mayaKnots( knots, curveKnots.size());
+    double*      knots = curveKnots.data();
+    MDoubleArray mayaKnots(knots, curveKnots.size());
 
     int mayaDegree = curveOrder[curveIndex] - 1;
 
     MFnNurbsCurve::Form mayaCurveForm = MFnNurbsCurve::kOpen; // HARDCODED
-    bool mayaCurveCreate2D = false;
-    bool mayaCurveCreateRational = true;
+    bool                mayaCurveCreate2D = false;
+    bool                mayaCurveCreateRational = true;
 
     // == Create NurbsCurve Shape Node
     MFnNurbsCurve curveFn;
-    MObject curveObj = curveFn.create(mayaPoints, 
-                                     mayaKnots,
-                                     mayaDegree,
-                                     mayaCurveForm,
-                                     mayaCurveCreate2D,
-                                     mayaCurveCreateRational,
-                                     mayaNodeTransformObj,
-                                     &status
-                                     );
-     if (status != MS::kSuccess) {
-         return false;
-     }
-    MString nodeName( prim.GetName().GetText() );
+    MObject       curveObj = curveFn.create(
+        mayaPoints,
+        mayaKnots,
+        mayaDegree,
+        mayaCurveForm,
+        mayaCurveCreate2D,
+        mayaCurveCreateRational,
+        mayaNodeTransformObj,
+        &status);
+    if (status != MS::kSuccess) {
+        return false;
+    }
+    MString nodeName(prim.GetName().GetText());
     nodeName += "Shape";
     curveFn.setName(nodeName, false, &status);
 
-    std::string nodePath( prim.GetPath().GetText() );
+    std::string nodePath(prim.GetPath().GetText());
     nodePath += "/";
     nodePath += nodeName.asChar();
     if (context) {
-        context->RegisterNewMayaNode( nodePath, curveObj ); // used for undo/redo
+        context->RegisterNewMayaNode(nodePath, curveObj); // used for undo/redo
     }
 
     // == Animate points ==
@@ -203,38 +195,37 @@ UsdMayaTranslatorCurves::Create(
     //
     if (numTimeSamples > 0) {
         MPointArray mayaPoints(mayaNumVertices);
-        MObject curveAnimObj;
+        MObject     curveAnimObj;
 
         MFnBlendShapeDeformer blendFn;
-        MObject blendObj = blendFn.create(curveObj);
+        MObject               blendObj = blendFn.create(curveObj);
         if (context) {
-            context->RegisterNewMayaNode(blendFn.name().asChar(), blendObj ); // used for undo/redo
+            context->RegisterNewMayaNode(blendFn.name().asChar(), blendObj); // used for undo/redo
         }
-        
-        for (unsigned int ti=0; ti < numTimeSamples; ++ti) {
-             curves.GetPointsAttr().Get(&points, pointsTimeSamples[ti]);
 
-            for (unsigned int i=0; i < mayaNumVertices; i++) {
-                mayaPoints.set( i, points[i][0], points[i][1], points[i][2] );
+        for (unsigned int ti = 0; ti < numTimeSamples; ++ti) {
+            curves.GetPointsAttr().Get(&points, pointsTimeSamples[ti]);
+
+            for (unsigned int i = 0; i < mayaNumVertices; i++) {
+                mayaPoints.set(i, points[i][0], points[i][1], points[i][2]);
             }
 
             // == Create NurbsCurve Shape Node
             MFnNurbsCurve curveFn;
-            if ( curveAnimObj.isNull() ) {
-                curveAnimObj = curveFn.create(mayaPoints, 
-                                     mayaKnots,
-                                     mayaDegree,
-                                     mayaCurveForm,
-                                     mayaCurveCreate2D,
-                                     mayaCurveCreateRational,
-                                     mayaNodeTransformObj,
-                                     &status
-                                     );
+            if (curveAnimObj.isNull()) {
+                curveAnimObj = curveFn.create(
+                    mayaPoints,
+                    mayaKnots,
+                    mayaDegree,
+                    mayaCurveForm,
+                    mayaCurveCreate2D,
+                    mayaCurveCreateRational,
+                    mayaNodeTransformObj,
+                    &status);
                 if (status != MS::kSuccess) {
                     continue;
                 }
-            }
-            else {
+            } else {
                 // Reuse the already created curve by copying it and then setting the points
                 curveAnimObj = curveFn.copy(curveAnimObj, mayaNodeTransformObj, &status);
                 curveFn.setCVs(mayaPoints);
@@ -242,7 +233,8 @@ UsdMayaTranslatorCurves::Create(
             blendFn.addTarget(curveObj, ti, curveAnimObj, 1.0);
             curveFn.setIntermediateObject(true);
             if (context) {
-                context->RegisterNewMayaNode( curveFn.fullPathName().asChar(), curveAnimObj ); // used for undo/redo
+                context->RegisterNewMayaNode(
+                    curveFn.fullPathName().asChar(), curveAnimObj); // used for undo/redo
             }
         }
 
@@ -252,21 +244,22 @@ UsdMayaTranslatorCurves::Create(
         // Construct the time array to be used for all the keys
         MTimeArray timeArray;
         timeArray.setLength(numTimeSamples);
-        for (unsigned int ti=0; ti < numTimeSamples; ++ti) {
-            timeArray.set( MTime(pointsTimeSamples[ti]), ti);
+        for (unsigned int ti = 0; ti < numTimeSamples; ++ti) {
+            timeArray.set(MTime(pointsTimeSamples[ti]), ti);
         }
 
         // Key/Animate the weights
-        MPlug plgAry = blendFn.findPlug( "weight" );
-        if ( !plgAry.isNull() && plgAry.isArray() ) {
-            for (unsigned int ti=0; ti < numTimeSamples; ++ti) {
-                MPlug plg = plgAry.elementByLogicalIndex(ti, &status);
+        MPlug plgAry = blendFn.findPlug("weight");
+        if (!plgAry.isNull() && plgAry.isArray()) {
+            for (unsigned int ti = 0; ti < numTimeSamples; ++ti) {
+                MPlug        plg = plgAry.elementByLogicalIndex(ti, &status);
                 MDoubleArray valueArray(numTimeSamples, 0.0);
                 valueArray[ti] = 1.0; // Set the time value where this curve's weight should be 1.0
                 MObject animObj = animFn.create(plg, nullptr, &status);
                 animFn.addKeys(&timeArray, &valueArray);
                 if (context) {
-                    context->RegisterNewMayaNode(animFn.name().asChar(), animObj ); // used for undo/redo
+                    context->RegisterNewMayaNode(
+                        animFn.name().asChar(), animObj); // used for undo/redo
                 }
             }
         }
@@ -276,4 +269,3 @@ UsdMayaTranslatorCurves::Create(
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

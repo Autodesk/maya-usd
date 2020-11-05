@@ -15,103 +15,95 @@
 //
 #include "translatorPrim.h"
 
-#include <maya/MFnAnimCurve.h>
-#include <maya/MFnDagNode.h>
-
-#include <pxr/usd/usdGeom/imageable.h>
-
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/usd/usdGeom/imageable.h>
+
+#include <maya/MFnAnimCurve.h>
+#include <maya/MFnDagNode.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-void
-UsdMayaTranslatorPrim::Read(
-        const UsdPrim& prim,
-        MObject mayaNode,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context)
+void UsdMayaTranslatorPrim::Read(
+    const UsdPrim&               prim,
+    MObject                      mayaNode,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     UsdGeomImageable primSchema(prim);
     if (!primSchema) {
-        TF_CODING_ERROR("Prim %s is not UsdGeomImageable.", 
-                prim.GetPath().GetText());
+        TF_CODING_ERROR("Prim %s is not UsdGeomImageable.", prim.GetPath().GetText());
         return;
     }
 
     // Gather visibility
     // If timeInterval is non-empty, pick the first available sample in the
     // timeInterval or default.
-    UsdTimeCode visTimeSample=UsdTimeCode::EarliestTime();
+    UsdTimeCode         visTimeSample = UsdTimeCode::EarliestTime();
     std::vector<double> visTimeSamples;
-    size_t visNumTimeSamples = 0;
+    size_t              visNumTimeSamples = 0;
     if (!args.GetTimeInterval().IsEmpty()) {
         primSchema.GetVisibilityAttr().GetTimeSamplesInInterval(
-                args.GetTimeInterval(), &visTimeSamples);
+            args.GetTimeInterval(), &visTimeSamples);
         visNumTimeSamples = visTimeSamples.size();
-        if (visNumTimeSamples>0) {
+        if (visNumTimeSamples > 0) {
             visTimeSample = visTimeSamples[0];
         }
     }
 
-    MStatus status;
+    MStatus           status;
     MFnDependencyNode depFn(mayaNode);
-    TfToken visibilityTok;
+    TfToken           visibilityTok;
 
-    if (primSchema.GetVisibilityAttr().Get(&visibilityTok, visTimeSample)){
-        UsdMayaUtil::setPlugValue(depFn, "visibility",
-                           visibilityTok != UsdGeomTokens->invisible);
+    if (primSchema.GetVisibilityAttr().Get(&visibilityTok, visTimeSample)) {
+        UsdMayaUtil::setPlugValue(depFn, "visibility", visibilityTok != UsdGeomTokens->invisible);
     }
 
     // == Animation ==
     if (visNumTimeSamples > 0) {
-        size_t numTimeSamples = visNumTimeSamples;
+        size_t       numTimeSamples = visNumTimeSamples;
         MDoubleArray valueArray(numTimeSamples);
 
         // Populate the channel arrays
-        for (unsigned int ti=0; ti < visNumTimeSamples; ++ti) {
+        for (unsigned int ti = 0; ti < visNumTimeSamples; ++ti) {
             primSchema.GetVisibilityAttr().Get(&visibilityTok, visTimeSamples[ti]);
-            valueArray[ti] =
-                    static_cast<double>(visibilityTok != UsdGeomTokens->invisible);
+            valueArray[ti] = static_cast<double>(visibilityTok != UsdGeomTokens->invisible);
         }
 
         // == Write to maya node ==
-        MFnDagNode depFn(mayaNode);
-        MPlug plg;
+        MFnDagNode   depFn(mayaNode);
+        MPlug        plg;
         MFnAnimCurve animFn;
 
         // Construct the time array to be used for all the keys
         MTimeArray timeArray;
         timeArray.setLength(numTimeSamples);
-        for (unsigned int ti=0; ti < numTimeSamples; ++ti) {
-            timeArray.set( MTime(visTimeSamples[ti]), ti);
+        for (unsigned int ti = 0; ti < numTimeSamples; ++ti) {
+            timeArray.set(MTime(visTimeSamples[ti]), ti);
         }
 
         // Add the keys
-        plg = depFn.findPlug( "visibility" );
-        if ( !plg.isNull() ) {
+        plg = depFn.findPlug("visibility");
+        if (!plg.isNull()) {
             MObject animObj = animFn.create(plg, nullptr, &status);
             animFn.addKeys(&timeArray, &valueArray);
             if (context) {
-                context->RegisterNewMayaNode(
-                        animFn.name().asChar(), animObj ); // used for undo/redo
+                context->RegisterNewMayaNode(animFn.name().asChar(), animObj); // used for undo/redo
             }
         }
     }
 
     // Process UsdGeomImageable typed schema (note that purpose is uniform).
     UsdMayaReadUtil::ReadSchemaAttributesFromPrim<UsdGeomImageable>(
-            prim, mayaNode, {UsdGeomTokens->purpose});
+        prim, mayaNode, { UsdGeomTokens->purpose });
 
     // Process API schema attributes and strongly-typed metadata.
-    UsdMayaReadUtil::ReadMetadataFromPrim(
-            args.GetIncludeMetadataKeys(), prim, mayaNode);
-    UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
-            args.GetIncludeAPINames(), prim, mayaNode);
+    UsdMayaReadUtil::ReadMetadataFromPrim(args.GetIncludeMetadataKeys(), prim, mayaNode);
+    UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(args.GetIncludeAPINames(), prim, mayaNode);
 
     // XXX What about all the "user attributes" that PrimWriter exports???
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

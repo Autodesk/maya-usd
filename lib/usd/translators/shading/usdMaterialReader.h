@@ -32,7 +32,8 @@ struct UsdMayaJobImportArgs;
 class UsdShadeShader;
 
 /// Shader reader for importing UsdPreviewSurface to Maya's native material nodes
-class PxrUsdTranslators_MaterialReader : public UsdMayaShaderReader {
+class PxrUsdTranslators_MaterialReader : public UsdMayaShaderReader
+{
 public:
     PxrUsdTranslators_MaterialReader(const UsdMayaPrimReaderArgs&);
 

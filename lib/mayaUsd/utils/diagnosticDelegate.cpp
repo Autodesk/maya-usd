@@ -15,74 +15,71 @@
 //
 #include "diagnosticDelegate.h"
 
-#include <iostream>
-
-#include <maya/MGlobal.h>
+#include <mayaUsd/base/debugCodes.h>
 
 #include <pxr/base/arch/threads.h>
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/stackTrace.h>
 
-#include <mayaUsd/base/debugCodes.h>
+#include <maya/MGlobal.h>
+
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_DIAGNOSTICS_BATCH, true,
-        "Whether to batch diagnostics coming from the same call site. "
-        "If batching is off, all secondary threads' diagnostics will be "
-        "printed to stderr.");
+TF_DEFINE_ENV_SETTING(
+    PIXMAYA_DIAGNOSTICS_BATCH,
+    true,
+    "Whether to batch diagnostics coming from the same call site. "
+    "If batching is off, all secondary threads' diagnostics will be "
+    "printed to stderr.");
 
 // Globally-shared delegate. Uses shared_ptr so we can have weak ptrs.
 static std::shared_ptr<UsdMayaDiagnosticDelegate> _sharedDelegate;
 
 namespace {
 
-class _StatusOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate {
-    void IssueWarning(const TfWarning&) override {}
-    void IssueFatalError(const TfCallContext&, const std::string&) override {}
+class _StatusOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
+{
+    void IssueWarning(const TfWarning&) override { }
+    void IssueFatalError(const TfCallContext&, const std::string&) override { }
 };
 
-class _WarningOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate {
-    void IssueStatus(const TfStatus&) override {}
-    void IssueFatalError(const TfCallContext&, const std::string&) override {}
+class _WarningOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
+{
+    void IssueStatus(const TfStatus&) override { }
+    void IssueFatalError(const TfCallContext&, const std::string&) override { }
 };
 
 } // anonymous namespace
 
-static MString
-_FormatDiagnostic(const TfDiagnosticBase& d)
+static MString _FormatDiagnostic(const TfDiagnosticBase& d)
 {
     const std::string msg = TfStringPrintf(
-            "%s -- %s in %s at line %zu of %s",
-            d.GetCommentary().c_str(),
-            TfDiagnosticMgr::GetCodeName(d.GetDiagnosticCode()).c_str(),
-            d.GetContext().GetFunction(),
-            d.GetContext().GetLine(),
-            d.GetContext().GetFile());
+        "%s -- %s in %s at line %zu of %s",
+        d.GetCommentary().c_str(),
+        TfDiagnosticMgr::GetCodeName(d.GetDiagnosticCode()).c_str(),
+        d.GetContext().GetFunction(),
+        d.GetContext().GetLine(),
+        d.GetContext().GetFile());
     return msg.c_str();
 }
 
-static MString
-_FormatCoalescedDiagnostic(const UsdUtilsCoalescingDiagnosticDelegateItem& item)
+static MString _FormatCoalescedDiagnostic(const UsdUtilsCoalescingDiagnosticDelegateItem& item)
 {
-    const size_t numItems = item.unsharedItems.size();
-    const std::string suffix = numItems == 1
-            ? std::string()
-            : TfStringPrintf(" -- and %zu similar", numItems - 1);
-    const std::string message = TfStringPrintf("%s%s",
-            item.unsharedItems[0].commentary.c_str(),
-            suffix.c_str());
+    const size_t      numItems = item.unsharedItems.size();
+    const std::string suffix
+        = numItems == 1 ? std::string() : TfStringPrintf(" -- and %zu similar", numItems - 1);
+    const std::string message
+        = TfStringPrintf("%s%s", item.unsharedItems[0].commentary.c_str(), suffix.c_str());
 
     return message.c_str();
 }
 
-static bool
-_IsDiagnosticBatchingEnabled()
-{
-    return TfGetEnvSetting(PIXMAYA_DIAGNOSTICS_BATCH);
-}
+static bool _IsDiagnosticBatchingEnabled() { return TfGetEnvSetting(PIXMAYA_DIAGNOSTICS_BATCH); }
 
-UsdMayaDiagnosticDelegate::UsdMayaDiagnosticDelegate() : _batchCount(0)
+UsdMayaDiagnosticDelegate::UsdMayaDiagnosticDelegate()
+    : _batchCount(0)
 {
     TfDiagnosticMgr::GetInstance().AddDelegate(this);
 }
@@ -97,8 +94,7 @@ UsdMayaDiagnosticDelegate::~UsdMayaDiagnosticDelegate()
     TfDiagnosticMgr::GetInstance().RemoveDelegate(this);
 }
 
-void
-UsdMayaDiagnosticDelegate::IssueError(const TfError& err)
+void UsdMayaDiagnosticDelegate::IssueError(const TfError& err)
 {
     // Errors are never batched. They should be rare, and in those cases, we
     // want to see them separately.
@@ -106,14 +102,12 @@ UsdMayaDiagnosticDelegate::IssueError(const TfError& err)
     // through _FormatDiagnostic.
     if (ArchIsMainThread()) {
         MGlobal::displayError(_FormatDiagnostic(err));
-    }
-    else {
+    } else {
         std::cerr << _FormatDiagnostic(err) << std::endl;
     }
 }
 
-void
-UsdMayaDiagnosticDelegate::IssueStatus(const TfStatus& status)
+void UsdMayaDiagnosticDelegate::IssueStatus(const TfStatus& status)
 {
     if (_batchCount.load() > 0) {
         return; // Batched.
@@ -121,14 +115,12 @@ UsdMayaDiagnosticDelegate::IssueStatus(const TfStatus& status)
 
     if (ArchIsMainThread()) {
         MGlobal::displayInfo(status.GetCommentary().c_str());
-    }
-    else {
+    } else {
         std::cerr << _FormatDiagnostic(status) << std::endl;
     }
 }
 
-void
-UsdMayaDiagnosticDelegate::IssueWarning(const TfWarning& warning)
+void UsdMayaDiagnosticDelegate::IssueWarning(const TfWarning& warning)
 {
     if (_batchCount.load() > 0) {
         return; // Batched.
@@ -136,29 +128,26 @@ UsdMayaDiagnosticDelegate::IssueWarning(const TfWarning& warning)
 
     if (ArchIsMainThread()) {
         MGlobal::displayWarning(warning.GetCommentary().c_str());
-    }
-    else {
+    } else {
         std::cerr << _FormatDiagnostic(warning) << std::endl;
     }
 }
 
-void
-UsdMayaDiagnosticDelegate::IssueFatalError(
+void UsdMayaDiagnosticDelegate::IssueFatalError(
     const TfCallContext& context,
-    const std::string& msg)
+    const std::string&   msg)
 {
     TfLogCrash(
-            "FATAL ERROR",
-            msg,
-            /*additionalInfo*/ std::string(),
-            context,
-            /*logToDb*/ true);
+        "FATAL ERROR",
+        msg,
+        /*additionalInfo*/ std::string(),
+        context,
+        /*logToDb*/ true);
     _UnhandledAbort();
 }
 
 /* static */
-void
-UsdMayaDiagnosticDelegate::InstallDelegate()
+void UsdMayaDiagnosticDelegate::InstallDelegate()
 {
     if (!ArchIsMainThread()) {
         TF_FATAL_CODING_ERROR("Cannot install delegate from secondary thread");
@@ -167,8 +156,7 @@ UsdMayaDiagnosticDelegate::InstallDelegate()
 }
 
 /* static */
-void
-UsdMayaDiagnosticDelegate::RemoveDelegate()
+void UsdMayaDiagnosticDelegate::RemoveDelegate()
 {
     if (!ArchIsMainThread()) {
         TF_FATAL_CODING_ERROR("Cannot remove delegate from secondary thread");
@@ -177,8 +165,7 @@ UsdMayaDiagnosticDelegate::RemoveDelegate()
 }
 
 /* static */
-int
-UsdMayaDiagnosticDelegate::GetBatchCount()
+int UsdMayaDiagnosticDelegate::GetBatchCount()
 {
     if (std::shared_ptr<UsdMayaDiagnosticDelegate> ptr = _sharedDelegate) {
         return ptr->_batchCount.load();
@@ -188,8 +175,7 @@ UsdMayaDiagnosticDelegate::GetBatchCount()
     return 0;
 }
 
-void
-UsdMayaDiagnosticDelegate::_StartBatch()
+void UsdMayaDiagnosticDelegate::_StartBatch()
 {
     TF_AXIOM(ArchIsMainThread());
 
@@ -200,16 +186,14 @@ UsdMayaDiagnosticDelegate::_StartBatch()
     }
 }
 
-void
-UsdMayaDiagnosticDelegate::_EndBatch()
+void UsdMayaDiagnosticDelegate::_EndBatch()
 {
     TF_AXIOM(ArchIsMainThread());
 
     const int prevValue = _batchCount.fetch_sub(1);
     if (prevValue <= 0) {
         TF_FATAL_ERROR("_EndBatch invoked before _StartBatch");
-    }
-    else if (prevValue == 1) {
+    } else if (prevValue == 1) {
         // This is the last _EndBatch; print the diagnostic messages.
         // and remove the batching delegates.
         _FlushBatch();
@@ -218,19 +202,16 @@ UsdMayaDiagnosticDelegate::_EndBatch()
     }
 }
 
-void
-UsdMayaDiagnosticDelegate::_FlushBatch()
+void UsdMayaDiagnosticDelegate::_FlushBatch()
 {
     TF_AXIOM(ArchIsMainThread());
 
-    const UsdUtilsCoalescingDiagnosticDelegateVector statuses =
-            _batchedStatuses
-            ? _batchedStatuses->TakeCoalescedDiagnostics()
-            : UsdUtilsCoalescingDiagnosticDelegateVector();
-    const UsdUtilsCoalescingDiagnosticDelegateVector warnings =
-            _batchedWarnings
-            ? _batchedWarnings->TakeCoalescedDiagnostics()
-            : UsdUtilsCoalescingDiagnosticDelegateVector();
+    const UsdUtilsCoalescingDiagnosticDelegateVector statuses = _batchedStatuses
+        ? _batchedStatuses->TakeCoalescedDiagnostics()
+        : UsdUtilsCoalescingDiagnosticDelegateVector();
+    const UsdUtilsCoalescingDiagnosticDelegateVector warnings = _batchedWarnings
+        ? _batchedWarnings->TakeCoalescedDiagnostics()
+        : UsdUtilsCoalescingDiagnosticDelegateVector();
 
     // Note that we must be in the main thread here, so it's safe to call
     // displayInfo/displayWarning.

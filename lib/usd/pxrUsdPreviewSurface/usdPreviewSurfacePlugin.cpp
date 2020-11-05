@@ -24,14 +24,14 @@
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
-#include <maya/MStatus.h>
-#include <maya/MGlobal.h>
-#include <maya/MFnPlugin.h>
-#include <maya/MDrawRegistry.h>
-
 #include <pxr/base/tf/envSetting.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
+
+#include <maya/MDrawRegistry.h>
+#include <maya/MFnPlugin.h>
+#include <maya/MGlobal.h>
+#include <maya/MStatus.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -104,12 +104,12 @@ MStatus PxrMayaUsdPreviewSurfacePlugin::finalize(
 }
 
 namespace {
-    bool _registered = false;
+bool _registered = false;
 }
 
 /* static */
-MStatus
-PxrMayaUsdPreviewSurfacePlugin::registerFragments() {
+MStatus PxrMayaUsdPreviewSurfacePlugin::registerFragments()
+{
     if (_registered) {
         return MS::kSuccess;
     }
@@ -120,8 +120,8 @@ PxrMayaUsdPreviewSurfacePlugin::registerFragments() {
 }
 
 /* static */
-MStatus
-PxrMayaUsdPreviewSurfacePlugin::deregisterFragments() {
+MStatus PxrMayaUsdPreviewSurfacePlugin::deregisterFragments()
+{
     if (!_registered) {
         return MS::kSuccess;
     }
@@ -132,8 +132,8 @@ PxrMayaUsdPreviewSurfacePlugin::deregisterFragments() {
 }
 
 /* static */
-void
-PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(const MString& typeName) {
+void PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(const MString& typeName)
+{
     TfToken typeNameToken(typeName.asChar());
 
     // There is obvious ambiguity here as soon as two plugins register a UsdPreviewSurface node.
@@ -144,20 +144,19 @@ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(const MString& type
         [typeNameToken](const UsdMayaPrimReaderArgs& readerArgs) {
             return std::make_shared<PxrMayaUsdPreviewSurface_Reader>(readerArgs, typeNameToken);
         });
-
 }
 
 /* static */
-void
-PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(const MString& typeName) {
+void PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(const MString& typeName)
+{
     TfToken typeNameToken(typeName.asChar());
 
     UsdMayaShaderWriterRegistry::Register(
         typeNameToken,
         &PxrMayaUsdPreviewSurface_Writer::CanExport,
         [](const MFnDependencyNode& depNodeFn,
-            const SdfPath&           usdPath,
-            UsdMayaWriteJobContext&  jobCtx) {
+           const SdfPath&           usdPath,
+           UsdMayaWriteJobContext&  jobCtx) {
             return std::make_shared<PxrMayaUsdPreviewSurface_Writer>(depNodeFn, usdPath, jobCtx);
         });
 }

@@ -60,7 +60,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// and for any user-defined plugin types. If mayaUSD does not ship with a
 /// writer plugin for some Maya built-in type, you can register your own
 /// plugin for that Maya built-in type.
-struct UsdMayaShaderWriterRegistry {
+struct UsdMayaShaderWriterRegistry
+{
     /// Writer factory function, i.e. a function that creates a shader writer
     /// for the given Maya node/USD paths and context.
     using WriterFactoryFn = std::function<UsdMayaShaderWriterSharedPtr(
@@ -91,9 +92,11 @@ struct UsdMayaShaderWriterRegistry {
 
 /// SFINAE utility class to detect the presence of a CanExport static function
 /// inside a writer class. Used by the registration macro for basic writers.
-template <typename T> class HasCanExport {
+template <typename T> class HasCanExport
+{
     typedef char _One;
-    struct _Two {
+    struct _Two
+    {
         char _x[2];
     };
 
@@ -101,7 +104,10 @@ template <typename T> class HasCanExport {
     template <typename C> static _Two _Test(...);
 
 public:
-    enum { value = sizeof(_Test<T>(0)) == sizeof(char) };
+    enum
+    {
+        value = sizeof(_Test<T>(0)) == sizeof(char)
+    };
 };
 
 /// \brief Registers a pre-existing writer class for the given Maya type;
@@ -141,7 +147,7 @@ public:
             &writerClass::CanExport,                                                         \
             [](const MFnDependencyNode& depNodeFn,                                           \
                const SdfPath&           usdPath,                                             \
-               UsdMayaWriteJobContext&  jobCtx) {                                            \
+               UsdMayaWriteJobContext&  jobCtx) {                                             \
                 return std::make_shared<writerClass>(depNodeFn, usdPath, jobCtx);            \
             });                                                                              \
     }

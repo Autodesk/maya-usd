@@ -13,25 +13,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "test_usdmaya.h"
+#include "AL/usdmaya/Metadata.h"
+#include "AL/usdmaya/StageCache.h"
+#include "AL/usdmaya/nodes/Layer.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/usdmaya/nodes/Transform.h"
-#include "AL/usdmaya/nodes/Layer.h"
-#include "AL/usdmaya/StageCache.h"
-#include "AL/usdmaya/Metadata.h"
-#include <maya/MFnTransform.h>
-#include <maya/MSelectionList.h>
-#include <maya/MGlobal.h>
-#include <maya/MItDependencyNodes.h>
-#include <maya/MDagModifier.h>
-#include <maya/MFileIO.h>
-#include <maya/MStringArray.h>
+#include "test_usdmaya.h"
 
-#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
+
+#include <maya/MDagModifier.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnTransform.h>
+#include <maya/MGlobal.h>
+#include <maya/MItDependencyNodes.h>
+#include <maya/MSelectionList.h>
+#include <maya/MStringArray.h>
 
 using AL::maya::test::buildTempPath;
 
@@ -41,22 +42,24 @@ using AL::maya::test::buildTempPath;
  */
 TEST(ProxyShapeSelectabilityDB, selectablesOnOpen)
 {
-  SdfPath expectedSelectable("/A/B");
-  std::function<UsdStageRefPtr()>  constructTransformChain = [&expectedSelectable] ()
-  {
-    UsdStageRefPtr stage = UsdStage::CreateInMemory();
-    stage->DefinePrim(SdfPath("/A/B/C"));
-    UsdPrim b = stage->GetPrimAtPath(expectedSelectable);
-    b.SetMetadata<TfToken>(AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::unselectable);
-    return stage;
-  };
+    SdfPath                         expectedSelectable("/A/B");
+    std::function<UsdStageRefPtr()> constructTransformChain = [&expectedSelectable]() {
+        UsdStageRefPtr stage = UsdStage::CreateInMemory();
+        stage->DefinePrim(SdfPath("/A/B/C"));
+        UsdPrim b = stage->GetPrimAtPath(expectedSelectable);
+        b.SetMetadata<TfToken>(
+            AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::unselectable);
+        return stage;
+    };
 
-  MFileIO::newFile(true);
-  const std::string temp_path = buildTempPath("AL_USDMayaTests_ProxyShape_selectablesOnOpen.usda");
-  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
+    MFileIO::newFile(true);
+    const std::string temp_path
+        = buildTempPath("AL_USDMayaTests_ProxyShape_selectablesOnOpen.usda");
+    AL::usdmaya::nodes::ProxyShape* proxyShape
+        = CreateMayaProxyShape(constructTransformChain, temp_path);
 
-  //Check that the path is selectable directly using the selectableDB object
-  EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    // Check that the path is selectable directly using the selectableDB object
+    EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
 }
 
 /*
@@ -64,56 +67,58 @@ TEST(ProxyShapeSelectabilityDB, selectablesOnOpen)
  */
 TEST(ProxyShapeSelectabilityDB, selectablesOnModification)
 {
-  std::function<UsdStageRefPtr()>  constructTransformChain = [] ()
-  {
-    UsdStageRefPtr stage = UsdStage::CreateInMemory();
-    stage->DefinePrim(SdfPath("/A/B/C"));
-    return stage;
-  };
+    std::function<UsdStageRefPtr()> constructTransformChain = []() {
+        UsdStageRefPtr stage = UsdStage::CreateInMemory();
+        stage->DefinePrim(SdfPath("/A/B/C"));
+        return stage;
+    };
 
-  MFileIO::newFile(true);
+    MFileIO::newFile(true);
 
-  // unsure undo is enabled for this test
-  const std::string temp_path = buildTempPath("AL_USDMayaTests_ProxyShape_selectablesOnModification.usda");
-  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
+    // unsure undo is enabled for this test
+    const std::string temp_path
+        = buildTempPath("AL_USDMayaTests_ProxyShape_selectablesOnModification.usda");
+    AL::usdmaya::nodes::ProxyShape* proxyShape
+        = CreateMayaProxyShape(constructTransformChain, temp_path);
 
-  SdfPath expectedSelectable("/A/B");
-  EXPECT_FALSE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    SdfPath expectedSelectable("/A/B");
+    EXPECT_FALSE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
 
-  UsdPrim b = proxyShape->getUsdStage()->GetPrimAtPath(expectedSelectable);
-  b.SetMetadata(AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::unselectable);
+    UsdPrim b = proxyShape->getUsdStage()->GetPrimAtPath(expectedSelectable);
+    b.SetMetadata(AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::unselectable);
 
-  //Check that the path is selectable directly using the selectableDB object
-  EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    // Check that the path is selectable directly using the selectableDB object
+    EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
 }
 
 /*
- * Tests that when a prim is tagged as unselected, and it's selectability changes from not being unselectable any more,
- * that the selectability database removes it from the unselectable list.
+ * Tests that when a prim is tagged as unselected, and it's selectability changes from not being
+ * unselectable any more, that the selectability database removes it from the unselectable list.
  */
 
 TEST(ProxyShapeSelectabilityDB, selectableIsRemoval)
 {
-  SdfPath expectedSelectable("/A/B");
-  std::function<UsdStageRefPtr()>  constructTransformChain = [&expectedSelectable] ()
-  {
-    UsdStageRefPtr stage = UsdStage::CreateInMemory();
-    stage->DefinePrim(SdfPath("/A/B/C"));
-    UsdPrim b = stage->GetPrimAtPath(expectedSelectable);
+    SdfPath                         expectedSelectable("/A/B");
+    std::function<UsdStageRefPtr()> constructTransformChain = [&expectedSelectable]() {
+        UsdStageRefPtr stage = UsdStage::CreateInMemory();
+        stage->DefinePrim(SdfPath("/A/B/C"));
+        UsdPrim b = stage->GetPrimAtPath(expectedSelectable);
 
-    b.SetMetadata(AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::unselectable);
-    return stage;
-  };
+        b.SetMetadata(AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::unselectable);
+        return stage;
+    };
 
-  MFileIO::newFile(true);
-  const std::string temp_path = buildTempPath("AL_USDMayaTests_ProxyShape_selectableIsRemoval.usda");
-  AL::usdmaya::nodes::ProxyShape* proxyShape = CreateMayaProxyShape(constructTransformChain, temp_path);
+    MFileIO::newFile(true);
+    const std::string temp_path
+        = buildTempPath("AL_USDMayaTests_ProxyShape_selectableIsRemoval.usda");
+    AL::usdmaya::nodes::ProxyShape* proxyShape
+        = CreateMayaProxyShape(constructTransformChain, temp_path);
 
-  EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    EXPECT_TRUE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
 
-  UsdPrim b = proxyShape->getUsdStage()->GetPrimAtPath(expectedSelectable);
-  b.SetMetadata(AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::selectable);
+    UsdPrim b = proxyShape->getUsdStage()->GetPrimAtPath(expectedSelectable);
+    b.SetMetadata(AL::usdmaya::Metadata::selectability, AL::usdmaya::Metadata::selectable);
 
-  //Check that the path has been removed from the selectable list
-  EXPECT_FALSE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
+    // Check that the path has been removed from the selectable list
+    EXPECT_FALSE(proxyShape->selectabilityDB().isPathUnselectable(expectedSelectable));
 }

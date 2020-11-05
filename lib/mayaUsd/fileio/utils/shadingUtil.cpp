@@ -15,9 +15,9 @@
 //
 #include "shadingUtil.h"
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/material.h>
@@ -29,23 +29,18 @@
 
 #include <string>
 
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
-
 std::string
-UsdMayaShadingUtil::GetStandardAttrName(
-        const MPlug& attrPlug,
-        bool allowMultiElementArrays)
+UsdMayaShadingUtil::GetStandardAttrName(const MPlug& attrPlug, bool allowMultiElementArrays)
 {
     if (!attrPlug.isElement()) {
-        const MString mayaPlugName =
-            attrPlug.partialName(false, false, false, false, false, true);
+        const MString mayaPlugName = attrPlug.partialName(false, false, false, false, false, true);
         return mayaPlugName.asChar();
     }
 
-    const MString mayaPlugName =
-        attrPlug.array().partialName(false, false, false, false, false, true);
+    const MString mayaPlugName
+        = attrPlug.array().partialName(false, false, false, false, false, true);
     const unsigned int logicalIndex = attrPlug.logicalIndex();
 
     if (allowMultiElementArrays) {
@@ -57,35 +52,31 @@ UsdMayaShadingUtil::GetStandardAttrName(
     return std::string();
 }
 
-UsdShadeInput
-UsdMayaShadingUtil::CreateMaterialInputAndConnectShader(
-        UsdShadeMaterial& material,
-        const TfToken& materialInputName,
-        const SdfValueTypeName& inputTypeName,
-        UsdShadeShader& shader,
-        const TfToken& shaderInputName)
+UsdShadeInput UsdMayaShadingUtil::CreateMaterialInputAndConnectShader(
+    UsdShadeMaterial&       material,
+    const TfToken&          materialInputName,
+    const SdfValueTypeName& inputTypeName,
+    UsdShadeShader&         shader,
+    const TfToken&          shaderInputName)
 {
     if (!material || !shader) {
         return UsdShadeInput();
     }
 
-    UsdShadeInput materialInput =
-        material.CreateInput(materialInputName, inputTypeName);
+    UsdShadeInput materialInput = material.CreateInput(materialInputName, inputTypeName);
 
-    UsdShadeInput shaderInput =
-        shader.CreateInput(shaderInputName, inputTypeName);
+    UsdShadeInput shaderInput = shader.CreateInput(shaderInputName, inputTypeName);
 
     shaderInput.ConnectToSource(materialInput);
 
     return materialInput;
 }
 
-UsdShadeOutput
-UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
-        UsdShadeShader& shader,
-        UsdShadeMaterial& material,
-        const TfToken& terminalName,
-        const TfToken& renderContext)
+UsdShadeOutput UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
+    UsdShadeShader&   shader,
+    UsdShadeMaterial& material,
+    const TfToken&    terminalName,
+    const TfToken&    renderContext)
 {
     if (!shader || !material) {
         return UsdShadeOutput();
@@ -102,8 +93,7 @@ UsdMayaShadingUtil::CreateShaderOutputAndConnectMaterial(
         return UsdShadeOutput();
     }
 
-    UsdShadeOutput shaderOutput =
-        shader.CreateOutput(terminalName, materialOutput.GetTypeName());
+    UsdShadeOutput shaderOutput = shader.CreateOutput(terminalName, materialOutput.GetTypeName());
 
     materialOutput.ConnectToSource(shaderOutput);
 

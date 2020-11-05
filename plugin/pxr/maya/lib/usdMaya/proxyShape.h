@@ -19,23 +19,22 @@
 /// \file usdMaya/proxyShape.h
 
 #include "usdMaya/api.h"
-#include <mayaUsd/nodes/proxyShapeBase.h>
 
-#include <pxr/pxr.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
 
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/tf/staticTokens.h>
-
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MBoundingBox.h>
+#include <maya/MDGContext.h>
 #include <maya/MDagPath.h>
 #include <maya/MDataBlock.h>
 #include <maya/MDataHandle.h>
-#include <maya/MDGContext.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -47,97 +46,85 @@
 
 #include <map>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define PXRUSDMAYA_PROXY_SHAPE_TOKENS ((MayaTypeName, "pxrUsdProxyShape"))
 
-#define PXRUSDMAYA_PROXY_SHAPE_TOKENS \
-    ((MayaTypeName, "pxrUsdProxyShape"))
-
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens,
-                         PXRUSDMAYA_API,
-                         PXRUSDMAYA_PROXY_SHAPE_TOKENS);
-
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens, PXRUSDMAYA_API, PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 
 class UsdMayaProxyShape : public MayaUsdProxyShapeBase
 {
-    public:
-        typedef MayaUsdProxyShapeBase ParentClass;
+public:
+    typedef MayaUsdProxyShapeBase ParentClass;
 
-        PXRUSDMAYA_API
-        static const MTypeId typeId;
-        PXRUSDMAYA_API
-        static const MString typeName;
+    PXRUSDMAYA_API
+    static const MTypeId typeId;
+    PXRUSDMAYA_API
+    static const MString typeName;
 
-        PXRUSDMAYA_API
-        static MObject variantKeyAttr;
-        PXRUSDMAYA_API
-        static MObject fastPlaybackAttr;
-        PXRUSDMAYA_API
-        static MObject softSelectableAttr;
+    PXRUSDMAYA_API
+    static MObject variantKeyAttr;
+    PXRUSDMAYA_API
+    static MObject fastPlaybackAttr;
+    PXRUSDMAYA_API
+    static MObject softSelectableAttr;
 
-        /// Delegate function for returning whether object soft select mode is
-        /// currently on
-        typedef std::function<bool(void)> ObjectSoftSelectEnabledDelegate;
+    /// Delegate function for returning whether object soft select mode is
+    /// currently on
+    typedef std::function<bool(void)> ObjectSoftSelectEnabledDelegate;
 
-        PXRUSDMAYA_API
-        static void* creator();
+    PXRUSDMAYA_API
+    static void* creator();
 
-        PXRUSDMAYA_API
-        static MStatus initialize();
+    PXRUSDMAYA_API
+    static MStatus initialize();
 
-        PXRUSDMAYA_API
-        static void SetObjectSoftSelectEnabledDelegate(
-                ObjectSoftSelectEnabledDelegate delegate);
+    PXRUSDMAYA_API
+    static void SetObjectSoftSelectEnabledDelegate(ObjectSoftSelectEnabledDelegate delegate);
 
-        // Virtual function overrides
+    // Virtual function overrides
 
-        PXRUSDMAYA_API
-        bool isBounded() const override;
-        PXRUSDMAYA_API
-        MBoundingBox boundingBox() const override;
+    PXRUSDMAYA_API
+    bool isBounded() const override;
+    PXRUSDMAYA_API
+    MBoundingBox boundingBox() const override;
 
-        // Public functions
-        PXRUSDMAYA_API
-        bool setInternalValueInContext(
-                const MPlug& plug,
-                const MDataHandle& dataHandle,
-                MDGContext& ctx) override;
+    // Public functions
+    PXRUSDMAYA_API
+    bool setInternalValueInContext(
+        const MPlug&       plug,
+        const MDataHandle& dataHandle,
+        MDGContext&        ctx) override;
 
-        PXRUSDMAYA_API
-        bool getInternalValueInContext(
-                const MPlug& plug,
-                MDataHandle& dataHandle,
-                MDGContext& ctx) override;
+    PXRUSDMAYA_API
+    bool
+    getInternalValueInContext(const MPlug& plug, MDataHandle& dataHandle, MDGContext& ctx) override;
 
-        void postConstructor() override;
+    void postConstructor() override;
 
-    protected:
-        // Use the variant key to get the session layer from the prim path.
-        PXRUSDMAYA_API
-        SdfLayerRefPtr computeSessionLayer(MDataBlock&) override;
+protected:
+    // Use the variant key to get the session layer from the prim path.
+    PXRUSDMAYA_API
+    SdfLayerRefPtr computeSessionLayer(MDataBlock&) override;
 
-        PXRUSDMAYA_API
-        bool canBeSoftSelected() const override;
+    PXRUSDMAYA_API
+    bool canBeSoftSelected() const override;
 
-        PXRUSDMAYA_API
-        bool GetObjectSoftSelectEnabled() const override;
+    PXRUSDMAYA_API
+    bool GetObjectSoftSelectEnabled() const override;
 
-    private:
-        UsdMayaProxyShape();
+private:
+    UsdMayaProxyShape();
 
-        UsdMayaProxyShape(const UsdMayaProxyShape&);
-        ~UsdMayaProxyShape() override;
-        UsdMayaProxyShape& operator=(const UsdMayaProxyShape&);
+    UsdMayaProxyShape(const UsdMayaProxyShape&);
+    ~UsdMayaProxyShape() override;
+    UsdMayaProxyShape& operator=(const UsdMayaProxyShape&);
 
-        bool _useFastPlayback;
+    bool _useFastPlayback;
 
-        static ObjectSoftSelectEnabledDelegate
-            _sharedObjectSoftSelectEnabledDelegate;
+    static ObjectSoftSelectEnabledDelegate _sharedObjectSoftSelectEnabledDelegate;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

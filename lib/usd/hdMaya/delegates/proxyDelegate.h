@@ -16,17 +16,17 @@
 #ifndef HDMAYA_AL_PROXY_DELEGATE_H
 #define HDMAYA_AL_PROXY_DELEGATE_H
 
-#include <memory>
+#include <hdMaya/delegates/delegate.h>
 
-#include <maya/MMessage.h>
-
-#include <pxr/pxr.h>
 #include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
-#include <hdMaya/delegates/delegate.h>
+#include <maya/MMessage.h>
+
+#include <memory>
 
 #if WANT_UFE_BUILD
 #include <ufe/selection.h>
@@ -37,7 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdMayaProxyAdapter;
 class MayaUsdProxyShapeBase;
 
-class HdMayaProxyDelegate : public HdMayaDelegate {
+class HdMayaProxyDelegate : public HdMayaDelegate
+{
 public:
     HdMayaProxyDelegate(const InitData& initData);
 
@@ -53,23 +54,24 @@ public:
 
     // TODO: implement this override this to add selection support
     // for non-ufe
-//    void PopulateSelectedPaths(
-//        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
-//        const HdSelectionSharedPtr& selection) override;
+    //    void PopulateSelectedPaths(
+    //        const MSelectionList& mayaSelection, SdfPathVector& selectedSdfPaths,
+    //        const HdSelectionSharedPtr& selection) override;
 
 #if WANT_UFE_BUILD
     void PopulateSelectedPaths(
-        const UFE_NS::Selection& ufeSelection, SdfPathVector& selectedSdfPaths,
+        const UFE_NS::Selection&    ufeSelection,
+        SdfPathVector&              selectedSdfPaths,
         const HdSelectionSharedPtr& selection) override;
     bool SupportsUfeSelection() override;
 #endif // WANT_UFE_BUILD
 
 #if MAYA_API_VERSION >= 20210000
     void PopulateSelectionList(
-        const HdxPickHitVector& hits,
+        const HdxPickHitVector&          hits,
         const MHWRender::MSelectionInfo& selectInfo,
-        MSelectionList& selectionList,
-        MPointArray& worldSpaceHitPts) override;
+        MSelectionList&                  selectionList,
+        MPointArray&                     worldSpaceHitPts) override;
 #endif
 };
 

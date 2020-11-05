@@ -27,10 +27,10 @@
 /// \file AL_USDMayaSchemasTest/tokens.h
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// 
+//
 // This is an automatically generated file (by usdGenSchema.py).
 // Do not hand-edit!
-// 
+//
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "api.h"
@@ -42,7 +42,6 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class AL_USDMayaSchemasTestTokensType
 ///
@@ -62,18 +61,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \code
 ///     gprim.GetMyTokenValuedAttr().Set(AL_USDMayaSchemasTestTokens->depth);
 /// \endcode
-struct AL_USDMayaSchemasTestTokensType {
+struct AL_USDMayaSchemasTestTokensType
+{
     AL_USDMAYASCHEMASTEST_API AL_USDMayaSchemasTestTokensType();
     /// \brief "depth"
-    /// 
+    ///
     /// AL_usd_ExamplePolyCubeNode
     const TfToken depth;
     /// \brief "height"
-    /// 
+    ///
     /// AL_usd_ExamplePolyCubeNode
     const TfToken height;
     /// \brief "width"
-    /// 
+    ///
     /// AL_usd_ExamplePolyCubeNode
     const TfToken width;
     /// A vector of all of the tokens listed above.
@@ -84,7 +84,8 @@ struct AL_USDMayaSchemasTestTokensType {
 ///
 /// A global variable with static, efficient \link TfToken TfTokens\endlink
 /// for use in all public USD API.  \sa AL_USDMayaSchemasTestTokensType
-extern AL_USDMAYASCHEMASTEST_API TfStaticData<AL_USDMayaSchemasTestTokensType> AL_USDMayaSchemasTestTokens;
+extern AL_USDMAYASCHEMASTEST_API TfStaticData<AL_USDMayaSchemasTestTokensType>
+                                 AL_USDMayaSchemasTestTokens;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
