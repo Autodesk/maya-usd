@@ -91,8 +91,12 @@ class HdVP2BasisCurves final : public HdBasisCurves
 public:
     HdVP2BasisCurves(
         HdVP2RenderDelegate* delegate,
-        const SdfPath&       id,
-        const SdfPath&       instancerId = SdfPath());
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        const SdfPath& id);
+#else
+        const SdfPath& id,
+        const SdfPath& instancerId = SdfPath());
+#endif
 
     //! Destructor.
     ~HdVP2BasisCurves() override = default;

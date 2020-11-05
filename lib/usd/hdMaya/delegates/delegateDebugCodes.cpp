@@ -44,6 +44,10 @@ TF_REGISTRY_FUNCTION(TfDebug)
         HDMAYA_DELEGATE_GET_EXTENT, "Print information about 'GetExtent' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_INSTANCER_ID,
+        "Print information about 'GetInstancerId' calls to the delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_INSTANCE_INDICES,
         "Print information about GetInstanceIndices calls to the delegates.");
 

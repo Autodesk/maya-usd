@@ -187,6 +187,11 @@ protected:
     HDMAYA_API
     VtIntArray GetInstanceIndices(const SdfPath& instancerId, const SdfPath& prototypeId) override;
 
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    HDMAYA_API
+    SdfPath GetInstancerId(const SdfPath& primId) override;
+#endif
+
     HDMAYA_API
     GfMatrix4d GetInstancerTransform(SdfPath const& instancerId) override;
 
