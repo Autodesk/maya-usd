@@ -16,14 +16,14 @@
 #ifndef PXRUSDMAYA_TRANSLATOR_GPRIM_H
 #define PXRUSDMAYA_TRANSLATOR_GPRIM_H
 
-#include <maya/MObject.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primWriterContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/gprim.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/primWriterContext.h>
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -31,20 +31,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct UsdMayaTranslatorGprim
 {
     MAYAUSD_CORE_PUBLIC
-    static void Read(
-            const UsdGeomGprim& gprim, 
-            MObject mayaNode,
-            UsdMayaPrimReaderContext* context);
+    static void
+    Read(const UsdGeomGprim& gprim, MObject mayaNode, UsdMayaPrimReaderContext* context);
 
     MAYAUSD_CORE_PUBLIC
-    static void Write(
-            const MObject& mayaNode,
-            const UsdGeomGprim& gprim, 
-            UsdMayaPrimWriterContext* context);
+    static void
+    Write(const MObject& mayaNode, const UsdGeomGprim& gprim, UsdMayaPrimWriterContext* context);
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
-

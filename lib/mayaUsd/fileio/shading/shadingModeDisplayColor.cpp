@@ -62,13 +62,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (diffuseColor)
-    (opacity)
+    (diffuseColor)(opacity)
 
-    ((NiceName, "Display Colors"))
-    ((ImportDescription, "Imports the displayColor primvar on the USD mesh as a Maya"
-                         " surface shader."))
-);
+        ((NiceName, "Display Colors"))(
+            (ImportDescription,
+             "Imports the displayColor primvar on the USD mesh as a Maya"
+             " surface shader.")));
 
 DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
     displayColor,
@@ -78,21 +77,20 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
     jobArguments)
 {
     const UsdShadeMaterial& shadeMaterial = context->GetShadeMaterial();
-    const UsdGeomGprim& primSchema = context->GetBoundPrim();
+    const UsdGeomGprim&     primSchema = context->GetBoundPrim();
 
     MStatus status;
 
     // Get Display Color from USD (linear) and convert to Display
-    GfVec3f linearDisplayColor(.5,.5,.5);
+    GfVec3f linearDisplayColor(.5, .5, .5);
     GfVec3f linearTransparency(0, 0, 0);
 
     VtVec3fArray gprimDisplayColor(1);
-    if (primSchema &&
-            primSchema.GetDisplayColorPrimvar().ComputeFlattened(&gprimDisplayColor)) {
+    if (primSchema && primSchema.GetDisplayColorPrimvar().ComputeFlattened(&gprimDisplayColor)) {
         linearDisplayColor = gprimDisplayColor[0];
         VtFloatArray gprimDisplayOpacity(1);
-        if (primSchema.GetDisplayOpacityPrimvar().GetAttr().HasAuthoredValue() &&
-                primSchema.GetDisplayOpacityPrimvar().ComputeFlattened(&gprimDisplayOpacity)) {
+        if (primSchema.GetDisplayOpacityPrimvar().GetAttr().HasAuthoredValue()
+            && primSchema.GetDisplayOpacityPrimvar().ComputeFlattened(&gprimDisplayOpacity)) {
             const float trans = 1.0 - gprimDisplayOpacity[0];
             linearTransparency = GfVec3f(trans, trans, trans);
         }
@@ -100,8 +98,7 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
         return MObject();
     }
 
-    const GfVec3f displayColor =
-        UsdMayaColorSpace::ConvertLinearToMaya(linearDisplayColor);
+    const GfVec3f displayColor = UsdMayaColorSpace::ConvertLinearToMaya(linearDisplayColor);
 
     // We default to lambert if no conversion was requested:
     const TfToken& preferredMaterial
@@ -109,24 +106,22 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
         ? jobArguments.preferredMaterial
         : UsdMayaPreferredMaterialTokens->lambert;
     std::string shaderName(preferredMaterial.GetText());
-    SdfPath shaderParentPath = SdfPath::AbsoluteRootPath();
+    SdfPath     shaderParentPath = SdfPath::AbsoluteRootPath();
     if (shadeMaterial) {
         const UsdPrim& shadeMaterialPrim = shadeMaterial.GetPrim();
-        shaderName =
-            TfStringPrintf("%s_%s",
-                shadeMaterialPrim.GetName().GetText(),
-                preferredMaterial.GetText());
+        shaderName = TfStringPrintf(
+            "%s_%s", shadeMaterialPrim.GetName().GetText(), preferredMaterial.GetText());
         shaderParentPath = shadeMaterialPrim.GetPath();
     }
 
     // Construct the selected shader.
-    MObject           shadingObj;
+    MObject shadingObj;
     UsdMayaTranslatorUtil::CreateShaderNode(
-              MString(shaderName.c_str()),
-              preferredMaterial.GetText(),
-              UsdMayaShadingNodeType::Shader,
-              &status,
-              &shadingObj);
+        MString(shaderName.c_str()),
+        preferredMaterial.GetText(),
+        UsdMayaShadingNodeType::Shader,
+        &status,
+        &shadingObj);
     if (status != MS::kSuccess) {
         TF_RUNTIME_ERROR(
             "Could not create node of type '%s' for prim '%s'.\n",
@@ -141,22 +136,21 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
         MFnStandardSurfaceShader surfaceFn;
         surfaceFn.setObject(shadingObj);
         surfaceFn.setBase(1.0f);
-        surfaceFn.setBaseColor(
-            MColor(displayColor[0], displayColor[1], displayColor[2]));
+        surfaceFn.setBaseColor(MColor(displayColor[0], displayColor[1], displayColor[2]));
 
         surfaceFn.setTransmission(linearTransparency[0]);
 
-        const SdfPath surfacePath =
-            shaderParentPath.AppendChild(TfToken(surfaceFn.name().asChar()));
+        const SdfPath surfacePath
+            = shaderParentPath.AppendChild(TfToken(surfaceFn.name().asChar()));
         context->AddCreatedObject(surfacePath, shadingObj);
 
         // Find the outColor plug so we can connect it as the surface shader of the
         // shading engine.
         outputPlug = surfaceFn.findPlug("outColor", &status);
         CHECK_MSTATUS_AND_RETURN(status, MObject());
-    } else 
+    } else
 #endif
-    if (preferredMaterial == UsdMayaPreferredMaterialTokens->usdPreviewSurface) {
+        if (preferredMaterial == UsdMayaPreferredMaterialTokens->usdPreviewSurface) {
         MFnDependencyNode depNodeFn;
         depNodeFn.setObject(shadingObj);
 
@@ -173,19 +167,18 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
     } else {
         MFnLambertShader lambertFn;
         lambertFn.setObject(shadingObj);
-        lambertFn.setColor(
-            MColor(displayColor[0], displayColor[1], displayColor[2]));
+        lambertFn.setColor(MColor(displayColor[0], displayColor[1], displayColor[2]));
         lambertFn.setTransparency(
             MColor(linearTransparency[0], linearTransparency[1], linearTransparency[2]));
-        
+
         // We explicitly set diffuse coefficient to 1.0 here since new lamberts
         // default to 0.8. This is to make sure the color value matches visually
         // when roundtripping since we bake the diffuseCoeff into the diffuse color
         // at export.
         lambertFn.setDiffuseCoeff(1.0);
 
-        const SdfPath lambertPath =
-            shaderParentPath.AppendChild(TfToken(lambertFn.name().asChar()));
+        const SdfPath lambertPath
+            = shaderParentPath.AppendChild(TfToken(lambertFn.name().asChar()));
         context->AddCreatedObject(lambertPath, shadingObj);
 
         outputPlug = lambertFn.findPlug("outColor", &status);
@@ -203,12 +196,12 @@ DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
 
     const TfToken surfaceShaderPlugName = context->GetSurfaceShaderPlugName();
     if (!surfaceShaderPlugName.IsEmpty()) {
-        MPlug seSurfaceShaderPlg =
-            fnSet.findPlug(surfaceShaderPlugName.GetText(), &status);
+        MPlug seSurfaceShaderPlg = fnSet.findPlug(surfaceShaderPlugName.GetText(), &status);
         CHECK_MSTATUS_AND_RETURN(status, MObject());
-        UsdMayaUtil::Connect(outputPlug,
-                                seSurfaceShaderPlg,
-                                /* clearDstPlug = */ true);
+        UsdMayaUtil::Connect(
+            outputPlug,
+            seSurfaceShaderPlg,
+            /* clearDstPlug = */ true);
     }
 
     return shadingEngine;

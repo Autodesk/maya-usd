@@ -15,12 +15,12 @@
 //
 #pragma once
 
-#include <ufe/transform3dUndoableCommands.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/usd/attribute.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <ufe/transform3dUndoableCommands.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,60 +31,71 @@ namespace ufe {
 /*!
     Ability to perform undo to restore the original pivot value.
  */
-class MAYAUSD_CORE_PUBLIC UsdRotatePivotTranslateUndoableCommand : public Ufe::TranslateUndoableCommand
+class MAYAUSD_CORE_PUBLIC UsdRotatePivotTranslateUndoableCommand
+    : public Ufe::TranslateUndoableCommand
 {
 public:
     typedef std::shared_ptr<UsdRotatePivotTranslateUndoableCommand> Ptr;
 
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path);
-    #else
-    UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
-    #endif
+#else
+    UsdRotatePivotTranslateUndoableCommand(
+        const UsdPrim&             prim,
+        const Ufe::Path&           ufePath,
+        const Ufe::SceneItem::Ptr& item);
+#endif
 
     ~UsdRotatePivotTranslateUndoableCommand() override;
 
     // Delete the copy/move constructors assignment operators.
     UsdRotatePivotTranslateUndoableCommand(const UsdRotatePivotTranslateUndoableCommand&) = delete;
-    UsdRotatePivotTranslateUndoableCommand& operator=(const UsdRotatePivotTranslateUndoableCommand&) = delete;
+    UsdRotatePivotTranslateUndoableCommand& operator=(const UsdRotatePivotTranslateUndoableCommand&)
+        = delete;
     UsdRotatePivotTranslateUndoableCommand(UsdRotatePivotTranslateUndoableCommand&&) = delete;
-    UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&) = delete;
+    UsdRotatePivotTranslateUndoableCommand& operator=(UsdRotatePivotTranslateUndoableCommand&&)
+        = delete;
 
-    //! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+//! Create a UsdRotatePivotTranslateUndoableCommand from a USD prim, UFE path and UFE scene item.
+#ifdef UFE_V2_FEATURES_AVAILABLE
     static UsdRotatePivotTranslateUndoableCommand::Ptr create(const Ufe::Path& path);
-    #else
-    static UsdRotatePivotTranslateUndoableCommand::Ptr create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
-    #endif
+#else
+    static UsdRotatePivotTranslateUndoableCommand::Ptr
+         create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item);
+#endif
 
     // Ufe::TranslateUndoableCommand overrides
     void undo() override;
     void redo() override;
 #if UFE_PREVIEW_VERSION_NUM >= 2025
-//#ifdef UFE_V2_FEATURES_AVAILABLE
+    //#ifdef UFE_V2_FEATURES_AVAILABLE
     bool set(double x, double y, double z) override;
 #else
     bool translate(double x, double y, double z) override;
 #endif
 
-    inline UsdPrim prim() const { TF_AXIOM(fItem != nullptr); return fItem->prim(); }
+    inline UsdPrim prim() const
+    {
+        TF_AXIOM(fItem != nullptr);
+        return fItem->prim();
+    }
 
 private:
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     UsdSceneItem::Ptr sceneItem() const;
-    #endif
+#endif
 
 private:
-    #if UFE_PREVIEW_VERSION_NUM < 2021
+#if UFE_PREVIEW_VERSION_NUM < 2021
     UsdPrim fPrim;
-    #endif
-    Ufe::Path fPath;
-    mutable UsdSceneItem::Ptr fItem{nullptr};
-    UsdAttribute fPivotAttrib;
-    GfVec3f fPrevPivotValue;
-    bool fNoPivotOp;
+#endif
+    Ufe::Path                 fPath;
+    mutable UsdSceneItem::Ptr fItem { nullptr };
+    UsdAttribute              fPivotAttrib;
+    GfVec3f                   fPrevPivotValue;
+    bool                      fNoPivotOp;
 
 }; // UsdRotatePivotTranslateUndoableCommand
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

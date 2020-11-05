@@ -16,17 +16,17 @@
 #ifndef PXRUSDMAYA_INSTANCED_NODE_WRITER_H
 #define PXRUSDMAYA_INSTANCED_NODE_WRITER_H
 
-#include <vector>
-
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MFnDependencyNode.h>
+
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,28 +36,25 @@ class UsdMaya_InstancedNodeWriter : public UsdMayaPrimWriter
 {
 public:
     UsdMaya_InstancedNodeWriter(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdInstancePath,
-            UsdMayaWriteJobContext& ctx);
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdInstancePath,
+        UsdMayaWriteJobContext&  ctx);
 
-    bool ExportsGprims() const override;
-    bool ShouldPruneChildren() const override;
-    const SdfPathVector& GetModelPaths() const override;
-    const UsdMayaUtil::MDagPathMap<SdfPath>&
-            GetDagToUsdPathMapping() const override;
-    void Write(const UsdTimeCode& usdTime) override;
+    bool                                     ExportsGprims() const override;
+    bool                                     ShouldPruneChildren() const override;
+    const SdfPathVector&                     GetModelPaths() const override;
+    const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagToUsdPathMapping() const override;
+    void                                     Write(const UsdTimeCode& usdTime) override;
 
 private:
     UsdMayaWriteJobContext::_ExportAndRefPaths _masterPaths;
 
     // All of the data below is cached when we construct/obtain prim writers.
-    bool _exportsGprims;
-    std::vector<SdfPath> _modelPaths;
+    bool                              _exportsGprims;
+    std::vector<SdfPath>              _modelPaths;
     UsdMayaUtil::MDagPathMap<SdfPath> _dagToUsdPaths;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

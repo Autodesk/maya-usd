@@ -21,40 +21,32 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdUndoDeleteCommand::UsdUndoDeleteCommand(const UsdPrim& prim)
-	: Ufe::UndoableCommand()
-	, fPrim(prim)
+    : Ufe::UndoableCommand()
+    , fPrim(prim)
 {
 }
 
-UsdUndoDeleteCommand::~UsdUndoDeleteCommand()
-{
-}
+UsdUndoDeleteCommand::~UsdUndoDeleteCommand() { }
 
 /*static*/
 UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const UsdPrim& prim)
 {
-	return std::make_shared<UsdUndoDeleteCommand>(prim);
+    return std::make_shared<UsdUndoDeleteCommand>(prim);
 }
 
 void UsdUndoDeleteCommand::perform(bool state)
 {
-	MayaUsd::ufe::InAddOrDeleteOperation ad;
-	fPrim.SetActive(state);
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+    fPrim.SetActive(state);
 }
 
 //------------------------------------------------------------------------------
 // UsdUndoDeleteCommand overrides
 //------------------------------------------------------------------------------
 
-void UsdUndoDeleteCommand::undo()
-{
-	perform(true);
-}
+void UsdUndoDeleteCommand::undo() { perform(true); }
 
-void UsdUndoDeleteCommand::redo()
-{
-	perform(false);
-}
+void UsdUndoDeleteCommand::redo() { perform(false); }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

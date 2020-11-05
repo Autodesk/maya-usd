@@ -17,24 +17,21 @@
 
 #include <string>
 
-#define xstr(a) stringify(a)
+#define xstr(a)      stringify(a)
 #define stringify(a) #a
 
 #define AL_USDMAYA_VERSION_MAJOR 1
 #define AL_USDMAYA_VERSION_MINOR 0
 #define AL_USDMAYA_VERSION_PATCH 0
 
-#define AL_USDMAYA_VERSION_STR xstr(AL_USDMAYA_VERSION_MAJOR) "." \
-                               xstr(AL_USDMAYA_VERSION_MINOR) "." \
-                               xstr(AL_USDMAYA_VERSION_PATCH)
+#define AL_USDMAYA_VERSION_STR                                                  \
+    xstr(AL_USDMAYA_VERSION_MAJOR) "." xstr(AL_USDMAYA_VERSION_MINOR) "." xstr( \
+        AL_USDMAYA_VERSION_PATCH)
 
 namespace AL {
 namespace usdmaya {
 
-inline const char* getVersion()
-{
-    return AL_USDMAYA_VERSION_STR;
-}
+inline const char* getVersion() { return AL_USDMAYA_VERSION_STR; }
 
-} // namespace AL
 } // namespace usdmaya
+} // namespace AL

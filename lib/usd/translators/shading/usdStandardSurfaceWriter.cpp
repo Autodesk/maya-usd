@@ -15,16 +15,16 @@
 //
 #include "usdMaterialWriter.h"
 
-#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
@@ -39,7 +39,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdTranslators_StandardSurfaceWriter : public PxrUsdTranslators_MaterialWriter {
+class PxrUsdTranslators_StandardSurfaceWriter : public PxrUsdTranslators_MaterialWriter
+{
     typedef PxrUsdTranslators_MaterialWriter BaseClass;
 
 public:
@@ -59,20 +60,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (base)
-    (baseColor)
-    (emission)
-    (emissionColor)
-    (metalness)
-    (specular)
-    (specularColor)
-    (specularIOR)
-    (specularRoughness)
-    (coat)
-    (coatRoughness)
-    (transmission)
-    (normalCamera)
-);
+    (base)(baseColor)(emission)(emissionColor)(metalness)(specular)(specularColor)(specularIOR)(
+        specularRoughness)(coat)(coatRoughness)(transmission)(normalCamera));
 
 PxrUsdTranslators_StandardSurfaceWriter::PxrUsdTranslators_StandardSurfaceWriter(
     const MFnDependencyNode& depNodeFn,

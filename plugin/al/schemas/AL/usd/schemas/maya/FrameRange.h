@@ -56,7 +56,7 @@ public:
     /// Equivalent to AL_usd_FrameRange::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit AL_usd_FrameRange(const UsdPrim& prim=UsdPrim())
+    explicit AL_usd_FrameRange(const UsdPrim& prim = UsdPrim())
         : UsdTyped(prim)
     {
     }
@@ -77,8 +77,7 @@ public:
     /// class and all its ancestor classes.  Does not include attributes that
     /// may be authored by custom/extended methods of the schemas involved.
     AL_USDMAYASCHEMAS_API
-    static const TfTokenVector &
-    GetSchemaAttributeNames(bool includeInherited=true);
+    static const TfTokenVector& GetSchemaAttributeNames(bool includeInherited = true);
 
     /// Return a AL_usd_FrameRange holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
@@ -90,8 +89,7 @@ public:
     /// \endcode
     ///
     AL_USDMAYASCHEMAS_API
-    static AL_usd_FrameRange
-    Get(const UsdStagePtr &stage, const SdfPath &path);
+    static AL_usd_FrameRange Get(const UsdStagePtr& stage, const SdfPath& path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
     /// is defined (according to UsdPrim::IsDefined()) on this stage.
@@ -116,8 +114,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     AL_USDMAYASCHEMAS_API
-    static AL_usd_FrameRange
-    Define(const UsdStagePtr &stage, const SdfPath &path);
+    static AL_usd_FrameRange Define(const UsdStagePtr& stage, const SdfPath& path);
 
 protected:
     /// Returns the type of schema this class belongs to.
@@ -130,17 +127,17 @@ private:
     // needs to invoke _GetStaticTfType.
     friend class UsdSchemaRegistry;
     AL_USDMAYASCHEMAS_API
-    static const TfType &_GetStaticTfType();
+    static const TfType& _GetStaticTfType();
 
     static bool _IsTypedSchema();
 
     // override SchemaBase virtuals.
     AL_USDMAYASCHEMAS_API
-    virtual const TfType &_GetTfType() const;
+    virtual const TfType& _GetTfType() const;
 
 public:
     // --------------------------------------------------------------------- //
-    // ANIMATIONSTARTFRAME 
+    // ANIMATIONSTARTFRAME
     // --------------------------------------------------------------------- //
     /// The start animation frame in Maya.
     ///
@@ -151,17 +148,19 @@ public:
     AL_USDMAYASCHEMAS_API
     UsdAttribute GetAnimationStartFrameAttr() const;
 
-    /// See GetAnimationStartFrameAttr(), and also 
+    /// See GetAnimationStartFrameAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     AL_USDMAYASCHEMAS_API
-    UsdAttribute CreateAnimationStartFrameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateAnimationStartFrameAttr(
+        VtValue const& defaultValue = VtValue(),
+        bool           writeSparsely = false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // STARTFRAME 
+    // STARTFRAME
     // --------------------------------------------------------------------- //
     /// The min frame in Maya.
     ///
@@ -172,17 +171,18 @@ public:
     AL_USDMAYASCHEMAS_API
     UsdAttribute GetStartFrameAttr() const;
 
-    /// See GetStartFrameAttr(), and also 
+    /// See GetStartFrameAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     AL_USDMAYASCHEMAS_API
-    UsdAttribute CreateStartFrameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateStartFrameAttr(VtValue const& defaultValue = VtValue(), bool writeSparsely = false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // ENDFRAME 
+    // ENDFRAME
     // --------------------------------------------------------------------- //
     /// The max frame in Maya.
     ///
@@ -193,17 +193,18 @@ public:
     AL_USDMAYASCHEMAS_API
     UsdAttribute GetEndFrameAttr() const;
 
-    /// See GetEndFrameAttr(), and also 
+    /// See GetEndFrameAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     AL_USDMAYASCHEMAS_API
-    UsdAttribute CreateEndFrameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute
+    CreateEndFrameAttr(VtValue const& defaultValue = VtValue(), bool writeSparsely = false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // ANIMATIONENDFRAME 
+    // ANIMATIONENDFRAME
     // --------------------------------------------------------------------- //
     /// The end animation frame in Maya.
     ///
@@ -214,17 +215,19 @@ public:
     AL_USDMAYASCHEMAS_API
     UsdAttribute GetAnimationEndFrameAttr() const;
 
-    /// See GetAnimationEndFrameAttr(), and also 
+    /// See GetAnimationEndFrameAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     AL_USDMAYASCHEMAS_API
-    UsdAttribute CreateAnimationEndFrameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateAnimationEndFrameAttr(
+        VtValue const& defaultValue = VtValue(),
+        bool           writeSparsely = false) const;
 
 public:
     // --------------------------------------------------------------------- //
-    // CURRENTFRAME 
+    // CURRENTFRAME
     // --------------------------------------------------------------------- //
     /// The current frame in Maya.
     ///
@@ -235,21 +238,23 @@ public:
     AL_USDMAYASCHEMAS_API
     UsdAttribute GetCurrentFrameAttr() const;
 
-    /// See GetCurrentFrameAttr(), and also 
+    /// See GetCurrentFrameAttr(), and also
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     AL_USDMAYASCHEMAS_API
-    UsdAttribute CreateCurrentFrameAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateCurrentFrameAttr(
+        VtValue const& defaultValue = VtValue(),
+        bool           writeSparsely = false) const;
 
 public:
     // ===================================================================== //
-    // Feel free to add custom code below this line, it will be preserved by 
-    // the code generator. 
+    // Feel free to add custom code below this line, it will be preserved by
+    // the code generator.
     //
-    // Just remember to: 
-    //  - Close the class declaration with }; 
+    // Just remember to:
+    //  - Close the class declaration with };
     //  - Close the namespace with PXR_NAMESPACE_CLOSE_SCOPE
     //  - Close the include guard with #endif
     // ===================================================================== //

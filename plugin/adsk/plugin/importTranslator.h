@@ -17,66 +17,60 @@
 #ifndef PXRUSDMAYA_IMPORT_TRANSLATOR_H
 #define PXRUSDMAYA_IMPORT_TRANSLATOR_H
 
-#include <string>
+#include "base/api.h"
+
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+
+#include <pxr/pxr.h>
 
 #include <maya/MFileObject.h>
 #include <maya/MPxFileTranslator.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-
-#include "base/api.h"
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// File translator for USD files. Handles the USD option in the Import window.
 class UsdMayaImportTranslator : public MPxFileTranslator
 {
-    public:
+public:
+    MAYAUSD_PLUGIN_PUBLIC
+    static void* creator();
 
-        MAYAUSD_PLUGIN_PUBLIC
-        static void* creator();
+    MAYAUSD_PLUGIN_PUBLIC
+    MStatus reader(
+        const MFileObject&                file,
+        const MString&                    optionsString,
+        MPxFileTranslator::FileAccessMode mode) override;
 
-        MAYAUSD_PLUGIN_PUBLIC
-        MStatus reader(
-                const MFileObject& file,
-                const MString& optionsString,
-                MPxFileTranslator::FileAccessMode mode) override;
+    bool haveReadMethod() const override { return true; }
+    bool haveWriteMethod() const override { return false; }
 
-        bool haveReadMethod() const override { return true; }
-        bool haveWriteMethod() const override { return false; }
+    MAYAUSD_PLUGIN_PUBLIC
+    MFileKind identifyFile(const MFileObject& file, const char* buffer, short size) const override;
 
-        MAYAUSD_PLUGIN_PUBLIC
-        MFileKind identifyFile(
-                const MFileObject& file,
-                const char* buffer,
-                short size) const override;
+    MString defaultExtension() const override
+    {
+        return UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
+    }
+    MString filter() const override
+    {
+        return UsdMayaTranslatorTokens->UsdReadableFileFilter.GetText();
+    }
 
-        MString defaultExtension() const override {
-            return UsdMayaTranslatorTokens->UsdFileExtensionDefault.GetText();
-        }
-        MString filter() const override {
-            return UsdMayaTranslatorTokens->UsdReadableFileFilter.GetText();
-        }
+    MAYAUSD_PLUGIN_PUBLIC
+    static const std::string& GetDefaultOptions();
 
-        MAYAUSD_PLUGIN_PUBLIC
-        static const std::string& GetDefaultOptions();
-
-    private:
-
-        UsdMayaImportTranslator();
-        UsdMayaImportTranslator(const UsdMayaImportTranslator&);
-        ~UsdMayaImportTranslator() override;
-        UsdMayaImportTranslator& operator=(const UsdMayaImportTranslator&);
+private:
+    UsdMayaImportTranslator();
+    UsdMayaImportTranslator(const UsdMayaImportTranslator&);
+    ~UsdMayaImportTranslator() override;
+    UsdMayaImportTranslator& operator=(const UsdMayaImportTranslator&);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

@@ -21,17 +21,17 @@
 #include <mayaUsd/fileio/transformWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 
-#include <utility>
-#include <vector>
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/points.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/points.h>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -39,29 +39,28 @@ class PxrUsdTranslators_ParticleWriter : public UsdMayaTransformWriter
 {
 public:
     PxrUsdTranslators_ParticleWriter(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdPath,
-            UsdMayaWriteJobContext& jobCtx);
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
     void Write(const UsdTimeCode& usdTime) override;
 
 private:
     void writeParams(const UsdTimeCode& usdTime, UsdGeomPoints& points);
 
-    enum ParticleType {
+    enum ParticleType
+    {
         PER_PARTICLE_INT,
         PER_PARTICLE_DOUBLE,
         PER_PARTICLE_VECTOR
     };
 
     std::vector<std::tuple<TfToken, MString, ParticleType>> mUserAttributes;
-    bool mInitialFrameDone;
+    bool                                                    mInitialFrameDone;
 
     void initializeUserAttributes();
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

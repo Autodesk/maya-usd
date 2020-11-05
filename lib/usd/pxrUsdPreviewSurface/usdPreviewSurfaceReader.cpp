@@ -20,11 +20,11 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
@@ -50,7 +50,8 @@ REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION(
     PxrMayaUsdPreviewSurfaceTokens->importDescription);
 
 PxrMayaUsdPreviewSurface_Reader::PxrMayaUsdPreviewSurface_Reader(
-    const UsdMayaPrimReaderArgs& readArgs, const TfToken& mayaTypeName)
+    const UsdMayaPrimReaderArgs& readArgs,
+    const TfToken&               mayaTypeName)
     : UsdMayaShaderReader(readArgs)
     , _mayaTypeName(mayaTypeName)
 {
@@ -59,7 +60,7 @@ PxrMayaUsdPreviewSurface_Reader::PxrMayaUsdPreviewSurface_Reader(
 /* virtual */
 bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
 {
-    const UsdPrim&    prim = _GetArgs().GetUsdPrim();
+    const UsdPrim& prim = _GetArgs().GetUsdPrim();
     UsdShadeShader shaderSchema = UsdShadeShader(prim);
     if (!shaderSchema) {
         return false;
@@ -102,20 +103,16 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
         }
 
         // "useSpecularWorkflow" is an int in USD, but a boolean in Maya.
-        if (baseName == PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName &&
-                inputVal.IsHolding<int>()) {
-            inputVal = (inputVal.UncheckedGet<int>() == 0) ?
-                false :
-                true;
+        if (baseName == PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName
+            && inputVal.IsHolding<int>()) {
+            inputVal = (inputVal.UncheckedGet<int>() == 0) ? false : true;
         }
 
         if (UsdMayaReadUtil::SetMayaAttr(
                 mayaAttr,
                 inputVal,
                 /* unlinearizeColors = */ false)) {
-            UsdMayaReadUtil::SetMayaAttrKeyableState(
-                mayaAttr,
-                input.GetAttr().GetVariability());
+            UsdMayaReadUtil::SetMayaAttrKeyableState(mayaAttr, input.GetAttr().GetVariability());
         }
     }
 
@@ -125,7 +122,7 @@ bool PxrMayaUsdPreviewSurface_Reader::Read(UsdMayaPrimReaderContext* context)
 /* virtual */
 TfToken PxrMayaUsdPreviewSurface_Reader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
-    TfToken baseName;
+    TfToken               baseName;
     UsdShadeAttributeType attrType;
     std::tie(baseName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 

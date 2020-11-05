@@ -15,15 +15,19 @@
 //
 #pragma once
 
-#include "AL/usdmaya/nodes/ProxyShape.h"
 #include "AL/maya/test/testHelpers.h"
+#include "AL/usdmaya/nodes/ProxyShape.h"
 
-  /// \brief  Creates a ProxyShape with the contents generated from the buildUsdStage function object. It will export it into the specified temp_location and
-  ///         feed this temp-file into a ProxyShape
-  /// \param[in] buildUsdStage function that will populate a USDStage and return a UsdStageRefPtr
-  /// \param[in] tempPath to where the contents of the populated stage is written out to. This file is then read into the ProxyShape.
-  /// \return AL::usdmaya::nodes::ProxyShape
-extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdStageRefPtr()> buildUsdStage, const std::string& tempPath, MObject* shapeParent=nullptr);
+/// \brief  Creates a ProxyShape with the contents generated from the buildUsdStage function object.
+/// It will export it into the specified temp_location and
+///         feed this temp-file into a ProxyShape
+/// \param[in] buildUsdStage function that will populate a USDStage and return a UsdStageRefPtr
+/// \param[in] tempPath to where the contents of the populated stage is written out to. This file is
+/// then read into the ProxyShape. \return AL::usdmaya::nodes::ProxyShape
+extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(
+    std::function<UsdStageRefPtr()> buildUsdStage,
+    const std::string&              tempPath,
+    MObject*                        shapeParent = nullptr);
 
 /// \brief  Creates a ProxyShape with the contents generated from the buildUsdStage function object.
 //          It will export it into the specified temp_location and
@@ -32,15 +36,14 @@ extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(std::function<UsdSta
 /// \return AL::usdmaya::nodes::ProxyShape
 extern AL::usdmaya::nodes::ProxyShape* CreateMayaProxyShape(const std::string& rootLayerPath);
 
-/// \brief  Creates a ProxyShape with the a Mesh typed prim with parent transform (using unmerged export)
-/// \return AL::usdmaya::nodes::ProxyShape
+/// \brief  Creates a ProxyShape with the a Mesh typed prim with parent transform (using unmerged
+/// export) \return AL::usdmaya::nodes::ProxyShape
 AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMesh();
 
-/// \brief  Creates a ProxyShape with the a single root node Mesh typed prim that contains geometry that represents a sphere.
-/// \return AL::usdmaya::nodes::ProxyShape
+/// \brief  Creates a ProxyShape with the a single root node Mesh typed prim that contains geometry
+/// that represents a sphere. \return AL::usdmaya::nodes::ProxyShape
 AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMergedMesh();
 
-/// \brief  Creates a ProxyShape with multiple root node Mesh typed prim that contains geometry that represents a sphere.
-/// \return AL::usdmaya::nodes::ProxyShape
+/// \brief  Creates a ProxyShape with multiple root node Mesh typed prim that contains geometry that
+/// represents a sphere. \return AL::usdmaya::nodes::ProxyShape
 extern AL::usdmaya::nodes::ProxyShape* SetupProxyShapeWithMultipleMeshes();
-

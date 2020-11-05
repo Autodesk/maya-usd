@@ -15,27 +15,27 @@
 //
 #include "utils.h"
 
-#include <maya/MGlobal.h>
+#include "renderGlobals.h"
+#include "tokens.h"
 
 #include <pxr/imaging/glf/contextCaps.h>
-
-#include "tokens.h"
-#include "renderGlobals.h"
-
 #include <pxr/imaging/hd/rendererPlugin.h>
 #include <pxr/imaging/hd/rendererPluginRegistry.h>
+
+#include <maya/MGlobal.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
 std::pair<const MtohRendererDescriptionVector&, const MtohRendererSettings&>
-MtohInitializeRenderPlugins() {
+MtohInitializeRenderPlugins()
+{
     using Storage = std::pair<MtohRendererDescriptionVector, MtohRendererSettings>;
 
     static const Storage ret = []() -> Storage {
         HdRendererPluginRegistry& pluginRegistry = HdRendererPluginRegistry::GetInstance();
-        HfPluginDescVector pluginDescs;
+        HfPluginDescVector        pluginDescs;
         pluginRegistry.GetPluginDescs(&pluginDescs);
 
         Storage store;
@@ -44,7 +44,7 @@ MtohInitializeRenderPlugins() {
         MtohRenderGlobals::OptionsPreamble();
 
         for (const auto& pluginDesc : pluginDescs) {
-            const TfToken renderer = pluginDesc.id;
+            const TfToken     renderer = pluginDesc.id;
             HdRendererPlugin* plugin = pluginRegistry.GetRendererPlugin(renderer);
             if (!plugin) {
                 continue;
@@ -54,16 +54,17 @@ MtohInitializeRenderPlugins() {
             if (pluginDesc.id == MtohTokens->HdStormRendererPlugin)
                 GlfContextCaps::InitInstance();
 
-            HdRenderDelegate* delegate = plugin->IsSupported() ?
-                plugin->CreateRenderDelegate() : nullptr;
+            HdRenderDelegate* delegate
+                = plugin->IsSupported() ? plugin->CreateRenderDelegate() : nullptr;
 
             // No 'delete plugin', should plugin be cached as well?
             if (!delegate) {
                 continue;
             }
 
-            auto& rendererSettingDescriptors = store.second.emplace(renderer,
-                delegate->GetRenderSettingDescriptors()).first->second;
+            auto& rendererSettingDescriptors
+                = store.second.emplace(renderer, delegate->GetRenderSettingDescriptors())
+                      .first->second;
 
             // We only needed the delegate for the settings, so release
             plugin->DeleteRenderDelegate(delegate);
@@ -72,13 +73,8 @@ MtohInitializeRenderPlugins() {
 
             store.first.emplace_back(
                 renderer,
-                TfToken(
-                    TfStringPrintf("mtohRenderOverride_%s", renderer.GetText())
-                ),
-                TfToken(
-                    TfStringPrintf("%s (Hydra)", pluginDesc.displayName.c_str())
-                )
-            );
+                TfToken(TfStringPrintf("mtohRenderOverride_%s", renderer.GetText())),
+                TfToken(TfStringPrintf("%s (Hydra)", pluginDesc.displayName.c_str())));
             MtohRenderGlobals::BuildOptionsMenu(store.first.back(), rendererSettingDescriptors);
         }
 
@@ -90,25 +86,26 @@ MtohInitializeRenderPlugins() {
     return ret;
 }
 
-}
+} // namespace
 
-std::string MtohGetRendererPluginDisplayName(const TfToken& id) {
+std::string MtohGetRendererPluginDisplayName(const TfToken& id)
+{
     HfPluginDesc pluginDesc;
-    if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().GetPluginDesc(
-            id, &pluginDesc))) {
+    if (!TF_VERIFY(HdRendererPluginRegistry::GetInstance().GetPluginDesc(id, &pluginDesc))) {
         return {};
     }
 
     return pluginDesc.displayName;
 }
 
-const MtohRendererDescriptionVector& MtohGetRendererDescriptions() {
+const MtohRendererDescriptionVector& MtohGetRendererDescriptions()
+{
     return MtohInitializeRenderPlugins().first;
 }
 
-const MtohRendererSettings& MtohGetRendererSettings() {
+const MtohRendererSettings& MtohGetRendererSettings()
+{
     return MtohInitializeRenderPlugins().second;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

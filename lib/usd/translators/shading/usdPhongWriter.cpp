@@ -15,16 +15,16 @@
 //
 #include "usdReflectWriter.h"
 
-#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
@@ -39,7 +39,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdTranslators_PhongWriter : public PxrUsdTranslators_ReflectWriter {
+class PxrUsdTranslators_PhongWriter : public PxrUsdTranslators_ReflectWriter
+{
     typedef PxrUsdTranslators_ReflectWriter BaseClass;
 
 public:
@@ -57,8 +58,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (cosinePower)
-);
+    (cosinePower));
 
 PxrUsdTranslators_PhongWriter::PxrUsdTranslators_PhongWriter(
     const MFnDependencyNode& depNodeFn,

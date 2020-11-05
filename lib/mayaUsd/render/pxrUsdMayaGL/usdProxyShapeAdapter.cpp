@@ -15,7 +15,29 @@
 //
 #include "usdProxyShapeAdapter.h"
 
-#include <string>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
+#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
+
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/trace/trace.h>
+#include <pxr/imaging/hd/enums.h>
+#include <pxr/imaging/hd/renderIndex.h>
+#include <pxr/imaging/hd/repr.h>
+#include <pxr/imaging/hd/tokens.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/tokens.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
@@ -27,35 +49,12 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/tf/debug.h>
-#include <pxr/base/tf/diagnostic.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/trace/trace.h>
-#include <pxr/imaging/hd/enums.h>
-#include <pxr/imaging/hd/renderIndex.h>
-#include <pxr/imaging/hd/repr.h>
-#include <pxr/imaging/hd/tokens.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/tokens.h>
-#include <pxr/usdImaging/usdImaging/delegate.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/nodes/proxyShapeBase.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
-#include <mayaUsd/render/pxrUsdMayaGL/renderParams.h>
-#include <mayaUsd/render/pxrUsdMayaGL/shapeAdapter.h>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* virtual */
-bool
-PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
+bool PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
 {
     bool isVisible;
 
@@ -63,8 +62,8 @@ PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
     /// const, so we have to cast away the const-ness here.
     M3dView* nonConstView = const_cast<M3dView*>(view);
 
-    if (nonConstView &&
-            !nonConstView->pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
+    if (nonConstView
+        && !nonConstView->pluginObjectDisplay(MayaUsdProxyShapeBase::displayFilterName)) {
         // USD proxy shapes are being filtered from this view, so don't bother
         // checking any other visibility state.
         isVisible = false;
@@ -81,15 +80,13 @@ PxrMayaHdUsdProxyShapeAdapter::UpdateVisibility(const M3dView* view)
 }
 
 /* virtual */
-bool
-PxrMayaHdUsdProxyShapeAdapter::IsVisible() const
+bool PxrMayaHdUsdProxyShapeAdapter::IsVisible() const
 {
     return (_delegate && _delegate->GetRootVisibility());
 }
 
 /* virtual */
-void
-PxrMayaHdUsdProxyShapeAdapter::SetRootXform(const GfMatrix4d& transform)
+void PxrMayaHdUsdProxyShapeAdapter::SetRootXform(const GfMatrix4d& transform)
 {
     _rootXform = transform;
 
@@ -99,11 +96,10 @@ PxrMayaHdUsdProxyShapeAdapter::SetRootXform(const GfMatrix4d& transform)
 }
 
 /* virtual */
-bool
-PxrMayaHdUsdProxyShapeAdapter::_Sync(
-        const MDagPath& shapeDagPath,
-        const unsigned int displayStyle,
-        const MHWRender::DisplayStatus displayStatus)
+bool PxrMayaHdUsdProxyShapeAdapter::_Sync(
+    const MDagPath&                shapeDagPath,
+    const unsigned int             displayStyle,
+    const MHWRender::DisplayStatus displayStatus)
 {
     TRACE_FUNCTION();
 
@@ -112,30 +108,32 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         MProfiler::kColorE_L2,
         "USD Proxy Shape Syncing Shape Adapter");
 
-    MayaUsdProxyShapeBase* usdProxyShape =
-            MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
+    MayaUsdProxyShapeBase* usdProxyShape = MayaUsdProxyShapeBase::GetShapeAtDagPath(shapeDagPath);
     if (!usdProxyShape) {
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)
+            .Msg(
                 "Failed to get MayaUsdProxyShapeBase for '%s'\n",
                 shapeDagPath.fullPathName().asChar());
         return false;
     }
 
-    UsdPrim usdPrim;
+    UsdPrim       usdPrim;
     SdfPathVector excludedPrimPaths;
-    int refineLevel;
-    UsdTimeCode timeCode;
-    bool drawRenderPurpose = false;
-    bool drawProxyPurpose = true;
-    bool drawGuidePurpose = false;
-    if (!usdProxyShape->GetAllRenderAttributes(&usdPrim,
-                                               &excludedPrimPaths,
-                                               &refineLevel,
-                                               &timeCode,
-                                               &drawRenderPurpose,
-                                               &drawProxyPurpose,
-                                               &drawGuidePurpose)) {
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
+    int           refineLevel;
+    UsdTimeCode   timeCode;
+    bool          drawRenderPurpose = false;
+    bool          drawProxyPurpose = true;
+    bool          drawGuidePurpose = false;
+    if (!usdProxyShape->GetAllRenderAttributes(
+            &usdPrim,
+            &excludedPrimPaths,
+            &refineLevel,
+            &timeCode,
+            &drawRenderPurpose,
+            &drawProxyPurpose,
+            &drawGuidePurpose)) {
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)
+            .Msg(
                 "Failed to get render attributes for MayaUsdProxyShapeBase '%s'\n",
                 shapeDagPath.fullPathName().asChar());
         return false;
@@ -143,13 +141,10 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
 
     // Check for updates to the shape or changes in the batch renderer that
     // require us to re-initialize the shape adapter.
-    HdRenderIndex* renderIndex =
-        UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
-    if (!(shapeDagPath == GetDagPath()) ||
-            usdPrim != _rootPrim ||
-            excludedPrimPaths != _excludedPrimPaths ||
-            !_delegate ||
-            renderIndex != &_delegate->GetRenderIndex()) {
+    HdRenderIndex* renderIndex = UsdMayaGLBatchRenderer::GetInstance().GetRenderIndex();
+    if (!(shapeDagPath == GetDagPath()) || usdPrim != _rootPrim
+        || excludedPrimPaths != _excludedPrimPaths || !_delegate
+        || renderIndex != &_delegate->GetRenderIndex()) {
         _SetDagPath(shapeDagPath);
         _rootPrim = usdPrim;
         _excludedPrimPaths = excludedPrimPaths;
@@ -176,7 +171,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
         _renderTags.push_back(HdRenderTagTokens->guide);
     }
 
-    MStatus status;
+    MStatus       status;
     const MMatrix transform = GetDagPath().inclusiveMatrix(&status);
     if (status == MS::kSuccess) {
         _rootXform = GfMatrix4d(transform.matrix);
@@ -188,11 +183,8 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // Will only react if time actually changes.
     _delegate->SetTime(timeCode);
 
-    _renderParams.useWireframe =
-        _GetWireframeColor(
-            displayStatus,
-            GetDagPath(),
-            &_renderParams.wireframeColor);
+    _renderParams.useWireframe
+        = _GetWireframeColor(displayStatus, GetDagPath(), &_renderParams.wireframeColor);
 
     // XXX: This is not technically correct. Since the display style can vary
     // per viewport, this decision of whether or not to enable lighting should
@@ -203,10 +195,9 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     // If the repr selector specifies a wireframe-only repr, then disable
     // lighting. The useWireframe property of the render params is used to
     // determine the repr, so be sure to do this *after* that has been set.
-    const HdReprSelector reprSelector =
-        GetReprSelectorForDisplayStyle(displayStyle);
-    if (reprSelector.Contains(HdReprTokens->wire) ||
-            reprSelector.Contains(HdReprTokens->refinedWire)) {
+    const HdReprSelector reprSelector = GetReprSelectorForDisplayStyle(displayStyle);
+    if (reprSelector.Contains(HdReprTokens->wire)
+        || reprSelector.Contains(HdReprTokens->refinedWire)) {
         _renderParams.enableLighting = false;
     }
 
@@ -220,8 +211,7 @@ PxrMayaHdUsdProxyShapeAdapter::_Sync(
     return true;
 }
 
-bool
-PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
+bool PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
 {
     TRACE_FUNCTION();
 
@@ -230,39 +220,38 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
         MProfiler::kColorE_L2,
         "USD Proxy Shape Initializing Shape Adapter");
 
-    if (!TF_VERIFY(
-            renderIndex,
-            "Cannot initialize shape adapter with invalid HdRenderIndex")) {
+    if (!TF_VERIFY(renderIndex, "Cannot initialize shape adapter with invalid HdRenderIndex")) {
         return false;
     }
 
-    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Initializing PxrMayaHdUsdProxyShapeAdapter: %p\n"
-        "    shape DAG path  : %s\n"
-        "    shape identifier: %s\n"
-        "    delegateId      : %s\n",
-        this,
-        GetDagPath().fullPathName().asChar(),
-        _shapeIdentifier.GetText(),
-        _delegateId.GetText());
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)
+        .Msg(
+            "Initializing PxrMayaHdUsdProxyShapeAdapter: %p\n"
+            "    shape DAG path  : %s\n"
+            "    shape identifier: %s\n"
+            "    delegateId      : %s\n",
+            this,
+            GetDagPath().fullPathName().asChar(),
+            _shapeIdentifier.GetText(),
+            _delegateId.GetText());
 
     _delegate.reset(new UsdImagingDelegate(renderIndex, _delegateId));
-    if (!TF_VERIFY(_delegate,
-                  "Failed to create shape adapter delegate for shape %s",
-                  GetDagPath().fullPathName().asChar())) {
+    if (!TF_VERIFY(
+            _delegate,
+            "Failed to create shape adapter delegate for shape %s",
+            GetDagPath().fullPathName().asChar())) {
         return false;
     }
 
     if (TfDebug::IsEnabled(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)) {
-        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-            "    Populating delegate:\n"
-            "        rootPrim         : %s\n"
-            "        excludedPrimPaths: ",
-            _rootPrim.GetPath().GetText());
+        TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)
+            .Msg(
+                "    Populating delegate:\n"
+                "        rootPrim         : %s\n"
+                "        excludedPrimPaths: ",
+                _rootPrim.GetPath().GetText());
         for (const SdfPath& primPath : _excludedPrimPaths) {
-            TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-                "%s ",
-                primPath.GetText());
+            TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg("%s ", primPath.GetText());
         }
         TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg("\n");
     }
@@ -272,21 +261,18 @@ PxrMayaHdUsdProxyShapeAdapter::_Init(HdRenderIndex* renderIndex)
     return true;
 }
 
-PxrMayaHdUsdProxyShapeAdapter::PxrMayaHdUsdProxyShapeAdapter(bool isViewport2) :
-    PxrMayaHdShapeAdapter(isViewport2)
+PxrMayaHdUsdProxyShapeAdapter::PxrMayaHdUsdProxyShapeAdapter(bool isViewport2)
+    : PxrMayaHdShapeAdapter(isViewport2)
 {
-    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Constructing PxrMayaHdUsdProxyShapeAdapter: %p\n",
-        this);
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)
+        .Msg("Constructing PxrMayaHdUsdProxyShapeAdapter: %p\n", this);
 }
 
 /* virtual */
 PxrMayaHdUsdProxyShapeAdapter::~PxrMayaHdUsdProxyShapeAdapter()
 {
-    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE).Msg(
-        "Destructing PxrMayaHdUsdProxyShapeAdapter: %p\n",
-        this);
+    TF_DEBUG(PXRUSDMAYAGL_SHAPE_ADAPTER_LIFECYCLE)
+        .Msg("Destructing PxrMayaHdUsdProxyShapeAdapter: %p\n", this);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

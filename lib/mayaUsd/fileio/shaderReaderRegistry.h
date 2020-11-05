@@ -57,7 +57,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// and for any user-defined plugin types. If UsdMaya does not ship with a
 /// reader plugin for some Maya built-in type, you can register your own
 /// plugin for that Maya built-in type.
-struct UsdMayaShaderReaderRegistry {
+struct UsdMayaShaderReaderRegistry
+{
     /// Predicate function, i.e. a function that can tell the level of support
     /// the reader function will provide for a given context.
     using ContextPredicateFn
@@ -95,9 +96,7 @@ struct UsdMayaShaderReaderRegistry {
     ///
     /// If there is no supported reader plugin for \p usdInfoId, returns nullptr.
     MAYAUSD_CORE_PUBLIC
-    static ReaderFactoryFn Find(
-        const TfToken&              usdInfoId,
-        const UsdMayaJobImportArgs& importArgs);
+    static ReaderFactoryFn Find(const TfToken& usdInfoId, const UsdMayaJobImportArgs& importArgs);
 };
 
 /// \brief Registers a pre-existing reader class for the given USD info:id;

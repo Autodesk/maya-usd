@@ -19,17 +19,16 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdContextOpsHandler::UsdContextOpsHandler()
-	: Ufe::ContextOpsHandler()
-{}
-
-UsdContextOpsHandler::~UsdContextOpsHandler()
+    : Ufe::ContextOpsHandler()
 {
 }
+
+UsdContextOpsHandler::~UsdContextOpsHandler() { }
 
 /*static*/
 UsdContextOpsHandler::Ptr UsdContextOpsHandler::create()
 {
-	return std::make_shared<UsdContextOpsHandler>();
+    return std::make_shared<UsdContextOpsHandler>();
 }
 
 //------------------------------------------------------------------------------
@@ -38,12 +37,12 @@ UsdContextOpsHandler::Ptr UsdContextOpsHandler::create()
 
 Ufe::ContextOps::Ptr UsdContextOpsHandler::contextOps(const Ufe::SceneItem::Ptr& item) const
 {
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-	assert(usdItem);
+    assert(usdItem);
 #endif
-	return UsdContextOps::create(usdItem);
+    return UsdContextOps::create(usdItem);
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

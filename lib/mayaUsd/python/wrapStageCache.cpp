@@ -13,14 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+#include <mayaUsd/utils/stageCache.h>
+
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/pxr.h>
+
+#include <boost/python.hpp>
 #include <boost/python/args.hpp>
 #include <boost/python/def.hpp>
-#include <boost/python.hpp>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/pyResultConversions.h>
-
-#include <mayaUsd/utils/stageCache.h>
 
 using namespace std;
 using namespace boost::python;
@@ -32,11 +32,12 @@ void wrapStageCache()
 {
     class_<UsdMayaStageCache>("StageCache")
 
-        .def("Get", &UsdMayaStageCache::Get,
-             args("loadAll"),
-             return_value_policy<reference_existing_object>())
+        .def(
+            "Get",
+            &UsdMayaStageCache::Get,
+            args("loadAll"),
+            return_value_policy<reference_existing_object>())
         .staticmethod("Get")
         .def("Clear", &UsdMayaStageCache::Clear)
-        .staticmethod("Clear")
-        ;
+        .staticmethod("Clear");
 }

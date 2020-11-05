@@ -14,25 +14,24 @@
 // limitations under the License.
 //
 #include "UsdUndoRenameCommand.h"
+
+#include "private/UfeNotifGuard.h"
 #include "private/Utils.h"
 
-#include <ufe/log.h>
-#include <ufe/scene.h>
-#include <ufe/sceneNotification.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
-#include <pxr/usd/sdf/changeBlock.h>
 
-#include <mayaUsd/ufe/Utils.h>
-
-#include <mayaUsdUtils/util.h>
-
-#include "private/UfeNotifGuard.h"
+#include <ufe/log.h>
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #define UFE_ENABLE_ASSERTS
@@ -51,13 +50,16 @@ namespace ufe {
 
     See usd-interest: Question around SdfPrimSepc's SetName routine
 
-    SdfPrimSpec::SetName() will rename any prim in the layer, but it does not allow you to reparent the prim, 
-    nor will it update any relationship or connection targets in the layer that targeted the prim or any of its 
-    decendants (they will all break unless you fix them up yourself.Renaming and reparenting prims destructively 
-    in composed scenes is pretty tricky stuff that cannot really practically be done with 100% guarantees.
+    SdfPrimSpec::SetName() will rename any prim in the layer, but it does not allow you to reparent
+   the prim, nor will it update any relationship or connection targets in the layer that targeted
+   the prim or any of its decendants (they will all break unless you fix them up yourself.Renaming
+   and reparenting prims destructively in composed scenes is pretty tricky stuff that cannot really
+   practically be done with 100% guarantees.
 */
 
-UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
+UsdUndoRenameCommand::UsdUndoRenameCommand(
+    const UsdSceneItem::Ptr&  srcItem,
+    const Ufe::PathComponent& newName)
     : Ufe::UndoableCommand()
     , _ufeSrcItem(srcItem)
     , _ufeDstItem(nullptr)
@@ -71,30 +73,28 @@ UsdUndoRenameCommand::UsdUndoRenameCommand(const UsdSceneItem::Ptr& srcItem, con
     _newName = uniqueChildName(prim.GetParent(), newName.string());
 
     // names are not allowed to start to digit numbers
-    if(std::isdigit(_newName.at(0))){
+    if (std::isdigit(_newName.at(0))) {
         _newName = prim.GetName();
     }
 
     // all special characters are replaced with `_`
-    const std::string specialChars{"~!@#$%^&*()-=+,.?`':{}|<>[]/ "};
-    std::replace_if(_newName.begin(), _newName.end(), [&](auto c){
-        return std::string::npos != specialChars.find(c);
-    }, '_');
+    const std::string specialChars { "~!@#$%^&*()-=+,.?`':{}|<>[]/ " };
+    std::replace_if(
+        _newName.begin(),
+        _newName.end(),
+        [&](auto c) { return std::string::npos != specialChars.find(c); },
+        '_');
 }
 
-UsdUndoRenameCommand::~UsdUndoRenameCommand()
-{
-}
+UsdUndoRenameCommand::~UsdUndoRenameCommand() { }
 
-UsdUndoRenameCommand::Ptr UsdUndoRenameCommand::create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
+UsdUndoRenameCommand::Ptr
+UsdUndoRenameCommand::create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName)
 {
     return std::make_shared<UsdUndoRenameCommand>(srcItem, newName);
 }
 
-UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const
-{
-    return _ufeDstItem;
-}
+UsdSceneItem::Ptr UsdUndoRenameCommand::renamedItem() const { return _ufeDstItem; }
 
 bool UsdUndoRenameCommand::renameRedo()
 {
@@ -112,7 +112,8 @@ bool UsdUndoRenameCommand::renameRedo()
         const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
         auto ufeSiblingPath = _ufeSrcItem->path().sibling(Ufe::PathComponent(_newName));
-        bool status = MayaUsdUtils::updateInternalReferencesPath(prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
+        bool status = MayaUsdUtils::updateInternalReferencesPath(
+            prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
         if (!status) {
             return false;
         }
@@ -129,7 +130,7 @@ bool UsdUndoRenameCommand::renameRedo()
     _ufeDstItem = createSiblingSceneItem(_ufeSrcItem->path(), _newName);
 
     // update stage's default prim
-    if(_ufeSrcItem->prim().GetPath() == defaultPrimPath) {
+    if (_ufeSrcItem->prim().GetPath() == defaultPrimPath) {
         _stage->SetDefaultPrim(_ufeDstItem->prim());
     }
 
@@ -154,8 +155,10 @@ bool UsdUndoRenameCommand::renameUndo()
 
         const UsdPrim& prim = _stage->GetPrimAtPath(_ufeDstItem->prim().GetPath());
 
-        auto ufeSiblingPath = _ufeSrcItem->path().sibling(Ufe::PathComponent(_ufeSrcItem->prim().GetName()));
-        bool status = MayaUsdUtils::updateInternalReferencesPath(prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
+        auto ufeSiblingPath
+            = _ufeSrcItem->path().sibling(Ufe::PathComponent(_ufeSrcItem->prim().GetName()));
+        bool status = MayaUsdUtils::updateInternalReferencesPath(
+            prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
         if (!status) {
             return false;
         }
@@ -171,7 +174,7 @@ bool UsdUndoRenameCommand::renameUndo()
     _ufeSrcItem = createSiblingSceneItem(_ufeDstItem->path(), _ufeSrcItem->prim().GetName());
 
     // update stage's default prim
-    if(_ufeDstItem->prim().GetPath() == defaultPrimPath) {
+    if (_ufeDstItem->prim().GetPath() == defaultPrimPath) {
         _stage->SetDefaultPrim(_ufeSrcItem->prim());
     }
 
@@ -188,10 +191,9 @@ void UsdUndoRenameCommand::undo()
         if (!renameUndo()) {
             UFE_LOG("rename undo failed");
         }
-    }
-    catch (const std::exception& e) {
+    } catch (const std::exception& e) {
         UFE_LOG(e.what());
-        throw;  // re-throw the same exception
+        throw; // re-throw the same exception
     }
 }
 
@@ -204,4 +206,4 @@ void UsdUndoRenameCommand::redo()
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

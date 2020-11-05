@@ -15,8 +15,9 @@
 //
 #pragma once
 
-#include <maya/MPxCommand.h>
 #include "AL/maya/utils/MayaHelperMacros.h"
+
+#include <maya/MPxCommand.h>
 
 namespace AL {
 namespace usdmaya {
@@ -26,15 +27,15 @@ namespace cmds {
 /// \brief   A command that allows you to register and unregister new Event types from script.
 /// \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class CreateUsdPrim
-  : public MPxCommand
+class CreateUsdPrim : public MPxCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  MStatus doIt(const MArgList& args) override;
+    MStatus doIt(const MArgList& args) override;
 };
 
-} // cmds
-} // usdmaya
-} // AL
+} // namespace cmds
+} // namespace usdmaya
+} // namespace AL

@@ -1,9 +1,10 @@
-#include <maya/MGlobal.h>
+#include "AL/usdmaya/Metadata.h"
+#include "test_usdmaya.h"
+
 #include <maya/MFileIO.h>
+#include <maya/MGlobal.h>
 #include <maya/MStringArray.h>
 
-#include "test_usdmaya.h"
-#include "AL/usdmaya/Metadata.h"
 #include <fstream>
 #include <set>
 #include <string>
@@ -15,130 +16,121 @@ extern const char* const g_unmerged;
 
 TEST(import_instances, merged)
 {
-  MFileIO::newFile(true);
+    MFileIO::newFile(true);
 
-  const std::string temp_path = buildTempPath("AL_USDMayaTests_mergedInstances.usda");
-  {
-    std::ofstream ofs(temp_path);
-    ofs << g_merged;
-  }
-
-  MString importStr = 
-  "file -import -type \"AL usdmaya import\"  -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"instanced\" -options \"Parent_Path=;Import_Animations=1;Import_Dynamic_Attributes=1;Load_None=0;Read_Default_Values=1;Activate_all_Plugin_Translators=1;Active_Translator_List=;Inactive_Translator_List=;Import_Curves=1;Import_Meshes=1;\" -pr -importFrameRate true -importTimeRange \"override\" \"";
-  importStr += temp_path.c_str();
-  importStr += "\";";
-  MGlobal::executeCommand(importStr);
-
-  MStringArray xformResults;
-  MGlobal::executeCommand("ls -type transform", xformResults);
-
-  // filter out the default TM's that maya creates
-  for(uint32_t i = 0; i < xformResults.length(); )
-  {
-    if(xformResults[i] == "front" || 
-       xformResults[i] == "side" || 
-       xformResults[i] == "persp" || 
-       xformResults[i] == "top")
+    const std::string temp_path = buildTempPath("AL_USDMayaTests_mergedInstances.usda");
     {
-      xformResults.remove(i);
+        std::ofstream ofs(temp_path);
+        ofs << g_merged;
     }
-    else
-    {
-      ++i;
+
+    MString importStr = "file -import -type \"AL usdmaya import\"  -ignoreVersion -ra true "
+                        "-mergeNamespacesOnClash false -namespace \"instanced\" -options "
+                        "\"Parent_Path=;Import_Animations=1;Import_Dynamic_Attributes=1;Load_None="
+                        "0;Read_Default_Values=1;Activate_all_Plugin_Translators=1;Active_"
+                        "Translator_List=;Inactive_Translator_List=;Import_Curves=1;Import_Meshes="
+                        "1;\" -pr -importFrameRate true -importTimeRange \"override\" \"";
+    importStr += temp_path.c_str();
+    importStr += "\";";
+    MGlobal::executeCommand(importStr);
+
+    MStringArray xformResults;
+    MGlobal::executeCommand("ls -type transform", xformResults);
+
+    // filter out the default TM's that maya creates
+    for (uint32_t i = 0; i < xformResults.length();) {
+        if (xformResults[i] == "front" || xformResults[i] == "side" || xformResults[i] == "persp"
+            || xformResults[i] == "top") {
+            xformResults.remove(i);
+        } else {
+            ++i;
+        }
     }
-  }
 
-  std::set<std::string> expectedTransforms = {
-  "InstanceParent1",
-  "InstanceParent1|FirstInstanceLevel",
-  "InstanceParent1|FirstInstanceLevel|Boxes1",
-  "InstanceParent1|FirstInstanceLevel|Boxes1|pCube1",
-  "InstanceParent1|FirstInstanceLevel|Boxes1|pCube2",
-  "InstanceParent1|FirstInstanceLevel|Boxes2",
-  "InstanceParent2",
-  "Root"};
-  ASSERT_EQ(expectedTransforms.size(), xformResults.length());
+    std::set<std::string> expectedTransforms = { "InstanceParent1",
+                                                 "InstanceParent1|FirstInstanceLevel",
+                                                 "InstanceParent1|FirstInstanceLevel|Boxes1",
+                                                 "InstanceParent1|FirstInstanceLevel|Boxes1|pCube1",
+                                                 "InstanceParent1|FirstInstanceLevel|Boxes1|pCube2",
+                                                 "InstanceParent1|FirstInstanceLevel|Boxes2",
+                                                 "InstanceParent2",
+                                                 "Root" };
+    ASSERT_EQ(expectedTransforms.size(), xformResults.length());
 
-  // with any luck, all the transforms should match 
-  uint32_t i = 0;
-  for(; i < xformResults.length(); ++i)
-  {
-    uint32_t removed = expectedTransforms.erase(xformResults[i].asChar());
-    ASSERT_TRUE(removed != 0);
-  }
+    // with any luck, all the transforms should match
+    uint32_t i = 0;
+    for (; i < xformResults.length(); ++i) {
+        uint32_t removed = expectedTransforms.erase(xformResults[i].asChar());
+        ASSERT_TRUE(removed != 0);
+    }
 
-  EXPECT_EQ(0u, expectedTransforms.size());
-  
-  MStringArray meshResults;
-  MGlobal::executeCommand("ls -type mesh", meshResults);
-  EXPECT_EQ(2u, meshResults.length());
+    EXPECT_EQ(0u, expectedTransforms.size());
+
+    MStringArray meshResults;
+    MGlobal::executeCommand("ls -type mesh", meshResults);
+    EXPECT_EQ(2u, meshResults.length());
 }
 
 TEST(import_instances, unmerged)
 {
-  MFileIO::newFile(true);
+    MFileIO::newFile(true);
 
-  const std::string temp_path = buildTempPath("AL_USDMayaTests_unmergedInstances.usda");
-  {
-    std::ofstream ofs(temp_path);
-    ofs << g_unmerged;
-  }
-
-  MString importStr = 
-  "file -import -type \"AL usdmaya import\"  -ignoreVersion -ra true -mergeNamespacesOnClash false -namespace \"instanced\" -options \"Parent_Path=;Import_Animations=1;Import_Dynamic_Attributes=1;Load_None=0;Read_Default_Values=1;Activate_all_Plugin_Translators=1;Active_Translator_List=;Inactive_Translator_List=;Import_Curves=1;Import_Meshes=1;\" -pr -importFrameRate true -importTimeRange \"override\" \"";
-  importStr += temp_path.c_str();
-  importStr += "\";";
-
-  MGlobal::executeCommand(importStr);
-
-  MStringArray xformResults;
-  MGlobal::executeCommand("ls -type transform", xformResults);
-
-  // filter out the default TM's that maya creates
-  for(uint32_t i = 0; i < xformResults.length(); )
-  {
-    if(xformResults[i] == "front" || 
-       xformResults[i] == "side" || 
-       xformResults[i] == "persp" || 
-       xformResults[i] == "top")
+    const std::string temp_path = buildTempPath("AL_USDMayaTests_unmergedInstances.usda");
     {
-      xformResults.remove(i);
+        std::ofstream ofs(temp_path);
+        ofs << g_unmerged;
     }
-    else
-    {
-      ++i;
+
+    MString importStr = "file -import -type \"AL usdmaya import\"  -ignoreVersion -ra true "
+                        "-mergeNamespacesOnClash false -namespace \"instanced\" -options "
+                        "\"Parent_Path=;Import_Animations=1;Import_Dynamic_Attributes=1;Load_None="
+                        "0;Read_Default_Values=1;Activate_all_Plugin_Translators=1;Active_"
+                        "Translator_List=;Inactive_Translator_List=;Import_Curves=1;Import_Meshes="
+                        "1;\" -pr -importFrameRate true -importTimeRange \"override\" \"";
+    importStr += temp_path.c_str();
+    importStr += "\";";
+
+    MGlobal::executeCommand(importStr);
+
+    MStringArray xformResults;
+    MGlobal::executeCommand("ls -type transform", xformResults);
+
+    // filter out the default TM's that maya creates
+    for (uint32_t i = 0; i < xformResults.length();) {
+        if (xformResults[i] == "front" || xformResults[i] == "side" || xformResults[i] == "persp"
+            || xformResults[i] == "top") {
+            xformResults.remove(i);
+        } else {
+            ++i;
+        }
     }
-  }
 
-  std::set<std::string> expectedTransforms = {
-  "InstanceParent1",
-  "InstanceParent1|FirstInstanceLevel",
-  "InstanceParent1|FirstInstanceLevel|Boxes1",
-  "InstanceParent1|FirstInstanceLevel|Boxes1|pCube1",
-  "InstanceParent1|FirstInstanceLevel|Boxes1|pCube2",
-  "InstanceParent1|FirstInstanceLevel|Boxes2",
-  "InstanceParent2",
-  "Root"};
-  ASSERT_EQ(expectedTransforms.size(), xformResults.length());
+    std::set<std::string> expectedTransforms = { "InstanceParent1",
+                                                 "InstanceParent1|FirstInstanceLevel",
+                                                 "InstanceParent1|FirstInstanceLevel|Boxes1",
+                                                 "InstanceParent1|FirstInstanceLevel|Boxes1|pCube1",
+                                                 "InstanceParent1|FirstInstanceLevel|Boxes1|pCube2",
+                                                 "InstanceParent1|FirstInstanceLevel|Boxes2",
+                                                 "InstanceParent2",
+                                                 "Root" };
+    ASSERT_EQ(expectedTransforms.size(), xformResults.length());
 
-  // with any luck, all the transforms should match 
-  uint32_t i = 0;
-  for(; i < xformResults.length(); ++i)
-  {
-    uint32_t removed = expectedTransforms.erase(xformResults[i].asChar());
-    ASSERT_TRUE(removed != 0);
-  }
+    // with any luck, all the transforms should match
+    uint32_t i = 0;
+    for (; i < xformResults.length(); ++i) {
+        uint32_t removed = expectedTransforms.erase(xformResults[i].asChar());
+        ASSERT_TRUE(removed != 0);
+    }
 
-  EXPECT_EQ(0u, expectedTransforms.size());
+    EXPECT_EQ(0u, expectedTransforms.size());
 
-  MStringArray meshResults;
-  MGlobal::executeCommand("ls -type mesh", meshResults);
-  EXPECT_EQ(2u, meshResults.length());
+    MStringArray meshResults;
+    MGlobal::executeCommand("ls -type mesh", meshResults);
+    EXPECT_EQ(2u, meshResults.length());
 }
 
-
 const char* const g_merged =
-R"(#usda 1.0
+    R"(#usda 1.0
 
 class "inner"
 {
@@ -229,9 +221,8 @@ def "Root"
 }
 )";
 
-
 const char* const g_unmerged =
-R"(#usda 1.0
+    R"(#usda 1.0
 
 class "inner"
 {

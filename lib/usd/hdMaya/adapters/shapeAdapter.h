@@ -16,27 +16,25 @@
 #ifndef HDMAYA_SHAPE_ADAPTER_H
 #define HDMAYA_SHAPE_ADAPTER_H
 
-#include <pxr/pxr.h>
-
 #include <hdMaya/adapters/dagAdapter.h>
+
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaShapeAdapter : public HdMayaDagAdapter {
+class HdMayaShapeAdapter : public HdMayaDagAdapter
+{
 protected:
     HDMAYA_API
-    HdMayaShapeAdapter(
-        const SdfPath& id, HdMayaDelegateCtx* delegate,
-        const MDagPath& dagPath);
+    HdMayaShapeAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MDagPath& dagPath);
 
 public:
     HDMAYA_API
     virtual ~HdMayaShapeAdapter() = default;
 
     HDMAYA_API
-    virtual size_t SamplePrimvar(
-        const TfToken& key, size_t maxSampleCount, float* times,
-        VtValue* samples);
+    virtual size_t
+    SamplePrimvar(const TfToken& key, size_t maxSampleCount, float* times, VtValue* samples);
     HDMAYA_API
     virtual HdMeshTopology GetMeshTopology();
     HDMAYA_API
@@ -46,8 +44,8 @@ public:
     HDMAYA_API
     virtual PxOsdSubdivTags GetSubdivTags();
     HDMAYA_API
-    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(
-        HdInterpolation interpolation) {
+    virtual HdPrimvarDescriptorVector GetPrimvarDescriptors(HdInterpolation interpolation)
+    {
         return {};
     }
     HDMAYA_API
@@ -66,9 +64,10 @@ public:
 
     HDMAYA_API
     virtual void PopulateSelectedPaths(
-        const MDagPath& selectedDag, SdfPathVector& selectedSdfPaths,
+        const MDagPath&                             selectedDag,
+        SdfPathVector&                              selectedSdfPaths,
         std::unordered_set<SdfPath, SdfPath::Hash>& selectedMasters,
-        const HdSelectionSharedPtr& selection);
+        const HdSelectionSharedPtr&                 selection);
 
 protected:
     HDMAYA_API
@@ -76,7 +75,7 @@ protected:
 
 private:
     GfRange3d _extent;
-    bool _extentDirty;
+    bool      _extentDirty;
 };
 
 using HdMayaShapeAdapterPtr = std::shared_ptr<HdMayaShapeAdapter>;

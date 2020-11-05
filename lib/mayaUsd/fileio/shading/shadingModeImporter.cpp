@@ -15,11 +15,6 @@
 //
 #include "shadingModeImporter.h"
 
-#include <maya/MFnSet.h>
-#include <maya/MObject.h>
-#include <maya/MSelectionList.h>
-#include <maya/MStatus.h>
-
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -27,16 +22,16 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 
+#include <maya/MFnSet.h>
+#include <maya/MObject.h>
+#include <maya/MSelectionList.h>
+#include <maya/MStatus.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingModeImporterTokens,
-    PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaShadingModeImporterTokens, PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS);
 
-
-bool
-UsdMayaShadingModeImportContext::GetCreatedObject(
-        const UsdPrim& prim,
-        MObject* obj) const
+bool UsdMayaShadingModeImportContext::GetCreatedObject(const UsdPrim& prim, MObject* obj) const
 {
     if (!prim) {
         return false;
@@ -51,10 +46,7 @@ UsdMayaShadingModeImportContext::GetCreatedObject(
     return false;
 }
 
-MObject
-UsdMayaShadingModeImportContext::AddCreatedObject(
-        const UsdPrim& prim,
-        const MObject& obj)
+MObject UsdMayaShadingModeImportContext::AddCreatedObject(const UsdPrim& prim, const MObject& obj)
 {
     if (prim) {
         return AddCreatedObject(prim.GetPath(), obj);
@@ -63,10 +55,7 @@ UsdMayaShadingModeImportContext::AddCreatedObject(
     return obj;
 }
 
-MObject
-UsdMayaShadingModeImportContext::AddCreatedObject(
-        const SdfPath& path,
-        const MObject& obj)
+MObject UsdMayaShadingModeImportContext::AddCreatedObject(const SdfPath& path, const MObject& obj)
 {
     if (!path.IsEmpty()) {
         _context->RegisterNewMayaNode(path.GetString(), obj);
@@ -75,35 +64,32 @@ UsdMayaShadingModeImportContext::AddCreatedObject(
     return obj;
 }
 
-MObject
-UsdMayaShadingModeImportContext::CreateShadingEngine() const
+MObject UsdMayaShadingModeImportContext::CreateShadingEngine() const
 {
     const TfToken shadingEngineName = GetShadingEngineName();
     if (shadingEngineName.IsEmpty()) {
         return MObject();
     }
 
-    MStatus status;
-    MFnSet fnSet;
+    MStatus        status;
+    MFnSet         fnSet;
     MSelectionList tmpSelList;
-    MObject shadingEngine =
-        fnSet.create(tmpSelList, MFnSet::kRenderableOnly, &status);
+    MObject        shadingEngine = fnSet.create(tmpSelList, MFnSet::kRenderableOnly, &status);
     if (status != MS::kSuccess) {
-        TF_RUNTIME_ERROR("Failed to create shadingEngine: %s",
-                         shadingEngineName.GetText());
+        TF_RUNTIME_ERROR("Failed to create shadingEngine: %s", shadingEngineName.GetText());
         return MObject();
     }
 
-    fnSet.setName(shadingEngineName.GetText(),
-                  /* createNamespace = */ true,
-                  &status);
+    fnSet.setName(
+        shadingEngineName.GetText(),
+        /* createNamespace = */ true,
+        &status);
     CHECK_MSTATUS_AND_RETURN(status, MObject());
 
     return shadingEngine;
 }
 
-TfToken
-UsdMayaShadingModeImportContext::GetShadingEngineName() const
+TfToken UsdMayaShadingModeImportContext::GetShadingEngineName() const
 {
     if (!_shadeMaterial && !_boundPrim) {
         return TfToken();
@@ -123,63 +109,51 @@ UsdMayaShadingModeImportContext::GetShadingEngineName() const
     // To make sure that the shadingEngine object names do not collide with
     // Maya transform or shape node names, we put the shadingEngine objects
     // into their own namespace.
-    const TfToken shadingEngineName(
-        TfStringPrintf(
-            "%s:%s",
-            UsdMayaShadingModeImporterTokens->MayaMaterialNamespace.GetText(),
-            primName.GetText()));
+    const TfToken shadingEngineName(TfStringPrintf(
+        "%s:%s",
+        UsdMayaShadingModeImporterTokens->MayaMaterialNamespace.GetText(),
+        primName.GetText()));
 
     return shadingEngineName;
 }
 
-TfToken
-UsdMayaShadingModeImportContext::GetSurfaceShaderPlugName() const
+TfToken UsdMayaShadingModeImportContext::GetSurfaceShaderPlugName() const
 {
     return _surfaceShaderPlugName;
 }
 
-TfToken
-UsdMayaShadingModeImportContext::GetVolumeShaderPlugName() const
+TfToken UsdMayaShadingModeImportContext::GetVolumeShaderPlugName() const
 {
     return _volumeShaderPlugName;
 }
 
-TfToken
-UsdMayaShadingModeImportContext::GetDisplacementShaderPlugName() const
+TfToken UsdMayaShadingModeImportContext::GetDisplacementShaderPlugName() const
 {
     return _displacementShaderPlugName;
 }
 
-void
-UsdMayaShadingModeImportContext::SetShadingEngineName(
-        const TfToken& shadingEngineName)
+void UsdMayaShadingModeImportContext::SetShadingEngineName(const TfToken& shadingEngineName)
 {
     _shadingEngineName = shadingEngineName;
 }
 
-void
-UsdMayaShadingModeImportContext::SetSurfaceShaderPlugName(
-        const TfToken& surfaceShaderPlugName)
+void UsdMayaShadingModeImportContext::SetSurfaceShaderPlugName(const TfToken& surfaceShaderPlugName)
 {
     _surfaceShaderPlugName = surfaceShaderPlugName;
 }
 
-void
-UsdMayaShadingModeImportContext::SetVolumeShaderPlugName(
-        const TfToken& volumeShaderPlugName)
+void UsdMayaShadingModeImportContext::SetVolumeShaderPlugName(const TfToken& volumeShaderPlugName)
 {
     _volumeShaderPlugName = volumeShaderPlugName;
 }
 
-void
-UsdMayaShadingModeImportContext::SetDisplacementShaderPlugName(
-        const TfToken& displacementShaderPlugName)
+void UsdMayaShadingModeImportContext::SetDisplacementShaderPlugName(
+    const TfToken& displacementShaderPlugName)
 {
     _displacementShaderPlugName = displacementShaderPlugName;
 }
 
-UsdMayaPrimReaderContext*
-UsdMayaShadingModeImportContext::GetPrimReaderContext() const
+UsdMayaPrimReaderContext* UsdMayaShadingModeImportContext::GetPrimReaderContext() const
 {
     return _context;
 }

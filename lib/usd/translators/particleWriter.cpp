@@ -15,12 +15,20 @@
 //
 #include "particleWriter.h"
 
-#include <limits>
-#include <memory>
-#include <set>
-#include <type_traits>
-#include <utility>
-#include <vector>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/points.h>
 
 #include <maya/MAnimControl.h>
 #include <maya/MDoubleArray.h>
@@ -32,20 +40,12 @@
 #include <maya/MString.h>
 #include <maya/MVectorArray.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/points.h>
-
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/transformWriter.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <limits>
+#include <memory>
+#include <set>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,150 +55,176 @@ PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(particle, UsdGeomPoints);
 PXRUSDMAYA_REGISTER_WRITER(nParticle, PxrUsdTranslators_ParticleWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nParticle, UsdGeomPoints);
 
-
 namespace {
-    template <typename T>
-    inline void _convertVector(T& t, const MVector& v) {
-        // I wish we had concepts
-        // We are guaranteed to have arithmetic types
-        using _t = decltype(+t[0]);
-        t[0] = static_cast<_t>(v.x);
-        t[1] = static_cast<_t>(v.y);
-        t[2] = static_cast<_t>(v.z);
+template <typename T> inline void _convertVector(T& t, const MVector& v)
+{
+    // I wish we had concepts
+    // We are guaranteed to have arithmetic types
+    using _t = decltype(+t[0]);
+    t[0] = static_cast<_t>(v.x);
+    t[1] = static_cast<_t>(v.y);
+    t[2] = static_cast<_t>(v.z);
+}
+
+template <typename T> using _sharedVtArray = std::shared_ptr<VtArray<T>>;
+
+template <typename T> _sharedVtArray<T> _convertVectorArray(const MVectorArray& a)
+{
+    const auto count = a.length();
+    auto*      ret = new VtArray<T>(count);
+    for (auto i = decltype(count) { 0 }; i < count; ++i) {
+        _convertVector<T>(ret->operator[](i), a[i]);
+    }
+    return _sharedVtArray<T>(ret);
+}
+
+template <typename T> _sharedVtArray<T> _convertArray(const MDoubleArray& a)
+{
+    const auto count = a.length();
+    auto*      ret = new VtArray<T>(count);
+    for (auto i = decltype(count) { 0 }; i < count; ++i) {
+        ret->operator[](i) = static_cast<T>(a[i]);
+    }
+    return _sharedVtArray<T>(ret);
+}
+
+template <typename T> _sharedVtArray<T> _convertArray(const MIntArray& a)
+{
+    const auto count = a.length();
+    auto*      ret = new VtArray<T>(count);
+    for (auto i = decltype(count) { 0 }; i < count; ++i) {
+        ret->operator[](i) = static_cast<T>(a[i]);
+    }
+    return _sharedVtArray<T>(ret);
+}
+
+template <typename T> using _strVecPair = std::pair<TfToken, _sharedVtArray<T>>;
+
+template <typename T> using _strVecPairVec = std::vector<_strVecPair<T>>;
+
+template <typename T> size_t _minCount(const _strVecPairVec<T>& a)
+{
+    auto mn = std::numeric_limits<size_t>::max();
+    for (const auto& v : a) {
+        mn = std::min(mn, v.second->size());
     }
 
-    template <typename T>
-    using _sharedVtArray = std::shared_ptr<VtArray<T>>;
+    return mn;
+}
 
-    template <typename T>
-    _sharedVtArray<T> _convertVectorArray(const MVectorArray& a) {
-        const auto count = a.length();
-        auto* ret = new VtArray<T>(count);
-        for (auto i = decltype(count){0}; i < count; ++i) {
-            _convertVector<T>(ret->operator[](i), a[i]);
-        }
-        return _sharedVtArray<T>(ret);
-    }
-
-    template <typename T>
-    _sharedVtArray<T> _convertArray(const MDoubleArray& a) {
-        const auto count = a.length();
-        auto* ret = new VtArray<T>(count);
-        for (auto i = decltype(count){0}; i < count; ++i) {
-            ret->operator[](i) = static_cast<T>(a[i]);
-        }
-        return _sharedVtArray<T>(ret);
-    }
-
-    template <typename T>
-    _sharedVtArray<T> _convertArray(const MIntArray& a) {
-        const auto count = a.length();
-        auto* ret = new VtArray<T>(count);
-        for (auto i = decltype(count){0}; i < count; ++i) {
-            ret->operator[](i) = static_cast<T>(a[i]);
-        }
-        return _sharedVtArray<T>(ret);
-    }
-
-    template <typename T>
-    using _strVecPair = std::pair<TfToken, _sharedVtArray<T>>;
-
-    template <typename T>
-    using _strVecPairVec = std::vector<_strVecPair<T>>;
-
-    template <typename T>
-    size_t _minCount(const _strVecPairVec<T>& a) {
-        auto mn = std::numeric_limits<size_t>::max();
-        for (const auto& v : a) {
-            mn = std::min(mn, v.second->size());
-        }
-
-        return mn;
-    }
-
-    template <typename T>
-    void _resizeVectors(_strVecPairVec<T>& a, size_t size) {
-        for (const auto& v : a) {
-            v.second->resize(size);
-        }
-    }
-
-    template <typename T>
-    inline void _addAttr(UsdGeomPoints& points, const TfToken& name,
-                         const SdfValueTypeName& typeName,
-                         const VtArray<T>& a, const UsdTimeCode& usdTime,
-                         UsdUtilsSparseValueWriter *valueWriter) {
-        auto attr = points.GetPrim().CreateAttribute(name, typeName, false, SdfVariabilityVarying);
-        VtValue val(a);
-        valueWriter->SetAttribute(attr, &val, usdTime);
-    }
-
-    const TfToken _rgbName("rgb");
-    const TfToken _emissionName("emission");
-    const TfToken _opacityName("opacity");
-    const TfToken _lifespanName("lifespan");
-    const TfToken _massName("mass");
-
-    template <typename T>
-    void _addAttrVec(UsdGeomPoints& points, const SdfValueTypeName& typeName,
-                     const _strVecPairVec<T>& a,
-                     const UsdTimeCode& usdTime,
-                     UsdUtilsSparseValueWriter *valueWriter) {
-        for (const auto& v : a) {
-            _addAttr(points, v.first, typeName, *v.second, usdTime,
-                     valueWriter);
-        }
-    }
-
-    // The logic of filtering the user attributes is based on partio4Maya/PartioExport.
-    // https://github.com/redpawfx/partio/blob/redpawfx-rez/contrib/partio4Maya/scripts/partioExportGui.mel
-    // We either don't want these or already export them using one of the builtin functions.
-    const std::set<std::string> _supressedAttrs = {
-        "emitterDataPosition", "emitterDataVelocity", "fieldDataMass",
-        "fieldDataPosition", "fieldDataVelocity", "inputGeometryPoints",
-        "lastCachedPosition", "lastPosition", "lastVelocity",
-        "lastWorldPosition", "lastWorldVelocity", "worldVelocityInObjectSpace",
-        "position", "velocity", "acceleration", "rgb", "rgbPP", "incandescencePP",
-        "radius", "radiusPP", "age", "opacity", "opacityPP", "lifespan", "lifespanPP",
-        "id", "particleId", "mass",
-    };
-
-    // All the initial state attributes end with 0
-    bool _isInitialAttribute(const std::string& attrName) {
-        return attrName.back() == '0';
-    }
-
-    bool _isCachedAttribute(const std::string& attrName) {
-        constexpr auto _cached = "cached";
-        constexpr auto _Cache = "Cache";
-        return TfStringEndsWith(attrName, _Cache) || TfStringStartsWith(attrName, _cached);
-    }
-
-    bool _isValidAttr(const std::string& attrName) {
-        if (attrName.empty()) { return false; }
-        if (_isInitialAttribute(attrName)) { return false; }
-        if (_isCachedAttribute(attrName)) { return false; }
-        return _supressedAttrs.find(attrName) == _supressedAttrs.end();
+template <typename T> void _resizeVectors(_strVecPairVec<T>& a, size_t size)
+{
+    for (const auto& v : a) {
+        v.second->resize(size);
     }
 }
 
+template <typename T>
+inline void _addAttr(
+    UsdGeomPoints&             points,
+    const TfToken&             name,
+    const SdfValueTypeName&    typeName,
+    const VtArray<T>&          a,
+    const UsdTimeCode&         usdTime,
+    UsdUtilsSparseValueWriter* valueWriter)
+{
+    auto    attr = points.GetPrim().CreateAttribute(name, typeName, false, SdfVariabilityVarying);
+    VtValue val(a);
+    valueWriter->SetAttribute(attr, &val, usdTime);
+}
+
+const TfToken _rgbName("rgb");
+const TfToken _emissionName("emission");
+const TfToken _opacityName("opacity");
+const TfToken _lifespanName("lifespan");
+const TfToken _massName("mass");
+
+template <typename T>
+void _addAttrVec(
+    UsdGeomPoints&             points,
+    const SdfValueTypeName&    typeName,
+    const _strVecPairVec<T>&   a,
+    const UsdTimeCode&         usdTime,
+    UsdUtilsSparseValueWriter* valueWriter)
+{
+    for (const auto& v : a) {
+        _addAttr(points, v.first, typeName, *v.second, usdTime, valueWriter);
+    }
+}
+
+// The logic of filtering the user attributes is based on partio4Maya/PartioExport.
+// https://github.com/redpawfx/partio/blob/redpawfx-rez/contrib/partio4Maya/scripts/partioExportGui.mel
+// We either don't want these or already export them using one of the builtin functions.
+const std::set<std::string> _supressedAttrs = {
+    "emitterDataPosition",
+    "emitterDataVelocity",
+    "fieldDataMass",
+    "fieldDataPosition",
+    "fieldDataVelocity",
+    "inputGeometryPoints",
+    "lastCachedPosition",
+    "lastPosition",
+    "lastVelocity",
+    "lastWorldPosition",
+    "lastWorldVelocity",
+    "worldVelocityInObjectSpace",
+    "position",
+    "velocity",
+    "acceleration",
+    "rgb",
+    "rgbPP",
+    "incandescencePP",
+    "radius",
+    "radiusPP",
+    "age",
+    "opacity",
+    "opacityPP",
+    "lifespan",
+    "lifespanPP",
+    "id",
+    "particleId",
+    "mass",
+};
+
+// All the initial state attributes end with 0
+bool _isInitialAttribute(const std::string& attrName) { return attrName.back() == '0'; }
+
+bool _isCachedAttribute(const std::string& attrName)
+{
+    constexpr auto _cached = "cached";
+    constexpr auto _Cache = "Cache";
+    return TfStringEndsWith(attrName, _Cache) || TfStringStartsWith(attrName, _cached);
+}
+
+bool _isValidAttr(const std::string& attrName)
+{
+    if (attrName.empty()) {
+        return false;
+    }
+    if (_isInitialAttribute(attrName)) {
+        return false;
+    }
+    if (_isCachedAttribute(attrName)) {
+        return false;
+    }
+    return _supressedAttrs.find(attrName) == _supressedAttrs.end();
+}
+} // namespace
+
 PxrUsdTranslators_ParticleWriter::PxrUsdTranslators_ParticleWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaTransformWriter(depNodeFn, usdPath, jobCtx),
-    mInitialFrameDone(false)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaTransformWriter(depNodeFn, usdPath, jobCtx)
+    , mInitialFrameDone(false)
 {
     if (!TF_VERIFY(GetDagPath().isValid())) {
         return;
     }
 
-    UsdGeomPoints primSchema =
-        UsdGeomPoints::Define(GetUsdStage(), GetUsdPath());
+    UsdGeomPoints primSchema = UsdGeomPoints::Define(GetUsdStage(), GetUsdPath());
     if (!TF_VERIFY(
-            primSchema,
-            "Could not define UsdGeomPoints at path '%s'\n",
-            GetUsdPath().GetText())) {
+            primSchema, "Could not define UsdGeomPoints at path '%s'\n", GetUsdPath().GetText())) {
         return;
     }
     _usdPrim = primSchema.GetPrim();
@@ -213,8 +239,7 @@ PxrUsdTranslators_ParticleWriter::PxrUsdTranslators_ParticleWriter(
 }
 
 /* virtual */
-void
-PxrUsdTranslators_ParticleWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_ParticleWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaTransformWriter::Write(usdTime);
 
@@ -222,10 +247,9 @@ PxrUsdTranslators_ParticleWriter::Write(const UsdTimeCode& usdTime)
     writeParams(usdTime, primSchema);
 }
 
-void
-PxrUsdTranslators_ParticleWriter::writeParams(
-        const UsdTimeCode& usdTime,
-        UsdGeomPoints& points)
+void PxrUsdTranslators_ParticleWriter::writeParams(
+    const UsdTimeCode& usdTime,
+    UsdGeomPoints&     points)
 {
     // XXX: Check this properly, static particles are uncommon, but used.
     if (usdTime.IsDefault()) {
@@ -269,12 +293,12 @@ PxrUsdTranslators_ParticleWriter::writeParams(
     }
 
     _strVecPairVec<GfVec3f> vectors;
-    _strVecPairVec<float> floats;
-    _strVecPairVec<int> ints;
+    _strVecPairVec<float>   floats;
+    _strVecPairVec<int>     ints;
 
     MVectorArray mayaVectors;
     MDoubleArray mayaDoubles;
-    MIntArray mayaInts;
+    MIntArray    mayaInts;
 
     deformedParticleSys.position(mayaVectors);
     auto positions = _convertVectorArray<GfVec3f>(mayaVectors);
@@ -331,12 +355,14 @@ PxrUsdTranslators_ParticleWriter::writeParams(
         }
     }
 
-    const auto minSize = std::min(
-        {
-            _minCount(vectors), _minCount(floats), _minCount(ints),
-            positions->size(), velocities->size(), ids->size(), radii->size(), masses->size()
-        }
-    );
+    const auto minSize = std::min({ _minCount(vectors),
+                                    _minCount(floats),
+                                    _minCount(ints),
+                                    positions->size(),
+                                    velocities->size(),
+                                    ids->size(),
+                                    radii->size(),
+                                    masses->size() });
 
     if (minSize == 0) {
         return;
@@ -351,35 +377,43 @@ PxrUsdTranslators_ParticleWriter::writeParams(
     radii->resize(minSize);
     masses->resize(minSize);
 
-    UsdMayaWriteUtil::SetAttribute(points.GetPointsAttr(), positions.get(), usdTime, _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(points.GetVelocitiesAttr(), velocities.get(), usdTime, _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(points.GetIdsAttr(), ids.get(), usdTime, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        points.GetPointsAttr(), positions.get(), usdTime, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        points.GetVelocitiesAttr(), velocities.get(), usdTime, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        points.GetIdsAttr(), ids.get(), usdTime, _GetSparseValueWriter());
 
     // radius -> width conversion
-    for (auto& r : *radii) { r = r * 2.0f; }
-    
-    UsdMayaWriteUtil::SetAttribute(points.GetWidthsAttr(), radii.get(), usdTime, _GetSparseValueWriter());
+    for (auto& r : *radii) {
+        r = r * 2.0f;
+    }
 
-    _addAttr(points, _massName, SdfValueTypeNames->FloatArray, *masses, usdTime,
-             _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        points.GetWidthsAttr(), radii.get(), usdTime, _GetSparseValueWriter());
+
+    _addAttr(
+        points,
+        _massName,
+        SdfValueTypeNames->FloatArray,
+        *masses,
+        usdTime,
+        _GetSparseValueWriter());
     // TODO: check if we need the array suffix!!
-    _addAttrVec(points, SdfValueTypeNames->Vector3fArray, vectors, usdTime,
-                _GetSparseValueWriter());
-    _addAttrVec(points, SdfValueTypeNames->FloatArray, floats, usdTime,
-                _GetSparseValueWriter());
-    _addAttrVec(points, SdfValueTypeNames->IntArray, ints, usdTime,
-                _GetSparseValueWriter());
+    _addAttrVec(
+        points, SdfValueTypeNames->Vector3fArray, vectors, usdTime, _GetSparseValueWriter());
+    _addAttrVec(points, SdfValueTypeNames->FloatArray, floats, usdTime, _GetSparseValueWriter());
+    _addAttrVec(points, SdfValueTypeNames->IntArray, ints, usdTime, _GetSparseValueWriter());
 }
 
-void
-PxrUsdTranslators_ParticleWriter::initializeUserAttributes()
+void PxrUsdTranslators_ParticleWriter::initializeUserAttributes()
 {
-    const auto particleNode = GetMayaObject();
+    const auto        particleNode = GetMayaObject();
     MFnParticleSystem particleSys(GetDagPath());
 
     const auto attributeCount = particleSys.attributeCount();
 
-    for (auto i = decltype(attributeCount){0}; i < attributeCount; ++i) {
+    for (auto i = decltype(attributeCount) { 0 }; i < attributeCount; ++i) {
         MObject attrObj = particleSys.attribute(i);
         // we need custom attributes
         if (particleSys.attributeClass(attrObj) == MFnDependencyNode::kNormalAttr) {
@@ -387,13 +421,17 @@ PxrUsdTranslators_ParticleWriter::initializeUserAttributes()
         }
         // only checking for parent attrs
         MPlug attrPlug(particleNode, attrObj);
-        if (!attrPlug.parent().isNull()) { continue; }
+        if (!attrPlug.parent().isNull()) {
+            continue;
+        }
 
         MFnAttribute attr(attrObj);
 
-        const auto mayaAttrName = attr.name();
+        const auto        mayaAttrName = attr.name();
         const std::string attrName = mayaAttrName.asChar();
-        if (!_isValidAttr(attrName)) { continue; }
+        if (!_isValidAttr(attrName)) {
+            continue;
+        }
         if (particleSys.isPerParticleIntAttribute(mayaAttrName)) {
             mUserAttributes.emplace_back(TfToken(attrName), mayaAttrName, PER_PARTICLE_INT);
         } else if (particleSys.isPerParticleDoubleAttribute(mayaAttrName)) {
@@ -403,6 +441,5 @@ PxrUsdTranslators_ParticleWriter::initializeUserAttributes()
         }
     }
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

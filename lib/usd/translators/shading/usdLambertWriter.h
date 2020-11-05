@@ -18,9 +18,9 @@
 
 /// \file
 
-#include <pxr/pxr.h>
-
 #include "usdMaterialWriter.h"
+
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -30,19 +30,18 @@ class PxrUsdTranslators_LambertWriter : public PxrUsdTranslators_MaterialWriter
 {
     typedef PxrUsdTranslators_MaterialWriter BaseClass;
 
-    public:
-        PxrUsdTranslators_LambertWriter(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrUsdTranslators_LambertWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        void Write(const UsdTimeCode& usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 
-        TfToken GetShadingAttributeNameForMayaAttrName(
-                const TfToken& mayaAttrName) override;
+    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 
-    protected:
-        virtual void WriteSpecular(const UsdTimeCode& usdTime);
+protected:
+    virtual void WriteSpecular(const UsdTimeCode& usdTime);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

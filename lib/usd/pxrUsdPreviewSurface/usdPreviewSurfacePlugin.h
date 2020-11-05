@@ -18,8 +18,8 @@
 
 #include "api.h"
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 
 #include <maya/MApiNamespace.h>
 
@@ -31,7 +31,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Preview surface support requires plugin registration of node classes, node
 /// data, and draw support.  This class provides this service. Each client is expected
 /// to provide a separate typeName and typeId to ensure proper plugin registration.
-class PxrMayaUsdPreviewSurfacePlugin {
+class PxrMayaUsdPreviewSurfacePlugin
+{
 public:
     /// Initialize a UsdPreviewSurface dependency node named \p typeName with a unique \p typeId for
     /// the \p plugin using the registrant id \p registrantId for the render overrides.

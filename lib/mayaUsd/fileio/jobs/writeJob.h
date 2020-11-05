@@ -16,17 +16,17 @@
 #ifndef PXRUSDMAYA_WRITE_JOB_H
 #define PXRUSDMAYA_WRITE_JOB_H
 
-#include <string>
-
-#include <maya/MObjectHandle.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/hashmap.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/chaser/chaser.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
+
+#include <pxr/base/tf/hashmap.h>
+#include <pxr/pxr.h>
+
+#include <maya/MObjectHandle.h>
+
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,7 +36,7 @@ class UsdMaya_WriteJob
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMaya_WriteJob(const UsdMayaJobExportArgs & iArgs);
+    UsdMaya_WriteJob(const UsdMayaJobExportArgs& iArgs);
 
     MAYAUSD_CORE_PUBLIC
     ~UsdMaya_WriteJob();
@@ -53,7 +53,7 @@ private:
     /// Begins constructing the USD stage, writing out the values at the default
     /// time. Returns \c true if the stage can be created successfully.
     bool _BeginWriting(const std::string& fileName, bool append);
-  
+
     /// Writes the stage values at the given frame.
     /// Warning: this function must be called with non-decreasing frame numbers.
     /// If you call WriteFrame() with a frame number lower than a previous
@@ -65,7 +65,7 @@ private:
     bool _FinishWriting();
 
     /// Writes the root prim variants based on the Maya render layers.
-    TfToken _WriteVariants(const UsdPrim &usdRootPrim);
+    TfToken _WriteVariants(const UsdPrim& usdRootPrim);
 
     /// Creates a usdz package from the write job's current USD stage.
     void _CreatePackage() const;
@@ -73,7 +73,7 @@ private:
     void _PerFrameCallback(double iFrame);
     void _PostCallback();
 
-    bool _CheckNameClashes(const SdfPath &path, const MDagPath &dagPath);
+    bool _CheckNameClashes(const SdfPath& path, const MDagPath& dagPath);
 
     // Name of the created/appended USD file
     std::string _fileName;
@@ -83,7 +83,7 @@ private:
 
     // Name of current layer since it should be restored after looping over them
     MString mCurrentRenderLayerName;
-    
+
     // List of renderLayerObjects. Currently used for variants
     MObjectArray mRenderLayerObjs;
 
@@ -98,7 +98,6 @@ private:
 
     std::unique_ptr<UsdMaya_ModelKindProcessor> _modelKindProcessor;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
