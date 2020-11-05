@@ -38,26 +38,28 @@ public:
 /*! \brief  Wrapper of a task body into commit task.
     \class  HdVP2TaskCommit
 */
-template <typename Body>
-class HdVP2TaskCommitBody final : public HdVP2TaskCommit {
+template <typename Body> class HdVP2TaskCommitBody final : public HdVP2TaskCommit
+{
     //! Use scalable allocator to prevent heap contention
     using my_allocator_type = tbb::tbb_allocator<HdVP2TaskCommitBody<Body>>;
 
-    //! Private constructor to force usage of construct method & allocation with 
+    //! Private constructor to force usage of construct method & allocation with
     //! scalable allocator.
-    HdVP2TaskCommitBody(const Body& body) : fBody(body) {}
+    HdVP2TaskCommitBody(const Body& body)
+        : fBody(body)
+    {
+    }
 
 public:
     ~HdVP2TaskCommitBody() override = default;
 
     //! Execute body task.
-    void operator()() override {
-        fBody();
-    }
+    void operator()() override { fBody(); }
 
     //! Objects of this type are allocated with tbb_allocator.
     //! Release the memory using same allocator by calling destroy method.
-    void destroy() override {
+    void destroy() override
+    {
         my_allocator_type().destroy(this);
         my_allocator_type().deallocate(this, 1);
     }
@@ -65,7 +67,8 @@ public:
     /*! Allocate a new object of type Body using scalable allocator.
         Always free this object by calling destroy method!
     */
-    static HdVP2TaskCommitBody<Body>* construct(const Body& body) {
+    static HdVP2TaskCommitBody<Body>* construct(const Body& body)
+    {
         void* mem = my_allocator_type().allocate(1);
         return new (mem) HdVP2TaskCommitBody<Body>(body);
     }

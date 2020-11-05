@@ -28,12 +28,12 @@ namespace AL {
 namespace usdmaya {
 namespace fileio {
 
-using usdmaya::utils::ScaledPair;
-using usdmaya::utils::PlugAttrVector;
+using usdmaya::utils::AnimationCheckTransformAttributes;
 using usdmaya::utils::MeshAttrVector;
 using usdmaya::utils::PlugAttrScaledVector;
+using usdmaya::utils::PlugAttrVector;
+using usdmaya::utils::ScaledPair;
 using usdmaya::utils::WorldSpaceAttrVector;
-using usdmaya::utils::AnimationCheckTransformAttributes;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A utility class to help with exporting animated plugs from maya
@@ -42,31 +42,33 @@ using usdmaya::utils::AnimationCheckTransformAttributes;
 class AnimationTranslator : public usdmaya::utils::AnimationTranslator
 {
 public:
+    /// \brief  After the scene has been exported, call this method to export the animation data on
+    /// various attributes \param  params the export options
+    AL_USDMAYA_PUBLIC
+    void exportAnimation(const ExporterParams& params);
 
-  /// \brief  After the scene has been exported, call this method to export the animation data on various attributes
-  /// \param  params the export options
-  AL_USDMAYA_PUBLIC
-  void exportAnimation(const ExporterParams& params);
-
-  /// \brief  insert a prim into the anim translator for custom anim export. 
-  /// \param  translator the plugin translator to handle the export of anim data for the node
-  /// \param  dagPath the maya dag path for the maya object to export
-  /// \param  usdPrim the prim to write the data into
-  inline void addCustomAnimNode(translators::TranslatorBase* translator, MDagPath dagPath, UsdPrim usdPrim)
-    { m_animatedNodes.push_back({translator, dagPath, usdPrim}); }
+    /// \brief  insert a prim into the anim translator for custom anim export.
+    /// \param  translator the plugin translator to handle the export of anim data for the node
+    /// \param  dagPath the maya dag path for the maya object to export
+    /// \param  usdPrim the prim to write the data into
+    inline void
+    addCustomAnimNode(translators::TranslatorBase* translator, MDagPath dagPath, UsdPrim usdPrim)
+    {
+        m_animatedNodes.push_back({ translator, dagPath, usdPrim });
+    }
 
 private:
-  struct NodeExportInfo
-  {
-    translators::TranslatorBase* m_translator;
-    MDagPath m_path;
-    UsdPrim m_prim;
-  };
-  std::vector<NodeExportInfo> m_animatedNodes;
+    struct NodeExportInfo
+    {
+        translators::TranslatorBase* m_translator;
+        MDagPath                     m_path;
+        UsdPrim                      m_prim;
+    };
+    std::vector<NodeExportInfo> m_animatedNodes;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-} // fileio
-} // usdmaya
-} // AL
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

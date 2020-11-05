@@ -15,27 +15,24 @@
 //
 #pragma once
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+
+#include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/timeCode.h>
+
+#include <maya/MDagPath.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/types.h>
 
-#include <maya/MDagPath.h>
-
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/sdf/layer.h>
-#include <pxr/base/tf/token.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-
-#include <cstring>		// memcpy
+#include <cstring> // memcpy
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-UFE_NS_DEF {
-class PathSegment;
-}
+UFE_NS_DEF { class PathSegment; }
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -60,7 +57,8 @@ MAYAUSD_CORE_PUBLIC
 bool isRootChild(const Ufe::Path& path);
 
 MAYAUSD_CORE_PUBLIC
-UsdSceneItem::Ptr createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
+UsdSceneItem::Ptr
+createSiblingSceneItem(const Ufe::Path& ufeSrcPath, const std::string& siblingName);
 
 //! Split the source name into a base name and a numerical suffix (set to
 //! 1 if absent).  Increment the numerical suffix until name is unique.
@@ -86,21 +84,21 @@ Ufe::PathSegment dagPathToPathSegment(const MDagPath& dagPath);
 MAYAUSD_CORE_PUBLIC
 UsdTimeCode getTime(const Ufe::Path& path);
 
-//! Send notification for data model changes 
+//! Send notification for data model changes
 template <class T>
 void sendNotification(const Ufe::SceneItem::Ptr& item, const Ufe::Path& previousPath)
 {
     T notification(item, previousPath);
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::Scene::instance().notify(notification);
-    #else
+#else
     Ufe::Scene::notifyObjectPathChange(notification);
-    #endif
+#endif
 }
 
 //! Readability function to downcast a SceneItem::Ptr to a UsdSceneItem::Ptr.
-inline
-UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item) {
+inline UsdSceneItem::Ptr downcast(const Ufe::SceneItem::Ptr& item)
+{
     return std::dynamic_pointer_cast<UsdSceneItem>(item);
 }
 
@@ -113,10 +111,7 @@ inline Ufe::Matrix4d toUfe(const GfMatrix4d& src)
 }
 
 //! Copy the argument vector into the return vector.
-inline Ufe::Vector3d toUfe(const GfVec3d& src)
-{
-  return Ufe::Vector3d(src[0], src[1], src[2]);
-}
+inline Ufe::Vector3d toUfe(const GfVec3d& src) { return Ufe::Vector3d(src[0], src[1], src[2]); }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

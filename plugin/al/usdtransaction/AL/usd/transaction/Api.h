@@ -15,26 +15,26 @@
 //
 
 #if defined _WIN32 || defined __CYGWIN__
-  #ifdef AL_USD_TRANSACTION_EXPORT
-    #ifdef __GNUC__
-      #define AL_USD_TRANSACTION_PUBLIC __attribute__ ((dllexport))
-    #else
-      #define AL_USD_TRANSACTION_PUBLIC __declspec(dllexport)
-    #endif
-  #else
-    #ifdef __GNUC__
-      #define AL_USD_TRANSACTION_PUBLIC __attribute__ ((dllimport))
-    #else
-      #define AL_USD_TRANSACTION_PUBLIC __declspec(dllimport)
-    #endif
-  #endif
-  #define AL_USD_TRANSACTION_LOCAL
+#ifdef AL_USD_TRANSACTION_EXPORT
+#ifdef __GNUC__
+#define AL_USD_TRANSACTION_PUBLIC __attribute__((dllexport))
 #else
-  #if __GNUC__ >= 4
-    #define AL_USD_TRANSACTION_PUBLIC __attribute__ ((visibility ("default")))
-    #define AL_USD_TRANSACTION_LOCAL  __attribute__ ((visibility ("hidden")))
-  #else
-    #define AL_USD_TRANSACTION_PUBLIC
-    #define AL_USD_TRANSACTION_LOCAL
-  #endif
+#define AL_USD_TRANSACTION_PUBLIC __declspec(dllexport)
+#endif
+#else
+#ifdef __GNUC__
+#define AL_USD_TRANSACTION_PUBLIC __attribute__((dllimport))
+#else
+#define AL_USD_TRANSACTION_PUBLIC __declspec(dllimport)
+#endif
+#endif
+#define AL_USD_TRANSACTION_LOCAL
+#else
+#if __GNUC__ >= 4
+#define AL_USD_TRANSACTION_PUBLIC __attribute__((visibility("default")))
+#define AL_USD_TRANSACTION_LOCAL  __attribute__((visibility("hidden")))
+#else
+#define AL_USD_TRANSACTION_PUBLIC
+#define AL_USD_TRANSACTION_LOCAL
+#endif
 #endif

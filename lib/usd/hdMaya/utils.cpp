@@ -15,8 +15,6 @@
 //
 #include "utils.h"
 
-#include <maya/MPlugArray.h>
-
 #include <pxr/base/tf/fileUtils.h>
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/image.h>
@@ -26,83 +24,88 @@
 #include <pxr/imaging/hdSt/textureResource.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 
+#include <maya/MPlugArray.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-class UdimTextureFactory : public GlfTextureFactoryBase {
+class UdimTextureFactory : public GlfTextureFactoryBase
+{
 public:
-    virtual GlfTextureRefPtr New(
-        TfToken const& texturePath,
-        GlfImage::ImageOriginLocation originLocation =
-            GlfImage::OriginLowerLeft) const override {
+    virtual GlfTextureRefPtr
+    New(TfToken const&                texturePath,
+        GlfImage::ImageOriginLocation originLocation = GlfImage::OriginLowerLeft) const override
+    {
         const GlfContextCaps& caps = GlfContextCaps::GetInstance();
         return GlfUdimTexture::New(
-            texturePath, originLocation,
+            texturePath,
+            originLocation,
             UsdImaging_GetUdimTiles(texturePath, caps.maxArrayTextureLayers));
     }
 
-    virtual GlfTextureRefPtr New(
-        TfTokenVector const& texturePaths,
-        GlfImage::ImageOriginLocation originLocation =
-            GlfImage::OriginLowerLeft) const override {
+    virtual GlfTextureRefPtr
+    New(TfTokenVector const&          texturePaths,
+        GlfImage::ImageOriginLocation originLocation = GlfImage::OriginLowerLeft) const override
+    {
         return nullptr;
     }
 };
 
 } // namespace
 
-MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName) {
-    MStatus status;
+MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName)
+{
+    MStatus           status;
     MFnDependencyNode node(obj, &status);
-    if (ARCH_UNLIKELY(!status)) { return MObject::kNullObj; }
+    if (ARCH_UNLIKELY(!status)) {
+        return MObject::kNullObj;
+    }
     return GetConnectedFileNode(node, paramName);
 }
 
-MObject GetConnectedFileNode(
-    const MFnDependencyNode& node, const TfToken& paramName) {
+MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& paramName)
+{
     MPlugArray conns;
     node.findPlug(paramName.GetText(), true).connectedTo(conns, true, false);
-    if (conns.length() == 0) { return MObject::kNullObj; }
+    if (conns.length() == 0) {
+        return MObject::kNullObj;
+    }
     const auto ret = conns[0].node();
-    if (ret.apiType() == MFn::kFileTexture) { return ret; }
+    if (ret.apiType() == MFn::kFileTexture) {
+        return ret;
+    }
     return MObject::kNullObj;
 }
 
-TfToken GetFileTexturePath(const MFnDependencyNode& fileNode) {
+TfToken GetFileTexturePath(const MFnDependencyNode& fileNode)
+{
     if (fileNode.findPlug(MayaAttrs::file::uvTilingMode, true).asShort() != 0) {
-        const TfToken ret{
-            fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern, true)
-                .asString()
-                .asChar()};
+        const TfToken ret {
+            fileNode.findPlug(MayaAttrs::file::fileTextureNamePattern, true).asString().asChar()
+        };
         return ret.IsEmpty()
-                   ? TfToken{fileNode
-                                 .findPlug(
-                                     MayaAttrs::file::
-                                         computedFileTextureNamePattern,
-                                     true)
-                                 .asString()
-                                 .asChar()}
-                   : ret;
+            ? TfToken { fileNode.findPlug(MayaAttrs::file::computedFileTextureNamePattern, true)
+                            .asString()
+                            .asChar() }
+            : ret;
     } else {
-        const TfToken ret{
-            MRenderUtil::exactFileTextureName(fileNode.object()).asChar()};
-        return ret.IsEmpty()
-                   ? TfToken{fileNode
-                                 .findPlug(
-                                     MayaAttrs::file::fileTextureName, true)
-                                 .asString()
-                                 .asChar()}
-                   : ret;
+        const TfToken ret { MRenderUtil::exactFileTextureName(fileNode.object()).asChar() };
+        return ret.IsEmpty() ? TfToken { fileNode.findPlug(MayaAttrs::file::fileTextureName, true)
+                                             .asString()
+                                             .asChar() }
+                             : ret;
     }
 }
 
-std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(
-    const MObject& fileObj) {
-    const std::tuple<HdWrap, HdWrap> def{HdWrapClamp, HdWrapClamp};
-    MStatus status;
-    MFnDependencyNode fileNode(fileObj, &status);
-    if (!status) { return def; }
+std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj)
+{
+    const std::tuple<HdWrap, HdWrap> def { HdWrapClamp, HdWrapClamp };
+    MStatus                          status;
+    MFnDependencyNode                fileNode(fileObj, &status);
+    if (!status) {
+        return def;
+    }
 
     auto getWrap = [&fileNode](MObject& wrapAttr, MObject& mirrorAttr) {
         if (fileNode.findPlug(wrapAttr, true).asBool()) {
@@ -115,14 +118,16 @@ std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(
             return HdWrapClamp;
         }
     };
-    return std::tuple<HdWrap, HdWrap>{
-        getWrap(MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU),
-        getWrap(MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV)};
+    return std::tuple<HdWrap, HdWrap> { getWrap(MayaAttrs::file::wrapU, MayaAttrs::file::mirrorU),
+                                        getWrap(MayaAttrs::file::wrapV, MayaAttrs::file::mirrorV) };
 }
 
-HdTextureResourceSharedPtr GetFileTextureResource(
-    const MObject& fileObj, const TfToken& filePath, int maxTextureMemory) {
-    if (filePath.IsEmpty()) { return {}; }
+HdTextureResourceSharedPtr
+GetFileTextureResource(const MObject& fileObj, const TfToken& filePath, int maxTextureMemory)
+{
+    if (filePath.IsEmpty()) {
+        return {};
+    }
     auto textureType = HdTextureType::Uv;
     if (GlfIsSupportedUdimTexture(filePath)) {
         textureType = HdTextureType::Udim;
@@ -131,15 +136,13 @@ HdTextureResourceSharedPtr GetFileTextureResource(
         return {};
     }
     // TODO: handle origin
-    const auto origin = GlfImage::OriginLowerLeft;
+    const auto             origin = GlfImage::OriginLowerLeft;
     GlfTextureHandleRefPtr texture = nullptr;
     if (textureType == HdTextureType::Udim) {
         UdimTextureFactory factory;
-        texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
-            filePath, origin, &factory);
+        texture = GlfTextureRegistry::GetInstance().GetTextureHandle(filePath, origin, &factory);
     } else {
-        texture = GlfTextureRegistry::GetInstance().GetTextureHandle(
-            filePath, origin);
+        texture = GlfTextureRegistry::GetInstance().GetTextureHandle(filePath, origin);
     }
 
     const auto wrapping = GetFileTextureWrappingParams(fileObj);
@@ -149,11 +152,14 @@ HdTextureResourceSharedPtr GetFileTextureResource(
     return HdTextureResourceSharedPtr(new HdStSimpleTextureResource(
         texture,
         textureType,
-        std::get<0>(wrapping), std::get<1>(wrapping),
+        std::get<0>(wrapping),
+        std::get<1>(wrapping),
 #if USD_VERSION_NUM >= 1910
         HdWrapClamp,
 #endif
-        HdMinFilterLinearMipmapLinear, HdMagFilterLinear, maxTextureMemory));
+        HdMinFilterLinearMipmapLinear,
+        HdMagFilterLinear,
+        maxTextureMemory));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

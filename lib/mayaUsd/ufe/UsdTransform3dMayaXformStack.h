@@ -15,9 +15,8 @@
 //
 #pragma once
 
-#include <mayaUsd/ufe/UsdTransform3dBase.h>
-
 #include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/ufe/UsdTransform3dBase.h>
 
 #include <pxr/usd/usdGeom/xformable.h>
 
@@ -29,7 +28,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Transform USD objects in 3D using the Maya transform stack.
-// 
+//
 // The Maya transform stack is described here:
 // http://help.autodesk.com/view/MAYAUL/2018/ENU/?guid=__cpp_ref_class_m_fn_transform_html
 //
@@ -40,10 +39,21 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdTransform3dMayaXformStack : public UsdTransform3dBase
 {
 public:
-    enum OpNdx {NdxTranslate = 0, NdxRotatePivotTranslate, NdxRotatePivot, 
-                NdxRotate, NdxRotateAxis, NdxRotatePivotInverse, 
-                NdxScalePivotTranslate, NdxScalePivot, NdxShear, NdxScale, 
-                NdxScalePivotInverse, NbOpNdx};
+    enum OpNdx
+    {
+        NdxTranslate = 0,
+        NdxRotatePivotTranslate,
+        NdxRotatePivot,
+        NdxRotate,
+        NdxRotateAxis,
+        NdxRotatePivotInverse,
+        NdxScalePivotTranslate,
+        NdxScalePivot,
+        NdxShear,
+        NdxScale,
+        NdxScalePivotInverse,
+        NbOpNdx
+    };
 
     typedef std::shared_ptr<UsdTransform3dMayaXformStack> Ptr;
 
@@ -51,52 +61,45 @@ public:
     ~UsdTransform3dMayaXformStack() override = default;
 
     //! Create a UsdTransform3dMayaXformStack.
-    static UsdTransform3dMayaXformStack::Ptr create(
-        const UsdSceneItem::Ptr& item
-    );
+    static UsdTransform3dMayaXformStack::Ptr create(const UsdSceneItem::Ptr& item);
 
     Ufe::Vector3d translation() const override;
     Ufe::Vector3d rotation() const override;
     Ufe::Vector3d scale() const override;
 
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
-    Ufe::RotateUndoableCommand::Ptr rotateCmd(double x, double y, double z) override;
-    Ufe::ScaleUndoableCommand::Ptr scaleCmd(double x, double y, double z) override;
+    Ufe::RotateUndoableCommand::Ptr    rotateCmd(double x, double y, double z) override;
+    Ufe::ScaleUndoableCommand::Ptr     scaleCmd(double x, double y, double z) override;
 
     Ufe::TranslateUndoableCommand::Ptr rotatePivotCmd(double x, double y, double z) override;
-    Ufe::Vector3d rotatePivot() const override;
+    Ufe::Vector3d                      rotatePivot() const override;
 
     Ufe::TranslateUndoableCommand::Ptr scalePivotCmd(double x, double y, double z) override;
-    Ufe::Vector3d scalePivot() const override;
+    Ufe::Vector3d                      scalePivot() const override;
 
-    Ufe::TranslateUndoableCommand::Ptr translateRotatePivotCmd(
-        double x, double y, double z) override;
+    Ufe::TranslateUndoableCommand::Ptr
+    translateRotatePivotCmd(double x, double y, double z) override;
 
     Ufe::Vector3d rotatePivotTranslation() const override;
 
-    Ufe::TranslateUndoableCommand::Ptr translateScalePivotCmd(
-        double x, double y, double z) override;
+    Ufe::TranslateUndoableCommand::Ptr
+    translateScalePivotCmd(double x, double y, double z) override;
 
     Ufe::Vector3d scalePivotTranslation() const override;
 
 private:
-
     bool           hasOp(OpNdx ndx) const;
     UsdGeomXformOp getOp(OpNdx ndx) const;
 
-    Ufe::TranslateUndoableCommand::Ptr pivotCmd(
-        const TfToken& pvtOpSuffix,
-        double x, double y, double z
-    );
-    template<class V>
-    Ufe::Vector3d getVector3d(const TfToken& attrName) const;
-    template<class V>
-    Ufe::SetVector3dUndoableCommand::Ptr setVector3dCmd(
-        const V& v, const TfToken& attrName, const TfToken& opSuffix = TfToken()
-    );
+    Ufe::TranslateUndoableCommand::Ptr
+                                     pivotCmd(const TfToken& pvtOpSuffix, double x, double y, double z);
+    template <class V> Ufe::Vector3d getVector3d(const TfToken& attrName) const;
+    template <class V>
+    Ufe::SetVector3dUndoableCommand::Ptr
+    setVector3dCmd(const V& v, const TfToken& attrName, const TfToken& opSuffix = TfToken());
 
     void setXformOpOrder();
-    
+
     // Cache of ops in the ordered ops vector, indexed by position.
     std::unordered_map<OpNdx, UsdGeomXformOp> _orderedOps;
 
@@ -109,8 +112,7 @@ private:
 // Note that all calls to specify time use the default time, but this
 // could be changed to use the current time, using getTime(path()).
 
-class MAYAUSD_CORE_PUBLIC UsdTransform3dMayaXformStackHandler
-  : public Ufe::Transform3dHandler
+class MAYAUSD_CORE_PUBLIC UsdTransform3dMayaXformStackHandler : public Ufe::Transform3dHandler
 {
 public:
     typedef std::shared_ptr<UsdTransform3dMayaXformStackHandler> Ptr;
@@ -130,4 +132,4 @@ private:
 }; // UsdTransform3dMayaXformStackHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

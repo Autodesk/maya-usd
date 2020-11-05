@@ -15,6 +15,20 @@
 //
 #include "strokeWriter.h"
 
+#include <mayaUsd/fileio/primWriterRegistry.h>
+
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/basisCurves.h>
+#include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdGeom/tokens.h>
+
 #include <maya/MDoubleArray.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnPfxGeometry.h>
@@ -23,36 +37,21 @@
 #include <maya/MStatus.h>
 #include <maya/MVectorArray.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/tf/diagnostic.h>
-#include <pxr/base/vt/types.h>
-#include <pxr/base/vt/value.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/basisCurves.h>
-#include <pxr/usd/usdGeom/primvar.h>
-#include <pxr/usd/usdGeom/tokens.h>
-
-#include <mayaUsd/fileio/primWriterRegistry.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_WRITER(stroke, PxrUsdTranslators_StrokeWriter);
 
 PxrUsdTranslators_StrokeWriter::PxrUsdTranslators_StrokeWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
     if (!TF_VERIFY(GetDagPath().isValid())) {
         return;
     }
 
-    UsdGeomBasisCurves primSchema =
-        UsdGeomBasisCurves::Define(GetUsdStage(), GetUsdPath());
+    UsdGeomBasisCurves primSchema = UsdGeomBasisCurves::Define(GetUsdStage(), GetUsdPath());
     if (!TF_VERIFY(
             primSchema,
             "Could not define UsdGeomBasisCurves at path <%s>\n",
@@ -69,31 +68,25 @@ PxrUsdTranslators_StrokeWriter::PxrUsdTranslators_StrokeWriter(
     }
 }
 
-static
-void
-_CollectCurveVertexData(
-        const MRenderLineArray& renderLineArray,
-        VtIntArray& curveVertexCounts,
-        VtVec3fArray& curvePoints,
-        VtFloatArray& curveWidths,
-        VtVec3fArray& curveDisplayColors,
-        VtFloatArray& curveDisplayOpacities)
+static void _CollectCurveVertexData(
+    const MRenderLineArray& renderLineArray,
+    VtIntArray&             curveVertexCounts,
+    VtVec3fArray&           curvePoints,
+    VtFloatArray&           curveWidths,
+    VtVec3fArray&           curveDisplayColors,
+    VtFloatArray&           curveDisplayOpacities)
 {
     const int renderLineArrayLength = renderLineArray.length();
     if (renderLineArrayLength < 0) {
         return;
     }
 
-    const unsigned int numRenderLines =
-        static_cast<unsigned int>(renderLineArrayLength);
+    const unsigned int numRenderLines = static_cast<unsigned int>(renderLineArrayLength);
 
     MStatus status;
 
-    for (unsigned int lineIndex = 0u;
-            lineIndex < numRenderLines;
-            ++lineIndex) {
-        const MRenderLine renderLine =
-            renderLineArray.renderLine(lineIndex, &status);
+    for (unsigned int lineIndex = 0u; lineIndex < numRenderLines; ++lineIndex) {
+        const MRenderLine renderLine = renderLineArray.renderLine(lineIndex, &status);
         if (status != MS::kSuccess) {
             // Render line arrays can be sparse, so some lines may be invalid
             // and should just be skipped.
@@ -137,14 +130,12 @@ _CollectCurveVertexData(
 
         for (unsigned int vertIndex = 0u; vertIndex < numPoints; ++vertIndex) {
             const MVector& vertPoint = linePoints[vertIndex];
-            curvePoints.push_back(
-                GfVec3f(vertPoint[0], vertPoint[1], vertPoint[2]));
+            curvePoints.push_back(GfVec3f(vertPoint[0], vertPoint[1], vertPoint[2]));
 
             curveWidths.push_back(static_cast<float>(lineWidths[vertIndex]));
 
             const MVector& vertColor = lineColors[vertIndex];
-            curveDisplayColors.push_back(
-                GfVec3f(vertColor[0], vertColor[1], vertColor[2]));
+            curveDisplayColors.push_back(GfVec3f(vertColor[0], vertColor[1], vertColor[2]));
 
             // Convert transparency in Maya (a vector with zero as fully opaque
             // and one as fully transparent) into a single float opacity for
@@ -152,18 +143,15 @@ _CollectCurveVertexData(
             // do this by averaging together the individual components of the
             // Maya transparency.
             const MVector& vertTransparency = lineTransparencies[vertIndex];
-            const float vertOpacity = static_cast<float>(
-                1.0 - ((vertTransparency[0] +
-                        vertTransparency[1] +
-                        vertTransparency[2]) / 3.0));
+            const float    vertOpacity = static_cast<float>(
+                1.0 - ((vertTransparency[0] + vertTransparency[1] + vertTransparency[2]) / 3.0));
             curveDisplayOpacities.push_back(vertOpacity);
         }
     }
 }
 
 /* virtual */
-void
-PxrUsdTranslators_StrokeWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_StrokeWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaPrimWriter::Write(usdTime);
 
@@ -171,7 +159,7 @@ PxrUsdTranslators_StrokeWriter::Write(const UsdTimeCode& usdTime)
         return;
     }
 
-    MStatus status;
+    MStatus        status;
     MFnPfxGeometry pfxGeomFn(GetDagPath(), &status);
     if (status != MS::kSuccess) {
         TF_RUNTIME_ERROR(
@@ -239,8 +227,7 @@ PxrUsdTranslators_StrokeWriter::Write(const UsdTimeCode& usdTime)
 
     curvesSchema.CreateTypeAttr(VtValue(UsdGeomTokens->linear));
 
-    UsdAttribute curveVertexCountsAttr =
-        curvesSchema.CreateCurveVertexCountsAttr();
+    UsdAttribute curveVertexCountsAttr = curvesSchema.CreateCurveVertexCountsAttr();
     curveVertexCountsAttr.Set(curveVertexCounts, usdTime);
 
     UsdAttribute curvePointsAttr = curvesSchema.CreatePointsAttr();
@@ -249,18 +236,17 @@ PxrUsdTranslators_StrokeWriter::Write(const UsdTimeCode& usdTime)
     UsdAttribute curveWidthsAttr = curvesSchema.CreateWidthsAttr();
     curveWidthsAttr.Set(curveWidths, usdTime);
 
-    UsdGeomPrimvar displayColorPrimvar =
-        curvesSchema.CreateDisplayColorPrimvar(UsdGeomTokens->vertex);
+    UsdGeomPrimvar displayColorPrimvar
+        = curvesSchema.CreateDisplayColorPrimvar(UsdGeomTokens->vertex);
     displayColorPrimvar.Set(curveDisplayColors, usdTime);
 
-    UsdGeomPrimvar displayOpacityPrimvar =
-        curvesSchema.CreateDisplayOpacityPrimvar(UsdGeomTokens->vertex);
+    UsdGeomPrimvar displayOpacityPrimvar
+        = curvesSchema.CreateDisplayOpacityPrimvar(UsdGeomTokens->vertex);
     displayOpacityPrimvar.Set(curveDisplayOpacities, usdTime);
 
     mainLines.deleteArray();
     leafLines.deleteArray();
     flowerLines.deleteArray();
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

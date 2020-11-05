@@ -15,13 +15,13 @@
 //
 #include "softSelectHelper.h"
 
+#include <pxr/base/tf/stl.h>
+#include <pxr/pxr.h>
+
 #include <maya/MGlobal.h>
 #include <maya/MItSelectionList.h>
 #include <maya/MRichSelection.h>
 #include <maya/MSelectionList.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/stl.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,15 +32,13 @@ UsdMayaGLSoftSelectHelper::UsdMayaGLSoftSelectHelper()
 
 #define _PXRUSDMAYA_SOFTSELECT_COLORRAMP 1
 
-void
-UsdMayaGLSoftSelectHelper::Reset()
+void UsdMayaGLSoftSelectHelper::Reset()
 {
     _populated = false;
     _dagPathsToWeight.clear();
 }
 
-void
-UsdMayaGLSoftSelectHelper::Populate()
+void UsdMayaGLSoftSelectHelper::Populate()
 {
     // only populate if we haven't already
     if (_populated) {
@@ -53,20 +51,19 @@ UsdMayaGLSoftSelectHelper::Populate()
     _populated = true;
 }
 
-void
-UsdMayaGLSoftSelectHelper::_PopulateWeights()
+void UsdMayaGLSoftSelectHelper::_PopulateWeights()
 {
     // we don't want to fallback to the active selection if there is no sot
     // select
-    bool defaultToActiveSelection = false;
+    bool           defaultToActiveSelection = false;
     MRichSelection softSelect;
     MGlobal::getRichSelection(softSelect, defaultToActiveSelection);
     MSelectionList selection;
     softSelect.getSelection(selection);
 
-    for (MItSelectionList iter( selection, MFn::kInvalid); !iter.isDone(); iter.next() )  {
+    for (MItSelectionList iter(selection, MFn::kInvalid); !iter.isDone(); iter.next()) {
         MDagPath dagPath;
-        MObject component;
+        MObject  component;
 
         iter.getDagPath(dagPath, component);
         // component.isNull() indcates that we're selecting a whole object, as
@@ -80,27 +77,24 @@ UsdMayaGLSoftSelectHelper::_PopulateWeights()
     }
 }
 
-void
-UsdMayaGLSoftSelectHelper::_PopulateSoftSelectColorRamp()
+void UsdMayaGLSoftSelectHelper::_PopulateSoftSelectColorRamp()
 {
     // Since in we are not able to get the real distance/weight value, we don't
     // yet store the full color ramp.  We just get the first color which at
     // least gives feedback over which things will be influenced.
-    bool success = false;
+    bool    success = false;
     MString commandResult;
 
     // it's really unfortunate that we have to go through this instead of having
     // direct access to this.
-    if (MGlobal::executeCommand("softSelect -query -softSelectColorCurve",
-                commandResult)) {
+    if (MGlobal::executeCommand("softSelect -query -softSelectColorCurve", commandResult)) {
 
         // parse only the first tuple.
-        int interp;
+        int   interp;
         float r, g, b;
         float position;
-        if (sscanf(commandResult.asChar(),
-                    "%f,%f,%f,%f,%d", &r, &g, &b, &position, &interp) == 5) {
-            _wireColor = MColor(r,g,b);
+        if (sscanf(commandResult.asChar(), "%f,%f,%f,%f,%d", &r, &g, &b, &position, &interp) == 5) {
+            _wireColor = MColor(r, g, b);
             success = true;
         }
     }
@@ -110,18 +104,12 @@ UsdMayaGLSoftSelectHelper::_PopulateSoftSelectColorRamp()
     }
 }
 
-bool
-UsdMayaGLSoftSelectHelper::GetWeight(
-        const MDagPath& dagPath,
-        float* weight) const
+bool UsdMayaGLSoftSelectHelper::GetWeight(const MDagPath& dagPath, float* weight) const
 {
     return TfMapLookup(_dagPathsToWeight, dagPath, weight);
 }
 
-bool
-UsdMayaGLSoftSelectHelper::GetFalloffColor(
-        const MDagPath& dagPath,
-        MColor* falloffColor) const
+bool UsdMayaGLSoftSelectHelper::GetFalloffColor(const MDagPath& dagPath, MColor* falloffColor) const
 {
     float weight = 0.f;
     if (GetWeight(dagPath, &weight)) {
@@ -134,6 +122,5 @@ UsdMayaGLSoftSelectHelper::GetFalloffColor(
 
     return false;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

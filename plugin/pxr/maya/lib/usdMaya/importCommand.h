@@ -20,28 +20,25 @@
 
 #include "usdMaya/api.h"
 
-#include <pxr/pxr.h>
-
 #include <mayaUsd/commands/baseImportCommand.h>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include <pxr/pxr.h>
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMaya_ReadJobWithSceneAssembly;
 
 class PxrMayaUSDImportCommand : public MayaUsd::MayaUSDImportCommand
 {
-  public:
+public:
     PXRUSDMAYA_API
     static void* creator();
 
-  protected:
-    std::unique_ptr<UsdMaya_ReadJob> initializeReadJob(const MayaUsd::ImportData &, 
-        const UsdMayaJobImportArgs &) override;
+protected:
+    std::unique_ptr<UsdMaya_ReadJob>
+    initializeReadJob(const MayaUsd::ImportData&, const UsdMayaJobImportArgs&) override;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

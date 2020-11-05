@@ -14,29 +14,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
-
 #include "usdMaya/readJobWithSceneAssembly.h"
+
 #include "usdMaya/translatorModelAssembly.h"
+
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMaya_ReadJobWithSceneAssembly::UsdMaya_ReadJobWithSceneAssembly(
-        const MayaUsd::ImportData& iImportData,
-        const UsdMayaJobImportArgs &iArgs) :
-    UsdMaya_ReadJob(iImportData, iArgs)
+    const MayaUsd::ImportData&  iImportData,
+    const UsdMayaJobImportArgs& iArgs)
+    : UsdMaya_ReadJob(iImportData, iArgs)
 {
 }
 
-UsdMaya_ReadJobWithSceneAssembly::~UsdMaya_ReadJobWithSceneAssembly()
-{
-}
+UsdMaya_ReadJobWithSceneAssembly::~UsdMaya_ReadJobWithSceneAssembly() { }
 
-bool
-UsdMaya_ReadJobWithSceneAssembly::DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
+bool UsdMaya_ReadJobWithSceneAssembly::DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootPrim)
 {
-    return mArgs.importWithProxyShapes ?
-        _DoImportWithProxies(rootRange) : _DoImport(rootRange, usdRootPrim);
+    return mArgs.importWithProxyShapes ? _DoImportWithProxies(rootRange)
+                                       : _DoImport(rootRange, usdRootPrim);
 }
 
 bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(
@@ -44,8 +42,7 @@ bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(
     const UsdPrim&               prim,
     const UsdMayaPrimReaderArgs& args,
     UsdMayaPrimReaderContext&    readCtx,
-    UsdPrimRange::iterator&      primIt
-)
+    UsdPrimRange::iterator&      primIt)
 {
     // If we are NOT importing on behalf of an assembly, then we'll
     // create reference assembly nodes that target the asset file
@@ -53,14 +50,10 @@ bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(
     // that a re-export will work correctly, since USD references
     // can only target root prims.
     std::string assetIdentifier;
-    SdfPath assetPrimPath;
+    SdfPath     assetPrimPath;
     if (UsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
-            usdRootPrim,
-            prim,
-            &assetIdentifier,
-            &assetPrimPath)) {
-        const bool isSceneAssembly =
-            GetMayaRootDagPath().node().hasFn(MFn::kAssembly);
+            usdRootPrim, prim, &assetIdentifier, &assetPrimPath)) {
+        const bool isSceneAssembly = GetMayaRootDagPath().node().hasFn(MFn::kAssembly);
         if (isSceneAssembly) {
             // If we ARE importing on behalf of an assembly, we use
             // the file path of the top-level assembly and the path
@@ -72,8 +65,7 @@ bool UsdMaya_ReadJobWithSceneAssembly::OverridePrimReader(
 
         // Note that if assemblyRep == "Import", the assembly reader
         // will NOT run and we will fall through to the prim reader.
-        MObject parentNode = readCtx.GetMayaNode(
-            prim.GetPath().GetParentPath(), false);
+        MObject parentNode = readCtx.GetMayaNode(prim.GetPath().GetParentPath(), false);
         if (UsdMayaTranslatorModelAssembly::Read(
                 prim,
                 assetIdentifier,
@@ -114,8 +106,7 @@ bool UsdMaya_ReadJobWithSceneAssembly::SkipRootPrim(bool isImportingPseudoRoot)
 {
     // Skip the root prim if it is the pseudoroot, or if we are importing
     // on behalf of a scene assembly.
-    return isImportingPseudoRoot ||
-        mMayaRootDagPath.node().hasFn(MFn::kAssembly);
+    return isImportingPseudoRoot || mMayaRootDagPath.node().hasFn(MFn::kAssembly);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

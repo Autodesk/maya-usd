@@ -17,27 +17,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdMayaPrimReaderContext::UsdMayaPrimReaderContext(
-        ObjectRegistry* pathNodeMap)
-    :
-        _prune(false),
-        _pathNodeMap(pathNodeMap)
+UsdMayaPrimReaderContext::UsdMayaPrimReaderContext(ObjectRegistry* pathNodeMap)
+    : _prune(false)
+    , _pathNodeMap(pathNodeMap)
 {
 }
 
-MObject
-UsdMayaPrimReaderContext::GetMayaNode(
-        const SdfPath& path,
-        bool findAncestors) const
+MObject UsdMayaPrimReaderContext::GetMayaNode(const SdfPath& path, bool findAncestors) const
 {
     // Get Node parent
     if (_pathNodeMap) {
-        for (SdfPath parentPath = path;
-                !parentPath.IsEmpty();
-                parentPath = parentPath.GetParentPath()) {
+        for (SdfPath parentPath = path; !parentPath.IsEmpty();
+             parentPath = parentPath.GetParentPath()) {
             // retrieve from a registry since nodes have not yet been put into DG
             ObjectRegistry::iterator it = _pathNodeMap->find(parentPath.GetString());
-            if (it != _pathNodeMap->end() ) {
+            if (it != _pathNodeMap->end()) {
                 return it->second;
             }
 
@@ -46,37 +40,25 @@ UsdMayaPrimReaderContext::GetMayaNode(
             }
         }
     }
-    return MObject::kNullObj; // returning MObject::kNullObj indicates that the parent is the root for the scene
+    return MObject::kNullObj; // returning MObject::kNullObj indicates that the parent is the root
+                              // for the scene
 }
 
-void
-UsdMayaPrimReaderContext::RegisterNewMayaNode(
-        const std::string &path, 
-        const MObject &mayaNode) const
+void UsdMayaPrimReaderContext::RegisterNewMayaNode(const std::string& path, const MObject& mayaNode)
+    const
 {
     if (_pathNodeMap) {
         _pathNodeMap->insert(std::make_pair(path, mayaNode));
     }
 }
 
-bool
-UsdMayaPrimReaderContext::GetPruneChildren() const
-{
-    return _prune;
-}
+bool UsdMayaPrimReaderContext::GetPruneChildren() const { return _prune; }
 
 /// Sets whether traversal should automatically continue into this prim's
 /// children. This only has an effect if set during the
 /// UsdMayaPrimReader::Read() step, and not in the
 /// UsdMayaPrimReader::PostReadSubtree() step, since in the latter, the
 /// children have already been processed.
-void
-UsdMayaPrimReaderContext::SetPruneChildren(
-        bool prune)
-{
-    _prune = prune;
-}
-
+void UsdMayaPrimReaderContext::SetPruneChildren(bool prune) { _prune = prune; }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

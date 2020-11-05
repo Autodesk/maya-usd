@@ -86,8 +86,7 @@ PxrUsdTranslators_DisplacementShaderWriter::PxrUsdTranslators_DisplacementShader
     }
 
     // Existing UsdPreviewSurface not found. Create one.
-    UsdShadeShader shaderSchema =
-        UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
+    UsdShadeShader shaderSchema = UsdShadeShader::Define(GetUsdStage(), GetUsdPath());
     if (!TF_VERIFY(
             shaderSchema,
             "Could not define UsdShadeShader at path '%s'\n",
@@ -95,8 +94,7 @@ PxrUsdTranslators_DisplacementShaderWriter::PxrUsdTranslators_DisplacementShader
         return;
     }
 
-    UsdAttribute idAttr = 
-        shaderSchema.CreateIdAttr(VtValue(UsdImagingTokens->UsdPreviewSurface));
+    UsdAttribute idAttr = shaderSchema.CreateIdAttr(VtValue(UsdImagingTokens->UsdPreviewSurface));
 
     _usdPrim = shaderSchema.GetPrim();
     if (!TF_VERIFY(
@@ -107,14 +105,10 @@ PxrUsdTranslators_DisplacementShaderWriter::PxrUsdTranslators_DisplacementShader
     }
 
     // Surface Output
-    shaderSchema.CreateOutput(
-        UsdShadeTokens->surface,
-        SdfValueTypeNames->Token);
+    shaderSchema.CreateOutput(UsdShadeTokens->surface, SdfValueTypeNames->Token);
 
     // Displacement Output
-    shaderSchema.CreateOutput(
-        UsdShadeTokens->displacement,
-        SdfValueTypeNames->Token);
+    shaderSchema.CreateOutput(UsdShadeTokens->displacement, SdfValueTypeNames->Token);
 }
 
 /* virtual */

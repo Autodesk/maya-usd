@@ -15,11 +15,11 @@
 //
 #pragma once
 
+#include "AL/event/EventHandler.h"
 #include "AL/usdmaya/Api.h"
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stageCache.h>
-#include "AL/event/EventHandler.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -32,24 +32,24 @@ namespace usdmaya {
 class StageCache
 {
 public:
+    /// \brief  Return the singleton stage cache for use by all USD clients within Maya.
+    /// \return the cache requested
+    /// \todo we need to offer a way of mapping from a specific ProxyShape to a specific stage
+    AL_USDMAYA_PUBLIC
+    static UsdStageCache& Get();
 
-  /// \brief  Return the singleton stage cache for use by all USD clients within Maya.
-  /// \return the cache requested
-  /// \todo we need to offer a way of mapping from a specific ProxyShape to a specific stage
-  AL_USDMAYA_PUBLIC
-  static UsdStageCache& Get();
+    /// \brief  Clear the cache
+    AL_USDMAYA_PUBLIC
+    static void Clear();
 
-  /// \brief  Clear the cache
-  AL_USDMAYA_PUBLIC
-  static void Clear();
+    /// \brief  deletes the callbacks constructed to manage the stage cache
+    AL_USDMAYA_PUBLIC
+    static void removeCallbacks();
 
-  /// \brief  deletes the callbacks constructed to manage the stage cache
-  AL_USDMAYA_PUBLIC
-  static void removeCallbacks();
 private:
-  static AL::event::CallbackId g_beforeNewCallbackId;
-  static AL::event::CallbackId g_beforeLoadCallbackId;
+    static AL::event::CallbackId g_beforeNewCallbackId;
+    static AL::event::CallbackId g_beforeLoadCallbackId;
 };
 
-} // usdmaya
-} // AL
+} // namespace usdmaya
+} // namespace AL

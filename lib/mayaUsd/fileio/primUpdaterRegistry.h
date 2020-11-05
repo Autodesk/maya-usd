@@ -17,17 +17,17 @@
 #ifndef PXRUSDMAYA_PRIM_UPDATER_REGISTRY_H
 #define PXRUSDMAYA_PRIM_UPDATER_REGISTRY_H
 
-#include <functional>
-#include <string>
-
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primUpdater.h>
+#include <mayaUsd/fileio/primUpdaterContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/primUpdater.h>
-#include <mayaUsd/fileio/primUpdaterContext.h>
+#include <maya/MFnDependencyNode.h>
+
+#include <functional>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,9 +64,8 @@ struct UsdMayaPrimUpdaterRegistry
 {
     /// Updater factory function, i.e. a function that creates a prim updater
     /// for the given Maya node/USD paths and context.
-    using UpdaterFactoryFn = std::function< UsdMayaPrimUpdaterSharedPtr (
-            const MFnDependencyNode&,
-            const SdfPath&) >;
+    using UpdaterFactoryFn
+        = std::function<UsdMayaPrimUpdaterSharedPtr(const MFnDependencyNode&, const SdfPath&)>;
 
     using RegisterItem = std::tuple<UsdMayaPrimUpdater::Supports, UpdaterFactoryFn>;
 
@@ -108,17 +107,15 @@ struct UsdMayaPrimUpdaterRegistry
     {
         if (TfType t = TfType::Find<T>()) {
             Register(t, sup, fn);
-        }
-        else {
-            TF_CODING_ERROR("Cannot register unknown TfType: %s.",
-                ArchGetDemangled<T>().c_str());
+        } else {
+            TF_CODING_ERROR("Cannot register unknown TfType: %s.", ArchGetDemangled<T>().c_str());
         }
     }
 
     // takes a usdType (i.e. prim.GetTypeName())
     /// \brief Finds a updater factory if one exists for \p usdTypeName.
     ///
-    /// \p usdTypeName should be a usd typeName, for example, 
+    /// \p usdTypeName should be a usd typeName, for example,
     /// \code
     /// prim.GetTypeName()
     /// \endcode
@@ -143,22 +140,15 @@ struct UsdMayaPrimUpdaterRegistry
 /// };
 /// PXRUSDMAYA_REGISTER_UPDATER(myUsdTypeName, MyUpdater);
 /// \endcode
-#define PXRUSDMAYA_REGISTER_UPDATER(usdTypeName, updaterClass, supports) \
-TF_REGISTRY_FUNCTION_WITH_TAG( \
-        UsdMayaPrimUpdaterRegistry, \
-        usdTypeName##_##updaterClass) \
-{ \
-    UsdMayaPrimUpdaterRegistry::Register<usdTypeName>( \
-        supports, \
-        []( \
-                const MFnDependencyNode& depNodeFn, \
-                const SdfPath& usdPath) { \
-            return std::make_shared<updaterClass>(depNodeFn, usdPath); \
-        }); \
-}
-
+#define PXRUSDMAYA_REGISTER_UPDATER(usdTypeName, updaterClass, supports)                    \
+    TF_REGISTRY_FUNCTION_WITH_TAG(UsdMayaPrimUpdaterRegistry, usdTypeName##_##updaterClass) \
+    {                                                                                       \
+        UsdMayaPrimUpdaterRegistry::Register<usdTypeName>(                                  \
+            supports, [](const MFnDependencyNode& depNodeFn, const SdfPath& usdPath) {      \
+                return std::make_shared<updaterClass>(depNodeFn, usdPath);                  \
+            });                                                                             \
+    }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

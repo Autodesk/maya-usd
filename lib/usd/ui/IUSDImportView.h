@@ -17,13 +17,11 @@
 #ifndef MAYAUSDUI_I_USD_IMPORT_VIEW_H
 #define MAYAUSDUI_I_USD_IMPORT_VIEW_H
 
-
-#include <pxr/usd/usd/stage.h>
-
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/mayaUsd.h>
-
 #include <mayaUsdUI/ui/api.h>
+
+#include <pxr/usd/usd/stage.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -35,34 +33,33 @@ namespace MAYAUSD_NS_DEF {
 class MAYAUSD_UI_PUBLIC IUSDImportView
 {
 public:
-	/**
-	 * \brief Destructor.
-	 */
-	virtual ~IUSDImportView() = 0;
+    /**
+     * \brief Destructor.
+     */
+    virtual ~IUSDImportView() = 0;
 
-	//! \return The filename associated with this import view.
-	virtual const std::string& filename() const = 0;
+    //! \return The filename associated with this import view.
+    virtual const std::string& filename() const = 0;
 
-	//! \return The root prim of the stage to use for import.
-	virtual const std::string& rootPrimPath() const = 0;
+    //! \return The root prim of the stage to use for import.
+    virtual const std::string& rootPrimPath() const = 0;
 
-	//! \return The USD population mask of the stage to use for import.
-	virtual UsdStagePopulationMask stagePopulationMask() const = 0;
+    //! \return The USD population mask of the stage to use for import.
+    virtual UsdStagePopulationMask stagePopulationMask() const = 0;
 
-	//! \return The USD initial load set of the stage to use for import.
-	virtual UsdStage::InitialLoadSet stageInitialLoadSet() const = 0;
+    //! \return The USD initial load set of the stage to use for import.
+    virtual UsdStage::InitialLoadSet stageInitialLoadSet() const = 0;
 
-	//! \return The USD variant selections (that were modified) to use for import.
-	virtual ImportData::PrimVariantSelections primVariantSelections() const = 0;
+    //! \return The USD variant selections (that were modified) to use for import.
+    virtual ImportData::PrimVariantSelections primVariantSelections() const = 0;
 
-	/**
-	 * \brief Display the view.
-	 * \return True if the user applied the changes, false if they canceled.
-	 */
-	virtual bool execute() = 0;
+    /**
+     * \brief Display the view.
+     * \return True if the user applied the changes, false if they canceled.
+     */
+    virtual bool execute() = 0;
 };
 
-} // namespace MayaUsd
-
+} // namespace MAYAUSD_NS_DEF
 
 #endif

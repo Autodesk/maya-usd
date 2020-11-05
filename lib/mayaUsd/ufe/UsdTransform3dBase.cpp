@@ -28,35 +28,35 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdTransform3dBase::UsdTransform3dBase(const UsdSceneItem::Ptr& item)
-    : Transform3d(), fItem(item), fPrim(item->prim())
-{}
-
-const Ufe::Path& UsdTransform3dBase::path() const
+    : Transform3d()
+    , fItem(item)
+    , fPrim(item->prim())
 {
-    return fItem->path();
 }
 
-Ufe::SceneItem::Ptr UsdTransform3dBase::sceneItem() const
-{
-    return fItem;
-}
+const Ufe::Path& UsdTransform3dBase::path() const { return fItem->path(); }
 
-Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::translateCmd(
-    double /* x */, double /* y */, double /* z */)
+Ufe::SceneItem::Ptr UsdTransform3dBase::sceneItem() const { return fItem; }
+
+Ufe::TranslateUndoableCommand::Ptr
+UsdTransform3dBase::translateCmd(double /* x */, double /* y */, double /* z */)
 {
     return nullptr;
 }
 
-
 Ufe::RotateUndoableCommand::Ptr UsdTransform3dBase::rotateCmd(
-    double /* x */, double /* y */, double /* z */
+    double /* x */,
+    double /* y */,
+    double /* z */
 )
 {
     return nullptr;
 }
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dBase::scaleCmd(
-    double /* x */, double /* y */, double /* z */
+    double /* x */,
+    double /* y */,
+    double /* z */
 )
 {
     return nullptr;
@@ -84,27 +84,21 @@ Ufe::Vector3d UsdTransform3dBase::scalePivot() const
     return Ufe::Vector3d(0, 0, 0);
 }
 
-Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::translateRotatePivotCmd(
-    double, double, double)
+Ufe::TranslateUndoableCommand::Ptr
+UsdTransform3dBase::translateRotatePivotCmd(double, double, double)
 {
     return nullptr;
 }
 
-Ufe::Vector3d UsdTransform3dBase::rotatePivotTranslation() const
-{
-    return Ufe::Vector3d(0, 0, 0);
-}
+Ufe::Vector3d UsdTransform3dBase::rotatePivotTranslation() const { return Ufe::Vector3d(0, 0, 0); }
 
-Ufe::TranslateUndoableCommand::Ptr UsdTransform3dBase::translateScalePivotCmd(
-    double, double, double)
+Ufe::TranslateUndoableCommand::Ptr
+UsdTransform3dBase::translateScalePivotCmd(double, double, double)
 {
     return nullptr;
 }
 
-Ufe::Vector3d UsdTransform3dBase::scalePivotTranslation() const
-{
-    return Ufe::Vector3d(0, 0, 0);
-}
+Ufe::Vector3d UsdTransform3dBase::scalePivotTranslation() const { return Ufe::Vector3d(0, 0, 0); }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2021
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dBase::setMatrixCmd(const Ufe::Matrix4d& m)
@@ -116,7 +110,7 @@ Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dBase::setMatrixCmd(const Ufe:
 Ufe::Matrix4d UsdTransform3dBase::matrix() const
 {
     // TODO: HS Aug25,2020 dummy code to pass the compiler errors
-    Ufe::Matrix4d m{};
+    Ufe::Matrix4d m {};
     return m;
 }
 #endif
@@ -126,17 +120,14 @@ Ufe::Matrix4d UsdTransform3dBase::segmentInclusiveMatrix() const
     UsdGeomXformCache xformCache(getTime(path()));
     return toUfe(xformCache.GetLocalToWorldTransform(fPrim));
 }
- 
+
 Ufe::Matrix4d UsdTransform3dBase::segmentExclusiveMatrix() const
 {
     UsdGeomXformCache xformCache(getTime(path()));
     return toUfe(xformCache.GetParentToWorldTransform(fPrim));
 }
 
-const char* UsdTransform3dBase::pathCStr() const
-{
-    return path().string().c_str();
-}
+const char* UsdTransform3dBase::pathCStr() const { return path().string().c_str(); }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

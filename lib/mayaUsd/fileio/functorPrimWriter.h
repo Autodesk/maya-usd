@@ -16,18 +16,18 @@
 #ifndef PXRUSDMAYA_FUNCTOR_PRIM_WRITER_H
 #define PXRUSDMAYA_FUNCTOR_PRIM_WRITER_H
 
-#include <functional>
-
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/transformWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <maya/MFnDependencyNode.h>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,36 +41,34 @@ class UsdMaya_FunctorPrimWriter final : public UsdMayaTransformWriter
 {
 public:
     UsdMaya_FunctorPrimWriter(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdPath,
-            UsdMayaWriteJobContext& jobCtx,
-            UsdMayaPrimWriterRegistry::WriterFn plugFn);
+        const MFnDependencyNode&            depNodeFn,
+        const SdfPath&                      usdPath,
+        UsdMayaWriteJobContext&             jobCtx,
+        UsdMayaPrimWriterRegistry::WriterFn plugFn);
 
     ~UsdMaya_FunctorPrimWriter() override;
 
-    void Write(const UsdTimeCode& usdTime) override;
-    bool ExportsGprims() const override;
-    bool ShouldPruneChildren() const override;
+    void                 Write(const UsdTimeCode& usdTime) override;
+    bool                 ExportsGprims() const override;
+    bool                 ShouldPruneChildren() const override;
     const SdfPathVector& GetModelPaths() const override;
 
     static UsdMayaPrimWriterSharedPtr Create(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdPath,
-            UsdMayaWriteJobContext& jobCtx,
-            UsdMayaPrimWriterRegistry::WriterFn plugFn);
+        const MFnDependencyNode&            depNodeFn,
+        const SdfPath&                      usdPath,
+        UsdMayaWriteJobContext&             jobCtx,
+        UsdMayaPrimWriterRegistry::WriterFn plugFn);
 
     static UsdMayaPrimWriterRegistry::WriterFactoryFn
-            CreateFactory(UsdMayaPrimWriterRegistry::WriterFn plugFn);
+    CreateFactory(UsdMayaPrimWriterRegistry::WriterFn plugFn);
 
 private:
     UsdMayaPrimWriterRegistry::WriterFn _plugFn;
-    bool _exportsGprims;
-    bool _pruneChildren;
-    SdfPathVector _modelPaths;
+    bool                                _exportsGprims;
+    bool                                _pruneChildren;
+    SdfPathVector                       _modelPaths;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

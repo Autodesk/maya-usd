@@ -16,6 +16,7 @@
 #pragma once
 
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
+
 #include <mayaUsdUtils/ForwardDeclares.h>
 
 #include <pxr/usd/usd/stage.h>
@@ -28,48 +29,51 @@ namespace translators {
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Class to translate an image plane in and out of maya.
 //----------------------------------------------------------------------------------------------------------------------
-class Camera
-  : public TranslatorBase
+class Camera : public TranslatorBase
 {
 public:
+    AL_USDMAYA_DECLARE_TRANSLATOR(Camera);
 
-  AL_USDMAYA_DECLARE_TRANSLATOR(Camera);
+    AL_USDMAYA_PUBLIC MStatus initialize() override;
+    MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
+    UsdPrim exportObject(
+        UsdStageRefPtr        stage,
+        MDagPath              dagPath,
+        const SdfPath&        usdPath,
+        const ExporterParams& params) override;
+    MStatus tearDown(const SdfPath& path) override;
+    MStatus update(const UsdPrim& path) override;
+    bool    supportsUpdate() const override { return true; }
 
-  AL_USDMAYA_PUBLIC MStatus initialize() override;
-  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createdObj) override;
-  UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
-                       const ExporterParams& params) override;
-  MStatus tearDown(const SdfPath& path) override;
-  MStatus update(const UsdPrim& path) override;
-  bool supportsUpdate() const override
-    { return true; }
+    void checkCurrentCameras(MObject cameraNode);
 
-  void checkCurrentCameras(MObject cameraNode);
-
-  ExportFlag canExport(const MObject& obj) override
-    { return obj.hasFn(MFn::kCamera) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
+    ExportFlag canExport(const MObject& obj) override
+    {
+        return obj.hasFn(MFn::kCamera) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported;
+    }
 
 protected:
-  AL_USDMAYA_PUBLIC virtual MStatus updateAttributes(MObject to, const UsdPrim& prim);
-  AL_USDMAYA_PUBLIC virtual void writePrim(UsdPrim &prim, MDagPath dagPath, const ExporterParams& params);
+    AL_USDMAYA_PUBLIC virtual MStatus updateAttributes(MObject to, const UsdPrim& prim);
+    AL_USDMAYA_PUBLIC virtual void
+    writePrim(UsdPrim& prim, MDagPath dagPath, const ExporterParams& params);
 
 private:
-  static MObject m_orthographic;
-  static MObject m_horizontalFilmAperture;
-  static MObject m_verticalFilmAperture;
-  static MObject m_horizontalFilmApertureOffset;
-  static MObject m_verticalFilmApertureOffset;
-  static MObject m_focalLength;
-  static MObject m_nearDistance;
-  static MObject m_farDistance;
-  static MObject m_fstop;
-  static MObject m_focusDistance;
-  static MObject m_lensSqueezeRatio;
+    static MObject m_orthographic;
+    static MObject m_horizontalFilmAperture;
+    static MObject m_verticalFilmAperture;
+    static MObject m_horizontalFilmApertureOffset;
+    static MObject m_verticalFilmApertureOffset;
+    static MObject m_focalLength;
+    static MObject m_nearDistance;
+    static MObject m_farDistance;
+    static MObject m_fstop;
+    static MObject m_focusDistance;
+    static MObject m_lensSqueezeRatio;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-} // translators
-} // fileio
-} // usdmaya
-} // AL
+} // namespace translators
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

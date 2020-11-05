@@ -46,7 +46,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Shader reader for importing UsdPreviewSurface to Maya's blinn material nodes
-class PxrUsdTranslators_BlinnReader : public PxrUsdTranslators_LambertReader {
+class PxrUsdTranslators_BlinnReader : public PxrUsdTranslators_LambertReader
+{
     using _BaseClass = PxrUsdTranslators_LambertReader;
 
 public:

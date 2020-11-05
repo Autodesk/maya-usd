@@ -20,9 +20,7 @@
 
 #include <ufe/ufe.h>
 
-UFE_NS_DEF {
-class Path;
-}
+UFE_NS_DEF { class Path; }
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -34,19 +32,19 @@ namespace ufe {
 class InPathChange
 {
 public:
-	InPathChange() { inGuard = true; }
-	~InPathChange() { inGuard = false; }
+    InPathChange() { inGuard = true; }
+    ~InPathChange() { inGuard = false; }
 
-	// Delete the copy/move constructors assignment operators.
-	InPathChange(const InPathChange&) = delete;
-	InPathChange& operator=(const InPathChange&) = delete;
-	InPathChange(InPathChange&&) = delete;
-	InPathChange& operator=(InPathChange&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    InPathChange(const InPathChange&) = delete;
+    InPathChange& operator=(const InPathChange&) = delete;
+    InPathChange(InPathChange&&) = delete;
+    InPathChange& operator=(InPathChange&&) = delete;
 
-	static bool inPathChange() { return inGuard; }
+    static bool inPathChange() { return inGuard; }
 
 private:
-	static bool inGuard;
+    static bool inGuard;
 };
 
 //! \brief Helper class to scope when we are in an add or delete operation.
@@ -56,21 +54,20 @@ private:
 class InAddOrDeleteOperation
 {
 public:
-	InAddOrDeleteOperation() { inGuard = true; }
-	~InAddOrDeleteOperation() { inGuard = false; }
+    InAddOrDeleteOperation() { inGuard = true; }
+    ~InAddOrDeleteOperation() { inGuard = false; }
 
-	// Delete the copy/move constructors assignment operators.
-	InAddOrDeleteOperation(const InAddOrDeleteOperation&) = delete;
-	InAddOrDeleteOperation& operator=(const InAddOrDeleteOperation&) = delete;
-	InAddOrDeleteOperation(InAddOrDeleteOperation&&) = delete;
-	InAddOrDeleteOperation& operator=(InAddOrDeleteOperation&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    InAddOrDeleteOperation(const InAddOrDeleteOperation&) = delete;
+    InAddOrDeleteOperation& operator=(const InAddOrDeleteOperation&) = delete;
+    InAddOrDeleteOperation(InAddOrDeleteOperation&&) = delete;
+    InAddOrDeleteOperation& operator=(InAddOrDeleteOperation&&) = delete;
 
-	static bool inAddOrDeleteOperation() { return inGuard; }
+    static bool inAddOrDeleteOperation() { return inGuard; }
 
 private:
-	static bool inGuard;
+    static bool inGuard;
 };
-
 
 //! \brief Helper class to scope when we are in a Transform3d change operation.
 //
@@ -80,19 +77,19 @@ private:
 class InTransform3dChange
 {
 public:
-	InTransform3dChange(const Ufe::Path& path);
-	~InTransform3dChange();
+    InTransform3dChange(const Ufe::Path& path);
+    ~InTransform3dChange();
 
-	// Delete the copy/move constructors assignment operators.
-	InTransform3dChange(const InTransform3dChange&) = delete;
-	InTransform3dChange& operator=(const InTransform3dChange&) = delete;
-	InTransform3dChange(InTransform3dChange&&) = delete;
-	InTransform3dChange& operator=(InTransform3dChange&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    InTransform3dChange(const InTransform3dChange&) = delete;
+    InTransform3dChange& operator=(const InTransform3dChange&) = delete;
+    InTransform3dChange(InTransform3dChange&&) = delete;
+    InTransform3dChange& operator=(InTransform3dChange&&) = delete;
 
-	static bool inTransform3dChange();
+    static bool inTransform3dChange();
 };
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF
 
 #endif // UFENOTIFGUARD_H

@@ -63,5 +63,4 @@ PXRUSDMAYA_DEFINE_WRITER(PxrSphereLight, args, context)
     return UsdMayaTranslatorRfMLight::Write(args, context);
 }
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
