@@ -253,7 +253,8 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
         // set which always exists, so we shouldn't try to create it.
         uvSetName = UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText();
         createUVSet = false;
-    } else if (!hasDefaultUVSet) { // If map1 still exists, we rename and re-use it:
+    } else if (!hasDefaultUVSet) {
+        // If map1 still exists, we rename and re-use it:
         MStringArray uvSetNames;
         meshFn.getUVSetNames(uvSetNames);
         if (uvSetNames[0] == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText()) {
@@ -261,6 +262,9 @@ bool assignUVSetPrimvarToMesh(const UsdGeomPrimvar& primvar, MFnMesh& meshFn, bo
                 UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName.GetText(), uvSetName);
             createUVSet = false;
         }
+    } else if (primvarName == UsdMayaMeshPrimvarTokens->DefaultMayaTexcoordName) {
+        // For UV sets explicitly named map1
+        createUVSet = false;
     }
 
     if (createUVSet) {
