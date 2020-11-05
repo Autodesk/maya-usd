@@ -13,74 +13,68 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <string>
-#include <vector>
+#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
+#include <mayaUsd/utils/util.h>
 
-#include <boost/python.hpp>
-#include <boost/python/def.hpp>
+#include <pxr/base/tf/pyContainerConversions.h>
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/pyStaticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/pyContainerConversions.h>
-#include <pxr/base/tf/pyResultConversions.h>
-#include <pxr/base/tf/pyStaticTokens.h>
-#include <pxr/base/tf/token.h>
+#include <boost/python.hpp>
+#include <boost/python/def.hpp>
 
-#include <mayaUsd/fileio/utils/userTaggedAttribute.h>
-#include <mayaUsd/utils/util.h>
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static
-std::vector<UsdMayaUserTaggedAttribute>
+static std::vector<UsdMayaUserTaggedAttribute>
 _GetUserTaggedAttributesForNode(const std::string& nodeName)
 {
     MObject mayaNode;
     MStatus status = UsdMayaUtil::GetMObjectByName(nodeName, mayaNode);
-    CHECK_MSTATUS_AND_RETURN(
-        status,
-        std::vector<UsdMayaUserTaggedAttribute>());
+    CHECK_MSTATUS_AND_RETURN(status, std::vector<UsdMayaUserTaggedAttribute>());
 
     return UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(mayaNode);
 }
 
 } // anonymous namespace
 
-
 void wrapUserTaggedAttribute()
 {
     using namespace boost::python;
 
-    TF_PY_WRAP_PUBLIC_TOKENS("UserTaggedAttributeTokens",
-            UsdMayaUserTaggedAttributeTokens,
-            PXRUSDMAYA_ATTR_TOKENS);
+    TF_PY_WRAP_PUBLIC_TOKENS(
+        "UserTaggedAttributeTokens", UsdMayaUserTaggedAttributeTokens, PXRUSDMAYA_ATTR_TOKENS);
 
-    TfPyContainerConversions::from_python_sequence<
-            std::set<unsigned int>,
-            TfPyContainerConversions::set_policy >();
+    TfPyContainerConversions::
+        from_python_sequence<std::set<unsigned int>, TfPyContainerConversions::set_policy>();
 
-    class_<UsdMayaUserTaggedAttribute>("UserTaggedAttribute",
-                "Attribute tagged for USD export",
-                no_init)
-            .def("GetMayaName", &UsdMayaUserTaggedAttribute::GetMayaName)
-            .def("GetUsdName", &UsdMayaUserTaggedAttribute::GetUsdName)
-            .def("GetUsdType", &UsdMayaUserTaggedAttribute::GetUsdType)
-            .def("GetUsdInterpolation",
-                 &UsdMayaUserTaggedAttribute::GetUsdInterpolation)
-            .def("GetTranslateMayaDoubleToUsdSinglePrecision",
-                 &UsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision)
-            .def("GetFallbackTranslateMayaDoubleToUsdSinglePrecision",
-                 &UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision)
-            .staticmethod("GetFallbackTranslateMayaDoubleToUsdSinglePrecision")
-            .def("GetUserTaggedAttributesForNode",
-                 _GetUserTaggedAttributesForNode,
-                 return_value_policy<TfPySequenceToList>())
-            .staticmethod("GetUserTaggedAttributesForNode")
-    ;
+    class_<UsdMayaUserTaggedAttribute>(
+        "UserTaggedAttribute", "Attribute tagged for USD export", no_init)
+        .def("GetMayaName", &UsdMayaUserTaggedAttribute::GetMayaName)
+        .def("GetUsdName", &UsdMayaUserTaggedAttribute::GetUsdName)
+        .def("GetUsdType", &UsdMayaUserTaggedAttribute::GetUsdType)
+        .def("GetUsdInterpolation", &UsdMayaUserTaggedAttribute::GetUsdInterpolation)
+        .def(
+            "GetTranslateMayaDoubleToUsdSinglePrecision",
+            &UsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision)
+        .def(
+            "GetFallbackTranslateMayaDoubleToUsdSinglePrecision",
+            &UsdMayaUserTaggedAttribute::GetFallbackTranslateMayaDoubleToUsdSinglePrecision)
+        .staticmethod("GetFallbackTranslateMayaDoubleToUsdSinglePrecision")
+        .def(
+            "GetUserTaggedAttributesForNode",
+            _GetUserTaggedAttributesForNode,
+            return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetUserTaggedAttributesForNode");
 }

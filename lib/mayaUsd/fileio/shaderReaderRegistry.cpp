@@ -34,26 +34,22 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (UsdMaya)
-    (ShaderReader)
-);
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (UsdMaya)(ShaderReader));
 
 namespace {
-struct _RegistryEntry {
+struct _RegistryEntry
+{
     UsdMayaShaderReaderRegistry::ContextPredicateFn _pred;
     UsdMayaShaderReaderRegistry::ReaderFactoryFn    _fn;
     int                                             _index;
 };
 
 typedef std::unordered_multimap<TfToken, _RegistryEntry, TfToken::HashFunctor> _Registry;
-static _Registry _reg;
-static int _indexCounter = 0;
+static _Registry                                                               _reg;
+static int                                                                     _indexCounter = 0;
 
-_Registry::const_iterator _Find(
-    const TfToken&              usdInfoId,
-    const UsdMayaJobImportArgs& importArgs) {
+_Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobImportArgs& importArgs)
+{
     using ContextSupport = UsdMayaShaderReader::ContextSupport;
 
     _Registry::const_iterator ret = _reg.cend();
@@ -87,11 +83,11 @@ void UsdMayaShaderReaderRegistry::Register(
             usdInfoId.GetText(),
             index);
 
-    _reg.insert(std::make_pair(usdInfoId, _RegistryEntry{pred, fn, index}));
+    _reg.insert(std::make_pair(usdInfoId, _RegistryEntry { pred, fn, index }));
 
     // The unloader uses the index to know which entry to erase when there are
     // more than one for the same usdInfoId.
-    UsdMaya_RegistryHelper::AddUnloader([usdInfoId, index]() { 
+    UsdMaya_RegistryHelper::AddUnloader([usdInfoId, index]() {
         _Registry::const_iterator it, itEnd;
         std::tie(it, itEnd) = _reg.equal_range(usdInfoId);
         for (; it != itEnd; ++it) {
@@ -104,15 +100,14 @@ void UsdMayaShaderReaderRegistry::Register(
 }
 
 /* static */
-UsdMayaShaderReaderRegistry::ReaderFactoryFn UsdMayaShaderReaderRegistry::Find(
-    const TfToken&              usdInfoId,
-    const UsdMayaJobImportArgs& importArgs)
+UsdMayaShaderReaderRegistry::ReaderFactoryFn
+UsdMayaShaderReaderRegistry::Find(const TfToken& usdInfoId, const UsdMayaJobImportArgs& importArgs)
 {
     using ContextSupport = UsdMayaShaderReader::ContextSupport;
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShaderReaderRegistry>();
 
     _Registry::const_iterator it = _Find(usdInfoId, importArgs);
-    
+
     if (it != _reg.end()) {
         return it->second._fn;
     }

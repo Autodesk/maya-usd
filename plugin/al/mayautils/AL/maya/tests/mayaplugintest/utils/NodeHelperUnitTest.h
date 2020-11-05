@@ -27,74 +27,72 @@ namespace utils {
 //----------------------------------------------------------------------------------------------------------------------
 #ifndef AL_GENERATING_DOCS
 class NodeHelperUnitTest
-: public AL::maya::utils::NodeHelper,
-  public MPxNode
+    : public AL::maya::utils::NodeHelper
+    , public MPxNode
 {
 public:
-
-  static void* creator();
-  static MStatus initialise();
-  static const MString kTypeName;
-  static const MTypeId kTypeId;
-  static void runUnitTest();
+    static void*         creator();
+    static MStatus       initialise();
+    static const MString kTypeName;
+    static const MTypeId kTypeId;
+    static void          runUnitTest();
 
 private:
+    MStatus compute(const MPlug& plug, MDataBlock& datablock) override;
 
-  MStatus compute(const MPlug &plug, MDataBlock &datablock) override;
-
-  static MObject loadFilename;
-  static MObject saveFilename;
-  static MObject directoryWithFile;
-  static MObject directory;
-  static MObject multiFile;
-  static MObject inPreFrame;
-  static MObject inBool;
-  static MObject inBoolHidden;
-  static MObject inInt8;
-  static MObject inInt8Hidden;
-  static MObject inInt16;
-  static MObject inInt16Hidden;
-  static MObject inInt32;
-  static MObject inInt32Hidden;
-  static MObject inInt64;
-  static MObject inInt64Hidden;
-  static MObject inFloat;
-  static MObject inFloatHidden;
-  static MObject inDouble;
-  static MObject inDoubleHidden;
-  static MObject inPoint;
-  static MObject inPointHidden;
-  static MObject inFloatPoint;
-  static MObject inFloatPointHidden;
-  static MObject inVector;
-  static MObject inVectorHidden;
-  static MObject inFloatVector;
-  static MObject inFloatVectorHidden;
-  static MObject inString;
-  static MObject inStringHidden;
-  static MObject inColour;
-  static MObject inColourHidden;
-  static MObject inMatrix;
-  static MObject inMatrixHidden;
-  static MObject outBool;
-  static MObject outInt8;
-  static MObject outInt16;
-  static MObject outInt32;
-  static MObject outInt64;
-  static MObject outFloat;
-  static MObject outDouble;
-  static MObject outPoint;
-  static MObject outFloatPoint;
-  static MObject outVector;
-  static MObject outFloatVector;
-  static MObject outString;
-  static MObject outColour;
-  static MObject outMatrix;
+    static MObject loadFilename;
+    static MObject saveFilename;
+    static MObject directoryWithFile;
+    static MObject directory;
+    static MObject multiFile;
+    static MObject inPreFrame;
+    static MObject inBool;
+    static MObject inBoolHidden;
+    static MObject inInt8;
+    static MObject inInt8Hidden;
+    static MObject inInt16;
+    static MObject inInt16Hidden;
+    static MObject inInt32;
+    static MObject inInt32Hidden;
+    static MObject inInt64;
+    static MObject inInt64Hidden;
+    static MObject inFloat;
+    static MObject inFloatHidden;
+    static MObject inDouble;
+    static MObject inDoubleHidden;
+    static MObject inPoint;
+    static MObject inPointHidden;
+    static MObject inFloatPoint;
+    static MObject inFloatPointHidden;
+    static MObject inVector;
+    static MObject inVectorHidden;
+    static MObject inFloatVector;
+    static MObject inFloatVectorHidden;
+    static MObject inString;
+    static MObject inStringHidden;
+    static MObject inColour;
+    static MObject inColourHidden;
+    static MObject inMatrix;
+    static MObject inMatrixHidden;
+    static MObject outBool;
+    static MObject outInt8;
+    static MObject outInt16;
+    static MObject outInt32;
+    static MObject outInt64;
+    static MObject outFloat;
+    static MObject outDouble;
+    static MObject outPoint;
+    static MObject outFloatPoint;
+    static MObject outVector;
+    static MObject outFloatVector;
+    static MObject outString;
+    static MObject outColour;
+    static MObject outMatrix;
 };
 #endif
 //----------------------------------------------------------------------------------------------------------------------
-} // utils
-} // tests
-} // maya
-} // AL
+} // namespace utils
+} // namespace tests
+} // namespace maya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

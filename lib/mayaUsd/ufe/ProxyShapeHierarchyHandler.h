@@ -15,9 +15,9 @@
 //
 #pragma once
 
-#include <ufe/hierarchyHandler.h>
-
 #include <mayaUsd/base/api.h>
+
+#include <ufe/hierarchyHandler.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -38,31 +38,32 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC ProxyShapeHierarchyHandler : public Ufe::HierarchyHandler
 {
 public:
-	typedef std::shared_ptr<ProxyShapeHierarchyHandler> Ptr;
+    typedef std::shared_ptr<ProxyShapeHierarchyHandler> Ptr;
 
-	ProxyShapeHierarchyHandler(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
-	~ProxyShapeHierarchyHandler() override;
+    ProxyShapeHierarchyHandler(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
+    ~ProxyShapeHierarchyHandler() override;
 
-	// Delete the copy/move constructors assignment operators.
-	ProxyShapeHierarchyHandler(const ProxyShapeHierarchyHandler&) = delete;
-	ProxyShapeHierarchyHandler& operator=(const ProxyShapeHierarchyHandler&) = delete;
-	ProxyShapeHierarchyHandler(ProxyShapeHierarchyHandler&&) = delete;
-	ProxyShapeHierarchyHandler& operator=(ProxyShapeHierarchyHandler&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    ProxyShapeHierarchyHandler(const ProxyShapeHierarchyHandler&) = delete;
+    ProxyShapeHierarchyHandler& operator=(const ProxyShapeHierarchyHandler&) = delete;
+    ProxyShapeHierarchyHandler(ProxyShapeHierarchyHandler&&) = delete;
+    ProxyShapeHierarchyHandler& operator=(ProxyShapeHierarchyHandler&&) = delete;
 
-	//! Create a ProxyShapeHierarchyHandler from a UFE hierarchy handler.
-	static ProxyShapeHierarchyHandler::Ptr create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
+    //! Create a ProxyShapeHierarchyHandler from a UFE hierarchy handler.
+    static ProxyShapeHierarchyHandler::Ptr
+    create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler);
 
-	// Ufe::HierarchyHandler overrides
-	Ufe::Hierarchy::Ptr hierarchy(const Ufe::SceneItem::Ptr& item) const override;
-	Ufe::SceneItem::Ptr createItem(const Ufe::Path& path) const override;
+    // Ufe::HierarchyHandler overrides
+    Ufe::Hierarchy::Ptr hierarchy(const Ufe::SceneItem::Ptr& item) const override;
+    Ufe::SceneItem::Ptr createItem(const Ufe::Path& path) const override;
 #if UFE_PREVIEW_VERSION_NUM >= 2022
-	UFE_V2(Ufe::Hierarchy::ChildFilter childFilter() const override;)
+    UFE_V2(Ufe::Hierarchy::ChildFilter childFilter() const override;)
 #endif
 
 private:
-	Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
+    Ufe::HierarchyHandler::Ptr fMayaHierarchyHandler;
 
 }; // ProxyShapeHierarchyHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

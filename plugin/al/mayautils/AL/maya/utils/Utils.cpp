@@ -14,6 +14,7 @@
 // limitations under the License.
 //
 #include "AL/maya/utils/Utils.h"
+
 #include <maya/MFnDagNode.h>
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
@@ -26,40 +27,39 @@ namespace utils {
 //----------------------------------------------------------------------------------------------------------------------
 MDagPath getDagPath(const MObject& object)
 {
-  MFnDagNode fnDag(object);
-  MDagPath dagPath;
-  fnDag.getPath(dagPath);
-  return dagPath;
+    MFnDagNode fnDag(object);
+    MDagPath   dagPath;
+    fnDag.getPath(dagPath);
+    return dagPath;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 bool ensureMayaPluginIsLoaded(const MString& pluginName)
 {
-  if(MFnPlugin::findPlugin(pluginName) == MObject::kNullObj)
-  {
-    MGlobal::executeCommand(MString("catchQuiet( `loadPlugin -quiet \"") + pluginName + "\"`)", false, false);
-    if(MFnPlugin::findPlugin(pluginName) == MObject::kNullObj)
-    {
-      return false;
+    if (MFnPlugin::findPlugin(pluginName) == MObject::kNullObj) {
+        MGlobal::executeCommand(
+            MString("catchQuiet( `loadPlugin -quiet \"") + pluginName + "\"`)", false, false);
+        if (MFnPlugin::findPlugin(pluginName) == MObject::kNullObj) {
+            return false;
+        }
     }
-  }
-  return true;
+    return true;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MObject findMayaObject(const MString& objectName)
 {
-  MSelectionList selList;
-  MObject mayaObj;
-  if (selList.add(objectName) == MS::kSuccess && selList.getDependNode(0, mayaObj) == MS::kSuccess)
-  {
-    return mayaObj;
-  }
-  return MObject::kNullObj;
+    MSelectionList selList;
+    MObject        mayaObj;
+    if (selList.add(objectName) == MS::kSuccess
+        && selList.getDependNode(0, mayaObj) == MS::kSuccess) {
+        return mayaObj;
+    }
+    return MObject::kNullObj;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-} // utils
-} // maya
-} // AL
+} // namespace utils
+} // namespace maya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

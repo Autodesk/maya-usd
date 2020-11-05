@@ -15,11 +15,11 @@
 //
 #pragma once
 
-#include <ufe/undoableCommand.h>
-
 #include <mayaUsd/base/api.h>
 
 #include <pxr/usd/usd/prim.h>
+
+#include <ufe/undoableCommand.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -42,7 +42,8 @@ public:
     UsdUndoReorderCommand& operator=(UsdUndoReorderCommand&&) = delete;
 
     //! Create a UsdUndoReorderCommand
-    static UsdUndoReorderCommand::Ptr create(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
+    static UsdUndoReorderCommand::Ptr
+    create(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
 
 private:
     bool reorder();
@@ -57,4 +58,4 @@ private:
 }; // UsdUndoReorderCommand
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

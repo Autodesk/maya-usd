@@ -29,35 +29,42 @@ namespace Impl {
 class SetEditTarget;
 }
 
-class EditTargetCommand : public MPxCommand {
+class EditTargetCommand : public MPxCommand
+{
 public:
     // plugin registration requirements
     MAYAUSD_CORE_PUBLIC
     static const char commandName[];
-    
+
     MAYAUSD_CORE_PUBLIC
-    static void*      creator();
-    
+    static void* creator();
+
     MAYAUSD_CORE_PUBLIC
-    static MSyntax    createSyntax();
+    static MSyntax createSyntax();
 
     // MPxCommand callbacks
     MAYAUSD_CORE_PUBLIC
     MStatus doIt(const MArgList& argList) override;
-    
+
     MAYAUSD_CORE_PUBLIC
     MStatus undoIt() override;
-    
+
     MAYAUSD_CORE_PUBLIC
     MStatus redoIt() override;
-    
+
     MAYAUSD_CORE_PUBLIC
-    bool    isUndoable() const override;
+    bool isUndoable() const override;
 
 private:
     MStatus parseArgs(const MArgList& argList);
 
-    enum class Mode { kCreate, kEdit, kQuery } _cmdMode = Mode::kCreate;
+    enum class Mode
+    {
+        kCreate,
+        kEdit,
+        kQuery
+    } _cmdMode
+        = Mode::kCreate;
     bool isEdit() const { return _cmdMode == Mode::kEdit; }
     bool isQuery() const { return _cmdMode == Mode::kQuery; }
 

@@ -16,6 +16,11 @@
 #ifndef PXRUSDMAYA_STAGE_NODE_H
 #define PXRUSDMAYA_STAGE_NODE_H
 
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/pxr.h>
+
 #include <maya/MDataBlock.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
@@ -24,20 +29,11 @@
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/staticTokens.h>
-
-#include <mayaUsd/base/api.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_STAGE_NODE_TOKENS \
-    ((MayaTypeName, "pxrUsdStageNode"))
+#define PXRUSDMAYA_STAGE_NODE_TOKENS ((MayaTypeName, "pxrUsdStageNode"))
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaStageNodeTokens,
-                         MAYAUSD_CORE_PUBLIC,
-                         PXRUSDMAYA_STAGE_NODE_TOKENS);
-
+TF_DECLARE_PUBLIC_TOKENS(UsdMayaStageNodeTokens, MAYAUSD_CORE_PUBLIC, PXRUSDMAYA_STAGE_NODE_TOKENS);
 
 /// Maya dependency node that reads and outputs a USD stage.
 ///
@@ -51,38 +47,36 @@ TF_DECLARE_PUBLIC_TOKENS(UsdMayaStageNodeTokens,
 /// stage and its contents.
 class UsdMayaStageNode : public MPxNode
 {
-    public:
-        MAYAUSD_CORE_PUBLIC
-        static const MTypeId typeId;
-        MAYAUSD_CORE_PUBLIC
-        static const MString typeName;
+public:
+    MAYAUSD_CORE_PUBLIC
+    static const MTypeId typeId;
+    MAYAUSD_CORE_PUBLIC
+    static const MString typeName;
 
-        // Attributes
-        MAYAUSD_CORE_PUBLIC
-        static MObject filePathAttr;
-        MAYAUSD_CORE_PUBLIC
-        static MObject outUsdStageAttr;
+    // Attributes
+    MAYAUSD_CORE_PUBLIC
+    static MObject filePathAttr;
+    MAYAUSD_CORE_PUBLIC
+    static MObject outUsdStageAttr;
 
-        MAYAUSD_CORE_PUBLIC
-        static void* creator();
+    MAYAUSD_CORE_PUBLIC
+    static void* creator();
 
-        MAYAUSD_CORE_PUBLIC
-        static MStatus initialize();
+    MAYAUSD_CORE_PUBLIC
+    static MStatus initialize();
 
-        // MPxNode overrides
-        MAYAUSD_CORE_PUBLIC
-        MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
+    // MPxNode overrides
+    MAYAUSD_CORE_PUBLIC
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
 
-    private:
-        UsdMayaStageNode();
-        ~UsdMayaStageNode() override;
+private:
+    UsdMayaStageNode();
+    ~UsdMayaStageNode() override;
 
-        UsdMayaStageNode(const UsdMayaStageNode&);
-        UsdMayaStageNode& operator=(const UsdMayaStageNode&);
+    UsdMayaStageNode(const UsdMayaStageNode&);
+    UsdMayaStageNode& operator=(const UsdMayaStageNode&);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

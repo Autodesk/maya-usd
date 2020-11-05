@@ -26,50 +26,42 @@
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrMayaUsdPreviewSurfaceShadingNodeOverride :
-        public MHWRender::MPxSurfaceShadingNodeOverride
+class PxrMayaUsdPreviewSurfaceShadingNodeOverride : public MHWRender::MPxSurfaceShadingNodeOverride
 {
-    public:
+public:
+    PXRUSDPREVIEWSURFACE_API
+    static MHWRender::MPxSurfaceShadingNodeOverride* creator(const MObject& obj);
 
-        PXRUSDPREVIEWSURFACE_API
-        static MHWRender::MPxSurfaceShadingNodeOverride* creator(
-                const MObject& obj);
+    PXRUSDPREVIEWSURFACE_API
+    PxrMayaUsdPreviewSurfaceShadingNodeOverride(const MObject& obj);
+    PXRUSDPREVIEWSURFACE_API
+    ~PxrMayaUsdPreviewSurfaceShadingNodeOverride() override;
 
-        PXRUSDPREVIEWSURFACE_API
-        PxrMayaUsdPreviewSurfaceShadingNodeOverride(const MObject& obj);
-        PXRUSDPREVIEWSURFACE_API
-        ~PxrMayaUsdPreviewSurfaceShadingNodeOverride() override;
+    // MPxSurfaceShadingNodeOverride Overrides.
 
-        // MPxSurfaceShadingNodeOverride Overrides.
+    PXRUSDPREVIEWSURFACE_API
+    MString primaryColorParameter() const override;
 
-        PXRUSDPREVIEWSURFACE_API
-        MString primaryColorParameter() const override;
+    PXRUSDPREVIEWSURFACE_API
+    MString transparencyParameter() const override;
 
-        PXRUSDPREVIEWSURFACE_API
-        MString transparencyParameter() const override;
+    PXRUSDPREVIEWSURFACE_API
+    MString bumpAttribute() const override;
 
-        PXRUSDPREVIEWSURFACE_API
-        MString bumpAttribute() const override;
+    // MPxShadingNodeOverride Overrides.
 
+    PXRUSDPREVIEWSURFACE_API
+    MHWRender::DrawAPI supportedDrawAPIs() const override;
 
-        // MPxShadingNodeOverride Overrides.
+    PXRUSDPREVIEWSURFACE_API
+    MString fragmentName() const override;
 
-        PXRUSDPREVIEWSURFACE_API
-        MHWRender::DrawAPI supportedDrawAPIs() const override;
-
-        PXRUSDPREVIEWSURFACE_API
-        MString fragmentName() const override;
-
-        PXRUSDPREVIEWSURFACE_API
-        void getCustomMappings(
-                MHWRender::MAttributeParameterMappingList& mappings) override;
+    PXRUSDPREVIEWSURFACE_API
+    void getCustomMappings(MHWRender::MAttributeParameterMappingList& mappings) override;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

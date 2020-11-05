@@ -25,22 +25,19 @@ namespace usdmaya {
 namespace cmds {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A command that is used to pre-sync the auto generated GUI for the plugin options to a translator.
-/// \ingroup commands
+/// \brief  A command that is used to pre-sync the auto generated GUI for the plugin options to a
+/// translator. \ingroup commands
 //----------------------------------------------------------------------------------------------------------------------
-class SyncFileIOGui
-  : public MPxCommand
+class SyncFileIOGui : public MPxCommand
 {
 public:
-  AL_MAYA_DECLARE_COMMAND();
+    AL_MAYA_DECLARE_COMMAND();
+
 private:
-  bool isUndoable() const override;
-  MStatus doIt(const MArgList& args) override;
+    bool    isUndoable() const override;
+    MStatus doIt(const MArgList& args) override;
 };
 
-} // cmds
-} // usdmaya
-} // AL
-
-
-
+} // namespace cmds
+} // namespace usdmaya
+} // namespace AL

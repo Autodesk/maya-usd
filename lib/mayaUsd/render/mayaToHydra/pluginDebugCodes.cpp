@@ -19,7 +19,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfDebug) {
+TF_REGISTRY_FUNCTION(TfDebug)
+{
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_RENDEROVERRIDE_DEFAULT_LIGHTING,
         "Print information detection of default lighting for the Maya VP2 "

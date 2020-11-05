@@ -17,56 +17,62 @@
 #ifndef AL_USDMAYA_PROXYSHAPETRANSLATOR_H
 #define AL_USDMAYA_PROXYSHAPETRANSLATOR_H
 
-#include <pxr/pxr.h>
 #include "usdMaya/api.h"
+
 #include <mayaUsd/fileio/primWriterArgs.h>
 #include <mayaUsd/fileio/primWriterContext.h>
+
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// This translator works with pixar's usdExport command as opposed to the
 /// translators contained in fileio.
-struct AL_USDMayaTranslatorProxyShape {
-  /// This method generates a USD prim with a model reference
-  /// when provided args and a context that identify an
-  /// AL_usdmaya_ProxyShape node.
-  PXRUSDMAYA_API
-  static bool Create(
-          const UsdMayaPrimWriterArgs& args,
-          UsdMayaPrimWriterContext* context);
+struct AL_USDMayaTranslatorProxyShape
+{
+    /// This method generates a USD prim with a model reference
+    /// when provided args and a context that identify an
+    /// AL_usdmaya_ProxyShape node.
+    PXRUSDMAYA_API
+    static bool Create(const UsdMayaPrimWriterArgs& args, UsdMayaPrimWriterContext* context);
 
 private:
-  /// Return true if \p field should be copied from the spec at \p srcPath in
-  /// \p srcLayer to the spec at \p dstPath in \p dstLayer.
-  /// This version overrides the default behavior to preserve values that
-  /// already exist on dest if source does not have them (otherwise they
-  /// would be cleared).
-  static bool _ShouldGraftValue(SdfSpecType specType,
-                                 const TfToken& field,
-                                 const SdfLayerHandle& srcLayer,
-                                 const SdfPath& srcPath,
-                                 bool fieldInSrc,
-                                 const SdfLayerHandle& dstLayer,
-                                 const SdfPath& dstPath,
-                                 bool fieldInDst,
-                                 boost::optional<VtValue>* valueToCopy){
-    // SdfShouldCopyValueFn copies everything by default
-    return (!fieldInDst && fieldInSrc);
-  }
+    /// Return true if \p field should be copied from the spec at \p srcPath in
+    /// \p srcLayer to the spec at \p dstPath in \p dstLayer.
+    /// This version overrides the default behavior to preserve values that
+    /// already exist on dest if source does not have them (otherwise they
+    /// would be cleared).
+    static bool _ShouldGraftValue(
+        SdfSpecType               specType,
+        const TfToken&            field,
+        const SdfLayerHandle&     srcLayer,
+        const SdfPath&            srcPath,
+        bool                      fieldInSrc,
+        const SdfLayerHandle&     dstLayer,
+        const SdfPath&            dstPath,
+        bool                      fieldInDst,
+        boost::optional<VtValue>* valueToCopy)
+    {
+        // SdfShouldCopyValueFn copies everything by default
+        return (!fieldInDst && fieldInSrc);
+    }
 
-  static bool
-  _ShouldGraftChildren(
-          const TfToken& childrenField,
-          const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
-          const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-          boost::optional<VtValue>* srcChildren,
-          boost::optional<VtValue>* dstChildren){
-    // SdfShouldCopyChildrenFn copies everything by default
-    return true;
-  }
+    static bool _ShouldGraftChildren(
+        const TfToken&            childrenField,
+        const SdfLayerHandle&     srcLayer,
+        const SdfPath&            srcPath,
+        bool                      fieldInSrc,
+        const SdfLayerHandle&     dstLayer,
+        const SdfPath&            dstPath,
+        bool                      fieldInDst,
+        boost::optional<VtValue>* srcChildren,
+        boost::optional<VtValue>* dstChildren)
+    {
+        // SdfShouldCopyChildrenFn copies everything by default
+        return true;
+    }
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //AL_USDMAYA_PROXYSHAPETRANSLATOR_H
+#endif // AL_USDMAYA_PROXYSHAPETRANSLATOR_H

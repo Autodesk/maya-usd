@@ -17,9 +17,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-void* PxrMayaUSDExportCommand::creator()
-{
-    return new PxrMayaUSDExportCommand();
-}
+void* PxrMayaUSDExportCommand::creator() { return new PxrMayaUSDExportCommand(); }
 
 PXR_NAMESPACE_CLOSE_SCOPE

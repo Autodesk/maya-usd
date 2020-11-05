@@ -16,22 +16,24 @@
 #ifndef HDMAYA_LIGHT_ADAPTER_H
 #define HDMAYA_LIGHT_ADAPTER_H
 
-#include <maya/MFnLight.h>
-#include <maya/MFnNonExtendedLight.h>
+#include <hdMaya/adapters/dagAdapter.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/gf/frustum.h>
 #include <pxr/imaging/glf/simpleLight.h>
 #include <pxr/imaging/hd/light.h>
 #include <pxr/imaging/hdx/simpleLightTask.h>
+#include <pxr/pxr.h>
 
-#include <hdMaya/adapters/dagAdapter.h>
+#include <maya/MFnLight.h>
+#include <maya/MFnNonExtendedLight.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaLightAdapter : public HdMayaDagAdapter {
+class HdMayaLightAdapter : public HdMayaDagAdapter
+{
 public:
-    inline bool GetShadowsEnabled(MFnNonExtendedLight& light) {
+    inline bool GetShadowsEnabled(MFnNonExtendedLight& light)
+    {
         return light.useDepthMapShadows() || light.useRayTraceShadows();
     }
 
@@ -62,7 +64,7 @@ public:
 
 protected:
     HDMAYA_API
-    virtual void _CalculateLightParams(GlfSimpleLight& light) {}
+    virtual void _CalculateLightParams(GlfSimpleLight& light) { }
     HDMAYA_API
     void _CalculateShadowParams(MFnLight& light, HdxShadowParams& params);
     HDMAYA_API

@@ -50,9 +50,18 @@ namespace MAYAUSD_NS_DEF {
 
 namespace Impl {
 
-enum class CmdId { kInsert, kRemove, kReplace, kDiscardEdit, kClearLayer, kAddAnonLayer };
+enum class CmdId
+{
+    kInsert,
+    kRemove,
+    kReplace,
+    kDiscardEdit,
+    kClearLayer,
+    kAddAnonLayer
+};
 
-class BaseCmd {
+class BaseCmd
+{
 public:
     BaseCmd(CmdId id)
         : _cmdId(id)
@@ -88,10 +97,13 @@ void BaseCmd::holdOnPathIfDirty(SdfLayerHandle layer, std::string path)
 void BaseCmd::holdOntoSubLayers(SdfLayerHandle layer)
 {
     const std::vector<std::string>& sublayers = layer->GetSubLayerPaths();
-    for (auto path : sublayers) { holdOnPathIfDirty(layer, path); }
+    for (auto path : sublayers) {
+        holdOnPathIfDirty(layer, path);
+    }
 }
 
-class InsertRemoveSubPathBase : public BaseCmd {
+class InsertRemoveSubPathBase : public BaseCmd
+{
 public:
     int         _index = -1;
     std::string _subPath;
@@ -149,7 +161,7 @@ public:
         return true;
     }
     static bool validateUndoIndex(SdfLayerHandle layer, int index)
-    {   // allow re-inserting at the last index + 1, but -1 should have been changed to 0
+    { // allow re-inserting at the last index + 1, but -1 should have been changed to 0
         return !(index < 0 || index > (int)layer->GetNumSubLayerPaths());
     }
 
@@ -166,7 +178,8 @@ public:
     }
 };
 
-class InsertSubPath : public InsertRemoveSubPathBase {
+class InsertSubPath : public InsertRemoveSubPathBase
+{
 public:
     InsertSubPath()
         : InsertRemoveSubPathBase(CmdId::kInsert)
@@ -174,7 +187,8 @@ public:
     }
 };
 
-class RemoveSubPath : public InsertRemoveSubPathBase {
+class RemoveSubPath : public InsertRemoveSubPathBase
+{
 public:
     RemoveSubPath()
         : InsertRemoveSubPathBase(CmdId::kRemove)
@@ -182,7 +196,8 @@ public:
     }
 };
 
-class ReplaceSubPath : public BaseCmd {
+class ReplaceSubPath : public BaseCmd
+{
 public:
     ReplaceSubPath()
         : BaseCmd(CmdId::kReplace)
@@ -216,7 +231,8 @@ public:
     std::string _oldPath, _newPath;
 };
 
-class AddAnonSubLayer : public InsertRemoveSubPathBase {
+class AddAnonSubLayer : public InsertRemoveSubPathBase
+{
 public:
     AddAnonSubLayer()
         : InsertRemoveSubPathBase(CmdId::kAddAnonLayer) {};
@@ -228,27 +244,25 @@ public:
         // on redo, we want to put back that same identifier, for later commands
         if (_anonIdentifier.empty()) {
             _anonLayer = SdfLayer::CreateAnonymous(_anonName);
-            _anonIdentifier = _anonLayer->GetIdentifier();            
-        } 
+            _anonIdentifier = _anonLayer->GetIdentifier();
+        }
         _subPath = _anonIdentifier;
         _index = 0;
         _cmdResult = _subPath;
         return InsertRemoveSubPathBase::doIt(layer);
     }
 
-    bool undoIt(SdfLayerHandle layer) override
-    {
-        return InsertRemoveSubPathBase::undoIt(layer);
-    }
+    bool undoIt(SdfLayerHandle layer) override { return InsertRemoveSubPathBase::undoIt(layer); }
 
     std::string _anonName;
 
 protected:
     PXR_NS::SdfLayerRefPtr _anonLayer;
-    std::string _anonIdentifier;
+    std::string            _anonIdentifier;
 };
 
-class BackupLayerBase : public BaseCmd {
+class BackupLayerBase : public BaseCmd
+{
     // commands that need to backup the whole layer for undo
 public:
     BackupLayerBase(CmdId id)
@@ -288,7 +302,8 @@ public:
     PXR_NS::SdfLayerRefPtr _backupLayer;
 };
 
-class DiscardEdit : public BackupLayerBase {
+class DiscardEdit : public BackupLayerBase
+{
 public:
     DiscardEdit()
         : BackupLayerBase(CmdId::kDiscardEdit)
@@ -296,7 +311,8 @@ public:
     }
 };
 
-class ClearLayer : public BackupLayerBase {
+class ClearLayer : public BackupLayerBase
+{
 public:
     ClearLayer()
         : BackupLayerBase(CmdId::kClearLayer)

@@ -24,7 +24,8 @@
 
 namespace {
 // Warning: If a user tries to delete a prim that is deactivated (can be localized).
-static constexpr char kWarningCannotDeactivePrim[] = "Cannot deactivate \"^1s\" because it is already inactive.";
+static constexpr char kWarningCannotDeactivePrim[]
+    = "Cannot deactivate \"^1s\" because it is already inactive.";
 
 void displayWarning(const UsdPrim& prim, const MString& fmt)
 {
@@ -33,103 +34,92 @@ void displayWarning(const UsdPrim& prim, const MString& fmt)
     MGlobal::displayWarning(msg);
 }
 
-}
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdSceneItemOps::UsdSceneItemOps(const UsdSceneItem::Ptr& item)
-	: Ufe::SceneItemOps()
+    : Ufe::SceneItemOps()
     , fItem(item)
 {
 }
 
-UsdSceneItemOps::~UsdSceneItemOps()
-{
-}
+UsdSceneItemOps::~UsdSceneItemOps() { }
 
 /*static*/
 UsdSceneItemOps::Ptr UsdSceneItemOps::create(const UsdSceneItem::Ptr& item)
 {
-	return std::make_shared<UsdSceneItemOps>(item);
+    return std::make_shared<UsdSceneItemOps>(item);
 }
 
-void UsdSceneItemOps::setItem(const UsdSceneItem::Ptr& item)
-{
-	fItem = item;
-}
+void UsdSceneItemOps::setItem(const UsdSceneItem::Ptr& item) { fItem = item; }
 
-const Ufe::Path& UsdSceneItemOps::path() const
-{
-	return fItem->path();
-}
+const Ufe::Path& UsdSceneItemOps::path() const { return fItem->path(); }
 
 //------------------------------------------------------------------------------
 // Ufe::SceneItemOps overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const
-{
-	return fItem;
-}
+Ufe::SceneItem::Ptr UsdSceneItemOps::sceneItem() const { return fItem; }
 
 Ufe::UndoableCommand::Ptr UsdSceneItemOps::deleteItemCmd()
 {
-	if (prim().IsActive()) {
-		auto deleteCmd = UsdUndoDeleteCommand::create(prim());
-		deleteCmd->execute();
-		return deleteCmd;
-	}
+    if (prim().IsActive()) {
+        auto deleteCmd = UsdUndoDeleteCommand::create(prim());
+        deleteCmd->execute();
+        return deleteCmd;
+    }
 
-	displayWarning(prim(), kWarningCannotDeactivePrim);
-	return nullptr;
+    displayWarning(prim(), kWarningCannotDeactivePrim);
+    return nullptr;
 }
 
 bool UsdSceneItemOps::deleteItem()
 {
-	if (prim().IsActive()) {
-		return prim().SetActive(false);
-	}
+    if (prim().IsActive()) {
+        return prim().SetActive(false);
+    }
 
-	displayWarning(prim(), kWarningCannotDeactivePrim);
-	return false;
+    displayWarning(prim(), kWarningCannotDeactivePrim);
+    return false;
 }
 
 Ufe::Duplicate UsdSceneItemOps::duplicateItemCmd()
 {
-	auto duplicateCmd = UsdUndoDuplicateCommand::create(prim(), fItem->path());
-	duplicateCmd->execute();
-	auto item = createSiblingSceneItem(path(), duplicateCmd->usdDstPath().GetElementString());
-	return Ufe::Duplicate(item, duplicateCmd);
+    auto duplicateCmd = UsdUndoDuplicateCommand::create(prim(), fItem->path());
+    duplicateCmd->execute();
+    auto item = createSiblingSceneItem(path(), duplicateCmd->usdDstPath().GetElementString());
+    return Ufe::Duplicate(item, duplicateCmd);
 }
 
 Ufe::SceneItem::Ptr UsdSceneItemOps::duplicateItem()
 {
-	SdfPath usdDstPath;
-	SdfLayerHandle layer;
-	UsdUndoDuplicateCommand::primInfo(prim(), usdDstPath, layer);
-	bool status = UsdUndoDuplicateCommand::duplicate(layer, prim().GetPath(), usdDstPath);
+    SdfPath        usdDstPath;
+    SdfLayerHandle layer;
+    UsdUndoDuplicateCommand::primInfo(prim(), usdDstPath, layer);
+    bool status = UsdUndoDuplicateCommand::duplicate(layer, prim().GetPath(), usdDstPath);
 
-	// The duplicate is a sibling of the source.
-	if (status)
-		return createSiblingSceneItem(path(), usdDstPath.GetElementString());
+    // The duplicate is a sibling of the source.
+    if (status)
+        return createSiblingSceneItem(path(), usdDstPath.GetElementString());
 
-	return nullptr;
+    return nullptr;
 }
 
 Ufe::SceneItem::Ptr UsdSceneItemOps::renameItem(const Ufe::PathComponent& newName)
 {
-	auto renameCmd = UsdUndoRenameCommand::create(fItem, newName);
-	renameCmd->execute();
-	return renameCmd->renamedItem();
+    auto renameCmd = UsdUndoRenameCommand::create(fItem, newName);
+    renameCmd->execute();
+    return renameCmd->renamedItem();
 }
 
 Ufe::Rename UsdSceneItemOps::renameItemCmd(const Ufe::PathComponent& newName)
 {
-	auto renameCmd = UsdUndoRenameCommand::create(fItem, newName);
-	renameCmd->execute();
-	return Ufe::Rename(renameCmd->renamedItem(), renameCmd);
+    auto renameCmd = UsdUndoRenameCommand::create(fItem, newName);
+    renameCmd->execute();
+    return Ufe::Rename(renameCmd->renamedItem(), renameCmd);
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

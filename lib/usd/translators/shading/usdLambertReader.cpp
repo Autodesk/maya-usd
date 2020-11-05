@@ -98,10 +98,8 @@ void PxrUsdTranslators_LambertReader::_OnBeforeReadAttribute(
 }
 
 /* override */
-void
-PxrUsdTranslators_LambertReader::_ConvertToMaya(
-        const TfToken& mayaAttrName,
-        VtValue& usdValue) const
+void PxrUsdTranslators_LambertReader::_ConvertToMaya(const TfToken& mayaAttrName, VtValue& usdValue)
+    const
 {
     if (mayaAttrName == _tokens->transparency && usdValue.IsHolding<float>()) {
         const float opacity = usdValue.UncheckedGet<float>();

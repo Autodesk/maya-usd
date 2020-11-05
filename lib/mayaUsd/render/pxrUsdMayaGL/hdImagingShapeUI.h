@@ -29,6 +29,8 @@
 //
 // The X11 include appears to have been removed in Maya 2020+, so this should
 // no longer be an issue with later versions.
+#include <mayaUsd/base/api.h>
+
 #include <pxr/usd/sdf/types.h>
 
 #include <maya/M3dView.h>
@@ -36,8 +38,6 @@
 #include <maya/MDrawRequest.h>
 #include <maya/MDrawRequestQueue.h>
 #include <maya/MPxSurfaceShapeUI.h>
-
-#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -51,32 +51,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// responsible for managing that.
 class PxrMayaHdImagingShapeUI : public MPxSurfaceShapeUI
 {
-    public:
+public:
+    MAYAUSD_CORE_PUBLIC
+    static void* creator();
 
-        MAYAUSD_CORE_PUBLIC
-        static void* creator();
+    MAYAUSD_CORE_PUBLIC
+    void getDrawRequests(
+        const MDrawInfo&   drawInfo,
+        bool               objectAndActiveOnly,
+        MDrawRequestQueue& requests) override;
 
-        MAYAUSD_CORE_PUBLIC
-        void getDrawRequests(
-                const MDrawInfo& drawInfo,
-                bool objectAndActiveOnly,
-                MDrawRequestQueue& requests) override;
+    MAYAUSD_CORE_PUBLIC
+    void draw(const MDrawRequest& request, M3dView& view) const override;
 
-        MAYAUSD_CORE_PUBLIC
-        void draw(const MDrawRequest& request, M3dView& view) const override;
+private:
+    PxrMayaHdImagingShapeUI();
+    ~PxrMayaHdImagingShapeUI() override;
 
-    private:
-
-        PxrMayaHdImagingShapeUI();
-        ~PxrMayaHdImagingShapeUI() override;
-
-        PxrMayaHdImagingShapeUI(const PxrMayaHdImagingShapeUI&) = delete;
-        PxrMayaHdImagingShapeUI& operator=(
-                const PxrMayaHdImagingShapeUI&) = delete;
+    PxrMayaHdImagingShapeUI(const PxrMayaHdImagingShapeUI&) = delete;
+    PxrMayaHdImagingShapeUI& operator=(const PxrMayaHdImagingShapeUI&) = delete;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

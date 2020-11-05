@@ -16,54 +16,53 @@
 #ifndef HDMAYA_DELEGATE_BASE_H
 #define HDMAYA_DELEGATE_BASE_H
 
-#include <maya/MDagPath.h>
+#include <hdMaya/delegates/delegate.h>
 
-#include <pxr/pxr.h>
 #include <pxr/imaging/hd/renderIndex.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <hdMaya/delegates/delegate.h>
+#include <maya/MDagPath.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaDelegateCtx : public HdSceneDelegate, public HdMayaDelegate {
+class HdMayaDelegateCtx
+    : public HdSceneDelegate
+    , public HdMayaDelegate
+{
 protected:
     HDMAYA_API
     HdMayaDelegateCtx(const InitData& initData);
 
 public:
-    enum RebuildFlags : uint32_t {
+    enum RebuildFlags : uint32_t
+    {
         RebuildFlagPrim = 1 << 1,
         RebuildFlagCallbacks = 1 << 2,
     };
 
     using HdSceneDelegate::GetRenderIndex;
-    HdChangeTracker& GetChangeTracker() {
-        return GetRenderIndex().GetChangeTracker();
-    }
+    HdChangeTracker& GetChangeTracker() { return GetRenderIndex().GetChangeTracker(); }
 
     HDMAYA_API
-    void InsertRprim(
-        const TfToken& typeId, const SdfPath& id,
-        const SdfPath& instancerId = {});
+    void InsertRprim(const TfToken& typeId, const SdfPath& id, const SdfPath& instancerId = {});
     HDMAYA_API
-    void InsertSprim(
-        const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
+    void InsertSprim(const TfToken& typeId, const SdfPath& id, HdDirtyBits initialBits);
     HDMAYA_API
     void RemoveRprim(const SdfPath& id);
     HDMAYA_API
     void RemoveSprim(const TfToken& typeId, const SdfPath& id);
     HDMAYA_API
-    void RemoveInstancer(const SdfPath& id);
-    virtual void RemoveAdapter(const SdfPath& id) {}
-    virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) {}
-    virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) {}
-    virtual void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) {}
+    void         RemoveInstancer(const SdfPath& id);
+    virtual void RemoveAdapter(const SdfPath& id) { }
+    virtual void RecreateAdapter(const SdfPath& id, const MObject& obj) { }
+    virtual void RecreateAdapterOnIdle(const SdfPath& id, const MObject& obj) { }
+    virtual void RebuildAdapterOnIdle(const SdfPath& id, uint32_t flags) { }
     /// \brief Notifies the scene delegate when a material tag changes.
     ///
     /// \param id Id of the Material that changed its tag.
-    virtual void MaterialTagChanged(const SdfPath& id) {}
+    virtual void MaterialTagChanged(const SdfPath& id) { }
     HDMAYA_API
     SdfPath GetPrimPath(const MDagPath& dg, bool isLight);
     HDMAYA_API

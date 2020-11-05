@@ -15,11 +15,11 @@
 //
 #pragma once
 
-#include <ufe/sceneItem.h>
+#include <mayaUsd/base/api.h>
 
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
+#include <ufe/sceneItem.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -30,31 +30,31 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdSceneItem : public Ufe::SceneItem
 {
 public:
-	typedef std::shared_ptr<UsdSceneItem> Ptr;
+    typedef std::shared_ptr<UsdSceneItem> Ptr;
 
-	UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim);
-	~UsdSceneItem() override = default;
+    UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim);
+    ~UsdSceneItem() override = default;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdSceneItem(const UsdSceneItem&) = delete;
-	UsdSceneItem& operator=(const UsdSceneItem&) = delete;
-	UsdSceneItem(UsdSceneItem&&) = delete;
-	UsdSceneItem& operator=(UsdSceneItem&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdSceneItem(const UsdSceneItem&) = delete;
+    UsdSceneItem& operator=(const UsdSceneItem&) = delete;
+    UsdSceneItem(UsdSceneItem&&) = delete;
+    UsdSceneItem& operator=(UsdSceneItem&&) = delete;
 
-	//! Create a UsdSceneItem from a UFE path and a USD prim.
-	static UsdSceneItem::Ptr create(const Ufe::Path& path, const UsdPrim& prim);
+    //! Create a UsdSceneItem from a UFE path and a USD prim.
+    static UsdSceneItem::Ptr create(const Ufe::Path& path, const UsdPrim& prim);
 
-	const UsdPrim& prim() const { return fPrim; }
+    const UsdPrim& prim() const { return fPrim; }
 
-	// Ufe::SceneItem overrides
-	std::string nodeType() const override;
-	#ifdef UFE_V2_FEATURES_AVAILABLE
-	std::vector<std::string> ancestorNodeTypes() const override;
-	#endif
+    // Ufe::SceneItem overrides
+    std::string nodeType() const override;
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    std::vector<std::string> ancestorNodeTypes() const override;
+#endif
 
 private:
-	UsdPrim fPrim;
+    UsdPrim fPrim;
 }; // UsdSceneItem
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

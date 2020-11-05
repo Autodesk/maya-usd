@@ -20,23 +20,20 @@
 
 #include "usdMaya/api.h"
 
+#include <mayaUsd/commands/baseListShadingModesCommand.h>
+
 #include <pxr/pxr.h>
 
 #include <maya/MPxCommand.h>
 
-#include <mayaUsd/commands/baseListShadingModesCommand.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class PxrMayaUSDListShadingModesCommand : public MayaUsd::MayaUSDListShadingModesCommand
 {
-  public:
-   
+public:
     PXRUSDMAYA_API
     static void* creator();
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

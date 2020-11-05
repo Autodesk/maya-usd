@@ -15,8 +15,9 @@
 //
 #pragma once
 #include "AL/usd/transaction/Api.h"
-#include <pxr/pxr.h>
+
 #include <pxr/base/tf/notice.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 
 namespace AL {
@@ -29,16 +30,20 @@ namespace transaction {
 class OpenNotice : public PXR_NS::TfNotice
 {
 public:
-  /// \brief  the ctor sets tracked by transaction
-  /// \param  layer that transaction is tracking
-  AL_USD_TRANSACTION_PUBLIC
-  OpenNotice(const PXR_NS::SdfLayerHandle& layer):m_layer(layer) {}
+    /// \brief  the ctor sets tracked by transaction
+    /// \param  layer that transaction is tracking
+    AL_USD_TRANSACTION_PUBLIC
+    OpenNotice(const PXR_NS::SdfLayerHandle& layer)
+        : m_layer(layer)
+    {
+    }
 
-  /// \brief  gets layer tracked by transaction
-  /// \return layer that transaction is tracking
-  inline const PXR_NS::SdfLayerHandle& GetLayer() const { return m_layer; }
+    /// \brief  gets layer tracked by transaction
+    /// \return layer that transaction is tracking
+    inline const PXR_NS::SdfLayerHandle& GetLayer() const { return m_layer; }
+
 private:
-  PXR_NS::SdfLayerHandle m_layer;
+    PXR_NS::SdfLayerHandle m_layer;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -47,35 +52,43 @@ private:
 class CloseNotice : public PXR_NS::TfNotice
 {
 public:
-  /// \brief  the ctor sets tracked by transaction and changed as well as resynced paths
-  /// \param  layer that transaction is tracking
-  /// \param  changed vector of paths that changed properties
-  /// \param  resynced vector of topmost paths for which hierarchy has changed
-  inline CloseNotice(const PXR_NS::SdfLayerHandle& layer, PXR_NS::SdfPathVector changed, PXR_NS::SdfPathVector resynced)
-    :m_layer(layer),m_changed(std::move(changed)),m_resynced(std::move(resynced)) {}
+    /// \brief  the ctor sets tracked by transaction and changed as well as resynced paths
+    /// \param  layer that transaction is tracking
+    /// \param  changed vector of paths that changed properties
+    /// \param  resynced vector of topmost paths for which hierarchy has changed
+    inline CloseNotice(
+        const PXR_NS::SdfLayerHandle& layer,
+        PXR_NS::SdfPathVector         changed,
+        PXR_NS::SdfPathVector         resynced)
+        : m_layer(layer)
+        , m_changed(std::move(changed))
+        , m_resynced(std::move(resynced))
+    {
+    }
 
-  /// \brief  gets layer tracked by transaction
-  /// \return layer that transaction is tracking
-  inline const PXR_NS::SdfLayerHandle& GetLayer() const { return m_layer; }
+    /// \brief  gets layer tracked by transaction
+    /// \return layer that transaction is tracking
+    inline const PXR_NS::SdfLayerHandle& GetLayer() const { return m_layer; }
 
-  /// \brief  gets vector of paths that changed properties
-  /// \return const reference to vector of paths
-  inline const PXR_NS::SdfPathVector& GetChangedInfoOnlyPaths() const { return m_changed; }
+    /// \brief  gets vector of paths that changed properties
+    /// \return const reference to vector of paths
+    inline const PXR_NS::SdfPathVector& GetChangedInfoOnlyPaths() const { return m_changed; }
 
-  /// \brief  gets vector of topmost paths for which hierarchy has changed
-  /// \return const reference to vector of paths
-  inline const PXR_NS::SdfPathVector& GetResyncedPaths() const { return m_resynced; }
+    /// \brief  gets vector of topmost paths for which hierarchy has changed
+    /// \return const reference to vector of paths
+    inline const PXR_NS::SdfPathVector& GetResyncedPaths() const { return m_resynced; }
 
-  /// \brief  provides information if any changes were registered
-  /// \return true when any changes were registered, otherwise false
-  inline bool AnyChanges() const { return !m_changed.empty() || !m_resynced.empty(); }
+    /// \brief  provides information if any changes were registered
+    /// \return true when any changes were registered, otherwise false
+    inline bool AnyChanges() const { return !m_changed.empty() || !m_resynced.empty(); }
+
 private:
-  PXR_NS::SdfLayerHandle m_layer;
-  PXR_NS::SdfPathVector m_changed, m_resynced;
+    PXR_NS::SdfLayerHandle m_layer;
+    PXR_NS::SdfPathVector  m_changed, m_resynced;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-} // transaction
-} // usd
-} // AL
+} // namespace transaction
+} // namespace usd
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

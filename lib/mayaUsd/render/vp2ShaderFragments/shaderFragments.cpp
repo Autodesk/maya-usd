@@ -15,189 +15,159 @@
 //
 #include "shaderFragments.h"
 
-#include <maya/MFragmentManager.h>
-#include <maya/MGlobal.h>
-#include <maya/MShaderManager.h>
-#include <maya/MViewport2Renderer.h>
-
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/thisPlugin.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
+
+#include <maya/MFragmentManager.h>
+#include <maya/MGlobal.h>
+#include <maya/MShaderManager.h>
+#include <maya/MViewport2Renderer.h>
 
 #include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(
-    HdVP2ShaderFragmentsTokens,
-    MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdVP2ShaderFragmentsTokens, MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS);
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (BasisCurvesCubicColorDomain)
-    (BasisCurvesCubicCPVHull)
-    (BasisCurvesCubicCPVPassing)
-    (BasisCurvesCubicCPVShader)
-    (BasisCurvesCubicDomain)
-    (BasisCurvesCubicFallbackShader)
-    (BasisCurvesCubicHull)
-    (BasisCurvesLinearColorDomain)
-    (BasisCurvesLinearCPVHull)
-    (BasisCurvesLinearCPVPassing)
-    (BasisCurvesLinearCPVShader)
-    (BasisCurvesLinearDomain)
-    (BasisCurvesLinearFallbackShader)
-    (BasisCurvesLinearHull)
+    (BasisCurvesCubicColorDomain)(BasisCurvesCubicCPVHull)(BasisCurvesCubicCPVPassing)(
+        BasisCurvesCubicCPVShader)(BasisCurvesCubicDomain)(BasisCurvesCubicFallbackShader)(
+        BasisCurvesCubicHull)(BasisCurvesLinearColorDomain)(BasisCurvesLinearCPVHull)(
+        BasisCurvesLinearCPVPassing)(BasisCurvesLinearCPVShader)(BasisCurvesLinearDomain)(
+        BasisCurvesLinearFallbackShader)(BasisCurvesLinearHull)
 
-    (FallbackCPVShader)
-    (FallbackShader)
+        (FallbackCPVShader)(FallbackShader)
 
-    (Float4ToFloatX)
-    (Float4ToFloatY)
-    (Float4ToFloatZ)
-    (Float4ToFloatW)
-    (Float4ToFloat3)
-    (Float4ToFloat4)
+            (Float4ToFloatX)(Float4ToFloatY)(Float4ToFloatZ)(Float4ToFloatW)(Float4ToFloat3)(
+                Float4ToFloat4)
 
-    (NwFaceCameraIfNAN)
+                (NwFaceCameraIfNAN)
 
-    (lightingContributions)
-    (scaledDiffusePassThrough)
-    (scaledSpecularPassThrough)
-    (opacityToTransparency)
-    (usdPreviewSurfaceLighting)
-    (usdPreviewSurfaceCombiner)
+                    (lightingContributions)(scaledDiffusePassThrough)(scaledSpecularPassThrough)(
+                        opacityToTransparency)(usdPreviewSurfaceLighting)(usdPreviewSurfaceCombiner)
 
-    (UsdPrimvarColor)
+                        (UsdPrimvarColor)
 
-    (UsdUVTexture)
+                            (UsdUVTexture)
 
-    (UsdPrimvarReader_color)
-    (UsdPrimvarReader_float)
-    (UsdPrimvarReader_float2)
-    (UsdPrimvarReader_float3)
-    (UsdPrimvarReader_float4)
-    (UsdPrimvarReader_vector)
-);
+                                (UsdPrimvarReader_color)(UsdPrimvarReader_float)(
+                                    UsdPrimvarReader_float2)(UsdPrimvarReader_float3)(
+                                    UsdPrimvarReader_float4)(UsdPrimvarReader_vector));
 
-static const TfTokenVector _LanguageSpecificFragmentNames = {
-    _tokens->BasisCurvesLinearDomain,
-    _tokens->BasisCurvesCubicDomain
-};
+static const TfTokenVector _LanguageSpecificFragmentNames
+    = { _tokens->BasisCurvesLinearDomain, _tokens->BasisCurvesCubicDomain };
 
-static const TfTokenVector _FragmentNames = {
-    _tokens->BasisCurvesCubicColorDomain,
-    _tokens->BasisCurvesCubicCPVHull,
-    _tokens->BasisCurvesCubicCPVPassing,
-    _tokens->BasisCurvesCubicHull,
-    _tokens->BasisCurvesLinearColorDomain,
-    _tokens->BasisCurvesLinearCPVHull,
-    _tokens->BasisCurvesLinearCPVPassing,
-    _tokens->BasisCurvesLinearHull,
+static const TfTokenVector _FragmentNames = { _tokens->BasisCurvesCubicColorDomain,
+                                              _tokens->BasisCurvesCubicCPVHull,
+                                              _tokens->BasisCurvesCubicCPVPassing,
+                                              _tokens->BasisCurvesCubicHull,
+                                              _tokens->BasisCurvesLinearColorDomain,
+                                              _tokens->BasisCurvesLinearCPVHull,
+                                              _tokens->BasisCurvesLinearCPVPassing,
+                                              _tokens->BasisCurvesLinearHull,
 
-    _tokens->UsdPrimvarColor,
+                                              _tokens->UsdPrimvarColor,
 
-    _tokens->UsdUVTexture,
+                                              _tokens->UsdUVTexture,
 
-    _tokens->UsdPrimvarReader_color,
-    _tokens->UsdPrimvarReader_float,
-    _tokens->UsdPrimvarReader_float2,
-    _tokens->UsdPrimvarReader_float3,
-    _tokens->UsdPrimvarReader_float4,
-    _tokens->UsdPrimvarReader_vector,
+                                              _tokens->UsdPrimvarReader_color,
+                                              _tokens->UsdPrimvarReader_float,
+                                              _tokens->UsdPrimvarReader_float2,
+                                              _tokens->UsdPrimvarReader_float3,
+                                              _tokens->UsdPrimvarReader_float4,
+                                              _tokens->UsdPrimvarReader_vector,
 
-    _tokens->Float4ToFloatX,
-    _tokens->Float4ToFloatY,
-    _tokens->Float4ToFloatZ,
-    _tokens->Float4ToFloatW,
-    _tokens->Float4ToFloat3,
-    _tokens->Float4ToFloat4,
+                                              _tokens->Float4ToFloatX,
+                                              _tokens->Float4ToFloatY,
+                                              _tokens->Float4ToFloatZ,
+                                              _tokens->Float4ToFloatW,
+                                              _tokens->Float4ToFloat3,
+                                              _tokens->Float4ToFloat4,
 
-    _tokens->NwFaceCameraIfNAN,
+                                              _tokens->NwFaceCameraIfNAN,
 
-    _tokens->lightingContributions,
-    _tokens->scaledDiffusePassThrough,
-    _tokens->scaledSpecularPassThrough,
-    _tokens->opacityToTransparency,
-    _tokens->usdPreviewSurfaceLighting,
-    _tokens->usdPreviewSurfaceCombiner
-};
+                                              _tokens->lightingContributions,
+                                              _tokens->scaledDiffusePassThrough,
+                                              _tokens->scaledSpecularPassThrough,
+                                              _tokens->opacityToTransparency,
+                                              _tokens->usdPreviewSurfaceLighting,
+                                              _tokens->usdPreviewSurfaceCombiner };
 
-static const TfTokenVector _FragmentGraphNames = {
-    _tokens->BasisCurvesCubicCPVShader,
-    _tokens->BasisCurvesCubicFallbackShader,
-    _tokens->BasisCurvesLinearCPVShader,
-    _tokens->BasisCurvesLinearFallbackShader,
-    _tokens->FallbackCPVShader,
-    _tokens->FallbackShader,
-    HdVP2ShaderFragmentsTokens->CoreFragmentGraphName,
-    HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName
-};
+static const TfTokenVector _FragmentGraphNames
+    = { _tokens->BasisCurvesCubicCPVShader,
+        _tokens->BasisCurvesCubicFallbackShader,
+        _tokens->BasisCurvesLinearCPVShader,
+        _tokens->BasisCurvesLinearFallbackShader,
+        _tokens->FallbackCPVShader,
+        _tokens->FallbackShader,
+        HdVP2ShaderFragmentsTokens->CoreFragmentGraphName,
+        HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName };
 
-
-namespace
+namespace {
+//! Get the file path of the shader fragment.
+std::string _GetResourcePath(const std::string& resource)
 {
-    //! Get the file path of the shader fragment.
-    std::string _GetResourcePath(const std::string& resource)
-    {
-        static PlugPluginPtr plugin =
-            PlugRegistry::GetInstance().GetPluginWithName("mayaUsd_ShaderFragments");
-        if (!TF_VERIFY(plugin, "Could not get plugin\n")) {
-            return std::string();
-        }
-
-        const std::string path = PlugFindPluginResource(plugin, resource);
-        TF_VERIFY(!path.empty(), "Could not find resource: %s\n", resource.c_str());
-
-        return path;
+    static PlugPluginPtr plugin
+        = PlugRegistry::GetInstance().GetPluginWithName("mayaUsd_ShaderFragments");
+    if (!TF_VERIFY(plugin, "Could not get plugin\n")) {
+        return std::string();
     }
+
+    const std::string path = PlugFindPluginResource(plugin, resource);
+    TF_VERIFY(!path.empty(), "Could not find resource: %s\n", resource.c_str());
+
+    return path;
+}
 
 #if MAYA_API_VERSION >= 20210000
 
-    //! Structure for Automatic shader stage input parameter to register in VP2.
-    struct AutomaticShaderStageInput {
-        MHWRender::MFragmentManager::ShaderStage  _shaderStage;
-        MString                                   _parameterName;
-        MString                                   _parameterSemantic;
-        MHWRender::MShaderInstance::ParameterType _parameterType;
-        bool                                      _isVaryingInput;
-    };
+//! Structure for Automatic shader stage input parameter to register in VP2.
+struct AutomaticShaderStageInput
+{
+    MHWRender::MFragmentManager::ShaderStage  _shaderStage;
+    MString                                   _parameterName;
+    MString                                   _parameterSemantic;
+    MHWRender::MShaderInstance::ParameterType _parameterType;
+    bool                                      _isVaryingInput;
+};
 
-    //! List of automatic shader stage input parameters to register in VP2.
-    std::vector<AutomaticShaderStageInput> _automaticShaderStageInputs
-        = { { MHWRender::MFragmentManager::kVertexShader,
-              "UsdPrimvarColor",
-              "COLOR0",
-              MHWRender::MShaderInstance::kFloat4,
-              true },
-            { MHWRender::MFragmentManager::kHullShader,
-              "UsdPrimvarColor",
-              "COLOR0",
-              MHWRender::MShaderInstance::kFloat4,
-              true },
-            { MHWRender::MFragmentManager::kDomainShader,
-              "UsdPrimvarColor",
-              "COLOR0",
-              MHWRender::MShaderInstance::kFloat4,
-              false },
-            { MHWRender::MFragmentManager::kPixelShader,
-              "BasisCurvesCubicColor",
-              "COLOR0",
-              MHWRender::MShaderInstance::kFloat4,
-              true },
-            { MHWRender::MFragmentManager::kPixelShader,
-              "BasisCurvesLinearColor",
-              "COLOR0",
-              MHWRender::MShaderInstance::kFloat4,
-              true } };
+//! List of automatic shader stage input parameters to register in VP2.
+std::vector<AutomaticShaderStageInput> _automaticShaderStageInputs
+    = { { MHWRender::MFragmentManager::kVertexShader,
+          "UsdPrimvarColor",
+          "COLOR0",
+          MHWRender::MShaderInstance::kFloat4,
+          true },
+        { MHWRender::MFragmentManager::kHullShader,
+          "UsdPrimvarColor",
+          "COLOR0",
+          MHWRender::MShaderInstance::kFloat4,
+          true },
+        { MHWRender::MFragmentManager::kDomainShader,
+          "UsdPrimvarColor",
+          "COLOR0",
+          MHWRender::MShaderInstance::kFloat4,
+          false },
+        { MHWRender::MFragmentManager::kPixelShader,
+          "BasisCurvesCubicColor",
+          "COLOR0",
+          MHWRender::MShaderInstance::kFloat4,
+          true },
+        { MHWRender::MFragmentManager::kPixelShader,
+          "BasisCurvesLinearColor",
+          "COLOR0",
+          MHWRender::MShaderInstance::kFloat4,
+          true } };
 
-    //! Name mapping between a parameter and a desired domain shader fragment to register in VP2.
-    std::vector<std::pair<MString, MString>> _domainShaderInputNameMappings
-        = { { "BasisCurvesCubicColor", "BasisCurvesCubicColorDomain" },
-            { "BasisCurvesLinearColor", "BasisCurvesLinearColorDomain" } };
+//! Name mapping between a parameter and a desired domain shader fragment to register in VP2.
+std::vector<std::pair<MString, MString>> _domainShaderInputNameMappings
+    = { { "BasisCurvesCubicColor", "BasisCurvesCubicColorDomain" },
+        { "BasisCurvesLinearColor", "BasisCurvesLinearColorDomain" } };
 
 #endif
 
@@ -222,8 +192,7 @@ MStatus HdVP2ShaderFragments::registerFragments()
         return MS::kFailure;
     }
 
-    MHWRender::MFragmentManager* fragmentManager =
-        theRenderer->getFragmentManager();
+    MHWRender::MFragmentManager* fragmentManager = theRenderer->getFragmentManager();
     if (!fragmentManager) {
         return MS::kFailure;
     }
@@ -232,9 +201,9 @@ MStatus HdVP2ShaderFragments::registerFragments()
 
     switch (theRenderer->drawAPI()) {
     case MHWRender::kOpenGLCoreProfile: language = "GLSL"; break;
-    case MHWRender::kDirectX11:         language = "HLSL"; break;
-    case MHWRender::kOpenGL:            language = "Cg";   break;
-    default: MGlobal::displayError("Unknown draw API");    break;
+    case MHWRender::kDirectX11: language = "HLSL"; break;
+    case MHWRender::kOpenGL: language = "Cg"; break;
+    default: MGlobal::displayError("Unknown draw API"); break;
     }
 
     // Register all fragments.
@@ -245,20 +214,19 @@ MStatus HdVP2ShaderFragments::registerFragments()
             continue;
         }
 
-        const std::string fragXmlFile =
-            TfStringPrintf("%s_%s.xml", fragName.asChar(), language.c_str());
+        const std::string fragXmlFile
+            = TfStringPrintf("%s_%s.xml", fragName.asChar(), language.c_str());
         const std::string fragXmlPath = _GetResourcePath(fragXmlFile);
 
-        const MString addedName =
-            fragmentManager->addShadeFragmentFromFile(
-                fragXmlPath.c_str(),
-                false);
+        const MString addedName
+            = fragmentManager->addShadeFragmentFromFile(fragXmlPath.c_str(), false);
 
         if (addedName != fragName) {
-            MGlobal::displayError(
-                TfStringPrintf("Failed to register fragment '%s' from file: %s",
-                    fragName.asChar(),
-                    fragXmlPath.c_str()).c_str());
+            MGlobal::displayError(TfStringPrintf(
+                                      "Failed to register fragment '%s' from file: %s",
+                                      fragName.asChar(),
+                                      fragXmlPath.c_str())
+                                      .c_str());
             return MS::kFailure;
         }
     }
@@ -270,20 +238,18 @@ MStatus HdVP2ShaderFragments::registerFragments()
             continue;
         }
 
-        const std::string fragXmlFile =
-            TfStringPrintf("%s.xml", fragName.asChar());
+        const std::string fragXmlFile = TfStringPrintf("%s.xml", fragName.asChar());
         const std::string fragXmlPath = _GetResourcePath(fragXmlFile);
 
-        const MString addedName =
-            fragmentManager->addShadeFragmentFromFile(
-                fragXmlPath.c_str(),
-                false);
+        const MString addedName
+            = fragmentManager->addShadeFragmentFromFile(fragXmlPath.c_str(), false);
 
         if (addedName != fragName) {
-            MGlobal::displayError(
-                TfStringPrintf("Failed to register fragment '%s' from file: %s",
-                    fragName.asChar(),
-                    fragXmlPath.c_str()).c_str());
+            MGlobal::displayError(TfStringPrintf(
+                                      "Failed to register fragment '%s' from file: %s",
+                                      fragName.asChar(),
+                                      fragXmlPath.c_str())
+                                      .c_str());
             return MS::kFailure;
         }
     }
@@ -296,17 +262,17 @@ MStatus HdVP2ShaderFragments::registerFragments()
             continue;
         }
 
-        const std::string fragGraphXmlFile =
-            TfStringPrintf("%s.xml", fragGraphName.asChar());
+        const std::string fragGraphXmlFile = TfStringPrintf("%s.xml", fragGraphName.asChar());
         const std::string fragGraphXmlPath = _GetResourcePath(fragGraphXmlFile);
 
-        const MString addedName =
-            fragmentManager->addFragmentGraphFromFile(fragGraphXmlPath.c_str());
+        const MString addedName
+            = fragmentManager->addFragmentGraphFromFile(fragGraphXmlPath.c_str());
         if (addedName != fragGraphName) {
-            MGlobal::displayError(
-                TfStringPrintf("Failed to register fragment graph '%s' from file: %s",
-                    fragGraphName.asChar(),
-                    fragGraphXmlPath.c_str()).c_str());
+            MGlobal::displayError(TfStringPrintf(
+                                      "Failed to register fragment graph '%s' from file: %s",
+                                      fragGraphName.asChar(),
+                                      fragGraphXmlPath.c_str())
+                                      .c_str());
             return MS::kFailure;
         }
     }
@@ -325,8 +291,7 @@ MStatus HdVP2ShaderFragments::registerFragments()
 
     // Register a desired domain shader fragment for each input parameter.
     for (const auto& mapping : _domainShaderInputNameMappings) {
-        fragmentManager->addDomainShaderInputNameMapping(
-            mapping.first, mapping.second);
+        fragmentManager->addDomainShaderInputNameMapping(mapping.first, mapping.second);
     }
 
 #endif
@@ -354,8 +319,7 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
         return MS::kFailure;
     }
 
-    MHWRender::MFragmentManager* fragmentManager =
-        theRenderer->getFragmentManager();
+    MHWRender::MFragmentManager* fragmentManager = theRenderer->getFragmentManager();
     if (!fragmentManager) {
         return MS::kFailure;
     }
@@ -380,8 +344,8 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
 
         if (!fragmentManager->removeFragment(fragGraphName)) {
             MGlobal::displayWarning(
-                TfStringPrintf("Failed to remove fragment graph: %s",
-                    fragGraphName.asChar()).c_str());
+                TfStringPrintf("Failed to remove fragment graph: %s", fragGraphName.asChar())
+                    .c_str());
             return MS::kFailure;
         }
     }
@@ -392,8 +356,7 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
 
         if (!fragmentManager->removeFragment(fragName)) {
             MGlobal::displayWarning(
-                TfStringPrintf("Failed to remove fragment: %s",
-                    fragName.asChar()).c_str());
+                TfStringPrintf("Failed to remove fragment: %s", fragName.asChar()).c_str());
             return MS::kFailure;
         }
     }
@@ -402,13 +365,11 @@ MStatus HdVP2ShaderFragments::deregisterFragments()
 
     // Clear the shader manager's effect cache as well so that any changes to
     // the fragments will get picked up if they are re-registered.
-    const MHWRender::MShaderManager* shaderMgr =
-        theRenderer->getShaderManager();
+    const MHWRender::MShaderManager* shaderMgr = theRenderer->getShaderManager();
     if (shaderMgr) {
         MStatus status = shaderMgr->clearEffectCache();
         if (status != MS::kSuccess) {
-            MGlobal::displayWarning(
-                "Failed to clear shader manager effect cache");
+            MGlobal::displayWarning("Failed to clear shader manager effect cache");
             return status;
         }
     }

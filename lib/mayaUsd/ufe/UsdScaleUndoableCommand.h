@@ -15,12 +15,12 @@
 //
 #pragma once
 
-#include <ufe/transform3dUndoableCommands.h>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
 
 #include <pxr/usd/usd/attribute.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
+#include <ufe/transform3dUndoableCommands.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -29,64 +29,63 @@ namespace ufe {
 
 //! \brief Absolute scale command of the given prim.
 /*!
-	Ability to perform undo to restore the original scale value.
+        Ability to perform undo to restore the original scale value.
  */
-class MAYAUSD_CORE_PUBLIC UsdScaleUndoableCommand : public Ufe::ScaleUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3f>
+class MAYAUSD_CORE_PUBLIC UsdScaleUndoableCommand
+    : public Ufe::ScaleUndoableCommand
+    , public UsdTRSUndoableCommandBase<GfVec3f>
 {
 public:
-	typedef std::shared_ptr<UsdScaleUndoableCommand> Ptr;
+    typedef std::shared_ptr<UsdScaleUndoableCommand> Ptr;
 
-	UsdScaleUndoableCommand(const UsdScaleUndoableCommand&) = delete;
-	UsdScaleUndoableCommand& operator=(const UsdScaleUndoableCommand&) = delete;
-	UsdScaleUndoableCommand(UsdScaleUndoableCommand&&) = delete;
-	UsdScaleUndoableCommand& operator=(UsdScaleUndoableCommand&&) = delete;
+    UsdScaleUndoableCommand(const UsdScaleUndoableCommand&) = delete;
+    UsdScaleUndoableCommand& operator=(const UsdScaleUndoableCommand&) = delete;
+    UsdScaleUndoableCommand(UsdScaleUndoableCommand&&) = delete;
+    UsdScaleUndoableCommand& operator=(UsdScaleUndoableCommand&&) = delete;
 
-	#ifdef UFE_V2_FEATURES_AVAILABLE
-	//! Create a UsdScaleUndoableCommand from a UFE scene path.  The command is
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    //! Create a UsdScaleUndoableCommand from a UFE scene path.  The command is
     //! not executed.
-	static UsdScaleUndoableCommand::Ptr create(
-        const Ufe::Path& path, double x, double y, double z);
-	#else
-	//! Create a UsdScaleUndoableCommand from a UFE scene item.  The command is
-    //! not executed.
-	static UsdScaleUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
-	#endif
-
-	// Ufe::ScaleUndoableCommand overrides
-	void undo() override;
-	void redo() override;
-#if UFE_PREVIEW_VERSION_NUM >= 2025
-//#ifdef UFE_V2_FEATURES_AVAILABLE
-	bool set(double x, double y, double z) override;
+    static UsdScaleUndoableCommand::Ptr create(const Ufe::Path& path, double x, double y, double z);
 #else
-	bool scale(double x, double y, double z) override;
+    //! Create a UsdScaleUndoableCommand from a UFE scene item.  The command is
+    //! not executed.
+    static UsdScaleUndoableCommand::Ptr
+         create(const UsdSceneItem::Ptr& item, double x, double y, double z);
 #endif
 
-	#ifdef UFE_V2_FEATURES_AVAILABLE
-	Ufe::Path getPath() const override { return path(); }
-	#endif
+    // Ufe::ScaleUndoableCommand overrides
+    void undo() override;
+    void redo() override;
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+    //#ifdef UFE_V2_FEATURES_AVAILABLE
+    bool set(double x, double y, double z) override;
+#else
+    bool scale(double x, double y, double z) override;
+#endif
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    Ufe::Path getPath() const override { return path(); }
+#endif
 
 protected:
-
     //! Construct a UsdScaleUndoableCommand.  The command is not executed.
-	#ifdef UFE_V2_FEATURES_AVAILABLE
-	UsdScaleUndoableCommand(const Ufe::Path& path, double x, double y, double z);
-	#else
-	UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
-	#endif
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    UsdScaleUndoableCommand(const Ufe::Path& path, double x, double y, double z);
+#else
+    UsdScaleUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+#endif
 
-	~UsdScaleUndoableCommand() override;
+    ~UsdScaleUndoableCommand() override;
 
 private:
-
     static TfToken scaleTok;
 
     TfToken attributeName() const override { return scaleTok; }
-    void performImp(double x, double y, double z) override;
-    void addEmptyAttribute() override;
+    void    performImp(double x, double y, double z) override;
+    void    addEmptyAttribute() override;
 
 }; // UsdScaleUndoableCommand
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

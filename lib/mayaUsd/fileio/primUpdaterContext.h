@@ -17,11 +17,11 @@
 #ifndef PXRUSDMAYA_PRIMUPDATERCONTEXT_H
 #define PXRUSDMAYA_PRIMUPDATERCONTEXT_H
 
+#include <mayaUsd/base/api.h>
+
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/timeCode.h>
-
-#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -32,9 +32,7 @@ class UsdMayaPrimUpdaterContext
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMayaPrimUpdaterContext(
-            const UsdTimeCode& timeCode,
-            const UsdStageRefPtr& stage);
+    UsdMayaPrimUpdaterContext(const UsdTimeCode& timeCode, const UsdStageRefPtr& stage);
 
     /// \brief returns the time frame where data should be edited.
     const UsdTimeCode& GetTimeCode() const { return _timeCode; }
@@ -44,14 +42,12 @@ public:
 
     MAYAUSD_CORE_PUBLIC
     virtual void Clear(const SdfPath&);
-  
-private:
-    const UsdTimeCode&  _timeCode;
-    UsdStageRefPtr      _stage;
-};
 
+private:
+    const UsdTimeCode& _timeCode;
+    UsdStageRefPtr     _stage;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
-

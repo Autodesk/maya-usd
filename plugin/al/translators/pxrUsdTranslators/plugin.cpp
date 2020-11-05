@@ -15,27 +15,28 @@
 //
 
 // This plugin exists solely because:
-//    a) we need to load the code in ProxyShapeTranslator.cpp, so it's PXRUSDMAYA_DEFINE_WRITER is run
-//    b) we want this library separate from the main AL plugins / libraries, so they don't have to link
+//    a) we need to load the code in ProxyShapeTranslator.cpp, so it's PXRUSDMAYA_DEFINE_WRITER is
+//    run b) we want this library separate from the main AL plugins / libraries, so they don't have
+//    to link
 //       against Pixar's usdMaya
-//    c) the plugin finding/loading mechanism for UsdMayaPrimWriterRegistry doesn't actually ever call
-//       PlugPlugin.Load() on the plugins registered with it - it just uses the plugins to inspect their
-//       metadata, find a maya plugin, and load that. While that works, it means you need this extra
-//       boilerplate to create a maya plugin...
+//    c) the plugin finding/loading mechanism for UsdMayaPrimWriterRegistry doesn't actually ever
+//    call
+//       PlugPlugin.Load() on the plugins registered with it - it just uses the plugins to inspect
+//       their metadata, find a maya plugin, and load that. While that works, it means you need this
+//       extra boilerplate to create a maya plugin...
 
 #include <maya/MFnPlugin.h>
 #include <maya/MStatus.h>
 
 MStatus initializePlugin(MObject obj)
 {
-  MStatus status;
-  MFnPlugin plugin(obj, "Animal Logic", "1.0", "Any", &status);
-  return status;
+    MStatus   status;
+    MFnPlugin plugin(obj, "Animal Logic", "1.0", "Any", &status);
+    return status;
 }
 
 MStatus uninitializePlugin(MObject obj)
 {
-  MFnPlugin plugin(obj);
-  return MStatus::kSuccess;
+    MFnPlugin plugin(obj);
+    return MStatus::kSuccess;
 }
-

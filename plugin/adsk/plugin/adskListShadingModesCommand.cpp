@@ -24,4 +24,4 @@ void* ADSKMayaUSDListShadingModesCommand::creator()
     return new ADSKMayaUSDListShadingModesCommand();
 }
 
-}
+} // namespace MAYAUSD_NS_DEF
