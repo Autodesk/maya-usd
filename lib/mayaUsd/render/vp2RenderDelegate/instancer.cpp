@@ -45,9 +45,14 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens, (instanceTransform)(rotate)(scale)(translate))
 */
 HdVP2Instancer::HdVP2Instancer(
     HdSceneDelegate* delegate,
-    SdfPath const&   id,
-    SdfPath const&   parentId)
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    SdfPath const& id)
+    : HdInstancer(delegate, id)
+#else
+    SdfPath const& id,
+    SdfPath const& parentId)
     : HdInstancer(delegate, id, parentId)
+#endif
 {
 }
 
@@ -77,12 +82,18 @@ void HdVP2Instancer::_SyncPrimvars()
 
     // Use the double-checked locking pattern to check if this instancer's
     // primvars are dirty.
-    int dirtyBits = changeTracker.GetInstancerDirtyBits(id);
-    if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, id)) {
+    HdDirtyBits dirtyBits = changeTracker.GetInstancerDirtyBits(id);
+    if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, id)
+        || HdChangeTracker::IsInstancerDirty(dirtyBits, id)) {
         std::lock_guard<std::mutex> lock(_instanceLock);
 
         // If not dirty, then another thread did the job
         dirtyBits = changeTracker.GetInstancerDirtyBits(id);
+
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        _UpdateInstancer(GetDelegate(), &dirtyBits);
+#endif
+
         if (HdChangeTracker::IsAnyPrimvarDirty(dirtyBits, id)) {
 
             // If this instancer has dirty primvars, get the list of
@@ -103,10 +114,10 @@ void HdVP2Instancer::_SyncPrimvars()
                     }
                 }
             }
-
-            // Mark the instancer as clean
-            changeTracker.MarkInstancerClean(id);
         }
+
+        // Mark the instancer as clean
+        changeTracker.MarkInstancerClean(id);
     }
 }
 

@@ -79,7 +79,7 @@ class testPxrUsdPreviewSurfaceExport(unittest.TestCase):
 
     def _GetSourceShader(self, inputOrOutput):
         (connectableAPI, _, _) = inputOrOutput.GetConnectedSource()
-        self.assertTrue(connectableAPI.IsShader())
+        self.assertTrue(connectableAPI.GetPrim().IsA(UsdShade.Shader))
         shaderPrim = connectableAPI.GetPrim()
         self.assertTrue(shaderPrim)
 
