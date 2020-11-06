@@ -50,6 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((UseSpecularWorkflowAttrName, "useSpecularWorkflow"))                                       \
     ((OutColorAttrName, "outColor"))                                                             \
     ((OutTransparencyAttrName, "outTransparency"))                                               \
+    ((OutTransparencyOnAttrName, "outTransparencyOn"))                                           \
     ((niceName, "USD Preview Surface"))                                                          \
     ((exportDescription, "Exports the bound shader as a USD preview surface UsdShade network.")) \
     ((importDescription, "Search for a USD preview surface UsdShade network to import."))

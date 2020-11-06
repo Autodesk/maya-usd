@@ -115,6 +115,10 @@ limitations under the License.
         <float name="fogDensity" ref="maya_FogDepthSurface.fogDensity"/>
         <float4 name="fogColor" ref="mayaComputeSurfaceFinal.fogColor"/>
         <float name="fogMultiplier" ref="mayaComputeSurfaceFinal.fogMultiplier"/>
+
+        <!-- The parameter is a workaround for VP2 to execute transparency test. For more details
+             see PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(). -->
+        <float name="dummyTransparency" ref="opacityToTransparency.dummyTransparency"/>
     </properties>
     <values>
         <!-- UsdPreviewSurface Parameter Default Values -->
@@ -148,6 +152,10 @@ limitations under the License.
         <float name="fogDensity" value="0.1"/>
         <float4 name="fogColor" value="0.5,0.5,0.5,1.0"/>
         <float name="fogMultiplier" value="1.0"/>
+
+        <!-- The parameter is a workaround for VP2 to execute transparency test. For more details
+             see PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(). -->
+        <float name="dummyTransparency" value="0.0" />
     </values>
     <outputs>
         <struct name="mayaSurfaceShaderOutput" ref="mayaSurfaceShaderOutput.mayaSurfaceShaderOutput"/>

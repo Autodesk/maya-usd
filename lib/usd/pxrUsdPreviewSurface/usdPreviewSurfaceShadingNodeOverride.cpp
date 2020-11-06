@@ -29,6 +29,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+const MString _transparencyParameter = "dummyTransparency"; //!< Transparency parameter
+}
+
 /* static */
 MHWRender::MPxSurfaceShadingNodeOverride*
 PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator(const MObject& obj)
@@ -59,7 +63,8 @@ MString PxrMayaUsdPreviewSurfaceShadingNodeOverride::primaryColorParameter() con
 /* virtual */
 MString PxrMayaUsdPreviewSurfaceShadingNodeOverride::transparencyParameter() const
 {
-    return "transparency";
+    // See getCustomMappings() implementation for more details.
+    return _transparencyParameter;
 }
 
 /* virtual */
@@ -84,12 +89,15 @@ void PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(
     // The control on the Maya shader is 'opacity' (1.0 is opaque), but Maya
     // prefers to work in terms of transparency (0.0 is opaque). We want Maya
     // to manage enabling or disabling transparency of the shader instance for
-    // us, so we map the "outTransparency" attribute on the shader (which the
-    // shader computes from "opacity") to the "transparency" parameter of the
-    // fragment graph. transparencyParameter() above then instructs Maya to
-    // watch for changes in value for that parameter.
+    // us, so we map the "outTransparencyOn" attribute on the shader (which the
+    // shader computes from "opacity") to the "dummyTransparency" parameter of
+    // the fragment graph. transparencyParameter() above then instructs Maya to
+    // execute transparency test on the value of the "dummyTransparency" parameter
+    // (a positive value means to enable transparency whilst a non-positive value
+    // means to disable transparency). Note the "opacity" parameter of the shader
+    // fragment carries the alpha value that is actually used in shading.
     MHWRender::MAttributeParameterMapping transparencyMapping(
-        "transparency", "outTransparency", true, true);
+        _transparencyParameter, "outTransparencyOn", true, true);
     mappings.append(transparencyMapping);
 }
 
