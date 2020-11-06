@@ -60,14 +60,19 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (diffuseColor)(opacity)
 
-        ((NiceName, "Display Colors"))(
-            (ImportDescription,
-             "Imports the displayColor primvar on the USD mesh as a Maya"
-             " surface shader.")));
+    (diffuseColor)
+    (opacity)
+
+    ((NiceName, "Display Colors"))
+    ((ImportDescription,
+        "Imports the displayColor primvar on the USD mesh as a Maya"
+        " surface shader."))
+);
+// clang-format on
 
 DEFINE_SHADING_MODE_IMPORTER_WITH_JOB_ARGUMENTS(
     displayColor,

@@ -48,12 +48,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((PointInstancerTypeName, "PxPointInstancer"))((XformTypeName, "Xform"))(
-        (GeomRootName, "Geom"))((ScopePrimTypeName, "Scope"))
 
-        ((MayaProxyShapeNodeName, "GeomProxy"))((ExcludePrimPathsPlugName, "excludePrimPaths")));
+    ((PointInstancerTypeName, "PxPointInstancer"))
+    ((XformTypeName, "Xform"))
+    ((GeomRootName, "Geom"))
+    ((ScopePrimTypeName, "Scope"))
+    ((MayaProxyShapeNodeName, "GeomProxy"))
+    ((ExcludePrimPathsPlugName, "excludePrimPaths"))
+);
+// clang-format on
 
 /*******************************************************************************
  *                                                                              *

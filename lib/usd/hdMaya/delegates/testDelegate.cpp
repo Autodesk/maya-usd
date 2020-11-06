@@ -23,7 +23,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HDMAYA_TEST_DELEGATE_FILE, "", "Path for HdMayaTestDelegate to load");
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdMayaTestDelegate));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (HdMayaTestDelegate)
+);
+// clang-format on
 
 TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaTestDelegate)
 {

@@ -54,6 +54,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaMeshPrimvarTokens, PXRUSDMAYA_MESH_PRIMVAR_TOKENS);
 
 // These tokens are supported Maya attributes used for Mesh surfaces
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _meshTokens,
 
@@ -67,7 +68,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     // This token is deprecated as it is from OpenSubdiv 2 and the USD
     // schema now conforms to OpenSubdiv 3, but we continue to look for it
     // and translate to the equivalent new value for backwards compatibility.
-    (USD_faceVaryingInterpolateBoundary));
+    (USD_faceVaryingInterpolateBoundary)
+);
+// clang-format on
 
 PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(
     UsdGeomTokens->subdivisionScheme,

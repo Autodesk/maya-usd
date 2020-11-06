@@ -58,11 +58,14 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(displacementShader, PxrUsdTranslators_DisplacementShaderWriter);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (displacement));
+    (displacement)
+);
+// clang-format on
 
 PxrUsdTranslators_DisplacementShaderWriter::PxrUsdTranslators_DisplacementShaderWriter(
     const MFnDependencyNode& depNodeFn,

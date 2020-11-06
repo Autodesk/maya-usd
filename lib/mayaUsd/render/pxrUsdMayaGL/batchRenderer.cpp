@@ -83,11 +83,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((BatchRendererRootName, "MayaHdBatchRenderer"))((LegacyViewport, "LegacyViewport"))(
-        (Viewport2, "Viewport2"))((MayaEndRenderNotificationName, "UsdMayaEndRenderNotification")));
+    ((BatchRendererRootName, "MayaHdBatchRenderer"))
+    ((LegacyViewport, "LegacyViewport"))
+    ((Viewport2, "Viewport2"))
+    ((MayaEndRenderNotificationName, "UsdMayaEndRenderNotification"))
+);
+// clang-format on
 
 TF_INSTANTIATE_SINGLETON(UsdMayaGLBatchRenderer);
 

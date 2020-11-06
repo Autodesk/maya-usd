@@ -46,7 +46,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_REGISTER_WRITER(instancer, PxrUsdTranslators_InstancerWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(instancer, UsdGeomPointInstancer);
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (Prototypes)(instancerTranslate));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (Prototypes)
+    (instancerTranslate)
+);
+// clang-format on
 
 namespace {
 

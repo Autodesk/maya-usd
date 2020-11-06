@@ -30,14 +30,18 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((NoneOption,
-      "none"))((NoneNiceName, "None"))((NoneExportDescription, "No material data gets exported."))(
-        (NoneImportDescription,
-         "Stop the search for materials. Can signal that no materials are to be"
-         " imported when used alone.")));
+    ((NoneOption, "none"))
+    ((NoneNiceName, "None"))
+    ((NoneExportDescription, "No material data gets exported."))
+    ((NoneImportDescription,
+        "Stop the search for materials. Can signal that no materials are to be"
+        " imported when used alone."))
+);
+// clang-format on
 
 namespace {
 std::pair<TfToken, TfToken> _GetOptions(const MString& niceName, bool isExport)
