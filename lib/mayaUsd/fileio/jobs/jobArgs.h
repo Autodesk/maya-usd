@@ -34,42 +34,93 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_TRANSLATOR_TOKENS                                         \
-    ((UsdFileExtensionDefault, "usd"))((UsdFileExtensionASCII, "usda"))(     \
-        (UsdFileExtensionCrate, "usdc"))((UsdFileExtensionPackage, "usdz"))( \
-        (UsdReadableFileFilter, "*.usd *.usda *.usdc *.usdz"))(              \
-        (UsdWritableFileFilter, "*.usd *.usda *.usdc *.usdz"))
+// clang-format off
+#define PXRUSDMAYA_TRANSLATOR_TOKENS \
+    ((UsdFileExtensionDefault, "usd")) \
+    ((UsdFileExtensionASCII, "usda")) \
+    ((UsdFileExtensionCrate, "usdc")) \
+    ((UsdFileExtensionPackage, "usdz")) \
+    ((UsdReadableFileFilter, "*.usd *.usda *.usdc *.usdz")) \
+    ((UsdWritableFileFilter, "*.usd *.usda *.usdc *.usdz"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaTranslatorTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_TRANSLATOR_TOKENS);
 
-#define PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS                                                      \
-    /* Dictionary keys */                                                                      \
-    (chaser)(chaserArgs)(compatibility)(defaultCameras)(defaultMeshScheme)(defaultUSDFormat)(  \
-        eulerFilter)(exportCollectionBasedBindings)(exportColorSets)(exportDisplayColor)(      \
-        exportInstances)(exportMaterialCollections)(exportReferenceObjects)(                   \
-        exportRefsAsInstanceable)(exportSkels)(exportSkin)(exportUVs)(exportVisibility)(kind)( \
-        materialCollectionsPath)(materialsScopeName)(melPerFrameCallback)(melPostCallback)(    \
-        mergeTransformAndShape)(normalizeNurbs)(parentScope)(pythonPerFrameCallback)(          \
-        pythonPostCallback)(renderableOnly)(renderLayerMode)(shadingMode)(convertMaterialsTo)( \
-        stripNamespaces)(verbose)                     /* Special "none" token */               \
-        (none)                                        /* renderLayerMode values */             \
-        (defaultLayer)(currentLayer)(modelingVariant) /* exportSkels/exportSkin values */      \
-        ((auto_, "auto"))((explicit_, "explicit"))    /* compatibility values */               \
-        (appleArKit)
+// clang-format off
+#define PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS \
+    /* Dictionary keys */ \
+    (chaser) \
+    (chaserArgs) \
+    (compatibility) \
+    (defaultCameras) \
+    (defaultMeshScheme) \
+    (defaultUSDFormat) \
+    (eulerFilter) \
+    (exportCollectionBasedBindings) \
+    (exportColorSets) \
+    (exportDisplayColor) \
+    (exportInstances) \
+    (exportMaterialCollections) \
+    (exportReferenceObjects) \
+    (exportRefsAsInstanceable) \
+    (exportSkels) \
+    (exportSkin) \
+    (exportUVs) \
+    (exportVisibility) \
+    (kind) \
+    (materialCollectionsPath) \
+    (materialsScopeName) \
+    (melPerFrameCallback) \
+    (melPostCallback) \
+    (mergeTransformAndShape) \
+    (normalizeNurbs) \
+    (parentScope) \
+    (pythonPerFrameCallback) \
+    (pythonPostCallback) \
+    (renderableOnly) \
+    (renderLayerMode) \
+    (shadingMode) \
+    (convertMaterialsTo) \
+    (stripNamespaces) \
+    (verbose) \
+    /* Special "none" token */ \
+    (none) \
+    /* renderLayerMode values */ \
+    (defaultLayer) \
+    (currentLayer) \
+    (modelingVariant) \
+    /* exportSkels/exportSkin values */ \
+    ((auto_, "auto")) \
+    ((explicit_, "explicit")) \
+    /* compatibility values */ \
+    (appleArKit)
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaJobExportArgsTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS);
 
-#define PXRUSDMAYA_JOB_IMPORT_ARGS_TOKENS                                               \
-    /* Dictionary keys */                                                               \
-    (apiSchema)(assemblyRep)(excludePrimvar)(metadata)(shadingMode)(preferredMaterial)( \
-        useAsAnimationCache)(importInstances) /* assemblyRep values */                  \
-        (Collapsed)(Full)(Import)((Unloaded, ""))
+// clang-format off
+#define PXRUSDMAYA_JOB_IMPORT_ARGS_TOKENS \
+    /* Dictionary keys */ \
+    (apiSchema) \
+    (assemblyRep) \
+    (excludePrimvar) \
+    (metadata) \
+    (shadingMode) \
+    (preferredMaterial) \
+    (useAsAnimationCache) \
+    (importInstances) \
+    /* assemblyRep values */ \
+    (Collapsed) \
+    (Full) \
+    (Import) \
+    ((Unloaded, ""))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaJobImportArgsTokens,
