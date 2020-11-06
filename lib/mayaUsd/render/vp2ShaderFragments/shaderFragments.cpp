@@ -32,6 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdVP2ShaderFragmentsTokens, MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -80,6 +81,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (UsdPrimvarReader_float4)
     (UsdPrimvarReader_vector)
 );
+// clang-format on
 
 static const TfTokenVector _LanguageSpecificFragmentNames
     = { _tokens->BasisCurvesLinearDomain, _tokens->BasisCurvesCubicDomain };
