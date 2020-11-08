@@ -32,7 +32,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_ATTR_TOKENS ((USDAttrTypePrimvar, "primvar"))((USDAttrTypeUsdRi, "usdRi"))
+// clang-format off
+#define PXRUSDMAYA_ATTR_TOKENS \
+    ((USDAttrTypePrimvar, "primvar")) \
+    ((USDAttrTypeUsdRi, "usdRi"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaUserTaggedAttributeTokens,

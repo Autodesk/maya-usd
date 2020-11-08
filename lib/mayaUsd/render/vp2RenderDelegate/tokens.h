@@ -21,7 +21,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define HDVP2_REPR_TOKENS (bbox)(selection)
+// clang-format off
+#define HDVP2_REPR_TOKENS \
+    (bbox) \
+    (selection)
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(HdVP2ReprTokens, , HDVP2_REPR_TOKENS);
 

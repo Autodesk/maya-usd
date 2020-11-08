@@ -58,9 +58,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((NativeInstancerType, "instancer"))(Instancer)(Prototypes)(EmptyPrim));
+
+    ((NativeInstancerType, "instancer"))
+    (Instancer)
+    (Prototypes)
+    (EmptyPrim)
+);
+// clang-format on
 
 /* virtual */
 bool UsdMayaGL_InstancerShapeAdapter::UpdateVisibility(const M3dView* view)

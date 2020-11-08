@@ -33,10 +33,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (UsdMaya)(ShaderWriter));
+    (UsdMaya)
+        (ShaderWriter)
+);
+// clang-format on
 
 namespace {
 struct _RegistryEntry

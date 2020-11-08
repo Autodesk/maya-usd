@@ -41,13 +41,18 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((abcTypeSuffix, "_AbcType"))((abcGeomScopeSuffix, "_AbcGeomScope"))(
-        (abcGeomScopeFaceVarying, "fvr"))((abcGeomScopeUniform, "uni"))((abcGeomScopeVertex, "vtx"))
-
-        ((userProperties, "userProperties:")));
+    ((abcTypeSuffix, "_AbcType"))
+    ((abcGeomScopeSuffix, "_AbcGeomScope"))
+    ((abcGeomScopeFaceVarying, "fvr"))
+    ((abcGeomScopeUniform, "uni"))
+    ((abcGeomScopeVertex, "vtx"))
+    ((userProperties, "userProperties:"))
+);
+// clang-format on
 
 struct _AttributeEntry
 {

@@ -27,12 +27,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((conversionName, "rendermanForMaya"))((renderContext, "ri"))((niceName, "RenderMan for Maya"))(
-        (exportDescription, "Exports bound shaders as a RenderMan for Maya UsdShade network."))(
-        (importDescription, "Imports a RenderMan UsdShade network.")));
+    ((conversionName, "rendermanForMaya"))
+    ((renderContext, "ri"))
+    ((niceName, "RenderMan for Maya"))
+    ((exportDescription, "Exports bound shaders as a RenderMan for Maya UsdShade network."))
+    ((importDescription, "Imports a RenderMan UsdShade network."))
+);
+// clang-format on
 
 REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     _tokens->conversionName,

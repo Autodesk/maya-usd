@@ -32,7 +32,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (mayaPlugin)(providesTranslator)(UsdMaya)(ShadingModePlugin));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (mayaPlugin)
+    (providesTranslator)
+    (UsdMaya)
+    (ShadingModePlugin)
+);
+// clang-format on
 
 template <typename T> bool _GetData(const JsValue& any, T* val)
 {

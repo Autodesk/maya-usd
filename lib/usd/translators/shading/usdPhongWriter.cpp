@@ -54,11 +54,14 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(phong, PxrUsdTranslators_PhongWriter);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (cosinePower));
+    (cosinePower)
+);
+// clang-format on
 
 PxrUsdTranslators_PhongWriter::PxrUsdTranslators_PhongWriter(
     const MFnDependencyNode& depNodeFn,

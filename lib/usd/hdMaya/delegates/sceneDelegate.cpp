@@ -167,9 +167,14 @@ inline void _MapAdapter(F f, const M0& m0, const M&... m)
 
 } // namespace
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (HdMayaSceneDelegate)((FallbackMaterial, "__fallback_material__")));
+
+    (HdMayaSceneDelegate)
+    ((FallbackMaterial, "__fallback_material__"))
+);
+// clang-format on
 
 TF_REGISTRY_FUNCTION(TfType)
 {
