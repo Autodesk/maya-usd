@@ -39,11 +39,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(lambert, PxrUsdTranslators_LambertWriter);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (color)(transparency)(diffuse)(incandescence)(normalCamera));
+    (color)
+    (transparency)
+    (diffuse)
+    (incandescence)
+    (normalCamera)
+);
+// clang-format on
 
 PxrUsdTranslators_LambertWriter::PxrUsdTranslators_LambertWriter(
     const MFnDependencyNode& depNodeFn,

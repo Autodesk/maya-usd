@@ -31,7 +31,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRMAYAUSD_STAGE_DATA_TOKENS ((MayaTypeName, "pxrUsdStageData"))
+// clang-format off
+#define PXRMAYAUSD_STAGE_DATA_TOKENS \
+    ((MayaTypeName, "pxrUsdStageData"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdStageDataTokens, MAYAUSD_CORE_PUBLIC, PXRMAYAUSD_STAGE_DATA_TOKENS);
 

@@ -107,7 +107,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (Animation)(bindPose)(Maya)(generated)(Skeleton));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (Animation)
+    (bindPose)
+    (Maya)
+    (generated)
+    (Skeleton)
+);
+// clang-format on
 
 struct _MayaTokensData
 {

@@ -34,15 +34,27 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_SHADINGMODE_TOKENS (none)(displayColor)(useRegistry)
+// clang-format off
+#define PXRUSDMAYA_SHADINGMODE_TOKENS \
+    (none) \
+    (displayColor) \
+    (useRegistry)
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaShadingModeTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_SHADINGMODE_TOKENS);
 
+// clang-format off
 #define PXRUSDMAYA_SHADINGCONVERSION_TOKENS \
-    (none)(lambert)(standardSurface)(usdPreviewSurface)(blinn)(phong)
+    (none) \
+    (lambert) \
+    (standardSurface) \
+    (usdPreviewSurface) \
+    (blinn) \
+    (phong)
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaPreferredMaterialTokens,

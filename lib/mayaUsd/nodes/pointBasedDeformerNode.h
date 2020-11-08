@@ -32,7 +32,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS ((MayaTypeName, "pxrUsdPointBasedDeformerNode"))
+// clang-format off
+#define PXRUSDMAYA_POINT_BASED_DEFORMER_NODE_TOKENS \
+    ((MayaTypeName, "pxrUsdPointBasedDeformerNode"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaPointBasedDeformerNodeTokens,
