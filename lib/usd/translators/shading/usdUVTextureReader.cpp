@@ -119,7 +119,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((UDIMTag, "<UDIM>"))
     (uvTilingMode)
 );
-// clang-format off
+// clang-format on
 
 static const TfTokenVector _Place2dTextureConnections = {
     _tokens->coverage,    _tokens->translateFrame, _tokens->rotateFrame,   _tokens->mirrorU,

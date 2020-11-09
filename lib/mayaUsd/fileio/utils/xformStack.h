@@ -35,10 +35,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 // at present, but there was some support for reading it, thus
 // why it's here
 
+// clang-format off
 /// \hideinitializer
-#define PXRUSDMAYA_XFORM_STACK_TOKENS                                                        \
-    (translate)(rotatePivotTranslate)(rotatePivot)(rotate)(rotateAxis)(scalePivotTranslate)( \
-        scalePivot)(shear)(scale)(pivot)(pivotTranslate)(transform)
+#define PXRUSDMAYA_XFORM_STACK_TOKENS \
+    (translate) \
+    (rotatePivotTranslate) \
+    (rotatePivot) \
+    (rotate) \
+    (rotateAxis) \
+    (scalePivotTranslate) \
+    (scalePivot) \
+    (shear) \
+    (scale) \
+    (pivot) \
+    (pivotTranslate) \
+    (transform)
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaXformStackTokens,

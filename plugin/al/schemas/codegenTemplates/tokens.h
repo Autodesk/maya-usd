@@ -35,12 +35,14 @@
 {{ namespaceOpen }}
 
 {% endif %}
+// clang-format off
 /// \hideinitializer
 #define {{ Upper(tokensPrefix) }}_TOKENS \
 {% for token in tokens %}
     {% if token.id == token.value -%}({{ token.id }})
     {%- else -%}                     (({{ token.id }}, "{{ token.value}}"))
     {%- endif -%}{% if not loop.last %} \{% endif %}
+// clang-format on
 
 {% endfor %}
 

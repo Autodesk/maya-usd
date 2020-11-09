@@ -33,14 +33,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((conversionName, "maya"))((renderContext, "maya"))((niceName, "Maya Shaders"))(
-        (exportDescription,
+    ((conversionName, "maya"))
+    ((renderContext, "maya"))
+    ((niceName, "Maya Shaders"))
+    ((exportDescription,
          "Dumps the bound shader in a Maya UsdShade network that can only be "
-         "used for import. Will not render in the Maya viewport or usdView."))(
-        (importDescription, "Fetches back a Maya shader network dumped as UsdShade")));
+         "used for import. Will not render in the Maya viewport or usdView."))
+    ((importDescription,
+        "Fetches back a Maya shader network dumped as UsdShade"))
+);
+// clang-format on
 
 REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     _tokens->conversionName,

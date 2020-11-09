@@ -34,7 +34,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Define local tokens for the names of the primvars the instancer
 // consumes.
 // XXX: These should be hydra tokens...
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (instanceTransform)(rotate)(scale)(translate));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (instanceTransform)
+    (rotate)
+    (scale)
+    (translate)
+);
+// clang-format on
 
 /*! \brief  Constructor.
 

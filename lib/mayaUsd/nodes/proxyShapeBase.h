@@ -60,7 +60,10 @@ constexpr char USD_UFE_SEPARATOR = '/';
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define MAYAUSD_PROXY_SHAPE_BASE_TOKENS ((MayaTypeName, "mayaUsdProxyShapeBase"))
+// clang-format off
+#define MAYAUSD_PROXY_SHAPE_BASE_TOKENS \
+    ((MayaTypeName, "mayaUsdProxyShapeBase"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     MayaUsdProxyShapeBaseTokens,

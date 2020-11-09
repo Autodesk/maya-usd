@@ -34,7 +34,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (UsdMaya)(PrimReader));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (UsdMaya)
+    (PrimReader)
+);
+// clang-format on
 
 typedef std::map<TfToken, UsdMayaPrimReaderRegistry::ReaderFactoryFn> _Registry;
 static _Registry                                                      _reg;

@@ -36,7 +36,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_HD_IMAGING_SHAPE_TOKENS ((MayaTypeName, "pxrHdImagingShape"))
+// clang-format off
+#define PXRUSDMAYA_HD_IMAGING_SHAPE_TOKENS \
+    ((MayaTypeName, "pxrHdImagingShape"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     PxrMayaHdImagingShapeTokens,

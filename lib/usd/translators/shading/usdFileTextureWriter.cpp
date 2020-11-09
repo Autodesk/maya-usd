@@ -132,7 +132,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((BlueOutputName, "b"))
     ((AlphaOutputName, "a"))
 );
-// clang-format off
+// clang-format on
 
 UsdMayaShaderWriter::ContextSupport
 PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)

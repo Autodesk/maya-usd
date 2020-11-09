@@ -55,20 +55,40 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (file)(opacity)(st)(varname)
+    (file)
+    (opacity)
+    (st)
+    (varname)
 
-        (input)(output)
+    (input)
+    (output)
 
-            (rgb)(r)(g)(b)(a)
+    (rgb)
+    (r)
+    (g)
+    (b)
+    (a)
 
-                (xyz)(x)(y)(z)(w)
+    (xyz)
+    (x)
+    (y)
+    (z)
+    (w)
 
-                    (Float4ToFloatX)(Float4ToFloatY)(Float4ToFloatZ)(Float4ToFloatW)(Float4ToFloat3)
+    (Float4ToFloatX)
+    (Float4ToFloatY)
+    (Float4ToFloatZ)
+    (Float4ToFloatW)
+    (Float4ToFloat3)
 
-                        (UsdPrimvarReader_color)(UsdPrimvarReader_vector));
+    (UsdPrimvarReader_color)
+    (UsdPrimvarReader_vector)
+);
+// clang-format on
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
 bool _IsUsdPrimvarReader(const HdMaterialNode& node)

@@ -51,10 +51,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_ADAPTOR_ATTRIBUTE_ALIAS(UsdGeomTokens->purpose, "USD_purpose");
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (USD_inheritClassNames));
+    (USD_inheritClassNames)
+);
+// clang-format on
 
 static bool _IsAnimated(const UsdMayaJobExportArgs& args, const MObject& obj)
 {

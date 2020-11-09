@@ -50,19 +50,25 @@ static bool _ReadToCamera(
     const UsdMayaPrimReaderArgs& args,
     UsdMayaPrimReaderContext*    context);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((MayaCameraTypeName, "camera"))((MayaCameraShapeNameSuffix, "Shape"))
 
-        ((MayaCameraAttrNameHorizontalAperture,
-          "horizontalFilmAperture"))((MayaCameraAttrNameVerticalAperture, "verticalFilmAperture"))(
-            (MayaCameraAttrNameHorizontalApertureOffset, "horizontalFilmOffset"))(
-            (MayaCameraAttrNameVerticalApertureOffset,
-             "verticalFilmOffset"))((MayaCameraAttrNameOrthographicWidth, "orthographicWidth"))(
-            (MayaCameraAttrNameFocalLength, "focalLength"))(
-            (MayaCameraAttrNameFocusDistance, "focusDistance"))((MayaCameraAttrNameFStop, "fStop"))(
-            (MayaCameraAttrNameNearClippingPlane,
-             "nearClipPlane"))((MayaCameraAttrNameFarClippingPlane, "farClipPlane")));
+    ((MayaCameraTypeName, "camera"))
+    ((MayaCameraShapeNameSuffix, "Shape"))
+
+    ((MayaCameraAttrNameHorizontalAperture, "horizontalFilmAperture"))
+    ((MayaCameraAttrNameVerticalAperture, "verticalFilmAperture"))
+    ((MayaCameraAttrNameHorizontalApertureOffset, "horizontalFilmOffset"))
+    ((MayaCameraAttrNameVerticalApertureOffset, "verticalFilmOffset"))
+    ((MayaCameraAttrNameOrthographicWidth, "orthographicWidth"))
+    ((MayaCameraAttrNameFocalLength, "focalLength"))
+    ((MayaCameraAttrNameFocusDistance, "focusDistance"))
+    ((MayaCameraAttrNameFStop, "fStop"))
+    ((MayaCameraAttrNameNearClippingPlane, "nearClipPlane"))
+    ((MayaCameraAttrNameFarClippingPlane, "farClipPlane"))
+);
+// clang-format on
 
 static bool _CheckUsdTypeAndResizeArrays(
     const UsdAttribute&  usdAttr,

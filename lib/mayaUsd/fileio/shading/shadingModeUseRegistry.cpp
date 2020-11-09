@@ -56,15 +56,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((ArgName, "useRegistry"))((NiceName, "Use Registry"))(
-        (ExportDescription,
+
+    ((ArgName, "useRegistry"))
+    ((NiceName, "Use Registry"))
+    ((ExportDescription,
+        "Use a registry based mechanism, complemented with material conversions,"
+         " to export to a UsdShade network"))
+    ((ImportDescription,
          "Use a registry based mechanism, complemented with material conversions,"
-         " to export to a UsdShade network"))(
-        (ImportDescription,
-         "Use a registry based mechanism, complemented with material conversions,"
-         " to import from a UsdShade network")));
+         " to import from a UsdShade network"))
+);
+// clang-format on
 
 using _NodeHandleToShaderWriterMap
     = UsdMayaUtil::MObjectHandleUnorderedMap<UsdMayaShaderWriterSharedPtr>;

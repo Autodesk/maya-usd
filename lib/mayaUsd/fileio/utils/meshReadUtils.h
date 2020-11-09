@@ -37,9 +37,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdGeomMesh;
 
-#define PXRUSDMAYA_MESH_PRIMVAR_TOKENS                                                            \
-    ((DisplayColorColorSetName, "displayColor"))((DisplayOpacityColorSetName, "displayOpacity"))( \
-        (DefaultMayaTexcoordName, "map1"))
+// clang-format off
+#define PXRUSDMAYA_MESH_PRIMVAR_TOKENS \
+    ((DisplayColorColorSetName, "displayColor")) \
+    ((DisplayOpacityColorSetName, "displayOpacity")) \
+    ((DefaultMayaTexcoordName, "map1"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaMeshPrimvarTokens,
