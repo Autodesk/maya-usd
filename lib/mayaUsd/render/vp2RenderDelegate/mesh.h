@@ -97,7 +97,11 @@ struct HdVP2MeshSharedData
 class HdVP2Mesh final : public HdMesh
 {
 public:
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    HdVP2Mesh(HdVP2RenderDelegate*, const SdfPath&);
+#else
     HdVP2Mesh(HdVP2RenderDelegate*, const SdfPath&, const SdfPath& instancerId = SdfPath());
+#endif
 
     //! Destructor.
     ~HdVP2Mesh() override = default;

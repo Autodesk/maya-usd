@@ -58,7 +58,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (surfaceShader)(volumeShader)(displacementShader)(varname)(map1));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (surfaceShader)
+    (volumeShader)
+    (displacementShader)
+    (varname)
+    (map1)
+);
+// clang-format on
 
 UsdMayaShadingModeExportContext::UsdMayaShadingModeExportContext(
     const MObject&                           shadingEngine,
@@ -433,6 +443,10 @@ public:
             _nodesWithUVInput.push_back(TfToken(splitName[1]));
         }
 
+        if (_nodesWithUVInput.empty()) {
+            return;
+        }
+
         std::set<TfToken> exportedShapes;
         for (const auto& iter : assignmentsToBind) {
             exportedShapes.insert(iter.shapeName);
@@ -497,8 +511,17 @@ public:
 
     const UsdShadeMaterial& getMaterial(const TfToken& shapeName)
     {
-        // Look for an existing material for the requested shape:
-        const TfTokenVector&             uvNames = _shapeNameToUVNames[shapeName];
+        // Look for the UV set names linked to this shape.
+        ShapeToStreams::const_iterator shapeStreamIter = _shapeNameToUVNames.find(shapeName);
+        if (shapeStreamIter == _shapeNameToUVNames.cend()) {
+            // No UV sets linked to this shape, so just use the original
+            // material.
+            return _material;
+        }
+
+        // Look for an existing material for the requested shape based on its
+        // UV sets.
+        const TfTokenVector&             uvNames = shapeStreamIter->second;
         MaterialMappings::const_iterator iter = _uvNamesToMaterial.find(uvNames);
         if (iter != _uvNamesToMaterial.end()) {
             return iter->second;

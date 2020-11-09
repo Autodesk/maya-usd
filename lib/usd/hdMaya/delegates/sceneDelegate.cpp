@@ -167,9 +167,14 @@ inline void _MapAdapter(F f, const M0& m0, const M&... m)
 
 } // namespace
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (HdMayaSceneDelegate)((FallbackMaterial, "__fallback_material__")));
+
+    (HdMayaSceneDelegate)
+    ((FallbackMaterial, "__fallback_material__"))
+);
+// clang-format on
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -934,6 +939,20 @@ HdMayaSceneDelegate::GetInstanceIndices(const SdfPath& instancerId, const SdfPat
         },
         _shapeAdapters);
 }
+
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+SdfPath HdMayaSceneDelegate::GetInstancerId(const SdfPath& primId)
+{
+    TF_DEBUG(HDMAYA_DELEGATE_GET_INSTANCER_ID)
+        .Msg("HdMayaSceneDelegate::GetInstancerId(%s)\n", primId.GetText());
+    // Instancers don't have any instancers yet.
+    if (primId.IsPropertyPath()) {
+        return SdfPath();
+    }
+    return _GetValue<HdMayaDagAdapter, SdfPath>(
+        primId, [](HdMayaDagAdapter* a) -> SdfPath { return a->GetInstancerID(); }, _shapeAdapters);
+}
+#endif
 
 GfMatrix4d HdMayaSceneDelegate::GetInstancerTransform(SdfPath const& instancerId)
 {

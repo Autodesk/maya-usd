@@ -95,6 +95,13 @@ class testUsdExportUVSetMappings(unittest.TestCase):
             self.assertEqual(mat.GetInput("file2:varname").GetAttr().Get(), f2_name)
             self.assertEqual(mat.GetInput("file3:varname").GetAttr().Get(), f3_name)
 
+        # Initial code had a bug where a material with no UV mappings would
+        # specialize itself. Make sure it stays fixed:
+        plane_prim = self._stage.GetPrimAtPath("/pPlane8")
+        binding_api = UsdShade.MaterialBindingAPI(plane_prim)
+        mat = binding_api.ComputeBoundMaterial()[0]
+        self.assertEqual(mat.GetPath(), "/pPlane8/Materials/blinn2SG")
+        self.assertFalse(mat.GetPrim().HasAuthoredSpecializes())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

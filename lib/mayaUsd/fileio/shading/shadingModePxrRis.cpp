@@ -60,14 +60,19 @@ using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((PxrShaderPrefix, "Pxr"))((DefaultShaderOutputName, "out"))((MayaShaderOutputName, "outColor"))
+    ((PxrShaderPrefix, "Pxr"))
+    ((DefaultShaderOutputName, "out"))
+    ((MayaShaderOutputName, "outColor"))
 
-        ((RmanPlugPreferenceName, "rfmShadingEngineUseRmanPlugs"))
+    ((RmanPlugPreferenceName, "rfmShadingEngineUseRmanPlugs"))
 
-            ((RmanVolumeShaderPlugName, "volumeShader")));
+    ((RmanVolumeShaderPlugName, "volumeShader"))
+);
+// clang-format on
 
 namespace {
 

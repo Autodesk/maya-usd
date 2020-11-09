@@ -38,10 +38,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaUserTaggedAttributeTokens, PXRUSDMAYA_ATTR_TOKENS);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (USD_UserExportedAttributesJson)(usdAttrName)(usdAttrType)(
-        translateMayaDoubleToUsdSinglePrecision)((UserPropertiesNamespace, "userProperties:")));
+
+    (USD_UserExportedAttributesJson)
+    (usdAttrName)
+    (usdAttrType)
+    (translateMayaDoubleToUsdSinglePrecision)
+    ((UserPropertiesNamespace, "userProperties:"))
+);
+// clang-format on
 
 UsdMayaUserTaggedAttribute::UsdMayaUserTaggedAttribute(
     const MPlug&       plug,

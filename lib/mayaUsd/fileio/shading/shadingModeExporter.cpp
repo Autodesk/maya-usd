@@ -41,7 +41,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, ((materialNamespace, "material:")));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    ((materialNamespace, "material:"))
+);
+// clang-format on
 
 UsdMayaShadingModeExporter::UsdMayaShadingModeExporter() { }
 

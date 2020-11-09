@@ -56,12 +56,26 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(standardSurface, PxrUsdTranslators_StandardSurfaceWriter);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (base)(baseColor)(emission)(emissionColor)(metalness)(specular)(specularColor)(specularIOR)(
-        specularRoughness)(coat)(coatRoughness)(transmission)(normalCamera));
+    (base)
+    (baseColor)
+    (emission)
+    (emissionColor)
+    (metalness)
+    (specular)
+    (specularColor)
+    (specularIOR)
+    (specularRoughness)
+    (coat)
+    (coatRoughness)
+    (transmission)
+    (normalCamera)
+);
+// clang-format on
 
 PxrUsdTranslators_StandardSurfaceWriter::PxrUsdTranslators_StandardSurfaceWriter(
     const MFnDependencyNode& depNodeFn,
