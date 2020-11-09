@@ -339,7 +339,11 @@ MStatus PxrMayaUsdPreviewSurface::initialize()
 }
 
 /* virtual */
-void PxrMayaUsdPreviewSurface::postConstructor() { setMPSafe(true); }
+void PxrMayaUsdPreviewSurface::postConstructor()
+{
+    setMPSafe(true);
+    setExistWithoutInConnections(true);
+}
 
 /* virtual */
 MStatus PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlock)
