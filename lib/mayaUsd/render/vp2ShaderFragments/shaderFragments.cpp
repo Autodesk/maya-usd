@@ -129,7 +129,6 @@ static const TfTokenVector _FragmentGraphNames
         _tokens->BasisCurvesLinearFallbackShader,
         _tokens->FallbackCPVShader,
         _tokens->FallbackShader,
-        HdVP2ShaderFragmentsTokens->CoreFragmentGraphName,
         HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName };
 
 namespace {
