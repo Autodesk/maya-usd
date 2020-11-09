@@ -16,7 +16,6 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
@@ -57,19 +56,15 @@ public:
     static bool
     duplicate(const SdfLayerHandle& layer, const SdfPath& usdSrcPath, const SdfPath& usdDstPath);
 
-    //! Return the USD destination path and layer.
-    static void primInfo();
-
     // UsdUndoDuplicateCommand overrides
     void undo() override;
     void redo() override;
 
 private:
-    UsdPrim         fSrcPrim;
-    UsdStageWeakPtr fStage;
-    SdfLayerHandle  fLayer;
-    Ufe::Path       fUfeSrcPath;
-    SdfPath         fUsdDstPath;
+    UsdPrim        _srcPrim;
+    SdfLayerHandle _layer;
+    Ufe::Path      _ufeSrcPath;
+    SdfPath        _usdDstPath;
 
 }; // UsdUndoDuplicateCommand
 
