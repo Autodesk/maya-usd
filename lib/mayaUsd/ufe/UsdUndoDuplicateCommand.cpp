@@ -16,6 +16,7 @@
 #include "UsdUndoDuplicateCommand.h"
 
 #include "private/UfeNotifGuard.h"
+#include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsdUtils/util.h>
@@ -59,6 +60,8 @@ void UsdUndoDuplicateCommand::primInfo(
     SdfPath&        usdDstPath,
     SdfLayerHandle& srcLayer)
 {
+    ufe::applyCommandRestriction(srcPrim, "duplicate");
+
     auto             parent = srcPrim.GetParent();
     TfToken::HashSet childrenNames;
     for (auto child : parent.GetFilteredChildren(UsdPrimIsDefined && !UsdPrimIsAbstract)) {
@@ -69,19 +72,6 @@ void UsdUndoDuplicateCommand::primInfo(
     // has a numerical suffix, increment it, otherwise append "1" to it.
     auto dstName = uniqueName(childrenNames, srcPrim.GetName());
     usdDstPath = parent.GetPath().AppendChild(TfToken(dstName));
-
-    // Iterate over the layer stack, starting at the highest-priority layer.
-    // The source layer is the one in which there exists a def primSpec, not
-    // an over.  An alternative would have beeen to call Sdf.CopySpec for
-    // each layer in which there is an over or a def, until we reach the
-    // layer with a def primSpec.  This would preserve the visual appearance
-    // of the duplicate.  PPT, 12-Jun-2018.
-    srcLayer = MayaUsdUtils::defPrimSpecLayer(srcPrim);
-    if (!srcLayer) {
-        std::string err
-            = TfStringPrintf("No prim found at %s", srcPrim.GetPath().GetString().c_str());
-        throw std::runtime_error(err.c_str());
-    }
 }
 
 /*static*/
