@@ -27,13 +27,10 @@
 #include <pxr/base/tf/iterator.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/types.h>
-#include <pxr/usd/pcp/layerStack.h>
-#include <pxr/usd/pcp/node.h>
-#include <pxr/usd/pcp/primIndex.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/sdf/layerTree.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdGeom/mesh.h>
@@ -58,27 +55,42 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (inputs)(varname));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (inputs)
+    (varname)
+);
+// clang-format on
 
 namespace {
 // We want to know if this material is a specialization that was created to handle UV mappings on
 // export. For details, see the _UVMappingManager class in ..\shading\shadingModeExporterContext.cpp
 //
-// If the root layer contains anything that is not a varname input, we do not consider it a
-// mergeable material.
 bool _IsMergeableMaterial(const UsdShadeMaterial& shadeMaterial)
 {
     if (!shadeMaterial || !shadeMaterial.HasBaseMaterial()) {
         return false;
     }
-    const PcpPrimIndex&   primIndex = shadeMaterial.GetPrim().GetPrimIndex();
-    PcpNodeRef            primRoot = primIndex.GetRootNode();
-    SdfPath               primPath = primIndex.GetPath();
-    const SdfLayerHandle& layer = primRoot.GetLayerStack()->GetLayerTree()->GetLayer();
 
+    UsdPrimCompositionQuery                 query(shadeMaterial.GetPrim());
+    std::vector<UsdPrimCompositionQueryArc> arcs = query.GetCompositionArcs();
+
+    // Check for materials created by _UVMappingManager::getMaterial(). This code could probably be
+    // expanded to be more generic and handle more complex composition arcs at a later stage.
+
+    // Materials created by the _UVMappingManager have only 2 arcs:
+    if (arcs.size() != 2) {
+        return false;
+    }
+
+    UsdPrimCompositionQueryArc specializationArc = arcs[1];
+    SdfPath                    primPath = shadeMaterial.GetPath();
+
+    // Check that the specialization arc contains only opinions on varname inputs:
     bool retVal = true;
-    auto testFunction = [&](const SdfPath& path) {
-        // If we traverse anything that is not a varname specialization, we return false.
+    auto isVarnameOpinion = [&](const SdfPath& path) {
         if (path == primPath) {
             return;
         }
@@ -87,14 +99,14 @@ bool _IsMergeableMaterial(const UsdShadeMaterial& shadeMaterial)
             return;
         }
         std::vector<std::string> splitName = SdfPath::TokenizeIdentifier(path.GetName());
-        // We allow only ["inputs", "XXX", "varname"]
+        // We allow only ["inputs", "<texture_name>", "varname"]
         if (splitName.size() != 3 || splitName[0] != _tokens->inputs.GetString()
             || splitName[2] != _tokens->varname.GetString()) {
             retVal = false;
         }
     };
 
-    layer->Traverse(primPath, testFunction);
+    specializationArc.GetIntroducingLayer()->Traverse(primPath, isVarnameOpinion);
 
     return retVal;
 }
@@ -145,7 +157,6 @@ MObject UsdMayaTranslatorMaterial::Read(
 
 namespace {
 using _UVBindings = std::map<TfToken, TfToken>;
-}
 
 static _UVBindings
 _GetUVBindingsFromMaterial(const UsdShadeMaterial& material, UsdMayaPrimReaderContext* context)
@@ -192,7 +203,7 @@ static void _BindUVs(const MDagPath& shapeDagPath, const _UVBindings& uvBindings
     }
 
     MStatus status;
-    MFnMesh meshFn(shapeDagPath.node(), &status);
+    MFnMesh meshFn(shapeDagPath, &status);
     if (!status) {
         return;
     }
@@ -218,6 +229,7 @@ static void _BindUVs(const MDagPath& shapeDagPath, const _UVBindings& uvBindings
         status = MGlobal::executeCommand(uvLinkCommand);
     }
 }
+} // namespace
 
 static bool _AssignMaterialFaceSet(
     const MObject&     shadingEngine,

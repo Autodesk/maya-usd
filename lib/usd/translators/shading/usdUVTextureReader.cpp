@@ -55,30 +55,71 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_READER(UsdUVTexture, PxrMayaUsdUVTexture_Reader)
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya "file" node attribute names
-    (file)(alphaGain)(alphaOffset)(colorGain)(colorOffset)(colorSpace)(defaultColor)(
-        fileTextureName)(outAlpha)(outColor)(outColorR)(outColorG)(outColorB)(place2dTexture)(
-        coverage)(translateFrame)(rotateFrame)(mirrorU)(mirrorV)(stagger)(wrapU)(wrapV)(repeatUV)(
-        offset)(rotateUV)(noiseUV)(vertexUvOne)(vertexUvTwo)(vertexUvThree)(vertexCameraOne)
+    (file)
+    (alphaGain)
+    (alphaOffset)
+    (colorGain)
+    (colorOffset)
+    (colorSpace)
+    (defaultColor)
+    (fileTextureName)
+    (outAlpha)
+    (outColor)
+    (outColorR)
+    (outColorG)
+    (outColorB)
+    (place2dTexture)
+    (coverage)
+    (translateFrame)
+    (rotateFrame)
+    (mirrorU)
+    (mirrorV)
+    (stagger)
+    (wrapU)
+    (wrapV)
+    (repeatUV)
+    (offset)
+    (rotateUV)
+    (noiseUV)
+    (vertexUvOne)
+    (vertexUvTwo)
+    (vertexUvThree)
+    (vertexCameraOne)
 
     // UsdUVTexture Input Names
-    (bias)(fallback)(scale)(wrapS)(wrapT)
+    (bias)
+    (fallback)
+    (scale)
+    (wrapS)
+    (wrapT)
 
     // uv connections:
-    (outUvFilterSize)(uvFilterSize)(outUV)(uvCoord)
+    (outUvFilterSize)
+    (uvFilterSize)
+    (outUV)
+    (uvCoord)
 
     // Values for wrapS and wrapT
-    (black)(repeat)
+    (black)
+    (repeat)
 
     // UsdUVTexture Output Names
-    ((RGBOutputName, "rgb"))((RedOutputName, "r"))((GreenOutputName, "g"))((BlueOutputName, "b"))(
-        (AlphaOutputName, "a"))
+    ((RGBOutputName, "rgb"))
+    ((RedOutputName, "r"))
+    ((GreenOutputName, "g"))
+    ((BlueOutputName, "b"))
+    ((AlphaOutputName, "a"))
 
     // UDIM detection
-    ((UDIMTag, "<UDIM>"))(uvTilingMode));
+    ((UDIMTag, "<UDIM>"))
+    (uvTilingMode)
+);
+// clang-format off
 
 static const TfTokenVector _Place2dTextureConnections = {
     _tokens->coverage,    _tokens->translateFrame, _tokens->rotateFrame,   _tokens->mirrorU,
