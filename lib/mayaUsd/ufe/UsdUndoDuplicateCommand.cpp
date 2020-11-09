@@ -36,11 +36,10 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(
     const UsdPrim&   srcPrim,
     const Ufe::Path& ufeSrcPath)
     : Ufe::UndoableCommand()
-    , fSrcPrim(srcPrim)
-    , fUfeSrcPath(ufeSrcPath)
+    , _srcPrim(srcPrim)
+    , _ufeSrcPath(ufeSrcPath)
 {
-    fStage = fSrcPrim.GetStage();
-    primInfo(srcPrim, fUsdDstPath, fLayer);
+    primInfo(srcPrim, _usdDstPath, _layer);
 }
 
 UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
@@ -52,7 +51,7 @@ UsdUndoDuplicateCommand::create(const UsdPrim& srcPrim, const Ufe::Path& ufeSrcP
     return std::make_shared<UsdUndoDuplicateCommand>(srcPrim, ufeSrcPath);
 }
 
-const SdfPath& UsdUndoDuplicateCommand::usdDstPath() const { return fUsdDstPath; }
+const SdfPath& UsdUndoDuplicateCommand::usdDstPath() const { return _usdDstPath; }
 
 /*static*/
 void UsdUndoDuplicateCommand::primInfo(
@@ -62,15 +61,8 @@ void UsdUndoDuplicateCommand::primInfo(
 {
     ufe::applyCommandRestriction(srcPrim, "duplicate");
 
-    auto             parent = srcPrim.GetParent();
-    TfToken::HashSet childrenNames;
-    for (auto child : parent.GetFilteredChildren(UsdPrimIsDefined && !UsdPrimIsAbstract)) {
-        childrenNames.insert(child.GetName());
-    }
-
-    // Find a unique name for the destination.  If the source name already
-    // has a numerical suffix, increment it, otherwise append "1" to it.
-    auto dstName = uniqueName(childrenNames, srcPrim.GetName());
+    auto parent = srcPrim.GetParent();
+    auto dstName = uniqueChildName(parent, srcPrim.GetName());
     usdDstPath = parent.GetPath().AppendChild(TfToken(dstName));
 
     srcLayer = MayaUsdUtils::defPrimSpecLayer(srcPrim);
@@ -106,7 +98,7 @@ void UsdUndoDuplicateCommand::undo()
     // notification semantics, which require the object to be alive when
     // the notification is sent, we send a pre delete notification here.
     Ufe::ObjectPreDelete notification(
-        createSiblingSceneItem(fUfeSrcPath, fUsdDstPath.GetElementString()));
+        createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString()));
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::Scene::instance().notify(notification);
@@ -114,7 +106,7 @@ void UsdUndoDuplicateCommand::undo()
     Ufe::Scene::notifyObjectDelete(notification);
 #endif
 
-    fStage->RemovePrim(fUsdDstPath);
+    _srcPrim.GetStage()->RemovePrim(_usdDstPath);
 }
 
 void UsdUndoDuplicateCommand::redo()
@@ -122,7 +114,7 @@ void UsdUndoDuplicateCommand::redo()
     // MAYA-92264: Pixar bug prevents redo from working.  Try again with USD
     // version 0.8.5 or later.  PPT, 28-May-2018.
     try {
-        duplicate(fLayer, fSrcPrim.GetPath(), fUsdDstPath);
+        duplicate(_layer, _srcPrim.GetPath(), _usdDstPath);
     } catch (const std::exception& e) {
         UFE_LOG(e.what());
         throw; // re-throw the same exception
