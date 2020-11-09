@@ -20,8 +20,14 @@ limitations under the License.
     </description>
     <properties>
         <float name="opacity"/>
+
+        <!-- The parameter is a workaround for VP2 to execute transparency test. For more details
+             see PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(). -->
+        <float name="dummyTransparency"/>
     </properties>
-    <values/>
+    <values>
+        <float name="dummyTransparency" value="0.0"/>
+    </values>
     <outputs>
         <float3 name="transparency"/>
     </outputs>
@@ -30,7 +36,7 @@ limitations under the License.
             <function_name val="opacityToTransparency"/>
             <source>
                 <![CDATA[
-float3 opacityToTransparency(float opacity)
+float3 opacityToTransparency(float opacity, float dummyTransparency)
 {
     float transp = 1.0f - opacity;
     return float3(transp, transp, transp);
@@ -42,7 +48,7 @@ float3 opacityToTransparency(float opacity)
             <function_name val="opacityToTransparency"/>
             <source>
                 <![CDATA[
-vec3 opacityToTransparency(float opacity)
+vec3 opacityToTransparency(float opacity, float dummyTransparency)
 {
     float transp = 1.0f - opacity;
     return vec3(transp, transp, transp);
@@ -54,7 +60,7 @@ vec3 opacityToTransparency(float opacity)
             <function_name val="opacityToTransparency"/>
             <source>
                 <![CDATA[
-float3 opacityToTransparency(float opacity)
+float3 opacityToTransparency(float opacity, float dummyTransparency)
 {
     float transp = 1.0f - opacity;
     return float3(transp, transp, transp);
@@ -66,7 +72,7 @@ float3 opacityToTransparency(float opacity)
             <function_name val="opacityToTransparency"/>
             <source>
                 <![CDATA[
-float3 opacityToTransparency(float opacity)
+float3 opacityToTransparency(float opacity, float dummyTransparency)
 {
     float transp = 1.0f - opacity;
     return float3(transp, transp, transp);
