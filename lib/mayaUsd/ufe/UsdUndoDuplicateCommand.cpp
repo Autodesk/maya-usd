@@ -72,6 +72,13 @@ void UsdUndoDuplicateCommand::primInfo(
     // has a numerical suffix, increment it, otherwise append "1" to it.
     auto dstName = uniqueName(childrenNames, srcPrim.GetName());
     usdDstPath = parent.GetPath().AppendChild(TfToken(dstName));
+
+    srcLayer = MayaUsdUtils::defPrimSpecLayer(srcPrim);
+    if (!srcLayer) {
+        std::string err
+            = TfStringPrintf("No prim found at %s", srcPrim.GetPath().GetString().c_str());
+        throw std::runtime_error(err.c_str());
+    }
 }
 
 /*static*/

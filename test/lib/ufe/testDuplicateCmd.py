@@ -135,9 +135,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertNotIn(sphereDupName, worldChildrenNames)
         self.assertNotIn(ball35DupName, propsChildrenNames)
 
-        # MAYA-92264: because of USD bug, redo doesn't work.
-        """
-        return
+        # The duplicated items shoudl reappear after a redo
         cmds.redo()
 
         snIter = iter(ufe.GlobalSelection.get())
@@ -152,7 +150,8 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         self.assertIn(sphereDupItem, worldChildren)
         self.assertIn(ball35DupItem, propsChildren)
-        """
+
+        cmds.undo()
 
         # The duplicated items should not be assigned to the name of a
         # deactivated USD item.
