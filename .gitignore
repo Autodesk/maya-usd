@@ -1,19 +1,86 @@
-*build/
+##### Editor Specific Ignores #####
+
+## Common Editor Resources ##
+GTAGS
+GRTAGS
+GPATH
+*.clang_complete
+compile_flags.txt
+compile_commands.json
+# Git Merge conflict files
+*.orig
+
+## Visual Studio / Visual Studio Code ##
+*.vs
+*.vscode
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Jetbrains (CLion/PyCharm etc) ##
+.idea/
+
+## Eclipse ##
 *.project
 *.cproject
 *.pydevproject
 *.settings/
-*.vs
-*.vscode
+
+## XCode ##
+xcuserdata/
+*.xcuserstate
+*.pbxuser
+
+## Emacs ##
+*.dir-locals.el
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+## Vim ##
+*.swp
+Session.vim
+Sessionx.vim
+
+
+##### Build Specific Ignores #####
+
+## CMake Artifacts ##
+cmake-build-*/
 CMakeSettings.json
 CMakeCache.txt
 CMakeLists.txt.user
 CMakeFiles/cmake.check_cache
-*~
-*.orig
+*build/
 
-*.DS_Store
-*.xcuserstate
-*.pbxuser
-*.swp
-*.pyc
+## Python ##
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg
+
+## Compiled Libs ##
+*.so
+*.dylib
+*.dll
+
+##### Platform Specific Ignores #####
+
+## macOS ##
+.DS_Store
+.AppleDouble
+.LSOverride
+
+## Windows ##
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+
+## Linux ##
+.directory
+.nfs
+# Files ending in ~ are Linux convention backup files
+*~
