@@ -74,16 +74,21 @@ bool _IsMergeableMaterial(const UsdShadeMaterial& shadeMaterial)
         return false;
     }
 
-    // This is a little more robust than grabbing a specific arc index.
-    UsdPrimCompositionQuery::Filter filter;
-    filter.arcTypeFilter = UsdPrimCompositionQuery::ArcTypeFilter::Specialize;
-    UsdPrimCompositionQuery                 query(shadeMaterial.GetPrim(), filter);
-    std::vector<UsdPrimCompositionQueryArc> arcs = query.GetCompositionArcs();
-    if (arcs.size() != 1) {
+    // Check for materials created by _UVMappingManager::getMaterial(). This code could probably be
+    // expanded to be more generic and handle more complex composition arcs at a later stage.
+
+    UsdPrimCompositionQuery query(shadeMaterial.GetPrim());
+    if (query.GetCompositionArcs().size() != 2) {
+        // Materials created by the _UVMappingManager have only 2 arcs:
         return false;
     }
 
-    const UsdPrimCompositionQueryArc specializationArc = arcs.front();
+    // This is a little more robust than grabbing a specific arc index.
+    UsdPrimCompositionQuery::Filter filter;
+    filter.arcTypeFilter = UsdPrimCompositionQuery::ArcTypeFilter::Specialize;
+    query.SetFilter(filter);
+    std::vector<UsdPrimCompositionQueryArc> arcs = query.GetCompositionArcs();
+    const UsdPrimCompositionQueryArc        specializationArc = arcs.front();
 
     const SdfLayerHandle    layer = specializationArc.GetIntroducingLayer();
     const SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(shadeMaterial.GetPath());
