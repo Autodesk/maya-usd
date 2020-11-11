@@ -1682,7 +1682,7 @@ VtDictionary UsdMayaUtil::GetDictionaryFromArgDatabase(
     //     Python command API. If single arg per flag, make it a vector of
     //     strings. Multi arg per flag, vector of vector of strings.
     VtDictionary args;
-    for (const std::pair<std::string, VtValue>& entry : guideDict) {
+    for (const auto& entry : guideDict) {
         const std::string& key = entry.first;
         const VtValue&     guideValue = entry.second;
         if (!argData.isFlagSet(key.c_str())) {

@@ -643,7 +643,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         if (Converter::hasAttrType(attrPlug, MFnData::kVectorArray)) {
             VtVec3fArray arr = newValue.Get<VtVec3fArray>();
             MVectorArray mayaArr;
-            for (const GfVec3d& v : arr) {
+            for (const GfVec3d v : arr) {
                 mayaArr.append(MVector(v[0], v[1], v[2]));
             }
             MFnVectorArrayData data;
@@ -654,7 +654,7 @@ bool UsdMayaReadUtil::SetMayaAttr(
         } else if (Converter::hasAttrType(attrPlug, MFnData::kPointArray)) {
             VtVec3fArray arr = newValue.Get<VtVec3fArray>();
             MPointArray  mayaArr;
-            for (const GfVec3d& v : arr) {
+            for (const GfVec3d v : arr) {
                 mayaArr.append(MPoint(v[0], v[1], v[2]));
             }
             MFnPointArrayData data;

@@ -140,7 +140,7 @@ TfToken GetOutputName(const HdMaterialNode& material, SdfValueTypeName type)
         // Then see if any preferred names are found
         if (!validOutputs.empty()) {
             const auto& preferredNames = GetPreferredOutputNames(type);
-            for (const auto preferredName : preferredNames) {
+            for (const auto& preferredName : preferredNames) {
                 if (std::find(validOutputs.begin(), validOutputs.end(), preferredName)
                     != validOutputs.end()) {
                     TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)

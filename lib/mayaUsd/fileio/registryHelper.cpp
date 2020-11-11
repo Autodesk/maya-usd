@@ -238,7 +238,7 @@ VtDictionary UsdMaya_RegistryHelper::GetComposedInfoDictionary(const std::vector
         if (_ReadNestedDict(plugin->GetMetadata(), scope, &curJsDict)) {
             const VtValue curValue = JsConvertToContainerType<VtValue, VtDictionary>(curJsDict);
             if (curValue.IsHolding<VtDictionary>()) {
-                for (const std::pair<std::string, VtValue>& pair :
+                for (const std::pair<std::string, VtValue> pair :
                      curValue.UncheckedGet<VtDictionary>()) {
                     result[pair.first] = pair.second;
                     keyDefinitionSites[pair.first].push_back(plugin->GetName());
@@ -254,7 +254,7 @@ VtDictionary UsdMaya_RegistryHelper::GetComposedInfoDictionary(const std::vector
     }
 
     // Validate that keys are only defined once globally.
-    for (const std::pair<std::string, std::vector<std::string>>& pair : keyDefinitionSites) {
+    for (const auto& pair : keyDefinitionSites) {
         if (pair.second.size() != 1) {
             TF_RUNTIME_ERROR(
                 "Key '%s' is defined in multiple plugins (%s). "
