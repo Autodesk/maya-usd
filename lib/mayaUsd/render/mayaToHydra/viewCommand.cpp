@@ -138,7 +138,7 @@ MSyntax MtohViewCmd::createSyntax()
 
     syntax.addFlag(_visibleOnly, _visibleOnlyLong);
 
-    syntax.addFlag(_sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString, MSyntax::kString);
+    syntax.addFlag(_sceneDelegateId, _sceneDelegateIdLong, MSyntax::kString);
 
     return syntax;
 }
@@ -181,6 +181,9 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
         }
     } else if (db.isFlagSet(_getRendererDisplayName)) {
         if (renderDelegateName.IsEmpty()) {
+            MGlobal::displayError(
+                MString("Must supply '") + _rendererIdLong + "' flag when using '"
+                + _getRendererDisplayNameLong + "' flag");
             return MS::kInvalidParameter;
         }
 
@@ -220,6 +223,9 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
             MtohRenderGlobals::GetInstance(storeUserSettings), renderDelegateName);
     } else if (db.isFlagSet(_listRenderIndex)) {
         if (renderDelegateName.IsEmpty()) {
+            MGlobal::displayError(
+                MString("Must supply '") + _rendererIdLong + "' flag when using '"
+                + _listRenderIndexLong + "' flag");
             return MS::kInvalidParameter;
         }
 
@@ -234,6 +240,9 @@ MStatus MtohViewCmd::doIt(const MArgList& args)
         }
     } else if (db.isFlagSet(_sceneDelegateId)) {
         if (renderDelegateName.IsEmpty()) {
+            MGlobal::displayError(
+                MString("Must supply '") + _rendererIdLong + "' flag when using '"
+                + _sceneDelegateIdLong + "' flag");
             return MS::kInvalidParameter;
         }
 
