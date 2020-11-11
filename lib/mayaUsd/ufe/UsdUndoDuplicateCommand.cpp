@@ -23,67 +23,74 @@
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/copyUtils.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <ufe/log.h>
+#include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
+
+#include <iostream>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(
-    const UsdPrim&   srcPrim,
-    const Ufe::Path& ufeSrcPath)
+UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem)
     : Ufe::UndoableCommand()
-    , _srcPrim(srcPrim)
-    , _ufeSrcPath(ufeSrcPath)
+    , _ufeSrcPath(srcItem->path())
 {
-    primInfo(srcPrim, _usdDstPath, _layer);
+    auto srcPrim = srcItem->prim();
+    auto parentPrim = srcPrim.GetParent();
+
+    ufe::applyCommandRestriction(srcPrim, "duplicate");
+
+    auto newName = uniqueChildName(parentPrim, srcPrim.GetName());
+    _usdDstPath = parentPrim.GetPath().AppendChild(TfToken(newName));
 }
 
 UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
 
 /*static*/
-UsdUndoDuplicateCommand::Ptr
-UsdUndoDuplicateCommand::create(const UsdPrim& srcPrim, const Ufe::Path& ufeSrcPath)
+UsdUndoDuplicateCommand::Ptr UsdUndoDuplicateCommand::create(const UsdSceneItem::Ptr& srcItem)
 {
-    return std::make_shared<UsdUndoDuplicateCommand>(srcPrim, ufeSrcPath);
+    return std::make_shared<UsdUndoDuplicateCommand>(srcItem);
 }
 
-const SdfPath& UsdUndoDuplicateCommand::usdDstPath() const { return _usdDstPath; }
-
-/*static*/
-void UsdUndoDuplicateCommand::primInfo(
-    const UsdPrim&  srcPrim,
-    SdfPath&        usdDstPath,
-    SdfLayerHandle& srcLayer)
+UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
 {
-    ufe::applyCommandRestriction(srcPrim, "duplicate");
-
-    auto parent = srcPrim.GetParent();
-    auto dstName = uniqueChildName(parent, srcPrim.GetName());
-    usdDstPath = parent.GetPath().AppendChild(TfToken(dstName));
-
-    srcLayer = MayaUsdUtils::defPrimSpecLayer(srcPrim);
-    if (!srcLayer) {
-        std::string err
-            = TfStringPrintf("No prim found at %s", srcPrim.GetPath().GetString().c_str());
-        throw std::runtime_error(err.c_str());
-    }
+    return createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
 }
 
-/*static*/
-bool UsdUndoDuplicateCommand::duplicate(
-    const SdfLayerHandle& layer,
-    const SdfPath&        usdSrcPath,
-    const SdfPath&        usdDstPath)
+bool UsdUndoDuplicateCommand::duplicateUndo()
 {
-    // We use the source layer as the destination.  An alternate workflow
-    // would be the edit target layer be the destination:
-    // layer = self._stage.GetEditTarget().GetLayer()
-    MayaUsd::ufe::InAddOrDeleteOperation ad;
-    return SdfCopySpec(layer, usdSrcPath, layer, usdDstPath);
+    // USD sends a ResyncedPaths notification after the prim is removed, but
+    // at that point the prim is no longer valid, and thus a UFE post delete
+    // notification is no longer possible.  To respect UFE object delete
+    // notification semantics, which require the object to be alive when
+    // the notification is sent, we send a pre delete notification here.
+    auto                 ufeDstItem = duplicatedItem();
+    Ufe::ObjectPreDelete notification(ufeDstItem);
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    Ufe::Scene::instance().notify(notification);
+#else
+    Ufe::Scene::notifyObjectDelete(notification);
+#endif
+    auto prim = ufePathToPrim(_ufeSrcPath);
+    prim.GetStage()->RemovePrim(_usdDstPath);
+
+    return true;
+}
+
+bool UsdUndoDuplicateCommand::duplicateRedo()
+{
+    auto prim = ufePathToPrim(_ufeSrcPath);
+    auto layer = prim.GetStage()->GetEditTarget().GetLayer();
+
+    bool retVal = SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
+
+    return retVal;
 }
 
 //------------------------------------------------------------------------------
@@ -92,29 +99,24 @@ bool UsdUndoDuplicateCommand::duplicate(
 
 void UsdUndoDuplicateCommand::undo()
 {
-    // USD sends a ResyncedPaths notification after the prim is removed, but
-    // at that point the prim is no longer valid, and thus a UFE post delete
-    // notification is no longer possible.  To respect UFE object delete
-    // notification semantics, which require the object to be alive when
-    // the notification is sent, we send a pre delete notification here.
-    Ufe::ObjectPreDelete notification(
-        createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString()));
-
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    Ufe::Scene::instance().notify(notification);
-#else
-    Ufe::Scene::notifyObjectDelete(notification);
-#endif
-
-    _srcPrim.GetStage()->RemovePrim(_usdDstPath);
+    try {
+        MayaUsd::ufe::InAddOrDeleteOperation ad;
+        if (!duplicateUndo()) {
+            UFE_LOG("duplicate undo failed");
+        }
+    } catch (const std::exception& e) {
+        UFE_LOG(e.what());
+        throw; // re-throw the same exception
+    }
 }
 
 void UsdUndoDuplicateCommand::redo()
 {
-    // MAYA-92264: Pixar bug prevents redo from working.  Try again with USD
-    // version 0.8.5 or later.  PPT, 28-May-2018.
     try {
-        duplicate(_layer, _srcPrim.GetPath(), _usdDstPath);
+        MayaUsd::ufe::InAddOrDeleteOperation ad;
+        if (!duplicateRedo()) {
+            UFE_LOG("duplicate redo failed");
+        }
     } catch (const std::exception& e) {
         UFE_LOG(e.what());
         throw; // re-throw the same exception
