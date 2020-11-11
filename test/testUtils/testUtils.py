@@ -18,6 +18,11 @@
     General test utilities.
 """
 
+def stripPrefix(input_str, prefix):
+    if input_str.startswith(prefix):
+        return input_str[len(prefix):]
+    return input_str
+
 def assertVectorAlmostEqual(testCase, a, b, places=7):
     for va, vb in zip(a, b):
         testCase.assertAlmostEqual(va, vb, places)
