@@ -74,41 +74,39 @@ bool _IsMergeableMaterial(const UsdShadeMaterial& shadeMaterial)
         return false;
     }
 
-    UsdPrimCompositionQuery                 query(shadeMaterial.GetPrim());
+    // This is a little more robust than grabbing a specific arc index.
+    UsdPrimCompositionQuery::Filter filter;
+    filter.arcTypeFilter = UsdPrimCompositionQuery::ArcTypeFilter::Specialize;
+    UsdPrimCompositionQuery                 query(shadeMaterial.GetPrim(), filter);
     std::vector<UsdPrimCompositionQueryArc> arcs = query.GetCompositionArcs();
-
-    // Check for materials created by _UVMappingManager::getMaterial(). This code could probably be
-    // expanded to be more generic and handle more complex composition arcs at a later stage.
-
-    // Materials created by the _UVMappingManager have only 2 arcs:
-    if (arcs.size() != 2) {
+    if (arcs.size() != 1) {
         return false;
     }
 
-    UsdPrimCompositionQueryArc specializationArc = arcs[1];
-    SdfPath                    primPath = shadeMaterial.GetPath();
+    const UsdPrimCompositionQueryArc specializationArc = arcs.front();
 
-    // Check that the specialization arc contains only opinions on varname inputs:
-    bool retVal = true;
-    auto isVarnameOpinion = [&](const SdfPath& path) {
-        if (path == primPath) {
-            return;
-        }
-        if (path.GetParentPath() != primPath || !path.IsPrimPropertyPath()) {
-            retVal = false;
-            return;
-        }
-        std::vector<std::string> splitName = SdfPath::TokenizeIdentifier(path.GetName());
+    const SdfLayerHandle    layer = specializationArc.GetIntroducingLayer();
+    const SdfPrimSpecHandle primSpec = layer->GetPrimAtPath(shadeMaterial.GetPath());
+
+    // If the primSpec that specializes the base material introduces other
+    // namespace children, it can't be merged.
+    if (!primSpec->GetNameChildren().empty()) {
+        return false;
+    }
+
+    // Check that the only properties authored are varname inputs.
+    for (const SdfPropertySpecHandle& propSpec : primSpec->GetProperties()) {
+        const SdfPath propPath = propSpec->GetPath();
+
+        const std::vector<std::string> splitName = SdfPath::TokenizeIdentifier(propPath.GetName());
         // We allow only ["inputs", "<texture_name>", "varname"]
-        if (splitName.size() != 3 || splitName[0] != _tokens->inputs.GetString()
-            || splitName[2] != _tokens->varname.GetString()) {
-            retVal = false;
+        if (splitName.size() != 3u || splitName[0u] != _tokens->inputs.GetString()
+            || splitName[2u] != _tokens->varname.GetString()) {
+            return false;
         }
-    };
+    }
 
-    specializationArc.GetIntroducingLayer()->Traverse(primPath, isVarnameOpinion);
-
-    return retVal;
+    return true;
 }
 } // namespace
 
