@@ -878,37 +878,42 @@ void MayaEventHandler::initDagMessage(MayaCallbackInfo& cbi)
     case DagMessage::kParentAdded:
         cbi.mayaCallback = MDagMessage::addParentAddedCallback(bindParentChildFunction, &cbi);
         break;
-    case DagMessage::kParentAddedDagPath: /* cbi.mayaCallback =
-                                             MDagMessage::addParentAddedDagPathCallback(bindNodeStringBoolFunc,
-                                             &cbi); */
+    case DagMessage::
+        kParentAddedDagPath: /* cbi.mayaCallback =
+                                MDagMessage::addParentAddedDagPathCallback(bindNodeStringBoolFunc,
+                                &cbi); */
         break;
     case DagMessage::kParentRemoved:
         cbi.mayaCallback = MDagMessage::addParentRemovedCallback(bindParentChildFunction, &cbi);
         break;
-    case DagMessage::kParentRemovedDagPath: /* cbi.mayaCallback =
-                                               MDagMessage::addParentRemovedDagPathCallback(bindNodeStringBoolFunc,
-                                               &cbi); */
+    case DagMessage::
+        kParentRemovedDagPath: /* cbi.mayaCallback =
+                                  MDagMessage::addParentRemovedDagPathCallback(bindNodeStringBoolFunc,
+                                  &cbi); */
         break;
     case DagMessage::kChildAdded:
         cbi.mayaCallback = MDagMessage::addChildAddedCallback(bindParentChildFunction, &cbi);
         break;
-    case DagMessage::kChildAddedDagPath: /* cbi.mayaCallback =
-                                            MContainerMessage::addChildAddedDagPathCallback(bindNodeStringBoolFunc,
-                                            &cbi); */
+    case DagMessage::
+        kChildAddedDagPath: /* cbi.mayaCallback =
+                               MContainerMessage::addChildAddedDagPathCallback(bindNodeStringBoolFunc,
+                               &cbi); */
         break;
     case DagMessage::kChildRemoved:
         cbi.mayaCallback = MDagMessage::addChildRemovedCallback(bindParentChildFunction, &cbi);
         break;
-    case DagMessage::kChildRemovedDagPath: /* cbi.mayaCallback =
-                                              MDagMessage::addChildRemovedDagPathCallback(bindNodeStringBoolFunc,
-                                              &cbi); */
+    case DagMessage::
+        kChildRemovedDagPath: /* cbi.mayaCallback =
+                                 MDagMessage::addChildRemovedDagPathCallback(bindNodeStringBoolFunc,
+                                 &cbi); */
         break;
     case DagMessage::kChildReordered:
         cbi.mayaCallback = MDagMessage::addChildReorderedCallback(bindParentChildFunction, &cbi);
         break;
-    case DagMessage::kChildReorderedDagPath: /* cbi.mayaCallback =
-                                                MDagMessage::addChildReorderedDagPathCallback(bindNodeStringBoolFunc,
-                                                &cbi); */
+    case DagMessage::
+        kChildReorderedDagPath: /* cbi.mayaCallback =
+                                   MDagMessage::addChildReorderedDagPathCallback(bindNodeStringBoolFunc,
+                                   &cbi); */
         break;
     case DagMessage::kDag: /* cbi.mayaCallback =
                               MDagMessage::addDagCallback(bindMessageParentChildFunction, &cbi); */
@@ -921,27 +926,31 @@ void MayaEventHandler::initDagMessage(MayaCallbackInfo& cbi)
         cbi.mayaCallback
             = MDagMessage::addAllDagChangesCallback(bindMessageParentChildFunction, &cbi);
         break;
-    case DagMessage::kAllDagChangesDagPath: /* cbi.mayaCallback =
-                                               MDagMessage::addAllDagChangesDagPathCallback(bindNodeStringBoolFunc,
-                                               &cbi); */
+    case DagMessage::
+        kAllDagChangesDagPath: /* cbi.mayaCallback =
+                                  MDagMessage::addAllDagChangesDagPathCallback(bindNodeStringBoolFunc,
+                                  &cbi); */
         break;
     case DagMessage::kInstanceAdded:
         cbi.mayaCallback = MDagMessage::addInstanceAddedCallback(bindParentChildFunction, &cbi);
         break;
-    case DagMessage::kInstanceAddedDagPath: /* cbi.mayaCallback =
-                                               MDagMessage::addInstanceAddedDagPathCallback(bindNodeStringBoolFunc,
-                                               &cbi); */
+    case DagMessage::
+        kInstanceAddedDagPath: /* cbi.mayaCallback =
+                                  MDagMessage::addInstanceAddedDagPathCallback(bindNodeStringBoolFunc,
+                                  &cbi); */
         break;
     case DagMessage::kInstanceRemoved:
         cbi.mayaCallback = MDagMessage::addInstanceRemovedCallback(bindParentChildFunction, &cbi);
         break;
-    case DagMessage::kInstanceRemovedDagPath: /* cbi.mayaCallback =
-                                                 MDagMessage::addInstanceRemovedDagPathCallback(bindNodeStringBoolFunc,
-                                                 &cbi); */
+    case DagMessage::
+        kInstanceRemovedDagPath: /* cbi.mayaCallback =
+                                    MDagMessage::addInstanceRemovedDagPathCallback(bindNodeStringBoolFunc,
+                                    &cbi); */
         break;
-    case DagMessage::kWorldMatrixModified: /* cbi.mayaCallback =
-                                              MDagMessage::addWorldMatrixModifiedCallback(bindNodeStringBoolFunc,
-                                              &cbi); */
+    case DagMessage::
+        kWorldMatrixModified: /* cbi.mayaCallback =
+                                 MDagMessage::addWorldMatrixModifiedCallback(bindNodeStringBoolFunc,
+                                 &cbi); */
         break;
     default: break;
     }
@@ -1143,13 +1152,15 @@ void MayaEventHandler::initModelMessage(MayaCallbackInfo& cbi)
     case ModelMessage::kAfterDuplicate:
         cbi.mayaCallback = MModelMessage::addAfterDuplicateCallback(bindBasicFunction, &cbi);
         break;
-    case ModelMessage::kNodeAddedToModel: /* cbi.mayaCallback =
-                                             MModelMessage::addNodeAddedToModelCallback(bindTimeFunction,
-                                             &cbi); */
+    case ModelMessage::
+        kNodeAddedToModel: /* cbi.mayaCallback =
+                              MModelMessage::addNodeAddedToModelCallback(bindTimeFunction,
+                              &cbi); */
         break;
-    case ModelMessage::kNodeRemovedFromModel: /* cbi.mayaCallback =
-                                                 MModelMessage::addNodeRemovedFromModelCallback(bindTimeFunction,
-                                                 &cbi); */
+    case ModelMessage::
+        kNodeRemovedFromModel: /* cbi.mayaCallback =
+                                  MModelMessage::addNodeRemovedFromModelCallback(bindTimeFunction,
+                                  &cbi); */
         break;
     default: break;
     }
