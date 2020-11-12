@@ -127,85 +127,17 @@ UsdAttributes::getUfeTypeForAttribute(const PXR_NS::UsdAttribute& usdAttr) const
 {
     // Map the USD type into UFE type.
     static const std::unordered_map<size_t, Ufe::Attribute::Type> sUsdTypeToUfe {
-        { SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool }, // bool
-        //		{SdfValueTypeNames->UChar.GetHash(), Ufe::Attribute::kUnknown},
-        //// uint8_t
-        { SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt }, // int32_t
-        //		{SdfValueTypeNames->UInt.GetHash(), Ufe::Attribute::kUnknown},
-        //// uint32_t
-        //		{SdfValueTypeNames->Int64.GetHash(), Ufe::Attribute::kInt},
-        //// int64_t 		{SdfValueTypeNames->UInt64.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / uint64_t
-        //		{SdfValueTypeNames->Half.GetHash(), Ufe::Attribute::kUnknown},
-        //// GfHalf
-        { SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },      // float
-        { SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },    // double
-        { SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },    // std::string
-        { SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kEnumString }, // TfToken
-        //		{SdfValueTypeNames->Asset.GetHash(), Ufe::Attribute::kUnknown},
-        //// SdfAssetPath 		{SdfValueTypeNames->Int2.GetHash(), Ufe::Attribute::kInt2},
-        //// GfVec2i 		{SdfValueTypeNames->Half2.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfVec2h {SdfValueTypeNames->Float2.GetHash(),
-        /// Ufe::Attribute::kFloat2}, / GfVec2f {SdfValueTypeNames->Double2.GetHash(),
-        /// Ufe::Attribute::kDouble2}, / GfVec2d
-        { SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 }, // GfVec3i
-        //		{SdfValueTypeNames->Half3.GetHash(), Ufe::Attribute::kUnknown},
-        //// GfVec3h
-        { SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },   // GfVec3f
-        { SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 }, // GfVec3d
-        //		{SdfValueTypeNames->Int4.GetHash(), Ufe::Attribute::kInt4},
-        //// GfVec4i 		{SdfValueTypeNames->Half4.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfVec4h {SdfValueTypeNames->Float4.GetHash(),
-        /// Ufe::Attribute::kFloat4}, / GfVec4f {SdfValueTypeNames->Double4.GetHash(),
-        /// Ufe::Attribute::kDouble4}, / GfVec4d {SdfValueTypeNames->Point3h.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfVec3h {SdfValueTypeNames->Point3f.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfVec3f {SdfValueTypeNames->Point3d.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfVec3d
-        ///{SdfValueTypeNames->Vector3h.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3h
-        ///{SdfValueTypeNames->Vector3f.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3f
-        ///{SdfValueTypeNames->Vector3d.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3d
-        ///{SdfValueTypeNames->Normal3h.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3h
-        ///{SdfValueTypeNames->Normal3f.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3f
-        ///{SdfValueTypeNames->Normal3d.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3d
-        ///{SdfValueTypeNames->Color3h.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3h
+        { SdfValueTypeNames->Bool.GetHash(), Ufe::Attribute::kBool },           // bool
+        { SdfValueTypeNames->Int.GetHash(), Ufe::Attribute::kInt },             // int32_t
+        { SdfValueTypeNames->Float.GetHash(), Ufe::Attribute::kFloat },         // float
+        { SdfValueTypeNames->Double.GetHash(), Ufe::Attribute::kDouble },       // double
+        { SdfValueTypeNames->String.GetHash(), Ufe::Attribute::kString },       // std::string
+        { SdfValueTypeNames->Token.GetHash(), Ufe::Attribute::kEnumString },    // TfToken
+        { SdfValueTypeNames->Int3.GetHash(), Ufe::Attribute::kInt3 },           // GfVec3i
+        { SdfValueTypeNames->Float3.GetHash(), Ufe::Attribute::kFloat3 },       // GfVec3f
+        { SdfValueTypeNames->Double3.GetHash(), Ufe::Attribute::kDouble3 },     // GfVec3d
         { SdfValueTypeNames->Color3f.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3f
         { SdfValueTypeNames->Color3d.GetHash(), Ufe::Attribute::kColorFloat3 }, // GfVec3d
-        //		{SdfValueTypeNames->Color4h.GetHash(), Ufe::Attribute::kUnknown},
-        //// GfVec4h 		{SdfValueTypeNames->Color4f.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfVec4f {SdfValueTypeNames->Color4d.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfVec4d 		{SdfValueTypeNames->Quath.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfQuath 		{SdfValueTypeNames->Quatf.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfQuatf 		{SdfValueTypeNames->Quatd.GetHash(),
-        /// Ufe::Attribute::kUnknown}, / GfQuatd
-        ///{SdfValueTypeNames->Matrix2d.GetHash(), Ufe::Attribute::kUnknown}, / GfMatrix2d
-        ///{SdfValueTypeNames->Matrix3d.GetHash(), Ufe::Attribute::kUnknown}, / GfMatrix3d
-        ///{SdfValueTypeNames->Matrix4d.GetHash(), Ufe::Attribute::kUnknown}, / GfMatrix4d
-        ///{SdfValueTypeNames->Frame4d.GetHash(), Ufe::Attribute::kUnknown}, / GfMatrix4d
-        ///{SdfValueTypeNames->TexCoord2f.GetHash(), Ufe::Attribute::kUnknown}, / GfVec2f
-        ///{SdfValueTypeNames->TexCoord2d.GetHash(), Ufe::Attribute::kUnknown}, / GfVec2d
-        ///{SdfValueTypeNames->TexCoord2h.GetHash(), Ufe::Attribute::kUnknown}, / GfVec2h
-        ///{SdfValueTypeNames->TexCoord3f.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3f
-        ///{SdfValueTypeNames->TexCoord3d.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3d
-        ///{SdfValueTypeNames->TexCoord3h.GetHash(), Ufe::Attribute::kUnknown}, / GfVec3h
-        // To add?
-        // SdfValueTypeName BoolArray;
-        // SdfValueTypeName UCharArray, IntArray, UIntArray, Int64Array, UInt64Array;
-        // SdfValueTypeName HalfArray, FloatArray, DoubleArray;
-        // SdfValueTypeName StringArray, TokenArray, AssetArray;
-        // SdfValueTypeName Int2Array,     Int3Array,     Int4Array;
-        // SdfValueTypeName Half2Array,    Half3Array,    Half4Array;
-        // SdfValueTypeName Float2Array,   Float3Array,   Float4Array;
-        // SdfValueTypeName Double2Array,  Double3Array,  Double4Array;
-        // SdfValueTypeName Point3hArray,  Point3fArray,  Point3dArray;
-        // SdfValueTypeName Vector3hArray, Vector3fArray, Vector3dArray;
-        // SdfValueTypeName Normal3hArray, Normal3fArray, Normal3dArray;
-        // SdfValueTypeName Color3hArray,  Color3fArray,  Color3dArray;
-        // SdfValueTypeName Color4hArray,  Color4fArray,  Color4dArray;
-        // SdfValueTypeName QuathArray,    QuatfArray,    QuatdArray;
-        // SdfValueTypeName Matrix2dArray, Matrix3dArray, Matrix4dArray;
-        // SdfValueTypeName Frame4dArray;
-        // SdfValueTypeName TexCoord2hArray, TexCoord2fArray, TexCoord2dArray;
-        // SdfValueTypeName TexCoord3hArray, TexCoord3fArray, TexCoord3dArray;
     };
 
     if (usdAttr.IsValid()) {
