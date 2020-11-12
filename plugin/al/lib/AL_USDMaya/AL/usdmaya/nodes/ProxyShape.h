@@ -716,29 +716,29 @@ public:
     AL_USDMAYA_PUBLIC
     void setChangedSelectionState(const bool hasSelectabilityChanged);
 
-  /// \brief convenience method to check if a path is unselectable.
-  /// \param path Usd prim path.
-  /// \return true if unselectable, false otherwise.
-  AL_USDMAYA_PUBLIC
-  bool isPathUnselectable(const SdfPath& path) const;
+    /// \brief convenience method to check if a path is unselectable.
+    /// \param path Usd prim path.
+    /// \return true if unselectable, false otherwise.
+    AL_USDMAYA_PUBLIC
+    bool isPathUnselectable(const SdfPath& path) const;
 
-  /// \brief convenience method to check if a prim is unselectable.
-  /// \param path Usd prim.
-  /// \return true if unselectable, false otherwise.
-  AL_USDMAYA_PUBLIC
-  bool isPrimUnselectable(const UsdPrim& prim, UnselectablePrimCache& cache) const;
+    /// \brief convenience method to check if a prim is unselectable.
+    /// \param path Usd prim.
+    /// \return true if unselectable, false otherwise.
+    AL_USDMAYA_PUBLIC
+    bool isPrimUnselectable(const UsdPrim& prim, UnselectablePrimCache& cache) const;
 
-  /// \brief convenience method to check if a path is locked.
-  /// \param path Usd prim path.
-  /// \return true if locked, false otherwise.
-  AL_USDMAYA_PUBLIC
-  bool isPathLocked(const SdfPath& path) const;
+    /// \brief convenience method to check if a path is locked.
+    /// \param path Usd prim path.
+    /// \return true if locked, false otherwise.
+    AL_USDMAYA_PUBLIC
+    bool isPathLocked(const SdfPath& path) const;
 
-  /// \brief convenience method to check if a prim is locked.
-  /// \param path Usd prim.
-  /// \return true if locked, false otherwise.
-  AL_USDMAYA_PUBLIC
-  bool isPrimLocked(const UsdPrim& prim, LockPrimCache& cache) const;
+    /// \brief convenience method to check if a prim is locked.
+    /// \param path Usd prim.
+    /// \return true if locked, false otherwise.
+    AL_USDMAYA_PUBLIC
+    bool isPrimLocked(const UsdPrim& prim, LockPrimCache& cache) const;
 
     /// \brief  used to reload the stage after file open
     AL_USDMAYA_PUBLIC
@@ -1055,15 +1055,15 @@ private:
     AL_USDMAYA_PUBLIC
     static std::vector<MObjectHandle> m_unloadedProxyShapes;
 
-    SelectionList                m_selectionList;
-    SdfPathHashSet               m_selectedPaths;
-    PrimPathToDagPath            m_primPathToDagPath;
-    std::vector<SdfPath>         m_paths;
-    std::vector<UsdPrim>         m_prims;
-    TfNotice::Key                m_objectsChangedNoticeKey;
-    TfNotice::Key                m_variantChangedNoticeKey;
-    TfNotice::Key                m_editTargetChanged;
-    TfNotice::Key                m_transactionNoticeKey;
+    SelectionList        m_selectionList;
+    SdfPathHashSet       m_selectedPaths;
+    PrimPathToDagPath    m_primPathToDagPath;
+    std::vector<SdfPath> m_paths;
+    std::vector<UsdPrim> m_prims;
+    TfNotice::Key        m_objectsChangedNoticeKey;
+    TfNotice::Key        m_variantChangedNoticeKey;
+    TfNotice::Key        m_editTargetChanged;
+    TfNotice::Key        m_transactionNoticeKey;
 
     SdfPathVector                              m_excludedGeometry;
     SdfPathVector                              m_excludedTaggedGeometry;

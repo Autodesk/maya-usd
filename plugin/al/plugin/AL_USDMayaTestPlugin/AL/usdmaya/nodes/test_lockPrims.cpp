@@ -272,7 +272,7 @@ TEST(Selectability, selectableMetaData)
 
     EXPECT_FALSE(proxy->isPathUnselectable(SdfPath("/hello")));
     EXPECT_TRUE(proxy->isPathUnselectable(SdfPath("/hello/world")));
-    EXPECT_TRUE(proxy->isPathUnselectable(SdfPath("/hello/world/cam")));
+    EXPECT_FALSE(proxy->isPathUnselectable(SdfPath("/hello/world/cam")));
 }
 
 // This test loads a usda file containing variants for the permutations of the excludedGeom tag.

@@ -2088,104 +2088,82 @@ void ProxyShape::setChangedSelectionState(const bool hasSelectabilityChanged)
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+template <typename CacheT>
+bool checkPrimMetadata(
+    const UsdPrim& prim,
+    const TfToken& key,
+    const TfToken& trueToken,
+    const TfToken& falseToken,
+    CacheT&        cache)
+{
+    TfHashSet<UsdPrim, boost::hash<UsdPrim>> cachedPrims;
+    auto                                     updateCache = [&cache, &cachedPrims](bool value) {
+        for (auto&& cachedPrim : cachedPrims) {
+            cache.insert(std::make_pair(cachedPrim, value));
+        }
+        return value;
+    };
+
+    auto parent(prim);
+    while (parent.IsValid() && !parent.IsPseudoRoot()) {
+        auto it = cache.find(parent);
+        if (it != cache.end()) {
+            return it->second;
+        }
+        cachedPrims.insert(parent);
+        TfToken token;
+        if (parent.GetMetadata<TfToken>(key, &token)) {
+            if (token == trueToken) {
+                return updateCache(true);
+            } else if (token == falseToken) {
+                return updateCache(false);
+            }
+        }
+        parent = parent.GetParent();
+    }
+    return updateCache(false);
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::isPathUnselectable(const SdfPath& path) const
 {
-  if (!m_stage)
-  {
-    return false;
-  }
-  auto prim(m_stage->GetPrimAtPath(path));
-  if (!prim)
-  {
-    return false;
-  }
-  UnselectablePrimCache cache;
-  return isPrimUnselectable(prim, cache);
+    if (!m_stage) {
+        return false;
+    }
+    auto prim(m_stage->GetPrimAtPath(path));
+    if (!prim) {
+        return false;
+    }
+    UnselectablePrimCache cache;
+    return isPrimUnselectable(prim, cache);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::isPrimUnselectable(const UsdPrim& prim, UnselectablePrimCache& cache) const
 {
-  TfHashSet<UsdPrim, boost::hash<UsdPrim>> cachedPrims;
-  auto updateCache = [&cache, &cachedPrims](bool value) {
-    for (auto &&cachedPrim: cachedPrims)
-    {
-      cache.insert(std::make_pair(cachedPrim, value));
-    }
-    return value;
-  };
-
-  auto parent(prim);
-  while(parent.IsValid() && !parent.IsPseudoRoot())
-  {
-    auto it = cache.find(parent);
-    if (it != cache.end())
-    {
-      return it->second;
-    }
-    cachedPrims.insert(parent);
-    TfToken token;
-    if(parent.GetMetadata<TfToken>(Metadata::selectability, &token) && token == Metadata::unselectable)
-    {
-      return updateCache(true);
-    }
-    parent = parent.GetParent();
-  }
-  return updateCache(false);
+    return checkPrimMetadata(
+        prim, Metadata::selectability, Metadata::unselectable, Metadata::selectable, cache);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::isPathLocked(const SdfPath& path) const
 {
-  if (!m_stage)
-  {
-    return false;
-  }
-  auto prim(m_stage->GetPrimAtPath(path));
-  if (!prim)
-  {
-    return false;
-  }
-  LockPrimCache cache;
-  return isPrimLocked(prim, cache);
+    if (!m_stage) {
+        return false;
+    }
+    auto prim(m_stage->GetPrimAtPath(path));
+    if (!prim) {
+        return false;
+    }
+    LockPrimCache cache;
+    return isPrimLocked(prim, cache);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 bool ProxyShape::isPrimLocked(const UsdPrim& prim, LockPrimCache& cache) const
 {
-  TfHashSet<UsdPrim, boost::hash<UsdPrim>> cachedPrims;
-  auto updateCache = [&cache, &cachedPrims](bool value) {
-    for (auto &&cachedPrim: cachedPrims)
-    {
-      cache.insert(std::make_pair(cachedPrim, value));
-    }
-    return value;
-  };
-
-  auto parent(prim);
-  while(parent.IsValid() && !parent.IsPseudoRoot())
-  {
-    auto it = cache.find(parent);
-    if (it != cache.end())
-    {
-      return it->second;
-    }
-    cachedPrims.insert(parent);
-    TfToken token;
-    if (parent.GetMetadata<TfToken>(Metadata::locked, &token))
-    {
-      if (token == Metadata::lockTransform)
-      {
-        return updateCache(true);
-      }
-      else if (token == Metadata::lockUnlocked)
-      {
-        return updateCache(false);
-      }
-    }
-    parent = parent.GetParent();
-  }
-  return updateCache(false);
+    return checkPrimMetadata(
+        prim, Metadata::locked, Metadata::lockTransform, Metadata::lockUnlocked, cache);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
