@@ -174,8 +174,8 @@ enum class MayaCallbackType
                               ///< referenceNode, MFileObject& file, void* userData); \endcode
     kRenderTileFunction,      ///< \brief describes the maya callback type \b
                               ///< MMessage::MRenderTileFunction \code typedef void
-                         ///< (*MRenderTileFunction) (int originX, int originY, int tileMaxX, int
-                         ///< tileMaxY, void* userData); \endcode
+    ///< (*MRenderTileFunction) (int originX, int originY, int tileMaxX, int
+    ///< tileMaxY, void* userData); \endcode
     kMessageFunction, ///< \brief describes the maya callback type \b MMessage::MMessageFunction
                       ///< \code typedef void (*MMessageFunction) (const MString& message,
                       ///< MCommandMessage::MessageType messageType, void* userData); \endcode
@@ -197,8 +197,8 @@ enum class MayaCallbackType
     kWorldMatrixModifiedFunction    ///< \brief describes the maya callback type \b
                                     ///< MMessage::MWorldMatrixModifiedFunction \code typedef void
                                     ///< (*MWorldMatrixModifiedFunction) (MObject& transformNode,
-                                 ///< MDagMessage::MatrixModifiedFlags& modified, void* userData);
-                                 ///< \endcode
+    ///< MDagMessage::MatrixModifiedFlags& modified, void* userData);
+    ///< \endcode
 };
 
 //----------------------------------------------------------------------------------------------------------------------
