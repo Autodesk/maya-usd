@@ -13,6 +13,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportFrameOffset.py
     testUsdExportGeomSubset.py
     testUsdExportInstances.py
+    testUsdExportLayerAttributes.py
     testUsdExportLocator.py
     testUsdExportMayaInstancer.py
     testUsdExportMesh.py
