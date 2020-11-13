@@ -244,6 +244,8 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     if (!mJobCtx.mArgs.timeSamples.empty()) {
         mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeSamples.front());
         mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeSamples.back());
+        mJobCtx.mStage->SetTimeCodesPerSecond(UsdMayaUtil::GetSceneMTimeUnitAsFloat());
+        mJobCtx.mStage->SetFramesPerSecond(UsdMayaUtil::GetSceneMTimeUnitAsFloat());
     }
 
     // Setup the requested render layer mode:

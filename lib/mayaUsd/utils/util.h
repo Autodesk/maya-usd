@@ -48,6 +48,7 @@
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
 #include <maya/MString.h>
+#include <maya/MTime.h>
 
 #include <map>
 #include <set>
@@ -568,6 +569,16 @@ void GetFilteredSelectionToExport(
     bool                      exportSelected,
     MSelectionList&           objectList,
     UsdMayaUtil::MDagPathSet& dagPaths);
+
+/// Coverts a given \pMTime::\pUnit enum to a \pfloat value of samples per second
+/// Returns 0.0f if the result is invalid.
+MAYAUSD_CORE_PUBLIC
+float ConvertMTimeUnitToFloat(const MTime::Unit& unit);
+
+/// Get's the scene's \pMTime::\pUnit as a \pfloat value of samples per second
+/// Returns 0.0f if the result is invalid.
+MAYAUSD_CORE_PUBLIC
+float GetSceneMTimeUnitAsFloat();
 
 } // namespace UsdMayaUtil
 
