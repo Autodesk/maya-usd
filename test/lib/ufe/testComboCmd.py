@@ -20,10 +20,14 @@ import maya.api.OpenMaya as om
 import maya.cmds as cmds
 from math import radians, degrees
 
+import mayaUsd.ufe
+
 import usdUtils, mayaUtils, ufeUtils
 from testUtils import assertVectorAlmostEqual
 import testTRSBase
 import ufe
+
+from pxr import UsdGeom
 
 import unittest
 import os
@@ -68,6 +72,18 @@ def checkPivotsAndCompensations(testCase, mayaObjName, usdT3d):
                             usdT3d.rotatePivotTranslation().vector, places=6)
     assertVectorAlmostEqual(testCase, cmds.getAttr(mayaObjName+".spt")[0],
                             usdT3d.scalePivotTranslation().vector, places=6)
+
+def checkWorldSpaceXform(testCase, objects):
+    '''Confirm matching Maya and UFE object world space positions.
+
+    The Maya object is the first object in the objects argument, and is used
+    as the benchmark.'''
+
+    mayaWorld = cmds.xform(objects[0], q=True, ws=True, matrix=True)
+    for t3d in objects[1:]:
+        # Flatten out UFE matrices for comparison with Maya output.
+        usdWorld = [y for x in t3d.inclusiveMatrix().matrix for y in x]
+        assertVectorAlmostEqual(testCase, mayaWorld, usdWorld)
 
 class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
     '''Verify the Transform3d UFE interface, for multiple runtimes.
@@ -539,3 +555,124 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         cmds.move(-4, -3, -2, "pSphere1.scalePivot", r=True)
 
         checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
+
+    # Name test such that it runs last.  Otherwise, it runs before 
+    # testRotateScalePivotCompensation(), and causes it to fail.  To be 
+    # investigated --- MAYA-108067.
+    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'Fallback transform op handling only available in UFE v2 or greater.')
+    def testZFallback(self):
+        '''Transformable not handled by standard Transform3d handlers must be
+    handled by fallback handler.'''
+
+        mayaUtils.openTestScene("xformOpFallback", "fallbackTest.ma")
+
+        # We have three objects in the scene, one Maya, one USD with a Maya
+        # transform stack, and one USD which does not match any Transform3d
+        # handler.  This last object is the one to which fallback transform ops
+        # will be appended.
+        mayaObj               = '|null1|pSphere1'
+        mayaSpherePath        = ufe.PathString.path(mayaObj)
+        usdSpherePath         = ufe.PathString.path('|fallbackTest|fallbackTestShape,/parent/sphere1')
+        usdFallbackSpherePath = ufe.PathString.path('|fallbackTest|fallbackTestShape,/sphere1')
+
+        mayaSphereItem        = ufe.Hierarchy.createItem(mayaSpherePath)
+        usdSphereItem         = ufe.Hierarchy.createItem(usdSpherePath)
+        usdFallbackSphereItem = ufe.Hierarchy.createItem(usdFallbackSpherePath)
+        usdSphere3d         = ufe.Transform3d.transform3d(usdSphereItem)
+        usdFallbackSphere3d = ufe.Transform3d.transform3d(usdFallbackSphereItem)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(mayaSphereItem)
+        sn.append(usdSphereItem)
+        sn.append(usdFallbackSphereItem)
+
+        # All objects should have the same world transform.  We use the Maya
+        # world transform as the benchmark.
+        checkWorldSpaceXform(self, [mayaObj, usdSphere3d, usdFallbackSphere3d])
+
+        # Count the number of transform ops in the Maya transform stack sphere
+        # and the fallback transform stack sphere.
+        spherePrim         = mayaUsd.ufe.ufePathToPrim(
+            ufe.PathString.string(usdSpherePath))
+        fallbackSpherePrim = mayaUsd.ufe.ufePathToPrim(
+            ufe.PathString.string(usdFallbackSpherePath))
+        sphereXformable         = UsdGeom.Xformable(spherePrim)
+        fallbackSphereXformable = UsdGeom.Xformable(fallbackSpherePrim)
+        sphereOps               = sphereXformable.GetOrderedXformOps()
+        fallbackSphereOps       = fallbackSphereXformable.GetOrderedXformOps()
+
+        # Both prims have TRS transform ops.
+        self.assertEqual(len(sphereOps), 3)
+        self.assertEqual(len(fallbackSphereOps), 3)
+
+        # First, translate all objects.
+        cmds.move(0, 0, 5, r=True, os=True, wd=True)
+
+        checkWorldSpaceXform(self, [mayaObj, usdSphere3d, usdFallbackSphere3d])
+
+        # The sphere with the Maya transform stack has no additional transform
+        # op; the sphere with the fallback stack will have an additional
+        # translate op.
+        sphereOps               = sphereXformable.GetOrderedXformOps()
+        fallbackSphereOps       = fallbackSphereXformable.GetOrderedXformOps()
+
+        self.assertEqual(len(sphereOps), 3)
+        self.assertEqual(len(fallbackSphereOps), 4)
+
+        # Rotate
+        cmds.rotate(40, 0, 0, r=True, os=True, fo=True)
+
+        checkWorldSpaceXform(self, [mayaObj, usdSphere3d, usdFallbackSphere3d])
+
+        # The sphere with the Maya transform stack has no additional transform
+        # op; the sphere with the fallback stack will have an additional
+        # rotate op.
+        sphereOps               = sphereXformable.GetOrderedXformOps()
+        fallbackSphereOps       = fallbackSphereXformable.GetOrderedXformOps()
+
+        self.assertEqual(len(sphereOps), 3)
+        self.assertEqual(len(fallbackSphereOps), 5)
+
+        # Scale
+        cmds.scale(1, 1, 2.0, r=True)
+        
+        checkWorldSpaceXform(self, [mayaObj, usdSphere3d, usdFallbackSphere3d])
+
+        # The sphere with the Maya transform stack has no additional transform
+        # op; the sphere with the fallback stack will have an additional
+        # scale op.
+        sphereOps               = sphereXformable.GetOrderedXformOps()
+        fallbackSphereOps       = fallbackSphereXformable.GetOrderedXformOps()
+
+        self.assertEqual(len(sphereOps), 3)
+        self.assertEqual(len(fallbackSphereOps), 6)
+
+        # Command to change the pivots on Maya items and UFE items is
+        # different, so remove Maya item from selection.
+        sn.remove(mayaSphereItem)
+
+        mayaPivots = [
+            mayaObj+"."+attrName for attrName in ["scalePivot", "rotatePivot"]]
+        cmds.move(0, -2.5, 2.5, *mayaPivots, r=True)
+        cmds.move(0, -2.5, 2.5, r=True, urp=True, usp=True)
+
+        checkPivotsAndCompensations(self, mayaObj, usdSphere3d)
+        checkPivotsAndCompensations(self, mayaObj, usdFallbackSphere3d)
+
+        # Both spheres have 6 additional transform ops: rotate pivot and its
+        # inverse, scale pivot and its inverse, rotate pivot translate, and
+        # scale pivot translate.
+        sphereOps               = sphereXformable.GetOrderedXformOps()
+        fallbackSphereOps       = fallbackSphereXformable.GetOrderedXformOps()
+
+        self.assertEqual(len(sphereOps), 9)
+        self.assertEqual(len(fallbackSphereOps), 12)
+
+        # Perform an additional pivot move, to ensure that the existing pivot
+        # values are properly considered.
+        cmds.move(0, -1, 1, *mayaPivots, r=True)
+        cmds.move(0, -1, 1, r=True, urp=True, usp=True)
+
+        checkPivotsAndCompensations(self, mayaObj, usdSphere3d)
+        checkPivotsAndCompensations(self, mayaObj, usdFallbackSphere3d)

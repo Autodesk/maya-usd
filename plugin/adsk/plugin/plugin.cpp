@@ -55,6 +55,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
+#include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
 
 #include <ufe/runTimeMgr.h>
 #endif
@@ -150,9 +151,9 @@ MStatus initializePlugin(MObject obj)
     // transform API).
 	auto& runTimeMgr = Ufe::RunTimeMgr::instance();
 	auto usdRtid = MAYAUSD_NS::ufe::getUsdRunTimeId();
-    g_Transform3dHandler = runTimeMgr.transform3dHandler(usdRtid);
+	auto fallbackHandler = MayaUsd::ufe::hack::UsdTransform3dMayaXformStackHandler::create();
 	auto matrixHandler = MAYAUSD_NS::ufe::UsdTransform3dMatrixOpHandler::create(
-		g_Transform3dHandler);
+		fallbackHandler);
 	auto mayaStackHandler = MAYAUSD_NS::ufe::UsdTransform3dMayaXformStackHandler::create(matrixHandler);
 	runTimeMgr.setTransform3dHandler(usdRtid, mayaStackHandler);
 #endif
