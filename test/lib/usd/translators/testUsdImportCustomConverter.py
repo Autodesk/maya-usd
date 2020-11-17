@@ -36,6 +36,14 @@ class testUsdImportCustomConverter(unittest.TestCase):
         else:
             suffix = "USD"
 
+        # Debugging why plugin load fails on OS/X:
+        usd_path = [i for i in plugin_path.split(os.pathsep) if i.endswith("USD")]
+        if usd_path:
+            dso_path = usd_path[0][:-3]
+            print("Contents of dso_path: %s" % dso_path)
+            for fn in os.listdir(dso_path):
+                print("\t%s" % fn)
+
         cls.input_path = fixturesUtils.setUpClass(__file__, suffix)
 
         cls.test_dir = os.path.join(cls.input_path,
