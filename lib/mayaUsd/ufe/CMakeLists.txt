@@ -37,6 +37,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
             ProxyShapeContextOpsHandler.cpp
+            RotationUtils.cpp
             UsdAttribute.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
@@ -91,6 +92,7 @@ set(HEADERS
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         ProxyShapeContextOpsHandler.h
+        RotationUtils.h
         UsdAttribute.h
         UsdAttributes.h
         UsdAttributesHandler.h

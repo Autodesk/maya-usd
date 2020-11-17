@@ -15,19 +15,14 @@
 //
 #pragma once
 
-#include <mayaUsd/ufe/UsdTransform3dBase.h>
-
-#include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 
 #include <pxr/usd/usdGeom/xformable.h>
-
-#include <unordered_map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
-namespace hack {
 
 //! \brief Default transform stack implementation of the Transform3d interface.
 //
@@ -71,100 +66,56 @@ namespace hack {
 // transform stack, the Transform3d handler will return a null Transform3d
 // interface pointer.
 //
-class MAYAUSD_CORE_PUBLIC UsdTransform3dMayaXformStack : public UsdTransform3dBase
+class MAYAUSD_CORE_PUBLIC UsdTransform3dFallbackMayaXformStack : public UsdTransform3dMayaXformStack
 {
 public:
-    enum OpNdx {NdxTranslate = 0, NdxRotatePivotTranslate, NdxRotatePivot, 
-                NdxRotate, NdxRotateAxis, NdxRotatePivotInverse, 
-                NdxScalePivotTranslate, NdxScalePivot, NdxShear, NdxScale, 
-                NdxScalePivotInverse, NbOpNdx};
 
-    typedef std::shared_ptr<UsdTransform3dMayaXformStack> Ptr;
+    typedef std::shared_ptr<UsdTransform3dFallbackMayaXformStack> Ptr;
 
-    UsdTransform3dMayaXformStack(
+    UsdTransform3dFallbackMayaXformStack(
         const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
     );
-    ~UsdTransform3dMayaXformStack() override = default;
+    ~UsdTransform3dFallbackMayaXformStack() override = default;
 
-    //! Create a UsdTransform3dMayaXformStack for the given item.  The argument
+    //! Create a UsdTransform3dFallbackMayaXformStack for the given item.  The argument
     //! transform ops must match a Maya transform stack.
-    static UsdTransform3dMayaXformStack::Ptr create(
+    static UsdTransform3dFallbackMayaXformStack::Ptr create(
         const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
     );
-
-    Ufe::Vector3d translation() const override;
-    Ufe::Vector3d rotation() const override;
-    Ufe::Vector3d scale() const override;
-
-    Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
-    Ufe::RotateUndoableCommand::Ptr rotateCmd(double x, double y, double z) override;
-    Ufe::ScaleUndoableCommand::Ptr scaleCmd(double x, double y, double z) override;
-
-    Ufe::TranslateUndoableCommand::Ptr rotatePivotCmd(double x, double y, double z) override;
-    Ufe::Vector3d rotatePivot() const override;
-
-    Ufe::TranslateUndoableCommand::Ptr scalePivotCmd(double x, double y, double z) override;
-    Ufe::Vector3d scalePivot() const override;
-
-    Ufe::TranslateUndoableCommand::Ptr translateRotatePivotCmd(
-        double x, double y, double z) override;
-
-    Ufe::Vector3d rotatePivotTranslation() const override;
-
-    Ufe::TranslateUndoableCommand::Ptr translateScalePivotCmd(
-        double x, double y, double z) override;
-
-    Ufe::Vector3d scalePivotTranslation() const override;
 
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
 private:
 
-    bool           hasOp(OpNdx ndx) const;
-    UsdGeomXformOp getOp(OpNdx ndx) const;
+    void    setXformOpOrder() override;
+    TfToken getOpSuffix(OpNdx ndx) const override;
+    TfToken getTRSOpSuffix() const override;
+    CvtRotXYZFromAttrFn getCvtRotXYZFromAttrFn(const TfToken& opName) const override;
+    CvtRotXYZToAttrFn getCvtRotXYZToAttrFn(const TfToken& opName) const override;
 
-    Ufe::TranslateUndoableCommand::Ptr pivotCmd(
-        const TfToken& pvtOpSuffix,
-        double x, double y, double z
-    );
-    template<class V>
-    Ufe::Vector3d getVector3d(const TfToken& attrName) const;
-    template<class V>
-    Ufe::SetVector3dUndoableCommand::Ptr setVector3dCmd(
-        const V& v, const TfToken& attrName, const TfToken& opSuffix = TfToken()
-    );
-
-    void setXformOpOrder();
-    
-    // Cache of ops in the ordered ops vector, indexed by position.
-    std::unordered_map<OpNdx, UsdGeomXformOp> _orderedOps;
-
-    UsdGeomXformable _xformable;
-
-}; // UsdTransform3dMayaXformStack
+}; // UsdTransform3dFallbackMayaXformStack
 
 //! \brief Factory to create the fallback Transform3d interface object.
 //
 // Since this is the fallback Transform3d handler, it is the final handler in
 // the chain of responsibility.
 
-class MAYAUSD_CORE_PUBLIC UsdTransform3dMayaXformStackHandler
+class MAYAUSD_CORE_PUBLIC UsdTransform3dFallbackMayaXformStackHandler
   : public Ufe::Transform3dHandler
 {
 public:
-    typedef std::shared_ptr<UsdTransform3dMayaXformStackHandler> Ptr;
+    typedef std::shared_ptr<UsdTransform3dFallbackMayaXformStackHandler> Ptr;
 
-    UsdTransform3dMayaXformStackHandler();
+    UsdTransform3dFallbackMayaXformStackHandler();
 
-    //! Create a UsdTransform3dMayaXformStackHandler.
+    //! Create a UsdTransform3dFallbackMayaXformStackHandler.
     static Ptr create();
 
     // Ufe::Transform3dHandler overrides
     Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
     Ufe::Transform3d::Ptr editTransform3d(const Ufe::SceneItem::Ptr& item) const override;
 
-}; // UsdTransform3dMayaXformStackHandler
+}; // UsdTransform3dFallbackMayaXformStackHandler
 
-} // namespace hack
 } // namespace ufe
 } // namespace MayaUsd

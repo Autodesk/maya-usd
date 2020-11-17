@@ -151,7 +151,7 @@ MStatus initializePlugin(MObject obj)
     // transform API).
 	auto& runTimeMgr = Ufe::RunTimeMgr::instance();
 	auto usdRtid = MAYAUSD_NS::ufe::getUsdRunTimeId();
-	auto fallbackHandler = MayaUsd::ufe::hack::UsdTransform3dMayaXformStackHandler::create();
+	auto fallbackHandler = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
 	auto matrixHandler = MAYAUSD_NS::ufe::UsdTransform3dMatrixOpHandler::create(
 		fallbackHandler);
 	auto mayaStackHandler = MAYAUSD_NS::ufe::UsdTransform3dMayaXformStackHandler::create(matrixHandler);
