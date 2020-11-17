@@ -45,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((NormalAttrName, "normal"))                                                                 \
     ((OcclusionAttrName, "occlusion"))                                                           \
     ((OpacityAttrName, "opacity"))                                                               \
+    ((OpacityThresholdAttrName, "opacityThreshold"))                                             \
     ((RoughnessAttrName, "roughness"))                                                           \
     ((SpecularColorAttrName, "specularColor"))                                                   \
     ((UseSpecularWorkflowAttrName, "useSpecularWorkflow"))                                       \

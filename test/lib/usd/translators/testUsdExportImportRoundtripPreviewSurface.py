@@ -68,6 +68,7 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         cmds.setAttr(material_node + ".specularColor", 0.125, 0.25, 0.75,
                      type="double3")
         cmds.setAttr(material_node + ".useSpecularWorkflow", True)
+        cmds.setAttr(material_node + ".opacityThreshold", 0.5)
 
         file_node = cmds.shadingNode("file", asTexture=True,
                                      isColorManaged=True)
@@ -131,6 +132,8 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
         # Check values:
         self.assertAlmostEqual(cmds.getAttr("usdPreviewSurface2.roughness"),
                                0.25)
+        self.assertAlmostEqual(cmds.getAttr("usdPreviewSurface2.opacityThreshold"),
+                               0.5)
         self.assertEqual(cmds.getAttr("usdPreviewSurface2.specularColor"),
                          [(0.125, 0.25, 0.75)])
         self.assertTrue(cmds.getAttr("usdPreviewSurface2.useSpecularWorkflow"))

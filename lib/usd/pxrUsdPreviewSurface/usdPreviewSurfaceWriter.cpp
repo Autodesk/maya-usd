@@ -253,6 +253,14 @@ void PxrMayaUsdPreviewSurface_Writer::Write(const UsdTimeCode& usdTime)
         SdfValueTypeNames->Float,
         usdTime);
 
+    // Opacity Threshold
+    _AuthorShaderInputFromShadingNodeAttr(
+        depNodeFn,
+        shaderSchema,
+        PxrMayaUsdPreviewSurfaceTokens->OpacityThresholdAttrName,
+        SdfValueTypeNames->Float,
+        usdTime);
+
     // Roughness
     _AuthorShaderInputFromShadingNodeAttr(
         depNodeFn,
@@ -306,6 +314,7 @@ PxrMayaUsdPreviewSurface_Writer::GetShadingAttributeNameForMayaAttrName(const Tf
         || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->NormalAttrName
         || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OcclusionAttrName
         || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName
+        || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->OpacityThresholdAttrName
         || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName
         || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName
         || mayaAttrName == PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName) {
