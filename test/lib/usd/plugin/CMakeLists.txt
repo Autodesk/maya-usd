@@ -15,7 +15,7 @@
 #
 set(TARGET_NAME usdTestMayaPlugin)
 
-add_library(${TARGET_NAME} MODULE)
+add_library(${TARGET_NAME} SHARED)
 
 # -----------------------------------------------------------------------------
 # sources
@@ -71,7 +71,7 @@ endif()
 
 set(TARGET_NAME usdTestUsdPlugin)
 
-add_library(${TARGET_NAME} MODULE)
+add_library(${TARGET_NAME} SHARED)
 
 # -----------------------------------------------------------------------------
 # sources
