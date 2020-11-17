@@ -23,7 +23,7 @@ import unittest
 import fixturesUtils
 from maya import cmds
 from maya import standalone
-from pxr import Usd
+from pxr import Usd, UsdGeom
 
 
 class testMayaUsdExportLayerAttributes(unittest.TestCase):
@@ -36,7 +36,7 @@ class testMayaUsdExportLayerAttributes(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def test_fps_30(self):
+    def test_fps(self):
         fps_map = {
             "ntsc": 30,
             "game": 15,
@@ -57,6 +57,25 @@ class testMayaUsdExportLayerAttributes(unittest.TestCase):
             self.assertEqual(stage.GetTimeCodesPerSecond(), fps)
             self.assertEqual(stage.GetFramesPerSecond(), fps)
 
+    def test_metersPerUnit(self):
+        units_map = {
+            "millimeter": UsdGeom.LinearUnits.millimeters,
+            "centimeter": UsdGeom.LinearUnits.centimeters,
+            "meter": UsdGeom.LinearUnits.meters,
+            "kilometer": UsdGeom.LinearUnits.kilometers,
+            "inch": UsdGeom.LinearUnits.inches,
+            "foot": UsdGeom.LinearUnits.feet,
+            "yard": UsdGeom.LinearUnits.yards,
+            "mile": UsdGeom.LinearUnits.miles
+        }
+
+        for name, unit in units_map.items():
+            cmds.currentUnit(linear=name)
+            temp_file = os.path.join(self.temp_dir, 'test_{}.usda'.format(name))
+            cmds.mayaUSDExport(f=temp_file)
+
+            stage = Usd.Stage.Open(temp_file)
+            self.assertEqual(UsdGeom.GetStageMetersPerUnit(stage), unit)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

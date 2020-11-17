@@ -70,6 +70,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_EXPORT_INTERNAL_DISTANCE_UNITS,
+    false,
+    "Sets metersPerUnit based on the internal Maya unit (cm)"
+    "When disabled, uses the UI Unit instead.");
+
 UsdMaya_WriteJob::UsdMaya_WriteJob(const UsdMayaJobExportArgs& iArgs)
     : mJobCtx(iArgs)
     , _modelKindProcessor(new UsdMaya_ModelKindProcessor(iArgs))
@@ -482,17 +488,21 @@ bool UsdMaya_WriteJob::_FinishWriting()
     UsdGeomSetStageUpAxis(mJobCtx.mStage, upAxis);
 
     // XXX Currently all distance values are written directly to USD, and will
-    // be in centimeters (Maya's internal unit) despite what the users UIUnit
-    // preference is. Future work could include converting exported values to
-    // the UIUnit setting and writing that unit to metadata.
-    MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
-    if (mayaInternalUnit != MDistance::uiUnit()) {
-        TF_WARN("Distance unit conversion is not yet supported. "
-                "All distance values will be exported in Maya's internal "
-                "distance unit.");
+    // be in the users uiUnit. If something requires conversion, this does
+    // not happen currently. Perhaps something for future work.
+    MDistance::Unit   mayaInternalUnit = MDistance::internalUnit();
+    MDistance::Unit   mayaUiUnit = MDistance::uiUnit();
+    static const bool exportInternalDistanceUnits
+        = TfGetEnvSetting(MAYAUSD_EXPORT_INTERNAL_DISTANCE_UNITS);
+
+    if (mayaInternalUnit != mayaUiUnit) {
+        TF_WARN("Scene Units that aren't centimeters are not fully supported. "
+                "Your output may not match your scene.");
     }
     UsdGeomSetStageMetersPerUnit(
-        mJobCtx.mStage, UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit));
+        mJobCtx.mStage,
+        UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(
+            exportInternalDistanceUnits ? mayaInternalUnit : mayaUiUnit));
 
     if (usdRootPrim) {
         // We have already decided above that 'usdRootPrim' is the important
