@@ -131,6 +131,7 @@ static bool _HasShadingModePlugin(
 
     JsValue any;
     if (TfMapLookup(mayaTranslatorMetadata, _tokens->mayaPlugin, &any)) {
+        // Find the mayaPlugin if there is one. Otherwise we can still load the plugin via USD.
         _GetData(any, mayaPluginName);
     }
 
@@ -189,6 +190,9 @@ void UsdMaya_RegistryHelper::FindAndLoadMayaPlug(
                 // already loaded.
                 plug->Load();
             }
+            // Continue search. For shaders, we can have multiple importers and exporters for the
+            // same Maya node. A lambert can be exported as UsdPreviewSurface, MaterialX, Arnold,
+            // PRman...
         }
     }
 }
