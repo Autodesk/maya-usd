@@ -53,6 +53,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         """
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+            cmds.loadPlugin('matrixNodes')
         
         # Useful for debugging accessor
         #Tf.Debug.SetDebugSymbolsByName("USDMAYA_PROXYACCESSOR", 1)
@@ -822,7 +823,54 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cmds.currentTime(1)
         v0 = cmds.getAttr('{}.{}'.format(nodeDagPath,matrixPlug))
         self.assertEqual(v0, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 3.0, 0.0, 1.0])
-      
+    
+    def validateRecursiveCompute(self, cachingScope):
+        """
+        Create parent constraint between two USD items. Such setup will make cyclic
+        dependency between proxy shape inputs and outputs, i.e. constraint requires
+        target local space attributes and world space attributes. To make this setup even more
+        complex, we make parent of the target animated with Maya's animation curves. This
+        way nested compute has to go outside of proxy shape when computing parent of the
+        target.
+        """
+        nodeDagPath,stage = createProxyFromFile(self.testAnimatedHierarchyUsdFile)
+        
+        # Get UFE items
+        ufeItemParent = createUfeSceneItem(nodeDagPath,'/ParentA')
+        ufeItem = createUfeSceneItem(nodeDagPath,'/ParentA/Sphere')
+        ufeTarget = createUfeSceneItem(nodeDagPath,'/ParentA/Cube')
+        
+        # Animate with animation curve parent rotation to create additional dependency on Maya's
+        # compute
+        rotatePlugParent = pa.getOrCreateAccessPlug(ufeItemParent, usdAttrName='xformOp:rotateXYZ')
+        cmds.setKeyframe( '{}.{}'.format(nodeDagPath,rotatePlugParent), time=1.0, value=0.0 )
+        cmds.setKeyframe( '{}.{}'.format(nodeDagPath,rotatePlugParent), time=100.0, value=90.0)
+        
+        # Parent
+        pa.parentConstraintItems(ufeItem,ufeTarget)
+        
+        # Get accessor plugs (created by parent constraint method)
+        translatePlug = pa.getOrCreateAccessPlug(ufeItem, usdAttrName='xformOp:translate')
+        rotatePlug = pa.getOrCreateAccessPlug(ufeItem, usdAttrName='xformOp:rotateXYZ')
+        
+        # Get accessor to world matrix for ufeItem to validate parent animation
+        worldMatrixPlug = pa.getOrCreateAccessPlug(ufeItem, '', Sdf.ValueTypeNames.Matrix4d)
+        
+        # Validate
+        cachingScope.checkValidFrames(self.cache_empty)
+        cachingScope.waitForCache()
+        cachingScope.checkValidFrames(self.cache_allFrames)
+        
+        cmds.currentTime(1)
+        self.validatePlugsEqual(nodeDagPath, [(translatePlug,(0.0, 0.0, 5.0)), (rotatePlug, (0.0, 0.0, 0.0))])
+        v0 = cmds.getAttr('{}.{}'.format(nodeDagPath,worldMatrixPlug))
+        self.assertVectorAlmostEqual(v0, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0])
+        
+        cmds.currentTime(100)
+        self.validatePlugsEqual(nodeDagPath, [(translatePlug,(0.0, 0.0, -5.0)), (rotatePlug, (0.0, 0.0, 0.0))])
+        v0 = cmds.getAttr('{}.{}'.format(nodeDagPath,worldMatrixPlug))
+        self.assertVectorAlmostEqual(v0, [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -5.0, 5.0, 0.0, 1.0])
+    
     ###################################################################################
     def testOutput_NoCaching(self):
         """
@@ -1070,3 +1118,22 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
             thisScope.verifyScopeSetup()
             self.validateMatrixOps(thisScope)
             
+    def testRecursiveCompute_NoCaching(self):
+        """
+        Validate that cyclic compute for parent constraints works.
+        Cached playback is disabled in this test.
+        """
+        cmds.file(new=True, force=True)
+        with NonCachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
+            self.validateRecursiveCompute(thisScope)
+
+    def testRecursiveCompute_Caching(self):
+        """
+        Validate that cyclic compute for parent constraints works.
+        Cached playback is ENABLED in this test.
+        """
+        cmds.file(new=True, force=True)
+        with CachingScope(self) as thisScope:
+            thisScope.verifyScopeSetup()
+            self.validateRecursiveCompute(thisScope)

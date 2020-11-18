@@ -16,14 +16,15 @@
 #ifndef MAYAUSD_PROXY_ACCESSOR_H
 #define MAYAUSD_PROXY_ACCESSOR_H
 
-#include "../base/api.h"
-#include "proxyStageProvider.h"
-#include "pxr/pxr.h"
-#include "pxr/usd/usd/stage.h"
-#include "pxr/usd/usd/timeCode.h"
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/base/syncId.h>
+#include <mayaUsd/nodes/proxyStageProvider.h>
 
 #include <pxr/base/tf/notice.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/notice.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MDataBlock.h>
@@ -39,11 +40,16 @@
 #include <tuple>
 #include <type_traits>
 
+PXR_NAMESPACE_OPEN_SCOPE
+class UsdGeomXformCache;
+PXR_NAMESPACE_CLOSE_SCOPE
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 struct ConverterArgs;
 class Converter;
+class ComputeContext;
 
 /*! \brief Proxy accessor class enables an MPxNode node with ProxyStageProvider interface to
  write and read data from the USD stage.
@@ -57,7 +63,7 @@ class Converter;
 
  Accessor attributes are dynamic attributes created on owning MPxNode and having the following
  characteristics:
- - attribute name is created using following formula - "AccessValue_" + hash(SdfPath)
+ - attribute name is created using following formula - "AP_" + sanitized sdf path
  - attribute nice name is used to store SdfPath to prim or prim property
  - when no property is provided in the SdfPath, we assume the world matrix is requested. This
  makes only sense for output plugs.
@@ -169,7 +175,7 @@ private:
         To avoid expensive searches during compute, we cache MPlug, SdfPath and converter needed
        to translate values between data models.
      */
-    using Item = std::tuple<MPlug, SdfPath, const Converter*>;
+    using Item = std::tuple<MPlug, SdfPath, const Converter*, SyncId>;
     using Container = std::vector<Item>;
 
     ProxyAccessor(ProxyStageProvider& provider)
@@ -194,20 +200,28 @@ private:
     void collectAccessorItems(MObject node);
     //! \brief  Invalidate acceleration structure
     void invalidateAccessorItems() { _validAccessorItems = false; }
+    //! \brief  Find accessor item in the acceleration structure
+    const Item* findAccessorItem(const MPlug& plug, bool isInput) const;
 
     //! \brief  Notification from MPxNode to insert accessor plugs dependencies
     MStatus addDependentsDirty(const MPlug& plug, MPlugArray& plugArray);
     //! \brief  Notification from MPxNode to compute accessor plugs.
     MStatus compute(const MPlug& plug, MDataBlock& dataBlock);
-    //! \brief  Using acceleration structure, do computation of accessor input plugs.
-    MStatus
-    computeInputs(const UsdStageRefPtr stage, MDataBlock& dataBlock, const ConverterArgs& args);
-    //! \brief  Using acceleration structure, do computation of accessor output plugs.
-    MStatus computeOutputs(
-        const MObject&       ownerNode,
+    //! \brief  Using acceleration structure, do computation of a given accessor input plug.
+    MStatus computeInput(
+        Item&                outputItemToCompute,
         const UsdStageRefPtr stage,
         MDataBlock&          dataBlock,
         const ConverterArgs& args);
+    //! \brief  Using acceleration structure, do computation of a given accessor output plug.
+    MStatus computeOutput(
+        const Item&          outputItemToCompute,
+        const MMatrix&       proxyInclusiveMatrix,
+        const UsdStageRefPtr stage,
+        MDataBlock&          dataBlock,
+        UsdGeomXformCache&   xformCache,
+        const ConverterArgs& args);
+
     /*! \brief  Notification from MPxNode to synchronize evaluation cache with USD stage
         Each manipulation can mutate the state of USD, but not every manipulation will
        invalidate the cache. In order to keep USD state in sync with what was stored in
@@ -221,7 +235,7 @@ private:
     MStatus forceCompute(const MObject& node);
 
     //! \brief  Is accessor compute started
-    bool inCompute() const { return _inCompute; }
+    bool inCompute() const { return (_inCompute != nullptr); }
 
     ProxyStageProvider& _stageProvider; //!< Accessor holds reference to stage provider in order
                                         //!< to query the stage and time
@@ -235,30 +249,19 @@ private:
     Container _accessorInputItems;
     //! \brief  Acceleration structure holding all output accessor plugs
     Container _accessorOutputItems;
+
+    ComputeContext* _inCompute {
+        nullptr
+    }; //!< Detect nested compute and provide access to top level context
+
+    //! \brief  Current evaluation id. Used to prevent endless recursion when computing cyclic
+    //! dependencies
+    Id _evaluationId;
+
     //! \brief  Flag to indicate if acceleration structure is valid or needs to be recreated
     bool _validAccessorItems { false };
-    bool _inCompute { false }; //!< Prevent nested compute
 
-    //! \brief  Helper scoped object to prevent nested compute
-    class Scoped_InCompute
-    {
-    public:
-        Scoped_InCompute(ProxyAccessor& accessor)
-            : _accessor(accessor)
-            , _restoreState(accessor._inCompute)
-        {
-            _accessor._inCompute = true;
-        }
-
-        ~Scoped_InCompute() { _accessor._inCompute = _restoreState; }
-
-        Scoped_InCompute(const Scoped_InCompute&) = delete;
-        Scoped_InCompute& operator=(const Scoped_InCompute&) = delete;
-
-    private:
-        ProxyAccessor& _accessor;
-        bool           _restoreState { false };
-    };
+    friend ComputeContext;
 };
 
 } // namespace MAYAUSD_NS_DEF

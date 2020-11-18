@@ -9,6 +9,8 @@ target_sources(${PROJECT_NAME}
 set(HEADERS
     api.h
     debugCodes.h
+    id.h
+    syncId.h
 )
 
 # -----------------------------------------------------------------------------

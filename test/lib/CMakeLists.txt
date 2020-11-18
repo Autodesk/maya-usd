@@ -5,12 +5,12 @@ set(TEST_SCRIPT_FILES
     testMayaUsdConverter.py
     testMayaUsdPythonImport.py
     testMayaUsdLayerEditorCommands.py
+    testMayaUsdCacheId.py
 )
 
-if (MAYA_APP_VERSION VERSION_GREATER 2020)
+if (UFE_FOUND AND MAYA_APP_VERSION VERSION_GREATER 2020)
     list(APPEND TEST_SCRIPT_FILES
         testMayaUsdProxyAccessor.py
-        testMayaUsdCacheId.py
     )
 endif()
 

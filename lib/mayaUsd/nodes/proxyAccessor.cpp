@@ -26,6 +26,7 @@
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/xformCache.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include <maya/MArrayDataBuilder.h>
 #include <maya/MArrayDataHandle.h>
@@ -49,6 +50,94 @@
 #include <unordered_map>
 
 namespace MAYAUSD_NS_DEF {
+
+/*! /brief  Scoped object setting up compute context for accessor
+
+    Proxy accessor supports nested compute that allows injecting DG dependencies to USD. More
+   complex setups will create dependencies between output and input accessor plugs. In such case
+   computing inputs will come back to proxy accessor and request computation of a specific output.
+   Such output may then be again dependent on input from Maya, so reqursion can continue.
+   ComputeContext is setup at the entry to computation and allows nested compute to reuse its state.
+
+    See `validateRecursiveCompute` for an example of a setup that requires nested compute.
+ */
+class ComputeContext
+{
+public:
+    //! \brief  Construct compute context for both inputs and outputs
+    ComputeContext(ProxyAccessor& accessor, const MObject& ownerNode)
+        : _restoreState(accessor._inCompute)
+        , _accessor(accessor)
+        , _stage(accessor.getUsdStage())
+        , _editContext(_stage, _stage->GetSessionLayer())
+    {
+        // Start with setting this context on the accessor. This is important in case
+        // anything below causes compute.
+        accessor._inCompute = this;
+
+        _args._timeCode = _accessor.getTime();
+        _xformCache.SetTime(_args._timeCode);
+
+        MDagPath proxyDagPath;
+        MDagPath::getAPathTo(ownerNode, proxyDagPath);
+        _proxyInclusiveMatrix = proxyDagPath.inclusiveMatrix();
+
+        // Only increment evaluation ID for top most evaluation scope.
+        // Nested scope is allowed, but shouldn't in really be needed.
+        if (!_restoreState) {
+            accessor._evaluationId.next();
+        }
+    }
+
+    //! \brief  Construct compute context for both inputs
+    ComputeContext(ProxyAccessor& accessor)
+        : _restoreState(accessor._inCompute)
+        , _accessor(accessor)
+        , _stage(accessor.getUsdStage())
+        , _editContext(_stage, _stage->GetSessionLayer())
+    {
+        // Start with setting this context on the accessor. This is important in case
+        // anything below causes compute.
+        accessor._inCompute = this;
+
+        _args._timeCode = _accessor.getTime();
+        _xformCache.SetTime(_args._timeCode);
+
+        // Only increment evaluation ID for top most evaluation scope.
+        // Nested scope is allowed, but shouldn't in really be needed.
+        if (!_restoreState) {
+            accessor._evaluationId.next();
+        }
+    }
+
+    //! \brief  Restore will handle changing context pointer in the accessor to the state before
+    ~ComputeContext() { _accessor._inCompute = _restoreState; }
+
+    ComputeContext(const ComputeContext&) = delete;
+    ComputeContext& operator=(const ComputeContext&) = delete;
+
+private:
+    //! Remember context pointer at the creation of this object
+    ComputeContext* _restoreState;
+
+public:
+    //! Accessor setting up this context
+    ProxyAccessor& _accessor;
+    //! Reference to the stage
+    const UsdStageRefPtr _stage;
+
+    //! Scoped objects setting up resolver cache
+    ArResolverScopedCache _resolverCache;
+    //! Scoped object changing current edit context to the session layer
+    UsdEditContext _editContext;
+    //! Xform compute cache
+    UsdGeomXformCache _xformCache;
+
+    //! Converter arguments used when translating between Maya's and USD data model
+    ConverterArgs _args;
+    //! Proxy share transform matrix
+    MMatrix _proxyInclusiveMatrix;
+};
 
 namespace {
 //! Profiler category for proxy accessor events
@@ -271,6 +360,19 @@ void ProxyAccessor::collectAccessorItems(MObject node)
     return;
 }
 
+const ProxyAccessor::Item* ProxyAccessor::findAccessorItem(const MPlug& plug, bool isInput) const
+{
+    const Container& accessorItems = isInput ? _accessorInputItems : _accessorOutputItems;
+    for (const auto& item : accessorItems) {
+        const MPlug& itemPlug = std::get<0>(item);
+
+        if ((plug.isElement() && itemPlug == plug.array()) || itemPlug == plug)
+            return &item;
+    }
+
+    return nullptr;
+}
+
 MStatus ProxyAccessor::addDependentsDirty(const MPlug& plug, MPlugArray& plugArray)
 {
     if (inCompute())
@@ -307,8 +409,57 @@ MStatus ProxyAccessor::addDependentsDirty(const MPlug& plug, MPlugArray& plugArr
 
 MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock)
 {
-    if (inCompute())
+    // Special handling for nested compute
+    if (inCompute()) {
+        MProfilingScope profilingScope(
+            _accessorProfilerCategory, MProfiler::kColorB_L3, "Nested compute USD accessor");
+
+        const auto* accessorItem = findAccessorItem(plug, false);
+        if (accessorItem) {
+            TF_DEBUG(USDMAYA_PROXYACCESSOR)
+                .Msg("Nested compute triggered by '%s'\n", plug.name().asChar());
+
+            ComputeContext& topState = *_inCompute;
+
+            const SdfPath& itemPath = std::get<1>(*accessorItem);
+            // If it's not a property path, then we will be writing out world matrix data
+            if (!itemPath.IsPrimPropertyPath()) {
+                // Read only inputs that can affect requested xform matrix and that haven't been
+                // yet read. We will perform evaluationId check to prevent causing recursive
+                // computation of the same plug, when there is more than one input depending on it.
+                for (auto& inputItem : _accessorInputItems) {
+                    const SdfPath& inputItemPath = std::get<1>(inputItem);
+                    SdfPath        inputItemPrimPath = inputItemPath.GetPrimPath();
+
+                    if (UsdGeomXformOp::IsXformOp(inputItemPath.GetNameToken())
+                        && itemPath.HasPrefix(inputItemPrimPath)) {
+                        computeInput(inputItem, topState._stage, dataBlock, topState._args);
+                    }
+                }
+
+                // write to only single output that was requested.
+                computeOutput(
+                    *accessorItem,
+                    topState._proxyInclusiveMatrix,
+                    topState._stage,
+                    dataBlock,
+                    topState._xformCache,
+                    topState._args);
+            } else {
+                computeOutput(
+                    *accessorItem,
+                    topState._proxyInclusiveMatrix,
+                    topState._stage,
+                    dataBlock,
+                    topState._xformCache,
+                    topState._args);
+            }
+        } else {
+            TF_DEBUG(USDMAYA_PROXYACCESSOR)
+                .Msg("!!!! Nested compute on a plug ignored '%s'\n", plug.name().asChar());
+        }
         return MS::kSuccess;
+    }
 
     MProfilingScope profilingScope(
         _accessorProfilerCategory, MProfiler::kColorB_L1, "Compute USD accessor");
@@ -316,155 +467,158 @@ MStatus ProxyAccessor::compute(const MPlug& plug, MDataBlock& dataBlock)
     TF_DEBUG(USDMAYA_PROXYACCESSOR)
         .Msg("Compute USD accessor triggered by '%s'\n", plug.name().asChar());
 
-    Scoped_InCompute inComputeNow(*this);
-
     collectAccessorItems(plug.node());
 
     // Early exit to avoid virtual function calls when no compute will happen
     if (_accessorInputItems.size() == 0 && _accessorOutputItems.size() == 0)
         return MS::kSuccess;
 
-    const UsdStageRefPtr stage = getUsdStage();
+    ComputeContext evalState(*this, plug.node());
 
-    ArResolverScopedCache resolverCache;
-
-    ConverterArgs args;
-    args._timeCode = getTime();
-
-    // Compute dependencies is considered as temporary data
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-
-    computeInputs(stage, dataBlock, args);
-    computeOutputs(plug.node(), stage, dataBlock, args);
+    // Read and set inputs on the stage. If recursive computation was performed,
+    // some of the inputs may have been already evaluated (see evaluationId check)
+    for (auto& item : _accessorInputItems) {
+        computeInput(item, evalState._stage, dataBlock, evalState._args);
+    }
+    // Write outputs that haven't been yet computed
+    for (const auto& item : _accessorOutputItems) {
+        computeOutput(
+            item,
+            evalState._proxyInclusiveMatrix,
+            evalState._stage,
+            dataBlock,
+            evalState._xformCache,
+            evalState._args);
+    }
 
     return MS::kSuccess;
 }
 
-MStatus ProxyAccessor::computeInputs(
+MStatus ProxyAccessor::computeInput(
+    Item&                inputItemToCompute,
     const UsdStageRefPtr stage,
     MDataBlock&          dataBlock,
     const ConverterArgs& args)
 {
     MStatus retValue = MS::kSuccess;
-    for (const auto& item : _accessorInputItems) {
-        const MPlug&     itemPlug = std::get<0>(item);
-        const SdfPath&   itemPath = std::get<1>(item);
-        const Converter* itemConverter = std::get<2>(item);
-        // We should cache UsdAttribute in here too and avoid expensive
-        // searches (i.e. getting the prim, getting attribute, checking if defined)
 
-        MProfilingScope profilingScope(
-            _accessorProfilerCategory, MProfiler::kColorB_L1, "Write input", itemPath.GetText());
+    SyncId& evaluationId = std::get<3>(inputItemToCompute);
+    if (evaluationId.inSync(_evaluationId))
+        return MS::kSuccess;
 
-        SdfPath        itemPrimPath = itemPath.GetPrimPath();
-        const UsdPrim& itemPrim = stage->GetPrimAtPath(itemPrimPath);
+    const MPlug&     itemPlug = std::get<0>(inputItemToCompute);
+    const SdfPath&   itemPath = std::get<1>(inputItemToCompute);
+    const Converter* itemConverter = std::get<2>(inputItemToCompute);
+    // We should cache UsdAttribute in here too and avoid expensive
+    // searches (i.e. getting the prim, getting attribute, checking if defined)
 
-        if (!itemPath.IsPrimPropertyPath() || !itemConverter)
-            continue;
+    MProfilingScope profilingScope(
+        _accessorProfilerCategory, MProfiler::kColorB_L1, "Write input", itemPath.GetText());
 
+    evaluationId.sync(_evaluationId);
+
+    SdfPath        itemPrimPath = itemPath.GetPrimPath();
+    const UsdPrim& itemPrim = stage->GetPrimAtPath(itemPrimPath);
+
+    if (!itemPath.IsPrimPropertyPath() || !itemConverter)
+        return MS::kFailure;
+
+    const TfToken& itemPropertyToken = itemPath.GetNameToken();
+    UsdAttribute   itemAttribute = itemPrim.GetAttribute(itemPropertyToken);
+
+    if (!itemAttribute.IsDefined()) {
+        TF_CODING_ERROR("Undefined/invalid attribute '%s'", itemPath.GetText());
+        return MS::kFailure;
+    }
+
+    MDataHandle itemDataHandle = dataBlock.inputValue(itemPlug, &retValue);
+    if (MFAIL(retValue)) {
+        return retValue;
+    }
+
+    VtValue convertedValue;
+    itemConverter->convert(itemDataHandle, convertedValue, args);
+
+    // Don't set the value if it didn't change. This will save us expensive invalidation +
+    // compute
+    VtValue currentValue;
+    if (itemAttribute.Get(&currentValue, args._timeCode) && convertedValue != currentValue) {
+        itemAttribute.Set(convertedValue, args._timeCode);
+    }
+
+    return MS::kSuccess;
+}
+
+MStatus ProxyAccessor::computeOutput(
+    const Item&          outputItemToCompute,
+    const MMatrix&       proxyInclusiveMatrix,
+    const UsdStageRefPtr stage,
+    MDataBlock&          dataBlock,
+    UsdGeomXformCache&   xformCache,
+    const ConverterArgs& args)
+{
+    MStatus retValue = MS::kSuccess;
+
+    const MPlug&     itemPlug = std::get<0>(outputItemToCompute);
+    const SdfPath&   itemPath = std::get<1>(outputItemToCompute);
+    const Converter* itemConverter = std::get<2>(outputItemToCompute);
+    // We should cache UsdAttribute in here too and avoid expensive
+    // searches (i.e. getting the prim, getting attribute, checking if defined)
+
+    MProfilingScope profilingScope(
+        _accessorProfilerCategory, MProfiler::kColorB_L1, "Write output", itemPath.GetText());
+
+    SdfPath        itemPrimPath = itemPath.GetPrimPath();
+    const UsdPrim& itemPrim = stage->GetPrimAtPath(itemPrimPath);
+
+    MDataHandle itemDataHandle = dataBlock.outputValue(itemPlug, &retValue);
+    if (MFAIL(retValue)) {
+        return retValue;
+    }
+
+    // If it's not a property path, then we will be writing out world matrix data
+    if (!itemPath.IsPrimPropertyPath()) {
+        GfMatrix4d mat = xformCache.GetLocalToWorldTransform(itemPrim);
+        MMatrix    mayaMat;
+        TypedConverter<MMatrix, GfMatrix4d>::convert(mat, mayaMat);
+
+        mayaMat *= proxyInclusiveMatrix;
+
+        MFnMatrixData data;
+        MObject       dataMatrix = data.create();
+        data.set(mayaMat);
+
+        MArrayDataHandle  dstArray(itemDataHandle);
+        MArrayDataBuilder dstArrayBuilder(&dataBlock, itemPlug.attribute(), 1);
+
+        MDataHandle dstElement = dstArrayBuilder.addElement(0);
+        dstElement.set(dataMatrix);
+
+        dstArray.set(dstArrayBuilder);
+        dstArray.setAllClean();
+    } else if (itemConverter) {
         const TfToken& itemPropertyToken = itemPath.GetNameToken();
         UsdAttribute   itemAttribute = itemPrim.GetAttribute(itemPropertyToken);
 
+        // cache this! expensive call
         if (!itemAttribute.IsDefined()) {
             TF_CODING_ERROR("Undefined/invalid attribute '%s'", itemPath.GetText());
-            continue;
+
+            dataBlock.setClean(itemPlug);
+            return MS::kFailure;
         }
 
-        MDataHandle itemDataHandle = dataBlock.inputValue(itemPlug, &retValue);
-        if (MFAIL(retValue)) {
-            continue;
-        }
-
-        VtValue convertedValue;
-        itemConverter->convert(itemDataHandle, convertedValue, args);
-
-        // Don't set the value if it didn't change. This will save us expensive invalidation +
-        // compute
-        VtValue currentValue;
-        if (itemAttribute.Get(&currentValue, args._timeCode) && convertedValue != currentValue) {
-            itemAttribute.Set(convertedValue, args._timeCode);
-        }
+        itemConverter->convert(itemAttribute, itemDataHandle, args);
     }
 
-    return retValue;
-}
+    // Even if we have no data to write, we set the data in data block as clean
+    // This will prevent entering compute loop again and in case of changes to USD
+    // which result in particular path being invalid, we will preserve the value
+    // from last time it was available
+    itemDataHandle.setClean();
+    dataBlock.setClean(itemPlug.attribute());
 
-MStatus ProxyAccessor::computeOutputs(
-    const MObject&       ownerNode,
-    const UsdStageRefPtr stage,
-    MDataBlock&          dataBlock,
-    const ConverterArgs& args)
-{
-    MStatus retValue = MS::kSuccess;
-
-    UsdGeomXformCache xformCache(args._timeCode);
-
-    MDagPath proxyDagPath;
-    MDagPath::getAPathTo(ownerNode, proxyDagPath);
-    const MMatrix proxyInclusiveMatrix = proxyDagPath.inclusiveMatrix();
-
-    for (const auto& item : _accessorOutputItems) {
-        const MPlug&     itemPlug = std::get<0>(item);
-        const SdfPath&   itemPath = std::get<1>(item);
-        const Converter* itemConverter = std::get<2>(item);
-        // We should cache UsdAttribute in here too and avoid expensive
-        // searches (i.e. getting the prim, getting attribute, checking if defined)
-
-        MProfilingScope profilingScope(
-            _accessorProfilerCategory, MProfiler::kColorB_L1, "Write output", itemPath.GetText());
-
-        SdfPath        itemPrimPath = itemPath.GetPrimPath();
-        const UsdPrim& itemPrim = stage->GetPrimAtPath(itemPrimPath);
-
-        MDataHandle itemDataHandle = dataBlock.outputValue(itemPlug, &retValue);
-        if (MFAIL(retValue)) {
-            continue;
-        }
-
-        // If it's not a property path, then we will be writing out world matrix data
-        if (!itemPath.IsPrimPropertyPath()) {
-            GfMatrix4d mat = xformCache.GetLocalToWorldTransform(itemPrim);
-            MMatrix    mayaMat;
-            TypedConverter<MMatrix, GfMatrix4d>::convert(mat, mayaMat);
-
-            mayaMat *= proxyInclusiveMatrix;
-
-            MFnMatrixData data;
-            MObject       dataMatrix = data.create();
-            data.set(mayaMat);
-
-            MArrayDataHandle  dstArray(itemDataHandle);
-            MArrayDataBuilder dstArrayBuilder(&dataBlock, itemPlug.attribute(), 1);
-
-            MDataHandle dstElement = dstArrayBuilder.addElement(0);
-            dstElement.set(dataMatrix);
-
-            dstArray.set(dstArrayBuilder);
-            dstArray.setAllClean();
-        } else if (itemConverter) {
-            const TfToken& itemPropertyToken = itemPath.GetNameToken();
-            UsdAttribute   itemAttribute = itemPrim.GetAttribute(itemPropertyToken);
-
-            // cache this! expensive call
-            if (!itemAttribute.IsDefined()) {
-                TF_CODING_ERROR("Undefined/invalid attribute '%s'", itemPath.GetText());
-
-                dataBlock.setClean(itemPlug);
-                continue;
-            }
-
-            itemConverter->convert(itemAttribute, itemDataHandle, args);
-        }
-
-        // Even if we have no data to write, we set the data in data block as clean
-        // This will prevent entering compute loop again and in case of changes to USD
-        // which result in particular path being invalid, we will preserve the value
-        // from last time it was available
-        itemDataHandle.setClean();
-        dataBlock.setClean(itemPlug.attribute());
-    }
-
-    return retValue;
+    return MS::kSuccess;
 }
 
 MStatus ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock)
@@ -477,25 +631,18 @@ MStatus ProxyAccessor::syncCache(const MObject& node, MDataBlock& dataBlock)
 
     TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Update USD cache\n");
 
-    Scoped_InCompute inComputeNow(*this);
-
     collectAccessorItems(node);
 
     // Early exit to avoid virtual function calls when no compute will happen
     if (_accessorInputItems.size() == 0)
         return MS::kSuccess;
 
-    const UsdStageRefPtr stage = getUsdStage();
+    ComputeContext evalState(*this);
+    for (auto& item : _accessorInputItems) {
+        computeInput(item, evalState._stage, dataBlock, evalState._args);
+    }
 
-    ArResolverScopedCache resolverCache;
-
-    ConverterArgs args;
-    args._timeCode = getTime();
-
-    // Compute dependencies is considered as temporary data
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-
-    return computeInputs(stage, dataBlock, args);
+    return MS::kSuccess;
 }
 
 MStatus ProxyAccessor::stageChanged(const MObject& node, const UsdNotice::ObjectsChanged& notice)
