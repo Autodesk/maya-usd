@@ -54,10 +54,11 @@ namespace MAYAUSD_NS_DEF {
 /*! /brief  Scoped object setting up compute context for accessor
 
     Proxy accessor supports nested compute that allows injecting DG dependencies to USD. More
-   complex setups will create dependencies between output and input accessor plugs. In such case
-   computing inputs will come back to proxy accessor and request computation of a specific output.
-   Such output may then be again dependent on input from Maya, so reqursion can continue.
-   ComputeContext is setup at the entry to computation and allows nested compute to reuse its state.
+    complex setups will create dependencies between output and input accessor plugs. In such case
+    computing inputs will come back to proxy accessor and request computation of a specific output.
+    Such output may then be again dependent on input from Maya, so reqursion can continue.
+    ComputeContext is setup at the entry to computation and allows nested compute to reuse its
+    state.
 
     See `validateRecursiveCompute` for an example of a setup that requires nested compute.
  */
@@ -89,7 +90,7 @@ public:
         }
     }
 
-    //! \brief  Construct compute context for both inputs
+    //! \brief  Construct compute context for inputs only.
     ComputeContext(ProxyAccessor& accessor)
         : _restoreState(accessor._inCompute)
         , _accessor(accessor)
@@ -350,10 +351,10 @@ void ProxyAccessor::collectAccessorItems(MObject node)
 
         if (isAccessorInputPlug(valuePlug)) {
             TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added INPUT '%s'\n", path.GetText());
-            _accessorInputItems.emplace_back(valuePlug, path, converter);
+            _accessorInputItems.emplace_back(valuePlug, path, converter, SyncId());
         } else {
             TF_DEBUG(USDMAYA_PROXYACCESSOR).Msg("Added OUTPUT '%s'\n", path.GetText());
-            _accessorOutputItems.emplace_back(valuePlug, path, converter);
+            _accessorOutputItems.emplace_back(valuePlug, path, converter, SyncId());
         }
     }
 
