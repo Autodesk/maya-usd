@@ -18,10 +18,13 @@
 
 import maya.cmds as cmds
 
-import usdUtils, mayaUtils
+import usdUtils
+import mayaUtils
 import ufe
+import ufeUtils
 
 import unittest
+
 
 class DuplicateCmdTestCase(unittest.TestCase):
     '''Verify the Maya delete command, for multiple runtimes.
@@ -40,7 +43,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
     '''
 
     pluginsLoaded = False
-    
+
     @classmethod
     def setUpClass(cls):
         if not cls.pluginsLoaded:
@@ -50,10 +53,10 @@ class DuplicateCmdTestCase(unittest.TestCase):
         ''' Called initially to set up the Maya test environment '''
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
-        
+
         # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
-        
+
         # Create some extra Maya nodes
         cmds.polySphere()
 
@@ -68,11 +71,11 @@ class DuplicateCmdTestCase(unittest.TestCase):
         sphereItem = ufe.Hierarchy.createItem(spherePath)
         sphereHierarchy = ufe.Hierarchy.hierarchy(sphereItem)
         worldItem = sphereHierarchy.parent()
-        
+
         ball35Path = ufe.Path([
             mayaUtils.createUfePathSegment(
                 "|world|transform1|proxyShape1"),
-             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
+            usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         ball35Item = ufe.Hierarchy.createItem(ball35Path)
         ball35Hierarchy = ufe.Hierarchy.hierarchy(ball35Item)
         propsItem = ball35Hierarchy.parent()
@@ -183,5 +186,24 @@ class DuplicateCmdTestCase(unittest.TestCase):
         self.assertNotIn(ballDupName, propsChildrenNames)
         self.assertEqual(ballDupName, "Ball_36")
 
-        cmds.undo() # undo duplication
-        cmds.undo() # undo deletion
+        cmds.undo()  # undo duplication
+        cmds.undo()  # undo deletion
+
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 122, 'Requires Maya fixes only available in Maya Preview Release 122 or later.')
+    def testSmartTransformDuplicate(self):
+        '''Test smart transform option of duplicate command.'''
+        torusFile = mayaUtils.getTestScene("groupCmd", "torus.usda")
+        torusDagPath, torusStage = mayaUtils.createProxyFromFile(torusFile)
+        usdTorusPathString = torusDagPath + ",/pTorus1"
+
+        cmds.duplicate(usdTorusPathString)
+        cmds.move(10, 0, 0, r=True)
+        smartDup = cmds.duplicate(smartTransform=True)
+
+        usdTorusItem = ufeUtils.createUfeSceneItem(torusDagPath, '/pTorus3')
+        torusT3d = ufe.Transform3d.transform3d(usdTorusItem)
+        transVector = torusT3d.inclusiveMatrix().matrix[-1]
+
+        correctResult = [20, 0, 0, 1]
+
+        self.assertEqual(correctResult, transVector)

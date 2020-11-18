@@ -20,11 +20,14 @@ import os
 
 import maya.cmds as cmds
 
-import usdUtils, mayaUtils, ufeUtils
+import usdUtils
+import mayaUtils
+import ufeUtils
 import ufe
 import mayaUsd.ufe
 
 import unittest
+
 
 class GroupCmdTestCase(unittest.TestCase):
     '''Verify the Maya group command, for multiple runtimes.
@@ -54,13 +57,16 @@ class GroupCmdTestCase(unittest.TestCase):
     def testUsdGroup(self):
         '''Creation of USD group objects.'''
 
-        mayaPathSegment = mayaUtils.createUfePathSegment("|world|transform1|proxyShape1")
+        mayaPathSegment = mayaUtils.createUfePathSegment(
+            "|world|transform1|proxyShape1")
 
-        usdSegmentBall5 = usdUtils.createUfePathSegment("/Ball_set/Props/Ball_5")
+        usdSegmentBall5 = usdUtils.createUfePathSegment(
+            "/Ball_set/Props/Ball_5")
         ball5Path = ufe.Path([mayaPathSegment, usdSegmentBall5])
         ball5Item = ufe.Hierarchy.createItem(ball5Path)
 
-        usdSegmentBall3 = usdUtils.createUfePathSegment("/Ball_set/Props/Ball_3")
+        usdSegmentBall3 = usdUtils.createUfePathSegment(
+            "/Ball_set/Props/Ball_3")
         ball3Path = ufe.Path([mayaPathSegment, usdSegmentBall3])
         ball3Item = ufe.Hierarchy.createItem(ball3Path)
 
@@ -86,7 +92,8 @@ class GroupCmdTestCase(unittest.TestCase):
         ufeSelectionList.append(ball5Item)
         ufeSelectionList.append(ball3Item)
 
-        groupCmd = parentHierarchy.createGroupCmd(ufeSelectionList, newGroupName)
+        groupCmd = parentHierarchy.createGroupCmd(
+            ufeSelectionList, newGroupName)
         groupCmd.execute()
 
         parentChildrenPost = parentHierarchy.children()
@@ -127,3 +134,18 @@ class GroupCmdTestCase(unittest.TestCase):
         self.assertTrue(newGroupPath in childPathsRedo)
         self.assertTrue(ball5Path not in childPathsRedo)
         self.assertTrue(ball3Path not in childPathsRedo)
+
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 122, 'Requires Maya fixes only available in Maya Preview Release 122 or later.')
+    def testGroupAcrossProxies(self):
+        sphereFile = mayaUtils.getTestScene("groupCmd", "sphere.usda")
+        sphereDagPath, sphereStage = mayaUtils.createProxyFromFile(sphereFile)
+        usdSphere = sphereDagPath + ",/pSphere1"
+
+        torusFile = mayaUtils.getTestScene("groupCmd", "torus.usda")
+        torusDagPath, torusStage = mayaUtils.createProxyFromFile(torusFile)
+        usdTorus = torusDagPath + ",/pTorus1"
+
+        try:
+            cmds.group(usdSphere, usdTorus)
+        except Exception as e:
+            self.assertTrue('cannot group across usd proxies')

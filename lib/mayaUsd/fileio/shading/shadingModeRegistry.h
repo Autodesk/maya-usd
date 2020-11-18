@@ -137,6 +137,31 @@ public:
     ///
     /// To register a material conversion on import, you need to use the
     /// REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION macro for each material conversion.
+    ///
+    /// In order for the core system to discover the plugin, you need a \c plugInfo.json that
+    /// declares the plugin exposes shading modes:
+    /// \code
+    /// {
+    ///   "Plugins": [
+    ///     {
+    ///       "Info": {
+    ///         "UsdMaya": {
+    ///          "ShadingModePlugin": {
+    ///            "mayaPlugin": "usdTestMayaPlugin" // (optional)
+    ///          }
+    ///         }
+    ///       },
+    ///       "Name": "myUsdPlugin",
+    ///       "LibraryPath": "../myUsdPlugin.[dll|dylib|so]",
+    ///       "Type": "library"
+    ///     }
+    ///   ]
+    /// }
+    /// \endcode
+    ///
+    /// If a mayaPlugin entry is provided, the plugin will be loaded via a call to loadPlugin inside
+    /// Maya. Otherwise, the plugin at LibraryPath will be loaded via the regular USD plugin loading
+    /// mechanism.
 
     /// Get all registered export conversions:
     static TfTokenVector ListMaterialConversions()
