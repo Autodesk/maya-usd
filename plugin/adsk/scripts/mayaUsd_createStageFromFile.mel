@@ -144,7 +144,7 @@ global proc mayaUsd_createStageFromFileOptions()
         $parent;
 
     string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
-    button -edit -label "Create Stage"
+    button -edit -label "Create Stage from File"
         -command ($callback + " " + $parent + " " + 1 + "; hideOptionBox;")
         $applyCloseBtn;
 
