@@ -42,7 +42,6 @@ TF_DEFINE_PUBLIC_TOKENS(
     PxrMayaUsdPreviewSurfaceTokens,
     PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS);
 
-
 /* static */
 void* PxrMayaUsdPreviewSurface::creator() { return new PxrMayaUsdPreviewSurface(); }
 
@@ -425,8 +424,8 @@ MStatus PxrMayaUsdPreviewSurface::compute(const MPlug& plug, MDataBlock& dataBlo
         CHECK_MSTATUS(status);
         float opacity = opacityData.asFloat();
 
-        MObject opacityThresholdAttr
-            = depNodeFn.attribute(PxrMayaUsdPreviewSurfaceTokens->OpacityThresholdAttrName.GetText());
+        MObject opacityThresholdAttr = depNodeFn.attribute(
+            PxrMayaUsdPreviewSurfaceTokens->OpacityThresholdAttrName.GetText());
         const MDataHandle opacityThresholdData
             = dataBlock.inputValue(opacityThresholdAttr, &status);
         CHECK_MSTATUS(status);
