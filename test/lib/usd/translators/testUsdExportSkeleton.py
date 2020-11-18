@@ -231,6 +231,7 @@ class testUsdExportSkeleton(unittest.TestCase):
         usdFile = os.path.abspath('UsdExportSkeletonSegfaultTest.usda')
         cmds.select('skinned_mesh')
 
+        # Run 5 times because the crash only happens every few runs.
         for _ in range(5):
             cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile,
                          shadingMode='none', exportSkels='auto', selection=True)
