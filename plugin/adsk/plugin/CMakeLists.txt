@@ -29,6 +29,7 @@ target_sources(${TARGET_NAME}
         importTranslator.cpp
         exportTranslator.cpp
         ProxyShape.cpp
+        sceneResetCheck.cpp
 )
 
 # -----------------------------------------------------------------------------

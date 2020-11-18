@@ -20,6 +20,7 @@
 #include "base/api.h"
 #include "exportTranslator.h"
 #include "importTranslator.h"
+#include "sceneResetCheck.h"
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/commands/editTargetCommand.h>
@@ -201,6 +202,8 @@ MStatus initializePlugin(MObject obj)
 
     UsdMayaSceneResetNotice::InstallListener();
 
+    MayaUsd::SceneResetCheck::registerSceneResetCheckCallback();
+
     return status;
 }
 
@@ -258,6 +261,8 @@ MStatus uninitializePlugin(MObject obj)
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();
+
+    MayaUsd::SceneResetCheck::deregisterSceneResetCheckCallback();
 
     return status;
 }
