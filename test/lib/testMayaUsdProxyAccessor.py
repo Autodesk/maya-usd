@@ -862,12 +862,12 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
         cachingScope.checkValidFrames(self.cache_allFrames)
         
         cmds.currentTime(1)
-        self.validatePlugsEqual(nodeDagPath, [(translatePlug,(0.0, 0.0, 5.0)), (rotatePlug, (0.0, 0.0, 0.0))])
+        self.validatePlugsAlmostEqual(nodeDagPath, [(translatePlug,(0.0, 0.0, 5.0)), (rotatePlug, (0.0, 0.0, 0.0))])
         v0 = cmds.getAttr('{}.{}'.format(nodeDagPath,worldMatrixPlug))
         self.assertVectorAlmostEqual(v0, [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 5.0, 1.0])
         
         cmds.currentTime(100)
-        self.validatePlugsEqual(nodeDagPath, [(translatePlug,(0.0, 0.0, -5.0)), (rotatePlug, (0.0, 0.0, 0.0))])
+        self.validatePlugsAlmostEqual(nodeDagPath, [(translatePlug,(0.0, 0.0, -5.0)), (rotatePlug, (0.0, 0.0, 0.0))])
         v0 = cmds.getAttr('{}.{}'.format(nodeDagPath,worldMatrixPlug))
         self.assertVectorAlmostEqual(v0, [0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, -5.0, 5.0, 0.0, 1.0])
     
