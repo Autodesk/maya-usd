@@ -15,6 +15,7 @@
 //
 #include "stageNode.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/stageCache.h>
 
@@ -34,6 +35,7 @@
 #include <maya/MFnPluginData.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MPxNode.h>
@@ -107,9 +109,21 @@ MStatus UsdMayaStageNode::compute(const MPlug& plug, MDataBlock& dataBlock)
         if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(usdFile)) {
             const bool           loadAll = true;
             UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadAll));
-            usdStage = UsdStage::Open(rootLayer, ArGetResolver().GetCurrentContext());
 
-            usdStage->SetEditTarget(usdStage->GetRootLayer());
+            bool targetSession = MGlobal::optionVarIntValue(toMString(
+                                     MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
+                == 1;
+            targetSession = targetSession || !rootLayer->PermissionToEdit();
+
+            if (targetSession) {
+                SdfLayerRefPtr sessionLayer = SdfLayer::CreateAnonymous();
+                usdStage
+                    = UsdStage::Open(rootLayer, sessionLayer, ArGetResolver().GetCurrentContext());
+                usdStage->SetEditTarget(sessionLayer);
+            } else {
+                usdStage = UsdStage::Open(rootLayer, ArGetResolver().GetCurrentContext());
+                usdStage->SetEditTarget(usdStage->GetRootLayer());
+            }
         }
 
         SdfPath primPath;
