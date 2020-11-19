@@ -101,7 +101,7 @@ class MayaUsdProxyAccessorTestCase(unittest.TestCase):
     def validatePlugsAlmostEqual(self, node, plugsWithResults):
         for plug, expected in plugsWithResults:
             result = cmds.getAttr('{}.{}'.format(node,plug))
-            self.assertAlmostEqual(result, [expected])
+            self.assertMatrixAlmostEqual(result, [expected])
 
     def validateOutput(self,cachingScope):
         """
