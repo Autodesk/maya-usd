@@ -167,27 +167,22 @@ static bool _FindDagPoseMembers(
     std::vector<unsigned int>*   indices)
 {
     MStatus status;
-    MPlug   membersPlug = dagPoseDep.findPlug("members", &status);
+    MPlug   membersPlug = dagPoseDep.findPlug("members", false, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Build a map of dagPath->index.
-
-    struct _HashObjectHandle
-    {
-        std::size_t operator()(const MObjectHandle& o) const { return o.hashCode(); }
-    };
-
-    std::unordered_map<MObjectHandle, size_t, _HashObjectHandle> pathIndexMap;
+    UsdMayaUtil::MObjectHandleUnorderedMap<size_t> pathIndexMap;
     for (size_t i = 0; i < dagPaths.size(); ++i) {
         pathIndexMap[MObjectHandle(dagPaths[i].node())] = i;
     }
 
     MPlugArray inputs;
 
+    size_t numDagPaths = dagPaths.size();
     indices->clear();
-    indices->resize(
-        std::min(membersPlug.numElements(), static_cast<unsigned int>(dagPaths.size())), -1);
+    indices->resize(numDagPaths);
 
+    std::vector<uint8_t> visitedIndices(numDagPaths, 0);
     for (unsigned int i = 0; i < membersPlug.numElements(); ++i) {
 
         MPlug memberPlug = membersPlug[i];
@@ -198,17 +193,19 @@ static bool _FindDagPoseMembers(
             auto          it = pathIndexMap.find(connNode);
             if (it != pathIndexMap.end()) {
                 (*indices)[it->second] = i;
+                visitedIndices[it->second] = 1;
             }
         }
     }
 
     // Validate that all of the input dagPaths are members.
-    for (size_t i = 0; i < indices->size(); ++i) {
-        int index = (*indices)[i];
-        if (index < 0) {
+    for (size_t i = 0; i < visitedIndices.size(); ++i) {
+        uint8_t visited = visitedIndices[i];
+        if (visited != 1) {
+            unsigned int index = (*indices)[i];
             TF_WARN(
                 "Node '%s' is not a member of dagPose '%s'.",
-                MFnDependencyNode(dagPaths[i].node()).name().asChar(),
+                MFnDependencyNode(dagPaths[index].node()).name().asChar(),
                 dagPoseDep.name().asChar());
             return false;
         }
