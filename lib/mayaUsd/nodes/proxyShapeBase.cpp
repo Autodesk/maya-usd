@@ -16,6 +16,7 @@
 #include "proxyShapeBase.h"
 
 #include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/query.h>
@@ -541,15 +542,27 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
                 if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
                     SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
-                    if (sessionLayer) {
+
+                    bool targetSession
+                        = MGlobal::optionVarIntValue(
+                              toMString(MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
+                        == 1;
+                    targetSession = targetSession || !rootLayer->PermissionToEdit();
+
+                    if (sessionLayer || targetSession) {
+                        if (!sessionLayer)
+                            sessionLayer = SdfLayer::CreateAnonymous();
                         usdStage = UsdStage::Open(
                             rootLayer, sessionLayer, ArGetResolver().GetCurrentContext(), loadSet);
                     } else {
                         usdStage = UsdStage::Open(
                             rootLayer, ArGetResolver().GetCurrentContext(), loadSet);
                     }
-
-                    usdStage->SetEditTarget(usdStage->GetRootLayer());
+                    if (sessionLayer && targetSession) {
+                        usdStage->SetEditTarget(sessionLayer);
+                    } else {
+                        usdStage->SetEditTarget(usdStage->GetRootLayer());
+                    }
                 } else {
                     // Create a new stage in memory with an anonymous root layer.
                     usdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
