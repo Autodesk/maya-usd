@@ -21,6 +21,14 @@ set(MSVC_FLAGS
     /Zi
     # standards compliant.
     /Zc:rvalueCast
+    # The /Zc:inline option strips out the "arch_ctor_<name>" symbols used for
+    # library initialization by ARCH_CONSTRUCTOR starting in Visual Studio 2019,
+    # causing release builds to fail. Disable the option for this and later
+    # versions.
+    #
+    # For more details, see:
+    # https://developercommunity.visualstudio.com/content/problem/914943/zcinline-removes-extern-symbols-inside-anonymous-n.html
+    $<IF:$<VERSION_GREATER_EQUAL:${MSVC_VERSION},1920>,/Zc:inline-,/Zc:inline>
     # enable multiprocessor builds.
     /MP
     # enable exception handling.
@@ -36,19 +44,6 @@ set(MSVC_FLAGS
     /wd4996
     /wd4180
 )
-
-# The /Zc:inline option strips out the "arch_ctor_<name>" symbols used for
-# library initialization by ARCH_CONSTRUCTOR starting in Visual Studio 2019,
-# causing release builds to fail. Disable the option for this and later
-# versions.
-#
-# For more details, see:
-# https://developercommunity.visualstudio.com/content/problem/914943/zcinline-removes-extern-symbols-inside-anonymous-n.html
-if (MSVC_VERSION GREATER_EQUAL 1920)
-    set(MSVC_FLAGS "${MSVC_FLAGS} /Zc:inline-")
-else()
-    set(MSVC_FLAGS "${MSVC_FLAGS} /Zc:inline")
-endif()
 
 set(MSVC_DEFINITIONS
     # Make sure WinDef.h does not define min and max macros which
