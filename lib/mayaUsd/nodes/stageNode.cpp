@@ -18,6 +18,7 @@
 #include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -110,7 +111,7 @@ MStatus UsdMayaStageNode::compute(const MPlug& plug, MDataBlock& dataBlock)
             const bool           loadAll = true;
             UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadAll));
 
-            bool targetSession = MGlobal::optionVarIntValue(toMString(
+            bool targetSession = MGlobal::optionVarIntValue(UsdMayaUtil::convert(
                                      MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
                 == 1;
             targetSession = targetSession || !rootLayer->PermissionToEdit();

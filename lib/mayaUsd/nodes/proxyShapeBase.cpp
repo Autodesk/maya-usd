@@ -21,6 +21,7 @@
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/gf/bbox3d.h>
@@ -548,8 +549,8 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
 
                     bool targetSession
-                        = MGlobal::optionVarIntValue(
-                              toMString(MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
+                        = MGlobal::optionVarIntValue(UsdMayaUtil::convert(
+                              MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
                         == 1;
                     targetSession = targetSession || !rootLayer->PermissionToEdit();
 
