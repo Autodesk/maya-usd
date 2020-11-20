@@ -48,6 +48,7 @@ set(TEST_SCRIPT_FILES
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but
     # passes.  PPT, 17-Jun-20.
     testUsdImportFrameRange.py
+    testUsdImportFramerates.py
     testUsdImportInstances.py
     testUsdImportMayaReference.py
     testUsdImportMesh.py

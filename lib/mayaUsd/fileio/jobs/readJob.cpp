@@ -115,6 +115,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
     }
 
     stage->SetEditTarget(stage->GetSessionLayer());
+    _setTimeSampleMultiplierFrom(stage->GetTimeCodesPerSecond());
 
     // XXX Currently all distance values are set directly from USD and will be
     // interpreted as centimeters (Maya's internal distance unit). Future work
@@ -152,11 +153,14 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             stageInterval.SetMax(stage->GetEndTimeCode());
         }
 
+        MTime::Unit timeUnit = MTime::uiUnit();
         if (stageInterval.GetMin() < currentMinTime.value()) {
-            MAnimControl::setMinTime(MTime(stageInterval.GetMin()));
+            MAnimControl::setMinTime(
+                MTime(stageInterval.GetMin() * mTimeSampleMultiplier, timeUnit));
         }
         if (stageInterval.GetMax() > currentMaxTime.value()) {
-            MAnimControl::setMaxTime(MTime(stageInterval.GetMax()));
+            MAnimControl::setMaxTime(
+                MTime(stageInterval.GetMax() * mTimeSampleMultiplier, timeUnit));
         }
     }
 
@@ -391,6 +395,7 @@ void UsdMaya_ReadJob::_ImportMaster(
     for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
         const UsdPrim&           prim = *primIt;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
+        readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
         if (prim.IsInstance()) {
             _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
         } else {
@@ -418,6 +423,7 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
         for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
             const UsdPrim&           prim = *primIt;
             UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
+            readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
 
             if (buildInstances && prim.IsInstance()) {
                 _DoImportInstanceIt(primIt, usdRootPrim, readCtx, primReaderMap);
@@ -430,6 +436,8 @@ bool UsdMaya_ReadJob::_DoImport(UsdPrimRange& rootRange, const UsdPrim& usdRootP
     if (buildInstances) {
         MDGModifier              deleteMasterMod;
         UsdMayaPrimReaderContext readCtx(&mNewNodeRegistry);
+        readCtx.SetTimeSampleMultiplier(mTimeSampleMultiplier);
+
         for (const auto& master : usdRootPrim.GetStage()->GetMasters()) {
             const SdfPath masterPath = master.GetPath();
             MObject       masterObject = readCtx.GetMayaNode(masterPath, false);
@@ -499,5 +507,14 @@ void UsdMaya_ReadJob::SetMayaRootDagPath(const MDagPath& mayaRootDagPath)
 }
 
 const MDagPath& UsdMaya_ReadJob::GetMayaRootDagPath() const { return mMayaRootDagPath; }
+
+double UsdMaya_ReadJob::timeSampleMultiplier() const { return mTimeSampleMultiplier; }
+
+double UsdMaya_ReadJob::_setTimeSampleMultiplierFrom(const double layerFPS)
+{
+    float sceneFPS = UsdMayaUtil::GetSceneMTimeUnitAsFloat();
+    mTimeSampleMultiplier = sceneFPS / layerFPS;
+    return mTimeSampleMultiplier;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

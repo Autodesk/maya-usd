@@ -73,10 +73,19 @@ public:
     MAYAUSD_CORE_PUBLIC
     void SetPruneChildren(bool prune);
 
+    /// \brief Return the time sample multiplier to convert from USD time to Maya time
+    MAYAUSD_CORE_PUBLIC
+    double GetTimeSampleMultiplier() const;
+
+    /// \brief Set the time sample multiplier to convert from USD time to Maya time
+    MAYAUSD_CORE_PUBLIC
+    void SetTimeSampleMultiplier(double multiplier);
+
     ~UsdMayaPrimReaderContext() { }
 
 private:
-    bool _prune;
+    bool   _prune;
+    double _timeSampleMultiplier;
 
     // used to keep track of prims that are created.
     // for undo/redo

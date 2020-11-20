@@ -476,8 +476,10 @@ bool _CopyAnimFromSkel(
     _GetJointAnimTimeSamples(skelQuery, args, &usdTimes);
     MTimeArray mayaTimes;
     mayaTimes.setLength(usdTimes.size());
+    MTime::Unit timeUnit = MTime::uiUnit();
+    double      timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
     for (size_t i = 0; i < usdTimes.size(); ++i) {
-        mayaTimes[i] = usdTimes[i];
+        mayaTimes[i] = MTime(usdTimes[i] * timeSampleMultiplier, timeUnit);
     }
 
     MStatus status;
@@ -622,7 +624,7 @@ bool UsdMayaTranslatorSkel::CreateJointHierarchy(
         jointContainerPath = skelQuery.GetPrim().GetPath();
         jointContainerIsSkeleton = true;
 
-        // Create a joint to represent thte Skeleton.
+        // Create a joint to represent the Skeleton.
         if (!UsdMayaTranslatorUtil::CreateNode(
                 jointContainerPath,
                 _MayaTokens->jointType,
