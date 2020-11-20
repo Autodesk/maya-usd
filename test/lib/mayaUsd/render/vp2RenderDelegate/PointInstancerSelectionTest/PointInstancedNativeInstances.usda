@@ -1,0 +1,38 @@
+#usda 1.0
+(
+    defaultPrim = "PointInstancedNativeInstances"
+    metersPerUnit = 0.01
+    upAxis = "Z"
+)
+
+def Xform "PointInstancedNativeInstances" (
+    assetInfo = {
+        asset identifier = @./PointInstancedNativeInstances.usda@
+        string name = "PointInstancedNativeInstances"
+    }
+    kind = "component"
+)
+{
+    def PointInstancer "PointInstancer" (
+        kind = "subcomponent"
+    )
+    {
+        float3[] extent = [(-5, -0.5, -0.5), (5, 0.5, 12)]
+        point3f[] positions = [(0, 0, 0), (0, 0, 5), (0, 0, 10)]
+        int[] protoIndices = [0, 0, 0]
+        rel prototypes = [
+            </PointInstancedNativeInstances/PointInstancer/prototypes/NativeInstancedCubes>
+        ]
+
+        def "prototypes" (
+            kind = "subcomponent"
+        )
+        {
+            def "NativeInstancedCubes" (
+                prepend references = @./NativeInstancedCubes.usda@
+            )
+            {
+            }
+        }
+    }
+}

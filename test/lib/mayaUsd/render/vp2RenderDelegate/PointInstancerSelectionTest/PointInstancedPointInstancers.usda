@@ -1,0 +1,38 @@
+#usda 1.0
+(
+    defaultPrim = "PointInstancedPointInstancers"
+    metersPerUnit = 0.01
+    upAxis = "Z"
+)
+
+def Xform "PointInstancedPointInstancers" (
+    assetInfo = {
+        asset identifier = @./PointInstancedPointInstancers.usda@
+        string name = "PointInstancedPointInstancers"
+    }
+    kind = "component"
+)
+{
+    def PointInstancer "PointInstancers" (
+        kind = "subcomponent"
+    )
+    {
+        float3[] extent = [(-5, -0.5, -0.5), (5, 0.5, 12)]
+        point3f[] positions = [(0, 0, 0), (0, 0, 5), (0, 0, 10)]
+        int[] protoIndices = [0, 0, 0]
+        rel prototypes = [
+            </PointInstancedPointInstancers/PointInstancers/prototypes/InstancedCubes>
+        ]
+
+        def "prototypes" (
+            kind = "subcomponent"
+        )
+        {
+            def "InstancedCubes" (
+                prepend references = @./PointInstancerCubes.usda@
+            )
+            {
+            }
+        }
+    }
+}

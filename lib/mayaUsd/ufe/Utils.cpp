@@ -81,7 +81,8 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
 
     UsdPrim prim;
     if (auto stage = getStage(Ufe::Path(segments[0]))) {
-        prim = stage->GetPrimAtPath(SdfPath(segments[1].string()));
+        const SdfPath usdPath = SdfPath(segments[1].string());
+        prim = stage->GetPrimAtPath(usdPath.GetPrimPath());
     }
     return prim;
 }

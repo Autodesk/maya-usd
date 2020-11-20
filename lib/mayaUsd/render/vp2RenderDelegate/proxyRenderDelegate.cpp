@@ -136,13 +136,14 @@ void PopulateSelection(
     }
 
     SdfPath usdPath = usdItem->prim().GetPath();
+    const int instanceIndex = usdItem->instanceIndex();
 
 #if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 11
     usdPath = sceneDelegate.ConvertCachePathToIndexPath(usdPath);
 #endif
 
     sceneDelegate.PopulateSelection(
-        HdSelection::HighlightModeSelect, usdPath, UsdImagingDelegate::ALL_INSTANCES, result);
+        HdSelection::HighlightModeSelect, usdPath, instanceIndex, result);
 }
 #endif // defined(WANT_UFE_BUILD)
 
@@ -726,10 +727,18 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // instance, because we don't use instanced draw for single instance render items in order to
     // improve draw performance in Maya 2020 and before.
     const int drawInstID = intersection.instanceID();
+    int instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
 
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
     const int usdInstID = drawInstID > 0 ? drawInstID - 1 : 0;
-    SdfPath   usdPath = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID);
+    HdInstancerContext instancerContext;
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID, &instancerContext);
+    if (!instancerContext.empty()) {
+        // Use the top-level instancer and instance index if the Rprim is the
+        // result of instancing.
+        usdPath = instancerContext.front().first;
+        instanceIndex = instancerContext.front().second;
+    }
 #else
     SdfPath indexPath;
     if (drawInstID > 0) {
@@ -776,12 +785,28 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     }
 
     const Ufe::PathSegment pathSegment(usdPath.GetText(), USD_UFE_RUNTIME_ID, USD_UFE_SEPARATOR);
-    const Ufe::SceneItem::Ptr& si
-        = handler->createItem(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
+    Ufe::Path sceneItemPath(_proxyShapeData->ProxyShape()->ufePath() + pathSegment);
+
+    if (instanceIndex != UsdImagingDelegate::ALL_INSTANCES) {
+        const std::string& primName = sceneItemPath.back().string();
+        const Ufe::PathComponent primInstanceComponent(
+            TfStringPrintf("%s.instance_%d", primName.c_str(), instanceIndex));
+        sceneItemPath = sceneItemPath.sibling(primInstanceComponent);
+    }
+
+    const Ufe::SceneItem::Ptr& si = handler->createItem(sceneItemPath);
     if (!si) {
         TF_WARN("Failed to create UFE scene item for Rprim '%s'", rprimId.GetText());
         return false;
     }
+
+    auto usdItem = std::dynamic_pointer_cast<MayaUsd::ufe::UsdSceneItem>(si);
+    if (!usdItem) {
+        TF_WARN("Failed to cast UFE scene item to UsdSceneItem for Rprim '%s'", rprimId.GetText());
+        return false;
+    }
+
+    usdItem->setInstanceIndex(instanceIndex);
 
     auto globalSelection = Ufe::GlobalSelection::get();
 
