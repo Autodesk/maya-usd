@@ -17,11 +17,17 @@
 
 #include "ProxyShape.h"
 
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/common.h>
+#include <pxr/usd/usd/stage.h>
+
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MMessage.h>
 #include <maya/MSceneMessage.h>
+
+PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 MCallbackId _beforeNewCheckCallbackId = 0;
