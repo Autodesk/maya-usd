@@ -402,11 +402,15 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     } else if (plug == inStageDataCachedAttr) {
         return computeInStageDataCached(dataBlock);
     } else if (plug == outTimeAttr) {
-        return computeOutputTime(dataBlock);
+        auto retStatus = computeOutputTime(dataBlock);
+        ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
+        return retStatus;
     } else if (plug == outStageDataAttr) {
         return computeOutStageData(dataBlock);
     } else if (plug == outStageCacheIdAttr) {
         return computeOutStageCacheId(dataBlock);
+    } else if (plug.isDynamic()) {
+        return ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
     }
 
     return MS::kUnknownParameter;
