@@ -14,15 +14,16 @@
 // limitations under the License.
 //
 
-#pragma once
+#ifndef PXRUSDMAYA_TOKENS_H
+#define PXRUSDMAYA_TOKENS_H
 
 #include "api.h"
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/pxr.h>
 
-#include <maya/MString.h>
-
+// See lib/mayaUsd/utils/util.h for a TfToken -> MString conversion
+//
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Tokens that are used as optionVars in MayaUSD
@@ -33,11 +34,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
 
-// Convenience to convert a TfToken to MString
-//
-static inline MString toMString(const TfToken& token)
-{
-    return MString(token.data(), token.size());
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif
