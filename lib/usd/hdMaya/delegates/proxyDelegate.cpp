@@ -38,6 +38,9 @@
 
 #if WANT_UFE_BUILD
 #include <ufe/globalSelection.h>
+#if UFE_PREVIEW_VERSION_NUM >= 2027
+#include <ufe/namedSelection.h>
+#endif
 #include <ufe/observableSelection.h>
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
@@ -373,7 +376,11 @@ void HdMayaProxyDelegate::PopulateSelectionList(
     if (handler == nullptr)
         return;
 
+#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+    auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
+#else
     const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
+#endif
 
     std::lock_guard<std::mutex> lock(_allAdaptersMutex);
 
@@ -410,6 +417,9 @@ void HdMayaProxyDelegate::PopulateSelectionList(
                 break;
             }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+            ufeSel->append(si);
+#else
             auto globalSelection = Ufe::GlobalSelection::get();
 
             switch (listAdjustment) {
@@ -429,6 +439,7 @@ void HdMayaProxyDelegate::PopulateSelectionList(
                 break;
             default: TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection."); break;
             }
+#endif
 
             break;
         }
