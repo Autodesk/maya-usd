@@ -64,11 +64,11 @@ static void _OnMayaNewOrOpenSceneCheckCallback(bool* retCode, void*)
                 continue;
             }
 
-            std::string          temp;
             SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
             for (auto layer : allLayers) {
                 if (layer->IsDirty()) {
                     atLeastOneDirty = true;
+                    break;
                 }
             }
         }
