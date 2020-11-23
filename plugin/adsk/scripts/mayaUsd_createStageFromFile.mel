@@ -192,5 +192,9 @@ global proc mayaUsd_createStageFromFile() {
     if (size($result) > 0) {
         doCreateStage($result[0]);
     }
-        
+}
+
+global proc mayaUsd_createStageFromFilePath(string $usdFile)
+{
+    doCreateStage($usdFile);
 }

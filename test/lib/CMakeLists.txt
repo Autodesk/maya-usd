@@ -3,6 +3,7 @@ set(TARGET_NAME MAYAUSD_TEST)
 # Unit test scripts.
 set(TEST_SCRIPT_FILES
     testMayaUsdConverter.py
+    testMayaUsdCreateStageCommands.py
     testMayaUsdPythonImport.py
     testMayaUsdLayerEditorCommands.py
     testMayaUsdCacheId.py
@@ -30,6 +31,9 @@ foreach(script ${TEST_SCRIPT_FILES})
         ENV
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
     )
+
+    # Add a ctest label to these tests for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 endforeach()
 
 add_subdirectory(mayaUsd)
