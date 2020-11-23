@@ -29,11 +29,14 @@
 #include <pxr/usd/usdGeom/xform.h>
 
 #include <ufe/log.h>
+#include <ufe/path.h>
+#include <ufe/pathComponent.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 
 #include <cassert>
 #include <stdexcept>
+#include <string>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
@@ -43,9 +46,21 @@
 
 namespace {
 UsdPrimSiblingRange getUSDFilteredChildren(
-    const UsdPrim&               prim,
-    const Usd_PrimFlagsPredicate pred = UsdPrimDefaultPredicate)
+    const MayaUsd::ufe::UsdSceneItem::Ptr usdSceneItem,
+    const Usd_PrimFlagsPredicate          pred = UsdPrimDefaultPredicate)
 {
+    // If the scene item represents a point instance of a PointInstancer prim,
+    // we consider it child-less. The namespace children of a PointInstancer
+    // can only be accessed directly through the PointInstancer prim and not
+    // through one of its point instances. Any authoring that would affect the
+    // point instance should be done either to the PointInstancer or to the
+    // prototype that is being instanced.
+    if (usdSceneItem->isPointInstance()) {
+        return UsdPrimSiblingRange();
+    }
+
+    const UsdPrim& prim = usdSceneItem->prim();
+
     // We need to be able to traverse down to instance proxies, so turn
     // on that part of the predicate, since by default, it is off. Since
     // the equivalent of GetChildren is
@@ -85,11 +100,11 @@ UsdSceneItem::Ptr UsdHierarchy::usdSceneItem() const { return fItem; }
 
 Ufe::SceneItem::Ptr UsdHierarchy::sceneItem() const { return fItem; }
 
-bool UsdHierarchy::hasChildren() const { return !getUSDFilteredChildren(prim()).empty(); }
+bool UsdHierarchy::hasChildren() const { return !getUSDFilteredChildren(fItem).empty(); }
 
 Ufe::SceneItemList UsdHierarchy::children() const
 {
-    return createUFEChildList(getUSDFilteredChildren(prim()));
+    return createUFEChildList(getUSDFilteredChildren(fItem));
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -103,7 +118,7 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter
         Usd_PrimFlagsPredicate flags = childFilter.front().value
             ? UsdPrimIsDefined && !UsdPrimIsAbstract
             : UsdPrimDefaultPredicate;
-        return createUFEChildList(getUSDFilteredChildren(prim(), flags));
+        return createUFEChildList(getUSDFilteredChildren(fItem, flags));
     }
 
     UFE_LOG("Unknown child filter");
@@ -115,6 +130,11 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter
 Ufe::SceneItemList UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& range) const
 {
     // Return UFE child list from input USD child list.
+    // Note that the calls to this function are given a range from
+    // getUSDFilteredChildren() above, which ensures that when fItem is a
+    // point instance of a PointInstancer, it will be child-less. As a result,
+    // we expect to receieve an empty range in that case, and will return an
+    // empty scene item list as a result.
     Ufe::SceneItemList children;
     for (const auto& child : range) {
         children.emplace_back(UsdSceneItem::create(fItem->path() + child.GetName(), child));
@@ -124,6 +144,11 @@ Ufe::SceneItemList UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& r
 
 Ufe::SceneItem::Ptr UsdHierarchy::parent() const
 {
+    // We do not have a special case for point instances here. If fItem
+    // represents a point instance of a PointInstancer, we consider the
+    // PointInstancer prim to be the "parent" of the point instance, even
+    // though this isn't really true in the USD sense. This allows pick-walking
+    // from point instances up to their PointInstancer.
     return UsdSceneItem::create(fItem->path().pop(), prim().GetParent());
 }
 
