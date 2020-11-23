@@ -18,6 +18,7 @@
 #include <mayaUsd/base/api.h>
 
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <ufe/path.h>
@@ -107,6 +108,15 @@ public:
     const UsdPrim& prim() const { return fPrim; }
 
     int instanceIndex() const { return _instanceIndex; }
+
+    //! Returns true if the UsdSceneItem represents a point instance.
+    //
+    // The scene item represents a point instance if its prim is a
+    // PointInstancer and its instanceIndex is non-negative.
+    bool isPointInstance() const
+    {
+        return (fPrim && fPrim.IsA<UsdGeomPointInstancer>() && _instanceIndex >= 0);
+    }
 
     // Ufe::SceneItem overrides
     std::string nodeType() const override;
