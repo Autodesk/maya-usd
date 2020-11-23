@@ -112,7 +112,7 @@ MStatus initialize()
     Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, proxyShapeContextOpsHandler);
 #endif
 
-#if UFE_PREVIEW_VERSION_NUM >= 2027
+#if UFE_PREVIEW_VERSION_NUM >= 2028
     Ufe::RunTimeMgr::Handlers handlers;
     handlers.fHierarchyHandler = UsdHierarchyHandler::create();
     handlers.fTransform3dHandler = UsdTransform3dHandler::create();
