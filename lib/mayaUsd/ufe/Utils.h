@@ -73,6 +73,13 @@ Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 UsdPrim ufePathToPrim(const Ufe::Path& path);
 
+//! Return the instance index corresponding to the argument UFE path if it
+//! represents a point instance.
+//! If the given path does not represent a point instance,
+//! UsdImagingDelegate::ALL_INSTANCES (-1) will be returned.
+MAYAUSD_CORE_PUBLIC
+int ufePathToInstanceIndex(const Ufe::Path& path);
+
 MAYAUSD_CORE_PUBLIC
 bool isRootChild(const Ufe::Path& path);
 

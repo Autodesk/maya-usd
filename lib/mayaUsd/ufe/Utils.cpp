@@ -29,6 +29,8 @@
 #include <pxr/usd/sdf/tokens.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usdGeom/pointInstancer.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
@@ -163,6 +165,26 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
         prim = stage->GetPrimAtPath(usdPath.GetPrimPath());
     }
     return prim;
+}
+
+int ufePathToInstanceIndex(const Ufe::Path& path)
+{
+    int instanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+
+    const UsdPrim usdPrim = ufePathToPrim(path);
+    if (!usdPrim || !usdPrim.IsA<UsdGeomPointInstancer>()) {
+        return instanceIndex;
+    }
+
+    // Once more as above in usdPathToUfePathSegment() and
+    // stripInstanceIndexFromUfePath(), a path component at the tail of the
+    // path that begins with a digit is assumed to represent an instance index.
+    const std::string& tailComponentString = path.back().string();
+    if (stringBeginsWithDigit(path.back().string())) {
+        instanceIndex = std::stoi(tailComponentString);
+    }
+
+    return instanceIndex;
 }
 
 bool isRootChild(const Ufe::Path& path)
