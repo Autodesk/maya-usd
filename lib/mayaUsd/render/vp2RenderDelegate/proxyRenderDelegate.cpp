@@ -35,6 +35,7 @@
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/imaging/hdx/taskController.h>
 #include <pxr/usd/kind/registry.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
@@ -139,14 +140,15 @@ void PopulateSelection(
         return;
     }
 
-    SdfPath usdPath = usdItem->prim().GetPath();
+    SdfPath   usdPath = usdItem->prim().GetPath();
+    const int instanceIndex = usdItem->instanceIndex();
 
 #if !defined(USD_IMAGING_API_VERSION) || USD_IMAGING_API_VERSION < 11
     usdPath = sceneDelegate.ConvertCachePathToIndexPath(usdPath);
 #endif
 
     sceneDelegate.PopulateSelection(
-        HdSelection::HighlightModeSelect, usdPath, UsdImagingDelegate::ALL_INSTANCES, result);
+        HdSelection::HighlightModeSelect, usdPath, instanceIndex, result);
 }
 #endif // defined(WANT_UFE_BUILD)
 
