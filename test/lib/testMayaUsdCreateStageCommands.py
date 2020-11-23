@@ -17,6 +17,7 @@
 #
 
 import os
+import platform
 import unittest
 from maya import cmds
 import maya.mel as mel
@@ -25,15 +26,15 @@ import mayaUtils
 class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
     """Test the MEL commands that are used to create a USD stage."""
 
-    pluginsLoaded = False
-
     @classmethod
     def setUpClass(cls):
-        if not cls.pluginsLoaded:
-            cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+        cmds.loadPlugin('mayaUsdPlugin')
 
-    def setUp(self):
-        self.assertTrue(self.pluginsLoaded)
+    def samefile(self, path1, path2):
+        if platform.system() == 'Windows':
+            return os.path.normcase(os.path.normpath(path1)) == os.path.normcase(os.path.normpath(path2))
+        else:
+            return os.path.samefile(path1, path2)
 
     def testCreateStageWithNewLayer(self):
         # Create a proxy shape with empty stage to start with.
@@ -67,7 +68,7 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
 
         # Verify that the shape node has the correct file path.
         filePathAttr = cmds.getAttr(shapeNode+'.filePath')
-        self.assertTrue(os.path.samefile(filePathAttr, ballFilePath))
+        self.assertTrue(self.samefile(filePathAttr, ballFilePath))
 
         # Verify that the shape node is connected to time.
         self.assertTrue(cmds.isConnected('time1.outTime', shapeNode+'.time'))
