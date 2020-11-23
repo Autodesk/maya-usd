@@ -36,9 +36,9 @@ MCallbackId _beforeOpenCheckCallbackId = 0;
 const char* ignoreDirtyLayersConfirmScript = R"(
 global proc string MayaUsdIgnoreDirtyLayersConfirm()
 {
-    return `confirmDialog -title "Warning: USD Edits Not Saved" 
-        -message "USD edits are not saved.  Are you sure you want to leave?"
-        -button "Yes" -button "No" -defaultButton "No"
+    return `confirmDialog -title "Discard USD Edits" 
+        -message "Are you sure you want to exit this session?\n\nAll edits on your USD layer(s) will be discarded."
+        -button "Yes" -button "No" -defaultButton "No" -icon "warning"
         -cancelButton "No" -dismissString "No"`;
 
 }
