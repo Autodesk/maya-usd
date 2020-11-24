@@ -17,6 +17,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/sdf/path.h>
 
@@ -48,16 +49,16 @@ public:
 
     UsdSceneItem::Ptr duplicatedItem() const;
 
-    // UsdUndoDuplicateCommand overrides
+    void execute() override;
     void undo() override;
     void redo() override;
 
 private:
-    bool duplicateUndo();
-    bool duplicateRedo();
-
     Ufe::Path _ufeSrcPath;
     SdfPath   _usdDstPath;
+
+    UsdUndoableItem _undoableItem;
+
 }; // UsdUndoDuplicateCommand
 
 } // namespace ufe

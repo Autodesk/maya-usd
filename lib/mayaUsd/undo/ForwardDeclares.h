@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2020 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,26 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/base/tf/pyModule.h>
+
+#ifndef MAYAUSD_UNDO_FORWARD_DECLARES_H
+#define MAYAUSD_UNDO_FORWARD_DECLARES_H
+
 #include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
 
-PXR_NAMESPACE_USING_DIRECTIVE
+PXR_NAMESPACE_OPEN_SCOPE
 
-TF_WRAP_MODULE
-{
-    TF_WRAP(Adaptor);
-    TF_WRAP(BlockSceneModificationContext);
-    TF_WRAP(ColorSpace);
-    TF_WRAP(Converter);
-    TF_WRAP(ConverterArgs);
-    TF_WRAP(DiagnosticDelegate);
-    TF_WRAP(MeshWriteUtils);
-    TF_WRAP(Query);
-    TF_WRAP(ReadUtil);
-    TF_WRAP(RoundTripUtil);
-    TF_WRAP(StageCache);
-    TF_WRAP(UserTaggedAttribute);
-    TF_WRAP(WriteUtil);
-    TF_WRAP(XformStack);
-    TF_WRAP(UsdUndoManager);
-}
+// forward declare usd types
+class SdfPath;
+class TfToken;
+class SdfLayer;
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif //MAYAUSD_UNDO_FORWARD_DECLARES_H

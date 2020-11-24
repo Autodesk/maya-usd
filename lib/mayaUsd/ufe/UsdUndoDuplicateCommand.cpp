@@ -19,6 +19,7 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/token.h>
@@ -30,8 +31,6 @@
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
-
-#include <iostream>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -51,7 +50,6 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
 
 UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
 
-/*static*/
 UsdUndoDuplicateCommand::Ptr UsdUndoDuplicateCommand::create(const UsdSceneItem::Ptr& srcItem)
 {
     return std::make_shared<UsdUndoDuplicateCommand>(srcItem);
@@ -62,65 +60,29 @@ UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
     return createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
 }
 
-bool UsdUndoDuplicateCommand::duplicateUndo()
+void UsdUndoDuplicateCommand::execute()
 {
-    // USD sends a ResyncedPaths notification after the prim is removed, but
-    // at that point the prim is no longer valid, and thus a UFE post delete
-    // notification is no longer possible.  To respect UFE object delete
-    // notification semantics, which require the object to be alive when
-    // the notification is sent, we send a pre delete notification here.
-    auto                 ufeDstItem = duplicatedItem();
-    Ufe::ObjectPreDelete notification(ufeDstItem);
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    Ufe::Scene::instance().notify(notification);
-#else
-    Ufe::Scene::notifyObjectDelete(notification);
-#endif
-    auto prim = ufePathToPrim(_ufeSrcPath);
-    prim.GetStage()->RemovePrim(_usdDstPath);
+    UsdUndoBlock undoBlock(&_undoableItem);
 
-    return true;
-}
-
-bool UsdUndoDuplicateCommand::duplicateRedo()
-{
     auto prim = ufePathToPrim(_ufeSrcPath);
     auto layer = prim.GetStage()->GetEditTarget().GetLayer();
-
-    bool retVal = SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
-
-    return retVal;
+    SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
 }
-
-//------------------------------------------------------------------------------
-// UsdUndoDuplicateCommand overrides
-//------------------------------------------------------------------------------
 
 void UsdUndoDuplicateCommand::undo()
 {
-    try {
-        MayaUsd::ufe::InAddOrDeleteOperation ad;
-        if (!duplicateUndo()) {
-            UFE_LOG("duplicate undo failed");
-        }
-    } catch (const std::exception& e) {
-        UFE_LOG(e.what());
-        throw; // re-throw the same exception
-    }
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.undo();
 }
 
 void UsdUndoDuplicateCommand::redo()
 {
-    try {
-        MayaUsd::ufe::InAddOrDeleteOperation ad;
-        if (!duplicateRedo()) {
-            UFE_LOG("duplicate redo failed");
-        }
-    } catch (const std::exception& e) {
-        UFE_LOG(e.what());
-        throw; // re-throw the same exception
-    }
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.redo();
 }
 
 } // namespace ufe

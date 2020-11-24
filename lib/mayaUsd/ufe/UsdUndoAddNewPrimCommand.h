@@ -18,6 +18,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <ufe/path.h>
 #include <ufe/undoableCommand.h>
@@ -38,6 +39,7 @@ public:
         const std::string&       name,
         const std::string&       type);
 
+    void execute() override;
     void undo() override;
     void redo() override;
 
@@ -52,6 +54,7 @@ private:
     PXR_NS::SdfPath         _primPath;
     PXR_NS::TfToken         _primToken;
     Ufe::Path               _newUfePath;
+    UsdUndoableItem         _undoableItem;
 
 }; // UsdUndoAddNewPrimCommand
 

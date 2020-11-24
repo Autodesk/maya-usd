@@ -19,6 +19,7 @@
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
 
 namespace {
 
@@ -72,22 +73,32 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
     }
 }
 
-void UsdUndoAddNewPrimCommand::undo()
+void UsdUndoAddNewPrimCommand::execute()
 {
-    if (_stage) {
-        MayaUsd::ufe::InAddOrDeleteOperation ad;
-        _stage->RemovePrim(_primPath);
-    }
-}
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
 
-void UsdUndoAddNewPrimCommand::redo()
-{
+    UsdUndoBlock undoBlock(&_undoableItem);
+
     if (_stage) {
         MayaUsd::ufe::InAddOrDeleteOperation ad;
         auto                                 prim = _stage->DefinePrim(_primPath, _primToken);
         if (!prim.IsValid())
             TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
     }
+}
+
+void UsdUndoAddNewPrimCommand::undo()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.undo();
+}
+
+void UsdUndoAddNewPrimCommand::redo()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.redo();
 }
 
 const Ufe::Path& UsdUndoAddNewPrimCommand::newUfePath() const { return _newUfePath; }
@@ -101,7 +112,6 @@ PXR_NS::UsdPrim UsdUndoAddNewPrimCommand::newPrim() const
     return _stage->GetPrimAtPath(_primPath);
 }
 
-/*static*/
 UsdUndoAddNewPrimCommand::Ptr UsdUndoAddNewPrimCommand::create(
     const UsdSceneItem::Ptr& usdSceneItem,
     const std::string&       name,

@@ -16,6 +16,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>
 
@@ -46,14 +47,15 @@ public:
     create(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
 
 private:
-    bool reorder();
-
+    void execute() override;
     void undo() override;
     void redo() override;
 
     UsdPrim _parentPrim;
 
     std::vector<TfToken> _orderedTokens;
+
+    UsdUndoableItem _undoableItem;
 
 }; // UsdUndoReorderCommand
 

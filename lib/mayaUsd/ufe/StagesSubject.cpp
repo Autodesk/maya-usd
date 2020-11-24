@@ -21,6 +21,7 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoManager.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
@@ -294,8 +295,19 @@ void StagesSubject::stageChanged(
     }
 }
 
+void StagesSubject::stageEditTargetChanged(
+    UsdNotice::StageEditTargetChanged const& notice,
+    UsdStageWeakPtr const&                   sender)
+{
+    // Track the edit target layer's state
+    UsdUndoManager::instance().trackLayerStates(notice.GetStage()->GetEditTarget().GetLayer());
+}
+
 void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
+    // Track the edit target layer's state
+    UsdUndoManager::instance().trackLayerStates(notice.GetStage()->GetEditTarget().GetLayer());
+
     // Handle re-entrant onStageSet
     bool expectedState = false;
     if (stageSetGuardCount.compare_exchange_strong(expectedState, true)) {
@@ -306,6 +318,8 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
         StagesSubject::Ptr me(this);
         for (auto stage : ProxyShapeHandler::getAllStages()) {
             fStageListeners[stage] = TfNotice::Register(me, &StagesSubject::stageChanged, stage);
+            fStageListeners[stage]
+                = TfNotice::Register(me, &StagesSubject::stageEditTargetChanged, stage);
         }
         stageSetGuardCount = false;
     }

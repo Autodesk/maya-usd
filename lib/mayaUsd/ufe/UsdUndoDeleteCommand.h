@@ -17,6 +17,7 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/usd/usd/prim.h>
 
@@ -45,15 +46,14 @@ public:
     //! Create a UsdUndoDeleteCommand from a USD prim.
     static UsdUndoDeleteCommand::Ptr create(const UsdPrim& prim);
 
-    // UsdUndoDeleteCommand overrides
+    void execute() override;
     void undo() override;
     void redo() override;
 
 private:
-    void perform(bool state);
+    UsdUndoableItem _undoableItem;
 
-private:
-    UsdPrim fPrim;
+    UsdPrim _prim;
 
 }; // UsdUndoDeleteCommand
 

@@ -73,6 +73,11 @@ private:
     //! Call the stageChanged() methods on stage observers.
     void stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender);
 
+    //! Call the stageEditTargetChanged() methods on stage observers.
+    void stageEditTargetChanged(
+        UsdNotice::StageEditTargetChanged const& notice,
+        UsdStageWeakPtr const&                   sender);
+
 private:
     // Notice listener method for proxy stage set
     void onStageSet(const MayaUsdProxyStageSetNotice& notice);
