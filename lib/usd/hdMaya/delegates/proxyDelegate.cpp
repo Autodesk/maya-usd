@@ -142,7 +142,7 @@ void SetupPluginCallbacks()
     TF_VERIFY(status, "Could not set pluginUnloaded callback");
 }
 
-#if MAYA_API_VERSION >= 20210000 && WANT_UFE_BUILD
+#if (MAYA_API_VERSION >= 20210000) && WANT_UFE_BUILD && (UFE_PREVIEW_VERSION_NUM < 2027)
 MGlobal::ListAdjustment GetListAdjustment()
 {
     // Keyboard modifiers can be queried from QApplication::keyboardModifiers()
