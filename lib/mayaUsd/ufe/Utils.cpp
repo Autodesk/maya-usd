@@ -18,17 +18,23 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
+#include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/hashset.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/tokens.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObjectHandle.h>
 #include <ufe/pathSegment.h>
+#include <ufe/rtid.h>
 
 #include <cassert>
 #include <memory>
@@ -75,6 +81,31 @@ std::unordered_map<std::string, bool> g_GatewayType;
 UsdStageWeakPtr getStage(const Ufe::Path& path) { return g_StageMap.stage(path); }
 
 Ufe::Path stagePath(UsdStageWeakPtr stage) { return g_StageMap.path(stage); }
+
+Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
+{
+    const Ufe::Rtid   usdRuntimeId = getUsdRunTimeId();
+    static const char separator = SdfPathTokens->childDelimiter.GetText()[0u];
+
+    if (usdPath.IsEmpty()) {
+        // Return an empty segment.
+        return Ufe::PathSegment(Ufe::PathSegment::Components(), usdRuntimeId, separator);
+    }
+
+    std::string pathString = usdPath.GetString();
+
+    if (instanceIndex >= 0) {
+        // Note here that we're taking advantage of the fact that identifiers
+        // in SdfPaths must be C/Python identifiers; that is, they must *not*
+        // begin with a digit. This means that when we see a path component at
+        // the end of a USD path segment that does begin with a digit, we can
+        // be sure that it represents an instance index and not a prim or other
+        // USD entity.
+        pathString += TfStringPrintf("%c%d", separator, instanceIndex);
+    }
+
+    return Ufe::PathSegment(pathString, usdRuntimeId, separator);
+}
 
 UsdPrim ufePathToPrim(const Ufe::Path& path)
 {

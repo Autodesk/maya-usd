@@ -20,8 +20,10 @@
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
@@ -52,6 +54,14 @@ UsdStageWeakPtr getStage(const Ufe::Path& path);
 //! Return the ProxyShape node UFE path for the argument stage.
 MAYAUSD_CORE_PUBLIC
 Ufe::Path stagePath(UsdStageWeakPtr stage);
+
+//! Get the UFE path segment corresponding to the argument USD path.
+//! If an instanceIndex is provided, the path segment for a point instance with
+//! that USD path and index is returned.
+MAYAUSD_CORE_PUBLIC
+Ufe::PathSegment usdPathToUfePathSegment(
+    const SdfPath& usdPath,
+    int            instanceIndex = UsdImagingDelegate::ALL_INSTANCES);
 
 //! Return the USD prim corresponding to the argument UFE path.
 MAYAUSD_CORE_PUBLIC
