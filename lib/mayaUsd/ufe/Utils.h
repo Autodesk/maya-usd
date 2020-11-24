@@ -63,6 +63,12 @@ Ufe::PathSegment usdPathToUfePathSegment(
     const SdfPath& usdPath,
     int            instanceIndex = UsdImagingDelegate::ALL_INSTANCES);
 
+//! Get the UFE path representing just the USD prim for the argument UFE path.
+//! Any instance index component at the tail of the given path is removed from
+//! the returned path.
+MAYAUSD_CORE_PUBLIC
+Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path);
+
 //! Return the USD prim corresponding to the argument UFE path.
 MAYAUSD_CORE_PUBLIC
 UsdPrim ufePathToPrim(const Ufe::Path& path);

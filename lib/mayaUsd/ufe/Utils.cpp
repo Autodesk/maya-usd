@@ -37,6 +37,7 @@
 #include <ufe/rtid.h>
 
 #include <cassert>
+#include <cctype>
 #include <memory>
 #include <regex>
 #include <stdexcept>
@@ -57,8 +58,24 @@ template <> struct iterator_traits<MStringArray::Iterator>
 #endif
 
 namespace {
+
 constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
+
+bool stringBeginsWithDigit(const std::string& inputString)
+{
+    if (inputString.empty()) {
+        return false;
+    }
+
+    const char& firstChar = inputString.front();
+    if (std::isdigit(static_cast<unsigned char>(firstChar))) {
+        return true;
+    }
+
+    return false;
 }
+
+} // anonymous namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -105,6 +122,25 @@ Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceInd
     }
 
     return Ufe::PathSegment(pathString, usdRuntimeId, separator);
+}
+
+Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path)
+{
+    if (path.empty()) {
+        return path;
+    }
+
+    // As with usdPathToUfePathSegment() above, we're taking advantage of the
+    // fact that identifiers in SdfPaths must be C/Python identifiers; that is,
+    // they must *not* begin with a digit. This means that when we see a path
+    // component at the end of a USD path segment that does begin with a digit,
+    // we can be sure that it represents an instance index and not a prim or
+    // other USD entity.
+    if (stringBeginsWithDigit(path.back().string())) {
+        return path.pop();
+    }
+
+    return path;
 }
 
 UsdPrim ufePathToPrim(const Ufe::Path& path)
