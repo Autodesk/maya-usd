@@ -15,6 +15,8 @@
 //
 #include "UsdUndoReorderCommand.h"
 
+#include "private/Utils.h"
+
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsdUtils/util.h>
 
@@ -28,6 +30,11 @@ UsdUndoReorderCommand::UsdUndoReorderCommand(
     , _parentPrim(parentPrim)
     , _orderedTokens(tokenList)
 {
+    // Apply restriction rules
+    for (const auto& childPrim : parentPrim.GetChildren()) {
+        ufe::applyCommandRestriction(childPrim, "reorder");
+        break;
+    }
 }
 
 UsdUndoReorderCommand::~UsdUndoReorderCommand() { }
