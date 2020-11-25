@@ -125,6 +125,39 @@ std::vector<UsdGeomXformOp>::const_iterator findFirstFallbackOp(const std::vecto
         });
 }
 
+void setXformOpOrder(const UsdGeomXformable& xformable)
+{
+    // As this method is called after appending a transform op to the fallback
+    // transform op sub-stack, we copy transform ops up to but excluding the
+    // first op in the fallback transform op sub-stack.
+    bool resetsXformStack = false;
+    auto oldOrder = xformable.GetOrderedXformOps(&resetsXformStack);
+    auto i = findFirstFallbackOp(oldOrder); TF_AXIOM(i != oldOrder.end());
+
+    // Copy ops before the Maya sub-stack unchanged.
+    std::vector<UsdGeomXformOp> newOrder;
+    newOrder.reserve(oldOrder.size());
+    std::copy(oldOrder.cbegin(), i, std::back_inserter(newOrder));
+
+    // Sort from the start of the Maya sub-stack.  Use the Maya transform stack
+    // indices to add to a map, then simply traverse the map to obtain the
+    // transform ops in Maya sub-stack order.
+    std::map<int, UsdGeomXformOp> orderedOps;
+    for (; i != oldOrder.end(); ++i) {
+	auto op = *i;
+	auto ndx = gOpNameToNdx.at(op.GetOpName());
+	orderedOps[ndx] = op;
+    }
+
+    // Set the transform op order attribute.
+    for (const auto& orderedOp : orderedOps) {
+        const auto& op = orderedOp.second;
+        newOrder.emplace_back(op);
+    }
+
+    xformable.SetXformOpOrder(newOrder, resetsXformStack);
+}
+
 Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
@@ -189,41 +222,12 @@ UsdTransform3dFallbackMayaXformStack::Ptr UsdTransform3dFallbackMayaXformStack::
     return std::make_shared<UsdTransform3dFallbackMayaXformStack>(item, ops);
 }
 
-void UsdTransform3dFallbackMayaXformStack::setXformOpOrder()
+UsdTransform3dFallbackMayaXformStack::SetXformOpOrderFn
+UsdTransform3dFallbackMayaXformStack::getXformOpOrderFn() const
 {
-    // As this method is called after appending a transform op to the fallback
-    // transform op sub-stack, we copy transform ops up to but excluding the
-    // first op in the fallback transform op sub-stack.
-    bool resetsXformStack = false;
-    auto oldOrder = _xformable.GetOrderedXformOps(&resetsXformStack);
-    auto i = findFirstFallbackOp(oldOrder); TF_AXIOM(i != oldOrder.end());
-
-    // Copy ops before the Maya sub-stack unchanged.
-    std::vector<UsdGeomXformOp> newOrder;
-    newOrder.reserve(oldOrder.size());
-    std::copy(oldOrder.cbegin(), i, std::back_inserter(newOrder));
-
-    // Sort from the start of the Maya sub-stack.  Use the Maya transform stack
-    // indices to add to a map, then simply traverse the map to obtain the
-    // transform ops in Maya sub-stack order.
-    std::map<int, UsdGeomXformOp> orderedOps;
-    for (; i != oldOrder.end(); ++i) {
-    auto op = *i;
-    auto ndx = gOpNameToNdx.at(op.GetOpName());
-    orderedOps[ndx] = op;
-    }
-
-    // Set the transform op order attribute, and rebuild our indexed cache.
-    _orderedOps.clear();
-    for (const auto& orderedOp : orderedOps) {
-        const auto& op = orderedOp.second;
-        newOrder.emplace_back(op);
-        auto ndx = gOpNameToNdx.at(op.GetOpName());
-        _orderedOps[ndx] = op;
-    }
-
-    _xformable.SetXformOpOrder(newOrder, resetsXformStack);
+    return setXformOpOrder;
 }
+
 
 TfToken UsdTransform3dFallbackMayaXformStack::getOpSuffix(OpNdx ndx) const
 {
@@ -277,6 +281,25 @@ UsdTransform3dFallbackMayaXformStack::getCvtRotXYZToAttrFn(const TfToken& opName
         {TfToken("xformOp:orient:" FB_CMPT),    nullptr}}; // FIXME, unsupported.
 
     return cvt.at(opName);
+}
+
+std::map<UsdTransform3dMayaXformStack::OpNdx, UsdGeomXformOp> 
+UsdTransform3dFallbackMayaXformStack::getOrderedOps() const
+{
+    bool resetsXformStack = false;
+    auto ops = _xformable.GetOrderedXformOps(&resetsXformStack);
+    auto i = findFirstFallbackOp(ops); TF_AXIOM(i != ops.end());
+
+    // Sort from the start of the Maya sub-stack.  Use the Maya transform stack
+    // indices to add to a map, then simply traverse the map to obtain the
+    // transform ops in Maya sub-stack order.
+    std::map<OpNdx, UsdGeomXformOp> orderedOps;
+    for (; i != ops.end(); ++i) {
+		auto op = *i;
+		auto ndx = gOpNameToNdx.at(op.GetOpName());
+		orderedOps[ndx] = op;
+    }
+	return orderedOps;
 }
 
 // segmentInclusiveMatrix() from UsdTransform3dBase is fine.

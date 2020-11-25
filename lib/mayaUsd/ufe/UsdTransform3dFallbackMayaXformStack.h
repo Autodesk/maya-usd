@@ -87,11 +87,12 @@ public:
 
 private:
 
-    void    setXformOpOrder() override;
+    SetXformOpOrderFn getXformOpOrderFn() const override;
     TfToken getOpSuffix(OpNdx ndx) const override;
     TfToken getTRSOpSuffix() const override;
     CvtRotXYZFromAttrFn getCvtRotXYZFromAttrFn(const TfToken& opName) const override;
     CvtRotXYZToAttrFn getCvtRotXYZToAttrFn(const TfToken& opName) const override;
+    std::map<OpNdx, UsdGeomXformOp> getOrderedOps() const override;
 
 }; // UsdTransform3dFallbackMayaXformStack
 

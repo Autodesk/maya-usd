@@ -20,6 +20,7 @@
 #include <pxr/usd/usdGeom/xformable.h>
 
 #include <unordered_map>
+#include <map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -48,6 +49,7 @@ public:
     OpNameToNdx;
     typedef Ufe::Vector3d (*CvtRotXYZFromAttrFn)(const VtValue& value);
     typedef VtValue (*CvtRotXYZToAttrFn)(double x, double y, double z);
+    typedef void (*SetXformOpOrderFn)(const UsdGeomXformable&);
 
     UsdTransform3dMayaXformStack(
         const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
@@ -94,11 +96,12 @@ protected:
 
     bool            hasOp(OpNdx ndx) const;
     UsdGeomXformOp  getOp(OpNdx ndx) const;
-    virtual void    setXformOpOrder();
+    virtual SetXformOpOrderFn getXformOpOrderFn() const;
     virtual TfToken getOpSuffix(OpNdx ndx) const;
     virtual TfToken getTRSOpSuffix() const;
     virtual CvtRotXYZFromAttrFn getCvtRotXYZFromAttrFn(const TfToken& opName) const;
     virtual CvtRotXYZToAttrFn getCvtRotXYZToAttrFn(const TfToken& opName) const;
+    virtual std::map<OpNdx, UsdGeomXformOp> getOrderedOps() const;
 
     template<class V>
     Ufe::Vector3d getVector3d(const TfToken& attrName) const;
