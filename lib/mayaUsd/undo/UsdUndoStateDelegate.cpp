@@ -142,6 +142,16 @@ void UsdUndoStateDelegate::invertPopPathChild(const SdfPath& parentPath, const T
     PushChild(parentPath, fieldName, value);
 }
 
+void UsdUndoStateDelegate::invertSetFieldDictValueByKey(const SdfPath& path, const TfToken& fieldName, const TfToken& keyPath, const VtValue& inverse)
+{
+    _setMessageAlreadyShowed = true;
+
+    TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE)
+            .Msg("Inverting Field '%s' By Key '%s' for Spec '%s'\n", fieldName.GetText(), keyPath.GetText(), path.GetText());
+
+    SetFieldDictValueByKey(path, fieldName, keyPath, inverse);
+}
+
 void UsdUndoStateDelegate::_OnSetField(const SdfPath& path, const TfToken& fieldName, const VtValue& value)
 {
     _MarkCurrentStateAsDirty();
@@ -200,7 +210,7 @@ void UsdUndoStateDelegate::_OnSetFieldDictValueByKey(
     const TfToken& keyPath,
     const VtValue& value)
 {
-    TF_CODING_ERROR("_OnSetFieldDictValueByKey (VtValue) is not yet implemented!");
+    _OnSetFieldDictValueByKeyImpl(path, fieldName, keyPath);
 }
 
 void UsdUndoStateDelegate::_OnSetFieldDictValueByKey(
@@ -209,7 +219,7 @@ void UsdUndoStateDelegate::_OnSetFieldDictValueByKey(
     const TfToken&                   keyPath,
     const SdfAbstractDataConstValue& value)
 {
-    TF_CODING_ERROR("_OnSetFieldDictValueByKey (SdfAbstractDataConstValue) is not yet implemented!");
+    _OnSetFieldDictValueByKeyImpl(path, fieldName, keyPath);
 }
 
 void UsdUndoStateDelegate::_OnSetTimeSample(const SdfPath& path, double time, const VtValue& value)
@@ -373,6 +383,32 @@ void UsdUndoStateDelegate::_OnPopChild(const SdfPath& parentPath, const TfToken&
 
     UsdUndoManager::instance().addInverse(
         std::bind(&UsdUndoStateDelegate::invertPopPathChild, this, parentPath, fieldName, oldValue));
+}
+
+void UsdUndoStateDelegate::_OnSetFieldDictValueByKeyImpl(const SdfPath& path, 
+                                                         const TfToken& fieldName,
+                                                         const TfToken& keyPath)
+{
+    _MarkCurrentStateAsDirty();
+
+    // early return if we are not insdide an UsdUndoBlock
+    if (UsdUndoBlock::depth() == 0){
+        return;
+    }
+
+    if (!_setMessageAlreadyShowed) {
+        TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE)
+                .Msg("Setting field '%s' by key '%s' for spec '%s'\n",
+                     fieldName.GetText(), keyPath.GetText(), path.GetText());
+    }
+
+    if (!_layer) {
+        return;
+    }
+
+    const VtValue inverseValue = _layer->GetFieldDictValueByKey(path, fieldName, keyPath);
+
+    UsdUndoManager::instance().addInverse(std::bind(&UsdUndoStateDelegate::invertSetFieldDictValueByKey, this, path, fieldName, keyPath, inverseValue));   
 }
 
 } // namespace MAYAUSD_NS_DEF

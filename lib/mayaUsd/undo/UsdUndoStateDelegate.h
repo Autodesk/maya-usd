@@ -54,6 +54,7 @@ private:
     void invertPopTokenChild(const SdfPath& parentPath, const TfToken& fieldName, const TfToken& value);
     void invertPushPathChild(const SdfPath& parentPath, const TfToken& fieldName, const SdfPath& value);
     void invertPopPathChild(const SdfPath& parentPath, const TfToken& fieldName, const SdfPath& value);
+    void invertSetFieldDictValueByKey(const SdfPath& path, const TfToken& fieldName, const TfToken& keyPath, const VtValue& inverse);
 
 protected:
     bool _IsDirty() override;
@@ -88,6 +89,9 @@ protected:
     void _OnPushChild(const SdfPath& parentPath, const TfToken& fieldName, const SdfPath& value) override;
     void _OnPopChild(const SdfPath& parentPath, const TfToken& fieldName, const TfToken& oldValue) override;
     void _OnPopChild(const SdfPath& parentPath, const TfToken& fieldName, const SdfPath& oldValue) override;
+
+private:
+    void _OnSetFieldDictValueByKeyImpl(const SdfPath& path, const TfToken& fieldName, const TfToken& keyPath);
 
 private:
     SdfLayerHandle _layer;
