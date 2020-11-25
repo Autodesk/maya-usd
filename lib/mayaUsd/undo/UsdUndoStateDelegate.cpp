@@ -152,6 +152,16 @@ void UsdUndoStateDelegate::invertSetFieldDictValueByKey(const SdfPath& path, con
     SetFieldDictValueByKey(path, fieldName, keyPath, inverse);
 }
 
+void UsdUndoStateDelegate::invertSetTimeSample(const SdfPath& path, double time, const VtValue& inverse)
+{
+    _setMessageAlreadyShowed = true;
+
+    TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE)
+        .Msg("Inverting TimeSample '%f' for Spec '%s'\n", time, path.GetText());
+
+    SetTimeSample(path, time, inverse);
+}
+
 void UsdUndoStateDelegate::_OnSetField(const SdfPath& path, const TfToken& fieldName, const VtValue& value)
 {
     _MarkCurrentStateAsDirty();
@@ -224,12 +234,12 @@ void UsdUndoStateDelegate::_OnSetFieldDictValueByKey(
 
 void UsdUndoStateDelegate::_OnSetTimeSample(const SdfPath& path, double time, const VtValue& value)
 {
-    TF_CODING_ERROR("_OnSetTimeSample (VtValue) is not yet implemented!");
+    _OnSetTimeSampleImpl(path, time);
 }
 
 void UsdUndoStateDelegate::_OnSetTimeSample(const SdfPath& path, double time, const SdfAbstractDataConstValue& value)
 {
-    TF_CODING_ERROR("_OnSetTimeSample (SdfAbstractDataConstValue) is not yet implemented!");
+    _OnSetTimeSampleImpl(path, time);
 }
 
 void UsdUndoStateDelegate::_OnCreateSpec(const SdfPath& path, SdfSpecType specType, bool inert)
@@ -409,6 +419,31 @@ void UsdUndoStateDelegate::_OnSetFieldDictValueByKeyImpl(const SdfPath& path,
     const VtValue inverseValue = _layer->GetFieldDictValueByKey(path, fieldName, keyPath);
 
     UsdUndoManager::instance().addInverse(std::bind(&UsdUndoStateDelegate::invertSetFieldDictValueByKey, this, path, fieldName, keyPath, inverseValue));   
+}
+
+void UsdUndoStateDelegate::_OnSetTimeSampleImpl(const SdfPath& path, double time)
+{
+    _MarkCurrentStateAsDirty();
+
+    // early return if we are not insdide an UsdUndoBlock
+    if (UsdUndoBlock::depth() == 0){
+      return;
+    }
+
+    TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE)
+           .Msg("Setting time sample '%f' for spec '%s'\n", time, path.GetText());
+
+    if (!_GetLayer()->HasField(path, SdfFieldKeys->TimeSamples)) 
+    {
+        UsdUndoManager::instance().addInverse( std::bind(&UsdUndoStateDelegate::invertSetField, this, path, SdfFieldKeys->TimeSamples, VtValue()));
+
+    } else {
+        VtValue oldValue;
+
+        _GetLayer()->QueryTimeSample(path, time, &oldValue);
+
+        UsdUndoManager::instance().addInverse(std::bind(&UsdUndoStateDelegate::invertSetTimeSample, this, path, time, oldValue));
+    }
 }
 
 } // namespace MAYAUSD_NS_DEF
