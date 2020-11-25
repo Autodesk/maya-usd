@@ -114,13 +114,13 @@ MStatus initialize()
 
 #if UFE_PREVIEW_VERSION_NUM >= 2028
     Ufe::RunTimeMgr::Handlers handlers;
-    handlers.fHierarchyHandler = UsdHierarchyHandler::create();
-    handlers.fTransform3dHandler = UsdTransform3dHandler::create();
-    handlers.fSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
-    handlers.fAttributesHandler = UsdAttributesHandler::create();
-    handlers.fObject3dHandler = UsdObject3dHandler::create();
-    handlers.fContextOpsHandler = UsdContextOpsHandler::create();
-    handlers.fUiInfoHandler = UsdUIInfoHandler::create();
+    handlers.hierarchyHandler = UsdHierarchyHandler::create();
+    handlers.transform3dHandler = UsdTransform3dHandler::create();
+    handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
+    handlers.attributesHandler = UsdAttributesHandler::create();
+    handlers.object3dHandler = UsdObject3dHandler::create();
+    handlers.contextOpsHandler = UsdContextOpsHandler::create();
+    handlers.uiInfoHandler = UsdUIInfoHandler::create();
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(
         kUSDRunTimeName, handlers);
 #else
