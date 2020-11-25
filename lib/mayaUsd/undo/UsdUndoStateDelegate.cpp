@@ -200,7 +200,7 @@ void UsdUndoStateDelegate::_OnSetFieldDictValueByKey(
     const TfToken& keyPath,
     const VtValue& value)
 {
-    throw std::logic_error(std::string { __func__ } + "is not implemented !!!");
+    TF_CODING_ERROR("_OnSetFieldDictValueByKey (VtValue) is not yet implemented!");
 }
 
 void UsdUndoStateDelegate::_OnSetFieldDictValueByKey(
@@ -209,17 +209,17 @@ void UsdUndoStateDelegate::_OnSetFieldDictValueByKey(
     const TfToken&                   keyPath,
     const SdfAbstractDataConstValue& value)
 {
-    throw std::logic_error(std::string { __func__ } + "is not implemented !!!");
+    TF_CODING_ERROR("_OnSetFieldDictValueByKey (SdfAbstractDataConstValue) is not yet implemented!");
 }
 
 void UsdUndoStateDelegate::_OnSetTimeSample(const SdfPath& path, double time, const VtValue& value)
 {
-    throw std::logic_error(std::string { __func__ } + "is not implemented !!!");
+    TF_CODING_ERROR("_OnSetTimeSample (VtValue) is not yet implemented!");
 }
 
 void UsdUndoStateDelegate::_OnSetTimeSample(const SdfPath& path, double time, const SdfAbstractDataConstValue& value)
 {
-    throw std::logic_error(std::string { __func__ } + "is not implemented !!!");
+    TF_CODING_ERROR("_OnSetTimeSample (SdfAbstractDataConstValue) is not yet implemented!");
 }
 
 void UsdUndoStateDelegate::_OnCreateSpec(const SdfPath& path, SdfSpecType specType, bool inert)
