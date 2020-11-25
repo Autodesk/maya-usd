@@ -71,7 +71,8 @@ void wrapUsdUndoManager()
     {
         typedef MayaUsd::UsdUndoManager This;
         class_<This, boost::noncopyable>("UsdUndoManager", no_init)
-            .def("trackLayerStates", &_trackLayerStates);
+            .def("trackLayerStates", &_trackLayerStates)
+            .staticmethod("trackLayerStates");
     }
 
     // UsdUndoBlock
