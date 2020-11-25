@@ -79,7 +79,7 @@ void UsdUndoStateDelegate::invertDeleteSpec(
 {
     _setMessageAlreadyShowed = true;
 
-    TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE).Msg("Inverting deleting spec at '%s'\n", path.GetText(), inert);
+    TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE).Msg("Inverting deleting spec at '%s'\n", path.GetText());
 
     CreateSpec(path, deletedSpecType, inert);
 }
@@ -272,7 +272,7 @@ void UsdUndoStateDelegate::_OnDeleteSpec(const SdfPath& path, bool inert)
     }
 
     if (!_setMessageAlreadyShowed) {
-        TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE).Msg("Deleting spec at '%s'\n", path.GetText(), inert);
+        TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE).Msg("Deleting spec at '%s'\n", path.GetText());
     }
 
     if (!_layer) {

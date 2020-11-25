@@ -76,7 +76,9 @@ void UsdUndoBlockCmd::execute(const UsdUndoableItem& undoableItem)
     argUndoItem = undoableItem;
 
     auto status = MGlobal::executeCommand(commandName, true, true);
-    assert(status == MS::kSuccess);
+    if(!status) {
+        TF_CODING_ERROR("Executing undoBlock command failed!");
+    }
 
     argUndoItem = UsdUndoableItem();
 }
