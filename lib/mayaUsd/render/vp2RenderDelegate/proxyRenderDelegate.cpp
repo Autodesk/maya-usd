@@ -49,6 +49,9 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <ufe/globalSelection.h>
+#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/namedSelection.h>
+#endif
 #include <ufe/observableSelection.h>
 #include <ufe/runTimeMgr.h>
 #include <ufe/scene.h>
@@ -755,7 +758,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // each intersection.
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     const TfToken&                 selectionKind = _selectionKind;
+#if UFE_PREVIEW_VERSION_NUM < 2027 // #ifndef UFE_V2_FEATURES_AVAILABLE
     const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
+#endif
 #else
     const TfToken selectionKind = GetSelectionKind();
     const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
@@ -783,6 +788,10 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         return false;
     }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+    auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
+    ufeSel->append(si);
+#else
     auto globalSelection = Ufe::GlobalSelection::get();
 
     switch (listAdjustment) {
@@ -802,6 +811,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         break;
     default: TF_WARN("Unexpected MGlobal::ListAdjustment enum for selection."); break;
     }
+#endif
 #else
     dagPath = _proxyShapeData->ProxyDagPath();
 #endif
@@ -812,7 +822,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
 //! \brief  Notify of selection change.
 void ProxyRenderDelegate::SelectionChanged() { _selectionChanged = true; }
 
-//! \brief  Polulate lead and active selection for Rprims under the proxy shape.
+//! \brief  Populate lead and active selection for Rprims under the proxy shape.
 void ProxyRenderDelegate::_PopulateSelection()
 {
 #if defined(WANT_UFE_BUILD)
