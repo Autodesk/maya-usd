@@ -164,7 +164,7 @@ void UsdUndoStateDelegate::_OnSetField(const SdfPath& path, const TfToken& field
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -191,7 +191,7 @@ void UsdUndoStateDelegate::_OnSetField(
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -244,7 +244,7 @@ void UsdUndoStateDelegate::_OnCreateSpec(const SdfPath& path, SdfSpecType specTy
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -264,7 +264,7 @@ void UsdUndoStateDelegate::_OnDeleteSpec(const SdfPath& path, bool inert)
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -288,7 +288,7 @@ void UsdUndoStateDelegate::_OnMoveSpec(const SdfPath& oldPath, const SdfPath& ne
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -309,7 +309,7 @@ void UsdUndoStateDelegate::_OnPushChild(const SdfPath& parentPath, const TfToken
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -331,7 +331,7 @@ void UsdUndoStateDelegate::_OnPushChild(const SdfPath& parentPath, const TfToken
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -353,7 +353,7 @@ void UsdUndoStateDelegate::_OnPopChild(const SdfPath& parentPath, const TfToken&
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -375,7 +375,7 @@ void UsdUndoStateDelegate::_OnPopChild(const SdfPath& parentPath, const TfToken&
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -399,7 +399,7 @@ void UsdUndoStateDelegate::_OnSetFieldDictValueByKeyImpl(const SdfPath& path,
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
         return;
     }
@@ -423,7 +423,7 @@ void UsdUndoStateDelegate::_OnSetTimeSampleImpl(const SdfPath& path, double time
 {
     _MarkCurrentStateAsDirty();
 
-    // early return if we are not insdide an UsdUndoBlock
+    // early return if we are not inside an UsdUndoBlock
     if (UsdUndoBlock::depth() == 0){
       return;
     }
