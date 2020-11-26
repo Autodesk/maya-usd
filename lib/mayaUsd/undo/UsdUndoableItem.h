@@ -17,9 +17,10 @@
 #ifndef MAYAUSD_UNDO_UNDOABLE_BLOCK_H
 #define MAYAUSD_UNDO_UNDOABLE_BLOCK_H
 
-#include "ForwardDeclares.h"
-
 #include <mayaUsd/base/api.h>
+
+#include <functional>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

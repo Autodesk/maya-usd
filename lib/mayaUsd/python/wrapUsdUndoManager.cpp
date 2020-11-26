@@ -18,9 +18,10 @@
 #include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
+#include <pxr/pxr.h>
 #include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyNoticeWrapper.h>
-#include <pxr/pxr.h>
+#include <pxr/usd/sdf/layer.h>
 
 #include <boost/python.hpp>
 

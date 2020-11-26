@@ -17,10 +17,14 @@
 #ifndef MAYAUSD_UNDO_UNDOMANAGER_H
 #define MAYAUSD_UNDO_UNDOMANAGER_H
 
-#include "ForwardDeclares.h"
 #include "UsdUndoableItem.h"
 
 #include <mayaUsd/base/api.h>
+
+#include <pxr/usd/sdf/layer.h>
+
+#include <functional>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

@@ -13,7 +13,6 @@ target_sources(${PROJECT_NAME}
 # promote headers
 # -----------------------------------------------------------------------------
 set(HEADERS
-    ForwardDeclares.h
     UsdUndoBlock.h
     UsdUndoManager.h
     UsdUndoStateDelegate.h

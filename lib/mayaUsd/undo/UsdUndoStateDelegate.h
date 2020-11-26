@@ -17,12 +17,12 @@
 #ifndef MAYAUSD_UNDO_UNDOSTATE_DELEGATE_H
 #define MAYAUSD_UNDO_UNDOSTATE_DELEGATE_H
 
-#include "ForwardDeclares.h"
-
 #include <mayaUsd/base/api.h>
 
-#include <pxr/base/tf/declarePtrs.h>
 #include <pxr/usd/sdf/layerStateDelegate.h>
+
+// convenient way to bring in other headers 
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

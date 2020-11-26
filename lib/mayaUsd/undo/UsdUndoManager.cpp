@@ -18,8 +18,6 @@
 #include "UsdUndoBlock.h"
 #include "UsdUndoStateDelegate.h"
 
-#include <pxr/usd/sdf/layer.h>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {

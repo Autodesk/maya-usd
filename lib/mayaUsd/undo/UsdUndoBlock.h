@@ -17,10 +17,11 @@
 #ifndef MAYAUSD_UNDO_UNDOBLOCK_H
 #define MAYAUSD_UNDO_UNDOBLOCK_H
 
-#include "ForwardDeclares.h"
 #include "UsdUndoableItem.h"
 
 #include <mayaUsd/base/api.h>
+
+#include <pxr/base/tf/declarePtrs.h>
 
 #include <maya/MGlobal.h>
 #include <maya/MPxCommand.h>
