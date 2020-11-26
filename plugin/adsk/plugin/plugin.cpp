@@ -51,6 +51,8 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
+#include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 
@@ -145,18 +147,20 @@ MStatus initializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
     }
 
-    // Augment the core maya-usd Transform3dHandler with our own chain of
-    // responsibility: first try the single matrix op at arbitrary position in
-    // the transform stack, then pass it off to the core maya-usd
-    // Transform3dHandler (which at time of writing converts to the USD common
-    // transform API).
+    // Set up a chain of responsibility for Transform3d interface creation,
+    // from least important to most important:
+    // - Perfor operations on a Maya transform stack appended to the existing
+    //   transform stack (fallback).
+    // - Perform operations on a 4x4 matrix transform op.
+    // - Perform operations using the USD common transform API.
+    // - Perform operations using a Maya transform stack.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
-    auto  usdRtid = MAYAUSD_NS::ufe::getUsdRunTimeId();
-    g_Transform3dHandler = runTimeMgr.transform3dHandler(usdRtid);
-    auto matrixHandler
-        = MAYAUSD_NS::ufe::UsdTransform3dMatrixOpHandler::create(g_Transform3dHandler);
-    auto mayaStackHandler
-        = MAYAUSD_NS::ufe::UsdTransform3dMayaXformStackHandler::create(matrixHandler);
+    auto  usdRtid = MayaUsd::ufe::getUsdRunTimeId();
+    auto  fallbackHandler = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
+    auto  matrixHandler = MayaUsd::ufe::UsdTransform3dMatrixOpHandler::create(fallbackHandler);
+    auto  commonAPIHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(matrixHandler);
+    auto  mayaStackHandler
+        = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(commonAPIHandler);
     runTimeMgr.setTransform3dHandler(usdRtid, mayaStackHandler);
 #endif
 

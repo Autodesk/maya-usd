@@ -21,6 +21,8 @@ target_sources(${PROJECT_NAME}
         UsdTRSUndoableCommandBase.cpp
         UsdTransform3d.cpp
         UsdTransform3dBase.cpp
+        UsdTransform3dCommonAPI.cpp
+        UsdTransform3dFallbackMayaXformStack.cpp
         UsdTransform3dMatrixOp.cpp
         UsdTransform3dMayaXformStack.cpp
         UsdTransform3dHandler.cpp
@@ -36,6 +38,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
             ProxyShapeContextOpsHandler.cpp
+            RotationUtils.cpp
             UsdAttribute.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
@@ -75,6 +78,8 @@ set(HEADERS
     UsdTRSUndoableCommandBase.h
     UsdTransform3d.h
     UsdTransform3dBase.h
+    UsdTransform3dCommonAPI.h
+    UsdTransform3dFallbackMayaXformStack.h
     UsdTransform3dMatrixOp.h
     UsdTransform3dMayaXformStack.h
     UsdTransform3dHandler.h
@@ -89,6 +94,7 @@ set(HEADERS
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         ProxyShapeContextOpsHandler.h
+        RotationUtils.h
         UsdAttribute.h
         UsdAttributes.h
         UsdAttributesHandler.h

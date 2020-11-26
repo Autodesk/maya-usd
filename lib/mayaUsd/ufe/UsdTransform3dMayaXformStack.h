@@ -15,12 +15,11 @@
 //
 #pragma once
 
-#include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dBase.h>
 
 #include <pxr/usd/usdGeom/xformable.h>
 
-#include <unordered_map>
+#include <map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -56,6 +55,9 @@ public:
     };
 
     typedef std::shared_ptr<UsdTransform3dMayaXformStack> Ptr;
+    typedef Ufe::Vector3d (*CvtRotXYZFromAttrFn)(const VtValue& value);
+    typedef VtValue (*CvtRotXYZToAttrFn)(double x, double y, double z);
+    typedef void (*SetXformOpOrderFn)(const UsdGeomXformable&);
 
     UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item);
     ~UsdTransform3dMayaXformStack() override = default;
@@ -87,24 +89,27 @@ public:
 
     Ufe::Vector3d scalePivotTranslation() const override;
 
-private:
-    bool           hasOp(OpNdx ndx) const;
-    UsdGeomXformOp getOp(OpNdx ndx) const;
+protected:
+    bool                                    hasOp(OpNdx ndx) const;
+    UsdGeomXformOp                          getOp(OpNdx ndx) const;
+    virtual SetXformOpOrderFn               getXformOpOrderFn() const;
+    virtual TfToken                         getOpSuffix(OpNdx ndx) const;
+    virtual TfToken                         getTRSOpSuffix() const;
+    virtual CvtRotXYZFromAttrFn             getCvtRotXYZFromAttrFn(const TfToken& opName) const;
+    virtual CvtRotXYZToAttrFn               getCvtRotXYZToAttrFn(const TfToken& opName) const;
+    virtual std::map<OpNdx, UsdGeomXformOp> getOrderedOps() const;
 
-    Ufe::TranslateUndoableCommand::Ptr
-                                     pivotCmd(const TfToken& pvtOpSuffix, double x, double y, double z);
     template <class V> Ufe::Vector3d getVector3d(const TfToken& attrName) const;
+
     template <class V>
     Ufe::SetVector3dUndoableCommand::Ptr
     setVector3dCmd(const V& v, const TfToken& attrName, const TfToken& opSuffix = TfToken());
 
-    void setXformOpOrder();
-
-    // Cache of ops in the ordered ops vector, indexed by position.
-    std::unordered_map<OpNdx, UsdGeomXformOp> _orderedOps;
-
     UsdGeomXformable _xformable;
 
+private:
+    Ufe::TranslateUndoableCommand::Ptr
+    pivotCmd(const TfToken& pvtOpSuffix, double x, double y, double z);
 }; // UsdTransform3dMayaXformStack
 
 //! \brief Factory to create a UsdTransform3dMayaXformStack interface object.
