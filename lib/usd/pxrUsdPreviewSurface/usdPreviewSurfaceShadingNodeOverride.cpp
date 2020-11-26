@@ -15,19 +15,17 @@
 //
 #include "usdPreviewSurfaceShadingNodeOverride.h"
 
-#include <pxr/pxr.h>
-
-#include <pxr/base/tf/staticTokens.h>
-
 #include <mayaUsd/render/vp2ShaderFragments/shaderFragments.h>
 
-#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/pxr.h>
 
 #include <maya/MObject.h>
 #include <maya/MPxSurfaceShadingNodeOverride.h>
 #include <maya/MString.h>
 #include <maya/MViewport2Renderer.h>
 
+#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,47 +42,37 @@ PxrMayaUsdPreviewSurfaceShadingNodeOverride::creator(const MObject& obj)
 }
 
 PxrMayaUsdPreviewSurfaceShadingNodeOverride::PxrMayaUsdPreviewSurfaceShadingNodeOverride(
-        const MObject& obj) :
-    MPxSurfaceShadingNodeOverride(obj)
+    const MObject& obj)
+    : MPxSurfaceShadingNodeOverride(obj)
 {
 }
 
 /* virtual */
-PxrMayaUsdPreviewSurfaceShadingNodeOverride::~PxrMayaUsdPreviewSurfaceShadingNodeOverride()
-{
-}
+PxrMayaUsdPreviewSurfaceShadingNodeOverride::~PxrMayaUsdPreviewSurfaceShadingNodeOverride() { }
 
 /* virtual */
-MString
-PxrMayaUsdPreviewSurfaceShadingNodeOverride::primaryColorParameter() const
+MString PxrMayaUsdPreviewSurfaceShadingNodeOverride::primaryColorParameter() const
 {
     return "diffuseColor";
 }
 
 /* virtual */
-MString
-PxrMayaUsdPreviewSurfaceShadingNodeOverride::transparencyParameter() const
+MString PxrMayaUsdPreviewSurfaceShadingNodeOverride::transparencyParameter() const
 {
     return "transparency";
 }
 
 /* virtual */
-MString
-PxrMayaUsdPreviewSurfaceShadingNodeOverride::bumpAttribute() const
-{
-    return "normal";
-}
+MString PxrMayaUsdPreviewSurfaceShadingNodeOverride::bumpAttribute() const { return "normal"; }
 
 /* virtual */
-MHWRender::DrawAPI
-PxrMayaUsdPreviewSurfaceShadingNodeOverride::supportedDrawAPIs() const
+MHWRender::DrawAPI PxrMayaUsdPreviewSurfaceShadingNodeOverride::supportedDrawAPIs() const
 {
     return MHWRender::kAllDevices;
 }
 
 /* virtual */
-MString
-PxrMayaUsdPreviewSurfaceShadingNodeOverride::fragmentName() const
+MString PxrMayaUsdPreviewSurfaceShadingNodeOverride::fragmentName() const
 {
     // This override uses the "Core" directly since the shading node does its
     // own conversion from "opacity" to "transparency".
@@ -92,9 +80,8 @@ PxrMayaUsdPreviewSurfaceShadingNodeOverride::fragmentName() const
 }
 
 /* virtual */
-void
-PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(
-        MHWRender::MAttributeParameterMappingList& mappings)
+void PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(
+    MHWRender::MAttributeParameterMappingList& mappings)
 {
     // The control on the Maya shader is 'opacity' (1.0 is opaque), but Maya
     // prefers to work in terms of transparency (0.0 is opaque). We want Maya
@@ -107,6 +94,5 @@ PxrMayaUsdPreviewSurfaceShadingNodeOverride::getCustomMappings(
         "transparency", "outTransparency", true, true);
     mappings.append(transparencyMapping);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

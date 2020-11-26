@@ -18,19 +18,19 @@
 
 /// \file pxrUsdMayaGL/instancerImager.h
 
-#include <functional>
-
-#include <maya/MCallbackIdArray.h>
-#include <maya/MDagMessage.h>
-#include <maya/MApiNamespace.h>
-
-#include <pxr/base/tf/singleton.h>
-#include <pxr/base/tf/weakBase.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/listeners/notice.h>
 #include <mayaUsd/render/pxrUsdMayaGL/instancerShapeAdapter.h>
 #include <mayaUsd/utils/util.h>
+
+#include <pxr/base/tf/singleton.h>
+#include <pxr/base/tf/weakBase.h>
+
+#include <maya/MApiNamespace.h>
+#include <maya/MCallbackIdArray.h>
+#include <maya/MDagMessage.h>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,7 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Maya instancing, we only draw the 0th instance. This behavior is similar to
 /// the current imaging behavior of USD proxy shapes, where only one instance
 /// gets drawn by the draw override.
-class UsdMayaGL_InstancerImager : public TfWeakBase {
+class UsdMayaGL_InstancerImager : public TfWeakBase
+{
 public:
     MAYAUSD_CORE_PUBLIC
     static UsdMayaGL_InstancerImager& GetInstance();
@@ -68,22 +69,22 @@ public:
     typedef std::function<bool(const MFnDependencyNode&)> ContinueTrackingOnDisconnectDelegate;
 
     MAYAUSD_CORE_PUBLIC
-    static void SetContinueTrackingOnDisconnectDelegate(
-        ContinueTrackingOnDisconnectDelegate delegate);
+    static void
+    SetContinueTrackingOnDisconnectDelegate(ContinueTrackingOnDisconnectDelegate delegate);
 
     /// Factory function for creating instancer shape adapters.
-    using InstancerShapeAdapterFactory =
-        std::function<UsdMayaGL_InstancerShapeAdapter*(bool /* isViewport2 */)>;
+    using InstancerShapeAdapterFactory
+        = std::function<UsdMayaGL_InstancerShapeAdapter*(bool /* isViewport2 */)>;
 
     /// Set the factory function for creating instancer shape adapters.
     MAYAUSD_CORE_PUBLIC
-    static void SetInstancerShapeAdapterFactory(
-        InstancerShapeAdapterFactory factory);
+    static void SetInstancerShapeAdapterFactory(InstancerShapeAdapterFactory factory);
 
 private:
     /// Helper struct that owns all the data needed to track and draw a
     /// particular instancer node.
-    struct _InstancerEntry {
+    struct _InstancerEntry
+    {
         MCallbackIdArray callbacks;
 
         // The shape adapter generates an in-memory USD stage, so don't create
@@ -117,17 +118,15 @@ private:
     /// @{
 
     /// Maya callback for when the given \p node becomes dirty.
-    static void _OnNodeDirty(
-            MObject& node,
-            void* clientData);
+    static void _OnNodeDirty(MObject& node, void* clientData);
 
     /// Maya callback for when the \p transformNode's world-space xform changes.
     /// \p transformNode is either the node for which the callback was
     /// registered or one of its ancestors.
     static void _OnWorldMatrixChanged(
-            MObject &transformNode,
-            MDagMessage::MatrixModifiedFlags& modified,
-            void *clientData);
+        MObject&                          transformNode,
+        MDagMessage::MatrixModifiedFlags& modified,
+        void*                             clientData);
 
     /// @}
     /// \name Helpers
@@ -136,9 +135,9 @@ private:
     /// Helper method to sync shape adapters for any instancers marked as dirty;
     /// this handles differences between VP2 and Legacy Viewport.
     void _SyncShapeAdapters(
-            bool vp2,
-            const unsigned int vp2DisplayStyle,
-            const M3dView::DisplayStyle legacyDisplayStyle);
+        bool                        vp2,
+        const unsigned int          vp2DisplayStyle,
+        const M3dView::DisplayStyle legacyDisplayStyle);
 
     /// Marks the global pxrHdImagingShape as dirty.
     /// If \p createIfNeeded is true, then creates the pxrHdImagingShape if it
@@ -160,14 +159,11 @@ private:
     /// @{
 
     /// Notice listener method for when the Maya scene resets.
-    void _OnSceneReset(
-            const UsdMayaSceneResetNotice& notice);
+    void _OnSceneReset(const UsdMayaSceneResetNotice& notice);
     /// Notice listener method for assembly-instancer connections.
-    void _OnConnection(
-            const UsdMayaAssemblyConnectedToInstancerNotice& notice);
+    void _OnConnection(const UsdMayaAssemblyConnectedToInstancerNotice& notice);
     /// Notice listener method for assembly-instancer disconnections.
-    void _OnDisconnection(
-            const UsdMayaAssemblyDisconnectedFromInstancerNotice& notice);
+    void _OnDisconnection(const UsdMayaAssemblyDisconnectedFromInstancerNotice& notice);
 
     /// @}
 

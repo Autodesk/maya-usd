@@ -16,29 +16,29 @@
 
 #if defined _WIN32 || defined __CYGWIN__
 
-  // We need a different export symbol for the plugin because when we are building
-  // the actual Maya plugin we must 'export' the two functions for plugin load/unload.
-  // And then we won't set the core export because we need to 'import' the symbols.
-  #ifdef MAYAUSD_PLUGIN_EXPORT
-    #ifdef __GNUC__
-      #define MAYAUSD_PLUGIN_PUBLIC __attribute__ ((dllexport))
-    #else
-      #define MAYAUSD_PLUGIN_PUBLIC __declspec(dllexport)
-    #endif
-  #else
-    #ifdef __GNUC__
-      #define MAYAUSD_PLUGIN_PUBLIC __attribute__ ((dllimport))
-    #else
-      #define MAYAUSD_PLUGIN_PUBLIC __declspec(dllimport)
-    #endif
-  #endif
-  #define MAYAUSD_PLUGIN_LOCAL
+// We need a different export symbol for the plugin because when we are building
+// the actual Maya plugin we must 'export' the two functions for plugin load/unload.
+// And then we won't set the core export because we need to 'import' the symbols.
+#ifdef MAYAUSD_PLUGIN_EXPORT
+#ifdef __GNUC__
+#define MAYAUSD_PLUGIN_PUBLIC __attribute__((dllexport))
 #else
-  #if __GNUC__ >= 4
-    #define MAYAUSD_PLUGIN_PUBLIC __attribute__ ((visibility ("default")))
-    #define MAYAUSD_PLUGIN_LOCAL  __attribute__ ((visibility ("hidden")))
+#define MAYAUSD_PLUGIN_PUBLIC __declspec(dllexport)
+#endif
 #else
-    #define MAYAUSD_PLUGIN_PUBLIC
-    #define MAYAUSD_PLUGIN_LOCAL
+#ifdef __GNUC__
+#define MAYAUSD_PLUGIN_PUBLIC __attribute__((dllimport))
+#else
+#define MAYAUSD_PLUGIN_PUBLIC __declspec(dllimport)
+#endif
+#endif
+#define MAYAUSD_PLUGIN_LOCAL
+#else
+#if __GNUC__ >= 4
+#define MAYAUSD_PLUGIN_PUBLIC __attribute__((visibility("default")))
+#define MAYAUSD_PLUGIN_LOCAL  __attribute__((visibility("hidden")))
+#else
+#define MAYAUSD_PLUGIN_PUBLIC
+#define MAYAUSD_PLUGIN_LOCAL
 #endif
 #endif

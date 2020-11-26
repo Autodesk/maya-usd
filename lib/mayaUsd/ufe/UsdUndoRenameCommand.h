@@ -15,12 +15,12 @@
 //
 #pragma once
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+
 #include <ufe/path.h>
 #include <ufe/pathComponent.h>
 #include <ufe/undoableCommand.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -43,7 +43,8 @@ public:
     UsdUndoRenameCommand& operator=(UsdUndoRenameCommand&&) = delete;
 
     //! Create a UsdUndoRenameCommand from a USD scene item and UFE pathcomponent.
-    static UsdUndoRenameCommand::Ptr create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
+    static UsdUndoRenameCommand::Ptr
+    create(const UsdSceneItem::Ptr& srcItem, const Ufe::PathComponent& newName);
 
     UsdSceneItem::Ptr renamedItem() const;
 
@@ -58,9 +59,9 @@ private:
     UsdSceneItem::Ptr _ufeDstItem;
 
     UsdStageWeakPtr _stage;
-    std::string _newName;
+    std::string     _newName;
 
 }; // UsdUndoRenameCommand
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

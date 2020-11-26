@@ -15,9 +15,20 @@
 //
 #include "hdImagingShapeUI.h"
 
+#include <mayaUsd/nodes/hdImagingShape.h>
+#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
+#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
+#include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
+#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
+
+#include <pxr/base/gf/vec2i.h>
+#include <pxr/base/tf/debug.h>
+#include <pxr/base/trace/trace.h>
+#include <pxr/pxr.h>
+
 #include <maya/M3dView.h>
-#include <maya/MDagPath.h>
 #include <maya/MDGContext.h>
+#include <maya/MDagPath.h>
 #include <maya/MDrawData.h>
 #include <maya/MDrawInfo.h>
 #include <maya/MDrawRequest.h>
@@ -28,33 +39,20 @@
 #include <maya/MPxSurfaceShapeUI.h>
 #include <maya/MStatus.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec2i.h>
-#include <pxr/base/tf/debug.h>
-#include <pxr/base/trace/trace.h>
-
-#include <mayaUsd/nodes/hdImagingShape.h>
-#include <mayaUsd/render/pxrUsdMayaGL/batchRenderer.h>
-#include <mayaUsd/render/pxrUsdMayaGL/debugCodes.h>
-#include <mayaUsd/render/pxrUsdMayaGL/instancerImager.h>
-#include <mayaUsd/render/pxrUsdMayaGL/userData.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-void*
-PxrMayaHdImagingShapeUI::creator()
+void* PxrMayaHdImagingShapeUI::creator()
 {
     UsdMayaGLBatchRenderer::Init();
     return new PxrMayaHdImagingShapeUI();
 }
 
 /* virtual */
-void
-PxrMayaHdImagingShapeUI::getDrawRequests(
-        const MDrawInfo& drawInfo,
-        bool /* objectAndActiveOnly */,
-        MDrawRequestQueue& requests)
+void PxrMayaHdImagingShapeUI::getDrawRequests(
+    const MDrawInfo& drawInfo,
+    bool /* objectAndActiveOnly */,
+    MDrawRequestQueue& requests)
 {
     TRACE_FUNCTION();
 
@@ -63,43 +61,38 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
         MProfiler::kColorE_L2,
         "Hydra Imaging Shape getDrawRequests() (Legacy Viewport)");
 
-    const MDagPath shapeDagPath = drawInfo.multiPath();
-    const PxrMayaHdImagingShape* imagingShape =
-        PxrMayaHdImagingShape::GetShapeAtDagPath(shapeDagPath);
+    const MDagPath               shapeDagPath = drawInfo.multiPath();
+    const PxrMayaHdImagingShape* imagingShape
+        = PxrMayaHdImagingShape::GetShapeAtDagPath(shapeDagPath);
     if (!imagingShape) {
         return;
     }
 
-    TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
-        "PxrMayaHdImagingShapeUI::getDrawRequests(), shapeDagPath: %s\n",
-        shapeDagPath.fullPathName().asChar());
+    TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING)
+        .Msg(
+            "PxrMayaHdImagingShapeUI::getDrawRequests(), shapeDagPath: %s\n",
+            shapeDagPath.fullPathName().asChar());
 
     // Grab batch renderer settings values from the shape here and pass them
     // along to the batch renderer. Settings that affect selection should then
     // be set appropriately for subsequent selections.
-    MStatus status;
+    MStatus                 status;
     const MFnDependencyNode depNodeFn(imagingShape->thisMObject(), &status);
     if (status == MS::kSuccess) {
-        const MPlug selectionResolutionPlug =
-            depNodeFn.findPlug(
-                PxrMayaHdImagingShape::selectionResolutionAttr,
-                &status);
+        const MPlug selectionResolutionPlug
+            = depNodeFn.findPlug(PxrMayaHdImagingShape::selectionResolutionAttr, &status);
         if (status == MS::kSuccess) {
-            const short selectionResolution =
-                selectionResolutionPlug.asShort(&status);
+            const short selectionResolution = selectionResolutionPlug.asShort(&status);
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetSelectionResolution(
                     GfVec2i(selectionResolution));
             }
         }
 
-        const MPlug enableDepthSelectionPlug =
-            depNodeFn.findPlug(
-                PxrMayaHdImagingShape::enableDepthSelectionAttr,
-                &status);
+        const MPlug enableDepthSelectionPlug
+            = depNodeFn.findPlug(PxrMayaHdImagingShape::enableDepthSelectionAttr, &status);
         if (status == MS::kSuccess) {
-            const bool enableDepthSelection =
-                enableDepthSelectionPlug.asBool(&status);
+            const bool enableDepthSelection = enableDepthSelectionPlug.asBool(&status);
             if (status == MS::kSuccess) {
                 UsdMayaGLBatchRenderer::GetInstance().SetDepthSelectionEnabled(
                     enableDepthSelection);
@@ -108,8 +101,7 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
     }
 
     // Sync any instancers that need Hydra drawing.
-    UsdMayaGL_InstancerImager::GetInstance().SyncShapeAdapters(
-            drawInfo.displayStyle());
+    UsdMayaGL_InstancerImager::GetInstance().SyncShapeAdapters(drawInfo.displayStyle());
 
     // The legacy viewport never has an old MUserData we can reuse. It also
     // does not manage the data allocated in the MDrawData object, so the batch
@@ -127,8 +119,7 @@ PxrMayaHdImagingShapeUI::getDrawRequests(
 }
 
 /* virtual */
-void
-PxrMayaHdImagingShapeUI::draw(const MDrawRequest& request, M3dView& view) const
+void PxrMayaHdImagingShapeUI::draw(const MDrawRequest& request, M3dView& view) const
 {
     TRACE_FUNCTION();
 
@@ -137,8 +128,7 @@ PxrMayaHdImagingShapeUI::draw(const MDrawRequest& request, M3dView& view) const
         MProfiler::kColorC_L1,
         "Hydra Imaging Shape draw() (Legacy Viewport)");
 
-    TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg(
-        "PxrMayaHdImagingShapeUI::draw()\n");
+    TF_DEBUG(PXRUSDMAYAGL_BATCHED_DRAWING).Msg("PxrMayaHdImagingShapeUI::draw()\n");
 
     view.beginGL();
 
@@ -147,7 +137,8 @@ PxrMayaHdImagingShapeUI::draw(const MDrawRequest& request, M3dView& view) const
     view.endGL();
 }
 
-PxrMayaHdImagingShapeUI::PxrMayaHdImagingShapeUI() : MPxSurfaceShapeUI()
+PxrMayaHdImagingShapeUI::PxrMayaHdImagingShapeUI()
+    : MPxSurfaceShapeUI()
 {
 }
 
@@ -156,6 +147,5 @@ PxrMayaHdImagingShapeUI::~PxrMayaHdImagingShapeUI()
 {
     UsdMayaGL_InstancerImager::GetInstance().RemoveShapeAdapters(/*vp2*/ false);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

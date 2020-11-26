@@ -16,8 +16,8 @@
 #ifndef HDMAYA_PLUGIN_DEBUG_CODES_H
 #define HDMAYA_PLUGIN_DEBUG_CODES_H
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/debug.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

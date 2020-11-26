@@ -13,23 +13,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <string>
+#include <mayaUsd/fileio/utils/meshWriteUtils.h>
+#include <mayaUsd/utils/util.h>
 
-#include <boost/python/class.hpp>
-#include <boost/python.hpp>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
 
 #include <maya/MFnMesh.h>
 #include <maya/MObject.h>
 #include <maya/MStatus.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/tf/pyResultConversions.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/array.h>
+#include <boost/python.hpp>
+#include <boost/python/class.hpp>
 
-#include <mayaUsd/fileio/utils/meshWriteUtils.h>
-#include <mayaUsd/utils/util.h>
+#include <string>
 
 using namespace boost::python;
 
@@ -37,25 +37,21 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static
-tuple
-_GetMeshNormals(const std::string& meshDagPath)
+static tuple _GetMeshNormals(const std::string& meshDagPath)
 {
     VtArray<GfVec3f> normalsArray;
-    TfToken interpolation;
+    TfToken          interpolation;
 
     MObject meshObj;
     MStatus status = UsdMayaUtil::GetMObjectByName(meshDagPath, meshObj);
     if (status != MS::kSuccess) {
-        TF_CODING_ERROR("Could not get MObject for dagPath: %s",
-                        meshDagPath.c_str());
+        TF_CODING_ERROR("Could not get MObject for dagPath: %s", meshDagPath.c_str());
         return make_tuple(normalsArray, interpolation);
     }
 
     MFnMesh meshFn(meshObj, &status);
     if (!meshObj.hasFn(MFn::kMesh)) {
-        TF_CODING_ERROR("MFnMesh() failed for object at dagPath: %s",
-                        meshDagPath.c_str());
+        TF_CODING_ERROR("MFnMesh() failed for object at dagPath: %s", meshDagPath.c_str());
         return make_tuple(normalsArray, interpolation);
     }
 
@@ -66,17 +62,18 @@ _GetMeshNormals(const std::string& meshDagPath)
 
 // Dummy class for putting UsdMayaMeshWriteUtils namespace functions in a Python
 // MeshWriteUtils namespace.
-class DummyScopeClass{};
+class DummyScopeClass
+{
+};
 
-} // anonymous namespace 
-
+} // anonymous namespace
 
 void wrapMeshWriteUtils()
 {
     scope s = class_<DummyScopeClass>("MeshWriteUtils", no_init)
 
-        .def("GetMeshNormals", &_GetMeshNormals)
-            .staticmethod("GetMeshNormals")
+                  .def("GetMeshNormals", &_GetMeshNormals)
+                  .staticmethod("GetMeshNormals")
 
         ;
 }

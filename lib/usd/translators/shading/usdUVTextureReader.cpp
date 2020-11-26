@@ -19,15 +19,17 @@
 #include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/ar/packageUtils.h>
+#include <pxr/usd/sdf/layerUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdf/valueTypeName.h>
+#include <pxr/usd/usd/resolver.h>
 #include <pxr/usd/usdShade/input.h>
 #include <pxr/usd/usdShade/output.h>
 #include <pxr/usd/usdShade/shader.h>
@@ -41,7 +43,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrMayaUsdUVTexture_Reader : public UsdMayaShaderReader {
+class PxrMayaUsdUVTexture_Reader : public UsdMayaShaderReader
+{
 public:
     PxrMayaUsdUVTexture_Reader(const UsdMayaPrimReaderArgs&);
 
@@ -56,55 +59,23 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya "file" node attribute names
-    (file)
-    (alphaGain)
-    (alphaOffset)
-    (colorGain)
-    (colorOffset)
-    (colorSpace)
-    (defaultColor)
-    (fileTextureName)
-    (outAlpha)
-    (outColor)
-    (outColorR)
-    (outColorG)
-    (outColorB)
-    (place2dTexture)
-    (coverage)
-    (translateFrame)
-    (rotateFrame)
-    (mirrorU)
-    (mirrorV)
-    (stagger)
-    (wrapU)
-    (wrapV)
-    (repeatUV)
-    (offset)
-    (rotateUV)
-    (noiseUV)
-    (vertexUvOne)
-    (vertexUvTwo)
-    (vertexUvThree)
-    (vertexCameraOne)
+    (file)(alphaGain)(alphaOffset)(colorGain)(colorOffset)(colorSpace)(defaultColor)(
+        fileTextureName)(outAlpha)(outColor)(outColorR)(outColorG)(outColorB)(place2dTexture)(
+        coverage)(translateFrame)(rotateFrame)(mirrorU)(mirrorV)(stagger)(wrapU)(wrapV)(repeatUV)(
+        offset)(rotateUV)(noiseUV)(vertexUvOne)(vertexUvTwo)(vertexUvThree)(vertexCameraOne)
 
     // UsdUVTexture Input Names
-    (bias)
-    (fallback)
-    (scale)
-    (wrapS)
-    (wrapT)
+    (bias)(fallback)(scale)(wrapS)(wrapT)
 
     // Values for wrapS and wrapT
-    (black)
-    (repeat)
+    (black)(repeat)
 
     // UsdUVTexture Output Names
-    ((RGBOutputName, "rgb"))
-    ((RedOutputName, "r"))
-    ((GreenOutputName, "g"))
-    ((BlueOutputName, "b"))
-    ((AlphaOutputName, "a"))
-);
+    ((RGBOutputName, "rgb"))((RedOutputName, "r"))((GreenOutputName, "g"))((BlueOutputName, "b"))(
+        (AlphaOutputName, "a"))
+
+    // UDIM detection
+    ((UDIMTag, "<UDIM>"))(uvTilingMode));
 
 static const TfTokenVector _Place2dTextureConnections = {
     _tokens->coverage,    _tokens->translateFrame, _tokens->rotateFrame,   _tokens->mirrorU,
@@ -189,8 +160,40 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             // as a relationship like texture paths inside USDZ assets.
             val = SdfAssetPath(filePath);
         }
+
+        // Re-fetch the file name in case it is UDIM-tagged
+        filePath = val.UncheckedGet<SdfAssetPath>().GetAssetPath();
         mayaAttr = depFn.findPlug(_tokens->fileTextureName.GetText(), true, &status);
         if (status == MS::kSuccess) {
+
+            // Handle UDIM dexture files:
+            std::string::size_type udimPos = filePath.rfind(_tokens->UDIMTag.GetString());
+            if (udimPos != std::string::npos) {
+                MPlug tilingAttr = depFn.findPlug(_tokens->uvTilingMode.GetText(), true, &status);
+                if (status == MS::kSuccess) {
+                    tilingAttr.setInt(3);
+
+                    // USD did not resolve the path to absolute because the file name was not an
+                    // actual file on disk. We need to find the first tile to help Maya find the
+                    // other ones.
+                    std::string udimPath(filePath.substr(0, udimPos));
+                    udimPath += "1001";
+                    udimPath += filePath.substr(udimPos + _tokens->UDIMTag.GetString().size());
+
+                    Usd_Resolver res(&prim.GetPrimIndex());
+                    for (; res.IsValid(); res.NextLayer()) {
+                        std::string resolvedName
+                            = SdfComputeAssetPathRelativeToLayer(res.GetLayer(), udimPath);
+
+                        if (!resolvedName.empty() && !ArIsPackageRelativePath(resolvedName)
+                            && resolvedName != udimPath) {
+                            udimPath = resolvedName;
+                            break;
+                        }
+                    }
+                    val = SdfAssetPath(udimPath);
+                }
+            }
             UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
         }
 
@@ -282,7 +285,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
 /* virtual */
 TfToken PxrMayaUsdUVTexture_Reader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
-    TfToken usdOutputName;
+    TfToken               usdOutputName;
     UsdShadeAttributeType attrType;
     std::tie(usdOutputName, attrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 

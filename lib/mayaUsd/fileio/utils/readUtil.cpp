@@ -15,6 +15,19 @@
 //
 #include "readUtil.h"
 
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/utils/colorSpace.h>
+#include <mayaUsd/utils/converter.h>
+#include <mayaUsd/utils/util.h>
+
+#include <pxr/base/gf/gamma.h>
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/envSetting.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/sdf/listOp.h>
+#include <pxr/usd/usd/tokens.h>
+
 #include <maya/MDoubleArray.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFnAttribute.h>
@@ -36,68 +49,62 @@
 #include <maya/MStringArray.h>
 #include <maya/MVectorArray.h>
 
-#include <pxr/base/gf/gamma.h>
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/tf/envSetting.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/usd/sdf/assetPath.h>
-#include <pxr/usd/sdf/listOp.h>
-#include <pxr/usd/usd/tokens.h>
-
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/utils/colorSpace.h>
-#include <mayaUsd/utils/util.h>
-#include <mayaUsd/utils/converter.h>
-
 using namespace MAYAUSD_NS_DEF;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(
-        PIXMAYA_READ_FLOAT2_AS_UV, true,
-        "Set to false to disable ability to read Float2 type as a UV set");
+    PIXMAYA_READ_FLOAT2_AS_UV,
+    true,
+    "Set to false to disable ability to read Float2 type as a UV set");
 
-bool
-UsdMayaReadUtil::ReadFloat2AsUV()
+bool UsdMayaReadUtil::ReadFloat2AsUV()
 {
-    static const bool readFloat2AsUV = 
-        TfGetEnvSetting(PIXMAYA_READ_FLOAT2_AS_UV);
+    static const bool readFloat2AsUV = TfGetEnvSetting(PIXMAYA_READ_FLOAT2_AS_UV);
     return readFloat2AsUV;
 }
 
-MObject
-UsdMayaReadUtil::FindOrCreateMayaAttr(
-        const SdfValueTypeName& typeName,
-        const SdfVariability variability,
-        MFnDependencyNode& depNode,
-        const std::string& attrName,
-        const std::string& attrNiceName)
+TF_DEFINE_ENV_SETTING(
+    MAYAUSD_IMPORT_PRIMARY_UV_SET_AS_MAP1,
+    false,
+    "Translates the primary UV set in USD to the map1 UV set in Maya. "
+    "When disabled, UV set names are translated directly (st in USD becomes st in Maya).");
+
+bool UsdMayaReadUtil::ReadSTAsMap1()
 {
-    MDGModifier modifier;
-    return FindOrCreateMayaAttr(typeName, variability, depNode, attrName,
-            attrNiceName, modifier);
+    static const bool readSTAsMap1 = TfGetEnvSetting(MAYAUSD_IMPORT_PRIMARY_UV_SET_AS_MAP1);
+    return readSTAsMap1;
 }
 
-static MObject
-_FindOrCreateMayaTypedAttr(
-    const std::string& attrName,
-    const std::string& attrNiceName,
+MObject UsdMayaReadUtil::FindOrCreateMayaAttr(
+    const SdfValueTypeName& typeName,
+    const SdfVariability    variability,
+    MFnDependencyNode&      depNode,
+    const std::string&      attrName,
+    const std::string&      attrNiceName)
+{
+    MDGModifier modifier;
+    return FindOrCreateMayaAttr(typeName, variability, depNode, attrName, attrNiceName, modifier);
+}
+
+static MObject _FindOrCreateMayaTypedAttr(
+    const std::string&  attrName,
+    const std::string&  attrNiceName,
     const MFnData::Type type,
-    const bool keyable,
-    const bool usedAsColor,
-    const bool usedAsFilename,
-    MFnDependencyNode& depNode,
-    MDGModifier& modifier)
+    const bool          keyable,
+    const bool          usedAsColor,
+    const bool          usedAsFilename,
+    MFnDependencyNode&  depNode,
+    MDGModifier&        modifier)
 {
     MString mayaName = attrName.c_str();
-    MString niceName =  attrNiceName.empty() ?
-            attrName.c_str() : attrNiceName.c_str();
+    MString niceName = attrNiceName.empty() ? attrName.c_str() : attrNiceName.c_str();
 
     MPlug plug = depNode.findPlug(mayaName, true);
     if (plug.isNull()) {
         // Create.
         MFnTypedAttribute attr;
-        MObject attrObj = attr.create(mayaName, mayaName, type);
+        MObject           attrObj = attr.create(mayaName, mayaName, type);
         attr.setNiceNameOverride(niceName);
         attr.setKeyable(keyable);
 
@@ -111,39 +118,34 @@ _FindOrCreateMayaTypedAttr(
         modifier.addAttribute(depNode.object(), attrObj);
         modifier.doIt();
         return attrObj;
-    }
-    else {
+    } else {
         // Found -- verify.
         if (Converter::hasAttrType(plug, type)) {
             return plug.attribute();
-        }
-        else {
-            TF_RUNTIME_ERROR("Plug %s has unexpected type",
-                    plug.name().asChar());
+        } else {
+            TF_RUNTIME_ERROR("Plug %s has unexpected type", plug.name().asChar());
             return MObject();
         }
     }
 }
 
-static MObject
-_FindOrCreateMayaNumericAttr(
-    const std::string& attrName,
-    const std::string& attrNiceName,
+static MObject _FindOrCreateMayaNumericAttr(
+    const std::string&         attrName,
+    const std::string&         attrNiceName,
     const MFnNumericData::Type type,
-    const bool keyable,
-    const bool usedAsColor,
-    MFnDependencyNode& depNode,
-    MDGModifier& modifier)
+    const bool                 keyable,
+    const bool                 usedAsColor,
+    MFnDependencyNode&         depNode,
+    MDGModifier&               modifier)
 {
     MString mayaName = attrName.c_str();
-    MString niceName =  attrNiceName.empty() ?
-            attrName.c_str() : attrNiceName.c_str();
+    MString niceName = attrNiceName.empty() ? attrName.c_str() : attrNiceName.c_str();
 
     MPlug plug = depNode.findPlug(mayaName, true);
     if (plug.isNull()) {
         // Create.
         MFnNumericAttribute attr;
-        MObject attrObj = attr.create(mayaName, mayaName, type);
+        MObject             attrObj = attr.create(mayaName, mayaName, type);
         attr.setNiceNameOverride(niceName);
         attr.setKeyable(keyable);
 
@@ -152,66 +154,59 @@ _FindOrCreateMayaNumericAttr(
         }
 
         const unsigned int numChildren = MFnCompoundAttribute(attrObj).numChildren();
-        if(numChildren < 5u) {
-            static MString suffix[4] = {" X", " Y", " Z", " W"};
-            for(unsigned int i = 0; i < numChildren; i++) {
-                MFnAttribute(attr.child(i)).setNiceNameOverride(niceName+suffix[i]);
+        if (numChildren < 5u) {
+            static MString suffix[4] = { " X", " Y", " Z", " W" };
+            for (unsigned int i = 0; i < numChildren; i++) {
+                MFnAttribute(attr.child(i)).setNiceNameOverride(niceName + suffix[i]);
             }
         } else {
             TF_CODING_ERROR("Unexpected number of children on numeric attribute");
         }
-        
+
         modifier.addAttribute(depNode.object(), attrObj);
         modifier.doIt();
         return attrObj;
-    }
-    else {
+    } else {
         // Found -- verify.
         if (Converter::hasNumericType(plug, type)
-            || (type == MFnNumericData::kInt && Converter::hasEnumType(plug)))
-        {
+            || (type == MFnNumericData::kInt && Converter::hasEnumType(plug))) {
             return plug.attribute();
-        }
-        else {
-            TF_RUNTIME_ERROR("Plug %s has unexpected type",
-                    plug.name().asChar());
+        } else {
+            TF_RUNTIME_ERROR("Plug %s has unexpected type", plug.name().asChar());
             return MObject();
         }
     }
 }
 
-MObject
-UsdMayaReadUtil::FindOrCreateMayaAttr(
-        const SdfValueTypeName& typeName,
-        const SdfVariability variability,
-        MFnDependencyNode& depNode,
-        const std::string& attrName,
-        const std::string& attrNiceName,
-        MDGModifier& modifier)
+MObject UsdMayaReadUtil::FindOrCreateMayaAttr(
+    const SdfValueTypeName& typeName,
+    const SdfVariability    variability,
+    MFnDependencyNode&      depNode,
+    const std::string&      attrName,
+    const std::string&      attrNiceName,
+    MDGModifier&            modifier)
 {
     return FindOrCreateMayaAttr(
-            typeName.GetType(),
-            typeName.GetRole(),
-            variability,
-            depNode,
-            attrName,
-            attrNiceName,
-            modifier);
+        typeName.GetType(),
+        typeName.GetRole(),
+        variability,
+        depNode,
+        attrName,
+        attrNiceName,
+        modifier);
 }
 
-MObject
-UsdMayaReadUtil::FindOrCreateMayaAttr(
-        const TfType& type,
-        const TfToken& role,
-        const SdfVariability variability,
-        MFnDependencyNode& depNode,
-        const std::string& attrName,
-        const std::string& attrNiceName,
-        MDGModifier& modifier)
+MObject UsdMayaReadUtil::FindOrCreateMayaAttr(
+    const TfType&        type,
+    const TfToken&       role,
+    const SdfVariability variability,
+    MFnDependencyNode&   depNode,
+    const std::string&   attrName,
+    const std::string&   attrNiceName,
+    MDGModifier&         modifier)
 {
     MString mayaName = attrName.c_str();
-    MString niceName =  attrNiceName.empty() ?
-            attrName.c_str() : attrNiceName.c_str();
+    MString niceName = attrNiceName.empty() ? attrName.c_str() : attrNiceName.c_str();
 
     // For the majority of things, we don't care about the role, just about
     // the type, e.g. we export point3f/vector3f/float3 the same.
@@ -221,141 +216,240 @@ UsdMayaReadUtil::FindOrCreateMayaAttr(
 
     MObject attrObj;
     if (type.IsA<TfToken>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kString, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<std::string>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kString, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<SdfAssetPath>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kString,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<std::string>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kString,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<SdfAssetPath>()) {
         // XXX We're not setting usedAsFilename right now because we can't
         // figure out how to opt-out of Maya's internal path resolution.
         // This is still OK when we round-trip because we'll still generate
         // SdfAssetPaths when we check the schema attribute's value type name.
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kString, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<GfMatrix4d>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kMatrix, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<SdfTokenListOp>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kStringArray, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<SdfStringListOp>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kStringArray, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<VtTokenArray>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kStringArray, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<VtStringArray>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kStringArray, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<VtDoubleArray>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kDoubleArray, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<VtFloatArray>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kFloatArray, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<VtIntArray>()) {
-        return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                MFnData::kIntArray, keyable, usedAsColor,
-                /*usedAsFilename*/ false, depNode, modifier);
-    }
-    else if (type.IsA<VtVec3dArray>() ||
-            type.IsA<VtVec3fArray>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kString,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<GfMatrix4d>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kMatrix,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<SdfTokenListOp>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kStringArray,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<SdfStringListOp>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kStringArray,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<VtTokenArray>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kStringArray,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<VtStringArray>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kStringArray,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<VtDoubleArray>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kDoubleArray,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<VtFloatArray>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kFloatArray,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<VtIntArray>()) {
+        return _FindOrCreateMayaTypedAttr(
+            attrName,
+            attrNiceName,
+            MFnData::kIntArray,
+            keyable,
+            usedAsColor,
+            /*usedAsFilename*/ false,
+            depNode,
+            modifier);
+    } else if (type.IsA<VtVec3dArray>() || type.IsA<VtVec3fArray>()) {
         if (role == SdfValueRoleNames->Point) {
-            return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                    MFnData::kPointArray, keyable, usedAsColor,
-                    /*usedAsFilename*/ false, depNode, modifier);
+            return _FindOrCreateMayaTypedAttr(
+                attrName,
+                attrNiceName,
+                MFnData::kPointArray,
+                keyable,
+                usedAsColor,
+                /*usedAsFilename*/ false,
+                depNode,
+                modifier);
+        } else {
+            return _FindOrCreateMayaTypedAttr(
+                attrName,
+                attrNiceName,
+                MFnData::kVectorArray,
+                keyable,
+                usedAsColor,
+                /*usedAsFilename*/ false,
+                depNode,
+                modifier);
         }
-        else {
-            return _FindOrCreateMayaTypedAttr(attrName, attrNiceName,
-                    MFnData::kVectorArray, keyable, usedAsColor,
-                    /*usedAsFilename*/ false, depNode, modifier);
-        }
-    }
-    else if (type.IsA<bool>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::kBoolean, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<int>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::kInt, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<GfVec2i>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::k2Int, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<GfVec3i>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::k3Int, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<float>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::kFloat, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<GfVec2f>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::k2Float, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<GfVec3f>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::k3Float, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<double>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::kDouble, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<GfVec2d>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::k2Double, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<GfVec3d>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::k3Double, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<GfVec4d>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::k4Double, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<GfQuatf>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::k4Double, keyable, usedAsColor,
-                depNode, modifier);
-    }
-    else if (type.IsA<GfQuatd>()) {
-        return _FindOrCreateMayaNumericAttr(attrName, attrNiceName,
-                MFnNumericData::k4Double, keyable, usedAsColor,
-                depNode, modifier);
+    } else if (type.IsA<bool>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::kBoolean,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
+    } else if (type.IsA<int>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName, attrNiceName, MFnNumericData::kInt, keyable, usedAsColor, depNode, modifier);
+    } else if (type.IsA<GfVec2i>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName, attrNiceName, MFnNumericData::k2Int, keyable, usedAsColor, depNode, modifier);
+    } else if (type.IsA<GfVec3i>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName, attrNiceName, MFnNumericData::k3Int, keyable, usedAsColor, depNode, modifier);
+    } else if (type.IsA<float>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::kFloat,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
+    } else if (type.IsA<GfVec2f>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::k2Float,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
+    } else if (type.IsA<GfVec3f>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::k3Float,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
+    } else if (type.IsA<double>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::kDouble,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
+    } else if (type.IsA<GfVec2d>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::k2Double,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
+    } else if (type.IsA<GfVec3d>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::k3Double,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
+    } else if (type.IsA<GfVec4d>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::k4Double,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
+    } else if (type.IsA<GfQuatf>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::k4Double,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
+    } else if (type.IsA<GfQuatd>()) {
+        return _FindOrCreateMayaNumericAttr(
+            attrName,
+            attrNiceName,
+            MFnNumericData::k4Double,
+            keyable,
+            usedAsColor,
+            depNode,
+            modifier);
     }
 
     TF_RUNTIME_ERROR("Type '%s' isn't supported", type.GetTypeName().c_str());
@@ -363,23 +457,19 @@ UsdMayaReadUtil::FindOrCreateMayaAttr(
 }
 
 /// Converts a vec from linear to display color if its attribute is a color.
-template <typename T>
-T
-_ConvertVec(
-        const MPlug& plug,
-        const T& val) {
+template <typename T> T _ConvertVec(const MPlug& plug, const T& val)
+{
     if (MFnAttribute(plug.attribute()).isUsedAsColor()) {
         return UsdMayaColorSpace::ConvertLinearToMaya(val);
-    }
-    else {
+    } else {
         return val;
     }
 }
 
 bool UsdMayaReadUtil::SetMayaAttr(
-        MPlug& attrPlug,
-        const UsdAttribute& usdAttr,
-        const bool unlinearizeColors)
+    MPlug&              attrPlug,
+    const UsdAttribute& usdAttr,
+    const bool          unlinearizeColors)
 {
     VtValue val;
     if (usdAttr.Get(&val)) {
@@ -393,19 +483,19 @@ bool UsdMayaReadUtil::SetMayaAttr(
 }
 
 bool UsdMayaReadUtil::SetMayaAttr(
-        MPlug& attrPlug,
-        const VtValue& newValue,
-        const bool unlinearizeColors)
+    MPlug&         attrPlug,
+    const VtValue& newValue,
+    const bool     unlinearizeColors)
 {
     MDGModifier modifier;
     return SetMayaAttr(attrPlug, newValue, modifier, unlinearizeColors);
 }
 
 bool UsdMayaReadUtil::SetMayaAttr(
-        MPlug& attrPlug,
-        const VtValue& newValue,
-        MDGModifier& modifier,
-        const bool unlinearizeColors)
+    MPlug&         attrPlug,
+    const VtValue& newValue,
+    MDGModifier&   modifier,
+    const bool     unlinearizeColors)
 {
     bool ok = false;
     if (newValue.IsHolding<TfToken>()) {
@@ -414,39 +504,34 @@ bool UsdMayaReadUtil::SetMayaAttr(
             modifier.newPlugValueString(attrPlug, token.GetText());
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<std::string>()) {
+    } else if (newValue.IsHolding<std::string>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kString)) {
             std::string str = newValue.Get<std::string>();
             modifier.newPlugValueString(attrPlug, str.c_str());
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<SdfAssetPath>()) {
+    } else if (newValue.IsHolding<SdfAssetPath>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kString)) {
             SdfAssetPath assetPath = newValue.Get<SdfAssetPath>();
-            modifier.newPlugValueString(attrPlug,
-                    assetPath.GetAssetPath().c_str());
+            modifier.newPlugValueString(attrPlug, assetPath.GetAssetPath().c_str());
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfMatrix4d>()) {
+    } else if (newValue.IsHolding<GfMatrix4d>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kMatrix)) {
             GfMatrix4d mat = newValue.Get<GfMatrix4d>();
-            MMatrix mayaMat;
+            MMatrix    mayaMat;
             for (size_t i = 0; i < 4; ++i) {
                 for (size_t j = 0; j < 4; ++j) {
                     mayaMat[i][j] = mat[i][j];
                 }
             }
             MFnMatrixData data;
-            MObject dataObj = data.create();
+            MObject       dataObj = data.create();
             data.set(mayaMat);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<SdfTokenListOp>()) {
+    } else if (newValue.IsHolding<SdfTokenListOp>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kStringArray)) {
             TfTokenVector result;
             newValue.Get<SdfTokenListOp>().ApplyOperations(&result);
@@ -455,13 +540,12 @@ bool UsdMayaReadUtil::SetMayaAttr(
                 mayaArr.append(tok.GetText());
             }
             MFnStringArrayData data;
-            MObject dataObj = data.create();
+            MObject            dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<SdfStringListOp>()) {
+    } else if (newValue.IsHolding<SdfStringListOp>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kStringArray)) {
             std::vector<std::string> result;
             newValue.Get<SdfStringListOp>().ApplyOperations(&result);
@@ -470,13 +554,12 @@ bool UsdMayaReadUtil::SetMayaAttr(
                 mayaArr.append(str.c_str());
             }
             MFnStringArrayData data;
-            MObject dataObj = data.create();
+            MObject            dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<VtTokenArray>()) {
+    } else if (newValue.IsHolding<VtTokenArray>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kStringArray)) {
             VtTokenArray arr = newValue.Get<VtTokenArray>();
             MStringArray mayaArr;
@@ -484,60 +567,55 @@ bool UsdMayaReadUtil::SetMayaAttr(
                 mayaArr.append(tok.GetText());
             }
             MFnStringArrayData data;
-            MObject dataObj = data.create();
+            MObject            dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<VtStringArray>()) {
+    } else if (newValue.IsHolding<VtStringArray>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kStringArray)) {
             VtStringArray arr = newValue.Get<VtStringArray>();
-            MStringArray mayaArr;
+            MStringArray  mayaArr;
             for (const std::string& str : arr) {
                 mayaArr.append(str.c_str());
             }
             MFnStringArrayData data;
-            MObject dataObj = data.create();
+            MObject            dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<VtDoubleArray>()) {
+    } else if (newValue.IsHolding<VtDoubleArray>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kDoubleArray)) {
-            VtDoubleArray arr = newValue.Get<VtDoubleArray>();
-            MDoubleArray mayaArr(arr.data(), arr.size());
+            VtDoubleArray      arr = newValue.Get<VtDoubleArray>();
+            MDoubleArray       mayaArr(arr.data(), arr.size());
             MFnDoubleArrayData data;
-            MObject dataObj = data.create();
+            MObject            dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<VtFloatArray>()) {
+    } else if (newValue.IsHolding<VtFloatArray>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kFloatArray)) {
-            VtFloatArray arr = newValue.Get<VtFloatArray>();
-            MFloatArray mayaArr(arr.data(), arr.size());
+            VtFloatArray      arr = newValue.Get<VtFloatArray>();
+            MFloatArray       mayaArr(arr.data(), arr.size());
             MFnFloatArrayData data;
-            MObject dataObj = data.create();
+            MObject           dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<VtIntArray>()) {
+    } else if (newValue.IsHolding<VtIntArray>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kIntArray)) {
-            VtIntArray arr = newValue.Get<VtIntArray>();
-            MIntArray mayaArr(arr.data(), arr.size());
+            VtIntArray      arr = newValue.Get<VtIntArray>();
+            MIntArray       mayaArr(arr.data(), arr.size());
             MFnIntArrayData data;
-            MObject dataObj = data.create();
+            MObject         dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<VtVec3dArray>()) {
+    } else if (newValue.IsHolding<VtVec3dArray>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kVectorArray)) {
             VtVec3dArray arr = newValue.Get<VtVec3dArray>();
             MVectorArray mayaArr;
@@ -545,25 +623,23 @@ bool UsdMayaReadUtil::SetMayaAttr(
                 mayaArr.append(MVector(v[0], v[1], v[2]));
             }
             MFnVectorArrayData data;
-            MObject dataObj = data.create();
+            MObject            dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
-        }
-        else if (Converter::hasAttrType(attrPlug, MFnData::kPointArray)) {
+        } else if (Converter::hasAttrType(attrPlug, MFnData::kPointArray)) {
             VtVec3dArray arr = newValue.Get<VtVec3dArray>();
-            MPointArray mayaArr;
+            MPointArray  mayaArr;
             for (const GfVec3d& v : arr) {
                 mayaArr.append(MPoint(v[0], v[1], v[2]));
             }
             MFnPointArrayData data;
-            MObject dataObj = data.create();
+            MObject           dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<VtVec3fArray>()) {
+    } else if (newValue.IsHolding<VtVec3fArray>()) {
         if (Converter::hasAttrType(attrPlug, MFnData::kVectorArray)) {
             VtVec3fArray arr = newValue.Get<VtVec3fArray>();
             MVectorArray mayaArr;
@@ -571,45 +647,39 @@ bool UsdMayaReadUtil::SetMayaAttr(
                 mayaArr.append(MVector(v[0], v[1], v[2]));
             }
             MFnVectorArrayData data;
-            MObject dataObj = data.create();
+            MObject            dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
-        }
-        else if (Converter::hasAttrType(attrPlug, MFnData::kPointArray)) {
+        } else if (Converter::hasAttrType(attrPlug, MFnData::kPointArray)) {
             VtVec3fArray arr = newValue.Get<VtVec3fArray>();
-            MPointArray mayaArr;
+            MPointArray  mayaArr;
             for (const GfVec3d& v : arr) {
                 mayaArr.append(MPoint(v[0], v[1], v[2]));
             }
             MFnPointArrayData data;
-            MObject dataObj = data.create();
+            MObject           dataObj = data.create();
             data.set(mayaArr);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<bool>()) {
+    } else if (newValue.IsHolding<bool>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::kBoolean)) {
             bool b = newValue.Get<bool>();
             modifier.newPlugValueBool(attrPlug, b);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<int>() ||
-            newValue.IsHolding<float>() ||
-            newValue.IsHolding<double>()) {
+    } else if (
+        newValue.IsHolding<int>() || newValue.IsHolding<float>() || newValue.IsHolding<double>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::kInt)) {
             int i = VtValue::Cast<int>(newValue).Get<int>();
             modifier.newPlugValueInt(attrPlug, i);
             ok = true;
-        }
-        else if (Converter::hasNumericType(attrPlug, MFnNumericData::kFloat)) {
+        } else if (Converter::hasNumericType(attrPlug, MFnNumericData::kFloat)) {
             float f = VtValue::Cast<float>(newValue).Get<float>();
             modifier.newPlugValueFloat(attrPlug, f);
             ok = true;
-        }
-        else if (Converter::hasNumericType(attrPlug, MFnNumericData::kDouble)) {
+        } else if (Converter::hasNumericType(attrPlug, MFnNumericData::kDouble)) {
             double d = VtValue::Cast<double>(newValue).Get<double>();
             modifier.newPlugValueDouble(attrPlug, d);
             ok = true;
@@ -618,103 +688,94 @@ bool UsdMayaReadUtil::SetMayaAttr(
             modifier.newPlugValueInt(attrPlug, i);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfVec2i>()) {
+    } else if (newValue.IsHolding<GfVec2i>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Int)) {
-            GfVec2i v = newValue.Get<GfVec2i>();
+            GfVec2i        v = newValue.Get<GfVec2i>();
             MFnNumericData data;
-            MObject dataObj = data.create(MFnNumericData::k2Int);
+            MObject        dataObj = data.create(MFnNumericData::k2Int);
             data.setData2Int(v[0], v[1]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfVec3i>()) {
+    } else if (newValue.IsHolding<GfVec3i>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Int)) {
-            GfVec3i v = newValue.Get<GfVec3i>();
+            GfVec3i        v = newValue.Get<GfVec3i>();
             MFnNumericData data;
-            MObject dataObj = data.create(MFnNumericData::k3Int);
+            MObject        dataObj = data.create(MFnNumericData::k3Int);
             data.setData3Int(v[0], v[1], v[2]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfVec2f>()) {
+    } else if (newValue.IsHolding<GfVec2f>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Float)) {
-            GfVec2f v = newValue.Get<GfVec2f>();
+            GfVec2f        v = newValue.Get<GfVec2f>();
             MFnNumericData data;
-            MObject dataObj = data.create(MFnNumericData::k2Float);
+            MObject        dataObj = data.create(MFnNumericData::k2Float);
             data.setData2Float(v[0], v[1]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfVec3f>()) {
+    } else if (newValue.IsHolding<GfVec3f>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Float)) {
             GfVec3f v = newValue.Get<GfVec3f>();
             if (unlinearizeColors) {
                 v = _ConvertVec(attrPlug, v);
             }
             MFnNumericData data;
-            MObject dataObj = data.create(MFnNumericData::k3Float);
+            MObject        dataObj = data.create(MFnNumericData::k3Float);
             data.setData3Float(v[0], v[1], v[2]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfVec2d>()) {
+    } else if (newValue.IsHolding<GfVec2d>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k2Double)) {
-            GfVec2d v = newValue.Get<GfVec2d>();
+            GfVec2d        v = newValue.Get<GfVec2d>();
             MFnNumericData data;
-            MObject dataObj = data.create(MFnNumericData::k2Double);
+            MObject        dataObj = data.create(MFnNumericData::k2Double);
             data.setData2Double(v[0], v[1]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfVec3d>()) {
+    } else if (newValue.IsHolding<GfVec3d>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k3Double)) {
             GfVec3d v = newValue.Get<GfVec3d>();
             if (unlinearizeColors) {
                 v = _ConvertVec(attrPlug, v);
             }
             MFnNumericData data;
-            MObject dataObj = data.create(MFnNumericData::k3Double);
+            MObject        dataObj = data.create(MFnNumericData::k3Double);
             data.setData3Double(v[0], v[1], v[2]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfVec4d>()) {
+    } else if (newValue.IsHolding<GfVec4d>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k4Double)) {
             GfVec4d v = newValue.Get<GfVec4d>();
             if (unlinearizeColors) {
                 v = _ConvertVec(attrPlug, v);
             }
             MFnNumericData data;
-            MObject dataObj = data.create(MFnNumericData::k4Double);
+            MObject        dataObj = data.create(MFnNumericData::k4Double);
             data.setData4Double(v[0], v[1], v[2], v[3]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfQuatf>()) {
+    } else if (newValue.IsHolding<GfQuatf>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k4Double)) {
-            GfQuatf q = newValue.Get<GfQuatf>();
-            GfVec3f im = q.GetImaginary();
+            GfQuatf        q = newValue.Get<GfQuatf>();
+            GfVec3f        im = q.GetImaginary();
             MFnNumericData data;
-            MObject dataObj = data.create(MFnNumericData::k4Double);
+            MObject        dataObj = data.create(MFnNumericData::k4Double);
             data.setData4Double(q.GetReal(), im[0], im[1], im[2]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
         }
-    }
-    else if (newValue.IsHolding<GfQuatd>()) {
+    } else if (newValue.IsHolding<GfQuatd>()) {
         if (Converter::hasNumericType(attrPlug, MFnNumericData::k4Double)) {
-            GfQuatd q = newValue.Get<GfQuatd>();
-            GfVec3d im = q.GetImaginary();
+            GfQuatd        q = newValue.Get<GfQuatd>();
+            GfVec3d        im = q.GetImaginary();
             MFnNumericData data;
-            MObject dataObj = data.create(MFnNumericData::k4Double);
+            MObject        dataObj = data.create(MFnNumericData::k4Double);
             data.setData4Double(q.GetReal(), im[0], im[1], im[2]);
             modifier.newPlugValue(attrPlug, dataObj);
             ok = true;
@@ -725,39 +786,36 @@ bool UsdMayaReadUtil::SetMayaAttr(
         modifier.doIt();
     } else {
         TF_RUNTIME_ERROR(
-                "Cannot set value of type '%s' on plug '%s'",
-                newValue.GetTypeName().c_str(),
-                attrPlug.name().asChar());
+            "Cannot set value of type '%s' on plug '%s'",
+            newValue.GetTypeName().c_str(),
+            attrPlug.name().asChar());
     }
     return ok;
 }
 
-void
-UsdMayaReadUtil::SetMayaAttrKeyableState(
-        MPlug& attrPlug,
-        const SdfVariability variability)
+void UsdMayaReadUtil::SetMayaAttrKeyableState(MPlug& attrPlug, const SdfVariability variability)
 {
     MDGModifier modifier;
     SetMayaAttrKeyableState(attrPlug, variability, modifier);
 }
 
-void
-UsdMayaReadUtil::SetMayaAttrKeyableState(
-        MPlug& attrPlug,
-        const SdfVariability variability,
-        MDGModifier& modifier)
+void UsdMayaReadUtil::SetMayaAttrKeyableState(
+    MPlug&               attrPlug,
+    const SdfVariability variability,
+    MDGModifier&         modifier)
 {
-    modifier.commandToExecute(TfStringPrintf("setAttr -keyable %d %s",
-            variability == SdfVariabilityVarying ? 1 : 0,
-            attrPlug.name().asChar()).c_str());
+    modifier.commandToExecute(TfStringPrintf(
+                                  "setAttr -keyable %d %s",
+                                  variability == SdfVariabilityVarying ? 1 : 0,
+                                  attrPlug.name().asChar())
+                                  .c_str());
     modifier.doIt();
 }
 
-bool
-UsdMayaReadUtil::ReadMetadataFromPrim(
+bool UsdMayaReadUtil::ReadMetadataFromPrim(
     const TfToken::Set& includeMetadataKeys,
-    const UsdPrim& prim,
-    const MObject& mayaObject)
+    const UsdPrim&      prim,
+    const MObject&      mayaObject)
 {
     UsdMayaAdaptor adaptor(mayaObject);
     if (!adaptor) {
@@ -781,11 +839,10 @@ UsdMayaReadUtil::ReadMetadataFromPrim(
     return true;
 }
 
-bool
-UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
+bool UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
     const TfToken::Set& includeAPINames,
-    const UsdPrim& prim,
-    const MObject& mayaObject)
+    const UsdPrim&      prim,
+    const MObject&      mayaObject)
 {
     UsdMayaAdaptor adaptor(mayaObject);
     if (!adaptor) {
@@ -796,11 +853,10 @@ UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
         if (includeAPINames.count(schemaName) == 0) {
             continue;
         }
-        if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
-                adaptor.ApplySchemaByName(schemaName)) {
+        if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor = adaptor.ApplySchemaByName(schemaName)) {
             for (const TfToken& attrName : schemaAdaptor.GetAttributeNames()) {
                 if (UsdAttribute attr = prim.GetAttribute(attrName)) {
-                    VtValue value;
+                    VtValue               value;
                     constexpr UsdTimeCode t = UsdTimeCode::EarliestTime();
                     if (attr.HasAuthoredValue() && attr.Get(&value, t)) {
                         schemaAdaptor.CreateAttribute(attrName).Set(value);
@@ -813,13 +869,12 @@ UsdMayaReadUtil::ReadAPISchemaAttributesFromPrim(
 }
 
 /* static */
-size_t
-UsdMayaReadUtil::ReadSchemaAttributesFromPrim(
-    const UsdPrim& prim,
-    const MObject& mayaObject,
-    const TfType& schemaType,
+size_t UsdMayaReadUtil::ReadSchemaAttributesFromPrim(
+    const UsdPrim&              prim,
+    const MObject&              mayaObject,
+    const TfType&               schemaType,
     const std::vector<TfToken>& attributeNames,
-    const UsdTimeCode& usdTime)
+    const UsdTimeCode&          usdTime)
 {
     UsdMayaAdaptor adaptor(mayaObject);
     if (!adaptor) {
@@ -827,8 +882,8 @@ UsdMayaReadUtil::ReadSchemaAttributesFromPrim(
     }
 
     size_t count = 0;
-    if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor =
-            adaptor.GetSchemaOrInheritedSchema(schemaType)) {
+    if (UsdMayaAdaptor::SchemaAdaptor schemaAdaptor
+        = adaptor.GetSchemaOrInheritedSchema(schemaType)) {
         for (const TfToken& attrName : attributeNames) {
             if (UsdAttribute attr = prim.GetAttribute(attrName)) {
                 VtValue value;

@@ -15,23 +15,22 @@
 //
 #include "utils_legacy.h"
 
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/pxr.h>
+
 #include <maya/M3dView.h>
 #include <maya/MDagPath.h>
 #include <maya/MMatrix.h>
 #include <maya/MSelectInfo.h>
 #include <maya/MStatus.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/matrix4d.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /* static */
-bool
-px_LegacyViewportUtils::GetSelectionMatrices(
-        MSelectInfo& selectInfo,
-        GfMatrix4d& viewMatrix,
-        GfMatrix4d& projectionMatrix)
+bool px_LegacyViewportUtils::GetSelectionMatrices(
+    MSelectInfo& selectInfo,
+    GfMatrix4d&  viewMatrix,
+    GfMatrix4d&  projectionMatrix)
 {
     MStatus status;
 
@@ -52,32 +51,22 @@ px_LegacyViewportUtils::GetSelectionMatrices(
     unsigned int viewportOriginY;
     unsigned int viewportWidth;
     unsigned int viewportHeight;
-    status = view.viewport(
-        viewportOriginX,
-        viewportOriginY,
-        viewportWidth,
-        viewportHeight);
+    status = view.viewport(viewportOriginX, viewportOriginY, viewportWidth, viewportHeight);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     unsigned int selectRectX;
     unsigned int selectRectY;
     unsigned int selectRectWidth;
     unsigned int selectRectHeight;
-    selectInfo.selectRect(
-        selectRectX,
-        selectRectY,
-        selectRectWidth,
-        selectRectHeight);
+    selectInfo.selectRect(selectRectX, selectRectY, selectRectWidth, selectRectHeight);
 
     MMatrix selectionMatrix;
     selectionMatrix[0][0] = (double)viewportWidth / (double)selectRectWidth;
     selectionMatrix[1][1] = (double)viewportHeight / (double)selectRectHeight;
-    selectionMatrix[3][0] =
-        ((double)viewportWidth - (double)(selectRectX * 2 + selectRectWidth)) /
-            (double)selectRectWidth;
-    selectionMatrix[3][1] =
-        ((double)viewportHeight - (double)(selectRectY * 2 + selectRectHeight)) /
-            (double)selectRectHeight;
+    selectionMatrix[3][0] = ((double)viewportWidth - (double)(selectRectX * 2 + selectRectWidth))
+        / (double)selectRectWidth;
+    selectionMatrix[3][1] = ((double)viewportHeight - (double)(selectRectY * 2 + selectRectHeight))
+        / (double)selectRectHeight;
 
     projectionMat *= selectionMatrix;
 
@@ -86,6 +75,5 @@ px_LegacyViewportUtils::GetSelectionMatrices(
 
     return true;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

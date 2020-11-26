@@ -16,12 +16,21 @@
 #ifndef PXRUSDMAYA_UTIL_H
 #define PXRUSDMAYA_UTIL_H
 
-#include <map>
-#include <set>
-#include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/declarePtrs.h>
+#include <pxr/base/tf/refPtr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/types.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MArgDatabase.h>
 #include <maya/MBoundingBox.h>
@@ -40,35 +49,26 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec2f.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/gf/vec4f.h>
-#include <pxr/base/tf/declarePtrs.h>
-#include <pxr/base/tf/refPtr.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/dictionary.h>
-#include <pxr/base/vt/types.h>
-#include <pxr/base/vt/value.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usd/timeCode.h>
-
-#include <mayaUsd/base/api.h>
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// General utilities for working with the Maya API.
-namespace UsdMayaUtil
-{
+namespace UsdMayaUtil {
 
 struct _CmpDag
 {
     bool operator()(const MDagPath& lhs, const MDagPath& rhs) const
     {
         int pathCountDiff = lhs.pathCount() - rhs.pathCount();
-        return (0 != pathCountDiff) ? (pathCountDiff < 0) :
-                (strcmp(lhs.fullPathName().asChar(), rhs.fullPathName().asChar()) < 0);
+        return (0 != pathCountDiff)
+            ? (pathCountDiff < 0)
+            : (strcmp(lhs.fullPathName().asChar(), rhs.fullPathName().asChar()) < 0);
     }
 };
 
@@ -84,31 +84,25 @@ using MDagPathSet = std::set<MDagPath, _CmpDag>;
 /// may change over time. Only use this class if you can guarantee that DAG
 /// nodes won't be renamed or reparented while class instances are alive.
 /// Otherwise, you may see inconsistent results.
-template <typename V>
-using MDagPathMap = std::map<MDagPath, V, _CmpDag>;
+template <typename V> using MDagPathMap = std::map<MDagPath, V, _CmpDag>;
 
 struct _HashObjectHandle
 {
-    unsigned long operator()(const MObjectHandle& handle) const
-    {
-        return handle.hashCode();
-    }
+    unsigned long operator()(const MObjectHandle& handle) const { return handle.hashCode(); }
 };
 
 /// Unordered set of Maya object handles.
-using MObjectHandleUnorderedSet =
-        std::unordered_set<MObjectHandle, _HashObjectHandle>;
+using MObjectHandleUnorderedSet = std::unordered_set<MObjectHandle, _HashObjectHandle>;
 
 /// Unordered mapping of Maya object handles to an arbitrary type.
 template <typename V>
-using MObjectHandleUnorderedMap =
-        std::unordered_map<MObjectHandle, V, _HashObjectHandle>;
+using MObjectHandleUnorderedMap = std::unordered_map<MObjectHandle, V, _HashObjectHandle>;
 
 /// RAII-style helper for destructing an MDataHandle obtained from a plug
 /// once it goes out of scope.
 class MDataHandleHolder : public TfRefBase
 {
-    MPlug _plug;
+    MPlug       _plug;
     MDataHandle _dataHandle;
 
 public:
@@ -126,53 +120,31 @@ const double MillimetersPerInch = 25.4;
 
 /// Converts the given value \p mm in millimeters to the equivalent value
 /// in inches.
-inline
-double
-ConvertMMToInches(const double mm)
-{
-    return mm / MillimetersPerInch;
-}
+inline double ConvertMMToInches(const double mm) { return mm / MillimetersPerInch; }
 
 /// Converts the given value \p inches in inches to the equivalent value
 /// in millimeters.
-inline
-double
-ConvertInchesToMM(const double inches)
-{
-    return inches * MillimetersPerInch;
-}
+inline double ConvertInchesToMM(const double inches) { return inches * MillimetersPerInch; }
 
 const double MillimetersPerCentimeter = 10.0;
 
 /// Converts the given value \p mm in millimeters to the equivalent value
 /// in centimeters.
-inline
-double
-ConvertMMToCM(const double mm)
-{
-    return mm / MillimetersPerCentimeter;
-}
+inline double ConvertMMToCM(const double mm) { return mm / MillimetersPerCentimeter; }
 
 /// Converts the given value \p cm in centimeters to the equivalent value
 /// in millimeters.
-inline
-double
-ConvertCMToMM(const double cm)
-{
-    return cm * MillimetersPerCentimeter;
-}
+inline double ConvertCMToMM(const double cm) { return cm * MillimetersPerCentimeter; }
 
-/// Converts the given value \p mdistance in Maya's MDistance units to the 
+/// Converts the given value \p mdistance in Maya's MDistance units to the
 /// equivalent value in USD's metersPerUnit.
 MAYAUSD_CORE_PUBLIC
-double ConvertMDistanceUnitToUsdGeomLinearUnit(
-    const MDistance::Unit mdistanceUnit);
+double ConvertMDistanceUnitToUsdGeomLinearUnit(const MDistance::Unit mdistanceUnit);
 
-/// Coverts the given value \p linearUnit in USD's metersPerUnit to the 
+/// Coverts the given value \p linearUnit in USD's metersPerUnit to the
 /// equivalent value in Maya's MDistance units.
 MAYAUSD_CORE_PUBLIC
-MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(
-    const double linearUnit);
+MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit);
 
 /// Get the full name of the Maya node \p mayaNode.
 ///
@@ -229,9 +201,7 @@ MAYAUSD_CORE_PUBLIC
 MObject GetDefaultLightSetObject();
 
 MAYAUSD_CORE_PUBLIC
-bool isAncestorDescendentRelationship(
-        const MDagPath& path1,
-        const MDagPath& path2);
+bool isAncestorDescendentRelationship(const MDagPath& path1, const MDagPath& path2);
 
 // returns 0 if static, 1 if sampled, and 2 if a curve
 MAYAUSD_CORE_PUBLIC
@@ -279,9 +249,7 @@ const std::string MayaNamespaceDelimiter(":");
 /// "taco:foo:bar" into "bar" for \p nsDepth > 1.
 /// If \p nsDepth is -1, all namespaces are stripped.
 MAYAUSD_CORE_PUBLIC
-std::string stripNamespaces(
-        const std::string& nodeName,
-        const int nsDepth = -1);
+std::string stripNamespaces(const std::string& nodeName, const int nsDepth = -1);
 
 MAYAUSD_CORE_PUBLIC
 std::string SanitizeName(const std::string& name);
@@ -298,11 +266,11 @@ std::string SanitizeColorSetName(const std::string& name);
 ///
 MAYAUSD_CORE_PUBLIC
 bool GetLinearShaderColor(
-        const MFnDagNode& node,
-        PXR_NS::VtVec3fArray* RGBData,
-        PXR_NS::VtFloatArray* AlphaData,
-        PXR_NS::TfToken* interpolation,
-        PXR_NS::VtIntArray* assignmentIndices);
+    const MFnDagNode&     node,
+    PXR_NS::VtVec3fArray* RGBData,
+    PXR_NS::VtFloatArray* AlphaData,
+    PXR_NS::TfToken*      interpolation,
+    PXR_NS::VtIntArray*   assignmentIndices);
 
 /// Get the base colors and opacities from the shader(s) bound to \p mesh.
 /// Returned colors will be in linear color space.
@@ -319,39 +287,39 @@ bool GetLinearShaderColor(
 ///
 MAYAUSD_CORE_PUBLIC
 bool GetLinearShaderColor(
-        const MFnMesh& mesh,
-        PXR_NS::VtVec3fArray* RGBData,
-        PXR_NS::VtFloatArray* AlphaData,
-        PXR_NS::TfToken* interpolation,
-        PXR_NS::VtIntArray* assignmentIndices);
+    const MFnMesh&        mesh,
+    PXR_NS::VtVec3fArray* RGBData,
+    PXR_NS::VtFloatArray* AlphaData,
+    PXR_NS::TfToken*      interpolation,
+    PXR_NS::VtIntArray*   assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
 MAYAUSD_CORE_PUBLIC
 void MergeEquivalentIndexedValues(
-        PXR_NS::VtFloatArray* valueData,
-        PXR_NS::VtIntArray* assignmentIndices);
+    PXR_NS::VtFloatArray* valueData,
+    PXR_NS::VtIntArray*   assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
 MAYAUSD_CORE_PUBLIC
 void MergeEquivalentIndexedValues(
-        PXR_NS::VtVec2fArray* valueData,
-        PXR_NS::VtIntArray* assignmentIndices);
+    PXR_NS::VtVec2fArray* valueData,
+    PXR_NS::VtIntArray*   assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
 MAYAUSD_CORE_PUBLIC
 void MergeEquivalentIndexedValues(
-        PXR_NS::VtVec3fArray* valueData,
-        PXR_NS::VtIntArray* assignmentIndices);
+    PXR_NS::VtVec3fArray* valueData,
+    PXR_NS::VtIntArray*   assignmentIndices);
 
 /// Combine distinct indices that point to the same values to all point to the
 /// same index for that value. This will potentially shrink the data array.
 MAYAUSD_CORE_PUBLIC
 void MergeEquivalentIndexedValues(
-        PXR_NS::VtVec4fArray* valueData,
-        PXR_NS::VtIntArray* assignmentIndices);
+    PXR_NS::VtVec4fArray* valueData,
+    PXR_NS::VtIntArray*   assignmentIndices);
 
 /// Attempt to compress faceVarying primvar indices to uniform, vertex, or
 /// constant interpolation if possible. This will potentially shrink the
@@ -359,9 +327,9 @@ void MergeEquivalentIndexedValues(
 /// possible.
 MAYAUSD_CORE_PUBLIC
 void CompressFaceVaryingPrimvarIndices(
-        const MFnMesh& mesh,
-        PXR_NS::TfToken* interpolation,
-        PXR_NS::VtIntArray* assignmentIndices);
+    const MFnMesh&      mesh,
+    PXR_NS::TfToken*    interpolation,
+    PXR_NS::VtIntArray* assignmentIndices);
 
 /// Get whether \p plug is authored in the Maya scene.
 ///
@@ -376,10 +344,7 @@ MAYAUSD_CORE_PUBLIC
 MPlug GetConnected(const MPlug& plug);
 
 MAYAUSD_CORE_PUBLIC
-void Connect(
-        const MPlug& srcPlug,
-        const MPlug& dstPlug,
-        const bool clearDstPlug);
+void Connect(const MPlug& srcPlug, const MPlug& dstPlug, const bool clearDstPlug);
 
 /// Get a named child plug of \p plug by name.
 MAYAUSD_CORE_PUBLIC
@@ -391,9 +356,7 @@ MPlug FindChildPlugByName(const MPlug& plug, const MString& name);
 /// This means it will replace Maya's namespace delimiter (':') with
 /// underscores ('_').
 MAYAUSD_CORE_PUBLIC
-SdfPath MayaNodeNameToSdfPath(
-        const std::string& nodeName,
-        const bool stripNamespaces);
+SdfPath MayaNodeNameToSdfPath(const std::string& nodeName, const bool stripNamespaces);
 
 /// Converts the given Maya MDagPath \p dagPath into an SdfPath.
 ///
@@ -406,24 +369,24 @@ SdfPath MayaNodeNameToSdfPath(
 /// underscores ('_').
 MAYAUSD_CORE_PUBLIC
 SdfPath MDagPathToUsdPath(
-        const MDagPath& dagPath,
-        const bool mergeTransformAndShape,
-        const bool stripNamespaces);
+    const MDagPath& dagPath,
+    const bool      mergeTransformAndShape,
+    const bool      stripNamespaces);
 
 /// Convenience function to retrieve custom data
 MAYAUSD_CORE_PUBLIC
 bool GetBoolCustomData(
-        const PXR_NS::UsdAttribute& obj,
-        const PXR_NS::TfToken& key,
-        const bool defaultValue);
+    const PXR_NS::UsdAttribute& obj,
+    const PXR_NS::TfToken&      key,
+    const bool                  defaultValue);
 
 /// Compute the value of \p attr, returning true upon success.
 template <typename T>
 bool getPlugValue(
-        const MFnDependencyNode& depNode,
-        const MString& attr,
-        T* val,
-        bool* isAnimated = nullptr)
+    const MFnDependencyNode& depNode,
+    const MString&           attr,
+    T*                       val,
+    bool*                    isAnimated = nullptr)
 {
     MPlug plg = depNode.findPlug(attr, /* wantNetworkedPlug = */ true);
     if (plg.isNull()) {
@@ -445,18 +408,12 @@ MMatrix GfMatrixToMMatrix(const GfMatrix4d& mx);
 // plug.
 // Returns true upon success, placing the matrix in the outVal parameter.
 MAYAUSD_CORE_PUBLIC
-bool getPlugMatrix(
-        const MFnDependencyNode& depNode,
-        const MString& attr,
-        MMatrix* outVal);
+bool getPlugMatrix(const MFnDependencyNode& depNode, const MString& attr, MMatrix* outVal);
 
 /// Set a matrix value on plug name \p attr, of \p depNode.
 /// Returns true if the value was set on the plug successfully, false otherwise.
 MAYAUSD_CORE_PUBLIC
-bool setPlugMatrix(
-        const MFnDependencyNode& depNode,
-        const MString& attr,
-        const GfMatrix4d& mx);
+bool setPlugMatrix(const MFnDependencyNode& depNode, const MString& attr, const GfMatrix4d& mx);
 
 MAYAUSD_CORE_PUBLIC
 bool setPlugMatrix(const GfMatrix4d& mx, MPlug& plug);
@@ -476,17 +433,14 @@ bool setPlugValue(const PXR_NS::UsdAttribute& attr, MPlug& attrPlug);
 /// Returns true if the value was set on the plug successfully, false otherwise.
 MAYAUSD_CORE_PUBLIC
 bool setPlugValue(
-        const PXR_NS::UsdAttribute& attr,
-        const PXR_NS::UsdTimeCode time,
-        MPlug& attrPlug);
+    const PXR_NS::UsdAttribute& attr,
+    const PXR_NS::UsdTimeCode   time,
+    MPlug&                      attrPlug);
 
 /// \brief sets \p attr to have value \p val, assuming it exists on \p
 /// depNode.  Returns true if successful.
 template <typename T>
-bool setPlugValue(
-        const MFnDependencyNode& depNode,
-        const MString& attr,
-        const T& val)
+bool setPlugValue(const MFnDependencyNode& depNode, const MString& attr, const T& val)
 {
     MPlug plg = depNode.findPlug(attr, /* findNetworked = */ false);
     if (plg.isNull()) {
@@ -514,9 +468,8 @@ bool SetHiddenInOutliner(MFnDependencyNode& depNode, const bool hidden);
 /// from \p argData.
 /// Mainly useful for parsing arguments in commands all at once.
 MAYAUSD_CORE_PUBLIC
-VtDictionary GetDictionaryFromArgDatabase(
-        const MArgDatabase& argData,
-        const VtDictionary& guideDict);
+VtDictionary
+GetDictionaryFromArgDatabase(const MArgDatabase& argData, const VtDictionary& guideDict);
 
 /// Parses \p value based on the type of \p key in \p guideDict, returning the
 /// parsed value wrapped in a VtValue.
@@ -525,10 +478,8 @@ VtDictionary GetDictionaryFromArgDatabase(
 /// strings. If you have an MArgList/MArgParser/MArgDatabase, it's going to be
 /// way simpler to use GetDictionaryFromArgDatabase() instead.
 MAYAUSD_CORE_PUBLIC
-VtValue ParseArgumentValue(
-        const std::string& key,
-        const std::string& value,
-        const VtDictionary& guideDict);
+VtValue
+ParseArgumentValue(const std::string& key, const std::string& value, const VtDictionary& guideDict);
 
 /// Converts a value into a string that can be parsed back using ParseArgumentValue.
 /// Should be used when generating argument strings that are to be used by translators.
@@ -550,9 +501,7 @@ std::vector<std::string> GetAllAncestorMayaNodeTypes(const std::string& ty);
 /// the \p *assemblyPath with the assembly path and returns \c true.
 /// Otherwise, returns \c false.
 MAYAUSD_CORE_PUBLIC
-bool FindAncestorSceneAssembly(
-        const MDagPath& dagPath,
-        MDagPath* assemblyPath = nullptr);
+bool FindAncestorSceneAssembly(const MDagPath& dagPath, MDagPath* assemblyPath = nullptr);
 
 MAYAUSD_CORE_PUBLIC
 MBoundingBox GetInfiniteBoundingBox();
@@ -575,8 +524,7 @@ MDagPathMap<SdfPath> getDagPathMap(const MFnDependencyNode& depNodeFn, const Sdf
 MAYAUSD_CORE_PUBLIC
 VtIntArray shiftIndices(const VtIntArray& array, int shift);
 
-template <typename T>
-VtValue PushFirstValue(VtArray<T> arr, const T& value)
+template <typename T> VtValue PushFirstValue(VtArray<T> arr, const T& value)
 {
     arr.resize(arr.size() + 1);
     std::move_backward(arr.begin(), arr.end() - 1, arr.end());
@@ -587,8 +535,7 @@ VtValue PushFirstValue(VtArray<T> arr, const T& value)
 MAYAUSD_CORE_PUBLIC
 VtValue pushFirstValue(const VtValue& arr, const VtValue& defaultValue);
 
-template <typename T>
-VtValue PopFirstValue(VtArray<T> arr)
+template <typename T> VtValue PopFirstValue(VtArray<T> arr)
 {
     std::move(arr.begin() + 1, arr.end(), arr.begin());
     arr.pop_back();
@@ -617,7 +564,10 @@ MDagPath nameToDagPath(const std::string& name);
 /// the objects to be exported.
 ///
 MAYAUSD_CORE_PUBLIC
-void GetFilteredSelectionToExport(bool exportSelected, MSelectionList& objectList, UsdMayaUtil::MDagPathSet& dagPaths);
+void GetFilteredSelectionToExport(
+    bool                      exportSelected,
+    MSelectionList&           objectList,
+    UsdMayaUtil::MDagPathSet& dagPaths);
 
 } // namespace UsdMayaUtil
 

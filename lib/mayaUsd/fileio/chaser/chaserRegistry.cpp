@@ -15,30 +15,26 @@
 //
 #include "chaserRegistry.h"
 
-#include <map>
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/fileio/registryHelper.h>
 
 #include <pxr/base/tf/instantiateSingleton.h>
 
-#include <mayaUsd/base/debugCodes.h>
-#include <mayaUsd/fileio/registryHelper.h>
+#include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaChaserRegistry::FactoryContext::FactoryContext(
-        const UsdStagePtr& stage,
-        const DagToUsdMap& dagToUsdMap,
-        const UsdMayaJobExportArgs& jobArgs)
+    const UsdStagePtr&          stage,
+    const DagToUsdMap&          dagToUsdMap,
+    const UsdMayaJobExportArgs& jobArgs)
     : _stage(stage)
     , _dagToUsdMap(dagToUsdMap)
     , _jobArgs(jobArgs)
 {
 }
 
-UsdStagePtr
-UsdMayaChaserRegistry::FactoryContext::GetStage() const
-{
-    return _stage;
-}
+UsdStagePtr UsdMayaChaserRegistry::FactoryContext::GetStage() const { return _stage; }
 
 const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap&
 UsdMayaChaserRegistry::FactoryContext::GetDagToUsdMap() const
@@ -46,8 +42,7 @@ UsdMayaChaserRegistry::FactoryContext::GetDagToUsdMap() const
     return _dagToUsdMap;
 }
 
-const UsdMayaJobExportArgs&
-UsdMayaChaserRegistry::FactoryContext::GetJobArgs() const
+const UsdMayaJobExportArgs& UsdMayaChaserRegistry::FactoryContext::GetJobArgs() const
 {
     return _jobArgs;
 }
@@ -56,38 +51,28 @@ TF_INSTANTIATE_SINGLETON(UsdMayaChaserRegistry);
 
 std::map<std::string, UsdMayaChaserRegistry::FactoryFn> _factoryRegistry;
 
-bool
-UsdMayaChaserRegistry::RegisterFactory(
-        const std::string& name,
-        FactoryFn fn)
+bool UsdMayaChaserRegistry::RegisterFactory(const std::string& name, FactoryFn fn)
 {
-    TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-            "Registering chaser '%s'.\n", name.c_str());
+    TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg("Registering chaser '%s'.\n", name.c_str());
     auto ret = _factoryRegistry.insert(std::make_pair(name, fn));
     if (ret.second) {
-        UsdMaya_RegistryHelper::AddUnloader([name]() {
-            _factoryRegistry.erase(name);
-        });
+        UsdMaya_RegistryHelper::AddUnloader([name]() { _factoryRegistry.erase(name); });
     }
     return ret.second;
 }
 
 UsdMayaChaserRefPtr
-UsdMayaChaserRegistry::Create(
-        const std::string& name,
-        const FactoryContext& context) const
+UsdMayaChaserRegistry::Create(const std::string& name, const FactoryContext& context) const
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaChaserRegistry>();
     if (UsdMayaChaserRegistry::FactoryFn fn = _factoryRegistry[name]) {
         return TfCreateRefPtr(fn(context));
-    }
-    else {
+    } else {
         return TfNullPtr;
     }
 }
 
-std::vector<std::string>
-UsdMayaChaserRegistry::GetAllRegisteredChasers() const 
+std::vector<std::string> UsdMayaChaserRegistry::GetAllRegisteredChasers() const
 {
     std::vector<std::string> ret;
     for (const auto& p : _factoryRegistry) {
@@ -97,20 +82,13 @@ UsdMayaChaserRegistry::GetAllRegisteredChasers() const
 }
 
 // static
-UsdMayaChaserRegistry& 
-UsdMayaChaserRegistry::GetInstance()
+UsdMayaChaserRegistry& UsdMayaChaserRegistry::GetInstance()
 {
     return TfSingleton<UsdMayaChaserRegistry>::GetInstance();
 }
 
-UsdMayaChaserRegistry::UsdMayaChaserRegistry()
-{
-}
+UsdMayaChaserRegistry::UsdMayaChaserRegistry() { }
 
-UsdMayaChaserRegistry::~UsdMayaChaserRegistry()
-{
-}
-
+UsdMayaChaserRegistry::~UsdMayaChaserRegistry() { }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

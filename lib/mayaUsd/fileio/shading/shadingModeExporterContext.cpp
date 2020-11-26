@@ -15,21 +15,13 @@
 //
 #include "shadingModeExporterContext.h"
 
-#include <string>
-#include <utility>
+#include "pxr/usd/usd/specializes.h"
 
-#include <maya/MDagPath.h>
-#include <maya/MDagPathArray.h>
-#include <maya/MDGContext.h>
-#include <maya/MFnDagNode.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MItMeshPolygon.h>
-#include <maya/MNamespace.h>
-#include <maya/MObject.h>
-#include <maya/MObjectArray.h>
-#include <maya/MPlug.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/envSetting.h>
@@ -45,41 +37,47 @@
 #include <pxr/usd/usdShade/material.h>
 #include <pxr/usd/usdShade/materialBindingAPI.h>
 #include <pxr/usd/usdShade/shader.h>
+#include <pxr/usd/usdUtils/pipeline.h>
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MDGContext.h>
+#include <maya/MDagPath.h>
+#include <maya/MDagPathArray.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MGlobal.h>
+#include <maya/MItMeshPolygon.h>
+#include <maya/MNamespace.h>
+#include <maya/MObject.h>
+#include <maya/MObjectArray.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+#include <string>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (surfaceShader)
-    (volumeShader)
-    (displacementShader)
-);
-
+TF_DEFINE_PRIVATE_TOKENS(_tokens, (surfaceShader)(volumeShader)(displacementShader)(varname)(map1));
 
 UsdMayaShadingModeExportContext::UsdMayaShadingModeExportContext(
-        const MObject& shadingEngine,
-        UsdMayaWriteJobContext& writeJobContext,
-        const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap) :
-    _shadingEngine(shadingEngine),
-    _stage(writeJobContext.GetUsdStage()),
-    _dagPathToUsdMap(dagPathToUsdMap),
-    _writeJobContext(writeJobContext),
-    _surfaceShaderPlugName(_tokens->surfaceShader),
-    _volumeShaderPlugName(_tokens->volumeShader),
-    _displacementShaderPlugName(_tokens->displacementShader)
+    const MObject&                           shadingEngine,
+    UsdMayaWriteJobContext&                  writeJobContext,
+    const UsdMayaUtil::MDagPathMap<SdfPath>& dagPathToUsdMap)
+    : _shadingEngine(shadingEngine)
+    , _stage(writeJobContext.GetUsdStage())
+    , _dagPathToUsdMap(dagPathToUsdMap)
+    , _writeJobContext(writeJobContext)
+    , _surfaceShaderPlugName(_tokens->surfaceShader)
+    , _volumeShaderPlugName(_tokens->volumeShader)
+    , _displacementShaderPlugName(_tokens->displacementShader)
 {
     if (GetExportArgs().dagPaths.empty()) {
         // if none specified, push back '/' which encompasses all
         _bindableRoots.insert(SdfPath::AbsoluteRootPath());
-    }
-    else {
-        TF_FOR_ALL(bindableRootIter, GetExportArgs().dagPaths) {
+    } else {
+        TF_FOR_ALL(bindableRootIter, GetExportArgs().dagPaths)
+        {
             const MDagPath& bindableRootDagPath = *bindableRootIter;
 
             auto iter = _dagPathToUsdMap.find(bindableRootDagPath);
@@ -94,8 +92,7 @@ UsdMayaShadingModeExportContext::UsdMayaShadingModeExportContext(
             // namespace with it.
             if (!GetExportArgs().usdModelRootOverridePath.IsEmpty()) {
                 usdPath = usdPath.ReplacePrefix(
-                    usdPath.GetPrefixes()[0],
-                    GetExportArgs().usdModelRootOverridePath);
+                    usdPath.GetPrefixes()[0], GetExportArgs().usdModelRootOverridePath);
             }
 
             _bindableRoots.insert(usdPath);
@@ -103,32 +100,24 @@ UsdMayaShadingModeExportContext::UsdMayaShadingModeExportContext(
     }
 }
 
-void
-UsdMayaShadingModeExportContext::SetSurfaceShaderPlugName(
-        const TfToken& surfaceShaderPlugName)
+void UsdMayaShadingModeExportContext::SetSurfaceShaderPlugName(const TfToken& surfaceShaderPlugName)
 {
     _surfaceShaderPlugName = surfaceShaderPlugName;
 }
 
-void
-UsdMayaShadingModeExportContext::SetVolumeShaderPlugName(
-        const TfToken& volumeShaderPlugName)
+void UsdMayaShadingModeExportContext::SetVolumeShaderPlugName(const TfToken& volumeShaderPlugName)
 {
     _volumeShaderPlugName = volumeShaderPlugName;
 }
 
-void
-UsdMayaShadingModeExportContext::SetDisplacementShaderPlugName(
-        const TfToken& displacementShaderPlugName)
+void UsdMayaShadingModeExportContext::SetDisplacementShaderPlugName(
+    const TfToken& displacementShaderPlugName)
 {
     _displacementShaderPlugName = displacementShaderPlugName;
 }
 
-static
-MPlug
-_GetShaderPlugFromShadingEngine(
-        const MObject& shadingEngine,
-        const TfToken& shaderPlugName)
+static MPlug
+_GetShaderPlugFromShadingEngine(const MObject& shadingEngine, const TfToken& shaderPlugName)
 {
     MStatus status;
 
@@ -137,11 +126,10 @@ _GetShaderPlugFromShadingEngine(
         return MPlug();
     }
 
-    const MPlug shaderPlug =
-        seDepNodeFn.findPlug(
-            shaderPlugName.GetText(),
-            /* wantNetworkedPlug = */ true,
-            &status);
+    const MPlug shaderPlug = seDepNodeFn.findPlug(
+        shaderPlugName.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
     if (status != MS::kSuccess) {
         return MPlug();
     }
@@ -149,16 +137,12 @@ _GetShaderPlugFromShadingEngine(
     return shaderPlug;
 }
 
-static
-MObject
-_GetShaderFromShadingEngine(
-        const MObject& shadingEngine,
-        const TfToken& shaderPlugName)
+static MObject
+_GetShaderFromShadingEngine(const MObject& shadingEngine, const TfToken& shaderPlugName)
 {
     MStatus status;
 
-    const MPlug shaderPlug =
-        _GetShaderPlugFromShadingEngine(shadingEngine, shaderPlugName);
+    const MPlug shaderPlug = _GetShaderPlugFromShadingEngine(shadingEngine, shaderPlugName);
     if (shaderPlug.isNull()) {
         return MObject();
     }
@@ -171,52 +155,34 @@ _GetShaderFromShadingEngine(
     return UsdMayaUtil::GetConnected(shaderPlug).node();
 }
 
-MPlug
-UsdMayaShadingModeExportContext::GetSurfaceShaderPlug() const
+MPlug UsdMayaShadingModeExportContext::GetSurfaceShaderPlug() const
 {
-    return _GetShaderPlugFromShadingEngine(
-        _shadingEngine,
-        _surfaceShaderPlugName);
+    return _GetShaderPlugFromShadingEngine(_shadingEngine, _surfaceShaderPlugName);
 }
 
-MObject
-UsdMayaShadingModeExportContext::GetSurfaceShader() const
+MObject UsdMayaShadingModeExportContext::GetSurfaceShader() const
 {
-    return _GetShaderFromShadingEngine(
-        _shadingEngine,
-        _surfaceShaderPlugName);
+    return _GetShaderFromShadingEngine(_shadingEngine, _surfaceShaderPlugName);
 }
 
-MPlug
-UsdMayaShadingModeExportContext::GetVolumeShaderPlug() const
+MPlug UsdMayaShadingModeExportContext::GetVolumeShaderPlug() const
 {
-    return _GetShaderPlugFromShadingEngine(
-        _shadingEngine,
-        _volumeShaderPlugName);
+    return _GetShaderPlugFromShadingEngine(_shadingEngine, _volumeShaderPlugName);
 }
 
-MObject
-UsdMayaShadingModeExportContext::GetVolumeShader() const
+MObject UsdMayaShadingModeExportContext::GetVolumeShader() const
 {
-    return _GetShaderFromShadingEngine(
-        _shadingEngine,
-        _volumeShaderPlugName);
+    return _GetShaderFromShadingEngine(_shadingEngine, _volumeShaderPlugName);
 }
 
-MPlug
-UsdMayaShadingModeExportContext::GetDisplacementShaderPlug() const
+MPlug UsdMayaShadingModeExportContext::GetDisplacementShaderPlug() const
 {
-    return _GetShaderPlugFromShadingEngine(
-        _shadingEngine,
-        _displacementShaderPlugName);
+    return _GetShaderPlugFromShadingEngine(_shadingEngine, _displacementShaderPlugName);
 }
 
-MObject
-UsdMayaShadingModeExportContext::GetDisplacementShader() const
+MObject UsdMayaShadingModeExportContext::GetDisplacementShader() const
 {
-    return _GetShaderFromShadingEngine(
-        _shadingEngine,
-        _displacementShaderPlugName);
+    return _GetShaderFromShadingEngine(_shadingEngine, _displacementShaderPlugName);
 }
 
 UsdMayaShadingModeExportContext::AssignmentVector
@@ -224,7 +190,7 @@ UsdMayaShadingModeExportContext::GetAssignments() const
 {
     AssignmentVector ret;
 
-    MStatus status;
+    MStatus           status;
     MFnDependencyNode seDepNode(_shadingEngine, &status);
     if (!status) {
         return ret;
@@ -237,9 +203,9 @@ UsdMayaShadingModeExportContext::GetAssignments() const
 
     SdfPathSet seenBoundPrimPaths;
     for (unsigned int i = 0; i < dsmPlug.numConnectedElements(); i++) {
-        MPlug dsmElemPlug(dsmPlug.connectionByPhysicalIndex(i));
+        MPlug   dsmElemPlug(dsmPlug.connectionByPhysicalIndex(i));
         MStatus status = MS::kFailure;
-        MPlug connectedPlug = UsdMayaUtil::GetConnected(dsmElemPlug);
+        MPlug   connectedPlug = UsdMayaUtil::GetConnected(dsmElemPlug);
 
         // Maya connects shader bindings for instances based on element indices
         // of the instObjGroups[x] or instObjGroups[x].objectGroups[y] plugs.
@@ -260,11 +226,11 @@ UsdMayaShadingModeExportContext::GetAssignments() const
         MDagPath::getAllPathsTo(connectedPlug.node(), allDagPaths);
         if (instanceNumber >= allDagPaths.length()) {
             TF_RUNTIME_ERROR(
-                    "Instance number is %d (from plug '%s') but node only has "
-                    "%d paths",
-                    instanceNumber,
-                    connectedPlug.name().asChar(),
-                    allDagPaths.length());
+                "Instance number is %d (from plug '%s') but node only has "
+                "%d paths",
+                instanceNumber,
+                connectedPlug.name().asChar(),
+                allDagPaths.length());
             continue;
         }
 
@@ -286,8 +252,7 @@ UsdMayaShadingModeExportContext::GetAssignments() const
         // root namespace with it.
         if (!GetExportArgs().usdModelRootOverridePath.IsEmpty()) {
             usdPath = usdPath.ReplacePrefix(
-                usdPath.GetPrefixes()[0],
-                GetExportArgs().usdModelRootOverridePath);
+                usdPath.GetPrefixes()[0], GetExportArgs().usdModelRootOverridePath);
         }
 
         // If this path has already been processed, skip it.
@@ -296,17 +261,12 @@ UsdMayaShadingModeExportContext::GetAssignments() const
         }
 
         // If the bound prim's path is not below a bindable root, skip it.
-        if (SdfPathFindLongestPrefix(
-            _bindableRoots, usdPath) == _bindableRoots.end()) {
+        if (SdfPathFindLongestPrefix(_bindableRoots, usdPath) == _bindableRoots.end()) {
             continue;
         }
 
         MObjectArray sgObjs, compObjs;
-        status = dagNode.getConnectedSetsAndMembers(
-            instanceNumber,
-            sgObjs,
-            compObjs,
-            true);
+        status = dagNode.getConnectedSetsAndMembers(instanceNumber, sgObjs, compObjs, true);
         if (status != MS::kSuccess) {
             continue;
         }
@@ -325,27 +285,25 @@ UsdMayaShadingModeExportContext::GetAssignments() const
                     faceIndices.push_back(faceIt.index());
                 }
             }
-            ret.push_back(std::make_pair(usdPath, faceIndices));
+            ret.push_back(Assignment { usdPath, faceIndices, TfToken(dagNode.name().asChar()) });
         }
     }
     return ret;
 }
 
-static
-UsdPrim
-_GetMaterialParent(
-        const UsdStageRefPtr& stage,
-        const TfToken& materialsScopeName,
-        const UsdMayaShadingModeExportContext::AssignmentVector& assignments)
+static UsdPrim _GetMaterialParent(
+    const UsdStageRefPtr&                                    stage,
+    const TfToken&                                           materialsScopeName,
+    const UsdMayaShadingModeExportContext::AssignmentVector& assignments)
 {
     SdfPath commonAncestor;
-    TF_FOR_ALL(iter, assignments) {
-        const SdfPath& assn = iter->first;
+    TF_FOR_ALL(iter, assignments)
+    {
+        const SdfPath& assn = iter->boundPrimPath;
         if (stage->GetPrimAtPath(assn)) {
             if (commonAncestor.IsEmpty()) {
                 commonAncestor = assn;
-            }
-            else {
+            } else {
                 commonAncestor = commonAncestor.GetCommonPrefix(assn);
             }
         }
@@ -373,9 +331,7 @@ _GetMaterialParent(
 /// it existed, i.e., if any of its ancestor paths are instances.
 /// (Note that if \p path itself is an instance, then it is _not_ an instance
 /// proxy path.)
-static
-bool
-_IsInstanceProxyPath(const UsdStageRefPtr& stage, const SdfPath& path)
+static bool _IsInstanceProxyPath(const UsdStageRefPtr& stage, const SdfPath& path)
 {
     for (const SdfPath& prefix : path.GetParentPath().GetPrefixes()) {
         if (const UsdPrim prim = stage->GetPrimAtPath(prefix)) {
@@ -390,12 +346,8 @@ _IsInstanceProxyPath(const UsdStageRefPtr& stage, const SdfPath& path)
 
 /// Ensures that a prim exists at \p path on \p stage and that the prim is
 /// neither an instance nor an instance proxy.
-static
-UsdPrim
-_UninstancePrim(
-        const UsdStageRefPtr& stage,
-        const SdfPath& path,
-        const std::string& reason)
+static UsdPrim
+_UninstancePrim(const UsdStageRefPtr& stage, const SdfPath& path, const std::string& reason)
 {
     bool didUninstance = false;
     for (const SdfPath& prefix : path.GetPrefixes()) {
@@ -404,32 +356,27 @@ _UninstancePrim(
                 prim.SetInstanceable(false);
                 didUninstance = true;
             }
-        }
-        else {
+        } else {
             break;
         }
     }
 
     if (didUninstance) {
-        TF_WARN("Uninstanced <%s> (and ancestors) because: %s",
-                path.GetText(),
-                reason.c_str());
+        TF_WARN("Uninstanced <%s> (and ancestors) because: %s", path.GetText(), reason.c_str());
     }
 
     return stage->OverridePrim(path);
 }
 
-UsdPrim
-UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
-        const AssignmentVector& assignmentsToBind,
-        const std::string& name,
-        SdfPathSet * const boundPrimPaths) const
+UsdPrim UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
+    const AssignmentVector& assignmentsToBind,
+    const std::string&      name) const
 {
     UsdPrim ret;
 
     std::string materialName = name;
     if (materialName.empty()) {
-        MStatus status;
+        MStatus           status;
         MFnDependencyNode seDepNode(_shadingEngine, &status);
         if (!status) {
             return ret;
@@ -440,105 +387,12 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
 
     materialName = UsdMayaUtil::SanitizeName(materialName);
     UsdStageRefPtr stage = GetUsdStage();
-    if (UsdPrim materialParent = _GetMaterialParent(
-            stage,
-            GetExportArgs().materialsScopeName,
-            assignmentsToBind)) {
-        SdfPath materialPath = materialParent.GetPath().AppendChild(
-                TfToken(materialName));
-        UsdShadeMaterial material = UsdShadeMaterial::Define(
-                GetUsdStage(), materialPath);
+    if (UsdPrim materialParent
+        = _GetMaterialParent(stage, GetExportArgs().materialsScopeName, assignmentsToBind)) {
+        SdfPath          materialPath = materialParent.GetPath().AppendChild(TfToken(materialName));
+        UsdShadeMaterial material = UsdShadeMaterial::Define(GetUsdStage(), materialPath);
 
         UsdPrim materialPrim = material.GetPrim();
-
-        // could use this to determine where we want to export.
-        TF_FOR_ALL(iter, assignmentsToBind) {
-            const SdfPath &boundPrimPath = iter->first;
-            const VtIntArray &faceIndices = iter->second;
-
-            // In the standard material binding case, skip if we're authoring
-            // direct (non-collection-based) bindings and we're an instance
-            // proxy.
-            // In the case of per-face bindings, un-instance the prim in order
-            // to author the append face sets or create a geom subset, since
-            // collection-based bindings won't help us here.
-            if (faceIndices.empty()) {
-                if (!GetExportArgs().exportCollectionBasedBindings) {
-                    if (_IsInstanceProxyPath(stage, boundPrimPath)) {
-                        // XXX: If we wanted to, we could try to author the
-                        // binding on the parent prim instead if it's an
-                        // instance prim with only one child (i.e. if it's the
-                        // transform prim corresponding to our shape prim).
-                        TF_WARN("Can't author direct material binding on "
-                                "instance proxy <%s>; try enabling "
-                                "collection-based material binding",
-                                boundPrimPath.GetText());
-                    }
-                    else {
-                        UsdPrim boundPrim = stage->OverridePrim(boundPrimPath);
-                        UsdShadeMaterialBindingAPI bindingAPI =
-                            UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
-                                UsdShadeMaterialBindingAPI>(boundPrim);
-                        bindingAPI.Bind(material);
-                    }
-                }
-
-                if (boundPrimPaths) {
-                    boundPrimPaths->insert(boundPrimPath);
-                }
-            } else {
-                UsdPrim boundPrim = _UninstancePrim(
-                        stage, boundPrimPath, "authoring per-face materials");
-                UsdShadeMaterialBindingAPI bindingAPI =
-                    UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
-                        UsdShadeMaterialBindingAPI>(boundPrim);
-
-                UsdGeomSubset faceSubset;
-                TfToken materialNameToken = TfToken(materialName);
-
-                // Try to re-use existing subset if any:
-                for (auto subset : bindingAPI.GetMaterialBindSubsets()) {
-                    TfToken elementType;
-                    if (subset.GetPrim().GetName() == materialNameToken
-                        && subset.GetElementTypeAttr().Get(&elementType)
-                        && elementType == UsdGeomTokens->face) {
-                        faceSubset = subset;
-                        break;
-                    }
-                }
-
-                if (faceSubset) {
-                    // Update and continue:
-                    VtIntArray mergedIndices;
-                    UsdAttribute indicesAttribute = faceSubset.GetIndicesAttr();
-                    indicesAttribute.Get(&mergedIndices);
-                    std::set<int> uniqueIndices(mergedIndices.cbegin(), mergedIndices.cend());
-                    uniqueIndices.insert(faceIndices.cbegin(), faceIndices.cend());
-                    mergedIndices.assign(uniqueIndices.cbegin(), uniqueIndices.cend());
-                    indicesAttribute.Set(mergedIndices);
-                    continue;
-                } 
-
-                faceSubset = bindingAPI.CreateMaterialBindSubset(
-                    /* subsetName */ materialNameToken,
-                    faceIndices,
-                    /* elementType */ UsdGeomTokens->face);
-
-                if (!GetExportArgs().exportCollectionBasedBindings) {
-                    UsdShadeMaterialBindingAPI subsetBindingAPI =
-                        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
-                            UsdShadeMaterialBindingAPI>(faceSubset.GetPrim());
-                    subsetBindingAPI.Bind(material);
-                }
-
-                if (boundPrimPaths) {
-                    boundPrimPaths->insert(faceSubset.GetPath());
-                }
-
-                bindingAPI.SetMaterialBindSubsetsFamilyType(
-                    UsdGeomTokens->partition);
-            }
-        }
 
         return materialPrim;
     }
@@ -546,5 +400,250 @@ UsdMayaShadingModeExportContext::MakeStandardMaterialPrim(
     return UsdPrim();
 }
 
+namespace {
+/// We can have multiple mesh with differing UV channel names and we need to make sure the
+/// exported material has varname inputs that match the texcoords exported by the shape
+class _UVMappingManager
+{
+public:
+    _UVMappingManager(
+        const UsdShadeMaterial&                                  material,
+        const UsdMayaShadingModeExportContext::AssignmentVector& assignmentsToBind)
+        : _material(material)
+    {
+        // Find out the nodes requiring mapping:
+        //
+        // The following naming convention is used on UsdShadeMaterial inputs to declare Maya
+        // shader nodes contained in the material that have UV inputs that requires mapping:
+        //
+        //      token inputs:node_with_uv_input:varname = "st"
+        //
+        // The "node_with_uv_input" is a dependency node which is a valid target for the Maya
+        // "uvLink" command, which describes UV linkage for all shapes in the scene that reference
+        // the material containing the exported shader node.
+        //
+        // See lib\usd\translators\shading\usdFileTextureWriter.cpp for an example of an exporter
+        // declaring UV inputs that require linking.
+        for (const UsdShadeInput& input : material.GetInputs()) {
+            const UsdAttribute&      usdAttr = input.GetAttr();
+            std::vector<std::string> splitName = usdAttr.SplitName();
+            if (splitName.size() != 3 || splitName[2] != _tokens->varname.GetString()) {
+                continue;
+            }
+            _nodesWithUVInput.push_back(TfToken(splitName[1]));
+        }
+
+        std::set<TfToken> exportedShapes;
+        for (const auto& iter : assignmentsToBind) {
+            exportedShapes.insert(iter.shapeName);
+        }
+
+        // Ask Maya about UV linkage:
+        for (const TfToken& nodeName : _nodesWithUVInput) {
+            MString uvLinkCmd;
+            uvLinkCmd.format(
+                "stringArrayToString(`uvLink -q -t \"^1s\"`, \" \");", nodeName.GetText());
+            std::string uvLinkResult = MGlobal::executeCommandStringResult(uvLinkCmd).asChar();
+            for (std::string uvSetRef : TfStringTokenize(uvLinkResult)) {
+                TfToken shapeName(uvSetRef.substr(0, uvSetRef.find('.')).c_str());
+                if (!exportedShapes.count(shapeName)) {
+                    continue;
+                }
+                MString getAttrCmd;
+                getAttrCmd.format("getAttr \"^1s\";", uvSetRef.c_str());
+                TfToken getAttrResult(MGlobal::executeCommandStringResult(getAttrCmd).asChar());
+
+                // Check if map1 should export as st:
+                if (getAttrResult == _tokens->map1 && UsdMayaWriteUtil::WriteMap1AsST()) {
+                    getAttrResult = UsdUtilsGetPrimaryUVSetName();
+                }
+
+                _shapeNameToUVNames[shapeName].push_back(getAttrResult);
+            }
+        }
+
+        // Group the shapes by UV mappings:
+        using MappingGroups = std::map<TfTokenVector, TfTokenVector>;
+        MappingGroups mappingGroups;
+        for (const auto& iter : _shapeNameToUVNames) {
+            const TfToken&       shapeName = iter.first;
+            const TfTokenVector& streams = iter.second;
+            mappingGroups[streams].push_back(shapeName);
+        }
+
+        // Find out the most common one, which will take over the unspecialized material:
+        size_t        largestSize = 0;
+        TfTokenVector largestSet;
+        for (const auto& iter : mappingGroups) {
+            if (iter.second.size() > largestSize) {
+                largestSize = iter.second.size();
+                largestSet = iter.first;
+            }
+        }
+
+        // Update the original material with the most common mapping:
+        if (largestSize) {
+            TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
+            TfTokenVector::const_iterator itName = largestSet.cbegin();
+            for (; itNode != _nodesWithUVInput.cend(); ++itNode, ++itName) {
+                TfToken inputName(
+                    TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
+                UsdShadeInput materialInput = material.GetInput(inputName);
+                materialInput.Set(*itName);
+            }
+            _uvNamesToMaterial[largestSet] = material;
+        }
+    }
+
+    const UsdShadeMaterial& getMaterial(const TfToken& shapeName)
+    {
+        // Look for an existing material for the requested shape:
+        const TfTokenVector&             uvNames = _shapeNameToUVNames[shapeName];
+        MaterialMappings::const_iterator iter = _uvNamesToMaterial.find(uvNames);
+        if (iter != _uvNamesToMaterial.end()) {
+            return iter->second;
+        }
+
+        // Create a specialized material:
+        std::string newName = _material.GetPrim().GetName();
+        for (const TfToken& t : uvNames) {
+            newName += "_";
+            newName += t.GetString();
+        }
+        SdfPath newPath
+            = _material.GetPrim().GetPath().GetParentPath().AppendChild(TfToken(newName.c_str()));
+        UsdShadeMaterial newMaterial
+            = UsdShadeMaterial::Define(_material.GetPrim().GetStage(), newPath);
+        newMaterial.GetPrim().GetSpecializes().AddSpecialize(_material.GetPrim().GetPath());
+
+        TfTokenVector::const_iterator itNode = _nodesWithUVInput.cbegin();
+        TfTokenVector::const_iterator itName = uvNames.cbegin();
+        for (; itNode != _nodesWithUVInput.cend(); ++itNode, ++itName) {
+            TfToken inputName(
+                TfStringPrintf("%s:%s", itNode->GetText(), _tokens->varname.GetText()));
+            UsdShadeInput materialInput
+                = newMaterial.CreateInput(inputName, SdfValueTypeNames->Token);
+            materialInput.Set(*itName);
+        }
+        auto insertResult
+            = _uvNamesToMaterial.insert(MaterialMappings::value_type { uvNames, newMaterial });
+        return insertResult.first->second;
+    }
+
+private:
+    /// The original material:
+    const UsdShadeMaterial& _material;
+    /// Helper structures for UV set mappings:
+    TfTokenVector _nodesWithUVInput;
+    using ShapeToStreams = std::map<TfToken, TfTokenVector>;
+    ShapeToStreams _shapeNameToUVNames;
+    using MaterialMappings = std::map<TfTokenVector, UsdShadeMaterial>;
+    MaterialMappings _uvNamesToMaterial;
+};
+} // namespace
+
+void UsdMayaShadingModeExportContext::BindStandardMaterialPrim(
+    const UsdPrim&          materialPrim,
+    const AssignmentVector& assignmentsToBind,
+    SdfPathSet* const       boundPrimPaths) const
+{
+    UsdShadeMaterial material(materialPrim);
+    if (!material) {
+        TF_RUNTIME_ERROR("Invalid material prim.");
+        return;
+    }
+
+    _UVMappingManager uvMappingManager(material, assignmentsToBind);
+
+    UsdStageRefPtr stage = GetUsdStage();
+    TfToken        materialNameToken(materialPrim.GetName());
+    for (const auto& iter : assignmentsToBind) {
+        const SdfPath&    boundPrimPath = iter.boundPrimPath;
+        const VtIntArray& faceIndices = iter.faceIndices;
+        const TfToken&    shapeName = iter.shapeName;
+
+        const UsdShadeMaterial& materialToBind = uvMappingManager.getMaterial(shapeName);
+        // In the standard material binding case, skip if we're authoring
+        // direct (non-collection-based) bindings and we're an instance
+        // proxy.
+        // In the case of per-face bindings, un-instance the prim in order
+        // to author the append face sets or create a geom subset, since
+        // collection-based bindings won't help us here.
+        if (faceIndices.empty()) {
+            if (!GetExportArgs().exportCollectionBasedBindings) {
+                if (_IsInstanceProxyPath(stage, boundPrimPath)) {
+                    // XXX: If we wanted to, we could try to author the
+                    // binding on the parent prim instead if it's an
+                    // instance prim with only one child (i.e. if it's the
+                    // transform prim corresponding to our shape prim).
+                    TF_WARN(
+                        "Can't author direct material binding on "
+                        "instance proxy <%s>; try enabling "
+                        "collection-based material binding",
+                        boundPrimPath.GetText());
+                } else {
+                    UsdPrim                    boundPrim = stage->OverridePrim(boundPrimPath);
+                    UsdShadeMaterialBindingAPI bindingAPI
+                        = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<
+                            UsdShadeMaterialBindingAPI>(boundPrim);
+                    bindingAPI.Bind(materialToBind);
+                }
+            }
+
+            if (boundPrimPaths) {
+                boundPrimPaths->insert(boundPrimPath);
+            }
+        } else {
+            UsdPrim boundPrim
+                = _UninstancePrim(stage, boundPrimPath, "authoring per-face materials");
+            UsdShadeMaterialBindingAPI bindingAPI
+                = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdShadeMaterialBindingAPI>(
+                    boundPrim);
+
+            UsdGeomSubset faceSubset;
+
+            // Try to re-use existing subset if any:
+            for (auto subset : bindingAPI.GetMaterialBindSubsets()) {
+                TfToken elementType;
+                if (subset.GetPrim().GetName() == materialNameToken
+                    && subset.GetElementTypeAttr().Get(&elementType)
+                    && elementType == UsdGeomTokens->face) {
+                    faceSubset = subset;
+                    break;
+                }
+            }
+
+            if (faceSubset) {
+                // Update and continue:
+                VtIntArray   mergedIndices;
+                UsdAttribute indicesAttribute = faceSubset.GetIndicesAttr();
+                indicesAttribute.Get(&mergedIndices);
+                std::set<int> uniqueIndices(mergedIndices.cbegin(), mergedIndices.cend());
+                uniqueIndices.insert(faceIndices.cbegin(), faceIndices.cend());
+                mergedIndices.assign(uniqueIndices.cbegin(), uniqueIndices.cend());
+                indicesAttribute.Set(mergedIndices);
+                continue;
+            }
+
+            faceSubset = bindingAPI.CreateMaterialBindSubset(
+                /* subsetName */ materialNameToken,
+                faceIndices,
+                /* elementType */ UsdGeomTokens->face);
+
+            if (!GetExportArgs().exportCollectionBasedBindings) {
+                UsdShadeMaterialBindingAPI subsetBindingAPI
+                    = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdShadeMaterialBindingAPI>(
+                        faceSubset.GetPrim());
+                subsetBindingAPI.Bind(materialToBind);
+            }
+
+            if (boundPrimPaths) {
+                boundPrimPaths->insert(faceSubset.GetPath());
+            }
+
+            bindingAPI.SetMaterialBindSubsetsFamilyType(UsdGeomTokens->partition);
+        }
+    }
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

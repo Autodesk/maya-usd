@@ -62,8 +62,7 @@ public:
     UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item);
     ~UsdTransform3dMayaXformStack() override = default;
 
-    //! Create a UsdTransform3dMayaXformStack for the given item.  The argument
-    //! transform ops must match a Maya transform stack.
+    //! Create a UsdTransform3dMayaXformStack.
     static UsdTransform3dMayaXformStack::Ptr create(const UsdSceneItem::Ptr& item);
 
     Ufe::Vector3d translation() const override;

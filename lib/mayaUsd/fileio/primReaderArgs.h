@@ -16,27 +16,25 @@
 #ifndef PXRUSDMAYA_PRIMREADERARGS_H
 #define PXRUSDMAYA_PRIMREADERARGS_H
 
-#include <pxr/pxr.h>
-#include <pxr/base/gf/interval.h>
-#include <pxr/usd/usd/prim.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
+
+#include <pxr/base/gf/interval.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usd/prim.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdMayaPrimReaderArgs
 /// \brief This class holds read-only arguments that are passed into reader plugins for
 /// the usdMaya library.
-/// 
+///
 /// \sa UsdMayaPrimReaderContext
 class UsdMayaPrimReaderArgs
 {
 public:
     MAYAUSD_CORE_PUBLIC
-    UsdMayaPrimReaderArgs(
-            const UsdPrim& prim,
-            const UsdMayaJobImportArgs& jobArgs);
+    UsdMayaPrimReaderArgs(const UsdPrim& prim, const UsdMayaJobImportArgs& jobArgs);
 
     /// \brief return the usd prim that should be read.
     MAYAUSD_CORE_PUBLIC
@@ -45,9 +43,7 @@ public:
     /// \brief return the initial job arguments, allowing a prim reader to
     /// execute a secondary prim reader.
     MAYAUSD_CORE_PUBLIC
-    const UsdMayaJobImportArgs& GetJobArguments() const {
-        return _jobArgs;
-    }
+    const UsdMayaJobImportArgs& GetJobArguments() const { return _jobArgs; }
 
     /// Returns the time interval over which to import animated data.
     /// An empty interval (<tt>GfInterval::IsEmpty()</tt>) means that no
@@ -66,16 +62,16 @@ public:
     MAYAUSD_CORE_PUBLIC
     bool GetUseAsAnimationCache() const;
 
-    bool ShouldImportUnboundShaders() const {
+    bool ShouldImportUnboundShaders() const
+    {
         // currently this is disabled.
         return false;
     }
 
 private:
-    const UsdPrim& _prim;
+    const UsdPrim&              _prim;
     const UsdMayaJobImportArgs& _jobArgs;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -15,8 +15,8 @@
 //
 #include "AL/usd/transaction/Transaction.h"
 
-#include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/makePyConstructor.h>
+#include <pxr/base/tf/pyPtrHelpers.h>
 #include <pxr/base/tf/pyResultConversions.h>
 
 #include <boost/python.hpp>
@@ -27,14 +27,12 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 void wrapTransaction()
 {
-  {
-    typedef AL::usd::transaction::Transaction This;
-    class_<This>("Transaction", no_init)
-      .def(init<const UsdStageWeakPtr&, const SdfLayerHandle&>((arg("stage"), arg("layer"))))
-      .def("Open", &This::Open)
-      .def("Close", &This::Close)
-      .def("InProgress", &This::InProgress)
-    ;
-  }
+    {
+        typedef AL::usd::transaction::Transaction This;
+        class_<This>("Transaction", no_init)
+            .def(init<const UsdStageWeakPtr&, const SdfLayerHandle&>((arg("stage"), arg("layer"))))
+            .def("Open", &This::Open)
+            .def("Close", &This::Close)
+            .def("InProgress", &This::InProgress);
+    }
 }
-

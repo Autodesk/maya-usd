@@ -15,28 +15,29 @@
 //
 #include "ProxyShapeContextOpsHandler.h"
 
-#include <pxr/usd/usd/stage.h>
-
 #include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
 
+#include <pxr/usd/usd/stage.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-ProxyShapeContextOpsHandler::ProxyShapeContextOpsHandler(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler)
-	: Ufe::ContextOpsHandler()
-	, _mayaContextOpsHandler(mayaContextOpsHandler)
-{}
-
-ProxyShapeContextOpsHandler::~ProxyShapeContextOpsHandler()
+ProxyShapeContextOpsHandler::ProxyShapeContextOpsHandler(
+    const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler)
+    : Ufe::ContextOpsHandler()
+    , _mayaContextOpsHandler(mayaContextOpsHandler)
 {
 }
 
+ProxyShapeContextOpsHandler::~ProxyShapeContextOpsHandler() { }
+
 /*static*/
-ProxyShapeContextOpsHandler::Ptr ProxyShapeContextOpsHandler::create(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler)
+ProxyShapeContextOpsHandler::Ptr
+ProxyShapeContextOpsHandler::create(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler)
 {
-	return std::make_shared<ProxyShapeContextOpsHandler>(mayaContextOpsHandler);
+    return std::make_shared<ProxyShapeContextOpsHandler>(mayaContextOpsHandler);
 }
 
 //------------------------------------------------------------------------------
@@ -45,36 +46,32 @@ ProxyShapeContextOpsHandler::Ptr ProxyShapeContextOpsHandler::create(const Ufe::
 
 Ufe::ContextOps::Ptr ProxyShapeContextOpsHandler::contextOps(const Ufe::SceneItem::Ptr& item) const
 {
-	if (isAGatewayType(item->nodeType()))
-	{
-		// UsdContextOps expects a UsdSceneItem which wraps a prim, so
-		// create one using the pseudo-root and our own path.
-		UsdStageWeakPtr stage = getStage(item->path());
-		if (stage)
-		{
-			auto usdItem = UsdSceneItem::create(item->path(), stage->GetPseudoRoot());
-			auto usdContextOpsHandler = UsdContextOpsHandler::create();
-			auto cOps = usdContextOpsHandler->contextOps(usdItem);
-			UsdContextOps::Ptr usdCOps = std::dynamic_pointer_cast<UsdContextOps>(cOps);
+    if (isAGatewayType(item->nodeType())) {
+        // UsdContextOps expects a UsdSceneItem which wraps a prim, so
+        // create one using the pseudo-root and our own path.
+        UsdStageWeakPtr stage = getStage(item->path());
+        if (stage) {
+            auto               usdItem = UsdSceneItem::create(item->path(), stage->GetPseudoRoot());
+            auto               usdContextOpsHandler = UsdContextOpsHandler::create();
+            auto               cOps = usdContextOpsHandler->contextOps(usdItem);
+            UsdContextOps::Ptr usdCOps = std::dynamic_pointer_cast<UsdContextOps>(cOps);
 
-			// We explicitly set the context ops as a gateway type because we created a
-			// new UsdSceneItem with a USD prim. Thus the scene item is no longer from
-			// the derived class in Maya and we cannot properly query the node type.
-			if (usdCOps)
-				usdCOps->setIsAGatewayType(true);
-			return cOps;
-		}
+            // We explicitly set the context ops as a gateway type because we created a
+            // new UsdSceneItem with a USD prim. Thus the scene item is no longer from
+            // the derived class in Maya and we cannot properly query the node type.
+            if (usdCOps)
+                usdCOps->setIsAGatewayType(true);
+            return cOps;
+        }
 
-		return nullptr;
-	}
-	else if (_mayaContextOpsHandler)
-	{
-		return _mayaContextOpsHandler->contextOps(item);
-	}
+        return nullptr;
+    } else if (_mayaContextOpsHandler) {
+        return _mayaContextOpsHandler->contextOps(item);
+    }
 
-	// Context ops handler is not mandatory.
-	return nullptr;
+    // Context ops handler is not mandatory.
+    return nullptr;
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

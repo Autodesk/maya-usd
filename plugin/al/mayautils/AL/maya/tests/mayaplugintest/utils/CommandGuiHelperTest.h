@@ -24,25 +24,24 @@ namespace tests {
 namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
-// A very simple test command that adds in all combinations of command argument, used to test the CommandGuiHelper class.
+// A very simple test command that adds in all combinations of command argument, used to test the
+// CommandGuiHelper class.
 //----------------------------------------------------------------------------------------------------------------------
 #ifndef AL_GENERATING_DOCS
-class CommandGuiHelperTestCMD
-  : public MPxCommand
+class CommandGuiHelperTestCMD : public MPxCommand
 {
 public:
-
-  static const MString kName;
-  static MSyntax createSyntax();
-  static void makeGUI();
-  static void* creator();
-  MStatus doIt(const MArgList& args) override;
+    static const MString kName;
+    static MSyntax       createSyntax();
+    static void          makeGUI();
+    static void*         creator();
+    MStatus              doIt(const MArgList& args) override;
 };
 #endif
 
 //----------------------------------------------------------------------------------------------------------------------
-} // utils
-} // tests
-} // maya
-} // AL
+} // namespace utils
+} // namespace tests
+} // namespace maya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

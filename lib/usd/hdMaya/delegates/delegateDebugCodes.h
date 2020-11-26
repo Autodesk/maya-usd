@@ -16,8 +16,8 @@
 #ifndef HDMAYA_DELEGATE_DEBUG_CODES_H
 #define HDMAYA_DELEGATE_DEBUG_CODES_H
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/debug.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -64,7 +64,6 @@ TF_DEBUG_CODES(
     HDMAYA_DELEGATE_GET_SURFACE_SHADER_SOURCE);
 // clang-format on
 #endif // USD_VERSION_NUM <= 1911
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
