@@ -43,7 +43,7 @@ namespace ufe {
 // "xformOp:<opType>:maya-default:<suffix>"
 // The "maya-default" namespace component is not optional, but the rest of the
 // suffix remains optional.
-// 
+//
 // Because all Transform3d handlers have already run and failed to match
 // (including the UsdTransform3dMayaXformStack), we know there is at least one
 // transform op in the existing stack, since an empty stack matches the
@@ -67,7 +67,6 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdTransform3dFallbackMayaXformStack : public UsdTransform3dMayaXformStack
 {
 public:
-
     typedef std::shared_ptr<UsdTransform3dFallbackMayaXformStack> Ptr;
 
     UsdTransform3dFallbackMayaXformStack(const UsdSceneItem::Ptr& item);
@@ -75,19 +74,16 @@ public:
 
     //! Create a UsdTransform3dFallbackMayaXformStack for the given item.  The argument
     //! transform ops must match a Maya transform stack.
-    static UsdTransform3dFallbackMayaXformStack::Ptr create(
-        const UsdSceneItem::Ptr& item
-    );
+    static UsdTransform3dFallbackMayaXformStack::Ptr create(const UsdSceneItem::Ptr& item);
 
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
 private:
-
-    SetXformOpOrderFn getXformOpOrderFn() const override;
-    TfToken getOpSuffix(OpNdx ndx) const override;
-    TfToken getTRSOpSuffix() const override;
-    CvtRotXYZFromAttrFn getCvtRotXYZFromAttrFn(const TfToken& opName) const override;
-    CvtRotXYZToAttrFn getCvtRotXYZToAttrFn(const TfToken& opName) const override;
+    SetXformOpOrderFn               getXformOpOrderFn() const override;
+    TfToken                         getOpSuffix(OpNdx ndx) const override;
+    TfToken                         getTRSOpSuffix() const override;
+    CvtRotXYZFromAttrFn             getCvtRotXYZFromAttrFn(const TfToken& opName) const override;
+    CvtRotXYZToAttrFn               getCvtRotXYZToAttrFn(const TfToken& opName) const override;
     std::map<OpNdx, UsdGeomXformOp> getOrderedOps() const override;
 
 }; // UsdTransform3dFallbackMayaXformStack
@@ -98,7 +94,7 @@ private:
 // the chain of responsibility.
 
 class MAYAUSD_CORE_PUBLIC UsdTransform3dFallbackMayaXformStackHandler
-  : public Ufe::Transform3dHandler
+    : public Ufe::Transform3dHandler
 {
 public:
     typedef std::shared_ptr<UsdTransform3dFallbackMayaXformStackHandler> Ptr;
@@ -115,4 +111,4 @@ public:
 }; // UsdTransform3dFallbackMayaXformStackHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

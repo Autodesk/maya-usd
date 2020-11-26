@@ -19,8 +19,8 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-template<MEulerRotation::RotationOrder SRC_ROT_ORDER>
-Ufe::Vector3d fromRot(const VtValue& value) {
+template <MEulerRotation::RotationOrder SRC_ROT_ORDER> Ufe::Vector3d fromRot(const VtValue& value)
+{
     auto v = value.Get<GfVec3f>();
 
     MEulerRotation eulerRot(TO_RAD(v[0]), TO_RAD(v[1]), TO_RAD(v[2]), SRC_ROT_ORDER);
@@ -28,8 +28,8 @@ Ufe::Vector3d fromRot(const VtValue& value) {
     return Ufe::Vector3d(TO_DEG(eulerRot.x), TO_DEG(eulerRot.y), TO_DEG(eulerRot.z));
 }
 
-template<MEulerRotation::RotationOrder DST_ROT_ORDER>
-VtValue toRot(double x, double y, double z) {
+template <MEulerRotation::RotationOrder DST_ROT_ORDER> VtValue toRot(double x, double y, double z)
+{
     MEulerRotation eulerRot(TO_RAD(x), TO_RAD(y), TO_RAD(z), MEulerRotation::kXYZ);
     eulerRot.reorderIt(DST_ROT_ORDER);
     VtValue v;
@@ -50,4 +50,4 @@ template VtValue toRot<MEulerRotation::kZXY>(double, double, double);
 template VtValue toRot<MEulerRotation::kZYX>(double, double, double);
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

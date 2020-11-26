@@ -25,7 +25,7 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Transform USD objects in 3D using the USD common transform API.
-// 
+//
 // See
 // https://graphics.pixar.com/usd/docs/api/class_usd_geom_xform_common_a_p_i.html
 // for details.
@@ -56,17 +56,16 @@ public:
     void scale(double x, double y, double z) override;
 
     Ufe::TranslateUndoableCommand::Ptr translateCmd(double x, double y, double z) override;
-    Ufe::RotateUndoableCommand::Ptr rotateCmd(double x, double y, double z) override;
-    Ufe::ScaleUndoableCommand::Ptr scaleCmd(double x, double y, double z) override;
+    Ufe::RotateUndoableCommand::Ptr    rotateCmd(double x, double y, double z) override;
+    Ufe::ScaleUndoableCommand::Ptr     scaleCmd(double x, double y, double z) override;
 
     Ufe::TranslateUndoableCommand::Ptr rotatePivotCmd(double x, double y, double z) override;
-    void rotatePivot(double x, double y, double z) override;
-    Ufe::Vector3d rotatePivot() const override;
+    void                               rotatePivot(double x, double y, double z) override;
+    Ufe::Vector3d                      rotatePivot() const override;
 
 private:
-
     UsdGeomXformCommonAPI _commonAPI;
-    
+
 }; // UsdTransform3dCommonAPI
 
 //! \brief Factory to create a UsdTransform3dCommonAPI interface object.
@@ -74,8 +73,7 @@ private:
 // Note that all calls to specify time use the default time, but this
 // could be changed to use the current time, using getTime(path()).
 
-class MAYAUSD_CORE_PUBLIC UsdTransform3dCommonAPIHandler : 
-    public Ufe::Transform3dHandler
+class MAYAUSD_CORE_PUBLIC UsdTransform3dCommonAPIHandler : public Ufe::Transform3dHandler
 {
 public:
     typedef std::shared_ptr<UsdTransform3dCommonAPIHandler> Ptr;
@@ -95,4 +93,4 @@ private:
 }; // UsdTransform3dCommonAPIHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

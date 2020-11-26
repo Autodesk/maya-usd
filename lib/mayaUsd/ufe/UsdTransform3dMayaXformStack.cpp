@@ -15,11 +15,11 @@
 //
 #include "UsdTransform3dMayaXformStack.h"
 
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/ufe/RotationUtils.h>
-#include <mayaUsd/fileio/utils/xformStack.h>
-
 #include "private/UfeNotifGuard.h"
+
+#include <mayaUsd/fileio/utils/xformStack.h>
+#include <mayaUsd/ufe/RotationUtils.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <maya/MEulerRotation.h>
 
@@ -28,24 +28,21 @@
 
 namespace {
 
-using OpFunc = std::function<UsdGeomXformOp(
-    const Ufe::BaseTransformUndoableCommand&)>;
+using OpFunc = std::function<UsdGeomXformOp(const Ufe::BaseTransformUndoableCommand&)>;
 
 using namespace MayaUsd::ufe;
 
 // Type traits for GfVec precision.
-template<class V>
-struct OpPrecision {
+template <class V> struct OpPrecision
+{
     static UsdGeomXformOp::Precision precision;
 };
 
-template<>
-UsdGeomXformOp::Precision OpPrecision<GfVec3f>::precision =
-    UsdGeomXformOp::PrecisionFloat;
+template <>
+UsdGeomXformOp::Precision OpPrecision<GfVec3f>::precision = UsdGeomXformOp::PrecisionFloat;
 
-template<>
-UsdGeomXformOp::Precision OpPrecision<GfVec3d>::precision =
-    UsdGeomXformOp::PrecisionDouble;
+template <>
+UsdGeomXformOp::Precision OpPrecision<GfVec3d>::precision = UsdGeomXformOp::PrecisionDouble;
 
 VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
 {
@@ -58,29 +55,35 @@ VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
 // argument, various rotate transform op equivalences in a separate
 // UsdMayaXformStack::IsCompatibleType().  Just roll our own op name to
 // Maya transform stack index position.
-const std::unordered_map<TfToken, UsdTransform3dMayaXformStack::OpNdx, TfToken::HashFunctor> gOpNameToNdx{
-    {TfToken("xformOp:translate"),  UsdTransform3dMayaXformStack::NdxTranslate},
-    {TfToken("xformOp:translate:rotatePivotTranslate"), UsdTransform3dMayaXformStack::NdxRotatePivotTranslate},
-    {TfToken("xformOp:translate:rotatePivot"), UsdTransform3dMayaXformStack::NdxRotatePivot},
-    {TfToken("xformOp:rotateX"),    UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:rotateY"),    UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:rotateZ"),    UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:rotateXYZ"),  UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:rotateXZY"),  UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:rotateYXZ"),  UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:rotateYZX"),  UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:rotateZXY"),  UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:rotateZYX"),  UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:orient"),     UsdTransform3dMayaXformStack::NdxRotate},
-    {TfToken("xformOp:rotateXYZ:rotateAxis"), UsdTransform3dMayaXformStack::NdxRotateAxis},
-    {TfToken("!invert!xformOp:translate:rotatePivot"), UsdTransform3dMayaXformStack::NdxRotatePivotInverse},
-    {TfToken("xformOp:translate:scalePivotTranslate"), UsdTransform3dMayaXformStack::NdxScalePivotTranslate},
-    {TfToken("xformOp:translate:scalePivot"), UsdTransform3dMayaXformStack::NdxScalePivot},
-    {TfToken("xformOp:transform:shear"), UsdTransform3dMayaXformStack::NdxShear},
-    {TfToken("xformOp:scale"),      UsdTransform3dMayaXformStack::NdxScale},
-    {TfToken("!invert!xformOp:translate:scalePivot"), UsdTransform3dMayaXformStack::NdxScalePivotInverse}};
+const std::unordered_map<TfToken, UsdTransform3dMayaXformStack::OpNdx, TfToken::HashFunctor>
+    gOpNameToNdx {
+        { TfToken("xformOp:translate"), UsdTransform3dMayaXformStack::NdxTranslate },
+        { TfToken("xformOp:translate:rotatePivotTranslate"),
+          UsdTransform3dMayaXformStack::NdxRotatePivotTranslate },
+        { TfToken("xformOp:translate:rotatePivot"), UsdTransform3dMayaXformStack::NdxRotatePivot },
+        { TfToken("xformOp:rotateX"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:rotateY"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:rotateZ"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:rotateXYZ"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:rotateXZY"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:rotateYXZ"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:rotateYZX"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:rotateZXY"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:rotateZYX"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:orient"), UsdTransform3dMayaXformStack::NdxRotate },
+        { TfToken("xformOp:rotateXYZ:rotateAxis"), UsdTransform3dMayaXformStack::NdxRotateAxis },
+        { TfToken("!invert!xformOp:translate:rotatePivot"),
+          UsdTransform3dMayaXformStack::NdxRotatePivotInverse },
+        { TfToken("xformOp:translate:scalePivotTranslate"),
+          UsdTransform3dMayaXformStack::NdxScalePivotTranslate },
+        { TfToken("xformOp:translate:scalePivot"), UsdTransform3dMayaXformStack::NdxScalePivot },
+        { TfToken("xformOp:transform:shear"), UsdTransform3dMayaXformStack::NdxShear },
+        { TfToken("xformOp:scale"), UsdTransform3dMayaXformStack::NdxScale },
+        { TfToken("!invert!xformOp:translate:scalePivot"),
+          UsdTransform3dMayaXformStack::NdxScalePivotInverse }
+    };
 
-}
+} // namespace
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -94,7 +97,7 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
     // ordering.  Use the Maya transform stack indices to add to a map, then
     // simply traverse the map to obtain the transform ops in order.
     std::map<UsdTransform3dMayaXformStack::OpNdx, UsdGeomXformOp> orderedOps;
-    bool resetsXformStack = false;
+    bool                                                          resetsXformStack = false;
     auto oldOrder = xformable.GetOrderedXformOps(&resetsXformStack);
     for (const auto& op : oldOrder) {
         auto ndx = gOpNameToNdx.at(op.GetOpName());
@@ -112,30 +115,27 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
     xformable.SetXformOpOrder(newOrder, resetsXformStack);
 }
 
-inline Ufe::Transform3d::Ptr nextTransform3d(
-    const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item
-) {
+inline Ufe::Transform3d::Ptr
+nextTransform3d(const Ufe::Transform3dHandler::Ptr& nextHandler, const Ufe::SceneItem::Ptr& item)
+{
     return nextHandler->transform3d(item);
 }
 
 inline Ufe::Transform3d::Ptr nextEditTransform3d(
     const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item
-) {
+    const Ufe::SceneItem::Ptr&          item)
+{
     return nextHandler->editTransform3d(item);
 }
 
 typedef Ufe::Transform3d::Ptr (*NextTransform3dFn)(
     const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item
-);
+    const Ufe::SceneItem::Ptr&          item);
 
 Ufe::Transform3d::Ptr createTransform3d(
     const Ufe::Transform3dHandler::Ptr& nextHandler,
     const Ufe::SceneItem::Ptr&          item,
-    NextTransform3dFn                   nextTransform3dFn
-)
+    NextTransform3dFn                   nextTransform3dFn)
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
@@ -161,13 +161,14 @@ Ufe::Transform3d::Ptr createTransform3d(
     // chain of responsibility.
     auto stackOps = UsdMayaXformStack::MayaStack().MatchingSubstack(xformOps);
 
-    return stackOps.empty() ? nextTransform3dFn(nextHandler, item) :
-        UsdTransform3dMayaXformStack::create(usdItem);
+    return stackOps.empty() ? nextTransform3dFn(nextHandler, item)
+                            : UsdTransform3dMayaXformStack::create(usdItem);
 }
 
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
-class UsdTRSUndoableCmdBase : public Ufe::SetVector3dUndoableCommand {
+class UsdTRSUndoableCmdBase : public Ufe::SetVector3dUndoableCommand
+{
 private:
     const UsdTimeCode _readTime;
     const UsdTimeCode _writeTime;
@@ -178,57 +179,72 @@ private:
     OpFunc            _opFunc;
 
 public:
-
-    struct State {
+    struct State
+    {
         virtual const char* name() const = 0;
-        virtual void handleUndo(UsdTRSUndoableCmdBase*) {
-            TF_CODING_ERROR("Illegal handleUndo() call in UsdTRSUndoableCmdBase for state '%s'.", name());
-        } 
-        virtual void handleSet(UsdTRSUndoableCmdBase*, const VtValue&) {
-            TF_CODING_ERROR("Illegal handleSet() call in UsdTRSUndoableCmdBase for state '%s'.", name()); }
+        virtual void        handleUndo(UsdTRSUndoableCmdBase*)
+        {
+            TF_CODING_ERROR(
+                "Illegal handleUndo() call in UsdTRSUndoableCmdBase for state '%s'.", name());
+        }
+        virtual void handleSet(UsdTRSUndoableCmdBase*, const VtValue&)
+        {
+            TF_CODING_ERROR(
+                "Illegal handleSet() call in UsdTRSUndoableCmdBase for state '%s'.", name());
+        }
     };
 
-    struct InitialState : public State {
+    struct InitialState : public State
+    {
         const char* name() const override { return "initial"; }
-        void handleUndo(UsdTRSUndoableCmdBase* cmd) override {
+        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
+        {
             // Maya triggers an undo on command creation, ignore it.
             cmd->_state = &UsdTRSUndoableCmdBase::_initialUndoCalledState;
         }
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override {
+        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
+        {
             // Going from initial to executing / executed state, save value.
             cmd->_op = cmd->_opFunc(*cmd);
-			cmd->_attrName = cmd->_op.GetOpName();
+            cmd->_attrName = cmd->_op.GetOpName();
             cmd->_prevOpValue = getValue(cmd->_op.GetAttr(), cmd->readTime());
-            cmd->_newOpValue  = v;
+            cmd->_newOpValue = v;
             cmd->setValue(v);
             cmd->_state = &UsdTRSUndoableCmdBase::_executeState;
         }
     };
 
-    struct InitialUndoCalledState : public State {
+    struct InitialUndoCalledState : public State
+    {
         const char* name() const override { return "initial undo called"; }
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override {
+        void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
+        {
             // Maya triggers a redo on command creation, ignore it.
             cmd->_state = &UsdTRSUndoableCmdBase::_initialState;
         }
     };
 
-    struct ExecuteState : public State {
+    struct ExecuteState : public State
+    {
         const char* name() const override { return "execute"; }
-        void handleUndo(UsdTRSUndoableCmdBase* cmd) override {
+        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
+        {
             cmd->recreateOp();
             cmd->setValue(cmd->_prevOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
         }
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override {
+        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
+        {
             cmd->_newOpValue = v;
             cmd->setValue(v);
         }
     };
 
-    struct UndoneState : public State {
+    struct UndoneState : public State
+    {
         const char* name() const override { return "undone"; }
-        void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override {
+        void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
+        {
             // Can ignore the value, we already have it --- or assert they're
             // equal, perhaps.
             cmd->recreateOp();
@@ -237,9 +253,11 @@ public:
         }
     };
 
-    struct RedoneState : public State {
+    struct RedoneState : public State
+    {
         const char* name() const override { return "redone"; }
-        void handleUndo(UsdTRSUndoableCmdBase* cmd) override {
+        void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
+        {
             cmd->recreateOp();
             cmd->setValue(cmd->_prevOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
@@ -247,32 +265,38 @@ public:
     };
 
     UsdTRSUndoableCmdBase(
-        const VtValue&        newOpValue,
-        const Ufe::Path&      path,
-        OpFunc                opFunc,
-        const UsdTimeCode&    writeTime_
-    ) : Ufe::SetVector3dUndoableCommand(path),
+        const VtValue&     newOpValue,
+        const Ufe::Path&   path,
+        OpFunc             opFunc,
+        const UsdTimeCode& writeTime_)
+        : Ufe::SetVector3dUndoableCommand(path)
+        ,
         // Always read from proxy shape time.
-        _readTime(getTime(path)),
-        _writeTime(writeTime_),
-        _prevOpValue(),
-		_newOpValue(newOpValue),
-        _attrName(),
-		_op(),
-		_opFunc(std::move(opFunc))
-    {}
+        _readTime(getTime(path))
+        , _writeTime(writeTime_)
+        , _prevOpValue()
+        , _newOpValue(newOpValue)
+        , _attrName()
+        , _op()
+        , _opFunc(std::move(opFunc))
+    {
+    }
 
-	// Ufe::UndoableCommand overrides.
+    // Ufe::UndoableCommand overrides.
     void execute() override { handleSet(_newOpValue); }
     void undo() override { _state->handleUndo(this); }
     void redo() override { handleSet(_newOpValue); }
 
-    void recreateOp() {
-        auto sceneItem = std::dynamic_pointer_cast<UsdSceneItem>(
-            Ufe::Hierarchy::createItem(path())); TF_AXIOM(sceneItem);
-        auto prim = sceneItem->prim(); TF_AXIOM(prim);
-        auto attr = prim.GetAttribute(_attrName); TF_AXIOM(attr);
-        _op       = UsdGeomXformOp(attr);
+    void recreateOp()
+    {
+        auto sceneItem
+            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(path()));
+        TF_AXIOM(sceneItem);
+        auto prim = sceneItem->prim();
+        TF_AXIOM(prim);
+        auto attr = prim.GetAttribute(_attrName);
+        TF_AXIOM(attr);
+        _op = UsdGeomXformOp(attr);
     }
 
     void handleSet(const VtValue& v) { _state->handleSet(this, v); }
@@ -291,51 +315,54 @@ public:
     State* _state { &_initialState };
 };
 
-UsdTRSUndoableCmdBase::InitialState        UsdTRSUndoableCmdBase::_initialState;
+UsdTRSUndoableCmdBase::InitialState           UsdTRSUndoableCmdBase::_initialState;
 UsdTRSUndoableCmdBase::InitialUndoCalledState UsdTRSUndoableCmdBase::_initialUndoCalledState;
-UsdTRSUndoableCmdBase::ExecuteState        UsdTRSUndoableCmdBase::_executeState;
-UsdTRSUndoableCmdBase::UndoneState         UsdTRSUndoableCmdBase::_undoneState;
-UsdTRSUndoableCmdBase::RedoneState         UsdTRSUndoableCmdBase::_redoneState;
+UsdTRSUndoableCmdBase::ExecuteState           UsdTRSUndoableCmdBase::_executeState;
+UsdTRSUndoableCmdBase::UndoneState            UsdTRSUndoableCmdBase::_undoneState;
+UsdTRSUndoableCmdBase::RedoneState            UsdTRSUndoableCmdBase::_redoneState;
 
 // UsdRotatePivotTranslateUndoableCmd uses hard-coded USD common transform API
 // single pivot attribute name, not reusable.
-template<class V>
-class UsdVecOpUndoableCmd : public UsdTRSUndoableCmdBase {
+template <class V> class UsdVecOpUndoableCmd : public UsdTRSUndoableCmdBase
+{
 public:
     UsdVecOpUndoableCmd(
         const V&           v,
         const Ufe::Path&   path,
         OpFunc             opFunc,
-        const UsdTimeCode& writeTime
-    ) : UsdTRSUndoableCmdBase(VtValue(v), path, opFunc, writeTime)
-    {}
+        const UsdTimeCode& writeTime)
+        : UsdTRSUndoableCmdBase(VtValue(v), path, opFunc, writeTime)
+    {
+    }
 
     // Executes the command by setting the translation onto the transform op.
     bool set(double x, double y, double z) override
     {
-		VtValue v;
+        VtValue v;
         v = V(x, y, z);
         handleSet(v);
         return true;
     }
 };
 
-class UsdRotateOpUndoableCmd : public UsdTRSUndoableCmdBase {
+class UsdRotateOpUndoableCmd : public UsdTRSUndoableCmdBase
+{
 public:
     UsdRotateOpUndoableCmd(
         const GfVec3f&                                  r,
         const Ufe::Path&                                path,
         OpFunc                                          opFunc,
         UsdTransform3dMayaXformStack::CvtRotXYZToAttrFn cvt,
-        const UsdTimeCode&                              writeTime
-    ) : UsdTRSUndoableCmdBase(VtValue(r), path, opFunc, writeTime),
-        _cvtRotXYZToAttr(cvt)
-    {}
+        const UsdTimeCode&                              writeTime)
+        : UsdTRSUndoableCmdBase(VtValue(r), path, opFunc, writeTime)
+        , _cvtRotXYZToAttr(cvt)
+    {
+    }
 
     // Executes the command by setting the rotation onto the transform op.
     bool set(double x, double y, double z) override
     {
-		VtValue v;
+        VtValue v;
         v = _cvtRotXYZToAttr(x, y, z);
         handleSet(v);
         return true;
@@ -346,28 +373,26 @@ private:
     UsdTransform3dMayaXformStack::CvtRotXYZToAttrFn _cvtRotXYZToAttr;
 };
 
-}
+} // namespace
 
-UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(
-    const UsdSceneItem::Ptr& item
-)
-    : UsdTransform3dBase(item), _xformable(prim())
+UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item)
+    : UsdTransform3dBase(item)
+    , _xformable(prim())
 {
     TF_AXIOM(_xformable);
 }
 
 /* static */
-UsdTransform3dMayaXformStack::Ptr UsdTransform3dMayaXformStack::create(
-    const UsdSceneItem::Ptr& item
-)
+UsdTransform3dMayaXformStack::Ptr
+UsdTransform3dMayaXformStack::create(const UsdSceneItem::Ptr& item)
 {
     return std::make_shared<UsdTransform3dMayaXformStack>(item);
 }
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::translation() const
 {
-    return getVector3d<GfVec3d>(UsdGeomXformOp::GetOpName(
-        UsdGeomXformOp::TypeTranslate, getTRSOpSuffix()));
+    return getVector3d<GfVec3d>(
+        UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, getTRSOpSuffix()));
 }
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::rotation() const
@@ -395,47 +420,49 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::scale() const
     return toUfe(v);
 }
 
-Ufe::TranslateUndoableCommand::Ptr UsdTransform3dMayaXformStack::translateCmd(double x, double y, double z)
+Ufe::TranslateUndoableCommand::Ptr
+UsdTransform3dMayaXformStack::translateCmd(double x, double y, double z)
 {
-    return setVector3dCmd(GfVec3d(x, y, z), UsdGeomXformOp::GetOpName(
-        UsdGeomXformOp::TypeTranslate, getTRSOpSuffix()), getTRSOpSuffix());
+    return setVector3dCmd(
+        GfVec3d(x, y, z),
+        UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, getTRSOpSuffix()),
+        getTRSOpSuffix());
 }
 
-Ufe::RotateUndoableCommand::Ptr UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
+Ufe::RotateUndoableCommand::Ptr
+UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
 {
-    GfVec3f v(x, y, z);
-	UsdGeomXformOp op;
-	TfToken attrName;
-    const bool hasRotate = hasOp(NdxRotate);
-	if (hasRotate) {
-		op = getOp(NdxRotate);
-		attrName = op.GetOpName();
-	}
+    GfVec3f        v(x, y, z);
+    UsdGeomXformOp op;
+    TfToken        attrName;
+    const bool     hasRotate = hasOp(NdxRotate);
+    if (hasRotate) {
+        op = getOp(NdxRotate);
+        attrName = op.GetOpName();
+    }
     // If there is no rotate transform op, we will create a RotXYZ.
-    CvtRotXYZToAttrFn cvt = hasRotate ? 
-        getCvtRotXYZToAttrFn(op.GetOpName()) : toXYZ;
-    OpFunc f = hasRotate ? OpFunc([attrName](
-            const Ufe::BaseTransformUndoableCommand& cmd
-        ) {
-			auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                cmd.sceneItem()); TF_AXIOM(usdSceneItem);
-			auto attr = usdSceneItem->prim().GetAttribute(attrName);
-			return UsdGeomXformOp(attr); })
-        : OpFunc([opSuffix = getTRSOpSuffix(), 
-				  setXformOpOrderFn = getXformOpOrderFn(), v](
-            const Ufe::BaseTransformUndoableCommand& cmd
-        ) {
-            // Use notification guard, otherwise will generate one notification
-            // for the xform op add, and another for the reorder.
-            InTransform3dChange guard(cmd.path());
-			auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                cmd.sceneItem()); TF_AXIOM(usdSceneItem);
-			UsdGeomXformable xformable(usdSceneItem->prim());
-            auto r = xformable.AddRotateXYZOp(
-                UsdGeomXformOp::PrecisionFloat, opSuffix); TF_AXIOM(r);
-            r.Set(v);
-            setXformOpOrderFn(xformable);
-            return r; });
+    CvtRotXYZToAttrFn cvt = hasRotate ? getCvtRotXYZToAttrFn(op.GetOpName()) : toXYZ;
+    OpFunc            f = hasRotate
+        ? OpFunc([attrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+              TF_AXIOM(usdSceneItem);
+              auto attr = usdSceneItem->prim().GetAttribute(attrName);
+              return UsdGeomXformOp(attr);
+          })
+        : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
+                     const Ufe::BaseTransformUndoableCommand& cmd) {
+              // Use notification guard, otherwise will generate one notification
+              // for the xform op add, and another for the reorder.
+              InTransform3dChange guard(cmd.path());
+              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+              TF_AXIOM(usdSceneItem);
+              UsdGeomXformable xformable(usdSceneItem->prim());
+              auto r = xformable.AddRotateXYZOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
+              TF_AXIOM(r);
+              r.Set(v);
+              setXformOpOrderFn(xformable);
+              return r;
+          });
 
     return std::make_shared<UsdRotateOpUndoableCmd>(
         v, path(), std::move(f), cvt, UsdTimeCode::Default());
@@ -443,34 +470,33 @@ Ufe::RotateUndoableCommand::Ptr UsdTransform3dMayaXformStack::rotateCmd(double x
 
 Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, double y, double z)
 {
-    GfVec3f v(x, y, z);
-	UsdGeomXformOp op;
-	TfToken attrName;
-	const bool hasScale = hasOp(NdxScale);
-	if (hasScale) {
-		op = getOp(NdxScale);
-		attrName = op.GetOpName();
-	}
-    OpFunc f = hasScale ? OpFunc([attrName](
-            const Ufe::BaseTransformUndoableCommand& cmd
-        ) {
-			auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                cmd.sceneItem()); TF_AXIOM(usdSceneItem);
-			auto attr = usdSceneItem->prim().GetAttribute(attrName);
-			return UsdGeomXformOp(attr); })
-		: OpFunc([opSuffix = getTRSOpSuffix(),
-				  setXformOpOrderFn = getXformOpOrderFn(), v](
-            const Ufe::BaseTransformUndoableCommand& cmd
-        ) {
-            InTransform3dChange guard(cmd.path());
-			auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                cmd.sceneItem()); TF_AXIOM(usdSceneItem);
-			UsdGeomXformable xformable(usdSceneItem->prim());
-			auto s = xformable.AddScaleOp(
-                UsdGeomXformOp::PrecisionFloat, opSuffix); TF_AXIOM(s);
-			s.Set(v);
-			setXformOpOrderFn(xformable);
-			return s; });
+    GfVec3f        v(x, y, z);
+    UsdGeomXformOp op;
+    TfToken        attrName;
+    const bool     hasScale = hasOp(NdxScale);
+    if (hasScale) {
+        op = getOp(NdxScale);
+        attrName = op.GetOpName();
+    }
+    OpFunc f = hasScale
+        ? OpFunc([attrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+              TF_AXIOM(usdSceneItem);
+              auto attr = usdSceneItem->prim().GetAttribute(attrName);
+              return UsdGeomXformOp(attr);
+          })
+        : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
+                     const Ufe::BaseTransformUndoableCommand& cmd) {
+              InTransform3dChange guard(cmd.path());
+              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+              TF_AXIOM(usdSceneItem);
+              UsdGeomXformable xformable(usdSceneItem->prim());
+              auto             s = xformable.AddScaleOp(UsdGeomXformOp::PrecisionFloat, opSuffix);
+              TF_AXIOM(s);
+              s.Set(v);
+              setXformOpOrderFn(xformable);
+              return s;
+          });
 
     return std::make_shared<UsdVecOpUndoableCmd<GfVec3f>>(
         v, path(), std::move(f), UsdTimeCode::Default());
@@ -484,8 +510,8 @@ UsdTransform3dMayaXformStack::rotatePivotCmd(double x, double y, double z)
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::rotatePivot() const
 {
-    return getVector3d<GfVec3f>(UsdGeomXformOp::GetOpName(
-        UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxRotatePivot)));
+    return getVector3d<GfVec3f>(
+        UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxRotatePivot)));
 }
 
 Ufe::TranslateUndoableCommand::Ptr
@@ -496,17 +522,15 @@ UsdTransform3dMayaXformStack::scalePivotCmd(double x, double y, double z)
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::scalePivot() const
 {
-    return getVector3d<GfVec3f>(UsdGeomXformOp::GetOpName(
-        UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxScalePivot)));
+    return getVector3d<GfVec3f>(
+        UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxScalePivot)));
 }
 
 Ufe::TranslateUndoableCommand::Ptr
-UsdTransform3dMayaXformStack::translateRotatePivotCmd(
-    double x, double y, double z)
+UsdTransform3dMayaXformStack::translateRotatePivotCmd(double x, double y, double z)
 {
     auto opSuffix = getOpSuffix(NdxRotatePivotTranslate);
-    auto attrName = UsdGeomXformOp::GetOpName(
-        UsdGeomXformOp::TypeTranslate, opSuffix);
+    auto attrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, opSuffix);
     return setVector3dCmd(GfVec3f(x, y, z), attrName, opSuffix);
 }
 
@@ -517,12 +541,10 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::rotatePivotTranslation() const
 }
 
 Ufe::TranslateUndoableCommand::Ptr
-UsdTransform3dMayaXformStack::translateScalePivotCmd(
-    double x, double y, double z)
+UsdTransform3dMayaXformStack::translateScalePivotCmd(double x, double y, double z)
 {
     auto opSuffix = getOpSuffix(NdxScalePivotTranslate);
-    auto attrName = UsdGeomXformOp::GetOpName(
-        UsdGeomXformOp::TypeTranslate, opSuffix);
+    auto attrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, opSuffix);
     return setVector3dCmd(GfVec3f(x, y, z), attrName, opSuffix);
 }
 
@@ -532,10 +554,8 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::scalePivotTranslation() const
         UsdGeomXformOp::TypeTranslate, getOpSuffix(NdxScalePivotTranslate)));
 }
 
-template<class V>
-Ufe::Vector3d UsdTransform3dMayaXformStack::getVector3d(
-    const TfToken& attrName
-) const
+template <class V>
+Ufe::Vector3d UsdTransform3dMayaXformStack::getVector3d(const TfToken& attrName) const
 {
     // If the attribute doesn't exist yet, return a zero vector.
     auto attr = prim().GetAttribute(attrName);
@@ -551,77 +571,71 @@ Ufe::Vector3d UsdTransform3dMayaXformStack::getVector3d(
     return toUfe(v);
 }
 
-template<class V>
-Ufe::SetVector3dUndoableCommand::Ptr
-UsdTransform3dMayaXformStack::setVector3dCmd(
-    const V& v, const TfToken& attrName, const TfToken& opSuffix
-)
+template <class V>
+Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCmd(
+    const V&       v,
+    const TfToken& attrName,
+    const TfToken& opSuffix)
 {
-    auto attr = prim().GetAttribute(attrName);
-    OpFunc f = attr ? OpFunc([attrName](
-            const Ufe::BaseTransformUndoableCommand& cmd
-        ) {
-			auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                cmd.sceneItem()); TF_AXIOM(usdSceneItem);
-			auto attr = usdSceneItem->prim().GetAttribute(attrName);
-			return UsdGeomXformOp(attr); })
-		: OpFunc([opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
-            const Ufe::BaseTransformUndoableCommand& cmd
-        ) {
-            InTransform3dChange guard(cmd.path());
-			auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                cmd.sceneItem()); TF_AXIOM(usdSceneItem);
-			UsdGeomXformable xformable(usdSceneItem->prim());
-            auto op = xformable.AddTranslateOp(
-                OpPrecision<V>::precision, opSuffix); TF_AXIOM(op);
-			op.Set(v);
-			setXformOpOrderFn(xformable);
-			return op; });
+    auto   attr = prim().GetAttribute(attrName);
+    OpFunc f = attr
+        ? OpFunc([attrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+              TF_AXIOM(usdSceneItem);
+              auto attr = usdSceneItem->prim().GetAttribute(attrName);
+              return UsdGeomXformOp(attr);
+          })
+        : OpFunc([opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
+                     const Ufe::BaseTransformUndoableCommand& cmd) {
+              InTransform3dChange guard(cmd.path());
+              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+              TF_AXIOM(usdSceneItem);
+              UsdGeomXformable xformable(usdSceneItem->prim());
+              auto             op = xformable.AddTranslateOp(OpPrecision<V>::precision, opSuffix);
+              TF_AXIOM(op);
+              op.Set(v);
+              setXformOpOrderFn(xformable);
+              return op;
+          });
 
     return std::make_shared<UsdVecOpUndoableCmd<V>>(
         v, path(), std::move(f), UsdTimeCode::Default());
 }
 
-Ufe::TranslateUndoableCommand::Ptr UsdTransform3dMayaXformStack::pivotCmd(
-    const TfToken& pvtOpSuffix,
-    double x, double y, double z
-)
+Ufe::TranslateUndoableCommand::Ptr
+UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, double y, double z)
 {
-    auto pvtAttrName = UsdGeomXformOp::GetOpName(
-        UsdGeomXformOp::TypeTranslate, pvtOpSuffix);
+    auto pvtAttrName = UsdGeomXformOp::GetOpName(UsdGeomXformOp::TypeTranslate, pvtOpSuffix);
 
     GfVec3f v(x, y, z);
-    auto attr = prim().GetAttribute(pvtAttrName);
+    auto    attr = prim().GetAttribute(pvtAttrName);
     OpFunc  f = attr
-        ? OpFunc([pvtAttrName](
-            const Ufe::BaseTransformUndoableCommand& cmd
-        ) {
-			auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                cmd.sceneItem()); TF_AXIOM(usdSceneItem);
-			auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
-            return UsdGeomXformOp(attr); })
+        ? OpFunc([pvtAttrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+              TF_AXIOM(usdSceneItem);
+              auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
+              return UsdGeomXformOp(attr);
+          })
         : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
-            const Ufe::BaseTransformUndoableCommand& cmd
-        ) {
-            // Without a notification guard each operation (each transform op
-            // addition, setting the attribute value, and setting the transform
-            // op order) will notify.  Observers would see an object in an
-            // inconsistent state, especially after pivot is added but before
-            // its inverse is added --- this does not match the Maya transform
-            // stack.  Use of SdfChangeBlock is discouraged when calling USD
-            // APIs above Sdf, so use our own guard.
-            InTransform3dChange guard(cmd.path());
-			auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(
-                cmd.sceneItem()); TF_AXIOM(usdSceneItem);
-			UsdGeomXformable xformable(usdSceneItem->prim());
-            auto p = xformable.AddTranslateOp(
-                UsdGeomXformOp::PrecisionFloat, pvtOpSuffix);
-            auto pInv = xformable.AddTranslateOp(
-                UsdGeomXformOp::PrecisionFloat, pvtOpSuffix, /* isInverseOp */ true);
-            TF_AXIOM(p && pInv);
-            p.Set(v);
-            setXformOpOrderFn(xformable);
-            return p;
+                     const Ufe::BaseTransformUndoableCommand& cmd) {
+              // Without a notification guard each operation (each transform op
+              // addition, setting the attribute value, and setting the transform
+              // op order) will notify.  Observers would see an object in an
+              // inconsistent state, especially after pivot is added but before
+              // its inverse is added --- this does not match the Maya transform
+              // stack.  Use of SdfChangeBlock is discouraged when calling USD
+              // APIs above Sdf, so use our own guard.
+              InTransform3dChange guard(cmd.path());
+              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+              TF_AXIOM(usdSceneItem);
+              UsdGeomXformable xformable(usdSceneItem->prim());
+              auto p = xformable.AddTranslateOp(UsdGeomXformOp::PrecisionFloat, pvtOpSuffix);
+              auto pInv = xformable.AddTranslateOp(
+                  UsdGeomXformOp::PrecisionFloat, pvtOpSuffix, /* isInverseOp */ true);
+              TF_AXIOM(p && pInv);
+              p.Set(v);
+              setXformOpOrderFn(xformable);
+              return p;
           });
 
     return std::make_shared<UsdVecOpUndoableCmd<GfVec3f>>(
@@ -631,66 +645,58 @@ Ufe::TranslateUndoableCommand::Ptr UsdTransform3dMayaXformStack::pivotCmd(
 UsdTransform3dMayaXformStack::SetXformOpOrderFn
 UsdTransform3dMayaXformStack::getXformOpOrderFn() const
 {
-	return setXformOpOrder;
+    return setXformOpOrder;
 }
 
-std::map<UsdTransform3dMayaXformStack::OpNdx, UsdGeomXformOp> 
+std::map<UsdTransform3dMayaXformStack::OpNdx, UsdGeomXformOp>
 UsdTransform3dMayaXformStack::getOrderedOps() const
 {
     std::map<OpNdx, UsdGeomXformOp> orderedOps;
-    bool resetsXformStack = false;
-    auto ops = _xformable.GetOrderedXformOps(&resetsXformStack);
+    bool                            resetsXformStack = false;
+    auto                            ops = _xformable.GetOrderedXformOps(&resetsXformStack);
     for (const auto& op : ops) {
         auto ndx = gOpNameToNdx.at(op.GetOpName());
         orderedOps[ndx] = op;
     }
-	return orderedOps;
+    return orderedOps;
 }
 
 bool UsdTransform3dMayaXformStack::hasOp(OpNdx ndx) const
 {
-	auto orderedOps = getOrderedOps();
+    auto orderedOps = getOrderedOps();
     return orderedOps.find(ndx) != orderedOps.end();
 }
 
 UsdGeomXformOp UsdTransform3dMayaXformStack::getOp(OpNdx ndx) const
 {
-	auto orderedOps = getOrderedOps();
+    auto orderedOps = getOrderedOps();
     return orderedOps.at(ndx);
 }
 
 TfToken UsdTransform3dMayaXformStack::getOpSuffix(OpNdx ndx) const
 {
-    static std::unordered_map<OpNdx, TfToken> opSuffix = {
-    {NdxRotatePivotTranslate, UsdMayaXformStackTokens->rotatePivotTranslate},
-    {NdxRotatePivot, UsdMayaXformStackTokens->rotatePivot},
-    {NdxRotateAxis, UsdMayaXformStackTokens->rotateAxis},
-    {NdxScalePivotTranslate, UsdMayaXformStackTokens->scalePivotTranslate},
-    {NdxScalePivot, UsdMayaXformStackTokens->scalePivot},
-    {NdxShear, UsdMayaXformStackTokens->shear}
-    };
+    static std::unordered_map<OpNdx, TfToken> opSuffix
+        = { { NdxRotatePivotTranslate, UsdMayaXformStackTokens->rotatePivotTranslate },
+            { NdxRotatePivot, UsdMayaXformStackTokens->rotatePivot },
+            { NdxRotateAxis, UsdMayaXformStackTokens->rotateAxis },
+            { NdxScalePivotTranslate, UsdMayaXformStackTokens->scalePivotTranslate },
+            { NdxScalePivot, UsdMayaXformStackTokens->scalePivot },
+            { NdxShear, UsdMayaXformStackTokens->shear } };
     return opSuffix.at(ndx);
 }
 
-TfToken UsdTransform3dMayaXformStack::getTRSOpSuffix() const
-{
-    return TfToken();
-}
+TfToken UsdTransform3dMayaXformStack::getTRSOpSuffix() const { return TfToken(); }
 
 UsdTransform3dMayaXformStack::CvtRotXYZFromAttrFn
 UsdTransform3dMayaXformStack::getCvtRotXYZFromAttrFn(const TfToken& opName) const
 {
     static std::unordered_map<TfToken, CvtRotXYZFromAttrFn, TfToken::HashFunctor> cvt = {
-        {TfToken("xformOp:rotateX"),   fromX},
-        {TfToken("xformOp:rotateY"),   fromY},
-        {TfToken("xformOp:rotateZ"),   fromZ},
-        {TfToken("xformOp:rotateXYZ"), fromXYZ},
-        {TfToken("xformOp:rotateXZY"), fromXZY},
-        {TfToken("xformOp:rotateYXZ"), fromYXZ},
-        {TfToken("xformOp:rotateYZX"), fromYZX},
-        {TfToken("xformOp:rotateZXY"), fromZXY},
-        {TfToken("xformOp:rotateZYX"), fromZYX},
-        {TfToken("xformOp:orient"),    nullptr}}; // FIXME, unsupported.
+        { TfToken("xformOp:rotateX"), fromX },     { TfToken("xformOp:rotateY"), fromY },
+        { TfToken("xformOp:rotateZ"), fromZ },     { TfToken("xformOp:rotateXYZ"), fromXYZ },
+        { TfToken("xformOp:rotateXZY"), fromXZY }, { TfToken("xformOp:rotateYXZ"), fromYXZ },
+        { TfToken("xformOp:rotateYZX"), fromYZX }, { TfToken("xformOp:rotateZXY"), fromZXY },
+        { TfToken("xformOp:rotateZYX"), fromZYX }, { TfToken("xformOp:orient"), nullptr }
+    }; // FIXME, unsupported.
 
     return cvt.at(opName);
 }
@@ -699,16 +705,12 @@ UsdTransform3dMayaXformStack::CvtRotXYZToAttrFn
 UsdTransform3dMayaXformStack::getCvtRotXYZToAttrFn(const TfToken& opName) const
 {
     static std::unordered_map<TfToken, CvtRotXYZToAttrFn, TfToken::HashFunctor> cvt = {
-        {TfToken("xformOp:rotateX"),   toX},
-        {TfToken("xformOp:rotateY"),   toY},
-        {TfToken("xformOp:rotateZ"),   toZ},
-        {TfToken("xformOp:rotateXYZ"), toXYZ},
-        {TfToken("xformOp:rotateXZY"), toXZY},
-        {TfToken("xformOp:rotateYXZ"), toYXZ},
-        {TfToken("xformOp:rotateYZX"), toYZX},
-        {TfToken("xformOp:rotateZXY"), toZXY},
-        {TfToken("xformOp:rotateZYX"), toZYX},
-        {TfToken("xformOp:orient"),    nullptr}}; // FIXME, unsupported.
+        { TfToken("xformOp:rotateX"), toX },     { TfToken("xformOp:rotateY"), toY },
+        { TfToken("xformOp:rotateZ"), toZ },     { TfToken("xformOp:rotateXYZ"), toXYZ },
+        { TfToken("xformOp:rotateXZY"), toXZY }, { TfToken("xformOp:rotateYXZ"), toYXZ },
+        { TfToken("xformOp:rotateYZX"), toYZX }, { TfToken("xformOp:rotateZXY"), toZXY },
+        { TfToken("xformOp:rotateZYX"), toZYX }, { TfToken("xformOp:orient"), nullptr }
+    }; // FIXME, unsupported.
 
     return cvt.at(opName);
 }
@@ -718,31 +720,30 @@ UsdTransform3dMayaXformStack::getCvtRotXYZToAttrFn(const TfToken& opName) const
 //------------------------------------------------------------------------------
 
 UsdTransform3dMayaXformStackHandler::UsdTransform3dMayaXformStackHandler(
-    const Ufe::Transform3dHandler::Ptr& nextHandler
-) : Ufe::Transform3dHandler(), _nextHandler(nextHandler)
-{}
+    const Ufe::Transform3dHandler::Ptr& nextHandler)
+    : Ufe::Transform3dHandler()
+    , _nextHandler(nextHandler)
+{
+}
 
 /*static*/
-UsdTransform3dMayaXformStackHandler::Ptr UsdTransform3dMayaXformStackHandler::create(
-    const Ufe::Transform3dHandler::Ptr& nextHandler
-)
+UsdTransform3dMayaXformStackHandler::Ptr
+UsdTransform3dMayaXformStackHandler::create(const Ufe::Transform3dHandler::Ptr& nextHandler)
 {
     return std::make_shared<UsdTransform3dMayaXformStackHandler>(nextHandler);
 }
 
-Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::transform3d(
-    const Ufe::SceneItem::Ptr& item
-) const
+Ufe::Transform3d::Ptr
+UsdTransform3dMayaXformStackHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
     return createTransform3d(_nextHandler, item, nextTransform3d);
 }
 
-Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr& item
-) const
+Ufe::Transform3d::Ptr
+UsdTransform3dMayaXformStackHandler::editTransform3d(const Ufe::SceneItem::Ptr& item) const
 {
     return createTransform3d(_nextHandler, item, nextEditTransform3d);
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF
