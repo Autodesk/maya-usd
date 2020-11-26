@@ -2,7 +2,7 @@
 
 ## Motivation
 
-The primary motivation for this service is to restore USD data model changes to it's correct state after undo/redo calls. The current implementation for this system uses [SdfLayerStateDelegateBase](https://graphics.pixar.com/usd/docs/api/class_sdf_layer_state_delegate_base.html#details) by implementing a mechanism to collect an inverse of each authoring operation for undo purposes. This mechanism was inspired by Luma's USD undo/redo facilities found in [usdQt](https://github.com/LumaPictures/usd-qt) 
+The primary motivation for this service is to restore USD data model changes to its correct state after undo/redo calls. The current implementation for this system uses [SdfLayerStateDelegateBase](https://graphics.pixar.com/usd/docs/api/class_sdf_layer_state_delegate_base.html#details) by implementing a mechanism to collect an inverse of each authoring operation for undo purposes. This mechanism was inspired by Luma's USD undo/redo facilities found in [usdQt](https://github.com/LumaPictures/usd-qt) 
 
 ## Building Blocks
 
@@ -33,7 +33,7 @@ These functions are similar to Maya command's doIt(),redoIt(),undoIt() functions
 
 ![](../../../doc/images/ufe_commands.png) 
 
-***NOTE:*** Currently rename, parent, group commands haven't adopted to this service yet.
+***NOTE:*** Currently rename, parent, group commands haven't adopted this service yet.
 
 ##### Pseudo code in C++
 ``` cpp

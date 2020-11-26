@@ -16,7 +16,6 @@
 
 #include "UsdUndoableItem.h"
 #include "UsdUndoBlock.h"
-#include "UsdUndoManager.h"
 
 #include <pxr/usd/sdf/changeBlock.h>
 

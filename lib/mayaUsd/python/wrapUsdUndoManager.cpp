@@ -30,40 +30,44 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-class PythonUndoBlock
+namespace
 {
-public:
-    PythonUndoBlock()
-        : _block(nullptr)
+    class PythonUndoBlock
     {
-    }
-
-    ~PythonUndoBlock() { }
-
-    void enter()
-    {
-        if (!TF_VERIFY(_block == nullptr)) {
-            return;
+    public:
+        PythonUndoBlock()
+            : _block(nullptr)
+        {
         }
-        _block = std::make_unique<MayaUsd::UsdUndoBlock>();
-    }
 
-    void exit(object, object, object)
-    {
-        if (!TF_VERIFY(_block != nullptr)) {
-            return;
+        ~PythonUndoBlock() { }
+
+        void enter()
+        {
+            if (!TF_VERIFY(_block == nullptr)) {
+                return;
+            }
+            _block = std::make_unique<MayaUsd::UsdUndoBlock>();
         }
-        _block.reset();
+
+        void exit(object, object, object)
+        {
+            if (!TF_VERIFY(_block != nullptr)) {
+                return;
+            }
+            _block.reset();
+        }
+
+    private:
+        std::unique_ptr<MayaUsd::UsdUndoBlock> _block;
+    };
+
+    void _trackLayerStates(const SdfLayerHandle& layer)
+    {
+        MayaUsd::UsdUndoManager::instance().trackLayerStates(layer);
     }
 
-private:
-    std::unique_ptr<MayaUsd::UsdUndoBlock> _block;
-};
-
-static void _trackLayerStates(const SdfLayerHandle& layer)
-{
-    MayaUsd::UsdUndoManager::instance().trackLayerStates(layer);
-}
+} // namespace 
 
 void wrapUsdUndoManager()
 {
