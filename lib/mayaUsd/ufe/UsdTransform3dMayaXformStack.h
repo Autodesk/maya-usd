@@ -19,7 +19,6 @@
 
 #include <pxr/usd/usdGeom/xformable.h>
 
-#include <unordered_map>
 #include <map>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -45,21 +44,17 @@ public:
                 NdxScalePivotInverse, NbOpNdx};
 
     typedef std::shared_ptr<UsdTransform3dMayaXformStack> Ptr;
-    typedef std::unordered_map<TfToken, OpNdx, TfToken::HashFunctor> 
-    OpNameToNdx;
     typedef Ufe::Vector3d (*CvtRotXYZFromAttrFn)(const VtValue& value);
     typedef VtValue (*CvtRotXYZToAttrFn)(double x, double y, double z);
     typedef void (*SetXformOpOrderFn)(const UsdGeomXformable&);
 
-    UsdTransform3dMayaXformStack(
-        const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
-    );
+    UsdTransform3dMayaXformStack(const UsdSceneItem::Ptr& item);
     ~UsdTransform3dMayaXformStack() override = default;
 
     //! Create a UsdTransform3dMayaXformStack for the given item.  The argument
     //! transform ops must match a Maya transform stack.
     static UsdTransform3dMayaXformStack::Ptr create(
-        const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
+        const UsdSceneItem::Ptr& item
     );
 
     Ufe::Vector3d translation() const override;
@@ -88,12 +83,6 @@ public:
 
 protected:
 
-    UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(
-        const UsdSceneItem::Ptr&           item,
-        const std::vector<UsdGeomXformOp>& ops,
-    const OpNameToNdx&                 opNameToNdx
-    );
-
     bool            hasOp(OpNdx ndx) const;
     UsdGeomXformOp  getOp(OpNdx ndx) const;
     virtual SetXformOpOrderFn getXformOpOrderFn() const;
@@ -110,9 +99,6 @@ protected:
     Ufe::SetVector3dUndoableCommand::Ptr setVector3dCmd(
         const V& v, const TfToken& attrName, const TfToken& opSuffix = TfToken()
     );
-
-    // Cache of ops in the ordered ops vector, indexed by position.
-    std::unordered_map<OpNdx, UsdGeomXformOp> _orderedOps;
 
     UsdGeomXformable _xformable;
 

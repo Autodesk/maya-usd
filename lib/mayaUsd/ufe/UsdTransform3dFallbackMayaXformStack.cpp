@@ -188,8 +188,7 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
 
     // No transform op matched: start a new Maya transform stack at the end.
     if (i == xformOps.end()) {
-        return UsdTransform3dFallbackMayaXformStack::create(
-            usdItem, std::vector<UsdGeomXformOp>());
+        return UsdTransform3dFallbackMayaXformStack::create(usdItem);
     }
 
     // Otherwise, copy ops starting at the first fallback op we found.  If all
@@ -203,23 +202,23 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
     // ops support the Maya transform stack, create a Maya transform stack
     // interface for it, otherwise no further handlers to delegate to, so fail.
     return MatchingSubstack(candidateOps) ? 
-        UsdTransform3dFallbackMayaXformStack::create(usdItem, candidateOps) : nullptr;
+        UsdTransform3dFallbackMayaXformStack::create(usdItem) : nullptr;
 }
 
 }
 
 UsdTransform3dFallbackMayaXformStack::UsdTransform3dFallbackMayaXformStack(
-    const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
+    const UsdSceneItem::Ptr& item
 )
-    : UsdTransform3dMayaXformStack(item, ops, gOpNameToNdx)
+    : UsdTransform3dMayaXformStack(item)
 {}
 
 /* static */
 UsdTransform3dFallbackMayaXformStack::Ptr UsdTransform3dFallbackMayaXformStack::create(
-    const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
+    const UsdSceneItem::Ptr& item
 )
 {
-    return std::make_shared<UsdTransform3dFallbackMayaXformStack>(item, ops);
+    return std::make_shared<UsdTransform3dFallbackMayaXformStack>(item);
 }
 
 UsdTransform3dFallbackMayaXformStack::SetXformOpOrderFn
@@ -348,4 +347,3 @@ Ufe::Transform3d::Ptr UsdTransform3dFallbackMayaXformStackHandler::editTransform
 
 } // namespace ufe
 } // namespace MayaUsd
-

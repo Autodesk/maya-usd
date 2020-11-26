@@ -93,7 +93,7 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
     // after addition, we must sort the ops to preserve Maya transform stack
     // ordering.  Use the Maya transform stack indices to add to a map, then
     // simply traverse the map to obtain the transform ops in order.
-    std::map<int, UsdGeomXformOp> orderedOps;
+    std::map<UsdTransform3dMayaXformStack::OpNdx, UsdGeomXformOp> orderedOps;
     bool resetsXformStack = false;
     auto oldOrder = xformable.GetOrderedXformOps(&resetsXformStack);
     for (const auto& op : oldOrder) {
@@ -153,8 +153,7 @@ Ufe::Transform3d::Ptr createTransform3d(
 
     // Early out: if there are no transform ops yet, it's a match.
     if (xformOps.empty()) {
-        return UsdTransform3dMayaXformStack::create(
-            usdItem, std::vector<UsdGeomXformOp>());
+        return UsdTransform3dMayaXformStack::create(usdItem);
     }
 
     // If the prim supports the Maya transform stack, create a Maya transform
@@ -163,7 +162,7 @@ Ufe::Transform3d::Ptr createTransform3d(
     auto stackOps = UsdMayaXformStack::MayaStack().MatchingSubstack(xformOps);
 
     return stackOps.empty() ? nextTransform3dFn(nextHandler, item) :
-        UsdTransform3dMayaXformStack::create(usdItem, xformOps);
+        UsdTransform3dMayaXformStack::create(usdItem);
 }
 
 // Helper class to factor out common code for translate, rotate, scale
@@ -350,34 +349,19 @@ private:
 }
 
 UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(
-    const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
-) : UsdTransform3dMayaXformStack(item, ops, gOpNameToNdx)
-{}
-
-UsdTransform3dMayaXformStack::UsdTransform3dMayaXformStack(
-    const UsdSceneItem::Ptr&           item,
-    const std::vector<UsdGeomXformOp>& ops,
-    const OpNameToNdx&                 opNameToNdx
+    const UsdSceneItem::Ptr& item
 )
     : UsdTransform3dBase(item), _xformable(prim())
 {
     TF_AXIOM(_xformable);
-
-    // *** FIXME ***  We ask for ordered transform ops, but the prim may have
-    // other transform ops that are not in the ordered list.  However, those
-    // transform ops are not contributing to the final local transform.
-    for (const auto& op : ops) {
-        auto ndx = opNameToNdx.at(op.GetOpName());
-        _orderedOps[ndx] = op;
-    }
 }
 
 /* static */
 UsdTransform3dMayaXformStack::Ptr UsdTransform3dMayaXformStack::create(
-    const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
+    const UsdSceneItem::Ptr& item
 )
 {
-    return std::make_shared<UsdTransform3dMayaXformStack>(item, ops);
+    return std::make_shared<UsdTransform3dMayaXformStack>(item);
 }
 
 Ufe::Vector3d UsdTransform3dMayaXformStack::translation() const

@@ -17,8 +17,6 @@
 
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 
-#include <pxr/usd/usdGeom/xformable.h>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
@@ -72,15 +70,13 @@ public:
 
     typedef std::shared_ptr<UsdTransform3dFallbackMayaXformStack> Ptr;
 
-    UsdTransform3dFallbackMayaXformStack(
-        const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
-    );
+    UsdTransform3dFallbackMayaXformStack(const UsdSceneItem::Ptr& item);
     ~UsdTransform3dFallbackMayaXformStack() override = default;
 
     //! Create a UsdTransform3dFallbackMayaXformStack for the given item.  The argument
     //! transform ops must match a Maya transform stack.
     static UsdTransform3dFallbackMayaXformStack::Ptr create(
-        const UsdSceneItem::Ptr& item, const std::vector<UsdGeomXformOp>& ops
+        const UsdSceneItem::Ptr& item
     );
 
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
