@@ -170,7 +170,9 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-    assert(usdItem);
+    if (!usdItem) {
+        TF_FATAL_ERROR("Could not create fallback Maya transform stack Transform3d interface for null item.");
+    }
 #endif
 
     // If the prim isn't transformable, can't create a Transform3d interface

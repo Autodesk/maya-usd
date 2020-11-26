@@ -28,13 +28,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//------------------------------------------------------------------------------
-// Helper functions for dealing with rotations.
-//------------------------------------------------------------------------------
-
-inline double TO_DEG(double a) { return a * 180.0 / 3.141592654; }
-inline double TO_RAD(double a) { return a * 3.141592654 / 180.0; }
-
 //----------------------------------------------------------------------
 // Conversion functions from RotXYZ to all supported rotation attributes.
 //----------------------------------------------------------------------

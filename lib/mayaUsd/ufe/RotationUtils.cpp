@@ -16,6 +16,13 @@
 
 #include "RotationUtils.h"
 
+namespace {
+
+inline double TO_DEG(double a) { return a * 180.0 / 3.141592654; }
+inline double TO_RAD(double a) { return a * 3.141592654 / 180.0; }
+
+}
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
