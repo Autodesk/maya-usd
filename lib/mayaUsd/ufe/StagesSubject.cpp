@@ -305,8 +305,12 @@ void StagesSubject::stageEditTargetChanged(
 
 void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
-    // Track the edit target layer's state
-    UsdUndoManager::instance().trackLayerStates(notice.GetStage()->GetEditTarget().GetLayer());
+    auto noticeStage = notice.GetStage();
+    // Check if stage received from notice is valid. We could have cases where a ProxyShape has an invalid stage.
+    if (noticeStage) {
+        // Track the edit target layer's state
+        UsdUndoManager::instance().trackLayerStates(noticeStage->GetEditTarget().GetLayer());
+    }
 
     // Handle re-entrant onStageSet
     bool expectedState = false;
