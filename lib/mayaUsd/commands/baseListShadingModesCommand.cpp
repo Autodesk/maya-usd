@@ -114,7 +114,7 @@ MStatus MayaUSDListShadingModesCommand::doIt(const MArgList& args)
         // This is to be used when importing via the dialog. Finer grained import is available at
         // the command level.
         //
-        for (const auto &c : UsdMayaShadingModeRegistry::ListMaterialConversions()) {
+        for (const auto& c : UsdMayaShadingModeRegistry::ListMaterialConversions()) {
             if (c != UsdImagingTokens->UsdPreviewSurface) {
                 auto const& info = UsdMayaShadingModeRegistry::GetMaterialConversionInfo(c);
                 if (info.hasImporter) {
@@ -122,7 +122,7 @@ MStatus MayaUSDListShadingModesCommand::doIt(const MArgList& args)
                 }
             }
         }
-        for (const auto &s : UsdMayaShadingModeRegistry::ListImporters()) {
+        for (const auto& s : UsdMayaShadingModeRegistry::ListImporters()) {
             if (s != UsdMayaShadingModeTokens->useRegistry
                 && s != UsdMayaShadingModeTokens->displayColor) {
                 appendToResult(UsdMayaShadingModeRegistry::GetImporterNiceName(s).c_str());
