@@ -27,7 +27,7 @@ UsdUndoStateDelegate::UsdUndoStateDelegate()
     : _dirty(false)
     , _setMessageAlreadyShowed(false)
 {
-    TfDebug::Enable(USDMAYA_UNDOSTATEDELEGATE);
+    //TfDebug::Enable(USDMAYA_UNDOSTATEDELEGATE);
 }
 
 UsdUndoStateDelegate::~UsdUndoStateDelegate() { }
