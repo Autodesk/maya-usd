@@ -59,9 +59,9 @@ public:
 private:
 #if UFE_PREVIEW_VERSION_NUM >= 2029
     UsdUndoableItem _undoableItem;
-    UsdPrim _prim;
+    UsdPrim         _prim;
 #else
-    void perform(bool state);
+    void    perform(bool state);
     UsdPrim fPrim;
 #endif
 

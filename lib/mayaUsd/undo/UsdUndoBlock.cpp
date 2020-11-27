@@ -14,22 +14,23 @@
 // limitations under the License.
 //
 #include "UsdUndoBlock.h"
+
 #include "UsdUndoManager.h"
+
+#include <mayaUsd/base/debugCodes.h>
 
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/debugCodes.h>
-
 namespace MAYAUSD_NS_DEF {
 
-uint32_t UsdUndoBlock::_undoBlockDepth{0};
+uint32_t UsdUndoBlock::_undoBlockDepth { 0 };
 
-const MString UsdUndoBlockCmd::commandName{"undoBlockCmd"};
+const MString UsdUndoBlockCmd::commandName { "undoBlockCmd" };
 
 UsdUndoableItem UsdUndoBlockCmd::argUndoItem;
 
-UsdUndoBlock::UsdUndoBlock() 
+UsdUndoBlock::UsdUndoBlock()
     : UsdUndoBlock(nullptr)
 {
 }
@@ -37,22 +38,21 @@ UsdUndoBlock::UsdUndoBlock()
 UsdUndoBlock::UsdUndoBlock(UsdUndoableItem* undoItem)
     : _undoItem(undoItem)
 {
-    //TfDebug::Enable(USDMAYA_UNDOSTACK);
+    // TfDebug::Enable(USDMAYA_UNDOSTACK);
 
     TF_DEBUG_MSG(USDMAYA_UNDOSTACK, "--Opening undo block at depth %i\n", _undoBlockDepth);
 
     ++_undoBlockDepth;
 }
 
-UsdUndoBlock::~UsdUndoBlock() 
+UsdUndoBlock::~UsdUndoBlock()
 {
     auto& undoManager = UsdUndoManager::instance();
 
     // decrease the depth
     --_undoBlockDepth;
 
-    if (_undoBlockDepth == 0) 
-    {
+    if (_undoBlockDepth == 0) {
         if (_undoItem == nullptr) {
             // create an undoable item
             UsdUndoableItem undoItem;
@@ -60,7 +60,7 @@ UsdUndoBlock::~UsdUndoBlock()
             undoManager.transferEdits(undoItem);
             // execute command
             UsdUndoBlockCmd::execute(undoItem);
-        }else {
+        } else {
             // transfer edits
             undoManager.transferEdits(*_undoItem);
         }
@@ -76,7 +76,7 @@ void UsdUndoBlockCmd::execute(const UsdUndoableItem& undoableItem)
     argUndoItem = undoableItem;
 
     auto status = MGlobal::executeCommand(commandName, true, true);
-    if(!status) {
+    if (!status) {
         TF_CODING_ERROR("Executing undoBlock command failed!");
     }
 
@@ -88,15 +88,9 @@ UsdUndoBlockCmd::UsdUndoBlockCmd(const UsdUndoableItem& undoableItem)
 {
 }
 
-bool UsdUndoBlockCmd::isUndoable() const
-{
-    return true;
-}
+bool UsdUndoBlockCmd::isUndoable() const { return true; }
 
-void* UsdUndoBlockCmd::creator() 
-{
-    return new UsdUndoBlockCmd(std::move(argUndoItem)); 
-}
+void* UsdUndoBlockCmd::creator() { return new UsdUndoBlockCmd(std::move(argUndoItem)); }
 
 MStatus UsdUndoBlockCmd::doIt(const MArgList& args)
 {
@@ -118,4 +112,4 @@ MStatus UsdUndoBlockCmd::undoIt()
     return MS::kSuccess;
 }
 
-} // MAYAUSD_NS_DEF
+} // namespace MAYAUSD_NS_DEF

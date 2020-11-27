@@ -15,21 +15,16 @@
 //
 
 #include "UsdUndoableItem.h"
+
 #include "UsdUndoBlock.h"
 
 #include <pxr/usd/sdf/changeBlock.h>
 
 namespace MAYAUSD_NS_DEF {
 
-void UsdUndoableItem::undo()
-{
-    doInvert();
-}
+void UsdUndoableItem::undo() { doInvert(); }
 
-void UsdUndoableItem::redo()
-{
-    doInvert();
-}
+void UsdUndoableItem::redo() { doInvert(); }
 
 void UsdUndoableItem::doInvert()
 {

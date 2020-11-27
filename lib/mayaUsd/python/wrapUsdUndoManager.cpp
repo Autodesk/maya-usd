@@ -18,9 +18,9 @@
 #include <mayaUsd/undo/UsdUndoManager.h>
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyNoticeWrapper.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/layer.h>
 
 #include <boost/python.hpp>
@@ -31,44 +31,43 @@ using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace
+namespace {
+class PythonUndoBlock
 {
-    class PythonUndoBlock
+public:
+    PythonUndoBlock()
+        : _block(nullptr)
     {
-    public:
-        PythonUndoBlock()
-            : _block(nullptr)
-        {
-        }
-
-        ~PythonUndoBlock() { }
-
-        void enter()
-        {
-            if (!TF_VERIFY(_block == nullptr)) {
-                return;
-            }
-            _block = std::make_unique<MayaUsd::UsdUndoBlock>();
-        }
-
-        void exit(object, object, object)
-        {
-            if (!TF_VERIFY(_block != nullptr)) {
-                return;
-            }
-            _block.reset();
-        }
-
-    private:
-        std::unique_ptr<MayaUsd::UsdUndoBlock> _block;
-    };
-
-    void _trackLayerStates(const SdfLayerHandle& layer)
-    {
-        MayaUsd::UsdUndoManager::instance().trackLayerStates(layer);
     }
 
-} // namespace 
+    ~PythonUndoBlock() { }
+
+    void enter()
+    {
+        if (!TF_VERIFY(_block == nullptr)) {
+            return;
+        }
+        _block = std::make_unique<MayaUsd::UsdUndoBlock>();
+    }
+
+    void exit(object, object, object)
+    {
+        if (!TF_VERIFY(_block != nullptr)) {
+            return;
+        }
+        _block.reset();
+    }
+
+private:
+    std::unique_ptr<MayaUsd::UsdUndoBlock> _block;
+};
+
+void _trackLayerStates(const SdfLayerHandle& layer)
+{
+    MayaUsd::UsdUndoManager::instance().trackLayerStates(layer);
+}
+
+} // namespace
 
 void wrapUsdUndoManager()
 {

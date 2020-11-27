@@ -15,6 +15,7 @@
 //
 
 #include "UsdUndoManager.h"
+
 #include "UsdUndoBlock.h"
 #include "UsdUndoStateDelegate.h"
 
@@ -28,19 +29,19 @@ UsdUndoManager& UsdUndoManager::instance()
     return undoManager;
 }
 
-void UsdUndoManager::trackLayerStates(const SdfLayerHandle& layer) 
+void UsdUndoManager::trackLayerStates(const SdfLayerHandle& layer)
 {
     layer->SetStateDelegate(UsdUndoStateDelegate::New());
 }
 
-void UsdUndoManager::addInverse(InvertFunc func) 
+void UsdUndoManager::addInverse(InvertFunc func)
 {
-    if (UsdUndoBlock::depth() == 0){
+    if (UsdUndoBlock::depth() == 0) {
         TF_CODING_ERROR("Collecting invert functions outside of undoblock is not allowed!");
         return;
     }
 
-    _invertFuncs.emplace_back(func); 
+    _invertFuncs.emplace_back(func);
 }
 
 void UsdUndoManager::transferEdits(UsdUndoableItem& undoableItem)

@@ -59,7 +59,7 @@ private:
     PXR_NS::TfToken         _primToken;
     Ufe::Path               _newUfePath;
 #if UFE_PREVIEW_VERSION_NUM >= 2029
-    UsdUndoableItem         _undoableItem;
+    UsdUndoableItem _undoableItem;
 #endif
 
 }; // UsdUndoAddNewPrimCommand

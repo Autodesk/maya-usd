@@ -50,7 +50,6 @@ public:
     create(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
 
 private:
-
 #if UFE_PREVIEW_VERSION_NUM >= 2029
     void execute() override;
 #else

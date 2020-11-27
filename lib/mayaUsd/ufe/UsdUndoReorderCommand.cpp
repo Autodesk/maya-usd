@@ -55,7 +55,7 @@ UsdUndoReorderCommand::create(const UsdPrim& parentPrim, const std::vector<TfTok
     return std::make_shared<UsdUndoReorderCommand>(parentPrim, tokenList);
 }
 
-//HS TODO: Get rif of this ugly guard once PR 121 is out.
+// HS TODO: Get rif of this ugly guard once PR 121 is out.
 #if UFE_PREVIEW_VERSION_NUM >= 2029
 void UsdUndoReorderCommand::execute()
 {

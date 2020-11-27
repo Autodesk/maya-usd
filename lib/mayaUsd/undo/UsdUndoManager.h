@@ -30,7 +30,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
-//! \brief Singleton class to manage layer states. 
+//! \brief Singleton class to manage layer states.
 /*!
     The UndoManager is responsible for :
     1- tracking layer state changes from UsdUndoStateDelegate

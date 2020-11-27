@@ -34,7 +34,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(UsdUndoManager);
 
 //! \brief UsdUndoBlock collects multiple edits into a single undo operation.
 /*!
-*/
+ */
 class MAYAUSD_CORE_PUBLIC UsdUndoBlock
 {
 public:
@@ -58,23 +58,23 @@ private:
     UsdUndoableItem* _undoItem;
 };
 
-//! \brief UsdUndoBlockCmd is used to collect USD edits inside Maya MPxCommand. 
+//! \brief UsdUndoBlockCmd is used to collect USD edits inside Maya MPxCommand.
 /*!
-*/
+ */
 class MAYAUSD_CORE_PUBLIC UsdUndoBlockCmd : public MPxCommand
 {
 public:
     UsdUndoBlockCmd(const UsdUndoableItem& undoableItem);
     static void* creator();
 
-    static void execute(const UsdUndoableItem& undoableItem);
+    static void            execute(const UsdUndoableItem& undoableItem);
     static UsdUndoableItem argUndoItem;
-    static const MString commandName;
+    static const MString   commandName;
 
     MStatus doIt(const MArgList& args) override;
     MStatus redoIt() override;
     MStatus undoIt() override;
-    bool isUndoable() const override;
+    bool    isUndoable() const override;
 
 private:
     UsdUndoableItem _undoItem;

@@ -26,9 +26,9 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
 
-//! \brief UsdUndoableItem 
+//! \brief UsdUndoableItem
 /*!
-    This class stores the list of inverse edit functions that are invoked 
+    This class stores the list of inverse edit functions that are invoked
     on undo() / redo() call. This is the object that must be placed in Maya's undo stack.
 */
 class MAYAUSD_CORE_PUBLIC UsdUndoableItem
@@ -38,7 +38,7 @@ public:
     using InvertFuncs = std::vector<InvertFunc>;
 
     // default constructor/destructor
-     UsdUndoableItem() = default;
+    UsdUndoableItem() = default;
     ~UsdUndoableItem() = default;
 
     // default copy constructor/assignment operator
