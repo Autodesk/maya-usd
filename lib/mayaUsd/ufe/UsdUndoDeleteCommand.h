@@ -18,7 +18,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
 #include <mayaUsd/undo/UsdUndoableItem.h>
 #endif
 
@@ -49,7 +49,7 @@ public:
     //! Create a UsdUndoDeleteCommand from a USD prim.
     static UsdUndoDeleteCommand::Ptr create(const UsdPrim& prim);
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
     void execute() override;
 #endif
 
@@ -57,7 +57,7 @@ public:
     void redo() override;
 
 private:
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
     UsdUndoableItem _undoableItem;
     UsdPrim _prim;
 #else

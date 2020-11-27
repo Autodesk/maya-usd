@@ -17,7 +17,7 @@
 
 #include <mayaUsd/base/api.h>
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
 #include <mayaUsd/undo/UsdUndoableItem.h>
 #endif
 
@@ -51,7 +51,7 @@ public:
 
 private:
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
     void execute() override;
 #else
     bool reorder();
@@ -64,7 +64,7 @@ private:
 
     std::vector<TfToken> _orderedTokens;
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
     UsdUndoableItem _undoableItem;
 #endif
 

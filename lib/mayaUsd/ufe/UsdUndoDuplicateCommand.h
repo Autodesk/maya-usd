@@ -18,7 +18,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
 #include <mayaUsd/undo/UsdUndoableItem.h>
 #endif
 
@@ -52,14 +52,14 @@ public:
 
     UsdSceneItem::Ptr duplicatedItem() const;
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
     void execute() override;
 #endif
     void undo() override;
     void redo() override;
 
 private:
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
     UsdUndoableItem _undoableItem;
 #else
     bool duplicateUndo();

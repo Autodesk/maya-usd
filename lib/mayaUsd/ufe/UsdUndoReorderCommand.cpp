@@ -15,7 +15,7 @@
 //
 #include "UsdUndoReorderCommand.h"
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
 
@@ -35,7 +35,7 @@ UsdUndoReorderCommand::UsdUndoReorderCommand(
     , _parentPrim(parentPrim)
     , _orderedTokens(tokenList)
 {
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
     // Apply restriction rules
     for (const auto& childPrim : parentPrim.GetChildren()) {
         ufe::applyCommandRestriction(childPrim, "reorder");
@@ -56,7 +56,7 @@ UsdUndoReorderCommand::create(const UsdPrim& parentPrim, const std::vector<TfTok
 }
 
 //HS TODO: Get rif of this ugly guard once PR 121 is out.
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
 void UsdUndoReorderCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);

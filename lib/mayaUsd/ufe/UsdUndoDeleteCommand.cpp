@@ -17,7 +17,7 @@
 
 #include "private/UfeNotifGuard.h"
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
 
@@ -26,7 +26,7 @@ namespace ufe {
 
 UsdUndoDeleteCommand::UsdUndoDeleteCommand(const UsdPrim& prim)
     : Ufe::UndoableCommand()
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
     , _prim(prim)
 #else
     , fPrim(prim)
@@ -41,7 +41,7 @@ UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const UsdPrim& prim)
     return std::make_shared<UsdUndoDeleteCommand>(prim);
 }
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
 void UsdUndoDeleteCommand::execute()
 {
     MayaUsd::ufe::InAddOrDeleteOperation ad;

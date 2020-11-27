@@ -20,7 +20,7 @@
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
 
@@ -76,7 +76,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
     }
 }
 
-#if UFE_PREVIEW_VERSION_NUM > 2025
+#if UFE_PREVIEW_VERSION_NUM >= 2029
 void UsdUndoAddNewPrimCommand::execute()
 {
     MayaUsd::ufe::InAddOrDeleteOperation ad;
