@@ -833,18 +833,6 @@ public:
     AL_USDMAYA_PUBLIC
     SdfPathVector getPrimPathsFromCommaJoinedString(const MString& paths) const;
 
-#if defined(WANT_UFE_BUILD)
-    /// \brief Get the UFE path of the maya proxy shape
-    /// \return An UFE path containing the path to the proxy shape
-    AL_USDMAYA_PUBLIC
-    Ufe::Path ufePath() const;
-
-    /// \brief Get the UFE path segment of the maya proxy shape
-    /// \return An UFE path segment containing the maya path to the proxy shape
-    AL_USDMAYA_PUBLIC
-    Ufe::PathSegment ufePathSegment() const;
-#endif
-
     /// \brief  Returns the selection mask of the shape
     AL_USDMAYA_PUBLIC
     MSelectionMask getShapeSelectionMask() const override;

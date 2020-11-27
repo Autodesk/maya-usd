@@ -91,7 +91,7 @@ class Transform3dMatricesTestCase(unittest.TestCase):
 
         # Next, rotate the USD object by another 30 degrees around X.  To
         # do so, select it first.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|mayaUsdTransform|shape')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|mayaUsdTransform|shape')
         usdPathSegment = usdUtils.createUfePathSegment('/pCylinder1')
         cylinderPath = ufe.Path([mayaPathSegment, usdPathSegment])
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
@@ -118,7 +118,7 @@ class Transform3dMatricesTestCase(unittest.TestCase):
 
         # Get a Transform3d interface for the proxy shape's transform, and
         # get its transforms.
-        xformPath = ufe.Path(mayaUtils.createUfePathSegment('|world|mayaUsdTransform'))
+        xformPath = ufe.Path(mayaUtils.createUfePathSegment('|mayaUsdTransform'))
         xformItem = ufe.Hierarchy.createItem(xformPath)
         t3d = ufe.Transform3d.transform3d(xformItem)
 

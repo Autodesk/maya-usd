@@ -106,7 +106,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         sphereShapeItem = ufe.Hierarchy.createItem(sphereShapePath)
 
         mayaSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
         ball35Path = ufe.Path(
             [mayaSegment,
              usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
@@ -210,7 +210,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         sphereShapeItem = ufe.Hierarchy.createItem(sphereShapePath)
 
         mayaSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
         ball35Path = ufe.Path(
             [mayaSegment,
              usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])

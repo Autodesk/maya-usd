@@ -58,7 +58,7 @@ class GroupCmdTestCase(unittest.TestCase):
         '''Creation of USD group objects.'''
 
         mayaPathSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
 
         usdSegmentBall5 = usdUtils.createUfePathSegment(
             "/Ball_set/Props/Ball_5")

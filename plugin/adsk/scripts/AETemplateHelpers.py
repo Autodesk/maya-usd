@@ -2,8 +2,6 @@ import ufe
 import mayaUsd.ufe
 
 def GetDefaultPrimName(proxyShape):
-    if not proxyShape.startswith('|world'):
-        proxyShape = '|world' + proxyShape
     try:
         proxyStage = mayaUsd.ufe.getStage(proxyShape)
         if proxyStage:
@@ -15,8 +13,6 @@ def GetDefaultPrimName(proxyShape):
     return ''
 
 def GetRootLayerName(proxyShape):
-    if not proxyShape.startswith('|world'):
-        proxyShape = '|world' + proxyShape
     try:
         proxyStage = mayaUsd.ufe.getStage(proxyShape)
         if proxyStage:
