@@ -27,7 +27,7 @@ UsdUndoStateDelegate::UsdUndoStateDelegate()
     : _dirty(false)
     , _setMessageAlreadyShowed(false)
 {
-    //TfDebug::Enable(USDMAYA_UNDOSTATEDELEGATE);
+    TfDebug::Enable(USDMAYA_UNDOSTATEDELEGATE);
 }
 
 UsdUndoStateDelegate::~UsdUndoStateDelegate() { }
@@ -58,6 +58,8 @@ void UsdUndoStateDelegate::invertSetField(const SdfPath& path, const TfToken& fi
         .Msg("Inverting set Field '%s' for Spec '%s'\n", fieldName.GetText(), path.GetText());
 
     SetField(path, fieldName, inverse);
+
+    _setMessageAlreadyShowed = false;
 }
 
 void UsdUndoStateDelegate::invertCreateSpec(const SdfPath& path, bool inert)
@@ -67,6 +69,9 @@ void UsdUndoStateDelegate::invertCreateSpec(const SdfPath& path, bool inert)
     TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE).Msg("Inverting creating spec at '%s'\n", path.GetText());
 
     DeleteSpec(path, inert);
+
+    _setMessageAlreadyShowed = false;
+
 }
 
 void UsdUndoStateDelegate::invertDeleteSpec(
@@ -80,6 +85,8 @@ void UsdUndoStateDelegate::invertDeleteSpec(
     TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE).Msg("Inverting deleting spec at '%s'\n", path.GetText());
 
     CreateSpec(path, deletedSpecType, inert);
+
+    _setMessageAlreadyShowed = false;
 }
 
 void UsdUndoStateDelegate::invertMoveSpec(const SdfPath& oldPath, const SdfPath& newPath)
@@ -89,6 +96,8 @@ void UsdUndoStateDelegate::invertMoveSpec(const SdfPath& oldPath, const SdfPath&
     TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE).Msg("Inverting move of '%s' to '%s'\n", oldPath.GetText(), newPath.GetText());
 
     MoveSpec(newPath, oldPath);
+
+    _setMessageAlreadyShowed = false;
 }
 
 void UsdUndoStateDelegate::invertPushTokenChild(
@@ -106,6 +115,8 @@ void UsdUndoStateDelegate::invertPushTokenChild(
     #else
         PopChild(parentPath, fieldName, value);
     #endif
+
+    _setMessageAlreadyShowed = false;
 }
 
 void UsdUndoStateDelegate::invertPushPathChild(
@@ -123,6 +134,8 @@ void UsdUndoStateDelegate::invertPushPathChild(
     #else
         PopChild(parentPath, fieldName, value);
     #endif
+
+    _setMessageAlreadyShowed = false;
 }
 
 void UsdUndoStateDelegate::invertPopTokenChild(
@@ -136,6 +149,8 @@ void UsdUndoStateDelegate::invertPopTokenChild(
         .Msg("Inverting pop field '%s' of '%s'\n", fieldName.GetText(), parentPath.GetText());
 
     PushChild(parentPath, fieldName, value);
+
+    _setMessageAlreadyShowed = false;
 }
 
 void UsdUndoStateDelegate::invertPopPathChild(const SdfPath& parentPath, const TfToken& fieldName, const SdfPath& value)
@@ -146,6 +161,8 @@ void UsdUndoStateDelegate::invertPopPathChild(const SdfPath& parentPath, const T
         .Msg("Inverting pop field '%s' of '%s'\n", fieldName.GetText(), parentPath.GetText());
 
     PushChild(parentPath, fieldName, value);
+
+    _setMessageAlreadyShowed = false;
 }
 
 void UsdUndoStateDelegate::invertSetFieldDictValueByKey(const SdfPath& path, const TfToken& fieldName, const TfToken& keyPath, const VtValue& inverse)
@@ -156,6 +173,8 @@ void UsdUndoStateDelegate::invertSetFieldDictValueByKey(const SdfPath& path, con
             .Msg("Inverting Field '%s' By Key '%s' for Spec '%s'\n", fieldName.GetText(), keyPath.GetText(), path.GetText());
 
     SetFieldDictValueByKey(path, fieldName, keyPath, inverse);
+
+    _setMessageAlreadyShowed = false;
 }
 
 void UsdUndoStateDelegate::invertSetTimeSample(const SdfPath& path, double time, const VtValue& inverse)
@@ -166,6 +185,8 @@ void UsdUndoStateDelegate::invertSetTimeSample(const SdfPath& path, double time,
         .Msg("Inverting TimeSample '%f' for Spec '%s'\n", time, path.GetText());
 
     SetTimeSample(path, time, inverse);
+
+    _setMessageAlreadyShowed = false;
 }
 
 void UsdUndoStateDelegate::_OnSetField(const SdfPath& path, const TfToken& fieldName, const VtValue& value)
