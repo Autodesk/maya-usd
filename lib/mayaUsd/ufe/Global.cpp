@@ -121,8 +121,7 @@ MStatus initialize()
     handlers.object3dHandler = UsdObject3dHandler::create();
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
-    g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-        kUSDRunTimeName, handlers);
+    g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
 #else
     auto usdHierHandler = UsdHierarchyHandler::create();
     auto usdTrans3dHandler = UsdTransform3dHandler::create();

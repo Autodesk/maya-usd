@@ -757,7 +757,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // once per selection update to avoid cost of executing MEL command or searching optionVar for
     // each intersection.
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
-    const TfToken&                 selectionKind = _selectionKind;
+    const TfToken& selectionKind = _selectionKind;
 #if UFE_PREVIEW_VERSION_NUM < 2027 // #ifndef UFE_V2_FEATURES_AVAILABLE
     const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
 #endif

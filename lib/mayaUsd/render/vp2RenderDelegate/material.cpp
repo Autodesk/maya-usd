@@ -432,7 +432,7 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 #if USD_VERSION_NUM >= 2102
     HioImageSharedPtr image = HioImage::OpenForReading(path);
 #else
-    GlfImageSharedPtr image = GlfImage::OpenForReading(path);
+    GlfImageSharedPtr     image = GlfImage::OpenForReading(path);
 #endif
     if (!TF_VERIFY(image)) {
         return nullptr;
