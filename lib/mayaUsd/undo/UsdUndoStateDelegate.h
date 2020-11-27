@@ -95,6 +95,9 @@ private:
     void _OnSetFieldDictValueByKeyImpl(const SdfPath& path, const TfToken& fieldName, const TfToken& keyPath);
     void _OnSetTimeSampleImpl(const SdfPath& path, double time);
 
+    template <class T>
+    void _PopChild(const SdfPath& parentPath, const TfToken& fieldName, const T& oldValue);
+
 private:
     SdfLayerHandle _layer;
     bool           _dirty;

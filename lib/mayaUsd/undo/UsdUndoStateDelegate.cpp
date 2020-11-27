@@ -101,7 +101,11 @@ void UsdUndoStateDelegate::invertPushTokenChild(
     TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE)
         .Msg("Inverting push field '%s' of '%s'\n", fieldName.GetText(), parentPath.GetText());
 
-    PopChild(parentPath, fieldName, value);
+    #if 1 
+        _PopChild(parentPath, fieldName, value);
+    #else
+        PopChild(parentPath, fieldName, value);
+    #endif
 }
 
 void UsdUndoStateDelegate::invertPushPathChild(
@@ -114,7 +118,11 @@ void UsdUndoStateDelegate::invertPushPathChild(
     TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE)
         .Msg("Inverting push field '%s' of '%s'\n", fieldName.GetText(), parentPath.GetText());
 
-    PopChild(parentPath, fieldName, value);
+    #if 1 
+        _PopChild(parentPath, fieldName, value);
+    #else
+        PopChild(parentPath, fieldName, value);
+    #endif
 }
 
 void UsdUndoStateDelegate::invertPopTokenChild(
@@ -442,6 +450,48 @@ void UsdUndoStateDelegate::_OnSetTimeSampleImpl(const SdfPath& path, double time
 
         UsdUndoManager::instance().addInverse(std::bind(&UsdUndoStateDelegate::invertSetTimeSample, this, path, time, oldValue));
     }
+}
+
+// We hit a wall when running testGroupCmd with the new Undo/Redo service.  
+// Grouping involves two command operation (AddPrim, Parent) and during the parent::undo(), the parented token (newGroup1) 
+// wasn't properly removed which caused the test to fail.
+//
+// In the implementation SdfLayerStateDelegateBase::PopChild, the value ( a.k.a oldValue ) is completely ignored
+// from the vector associate with this field and instead the last value is pop_back which is incorrect.
+//
+// https://github.com/PixarAnimationStudios/USD/blob/d8a405a1344480f859f025c4f97085143efacb53/pxr/usd/sdf/layer.cpp#L3767
+//
+// _PopChild is the customized version of SdfLayer::_PrimPopChild where the oldValue is properly removed from the container.
+template <class T>
+void UsdUndoStateDelegate::_PopChild(const SdfPath& parentPath, const TfToken& fieldName, const T& oldValue)
+{
+    // capture pop child
+    _OnPopChild(parentPath, fieldName, oldValue);
+
+    // get layer data
+    SdfAbstractDataPtr data = _GetLayerData();
+
+    // See efficiency notes in _PrimPushChild().
+    VtValue box = data->Get(parentPath, fieldName);
+    data->Erase(parentPath, fieldName);
+    if (!box.IsHolding<std::vector<T>>()) {
+        TF_CODING_ERROR("SdfLayer::_PrimPopChild failed: field %s is "
+                        "non-vector", fieldName.GetText());
+        return;
+    }
+    std::vector<T> vec;
+    box.Swap(vec);
+    if (vec.empty()) {
+        TF_CODING_ERROR("SdfLayer::_PrimPopChild failed: %s is empty",
+                        fieldName.GetText());
+        return;
+    }
+
+    // find the oldValue and remove it.
+    vec.erase(std::remove(vec.begin(), vec.end(), oldValue), vec.end());
+
+    box.Swap(vec);
+    data->Set(parentPath, fieldName, box);
 }
 
 } // namespace MAYAUSD_NS_DEF
