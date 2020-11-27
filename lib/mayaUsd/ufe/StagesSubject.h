@@ -73,10 +73,12 @@ private:
     //! Call the stageChanged() methods on stage observers.
     void stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender);
 
+#if UFE_PREVIEW_VERSION_NUM > 2025
     //! Call the stageEditTargetChanged() methods on stage observers.
     void stageEditTargetChanged(
         UsdNotice::StageEditTargetChanged const& notice,
         UsdStageWeakPtr const&                   sender);
+#endif
 
 private:
     // Notice listener method for proxy stage set

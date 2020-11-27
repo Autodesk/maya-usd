@@ -19,7 +19,10 @@
 
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#if UFE_PREVIEW_VERSION_NUM > 2025
 #include <mayaUsd/undo/UsdUndoBlock.h>
+#endif
 
 namespace {
 
@@ -73,6 +76,7 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
     }
 }
 
+#if UFE_PREVIEW_VERSION_NUM > 2025
 void UsdUndoAddNewPrimCommand::execute()
 {
     MayaUsd::ufe::InAddOrDeleteOperation ad;
@@ -100,6 +104,25 @@ void UsdUndoAddNewPrimCommand::redo()
 
     _undoableItem.redo();
 }
+#else
+void UsdUndoAddNewPrimCommand::undo()
+{
+    if (_stage) {
+        MayaUsd::ufe::InAddOrDeleteOperation ad;
+        _stage->RemovePrim(_primPath);
+    }
+}
+
+void UsdUndoAddNewPrimCommand::redo()
+{
+    if (_stage) {
+        MayaUsd::ufe::InAddOrDeleteOperation ad;
+        auto                                 prim = _stage->DefinePrim(_primPath, _primToken);
+        if (!prim.IsValid())
+            TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
+    }
+}
+#endif
 
 const Ufe::Path& UsdUndoAddNewPrimCommand::newUfePath() const { return _newUfePath; }
 

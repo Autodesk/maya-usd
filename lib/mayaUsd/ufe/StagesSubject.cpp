@@ -21,7 +21,9 @@
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
+#if UFE_PREVIEW_VERSION_NUM > 2025
 #include <mayaUsd/undo/UsdUndoManager.h>
+#endif
 
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdGeom/xformOp.h>
@@ -295,6 +297,7 @@ void StagesSubject::stageChanged(
     }
 }
 
+#if UFE_PREVIEW_VERSION_NUM > 2025
 void StagesSubject::stageEditTargetChanged(
     UsdNotice::StageEditTargetChanged const& notice,
     UsdStageWeakPtr const&                   sender)
@@ -302,15 +305,18 @@ void StagesSubject::stageEditTargetChanged(
     // Track the edit target layer's state
     UsdUndoManager::instance().trackLayerStates(notice.GetStage()->GetEditTarget().GetLayer());
 }
+#endif
 
 void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
+    #if UFE_PREVIEW_VERSION_NUM > 2025
     auto noticeStage = notice.GetStage();
     // Check if stage received from notice is valid. We could have cases where a ProxyShape has an invalid stage.
     if (noticeStage) {
         // Track the edit target layer's state
         UsdUndoManager::instance().trackLayerStates(noticeStage->GetEditTarget().GetLayer());
     }
+    #endif
 
     // Handle re-entrant onStageSet
     bool expectedState = false;
@@ -322,8 +328,10 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
         StagesSubject::Ptr me(this);
         for (auto stage : ProxyShapeHandler::getAllStages()) {
             fStageListeners[stage] = TfNotice::Register(me, &StagesSubject::stageChanged, stage);
+#if UFE_PREVIEW_VERSION_NUM > 2025
             fStageListeners[stage]
                 = TfNotice::Register(me, &StagesSubject::stageEditTargetChanged, stage);
+#endif
         }
         stageSetGuardCount = false;
     }

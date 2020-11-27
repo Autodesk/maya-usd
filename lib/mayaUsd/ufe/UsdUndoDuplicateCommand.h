@@ -17,7 +17,10 @@
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
+
+#if UFE_PREVIEW_VERSION_NUM > 2025
 #include <mayaUsd/undo/UsdUndoableItem.h>
+#endif
 
 #include <pxr/usd/sdf/path.h>
 
@@ -49,15 +52,22 @@ public:
 
     UsdSceneItem::Ptr duplicatedItem() const;
 
+#if UFE_PREVIEW_VERSION_NUM > 2025
     void execute() override;
+#endif
     void undo() override;
     void redo() override;
 
 private:
+#if UFE_PREVIEW_VERSION_NUM > 2025
+    UsdUndoableItem _undoableItem;
+#else
+    bool duplicateUndo();
+    bool duplicateRedo();
+#endif
+
     Ufe::Path _ufeSrcPath;
     SdfPath   _usdDstPath;
-
-    UsdUndoableItem _undoableItem;
 
 }; // UsdUndoDuplicateCommand
 

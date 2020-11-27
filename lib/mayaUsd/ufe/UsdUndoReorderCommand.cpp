@@ -69,7 +69,7 @@ void UsdUndoReorderCommand::undo() { _undoableItem.undo(); }
 
 void UsdUndoReorderCommand::redo() { _undoableItem.redo(); }
 
-#elif
+#else
 bool UsdUndoReorderCommand::reorder()
 {
     const auto& parentPrimSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_parentPrim);
