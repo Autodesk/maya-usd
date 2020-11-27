@@ -316,8 +316,13 @@ void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& n
     afterOpen();
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(notice.GetProxyShape().ufePath());
-    Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+    auto p = notice.GetProxyShape().ufePath();
+    if (!p.empty()) {
+        Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(p);
+        if (sceneItem) {
+            Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+        }
+    }
 #endif
 }
 
