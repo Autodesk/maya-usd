@@ -118,11 +118,7 @@ void UsdUndoStateDelegate::invertPushTokenChild(
     TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE)
         .Msg("Inverting push field '%s' of '%s'\n", fieldName.GetText(), parentPath.GetText());
 
-#if 1
     _PopChild(parentPath, fieldName, value);
-#else
-    PopChild(parentPath, fieldName, value);
-#endif
 
     _setMessageAlreadyShowed = false;
 }
@@ -137,11 +133,7 @@ void UsdUndoStateDelegate::invertPushPathChild(
     TF_DEBUG(USDMAYA_UNDOSTATEDELEGATE)
         .Msg("Inverting push field '%s' of '%s'\n", fieldName.GetText(), parentPath.GetText());
 
-#if 1
     _PopChild(parentPath, fieldName, value);
-#else
-    PopChild(parentPath, fieldName, value);
-#endif
 
     _setMessageAlreadyShowed = false;
 }
