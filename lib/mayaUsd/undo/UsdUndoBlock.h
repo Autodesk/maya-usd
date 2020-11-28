@@ -64,7 +64,7 @@ private:
 class MAYAUSD_CORE_PUBLIC UsdUndoBlockCmd : public MPxCommand
 {
 public:
-    UsdUndoBlockCmd(const UsdUndoableItem& undoableItem);
+    UsdUndoBlockCmd(UsdUndoableItem undoableItem);
     static void* creator();
 
     static void            execute(const UsdUndoableItem& undoableItem);

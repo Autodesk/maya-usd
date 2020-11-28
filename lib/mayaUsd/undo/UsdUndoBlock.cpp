@@ -83,7 +83,7 @@ void UsdUndoBlockCmd::execute(const UsdUndoableItem& undoableItem)
     argUndoItem = UsdUndoableItem();
 }
 
-UsdUndoBlockCmd::UsdUndoBlockCmd(const UsdUndoableItem& undoableItem)
+UsdUndoBlockCmd::UsdUndoBlockCmd(UsdUndoableItem undoableItem)
     : _undoItem(undoableItem)
 {
 }
