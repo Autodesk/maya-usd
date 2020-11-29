@@ -168,7 +168,11 @@ void StagesSubject::afterOpen()
     std::for_each(
         std::begin(fStageListeners),
         std::end(fStageListeners),
-        [](StageListenerMap::value_type element) { TfNotice::Revoke(element.second); });
+        [](StageListenerMap::value_type element) {
+            for (auto& noticeKey : element.second) {
+                TfNotice::Revoke(noticeKey);
+            }
+        });
     fStageListeners.clear();
 
     // Set up our stage to proxy shape UFE path (and reverse)
@@ -328,12 +332,16 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 
         StagesSubject::Ptr me(this);
         for (auto stage : ProxyShapeHandler::getAllStages()) {
-            fStageListeners[stage] = TfNotice::Register(me, &StagesSubject::stageChanged, stage);
+
+            NoticeKeys noticeKeys;
+
+            noticeKeys[0] = TfNotice::Register(me, &StagesSubject::stageChanged, stage);
 #if UFE_PREVIEW_VERSION_NUM >= 2029
-            fStageListeners[stage]
-                = TfNotice::Register(me, &StagesSubject::stageEditTargetChanged, stage);
+            noticeKeys[1] = TfNotice::Register(me, &StagesSubject::stageEditTargetChanged, stage);
 #endif
+            fStageListeners[stage] = noticeKeys;
         }
+
         stageSetGuardCount = false;
     }
 }

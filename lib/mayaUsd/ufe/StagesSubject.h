@@ -87,9 +87,16 @@ private:
     // Notice listener method for proxy stage invalidate.
     void onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice);
 
+    // Array of Notice::Key for registered listener
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    using NoticeKeys = std::array<TfNotice::Key, 2>;
+#else
+    using NoticeKeys = std::array<TfNotice::Key, 1>;
+#endif
+
     // Map of per-stage listeners, indexed by stage.
-    typedef TfHashMap<UsdStageWeakPtr, TfNotice::Key, TfHash> StageListenerMap;
-    StageListenerMap                                          fStageListeners;
+    typedef TfHashMap<UsdStageWeakPtr, NoticeKeys, TfHash> StageListenerMap;
+    StageListenerMap                                       fStageListeners;
 
     bool fBeforeNewCallback = false;
 
