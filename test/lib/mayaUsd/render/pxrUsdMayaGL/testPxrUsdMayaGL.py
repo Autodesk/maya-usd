@@ -65,7 +65,7 @@ class testPxrUsdMayaGL(unittest.TestCase):
 
 if __name__ == '__main__':
     suite = unittest.TestLoader().loadTestsFromTestCase(testPxrUsdMayaGL)
-    results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
+    results = unittest.TextTestRunner(stream=sys.__stderr__).run(suite)
     if results.wasSuccessful():
         exitCode = 0
     else:

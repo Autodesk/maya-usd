@@ -162,7 +162,7 @@ if __name__ == "__main__":
         testSuites.append(unittest.TestLoader().loadTestsFromTestCase(testCase))
     suite = unittest.TestSuite(testSuites)
 
-    results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
+    results = unittest.TextTestRunner(stream=sys.__stderr__).run(suite)
     if results.wasSuccessful():
         exitCode = 0
     else:
