@@ -113,35 +113,82 @@ inline bool _IsUsdUVTexture(const HdMaterialNode& node)
     return (node.identifier == UsdImagingTokens->UsdUVTexture);
 }
 
-//! Helper utility function to print nodes, connections and primvars in the
+//! Helper function to generate a XML string about nodes, relationships and primvars in the
 //! specified material network.
-void _PrintMaterialNetwork(
-    const std::string&       label,
-    const SdfPath&           id,
-    const HdMaterialNetwork& mat)
+std::string _GenerateXMLString(const HdMaterialNetwork& mat, bool includeParams=true)
 {
-    std::cout << label << " material network for " << id << "\n";
+    std::string result;
+    result.reserve(1024);
 
-    std::cout << "  --Node--\n";
-    for (HdMaterialNode const& node : mat.nodes) {
-        std::cout << "    " << node.path << "\n";
-        std::cout << "    " << node.identifier << "\n";
+    if (!mat.nodes.empty()) {
+        result += "<nodes>\n";
 
-        for (auto const& entry : node.parameters) {
-            std::cout << "      param " << entry.first << ": " << TfStringify(entry.second) << "\n";
+        if (includeParams) {
+            for (HdMaterialNode const& node : mat.nodes) {
+                result += "  <node name=\"";
+                result += node.path.GetName();
+                result += "\" identifier=\"";
+                result += node.identifier;
+                result += "\">\n";
+
+                result += "    <params>\n";
+
+                for (auto const& parameter : node.parameters) {
+                    result += "      <param name=\"";
+                    result += parameter.first;
+                    result += "\" value=\"";
+                    result += TfStringify(parameter.second);
+                    result += "\"/>\n";
+                }
+
+                result += "    </params>\n";
+
+                result += "  </node>\n";
+            }
+        } else {
+            for (HdMaterialNode const& node : mat.nodes) {
+                result += "  <node name=\"";
+                result += node.path.GetName();
+                result += "\" identifier=\"";
+                result += node.identifier;
+                result += "\"/>\n";
+            }
         }
+
+        result += "</nodes>\n";
     }
 
-    std::cout << "  --Connections--\n";
-    for (const HdMaterialRelationship& rel : mat.relationships) {
-        std::cout << "    " << rel.inputId << "." << rel.inputName << "->" << rel.outputId << "."
-                  << rel.outputName << "\n";
+    if (!mat.relationships.empty()) {
+        result += "<relationships>\n";
+
+        for (const HdMaterialRelationship& rel : mat.relationships) {
+            result += "  <relationship from=\"";
+            result += rel.inputId.GetName();
+            result += ".";
+            result += rel.inputName;
+            result += "\" to=\"";
+            result += rel.outputId.GetName();
+            result += ".";
+            result += rel.outputName;
+            result += "\"/>\n";
+        }
+
+        result += "</relationships>\n";
     }
 
-    std::cout << "  --Primvars--\n";
-    for (TfToken const& primvar : mat.primvars) {
-        std::cout << "    " << primvar << "\n";
+    if (!mat.primvars.empty()) {
+        result += "<primvars>\n";
+
+        for (TfToken const& primvar : mat.primvars) {
+            result += "  <primvar name=\"";
+            result += primvar;
+            result += "\"/>\n";
+        }
+
+        result += "</primvars>\n";
     }
+
+    return result;
 }
 
 //! Helper utility function to apply VP2-specific fixes to the material network.
@@ -591,17 +638,6 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 
 } // anonymous namespace
 
-/*! \brief  Releases the reference to the shader owned by a smart pointer.
- */
-void HdVP2ShaderDeleter::operator()(MHWRender::MShaderInstance* shader)
-{
-    MRenderer* const            renderer = MRenderer::theRenderer();
-    const MShaderManager* const shaderMgr = renderer ? renderer->getShaderManager() : nullptr;
-    if (TF_VERIFY(shaderMgr)) {
-        shaderMgr->releaseShader(shader);
-    }
-}
-
 /*! \brief  Releases the reference to the texture owned by a smart pointer.
  */
 void HdVP2TextureDeleter::operator()(MHWRender::MTexture* texture)
@@ -647,13 +683,37 @@ void HdVP2Material::Sync(
                 HdMaterialNetwork vp2BxdfNet;
                 _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
 
-                // Create a shader instance for the material network.
-                _surfaceShader.reset(_CreateShaderInstance(vp2BxdfNet));
+                // Generate a XML string from the material network and convert it to a token for
+                // faster hashing and comparison.
+                const TfToken bxdfNetToken(_GenerateXMLString(bxdfNet, false));
+
+                // Acquire a shader instance from the shader cache. If a shader instance has been
+                // cached with the same token, a clone of the shader instance will be returned.
+                // Multiple clones of a shader instance will share the same shader effect, thus
+                // reduce compilation overhead and enable MDI consolidation.
+                MHWRender::MShaderInstance* shader
+                    = _renderDelegate->GetShaderFromCache(bxdfNetToken);
+
+                // If the shader instance is not found in the cache, create one from the material
+                // network and add a clone to the cache for reuse.
+                if (!shader) {
+                    shader = _CreateShaderInstance(vp2BxdfNet);
+
+                    if (shader) {
+                        _renderDelegate->AddShaderToCache(bxdfNetToken, *shader);
+                    }
+                }
+
+                // The shader instance is owned by the material solely.
+                _surfaceShader.reset(shader);
 
                 if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
-                    _PrintMaterialNetwork("BXDF", id, bxdfNet);
-                    _PrintMaterialNetwork("BXDF (with VP2 fixes)", id, vp2BxdfNet);
-                    _PrintMaterialNetwork("Displacement", id, dispNet);
+                    std::cout << "BXDF material network for " << id << ":\n"
+                              << _GenerateXMLString(bxdfNet) << "\n"
+                              << "BXDF (with VP2 fixes) material network for " << id << ":\n"
+                              << _GenerateXMLString(vp2BxdfNet) << "\n"
+                              << "Displacement material network for " << id << ":\n"
+                              << _GenerateXMLString(dispNet) << "\n";
 
                     if (_surfaceShader) {
                         auto tmpDir = boost::filesystem::temp_directory_path();

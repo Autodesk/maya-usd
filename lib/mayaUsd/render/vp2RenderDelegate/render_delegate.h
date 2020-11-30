@@ -18,6 +18,7 @@
 
 #include "render_param.h"
 #include "resource_registry.h"
+#include "shader.h"
 
 #include <pxr/imaging/hd/renderDelegate.h>
 #include <pxr/imaging/hd/resourceRegistry.h>
@@ -136,6 +137,9 @@ public:
     MHWRender::MShaderInstance*
     GetBasisCurvesCPVShader(const TfToken& curveType, const TfToken& curveBasis) const;
 
+    MHWRender::MShaderInstance* GetShaderFromCache(const TfToken& id);
+    bool AddShaderToCache(const TfToken& id, const MHWRender::MShaderInstance& shader);
+
     const MHWRender::MSamplerState* GetSamplerState(const MHWRender::MSamplerStateDesc& desc) const;
 
     const HdVP2BBoxGeom& GetSharedBBoxGeom() const;
@@ -155,10 +159,12 @@ private:
         _resourceRegistry; //!< Shared and unused by VP2 resource registry
 
     std::unique_ptr<HdVP2RenderParam>
-            _renderParam; //!< Render param used to provided access to VP2 during prim synchronization
-    SdfPath _id;          //!< Render delegate IDs
+        _renderParam; //!< Render param used to provided access to VP2 during prim synchronization
+    SdfPath _id;      //!< Render delegate ID
     HdVP2ResourceRegistry
         _resourceRegistryVP2; //!< VP2 resource registry used for enqueue and execution of commits
+
+    HdVP2ShaderCache _shaderCache; //!< A thread-safe cache of named shaders.
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
