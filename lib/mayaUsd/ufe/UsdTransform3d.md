@@ -102,10 +102,14 @@ factory interface.  Its signature and documentation are the following:
         through the edit transform 3D object will be visible through the normal
         \ref Ufe::Transform3d::transform3d() interface.
         \param item SceneItem to use to retrieve its Transform3d interface.
+        \param hint Contextual information for Transform3d interface creation.
         \return Transform3d interface of given SceneItem. Returns a null
         pointer if no Transform3d interface can be created for the item.
     */
-    virtual Transform3d::Ptr editTransform3d(const SceneItem::Ptr& item) const {
+    virtual Transform3d::Ptr editTransform3d(
+        const SceneItem::Ptr&      item,
+        const EditTransform3dHint& hint = EditTransform3dHint()
+    ) const {
         return transform3d(item);
     }
 ```

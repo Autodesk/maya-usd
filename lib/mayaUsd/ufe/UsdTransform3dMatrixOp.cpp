@@ -404,7 +404,10 @@ UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) cons
 }
 
 Ufe::Transform3d::Ptr
-UsdTransform3dMatrixOpHandler::editTransform3d(const Ufe::SceneItem::Ptr& item) const
+UsdTransform3dMatrixOpHandler::editTransform3d(
+    const Ufe::SceneItem::Ptr&      item,
+    const Ufe::EditTransform3dHint& hint
+) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
@@ -433,8 +436,19 @@ UsdTransform3dMatrixOpHandler::editTransform3d(const Ufe::SceneItem::Ptr& item) 
     });
     bool foundMatrix = (i != xformOps.end());
 
-    return foundMatrix ? UsdTransform3dMatrixOp::create(usdItem, *i)
-                       : _nextHandler->editTransform3d(item);
+    // If we've found a matrix op, but there is a more local non-matrix op in
+    // the stack, the more local op should be used to handle the edit.
+    bool moreLocalNonMatrix = foundMatrix ?
+        (std::find_if(i, xformOps.end(), [](const UsdGeomXformOp& op)
+        { return op.GetOpType() != UsdGeomXformOp::TypeTransform; }) 
+         != xformOps.end()) : false;
+
+    // We can't handle pivot edits, so in that case pass on to the next handler.
+    return
+        (foundMatrix && !moreLocalNonMatrix && 
+         (hint.type() != Ufe::EditTransform3dHint::EditPivot)) ? 
+        UsdTransform3dMatrixOp::create(usdItem, *i) : 
+        _nextHandler->editTransform3d(item);
 }
 
 } // namespace ufe

@@ -149,7 +149,7 @@ MStatus initializePlugin(MObject obj)
 
     // Set up a chain of responsibility for Transform3d interface creation,
     // from least important to most important:
-    // - Perfor operations on a Maya transform stack appended to the existing
+    // - Perform operations on a Maya transform stack appended to the existing
     //   transform stack (fallback).
     // - Perform operations on a 4x4 matrix transform op.
     // - Perform operations using the USD common transform API.

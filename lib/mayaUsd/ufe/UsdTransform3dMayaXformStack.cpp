@@ -115,31 +115,18 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
     xformable.SetXformOpOrder(newOrder, resetsXformStack);
 }
 
-inline Ufe::Transform3d::Ptr
-nextTransform3d(const Ufe::Transform3dHandler::Ptr& nextHandler, const Ufe::SceneItem::Ptr& item)
-{
-    return nextHandler->transform3d(item);
-}
-
-inline Ufe::Transform3d::Ptr nextEditTransform3d(
-    const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item)
-{
-    return nextHandler->editTransform3d(item);
-}
-
-typedef Ufe::Transform3d::Ptr (*NextTransform3dFn)(
-    const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item);
+using NextTransform3dFn = std::function<Ufe::Transform3d::Ptr()>;
 
 Ufe::Transform3d::Ptr createTransform3d(
-    const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item,
-    NextTransform3dFn                   nextTransform3dFn)
+    const Ufe::SceneItem::Ptr& item,
+    NextTransform3dFn          nextTransform3dFn
+)
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-    assert(usdItem);
+    if (!usdItem) {
+        TF_FATAL_ERROR("Could not create Maya transform stack Transform3d interface for null item.");
+    }
 #endif
 
     // If the prim isn't transformable, can't create a Transform3d interface
@@ -161,7 +148,7 @@ Ufe::Transform3d::Ptr createTransform3d(
     // chain of responsibility.
     auto stackOps = UsdMayaXformStack::MayaStack().MatchingSubstack(xformOps);
 
-    return stackOps.empty() ? nextTransform3dFn(nextHandler, item)
+    return stackOps.empty() ? nextTransform3dFn()
                             : UsdTransform3dMayaXformStack::create(usdItem);
 }
 
@@ -736,13 +723,18 @@ UsdTransform3dMayaXformStackHandler::create(const Ufe::Transform3dHandler::Ptr& 
 Ufe::Transform3d::Ptr
 UsdTransform3dMayaXformStackHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    return createTransform3d(_nextHandler, item, nextTransform3d);
+    return createTransform3d(
+        item, [&](){ return _nextHandler->transform3d(item); });
 }
 
 Ufe::Transform3d::Ptr
-UsdTransform3dMayaXformStackHandler::editTransform3d(const Ufe::SceneItem::Ptr& item) const
+UsdTransform3dMayaXformStackHandler::editTransform3d(
+    const Ufe::SceneItem::Ptr&      item,
+    const Ufe::EditTransform3dHint& hint
+) const
 {
-    return createTransform3d(_nextHandler, item, nextEditTransform3d);
+    return createTransform3d(
+        item, [&](){ return _nextHandler->editTransform3d(item, hint); });
 }
 
 } // namespace ufe
