@@ -84,7 +84,7 @@ void UsdUndoBlockCmd::execute(const UsdUndoableItem& undoableItem)
 }
 
 UsdUndoBlockCmd::UsdUndoBlockCmd(UsdUndoableItem undoableItem)
-    : _undoItem(undoableItem)
+    : _undoItem(std::move(undoableItem))
 {
 }
 
