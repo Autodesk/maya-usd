@@ -36,6 +36,34 @@ foreach(script ${TEST_SCRIPT_FILES})
     set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
 endforeach()
 
+#
+# -----------------------------------------------------------------------------
+# Special case for plug tests
+# -----------------------------------------------------------------------------
+set(TEST_PLUG_FILES
+    testMayaUsdPlugVersionCheck.py
+)
+
+mayaUsd_copyFiles(${TARGET_NAME}
+    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+    FILES ${TEST_PLUG_FILES}
+)
+
+foreach(script ${TEST_PLUG_FILES})
+    mayaUsd_get_unittest_target(target ${script})
+    mayaUsd_add_test(${target}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        PYTHON_MODULE ${target}
+        ENV
+            "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
+            "MAYA_PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/usd/plugin/TestMayaUsdPlug"
+    )
+
+    # Add a ctest label to these tests for easy filtering.
+    set_property(TEST ${target} APPEND PROPERTY LABELS MayaUsd)
+endforeach()
+
+# -----------------------------------------------------------------------------
 add_subdirectory(mayaUsd)
 
 if (UFE_FOUND)

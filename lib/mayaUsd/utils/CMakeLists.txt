@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}
         converter.cpp
         diagnosticDelegate.cpp
         query.cpp
+        plugRegistryHelper.cpp
         stageCache.cpp
         undoHelperCommand
         util.cpp

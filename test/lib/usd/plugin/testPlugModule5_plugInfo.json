@@ -1,0 +1,16 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "TestPlugModule5",
+            "Info": {
+                "_TestPlugBaseBool": true,
+                "Types": {
+                    "TestPlugModule5.TestPlugPythonDerived5": {
+                        "bases": ["_TestPlugBase<1>"]
+                    }
+                }
+            }
+        }
+    ]
+}

@@ -69,6 +69,13 @@ if(UFE_FOUND AND MSVC)
     )
 endif()
 
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        MAYA_USD_VERSION=${USD_VERSION}
+        MAYAUSD_VERSION=${MAYAUSD_VERSION}
+        MAYA_PY_VERSION=${MAYA_PY_VERSION}
+)
+
 mayaUsd_compile_config(${PROJECT_NAME})
 
 # -----------------------------------------------------------------------------

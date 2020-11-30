@@ -127,3 +127,31 @@ if(IS_MACOSX OR IS_LINUX)
     mayaUsd_install_rpath(rpath ${TARGET_NAME})
 endif()
 
+# -----------------------------------------------------------------------------
+# Plug Plug-in files
+# -----------------------------------------------------------------------------
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/mayaUsdPlugInfo.json"
+               "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/mayaUsdPlugInfo.json"
+)
+
+# -----------------------------------------------------------------------------
+# Plug Plug-ins
+# -----------------------------------------------------------------------------
+set(PLUGPLUGIN_NAMES
+    testPlugModule1
+    testPlugModule2
+    testPlugModule3
+    testPlugModule4
+    testPlugModule5
+    testPlugModule6
+)
+
+foreach(plugName ${PLUGPLUGIN_NAMES})
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${plugName}.py"
+        RENAME __init__.py
+        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/${plugName}")
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${plugName}_plugInfo.json"
+               "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/${plugName}/plugInfo.json"
+)
+endforeach()
