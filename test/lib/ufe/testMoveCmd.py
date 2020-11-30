@@ -180,7 +180,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         # Select Ball_35 to move it.
         ball35Path = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         ball35Item = ufe.Hierarchy.createItem(ball35Path)
 
@@ -215,7 +215,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         # Select multiple balls to move them.
         proxyShapePathSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
 
         balls = ['Ball_33', 'Ball_34']
         ballPaths = [
