@@ -29,4 +29,6 @@ def createStageWithNewLayer():
     # Simply create a proxy shape. Since it does not have a USD file associated
     # (in the .filePath attribute), the proxy shape base will create an empty
     # stage in memory. This will create the session and root layer as well.
-    shapeNode = cmds.createNode('mayaUsdProxyShape', name='stageShape1')
+    shapeNode = cmds.createNode('mayaUsdProxyShape', skipSelect=True, name='stageShape1')
+    cmds.connectAttr('time1.outTime', shapeNode+'.time')
+    cmds.select(shapeNode, replace=True)

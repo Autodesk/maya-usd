@@ -82,7 +82,7 @@ void replaceReferenceItems(
 
     // fetching the existing SdfReference items and using
     // the Replace() method to replace them with updated SdfReference items.
-    for (const SdfReference& ref : listProxy) {
+    for (const SdfReference ref : listProxy) {
         if (MayaUsdUtils::isInternalReference(ref)) {
             SdfPath finalPath;
             if (oldPrim.GetPath() == ref.GetPrimPath()) {

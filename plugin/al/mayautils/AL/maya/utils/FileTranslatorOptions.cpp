@@ -607,7 +607,7 @@ FileTranslatorOptions::generateScript(OptionsParser& optionParser, MString& defa
               "  string $optionBreakDown[];\n"
               "  int $index;\n"
               "  if ($action == \"post\")\n  {\n" //< start of the 'post' section of the script (set
-                                                  //control values from option string)
+                                                  // control values from option string)
               "    setParent $parent;\n"
               "    columnLayout -adj true;\n"
               "    AL_usdmaya_SyncFileIOGui \""
@@ -650,8 +650,8 @@ FileTranslatorOptions::generateScript(OptionsParser& optionParser, MString& defa
         + "($optionBreakDown[0], $optionBreakDown[1]);\n        }\n"
           "      }\n    }\n"
           "  }\n  else\n  if ($action == \"query\")\n  {\n"; //< start of 'query' section - return
-                                                             //all control values as key-value pairs
-                                                             //in an option string.
+                                                             // all control values as key-value
+                                                             // pairs in an option string.
 
     itf = m_frames.begin();
     for (; itf != endf; ++itf) {

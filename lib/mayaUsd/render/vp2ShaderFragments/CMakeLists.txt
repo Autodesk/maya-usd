@@ -16,7 +16,6 @@ list(APPEND SHADERFRAGMENTS_XMLS
     Float4ToFloatY.xml
     Float4ToFloatZ.xml
     UsdPreviewSurface.xml
-    UsdPreviewSurfaceCore.xml
     lightingContributions.xml
     opacityToTransparency.xml
     scaledDiffusePassThrough.xml

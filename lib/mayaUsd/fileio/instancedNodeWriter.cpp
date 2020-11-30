@@ -168,7 +168,7 @@ UsdMaya_InstancedNodeWriter::UsdMaya_InstancedNodeWriter(
             // Replace prefixes to obtain DAG-USD path mapping.
             const UsdMayaUtil::MDagPathMap<SdfPath>& writerMapping
                 = writer->GetDagToUsdPathMapping();
-            for (const std::pair<MDagPath, SdfPath>& pair : writerMapping) {
+            for (const auto& pair : writerMapping) {
                 const MDagPath& dagPathInMaster = pair.first;
                 const SdfPath&  usdPathInMaster = pair.second;
 

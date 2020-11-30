@@ -29,6 +29,7 @@ from pxr import UsdGeom
 from maya import cmds
 
 import ufe
+import ufeUtils
 
 import os
 import re
@@ -95,20 +96,20 @@ def isMayaUsdPluginLoaded():
 
 def createUfePathSegment(mayaPath):
     """
-        Create an UFE path from a given maya path.
-        Make sure that it starts with |world. We are currently 
-        supporting Maya nodes being at the top of UFE Paths (03/26/2018)
+        Create a UFE path from a given maya path and return the first segment.
         Args:
             mayaPath (str): The maya path to use
         Returns :
             PathSegment of the given mayaPath
     """
-    if not mayaPath.startswith("|world"):
-        mayaPath = "|world" + mayaPath
-    return ufe.PathSegment(mayaPath, mayaUsdUfe.getMayaRunTimeId(),
-        mayaSeparator)
+    if ufeUtils.ufeFeatureSetVersion() >= 2:
+        return ufe.PathString.path(mayaPath).segments[0]
+    else:
+        if not mayaPath.startswith("|world"):
+            mayaPath = "|world" + mayaPath
+        return ufe.PathSegment(mayaPath, mayaUsdUfe.getMayaRunTimeId(),
+            mayaSeparator)
 
-    
 def getMayaSelectionList():
     """ 
         Returns the current Maya selection in a list

@@ -32,32 +32,56 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdVP2ShaderFragmentsTokens, MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (BasisCurvesCubicColorDomain)(BasisCurvesCubicCPVHull)(BasisCurvesCubicCPVPassing)(
-        BasisCurvesCubicCPVShader)(BasisCurvesCubicDomain)(BasisCurvesCubicFallbackShader)(
-        BasisCurvesCubicHull)(BasisCurvesLinearColorDomain)(BasisCurvesLinearCPVHull)(
-        BasisCurvesLinearCPVPassing)(BasisCurvesLinearCPVShader)(BasisCurvesLinearDomain)(
-        BasisCurvesLinearFallbackShader)(BasisCurvesLinearHull)
+    (BasisCurvesCubicColorDomain)
+    (BasisCurvesCubicCPVHull)
+    (BasisCurvesCubicCPVPassing)
+    (BasisCurvesCubicCPVShader)
+    (BasisCurvesCubicDomain)
+    (BasisCurvesCubicFallbackShader)
+    (BasisCurvesCubicHull)
+    (BasisCurvesLinearColorDomain)
+    (BasisCurvesLinearCPVHull)
+    (BasisCurvesLinearCPVPassing)
+    (BasisCurvesLinearCPVShader)
+    (BasisCurvesLinearDomain)
+    (BasisCurvesLinearFallbackShader)
+    (BasisCurvesLinearHull)
 
-        (FallbackCPVShader)(FallbackShader)
+    (FallbackCPVShader)
+    (FallbackShader)
 
-            (Float4ToFloatX)(Float4ToFloatY)(Float4ToFloatZ)(Float4ToFloatW)(Float4ToFloat3)(
-                Float4ToFloat4)
+    (Float4ToFloatX)
+    (Float4ToFloatY)
+    (Float4ToFloatZ)
+    (Float4ToFloatW)
+    (Float4ToFloat3)
+    (Float4ToFloat4)
 
-                (NwFaceCameraIfNAN)
+    (NwFaceCameraIfNAN)
 
-                    (lightingContributions)(scaledDiffusePassThrough)(scaledSpecularPassThrough)(
-                        opacityToTransparency)(usdPreviewSurfaceLighting)(usdPreviewSurfaceCombiner)
+    (lightingContributions)
+    (scaledDiffusePassThrough)
+    (scaledSpecularPassThrough)
+    (opacityToTransparency)
+    (usdPreviewSurfaceLighting)
+    (usdPreviewSurfaceCombiner)
 
-                        (UsdPrimvarColor)
+    (UsdPrimvarColor)
 
-                            (UsdUVTexture)
+    (UsdUVTexture)
 
-                                (UsdPrimvarReader_color)(UsdPrimvarReader_float)(
-                                    UsdPrimvarReader_float2)(UsdPrimvarReader_float3)(
-                                    UsdPrimvarReader_float4)(UsdPrimvarReader_vector));
+    (UsdPrimvarReader_color)
+    (UsdPrimvarReader_float)
+    (UsdPrimvarReader_float2)
+    (UsdPrimvarReader_float3)
+    (UsdPrimvarReader_float4)
+    (UsdPrimvarReader_vector)
+);
+// clang-format on
 
 static const TfTokenVector _LanguageSpecificFragmentNames
     = { _tokens->BasisCurvesLinearDomain, _tokens->BasisCurvesCubicDomain };
@@ -105,7 +129,6 @@ static const TfTokenVector _FragmentGraphNames
         _tokens->BasisCurvesLinearFallbackShader,
         _tokens->FallbackCPVShader,
         _tokens->FallbackShader,
-        HdVP2ShaderFragmentsTokens->CoreFragmentGraphName,
         HdVP2ShaderFragmentsTokens->SurfaceFragmentGraphName };
 
 namespace {

@@ -507,9 +507,14 @@ void setWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
 //! \brief  Constructor
 HdVP2BasisCurves::HdVP2BasisCurves(
     HdVP2RenderDelegate* delegate,
-    SdfPath const&       id,
-    SdfPath const&       instancerId)
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    SdfPath const& id)
+    : HdBasisCurves(id)
+#else
+    SdfPath const& id,
+    SdfPath const& instancerId)
     : HdBasisCurves(id, instancerId)
+#endif
     , _delegate(delegate)
     , _rprimId(id.GetText())
 {
@@ -661,7 +666,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         return;
     }
 
-    const HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
+    HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
     CommitState                    stateToCommit(*drawItem);
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
@@ -1051,6 +1056,12 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     // pulls them every time something changes.
     // If the mesh is instanced but has 0 instance transforms remember that
     // so the render item can be hidden.
+
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    // Sync instance topology if necessary.
+    _UpdateInstancer(sceneDelegate, &itemDirtyBits);
+#endif
+
     bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
 
@@ -1559,7 +1570,7 @@ void HdVP2BasisCurves::_UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const
 HdDirtyBits HdVP2BasisCurves::GetInitialDirtyBitsMask() const
 {
     constexpr HdDirtyBits bits = HdChangeTracker::InitRepr | HdChangeTracker::DirtyExtent
-        | HdChangeTracker::DirtyInstanceIndex | HdChangeTracker::DirtyNormals
+        | HdChangeTracker::DirtyInstancer | HdChangeTracker::DirtyNormals
         | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyPrimID
         | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyDisplayStyle
         | HdChangeTracker::DirtyRepr | HdChangeTracker::DirtyMaterialId

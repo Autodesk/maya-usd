@@ -68,22 +68,40 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(file, PxrUsdTranslators_FileTextureWriter);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya "file" node attribute names
-    (alphaGain)(alphaOffset)(colorGain)(colorOffset)(colorSpace)(defaultColor)(fileTextureName)(
-        outAlpha)(outColor)(outColorR)(outColorG)(outColorB)(outTransparency)(outTransparencyR)(
-        outTransparencyG)(outTransparencyB)(wrapU)(wrapV)
+    (alphaGain)
+    (alphaOffset)
+    (colorGain)
+    (colorOffset)
+    (colorSpace)
+    (defaultColor)
+    (fileTextureName)
+    (outAlpha)
+    (outColor)
+    (outColorR)
+    (outColorG)
+    (outColorB)
+    (outTransparency)
+    (outTransparencyR)
+    (outTransparencyG)
+    (outTransparencyB)
+    (wrapU)
+    (wrapV)
 
     // UDIM handling:
-    (uvTilingMode)((UDIMTag, "<UDIM>"))
+    (uvTilingMode)
+    ((UDIMTag, "<UDIM>"))
 
     // XXX: We duplicate these tokens here rather than create a dependency on
     // usdImaging in case the plugin is being built with imaging disabled.
     // If/when they move out of usdImaging to a place that is always available,
     // they should be pulled from there instead.
-    (UsdUVTexture)(UsdPrimvarReader_float2)
+    (UsdUVTexture)
+    (UsdPrimvarReader_float2)
 
     // UsdPrimvarReader_float2 Prim Name
     ((PrimvarReaderShaderName, "TexCoordReader"))
@@ -95,14 +113,26 @@ TF_DEFINE_PRIVATE_TOKENS(
     (result)
 
     // UsdUVTexture Input Names
-    (bias)(fallback)(file)(scale)(st)(wrapS)(wrapT)
+    (bias)
+    (fallback)
+    (file)
+    (scale)
+    (st)
+    (wrapS)
+    (wrapT)
 
     // Values for wrapS and wrapT
-    (black)(repeat)
+    (black)
+    (repeat)
 
     // UsdUVTexture Output Names
-    ((RGBOutputName, "rgb"))((RedOutputName, "r"))((GreenOutputName, "g"))((BlueOutputName, "b"))(
-        (AlphaOutputName, "a")));
+    ((RGBOutputName, "rgb"))
+    ((RedOutputName, "r"))
+    ((GreenOutputName, "g"))
+    ((BlueOutputName, "b"))
+    ((AlphaOutputName, "a"))
+);
+// clang-format on
 
 UsdMayaShaderWriter::ContextSupport
 PxrUsdTranslators_FileTextureWriter::CanExport(const UsdMayaJobExportArgs& exportArgs)

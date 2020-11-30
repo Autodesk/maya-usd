@@ -33,7 +33,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (UsdMaya)(PrimWriter));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (UsdMaya)
+        (PrimWriter)
+);
+// clang-format on
 
 typedef std::map<std::string, UsdMayaPrimWriterRegistry::WriterFactoryFn> _Registry;
 static _Registry                                                          _reg;

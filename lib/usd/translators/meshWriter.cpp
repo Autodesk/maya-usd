@@ -59,10 +59,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_REGISTER_WRITER(mesh, PxrUsdTranslators_MeshWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mesh, UsdGeomMesh);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((skelJointIndices, "skel:jointIndices"))((skelJointWeights, "skel:jointWeights"))(
-        (skelGeomBindTransform, "skel:geomBindTransform")));
+
+    ((skelJointIndices, "skel:jointIndices"))
+    ((skelJointWeights, "skel:jointWeights"))
+    ((skelGeomBindTransform, "skel:geomBindTransform"))
+);
+// clang-format on
 
 PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     const MFnDependencyNode& depNodeFn,

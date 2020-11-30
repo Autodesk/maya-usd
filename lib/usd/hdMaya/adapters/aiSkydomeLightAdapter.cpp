@@ -65,7 +65,11 @@ public:
             return VtValue(light.findPlug("aiExposure", true).asFloat());
         } else if (paramName == HdLightTokens->normalize) {
             return VtValue(light.findPlug("aiNormalize", true).asBool());
+#if USD_VERSION_NUM >= 2102
+        } else if (paramName == HdLightTokens->textureFormat) {
+#else
         } else if (paramName == UsdLuxTokens->textureFormat) {
+#endif
             const auto format = light.findPlug("format", true).asShort();
             // mirrored_ball : 0
             // angular : 1

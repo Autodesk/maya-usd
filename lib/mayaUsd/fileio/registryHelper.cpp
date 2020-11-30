@@ -32,7 +32,16 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (mayaPlugin)(providesTranslator)(UsdMaya)(ShadingModePlugin));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (mayaPlugin)
+    (providesTranslator)
+    (UsdMaya)
+    (ShadingModePlugin)
+);
+// clang-format on
 
 template <typename T> bool _GetData(const JsValue& any, T* val)
 {
@@ -122,10 +131,11 @@ static bool _HasShadingModePlugin(
 
     JsValue any;
     if (TfMapLookup(mayaTranslatorMetadata, _tokens->mayaPlugin, &any)) {
-        return _GetData(any, mayaPluginName);
+        // Find the mayaPlugin if there is one. Otherwise we can still load the plugin via USD.
+        _GetData(any, mayaPluginName);
     }
 
-    return false;
+    return true;
 }
 
 /* static */
@@ -150,7 +160,7 @@ void UsdMaya_RegistryHelper::FindAndLoadMayaPlug(
             if (!mayaPlugin.empty()) {
                 TF_DEBUG(PXRUSDMAYA_REGISTRY)
                     .Msg(
-                        "Found usdMaya plugin %s:  %s = %s.  Loading maya plugin %s.\n",
+                        "Found usdMaya plugin %s:  %s = %s.  Loading via Maya API %s.\n",
                         plug->GetName().c_str(),
                         _PluginDictScopeToDebugString(scope).c_str(),
                         value.c_str(),
@@ -180,7 +190,9 @@ void UsdMaya_RegistryHelper::FindAndLoadMayaPlug(
                 // already loaded.
                 plug->Load();
             }
-            break;
+            // Continue search. For shaders, we can have multiple importers and exporters for the
+            // same Maya node. A lambert can be exported as UsdPreviewSurface, MaterialX, Arnold,
+            // PRman...
         }
     }
 }
@@ -196,21 +208,29 @@ void UsdMaya_RegistryHelper::LoadShadingModePlugins()
         TF_FOR_ALL(plugIter, plugins)
         {
             PlugPluginPtr plug = *plugIter;
-            if (_HasShadingModePlugin(plug, scope, &mayaPlugin) && !mayaPlugin.empty()) {
-                TF_DEBUG(PXRUSDMAYA_REGISTRY)
-                    .Msg(
-                        "Found usdMaya plugin %s: Loading maya plugin %s.\n",
-                        plug->GetName().c_str(),
-                        mayaPlugin.c_str());
-                std::string loadPluginCmd
-                    = TfStringPrintf("loadPlugin -quiet %s", mayaPlugin.c_str());
-                if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
-                    // Need to ensure Python script modules are loaded
-                    // properly for this library (Maya's loadPlugin will not
-                    // load script modules like TfDlopen would).
-                    TfScriptModuleLoader::GetInstance().LoadModules();
+            if (_HasShadingModePlugin(plug, scope, &mayaPlugin)) {
+                if (!mayaPlugin.empty()) {
+                    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+                        .Msg(
+                            "Found shading mode plugin %s: Loading via Maya API %s.\n",
+                            plug->GetName().c_str(),
+                            mayaPlugin.c_str());
+                    std::string loadPluginCmd
+                        = TfStringPrintf("loadPlugin -quiet %s", mayaPlugin.c_str());
+                    if (MGlobal::executeCommand(loadPluginCmd.c_str())) {
+                        // Need to ensure Python script modules are loaded
+                        // properly for this library (Maya's loadPlugin will not
+                        // load script modules like TfDlopen would).
+                        TfScriptModuleLoader::GetInstance().LoadModules();
+                    } else {
+                        TF_CODING_ERROR("Unable to load mayaplugin %s\n", mayaPlugin.c_str());
+                    }
                 } else {
-                    TF_CODING_ERROR("Unable to load mayaplugin %s\n", mayaPlugin.c_str());
+                    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+                        .Msg(
+                            "Found shading mode plugin %s: Loading via USD API.\n",
+                            plug->GetName().c_str());
+                    plug->Load();
                 }
             }
         }
@@ -229,7 +249,7 @@ VtDictionary UsdMaya_RegistryHelper::GetComposedInfoDictionary(const std::vector
         if (_ReadNestedDict(plugin->GetMetadata(), scope, &curJsDict)) {
             const VtValue curValue = JsConvertToContainerType<VtValue, VtDictionary>(curJsDict);
             if (curValue.IsHolding<VtDictionary>()) {
-                for (const std::pair<std::string, VtValue>& pair :
+                for (const std::pair<std::string, VtValue> pair :
                      curValue.UncheckedGet<VtDictionary>()) {
                     result[pair.first] = pair.second;
                     keyDefinitionSites[pair.first].push_back(plugin->GetName());
@@ -245,7 +265,7 @@ VtDictionary UsdMaya_RegistryHelper::GetComposedInfoDictionary(const std::vector
     }
 
     // Validate that keys are only defined once globally.
-    for (const std::pair<std::string, std::vector<std::string>>& pair : keyDefinitionSites) {
+    for (const auto& pair : keyDefinitionSites) {
         if (pair.second.size() != 1) {
             TF_RUNTIME_ERROR(
                 "Key '%s' is defined in multiple plugins (%s). "

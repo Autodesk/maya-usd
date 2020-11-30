@@ -13,6 +13,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportFrameOffset.py
     testUsdExportGeomSubset.py
     testUsdExportInstances.py
+    testUsdExportLayerAttributes.py
     testUsdExportLocator.py
     testUsdExportMayaInstancer.py
     testUsdExportMesh.py
@@ -56,6 +57,7 @@ set(TEST_SCRIPT_FILES
     testUsdImportSessionLayer.py
     testUsdImportShadingModeDisplayColor.py
     testUsdImportShadingModePxrRis.py
+    testUsdImportUVSetMappings.py
     testUsdExportImportRoundtripPreviewSurface.py
     testUsdExportImportUDIM.py
     testUsdImportSkeleton.py
@@ -174,16 +176,23 @@ if (MAYA_APP_VERSION VERSION_GREATER_EQUAL 2020)
         testUsdExportCustomConverter.py
         testUsdImportCustomConverter.py
     )
+    set(PLUGIN_TYPES
+        Maya
+        USD
+    )
     foreach(script ${CUSTOM_TEST_SCRIPT_FILES})
-        mayaUsd_get_unittest_target(target ${script})
-        mayaUsd_add_test(${target}
-            PYTHON_MODULE ${target}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-            ENV
-                "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
-                "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
-        )
-        set_property(TEST ${target} APPEND PROPERTY LABELS translators)
+        foreach(plugin_type ${PLUGIN_TYPES})
+            mayaUsd_get_unittest_target(module ${script})
+            set(target "${module}-${plugin_type}")
+            mayaUsd_add_test(${target}
+                PYTHON_MODULE ${module}
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+                ENV
+                    "MAYA_PLUG_IN_PATH=${CMAKE_CURRENT_BINARY_DIR}/../plugin"
+                    "PXR_PLUGINPATH_NAME=${CMAKE_CURRENT_BINARY_DIR}/../plugin/${plugin_type}"
+            )
+            set_property(TEST ${target} APPEND PROPERTY LABELS translators)
+        endforeach()
     endforeach()
 endif()
 

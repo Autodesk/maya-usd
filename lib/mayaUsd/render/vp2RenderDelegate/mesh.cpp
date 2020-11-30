@@ -328,8 +328,13 @@ void setWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
 } // namespace
 
 //! \brief  Constructor
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id)
+    : HdMesh(id)
+#else
 HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id, const SdfPath& instancerId)
     : HdMesh(id, instancerId)
+#endif
     , _delegate(delegate)
     , _rprimId(id.GetText())
 {
@@ -522,7 +527,7 @@ HdDirtyBits HdVP2Mesh::GetInitialDirtyBitsMask() const
     constexpr HdDirtyBits bits = HdChangeTracker::InitRepr | HdChangeTracker::DirtyPoints
         | HdChangeTracker::DirtyTopology | HdChangeTracker::DirtyTransform
         | HdChangeTracker::DirtyMaterialId | HdChangeTracker::DirtyPrimvar
-        | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyInstanceIndex
+        | HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyInstancer
         | HdChangeTracker::DirtyRenderTag | DirtySelectionHighlight;
 
     return bits;
@@ -821,7 +826,7 @@ void HdVP2Mesh::_UpdateDrawItem(
         return;
     }
 
-    const HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
+    HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
     // We don't need to update the dedicated selection highlight item when there
     // is no selection highlight change and the mesh is not selected. Draw item
@@ -1283,6 +1288,12 @@ void HdVP2Mesh::_UpdateDrawItem(
     // pulls them every time something changes.
     // If the mesh is instanced but has 0 instance transforms remember that
     // so the render item can be hidden.
+
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    // Update our instance topology if necessary.
+    _UpdateInstancer(sceneDelegate, &itemDirtyBits);
+#endif
+
     bool instancerWithNoInstances = false;
     if (!GetInstancerId().IsEmpty()) {
 

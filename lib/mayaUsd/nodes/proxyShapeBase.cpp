@@ -16,10 +16,12 @@
 #include "proxyShapeBase.h"
 
 #include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/listeners/proxyShapeNotice.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/query.h>
 #include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h>
 #include <mayaUsd/utils/utilFileSystem.h>
 
 #include <pxr/base/gf/bbox3d.h>
@@ -88,6 +90,9 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <ufe/path.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
 #endif
 
 using namespace MAYAUSD_NS_DEF;
@@ -401,11 +406,15 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     } else if (plug == inStageDataCachedAttr) {
         return computeInStageDataCached(dataBlock);
     } else if (plug == outTimeAttr) {
-        return computeOutputTime(dataBlock);
+        auto retStatus = computeOutputTime(dataBlock);
+        ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
+        return retStatus;
     } else if (plug == outStageDataAttr) {
         return computeOutStageData(dataBlock);
     } else if (plug == outStageCacheIdAttr) {
         return computeOutStageCacheId(dataBlock);
+    } else if (plug.isDynamic()) {
+        return ProxyAccessor::compute(_usdAccessor, plug, dataBlock);
     }
 
     return MS::kUnknownParameter;
@@ -541,15 +550,27 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
                 if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
                     SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
-                    if (sessionLayer) {
+
+                    bool targetSession
+                        = MGlobal::optionVarIntValue(UsdMayaUtil::convert(
+                              MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
+                        == 1;
+                    targetSession = targetSession || !rootLayer->PermissionToEdit();
+
+                    if (sessionLayer || targetSession) {
+                        if (!sessionLayer)
+                            sessionLayer = SdfLayer::CreateAnonymous();
                         usdStage = UsdStage::Open(
                             rootLayer, sessionLayer, ArGetResolver().GetCurrentContext(), loadSet);
                     } else {
                         usdStage = UsdStage::Open(
                             rootLayer, ArGetResolver().GetCurrentContext(), loadSet);
                     }
-
-                    usdStage->SetEditTarget(usdStage->GetRootLayer());
+                    if (sessionLayer && targetSession) {
+                        usdStage->SetEditTarget(sessionLayer);
+                    } else {
+                        usdStage->SetEditTarget(usdStage->GetRootLayer());
+                    }
                 } else {
                     // Create a new stage in memory with an anonymous root layer.
                     usdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
@@ -1201,10 +1222,14 @@ Ufe::Path MayaUsdProxyShapeBase::ufePath() const
     MDagPath thisPath;
     MDagPath::getAPathTo(thisMObject(), thisPath);
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    return Ufe::PathString::path(thisPath.fullPathName().asChar());
+#else
     // MDagPath does not include |world to its full path name
     MString fullpath = "|world" + thisPath.fullPathName();
 
     return Ufe::Path(Ufe::PathSegment(fullpath.asChar(), MAYA_UFE_RUNTIME_ID, MAYA_UFE_SEPARATOR));
+#endif
 }
 #endif
 

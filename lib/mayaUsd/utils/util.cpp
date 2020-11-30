@@ -1682,7 +1682,7 @@ VtDictionary UsdMayaUtil::GetDictionaryFromArgDatabase(
     //     Python command API. If single arg per flag, make it a vector of
     //     strings. Multi arg per flag, vector of vector of strings.
     VtDictionary args;
-    for (const std::pair<std::string, VtValue>& entry : guideDict) {
+    for (const auto& entry : guideDict) {
         const std::string& key = entry.first;
         const VtValue&     guideValue = entry.second;
         if (!argData.isFlagSet(key.c_str())) {
@@ -2077,4 +2077,173 @@ void UsdMayaUtil::GetFilteredSelectionToExport(
         if (!filterInput || shouldAddToSet(pIter, dagPaths))
             dagPaths.emplace(pIter);
     }
+}
+
+float UsdMayaUtil::ConvertMTimeUnitToFloat(const MTime::Unit& unit)
+{
+    float ret = 0.f;
+    switch (unit) {
+    case MTime::k2FPS: {
+        ret = 2.f;
+    } break;
+    case MTime::k3FPS: {
+        ret = 3.f;
+    } break;
+    case MTime::k4FPS: {
+        ret = 4.f;
+    } break;
+    case MTime::k5FPS: {
+        ret = 5.f;
+    } break;
+    case MTime::k6FPS: {
+        ret = 6.f;
+    } break;
+    case MTime::k8FPS: {
+        ret = 8.f;
+    } break;
+    case MTime::k10FPS: {
+        ret = 10.f;
+    } break;
+    case MTime::k12FPS: {
+        ret = 12.f;
+    } break;
+    case MTime::k15FPS: {
+        ret = 15.f;
+    } break;
+    case MTime::k16FPS: {
+        ret = 16.f;
+    } break;
+    case MTime::k20FPS: {
+        ret = 20.f;
+    } break;
+    case MTime::k23_976FPS: {
+        ret = 23.976f;
+    } break;
+    case MTime::k24FPS: {
+        ret = 24.f;
+    } break;
+    case MTime::k25FPS: {
+        ret = 25.f;
+    } break;
+    case MTime::k29_97FPS: {
+        ret = 29.97f;
+    } break;
+    case MTime::k29_97DF: {
+        ret = 29.97f;
+    } break;
+    case MTime::k30FPS: {
+        ret = 30.f;
+    } break;
+    case MTime::k40FPS: {
+        ret = 40.f;
+    } break;
+    case MTime::k47_952FPS: {
+        ret = 47.952f;
+    } break;
+    case MTime::k48FPS: {
+        ret = 48.f;
+    } break;
+    case MTime::k50FPS: {
+        ret = 50.f;
+    } break;
+    case MTime::k59_94FPS: {
+        ret = 59.94f;
+    } break;
+    case MTime::k60FPS: {
+        ret = 60.f;
+    } break;
+    case MTime::k75FPS: {
+        ret = 75.f;
+    } break;
+    case MTime::k80FPS: {
+        ret = 80.f;
+    } break;
+#if MAYA_API_VERSION >= 20200000
+    case MTime::k90FPS: {
+        ret = 90.f;
+    } break;
+#endif
+    case MTime::k100FPS: {
+        ret = 100.f;
+    } break;
+    case MTime::k120FPS: {
+        ret = 120.f;
+    } break;
+    case MTime::k125FPS: {
+        ret = 125.f;
+    } break;
+    case MTime::k150FPS: {
+        ret = 150.f;
+    } break;
+    case MTime::k200FPS: {
+        ret = 200.f;
+    } break;
+    case MTime::k240FPS: {
+        ret = 240.f;
+    } break;
+    case MTime::k250FPS: {
+        ret = 250.f;
+    } break;
+    case MTime::k300FPS: {
+        ret = 300.f;
+    } break;
+    case MTime::k375FPS: {
+        ret = 375.f;
+    } break;
+    case MTime::k400FPS: {
+        ret = 400.f;
+    } break;
+    case MTime::k500FPS: {
+        ret = 500.f;
+    } break;
+    case MTime::k600FPS: {
+        ret = 600.f;
+    } break;
+    case MTime::k750FPS: {
+        ret = 750.f;
+    } break;
+    case MTime::k1200FPS: {
+        ret = 1200.f;
+    } break;
+    case MTime::k1500FPS: {
+        ret = 1500.f;
+    } break;
+    case MTime::k2000FPS: {
+        ret = 2000.f;
+    } break;
+    case MTime::k3000FPS: {
+        ret = 3000.f;
+    } break;
+    case MTime::k6000FPS: {
+        ret = 6000.f;
+    } break;
+    case MTime::k44100FPS: {
+        ret = 44100.f;
+    } break;
+    case MTime::k48000FPS: {
+        ret = 48000.f;
+    } break;
+    case MTime::kHours: {
+        ret = (1.f / 3600.f);
+    } break;
+    case MTime::kMinutes: {
+        ret = (1.f / 60.f);
+    } break;
+    case MTime::kSeconds: {
+        ret = 1.0f;
+    } break;
+    case MTime::kMilliseconds: {
+        ret = 1000.f;
+    } break;
+    default: {
+        ret = 0.0f;
+    } break;
+    }
+    return ret;
+}
+
+float UsdMayaUtil::GetSceneMTimeUnitAsFloat()
+{
+    const MTime::Unit sceneUnit = MTime::uiUnit();
+    return UsdMayaUtil::ConvertMTimeUnitToFloat(sceneUnit);
 }
