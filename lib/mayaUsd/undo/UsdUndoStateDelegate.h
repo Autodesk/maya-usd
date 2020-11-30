@@ -19,6 +19,7 @@
 
 #include <mayaUsd/base/api.h>
 
+#include <pxr/usd/sdf/data.h>
 #include <pxr/usd/sdf/layerStateDelegate.h>
 
 // convenient way to bring in other headers
