@@ -13,7 +13,7 @@ jobs:
   build_preflight:
       timeout-minutes: 400
       runs-on: ubuntu-latest
-      if: ${{ github.event.assignee.login == 'ecp-maya-devops-adsk' }}
+      if: ${{ github.event.assignee.login == 'ecp-maya-devops-adsk___' }}
       steps:
 
         # Build start info will be committed here when the remote build is launched
