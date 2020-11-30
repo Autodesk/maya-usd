@@ -174,6 +174,7 @@ add_subdirectory(resources)
 if(UFE_FOUND)
     add_subdirectory(ufe)
 endif()
+add_subdirectory(undo)
 add_subdirectory(utils)
 
 if(BUILD_HDMAYA)

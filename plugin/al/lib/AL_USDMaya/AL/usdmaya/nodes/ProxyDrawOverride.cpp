@@ -396,7 +396,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
             SdfPathVector ufePaths;
             auto          ufeSelList = Ufe::GlobalSelection::get();
 
-            Ufe::PathSegment proxyUfePath = ptr->m_shape->ufePathSegment();
+            Ufe::PathSegment proxyUfePath = ptr->m_shape->ufePath().getSegments()[0];
             for (const auto& sceneItem : *ufeSelList) {
                 if (sceneItem->runTimeId() == USD_UFE_RUNTIME_ID) {
                     const Ufe::Path&        itemPath = sceneItem->path();

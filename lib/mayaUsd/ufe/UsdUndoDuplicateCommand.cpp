@@ -19,6 +19,9 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+#include <mayaUsd/undo/UsdUndoBlock.h>
+#endif
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/token.h>
@@ -30,8 +33,6 @@
 #include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
-
-#include <iostream>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -51,7 +52,6 @@ UsdUndoDuplicateCommand::UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcIte
 
 UsdUndoDuplicateCommand::~UsdUndoDuplicateCommand() { }
 
-/*static*/
 UsdUndoDuplicateCommand::Ptr UsdUndoDuplicateCommand::create(const UsdSceneItem::Ptr& srcItem)
 {
     return std::make_shared<UsdUndoDuplicateCommand>(srcItem);
@@ -62,6 +62,32 @@ UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
     return createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+void UsdUndoDuplicateCommand::execute()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    UsdUndoBlock undoBlock(&_undoableItem);
+
+    auto prim = ufePathToPrim(_ufeSrcPath);
+    auto layer = prim.GetStage()->GetEditTarget().GetLayer();
+    SdfCopySpec(layer, prim.GetPath(), layer, _usdDstPath);
+}
+
+void UsdUndoDuplicateCommand::undo()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.undo();
+}
+
+void UsdUndoDuplicateCommand::redo()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.redo();
+}
+#else
 bool UsdUndoDuplicateCommand::duplicateUndo()
 {
     // USD sends a ResyncedPaths notification after the prim is removed, but
@@ -93,10 +119,6 @@ bool UsdUndoDuplicateCommand::duplicateRedo()
     return retVal;
 }
 
-//------------------------------------------------------------------------------
-// UsdUndoDuplicateCommand overrides
-//------------------------------------------------------------------------------
-
 void UsdUndoDuplicateCommand::undo()
 {
     try {
@@ -122,6 +144,7 @@ void UsdUndoDuplicateCommand::redo()
         throw; // re-throw the same exception
     }
 }
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
