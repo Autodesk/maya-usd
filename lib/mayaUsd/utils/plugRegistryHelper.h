@@ -24,14 +24,14 @@ namespace MAYAUSD_NS_DEF {
 /*! \brief  Register USD plugins with USD / MayaUsd / Python version checks
 
     Plug registry plugins (either pure USD, like render delegates or MayaUsd ones like translators)
-   should never be used with a mismatched version of shared libraries.
+    should never be used with a mismatched version of shared libraries.
 
     When all components are compiled together, there is no chance for version mismatch and
-   PXR_PLUGINPATH_NAME is the proper way to discover and register such plugins.
+    PXR_PLUGINPATH_NAME is the proper way to discover and register such plugins.
 
     Plugins distributed separately from MayaUSD should use MAYA_PXR_PLUGINPATH_NAME env variable to
-   point to a folder with mayaUsdPlugInfo.json file. The JSON file is used to discover plugin paths
-   to register after running requested version checks at runtime. Here is an example file:
+    point to a folder with mayaUsdPlugInfo.json file. The JSON file is used to discover plugin paths
+    to register after running requested version checks at runtime. Here is an example file:
     {
        "MayaUsdIncludes":[
           {
@@ -72,14 +72,15 @@ namespace MAYAUSD_NS_DEF {
     }
 
     The plugin must decide which validation checks are needed by listing them in "VersionCheck"
-   object. Supported checks are:
+    object. Supported checks are:
         - "Python"
         - "USD"
         - "MayaUsd"
 
     Every plugin passing version check will get registered in plug registry via
-   `PlugRegistry::GetInstance().RegisterPlugins` method.
+    `PlugRegistry::GetInstance().RegisterPlugins` method.
  */
+MAYAUSD_CORE_PUBLIC
 void registerVersionedPlugins();
 
 } // namespace MAYAUSD_NS_DEF

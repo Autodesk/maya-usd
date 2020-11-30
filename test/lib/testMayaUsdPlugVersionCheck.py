@@ -32,7 +32,7 @@ class MayaUsdPlugVersionCheckTestCase(unittest.TestCase):
         
         # Loading the plugin will trigger registration of plugins from MAYA_PXR_PLUGINPATH_NAME
         # path
-        self.assertTrue(mayaUtils.isMayaUsdPluginLoaded())
+        mayaUtils.isMayaUsdPluginLoaded()
 
         # All test plugins derive from _TestPlugBase<1>
         base1Subclasses = Tf.Type.FindByName('_TestPlugBase<1>').GetAllDerivedTypes()
