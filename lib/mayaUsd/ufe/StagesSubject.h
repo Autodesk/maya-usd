@@ -73,6 +73,13 @@ private:
     //! Call the stageChanged() methods on stage observers.
     void stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender);
 
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    //! Call the stageEditTargetChanged() methods on stage observers.
+    void stageEditTargetChanged(
+        UsdNotice::StageEditTargetChanged const& notice,
+        UsdStageWeakPtr const&                   sender);
+#endif
+
 private:
     // Notice listener method for proxy stage set
     void onStageSet(const MayaUsdProxyStageSetNotice& notice);
@@ -80,9 +87,16 @@ private:
     // Notice listener method for proxy stage invalidate.
     void onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice);
 
+    // Array of Notice::Key for registered listener
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    using NoticeKeys = std::array<TfNotice::Key, 2>;
+#else
+    using NoticeKeys = std::array<TfNotice::Key, 1>;
+#endif
+
     // Map of per-stage listeners, indexed by stage.
-    typedef TfHashMap<UsdStageWeakPtr, TfNotice::Key, TfHash> StageListenerMap;
-    StageListenerMap                                          fStageListeners;
+    typedef TfHashMap<UsdStageWeakPtr, NoticeKeys, TfHash> StageListenerMap;
+    StageListenerMap                                       fStageListeners;
 
     bool fBeforeNewCallback = false;
 
