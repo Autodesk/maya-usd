@@ -49,6 +49,8 @@ set(MSVC_FLAGS
     /wd4506
     /wd4996
     /wd4180
+    # exporting STL classes
+    /wd4251
 )
 
 set(MSVC_DEFINITIONS
