@@ -17,6 +17,10 @@
 
 #include <mayaUsd/base/api.h>
 
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+#include <mayaUsd/undo/UsdUndoableItem.h>
+#endif
+
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/undoableCommand.h>
@@ -46,7 +50,11 @@ public:
     create(const UsdPrim& parentPrim, const std::vector<TfToken>& orderedTokens);
 
 private:
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    void execute() override;
+#else
     bool reorder();
+#endif
 
     void undo() override;
     void redo() override;
@@ -54,6 +62,10 @@ private:
     UsdPrim _parentPrim;
 
     std::vector<TfToken> _orderedTokens;
+
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    UsdUndoableItem _undoableItem;
+#endif
 
 }; // UsdUndoReorderCommand
 

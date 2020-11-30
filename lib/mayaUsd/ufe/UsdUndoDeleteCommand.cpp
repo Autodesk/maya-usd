@@ -17,36 +17,63 @@
 
 #include "private/UfeNotifGuard.h"
 
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+#include <mayaUsd/undo/UsdUndoBlock.h>
+#endif
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdUndoDeleteCommand::UsdUndoDeleteCommand(const UsdPrim& prim)
     : Ufe::UndoableCommand()
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    , _prim(prim)
+#else
     , fPrim(prim)
+#endif
 {
 }
 
 UsdUndoDeleteCommand::~UsdUndoDeleteCommand() { }
 
-/*static*/
 UsdUndoDeleteCommand::Ptr UsdUndoDeleteCommand::create(const UsdPrim& prim)
 {
     return std::make_shared<UsdUndoDeleteCommand>(prim);
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+void UsdUndoDeleteCommand::execute()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    UsdUndoBlock undoBlock(&_undoableItem);
+    _prim.SetActive(false);
+}
+
+void UsdUndoDeleteCommand::undo()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.undo();
+}
+
+void UsdUndoDeleteCommand::redo()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.redo();
+}
+#else
 void UsdUndoDeleteCommand::perform(bool state)
 {
     MayaUsd::ufe::InAddOrDeleteOperation ad;
     fPrim.SetActive(state);
 }
 
-//------------------------------------------------------------------------------
-// UsdUndoDeleteCommand overrides
-//------------------------------------------------------------------------------
-
 void UsdUndoDeleteCommand::undo() { perform(true); }
 
 void UsdUndoDeleteCommand::redo() { perform(false); }
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

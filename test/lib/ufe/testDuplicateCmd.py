@@ -74,7 +74,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
         ball35Path = ufe.Path([
             mayaUtils.createUfePathSegment(
-                "|world|transform1|proxyShape1"),
+                "|transform1|proxyShape1"),
             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         ball35Item = ufe.Hierarchy.createItem(ball35Path)
         ball35Hierarchy = ufe.Hierarchy.hierarchy(ball35Item)

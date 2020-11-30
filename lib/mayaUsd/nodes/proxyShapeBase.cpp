@@ -90,6 +90,9 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <ufe/path.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
 #endif
 
 using namespace MAYAUSD_NS_DEF;
@@ -1219,10 +1222,14 @@ Ufe::Path MayaUsdProxyShapeBase::ufePath() const
     MDagPath thisPath;
     MDagPath::getAPathTo(thisMObject(), thisPath);
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    return Ufe::PathString::path(thisPath.fullPathName().asChar());
+#else
     // MDagPath does not include |world to its full path name
     MString fullpath = "|world" + thisPath.fullPathName();
 
     return Ufe::Path(Ufe::PathSegment(fullpath.asChar(), MAYA_UFE_RUNTIME_ID, MAYA_UFE_SEPARATOR));
+#endif
 }
 #endif
 

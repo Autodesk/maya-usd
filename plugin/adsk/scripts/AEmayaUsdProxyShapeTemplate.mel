@@ -1,6 +1,65 @@
+global proc AEmayaUsdProxyShapeInfoNew(string $input)
+{
+    textFieldGrp -label "Root Layer" -editable 0
+                 -ann "Identifies the root layer of a stage. If a file path is shown in this field, the root layer is a file on disk. If a layerName is shown in this field, the root layer is an anonymous layer."
+                 mayaUsdProxyShapeRootLayer;
+
+    textFieldGrp -label "Default Prim" -editable 0
+                 -ann "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file."
+                 mayaUsdProxyShapeDefaultPrim;
+
+    AEmayaUsdProxyShapeInfoReplace($input);
+}
+
+global proc AEmayaUsdProxyShapeInfoReplace(string $input)
+{
+    // From the input attribute we simply want the node name.
+    string $nodeName = plugNode($input);
+    string $res[] = `ls -l $nodeName`;
+    string $fullNodeName = $res[0];
+
+    // Call python helpers to get the info we want to display.
+    string $rootLayer   = `python("import AETemplateHelpers; AETemplateHelpers.GetRootLayerName('" + $fullNodeName + "')")`;
+    string $defaultPrim = `python("import AETemplateHelpers; AETemplateHelpers.GetDefaultPrimName('" + $fullNodeName + "')")`;
+
+    textFieldGrp -edit -text $rootLayer mayaUsdProxyShapeRootLayer;
+    textFieldGrp -edit -text $defaultPrim mayaUsdProxyShapeDefaultPrim;
+}
+
 global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
 {
     editorTemplate -beginScrollLayout;
+
+        //
+        // Proxy Shape specific attributes
+        //
+        editorTemplate -suppress "complexity";
+        editorTemplate -suppress "inStageData";
+        editorTemplate -suppress "stageCacheId";
+        editorTemplate -suppress "outStageCacheId";
+
+        editorTemplate -beginLayout "Stage" -collapse 0;
+            // We aren't displaying the "inStageData" attribute in the ProxyShapeInfo. We simply
+            // pass it in order to get the current nodename. Cannot use the input one here as it
+            // changes based on which proxy shape the AE is viewing.
+            editorTemplate -callCustom "AEmayaUsdProxyShapeInfoNew" "AEmayaUsdProxyShapeInfoReplace" inStageData;
+            editorTemplate -addControl "loadPayloads";
+        editorTemplate -endLayout;
+
+        editorTemplate -beginLayout "Stage Source" -collapse 0;
+            editorTemplate -addControl "filePath";
+        editorTemplate -endLayout;
+
+        editorTemplate -beginLayout "Stage Display" -collapse 0;
+            editorTemplate -ann "Edits the current time value of a stage, which corresponds to the animation frame drawn in the viewport. By default, this value connects to Maya's global time node."
+                           -addControl "time";
+            editorTemplate -addControl "drawGuidePurpose";
+            editorTemplate -addControl "drawProxyPurpose";
+            editorTemplate -addControl "drawRenderPurpose";
+            editorTemplate -addControl "primPath";
+            editorTemplate -addControl "excludePrimPaths";
+        editorTemplate -endLayout;
+
 
         // Object Display (from AEdagNodeCommon.mel):
         editorTemplate -beginLayout (uiRes("m_AEshapeTemplate.kObjectDisplay"));
@@ -29,24 +88,6 @@ global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
         editorTemplate -beginLayout (uiRes("m_AEdependNodeTemplate.kUUID"));
             editorTemplate -suppress "nodeState";
             editorTemplate -callCustom "AEdependNodeUUIDNew" "AEdependNodeUUIDReplace" "nodeState";
-        editorTemplate -endLayout;
-
-        // Proxy Shape specific attributes
-        editorTemplate -beginLayout "Stage" -collapse 0;
-            editorTemplate -beginNoOptimize;
-                editorTemplate -suppress "complexity";
-                editorTemplate -suppress "inStageData";
-                editorTemplate -addControl "filePath";
-                editorTemplate -addControl "primPath";
-                editorTemplate -addControl "excludePrimPaths";
-                editorTemplate -addControl "loadPayloads";
-                editorTemplate -addControl "time";
-                editorTemplate -addControl "stageCacheId";
-                editorTemplate -addControl "drawRenderPurpose";
-                editorTemplate -addControl "drawProxyPurpose";
-                editorTemplate -addControl "drawGuidePurpose";
-                editorTemplate -addControl "outStageCacheId";
-            editorTemplate -endNoOptimize;
         editorTemplate -endLayout;
 
         // Displacement Map (completely remove):

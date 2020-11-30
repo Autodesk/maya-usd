@@ -21,6 +21,9 @@
 
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
 
 #include <boost/python.hpp>
 
@@ -61,10 +64,14 @@ std::string getNodeTypeFromRawItem(uint64_t rawItem)
 
 UsdStageWeakPtr getStage(const std::string& ufePathString)
 {
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    return ufe::getStage(Ufe::PathString::path(ufePathString));
+#else
     // This function works on a single-segment path, i.e. the Maya Dag path
     // segment to the proxy shape.  We know the Maya run-time ID is 1,
     // separator is '|'.
     return ufe::getStage(Ufe::Path(Ufe::PathSegment(ufePathString, 1, '|')));
+#endif
 }
 
 std::string stagePath(UsdStageWeakPtr stage)
