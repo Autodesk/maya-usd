@@ -21,6 +21,7 @@ import platform
 import unittest
 from maya import cmds
 import maya.mel as mel
+import mayaUtils
 
 class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
     """Test the MEL commands that are used to create a USD stage."""
@@ -34,9 +35,6 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
             return os.path.normcase(os.path.normpath(path1)) == os.path.normcase(os.path.normpath(path2))
         else:
             return os.path.samefile(path1, path2)
-
-    def getTestScene(self, *args):
-        return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", *args)
 
     def testCreateStageWithNewLayer(self):
         # Create a proxy shape with empty stage to start with.
@@ -59,7 +57,7 @@ class MayaUsdCreateStageCommandsTestCase(unittest.TestCase):
         # we can call what it does once the file is choose.
         # Note: on ballFilePath we replace \ with / to stop the \ as
         #       being interpreted.
-        ballFilePath = os.path.normpath(self.getTestScene('ballset', 'StandaloneScene', 'top_layer.usda')).replace('\\', '/')
+        ballFilePath = os.path.normpath(mayaUtils.getTestScene('ballset', 'StandaloneScene', 'top_layer.usda')).replace('\\', '/')
         mel.eval('source \"mayaUsd_createStageFromFile.mel\"')
         mel.eval('mayaUsd_createStageFromFilePath(\"'+ballFilePath+'\")')
         mayaSel = cmds.ls(sl=True)
