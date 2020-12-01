@@ -990,24 +990,29 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         const GfRange3d& rangeToUse
             = isBoundingBoxItem ? _delegate->GetSharedBBoxGeom().GetRange() : range;
 
-        bool boundingBoxExpanded = false;
+        // If the Rprim has empty bounds, we will assign a null bounding box to the render item and
+        // Maya will compute the bounding box from the position data.
+        if (!rangeToUse.IsEmpty()) {
+            const GfVec3d& min = rangeToUse.GetMin();
+            const GfVec3d& max = rangeToUse.GetMax();
 
-        const GfVec3d& min = rangeToUse.GetMin();
-        const MPoint   pntMin(min[0], min[1], min[2]);
-        if (!drawItemData._boundingBox.contains(pntMin)) {
-            drawItemData._boundingBox.expand(pntMin);
-            boundingBoxExpanded = true;
-        }
+            bool boundingBoxExpanded = false;
 
-        const GfVec3d& max = rangeToUse.GetMax();
-        const MPoint   pntMax(max[0], max[1], max[2]);
-        if (!drawItemData._boundingBox.contains(pntMax)) {
-            drawItemData._boundingBox.expand(pntMax);
-            boundingBoxExpanded = true;
-        }
+            const MPoint pntMin(min[0], min[1], min[2]);
+            if (!drawItemData._boundingBox.contains(pntMin)) {
+                drawItemData._boundingBox.expand(pntMin);
+                boundingBoxExpanded = true;
+            }
 
-        if (boundingBoxExpanded) {
-            stateToCommit._boundingBox = &drawItemData._boundingBox;
+            const MPoint pntMax(max[0], max[1], max[2]);
+            if (!drawItemData._boundingBox.contains(pntMax)) {
+                drawItemData._boundingBox.expand(pntMax);
+                boundingBoxExpanded = true;
+            }
+
+            if (boundingBoxExpanded) {
+                stateToCommit._boundingBox = &drawItemData._boundingBox;
+            }
         }
     }
 
