@@ -18,51 +18,71 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <pxr/base/plug/registry.h>
-#include <pxr/base/tf/getenv.h>
-#include <pxr/base/tf/pathUtils.h>
-#include <pxr/base/tf/stringUtils.h>
-
-#include <string>
-
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace MAYAUSD_NS_DEF {
-/*! \brief  Register USD plugins matching USD version distributed with MayaUSD.
+/*! \brief  Register USD plugins with USD / MayaUsd / Python version checks
 
-    USD Plugins registered in the plug registry via PXR_PLUGINPATH_NAME have to link against
-    the same version of USD as MayaUSD. Plugins distributed separately from MayaUSD can use
-    MAYA_PXR_PLUGINPATH_NAME env variable to point to a folder with multiple binaries organized
-    in folders per USD versions. MayaUSD will append to each path USD version and call plug registry
-    to register the plugins.
+    Plug registry plugins (either pure USD, like render delegates or MayaUsd ones like translators)
+    should never be used with a mismatched version of shared libraries.
+
+    When all components are compiled together, there is no chance for version mismatch and
+    PXR_PLUGINPATH_NAME is the proper way to discover and register such plugins.
+
+    Plugins distributed separately from MayaUSD should use MAYA_PXR_PLUGINPATH_NAME env variable to
+    point to a folder with mayaUsdPlugInfo.json file. The JSON file is used to discover plugin paths
+    to register after running requested version checks at runtime. Here is an example file:
+    {
+       "MayaUsdIncludes":[
+          {
+             "PlugPath":"testPlugModule1",
+             "VersionCheck":{
+                "Python":"3",
+                "USD":"0.20.8"
+             }
+          },
+          {
+             "PlugPath":"testPlugModule2",
+             "VersionCheck":{
+                "MayaUsd":"0.6.0"
+             }
+          },
+          {
+             "PlugPath":"testPlugModule3"
+          },
+          {
+             "PlugPath":"testPlugModule4",
+             "VersionCheck":{
+                "MayaUsd":"0.0.0"
+             }
+          },
+          {
+             "PlugPath":"testPlugModule5",
+             "VersionCheck":{
+                "Python":"1"
+             }
+          },
+          {
+             "PlugPath":"testPlugModule6",
+             "VersionCheck":{
+                "USD":"0.0.0"
+             }
+          }
+       ]
+    }
+
+    The plugin must decide which validation checks are needed by listing them in "VersionCheck"
+    object. Supported checks are:
+        - "Python"
+        - "USD"
+        - "MayaUsd"
+
+    Every plugin passing version check will get registered in plug registry via
+    `PlugRegistry::GetInstance().RegisterPlugins` method.
  */
-inline void registerVersionedPlugins()
-{
-    static std::once_flag once;
-    std::call_once(once, []() {
-        static std::string usd_version = std::to_string(PXR_VERSION);
+MAYAUSD_CORE_PUBLIC
+void registerVersionedPlugins();
 
-        std::vector<std::string> pluginsToRegister;
-
-        const std::string paths = TfGetenv("MAYA_PXR_PLUGINPATH_NAME");
-        for (const auto& path : TfStringSplit(paths, ARCH_PATH_LIST_SEP)) {
-            if (path.empty()) {
-                continue;
-            }
-
-            if (TfIsRelativePath(path)) {
-                TF_CODING_ERROR(
-                    "Relative paths are unsupported for MAYA_PXR_PLUGINPATH_NAME: '%s'",
-                    path.c_str());
-                continue;
-            }
-
-            pluginsToRegister.push_back(TfStringCatPaths(path, usd_version));
-        }
-
-        PlugRegistry::GetInstance().RegisterPlugins(pluginsToRegister);
-    });
-}
 } // namespace MAYAUSD_NS_DEF
 
 #endif
