@@ -147,11 +147,11 @@ set(PLUGPLUGIN_NAMES
 )
 
 foreach(plugName ${PLUGPLUGIN_NAMES})
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${plugName}.py"
-        RENAME __init__.py
-        DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/${plugName}")
+    install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${plugName}.py"
+            RENAME __init__.py
+            DESTINATION "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/${plugName}")
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${plugName}_plugInfo.json"
-               "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/${plugName}/plugInfo.json"
+    configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${plugName}_plugInfo.json"
+                   "${CMAKE_CURRENT_BINARY_DIR}/TestMayaUsdPlug/${plugName}/plugInfo.json"
 )
 endforeach()
