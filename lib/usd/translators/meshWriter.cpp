@@ -15,6 +15,8 @@
 //
 #include "meshWriter.h"
 
+#include "pxr/base/tf/diagnostic.h"
+
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMesh.h>
@@ -26,7 +28,6 @@
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
-#include "pxr/base/tf/diagnostic.h"
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>

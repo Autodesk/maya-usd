@@ -60,7 +60,7 @@ struct MayaBlendShapeWeightDatum
     MObjectArray targetMeshes; // The target shape(s) to hit. (i.e. multiple shapes would be using
                                // Maya's "in-betweens" feature.)
     MIntArray
-        inputTargetGroupIndices; // The input group indices at which each target is connected under.
+              inputTargetGroupIndices; // The input group indices at which each target is connected under.
     MIntArray inputTargetIndices; // The input indices at which each target is connected under.
     MIntArray targetItemIndices;  // The Maya blendshape weight indices for the resulting deformed
                                   // mesh shape.
