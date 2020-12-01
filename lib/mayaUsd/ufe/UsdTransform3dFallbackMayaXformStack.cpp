@@ -345,8 +345,10 @@ UsdTransform3dFallbackMayaXformStackHandler::transform3d(const Ufe::SceneItem::P
 
 Ufe::Transform3d::Ptr
 UsdTransform3dFallbackMayaXformStackHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr&      item,
-    const Ufe::EditTransform3dHint&
+    const Ufe::SceneItem::Ptr&      item
+#if UFE_PREVIEW_VERSION_NUM >= 2030
+    , const Ufe::EditTransform3dHint& hint
+#endif
 ) const
 {
     return createTransform3d(item);

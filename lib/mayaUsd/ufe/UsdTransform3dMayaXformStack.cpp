@@ -729,12 +729,18 @@ UsdTransform3dMayaXformStackHandler::transform3d(const Ufe::SceneItem::Ptr& item
 
 Ufe::Transform3d::Ptr
 UsdTransform3dMayaXformStackHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr&      item,
-    const Ufe::EditTransform3dHint& hint
+    const Ufe::SceneItem::Ptr&      item
+#if UFE_PREVIEW_VERSION_NUM >= 2030
+    , const Ufe::EditTransform3dHint& hint
+#endif
 ) const
 {
     return createTransform3d(
-        item, [&](){ return _nextHandler->editTransform3d(item, hint); });
+        item, [&](){ return _nextHandler->editTransform3d(item
+#if UFE_PREVIEW_VERSION_NUM >= 2030
+            , hint
+#endif
+        ); });
 }
 
 } // namespace ufe

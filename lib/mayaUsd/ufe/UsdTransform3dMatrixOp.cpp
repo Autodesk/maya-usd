@@ -405,8 +405,10 @@ UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) cons
 
 Ufe::Transform3d::Ptr
 UsdTransform3dMatrixOpHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr&      item,
-    const Ufe::EditTransform3dHint& hint
+    const Ufe::SceneItem::Ptr&      item
+#if UFE_PREVIEW_VERSION_NUM >= 2030
+    , const Ufe::EditTransform3dHint& hint
+#endif
 ) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
@@ -445,11 +447,18 @@ UsdTransform3dMatrixOpHandler::editTransform3d(
 
     // We can't handle pivot edits, so in that case pass on to the next handler.
     return
-        (foundMatrix && !moreLocalNonMatrix && 
-         (hint.type() != Ufe::EditTransform3dHint::RotatePivot) &&
-         (hint.type() != Ufe::EditTransform3dHint::ScalePivot)) ? 
-        UsdTransform3dMatrixOp::create(usdItem, *i) : 
-        _nextHandler->editTransform3d(item, hint);
+        (foundMatrix && !moreLocalNonMatrix
+#if UFE_PREVIEW_VERSION_NUM >= 2030
+         && (hint.type() != Ufe::EditTransform3dHint::RotatePivot) &&
+         (hint.type() != Ufe::EditTransform3dHint::ScalePivot)
+#endif
+        ) ? 
+        UsdTransform3dMatrixOp::create(usdItem, *i) :
+        _nextHandler->editTransform3d(item
+#if UFE_PREVIEW_VERSION_NUM >= 2030
+            , hint
+#endif
+        );
 }
 
 } // namespace ufe
