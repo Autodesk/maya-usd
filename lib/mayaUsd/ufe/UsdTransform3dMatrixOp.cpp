@@ -446,9 +446,10 @@ UsdTransform3dMatrixOpHandler::editTransform3d(
     // We can't handle pivot edits, so in that case pass on to the next handler.
     return
         (foundMatrix && !moreLocalNonMatrix && 
-         (hint.type() != Ufe::EditTransform3dHint::EditPivot)) ? 
+         (hint.type() != Ufe::EditTransform3dHint::RotatePivot) &&
+         (hint.type() != Ufe::EditTransform3dHint::ScalePivot)) ? 
         UsdTransform3dMatrixOp::create(usdItem, *i) : 
-        _nextHandler->editTransform3d(item);
+        _nextHandler->editTransform3d(item, hint);
 }
 
 } // namespace ufe
