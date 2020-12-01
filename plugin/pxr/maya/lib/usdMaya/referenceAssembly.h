@@ -42,14 +42,20 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_REFERENCE_ASSEMBLY_TOKENS ((MayaTypeName, "pxrUsdReferenceAssembly"))
+// clang-format off
+#define PXRUSDMAYA_REFERENCE_ASSEMBLY_TOKENS \
+    ((MayaTypeName, "pxrUsdReferenceAssembly"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaReferenceAssemblyTokens,
     PXRUSDMAYA_API,
     PXRUSDMAYA_REFERENCE_ASSEMBLY_TOKENS);
 
-#define PXRUSDMAYA_VARIANT_SET_TOKENS ((PlugNamePrefix, "usdVariantSet_"))
+// clang-format off
+#define PXRUSDMAYA_VARIANT_SET_TOKENS \
+    ((PlugNamePrefix, "usdVariantSet_"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(UsdMayaVariantSetTokens, PXRUSDMAYA_API, PXRUSDMAYA_VARIANT_SET_TOKENS);
 

@@ -34,7 +34,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS ((MayaMaterialNamespace, "USD_Materials"))
+// clang-format off
+#define PXRUSDMAYA_SHADING_MODE_IMPORTER_TOKENS \
+    ((MayaMaterialNamespace, "USD_Materials"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaShadingModeImporterTokens,

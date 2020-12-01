@@ -112,6 +112,17 @@ MStatus initialize()
     Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, proxyShapeContextOpsHandler);
 #endif
 
+#if UFE_PREVIEW_VERSION_NUM >= 2028
+    Ufe::RunTimeMgr::Handlers handlers;
+    handlers.hierarchyHandler = UsdHierarchyHandler::create();
+    handlers.transform3dHandler = UsdTransform3dHandler::create();
+    handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
+    handlers.attributesHandler = UsdAttributesHandler::create();
+    handlers.object3dHandler = UsdObject3dHandler::create();
+    handlers.contextOpsHandler = UsdContextOpsHandler::create();
+    handlers.uiInfoHandler = UsdUIInfoHandler::create();
+    g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
+#else
     auto usdHierHandler = UsdHierarchyHandler::create();
     auto usdTrans3dHandler = UsdTransform3dHandler::create();
     auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
@@ -131,6 +142,7 @@ MStatus initialize()
                 UFE_V2(, usdUIInfoHandler)
 #endif
     );
+#endif
 
 #if !defined(NDEBUG)
     assert(g_USDRtid != 0);

@@ -93,7 +93,7 @@ class testUsdMayaListShadingModesCommand(unittest.TestCase):
         # plugin was not discoverable by USD so it was not loaded when asking
         # for the modes the first time. We will test discoverability in the
         # testUsdExportCustomConverter.py test.
-        cmds.loadPlugin("usdTestPlugin")
+        cmds.loadPlugin("usdTestMayaPlugin")
 
         exporters = modes(ex=True)
 

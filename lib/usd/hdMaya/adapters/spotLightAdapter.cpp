@@ -128,17 +128,17 @@ protected:
         MStatus      status;
         MFnSpotLight light(GetDagPath(), &status);
         if (TF_VERIFY(status)) {
-            if (paramName == UsdLuxTokens->radius) {
+            if (paramName == HdLightTokens->radius) {
                 const float radius = light.shadowRadius();
                 return VtValue(radius);
             } else if (paramName == UsdLuxTokens->treatAsPoint) {
                 const bool treatAsPoint = (light.shadowRadius() == 0.0);
                 return VtValue(treatAsPoint);
-            } else if (paramName == UsdLuxTokens->shapingConeAngle) {
+            } else if (paramName == HdLightTokens->shapingConeAngle) {
                 return VtValue(GetSpotCutoff(light));
-            } else if (paramName == UsdLuxTokens->shapingConeSoftness) {
+            } else if (paramName == HdLightTokens->shapingConeSoftness) {
                 return VtValue(GetSpotSoftness(light));
-            } else if (paramName == UsdLuxTokens->shapingFocus) {
+            } else if (paramName == HdLightTokens->shapingFocus) {
                 return VtValue(GetSpotFalloff(light));
             }
         }

@@ -137,6 +137,7 @@ TfToken PxrMayaUsdPreviewSurface_Reader::GetMayaNameForUsdAttrName(const TfToken
             || baseName == PxrMayaUsdPreviewSurfaceTokens->NormalAttrName
             || baseName == PxrMayaUsdPreviewSurfaceTokens->OcclusionAttrName
             || baseName == PxrMayaUsdPreviewSurfaceTokens->OpacityAttrName
+            || baseName == PxrMayaUsdPreviewSurfaceTokens->OpacityThresholdAttrName
             || baseName == PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName
             || baseName == PxrMayaUsdPreviewSurfaceTokens->SpecularColorAttrName
             || baseName == PxrMayaUsdPreviewSurfaceTokens->UseSpecularWorkflowAttrName) {

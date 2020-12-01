@@ -87,24 +87,15 @@ bool UsdSceneItemOps::deleteItem()
 
 Ufe::Duplicate UsdSceneItemOps::duplicateItemCmd()
 {
-    auto duplicateCmd = UsdUndoDuplicateCommand::create(prim(), fItem->path());
+    auto duplicateCmd = UsdUndoDuplicateCommand::create(fItem);
     duplicateCmd->execute();
-    auto item = createSiblingSceneItem(path(), duplicateCmd->usdDstPath().GetElementString());
-    return Ufe::Duplicate(item, duplicateCmd);
+    return Ufe::Duplicate(duplicateCmd->duplicatedItem(), duplicateCmd);
 }
 
 Ufe::SceneItem::Ptr UsdSceneItemOps::duplicateItem()
 {
-    SdfPath        usdDstPath;
-    SdfLayerHandle layer;
-    UsdUndoDuplicateCommand::primInfo(prim(), usdDstPath, layer);
-    bool status = UsdUndoDuplicateCommand::duplicate(layer, prim().GetPath(), usdDstPath);
-
-    // The duplicate is a sibling of the source.
-    if (status)
-        return createSiblingSceneItem(path(), usdDstPath.GetElementString());
-
-    return nullptr;
+    auto duplicate = duplicateItemCmd();
+    return duplicate.item;
 }
 
 Ufe::SceneItem::Ptr UsdSceneItemOps::renameItem(const Ufe::PathComponent& newName)

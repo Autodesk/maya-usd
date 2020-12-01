@@ -38,7 +38,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdVP2Instancer final : public HdInstancer
 {
 public:
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    HdVP2Instancer(HdSceneDelegate* delegate, SdfPath const& id);
+#else
     HdVP2Instancer(HdSceneDelegate* delegate, SdfPath const& id, SdfPath const& parentInstancerId);
+#endif
 
     ~HdVP2Instancer();
 

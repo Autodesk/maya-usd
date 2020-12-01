@@ -20,6 +20,8 @@
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <maya/MEulerRotation.h>
 
@@ -29,6 +31,10 @@
 namespace {
 
 using OpFunc = std::function<UsdGeomXformOp(const Ufe::BaseTransformUndoableCommand&)>;
+
+using NextTransform3dFn = std::function<Ufe::Transform3d::Ptr(
+    const Ufe::Transform3dHandler::Ptr& nextHandler,
+    const Ufe::SceneItem::Ptr&          item)>;
 
 using namespace MayaUsd::ufe;
 
@@ -115,23 +121,6 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
     xformable.SetXformOpOrder(newOrder, resetsXformStack);
 }
 
-inline Ufe::Transform3d::Ptr
-nextTransform3d(const Ufe::Transform3dHandler::Ptr& nextHandler, const Ufe::SceneItem::Ptr& item)
-{
-    return nextHandler->transform3d(item);
-}
-
-inline Ufe::Transform3d::Ptr nextEditTransform3d(
-    const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item)
-{
-    return nextHandler->editTransform3d(item);
-}
-
-typedef Ufe::Transform3d::Ptr (*NextTransform3dFn)(
-    const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item);
-
 Ufe::Transform3d::Ptr createTransform3d(
     const Ufe::Transform3dHandler::Ptr& nextHandler,
     const Ufe::SceneItem::Ptr&          item,
@@ -177,6 +166,7 @@ private:
     TfToken           _attrName;
     UsdGeomXformOp    _op;
     OpFunc            _opFunc;
+    UsdUndoableItem   _undoableItem;
 
 public:
     struct State
@@ -209,6 +199,9 @@ public:
             cmd->_attrName = cmd->_op.GetOpName();
             cmd->_prevOpValue = getValue(cmd->_op.GetAttr(), cmd->readTime());
             cmd->_newOpValue = v;
+
+            // Add undoblock to capture edits
+            UsdUndoBlock undoBlock(&cmd->_undoableItem);
             cmd->setValue(v);
             cmd->_state = &UsdTRSUndoableCmdBase::_executeState;
         }
@@ -229,6 +222,9 @@ public:
         const char* name() const override { return "execute"; }
         void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
         {
+            // Undo
+            cmd->_undoableItem.undo();
+
             cmd->recreateOp();
             cmd->setValue(cmd->_prevOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
@@ -245,6 +241,9 @@ public:
         const char* name() const override { return "undone"; }
         void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
         {
+            // Redo
+            cmd->_undoableItem.redo();
+
             // Can ignore the value, we already have it --- or assert they're
             // equal, perhaps.
             cmd->recreateOp();
@@ -258,6 +257,9 @@ public:
         const char* name() const override { return "redone"; }
         void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
         {
+            // Undo
+            cmd->_undoableItem.undo();
+
             cmd->recreateOp();
             cmd->setValue(cmd->_prevOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
@@ -736,13 +738,23 @@ UsdTransform3dMayaXformStackHandler::create(const Ufe::Transform3dHandler::Ptr& 
 Ufe::Transform3d::Ptr
 UsdTransform3dMayaXformStackHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    return createTransform3d(_nextHandler, item, nextTransform3d);
+    return createTransform3d(
+        _nextHandler,
+        item,
+        [&](const Ufe::Transform3dHandler::Ptr& nextHandler, const Ufe::SceneItem::Ptr& item) {
+            return _nextHandler->transform3d(item);
+        });
 }
 
 Ufe::Transform3d::Ptr
 UsdTransform3dMayaXformStackHandler::editTransform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    return createTransform3d(_nextHandler, item, nextEditTransform3d);
+    return createTransform3d(
+        _nextHandler,
+        item,
+        [&](const Ufe::Transform3dHandler::Ptr& nextHandler, const Ufe::SceneItem::Ptr& item) {
+            return _nextHandler->editTransform3d(item);
+        });
 }
 
 } // namespace ufe

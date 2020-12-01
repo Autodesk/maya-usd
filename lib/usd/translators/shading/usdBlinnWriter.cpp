@@ -55,11 +55,16 @@ protected:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(blinn, PxrUsdTranslators_BlinnWriter);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (eccentricity)(specularColor)(specularRollOff));
+    (eccentricity)
+    (specularColor)
+    (specularRollOff)
+);
+// clang-format on
 
 PxrUsdTranslators_BlinnWriter::PxrUsdTranslators_BlinnWriter(
     const MFnDependencyNode& depNodeFn,

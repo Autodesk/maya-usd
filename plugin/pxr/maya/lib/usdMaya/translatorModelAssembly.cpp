@@ -64,15 +64,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((FilePathPlugName, "filePath"))((PrimPathPlugName, "primPath"))((KindPlugName, "kind"))
 
-        ((MayaProxyShapeNameSuffix, "Proxy"))
+    ((FilePathPlugName, "filePath"))
+    ((PrimPathPlugName, "primPath"))
+    ((KindPlugName, "kind"))
+    ((MayaProxyShapeNameSuffix, "Proxy"))
 
     // XXX: These should eventually be replaced/removed when the proxy shape
     // node supports all variantSets and not just modelingVariant.
-    (variantKey)(modelingVariant));
+    (variantKey)
+    (modelingVariant)
+);
+// clang-format on
 
 /* static */
 bool UsdMayaTranslatorModelAssembly::Create(

@@ -47,15 +47,23 @@ TF_DEFINE_PUBLIC_TOKENS(UsdMayaJobExportArgsTokens, PXRUSDMAYA_JOB_EXPORT_ARGS_T
 
 TF_DEFINE_PUBLIC_TOKENS(UsdMayaJobImportArgsTokens, PXRUSDMAYA_JOB_IMPORT_ARGS_TOKENS);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _usdExportInfoScope,
 
-    (UsdMaya)(UsdExport));
+    (UsdMaya)
+        (UsdExport)
+);
+// clang-format on
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _usdImportInfoScope,
 
-    (UsdMaya)(UsdImport));
+    (UsdMaya)
+        (UsdImport)
+);
+// clang-format on
 
 /// Extracts a bool at \p key from \p userArgs, or false if it can't extract.
 static bool _Boolean(const VtDictionary& userArgs, const TfToken& key)

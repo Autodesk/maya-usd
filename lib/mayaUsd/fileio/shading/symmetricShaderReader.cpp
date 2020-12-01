@@ -50,10 +50,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    ((MayaShaderOutputName, "outColor")));
+    ((MayaShaderOutputName, "outColor"))
+);
+// clang-format on
 
 /* static */
 void UsdMayaSymmetricShaderReader::RegisterReader(
