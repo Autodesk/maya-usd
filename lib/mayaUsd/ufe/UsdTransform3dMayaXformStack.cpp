@@ -32,6 +32,10 @@ namespace {
 
 using OpFunc = std::function<UsdGeomXformOp(const Ufe::BaseTransformUndoableCommand&)>;
 
+using NextTransform3dFn = std::function<Ufe::Transform3d::Ptr(
+    const Ufe::Transform3dHandler::Ptr& nextHandler,
+    const Ufe::SceneItem::Ptr&          item)>;
+
 using namespace MayaUsd::ufe;
 
 // Type traits for GfVec precision.
@@ -116,23 +120,6 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
 
     xformable.SetXformOpOrder(newOrder, resetsXformStack);
 }
-
-inline Ufe::Transform3d::Ptr
-nextTransform3d(const Ufe::Transform3dHandler::Ptr& nextHandler, const Ufe::SceneItem::Ptr& item)
-{
-    return nextHandler->transform3d(item);
-}
-
-inline Ufe::Transform3d::Ptr nextEditTransform3d(
-    const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item)
-{
-    return nextHandler->editTransform3d(item);
-}
-
-typedef Ufe::Transform3d::Ptr (*NextTransform3dFn)(
-    const Ufe::Transform3dHandler::Ptr& nextHandler,
-    const Ufe::SceneItem::Ptr&          item);
 
 Ufe::Transform3d::Ptr createTransform3d(
     const Ufe::Transform3dHandler::Ptr& nextHandler,
@@ -751,13 +738,23 @@ UsdTransform3dMayaXformStackHandler::create(const Ufe::Transform3dHandler::Ptr& 
 Ufe::Transform3d::Ptr
 UsdTransform3dMayaXformStackHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    return createTransform3d(_nextHandler, item, nextTransform3d);
+    return createTransform3d(
+        _nextHandler,
+        item,
+        [&](const Ufe::Transform3dHandler::Ptr& nextHandler, const Ufe::SceneItem::Ptr& item) {
+            return _nextHandler->transform3d(item);
+        });
 }
 
 Ufe::Transform3d::Ptr
 UsdTransform3dMayaXformStackHandler::editTransform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    return createTransform3d(_nextHandler, item, nextEditTransform3d);
+    return createTransform3d(
+        _nextHandler,
+        item,
+        [&](const Ufe::Transform3dHandler::Ptr& nextHandler, const Ufe::SceneItem::Ptr& item) {
+            return _nextHandler->editTransform3d(item);
+        });
 }
 
 } // namespace ufe
