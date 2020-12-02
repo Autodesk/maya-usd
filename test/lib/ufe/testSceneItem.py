@@ -48,7 +48,7 @@ class SceneItemTestCase(unittest.TestCase):
 
         # Get a UFE scene item for one of the balls in the scene.
         ball35Path = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         ball35Item = ufe.Hierarchy.createItem(ball35Path)
 

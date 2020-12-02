@@ -28,11 +28,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya material nodes attribute names
-    (specularColor));
+    (specularColor)
+);
+// clang-format on
 
 PxrUsdTranslators_ReflectWriter::PxrUsdTranslators_ReflectWriter(
     const MFnDependencyNode& depNodeFn,

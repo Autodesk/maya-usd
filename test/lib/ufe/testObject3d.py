@@ -157,7 +157,7 @@ class Object3dTestCase(unittest.TestCase):
 
         # Create an Object3d interface for USD sphere.
         mayaPathSegment = mayaUtils.createUfePathSegment(
-            '|world|transform1|proxyShape1')
+            '|transform1|proxyShape1')
         usdPathSegment = usdUtils.createUfePathSegment('/pSphere1')
 
         spherePath = ufe.Path([mayaPathSegment, usdPathSegment])
@@ -186,7 +186,7 @@ class Object3dTestCase(unittest.TestCase):
 
         # Get a scene item for Ball_35.
         ball35Path = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         ball35Item = ufe.Hierarchy.createItem(ball35Path)
 

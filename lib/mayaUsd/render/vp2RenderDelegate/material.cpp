@@ -15,13 +15,20 @@
 //
 #include "material.h"
 
+#include "debugCodes.h"
+#include "render_delegate.h"
+
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
-#include <pxr/imaging/glf/image.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
+#include <pxr/usd/ar/packageUtils.h>
+#include <pxr/usd/sdf/assetPath.h>
+#include <pxr/usd/usdHydra/tokens.h>
+#include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFragmentManager.h>
 #include <maya/MProfiler.h>
@@ -37,38 +44,56 @@
 
 #include <iostream>
 #include <string>
+
 #if USD_VERSION_NUM >= 2002
 #include <pxr/imaging/glf/udimTexture.h>
-#endif
-#include <pxr/imaging/hd/sceneDelegate.h>
-#include <pxr/usd/ar/packageUtils.h>
-#include <pxr/usd/sdf/assetPath.h>
-#include <pxr/usd/usdHydra/tokens.h>
-#include <pxr/usdImaging/usdImaging/tokens.h>
-#if USD_VERSION_NUM >= 2002
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 #endif
-#include "debugCodes.h"
-#include "render_delegate.h"
+
+#if USD_VERSION_NUM >= 2102
+#include <pxr/imaging/hio/image.h>
+#else
+#include <pxr/imaging/glf/image.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (file)(opacity)(st)(varname)
+    (file)
+    (opacity)
+    (st)
+    (varname)
 
-        (input)(output)
+    (input)
+    (output)
 
-            (rgb)(r)(g)(b)(a)
+    (rgb)
+    (r)
+    (g)
+    (b)
+    (a)
 
-                (xyz)(x)(y)(z)(w)
+    (xyz)
+    (x)
+    (y)
+    (z)
+    (w)
 
-                    (Float4ToFloatX)(Float4ToFloatY)(Float4ToFloatZ)(Float4ToFloatW)(Float4ToFloat3)
+    (Float4ToFloatX)
+    (Float4ToFloatY)
+    (Float4ToFloatZ)
+    (Float4ToFloatW)
+    (Float4ToFloat3)
 
-                        (UsdPrimvarReader_color)(UsdPrimvarReader_vector));
+    (UsdPrimvarReader_color)
+    (UsdPrimvarReader_vector)
+);
+// clang-format on
 
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
 bool _IsUsdPrimvarReader(const HdMaterialNode& node)
@@ -314,7 +339,11 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     // resolution, warn the user if Maya's tiled texture implementation is going to result in
     // a loss of texture data.
     {
+#if USD_VERSION_NUM >= 2102
+        HioImageSharedPtr image = HioImage::OpenForReading(std::get<1>(tiles[0]).GetString());
+#else
         GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tiles[0]).GetString());
+#endif
         if (!TF_VERIFY(image)) {
             return nullptr;
         }
@@ -339,7 +368,11 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     for (auto& tile : tiles) {
         tilePaths.append(MString(std::get<1>(tile).GetText()));
 
+#if USD_VERSION_NUM >= 2102
+        HioImageSharedPtr image = HioImage::OpenForReading(std::get<1>(tile).GetString());
+#else
         GlfImageSharedPtr image = GlfImage::OpenForReading(std::get<1>(tile).GetString());
+#endif
         if (!TF_VERIFY(image)) {
             return nullptr;
         }
@@ -396,19 +429,29 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
         return nullptr;
     }
 
-    GlfImageSharedPtr image = GlfImage::OpenForReading(path);
+#if USD_VERSION_NUM >= 2102
+    HioImageSharedPtr image = HioImage::OpenForReading(path);
+#else
+    GlfImageSharedPtr     image = GlfImage::OpenForReading(path);
+#endif
     if (!TF_VERIFY(image)) {
         return nullptr;
     }
 
-    // GlfImage is used for loading pixel data from usdz only and should
+    // This image is used for loading pixel data from usdz only and should
     // not trigger any OpenGL call. VP2RenderDelegate will transfer the
     // texels to GPU memory with VP2 API which is 3D API agnostic.
+#if USD_VERSION_NUM >= 2102
+    HioImage::StorageSpec spec;
+#else
     GlfImage::StorageSpec spec;
+#endif
     spec.width = image->GetWidth();
     spec.height = image->GetHeight();
     spec.depth = 1;
-#if USD_VERSION_NUM > 2008
+#if USD_VERSION_NUM >= 2102
+    spec.format = image->GetFormat();
+#elif USD_VERSION_NUM > 2008
     spec.hioFormat = image->GetHioFormat();
 #else
     spec.format = image->GetFormat();
@@ -437,7 +480,11 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     desc.fBytesPerSlice = bytesPerSlice;
 
 #if USD_VERSION_NUM > 2008
+#if USD_VERSION_NUM >= 2102
+    switch (spec.format) {
+#else
     switch (spec.hioFormat) {
+#endif
     // Single Channel
     case HioFormatFloat32:
         desc.fFormat = MHWRender::kR32_FLOAT;

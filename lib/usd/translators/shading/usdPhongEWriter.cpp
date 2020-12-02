@@ -52,11 +52,14 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(phongE, PxrUsdTranslators_PhongEWriter);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // Maya
-    (roughness));
+    (roughness)
+);
+// clang-format on
 
 PxrUsdTranslators_PhongEWriter::PxrUsdTranslators_PhongEWriter(
     const MFnDependencyNode& depNodeFn,

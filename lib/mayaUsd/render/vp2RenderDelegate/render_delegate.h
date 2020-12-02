@@ -89,12 +89,23 @@ public:
 
     HdInstancer* CreateInstancer(
         HdSceneDelegate* delegate,
-        SdfPath const&   id,
-        SdfPath const&   instancerId) override;
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        SdfPath const& id) override;
+#else
+        SdfPath const& id,
+        SdfPath const& instancerId) override;
+#endif
     void DestroyInstancer(HdInstancer* instancer) override;
 
-    HdRprim*
-         CreateRprim(TfToken const& typeId, SdfPath const& rprimId, SdfPath const& instancerId) override;
+    HdRprim* CreateRprim(
+        TfToken const& typeId,
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        SdfPath const& rprimId) override;
+#else
+        SdfPath const& rprimId,
+        SdfPath const& instancerId) override;
+#endif
+
     void DestroyRprim(HdRprim* rPrim) override;
 
     HdSprim* CreateSprim(TfToken const& typeId, SdfPath const& sprimId) override;

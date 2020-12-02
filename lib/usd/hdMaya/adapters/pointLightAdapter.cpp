@@ -54,7 +54,7 @@ public:
                 GetDagPath().partialPathName().asChar());
 
         MFnPointLight light(GetDagPath());
-        if (paramName == UsdLuxTokens->radius) {
+        if (paramName == HdLightTokens->radius) {
             const float radius = light.shadowRadius();
             return VtValue(radius);
         } else if (paramName == UsdLuxTokens->treatAsPoint) {

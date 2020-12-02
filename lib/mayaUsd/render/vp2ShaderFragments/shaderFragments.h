@@ -25,9 +25,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS  \
-    ((CoreFragmentGraphName, "UsdPreviewSurfaceCore"))( \
-        (SurfaceFragmentGraphName, "UsdPreviewSurface"))
+// clang-format off
+#define MAYAUSD_CORE_PUBLIC_USD_PREVIEW_SURFACE_TOKENS \
+    ((SurfaceFragmentGraphName, "UsdPreviewSurface"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     HdVP2ShaderFragmentsTokens,

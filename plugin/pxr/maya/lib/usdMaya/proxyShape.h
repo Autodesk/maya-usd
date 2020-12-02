@@ -48,7 +48,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define PXRUSDMAYA_PROXY_SHAPE_TOKENS ((MayaTypeName, "pxrUsdProxyShape"))
+// clang-format off
+#define PXRUSDMAYA_PROXY_SHAPE_TOKENS \
+    ((MayaTypeName, "pxrUsdProxyShape"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(UsdMayaProxyShapeTokens, PXRUSDMAYA_API, PXRUSDMAYA_PROXY_SHAPE_TOKENS);
 

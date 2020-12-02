@@ -76,7 +76,7 @@ class ParentCmdTestCase(unittest.TestCase):
     def testParentRelative(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
-            "|world|mayaUsdProxy1|mayaUsdProxyShape1")
+            "|mayaUsdProxy1|mayaUsdProxyShape1")
         cubePath = ufe.Path(
             [shapeSegment, usdUtils.createUfePathSegment("/cubeXform")])
         cubeItem = ufe.Hierarchy.createItem(cubePath)
@@ -166,7 +166,7 @@ class ParentCmdTestCase(unittest.TestCase):
     def testParentAbsolute(self):
         # Create scene items for the cube and the cylinder.
         shapeSegment = mayaUtils.createUfePathSegment(
-            "|world|mayaUsdProxy1|mayaUsdProxyShape1")
+            "|mayaUsdProxy1|mayaUsdProxyShape1")
         cubePath = ufe.Path(
             [shapeSegment, usdUtils.createUfePathSegment("/cubeXform")])
         cubeItem = ufe.Hierarchy.createItem(cubePath)
@@ -251,7 +251,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
             # Create scene items for the proxy shape and the sphere.
             shapeSegment = mayaUtils.createUfePathSegment(
-                "|world|mayaUsdProxy1|mayaUsdProxyShape1")
+                "|mayaUsdProxy1|mayaUsdProxyShape1")
             shapePath = ufe.Path([shapeSegment])
             shapeItem = ufe.Hierarchy.createItem(shapePath)
 
@@ -326,7 +326,7 @@ class ParentCmdTestCase(unittest.TestCase):
 
         with OpenFileCtx("simpleHierarchy.ma"):
             shapeSegment = mayaUtils.createUfePathSegment(
-                "|world|mayaUsdProxy1|mayaUsdProxyShape1")
+                "|mayaUsdProxy1|mayaUsdProxyShape1")
             spherePath = ufe.Path(
                 [shapeSegment,
                  usdUtils.createUfePathSegment("/pCylinder1/pCube1/pSphere1")])

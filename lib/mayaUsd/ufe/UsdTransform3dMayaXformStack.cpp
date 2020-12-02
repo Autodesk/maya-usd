@@ -20,6 +20,8 @@
 #include <mayaUsd/fileio/utils/xformStack.h>
 #include <mayaUsd/ufe/RotationUtils.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <maya/MEulerRotation.h>
 
@@ -162,6 +164,7 @@ private:
     TfToken           _attrName;
     UsdGeomXformOp    _op;
     OpFunc            _opFunc;
+    UsdUndoableItem   _undoableItem;
 
 public:
     struct State
@@ -194,6 +197,9 @@ public:
             cmd->_attrName = cmd->_op.GetOpName();
             cmd->_prevOpValue = getValue(cmd->_op.GetAttr(), cmd->readTime());
             cmd->_newOpValue = v;
+
+            // Add undoblock to capture edits
+            UsdUndoBlock undoBlock(&cmd->_undoableItem);
             cmd->setValue(v);
             cmd->_state = &UsdTRSUndoableCmdBase::_executeState;
         }
@@ -214,6 +220,9 @@ public:
         const char* name() const override { return "execute"; }
         void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
         {
+            // Undo
+            cmd->_undoableItem.undo();
+
             cmd->recreateOp();
             cmd->setValue(cmd->_prevOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
@@ -230,6 +239,9 @@ public:
         const char* name() const override { return "undone"; }
         void        handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue&) override
         {
+            // Redo
+            cmd->_undoableItem.redo();
+
             // Can ignore the value, we already have it --- or assert they're
             // equal, perhaps.
             cmd->recreateOp();
@@ -243,6 +255,9 @@ public:
         const char* name() const override { return "redone"; }
         void        handleUndo(UsdTRSUndoableCmdBase* cmd) override
         {
+            // Undo
+            cmd->_undoableItem.undo();
+
             cmd->recreateOp();
             cmd->setValue(cmd->_prevOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;

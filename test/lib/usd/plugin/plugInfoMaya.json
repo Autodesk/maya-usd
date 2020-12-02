@@ -1,0 +1,16 @@
+{
+  "Plugins": [
+    {
+      "Info": {
+        "UsdMaya": {
+          "ShadingModePlugin": {
+            "mayaPlugin": "usdTestMayaPlugin"
+          }
+        }
+      },
+      "Name": "usdTestMayaPlugin",
+      "LibraryPath": "@CMAKE_CURRENT_BINARY_DIR@/@CMAKE_SHARED_LIBRARY_PREFIX@usdTestMayaPlugin@CMAKE_SHARED_LIBRARY_SUFFIX@",
+      "Type": "library"
+    }
+  ]
+}

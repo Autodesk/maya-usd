@@ -30,7 +30,16 @@ class testUsdExportCustomConverter(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.input_path = fixturesUtils.setUpClass(__file__)
+        # In case tests are run in parallel, make sure we export to separate
+        # directories:
+        plugin_path = os.getenv("PXR_PLUGINPATH_NAME")
+        maya_path = [i for i in plugin_path.split(os.pathsep) if i.endswith("Maya")]
+        if maya_path:
+            suffix = "Maya"
+        else:
+            suffix = "USD"
+
+        cls.input_path = fixturesUtils.setUpClass(__file__, suffix)
 
         test_dir = os.path.join(cls.input_path,
                                 "UsdExportCustomConverterTest")

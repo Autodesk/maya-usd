@@ -57,7 +57,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (Animation)(Skeleton));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
+    (Animation)
+    (Skeleton)
+);
+// clang-format on
 
 SdfPath UsdMayaJointUtil::getAnimationPath(const SdfPath& skelPath)
 {

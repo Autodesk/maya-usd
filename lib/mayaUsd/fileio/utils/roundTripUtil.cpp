@@ -26,6 +26,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -36,12 +37,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     // re-imported into Maya when trying to "roundtrip" data.
     (generated)
 
-        (clamped)
+    (clamped)
 
     // This annotates if the attribute used to be a maya array.  The index
     // of the array is likely encoded in the attribute name though we could
     // extend this to store the name and index.
-    (arrayIndex));
+    (arrayIndex)
+);
+// clang-format on
 
 template <typename T>
 static bool _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* outVal)

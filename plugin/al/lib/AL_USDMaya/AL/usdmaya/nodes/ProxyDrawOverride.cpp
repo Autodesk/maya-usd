@@ -35,6 +35,9 @@
 #include "AL/usdmaya/TypeIDs.h"
 #include "ufe/globalSelection.h"
 #include "ufe/log.h"
+#if UFE_PREVIEW_VERSION_NUM >= 2027
+#include <ufe/namedSelection.h>
+#endif
 #include "ufe/observableSelection.h"
 #include "ufe/runTimeMgr.h"
 #include "ufe/sceneItem.h"
@@ -393,7 +396,7 @@ void ProxyDrawOverride::draw(const MHWRender::MDrawContext& context, const MUser
             SdfPathVector ufePaths;
             auto          ufeSelList = Ufe::GlobalSelection::get();
 
-            Ufe::PathSegment proxyUfePath = ptr->m_shape->ufePathSegment();
+            Ufe::PathSegment proxyUfePath = ptr->m_shape->ufePath().getSegments()[0];
             for (const auto& sceneItem : *ufeSelList) {
                 if (sceneItem->runTimeId() == USD_UFE_RUNTIME_ID) {
                     const Ufe::Path&        itemPath = sceneItem->path();
@@ -691,7 +694,11 @@ bool ProxyDrawOverride::userSelect(
             }
 
             if (paths.size()) {
+#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+                auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
+#else
                 auto globalSelection = Ufe::GlobalSelection::get();
+#endif
 
                 for (const auto& it : paths) {
                     // Build a path segment of the USD picked object
@@ -701,6 +708,9 @@ bool ProxyDrawOverride::userSelect(
                     const Ufe::SceneItem::Ptr& si { handler->createItem(
                         proxyShape->ufePath() + ps_usd) };
 
+#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+                    ufeSel->append(si);
+#else
                     switch (listAdjustment) {
                     case MGlobal::kReplaceList:
                         // The list has been cleared before viewport selection runs, so we
@@ -721,6 +731,7 @@ bool ProxyDrawOverride::userSelect(
                         UFE_LOG("UFE does not support prepend to selection.");
                         break;
                     }
+#endif
                 }
             }
         } else {

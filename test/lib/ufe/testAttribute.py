@@ -96,7 +96,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # Get a UFE scene item the input path in the scene.
         itemPath = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment(path)])
         ufeItem = ufe.Hierarchy.createItem(itemPath)
 
@@ -420,7 +420,7 @@ class AttributeTestCase(unittest.TestCase):
         # Create three observers, one for global attribute observation, and two
         # on different UFE items.
         proxyShapePathSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
         path = ufe.Path([
             proxyShapePathSegment, 
             usdUtils.createUfePathSegment('/Room_set/Props/Ball_34')])

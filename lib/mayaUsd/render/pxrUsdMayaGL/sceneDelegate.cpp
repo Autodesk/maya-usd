@@ -61,10 +61,13 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
-    (selectionTask));
+    (selectionTask)
+);
+// clang-format on
 
 namespace {
 class PxrMayaHdShadowMatrix : public HdxShadowMatrixComputation
@@ -229,6 +232,26 @@ void PxrMayaHdSceneDelegate::SetCameraState(
     cache[HdCameraTokens->projectionMatrix] = VtValue(projectionMatrix);
     cache[HdCameraTokens->windowPolicy] = VtValue(CameraUtilFit);
     cache[HdCameraTokens->clipPlanes] = VtValue(std::vector<GfVec4d>());
+
+    // Provide other keys so that pulling on those in HdCamera::Sync doesn't
+    // trigger coding errors.
+#if USD_VERSION_NUM >= 2102
+    cache[HdCameraTokens->projection] = VtValue();
+#endif
+    cache[HdCameraTokens->horizontalAperture] = VtValue();
+    cache[HdCameraTokens->verticalAperture] = VtValue();
+    cache[HdCameraTokens->horizontalApertureOffset] = VtValue();
+    cache[HdCameraTokens->verticalApertureOffset] = VtValue();
+    cache[HdCameraTokens->focalLength] = VtValue();
+    cache[HdCameraTokens->clippingRange] = VtValue();
+    cache[HdCameraTokens->clipPlanes] = VtValue();
+    cache[HdCameraTokens->fStop] = VtValue();
+    cache[HdCameraTokens->focusDistance] = VtValue();
+    cache[HdCameraTokens->shutterOpen] = VtValue();
+    cache[HdCameraTokens->shutterClose] = VtValue();
+#if USD_VERSION_NUM >= 2011
+    cache[HdCameraTokens->exposure] = VtValue();
+#endif
 
     // invalidate the camera to be synced
     GetRenderIndex().GetChangeTracker().MarkSprimDirty(_cameraId, HdCamera::AllDirty);

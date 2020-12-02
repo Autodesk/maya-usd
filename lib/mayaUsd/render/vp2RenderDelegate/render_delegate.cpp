@@ -553,11 +553,16 @@ HdVP2RenderDelegate::CreateRenderPass(HdRenderIndex* index, const HdRprimCollect
 */
 HdInstancer* HdVP2RenderDelegate::CreateInstancer(
     HdSceneDelegate* delegate,
-    const SdfPath&   id,
-    const SdfPath&   instancerId)
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    const SdfPath& id)
 {
-
+    return new HdVP2Instancer(delegate, id);
+#else
+    const SdfPath& id,
+    const SdfPath& instancerId)
+{
     return new HdVP2Instancer(delegate, id, instancerId);
+#endif
 }
 
 /*! \brief  Destroy instancer instance
@@ -575,17 +580,33 @@ void HdVP2RenderDelegate::DestroyInstancer(HdInstancer* instancer) { delete inst
 */
 HdRprim* HdVP2RenderDelegate::CreateRprim(
     const TfToken& typeId,
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    const SdfPath& rprimId)
+#else
     const SdfPath& rprimId,
     const SdfPath& instancerId)
+#endif
 {
     if (typeId == HdPrimTypeTokens->mesh) {
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        return new HdVP2Mesh(this, rprimId);
+#else
         return new HdVP2Mesh(this, rprimId, instancerId);
+#endif
     }
     if (typeId == HdPrimTypeTokens->basisCurves) {
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        return new HdVP2BasisCurves(this, rprimId);
+#else
         return new HdVP2BasisCurves(this, rprimId, instancerId);
+#endif
     }
     // if (typeId == HdPrimTypeTokens->volume) {
+    // #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    //    return new HdVP2Volume(this, rprimId);
+    // #else
     //    return new HdVP2Volume(this, rprimId, instancerId);
+    // #endif
     //}
     TF_CODING_ERROR("Unknown Rprim Type %s", typeId.GetText());
     return nullptr;

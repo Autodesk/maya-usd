@@ -58,47 +58,75 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // RenderMan for Maya light types.
-    ((AovLightMayaTypeName, "PxrAovLight"))((CylinderLightMayaTypeName, "PxrCylinderLight"))(
-        (DiskLightMayaTypeName, "PxrDiskLight"))((DistantLightMayaTypeName, "PxrDistantLight"))(
-        (DomeLightMayaTypeName, "PxrDomeLight"))((EnvDayLightMayaTypeName, "PxrEnvDayLight"))(
-        (GeometryLightMayaTypeName, "PxrMeshLight"))((RectLightMayaTypeName, "PxrRectLight"))(
-        (SphereLightMayaTypeName, "PxrSphereLight"))
+    ((AovLightMayaTypeName, "PxrAovLight"))
+    ((CylinderLightMayaTypeName, "PxrCylinderLight"))
+    ((DiskLightMayaTypeName, "PxrDiskLight"))
+    ((DistantLightMayaTypeName, "PxrDistantLight"))
+    ((DomeLightMayaTypeName, "PxrDomeLight"))
+    ((EnvDayLightMayaTypeName, "PxrEnvDayLight"))
+    ((GeometryLightMayaTypeName, "PxrMeshLight"))
+    ((RectLightMayaTypeName, "PxrRectLight"))
+    ((SphereLightMayaTypeName, "PxrSphereLight"))
 
     // Light plug names.
-    ((IntensityPlugName, "intensity"))((ExposurePlugName, "exposure"))(
-        (DiffuseAmountPlugName, "diffuse"))((SpecularAmountPlugName, "specular"))(
-        (NormalizePowerPlugName, "areaNormalize"))((ColorPlugName, "lightColor"))(
-        (EnableTemperaturePlugName, "enableTemperature"))((TemperaturePlugName, "temperature"))
+    ((IntensityPlugName, "intensity"))
+    ((ExposurePlugName, "exposure"))
+    ((DiffuseAmountPlugName, "diffuse"))
+    ((SpecularAmountPlugName, "specular"))
+    ((NormalizePowerPlugName, "areaNormalize"))
+    ((ColorPlugName, "lightColor"))
+    ((EnableTemperaturePlugName, "enableTemperature"))
+    ((TemperaturePlugName, "temperature"))
 
     // Type-specific Light plug names.
-    ((DistantLightAnglePlugName, "angleExtent"))((TextureFilePlugName, "lightColorMap"))
+    ((DistantLightAnglePlugName, "angleExtent"))
+    ((TextureFilePlugName, "lightColorMap"))
 
     // PxrAovLight plug names.
-    ((AovNamePlugName, "aovName"))((InPrimaryHitPlugName, "inPrimaryHit"))(
-        (InReflectionPlugName, "inReflection"))((InRefractionPlugName, "inRefraction"))(
-        (InvertPlugName, "invert"))((OnVolumeBoundariesPlugName, "onVolumeBoundaries"))(
-        (UseColorPlugName, "useColor"))((UseThroughputPlugName, "useThroughput"))
+    ((AovNamePlugName, "aovName"))
+    ((InPrimaryHitPlugName, "inPrimaryHit"))
+    ((InReflectionPlugName, "inReflection"))
+    ((InRefractionPlugName, "inRefraction"))
+    ((InvertPlugName, "invert"))
+    ((OnVolumeBoundariesPlugName, "onVolumeBoundaries"))
+    ((UseColorPlugName, "useColor"))
+    ((UseThroughputPlugName, "useThroughput"))
 
     // PxrEnvDayLight plug names.
-    ((DayPlugName, "day"))((HazinessPlugName, "haziness"))((HourPlugName, "hour"))(
-        (LatitudePlugName, "latitude"))((LongitudePlugName, "longitude"))((MonthPlugName, "month"))(
-        (SkyTintPlugName,
-         "skyTint"))((SunDirectionPlugName, "sunDirection"))((SunSizePlugName, "sunSize"))(
-        (SunTintPlugName, "sunTint"))((YearPlugName, "year"))((ZonePlugName, "zone"))
+    ((DayPlugName, "day"))
+    ((HazinessPlugName, "haziness"))
+    ((HourPlugName, "hour"))
+    ((LatitudePlugName, "latitude"))
+    ((LongitudePlugName, "longitude"))
+    ((MonthPlugName, "month"))
+    ((SkyTintPlugName, "skyTint"))
+    ((SunDirectionPlugName, "sunDirection"))
+    ((SunSizePlugName, "sunSize"))
+    ((SunTintPlugName, "sunTint"))
+    ((YearPlugName, "year"))
+    ((ZonePlugName, "zone"))
 
     // ShapingAPI plug names.
-    ((FocusPlugName, "emissionFocus"))((FocusTintPlugName, "emissionFocusTint"))(
-        (ConeAnglePlugName, "coneAngle"))((ConeSoftnessPlugName, "coneSoftness"))(
-        (ProfileFilePlugName, "iesProfile"))((ProfileScalePlugName, "iesProfileScale"))
+    ((FocusPlugName, "emissionFocus"))
+    ((FocusTintPlugName, "emissionFocusTint"))
+    ((ConeAnglePlugName, "coneAngle"))
+    ((ConeSoftnessPlugName, "coneSoftness"))
+    ((ProfileFilePlugName, "iesProfile"))
+    ((ProfileScalePlugName, "iesProfileScale"))
 
     // ShadowAPI plug names.
-    ((EnableShadowsPlugName, "enableShadows"))((ShadowColorPlugName, "shadowColor"))(
-        (ShadowDistancePlugName, "shadowDistance"))((ShadowFalloffPlugName, "shadowFalloff"))(
-        (ShadowFalloffGammaPlugName, "shadowFalloffGamma")));
+    ((EnableShadowsPlugName, "enableShadows"))
+    ((ShadowColorPlugName, "shadowColor"))
+    ((ShadowDistancePlugName, "shadowDistance"))
+    ((ShadowFalloffPlugName, "shadowFalloff"))
+    ((ShadowFalloffGammaPlugName, "shadowFalloffGamma"))
+);
+// clang-format on
 
 static bool _ReportError(const std::string& msg, const SdfPath& primPath = SdfPath())
 {
