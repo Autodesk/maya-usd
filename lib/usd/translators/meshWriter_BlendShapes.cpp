@@ -31,6 +31,7 @@
 #include <pxr/usd/usdSkel/blendShape.h>
 
 #include <maya/MApiNamespace.h>
+#include <maya/MAnimUtil.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFloatPointArray.h>
 #include <maya/MFnAttribute.h>
@@ -611,6 +612,15 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                 unsigned int numOfTargets = weightInfo.targetMeshes.length();
                 for (unsigned int k = 0; k < numOfTargets; ++k) {
                     MObject targetMesh = weightInfo.targetMeshes[k];
+                    // TODO: (yliangsiew) Because UsdSkelBlendShape does not
+                    // support animated targets (the `normalOffsets` and
+                    // `offsets` attributes are defined as uniforms), we cannot
+                    // fully support it in the exporter either.
+                    if (MAnimUtil::isAnimated(targetMesh)) {
+                        TF_RUNTIME_ERROR("Animated blendshapes are not supported in USD. Please bake down deformer history and remove existing connections first before attempting to export.");
+                        return MObject::kNullObj;
+                    }
+
                     MString curTargetMeshNameMStr = mayaGetUniqueNameOfDAGNode(targetMesh);
                     assert(curTargetMeshNameMStr.length() != 0);
                     std::string curTargetMeshName
@@ -678,6 +688,19 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                 // in-between shapes and format names for them ourselves based on the weight that
                 // they're supposed to activate at.
                 unsigned int numOfTargets = weightInfo.targetMeshes.length();
+
+                // TODO: (yliangsiew) Because UsdSkelBlendShape does not support
+                // animated targets (the `normalOffsets` and `offsets`
+                // attributes are defined as uniforms), we cannot fully support
+                // it in the exporter either.
+                for (unsigned int k=0; k < numOfTargets; ++k) {
+                    MObject targetMesh = weightInfo.targetMeshes[k];
+                    if (MAnimUtil::isAnimated(targetMesh)) {
+                        TF_RUNTIME_ERROR("Animated blendshapes are not supported in USD. Please bake down deformer history and remove existing connections first before attempting to export.");
+                        return MObject::kNullObj;
+                    }
+                }
+
                 // NOTE: (yliangsiew) Because of just how USD works; need to create
                 // the base shape first before we create the inbetween shapes.
                 // For this, we will use the name of the plug at the corresponding weight index.
