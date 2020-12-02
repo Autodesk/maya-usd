@@ -97,7 +97,7 @@ public:
                 file.findPlug(MayaAttrs::file::fileTextureName, true).asString().asChar()));
         } else if (paramName == HdLightTokens->enableColorTemperature) {
             return VtValue(false);
-#if USD_VERSION_NUM >= 1910
+#if USD_VERSION_NUM >= 1910 && USD_VERSION_NUM < 2011
         } else if (paramName == HdLightTokens->textureResource) {
             auto fileObj = GetConnectedFileNode(GetNode(), HdMayaAdapterTokens->color);
             // TODO: Return a default, white texture?
@@ -110,7 +110,7 @@ public:
                 fileObj,
                 GetFileTexturePath(MFnDependencyNode(fileObj)),
                 GetDelegate()->GetParams().textureMemoryPerTexture) };
-#endif // USD_VERSION_NUM >= 1910
+#endif // USD_VERSION_NUM >= 1910 && USD_VERSION_NUM < 2011
         }
         return {};
     }
