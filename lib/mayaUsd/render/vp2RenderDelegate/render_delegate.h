@@ -159,8 +159,8 @@ private:
         _resourceRegistry; //!< Shared and unused by VP2 resource registry
 
     std::unique_ptr<HdVP2RenderParam>
-        _renderParam; //!< Render param used to provided access to VP2 during prim synchronization
-    SdfPath _id;      //!< Render delegate ID
+            _renderParam; //!< Render param used to provided access to VP2 during prim synchronization
+    SdfPath _id;          //!< Render delegate ID
     HdVP2ResourceRegistry
         _resourceRegistryVP2; //!< VP2 resource registry used for enqueue and execution of commits
 
