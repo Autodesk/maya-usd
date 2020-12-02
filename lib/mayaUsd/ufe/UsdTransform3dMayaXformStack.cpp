@@ -117,15 +117,14 @@ void setXformOpOrder(const UsdGeomXformable& xformable)
 
 using NextTransform3dFn = std::function<Ufe::Transform3d::Ptr()>;
 
-Ufe::Transform3d::Ptr createTransform3d(
-    const Ufe::SceneItem::Ptr& item,
-    NextTransform3dFn          nextTransform3dFn
-)
+Ufe::Transform3d::Ptr
+createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransform3dFn)
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
     if (!usdItem) {
-        TF_FATAL_ERROR("Could not create Maya transform stack Transform3d interface for null item.");
+        TF_FATAL_ERROR(
+            "Could not create Maya transform stack Transform3d interface for null item.");
     }
 #endif
 
@@ -148,8 +147,7 @@ Ufe::Transform3d::Ptr createTransform3d(
     // chain of responsibility.
     auto stackOps = UsdMayaXformStack::MayaStack().MatchingSubstack(xformOps);
 
-    return stackOps.empty() ? nextTransform3dFn()
-                            : UsdTransform3dMayaXformStack::create(usdItem);
+    return stackOps.empty() ? nextTransform3dFn() : UsdTransform3dMayaXformStack::create(usdItem);
 }
 
 // Helper class to factor out common code for translate, rotate, scale
@@ -723,24 +721,26 @@ UsdTransform3dMayaXformStackHandler::create(const Ufe::Transform3dHandler::Ptr& 
 Ufe::Transform3d::Ptr
 UsdTransform3dMayaXformStackHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    return createTransform3d(
-        item, [&](){ return _nextHandler->transform3d(item); });
+    return createTransform3d(item, [&]() { return _nextHandler->transform3d(item); });
 }
 
-Ufe::Transform3d::Ptr
-UsdTransform3dMayaXformStackHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr&      item
+Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
+    const Ufe::SceneItem::Ptr& item
 #if UFE_PREVIEW_VERSION_NUM >= 2030
-    , const Ufe::EditTransform3dHint& hint
+    ,
+    const Ufe::EditTransform3dHint& hint
 #endif
 ) const
 {
-    return createTransform3d(
-        item, [&](){ return _nextHandler->editTransform3d(item
+    return createTransform3d(item, [&]() {
+        return _nextHandler->editTransform3d(
+            item
 #if UFE_PREVIEW_VERSION_NUM >= 2030
-            , hint
+            ,
+            hint
 #endif
-        ); });
+        );
+    });
 }
 
 } // namespace ufe

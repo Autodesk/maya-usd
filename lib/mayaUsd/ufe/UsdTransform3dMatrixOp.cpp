@@ -403,11 +403,11 @@ UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) cons
     return _nextHandler->transform3d(item);
 }
 
-Ufe::Transform3d::Ptr
-UsdTransform3dMatrixOpHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr&      item
+Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
+    const Ufe::SceneItem::Ptr& item
 #if UFE_PREVIEW_VERSION_NUM >= 2030
-    , const Ufe::EditTransform3dHint& hint
+    ,
+    const Ufe::EditTransform3dHint& hint
 #endif
 ) const
 {
@@ -440,23 +440,29 @@ UsdTransform3dMatrixOpHandler::editTransform3d(
 
     // If we've found a matrix op, but there is a more local non-matrix op in
     // the stack, the more local op should be used to handle the edit.
-    bool moreLocalNonMatrix = foundMatrix ?
-        (std::find_if(i, xformOps.end(), [](const UsdGeomXformOp& op)
-        { return op.GetOpType() != UsdGeomXformOp::TypeTransform; }) 
-         != xformOps.end()) : false;
+    bool moreLocalNonMatrix = foundMatrix
+        ? (std::find_if(
+               i,
+               xformOps.end(),
+               [](const UsdGeomXformOp& op) {
+                   return op.GetOpType() != UsdGeomXformOp::TypeTransform;
+               })
+           != xformOps.end())
+        : false;
 
     // We can't handle pivot edits, so in that case pass on to the next handler.
-    return
-        (foundMatrix && !moreLocalNonMatrix
+    return (foundMatrix && !moreLocalNonMatrix
 #if UFE_PREVIEW_VERSION_NUM >= 2030
-         && (hint.type() != Ufe::EditTransform3dHint::RotatePivot) &&
-         (hint.type() != Ufe::EditTransform3dHint::ScalePivot)
+            && (hint.type() != Ufe::EditTransform3dHint::RotatePivot)
+            && (hint.type() != Ufe::EditTransform3dHint::ScalePivot)
 #endif
-        ) ? 
-        UsdTransform3dMatrixOp::create(usdItem, *i) :
-        _nextHandler->editTransform3d(item
+                )
+        ? UsdTransform3dMatrixOp::create(usdItem, *i)
+        : _nextHandler->editTransform3d(
+            item
 #if UFE_PREVIEW_VERSION_NUM >= 2030
-            , hint
+            ,
+            hint
 #endif
         );
 }

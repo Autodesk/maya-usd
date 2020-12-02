@@ -171,7 +171,8 @@ Ufe::Transform3d::Ptr createTransform3d(const Ufe::SceneItem::Ptr& item)
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
     if (!usdItem) {
-        TF_FATAL_ERROR("Could not create fallback Maya transform stack Transform3d interface for null item.");
+        TF_FATAL_ERROR(
+            "Could not create fallback Maya transform stack Transform3d interface for null item.");
     }
 #endif
 
@@ -343,11 +344,11 @@ UsdTransform3dFallbackMayaXformStackHandler::transform3d(const Ufe::SceneItem::P
     return createTransform3d(item);
 }
 
-Ufe::Transform3d::Ptr
-UsdTransform3dFallbackMayaXformStackHandler::editTransform3d(
-    const Ufe::SceneItem::Ptr&      item
+Ufe::Transform3d::Ptr UsdTransform3dFallbackMayaXformStackHandler::editTransform3d(
+    const Ufe::SceneItem::Ptr& item
 #if UFE_PREVIEW_VERSION_NUM >= 2030
-    , const Ufe::EditTransform3dHint& hint
+    ,
+    const Ufe::EditTransform3dHint& hint
 #endif
 ) const
 {
