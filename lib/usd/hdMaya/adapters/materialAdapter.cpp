@@ -21,26 +21,29 @@
 #include <hdMaya/adapters/tokens.h>
 #include <hdMaya/utils.h>
 
-#include <pxr/base/tf/fileUtils.h>
-#include <pxr/imaging/glf/contextCaps.h>
-#include <pxr/imaging/glf/textureRegistry.h>
-#include <pxr/imaging/glf/udimTexture.h>
-#include <pxr/imaging/hd/instanceRegistry.h>
 #include <pxr/imaging/hd/material.h>
-#include <pxr/imaging/hd/resourceRegistry.h>
-#include <pxr/imaging/hdSt/resourceRegistry.h>
-#include <pxr/imaging/hdSt/textureResource.h>
-#include <pxr/imaging/hdSt/textureResourceHandle.h>
 #include <pxr/imaging/hio/glslfx.h>
 #include <pxr/usd/sdf/types.h>
 #include <pxr/usd/sdr/registry.h>
-#include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 #include <pxr/usdImaging/usdImagingGL/package.h>
 
 #include <maya/MNodeMessage.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+
+#if USD_VERSION_NUM < 2011
+#include <pxr/base/tf/fileUtils.h>
+#include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/glf/textureRegistry.h>
+#include <pxr/imaging/glf/udimTexture.h>
+#include <pxr/imaging/hd/instanceRegistry.h>
+#include <pxr/imaging/hd/resourceRegistry.h>
+#include <pxr/imaging/hdSt/resourceRegistry.h>
+#include <pxr/imaging/hdSt/textureResource.h>
+#include <pxr/imaging/hdSt/textureResourceHandle.h>
+#include <pxr/usdImaging/usdImaging/textureUtils.h>
+#endif // USD_VERSION_NUM < 2011
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -105,7 +108,19 @@ void HdMayaMaterialAdapter::Populate()
     _isPopulated = true;
 }
 
-#if USD_VERSION_NUM <= 1911
+#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM < 2011
+
+HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(const TfToken& paramName)
+{
+    return {};
+}
+
+HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(const SdfPath& textureShaderId)
+{
+    return {};
+}
+
+#elif USD_VERSION_NUM <= 1911
 
 // We can't store the shader here explicitly, since it causes a deadlock
 // due to library dependencies.
@@ -194,19 +209,12 @@ HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(const TfTok
     return {};
 }
 
-#else // USD_VERSION_NUM > 1911
-
-HdTextureResourceSharedPtr HdMayaMaterialAdapter::GetTextureResource(const SdfPath& textureShaderId)
+HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(const TfToken& paramName)
 {
     return {};
 }
 
 #endif // USD_VERSION_NUM <= 1911
-
-HdTextureResource::ID HdMayaMaterialAdapter::GetTextureResourceID(const TfToken& paramName)
-{
-    return {};
-}
 
 VtValue HdMayaMaterialAdapter::GetMaterialResource()
 {
@@ -317,7 +325,29 @@ private:
         }
     }
 
-#if USD_VERSION_NUM <= 1911
+#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM < 2011
+
+    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId) override
+    {
+        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
+            .Msg(
+                "HdMayaShadingEngineAdapter::GetTextureResource(%s): %s\n",
+                textureShaderId.GetText(),
+                GetID().GetText());
+        if (GetDelegate()->IsHdSt()) {
+            auto* mObjPtr = TfMapLookupPtr(_materialPathToMobj, textureShaderId);
+            if (!mObjPtr || (*mObjPtr) == MObject::kNullObj) {
+                return {};
+            }
+            return GetFileTextureResource(
+                *mObjPtr,
+                GetFileTexturePath(MFnDependencyNode(*mObjPtr)),
+                GetDelegate()->GetParams().textureMemoryPerTexture);
+        }
+        return {};
+    }
+
+#elif USD_VERSION_NUM <= 1911
 
     inline bool _RegisterTexture(
         const MFnDependencyNode& node,
@@ -525,28 +555,6 @@ private:
         return {};
     }
 
-#else // USD_VERSION_NUM > 1911
-
-    HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId) override
-    {
-        TF_DEBUG(HDMAYA_ADAPTER_MATERIALS)
-            .Msg(
-                "HdMayaShadingEngineAdapter::GetTextureResource(%s): %s\n",
-                textureShaderId.GetText(),
-                GetID().GetText());
-        if (GetDelegate()->IsHdSt()) {
-            auto* mObjPtr = TfMapLookupPtr(_materialPathToMobj, textureShaderId);
-            if (!mObjPtr || (*mObjPtr) == MObject::kNullObj) {
-                return {};
-            }
-            return GetFileTextureResource(
-                *mObjPtr,
-                GetFileTexturePath(MFnDependencyNode(*mObjPtr)),
-                GetDelegate()->GetParams().textureMemoryPerTexture);
-        }
-        return {};
-    }
-
 #endif // USD_VERSION_NUM <= 1911
 
     void _CreateSurfaceMaterialCallback()
@@ -563,6 +571,8 @@ private:
         }
     }
 
+#if USD_VERSION_NUM < 2011
+
     inline HdTextureResource::ID
     _GetTextureResourceID(const MObject& fileObj, const TfToken& filePath)
     {
@@ -573,6 +583,8 @@ private:
         boost::hash_combine(hash, std::get<1>(wrapping));
         return HdTextureResource::ID(hash);
     }
+
+#endif // USD_VERSION_NUM < 2011
 
     VtValue GetMaterialResource() override
     {
@@ -641,8 +653,12 @@ private:
     TfToken _surfaceShaderType;
     // So they live long enough
 
+#if USD_VERSION_NUM < 2011
+
     std::unordered_map<TfToken, HdStTextureResourceHandleSharedPtr, TfToken::HashFunctor>
         _textureResourceHandles;
+
+#endif // USD_VERSION_NUM < 2011
 
     MCallbackId _surfaceShaderCallback;
 #ifdef HDMAYA_OIT_ENABLED
