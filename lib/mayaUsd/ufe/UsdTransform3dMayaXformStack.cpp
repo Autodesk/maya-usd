@@ -236,9 +236,6 @@ public:
             // Redo
             cmd->_undoableItem.redo();
 
-            // Can ignore the value, we already have it --- or assert they're
-            // equal, perhaps.
-            cmd->setValue(cmd->_newOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_redoneState;
         }
     };
