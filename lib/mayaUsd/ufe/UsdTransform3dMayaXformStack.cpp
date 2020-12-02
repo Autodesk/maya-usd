@@ -159,9 +159,7 @@ class UsdTRSUndoableCmdBase : public Ufe::SetVector3dUndoableCommand
 private:
     const UsdTimeCode _readTime;
     const UsdTimeCode _writeTime;
-    VtValue           _prevOpValue;
     VtValue           _newOpValue;
-    TfToken           _attrName;
     UsdGeomXformOp    _op;
     OpFunc            _opFunc;
     UsdUndoableItem   _undoableItem;
@@ -192,14 +190,12 @@ public:
         }
         void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
         {
-            // Going from initial to executing / executed state, save value.
-            cmd->_op = cmd->_opFunc(*cmd);
-            cmd->_attrName = cmd->_op.GetOpName();
-            cmd->_prevOpValue = getValue(cmd->_op.GetAttr(), cmd->readTime());
-            cmd->_newOpValue = v;
-
             // Add undoblock to capture edits
             UsdUndoBlock undoBlock(&cmd->_undoableItem);
+
+            // Going from initial to executing / executed state, save value.
+            cmd->_op = cmd->_opFunc(*cmd);
+            cmd->_newOpValue = v;
             cmd->setValue(v);
             cmd->_state = &UsdTRSUndoableCmdBase::_executeState;
         }
@@ -223,8 +219,6 @@ public:
             // Undo
             cmd->_undoableItem.undo();
 
-            cmd->recreateOp();
-            cmd->setValue(cmd->_prevOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
         }
         void handleSet(UsdTRSUndoableCmdBase* cmd, const VtValue& v) override
@@ -244,7 +238,6 @@ public:
 
             // Can ignore the value, we already have it --- or assert they're
             // equal, perhaps.
-            cmd->recreateOp();
             cmd->setValue(cmd->_newOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_redoneState;
         }
@@ -258,8 +251,6 @@ public:
             // Undo
             cmd->_undoableItem.undo();
 
-            cmd->recreateOp();
-            cmd->setValue(cmd->_prevOpValue);
             cmd->_state = &UsdTRSUndoableCmdBase::_undoneState;
         }
     };
@@ -274,9 +265,7 @@ public:
         // Always read from proxy shape time.
         _readTime(getTime(path))
         , _writeTime(writeTime_)
-        , _prevOpValue()
         , _newOpValue(newOpValue)
-        , _attrName()
         , _op()
         , _opFunc(std::move(opFunc))
     {
@@ -286,18 +275,6 @@ public:
     void execute() override { handleSet(_newOpValue); }
     void undo() override { _state->handleUndo(this); }
     void redo() override { handleSet(_newOpValue); }
-
-    void recreateOp()
-    {
-        auto sceneItem
-            = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(path()));
-        TF_AXIOM(sceneItem);
-        auto prim = sceneItem->prim();
-        TF_AXIOM(prim);
-        auto attr = prim.GetAttribute(_attrName);
-        TF_AXIOM(attr);
-        _op = UsdGeomXformOp(attr);
-    }
 
     void handleSet(const VtValue& v) { _state->handleSet(this, v); }
 
