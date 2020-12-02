@@ -58,6 +58,11 @@
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 
 #include <ufe/runTimeMgr.h>
+
+// For Maya preview release 121 enabling and disabling of new Transform3d
+// functionality.  PPT, 1-Dec-2020.
+#include <maya/MGlobal.h>
+#include <maya/MPxCommand.h>
 #endif
 
 #if defined(MAYAUSD_VERSION)
@@ -75,6 +80,11 @@ const MTypeId MayaUsdPreviewSurface_typeId(0x58000096);
 const MString MayaUsdPreviewSurface_typeName("usdPreviewSurface");
 const MString MayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
 
+// Keep a reference to the existing USD Transform3d handler, to restore on
+// finalization.
+Ufe::Transform3dHandler::Ptr g_OldTransform3dHandler;
+Ufe::Transform3dHandler::Ptr g_NewTransform3dHandler;
+
 template <typename T> void registerCommandCheck(MFnPlugin& plugin)
 {
     auto status = plugin.registerCommand(T::commandName, T::creator, T::createSyntax);
@@ -91,9 +101,43 @@ template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
     }
 }
 
-// The existing USD Transform3d handler, which we decorate for augmented
-// Transform3d support.  Keep a reference to it to restore on finalization.
-Ufe::Transform3dHandler::Ptr g_Transform3dHandler;
+class ToggleTransform3d : public MPxCommand
+{
+public:
+    ToggleTransform3d() { }
+    static void* creator() { return new ToggleTransform3d(); }
+
+    static const MString commandName;
+
+    MStatus doIt(const MArgList&) override { return redoIt(); }
+
+    void toggle() const
+    {
+        bool toNew
+            = (Ufe::RunTimeMgr::instance().transform3dHandler(MayaUsd::ufe::getUsdRunTimeId())
+               == g_OldTransform3dHandler);
+        Ufe::RunTimeMgr::instance().setTransform3dHandler(
+            MayaUsd::ufe::getUsdRunTimeId(),
+            toNew ? g_NewTransform3dHandler : g_OldTransform3dHandler);
+        MGlobal::displayInfo(
+            toNew ? MString("Using chain of responsibility Transform3d handlers.")
+                  : MString("Using legacy Transform3d handler."));
+    }
+
+    MStatus redoIt() override
+    {
+        toggle();
+        return MS::kSuccess;
+    }
+    MStatus undoIt() override
+    {
+        toggle();
+        return MS::kSuccess;
+    }
+    bool isUndoable() const override { return true; }
+};
+
+const MString ToggleTransform3d::commandName { "toggleTransform3d" };
 
 } // namespace
 
@@ -154,19 +198,28 @@ MStatus initializePlugin(MObject obj)
 
     // Set up a chain of responsibility for Transform3d interface creation,
     // from least important to most important:
-    // - Perfor operations on a Maya transform stack appended to the existing
+    // - Perform operations on a Maya transform stack appended to the existing
     //   transform stack (fallback).
     // - Perform operations on a 4x4 matrix transform op.
     // - Perform operations using the USD common transform API.
     // - Perform operations using a Maya transform stack.
     auto& runTimeMgr = Ufe::RunTimeMgr::instance();
     auto  usdRtid = MayaUsd::ufe::getUsdRunTimeId();
-    auto  fallbackHandler = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
-    auto  matrixHandler = MayaUsd::ufe::UsdTransform3dMatrixOpHandler::create(fallbackHandler);
-    auto  commonAPIHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(matrixHandler);
-    auto  mayaStackHandler
+    g_OldTransform3dHandler = runTimeMgr.transform3dHandler(usdRtid);
+    auto fallbackHandler = MayaUsd::ufe::UsdTransform3dFallbackMayaXformStackHandler::create();
+    auto matrixHandler = MayaUsd::ufe::UsdTransform3dMatrixOpHandler::create(fallbackHandler);
+    auto commonAPIHandler = MayaUsd::ufe::UsdTransform3dCommonAPIHandler::create(matrixHandler);
+    auto mayaStackHandler
         = MayaUsd::ufe::UsdTransform3dMayaXformStackHandler::create(commonAPIHandler);
+    g_NewTransform3dHandler = mayaStackHandler;
     runTimeMgr.setTransform3dHandler(usdRtid, mayaStackHandler);
+
+    status = plugin.registerCommand(ToggleTransform3d::commandName, ToggleTransform3d::creator);
+    if (!status) {
+        status.perror(
+            MString("mayaUsdPlugin: unable to register command ") + ToggleTransform3d::commandName);
+    }
+
 #endif
 
     status = plugin.registerShape(
@@ -290,9 +343,19 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)
+    status = plugin.deregisterCommand(ToggleTransform3d::commandName);
+    if (!status) {
+        status.perror(
+            MString("mayaUsdPlugin: unable to deregister command ")
+            + ToggleTransform3d::commandName);
+    }
+
     // Restore the initial maya-usd Transform3d handler.
     Ufe::RunTimeMgr::instance().setTransform3dHandler(
-        MayaUsd::ufe::getUsdRunTimeId(), g_Transform3dHandler);
+        MayaUsd::ufe::getUsdRunTimeId(), g_OldTransform3dHandler);
+
+    g_OldTransform3dHandler = nullptr;
+    g_NewTransform3dHandler = nullptr;
 
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
