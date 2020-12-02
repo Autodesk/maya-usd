@@ -115,18 +115,21 @@ inline bool _IsUsdUVTexture(const HdMaterialNode& node)
 
 //! Helper function to generate a XML string about nodes, relationships and primvars in the
 //! specified material network.
-std::string _GenerateXMLString(const HdMaterialNetwork& mat, bool includeParams=true)
+std::string _GenerateXMLString(
+    const HdMaterialNetwork& materialNetwork,
+    const SdfPath&           materialPath,
+    bool                     includeParams = true)
 {
     std::string result;
     result.reserve(1024);
 
-    if (!mat.nodes.empty()) {
+    if (!materialNetwork.nodes.empty()) {
         result += "<nodes>\n";
 
         if (includeParams) {
-            for (HdMaterialNode const& node : mat.nodes) {
-                result += "  <node name=\"";
-                result += node.path.GetName();
+            for (HdMaterialNode const& node : materialNetwork.nodes) {
+                result += "  <node path=\"";
+                result += node.path.MakeRelativePath(materialPath).GetString();
                 result += "\" identifier=\"";
                 result += node.identifier;
                 result += "\">\n";
@@ -146,9 +149,9 @@ std::string _GenerateXMLString(const HdMaterialNetwork& mat, bool includeParams=
                 result += "  </node>\n";
             }
         } else {
-            for (HdMaterialNode const& node : mat.nodes) {
-                result += "  <node name=\"";
-                result += node.path.GetName();
+            for (HdMaterialNode const& node : materialNetwork.nodes) {
+                result += "  <node path=\"";
+                result += node.path.MakeRelativePath(materialPath).GetString();
                 result += "\" identifier=\"";
                 result += node.identifier;
                 result += "\"/>\n";
@@ -158,16 +161,16 @@ std::string _GenerateXMLString(const HdMaterialNetwork& mat, bool includeParams=
         result += "</nodes>\n";
     }
 
-    if (!mat.relationships.empty()) {
+    if (!materialNetwork.relationships.empty()) {
         result += "<relationships>\n";
 
-        for (const HdMaterialRelationship& rel : mat.relationships) {
+        for (const HdMaterialRelationship& rel : materialNetwork.relationships) {
             result += "  <relationship from=\"";
-            result += rel.inputId.GetName();
+            result += rel.inputId.MakeRelativePath(materialPath).GetString();
             result += ".";
             result += rel.inputName;
             result += "\" to=\"";
-            result += rel.outputId.GetName();
+            result += rel.outputId.MakeRelativePath(materialPath).GetString();
             result += ".";
             result += rel.outputName;
             result += "\"/>\n";
@@ -176,10 +179,10 @@ std::string _GenerateXMLString(const HdMaterialNetwork& mat, bool includeParams=
         result += "</relationships>\n";
     }
 
-    if (!mat.primvars.empty()) {
+    if (!materialNetwork.primvars.empty()) {
         result += "<primvars>\n";
 
-        for (TfToken const& primvar : mat.primvars) {
+        for (TfToken const& primvar : materialNetwork.primvars) {
             result += "  <primvar name=\"";
             result += primvar;
             result += "\"/>\n";
@@ -685,7 +688,8 @@ void HdVP2Material::Sync(
 
                 // Generate a XML string from the material network and convert it to a token for
                 // faster hashing and comparison.
-                const TfToken bxdfNetToken(_GenerateXMLString(bxdfNet, false));
+                const SdfPath materialPath = sceneDelegate->GetScenePrimPath(id, 0);
+                const TfToken bxdfNetToken(_GenerateXMLString(bxdfNet, materialPath, false));
 
                 // Acquire a shader instance from the shader cache. If a shader instance has been
                 // cached with the same token, a clone of the shader instance will be returned.
@@ -709,11 +713,11 @@ void HdVP2Material::Sync(
 
                 if (TfDebug::IsEnabled(HDVP2_DEBUG_MATERIAL)) {
                     std::cout << "BXDF material network for " << id << ":\n"
-                              << _GenerateXMLString(bxdfNet) << "\n"
+                              << _GenerateXMLString(bxdfNet, materialPath) << "\n"
                               << "BXDF (with VP2 fixes) material network for " << id << ":\n"
-                              << _GenerateXMLString(vp2BxdfNet) << "\n"
+                              << _GenerateXMLString(vp2BxdfNet, materialPath) << "\n"
                               << "Displacement material network for " << id << ":\n"
-                              << _GenerateXMLString(dispNet) << "\n";
+                              << _GenerateXMLString(dispNet, materialPath) << "\n";
 
                     if (_surfaceShader) {
                         auto tmpDir = boost::filesystem::temp_directory_path();
