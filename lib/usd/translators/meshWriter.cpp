@@ -273,7 +273,9 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // NOTE: (yliangsiew) Because we need to write out the _actual_ base mesh,
     // not the deformed mesh as as result of blendshapes, if there is a blendshape
     // in the deform stack here, we walk past it to the original shape instead.
-    // NOTE: (yliangsiew) Also check if the mesh is a valid DG node (mesh geo subsets are kMeshData)
+    // Also check if the mesh is a valid DG node (mesh geo subsets are
+    // kMeshData in cases where a single mesh has multiple face
+    // assignments to materials.)
     if (exportArgs.exportBlendShapes && geomMeshObj.hasFn(MFn::kDependencyNode)) {
         if (exportArgs.ignoreWarnings) {
             geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, NULL);
@@ -324,11 +326,16 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                             }
                         }
                     }
-                    break;
+                    MGlobal::displayError("USDSkelBlendShape does not support animated blend shapes. Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.");
+                    TF_RUNTIME_ERROR("USDSkelBlendShape does not support animated blend shapes. Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.");
+                    return false;
+                } else {
+                    MFnDependencyNode fnNode(curIntermediate, &status);
+                    CHECK_MSTATUS_AND_RETURN(status, false);
+                    MGlobal::displayError("Unrecognized node encountered in blendshape deformation chain: " + fnNode.name() + "Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.");
+                    TF_RUNTIME_ERROR("Unrecognized node encountered in blendshape deformation chain: %s. Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.", fnNode.name().asChar());
+                    return false;
                 }
-
-                TF_RUNTIME_ERROR("USDSkelBlendShape does not support animated blend shapes. Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.");
-                return false;
             }
         }
     }
