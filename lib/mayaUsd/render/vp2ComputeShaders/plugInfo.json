@@ -1,0 +1,11 @@
+{
+    "Plugins": [
+        {
+            "Name": "mayaUsd_ComputeShaders", 
+            "Info": {}, 
+            "ResourcePath": "../../usd/mayaUsd_ComputeShaders/resources", 
+            "Root": "..", 
+            "Type": "resource"
+        }
+    ]
+}
