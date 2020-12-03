@@ -768,6 +768,37 @@ MString HdVP2RenderDelegate::GetLocalNodeName(const MString& name) const
     return MString(_id.AppendChild(TfToken(name.asChar())).GetText());
 }
 
+/*! \brief  Returns a clone of the shader entry stored in the cache with the specified id.
+ */
+MHWRender::MShaderInstance* HdVP2RenderDelegate::GetShaderFromCache(const TfToken& id)
+{
+    tbb::spin_rw_mutex::scoped_lock lock(_shaderCache._mutex, false /*write*/);
+
+    const auto it = _shaderCache._map.find(id);
+
+    const MHWRender::MShaderInstance* shader
+        = (it != _shaderCache._map.cend() ? it->second.get() : nullptr);
+    return (shader ? shader->clone() : nullptr);
+}
+
+/*! \brief  Adds a clone of the shader to the cache with the specified id if it doesn't exist.
+ */
+bool HdVP2RenderDelegate::AddShaderToCache(
+    const TfToken&                    id,
+    const MHWRender::MShaderInstance& shader)
+{
+    tbb::spin_rw_mutex::scoped_lock lock(_shaderCache._mutex, false /*write*/);
+
+    const auto it = _shaderCache._map.find(id);
+    if (it != _shaderCache._map.cend()) {
+        return false;
+    }
+
+    lock.upgrade_to_writer();
+    _shaderCache._map[id].reset(shader.clone());
+    return true;
+}
+
 /*! \brief  Returns a fallback shader instance when no material is bound.
 
     This method is keeping registry of all fallback shaders generated, allowing only
