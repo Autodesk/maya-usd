@@ -1,6 +1,6 @@
 import fnmatch
 import ufe
-import mayaUsd.ufe as mu
+import mayaUsd.ufe
 import maya.internal.common.ufe_ae.template as ufeAeTemplate
 
 # We manually import all the classes which have a 'GetSchemaAttributeNames'
@@ -61,7 +61,7 @@ class AETemplate(ufeAeTemplate.Template):
                 schemaTypeName = schemaTypeName.replace(p, r, 1)
                 break
 
-        # Put a space in the name when proceeded with a capital letter.
+        # Put a space in the name when preceded by a capital letter.
         # Exceptions: Number followed by capital
         #             Multiple capital letters together
         catName = str(schemaTypeName[0])
@@ -86,7 +86,7 @@ class AETemplate(ufeAeTemplate.Template):
         # Get the xformOp order and add those attributes (in order)
         # followed by the xformOp order attribute.
         allAttrs = self.attrS.attributeNames
-        prim = mu.getPrimFromRawItem(ufeSceneItem.getRawAddress())
+        prim = mayaUsd.ufe.getPrimFromRawItem(ufeSceneItem.getRawAddress())
         geomX = UsdGeom.Xformable(prim)
         xformOps = geomX.GetOrderedXformOps()
         xformOpOrderNames = [op.GetOpName() for op in xformOps]
