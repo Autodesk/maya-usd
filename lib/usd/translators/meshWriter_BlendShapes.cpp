@@ -30,8 +30,8 @@
 #include <pxr/usd/usdSkel/bindingAPI.h>
 #include <pxr/usd/usdSkel/blendShape.h>
 
-#include <maya/MApiNamespace.h>
 #include <maya/MAnimUtil.h>
+#include <maya/MApiNamespace.h>
 #include <maya/MFloatArray.h>
 #include <maya/MFloatPointArray.h>
 #include <maya/MFnAttribute.h>
@@ -617,7 +617,9 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     // `offsets` attributes are defined as uniforms), we cannot
                     // fully support it in the exporter either.
                     if (MAnimUtil::isAnimated(targetMesh)) {
-                        TF_RUNTIME_ERROR("Animated blendshapes are not supported in USD. Please bake down deformer history and remove existing connections first before attempting to export.");
+                        TF_RUNTIME_ERROR("Animated blendshapes are not supported in USD. Please "
+                                         "bake down deformer history and remove existing "
+                                         "connections first before attempting to export.");
                         return MObject::kNullObj;
                     }
 
@@ -693,10 +695,12 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                 // animated targets (the `normalOffsets` and `offsets`
                 // attributes are defined as uniforms), we cannot fully support
                 // it in the exporter either.
-                for (unsigned int k=0; k < numOfTargets; ++k) {
+                for (unsigned int k = 0; k < numOfTargets; ++k) {
                     MObject targetMesh = weightInfo.targetMeshes[k];
                     if (MAnimUtil::isAnimated(targetMesh)) {
-                        TF_RUNTIME_ERROR("Animated blendshapes are not supported in USD. Please bake down deformer history and remove existing connections first before attempting to export.");
+                        TF_RUNTIME_ERROR("Animated blendshapes are not supported in USD. Please "
+                                         "bake down deformer history and remove existing "
+                                         "connections first before attempting to export.");
                         return MObject::kNullObj;
                     }
                 }
