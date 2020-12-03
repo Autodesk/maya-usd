@@ -45,8 +45,6 @@ public:
     UsdUndoStateDelegate();
     ~UsdUndoStateDelegate() override;
 
-    static UsdUndoStateDelegateRefPtr New();
-
 private:
     void invertSetField(const SdfPath& path, const TfToken& fieldName, const VtValue& inverse);
     void invertCreateSpec(const SdfPath& path, bool inert);

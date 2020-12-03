@@ -64,7 +64,7 @@ private:
 
 void _trackLayerStates(const SdfLayerHandle& layer)
 {
-    MayaUsd::UsdUndoManager::instance().trackLayerStates(layer);
+    MayaUsd::UsdUndoManager::instance().trackStatesOnNewStage(layer);
 }
 
 } // namespace

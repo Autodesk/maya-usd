@@ -33,11 +33,6 @@ UsdUndoStateDelegate::UsdUndoStateDelegate()
 
 UsdUndoStateDelegate::~UsdUndoStateDelegate() { }
 
-UsdUndoStateDelegateRefPtr UsdUndoStateDelegate::New()
-{
-    return TfCreateRefPtr(new UsdUndoStateDelegate());
-}
-
 bool UsdUndoStateDelegate::_IsDirty() { return _dirty; }
 
 void UsdUndoStateDelegate::_MarkCurrentStateAsClean() { _dirty = false; }

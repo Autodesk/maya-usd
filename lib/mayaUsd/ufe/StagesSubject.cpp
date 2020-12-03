@@ -307,7 +307,7 @@ void StagesSubject::stageEditTargetChanged(
     UsdStageWeakPtr const&                   sender)
 {
     // Track the edit target layer's state
-    UsdUndoManager::instance().trackLayerStates(notice.GetStage()->GetEditTarget().GetLayer());
+    UsdUndoManager::instance().trackStatesOnEditTargetChange(notice.GetStage()->GetEditTarget().GetLayer());
 }
 #endif
 
@@ -319,7 +319,7 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
     // invalid stage.
     if (noticeStage) {
         // Track the edit target layer's state
-        UsdUndoManager::instance().trackLayerStates(noticeStage->GetEditTarget().GetLayer());
+        UsdUndoManager::instance().trackStatesOnNewStage(noticeStage->GetEditTarget().GetLayer());
     }
 #endif
 

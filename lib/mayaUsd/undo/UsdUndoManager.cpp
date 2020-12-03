@@ -29,9 +29,16 @@ UsdUndoManager& UsdUndoManager::instance()
     return undoManager;
 }
 
-void UsdUndoManager::trackLayerStates(const SdfLayerHandle& layer)
+void UsdUndoManager::trackStatesOnNewStage(const SdfLayerHandle& layer)
 {
-    layer->SetStateDelegate(UsdUndoStateDelegate::New());
+    _layerStateDelegate = TfCreateRefPtr(new UsdUndoStateDelegate);
+
+    layer->SetStateDelegate(_layerStateDelegate);
+}
+
+void UsdUndoManager::trackStatesOnEditTargetChange(const SdfLayerHandle& layer) 
+{
+    layer->SetStateDelegate(_layerStateDelegate);
 }
 
 void UsdUndoManager::addInverse(InvertFunc func)

@@ -18,6 +18,7 @@
 #define MAYAUSD_UNDO_UNDOMANAGER_H
 
 #include "UsdUndoableItem.h"
+#include "UsdUndoStateDelegate.h"
 
 #include <mayaUsd/base/api.h>
 
@@ -52,8 +53,11 @@ public:
     UsdUndoManager(UsdUndoManager&&) = delete;
     UsdUndoManager& operator=(UsdUndoManager&&) = delete;
 
-    // tracks layer states by spawning a new UsdUndoStateDelegate
-    void trackLayerStates(const SdfLayerHandle& layer);
+    // tracks layer states on a new stage
+    void trackStatesOnNewStage(const SdfLayerHandle& layer);
+
+    // tracks layer states when switching between stage's layers
+    void trackStatesOnEditTargetChange(const SdfLayerHandle& layer);
 
 private:
     friend class UsdUndoStateDelegate;
@@ -68,6 +72,8 @@ private:
 
 private:
     InvertFuncs _invertFuncs;
+
+    UsdUndoStateDelegateRefPtr _layerStateDelegate;
 };
 
 } // namespace MAYAUSD_NS_DEF
