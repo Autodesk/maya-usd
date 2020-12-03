@@ -84,10 +84,6 @@ limitations under the License.
 
 // line 110 of "../../../../pxr/usdImaging/lib/usdShaders/shaders/previewSurface.glslfx"
 
-#define PI 3.1415
-#define EPSILON 0.001
-
-
 float
 SchlickFresnel(float EdotH)
 {
@@ -97,6 +93,8 @@ SchlickFresnel(float EdotH)
 float
 NormalDistribution(float specularRoughness, float NdotH)
 {
+    const float PI = 3.141592654;
+    const float EPSILON = 0.001;
     float alpha = specularRoughness * specularRoughness;
     float alpha2 = alpha * alpha;
     float NdotH2 = NdotH * NdotH;
@@ -125,6 +123,7 @@ Geometric(
 float
 evaluateDirectDiffuse()
 {
+    const float PI = 3.141592654;
     return 1.0 / PI;
 }
 
@@ -139,6 +138,7 @@ evaluateDirectSpecular(
         float NdotH,
         float EdotH)
 {
+    const float EPSILON = 0.001;
     float3 F = mix(specularColorF0, specularColorF90, fresnel);
     float D = NormalDistribution(specularRoughness, NdotH);
     float G = Geometric(specularRoughness, NdotL, NdotE, NdotH, EdotH);
@@ -241,10 +241,6 @@ usdPreviewSurfaceLighting(
 
 // line 110 of "../../../../pxr/usdImaging/lib/usdShaders/shaders/previewSurface.glslfx"
 
-#define PI 3.1415
-#define EPSILON 0.001
-
-
 float
 SchlickFresnel(float EdotH)
 {
@@ -254,6 +250,8 @@ SchlickFresnel(float EdotH)
 float
 NormalDistribution(float specularRoughness, float NdotH)
 {
+    const float PI = 3.141592654;
+    const float EPSILON = 0.001;
     float alpha = specularRoughness * specularRoughness;
     float alpha2 = alpha * alpha;
     float NdotH2 = NdotH * NdotH;
@@ -282,6 +280,7 @@ Geometric(
 float
 evaluateDirectDiffuse()
 {
+    const float PI = 3.141592654;
     return 1.0 / PI;
 }
 
@@ -296,6 +295,7 @@ evaluateDirectSpecular(
         float NdotH,
         float EdotH)
 {
+    const float EPSILON = 0.001;
     float3 F = mix(specularColorF0, specularColorF90, fresnel);
     float D = NormalDistribution(specularRoughness, NdotH);
     float G = Geometric(specularRoughness, NdotL, NdotE, NdotH, EdotH);
@@ -398,10 +398,6 @@ usdPreviewSurfaceLighting(
 
 // line 110 of "../../../../pxr/usdImaging/lib/usdShaders/shaders/previewSurface.glslfx"
 
-#define PI 3.1415
-#define EPSILON 0.001
-
-
 float
 SchlickFresnel(float EdotH)
 {
@@ -411,6 +407,8 @@ SchlickFresnel(float EdotH)
 float
 NormalDistribution(float specularRoughness, float NdotH)
 {
+    const float PI = 3.141592654;
+    const float EPSILON = 0.001;
     float alpha = specularRoughness * specularRoughness;
     float alpha2 = alpha * alpha;
     float NdotH2 = NdotH * NdotH;
@@ -439,6 +437,7 @@ Geometric(
 float
 evaluateDirectDiffuse()
 {
+    const float PI = 3.141592654;
     return 1.0 / PI;
 }
 
@@ -453,6 +452,7 @@ evaluateDirectSpecular(
         float NdotH,
         float EdotH)
 {
+    const float EPSILON = 0.001;
     float3 F = lerp(specularColorF0, specularColorF90, fresnel);
     float D = NormalDistribution(specularRoughness, NdotH);
     float G = Geometric(specularRoughness, NdotL, NdotE, NdotH, EdotH);
@@ -555,10 +555,6 @@ usdPreviewSurfaceLighting(
 
 // line 110 of "../../../../pxr/usdImaging/lib/usdShaders/shaders/previewSurface.glslfx"
 
-#define PI 3.1415
-#define EPSILON 0.001
-
-
 float
 SchlickFresnel(float EdotH)
 {
@@ -568,6 +564,8 @@ SchlickFresnel(float EdotH)
 float
 NormalDistribution(float specularRoughness, float NdotH)
 {
+    const float PI = 3.141592654;
+    const float EPSILON = 0.001;
     float alpha = specularRoughness * specularRoughness;
     float alpha2 = alpha * alpha;
     float NdotH2 = NdotH * NdotH;
@@ -596,6 +594,7 @@ Geometric(
 float
 evaluateDirectDiffuse()
 {
+    const float PI = 3.141592654;
     return 1.0 / PI;
 }
 
@@ -610,6 +609,7 @@ evaluateDirectSpecular(
         float NdotH,
         float EdotH)
 {
+    const float EPSILON = 0.001;
     float3 F = lerp(specularColorF0, specularColorF90, fresnel);
     float D = NormalDistribution(specularRoughness, NdotH);
     float G = Geometric(specularRoughness, NdotL, NdotE, NdotH, EdotH);

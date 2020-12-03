@@ -16,6 +16,8 @@
 #ifndef HD_VP2_MATERIAL
 #define HD_VP2_MATERIAL
 
+#include "shader.h"
+
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/imaging/hd/material.h>
 #include <pxr/pxr.h>
@@ -28,17 +30,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
 class HdVP2RenderDelegate;
-
-/*! \brief  A deleter for MShaderInstance, for use with smart pointers.
- */
-struct HdVP2ShaderDeleter
-{
-    void operator()(MHWRender::MShaderInstance*);
-};
-
-/*! \brief  A MShaderInstance owned by a std unique pointer.
- */
-using HdVP2ShaderUniquePtr = std::unique_ptr<MHWRender::MShaderInstance, HdVP2ShaderDeleter>;
 
 /*! \brief  A deleter for MTexture, for use with smart pointers.
  */
