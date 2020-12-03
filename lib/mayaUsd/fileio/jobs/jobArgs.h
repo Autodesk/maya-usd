@@ -71,6 +71,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportBlendShapes) \
     (exportUVs) \
     (exportVisibility) \
+    (ignoreWarnings) \
     (kind) \
     (materialCollectionsPath) \
     (materialsScopeName) \
@@ -155,6 +156,7 @@ struct UsdMayaJobExportArgs
     const TfToken exportSkin;
     const bool    exportBlendShapes;
     const bool    exportVisibility;
+    const bool    ignoreWarnings;
 
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of

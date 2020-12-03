@@ -54,13 +54,17 @@
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MUintArray.h>
+#include <maya/MGlobal.h>
 
+#include <cassert>
+#include <cfloat>
 #include <set>
 #include <string>
 #include <vector>
 
-MObject mayaFindUpstreamOrigMesh(const MObject& mesh)
+MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray *intermediates)
 {
+    assert(mesh.hasFn(MFn::kMesh));
     MStatus stat;
 
     // NOTE: (yliangsiew) If there's a skinCluster, find that first since that
@@ -75,10 +79,12 @@ MObject mayaFindUpstreamOrigMesh(const MObject& mesh)
         searchObject = MObject(mesh);
     }
 
-    // TODO: (yliangsiew) Problem: if there are _intermediate deformers between blendshapes,
-    // then what do we do? Like blendshape1 -> wrap -> blendshape2. This won't find
-    // that correctly...
+    // NOTE: (yliangsiew) Problem: if there are _intermediate deformers between blendshapes,
+    // then oh-no: what do we do? Like blendshape1 -> wrap -> blendshape2. This won't find
+    // that correctly...so we just tell the client what we found and let them decide how to
+    // handle it.
     MFnGeometryFilter     fnGeoFilter;
+    assert(MObjectHandle(searchObject).isValid());
     MFnBlendShapeDeformer fnBlendShape;
     MItDependencyGraph    itDg(
         searchObject,
@@ -100,10 +106,23 @@ MObject mayaFindUpstreamOrigMesh(const MObject& mesh)
         // deformed meshes from a single blendshape deformer, we have
         // to walk back up the graph using the connected index to find
         // out what the _actual_ base mesh was.
-        fnGeoFilter.setObject(curBlendShape);
-        MObject inputGeo = fnGeoFilter.inputShapeAtIndex(outputGeomPlugIdx, &stat);
-        if (inputGeo.hasFn(MFn::kMesh)) {
-            return inputGeo;
+        if (intermediates == NULL) {
+            MFnGeometryFilter     fnGeoFilter;
+            fnGeoFilter.setObject(curBlendShape);
+            MObject inputGeo = fnGeoFilter.inputShapeAtIndex(outputGeomPlugIdx, &stat);
+            if (inputGeo.hasFn(MFn::kMesh)) {
+                return inputGeo;
+            }
+        } else {
+            intermediates->clear();
+            MItDependencyGraph itDgBS(curBlendShape, MFn::kInvalid, MItDependencyGraph::kUpstream, MItDependencyGraph::kDepthFirst, MItDependencyGraph::kPlugLevel, &stat);
+            for (; !itDgBS.isDone(); itDgBS.next()) {
+                MObject curNode = itDgBS.thisNode();
+                if (curNode.hasFn(MFn::kMesh)) {
+                    return curNode;
+                }
+                intermediates->append(curNode);
+            }
         }
     }
 
@@ -254,8 +273,64 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // NOTE: (yliangsiew) Because we need to write out the _actual_ base mesh,
     // not the deformed mesh as as result of blendshapes, if there is a blendshape
     // in the deform stack here, we walk past it to the original shape instead.
-    if (exportArgs.exportBlendShapes) {
-        geomMeshObj = mayaFindUpstreamOrigMesh(geomMeshObj);
+    // NOTE: (yliangsiew) Also check if the mesh is a valid DG node (mesh geo subsets are kMeshData)
+    if (exportArgs.exportBlendShapes && geomMeshObj.hasFn(MFn::kDependencyNode)) {
+        if (exportArgs.ignoreWarnings) {
+            geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, NULL);
+        } else {
+            MObjectArray intermediates;
+            geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, &intermediates);
+            unsigned int numIntermediates = intermediates.length();
+            for (unsigned int i=0; i < numIntermediates; ++i) {
+                MObject curIntermediate = intermediates[i];
+                if (curIntermediate.hasFn(MFn::kGroupParts) || curIntermediate.hasFn(MFn::kMesh)) {
+                    continue;
+                } else if (curIntermediate.hasFn(MFn::kGeometryFilt)) {
+                    // NOTE: (yliangsiew) We make sure the tweak node is empty first, since
+                    // that could potentially affect deformation of the origShape before it hits the
+                    // blendshape node.
+                    MFnGeometryFilter fnGeoFilt(curIntermediate, &status);
+                    CHECK_MSTATUS_AND_RETURN(status, false);
+                    float envelope = fnGeoFilt.envelope();
+                    if (fabs(envelope - 0.0f) < FLT_EPSILON) {
+                        continue;  // deformer has no effect
+                    }
+
+                    if (curIntermediate.hasFn(MFn::kTweak)) {
+                        // NOTE: (yliangsiew) Make sure tweak really has no effect even if it's on
+                        MPlug plgVLists = fnGeoFilt.findPlug("vlist");
+                        assert(plgVLists.isArray());
+                        unsigned int numPlgVlists = plgVLists.numElements();
+                        for (unsigned int j=0; j < numPlgVlists; ++j) {
+                            MPlug plgVlist = plgVLists.elementByPhysicalIndex(j);  // vlist[0]
+                            assert(plgVlist.isCompound());
+                            unsigned int plgVlistNumChildren = plgVlist.numChildren();
+                            for (unsigned int k=0; k < plgVlistNumChildren; ++k) {
+                                MPlug plgVlistChild = plgVlist.child(k); // vlist[0].vertex
+                                assert(plgVlistChild.isArray());
+                                unsigned int numPlgVlistChildElements = plgVlistChild.numElements();
+                                for (unsigned int x=0; x < numPlgVlistChildElements; ++x) {
+                                    MPlug plgVertex = plgVlistChild.elementByPhysicalIndex(x); // vlist[0].vertex[0]
+                                    assert(plgVertex.isCompound());
+                                    unsigned int plgVertexNumChildren = plgVertex.numChildren();
+                                    for (unsigned int y=0; y < plgVertexNumChildren; ++y) {
+                                        MPlug plgVertexComponent = plgVertex.child(y); // vlist[0].vertex[0].xVertex
+                                        float vertexComponent = plgVertexComponent.asFloat();
+                                        if (fabs(vertexComponent - 0.0f) < FLT_EPSILON) {
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
+                }
+
+                TF_RUNTIME_ERROR("USDSkelBlendShape does not support animated blend shapes. Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.");
+                return false;
+            }
+        }
     }
     MFnMesh geomMesh(geomMeshObj, &status);
     if (!status) {
