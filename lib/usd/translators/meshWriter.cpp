@@ -47,6 +47,7 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnGeometryFilter.h>
 #include <maya/MFnMesh.h>
+#include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItDependencyGraph.h>
 #include <maya/MPlug.h>
@@ -54,7 +55,6 @@
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MUintArray.h>
-#include <maya/MGlobal.h>
 
 #include <cassert>
 #include <cfloat>
@@ -62,7 +62,7 @@
 #include <string>
 #include <vector>
 
-MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray *intermediates)
+MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* intermediates)
 {
     assert(mesh.hasFn(MFn::kMesh));
     MStatus stat;
@@ -83,7 +83,7 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray *
     // then oh-no: what do we do? Like blendshape1 -> wrap -> blendshape2. This won't find
     // that correctly...so we just tell the client what we found and let them decide how to
     // handle it.
-    MFnGeometryFilter     fnGeoFilter;
+    MFnGeometryFilter fnGeoFilter;
     assert(MObjectHandle(searchObject).isValid());
     MFnBlendShapeDeformer fnBlendShape;
     MItDependencyGraph    itDg(
@@ -107,7 +107,7 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray *
         // to walk back up the graph using the connected index to find
         // out what the _actual_ base mesh was.
         if (intermediates == NULL) {
-            MFnGeometryFilter     fnGeoFilter;
+            MFnGeometryFilter fnGeoFilter;
             fnGeoFilter.setObject(curBlendShape);
             MObject inputGeo = fnGeoFilter.inputShapeAtIndex(outputGeomPlugIdx, &stat);
             if (inputGeo.hasFn(MFn::kMesh)) {
@@ -115,7 +115,13 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray *
             }
         } else {
             intermediates->clear();
-            MItDependencyGraph itDgBS(curBlendShape, MFn::kInvalid, MItDependencyGraph::kUpstream, MItDependencyGraph::kDepthFirst, MItDependencyGraph::kPlugLevel, &stat);
+            MItDependencyGraph itDgBS(
+                curBlendShape,
+                MFn::kInvalid,
+                MItDependencyGraph::kUpstream,
+                MItDependencyGraph::kDepthFirst,
+                MItDependencyGraph::kPlugLevel,
+                &stat);
             for (; !itDgBS.isDone(); itDgBS.next()) {
                 MObject curNode = itDgBS.thisNode();
                 if (curNode.hasFn(MFn::kMesh)) {
@@ -283,7 +289,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             MObjectArray intermediates;
             geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, &intermediates);
             unsigned int numIntermediates = intermediates.length();
-            for (unsigned int i=0; i < numIntermediates; ++i) {
+            for (unsigned int i = 0; i < numIntermediates; ++i) {
                 MObject curIntermediate = intermediates[i];
                 if (curIntermediate.hasFn(MFn::kGroupParts) || curIntermediate.hasFn(MFn::kMesh)) {
                     continue;
@@ -295,7 +301,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                     CHECK_MSTATUS_AND_RETURN(status, false);
                     float envelope = fnGeoFilt.envelope();
                     if (fabs(envelope - 0.0f) < FLT_EPSILON) {
-                        continue;  // deformer has no effect
+                        continue; // deformer has no effect
                     }
 
                     if (curIntermediate.hasFn(MFn::kTweak)) {
@@ -303,20 +309,22 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                         MPlug plgVLists = fnGeoFilt.findPlug("vlist");
                         assert(plgVLists.isArray());
                         unsigned int numPlgVlists = plgVLists.numElements();
-                        for (unsigned int j=0; j < numPlgVlists; ++j) {
-                            MPlug plgVlist = plgVLists.elementByPhysicalIndex(j);  // vlist[0]
+                        for (unsigned int j = 0; j < numPlgVlists; ++j) {
+                            MPlug plgVlist = plgVLists.elementByPhysicalIndex(j); // vlist[0]
                             assert(plgVlist.isCompound());
                             unsigned int plgVlistNumChildren = plgVlist.numChildren();
-                            for (unsigned int k=0; k < plgVlistNumChildren; ++k) {
+                            for (unsigned int k = 0; k < plgVlistNumChildren; ++k) {
                                 MPlug plgVlistChild = plgVlist.child(k); // vlist[0].vertex
                                 assert(plgVlistChild.isArray());
                                 unsigned int numPlgVlistChildElements = plgVlistChild.numElements();
-                                for (unsigned int x=0; x < numPlgVlistChildElements; ++x) {
-                                    MPlug plgVertex = plgVlistChild.elementByPhysicalIndex(x); // vlist[0].vertex[0]
+                                for (unsigned int x = 0; x < numPlgVlistChildElements; ++x) {
+                                    MPlug plgVertex = plgVlistChild.elementByPhysicalIndex(
+                                        x); // vlist[0].vertex[0]
                                     assert(plgVertex.isCompound());
                                     unsigned int plgVertexNumChildren = plgVertex.numChildren();
-                                    for (unsigned int y=0; y < plgVertexNumChildren; ++y) {
-                                        MPlug plgVertexComponent = plgVertex.child(y); // vlist[0].vertex[0].xVertex
+                                    for (unsigned int y = 0; y < plgVertexNumChildren; ++y) {
+                                        MPlug plgVertexComponent
+                                            = plgVertex.child(y); // vlist[0].vertex[0].xVertex
                                         float vertexComponent = plgVertexComponent.asFloat();
                                         if (fabs(vertexComponent - 0.0f) < FLT_EPSILON) {
                                             continue;
@@ -326,14 +334,28 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                             }
                         }
                     }
-                    MGlobal::displayError("USDSkelBlendShape does not support animated blend shapes. Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.");
-                    TF_RUNTIME_ERROR("USDSkelBlendShape does not support animated blend shapes. Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.");
+                    MGlobal::displayError(
+                        "USDSkelBlendShape does not support animated blend shapes. Please bake "
+                        "down deformer history before attempting an export, or specify "
+                        "-ignoreWarnings during the export process.");
+                    TF_RUNTIME_ERROR(
+                        "USDSkelBlendShape does not support animated blend shapes. Please bake "
+                        "down deformer history before attempting an export, or specify "
+                        "-ignoreWarnings during the export process.");
                     return false;
                 } else {
                     MFnDependencyNode fnNode(curIntermediate, &status);
                     CHECK_MSTATUS_AND_RETURN(status, false);
-                    MGlobal::displayError("Unrecognized node encountered in blendshape deformation chain: " + fnNode.name() + "Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.");
-                    TF_RUNTIME_ERROR("Unrecognized node encountered in blendshape deformation chain: %s. Please bake down deformer history before attempting an export, or specify -ignoreWarnings during the export process.", fnNode.name().asChar());
+                    MGlobal::displayError(
+                        "Unrecognized node encountered in blendshape deformation chain: "
+                        + fnNode.name()
+                        + "Please bake down deformer history before attempting an export, or "
+                          "specify -ignoreWarnings during the export process.");
+                    TF_RUNTIME_ERROR(
+                        "Unrecognized node encountered in blendshape deformation chain: %s. Please "
+                        "bake down deformer history before attempting an export, or specify "
+                        "-ignoreWarnings during the export process.",
+                        fnNode.name().asChar());
                     return false;
                 }
             }
