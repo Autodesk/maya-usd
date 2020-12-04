@@ -283,8 +283,8 @@ MStatus MayaUsdProxyShapeBase::initialize()
     outStageCacheIdAttr
         = numericAttrFn.create("outStageCacheId", "ostcid", MFnNumericData::kInt, -1, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
-    typedAttrFn.setStorable(false);
-    typedAttrFn.setWritable(false);
+    numericAttrFn.setStorable(false);
+    numericAttrFn.setWritable(false);
     retValue = addAttribute(outStageCacheIdAttr);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
