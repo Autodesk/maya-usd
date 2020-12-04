@@ -430,6 +430,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         self.runTestCombo(expectedTRS)
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Rotate and scale pivot compensation only available in Maya Preview Release 121 or later.')
     def testRotateScalePivotCompensation(self):
         '''Test that rotate and scale pivot compensation match Maya object.'''
 
@@ -498,6 +499,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Rotate and scale pivot compensation only available in Maya Preview Release 121 or later.')
     def testRotateScalePivotCompensationAfterExport(self):
         '''Rotate and scale pivots must match after export.'''
 
@@ -559,7 +561,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
     # Name test such that it runs last.  Otherwise, it runs before 
     # testRotateScalePivotCompensation(), and causes it to fail.  To be 
     # investigated --- MAYA-108067.
-    @unittest.skipUnless(ufeUtils.ufeFeatureSetVersion() >= 2, 'Fallback transform op handling only available in UFE v2 or greater.')
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
     def testZFallback(self):
         '''Transformable not handled by standard Transform3d handlers must be
     handled by fallback handler.'''
