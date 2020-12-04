@@ -24,6 +24,7 @@
 #include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <maya/MEulerRotation.h>
+#include <maya/MGlobal.h>
 
 #include <functional>
 #include <map>
@@ -129,6 +130,14 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
             "Could not create Maya transform stack Transform3d interface for null item.");
     }
 #endif
+
+    // According to USD docs, editing scene description via instance proxies and their properties is
+    // not allowed.
+    // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
+    if (usdItem->prim().IsInstanceProxy()) {
+        MGlobal::displayError("Authoring to an instance proxy is not allowed.");
+        return nullptr;
+    }
 
     // If the prim isn't transformable, can't create a Transform3d interface
     // for it.

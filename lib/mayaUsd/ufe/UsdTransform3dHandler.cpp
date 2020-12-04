@@ -17,6 +17,8 @@
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#include <maya/MGlobal.h>
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -43,6 +45,14 @@ Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::P
 #if !defined(NDEBUG)
     assert(usdItem);
 #endif
+
+    // According to USD docs, editing scene description via instance proxies and their properties is
+    // not allowed.
+    // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
+    if (usdItem->prim().IsInstanceProxy()) {
+        MGlobal::displayError("Authoring to an instance proxy is not allowed.");
+        return nullptr;
+    }
 
     return UsdTransform3d::create(usdItem);
 }
