@@ -19,7 +19,6 @@
 
 #include <pxr/base/tf/stringUtils.h>
 
-#include <ufe/pathString.h>
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -84,7 +83,32 @@ std::string stagePath(UsdStageWeakPtr stage)
 
 UsdPrim ufePathToPrim(const std::string& ufePathString)
 {
+#ifdef UFE_V2_FEATURES_AVAILABLE
     return ufe::ufePathToPrim(Ufe::PathString::path(ufePathString));
+#else
+    // The path string is a list of segment strings separated by ',' comma
+    // separator.
+    auto segmentStrings = TfStringTokenize(ufePathString, ",");
+
+    // If there's just one segment, it's the Maya Dag path segment, so it can't
+    // have a prim.
+    if (segmentStrings.size() == 1) {
+        return UsdPrim();
+    }
+
+    // We have the path string split into segments.  Build up the Ufe::Path one
+    // segment at a time.  The path segment separator is the first character
+    // of each segment.  We know that USD's separator is '/' and Maya's
+    // separator is '|', so use a map to get the corresponding UFE run-time ID.
+    Ufe::Path                        path;
+    static std::map<char, Ufe::Rtid> sepToRtid = { { '/', ufe::getUsdRunTimeId() }, { '|', 1 } };
+    for (std::size_t i = 0; i < segmentStrings.size(); ++i) {
+        const auto& segmentString = segmentStrings[i];
+        char        sep = segmentString[0];
+        path = path + Ufe::PathSegment(segmentString, sepToRtid.at(sep), sep);
+    }
+    return ufe::ufePathToPrim(path);
+#endif    
 }
 
 void wrapUtils()

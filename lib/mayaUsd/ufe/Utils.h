@@ -26,7 +26,11 @@
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
 #include <ufe/scene.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/types.h>
+#else
+#include <ufe/transform3d.h>
+#endif
 
 #include <cstring> // memcpy
 

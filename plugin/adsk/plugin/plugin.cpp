@@ -52,17 +52,21 @@
 
 #if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Global.h>
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/runTimeMgr.h>
+
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
 
-#include <ufe/runTimeMgr.h>
-
 // For Maya preview release 121 enabling and disabling of new Transform3d
 // functionality.  PPT, 1-Dec-2020.
 #include <maya/MGlobal.h>
 #include <maya/MPxCommand.h>
+#endif
+
 #endif
 
 #if defined(MAYAUSD_VERSION)
@@ -80,26 +84,11 @@ const MTypeId MayaUsdPreviewSurface_typeId(0x58000096);
 const MString MayaUsdPreviewSurface_typeName("usdPreviewSurface");
 const MString MayaUsdPreviewSurface_registrantId("mayaUsdPlugin");
 
+#if defined(WANT_UFE_BUILD) && defined(UFE_V2_FEATURES_AVAILABLE)
 // Keep a reference to the existing USD Transform3d handler, to restore on
 // finalization.
 Ufe::Transform3dHandler::Ptr g_OldTransform3dHandler;
 Ufe::Transform3dHandler::Ptr g_NewTransform3dHandler;
-
-template <typename T> void registerCommandCheck(MFnPlugin& plugin)
-{
-    auto status = plugin.registerCommand(T::commandName, T::creator, T::createSyntax);
-    if (!status) {
-        status.perror(MString("mayaUsdPlugin: unable to register command ") + T::commandName);
-    }
-}
-
-template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
-{
-    auto status = plugin.deregisterCommand(T::commandName);
-    if (!status) {
-        status.perror(MString("mayaUsdPlugin: unable to deregister command ") + T::commandName);
-    }
-}
 
 class ToggleTransform3d : public MPxCommand
 {
@@ -138,6 +127,24 @@ public:
 };
 
 const MString ToggleTransform3d::commandName { "toggleTransform3d" };
+
+#endif
+
+template <typename T> void registerCommandCheck(MFnPlugin& plugin)
+{
+    auto status = plugin.registerCommand(T::commandName, T::creator, T::createSyntax);
+    if (!status) {
+        status.perror(MString("mayaUsdPlugin: unable to register command ") + T::commandName);
+    }
+}
+
+template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
+{
+    auto status = plugin.deregisterCommand(T::commandName);
+    if (!status) {
+        status.perror(MString("mayaUsdPlugin: unable to deregister command ") + T::commandName);
+    }
+}
 
 } // namespace
 
@@ -196,6 +203,7 @@ MStatus initializePlugin(MObject obj)
         status.perror("mayaUsdPlugin: unable to initialize ufe.");
     }
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
     // Set up a chain of responsibility for Transform3d interface creation,
     // from least important to most important:
     // - Perform operations on a Maya transform stack appended to the existing
@@ -219,6 +227,7 @@ MStatus initializePlugin(MObject obj)
         status.perror(
             MString("mayaUsdPlugin: unable to register command ") + ToggleTransform3d::commandName);
     }
+#endif
 
 #endif
 
@@ -343,6 +352,7 @@ MStatus uninitializePlugin(MObject obj)
     CHECK_MSTATUS(status);
 
 #if defined(WANT_UFE_BUILD)
+#ifdef UFE_V2_FEATURES_AVAILABLE
     status = plugin.deregisterCommand(ToggleTransform3d::commandName);
     if (!status) {
         status.perror(
@@ -356,6 +366,7 @@ MStatus uninitializePlugin(MObject obj)
 
     g_OldTransform3dHandler = nullptr;
     g_NewTransform3dHandler = nullptr;
+#endif
 
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
