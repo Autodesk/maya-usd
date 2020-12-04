@@ -27,6 +27,7 @@
 #include <mayaUsd/utils/colorSpace.h>
 
 #include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/getenv.h>
 #include <pxr/imaging/hd/meshUtil.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/smoothNormals.h>

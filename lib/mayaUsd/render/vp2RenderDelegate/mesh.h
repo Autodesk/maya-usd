@@ -18,6 +18,8 @@
 
 #include "meshViewportCompute.h"
 
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/pxr.h>
 

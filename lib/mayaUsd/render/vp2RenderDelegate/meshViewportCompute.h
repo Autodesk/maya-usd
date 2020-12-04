@@ -98,7 +98,6 @@
 #include <pxr/base/plug/plugin.h>
 #include <pxr/base/plug/thisPlugin.h>
 #include <pxr/base/tf/diagnostic.h>
-#include <pxr/base/tf/getenv.h>
 
 #ifdef HDVP2_ENABLE_GPU_OSD
 #include <pxr/imaging/pxOsd/refinerFactory.h>
@@ -171,7 +170,7 @@ private:
     MVertexBuffer* _normalVertexBufferGPU { nullptr };   // not owned by *this, owned by fRenderGeom
     MVertexBuffer* _colorVertexBufferGPU { nullptr };    // not owned by *this, owned by fRenderGeom
 
-    bool _adjacencyTaskInProgress { false };z
+    bool _adjacencyTaskInProgress { false };
     bool _topologyDirty { true };           // sourceMeshSharedData->_renderingTopology has changed
     bool _adjacencyBufferGPUDirty { true }; //_adjacencyBufferGPU is dirty
     bool _normalVertexBufferGPUDirty { true }; //_normalVertexBufferGPU is dirty
