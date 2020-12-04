@@ -31,7 +31,13 @@ UsdUndoManager& UsdUndoManager::instance()
 
 void UsdUndoManager::trackLayerStates(const SdfLayerHandle& layer)
 {
-    layer->SetStateDelegate(UsdUndoStateDelegate::New());
+    // Check if the layer has already been given a UsdUndoStateDelegate
+    // if the cast fails that means we need to set a new one.
+    auto usdUndoStateDelegatePtr
+        = TfDynamic_cast<UsdUndoStateDelegatePtr>(layer->GetStateDelegate());
+    if (!usdUndoStateDelegatePtr) {
+        layer->SetStateDelegate(UsdUndoStateDelegate::New());
+    }
 }
 
 void UsdUndoManager::addInverse(InvertFunc func)
