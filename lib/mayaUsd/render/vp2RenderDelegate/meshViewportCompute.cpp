@@ -264,7 +264,9 @@ void MeshViewportCompute::createConsolidatedTopology(TopologyAccessor getTopolog
         for (int sourceIndex = 0; sourceIndex < _geometryIndexMapping->geometryCount();
              sourceIndex++) {
             MRenderItem* sourceItem = _geometryIndexMapping->sourceRenderItem(sourceIndex);
-            int consolidatedBufferVertexOffset = _geometryIndexMapping->vertexStart(sourceIndex);
+            int          vertexStart = _geometryIndexMapping->vertexStart(sourceIndex);
+            TF_VERIFY(vertexStart >= 0);
+            size_t                          consolidatedBufferVertexOffset = (size_t)vertexStart;
             MSharedPtr<MeshViewportCompute> sourceViewportComputeItem
                 = MSharedPtr<MeshViewportCompute>::dynamic_pointer_cast<>(
                     sourceItem->viewportComputeItem());
@@ -279,24 +281,24 @@ void MeshViewportCompute::createConsolidatedTopology(TopologyAccessor getTopolog
             TF_VERIFY(sourceTopology.GetRefineLevel() == refineLevel);
 
             VtIntArray const& sourceFaceVertexCounts = sourceTopology.GetFaceVertexCounts();
-            for (int faceId = 0; faceId < sourceFaceVertexCounts.size(); faceId++) {
+            for (size_t faceId = 0; faceId < sourceFaceVertexCounts.size(); faceId++) {
                 faceVertexCounts.push_back(sourceFaceVertexCounts[faceId]);
             }
 
             VtIntArray const& sourceFaceVertexIndices = sourceTopology.GetFaceVertexIndices();
-            for (int faceVertexId = 0; faceVertexId < sourceFaceVertexIndices.size();
+            for (size_t faceVertexId = 0; faceVertexId < sourceFaceVertexIndices.size();
                  faceVertexId++) {
                 faceVertexIndices.push_back(
                     sourceFaceVertexIndices[faceVertexId] + consolidatedBufferVertexOffset);
             }
 
             VtIntArray const& sourceHoleIndices = sourceTopology.GetHoleIndices();
-            for (int faceId = 0; faceId < sourceHoleIndices.size(); faceId++) {
+            for (size_t faceId = 0; faceId < sourceHoleIndices.size(); faceId++) {
                 holeIndices.push_back(
                     sourceHoleIndices[faceId] + consolidatedBufferVertexOffset); // untested?
             }
 
-            for (int idx = 0; idx < sourceMeshSharedData->_renderingToSceneFaceVtxIds.size();
+            for (size_t idx = 0; idx < sourceMeshSharedData->_renderingToSceneFaceVtxIds.size();
                  idx++) {
                 _meshSharedData->_renderingToSceneFaceVtxIds.push_back(
                     sourceMeshSharedData->_renderingToSceneFaceVtxIds[idx]
@@ -310,7 +312,7 @@ void MeshViewportCompute::createConsolidatedTopology(TopologyAccessor getTopolog
                 _meshSharedData->_sceneToRenderingFaceVtxIds.push_back(-1);
             }
 
-            for (int idx = 0; idx < sourceMeshSharedData->_sceneToRenderingFaceVtxIds.size();
+            for (size_t idx = 0; idx < sourceMeshSharedData->_sceneToRenderingFaceVtxIds.size();
                  idx++) {
                 _meshSharedData->_sceneToRenderingFaceVtxIds.push_back(
                     sourceMeshSharedData->_sceneToRenderingFaceVtxIds[idx]
@@ -345,8 +347,6 @@ void MeshViewportCompute::createConsolidatedAdjacency()
         HdVP2RenderDelegate::sProfilerCategory,
         MProfiler::kColorD_L2,
         "MeshViewportCompute:createConsolidatedAdjacency");
-
-    bool isConsolidated = nullptr != _geometryIndexMapping.get();
 
     Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
     HdBufferSourceSharedPtr     adjacencyComputation
@@ -708,7 +708,7 @@ void MeshViewportCompute::prepareAdjacencyBuffer()
     _adjacencyBufferGPU.reset(new MHWRender::MVertexBuffer(intArrayDesc));
     void* bufferData = _adjacencyBufferGPU->acquire(adjacencyBufferSize, true);
 
-    for (int i = 0; i < vertexDataSize; i += 2) {
+    for (size_t i = 0; i < vertexDataSize; i += 2) {
         vertexDataStart[i] += paddingSize;
     }
 

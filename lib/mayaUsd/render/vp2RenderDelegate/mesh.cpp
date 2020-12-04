@@ -906,8 +906,7 @@ void HdVP2Mesh::_UpdateDrawItem(
 #ifdef HDVP2_ENABLE_GPU_OSD
     const bool isLineItem = (renderItem->primitive() == MHWRender::MGeometry::kLines);
     // when we do OSD we don't bother creating indexing until after we have a smooth mesh
-    const bool requiresIndexUpdate
-        = !isBBoxItem && !isPointSnappingItem && (!_gpuOSDEnabled || isLineItem);
+    const bool requiresIndexUpdate = !isBBoxItem && !isPointSnappingItem && isLineItem;
 #else
     const bool requiresIndexUpdate = !isBBoxItem && !isPointSnappingItem;
 #endif
@@ -934,7 +933,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                     numIndex * sizeof(int));
 
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
-            if (requireSmoothNormals && (_gpuNormalsEnabled || _gpuOSDEnabled)) {
+            if (requireSmoothNormals && _gpuNormalsEnabled) {
                 // these function only do something if HDVP2_ENABLE_GPU_COMPUTE or
                 // HDVP2_ENABLE_GPU_OSD is defined
                 _CreateViewportCompute(*drawItem);
@@ -976,7 +975,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             prepareNormals = ((itemDirtyBits & HdChangeTracker::DirtyNormals) != 0);
         } else if (requireSmoothNormals && (itemDirtyBits & DirtySmoothNormals)) {
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
-            if (_gpuNormalsEnabled || _gpuOSDEnabled) {
+            if (_gpuNormalsEnabled) {
                 if (!_meshSharedData->_viewportCompute) {
                     _CreateViewportCompute(*drawItem);
 #ifdef HDVP2_ENABLE_GPU_OSD
@@ -1717,8 +1716,6 @@ void HdVP2Mesh::_CreateViewportCompute(const HdVP2DrawItem& drawItem)
 void HdVP2Mesh::_CreateOSDTables()
 {
 #if defined(DO_CPU_OSD) || defined(DO_OPENGL_OSD)
-    if (!_gpuOSDEnabled)
-        return;
 
     assert(_meshSharedData->_viewportCompute);
     MProfilingScope subProfilingScope(

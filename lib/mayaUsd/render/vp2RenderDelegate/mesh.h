@@ -185,13 +185,6 @@ private:
     //! makes the expressions using these variables much simpler
     bool _gpuNormalsEnabled { true }; //!< Use GPU Compute for normal calculation, only used when
                                       //!< HDVP2_ENABLE_GPU_COMPUTE is defined
-    bool _gpuOSDEnabled {
-#ifdef HDVP2_ENABLE_GPU_OSD
-        true
-#else
-        false
-#endif
-    }; //!< Use GPU Compute for OSD, only used when HDVP2_ENABLE_GPU_OSD is defined
     static int _gpuNormalsComputeThreshold;
 };
 
