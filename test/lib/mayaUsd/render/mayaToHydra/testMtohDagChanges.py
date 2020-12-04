@@ -3,6 +3,7 @@ import unittest
 
 import maya.cmds as cmds
 
+import fixturesUtils
 import mtohUtils
 
 class TestDagChanges(mtohUtils.MtohTestCase):
@@ -293,21 +294,5 @@ class TestUndo(mtohUtils.MtohTestCase):
             cmds.undoInfo(state=undoWasEnabled)
 
 
-if __name__ == "__main__":
-    testCases = [TestDagChanges, TestUndo]
-    testSuites = []
-    for testCase in testCases:
-        testSuites.append(unittest.TestLoader().loadTestsFromTestCase(testCase))
-    suite = unittest.TestSuite(testSuites)
-
-    results = unittest.TextTestRunner(stream=sys.__stderr__).run(suite)
-    if results.wasSuccessful():
-        exitCode = 0
-    else:
-        exitCode = 1
-
-    # maya running interactively often absorbs all the output.  comment out the
-    # following to prevent maya from exiting and open the script editor to look
-    # at failures.
-    cmds.quit(abort=True, exitCode=exitCode)
-
+if __name__ == '__main__':
+    fixturesUtils.runTests(globals())
