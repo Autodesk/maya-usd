@@ -269,7 +269,8 @@ UsdTransform3d::scalePivotTranslate(
 #endif
     double, double, double
 )
-{}
+{
+}
 
 Ufe::Vector3d UsdTransform3d::scalePivot() const { return rotatePivot(); }
 

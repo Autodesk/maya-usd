@@ -108,7 +108,7 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
         path = path + Ufe::PathSegment(segmentString, sepToRtid.at(sep), sep);
     }
     return ufe::ufePathToPrim(path);
-#endif    
+#endif
 }
 
 void wrapUtils()
