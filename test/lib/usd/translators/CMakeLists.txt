@@ -47,6 +47,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportVisibilityDefault.py
     testUsdImportAnonymousLayer.py
     testUsdImportCamera.py
+    testUsdImportChaser.py
     testUsdImportColorSets.py
     testUsdImportDisplacement.py
     testUsdImportExportScope.py

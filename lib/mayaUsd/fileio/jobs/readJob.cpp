@@ -15,6 +15,7 @@
 //
 #include "readJob.h"
 
+#include <mayaUsd/fileio/chaser/importChaserRegistry.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
@@ -41,6 +42,7 @@
 #include <maya/MAnimControl.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagModifier.h>
+#include <maya/MDagPathArray.h>
 #include <maya/MDistance.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
@@ -253,6 +255,10 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
 
     DoImport(range, usdRootPrim);
 
+    // NOTE: (yliangsiew) Storage to later pass on to `PostImport` for import chasers.
+    MDagPathArray currentAddedDagPaths;
+    SdfPathVector fromSdfPaths;
+
     SdfPathSet topImportedPaths;
     if (isImportingPseudoRoot) {
         // get all the dag paths for the root prims
@@ -271,7 +277,31 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         if (TfMapLookup(mNewNodeRegistry, key, &obj)) {
             if (obj.hasFn(MFn::kDagNode)) {
                 addedDagPaths->push_back(MDagPath::getAPathTo(obj));
+                currentAddedDagPaths.append(MDagPath::getAPathTo(obj));
+                fromSdfPaths.push_back(pathsIter->GetPrimPath());
             }
+        }
+    }
+
+    // NOTE: (yliangsiew) Look into a registry of post-import "chasers" here
+    // and call `PostImport` on each of them.
+    this->mImportChasers.clear();
+    UsdMayaImportChaserRegistry::FactoryContext ctx(
+        predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
+    for (const std::string& importChaserName : this->mArgs.chaserNames) {
+        if (UsdMayaImportChaserRefPtr fn
+            = UsdMayaImportChaserRegistry::GetInstance().Create(importChaserName.c_str(), ctx)) {
+            this->mImportChasers.emplace_back(fn);
+        } else {
+            TF_RUNTIME_ERROR("Failed to create import chaser: %s", importChaserName.c_str());
+        }
+    }
+
+    for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
+        bool bStat
+            = chaser->PostImport(predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
+        if (!bStat) {
+            return false;
         }
     }
 

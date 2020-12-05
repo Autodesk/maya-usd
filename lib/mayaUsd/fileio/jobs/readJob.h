@@ -16,6 +16,7 @@
 #ifndef PXRUSDMAYA_READ_JOB_H
 #define PXRUSDMAYA_READ_JOB_H
 
+#include <mayaUsd/fileio/chaser/importChaser.h>
 #include <mayaUsd/fileio/importData.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primReader.h>
@@ -128,9 +129,10 @@ private:
     double _setTimeSampleMultiplierFrom(const double layerFPS);
 
     // Data
-    MDagModifier mDagModifierUndo;
-    bool         mDagModifierSeeded;
-    double       mTimeSampleMultiplier;
+    MDagModifier                    mDagModifierUndo;
+    bool                            mDagModifierSeeded;
+    double                          mTimeSampleMultiplier;
+    UsdMayaImportChaserRefPtrVector mImportChasers;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

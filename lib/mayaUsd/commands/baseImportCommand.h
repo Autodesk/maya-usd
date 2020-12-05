@@ -47,6 +47,8 @@ public:
     static constexpr auto kApiSchemaFlag = "api";
     static constexpr auto kExcludePrimvarFlag = "epv";
     static constexpr auto kUseAsAnimationCacheFlag = "uac";
+    static constexpr auto kImportChaserFlag = "chr";
+    static constexpr auto kImportChaserArgsFlag = "cha";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kFileFlag = "f";
