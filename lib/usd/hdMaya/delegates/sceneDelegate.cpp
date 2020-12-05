@@ -30,9 +30,7 @@
 #include <pxr/imaging/hd/mesh.h>
 #include <pxr/imaging/hd/rprim.h>
 #include <pxr/imaging/hd/tokens.h>
-#include <pxr/imaging/hdx/renderSetupTask.h>
-#include <pxr/imaging/hdx/renderTask.h>
-#include <pxr/imaging/hdx/tokens.h>
+#include <pxr/imaging/hdx/pickTask.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
@@ -126,12 +124,16 @@ inline bool _RemoveAdapter(const SdfPath& id, F f, M0& m0, M&... m)
 
 template <typename R> inline R _GetDefaultValue() { return {}; }
 
+#if USD_VERSION_NUM < 2011
+
 // Default return value for HdTextureResource::ID, if not found, should be
 // -1, not {} - which would be 0
 template <> inline HdTextureResource::ID _GetDefaultValue<HdTextureResource::ID>()
 {
     return HdTextureResource::ID(-1);
 }
+
+#endif // USD_VERSION_NUM < 2011
 
 // This will be nicer to use with automatic parameter deduction for lambdas in
 // C++14.
@@ -1130,6 +1132,8 @@ VtValue HdMayaSceneDelegate::GetMaterialResource(const SdfPath& id)
     return ret.IsEmpty() ? HdMayaMaterialAdapter::GetPreviewMaterialResource(id) : ret;
 }
 
+#if USD_VERSION_NUM < 2011
+
 HdTextureResource::ID HdMayaSceneDelegate::GetTextureResourceID(const SdfPath& textureId)
 {
     TF_DEBUG(HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID)
@@ -1188,6 +1192,8 @@ HdTextureResourceSharedPtr HdMayaSceneDelegate::GetTextureResource(const SdfPath
 
 #endif // USD_VERSION_NUM <= 1911
 }
+
+#endif // USD_VERSION_NUM < 2011
 
 bool HdMayaSceneDelegate::_CreateMaterial(const SdfPath& id, const MObject& obj)
 {

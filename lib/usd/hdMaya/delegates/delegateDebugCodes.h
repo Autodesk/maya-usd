@@ -38,8 +38,6 @@ TF_DEBUG_CODES(
     HDMAYA_DELEGATE_GET_PRIMVAR_DESCRIPTORS,
     HDMAYA_DELEGATE_GET_RENDER_TAG,
     HDMAYA_DELEGATE_GET_SUBDIV_TAGS,
-    HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
-    HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID,
     HDMAYA_DELEGATE_GET_TRANSFORM,
     HDMAYA_DELEGATE_GET_VISIBLE,
     HDMAYA_DELEGATE_INSERTDAG,
@@ -50,6 +48,18 @@ TF_DEBUG_CODES(
     HDMAYA_DELEGATE_SAMPLE_TRANSFORM,
     HDMAYA_DELEGATE_SELECTION);
 // clang-format on
+
+// Debug codes for Hydra API that was deprecated with USD 20.11.
+// These are declared in a separate block to avoid using a preprocessor
+// directive inside the TF_DEBUG_CODES() macro invocation, which breaks
+// compilation on Windows.
+#if USD_VERSION_NUM < 2011
+// clang-format off
+TF_DEBUG_CODES(
+    HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
+    HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID);
+// clang-format on
+#endif // USD_VERSION_NUM < 2011
 
 // Debug codes for Hydra API that was deprecated after USD 19.11.
 // These are declared in a separate block to avoid using a preprocessor

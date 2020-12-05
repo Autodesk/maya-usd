@@ -82,15 +82,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "Print information about 'GetSubdivTags' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
-        "Print information about 'GetTextureResource' calls to the delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID,
-        "Print information about 'GetTextureResourceID' calls to the "
-        "delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_TRANSFORM,
         "Print information about 'GetTransform' calls to the delegates.");
 
@@ -121,6 +112,19 @@ TF_REGISTRY_FUNCTION(TfDebug)
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_SELECTION, "Print information about hdMaya delegate selection.");
+
+#if USD_VERSION_NUM < 2011
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
+        "Print information about 'GetTextureResource' calls to the delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID,
+        "Print information about 'GetTextureResourceID' calls to the "
+        "delegates.");
+
+#endif // USD_VERSION_NUM < 2011
 
 #if USD_VERSION_NUM <= 1911
 
