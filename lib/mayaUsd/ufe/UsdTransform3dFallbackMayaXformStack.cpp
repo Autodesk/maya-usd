@@ -121,7 +121,6 @@ GfMatrix4d computeLocalTransform(
     return m;
 }
 
-auto computeLocalInclusiveTransform = computeLocalTransform<true>;
 auto computeLocalExclusiveTransform = computeLocalTransform<false>;
 
 std::vector<UsdGeomXformOp>::const_iterator

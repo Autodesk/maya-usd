@@ -75,7 +75,7 @@ public:
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
     Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
-    Ufe::Matrix4d matrix() const override;
+    Ufe::Matrix4d                        matrix() const override;
 #endif
 
     void          translate(double x, double y, double z) override;

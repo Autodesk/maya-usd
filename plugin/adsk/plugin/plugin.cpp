@@ -54,12 +54,12 @@
 #include <mayaUsd/ufe/Global.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#include <ufe/runTimeMgr.h>
-
 #include <mayaUsd/ufe/UsdTransform3dCommonAPI.h>
 #include <mayaUsd/ufe/UsdTransform3dFallbackMayaXformStack.h>
 #include <mayaUsd/ufe/UsdTransform3dMatrixOp.h>
 #include <mayaUsd/ufe/UsdTransform3dMayaXformStack.h>
+
+#include <ufe/runTimeMgr.h>
 
 // For Maya preview release 121 enabling and disabling of new Transform3d
 // functionality.  PPT, 1-Dec-2020.

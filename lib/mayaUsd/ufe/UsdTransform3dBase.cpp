@@ -20,10 +20,6 @@
 #include <pxr/usd/usdGeom/xformCache.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
-namespace {
-const char* const kLocalTransformFailed = "Obtaining local transform failed for object %s";
-}
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
