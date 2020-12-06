@@ -83,7 +83,7 @@ limitations under the License.
         <!-- UsdPreviewSurface Parameters -->
         <float name="clearcoat" ref="usdPreviewSurfaceLighting.clearcoatAmount"/>
         <float name="clearcoatRoughness" ref="usdPreviewSurfaceLighting.clearcoatRoughness"/>
-        <float3 name="diffuseColor" ref="diffuseColorPassThrough.input"/>
+        <float3 name="diffuseColor" ref="diffuseColorPassThrough.input" flags="multiDraw"/>
         <float3 name="emissiveColor" ref="usdPreviewSurfaceCombiner.emissiveColor"/>
         <float name="ior" ref="usdPreviewSurfaceLighting.ior"/>
         <float name="metallic" ref="usdPreviewSurfaceLighting.metallic"/>
