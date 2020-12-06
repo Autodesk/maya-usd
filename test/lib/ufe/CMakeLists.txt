@@ -32,6 +32,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         testRotatePivot.py
         testScaleCmd.py
         testSceneItem.py
+        testTransform3dChainOfResponsibility.py
         testTransform3dTranslate.py
         testUIInfoHandler.py
         testObservableScene.py
