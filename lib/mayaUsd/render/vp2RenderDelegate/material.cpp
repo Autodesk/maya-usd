@@ -707,6 +707,12 @@ void HdVP2Material::Sync(
                 HdMaterialNetwork vp2BxdfNet;
                 _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
 
+                // Remember the path of the surface shader for special handling.
+                _surfaceShaderId = vp2BxdfNet.nodes.back().path;
+
+                MHWRender::MShaderInstance* shader;
+
+#ifndef HDVP2_DISABLE_SHADER_CACHE
                 // Generate a XML string from the material network and convert it to a token for
                 // faster hashing and comparison.
                 const TfToken bxdfNetToken(_GenerateXMLString(bxdfNet, false));
@@ -715,8 +721,7 @@ void HdVP2Material::Sync(
                 // cached with the same token, a clone of the shader instance will be returned.
                 // Multiple clones of a shader instance will share the same shader effect, thus
                 // reduce compilation overhead and enable MDI consolidation.
-                MHWRender::MShaderInstance* shader
-                    = _renderDelegate->GetShaderFromCache(bxdfNetToken);
+                shader = _renderDelegate->GetShaderFromCache(bxdfNetToken);
 
                 // If the shader instance is not found in the cache, create one from the material
                 // network and add a clone to the cache for reuse.
@@ -727,6 +732,9 @@ void HdVP2Material::Sync(
                         _renderDelegate->AddShaderToCache(bxdfNetToken, *shader);
                     }
                 }
+#else
+                shader = _CreateShaderInstance(vp2BxdfNet);
+#endif
 
                 // The shader instance is owned by the material solely.
                 _surfaceShader.reset(shader);
@@ -807,8 +815,6 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateShaderInstance(const HdMateria
 
         if (shaderInstance == nullptr) {
             shaderInstance = shaderMgr->getFragmentShader(nodeId, "outSurfaceFinal", true);
-            _surfaceShaderId = node.path;
-
             if (shaderInstance == nullptr) {
                 TF_WARN("Failed to create shader instance for %s", nodeId.asChar());
                 break;
@@ -887,8 +893,6 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateShaderInstance(const HdMateria
 
         if (shaderInstance == nullptr) {
             shaderInstance = shaderMgr->getFragmentShader(nodeId, "outSurfaceFinal", true);
-            _surfaceShaderId = node.path;
-
             if (shaderInstance == nullptr) {
                 TF_WARN("Failed to create shader instance for %s", nodeId.asChar());
                 break;
