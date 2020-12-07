@@ -528,8 +528,10 @@ void findUnionAndProcessArrays(
         newOffsetsArray.assign(numUnionIndices, GfVec3f(0.0f));
 
         const VtVec3fArray& origNormalsArray = normalsArrays[i];
+#ifdef _DEBUG
         const size_t        numOrigNormals = origNormalsArray.size();
         assert(numOrigOffsets == numOrigNormals);
+#endif
         VtVec3fArray& newNormalsArray = unionNormalsArrays[i];
         newNormalsArray.assign(numUnionIndices, GfVec3f(0.0f));
 
