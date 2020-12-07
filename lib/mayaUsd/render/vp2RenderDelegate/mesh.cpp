@@ -335,14 +335,14 @@ void HdVP2Mesh::_InitGPUCompute()
     // would also be nice to check the openGL version but renderer->drawAPIVersion() returns 4.
     // Compute was added in 4.3 so I don't have enough information to make the check
     if (renderer && renderer->drawAPIIsOpenGL()
-        && (TfGetenvInt("HDVP2_USE_GPU_NORMAL_COMPUTATION", 0) > 0))
-        _gpuNormalsComputeThreshold
-            = TfGetenvInt("HDVP2_GPU_NORMAL_COMPUTATION_MINIMUM_THRESHOLD", 8000);
-    else
-        _gpuNormalsComputeThreshold = INT_MAX;
+        && (TfGetenvInt("HDVP2_USE_GPU_NORMAL_COMPUTATION", 0) > 0)) {
+        int threshold = TfGetenvInt("HDVP2_GPU_NORMAL_COMPUTATION_MINIMUM_THRESHOLD", 8000);
+        _gpuNormalsComputeThreshold = threshold >= 0 ? (size_t)threshold : SIZE_MAX;
+    } else
+        _gpuNormalsComputeThreshold = SIZE_MAX;
 }
 
-int HdVP2Mesh::_gpuNormalsComputeThreshold = -1;
+size_t HdVP2Mesh::_gpuNormalsComputeThreshold = SIZE_MAX;
 //! \brief  Constructor
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
 HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id)

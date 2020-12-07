@@ -185,7 +185,7 @@ private:
     //! makes the expressions using these variables much simpler
     bool _gpuNormalsEnabled { true }; //!< Use GPU Compute for normal calculation, only used when
                                       //!< HDVP2_ENABLE_GPU_COMPUTE is defined
-    static int _gpuNormalsComputeThreshold;
+    static size_t _gpuNormalsComputeThreshold;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
