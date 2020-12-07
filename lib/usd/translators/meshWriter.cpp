@@ -122,8 +122,16 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
                 MItDependencyGraph::kPlugLevel,
                 &stat);
             for (; !itDgBS.isDone(); itDgBS.next()) {
-                MItDependencyGraph itDgBS(curBlendShape, MFn::kInvalid, MItDependencyGraph::kUpstream, MItDependencyGraph::kDepthFirst, MItDependencyGraph::kNodeLevel, &stat);
-                for (itDgBS.next(); !itDgBS.isDone(); itDgBS.next()) {  // NOTE: (yliangsiew) Skip the first node which starts at the root, which is the blendshape deformer itself.
+                MItDependencyGraph itDgBS(
+                    curBlendShape,
+                    MFn::kInvalid,
+                    MItDependencyGraph::kUpstream,
+                    MItDependencyGraph::kDepthFirst,
+                    MItDependencyGraph::kNodeLevel,
+                    &stat);
+                for (itDgBS.next(); !itDgBS.isDone();
+                     itDgBS.next()) { // NOTE: (yliangsiew) Skip the first node which starts at the
+                                      // root, which is the blendshape deformer itself.
                     MObject curNode = itDgBS.thisNode();
                     if (curNode.hasFn(MFn::kMesh)) {
                         return curNode;
@@ -134,7 +142,6 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
         }
     }
     return mesh;
-
 }
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -331,15 +338,25 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                                         if (fabs(vertexComponent - 0.0f) > FLT_EPSILON) {
                                             MFnDependencyNode fnNode(curIntermediate, &status);
                                             CHECK_MSTATUS_AND_RETURN(status, false);
-                                            MGlobal::displayError("Could not determine the original blendshape source mesh due to the tweak node: " + fnNode.name() + ". Please either bake it down or remove the edits and attempt the export process again, or specify -ignoreWarnings.");
-                                            TF_RUNTIME_ERROR("Could not determine the original blendshape source mesh due to a non-empty tweak node, aborting export.");
+                                            MGlobal::displayError(
+                                                "Could not determine the original blendshape "
+                                                "source mesh due to the tweak node: "
+                                                + fnNode.name()
+                                                + ". Please either bake it down or remove the "
+                                                  "edits and attempt the export process again, or "
+                                                  "specify -ignoreWarnings.");
+                                            TF_RUNTIME_ERROR(
+                                                "Could not determine the original blendshape "
+                                                "source mesh due to a non-empty tweak node, "
+                                                "aborting export.");
                                             return false;
                                         }
                                     }
                                 }
                             }
                         }
-                        continue; // NOTE: (yliangsiew) If the tweak node has no effect, go check the next intermediate.
+                        continue; // NOTE: (yliangsiew) If the tweak node has no effect, go check
+                                  // the next intermediate.
                     }
                     MGlobal::displayError(
                         "USDSkelBlendShape does not support animated blend shapes. Please bake "
@@ -352,19 +369,26 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                     return false;
 
                 } else if (curIntermediate.hasFn(MFn::kMesh)) {
-                    // NOTE: (yliangsiew) Need to check that the mesh itself does not include any tweaks.
+                    // NOTE: (yliangsiew) Need to check that the mesh itself does not include any
+                    // tweaks.
                     MFnDependencyNode fnNode(curIntermediate, &status);
                     CHECK_MSTATUS_AND_RETURN(status, false);
                     MPlug plgPnts = fnNode.findPlug("pnts");
                     assert(plgPnts.isArray());
-                    for (unsigned int j=0; j < plgPnts.numElements(); ++j) {
+                    for (unsigned int j = 0; j < plgPnts.numElements(); ++j) {
                         MPlug plgPnt = plgPnts.elementByPhysicalIndex(j);
                         assert(plgPnt.isCompound());
-                        for (unsigned int k=0; k < plgPnt.numChildren(); ++k) {
+                        for (unsigned int k = 0; k < plgPnt.numChildren(); ++k) {
                             float tweakValue = plgPnt.child(k).asFloat();
                             if (fabs(tweakValue - 0.0f) > FLT_EPSILON) {
-                                MGlobal::displayError("The mesh: " + fnNode.name() + " has local tweak data on its .pnts attribute. Please remove it before attempting an export, or specify -ignoreWarnings during the export process.");
-                                TF_RUNTIME_ERROR("Could not reliably verify the points of the original source mesh for the blendshape export, aborting export.");
+                                MGlobal::displayError(
+                                    "The mesh: " + fnNode.name()
+                                    + " has local tweak data on its .pnts attribute. Please remove "
+                                      "it before attempting an export, or specify -ignoreWarnings "
+                                      "during the export process.");
+                                TF_RUNTIME_ERROR(
+                                    "Could not reliably verify the points of the original source "
+                                    "mesh for the blendshape export, aborting export.");
                                 return false;
                             }
                         }
