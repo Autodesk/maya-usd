@@ -41,10 +41,12 @@ class BasicTransformationMatrix : public MPxTransformationMatrix
 {
 public:
     /// \brief  ctor
+    AL_USDMAYA_PUBLIC
     BasicTransformationMatrix();
 
     /// \brief  ctor
     /// \param  prim the USD prim that this matrix should represent
+    AL_USDMAYA_PUBLIC
     BasicTransformationMatrix(const UsdPrim& prim);
 
     /// \brief  dtor
@@ -53,6 +55,7 @@ public:
     /// \brief  set the prim that this transformation matrix will read/write to.
     /// \param  prim the prim
     /// \param  scopeNode the owning maya node
+    AL_USDMAYA_PUBLIC
     virtual void setPrim(const UsdPrim& prim, Scope* scopeNode);
 
     /// \brief  sets the MObject for the transform
