@@ -57,7 +57,7 @@ public:
          create(const UsdSceneItem::Ptr& item, double x, double y, double z);
 #endif
 
-    // Ufe::RotateUndoableCommand overrides.  rotate() sets the command's
+    // Ufe::RotateUndoableCommand overrides.  set() sets the command's
     // rotation value and executes the command.
     void undo() override;
     void redo() override;

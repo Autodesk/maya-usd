@@ -243,11 +243,13 @@ protected:
     HDMAYA_API
     VtValue GetMaterialResource(const SdfPath& id) override;
 
+#if USD_VERSION_NUM < 2011
     HDMAYA_API
     HdTextureResource::ID GetTextureResourceID(const SdfPath& textureId) override;
 
     HDMAYA_API
     HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureId) override;
+#endif // USD_VERSION_NUM < 2011
 
 private:
     bool _CreateMaterial(const SdfPath& id, const MObject& obj);

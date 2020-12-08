@@ -28,6 +28,7 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObjectHandle.h>
+#include <ufe/pathSegment.h>
 
 #include <cassert>
 #include <memory>

@@ -33,6 +33,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     target_sources(${PROJECT_NAME}
         PRIVATE
             ProxyShapeContextOpsHandler.cpp
+            RotationUtils.cpp
             UsdAttribute.cpp
             UsdAttributes.cpp
             UsdAttributesHandler.cpp
@@ -40,6 +41,11 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdContextOpsHandler.cpp
             UsdObject3d.cpp
             UsdObject3dHandler.cpp
+            UsdTransform3dBase.cpp
+            UsdTransform3dCommonAPI.cpp
+            UsdTransform3dFallbackMayaXformStack.cpp
+            UsdTransform3dMatrixOp.cpp
+            UsdTransform3dMayaXformStack.cpp
             UsdUndoAddNewPrimCommand.cpp
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
@@ -83,6 +89,7 @@ set(HEADERS
 if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
     list(APPEND HEADERS
         ProxyShapeContextOpsHandler.h
+        RotationUtils.h
         UsdAttribute.h
         UsdAttributes.h
         UsdAttributesHandler.h
@@ -90,6 +97,11 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdContextOpsHandler.h
         UsdObject3d.h
         UsdObject3dHandler.h
+        UsdTransform3dBase.h
+        UsdTransform3dCommonAPI.h
+        UsdTransform3dFallbackMayaXformStack.h
+        UsdTransform3dMatrixOp.h
+        UsdTransform3dMayaXformStack.h
         UsdUIInfoHandler.h
         UsdUndoAddNewPrimCommand.h
         UsdUndoCreateGroupCommand.h

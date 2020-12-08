@@ -15,23 +15,29 @@
 //
 #include "utils.h"
 
+#include <pxr/base/tf/token.h>
+
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
+#include <maya/MPlugArray.h>
+#include <maya/MStatus.h>
+
+#if USD_VERSION_NUM < 2011
 #include <pxr/base/tf/fileUtils.h>
 #include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/glf/image.h>
 #include <pxr/imaging/glf/textureHandle.h>
 #include <pxr/imaging/glf/textureRegistry.h>
 #include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/imaging/hdSt/textureResource.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
 
-#include <maya/MPlugArray.h>
-
-#if USD_VERSION_NUM >= 2102
-#include <pxr/imaging/hio/image.h>
-#else
-#include <pxr/imaging/glf/image.h>
+#include <tuple>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#if USD_VERSION_NUM < 2011
 
 namespace {
 
@@ -39,12 +45,8 @@ class UdimTextureFactory : public GlfTextureFactoryBase
 {
 public:
     virtual GlfTextureRefPtr
-    New(TfToken const& texturePath,
-#if USD_VERSION_NUM >= 2102
-        HioImage::ImageOriginLocation originLocation = HioImage::OriginLowerLeft) const override
-#else
+    New(TfToken const&                texturePath,
         GlfImage::ImageOriginLocation originLocation = GlfImage::OriginLowerLeft) const override
-#endif
     {
         const GlfContextCaps& caps = GlfContextCaps::GetInstance();
         return GlfUdimTexture::New(
@@ -54,18 +56,16 @@ public:
     }
 
     virtual GlfTextureRefPtr
-    New(TfTokenVector const& texturePaths,
-#if USD_VERSION_NUM >= 2102
-        HioImage::ImageOriginLocation originLocation = HioImage::OriginLowerLeft) const override
-#else
+    New(TfTokenVector const&          texturePaths,
         GlfImage::ImageOriginLocation originLocation = GlfImage::OriginLowerLeft) const override
-#endif
     {
         return nullptr;
     }
 };
 
 } // namespace
+
+#endif // USD_VERSION_NUM < 2011
 
 MObject GetConnectedFileNode(const MObject& obj, const TfToken& paramName)
 {
@@ -111,6 +111,8 @@ TfToken GetFileTexturePath(const MFnDependencyNode& fileNode)
     }
 }
 
+#if USD_VERSION_NUM < 2011
+
 std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj)
 {
     const std::tuple<HdWrap, HdWrap> def { HdWrapClamp, HdWrapClamp };
@@ -149,11 +151,7 @@ GetFileTextureResource(const MObject& fileObj, const TfToken& filePath, int maxT
         return {};
     }
     // TODO: handle origin
-#if USD_VERSION_NUM >= 2102
-    const auto origin = HioImage::OriginLowerLeft;
-#else
-    const auto origin = GlfImage::OriginLowerLeft;
-#endif
+    const auto             origin = GlfImage::OriginLowerLeft;
     GlfTextureHandleRefPtr texture = nullptr;
     if (textureType == HdTextureType::Udim) {
         UdimTextureFactory factory;
@@ -178,5 +176,7 @@ GetFileTextureResource(const MObject& fileObj, const TfToken& filePath, int maxT
         HdMagFilterLinear,
         maxTextureMemory));
 }
+
+#endif // USD_VERSION_NUM < 2011
 
 PXR_NAMESPACE_CLOSE_SCOPE

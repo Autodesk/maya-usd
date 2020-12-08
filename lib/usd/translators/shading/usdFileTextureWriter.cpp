@@ -19,6 +19,8 @@
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/gf/matrix4f.h>
+#include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -64,6 +66,8 @@ public:
     void Write(const UsdTimeCode& usdTime) override;
 
     TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
+
+    void WriteTransform2dNode(const UsdTimeCode& usdTime, const UsdShadeShader& texShaderSchema);
 };
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(file, PxrUsdTranslators_FileTextureWriter);
@@ -89,6 +93,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (outTransparencyR)
     (outTransparencyG)
     (outTransparencyB)
+    (offset)
+    (repeatUV)
+    (rotateUV)
     (wrapU)
     (wrapV)
 
@@ -102,6 +109,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     // they should be pulled from there instead.
     (UsdUVTexture)
     (UsdPrimvarReader_float2)
+    (UsdTransform2d)
 
     // UsdPrimvarReader_float2 Prim Name
     ((PrimvarReaderShaderName, "TexCoordReader"))
@@ -120,6 +128,18 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (wrapS)
     (wrapT)
+
+    // Usd2dTransform Prim Name
+    ((UsdTransform2dShaderName, "UsdTransform2d"))
+
+    // Usd2dTransform Input Names
+    (in)
+    (rotation)
+    // (scale)  // already defined
+    (translation)
+
+    // Usd2dTransform Output Name
+    // (result)  // already defined
 
     // Values for wrapS and wrapT
     (black)
@@ -452,6 +472,180 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
         const TfToken wrapT = wrapV ? _tokens->repeat : _tokens->black;
         shaderSchema.CreateInput(_tokens->wrapT, SdfValueTypeNames->Token).Set(wrapT, usdTime);
     }
+
+    WriteTransform2dNode(usdTime, shaderSchema);
+}
+
+void PxrUsdTranslators_FileTextureWriter::WriteTransform2dNode(
+    const UsdTimeCode&    usdTime,
+    const UsdShadeShader& texShaderSchema)
+{
+    MStatus status;
+
+    const MFnDependencyNode depNodeFn(GetMayaObject(), &status);
+    if (status != MS::kSuccess) {
+        return;
+    }
+
+    // Gather UV transform data.  If it differs from default values,
+    // create a Transform2d Node, connect it to the output "result"
+    // of the TexCoordReader node and the input "st" of the FileTexture node.
+    const GfVec2f translationFallbackValue(0.0f, 0.0f);
+    const float   rotationFallbackValue = 0.0f;
+    const GfVec2f scaleFallbackValue(1.0f, 1.0f);
+
+    GfVec2f translationValue = translationFallbackValue;
+    float   rotationValue = rotationFallbackValue;
+    GfVec2f scaleValue = scaleFallbackValue;
+
+    bool transformationsAreAuthored = false;
+
+    // Translation
+    const MPlug offsetPlug = depNodeFn.findPlug(
+        _tokens->offset.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
+    if (status != MS::kSuccess) {
+        return;
+    }
+
+    if (UsdMayaUtil::IsAuthored(offsetPlug)) {
+        for (size_t i = 0u; i < GfVec2f::dimension; ++i) {
+            translationValue[i] = offsetPlug.child(i).asFloat(&status);
+            if (status != MS::kSuccess) {
+                return;
+            }
+        }
+
+        if (translationValue != translationFallbackValue) {
+            transformationsAreAuthored = true;
+        }
+    }
+
+    // Rotation
+    const MPlug rotateUVPlug = depNodeFn.findPlug(
+        _tokens->rotateUV.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
+    if (status != MS::kSuccess) {
+        return;
+    }
+
+    if (UsdMayaUtil::IsAuthored(rotateUVPlug)) {
+        rotationValue = rotateUVPlug.asFloat(&status);
+        if (status != MS::kSuccess) {
+            return;
+        }
+
+        if (rotationValue != rotationFallbackValue) {
+            transformationsAreAuthored |= true;
+        }
+
+        // Convert rotation from radians to degrees
+        rotationValue = GfRadiansToDegrees(rotationValue);
+    }
+
+    // Scale
+    const MPlug repeatUVPlug = depNodeFn.findPlug(
+        _tokens->repeatUV.GetText(),
+        /* wantNetworkedPlug = */ true,
+        &status);
+    if (status != MS::kSuccess) {
+        return;
+    }
+
+    if (UsdMayaUtil::IsAuthored(offsetPlug)) {
+        for (size_t i = 0u; i < GfVec2f::dimension; ++i) {
+            scaleValue[i] = repeatUVPlug.child(i).asFloat(&status);
+            if (status != MS::kSuccess) {
+                return;
+            }
+        }
+
+        if (scaleValue != scaleFallbackValue) {
+            transformationsAreAuthored |= true;
+        }
+    }
+
+    if (!transformationsAreAuthored) {
+        return;
+    }
+
+    // Get the TexCoordReader node and its output "result"
+    const SdfPath primvarReaderShaderPath
+        = texShaderSchema.GetPath().AppendChild(_tokens->PrimvarReaderShaderName);
+
+    const UsdShadeShader primvarReaderShader
+        = texShaderSchema.Get(GetUsdStage(), primvarReaderShaderPath);
+
+    const UsdShadeOutput primvarReaderShaderOutput = primvarReaderShader.GetOutput(_tokens->result);
+
+    // Create the Transform2d node as a child of the UsdUVTexture node
+    const SdfPath transform2dShaderPath
+        = texShaderSchema.GetPath().AppendChild(_tokens->UsdTransform2dShaderName);
+    UsdShadeShader transform2dShaderSchema
+        = UsdShadeShader::Define(GetUsdStage(), transform2dShaderPath);
+
+    transform2dShaderSchema.CreateIdAttr(VtValue(_tokens->UsdTransform2d));
+
+    // Create the Transform2d input "in" attribute and connect it
+    // to the TexCoordReader output "result"
+    transform2dShaderSchema.CreateInput(_tokens->in, SdfValueTypeNames->Float2)
+        .ConnectToSource(primvarReaderShaderOutput);
+
+    // Compute the Transform2d values, converting from Maya's coordinates to USD coordinates
+
+    // Maya's place2dtexture transform order seems to be `in * T * S * R`, where the rotation pivot
+    // is (0.5, 0.5) and scale pivot is (0,0). USD's Transform2d transform order is `in * S * R *
+    // T`, where the rotation and scale pivots are (0,0). This conversion translates from
+    // place2dtexture's UV space to Transform2d's UV space: `in * S * T * Rpivot_inverse * R *
+    // Rpivot`
+    GfMatrix4f pivotXform = GfMatrix4f().SetTranslate(GfVec3f(0.5, 0.5, 0));
+    GfMatrix4f translateXform
+        = GfMatrix4f().SetTranslate(GfVec3f(translationValue[0], translationValue[1], 0));
+    GfRotation rotation = GfRotation(GfVec3f::ZAxis(), rotationValue);
+    GfMatrix4f rotationXform = GfMatrix4f().SetRotate(rotation);
+    GfVec3f    scale;
+    if (fabs(scaleValue[0]) <= std::numeric_limits<float>::epsilon()
+        || fabs(scaleValue[1]) <= std::numeric_limits<float>::epsilon()) {
+        TF_WARN(
+            "At least one of the components of RepeatUV for %s are set to zero.  To avoid divide "
+            "by zero "
+            "exceptions, these values are changed to the smallest finite float greater than zero.",
+            UsdMayaUtil::GetMayaNodeName(GetMayaObject()).c_str());
+
+        scale = GfVec3f(
+            1.0 / std::max(scaleValue[0], std::numeric_limits<float>::min()),
+            1.0 / std::max(scaleValue[1], std::numeric_limits<float>::min()),
+            1.0);
+    } else {
+        scale = GfVec3f(1.0 / scaleValue[0], 1.0 / scaleValue[1], 1.0);
+    }
+
+    GfMatrix4f scaleXform = GfMatrix4f().SetScale(scale);
+
+    GfMatrix4f transform
+        = scaleXform * translateXform * pivotXform.GetInverse() * rotationXform * pivotXform;
+    GfVec3f translationResult = transform.ExtractTranslation();
+    translationValue.Set(translationResult[0], translationResult[1]);
+
+    // Create and set the Transform2d input attributes
+    transform2dShaderSchema.CreateInput(_tokens->translation, SdfValueTypeNames->Float2)
+        .Set(translationValue);
+
+    transform2dShaderSchema.CreateInput(_tokens->rotation, SdfValueTypeNames->Float)
+        .Set(rotationValue);
+
+    transform2dShaderSchema.CreateInput(_tokens->scale, SdfValueTypeNames->Float2).Set(scaleValue);
+
+    // Create the Transform2d output "result" attribute
+    UsdShadeOutput transform2dOutput
+        = transform2dShaderSchema.CreateOutput(_tokens->result, SdfValueTypeNames->Float2);
+
+    // Get and connect the TexCoordReader input "st" to the Transform2d
+    // output "result"
+    UsdShadeInput texShaderSchemaInput = texShaderSchema.GetInput(_tokens->st);
+    texShaderSchemaInput.ConnectToSource(transform2dOutput);
 }
 
 /* virtual */

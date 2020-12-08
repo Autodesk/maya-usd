@@ -83,6 +83,9 @@ std::string stagePath(UsdStageWeakPtr stage)
 
 UsdPrim ufePathToPrim(const std::string& ufePathString)
 {
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    return ufe::ufePathToPrim(Ufe::PathString::path(ufePathString));
+#else
     // The path string is a list of segment strings separated by ',' comma
     // separator.
     auto segmentStrings = TfStringTokenize(ufePathString, ",");
@@ -105,6 +108,7 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
         path = path + Ufe::PathSegment(segmentString, sepToRtid.at(sep), sep);
     }
     return ufe::ufePathToPrim(path);
+#endif
 }
 
 void wrapUtils()

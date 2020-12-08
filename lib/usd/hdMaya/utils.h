@@ -24,8 +24,6 @@
 
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/tf/token.h>
-#include <pxr/imaging/hd/textureResource.h>
-#include <pxr/imaging/hd/types.h>
 #include <pxr/pxr.h>
 
 #include <maya/MDagPath.h>
@@ -38,8 +36,12 @@
 #include <maya/MRenderUtil.h>
 #include <maya/MSelectionList.h>
 
-#include <functional>
+#if USD_VERSION_NUM < 2011
+#include <pxr/imaging/hd/textureResource.h>
+#include <pxr/imaging/hd/types.h>
+
 #include <tuple>
+#endif // USD_VERSION_NUM < 2011
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -80,6 +82,8 @@ MObject GetConnectedFileNode(const MFnDependencyNode& node, const TfToken& param
 HDMAYA_API
 TfToken GetFileTexturePath(const MFnDependencyNode& fileNode);
 
+#if USD_VERSION_NUM < 2011
+
 /// \brief Returns the texture resource from a "file" shader node.
 /// \param fileObj "file" shader object.
 /// \param filePath Path to the texture file held by "file" shader node.
@@ -100,6 +104,8 @@ HdTextureResourceSharedPtr GetFileTextureResource(
 ///  for s and t axis.
 HDMAYA_API
 std::tuple<HdWrap, HdWrap> GetFileTextureWrappingParams(const MObject& fileObj);
+
+#endif // USD_VERSION_NUM < 2011
 
 /// \brief Runs a function on all recursive descendents of a selection list
 ///  May optionally filter by node type. The items in the list are also included
