@@ -34,18 +34,18 @@ global proc string stageFromFile_UISetup(string $parent) {
     setParent $parent;
     string $layout = `scrollLayout -childResizable true`;
 
-    frameLayout -label "USD File Options" -collapsable false;
-    textFieldGrp -l "Prim Path:" 
-        -ann "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded." 
-        -sbm "Loads the specified prim path" 
+    frameLayout -label `getMayaUsdString("kUsdFileOptions")` -collapsable false;
+    textFieldGrp -l `getMayaUsdString("kPrimPath")` 
+        -ann `getMayaUsdString("kPrimPathAnn")`
+        -sbm `getMayaUsdString("kPrimPathSbm")`
         primPathField;
-    textFieldGrp -l "Exclude Prim Paths:" 
-        -ann "Excludes the specified prim paths from the loaded USD data. Multiple prim paths must be separated by a comma." 
-        -sbm "Excludes the specified prim paths from the loaded USD data" 
+    textFieldGrp -l `getMayaUsdString("kExcludePrimPaths")` 
+        -ann `getMayaUsdString("kExcludePrimPathsAnn")`
+        -sbm `getMayaUsdString("kExcludePrimPathsSbm")`
         excludePrimPathField;
-    checkBoxGrp -l "Load Payloads:" 
-        -ann "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded." 
-        -sbm "Loads prims marked as payloads" 
+    checkBoxGrp -l `getMayaUsdString("kLoadPayloads")` 
+        -ann `getMayaUsdString("kLoadPayloadsAnn")`
+        -sbm `getMayaUsdString("kLoadPayloadsSbm")`
         loadPayloadsCheckBox;
 
     return $layout;
@@ -144,17 +144,17 @@ global proc mayaUsd_createStageFromFileOptions()
         $parent;
 
     string $applyCloseBtn = getOptionBoxApplyAndCloseBtn();
-    button -edit -label "Create Stage from File"
+    button -edit -label `getMayaUsdString("kCreateStageFromFile")`
         -command ($callback + " " + $parent + " " + 1 + "; hideOptionBox;")
         $applyCloseBtn;
 
     string $applyBtn = getOptionBoxApplyBtn();
-    button -edit -label "Save and Close"
+    button -edit -label `getMayaUsdString("kSaveAndClose")`
         -command ($callback + " " + $parent + " " + 0 + "; hideOptionBox;")
         $applyBtn;
 
     string $cancelBtn = getOptionBoxCloseBtn();
-    button -edit -label "Cancel"
+    button -edit -label `getMayaUsdString("kCancel")`
         -command ("hideOptionBox;")
         $cancelBtn;
 
@@ -168,7 +168,7 @@ global proc mayaUsd_createStageFromFileOptions()
         -command ($callback + " " + $parent + " " + 0)
         $saveBtn;
 
-    setOptionBoxTitle("Create USD Stage from File Options");
+    setOptionBoxTitle(getMayaUsdString("kCreateUsdStageFromFileOptions"));
 
     setOptionBoxHelpTag( "" );
 
@@ -180,11 +180,15 @@ global proc mayaUsd_createStageFromFileOptions()
 global proc mayaUsd_createStageFromFile() {
     setOptionVars(false);
     
+    $caption = getMayaUsdString("kCreateUsdStageFromFile");
+    $fileFilter = getMayaUsdString("kAllUsdFiles") + " (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz";
+    $okCaption = getMayaUsdString("kCreate");
+
     string $result[] = `fileDialog2 
         -fileMode 1
-        -caption "Create USD Stage from File"
-        -fileFilter "All USD Files (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz"
-        -okCaption "Create"
+        -caption $caption
+        -fileFilter $fileFilter 
+        -okCaption $okCaption
         -optionsUICreate "stageFromFile_UISetup"
         -optionsUIInit "stageFromFile_UIInit"
         -optionsUICommit "stageFromFile_UICommit"`;

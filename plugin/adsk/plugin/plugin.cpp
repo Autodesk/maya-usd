@@ -24,6 +24,7 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/commands/editTargetCommand.h>
 #include <mayaUsd/commands/layerEditorCommand.h>
+#include <mayaUsd/commands/layerEditorWindowCommand.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/listeners/notice.h>
@@ -46,7 +47,9 @@
 #include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 #include <sstream>
+
 #if defined(WANT_QT_BUILD)
+#include <mayaUsdUI/ui/initStringResources.h>
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
 #endif
 
@@ -146,6 +149,15 @@ template <typename T> void deregisterCommandCheck(MFnPlugin& plugin)
     }
 }
 
+MStatus registerStringResources()
+{
+    MStatus status { MStatus::MStatusCode::kSuccess };
+#if defined(WANT_QT_BUILD)
+    status = MayaUsd::initStringResources();
+#endif
+    return status;
+}
+
 } // namespace
 
 TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
@@ -162,6 +174,12 @@ MStatus initializePlugin(MObject obj)
 {
     MStatus   status;
     MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
+
+    // register string resources
+    status = plugin.registerUIStrings(registerStringResources, "mayaUSDRegisterStrings");
+    if (!status) {
+        status.perror("mayaUsdPlugin: unable to register string resources.");
+    }
 
     status = plugin.registerFileTranslator(
         "USD Import",
@@ -189,6 +207,7 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+    registerCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
 
     status = plugin.registerCommand(
         MayaUsd::UsdUndoBlockCmd::commandName, MayaUsd::UsdUndoBlockCmd::creator);
@@ -341,6 +360,8 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     deregisterCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+    deregisterCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
+    MayaUsd::LayerEditorWindowCommand::cleanupOnPluginUnload();
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
     CHECK_MSTATUS(status);
