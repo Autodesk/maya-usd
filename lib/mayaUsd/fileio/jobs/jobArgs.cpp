@@ -347,6 +347,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
           UsdImagingTokens->UsdPreviewSurface,
           UsdMayaShadingModeRegistry::ListMaterialConversions()))
     , verbose(_Boolean(userArgs, UsdMayaJobExportArgsTokens->verbose))
+    , staticSingleSample(_Boolean(userArgs, UsdMayaJobExportArgsTokens->staticSingleSample))
     ,
 
     chaserNames(_Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
@@ -397,6 +398,7 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportAr
         << "convertMaterialsTo: " << exportArgs.convertMaterialsTo << std::endl
         << "stripNamespaces: " << TfStringify(exportArgs.stripNamespaces) << std::endl
         << "timeSamples: " << exportArgs.timeSamples.size() << " sample(s)" << std::endl
+        << "staticSingleSample: " << TfStringify(exportArgs.staticSingleSample) << std::endl
         << "usdModelRootOverridePath: " << exportArgs.usdModelRootOverridePath << std::endl;
 
     out << "melPerFrameCallback: " << exportArgs.melPerFrameCallback << std::endl
@@ -488,6 +490,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
             = UsdImagingTokens->UsdPreviewSurface.GetString();
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
+        d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable

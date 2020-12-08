@@ -212,6 +212,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         string $animDataAnn = "Exports Maya animation data as USD time samples.";
         string $frameStepAnn = "Specifies the increment between USD time sample frames during animation export";
         string $eulerFilterAnn = "Exports the euler angle filtering that was performed in Maya.";
+        string $staticSingleSampleAnn = "Converts animated values with a single time sample to be static instead.";
         string $visibilityAnn = "Exports Maya visibility attributes as USD metadata.";
         string $mergeShapesAnn = "Merges Maya transform and shape nodes into a single USD prim.";
         string $namespacesAnn = "By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1";
@@ -285,8 +286,11 @@ global proc int mayaUsdTranslatorExport (string $parent,
 
                 checkBoxGrp -l "Euler Filter:" -cw 1 175 
                     -annotation $eulerFilterAnn eulerFilterCheckBox;
-            setParent ..;
 
+                checkBoxGrp -l "Static Single Sample:" -annotation $staticSingleSampleAnn -v1 0 staticSingleSampleCheckBox;
+
+            setParent ..;
+            
             separator -style "none";
         setParent ..;
 
@@ -327,6 +331,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "animationCheckBox");
                 } else if ($optionBreakDown[0] == "eulerFilter") {
                     mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "eulerFilterCheckBox");
+                } else if ($optionBreakDown[0] == "staticSingleSample") {
+                    mayaUsdTranslatorExport_SetCheckbox($optionBreakDown[1], "staticSingleSampleCheckBox");
                 } else if ($optionBreakDown[0] == "startTime") {
                     int $startTime=$optionBreakDown[1];
                     intFieldGrp -e -v1 $startTime framRangeFields;
@@ -392,6 +398,7 @@ global proc int mayaUsdTranslatorExport (string $parent,
         $currentOptions = mayaUsdTranslatorExport_AppendFromPopup($currentOptions, "defaultUSDFormat", "defaultUSDFormatPopup");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "eulerFilter", "eulerFilterCheckBox");
+        $currentOptions = mayaUsdTranslatorExport_AppendFromCheckbox($currentOptions, "staticSingleSample", "staticSingleSampleCheckBox");
         $currentOptions = mayaUsdTranslatorExport_AppendFrameRange($currentOptions);
         $currentOptions = mayaUsdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");
         $currentOptions = mayaUsdTranslatorExport_AppendFromTextField($currentOptions, "frameSample", "frameSampleField");
