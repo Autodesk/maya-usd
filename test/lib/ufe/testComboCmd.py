@@ -21,13 +21,14 @@ import maya.cmds as cmds
 from math import radians, degrees
 
 import mayaUsd.ufe
+import mayaUsd.lib
 
 import usdUtils, mayaUtils, ufeUtils
 from testUtils import assertVectorAlmostEqual
 import testTRSBase
 import ufe
 
-from pxr import UsdGeom
+from pxr import UsdGeom, Vt
 
 import unittest
 import os
@@ -558,6 +559,59 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
         cmds.move(-4, -3, -2, "pSphere1.scalePivot", r=True)
 
         checkPivotsAndCompensations(self, "pSphere1", usdSphereT3d)
+
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 121, 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
+    def testFallbackCases(self):
+        '''Fallback handler test cases.'''
+
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+
+        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Sphere'])
+
+        spherePath = ufe.PathString.path('|stage1|stageShape1,/Sphere1')
+        sphereItem = ufe.Hierarchy.createItem(spherePath)
+        sphereT3d = ufe.Transform3d.transform3d(sphereItem)
+
+        spherePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(spherePath))
+        sphereXformable = UsdGeom.Xformable(spherePrim)
+
+        # Add transform ops that do not match either the Maya transform stack,
+        # the USD common API transform stack, or a matrix stack.
+        sphereXformable.AddTranslateOp()
+        sphereXformable.AddTranslateOp(UsdGeom.XformOp.PrecisionFloat, "pivot")
+        sphereXformable.AddRotateZOp()
+        sphereXformable.AddTranslateOp(
+            UsdGeom.XformOp.PrecisionFloat, "pivot", True)
+
+        self.assertEqual(
+            sphereXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:translate", "xformOp:translate:pivot",
+                "xformOp:rotateZ", "!invert!xformOp:translate:pivot")))
+
+        self.assertFalse(UsdGeom.XformCommonAPI(sphereXformable))
+        self.assertFalse(mayaUsd.lib.XformStack.MayaStack().MatchingSubstack(
+            sphereXformable.GetOrderedXformOps()))
+
+        # Select sphere.
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(sphereItem)
+
+        # Rotate sphere around X.
+        cmds.rotate(30, 0, 0, r=True, os=True, fo=True)
+
+        # Fallback interface will have added a RotXYZ transform op.
+        self.assertEqual(
+            sphereXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:translate", "xformOp:translate:pivot",
+                "xformOp:rotateZ", "!invert!xformOp:translate:pivot",
+                "xformOp:rotateXYZ:maya_fallback")))
 
     # Name test such that it runs last.  Otherwise, it runs before 
     # testRotateScalePivotCompensation(), and causes it to fail.  To be 

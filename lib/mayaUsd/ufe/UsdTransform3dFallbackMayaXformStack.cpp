@@ -291,8 +291,9 @@ UsdTransform3dFallbackMayaXformStack::getOrderedOps() const
 {
     bool resetsXformStack = false;
     auto ops = _xformable.GetOrderedXformOps(&resetsXformStack);
+    // On initial fallback op addition there is no existing fallback
+    // op, so the return iterator may be ops.end().
     auto i = findFirstFallbackOp(ops);
-    TF_AXIOM(i != ops.end());
 
     // Sort from the start of the Maya sub-stack.  Use the Maya transform stack
     // indices to add to a map, then simply traverse the map to obtain the
