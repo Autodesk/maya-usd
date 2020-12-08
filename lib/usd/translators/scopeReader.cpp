@@ -19,8 +19,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/scope.h>
-#include <pxr/usd/usdShade/nodeGraph.h>
-#include <pxr/usd/usdShade/shader.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
 
 #include <maya/MObject.h>
 
@@ -30,18 +29,18 @@ PXRUSDMAYA_DEFINE_READER(UsdGeomScope, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
 
-    // If this is a Looks/Materials scope that contains only UsdShade nodes, just skip.
-    bool hasLookData = false;
-    bool hasNonLookData = false;
-    for (auto const& child : usdPrim.GetChildren()) {
-        if (child.IsA<UsdShadeNodeGraph>() || child.IsA<UsdShadeShader>()) {
-            hasLookData = true;
+    // If this scope contains only UsdShade nodes, just skip.
+    bool hasShadingData = false;
+    bool hasNonShadingData = false;
+    for (const auto& child : usdPrim.GetChildren()) {
+        if (UsdShadeConnectableAPI(child)) {
+            hasShadingData = true;
         } else {
-            hasNonLookData = true;
+            hasNonShadingData = true;
             break;
         }
     }
-    if (hasLookData && !hasNonLookData) {
+    if (hasShadingData && !hasNonShadingData) {
         return false;
     }
 
