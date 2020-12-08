@@ -19,6 +19,8 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usdShade/nodeGraph.h>
+#include <pxr/usd/usdShade/shader.h>
 
 #include <maya/MObject.h>
 
@@ -27,6 +29,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_DEFINE_READER(UsdGeomScope, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
+
+    // If this is a Looks/Materials scope that contains only UsdShade nodes, just skip.
+    bool hasLookData = false;
+    bool hasNonLookData = false;
+    for (auto const& child : usdPrim.GetChildren()) {
+        if (child.IsA<UsdShadeNodeGraph>() || child.IsA<UsdShadeShader>()) {
+            hasLookData = true;
+        } else {
+            hasNonLookData = true;
+            break;
+        }
+    }
+    if (hasLookData && !hasNonLookData) {
+        return false;
+    }
+
     MObject        parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
 
     MStatus status;
