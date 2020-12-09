@@ -21,7 +21,7 @@
 
 namespace UsdLayerEditor {
 /**
- * @brief Widget that apears on top of the Save Layer button, to show how many layers need to be
+ * @brief Widget that appears on top of the Save Layer button, to show how many layers need to be
  *saved
  *
  **/

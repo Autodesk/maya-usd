@@ -11,10 +11,10 @@ namespace MAYAUSD_NS_DEF {
 class AbstractLayerEditorWindow;
 
 /**
- * @brief abract class used by layer editor window command to create and get
+ * @brief Abstract class used by layer editor window command to create and get
  * the layer editor windows.
- * this allows breaking the circular dependency between between maya usd lib
- * and UI libraries
+ * This allows breaking the circular dependency between between maya usd lib
+ * and UI libraries.
  *
  */
 class MAYAUSD_CORE_PUBLIC AbstractLayerEditorCreator

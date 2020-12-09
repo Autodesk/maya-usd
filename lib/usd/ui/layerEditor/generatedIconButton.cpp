@@ -41,24 +41,22 @@ struct LUTS
 // look up table to apply to HS[V] value
 void generateVLut(LUTS& luts, PixmapType pixmapType)
 {
-    {
-        const int HIGH_LIMIT = 205, LOW_LIMIT = 30, MAX_VALUE = 255;
-        const int ADJUSTEMENT_VALUE = MAX_VALUE - HIGH_LIMIT;
+    const int HIGH_LIMIT = 205, LOW_LIMIT = 30, MAX_VALUE = 255;
+    const int ADJUSTEMENT_VALUE = MAX_VALUE - HIGH_LIMIT;
 
-        int newValue;
-        for (int v = 0; v < 256; v++) {
-            newValue = v;
-            if (v > LOW_LIMIT) {      // value below this limit will not be adjusted
-                if (v < HIGH_LIMIT) { // value above this limit will just max up to 255
-                    if (pixmapType != PixmapType::DISABLED) {
-                        newValue = v + ADJUSTEMENT_VALUE;
-                    }
-                } else {
-                    newValue = MAX_VALUE;
+    int newValue;
+    for (int v = 0; v < 256; v++) {
+        newValue = v;
+        if (v > LOW_LIMIT) {      // value below this limit will not be adjusted
+            if (v < HIGH_LIMIT) { // value above this limit will just max up to 255
+                if (pixmapType != PixmapType::DISABLED) {
+                    newValue = v + ADJUSTEMENT_VALUE;
                 }
+            } else {
+                newValue = MAX_VALUE;
             }
-            luts.valueLut[v] = newValue;
         }
+        luts.valueLut[v] = newValue;
     }
 }
 
