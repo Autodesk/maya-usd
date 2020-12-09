@@ -14,8 +14,8 @@
 // limitations under the License.
 //
 
-#ifndef GENERATEDBUTTON_H
-#define GENERATEDBUTTON_H
+#ifndef GENERATEDICONBUTTON_H
+#define GENERATEDICONBUTTON_H
 
 #include <QtGui/QPixmap>
 #include <QtWidgets/QAbstractButton>
@@ -47,4 +47,4 @@ protected:
 };
 
 } // namespace UsdLayerEditor
-#endif // GENERATEDBUTTON_H
+#endif // GENERATEDICONBUTTON_H

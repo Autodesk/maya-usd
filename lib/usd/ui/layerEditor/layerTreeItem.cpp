@@ -207,9 +207,11 @@ bool LayerTreeItem::isMovable() const
 
 bool LayerTreeItem::needsSaving() const
 {
-    if (_layer)
-        if (!isSessionLayer())
+    if (_layer) {
+        if (!isSessionLayer()) {
             return isDirty() || isAnonymous();
+        }
+    }
     return false;
 }
 

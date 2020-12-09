@@ -130,12 +130,6 @@ MayaLayerEditorWindow::MayaLayerEditorWindow(const char* panelName, QWidget* par
         &MayaSessionState::clearUIOnSceneResetSignal,
         this,
         &MayaLayerEditorWindow::onClearUIOnSceneReset);
-
-    connect(
-        treeView(),
-        &QWidget::customContextMenuRequested,
-        this,
-        &MayaLayerEditorWindow::onShowContextMenu);
 }
 
 MayaLayerEditorWindow::~MayaLayerEditorWindow() { _sessionState.unregisterNotifications(); }
@@ -160,6 +154,12 @@ void MayaLayerEditorWindow::onCreateUI()
     setCentralWidget(_layerEditor);
     _layerEditor->show();
     _sessionState.registerNotifications();
+
+    connect(
+        treeView(),
+        &QWidget::customContextMenuRequested,
+        this,
+        &MayaLayerEditorWindow::onShowContextMenu);
 }
 
 LayerTreeView* MayaLayerEditorWindow::treeView() { return _layerEditor->layerTree(); }

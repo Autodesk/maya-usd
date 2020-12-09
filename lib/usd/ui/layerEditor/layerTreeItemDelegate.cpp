@@ -20,9 +20,6 @@
 
 #include <memory>
 
-namespace {
-}
-
 namespace UsdLayerEditor {
 
 LayerTreeItemDelegate::LayerTreeItemDelegate(LayerTreeView* in_parent)

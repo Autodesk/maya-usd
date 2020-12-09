@@ -288,13 +288,13 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
     menuItem -divider 1;
     
     if ($isSubLayer) {
-    	if ($isMuted) 
-    		$label = getMayaUsdString("kMenuUnmute");
-    	else
-    		$label = getMayaUsdString("kMenuMute");
-	    $cmd = makeCommand($panelName, "muteLayer");
-    	$enabled = 1;    	
-	    menuItem -label $label -enable $enabled -c $cmd;
+        if ($isMuted) 
+            $label = getMayaUsdString("kMenuUnmute");
+        else
+            $label = getMayaUsdString("kMenuMute");
+        $cmd = makeCommand($panelName, "muteLayer");
+        $enabled = 1;    	
+        menuItem -label $label -enable $enabled -c $cmd;
     }
 
     $label = getMayaUsdString("kMenuPrintToScriptEditor");
@@ -315,17 +315,17 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
 
     if ($isSubLayer) {
         $label = getMayaUsdString("kMenuRemove");
-	    $cmd = makeCommand($panelName, "removeSubLayer");
-	    $enabled = 1;
-	    menuItem -label $label -enable $enabled -c $cmd;
-	}
+        $cmd = makeCommand($panelName, "removeSubLayer");
+        $enabled = 1;
+        menuItem -label $label -enable $enabled -c $cmd;
+    }
 
 
     if (!$isAnonymousLayer) {
         $label = getMayaUsdString("kMenuClear");
-	    $cmd = makeCommand($panelName, "clearLayer");
-	    $enabled = 1;
-	    menuItem -label $label -enable $enabled -c $cmd;
-	}
+        $cmd = makeCommand($panelName, "clearLayer");
+        $enabled = 1;
+        menuItem -label $label -enable $enabled -c $cmd;
+    }
 }
 

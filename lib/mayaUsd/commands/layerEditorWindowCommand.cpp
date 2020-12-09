@@ -65,7 +65,6 @@ AbstractLayerEditorCreator* AbstractLayerEditorCreator::_instance = nullptr;
 
 AbstractLayerEditorCreator* AbstractLayerEditorCreator::instance()
 {
-    //
     return AbstractLayerEditorCreator::_instance;
 }
 
@@ -98,7 +97,6 @@ const char LayerEditorWindowCommand::commandName[] = "mayaUsdLayerEditorWindow";
 // plug-in callback to create the command object
 void* LayerEditorWindowCommand::creator()
 {
-    //
     return static_cast<MPxCommand*>(new LayerEditorWindowCommand());
 }
 
@@ -322,7 +320,7 @@ MStatus LayerEditorWindowCommand::handleEdits(
     AbstractLayerEditorWindow* layerEditor)
 {
     //
-    // this methis is written so that it'll return an error
+    // this method is written so that it'll return an error
     // if a query flag is used in non-query mode.
     bool    notEdit = !argParser.isEdit();
     MString errorMsg("Need -edit mode for parameter ");
