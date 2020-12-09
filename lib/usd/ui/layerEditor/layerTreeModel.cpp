@@ -18,11 +18,15 @@
 
 #include "layerEditorWidget.h"
 #include "layerTreeItem.h"
+#include "saveLayersDialog.h"
 #include "stringResources.h"
 #include "warningDialogs.h"
 
+#include <mayaUsd/utils/util.h>
+
 #include <pxr/base/tf/notice.h>
 
+#include <maya/MGlobal.h>
 #include <maya/MQtUtil.h>
 
 #include <QtCore/QTimer>
@@ -402,23 +406,56 @@ LayerItemVector LayerTreeModel::getAllAnonymousLayers() const
     return getAllItems(filter);
 }
 
-void LayerTreeModel::saveStage()
+void LayerTreeModel::saveStage(QWidget* in_parent)
 {
-    const auto anonLayers = getLayerListAsQStringList(getAllAnonymousLayers());
-    QString    dialogTitle = StringResources::getAsQString(StringResources::kSaveStage);
-    QString    message;
-    if (anonLayers.size()) {
-        if (anonLayers.size() == 1)
-            message = StringResources::getAsQString(StringResources::kToSaveTheStageSaveAnonym);
-        else {
+    QString dialogTitle = StringResources::getAsQString(StringResources::kSaveStage);
+    QString message;
+
+    const auto anonLayerItems = getAllAnonymousLayers();
+    auto       nbAnon = anonLayerItems.size();
+    if (0 < nbAnon) {
+        if (1 < nbAnon) {
             MString msg;
             MString size;
-            size = anonLayers.size();
+            size = nbAnon;
             msg.format(
-                StringResources::getAsMString(StringResources::kToSaveTheStageSaveAnonyms), size);
+                StringResources::getAsMString(StringResources::kToSaveTheStageAnonFilesWillBeSaved),
+                size);
             message = MQtUtil::toQString(msg);
+
+        } else {
+            message = StringResources::getAsQString(
+                StringResources::kToSaveTheStageAnonFileWillBeSaved);
         }
-        warningDialog(dialogTitle, message, &anonLayers);
+
+        SaveLayersDialog dlg(dialogTitle, message, anonLayerItems, in_parent);
+        if (QDialog::Accepted == dlg.exec()) {
+
+            if (!dlg.layersWithErrorPairs().isEmpty()) {
+                const QStringList& errors = dlg.layersWithErrorPairs();
+                MString            resultMsg;
+                for (int i = 0; i < errors.length() - 1; i += 2) {
+                    MString errorMsg;
+                    errorMsg.format(
+                        StringResources::getAsMString(StringResources::kSaveAnonymousLayersErrors),
+                        MQtUtil::toMString(errors[i]),
+                        MQtUtil::toMString(errors[i + 1]));
+                    resultMsg += errorMsg + "\n";
+                }
+
+                MGlobal::displayError(resultMsg);
+
+                warningDialog(
+                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
+                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
+            } else {
+                const auto layers = getAllNeedsSavingLayers();
+                for (auto layer : layers) {
+                    if (!layer->isAnonymous())
+                        layer->saveEdits();
+                }
+            }
+        }
     } else {
         QString    buttonText;
         const auto layers = getAllNeedsSavingLayers();

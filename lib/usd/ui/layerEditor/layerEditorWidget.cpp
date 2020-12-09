@@ -349,6 +349,6 @@ void LayerEditorWidget::onLoadLayersButtonClicked()
     layerTreeItem->loadSubLayers(this);
 }
 
-void LayerEditorWidget::onSaveStageButtonClicked() { _treeView->layerTreeModel()->saveStage(); }
+void LayerEditorWidget::onSaveStageButtonClicked() { _treeView->layerTreeModel()->saveStage(this); }
 
 } // namespace UsdLayerEditor

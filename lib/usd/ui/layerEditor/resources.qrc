@@ -11,22 +11,22 @@
         <file alias="LE_save_all_pressed_150.png">resources/save_all_pressed_150.png</file>
         <file alias="LE_save_all_pressed_200.png">resources/save_all_pressed_200.png</file>
 
-        <file alias="target_hover_100.png">resources/target_hover_100.png</file>
+        <file alias="target_hover.png">resources/target_hover_100.png</file>
         <file alias="target_hover_150.png">resources/target_hover_150.png</file>
         <file alias="target_hover_200.png">resources/target_hover_200.png</file>
-        <file alias="target_on_100.png">resources/target_on_100.png</file>
+        <file alias="target_on.png">resources/target_on_100.png</file>
         <file alias="target_on_150.png">resources/target_on_150.png</file>
         <file alias="target_on_200.png">resources/target_on_200.png</file>
-        <file alias="target_on_hover_100.png">resources/target_on_hover_100.png</file>
+        <file alias="target_on_hover.png">resources/target_on_hover_100.png</file>
         <file alias="target_on_hover_150.png">resources/target_on_hover_150.png</file>
         <file alias="target_on_hover_200.png">resources/target_on_hover_200.png</file>
-        <file alias="target_on_pressed_100.png">resources/target_on_pressed_100.png</file>
+        <file alias="target_on_pressed.png">resources/target_on_pressed_100.png</file>
         <file alias="target_on_pressed_150.png">resources/target_on_pressed_150.png</file>
         <file alias="target_on_pressed_200.png">resources/target_on_pressed_200.png</file>
-        <file alias="target_pressed_100.png">resources/target_pressed_100.png</file>
+        <file alias="target_pressed.png">resources/target_pressed_100.png</file>
         <file alias="target_pressed_150.png">resources/target_pressed_150.png</file>
         <file alias="target_pressed_200.png">resources/target_pressed_200.png</file>
-        <file alias="target_regular_100.png">resources/target_regular_100.png</file>
+        <file alias="target_regular.png">resources/target_regular_100.png</file>
         <file alias="target_regular_150.png">resources/target_regular_150.png</file>
         <file alias="target_regular_200.png">resources/target_regular_200.png</file>
 

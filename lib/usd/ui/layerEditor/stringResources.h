@@ -90,6 +90,15 @@ const auto kSetLayerAsTargetLayerTooltip  { create("kSetLayerAsTargetLayerToolti
 const auto kUsdLayerIdentifier       { create("kUsdLayerIdentifier", "USD Layer identifier: ^1s") };
 const auto kUsdStage                 { create("kUsdStage", "USD Stage:") };
 
+const auto kToSaveTheStageAnonFileWillBeSaved  { create("kToSaveTheStageAnonFileWillBeSaved",
+                                                   "To save the stage, you must first save your anonymous layer.  All file-backed layers will also be saved.\n") };
+const auto kToSaveTheStageAnonFilesWillBeSaved { create("kToSaveTheStageAnonFilesWillBeSaved",
+                                                   "To save the stage, you must first save your ^1s anonymous layers.  All file-backed layers will also be saved.\n") };
+const auto kSaveAnonymousLayersErrorsTitle { create("kSaveAnonymousLayersErrorsTitle", "Save All Layers Error")};
+const auto kSaveAnonymousLayersErrorsMsg { create("kSaveAnonymousLayersErrorsMsg", "Errors were encountered while saving layers.  Check Script Editor for details.")};
+const auto kSaveAnonymousLayersErrors { create("kSaveAnonymousLayersErrors", "Layer ^1s could not be saved to: ^2s")};
+
+
 // -------------------------------------------------------------
 // Errors
 // -------------------------------------------------------------
