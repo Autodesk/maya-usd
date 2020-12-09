@@ -99,7 +99,7 @@ void MayaCommandHook::insertSubLayerPath(UsdLayer usdLayer, Path path, int index
 void MayaCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
 {
     size_t index = usdLayer->GetSubLayerPaths().Find(path);
-    assert(index != -1);
+    assert(index != static_cast<size_t>(-1));
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -removeSubPath ";
     cmd += std::to_string(index);
