@@ -49,8 +49,8 @@
 #include <sstream>
 
 #if defined(WANT_QT_BUILD)
-#include <mayaUsdUI/ui/initStringResources.h>
 #include <mayaUsdUI/ui/USDImportDialogCmd.h>
+#include <mayaUsdUI/ui/initStringResources.h>
 #endif
 
 #if defined(WANT_UFE_BUILD)
