@@ -58,7 +58,7 @@ QString suggestedStartFolder(const LayerTreeItem* treeItem)
         startPath = treeItem->parentModel()->sessionState()->defaultLoadPath().c_str();
     }
 
-    if (!startPath.isEmpty() && startPath.back() != QDir::separator()) {
+    if (!startPath.isEmpty() && startPath.at(startPath.size() - 1) != QDir::separator()) {
         startPath += QDir::separator();
     }
 
@@ -93,7 +93,7 @@ public:
         auto hint = QLineEdit::sizeHint();
         if (!text().isEmpty()) {
             QFontMetrics appFont = QApplication::fontMetrics();
-            int          pathWidth = appFont.horizontalAdvance(text()) + 100;
+            int          pathWidth = appFont.boundingRect(text()).width() + 100;
             hint.setWidth(DPIScale(pathWidth));
         }
         return hint;
