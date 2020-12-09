@@ -167,6 +167,15 @@ def openGroupBallsScene():
 def openPrimitivesScene():
     return openTestScene("reorderCmd", "primitives.ma" )
 
+def openPointInstancesGrid14Scene():
+    return openTestScene("pointInstances", "PointInstancer_Grid_14.ma" )
+
+def openPointInstancesGrid7kScene():
+    return openTestScene("pointInstances", "PointInstancer_Grid_7k.ma" )
+
+def openPointInstancesGrid70kScene():
+    return openTestScene("pointInstances", "PointInstancer_Grid_70k.ma" )
+
 def openVariantSetScene():
     return openTestScene("variantSet", "Variant.ma" )
 
