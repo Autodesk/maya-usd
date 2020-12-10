@@ -35,25 +35,12 @@
 #include <maya/MObject.h>
 #include <maya/MString.h>
 
-/**
- * Gets the minimum unique name of a DAG node.
- *
- * @param node  The node to find the name of.
- *
- * @return      The name as a Maya string.
- */
-MString mayaGetUniqueNameOfDAGNode(const MObject& node);
+PXR_NAMESPACE_OPEN_SCOPE
 
-/**
- * Finds a child plug with the given `name`.
- *
- * @param parent    The parent plug to start the search from.
- * @param name      The name of the child plug to find. This should be the short name.
- *
- * @return          The plug if it can be found, or a null `MPlug` otherwise.
- */
-MPlug mayaFindChildPlugWithName(const MPlug& parent, const MString& name);
+class UsdGeomMesh;
 
+// Utilities for dealing with writing USD from Maya mesh/subdiv tags.
+namespace UsdMayaMeshWriteUtils {
 /**
  * Finds a skinCluster directly connected upstream in the DG to the given mesh.
  *
@@ -63,10 +50,11 @@ MPlug mayaFindChildPlugWithName(const MPlug& parent, const MString& name);
  *
  * @return                  `MStatus::kSuccess` if the operation completed successfully.
  */
-MStatus mayaGetSkinClusterConnectedToMesh(const MObject& mesh, MObject& skinCluster);
+MAYAUSD_CORE_PUBLIC
+MStatus getSkinClusterConnectedToMesh(const MObject& mesh, MObject& skinCluster);
 
 /**
- * Similar to `mayaGetSkinClusterConnectedToMesh`, except that instead of finding a
+ * Similar to `getSkinClusterConnectedToMesh`, except that instead of finding a
  * directly-connected skinCluster, it searches the DG upstream of the mesh for any
  * other skinClusters as well.
  *
@@ -75,19 +63,8 @@ MStatus mayaGetSkinClusterConnectedToMesh(const MObject& mesh, MObject& skinClus
  *
  * @return                  `MStatus::kSuccess` if the operation completed successfully.
  */
-MStatus mayaGetSkinClustersUpstreamOfMesh(const MObject& mesh, MObjectArray& skinClusters);
-
-/**
- * Searches the given array for an element.
- *
- * @param a         The element to search for.
- * @param array     The array to search within.
- * @param idx       Storage for the index of the element within the array if it exists.
- *                  If it does not exist, this will be undefined.
- *
- * @return          Returns ``true`` if the element exists in the array, ``false`` otherwise.
- */
-bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx);
+MAYAUSD_CORE_PUBLIC
+MStatus getSkinClustersUpstreamOfMesh(const MObject& mesh, MObjectArray& skinClusters);
 
 /**
  * Calculates the union bounding box of a given array of meshes.
@@ -96,14 +73,9 @@ bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx)
  *
  * @return          The union bounding box.
  */
-MBoundingBox mayaCalcBBoxOfMeshes(const MObjectArray& meshes);
+MAYAUSD_CORE_PUBLIC
+MBoundingBox calcBBoxOfMeshes(const MObjectArray& meshes);
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-class UsdGeomMesh;
-
-// Utilities for dealing with writing USD from Maya mesh/subdiv tags.
-namespace UsdMayaMeshWriteUtils {
 /// Helper method for getting Maya mesh normals as a VtVec3fArray.
 MAYAUSD_CORE_PUBLIC
 bool getMeshNormals(const MFnMesh& mesh, VtVec3fArray* normalsArray, TfToken* interpolation);

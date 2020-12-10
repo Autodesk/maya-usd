@@ -595,8 +595,7 @@ bool UsdMayaWriteJobContext::UpdateSkelBindingsWithExtent(
     const VtVec3fArray& bbox,
     const UsdTimeCode&  timeSample)
 {
-    bool bStat = _skelBindingsProcessor->UpdateSkelRootsWithExtent(stage, bbox, timeSample);
-    return bStat;
+    return _skelBindingsProcessor->UpdateSkelRootsWithExtent(stage, bbox, timeSample);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

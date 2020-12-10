@@ -56,12 +56,16 @@
 
 #define MAYA_ATTR_NAME_WEIGHT "weight"
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 struct MayaBlendShapeWeightDatum
 {
     MObjectArray targetMeshes; // The target shape(s) to hit. (i.e. multiple shapes would be using
                                // Maya's "in-betweens" feature.)
-    MIntArray
-              inputTargetGroupIndices; // The input group indices at which each target is connected under.
+
+    // The input group indices at which each target is connected under.
+    MIntArray inputTargetGroupIndices;
+
     MIntArray inputTargetIndices; // The input indices at which each target is connected under.
     MIntArray targetItemIndices;  // The Maya blendshape weight indices for the resulting deformed
                                   // mesh shape.
@@ -107,7 +111,7 @@ MStatus mayaGetBlendShapeInfosForMesh(
     // blendshape deformers upstream of the mesh.
     MObject      searchObject;
     MObjectArray skinClusters;
-    stat = mayaGetSkinClustersUpstreamOfMesh(deformedMesh, skinClusters);
+    stat = UsdMayaMeshWriteUtils::getSkinClustersUpstreamOfMesh(deformedMesh, skinClusters);
     CHECK_MSTATUS_AND_RETURN_IT(stat);
     unsigned int numSkinClusters = skinClusters.length();
     switch (numSkinClusters) {
@@ -222,28 +226,6 @@ MStatus mayaGetBlendShapeInfosForMesh(
     return stat;
 }
 
-PXR_NAMESPACE_OPEN_SCOPE
-
-VtIntArray getUnionOfVtIntArrays(const VtIntArray* const arrays, const size_t count)
-{
-    std::unordered_map<int, int> visitedMap = {};
-    for (size_t i = 0; i < count; ++i) {
-        const VtIntArray array = arrays[i];
-        for (size_t j = 0; j < array.size(); ++j) {
-            ++(visitedMap[array[j]]);
-        }
-    }
-
-    VtIntArray result;
-    for (auto it = visitedMap.begin(); it != visitedMap.end(); ++it) {
-        if (it->second != 0) {
-            result.push_back(it->first);
-        }
-    }
-
-    return result;
-}
-
 MStatus findNormalOffsetsBetweenMeshes(
     const MObject&   target,
     const MObject&   base,
@@ -324,7 +306,8 @@ MStatus readBlendShapeTargetData(
     MPlug plgInputTarget = plgInputTargets.elementByPhysicalIndex(inputTargetIndex, &stat);
     CHECK_MSTATUS_AND_RETURN_IT(stat);
 
-    MPlug plgInputTargetGrps = mayaFindChildPlugWithName(plgInputTarget, "inputTargetGroup");
+    MPlug plgInputTargetGrps
+        = UsdMayaUtil::FindChildPlugWithName(plgInputTarget, "inputTargetGroup");
     assert(!plgInputTargetGrps.isNull());
     assert(plgInputTargetGrps.isArray());
 
@@ -333,7 +316,8 @@ MStatus readBlendShapeTargetData(
     MPlug plgInputTargetGrp = plgInputTargetGrps.elementByPhysicalIndex(targetGroupIndex, &stat);
     CHECK_MSTATUS_AND_RETURN_IT(stat);
 
-    MPlug plgInputTargetItems = mayaFindChildPlugWithName(plgInputTargetGrp, "inputTargetItem");
+    MPlug plgInputTargetItems
+        = UsdMayaUtil::FindChildPlugWithName(plgInputTargetGrp, "inputTargetItem");
     assert(!plgInputTargetItems.isNull());
     assert(plgInputTargetItems.isArray());
 
@@ -341,14 +325,14 @@ MStatus readBlendShapeTargetData(
     MIntArray plgInputTargetItemLogicalIndices;
     plgInputTargetItems.getExistingArrayAttributeIndices(plgInputTargetItemLogicalIndices, &stat);
     CHECK_MSTATUS_AND_RETURN_IT(stat);
-    assert(mayaSearchMIntArray(weightIndex, plgInputTargetItemLogicalIndices) == true);
+    assert(UsdMayaUtil::mayaSearchMIntArray(weightIndex, plgInputTargetItemLogicalIndices) == true);
 #endif
 
     MPlug plgInputTargetItem = plgInputTargetItems.elementByLogicalIndex(targetWeightIndex, &stat);
     CHECK_MSTATUS_AND_RETURN_IT(stat);
 
     MPlug plgInputComponentsTarget
-        = mayaFindChildPlugWithName(plgInputTargetItem, "inputComponentsTarget");
+        = UsdMayaUtil::FindChildPlugWithName(plgInputTargetItem, "inputComponentsTarget");
     assert(!plgInputComponentsTarget.isNull());
 
     // NOTE: (yliangsiew) Problem: looks like there's a maya bug where you have to twiddle the
@@ -442,7 +426,8 @@ MStatus readBlendShapeTargetData(
         }
     }
 
-    MPlug plgInputPointsTarget = mayaFindChildPlugWithName(plgInputTargetItem, "inputPointsTarget");
+    MPlug plgInputPointsTarget
+        = UsdMayaUtil::FindChildPlugWithName(plgInputTargetItem, "inputPointsTarget");
     MDataHandle dhInputPointsTarget = plgInputPointsTarget.asMDataHandle(&stat);
     CHECK_MSTATUS_AND_RETURN_IT(stat);
 
@@ -464,7 +449,7 @@ MStatus readBlendShapeTargetData(
         targetOffsets[i] = GfVec3f(curPt.x, curPt.y, curPt.z);
     }
 
-    MPlug plgTargetGeom = mayaFindChildPlugWithName(plgInputTargetItem, "inputGeomTarget");
+    MPlug plgTargetGeom = UsdMayaUtil::FindChildPlugWithName(plgInputTargetItem, "inputGeomTarget");
     if (plgTargetGeom.isNull()) {
         return MStatus::kFailure;
     }
@@ -529,7 +514,7 @@ void findUnionAndProcessArrays(
 
         const VtVec3fArray& origNormalsArray = normalsArrays[i];
 #ifdef _DEBUG
-        const size_t        numOrigNormals = origNormalsArray.size();
+        const size_t numOrigNormals = origNormalsArray.size();
         assert(numOrigOffsets == numOrigNormals);
 #endif
         VtVec3fArray& newNormalsArray = unionNormalsArrays[i];
@@ -625,7 +610,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         return MObject::kNullObj;
                     }
 
-                    MString curTargetMeshNameMStr = mayaGetUniqueNameOfDAGNode(targetMesh);
+                    MString curTargetMeshNameMStr = UsdMayaUtil::GetUniqueNameOfDAGNode(targetMesh);
                     assert(curTargetMeshNameMStr.length() != 0);
                     std::string curTargetMeshName
                         = TfMakeValidIdentifier(std::string(curTargetMeshNameMStr.asChar()));
@@ -788,8 +773,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     processedNormalsOffsetsArrays);
 
                 for (unsigned int k = 0; k < numOfTargets; ++k) {
-                    MObject     targetMesh = weightInfo.targetMeshes[k];
-                    MString     curTargetMeshNameMStr = mayaGetUniqueNameOfDAGNode(targetMesh);
+                    MObject targetMesh = weightInfo.targetMeshes[k];
+                    MString curTargetMeshNameMStr = UsdMayaUtil::GetUniqueNameOfDAGNode(targetMesh);
                     std::string curTargetMeshName
                         = TfMakeValidIdentifier(std::string(curTargetMeshNameMStr.asChar()));
                     unsigned int targetWeightIndex = weightInfo.targetItemIndices[k];

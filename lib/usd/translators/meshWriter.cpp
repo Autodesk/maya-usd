@@ -56,11 +56,12 @@
 #include <maya/MStringArray.h>
 #include <maya/MUintArray.h>
 
-#include <cassert>
 #include <cfloat>
 #include <set>
 #include <string>
 #include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* intermediates)
 {
@@ -72,7 +73,7 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
     // blendshape deformers upstream of the mesh.
     MObject searchObject;
     MObject skinCluster;
-    stat = mayaGetSkinClusterConnectedToMesh(mesh, skinCluster);
+    stat = UsdMayaMeshWriteUtils::getSkinClusterConnectedToMesh(mesh, skinCluster);
     if (stat) {
         searchObject = MObject(skinCluster);
     } else {
@@ -84,7 +85,7 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
     // that correctly...so we just tell the client what we found and let them decide how to
     // handle it.
     MFnGeometryFilter fnGeoFilter;
-    assert(MObjectHandle(searchObject).isValid());
+    TF_VERIFY(MObjectHandle(searchObject).isValid());
     MFnBlendShapeDeformer fnBlendShape;
     MItDependencyGraph    itDg(
         searchObject,
@@ -96,9 +97,9 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
     MFnDependencyNode fnNode;
     for (; !itDg.isDone(); itDg.next()) {
         MObject curBlendShape = itDg.currentItem();
-        assert(curBlendShape.hasFn(MFn::kBlendShape));
+        TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
         MPlug outputGeomPlug = itDg.thisPlug();
-        assert(outputGeomPlug.isElement() == true);
+        TF_VERIFY(outputGeomPlug.isElement() == true);
         unsigned int outputGeomPlugIdx = outputGeomPlug.logicalIndex();
 
         // NOTE: (yliangsiew) Because we can have multiple output
@@ -144,8 +145,6 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
     return mesh;
 }
 
-PXR_NAMESPACE_OPEN_SCOPE
-
 PXRUSDMAYA_REGISTER_WRITER(mesh, PxrUsdTranslators_MeshWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mesh, UsdGeomMesh);
 
@@ -183,8 +182,8 @@ bool PxrUsdTranslators_MeshWriter::writeAnimatedMeshExtents(
 {
     // NOTE: (yliangsiew) We also cache the animated extents out here; this
     // will be written at the SkelRoot level later on.
-    assert(!deformedMesh.isNull());
-    assert(deformedMesh.hasFn(MFn::kMesh));
+    TF_VERIFY(!deformedMesh.isNull());
+    TF_VERIFY(deformedMesh.hasFn(MFn::kMesh));
     MStatus stat;
     MFnMesh fnMesh(deformedMesh, &stat);
     CHECK_MSTATUS_AND_RETURN(stat, false);
@@ -316,20 +315,20 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                     if (curIntermediate.hasFn(MFn::kTweak)) {
                         // NOTE: (yliangsiew) Make sure tweak really has no effect even if it's on
                         MPlug plgVLists = fnGeoFilt.findPlug("vlist");
-                        assert(plgVLists.isArray());
+                        TF_VERIFY(plgVLists.isArray());
                         unsigned int numPlgVlists = plgVLists.numElements();
                         for (unsigned int j = 0; j < numPlgVlists; ++j) {
                             MPlug plgVlist = plgVLists.elementByPhysicalIndex(j); // vlist[0]
-                            assert(plgVlist.isCompound());
+                            TF_VERIFY(plgVlist.isCompound());
                             unsigned int plgVlistNumChildren = plgVlist.numChildren();
                             for (unsigned int k = 0; k < plgVlistNumChildren; ++k) {
                                 MPlug plgVlistChild = plgVlist.child(k); // vlist[0].vertex
-                                assert(plgVlistChild.isArray());
+                                TF_VERIFY(plgVlistChild.isArray());
                                 unsigned int numPlgVlistChildElements = plgVlistChild.numElements();
                                 for (unsigned int x = 0; x < numPlgVlistChildElements; ++x) {
                                     MPlug plgVertex = plgVlistChild.elementByPhysicalIndex(
                                         x); // vlist[0].vertex[0]
-                                    assert(plgVertex.isCompound());
+                                    TF_VERIFY(plgVertex.isCompound());
                                     unsigned int plgVertexNumChildren = plgVertex.numChildren();
                                     for (unsigned int y = 0; y < plgVertexNumChildren; ++y) {
                                         MPlug plgVertexComponent
@@ -374,10 +373,10 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                     MFnDependencyNode fnNode(curIntermediate, &status);
                     CHECK_MSTATUS_AND_RETURN(status, false);
                     MPlug plgPnts = fnNode.findPlug("pnts");
-                    assert(plgPnts.isArray());
+                    TF_VERIFY(plgPnts.isArray());
                     for (unsigned int j = 0; j < plgPnts.numElements(); ++j) {
                         MPlug plgPnt = plgPnts.elementByPhysicalIndex(j);
-                        assert(plgPnt.isCompound());
+                        TF_VERIFY(plgPnt.isCompound());
                         for (unsigned int k = 0; k < plgPnt.numChildren(); ++k) {
                             float tweakValue = plgPnt.child(k).asFloat();
                             if (fabs(tweakValue - 0.0f) > FLT_EPSILON) {

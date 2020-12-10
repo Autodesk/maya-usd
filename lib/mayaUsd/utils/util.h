@@ -160,6 +160,16 @@ MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit)
 MAYAUSD_CORE_PUBLIC
 std::string GetMayaNodeName(const MObject& mayaNode);
 
+/**
+ * Gets the minimum unique name of a DAG node.
+ *
+ * @param node  The node to find the name of.
+ *
+ * @return      The name as a Maya string.
+ */
+MAYAUSD_CORE_PUBLIC
+MString GetUniqueNameOfDAGNode(const MObject& node);
+
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
@@ -173,6 +183,17 @@ MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
 /// used by MEL).
 MAYAUSD_CORE_PUBLIC
 MStatus GetPlugByName(const std::string& attrPath, MPlug& plug);
+
+/**
+ * Finds a child plug with the given `name`.
+ *
+ * @param parent    The parent plug to start the search from.
+ * @param name      The name of the child plug to find. This should be the short name.
+ *
+ * @return          The plug if it can be found, or a null `MPlug` otherwise.
+ */
+MAYAUSD_CORE_PUBLIC
+MPlug FindChildPlugWithName(const MPlug& parent, const MString& name);
 
 /// Get the MPlug for the output time attribute of Maya's global time object
 ///
@@ -579,6 +600,19 @@ float ConvertMTimeUnitToFloat(const MTime::Unit& unit);
 /// Returns 0.0f if the result is invalid.
 MAYAUSD_CORE_PUBLIC
 float GetSceneMTimeUnitAsFloat();
+
+/**
+ * Searches the given array for an element.
+ *
+ * @param a         The element to search for.
+ * @param array     The array to search within.
+ * @param idx       Storage for the index of the element within the array if it exists.
+ *                  If it does not exist, this will be undefined.
+ *
+ * @return          Returns ``true`` if the element exists in the array, ``false`` otherwise.
+ */
+MAYAUSD_CORE_PUBLIC
+bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx);
 
 } // namespace UsdMayaUtil
 
