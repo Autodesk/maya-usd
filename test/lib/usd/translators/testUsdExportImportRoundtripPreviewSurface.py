@@ -118,6 +118,11 @@ class testUsdExportImportRoundtripPreviewSurface(unittest.TestCase):
             "pSphere1Shape",
             isMember="USD_Materials:usdPreviewSurface1SG"))
 
+        # Check that we have no spurious "Looks" transform
+        expectedTr = set(['front', 'persp', 'side', 'top', 'pSphere1', 'pSphere2'])
+        allTr = set(cmds.ls(tr=True))
+        self.assertEqual(allTr, expectedTr)
+
         # Check connections:
         self.assertEqual(
             cmds.connectionInfo("usdPreviewSurface2.outColor", dfs=True),

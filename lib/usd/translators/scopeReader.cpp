@@ -19,6 +19,7 @@
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
 
 #include <maya/MObject.h>
 
@@ -27,7 +28,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 PXRUSDMAYA_DEFINE_READER(UsdGeomScope, args, context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
-    MObject        parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
+
+    // If this scope contains only UsdShade nodes, just skip.
+    bool hasShadingData = false;
+    bool hasNonShadingData = false;
+    for (const auto& child : usdPrim.GetChildren()) {
+        if (UsdShadeConnectableAPI(child)) {
+            hasShadingData = true;
+        } else {
+            hasNonShadingData = true;
+            break;
+        }
+    }
+    if (hasShadingData && !hasNonShadingData) {
+        return false;
+    }
+
+    MObject parentNode = context->GetMayaNode(usdPrim.GetPath().GetParentPath(), true);
 
     MStatus status;
     MObject mayaNode;

@@ -22,11 +22,14 @@ set(CMAKE_AUTOUIC ON)
 
 add_library(${PROJECT_NAME} SHARED)
 
+add_subdirectory(layerEditor)
+
 # -----------------------------------------------------------------------------
 # sources
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        initStringResources.cpp
         ItemDelegate.cpp
         TreeItem.cpp
         TreeModel.cpp
@@ -95,6 +98,7 @@ endif()
 set(HEADERS
     api.h
     IMayaMQtUtil.h
+    initStringResources.h
     ItemDelegate.h
     IUSDImportView.h
     TreeItem.h
