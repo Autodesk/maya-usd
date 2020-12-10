@@ -6,11 +6,15 @@
 #include "pathChecker.h"
 #include "qtUtils.h"
 #include "sessionState.h"
+#include "stringResources.h"
 #include "warningDialogs.h"
 
 #include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/usdFileFormat.h>
+
+#include <maya/MQtUtil.h>
+#include <maya/MString.h>
 
 #include <QtCore/QDir>
 #include <QtCore/QFileInfo>
@@ -28,12 +32,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace {
 
 using namespace UsdLayerEditor;
-
-bool isAbsolutePath(const QString& in_path)
-{
-    QFileInfo fileInfo(in_path);
-    return fileInfo.isAbsolute();
-}
 
 // Starting at the given tree item, walk up the layer hierarchy looking for
 // the first file backed layer.
@@ -402,10 +400,16 @@ bool SaveLayersDialog::okToSave()
     }
 
     if (!existingFiles.isEmpty()) {
-        QString message
-            = QString("%1 file(s) already exist and will be overwritten.  Do you want to continue?")
-                  .arg(existingFiles.length());
-        return (confirmDialog("Overwrite Files", message, &existingFiles));
+        MString confirmMsg;
+        MString count;
+        count = existingFiles.length();
+        confirmMsg.format(
+            StringResources::getAsMString(StringResources::kSaveAnonymousConfirmOverwrite), count);
+
+        return (confirmDialog(
+            StringResources::getAsQString(StringResources::kSaveAnonymousConfirmOverwriteTitle),
+            MQtUtil::toQString(confirmMsg),
+            &existingFiles));
     }
 
     return true;
