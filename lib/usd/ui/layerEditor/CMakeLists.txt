@@ -42,6 +42,8 @@ target_sources(${PROJECT_NAME}
         qtUtils.cpp
         qtUtils.h
         resources.qrc
+        saveLayersDialog.cpp
+        saveLayersDialog.h
         sessionState.cpp
         sessionState.h
         stageSelectorWidget.cpp

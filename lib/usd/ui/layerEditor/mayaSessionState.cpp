@@ -305,12 +305,27 @@ void MayaSessionState::setupCreateMenu(QMenu* in_menu)
         /*undo*/ false);
 }
 
+const char* getCurrentSaveAsFolderScript = R"(
+global proc string MayaSessionState_GetCurrentSaveAsFolder()
+{
+    string $sceneFolder = dirname(`file -q -sceneName`);
+    if ("" == $sceneFolder)
+    {
+        string $workspaceLocation = `workspace -q -fn`;
+        string $scenesFolder = `workspace -q -fileRuleEntry "scene"`;
+        $sceneFolder = $workspaceLocation + "/" + $scenesFolder;
+    }
+    return $sceneFolder;
+}
+MayaSessionState_GetCurrentSaveAsFolder;
+)";
+
 // path to default load layer dialogs to
 std::string MayaSessionState::defaultLoadPath() const
 {
     MString sceneName;
     MGlobal::executeCommand(
-        MString("file -q -sceneName"),
+        getCurrentSaveAsFolderScript,
         sceneName,
         /*display*/ false,
         /*undo*/ false);

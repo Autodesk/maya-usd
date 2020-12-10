@@ -167,7 +167,7 @@ void LayerPathRow::setAsRowInserter(bool setIt)
 }
 
 LoadLayersDialog::LoadLayersDialog(LayerTreeItem* in_treeItem, QWidget* in_parent)
-    : QDialog(in_parent)
+    : QDialog(in_parent, Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::WindowCloseButtonHint)
     , _treeItem(in_treeItem)
 {
     MString title;

@@ -75,7 +75,7 @@ public:
     std::string findNameForNewAnonymousLayer() const;
 
     // save stage UI
-    void saveStage();
+    void saveStage(QWidget* in_parent);
 
     // return the index of the root layer
     QModelIndex rootLayerIndex();
