@@ -20,7 +20,7 @@ limitations under the License.
         <![CDATA[VP2 implementation for color/opacity reader]]>
     </description>
     <properties>
-        <float4 name="color" semantic="fcolor" flags="varyingInputParam" />
+        <float4 name="diffuseColor" semantic="fcolor" flags="varyingInputParam,multiDraw" />
     </properties>
     <outputs>
         <float4 name="output" />
