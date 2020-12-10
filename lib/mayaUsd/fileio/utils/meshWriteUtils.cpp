@@ -53,162 +53,6 @@
 
 #define MAYA_ATTR_NAME_INMESH "inMesh"
 
-MString mayaGetUniqueNameOfDAGNode(const MObject& node)
-{
-    assert(!node.isNull());
-    assert(node.hasFn(MFn::kDagNode));
-    MStatus    stat;
-    MFnDagNode fnNode(node, &stat);
-    CHECK_MSTATUS_AND_RETURN(stat, MString());
-    MString nodeName = fnNode.partialPathName(&stat);
-    return nodeName;
-}
-
-MPlug mayaFindChildPlugWithName(const MPlug& parent, const MString& name)
-{
-    MPlug sentinel;
-    if (!parent.isCompound() || parent.isNull()) {
-        return sentinel;
-    }
-    MStatus      stat;
-    unsigned int numChildren = parent.numChildren(&stat);
-    CHECK_MSTATUS_AND_RETURN(stat, sentinel);
-    if (numChildren == 0) {
-        return sentinel;
-    }
-
-    MFnAttribute fnAttr;
-
-    // TODO: (yliangsiew) for a certain threshold of child plugs, might want to
-    //       binary search instead.
-    for (unsigned int i = 0; i < numChildren; ++i) {
-        MPlug plgChild = parent.child(i, &stat);
-        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
-        MObject attrChild = plgChild.attribute(&stat);
-        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
-        stat = fnAttr.setObject(attrChild);
-        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
-        const MString attrName = fnAttr.name();
-        if (attrName == name) {
-            return plgChild;
-        }
-    }
-
-    return sentinel;
-}
-
-MStatus mayaGetSkinClusterConnectedToMesh(const MObject& mesh, MObject& skinCluster)
-{
-    // TODO: (yliangsiew) Do we care about multiple skinCluster layers? How do we even want
-    //        to deal with that, if at all?
-    MStatus stat;
-    if (!mesh.hasFn(MFn::kMesh)) {
-        return MStatus::kInvalidParameter;
-    }
-
-    MFnDependencyNode fnNode(mesh, &stat);
-    CHECK_MSTATUS_AND_RETURN_IT(stat);
-
-    MPlug inMeshPlug = fnNode.findPlug(MAYA_ATTR_NAME_INMESH, false, &stat);
-    CHECK_MSTATUS_AND_RETURN_IT(stat);
-
-    bool isDest = inMeshPlug.isDestination(&stat);
-    CHECK_MSTATUS_AND_RETURN_IT(stat);
-    if (!isDest) {
-        return MStatus::kFailure;
-    }
-    MPlug srcPlug = inMeshPlug.source(&stat);
-    CHECK_MSTATUS_AND_RETURN_IT(stat);
-    if (srcPlug.isNull()) {
-        return MStatus::kFailure;
-    }
-
-    skinCluster = srcPlug.node(&stat);
-
-    CHECK_MSTATUS_AND_RETURN_IT(stat);
-    if (!skinCluster.hasFn(MFn::kSkinClusterFilter)) {
-        return MStatus::kFailure;
-    }
-
-    return stat;
-}
-
-MStatus mayaGetSkinClustersUpstreamOfMesh(const MObject& mesh, MObjectArray& skinClusters)
-{
-    MStatus stat;
-    if (!mesh.hasFn(MFn::kMesh)) {
-        return MStatus::kInvalidParameter;
-    }
-
-    skinClusters.clear();
-    MObject            searchObj = MObject(mesh);
-    MItDependencyGraph itDg(
-        searchObj,
-        MFn::kInvalid,
-        MItDependencyGraph::kUpstream,
-        MItDependencyGraph::kDepthFirst,
-        MItDependencyGraph::kNodeLevel,
-        &stat);
-    while (!itDg.isDone()) {
-        MObject curNode = itDg.currentItem();
-        if (curNode.hasFn(MFn::kSkinClusterFilter)) {
-            skinClusters.append(curNode);
-        }
-        itDg.next();
-    }
-
-    return stat;
-}
-
-bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx)
-{
-    for (unsigned int i = 0; i < array.length(); ++i) {
-        if (array[i] == a) {
-            if (idx != NULL) {
-                *idx = i;
-            }
-            return true;
-        }
-    }
-    if (idx != NULL) {
-        *idx = -1;
-    }
-    return false;
-}
-
-MBoundingBox mayaCalcBBoxOfMeshes(const MObjectArray& meshes)
-{
-    unsigned int numMeshes = meshes.length();
-    MFnMesh      fnMesh;
-    MStatus      stat;
-    MVector      a;
-    MVector      b;
-    for (unsigned int i = 0; i < numMeshes; ++i) {
-        MObject curMesh = meshes[i];
-        assert(curMesh.hasFn(MFn::kMesh));
-        fnMesh.setObject(curMesh);
-        unsigned int numVertices = fnMesh.numVertices();
-        const float* meshPts = fnMesh.getRawPoints(&stat);
-        for (unsigned int j = 0; j < numVertices; ++j) {
-            float x = meshPts[j * 3];
-            float y = meshPts[(j * 3) + 1];
-            float z = meshPts[(j * 3) + 2];
-
-            a.x = x < a.x ? x : a.x;
-            b.x = x > b.x ? x : b.x;
-
-            a.y = y < a.y ? y : a.y;
-            b.y = y > b.y ? y : b.y;
-
-            a.z = z < a.z ? z : a.z;
-            b.z = z > b.z ? z : b.z;
-        }
-    }
-
-    MBoundingBox result = MBoundingBox(MPoint(a), MPoint(b));
-    return result;
-}
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // These tokens are supported Maya attributes used for Mesh surfaces
@@ -499,6 +343,105 @@ GfVec3f LinearColorFromColorSet(const MColor& mayaColor, bool shouldConvertToLin
 }
 
 } // anonymous namespace
+
+MStatus
+UsdMayaMeshWriteUtils::getSkinClusterConnectedToMesh(const MObject& mesh, MObject& skinCluster)
+{
+    // TODO: (yliangsiew) Do we care about multiple skinCluster layers? How do we even want
+    //        to deal with that, if at all?
+    MStatus stat;
+    if (!mesh.hasFn(MFn::kMesh)) {
+        return MStatus::kInvalidParameter;
+    }
+
+    MFnDependencyNode fnNode(mesh, &stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+
+    MPlug inMeshPlug = fnNode.findPlug(MAYA_ATTR_NAME_INMESH, false, &stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+
+    bool isDest = inMeshPlug.isDestination(&stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+    if (!isDest) {
+        return MStatus::kFailure;
+    }
+    MPlug srcPlug = inMeshPlug.source(&stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+    if (srcPlug.isNull()) {
+        return MStatus::kFailure;
+    }
+
+    skinCluster = srcPlug.node(&stat);
+
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+    if (!skinCluster.hasFn(MFn::kSkinClusterFilter)) {
+        return MStatus::kFailure;
+    }
+
+    return stat;
+}
+
+MStatus UsdMayaMeshWriteUtils::getSkinClustersUpstreamOfMesh(
+    const MObject& mesh,
+    MObjectArray&  skinClusters)
+{
+    MStatus stat;
+    if (!mesh.hasFn(MFn::kMesh)) {
+        return MStatus::kInvalidParameter;
+    }
+
+    skinClusters.clear();
+    MObject            searchObj = MObject(mesh);
+    MItDependencyGraph itDg(
+        searchObj,
+        MFn::kInvalid,
+        MItDependencyGraph::kUpstream,
+        MItDependencyGraph::kDepthFirst,
+        MItDependencyGraph::kNodeLevel,
+        &stat);
+    while (!itDg.isDone()) {
+        MObject curNode = itDg.currentItem();
+        if (curNode.hasFn(MFn::kSkinClusterFilter)) {
+            skinClusters.append(curNode);
+        }
+        itDg.next();
+    }
+
+    return stat;
+}
+
+MBoundingBox UsdMayaMeshWriteUtils::calcBBoxOfMeshes(const MObjectArray& meshes)
+{
+    unsigned int numMeshes = meshes.length();
+    MFnMesh      fnMesh;
+    MStatus      stat;
+    MVector      a;
+    MVector      b;
+    for (unsigned int i = 0; i < numMeshes; ++i) {
+        MObject curMesh = meshes[i];
+        TF_VERIFY(curMesh.hasFn(MFn::kMesh));
+        fnMesh.setObject(curMesh);
+        unsigned int numVertices = fnMesh.numVertices();
+        const float* meshPts = fnMesh.getRawPoints(&stat);
+        for (unsigned int j = 0; j < numVertices; ++j) {
+            float x = meshPts[j * 3];
+            float y = meshPts[(j * 3) + 1];
+            float z = meshPts[(j * 3) + 2];
+
+            a.x = x < a.x ? x : a.x;
+            b.x = x > b.x ? x : b.x;
+
+            a.y = y < a.y ? y : a.y;
+            b.y = y > b.y ? y : b.y;
+
+            a.z = z < a.z ? z : a.z;
+            b.z = z > b.z ? z : b.z;
+        }
+    }
+
+    MBoundingBox result = MBoundingBox(MPoint(a), MPoint(b));
+    return result;
+}
 
 bool UsdMayaMeshWriteUtils::getMeshNormals(
     const MFnMesh& mesh,

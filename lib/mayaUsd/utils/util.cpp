@@ -185,6 +185,17 @@ std::string UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
     return nodeName.asChar();
 }
 
+MString UsdMayaUtil::GetUniqueNameOfDAGNode(const MObject& node)
+{
+    TF_VERIFY(!node.isNull());
+    TF_VERIFY(node.hasFn(MFn::kDagNode));
+    MStatus    stat;
+    MFnDagNode fnNode(node, &stat);
+    CHECK_MSTATUS_AND_RETURN(stat, MString());
+    MString nodeName = fnNode.partialPathName(&stat);
+    return nodeName;
+}
+
 MStatus UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
 {
     MSelectionList selectionList;
@@ -237,6 +248,39 @@ MStatus UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
 
     plug = tmpPlug;
     return status;
+}
+
+MPlug UsdMayaUtil::FindChildPlugWithName(const MPlug& parent, const MString& name)
+{
+    MPlug sentinel;
+    if (parent.isNull() || !parent.isCompound()) {
+        return sentinel;
+    }
+    MStatus      stat;
+    unsigned int numChildren = parent.numChildren(&stat);
+    CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+    if (numChildren == 0) {
+        return sentinel;
+    }
+
+    MFnAttribute fnAttr;
+
+    // TODO: (yliangsiew) for a certain threshold of child plugs, might want to
+    //       binary search instead.
+    for (unsigned int i = 0; i < numChildren; ++i) {
+        MPlug plgChild = parent.child(i, &stat);
+        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+        MObject attrChild = plgChild.attribute(&stat);
+        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+        stat = fnAttr.setObject(attrChild);
+        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+        const MString attrName = fnAttr.name();
+        if (attrName == name) {
+            return plgChild;
+        }
+    }
+
+    return sentinel;
 }
 
 MPlug UsdMayaUtil::GetMayaTimePlug()
@@ -2246,4 +2290,20 @@ double UsdMayaUtil::GetSceneMTimeUnitAsDouble()
 {
     const MTime::Unit sceneUnit = MTime::uiUnit();
     return UsdMayaUtil::ConvertMTimeUnitToDouble(sceneUnit);
+}
+
+bool UsdMayaUtil::mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx)
+{
+    for (unsigned int i = 0; i < array.length(); ++i) {
+        if (array[i] == a) {
+            if (idx != nullptr) {
+                *idx = i;
+            }
+            return true;
+        }
+    }
+    if (idx != nullptr) {
+        *idx = -1;
+    }
+    return false;
 }
