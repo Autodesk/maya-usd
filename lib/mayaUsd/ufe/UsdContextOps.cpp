@@ -426,16 +426,12 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
         // Top-level item - USD Layer editor (for all context op types).
-        int hasLayerEditorCmd { 0 };
-        MGlobal::executeCommand("runTimeCommand -exists UsdLayerEditor", hasLayerEditorCmd);
-        if (hasLayerEditorCmd) {
 #if UFE_PREVIEW_VERSION_NUM >= 2023
-            items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
+        items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
 #else
-            items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
+        items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
 #endif
-            items.emplace_back(Ufe::ContextItem::kSeparator);
-        }
+        items.emplace_back(Ufe::ContextItem::kSeparator);
 
         // Top-level items (do not add for gateway type node):
         if (!fIsAGatewayType) {
@@ -596,7 +592,14 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
     } else if (itemPath[0] == kUSDLayerEditorItem) {
         // Just open the editor directly and return null so we don't have undo.
-        MGlobal::executeCommand("UsdLayerEditor");
+        auto ufePath = ufe::stagePath(prim().GetStage());
+        auto noWorld = ufePath.popHead().string();
+        auto dagPath = UsdMayaUtil::nameToDagPath(noWorld);
+        auto shapePath = dagPath.fullPathName();
+
+        MString script;
+        script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
+        MGlobal::executeCommand(script);
         return nullptr;
     } else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
         MString fileRef = MGlobal::executeCommandStringResult(selectUSDFileScript);

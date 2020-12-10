@@ -1,0 +1,65 @@
+// Copyright 2020 Autodesk
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+
+proc register(string $key, string $value) {
+    registerPluginResource("mayaUsdPlugin", $key, $value);
+}
+
+global proc string getMayaUsdString(string $key) {
+    return getPluginResource("mayaUsdPlugin", $key);
+}
+
+global proc mayaUSDRegisterStrings() {
+
+    register("kAllUsdFiles", "All USD Files");   
+    register("kCreateUsdStageFromFile", "Create USD Stage from File");
+    register("kCreateUsdStageFromFileOptions", "Create USD Stage from File Options");
+    register("kCreateStageFromFile", "Create Stage from File");
+    register("kExcludePrimPaths", "Exclude Prim Paths:");
+    register("kExcludePrimPathsAnn", "Excludes the specified prim paths from the loaded USD data. Multiple prim paths must be separated by a comma.");
+    register("kExcludePrimPathsSbm", "Excludes the specified prim paths from the loaded USD data");
+    register("kLoad", "Load");
+    register("kLoadPayloads", "Load Payloads:");
+    register("kLoadPayloadsAnn", "When on, loads all prims marked as payloads. When off, all prims marked as payloads and their children are not loaded.");
+    register("kLoadPayloadsSbm", "Loads prims marked as payloads");
+    register("kMenuAddSublayer", "Add Sublayer");
+    register("kMenuAddParentLayer", "Add Parent Layer");
+    register("kMenuClear", "Clear");
+    register("kMenuDiscardEdits", "Discard Edits");
+    register("kMenuLoadSublayers", "Load Sublayers...");
+    register("kMenuMute", "Mute");
+    register("kMenuPrintToScriptEditor", "Print to Script Editor");
+    register("kMenuRemove", "Remove");
+    register("kMenuSelectPrimsWithSpec", "Select Prims With Spec");
+    register("kMenuStageWithNewLayer", "Stage with New Layer");
+    register("kMenuStageWithNewLayerAnn", "Create a new, empty USD Stage");
+    register("kMenuStageFromFile", "Stage From File...");
+    register("kMenuStageFromFileAnn", "Create a USD Stage from an existing USD file");
+    register("kMenuSaveAs", "Save As...");
+    register("kMenuSaveEdits", "Save Edits");
+    register("kMenuUnmute", "Unmute");
+    register("kPrimPath", "Prim Path:");
+    register("kPrimPathAnn", "Loads the specified prim path. If a matching prim path is not found, all prims in the file are loaded.");
+    register("kPrimPathSbm", "Loads the specified prim path");
+    register("kSaveAndClose", "Save and Close");
+    register("kSaveLayerUsdFileFormatAnn", "Select whether the .usd file is written out in binary or ASCII. You can save a file in .usdc (binary) or .usda (ASCII) format. Manually entering a file name with an extension overrides the selection in this drop-down menu.");
+    register("kSaveLayerUsdFileFormatSbm", "Select whether the .usd file is written out in binary or ASCII");
+    register("kTipYouCanChooseMultipleFiles", "<b>Tip:</b>  You can choose multiple files.");
+    register("kUsdFileOptions", "USD File Options");
+    register("kUsdFileFormat", ".usd File Format:  ");
+ 
+    // load any localized resources
+    loadPluginLanguageResources("mayaUsdPlugin", "mayaUsdPlugin.pres.mel");
+}

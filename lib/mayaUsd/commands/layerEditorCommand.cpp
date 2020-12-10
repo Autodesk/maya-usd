@@ -43,6 +43,8 @@ const char kClearLayerFlag[] = "cl";
 const char kClearLayerFlagL[] = "clear";
 const char kAddAnonSublayerFlag[] = "aa";
 const char kAddAnonSublayerFlagL[] = "addAnonymous";
+const char kMuteLayerFlag[] = "mt";
+const char kMuteLayerFlagL[] = "muteLayer";
 
 } // namespace
 
@@ -57,7 +59,8 @@ enum class CmdId
     kReplace,
     kDiscardEdit,
     kClearLayer,
-    kAddAnonLayer
+    kAddAnonLayer,
+    kMuteLayer
 };
 
 class BaseCmd
@@ -320,6 +323,60 @@ public:
     }
 };
 
+class MuteLayer : public BaseCmd
+{
+public:
+    MuteLayer()
+        : BaseCmd(CmdId::kMuteLayer)
+    {
+    }
+
+    bool doIt(SdfLayerHandle layer) override
+    {
+        auto stage = getStage();
+        if (!stage)
+            return false;
+        if (_muteIt) {
+            stage->MuteLayer(layer->GetIdentifier());
+        } else {
+            stage->UnmuteLayer(layer->GetIdentifier());
+        }
+
+        // we perfer not holding to pointers needlessly, but we need to hold on to the layer if we
+        // mute it otherwise usd will let go of it and its modifications, and any dirty children
+        // will also be lost
+        _mutedLayer = layer;
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle layer) override
+    {
+        auto stage = getStage();
+        if (!stage)
+            return false;
+        if (_muteIt) {
+            stage->UnmuteLayer(layer->GetIdentifier());
+        } else {
+            stage->MuteLayer(layer->GetIdentifier());
+        }
+        // we can release the pointer
+        _mutedLayer = nullptr;
+        return true;
+    }
+
+    std::string _proxyShapePath;
+    bool        _muteIt = true;
+
+protected:
+    UsdStageWeakPtr getStage()
+    {
+        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        auto stage = prim.GetStage();
+        return stage;
+    }
+    PXR_NS::SdfLayerRefPtr _mutedLayer;
+};
+
 } // namespace Impl
 
 const char LayerEditorCommand::commandName[] = "mayaUsdLayerEditor";
@@ -346,8 +403,11 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.makeFlagMultiUse(kReplaceSubPathFlag);
     syntax.addFlag(kDiscardEditsFlag, kDiscardEditsFlagL);
     syntax.addFlag(kClearLayerFlag, kClearLayerFlagL);
+    // parameter: new layer name
     syntax.addFlag(kAddAnonSublayerFlag, kAddAnonSublayerFlagL, MSyntax::kString);
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
+    // paramter: proxy shape name
+    syntax.addFlag(kMuteLayerFlag, kMuteLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
 
     return syntax;
 }
@@ -433,6 +493,25 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 cmd->_anonName = listOfArgs.asString(0).asUTF8();
                 _subCommands.push_back(std::move(cmd));
             }
+        }
+        if (argParser.isFlagSet(kMuteLayerFlag)) {
+            bool muteIt = true;
+            argParser.getFlagArgument(kMuteLayerFlag, 0, muteIt);
+
+            MString proxyShapeName;
+            argParser.getFlagArgument(kMuteLayerFlag, 1, proxyShapeName);
+
+            auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
+            if (prim == UsdPrim()) {
+                displayError(
+                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                return MS::kInvalidParameter;
+            }
+
+            auto cmd = std::make_shared<Impl::MuteLayer>();
+            cmd->_muteIt = muteIt;
+            cmd->_proxyShapePath = proxyShapeName.asChar();
+            _subCommands.push_back(std::move(cmd));
         }
     }
 
