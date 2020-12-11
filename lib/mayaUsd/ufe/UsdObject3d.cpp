@@ -81,14 +81,13 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
 bool UsdObject3d::visibility() const
 {
     TfToken visibilityToken;
-    auto visAttr = UsdGeomImageable(fPrim).GetVisibilityAttr();
+    auto    visAttr = UsdGeomImageable(fPrim).GetVisibilityAttr();
     visAttr.Get(&visibilityToken);
 
     bool result;
-    if (visibilityToken == UsdGeomTokens->invisible) { 
+    if (visibilityToken == UsdGeomTokens->invisible) {
         result = false;
-    }
-    else if (visibilityToken == UsdGeomTokens->inherited) {
+    } else if (visibilityToken == UsdGeomTokens->inherited) {
         result = true;
     }
 
