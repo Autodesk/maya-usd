@@ -198,7 +198,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[-2, "bogus"])
         with self.assertRaises(RuntimeError):
-            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[2, "bogus"])
+            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[3, "bogus"])
 
         # -replaceSubPath
 
