@@ -325,9 +325,7 @@ MStatus mayaGetBlendShapeInfosForMesh(
         // NOTE: (yliangsiew) So after we call targetItemIndexList which associates a given weight
         // index and a base object, we can infer that the inputTarget group logical index matches
         // that of the outputGeometry logical index (i.e. the base object).
-        // TODO: (yliangsiew) BUG: each weightdatum is reading _all_ the targets instead of just the
-        // one it is associated with.
-        // TODO: (yliangsiew) The logical index of the weight plug should match that of the
+        // The logical index of the weight plug should match that of the
         // inputTargetGroup that is being driven by said weight. (Confirmed by @williamkrick from ADSK).
         MPlug plgInTgtGrps = UsdMayaUtil::FindChildPlugWithName(plgInTgt, "inputTargetGroup");
         assert(!plgInTgtGrps.isNull());
@@ -720,7 +718,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                 for (size_t k = 0; k < numOfTargets; ++k) {
                     MayaBlendShapeTargetDatum targetDatum = weightInfo.targets[k];
                     MObject targetMesh = targetDatum.targetMesh;
-                    // TODO: (yliangsiew) If mesh is already baked in, format name differently.
+                    // NOTE: (yliangsiew) If mesh is already baked in, format name differently.
                     MString curTargetNameMStr;
                     if (!targetMesh.isNull()) {
                         // NOTE: (yliangsiew) Because UsdSkelBlendShape does not
