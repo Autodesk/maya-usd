@@ -170,7 +170,7 @@ public:
 
     static bool validateAndReportIndex(SdfLayerHandle layer, int index)
     {
-        if (index < 0 || index >= (int)layer->GetNumSubLayerPaths()) {
+        if (index < 0 || index > (int)layer->GetNumSubLayerPaths()) {
             std::string message = std::string("Index ") + std::to_string(index)
                 + std::string(" out-of-bound for ") + layer->GetIdentifier();
             MPxCommand::displayError(message.c_str());
