@@ -2310,7 +2310,6 @@ bool UsdMayaUtil::mayaSearchMIntArray(const int a, const MIntArray& array, unsig
     return false;
 }
 
-
 MStatus UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(const MPlug &plg, MIntArray &indices)
 {
     MStatus status;

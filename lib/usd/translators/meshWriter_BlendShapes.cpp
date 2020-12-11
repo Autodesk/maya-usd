@@ -80,7 +80,7 @@ struct MayaBlendShapeWeightDatum
     // weight at which the target is triggered. (i.e. inputTargetItem[6000] plug)
     MIntArray targetItemIndices;
 
-    // The input indices at which the target(s) are connected under. (i.e. inputTarget[0] plug)
+    // The input index  at which the target(s) are connected under. (i.e. inputTarget[0] plug)
     unsigned int inputTargetIndex;
 
     // The logical index of the weight attribute on the blendshape node.
@@ -282,6 +282,7 @@ MStatus mayaGetBlendShapeInfosForMesh(
         MItDependencyGraph::kDepthFirst,
         MItDependencyGraph::kPlugLevel,
         &stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
     MFnDependencyNode fnNode;
     for (; !itDg.isDone(); itDg.next()) {
         MObject curBlendShape = itDg.currentItem();
@@ -324,8 +325,10 @@ MStatus mayaGetBlendShapeInfosForMesh(
         // NOTE: (yliangsiew) So after we call targetItemIndexList which associates a given weight
         // index and a base object, we can infer that the inputTarget group logical index matches
         // that of the outputGeometry logical index (i.e. the base object).
-        // Therefore all the inputTargetGroup[x] elements under a single inputTarget[x] are driving
-        // that given outputGeometry. (And @williamkrick from ADSK confirmed this, so we're golden!)
+        // TODO: (yliangsiew) BUG: each weightdatum is reading _all_ the targets instead of just the
+        // one it is associated with.
+        // TODO: (yliangsiew) The logical index of the weight plug should match that of the
+        // inputTargetGroup that is being driven by said weight. (Confirmed by @williamkrick from ADSK).
         MPlug plgInTgtGrps = UsdMayaUtil::FindChildPlugWithName(plgInTgt, "inputTargetGroup");
         assert(!plgInTgtGrps.isNull());
 
@@ -344,72 +347,74 @@ MStatus mayaGetBlendShapeInfosForMesh(
             CHECK_MSTATUS_AND_RETURN_IT(stat);
 
             unsigned int numInTgtGrps = plgInTgtGrps.numElements();
-            for (unsigned int j=0; j < numInTgtGrps; ++j) {
-                MPlug plgInTgtGrp = plgInTgtGrps.elementByPhysicalIndex(j);
+            if (numInTgtGrps == 0) {
+                continue;
+            }
 
-                unsigned int inTgtGrpIdx = plgInTgtGrp.logicalIndex();
-                weightInfo.inputTargetGroupIndices.append(inTgtGrpIdx);
+            // NOTE: (yliangsiew) The index of the inputTargetGroup should match the index into the weight attribute.
+            MPlug plgInTgtGrp = plgInTgtGrps.elementByLogicalIndex(weightInfo.weightIndex);
 
-                MPlug plgInTgtItems = UsdMayaUtil::FindChildPlugWithName(plgInTgtGrp, "inputTargetItem");
-                for (unsigned int k=0; k < weightInfo.targetItemIndices.length(); ++k) {
-                    MPlug plgInTgtItem = plgInTgtItems.elementByLogicalIndex(weightInfo.targetItemIndices[k]);
-                    MPlug plgInGeomTgt = UsdMayaUtil::FindChildPlugWithName(plgInTgtItem, "inputGeomTarget");
-                    assert(!plgInGeomTgt.isNull());
+            unsigned int inTgtGrpIdx = plgInTgtGrp.logicalIndex();
+            weightInfo.inputTargetGroupIndices.append(inTgtGrpIdx);
 
-                    // NOTE: (yliangsiew) Get the indices first so that we know which
-                    // components to calculate the offsets for.
-                    MPlug plgInComponentsTgt = UsdMayaUtil::FindChildPlugWithName(plgInTgtItem, "inputComponentsTarget");
-                    assert(!plgInComponentsTgt.isNull());
+            MPlug plgInTgtItems = UsdMayaUtil::FindChildPlugWithName(plgInTgtGrp, "inputTargetItem");
+            for (unsigned int k=0; k < weightInfo.targetItemIndices.length(); ++k) {
+                MPlug plgInTgtItem = plgInTgtItems.elementByLogicalIndex(weightInfo.targetItemIndices[k]);
+                MPlug plgInGeomTgt = UsdMayaUtil::FindChildPlugWithName(plgInTgtItem, "inputGeomTarget");
+                assert(!plgInGeomTgt.isNull());
 
-                    MayaBlendShapeTargetDatum meshTargetDatum = {};
-                    MIntArray indices;
-                    stat = UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(plgInComponentsTgt, indices);
-                    CHECK_MSTATUS_AND_RETURN_IT(stat);
-                    for (unsigned int m=0; m < indices.length(); ++m) {
-                        meshTargetDatum.indices.emplace_back(indices[m]);
-                    }
+                // NOTE: (yliangsiew) Get the indices first so that we know which
+                // components to calculate the offsets for.
+                MPlug plgInComponentsTgt = UsdMayaUtil::FindChildPlugWithName(plgInTgtItem, "inputComponentsTarget");
+                assert(!plgInComponentsTgt.isNull());
 
-                    CHECK_MSTATUS_AND_RETURN_IT(stat);
-                    unsigned int numComponentIndices = meshTargetDatum.indices.size();
-                    if (numComponentIndices == 0) {
-                        TF_WARN("Found zero-length component indices on a plug; cannot determine blendshape target info from it: %s", plgInComponentsTgt.name().asChar());
-                        continue;
-                    }
-
-                    // NOTE: (yliangsiew) We check if the geometry target is actually connected.
-                    // If it is, we can use that to find normal offset information. If it's not, we
-                    // have to assume normals have no offsets since Maya doesn't support them in blendshapes.
-                    if (plgInGeomTgt.isDestination()) {
-                        // TODO: (yliangsiew) Maybe DG iterator to walk to the mesh? But for now, all testing seems to imply
-                        // direct connections are the default...
-                        MPlug plgInGeomTgtSrc = plgInGeomTgt.source(&stat);
-                        CHECK_MSTATUS_AND_RETURN_IT(stat);
-
-                        MObject meshInGeomTgt = plgInGeomTgtSrc.node();
-                        assert(meshInGeomTgt.hasFn(MFn::kMesh));
-
-                        meshTargetDatum.targetMesh = meshInGeomTgt;
-                        mayaFindPtAndNormalOffsetsBetweenMeshes(inputGeo, meshInGeomTgt, meshTargetDatum.ptOffsets, meshTargetDatum.normalOffsets, meshTargetDatum.indices);
-                    } else {
-                        // NOTE: (yliangsiew) If there is no geometry target, then we have to assume
-                        // the target has already been "baked" into the blendshape deformer. In this case we
-                        // need to compute the deltas manually for the points.
-                        meshTargetDatum.normalOffsets.resize(numComponentIndices);  // NOTE: (yliangsiew) Zeroed out normal offsets.
-                        MPlug plgInPtsTgt = UsdMayaUtil::FindChildPlugWithName(plgInTgtItem, "inputPointsTarget");
-                        assert(!plgInPtsTgt.isNull());
-                        MObject inPtsTgtData = plgInPtsTgt.asMObject(&stat);
-                        CHECK_MSTATUS_AND_RETURN_IT(stat);
-                        MFnPointArrayData fnPtArrayData(inPtsTgtData, &stat);
-                        CHECK_MSTATUS_AND_RETURN_IT(stat);
-
-                        MPointArray ptDeltas = fnPtArrayData.array();
-                        for (unsigned int m=0; m < numComponentIndices; ++m) {
-                            MPoint pt = ptDeltas[m];
-                            meshTargetDatum.ptOffsets.emplace_back(GfVec3f(pt.x, pt.y, pt.z));
-                        }
-                    }
-                    weightInfo.targets.emplace_back(meshTargetDatum);
+                MayaBlendShapeTargetDatum meshTargetDatum = {};
+                MIntArray indices;
+                stat = UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(plgInComponentsTgt, indices);
+                CHECK_MSTATUS_AND_RETURN_IT(stat);
+                for (unsigned int m=0; m < indices.length(); ++m) {
+                    meshTargetDatum.indices.emplace_back(indices[m]);
                 }
+
+                unsigned int numComponentIndices = meshTargetDatum.indices.size();
+                if (numComponentIndices == 0) {
+                    TF_WARN("Found zero-length component indices on a plug; cannot determine blendshape target info from it: %s", plgInComponentsTgt.name().asChar());
+                    continue;
+                }
+
+                // NOTE: (yliangsiew) We check if the geometry target is actually connected.
+                // If it is, we can use that to find normal offset information. If it's not, we
+                // have to assume normals have no offsets since Maya doesn't support them in blendshapes.
+                if (plgInGeomTgt.isDestination()) {
+                    // TODO: (yliangsiew) Maybe DG iterator to walk to the mesh? But for now, all testing seems to imply
+                    // direct connections are the default...
+                    MPlug plgInGeomTgtSrc = plgInGeomTgt.source(&stat);
+                    CHECK_MSTATUS_AND_RETURN_IT(stat);
+
+                    MObject meshInGeomTgt = plgInGeomTgtSrc.node();
+                    assert(meshInGeomTgt.hasFn(MFn::kMesh));
+
+                    meshTargetDatum.targetMesh = meshInGeomTgt;
+                    mayaFindPtAndNormalOffsetsBetweenMeshes(inputGeo, meshInGeomTgt, meshTargetDatum.ptOffsets, meshTargetDatum.normalOffsets, meshTargetDatum.indices);
+                } else {
+                    // NOTE: (yliangsiew) If there is no geometry target, then we have to assume
+                    // the target has already been "baked" into the blendshape deformer. In this case we
+                    // need to compute the deltas manually for the points.
+                    meshTargetDatum.normalOffsets.resize(numComponentIndices);  // NOTE: (yliangsiew) Zeroed out normal offsets.
+                    MPlug plgInPtsTgt = UsdMayaUtil::FindChildPlugWithName(plgInTgtItem, "inputPointsTarget");
+                    assert(!plgInPtsTgt.isNull());
+                    MObject inPtsTgtData = plgInPtsTgt.asMObject(&stat);
+                    CHECK_MSTATUS_AND_RETURN_IT(stat);
+                    MFnPointArrayData fnPtArrayData(inPtsTgtData, &stat);
+                    CHECK_MSTATUS_AND_RETURN_IT(stat);
+
+                    MPointArray ptDeltas = fnPtArrayData.array();
+                    for (unsigned int m=0; m < numComponentIndices; ++m) {
+                        MPoint pt = ptDeltas[m];
+                        meshTargetDatum.ptOffsets.emplace_back(GfVec3f(pt.x, pt.y, pt.z));
+                    }
+                }
+                weightInfo.targets.emplace_back(meshTargetDatum);
             }
 
             // NOTE: (yliangsiew) If the target mesh has "in-between" weights, in
@@ -575,13 +580,13 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         MPlug plgBlendShapeWeights = fnNode.findPlug(MAYA_ATTR_NAME_WEIGHT);
                         MPlug plgBlendShapeWeight = plgBlendShapeWeights.elementByLogicalIndex(weightInfo.weightIndex);
-                        MString plgBlendShapeName = plgBlendShapeWeight.partialName(0, 0, 0, 0, 0, 1, &stat);
+                        MString plgBlendShapeName = plgBlendShapeWeight.partialName(0, 0, 0, 1, 0, 0, &stat);  // NOTE: (yliangsiew) The target name is set as an alias, so we'll use that instead of calling our target "weight_".
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we have to put a numeric
                         // suffix in the target name.
                         int lenSuffix = snprintf(NULL, 0, "%zu", k);
                         char *suffix = (char *)malloc((sizeof(char) * lenSuffix) + 1);
-                        snprintf(suffix, lenSuffix, "%zu", k);
+                        snprintf(suffix, lenSuffix + 1, "%zu", k);
                         curTargetNameMStr = plgBlendShapeName + MString(suffix);
                         free(suffix);
                     }
@@ -734,7 +739,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         MPlug plgBlendShapeWeights = fnNode.findPlug(MAYA_ATTR_NAME_WEIGHT);
                         MPlug plgBlendShapeWeight = plgBlendShapeWeights.elementByLogicalIndex(weightInfo.weightIndex);
-                        MString plgBlendShapeName = plgBlendShapeWeight.partialName(0, 0, 0, 0, 0, 1, &stat);
+                        MString plgBlendShapeName = plgBlendShapeWeight.partialName(0, 0, 0, 1, 0, 0, &stat);  // NOTE: (yliangsiew) The target name is set as an alias, so we'll use that instead of calling our target "weight_".
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we have to put a numeric
                         // suffix in the target name.
