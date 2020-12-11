@@ -169,8 +169,8 @@ void LayerTreeView::onAddParentLayer(const QString& undoName) const
     for (auto item : *params.selection) {
         auto oldParent = item->parentLayerItem()->layer();
         // create an anon layer as the new parent
-        auto anonLayer
-            = pxr::SdfLayer::CreateAnonymous(item->parentModel()->findNameForNewAnonymousLayer());
+        auto anonLayer = PXR_NS::SdfLayer::CreateAnonymous(
+            item->parentModel()->findNameForNewAnonymousLayer());
         // insert this selected item under it
         anonLayer->InsertSubLayerPath(item->layer()->GetIdentifier());
         // replace this selected item in its parent with the anon layer

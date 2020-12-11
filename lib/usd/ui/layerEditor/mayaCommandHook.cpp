@@ -144,7 +144,7 @@ UsdLayer MayaCommandHook::addAnonymousSubLayer(UsdLayer usdLayer, std::string ne
     cmd += quote(newName);
     cmd += quote(usdLayer->GetIdentifier());
     std::string result = executeMel(cmd).asChar();
-    return pxr::SdfLayer::FindOrOpen(result);
+    return PXR_NS::SdfLayer::FindOrOpen(result);
 }
 
 // mute or unmute the given layer

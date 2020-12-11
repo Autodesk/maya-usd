@@ -45,17 +45,17 @@ public:
 
     struct StageEntry
     {
-        pxr::UsdStageRefPtr _stage;
-        std::string         _displayName;
-        std::string         _proxyShapePath;
+        PXR_NS::UsdStageRefPtr _stage;
+        std::string            _displayName;
+        std::string            _proxyShapePath;
     };
 
     // properties
     virtual bool                    autoHideSessionLayer() const { return _autoHideSessionLayer; }
     virtual void                    setAutoHideSessionLayer(bool hide);
-    pxr::UsdStageRefPtr const&      stage() const { return _stage; }
-    pxr::SdfLayerRefPtr             targetLayer() const;
-    virtual void                    setStage(pxr::UsdStageRefPtr const& in_stage);
+    PXR_NS::UsdStageRefPtr const&   stage() const { return _stage; }
+    PXR_NS::SdfLayerRefPtr          targetLayer() const;
+    virtual void                    setStage(PXR_NS::UsdStageRefPtr const& in_stage);
     virtual AbstractCommandHook*    commandHook() = 0;
     virtual std::vector<StageEntry> allStages() const = 0;
     // path to default load layer dialogs to
@@ -66,7 +66,7 @@ public:
     // ui to save a layer. returns the path and the file format (ex: "usda")
     virtual bool
                  saveLayerUI(QWidget* in_parent, std::string* out_filePath, std::string* out_pFormat) const = 0;
-    virtual void printLayer(const pxr::SdfLayerRefPtr& layer) const = 0;
+    virtual void printLayer(const PXR_NS::SdfLayerRefPtr& layer) const = 0;
 
     // main API
     virtual void setupCreateMenu(QMenu* in_menu) = 0;
@@ -78,13 +78,13 @@ public:
 
 Q_SIGNALS:
     void currentStageChangedSignal();
-    void stageListChangedSignal(pxr::UsdStageRefPtr const& toSelect = pxr::UsdStageRefPtr());
-    void stageRenamedSignal(std::string const& name, pxr::UsdStageRefPtr const& stage);
+    void stageListChangedSignal(PXR_NS::UsdStageRefPtr const& toSelect = PXR_NS::UsdStageRefPtr());
+    void stageRenamedSignal(std::string const& name, PXR_NS::UsdStageRefPtr const& stage);
     void autoHideSessionLayerSignal(bool hideIt);
 
 protected:
-    pxr::UsdStageRefPtr _stage;
-    bool                _autoHideSessionLayer = true;
+    PXR_NS::UsdStageRefPtr _stage;
+    bool                   _autoHideSessionLayer = true;
 };
 
 } // namespace UsdLayerEditor

@@ -45,11 +45,11 @@ bool checkIfPathIsSafeToAdd(
 // if that fails, delete the file we created.
 // for now, assumes an absolute input path
 bool saveSubLayer(
-    const QString&      in_errorTitle,
-    LayerTreeItem*      in_parentItem,
-    pxr::SdfLayerRefPtr in_layer,
-    const std::string&  in_absolutePath,
-    const std::string&  in_formatTag);
+    const QString&         in_errorTitle,
+    LayerTreeItem*         in_parentItem,
+    PXR_NS::SdfLayerRefPtr in_layer,
+    const std::string&     in_absolutePath,
+    const std::string&     in_formatTag);
 
 // convert path string to use forward slashes
 inline std::string toForwardSlashes(const std::string& in_path)
@@ -64,13 +64,13 @@ inline std::string toForwardSlashes(const std::string& in_path)
 // from a sublayerpath.
 // this path could be absolute, relative, or be an anon layer
 inline std::string computePathToLoadSublayer(
-    const std::string& subLayerPath,
-    const std::string& anchor,
-    pxr::ArResolver&   resolver)
+    const std::string&  subLayerPath,
+    const std::string&  anchor,
+    PXR_NS::ArResolver& resolver)
 {
     std::string actualPath = subLayerPath;
     if (resolver.IsRelativePath(subLayerPath)) {
-        auto subLayer = pxr::SdfLayer::Find(subLayerPath); // note: finds in the cache
+        auto subLayer = PXR_NS::SdfLayer::Find(subLayerPath); // note: finds in the cache
         if (subLayer) {
             if (!resolver.IsRelativePath(subLayer->GetIdentifier())) {
                 actualPath = toForwardSlashes(subLayer->GetRealPath());
