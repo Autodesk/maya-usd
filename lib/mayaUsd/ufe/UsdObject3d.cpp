@@ -84,14 +84,7 @@ bool UsdObject3d::visibility() const
     auto    visAttr = UsdGeomImageable(fPrim).GetVisibilityAttr();
     visAttr.Get(&visibilityToken);
 
-    bool result;
-    if (visibilityToken == UsdGeomTokens->invisible) {
-        result = false;
-    } else if (visibilityToken == UsdGeomTokens->inherited) {
-        result = true;
-    }
-
-    return result;
+    return visibilityToken != UsdGeomTokens->invisible;
 }
 
 void UsdObject3d::setVisibility(bool vis)
