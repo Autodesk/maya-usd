@@ -28,25 +28,6 @@
 
 namespace {
 Ufe::Vector3d toVector3d(const GfVec3d& v) { return Ufe::Vector3d(v[0], v[1], v[2]); }
-
-Ufe::AttributeEnumString::Ptr getVisibilityAttribute(Ufe::SceneItem::Ptr item)
-{
-    auto objAttrs = Ufe::Attributes::attributes(item);
-    if (objAttrs) {
-        auto visAttr = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
-            objAttrs->attribute(UsdGeomTokens->visibility));
-        if (visAttr)
-            return visAttr;
-    }
-
-    // Getting here is considered a serious error. In UsdObject3dHandler::object3d()
-    // we only create and return a valid Ufe::Object3d interface for imageable geometry.
-    // Those kind of prims must have a visibility attribute.
-    std::string err = TfStringPrintf(
-        "Could not get visibility attribute for Object3d: %s", item->path().string().c_str());
-    throw std::runtime_error(err.c_str());
-}
-
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -99,19 +80,24 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
 
 bool UsdObject3d::visibility() const
 {
-    auto visAttr = getVisibilityAttribute(sceneItem());
-    if (visAttr) {
-        return (visAttr->get() != UsdGeomTokens->invisible);
+    TfToken visibilityToken;
+    auto visAttr = UsdGeomImageable(fPrim).GetVisibilityAttr();
+    visAttr.Get(&visibilityToken);
+
+    bool result;
+    if (visibilityToken == UsdGeomTokens->invisible) { 
+        result = false;
     }
-    return false;
+    else if (visibilityToken == UsdGeomTokens->inherited) {
+        result = true;
+    }
+
+    return result;
 }
 
 void UsdObject3d::setVisibility(bool vis)
 {
-    auto visAttr = getVisibilityAttribute(sceneItem());
-    if (visAttr) {
-        visAttr->set(vis ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
-    }
+    vis ? UsdGeomImageable(fPrim).MakeVisible() : UsdGeomImageable(fPrim).MakeInvisible();
 }
 
 } // namespace ufe
