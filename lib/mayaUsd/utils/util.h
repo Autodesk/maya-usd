@@ -614,6 +614,9 @@ double GetSceneMTimeUnitAsDouble();
 MAYAUSD_CORE_PUBLIC
 bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx);
 
+MAYAUSD_CORE_PUBLIC
+MStatus GetAllIndicesFromComponentListDataPlug(const MPlug &plg, MIntArray &indices);
+
 } // namespace UsdMayaUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE

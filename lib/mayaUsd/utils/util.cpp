@@ -23,6 +23,7 @@
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
+#include <maya/MFnComponentListData.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -31,6 +32,7 @@
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnSet.h>
+#include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyGraph.h>
@@ -2306,4 +2308,36 @@ bool UsdMayaUtil::mayaSearchMIntArray(const int a, const MIntArray& array, unsig
         *idx = -1;
     }
     return false;
+}
+
+
+MStatus UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(const MPlug &plg, MIntArray &indices)
+{
+    MStatus status;
+    MDataHandle dh = plg.asMDataHandle(&status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    MObject indicesData = dh.data();
+    if (indicesData.isNull() || !indicesData.hasFn(MFn::kComponentListData)) {
+        return MStatus::kFailure;
+    }
+    MFnComponentListData fnComponentListData(indicesData, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    indices.clear();
+    unsigned int numIndices = fnComponentListData.length();
+    if (numIndices == 0) {
+        return MStatus::kSuccess;
+    }
+    for (unsigned int i = 0; i < numIndices; ++i) {
+        MObject                   curComponent = fnComponentListData[i];
+        MFnSingleIndexedComponent fnSingleIndexedComponent(curComponent, &status);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+        MIntArray curIndices;
+        status = fnSingleIndexedComponent.getElements(curIndices);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+        for (unsigned int j = 0; j < curIndices.length(); ++j) {
+            indices.append(curIndices[j]);
+        }
+    }
+
+    return status;
 }
