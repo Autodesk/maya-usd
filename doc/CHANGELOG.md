@@ -1,5 +1,82 @@
 # Changelog
 
+## [0.6.0] - 2020-12-14
+
+This release includes many changes, like:
+* Refactored UFE Manipulation support
+* New Undo Manager
+* LayerEditor
+* Material import/export improvements (displacement, UDIMs, UVs) & bug fixes
+* AE improvements
+* Viewport optimization for many duplicated materials
+* Undo support for UFEv2 selection in viewport
+* Proxy accessor - handle recursive patterns
+* Clang-format is applied to the entire repository
+
+**Build:**
+* Fixed compilation on windows if backslash in `Python_EXECUTABLE` [#968](https://github.com/Autodesk/maya-usd/pull/968)
+* Enable USD version check for components distributed separately [#949](https://github.com/Autodesk/maya-usd/pull/949) [#846](https://github.com/Autodesk/maya-usd/pull/846)
+* Fixed missing `ARCH_CONSTRUCTOR` code with VS2019 [#937](https://github.com/Autodesk/maya-usd/pull/937)
+* Fixed current compiler warnings [#930](https://github.com/Autodesk/maya-usd/pull/930)
+* Fixed compilation errors with latest post-20.11 dev branch of core USD  [#929](https://github.com/Autodesk/maya-usd/pull/929) [#889](https://github.com/Autodesk/maya-usd/pull/889)
+* Added support for `Boost_NO_BOOST_CMAKE=O`N for Boost::python [#912](https://github.com/Autodesk/maya-usd/pull/912)
+* Organized Gitignore, and add more editor,platform and build specific patterns [#908](https://github.com/Autodesk/maya-usd/pull/908)
+* Applied clang-format [#890](https://github.com/Autodesk/maya-usd/pull/890) [#918](https://github.com/Autodesk/maya-usd/pull/918)  [#895](https://github.com/Autodesk/maya-usd/pull/895)
+* Enabled initialization order warning on Windows. [#885](https://github.com/Autodesk/maya-usd/pull/885)
+* Added mayaUtils.openTestScene and mayaUtils.getTestScene [#868](https://github.com/Autodesk/maya-usd/pull/868)
+* Exposed stage reset notices to python [#861](https://github.com/Autodesk/maya-usd/pull/861)
+* Clang-format fixes [#842](https://github.com/Autodesk/maya-usd/pull/842)
+* Devtoolset-9 fixes [#841](https://github.com/Autodesk/maya-usd/pull/841)
+* Made `WANT_UFE_BUILD` def public. [#793](https://github.com/Autodesk/maya-usd/pull/793)
+
+**Translation Framework:**
+* Fixed `Looks` scopes roundtrip [#985](https://github.com/Autodesk/maya-usd/pull/985)
+* Added support for UV transform value exports [#954](https://github.com/Autodesk/maya-usd/pull/954)
+* Allowed loading pure-USD shading mode plugins [#923](https://github.com/Autodesk/maya-usd/pull/923)
+* Added opacity threshold to USD Preview Surface Shader [#917](https://github.com/Autodesk/maya-usd/pull/917)
+* Fixed out of bound errors causing segfaults [#914](https://github.com/Autodesk/maya-usd/pull/914)
+* Added FPS metadata to exported usd files if non static [#913](https://github.com/Autodesk/maya-usd/pull/913)
+* Added proper support for importing UV set mappings [#902](https://github.com/Autodesk/maya-usd/pull/902)
+* Fixed `map1` import [#892](https://github.com/Autodesk/maya-usd/pull/892)
+* Fixed self-specialization bug with textureless materials [#891](https://github.com/Autodesk/maya-usd/pull/891)
+* Added UDIM Import/Export [#883](https://github.com/Autodesk/maya-usd/pull/883)
+* Added proper support for UV linkage on material export [#876](https://github.com/Autodesk/maya-usd/pull/876)
+* Fix to keep USDZ texture paths relative [#865](https://github.com/Autodesk/maya-usd/pull/865)
+* Added support for handling color space information on file nodes [#862](https://github.com/Autodesk/maya-usd/pull/862)
+* Added import optimization to merge subsets connected to same material [#860](https://github.com/Autodesk/maya-usd/pull/860)
+* Renamed InstanceSources to be Maya-specific [#859](https://github.com/Autodesk/maya-usd/pull/859)
+* Added displacement export & import [#844](https://github.com/Autodesk/maya-usd/pull/844) [#851](https://github.com/Autodesk/maya-usd/pull/851)
+
+**Workflow:**
+* Added save layers dialog [#990](https://github.com/Autodesk/maya-usd/pull/990)
+* Added Layer Editor [#988](https://github.com/Autodesk/maya-usd/pull/988)
+* Fixed undo crash when switching between target layers in a stage [#965](https://github.com/Autodesk/maya-usd/pull/965)
+* Made attributes categorized by schema in AE [#964](https://github.com/Autodesk/maya-usd/pull/964)
+* Added new transform3d handlers to remove limitations in UFE manipulation support [#962](https://github.com/Autodesk/maya-usd/pull/962)
+* Added Undo/Redo support for USD data model. [#942](https://github.com/Autodesk/maya-usd/pull/942) [#956](https://github.com/Autodesk/maya-usd/pull/956)
+* Added connection to time when creating a new empty USD stage [#928](https://github.com/Autodesk/maya-usd/pull/928)
+* Enabled recursive compute with proxy accessor [#926](https://github.com/Autodesk/maya-usd/pull/926)
+* Cleaned up Proxy Shape AE template [#922](https://github.com/Autodesk/maya-usd/pull/922)  [#944](https://github.com/Autodesk/maya-usd/pull/944)
+* Made select command UFE aware [#921](https://github.com/Autodesk/maya-usd/pull/921)
+* Allowed usdPreviewSurface to exist without input connections [#907](https://github.com/Autodesk/maya-usd/pull/907)
+* Fixed default edit target when root layer is not editable. Added ability to force session layer by default. [#899](https://github.com/Autodesk/maya-usd/pull/899) [#935](https://github.com/Autodesk/maya-usd/pull/935)
+* Fixed outliner update when duplicating items [#880](https://github.com/Autodesk/maya-usd/pull/880)
+* Added subtree invalidation support on StageProxy ( a.k.a pseudo-root ). [#864](https://github.com/Autodesk/maya-usd/pull/864)
+* Added support None-destructive reorder ( move ) of prims relative to their siblings. [#867](https://github.com/Autodesk/maya-usd/pull/867)
+* Made parenting to a Gprim not allowed [#852](https://github.com/Autodesk/maya-usd/pull/852)
+* Improved accessor plug name and cleanup tests [#838](https://github.com/Autodesk/maya-usd/pull/838)
+
+**Render:**
+* Enabled color consolidation support for UsdPreviewSurface and UsdPrimvarReader_color [#979](https://github.com/Autodesk/maya-usd/pull/979)
+* Fixed broken lighting fragment [#963](https://github.com/Autodesk/maya-usd/pull/963)
+* Removed dependencies on old Hydra texture system from hdMaya for USD releases after 20.11 [#961](https://github.com/Autodesk/maya-usd/pull/961)
+* Improved draw performance for Rprims without extent [#955](https://github.com/Autodesk/maya-usd/pull/955)
+* Reuse shader effect for duplicate material networks [#950](https://github.com/Autodesk/maya-usd/pull/950)
+* Added undo support for viewport selections of USD objects [#940](https://github.com/Autodesk/maya-usd/pull/940)
+* Fixed transparency issues for pxrUsdPreviewSurface shader node [#903](https://github.com/Autodesk/maya-usd/pull/903)
+* Fixed fallback shader (a.k.a "blue color") being incorrectly used in some cases [#882](https://github.com/Autodesk/maya-usd/pull/882)
+* Added CPV support and curveBasis support for basiscurves complexity level 1 [#809](https://github.com/Autodesk/maya-usd/pull/809)
+
 ## [0.5.0] - 2020-10-20
 
 **Build:**
