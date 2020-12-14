@@ -18,25 +18,20 @@
 #include <mayaUsd/nodes/hdImagingShape.h>
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 // ========================================================
 
-const MTypeId MAYAUSD_PROXYSHAPE_ID (0x58000095);
+const MTypeId MAYAUSD_PROXYSHAPE_ID(0x58000095);
 
 const MTypeId ProxyShape::typeId(MayaUsd::MAYAUSD_PROXYSHAPE_ID);
 const MString ProxyShape::typeName("mayaUsdProxyShape");
 
 /* static */
-void*
-ProxyShape::creator()
-{
-    return new ProxyShape();
-}
+void* ProxyShape::creator() { return new ProxyShape(); }
 
 /* static */
-MStatus
-ProxyShape::initialize()
+MStatus ProxyShape::initialize()
 {
     MStatus retValue = inheritAttributesFrom(MayaUsdProxyShapeBase::typeName);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
@@ -44,7 +39,8 @@ ProxyShape::initialize()
     return retValue;
 }
 
-ProxyShape::ProxyShape() : MayaUsdProxyShapeBase()
+ProxyShape::ProxyShape()
+    : MayaUsdProxyShapeBase()
 {
     TfRegistryManager::GetInstance().SubscribeTo<ProxyShape>();
 }
@@ -61,17 +57,16 @@ void ProxyShape::postConstructor()
 {
     ParentClass::postConstructor();
 
-    if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering())
-    {
+    if (!MayaUsdProxyShapePlugin::useVP2_NativeUSD_Rendering()) {
         // This shape uses Hydra for imaging, so make sure that the
         // pxrHdImagingShape is setup.
         PXR_NS::PxrMayaHdImagingShape::GetOrCreateInstance();
     }
-    
+
     // Enable proxy accessor features for this proxy
 #if MAYA_API_VERSION >= 20210000
     enableProxyAccessor();
 #endif
 }
 
-} // MayaUsd
+} // namespace MAYAUSD_NS_DEF

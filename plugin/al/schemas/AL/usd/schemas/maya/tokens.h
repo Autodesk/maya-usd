@@ -19,10 +19,10 @@
 /// \file AL_USDMayaSchemas/tokens.h
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// 
+//
 // This is an automatically generated file (by usdGenSchema.py).
 // Do not hand-edit!
-// 
+//
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 #include "api.h"
@@ -34,7 +34,6 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class AL_USDMayaSchemasTokensType
 ///
@@ -54,66 +53,67 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \code
 ///     gprim.GetMyTokenValuedAttr().Set(AL_USDMayaSchemasTokens->animationEndFrame);
 /// \endcode
-struct AL_USDMayaSchemasTokensType {
+struct AL_USDMayaSchemasTokensType
+{
     AL_USDMAYASCHEMAS_API AL_USDMayaSchemasTokensType();
     /// \brief "animationEndFrame"
-    /// 
+    ///
     /// AL_usd_FrameRange
     const TfToken animationEndFrame;
     /// \brief "animationStartFrame"
-    /// 
+    ///
     /// AL_usd_FrameRange
     const TfToken animationStartFrame;
     /// \brief "currentFrame"
-    /// 
+    ///
     /// AL_usd_FrameRange
     const TfToken currentFrame;
     /// \brief "endFrame"
-    /// 
+    ///
     /// AL_usd_FrameRange
     const TfToken endFrame;
     /// \brief "al_usdmaya_lock"
-    /// 
+    ///
     /// Stores the lock state of corresponding Maya objects of the prims
     const TfToken lock;
     /// \brief "inherited"
-    /// 
+    ///
     /// State which makes the Prim inherit its parent's lock state
     const TfToken lock_inherited;
     /// \brief "transform"
-    /// 
+    ///
     /// State which makes transform attributes of Maya objects (including children) locked
     const TfToken lock_transform;
     /// \brief "unlocked"
-    /// 
+    ///
     /// State which makes the Prim unlocked regardless of its parent's state
     const TfToken lock_unlocked;
     /// \brief "al_usdmaya_mergedTransform"
-    /// 
+    ///
     /// State which makes the prim merged
     const TfToken mergedTransform;
     /// \brief "unmerged"
-    /// 
+    ///
     /// State which makes the prim unmerged
     const TfToken mergedTransform_unmerged;
     /// \brief "al_usdmaya_selectability"
-    /// 
+    ///
     /// Stores the state of the prims selectability
     const TfToken selectability;
     /// \brief "inherited"
-    /// 
+    ///
     /// State which makes the Prim inherit it's selectability
     const TfToken selectability_inherited;
     /// \brief "selectable"
-    /// 
+    ///
     /// State which makes the Prim selectable
     const TfToken selectability_selectable;
     /// \brief "unselectable"
-    /// 
+    ///
     /// State which makes the Prim unselectable
     const TfToken selectability_unselectable;
     /// \brief "startFrame"
-    /// 
+    ///
     /// AL_usd_FrameRange
     const TfToken startFrame;
     /// A vector of all of the tokens listed above.

@@ -15,11 +15,11 @@
 //
 #include "symmetricShaderReader.h"
 
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/shaderReader.h>
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/utils/roundTripUtil.h>
 #include <mayaUsd/utils/util.h>
@@ -48,46 +48,38 @@
 #include <utility>
 #include <vector>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     ((MayaShaderOutputName, "outColor"))
 );
-
+// clang-format on
 
 /* static */
-void
-UsdMayaSymmetricShaderReader::RegisterReader(
-        const TfToken& usdShaderId,
-        const TfToken& mayaNodeTypeName,
-        const TfToken& materialConversion)
+void UsdMayaSymmetricShaderReader::RegisterReader(
+    const TfToken& usdShaderId,
+    const TfToken& mayaNodeTypeName,
+    const TfToken& materialConversion)
 {
     UsdMayaShaderReaderRegistry::Register(
         usdShaderId,
         [materialConversion](const UsdMayaJobImportArgs& importArgs) {
-            return UsdMayaSymmetricShaderReader::CanImport(
-                importArgs,
-                materialConversion);
+            return UsdMayaSymmetricShaderReader::CanImport(importArgs, materialConversion);
         },
         [mayaNodeTypeName](const UsdMayaPrimReaderArgs& readerArgs) {
-            return std::make_shared<UsdMayaSymmetricShaderReader>(
-                readerArgs,
-                mayaNodeTypeName);
+            return std::make_shared<UsdMayaSymmetricShaderReader>(readerArgs, mayaNodeTypeName);
         });
 }
 
 /* static */
-UsdMayaShaderReader::ContextSupport
-UsdMayaSymmetricShaderReader::CanImport(
-        const UsdMayaJobImportArgs& importArgs,
-        const TfToken& materialConversion)
+UsdMayaShaderReader::ContextSupport UsdMayaSymmetricShaderReader::CanImport(
+    const UsdMayaJobImportArgs& importArgs,
+    const TfToken&              materialConversion)
 {
-    if (materialConversion.IsEmpty()
-        || importArgs.GetMaterialConversion() == materialConversion) {
+    if (materialConversion.IsEmpty() || importArgs.GetMaterialConversion() == materialConversion) {
         // This shader reader advertises "Fallback" support so that any more
         // specialized readers for a particular shader ID can take precedence.
         return ContextSupport::Fallback;
@@ -96,13 +88,11 @@ UsdMayaSymmetricShaderReader::CanImport(
     return ContextSupport::Unsupported;
 }
 
-static
-UsdMayaShadingNodeType
+static UsdMayaShadingNodeType
 _ComputeShadingNodeTypeForMayaTypeName(const TfToken& mayaNodeTypeName)
 {
     // Use NonShading as a fallback.
-    UsdMayaShadingNodeType shadingNodeType =
-        UsdMayaShadingNodeType::NonShading;
+    UsdMayaShadingNodeType shadingNodeType = UsdMayaShadingNodeType::NonShading;
 
     MStatus status;
     MString cmd;
@@ -113,12 +103,10 @@ _ComputeShadingNodeTypeForMayaTypeName(const TfToken& mayaNodeTypeName)
     status = MGlobal::executeCommand(cmd, compoundClassifications, false, false);
     CHECK_MSTATUS_AND_RETURN(status, shadingNodeType);
 
-    static const std::vector<std::pair<std::string, UsdMayaShadingNodeType>>
-        _classificationsToTypes = {
-            { "texture/", UsdMayaShadingNodeType::Texture },
+    static const std::vector<std::pair<std::string, UsdMayaShadingNodeType>> _classificationsToTypes
+        = { { "texture/", UsdMayaShadingNodeType::Texture },
             { "utility/", UsdMayaShadingNodeType::Utility },
-            { "shader/", UsdMayaShadingNodeType::Shader }
-        };
+            { "shader/", UsdMayaShadingNodeType::Shader } };
 
     // The docs for getClassification() are pretty confusing. You'd think that
     // the string array returned would give you each "classification", but
@@ -133,14 +121,10 @@ _ComputeShadingNodeTypeForMayaTypeName(const TfToken& mayaNodeTypeName)
     for (unsigned int i = 0u; i < compoundClassifications.length(); ++i) {
         const MString& compoundClassification = compoundClassifications[i];
 #endif
-        const std::string compoundClassificationStr(
-            compoundClassification.asChar());
-        for (const std::string& classification :
-                TfStringSplit(compoundClassificationStr, ":")) {
+        const std::string compoundClassificationStr(compoundClassification.asChar());
+        for (const std::string& classification : TfStringSplit(compoundClassificationStr, ":")) {
             for (const auto& classPrefixAndType : _classificationsToTypes) {
-                if (TfStringStartsWith(
-                        classification,
-                        classPrefixAndType.first)) {
+                if (TfStringStartsWith(classification, classPrefixAndType.first)) {
                     return classPrefixAndType.second;
                 }
             }
@@ -151,20 +135,18 @@ _ComputeShadingNodeTypeForMayaTypeName(const TfToken& mayaNodeTypeName)
 }
 
 UsdMayaSymmetricShaderReader::UsdMayaSymmetricShaderReader(
-        const UsdMayaPrimReaderArgs& readerArgs,
-        const TfToken& mayaNodeTypeName) :
-    UsdMayaShaderReader(readerArgs),
-    _mayaNodeTypeName(mayaNodeTypeName),
-    _mayaShadingNodeType(
-        _ComputeShadingNodeTypeForMayaTypeName(mayaNodeTypeName))
+    const UsdMayaPrimReaderArgs& readerArgs,
+    const TfToken&               mayaNodeTypeName)
+    : UsdMayaShaderReader(readerArgs)
+    , _mayaNodeTypeName(mayaNodeTypeName)
+    , _mayaShadingNodeType(_ComputeShadingNodeTypeForMayaTypeName(mayaNodeTypeName))
 {
 }
 
 /* override */
-bool
-UsdMayaSymmetricShaderReader::Read(UsdMayaPrimReaderContext* context)
+bool UsdMayaSymmetricShaderReader::Read(UsdMayaPrimReaderContext* context)
 {
-    const UsdPrim& prim = _GetArgs().GetUsdPrim();
+    const UsdPrim&       prim = _GetArgs().GetUsdPrim();
     const UsdShadeShader shaderSchema = UsdShadeShader(prim);
     if (!shaderSchema) {
         return false;
@@ -175,8 +157,8 @@ UsdMayaSymmetricShaderReader::Read(UsdMayaPrimReaderContext* context)
         return false;
     }
 
-    MStatus status;
-    MObject mayaObject;
+    MStatus           status;
+    MObject           mayaObject;
     MFnDependencyNode depNodeFn;
     if (!(UsdMayaTranslatorUtil::CreateShaderNode(
               MString(prim.GetName().GetText()),
@@ -197,7 +179,7 @@ UsdMayaSymmetricShaderReader::Read(UsdMayaPrimReaderContext* context)
 
     for (const UsdShadeInput& input : shaderSchema.GetInputs()) {
         const UsdAttribute& usdAttr = input.GetAttr();
-        const std::string mayaAttrName = usdAttr.GetBaseName().GetString();
+        const std::string   mayaAttrName = usdAttr.GetBaseName().GetString();
 
         MPlug attrPlug = depNodeFn.findPlug(mayaAttrName.c_str(), &status);
         if (status != MS::kSuccess) {
@@ -219,23 +201,19 @@ UsdMayaSymmetricShaderReader::Read(UsdMayaPrimReaderContext* context)
 }
 
 /* override */
-TfToken
-UsdMayaSymmetricShaderReader::GetMayaNameForUsdAttrName(
-        const TfToken& usdAttrName) const
+TfToken UsdMayaSymmetricShaderReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
-    TfToken usdBaseName;
+    TfToken               usdBaseName;
     UsdShadeAttributeType usdAttrType;
-    std::tie(usdBaseName, usdAttrType) =
-        UsdShadeUtils::GetBaseNameAndType(usdAttrName);
+    std::tie(usdBaseName, usdAttrType) = UsdShadeUtils::GetBaseNameAndType(usdAttrName);
 
     // The one edge case we're handling here is the connection to a "top-level"
     // shader from one of its Material prim's terminal outputs. We make an
     // assumption about the name of the Maya shading node's primary output
     // attribute.
-    if (usdAttrType == UsdShadeAttributeType::Output &&
-            (usdBaseName == UsdShadeTokens->surface ||
-             usdBaseName == UsdShadeTokens->displacement ||
-             usdBaseName == UsdShadeTokens->volume)) {
+    if (usdAttrType == UsdShadeAttributeType::Output
+        && (usdBaseName == UsdShadeTokens->surface || usdBaseName == UsdShadeTokens->displacement
+            || usdBaseName == UsdShadeTokens->volume)) {
         return _tokens->MayaShaderOutputName;
     }
 
@@ -243,6 +221,5 @@ UsdMayaSymmetricShaderReader::GetMayaNameForUsdAttrName(
     // attribute.
     return usdBaseName;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

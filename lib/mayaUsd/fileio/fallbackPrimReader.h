@@ -23,7 +23,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// This is a special prim reader that is used whenever a typeless prim or prim
 /// with unknown types is encountered when traversing USD.
-class UsdMaya_FallbackPrimReader : public UsdMayaPrimReader {
+class UsdMaya_FallbackPrimReader : public UsdMayaPrimReader
+{
 public:
     UsdMaya_FallbackPrimReader(const UsdMayaPrimReaderArgs& args);
 

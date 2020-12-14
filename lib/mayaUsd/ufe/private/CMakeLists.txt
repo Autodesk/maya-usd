@@ -3,5 +3,6 @@
 # -----------------------------------------------------------------------------
 target_sources(${PROJECT_NAME} 
     PRIVATE
+        UfeNotifGuard.cpp
         Utils.cpp
 )

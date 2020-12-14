@@ -16,7 +16,8 @@
 #pragma once
 //----------------------------------------------------------------------------------------------------------------------
 /// \file   FileTranslatorBase.h
-/// \brief  This file contains a few macros and templates to help automate the tedious boiler plate setup of
+/// \brief  This file contains a few macros and templates to help automate the tedious boiler plate
+/// setup of
 ///         Maya import/export plugins.
 /// \code
 /// MAYA_TRANSLATOR_BEGIN(MyExporter, "My Exporter", true, true, "*.my", "*.my");
@@ -43,7 +44,8 @@
 ///
 /// MAYA_TRANSLATOR_END();
 ///
-/// MStatus MyExporter::reader(const MFileObject& file, const OptionsParser& options, FileAccessMode mode)
+/// MStatus MyExporter::reader(const MFileObject& file, const OptionsParser& options, FileAccessMode
+/// mode)
 /// {
 ///   // query your options
 ///   bool someBoolValue = options.getBool(kSomeBoolValue);
@@ -56,7 +58,8 @@
 ///   return MS::kSuccess; // done!
 /// }
 ///
-/// MStatus MyExporter::writer(const MFileObject& file, const OptionsParser& options, FileAccessMode mode)
+/// MStatus MyExporter::writer(const MFileObject& file, const OptionsParser& options, FileAccessMode
+/// mode)
 /// {
 ///   // query your options
 ///   bool someBoolValue = options.getBool(kSomeBoolValue);
@@ -88,159 +91,160 @@
 //----------------------------------------------------------------------------------------------------------------------
 #include "AL/maya/utils/FileTranslatorOptions.h"
 
-#include <maya/MPxFileTranslator.h>
 #include <maya/MGlobal.h>
+#include <maya/MPxFileTranslator.h>
 
 namespace AL {
 namespace maya {
 namespace utils {
 
 /// \brief  Macro to wrap some boiler plate creation of a file translator
-#define AL_MAYA_TRANSLATOR_BEGIN(ClassName, TranslatorName, HaveRead, HaveWrite, DefaultExtension, FilterString) \
-  class ClassName : public AL::maya::utils::FileTranslatorBase<ClassName> { \
-  public: \
-    static constexpr const char* const kTranslatorName = TranslatorName; \
-    static constexpr const char* const kClassName = #ClassName; \
-    static void* creator() { return new ClassName; } \
-  private: \
-    bool haveReadMethod() const override { return HaveRead; } \
-    bool haveWriteMethod() const override { return HaveWrite; } \
-    MString defaultExtension() const override { return DefaultExtension; } \
-    MString filter() const override { return FilterString; } \
-  public:
+#define AL_MAYA_TRANSLATOR_BEGIN(                                                   \
+    ClassName, TranslatorName, HaveRead, HaveWrite, DefaultExtension, FilterString) \
+    class ClassName : public AL::maya::utils::FileTranslatorBase<ClassName>         \
+    {                                                                               \
+    public:                                                                         \
+        static constexpr const char* const kTranslatorName = TranslatorName;        \
+        static constexpr const char* const kClassName = #ClassName;                 \
+        static void*                       creator() { return new ClassName; }      \
+                                                                                    \
+    private:                                                                        \
+        bool    haveReadMethod() const override { return HaveRead; }                \
+        bool    haveWriteMethod() const override { return HaveWrite; }              \
+        MString defaultExtension() const override { return DefaultExtension; }      \
+        MString filter() const override { return FilterString; }                    \
+                                                                                    \
+    public:
 
 /// \brief  Macro to wrap some boiler plate creation of a file translator
-#define AL_MAYA_TRANSLATOR_END() };
+#define AL_MAYA_TRANSLATOR_END() \
+    }                            \
+    ;
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  A utility class that provides a 'unique' base class to derive new translator from.
 //----------------------------------------------------------------------------------------------------------------------
-template<typename T>
-class FileTranslatorBase
-  : public MPxFileTranslator
+template <typename T> class FileTranslatorBase : public MPxFileTranslator
 {
 public:
-
-  /// \brief  unregister the file translator
-  /// \param  plugin the MFnPlugin function set
-  template<typename FnPlugin>
-  static MStatus registerTranslator(FnPlugin& plugin)
+    /// \brief  unregister the file translator
+    /// \param  plugin the MFnPlugin function set
+    template <typename FnPlugin> static MStatus registerTranslator(FnPlugin& plugin)
     {
-      if(MS::kSuccess == T::specifyOptions(m_options))
-      {
-        m_options.generateScript(m_optionParser, m_defaultOptionString);
+        if (MS::kSuccess == T::specifyOptions(m_options)) {
+            m_options.generateScript(m_optionParser, m_defaultOptionString);
 
-        MStatus status = plugin.registerFileTranslator(
-            T::kTranslatorName,
-            "",
-            T::creator,
-            T::kClassName,
-            m_defaultOptionString.asChar());
+            MStatus status = plugin.registerFileTranslator(
+                T::kTranslatorName, "", T::creator, T::kClassName, m_defaultOptionString.asChar());
 
-        if(!status) {
-          MGlobal::displayError(MString("Failed to register translator: ") + T::kTranslatorName);
+            if (!status) {
+                MGlobal::displayError(
+                    MString("Failed to register translator: ") + T::kTranslatorName);
+            }
+            return status;
         }
-        return status;
-      }
-      MGlobal::displayError(MString("Failed to generate options for translator: ") + T::kTranslatorName);
-      return MS::kFailure;
+        MGlobal::displayError(
+            MString("Failed to generate options for translator: ") + T::kTranslatorName);
+        return MS::kFailure;
     }
 
-  /// \brief  unregister the file translator
-  /// \param  plugin the MFnPlugin function set
-  template<typename FnPlugin>
-  static MStatus deregisterTranslator(FnPlugin& plugin)
-  {
-    if(MS::kSuccess == T::cleanupOptions(m_options))
+    /// \brief  unregister the file translator
+    /// \param  plugin the MFnPlugin function set
+    template <typename FnPlugin> static MStatus deregisterTranslator(FnPlugin& plugin)
     {
-      MStatus status = plugin.deregisterFileTranslator(T::kTranslatorName);
-      if(!status)
-      {
-        MGlobal::displayError(MString("Failed to deregister translator: ") + T::kTranslatorName);
-      }
-      return status;
+        if (MS::kSuccess == T::cleanupOptions(m_options)) {
+            MStatus status = plugin.deregisterFileTranslator(T::kTranslatorName);
+            if (!status) {
+                MGlobal::displayError(
+                    MString("Failed to deregister translator: ") + T::kTranslatorName);
+            }
+            return status;
+        }
+        MGlobal::displayError(
+            MString("Failed to remove options for translator: ") + T::kTranslatorName);
+        return MS::kFailure;
     }
-    MGlobal::displayError(MString("Failed to remove options for translator: ") + T::kTranslatorName);
-    return MS::kFailure;
-  }
 
-  /// \brief  default fall back in case no options are needed in the derived translator
-  /// \param  options the file translator options
-  /// \return MS::kSuccess if options were correctly specified
-  static MStatus specifyOptions(FileTranslatorOptions& options)
-    { return MS::kSuccess; }
+    /// \brief  default fall back in case no options are needed in the derived translator
+    /// \param  options the file translator options
+    /// \return MS::kSuccess if options were correctly specified
+    static MStatus specifyOptions(FileTranslatorOptions& options) { return MS::kSuccess; }
 
-  /// \brief  default fall back in case no options are needed in the derived translator
-  /// \param  options the file translator options
-  /// \return MS::kSuccess if options were correctly cleaned up
-  static MStatus cleanupOptions(FileTranslatorOptions& options)
-    { return MS::kSuccess; }
+    /// \brief  default fall back in case no options are needed in the derived translator
+    /// \param  options the file translator options
+    /// \return MS::kSuccess if options were correctly cleaned up
+    static MStatus cleanupOptions(FileTranslatorOptions& options) { return MS::kSuccess; }
 
-  /// \brief  Override this method to read your files (do not use the version from MPxFileTranslator!)
-  /// \param  file the file to read into maya
-  /// \param  options a set of Key/Value pair options passed through from the MEL GUI
-  /// \param  mode does this actually serve any purpose?
-  /// \return a failure in this case (because you need to override to import the file)
-  virtual MStatus reader(const MFileObject& file, const OptionsParser& options, FileAccessMode mode)
-    { return MS::kFailure; }
+    /// \brief  Override this method to read your files (do not use the version from
+    /// MPxFileTranslator!) \param  file the file to read into maya \param  options a set of
+    /// Key/Value pair options passed through from the MEL GUI \param  mode does this actually serve
+    /// any purpose? \return a failure in this case (because you need to override to import the
+    /// file)
+    virtual MStatus
+    reader(const MFileObject& file, const OptionsParser& options, FileAccessMode mode)
+    {
+        return MS::kFailure;
+    }
 
-  /// \brief  Override this method to write your files (do not use the version from MPxFileTranslator!)
-  /// \param  file information about the file to export
-  /// \param  options a set of Key/Value pair options passed through from the MEL GUI
-  /// \param  mode are we exporting everything, or only the selected objects
-  /// \return a failure in this case (because you need to override to import the file)
-  virtual MStatus writer(const MFileObject& file, const OptionsParser& options, FileAccessMode mode)
-    { return MS::kFailure; }
+    /// \brief  Override this method to write your files (do not use the version from
+    /// MPxFileTranslator!) \param  file information about the file to export \param  options a set
+    /// of Key/Value pair options passed through from the MEL GUI \param  mode are we exporting
+    /// everything, or only the selected objects \return a failure in this case (because you need to
+    /// override to import the file)
+    virtual MStatus
+    writer(const MFileObject& file, const OptionsParser& options, FileAccessMode mode)
+    {
+        return MS::kFailure;
+    }
 
-  /// \brief  access the registered translator options
-  /// \return the options
-  static FileTranslatorOptions& options()
-    { return m_options; }
+    /// \brief  access the registered translator options
+    /// \return the options
+    static FileTranslatorOptions& options() { return m_options; }
 
 protected:
-  static void setPluginOptionsContext(PluginTranslatorOptionsInstance* pluginOptions)
-  {
-    m_optionParser.setPluginOptionsContext(pluginOptions);
-  }
+    static void setPluginOptionsContext(PluginTranslatorOptionsInstance* pluginOptions)
+    {
+        m_optionParser.setPluginOptionsContext(pluginOptions);
+    }
+
 private:
-
-  MStatus reader(const MFileObject &file, const MString &optionsString, FileAccessMode mode) override
+    MStatus
+    reader(const MFileObject& file, const MString& optionsString, FileAccessMode mode) override
     {
-      prepPluginOptions();
-      MStatus status = m_optionParser.parse(optionsString);
-      if(MS::kSuccess == status)
-      {
-        return reader(file, m_optionParser, mode);
-      }
-      MGlobal::displayError("Unable to parse the file translator options");
-      return status;
+        prepPluginOptions();
+        MStatus status = m_optionParser.parse(optionsString);
+        if (MS::kSuccess == status) {
+            return reader(file, m_optionParser, mode);
+        }
+        MGlobal::displayError("Unable to parse the file translator options");
+        return status;
     }
 
-  MStatus writer(const MFileObject &file, const MString &optionsString, FileAccessMode mode) override
+    MStatus
+    writer(const MFileObject& file, const MString& optionsString, FileAccessMode mode) override
     {
-      prepPluginOptions();
-      MStatus status = m_optionParser.parse(optionsString);
-      if(MS::kSuccess == status)
-      {
-        return writer(file, m_optionParser, mode);
-      }
-      MGlobal::displayError("Unable to parse the file translator options");
-      return status;
+        prepPluginOptions();
+        MStatus status = m_optionParser.parse(optionsString);
+        if (MS::kSuccess == status) {
+            return writer(file, m_optionParser, mode);
+        }
+        MGlobal::displayError("Unable to parse the file translator options");
+        return status;
     }
 
-  virtual void prepPluginOptions() {}
+    virtual void prepPluginOptions() { }
 
-  static MString m_defaultOptionString;
-  static OptionsParser m_optionParser;
-  static FileTranslatorOptions m_options;
+    static MString               m_defaultOptionString;
+    static OptionsParser         m_optionParser;
+    static FileTranslatorOptions m_options;
 };
 
-template<typename T> MString FileTranslatorBase<T>::m_defaultOptionString;
-template<typename T> OptionsParser FileTranslatorBase<T>::m_optionParser;
-template<typename T> FileTranslatorOptions FileTranslatorBase<T>::m_options(T::kClassName);
+template <typename T> MString               FileTranslatorBase<T>::m_defaultOptionString;
+template <typename T> OptionsParser         FileTranslatorBase<T>::m_optionParser;
+template <typename T> FileTranslatorOptions FileTranslatorBase<T>::m_options(T::kClassName);
 
 //----------------------------------------------------------------------------------------------------------------------
-} // utils
-} // maya
-} // AL
+} // namespace utils
+} // namespace maya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

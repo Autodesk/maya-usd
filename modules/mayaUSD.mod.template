@@ -6,6 +6,7 @@ scripts:
 resources: 
 PYTHONPATH+:=lib/python
 USD_LOCATION:=
+MAYA_USD_VERSION=${USD_VERSION}
 
 + MayaUSD_LIB ${MAYAUSD_VERSION} ${CMAKE_INSTALL_PREFIX}
 icons: lib/icons
@@ -15,6 +16,7 @@ scripts:
 resources: 
 PYTHONPATH+:=lib/python
 PXR_PLUGINPATH_NAME+:=lib/usd
+MAYAUSD_VERSION=${MAYAUSD_VERSION}
 VP2_RENDER_DELEGATE_PROXY=1
 ${MAYAUSD_GTEST_PATH}
 

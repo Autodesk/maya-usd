@@ -13,114 +13,98 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include "test_usdmaya.h"
-#include <array>
-
 #include "AL/usdmaya/fileio/ExportParams.h"
 #include "AL/usdmaya/fileio/ImportParams.h"
 #include "AL/usdmaya/fileio/NodeFactory.h"
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
-
-#include <maya/MDagModifier.h>
-#include <maya/MDoubleArray.h>
-#include <maya/MFnDagNode.h>
-#include <maya/MFileIO.h>
-#include <maya/MFnNurbsCurve.h>
-#include <maya/MFnTransform.h>
-#include <maya/MPointArray.h>
-#include <maya/MFnDoubleArrayData.h>
-#include <maya/MFnFloatArrayData.h>
+#include "test_usdmaya.h"
 
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/nurbsCurves.h>
 
+#include <maya/MDagModifier.h>
+#include <maya/MDoubleArray.h>
+#include <maya/MFileIO.h>
+#include <maya/MFnDagNode.h>
+#include <maya/MFnDoubleArrayData.h>
+#include <maya/MFnFloatArrayData.h>
+#include <maya/MFnNurbsCurve.h>
+#include <maya/MFnTransform.h>
+#include <maya/MPointArray.h>
+
+#include <array>
+
 using AL::usdmaya::fileio::ExporterParams;
 using AL::usdmaya::fileio::ImporterParams;
 
 #ifndef USE_AL_DEFAULT
- #define USE_AL_DEFAULT 0
+#define USE_AL_DEFAULT 0
 #endif
 
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief  Test some of the functionality of the alUsdNodeHelper.
 //----------------------------------------------------------------------------------------------------------------------
 
-MObject createNurbStage(bool useSingleWidth=false)
+MObject createNurbStage(bool useSingleWidth = false)
 {
-  UsdStageRefPtr stage = UsdStage::CreateInMemory();
-  UsdGeomNurbsCurves nurb = UsdGeomNurbsCurves::Define(stage, SdfPath("/nurb"));
+    UsdStageRefPtr     stage = UsdStage::CreateInMemory();
+    UsdGeomNurbsCurves nurb = UsdGeomNurbsCurves::Define(stage, SdfPath("/nurb"));
 
-  VtArray<int32_t> curveVertextCounts;
-  curveVertextCounts.push_back(5);
+    VtArray<int32_t> curveVertextCounts;
+    curveVertextCounts.push_back(5);
 
-  std::array<double, 7> knotsa = {0., 0., 0., 1., 2., 2., 2.};
-  VtDoubleArray knots = VtDoubleArray(7);
-  memcpy(knots.data(), &knotsa, sizeof(double)*7);
+    VtDoubleArray knots = VtDoubleArray { 0., 0., 0., 1., 2., 2., 2. };
 
-  std::vector<std::array<float, 3>> pointsa = { {-1.5079714f, 44.28195f, 5.781988f},
-                            {-1.5784601f, 44.300205f, 5.813314f},
-                            {-2.4803247f, 44.201904f, 6.2143235f},
-                            {-3.9173129f, 43.33975f, 6.475575f},
-                            {-5.2281976f, 42.145287f, 6.6371536f} };
-  VtVec3fArray points = VtVec3fArray(5);
-  for(uint32_t i = 0 ; i< pointsa.size(); ++i)
-  {
-    memcpy(&points[i], &pointsa[i], 3*sizeof(float));
-  }
+    VtVec3fArray points = VtVec3fArray { { -1.5079714f, 44.28195f, 5.781988f },
+                                         { -1.5784601f, 44.300205f, 5.813314f },
+                                         { -2.4803247f, 44.201904f, 6.2143235f },
+                                         { -3.9173129f, 43.33975f, 6.475575f },
+                                         { -5.2281976f, 42.145287f, 6.6371536f } };
 
-  std::vector<std::array<double,2> > rangesa = {{0.,2.}};
-  VtVec2dArray ranges = VtVec2dArray(2);
+    VtVec2dArray ranges = VtVec2dArray { { 0., 2. } };
 
-  for(uint32_t i = 0 ; i< rangesa.size(); ++i)
-  {
-    memcpy(&ranges[i], &rangesa[i], 2*sizeof(double));
-  }
+    if (useSingleWidth) {
+        VtFloatArray widths;
+        widths.push_back(0.025f);
+        nurb.GetWidthsAttr().Set(widths);
+    } else {
+        std::array<float, 5> widthValues = { 0.025f, 0.025f, 0.025f, 0.025f, 0.001f };
+        VtFloatArray         widths = VtFloatArray(5);
+        memcpy(widths.data(), &widthValues, sizeof(float) * 5);
+        nurb.GetWidthsAttr().Set(widths);
+    }
 
-  if(useSingleWidth)
-  {
-    VtFloatArray widths;
-    widths.push_back(0.025f);
-    nurb.GetWidthsAttr().Set(widths);
-  }
-  else
-  {
-    std::array<float, 5> widthValues = {0.025f, 0.025f, 0.025f, 0.025f, 0.001f};
-    VtFloatArray widths = VtFloatArray(5);
-    memcpy(widths.data(), &widthValues, sizeof(float)*5);
-    nurb.GetWidthsAttr().Set(widths);
-  }
+    nurb.GetCurveVertexCountsAttr().Set(curveVertextCounts);
+    nurb.GetKnotsAttr().Set(knots);
+    nurb.GetPointsAttr().Set(points);
+    nurb.GetRangesAttr().Set(ranges);
 
-  nurb.GetCurveVertexCountsAttr().Set(curveVertextCounts);
-  nurb.GetKnotsAttr().Set(knots);
-  nurb.GetPointsAttr().Set(points);
-  nurb.GetRangesAttr().Set(ranges);
+    VtArray<GfVec3f> extent(2);
+    UsdGeomPointBased::ComputeExtent(points, &extent);
+    nurb.GetExtentAttr().Set(extent);
 
-  VtArray<GfVec3f> extent(2);
-  UsdGeomPointBased::ComputeExtent(points, &extent);
-  nurb.GetExtentAttr().Set(extent);
+    VtArray<int> order;
+    order.push_back(4);
+    nurb.GetOrderAttr().Set(order);
 
-  VtArray<int> order;
-  order.push_back(4);
-  nurb.GetOrderAttr().Set(order);
+    MFnTransform fnx;
+    MObject      parent = fnx.create();
 
-  MFnTransform fnx;
-  MObject parent = fnx.create();
+    UsdPrim                                                 prim = nurb.GetPrim();
+    AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
 
-  UsdPrim prim = nurb.GetPrim();
-  AL::usdmaya::fileio::translators::TranslatorManufacture manufacture(nullptr);
-
-  AL::usdmaya::fileio::translators::TranslatorRefPtr translator = manufacture.getTranslatorFromId(AL::usdmaya::fileio::translators::TranslatorManufacture::TranslatorPrefixSchemaType.GetString() + prim.GetTypeName().GetString());
-  if (translator)
-  {
-    MObject createdNode;
-    translator->import(prim, parent, createdNode);
-    return createdNode;
-  }
-  else
-  {
-    return MObject::kNullObj;
-  }
+    AL::usdmaya::fileio::translators::TranslatorRefPtr translator = manufacture.getTranslatorFromId(
+        AL::usdmaya::fileio::translators::TranslatorManufacture::TranslatorPrefixSchemaType
+            .GetString()
+        + prim.GetTypeName().GetString());
+    if (translator) {
+        MObject createdNode;
+        translator->import(prim, parent, createdNode);
+        return createdNode;
+    } else {
+        return MObject::kNullObj;
+    }
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -128,23 +112,23 @@ MObject createNurbStage(bool useSingleWidth=false)
 //----------------------------------------------------------------------------------------------------------------------
 TEST(translators_NurbsCurveTranslator, test_width)
 {
-  MFileIO::newFile(true);
-  const bool useSingleWidth = true;
-  // Create and write out stage that contains a curve
-  MObject nurbObj = createNurbStage(useSingleWidth);
+    MFileIO::newFile(true);
+    const bool useSingleWidth = true;
+    // Create and write out stage that contains a curve
+    MObject nurbObj = createNurbStage(useSingleWidth);
 
-  ASSERT_TRUE(!nurbObj.isNull());
+    ASSERT_TRUE(!nurbObj.isNull());
 
-  MFnNurbsCurve nurbs(nurbObj);
+    MFnNurbsCurve nurbs(nurbObj);
 
-  const char* plugName = "width";
+    const char* plugName = "width";
 
-  MStatus s2;
-  MPlug widthsPlug = nurbs.findPlug(plugName, &s2);
-  ASSERT_EQ(s2, MS::kSuccess);
+    MStatus s2;
+    MPlug   widthsPlug = nurbs.findPlug(plugName, &s2);
+    ASSERT_EQ(s2, MS::kSuccess);
 
-  // test the values came through!
-  EXPECT_FLOAT_EQ(widthsPlug.asFloat(), 0.025f);
+    // test the values came through!
+    EXPECT_FLOAT_EQ(widthsPlug.asFloat(), 0.025f);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -152,30 +136,30 @@ TEST(translators_NurbsCurveTranslator, test_width)
 //----------------------------------------------------------------------------------------------------------------------
 TEST(translators_NurbsCurveTranslator, test_widths)
 {
-  MFileIO::newFile(true);
-  // Create and write out stage that contains a curve
-  MObject nurbObj = createNurbStage();
-  ASSERT_TRUE(!nurbObj.isNull());
-  MFnNurbsCurve nurbs(nurbObj);
+    MFileIO::newFile(true);
+    // Create and write out stage that contains a curve
+    MObject nurbObj = createNurbStage();
+    ASSERT_TRUE(!nurbObj.isNull());
+    MFnNurbsCurve nurbs(nurbObj);
 
-  const char* plugName = "width";
-  
-  MStatus s2;
-  MPlug widthsPlug = nurbs.findPlug(plugName, &s2);
-  ASSERT_EQ(s2, MS::kSuccess);
+    const char* plugName = "width";
 
-  MObject value;
-  widthsPlug.getValue(value);
-  MFnFloatArrayData floatData;
-  floatData.setObject(value);
-   
-  // test the values came through!
-  ASSERT_EQ(floatData.length(), 5u);
-  EXPECT_FLOAT_EQ(floatData[0], 0.025f);
-  EXPECT_FLOAT_EQ(floatData[1], 0.025f);
-  EXPECT_FLOAT_EQ(floatData[2], 0.025f);
-  EXPECT_FLOAT_EQ(floatData[3], 0.025f);
-  EXPECT_FLOAT_EQ(floatData[4], 0.001f);
+    MStatus s2;
+    MPlug   widthsPlug = nurbs.findPlug(plugName, &s2);
+    ASSERT_EQ(s2, MS::kSuccess);
+
+    MObject value;
+    widthsPlug.getValue(value);
+    MFnFloatArrayData floatData;
+    floatData.setObject(value);
+
+    // test the values came through!
+    ASSERT_EQ(floatData.length(), 5u);
+    EXPECT_FLOAT_EQ(floatData[0], 0.025f);
+    EXPECT_FLOAT_EQ(floatData[1], 0.025f);
+    EXPECT_FLOAT_EQ(floatData[2], 0.025f);
+    EXPECT_FLOAT_EQ(floatData[3], 0.025f);
+    EXPECT_FLOAT_EQ(floatData[4], 0.001f);
 }
 
 #if 0

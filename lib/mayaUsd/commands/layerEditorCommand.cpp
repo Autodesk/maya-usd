@@ -43,16 +43,28 @@ const char kClearLayerFlag[] = "cl";
 const char kClearLayerFlagL[] = "clear";
 const char kAddAnonSublayerFlag[] = "aa";
 const char kAddAnonSublayerFlagL[] = "addAnonymous";
+const char kMuteLayerFlag[] = "mt";
+const char kMuteLayerFlagL[] = "muteLayer";
 
 } // namespace
 
-namespace MAYAUSD_NS {
+namespace MAYAUSD_NS_DEF {
 
 namespace Impl {
 
-enum class CmdId { kInsert, kRemove, kReplace, kDiscardEdit, kClearLayer, kAddAnonLayer };
+enum class CmdId
+{
+    kInsert,
+    kRemove,
+    kReplace,
+    kDiscardEdit,
+    kClearLayer,
+    kAddAnonLayer,
+    kMuteLayer
+};
 
-class BaseCmd {
+class BaseCmd
+{
 public:
     BaseCmd(CmdId id)
         : _cmdId(id)
@@ -88,10 +100,13 @@ void BaseCmd::holdOnPathIfDirty(SdfLayerHandle layer, std::string path)
 void BaseCmd::holdOntoSubLayers(SdfLayerHandle layer)
 {
     const std::vector<std::string>& sublayers = layer->GetSubLayerPaths();
-    for (auto path : sublayers) { holdOnPathIfDirty(layer, path); }
+    for (auto path : sublayers) {
+        holdOnPathIfDirty(layer, path);
+    }
 }
 
-class InsertRemoveSubPathBase : public BaseCmd {
+class InsertRemoveSubPathBase : public BaseCmd
+{
 public:
     int         _index = -1;
     std::string _subPath;
@@ -149,7 +164,7 @@ public:
         return true;
     }
     static bool validateUndoIndex(SdfLayerHandle layer, int index)
-    {   // allow re-inserting at the last index + 1, but -1 should have been changed to 0
+    { // allow re-inserting at the last index + 1, but -1 should have been changed to 0
         return !(index < 0 || index > (int)layer->GetNumSubLayerPaths());
     }
 
@@ -166,7 +181,8 @@ public:
     }
 };
 
-class InsertSubPath : public InsertRemoveSubPathBase {
+class InsertSubPath : public InsertRemoveSubPathBase
+{
 public:
     InsertSubPath()
         : InsertRemoveSubPathBase(CmdId::kInsert)
@@ -174,7 +190,8 @@ public:
     }
 };
 
-class RemoveSubPath : public InsertRemoveSubPathBase {
+class RemoveSubPath : public InsertRemoveSubPathBase
+{
 public:
     RemoveSubPath()
         : InsertRemoveSubPathBase(CmdId::kRemove)
@@ -182,7 +199,8 @@ public:
     }
 };
 
-class ReplaceSubPath : public BaseCmd {
+class ReplaceSubPath : public BaseCmd
+{
 public:
     ReplaceSubPath()
         : BaseCmd(CmdId::kReplace)
@@ -216,7 +234,8 @@ public:
     std::string _oldPath, _newPath;
 };
 
-class AddAnonSubLayer : public InsertRemoveSubPathBase {
+class AddAnonSubLayer : public InsertRemoveSubPathBase
+{
 public:
     AddAnonSubLayer()
         : InsertRemoveSubPathBase(CmdId::kAddAnonLayer) {};
@@ -228,27 +247,25 @@ public:
         // on redo, we want to put back that same identifier, for later commands
         if (_anonIdentifier.empty()) {
             _anonLayer = SdfLayer::CreateAnonymous(_anonName);
-            _anonIdentifier = _anonLayer->GetIdentifier();            
-        } 
+            _anonIdentifier = _anonLayer->GetIdentifier();
+        }
         _subPath = _anonIdentifier;
         _index = 0;
         _cmdResult = _subPath;
         return InsertRemoveSubPathBase::doIt(layer);
     }
 
-    bool undoIt(SdfLayerHandle layer) override
-    {
-        return InsertRemoveSubPathBase::undoIt(layer);
-    }
+    bool undoIt(SdfLayerHandle layer) override { return InsertRemoveSubPathBase::undoIt(layer); }
 
     std::string _anonName;
 
 protected:
     PXR_NS::SdfLayerRefPtr _anonLayer;
-    std::string _anonIdentifier;
+    std::string            _anonIdentifier;
 };
 
-class BackupLayerBase : public BaseCmd {
+class BackupLayerBase : public BaseCmd
+{
     // commands that need to backup the whole layer for undo
 public:
     BackupLayerBase(CmdId id)
@@ -288,7 +305,8 @@ public:
     PXR_NS::SdfLayerRefPtr _backupLayer;
 };
 
-class DiscardEdit : public BackupLayerBase {
+class DiscardEdit : public BackupLayerBase
+{
 public:
     DiscardEdit()
         : BackupLayerBase(CmdId::kDiscardEdit)
@@ -296,12 +314,67 @@ public:
     }
 };
 
-class ClearLayer : public BackupLayerBase {
+class ClearLayer : public BackupLayerBase
+{
 public:
     ClearLayer()
         : BackupLayerBase(CmdId::kClearLayer)
     {
     }
+};
+
+class MuteLayer : public BaseCmd
+{
+public:
+    MuteLayer()
+        : BaseCmd(CmdId::kMuteLayer)
+    {
+    }
+
+    bool doIt(SdfLayerHandle layer) override
+    {
+        auto stage = getStage();
+        if (!stage)
+            return false;
+        if (_muteIt) {
+            stage->MuteLayer(layer->GetIdentifier());
+        } else {
+            stage->UnmuteLayer(layer->GetIdentifier());
+        }
+
+        // we perfer not holding to pointers needlessly, but we need to hold on to the layer if we
+        // mute it otherwise usd will let go of it and its modifications, and any dirty children
+        // will also be lost
+        _mutedLayer = layer;
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle layer) override
+    {
+        auto stage = getStage();
+        if (!stage)
+            return false;
+        if (_muteIt) {
+            stage->UnmuteLayer(layer->GetIdentifier());
+        } else {
+            stage->MuteLayer(layer->GetIdentifier());
+        }
+        // we can release the pointer
+        _mutedLayer = nullptr;
+        return true;
+    }
+
+    std::string _proxyShapePath;
+    bool        _muteIt = true;
+
+protected:
+    UsdStageWeakPtr getStage()
+    {
+        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        auto stage = prim.GetStage();
+        return stage;
+    }
+    PXR_NS::SdfLayerRefPtr _mutedLayer;
 };
 
 } // namespace Impl
@@ -330,8 +403,11 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.makeFlagMultiUse(kReplaceSubPathFlag);
     syntax.addFlag(kDiscardEditsFlag, kDiscardEditsFlagL);
     syntax.addFlag(kClearLayerFlag, kClearLayerFlagL);
+    // parameter: new layer name
     syntax.addFlag(kAddAnonSublayerFlag, kAddAnonSublayerFlagL, MSyntax::kString);
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
+    // paramter: proxy shape name
+    syntax.addFlag(kMuteLayerFlag, kMuteLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
 
     return syntax;
 }
@@ -418,6 +494,25 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 _subCommands.push_back(std::move(cmd));
             }
         }
+        if (argParser.isFlagSet(kMuteLayerFlag)) {
+            bool muteIt = true;
+            argParser.getFlagArgument(kMuteLayerFlag, 0, muteIt);
+
+            MString proxyShapeName;
+            argParser.getFlagArgument(kMuteLayerFlag, 1, proxyShapeName);
+
+            auto prim = UsdMayaQuery::GetPrim(proxyShapeName.asChar());
+            if (prim == UsdPrim()) {
+                displayError(
+                    MString("Invalid proxy shape \"") + MString(proxyShapeName.asChar()) + "\"");
+                return MS::kInvalidParameter;
+            }
+
+            auto cmd = std::make_shared<Impl::MuteLayer>();
+            cmd->_muteIt = muteIt;
+            cmd->_proxyShapePath = proxyShapeName.asChar();
+            _subCommands.push_back(std::move(cmd));
+        }
     }
 
     return MS::kSuccess;
@@ -481,4 +576,4 @@ MStatus LayerEditorCommand::undoIt()
     return MS::kSuccess;
 }
 
-} // namespace MAYAUSD_NS
+} // namespace MAYAUSD_NS_DEF

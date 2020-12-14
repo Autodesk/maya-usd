@@ -20,7 +20,7 @@ import os
 
 import maya.cmds as cmds
 
-from ufeTestUtils import mayaUtils
+import mayaUtils
 import ufe
 
 import unittest
@@ -43,7 +43,7 @@ class ChildFilterTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
 
-        # Open ballset.ma scene in test-samples
+        # Open ballset.ma scene in testSamples
         mayaUtils.openGroupBallsScene()
 
         # Clear selection to start off

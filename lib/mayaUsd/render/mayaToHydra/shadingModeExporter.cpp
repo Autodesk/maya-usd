@@ -13,15 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/pxr.h>
-#include <pxr/imaging/hio/glslfx.h>
-#include <pxr/usd/usdShade/connectableAPI.h>
-#include <pxr/usd/usdShade/shader.h>
-
+#include <hdMaya/adapters/materialNetworkConverter.h>
 #include <mayaUsd/fileio/shading/shadingModeExporter.h>
 #include <mayaUsd/fileio/shading/shadingModeRegistry.h>
 
-#include <hdMaya/adapters/materialNetworkConverter.h>
+#include <pxr/imaging/hio/glslfx.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usdShade/connectableAPI.h>
+#include <pxr/usd/usdShade/shader.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -132,8 +131,8 @@ public:
             context.GetAssignments();
         if (assignments.empty()) { return; }
 
-        UsdPrim materialPrim = context.MakeStandardMaterialPrim(
-            assignments, std::string(), boundPrimPaths);
+        UsdPrim materialPrim = context.MakeStandardMaterialPrim(assignments);
+        context.BindStandardMaterialPrim(materialPrim, assignments, boundPrimPaths);
         UsdShadeMaterial material(materialPrim);
         if (!material) { return; }
 

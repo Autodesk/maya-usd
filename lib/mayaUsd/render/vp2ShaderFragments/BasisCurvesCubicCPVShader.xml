@@ -1,0 +1,110 @@
+<!--
+========================================================================
+Copyright 2020 Autodesk
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+========================================================================
+-->
+<fragment_graph name="BasisCurvesCubicCPVShader" ref="BasisCurvesCubicCPVShader" class="FragmentGraph" version="1.0" feature_level="0" >
+    <fragments>
+        <fragment_ref name="mayaBlinnSurface" ref="mayaBlinnSurface" />
+        <fragment_ref name="opacityToTransparency" ref="opacityToTransparency" />
+        <fragment_ref name="Float4ToFloat3" ref="Float4ToFloat3" />
+        <fragment_ref name="Float4ToFloatW" ref="Float4ToFloatW" />
+        <fragment_ref name="BasisCurvesCubicCPVPassing" ref="BasisCurvesCubicCPVPassing" />
+        <fragment_ref name="BasisCurvesCubicCPVHull" ref="BasisCurvesCubicCPVHull" />
+        <fragment_ref name="BasisCurvesCubicDomain" ref="BasisCurvesCubicDomain" />
+    </fragments>
+    <connections>
+        <connect from="Float4ToFloat3.output" to="mayaBlinnSurface.color" name="color" />
+        <connect from="opacityToTransparency.transparency" to="mayaBlinnSurface.transparency" name="transparency" />
+        <connect from="Float4ToFloatW.output" to="opacityToTransparency.opacity" name="opacity" />
+        <connect from="BasisCurvesCubicCPVPassing.BasisCurvesCubicColor" to="Float4ToFloat3.input" name="rgb" />
+        <connect from="BasisCurvesCubicCPVPassing.BasisCurvesCubicColor" to="Float4ToFloatW.input" name="a" />
+        <connect from="BasisCurvesCubicDomain.GPUStage" to="mayaBlinnSurface.GPUStage" name="DS_to_PS" />
+        <connect from="BasisCurvesCubicCPVHull.GPUStage" to="BasisCurvesCubicDomain.GPUStage" name="HS_to_DS" />
+    </connections>
+    <properties>
+        <undefined name="GPUStage" ref="BasisCurvesCubicCPVHull.GPUStage" semantic="GPUStage" />
+        <float3 name="Nw" ref="mayaBlinnSurface.Nw" flags="varyingInputParam" />
+        <float3 name="Lw" ref="mayaBlinnSurface.Lw" />
+        <float3 name="Vw" ref="mayaBlinnSurface.Vw" flags="varyingInputParam" />
+        <float3 name="HLw" ref="mayaBlinnSurface.HLw" />
+        <float3 name="diffuseI" ref="mayaBlinnSurface.diffuseI" />
+        <float name="diffuse" ref="mayaBlinnSurface.diffuse" />
+        <float name="translucence" ref="mayaBlinnSurface.translucence" />
+        <float name="translucenceDepth" ref="mayaBlinnSurface.translucenceDepth" />
+        <float name="translucenceFocus" ref="mayaBlinnSurface.translucenceFocus" />
+        <float3 name="specularI" ref="mayaBlinnSurface.specularI" />
+        <float3 name="specularColor" ref="mayaBlinnSurface.specularColor" />
+        <float name="eccentricity" ref="mayaBlinnSurface.eccentricity" />
+        <float name="specularRollOff" ref="mayaBlinnSurface.specularRollOff" />
+        <string name="selector" ref="mayaBlinnSurface.selector" />
+        <float3 name="ambientColor" ref="mayaBlinnSurface.ambientColor" />
+        <float3  name="ambientIn" ref="mayaBlinnSurface.ambientIn" />
+        <float3 name="incandescence" ref="mayaBlinnSurface.incandescence" />
+        <float name="reflectivity" ref="mayaBlinnSurface.reflectivity" />
+        <float3 name="reflectedColor" ref="mayaBlinnSurface.reflectedColor" />
+        <float3 name="IrradianceEnv" ref="mayaBlinnSurface.IrradianceEnv" />
+        <float3 name="SpecularEnv" ref="mayaBlinnSurface.SpecularEnv" />
+        <float name="glowIntensity" ref="mayaBlinnSurface.glowIntensity" />
+        <bool name="hideSource" ref="mayaBlinnSurface.hideSource" />
+        <float name="matteOpacity" ref="mayaBlinnSurface.matteOpacity" />
+        <int name="matteOpacityMode" ref="mayaBlinnSurface.matteOpacityMode" />
+        <float name="extraOpacity" ref="mayaBlinnSurface.extraOpacity" />
+        <bool name="fogEnabled" ref="mayaBlinnSurface.fogEnabled" />
+        <float name="fogStart" ref="mayaBlinnSurface.fogStart" />
+        <float name="fogEnd" ref="mayaBlinnSurface.fogEnd" />
+        <int name="fogMode" ref="mayaBlinnSurface.fogMode" />
+        <float name="fogDensity" ref="mayaBlinnSurface.fogDensity" />
+        <float4 name="fogColor" ref="mayaBlinnSurface.fogColor" />
+        <float name="fogMultiplier" ref="mayaBlinnSurface.fogMultiplier" />
+        <float4 name="diffuseColor" ref="BasisCurvesCubicCPVPassing.colorIn" flags="varyingInputParam" />
+        <int name="curveBasis" ref="BasisCurvesCubicDomain.curveBasis" />
+    </properties>
+    <values>
+        <float3 name="Lw" value="0.000000,0.000000,0.000000"  />
+        <float3 name="HLw" value="0.000000,0.000000,0.000000"  />
+        <float3 name="diffuseI" value="0.000000,0.000000,0.000000"  />
+        <float name="diffuse" value="0.800000"  />
+        <float name="translucence" value="0.000000"  />
+        <float name="translucenceDepth" value="0.500000"  />
+        <float name="translucenceFocus" value="0.500000"  />
+        <float3 name="specularI" value="0.000000,0.000000,0.000000"  />
+        <float3 name="specularColor" value="0.500000,0.500000,0.500000"  />
+        <float name="eccentricity" value="0.300000"  />
+        <string name="selector" value="mayaLightSelector16"  />
+        <float3 name="ambientColor" value="0.000000,0.000000,0.000000"  />
+        <float3 name="ambientIn" value="0.000000,0.000000,0.000000"  />
+        <float3 name="incandescence" value="0.000000,0.000000,0.000000"  />
+        <float name="reflectivity" value="0.500000"  />
+        <float3 name="reflectedColor" value="0.000000,0.000000,0.000000"  />
+        <float3 name="IrradianceEnv" value="0.000000,0.000000,0.000000"  />
+        <float name="glowIntensity" value="0.000000"  />
+        <bool name="hideSource" value="false"  />
+        <float name="matteOpacity" value="1.000000"  />
+        <int name="matteOpacityMode" value="2"  />
+        <float name="extraOpacity" value="1.000000"  />
+        <bool name="fogEnabled" value="false"  />
+        <float name="fogStart" value="0.000000"  />
+        <float name="fogEnd" value="92.000000"  />
+        <int name="fogMode" value="0"  />
+        <float name="fogDensity" value="0.100000"  />
+        <float4 name="fogColor" value="0.500000,0.500000,0.500000,1.000000"  />
+        <float name="fogMultiplier" value="1.000000"  />
+        <float4 name="diffuseColor" value="0.18,0.18,0.18,1.00" />
+    </values>
+    <outputs>
+        <struct name="mayaSurfaceShaderOutput" ref="mayaBlinnSurface.mayaSurfaceShaderOutput" />
+    </outputs>
+</fragment_graph>

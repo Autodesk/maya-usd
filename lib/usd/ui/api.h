@@ -16,29 +16,28 @@
 
 #if defined _WIN32 || defined __CYGWIN__
 
-  // The main export symbol used for the UI library.
-  #ifdef MAYAUSD_UI_EXPORT
-    #ifdef __GNUC__
-      #define MAYAUSD_UI_PUBLIC __attribute__ ((dllexport))
-    #else
-      #define MAYAUSD_UI_PUBLIC __declspec(dllexport)
-    #endif
-  #else
-    #ifdef __GNUC__
-      #define MAYAUSD_UI_PUBLIC __attribute__ ((dllimport))
-    #else
-      #define MAYAUSD_UI_PUBLIC __declspec(dllimport)
-    #endif
-  #endif
-  #define MAYAUSD_UI_LOCAL
-
+// The main export symbol used for the UI library.
+#ifdef MAYAUSD_UI_EXPORT
+#ifdef __GNUC__
+#define MAYAUSD_UI_PUBLIC __attribute__((dllexport))
 #else
-  #if __GNUC__ >= 4
-    #define MAYAUSD_UI_PUBLIC __attribute__ ((visibility ("default")))
-    #define MAYAUSD_UI_LOCAL  __attribute__ ((visibility ("hidden")))
+#define MAYAUSD_UI_PUBLIC __declspec(dllexport)
+#endif
 #else
-    #define MAYAUSD_UI_PUBLIC
-    #define MAYAUSD_UI_LOCAL
+#ifdef __GNUC__
+#define MAYAUSD_UI_PUBLIC __attribute__((dllimport))
+#else
+#define MAYAUSD_UI_PUBLIC __declspec(dllimport)
 #endif
 #endif
+#define MAYAUSD_UI_LOCAL
 
+#else
+#if __GNUC__ >= 4
+#define MAYAUSD_UI_PUBLIC __attribute__((visibility("default")))
+#define MAYAUSD_UI_LOCAL  __attribute__((visibility("hidden")))
+#else
+#define MAYAUSD_UI_PUBLIC
+#define MAYAUSD_UI_LOCAL
+#endif
+#endif

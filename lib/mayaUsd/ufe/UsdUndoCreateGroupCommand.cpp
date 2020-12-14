@@ -15,39 +15,40 @@
 //
 #include "UsdUndoCreateGroupCommand.h"
 
-#include <ufe/hierarchy.h>
-#include <ufe/scene.h>
-#include <ufe/sceneNotification.h>
+#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 
-#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+#include <ufe/hierarchy.h>
+#include <ufe/scene.h>
+#include <ufe/sceneNotification.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoCreateGroupCommand::UsdUndoCreateGroupCommand(const UsdSceneItem::Ptr& parentItem, const Ufe::Selection& selection, const Ufe::PathComponent& name)
-	: Ufe::CompositeUndoableCommand()
-	, _parentItem(parentItem)
-	, _name(name)
-	, _selection(selection)
+UsdUndoCreateGroupCommand::UsdUndoCreateGroupCommand(
+    const UsdSceneItem::Ptr&  parentItem,
+    const Ufe::Selection&     selection,
+    const Ufe::PathComponent& name)
+    : Ufe::CompositeUndoableCommand()
+    , _parentItem(parentItem)
+    , _name(name)
+    , _selection(selection)
 {
 }
 
-UsdUndoCreateGroupCommand::~UsdUndoCreateGroupCommand()
+UsdUndoCreateGroupCommand::~UsdUndoCreateGroupCommand() { }
+
+UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(
+    const UsdSceneItem::Ptr&  parentItem,
+    const Ufe::Selection&     selection,
+    const Ufe::PathComponent& name)
 {
+    return std::make_shared<UsdUndoCreateGroupCommand>(parentItem, selection, name);
 }
 
-UsdUndoCreateGroupCommand::Ptr UsdUndoCreateGroupCommand::create(const UsdSceneItem::Ptr& parentItem, const Ufe::Selection& selection, const Ufe::PathComponent& name)
-{
-	return std::make_shared<UsdUndoCreateGroupCommand>(parentItem, selection, name);
-}
-
-Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const
-{
-	return _group;
-}
+Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const { return _group; }
 
 //------------------------------------------------------------------------------
 // UsdUndoCreateGroupCommand overrides
@@ -55,21 +56,21 @@ Ufe::SceneItem::Ptr UsdUndoCreateGroupCommand::group() const
 
 void UsdUndoCreateGroupCommand::execute()
 {
-	auto addPrimCmd =  UsdUndoAddNewPrimCommand::create(_parentItem, _name.string(), "Xform");
-	append(addPrimCmd);
-	addPrimCmd->execute();
-	
-	_group = UsdSceneItem::create(addPrimCmd->newUfePath(), addPrimCmd->newPrim());
+    auto addPrimCmd = UsdUndoAddNewPrimCommand::create(_parentItem, _name.string(), "Xform");
+    append(addPrimCmd);
+    addPrimCmd->execute();
 
-	auto newParentHierarchy = Ufe::Hierarchy::hierarchy(_group);
-	if (newParentHierarchy) {
-		for (auto child : _selection) {
-			auto parentCmd = newParentHierarchy->appendChildCmd(child);
-			parentCmd->execute();
-			append(parentCmd);
-		}
-	}
+    _group = UsdSceneItem::create(addPrimCmd->newUfePath(), addPrimCmd->newPrim());
+
+    auto newParentHierarchy = Ufe::Hierarchy::hierarchy(_group);
+    if (newParentHierarchy) {
+        for (auto child : _selection) {
+            auto parentCmd = newParentHierarchy->appendChildCmd(child);
+            parentCmd->execute();
+            append(parentCmd);
+        }
+    }
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

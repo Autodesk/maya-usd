@@ -15,47 +15,57 @@
 //
 #pragma once
 
-#include <ufe/undoableCommand.h>
-
-#include <pxr/usd/usd/prim.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+#include <mayaUsd/undo/UsdUndoableItem.h>
+#endif
+
+#include <pxr/usd/usd/prim.h>
+
+#include <ufe/undoableCommand.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief UsdUndoDeleteCommand
 class MAYAUSD_CORE_PUBLIC UsdUndoDeleteCommand : public Ufe::UndoableCommand
 {
 public:
-	typedef std::shared_ptr<UsdUndoDeleteCommand> Ptr;
+    typedef std::shared_ptr<UsdUndoDeleteCommand> Ptr;
 
-	UsdUndoDeleteCommand(const UsdPrim& prim);
-	~UsdUndoDeleteCommand() override;
+    UsdUndoDeleteCommand(const UsdPrim& prim);
+    ~UsdUndoDeleteCommand() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdUndoDeleteCommand(const UsdUndoDeleteCommand&) = delete;
-	UsdUndoDeleteCommand& operator=(const UsdUndoDeleteCommand&) = delete;
-	UsdUndoDeleteCommand(UsdUndoDeleteCommand&&) = delete;
-	UsdUndoDeleteCommand& operator=(UsdUndoDeleteCommand&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdUndoDeleteCommand(const UsdUndoDeleteCommand&) = delete;
+    UsdUndoDeleteCommand& operator=(const UsdUndoDeleteCommand&) = delete;
+    UsdUndoDeleteCommand(UsdUndoDeleteCommand&&) = delete;
+    UsdUndoDeleteCommand& operator=(UsdUndoDeleteCommand&&) = delete;
 
-	//! Create a UsdUndoDeleteCommand from a USD prim.
-	static UsdUndoDeleteCommand::Ptr create(const UsdPrim& prim);
+    //! Create a UsdUndoDeleteCommand from a USD prim.
+    static UsdUndoDeleteCommand::Ptr create(const UsdPrim& prim);
 
-	// UsdUndoDeleteCommand overrides
-	void undo() override;
-	void redo() override;
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    void execute() override;
+#endif
+
+    void undo() override;
+    void redo() override;
 
 private:
-	void perform(bool state);
-
-private:
-	UsdPrim fPrim;
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    UsdUndoableItem _undoableItem;
+    UsdPrim         _prim;
+#else
+    void    perform(bool state);
+    UsdPrim fPrim;
+#endif
 
 }; // UsdUndoDeleteCommand
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

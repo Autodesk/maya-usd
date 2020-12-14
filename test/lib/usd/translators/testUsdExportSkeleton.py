@@ -220,5 +220,23 @@ class testUsdExportSkeleton(unittest.TestCase):
                            shadingMode='none', exportSkels='auto')
 
 
+    def testSkelForSegfault(self):
+        """
+        Certain skeletons cause heap corruption and segfaulting when exported multiple times.
+        Because this can happen anywhere from the first to last time, we run this test multiple times.
+        """
+        mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest", "UsdExportSkeletonSegfaultTest.ma")
+        cmds.file(mayaFile, force=True, open=True)
+
+        usdFile = os.path.abspath('UsdExportSkeletonSegfaultTest.usda')
+        cmds.select('skinned_mesh')
+
+        # Run 5 times because the crash only happens every few runs.
+        for _ in range(5):
+            cmds.mayaUSDExport(mergeTransformAndShape=True, file=usdFile,
+                         shadingMode='none', exportSkels='auto', selection=True)
+
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

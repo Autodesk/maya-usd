@@ -16,24 +16,25 @@
 #ifndef PXRUSDMAYA_JOB_ARGS_H
 #define PXRUSDMAYA_JOB_ARGS_H
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/utils/util.h>
+
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+
+#include <maya/MString.h>
+
 #include <map>
 #include <ostream>
 #include <set>
 #include <string>
 #include <vector>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/sdf/path.h>
-
-#include <maya/MString.h>
-
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/utils/util.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 #define PXRUSDMAYA_TRANSLATOR_TOKENS \
     ((UsdFileExtensionDefault, "usd")) \
     ((UsdFileExtensionASCII, "usda")) \
@@ -41,12 +42,14 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((UsdFileExtensionPackage, "usdz")) \
     ((UsdReadableFileFilter, "*.usd *.usda *.usdc *.usdz")) \
     ((UsdWritableFileFilter, "*.usd *.usda *.usdc *.usdz"))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaTranslatorTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_TRANSLATOR_TOKENS);
 
+// clang-format off
 #define PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS \
     /* Dictionary keys */ \
     (chaser) \
@@ -94,12 +97,14 @@ TF_DECLARE_PUBLIC_TOKENS(
     ((explicit_, "explicit")) \
     /* compatibility values */ \
     (appleArKit)
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaJobExportArgsTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_JOB_EXPORT_ARGS_TOKENS);
 
+// clang-format off
 #define PXRUSDMAYA_JOB_IMPORT_ARGS_TOKENS \
     /* Dictionary keys */ \
     (apiSchema) \
@@ -109,48 +114,45 @@ TF_DECLARE_PUBLIC_TOKENS(
     (shadingMode) \
     (preferredMaterial) \
     (useAsAnimationCache) \
-    (instanceMode) \
+    (importInstances) \
     /* assemblyRep values */ \
     (Collapsed) \
     (Full) \
     (Import) \
-    ((Unloaded, "")) \
-    /* instanceMode values */ \
-    (flatten) \
-    (buildInstances)
+    ((Unloaded, ""))
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdMayaJobImportArgsTokens,
     MAYAUSD_CORE_PUBLIC,
     PXRUSDMAYA_JOB_IMPORT_ARGS_TOKENS);
 
-
 struct UsdMayaJobExportArgs
 {
     const TfToken compatibility;
     const TfToken defaultMeshScheme;
     const TfToken defaultUSDFormat;
-    const bool eulerFilter;
-    const bool excludeInvisible;
+    const bool    eulerFilter;
+    const bool    excludeInvisible;
 
     /// If set to false, then direct per-gprim bindings are exported.
     /// If set to true and if \p materialCollectionsPath is non-empty, then
     /// material-collections are created and bindings are made to the
     /// collections at \p materialCollectionsPath, instead of direct
     /// per-gprim bindings.
-    const bool exportCollectionBasedBindings;
-    const bool exportColorSets;
-    const bool exportDefaultCameras;
-    const bool exportDisplayColor;
-    const bool exportInstances;
-    const bool exportMaterialCollections;
-    const bool exportMeshUVs;
-    const bool exportNurbsExplicitUV;
-    const bool exportReferenceObjects;
-    const bool exportRefsAsInstanceable;
+    const bool    exportCollectionBasedBindings;
+    const bool    exportColorSets;
+    const bool    exportDefaultCameras;
+    const bool    exportDisplayColor;
+    const bool    exportInstances;
+    const bool    exportMaterialCollections;
+    const bool    exportMeshUVs;
+    const bool    exportNurbsExplicitUV;
+    const bool    exportReferenceObjects;
+    const bool    exportRefsAsInstanceable;
     const TfToken exportSkels;
     const TfToken exportSkin;
-    const bool exportVisibility;
+    const bool    exportVisibility;
 
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of
@@ -174,11 +176,11 @@ struct UsdMayaJobExportArgs
     const TfToken rootKind;
     const TfToken shadingMode;
     const TfToken convertMaterialsTo;
-    const bool verbose;
+    const bool    verbose;
 
     typedef std::map<std::string, std::string> ChaserArgs;
-    const std::vector<std::string> chaserNames;
-    const std::map< std::string, ChaserArgs > allChaserArgs;
+    const std::vector<std::string>             chaserNames;
+    const std::map<std::string, ChaserArgs>    allChaserArgs;
 
     const std::string melPerFrameCallback;
     const std::string melPostCallback;
@@ -205,9 +207,9 @@ struct UsdMayaJobExportArgs
     /// types should match those declared in GetDefaultDictionary().
     MAYAUSD_CORE_PUBLIC
     static UsdMayaJobExportArgs CreateFromDictionary(
-        const VtDictionary& userArgs,
+        const VtDictionary&             userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
-        const std::vector<double>& timeSamples = std::vector<double>());
+        const std::vector<double>&      timeSamples = std::vector<double>());
 
     /// Gets the default arguments dictionary for UsdMayaJobExportArgs.
     MAYAUSD_CORE_PUBLIC
@@ -219,20 +221,16 @@ struct UsdMayaJobExportArgs
     MAYAUSD_CORE_PUBLIC
     void AddFilteredTypeName(const MString& typeName);
 
-    const std::set<unsigned int>& GetFilteredTypeIds() const {
-        return _filteredTypeIds;
-    }
+    const std::set<unsigned int>& GetFilteredTypeIds() const { return _filteredTypeIds; }
 
-    void ClearFilteredTypeIds() {
-        _filteredTypeIds.clear();
-    }
+    void ClearFilteredTypeIds() { _filteredTypeIds.clear(); }
 
 private:
     MAYAUSD_CORE_PUBLIC
     UsdMayaJobExportArgs(
-        const VtDictionary& userArgs,
+        const VtDictionary&             userArgs,
         const UsdMayaUtil::MDagPathSet& dagPaths,
-        const std::vector<double>& timeSamples = std::vector<double>());
+        const std::vector<double>&      timeSamples = std::vector<double>());
 
     // Maya type ids to avoid exporting; these are
     // EXACT types, though the only exposed way to modify this,
@@ -243,26 +241,24 @@ private:
 };
 
 MAYAUSD_CORE_PUBLIC
-std::ostream& operator <<(
-    std::ostream& out,
-    const UsdMayaJobExportArgs& exportArgs);
-
+std::ostream& operator<<(std::ostream& out, const UsdMayaJobExportArgs& exportArgs);
 
 struct UsdMayaJobImportArgs
 {
-    const TfToken assemblyRep;
+    const TfToken      assemblyRep;
     const TfToken::Set excludePrimvarNames;
     const TfToken::Set includeAPINames;
     const TfToken::Set includeMetadataKeys;
-    struct ShadingMode {
+    struct ShadingMode
+    {
         TfToken mode;
         TfToken materialConversion;
     };
     using ShadingModes = std::vector<ShadingMode>;
-    ShadingModes shadingModes; // XXX can we make this const?
+    ShadingModes  shadingModes; // XXX can we make this const?
     const TfToken preferredMaterial;
-    const TfToken instanceMode;
-    const bool useAsAnimationCache;
+    const bool    importInstances;
+    const bool    useAsAnimationCache;
 
     const bool importWithProxyShapes;
     /// The interval over which to import animated data.
@@ -287,8 +283,8 @@ struct UsdMayaJobImportArgs
     MAYAUSD_CORE_PUBLIC
     static UsdMayaJobImportArgs CreateFromDictionary(
         const VtDictionary& userArgs,
-        const bool importWithProxyShapes = false,
-        const GfInterval& timeInterval = GfInterval::GetFullInterval());
+        const bool          importWithProxyShapes = false,
+        const GfInterval&   timeInterval = GfInterval::GetFullInterval());
 
     /// Gets the default arguments dictionary for UsdMayaJobImportArgs.
     MAYAUSD_CORE_PUBLIC
@@ -298,17 +294,13 @@ private:
     MAYAUSD_CORE_PUBLIC
     UsdMayaJobImportArgs(
         const VtDictionary& userArgs,
-        const bool importWithProxyShapes,
-        const GfInterval& timeInterval);
+        const bool          importWithProxyShapes,
+        const GfInterval&   timeInterval);
 };
 
 MAYAUSD_CORE_PUBLIC
-std::ostream& operator <<(
-    std::ostream& out,
-    const UsdMayaJobImportArgs& importArgs);
-
+std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importArgs);
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

@@ -17,10 +17,10 @@
 #include <mayaUsd/fileio/chaser/chaserRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
@@ -41,47 +41,45 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
-    _tokens, 
+    _tokens,
 
     ((abcTypeSuffix, "_AbcType"))
     ((abcGeomScopeSuffix, "_AbcGeomScope"))
     ((abcGeomScopeFaceVarying, "fvr"))
     ((abcGeomScopeUniform, "uni"))
     ((abcGeomScopeVertex, "vtx"))
-
     ((userProperties, "userProperties:"))
 );
+// clang-format on
 
 struct _AttributeEntry
 {
     std::string mayaAttributeName;
     std::string usdAttributeName;
-    bool isPrimvar;
-    _AttributeEntry(
-        const std::string& mayaName,
-        const std::string& usdName,
-        bool isPrimvar)
-        : mayaAttributeName(mayaName), usdAttributeName(usdName),
-          isPrimvar(isPrimvar)
+    bool        isPrimvar;
+    _AttributeEntry(const std::string& mayaName, const std::string& usdName, bool isPrimvar)
+        : mayaAttributeName(mayaName)
+        , usdAttributeName(usdName)
+        , isPrimvar(isPrimvar)
     {
     }
 };
 
 struct _PrimEntry
 {
-    MDagPath mayaDagPath;
-    UsdPrim usdPrim;
+    MDagPath                     mayaDagPath;
+    UsdPrim                      usdPrim;
     std::vector<_AttributeEntry> attrs;
     _PrimEntry(const MDagPath& dagPath, const UsdPrim& usdPrim)
-        : mayaDagPath(dagPath), usdPrim(usdPrim)
+        : mayaDagPath(dagPath)
+        , usdPrim(usdPrim)
     {
     }
 };
 
-static
-bool
-_EndsWithAbcTag(const std::string& attrName)
+static bool _EndsWithAbcTag(const std::string& attrName)
 {
     // Note: we consume attrName_AbcGeomScope but we use our own type inference
     // instead of attrName_AbcType; however; we want to exclude both for
@@ -90,32 +88,25 @@ _EndsWithAbcTag(const std::string& attrName)
     const std::string& abcGeomScope = _tokens->abcGeomScopeSuffix.GetString();
     const std::string& abcType = _tokens->abcTypeSuffix.GetString();
 
-    if (attrName.size() > abcGeomScope.size() &&
-            attrName.compare(
-                    attrName.size() - abcGeomScope.size(),
-                    abcGeomScope.size(),
-                    abcGeomScope) == 0) {
+    if (attrName.size() > abcGeomScope.size()
+        && attrName.compare(
+               attrName.size() - abcGeomScope.size(), abcGeomScope.size(), abcGeomScope)
+            == 0) {
         return true;
     }
 
-    if (attrName.size() > abcType.size() &&
-            attrName.compare(
-                    attrName.size() - abcType.size(),
-                    abcType.size(),
-                    abcType) == 0) {
+    if (attrName.size() > abcType.size()
+        && attrName.compare(attrName.size() - abcType.size(), abcType.size(), abcType) == 0) {
         return true;
     }
 
     return false;
 }
 
-static
-TfToken
-_GetPrimvarInterpolation(const MFnDependencyNode& depFn,
-        const std::string attrName)
+static TfToken _GetPrimvarInterpolation(const MFnDependencyNode& depFn, const std::string attrName)
 {
-    const MPlug scopePlg = depFn.findPlug(MString(attrName.c_str())
-            + MString(_tokens->abcGeomScopeSuffix.GetText()), true);
+    const MPlug scopePlg = depFn.findPlug(
+        MString(attrName.c_str()) + MString(_tokens->abcGeomScopeSuffix.GetText()), true);
     if (scopePlg.isNull()) {
         return TfToken();
     }
@@ -123,52 +114,44 @@ _GetPrimvarInterpolation(const MFnDependencyNode& depFn,
     const char* scopeText = scopePlg.asString().toLowerCase().asChar();
     if (scopeText == _tokens->abcGeomScopeVertex) {
         return UsdGeomTokens->vertex;
-    }
-    else if (scopeText == _tokens->abcGeomScopeFaceVarying) {
+    } else if (scopeText == _tokens->abcGeomScopeFaceVarying) {
         return UsdGeomTokens->faceVarying;
-    }
-    else if (scopeText == _tokens->abcGeomScopeUniform) {
+    } else if (scopeText == _tokens->abcGeomScopeUniform) {
         return UsdGeomTokens->uniform;
     } else {
         return UsdGeomTokens->constant;
     }
 }
 
-static
-void
-_AddAttributeNameEntry(
-        const std::string mayaAttrName,
-        const std::map<std::string, std::string>& mayaToUsdPrefixes,
-        bool isPrimvar,
-        std::vector<_AttributeEntry>* outAttrs)
+static void _AddAttributeNameEntry(
+    const std::string                         mayaAttrName,
+    const std::map<std::string, std::string>& mayaToUsdPrefixes,
+    bool                                      isPrimvar,
+    std::vector<_AttributeEntry>*             outAttrs)
 {
     for (const auto& mayaAndUsdPrefix : mayaToUsdPrefixes) {
         const std::string& mayaPrefix = mayaAndUsdPrefix.first;
         const std::string& usdPrefix = mayaAndUsdPrefix.second;
         if (TfStringStartsWith(mayaAttrName, mayaPrefix)) {
-            const std::string usdAttrName = usdPrefix
-                    + mayaAttrName.substr(mayaPrefix.size());
-            outAttrs->push_back(
-                    _AttributeEntry(mayaAttrName, usdAttrName, isPrimvar));
+            const std::string usdAttrName = usdPrefix + mayaAttrName.substr(mayaPrefix.size());
+            outAttrs->push_back(_AttributeEntry(mayaAttrName, usdAttrName, isPrimvar));
         }
     }
 }
 
-static
-void
-_GatherPrefixedAttrs(
-        const std::map<std::string, std::string>& attrPrefixes,
-        const std::map<std::string, std::string>& primvarPrefixes,
-        const MDagPath &dag, 
-        std::vector<_AttributeEntry>* attrs)
+static void _GatherPrefixedAttrs(
+    const std::map<std::string, std::string>& attrPrefixes,
+    const std::map<std::string, std::string>& primvarPrefixes,
+    const MDagPath&                           dag,
+    std::vector<_AttributeEntry>*             attrs)
 {
-    MStatus status;
+    MStatus           status;
     MFnDependencyNode depFn(dag.node());
 
     unsigned int numAttrs = depFn.attributeCount();
-    for (unsigned int i=0; i < numAttrs; ++i) {
+    for (unsigned int i = 0; i < numAttrs; ++i) {
         MObject attrObj = depFn.attribute(i);
-        MPlug plg = depFn.findPlug(attrObj, true);
+        MPlug   plg = depFn.findPlug(attrObj, true);
         if (plg.isNull()) {
             continue;
         }
@@ -178,7 +161,7 @@ _GatherPrefixedAttrs(
             continue;
         }
 
-        MString mayaPlgName = plg.partialName(false, false, false, false, false, true, &status);
+        MString     mayaPlgName = plg.partialName(false, false, false, false, false, true, &status);
         std::string plgName(mayaPlgName.asChar());
 
         // Skip if it's an AbcExport-suffixed hint attribute.
@@ -192,55 +175,44 @@ _GatherPrefixedAttrs(
     }
 }
 
-void 
-_WritePrefixedAttrs(
-        const UsdTimeCode &usdTime, 
-        const _PrimEntry& entry)
+void _WritePrefixedAttrs(const UsdTimeCode& usdTime, const _PrimEntry& entry)
 {
-    MStatus status;
+    MStatus           status;
     MFnDependencyNode depFn(entry.mayaDagPath.node());
     for (const auto& attrEntry : entry.attrs) {
-        MPlug plg = depFn.findPlug(attrEntry.mayaAttributeName.c_str(), true);
+        MPlug        plg = depFn.findPlug(attrEntry.mayaAttributeName.c_str(), true);
         UsdAttribute usdAttr;
 
         if (attrEntry.isPrimvar) {
             // Treat as custom primvar.
-            TfToken interpolation = _GetPrimvarInterpolation(
-                    depFn, attrEntry.mayaAttributeName);
+            TfToken interpolation = _GetPrimvarInterpolation(depFn, attrEntry.mayaAttributeName);
             UsdGeomImageable imageable(entry.usdPrim);
             if (!imageable) {
                 TF_RUNTIME_ERROR(
-                        "Cannot create primvar for non-UsdGeomImageable "
-                        "USD prim <%s>",
-                        entry.usdPrim.GetPath().GetText());
+                    "Cannot create primvar for non-UsdGeomImageable "
+                    "USD prim <%s>",
+                    entry.usdPrim.GetPath().GetText());
                 continue;
             }
             UsdGeomPrimvar primvar = UsdMayaWriteUtil::GetOrCreatePrimvar(
-                    plg,
-                    imageable,
-                    attrEntry.usdAttributeName,
-                    interpolation,
-                    -1,
-                    false);
+                plg, imageable, attrEntry.usdAttributeName, interpolation, -1, false);
             if (primvar) {
                 usdAttr = primvar.GetAttr();
             }
-        }
-        else {
+        } else {
             // Treat as custom attribute.
             usdAttr = UsdMayaWriteUtil::GetOrCreateUsdAttr(
-                    plg, entry.usdPrim, attrEntry.usdAttributeName, true);
+                plg, entry.usdPrim, attrEntry.usdAttributeName, true);
         }
 
         if (usdAttr) {
             UsdMayaWriteUtil::SetUsdAttr(plg, usdAttr, usdTime);
-        }
-        else {
+        } else {
             TF_RUNTIME_ERROR(
-                    "Could not create attribute '%s' for "
-                    "USD prim <%s>",
-                    attrEntry.usdAttributeName.c_str(),
-                    entry.usdPrim.GetPath().GetText());
+                "Could not create attribute '%s' for "
+                "USD prim <%s>",
+                attrEntry.usdAttributeName.c_str(),
+                entry.usdPrim.GetPath().GetText());
             continue;
         }
     }
@@ -249,16 +221,14 @@ _WritePrefixedAttrs(
 // alembic by default sets meshes to be poly unless it's explicitly set to be
 // subdivision.  UsdExport makes meshes catmullClark by default.  Here, we
 // implement logic to get set the subdivision scheme so that it matches.
-static
-void
-_SetMeshesSubDivisionScheme(
-        UsdStagePtr stage,
-        const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd)
+static void _SetMeshesSubDivisionScheme(
+    UsdStagePtr                                               stage,
+    const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd)
 {
 
-    for (const auto& p: dagToUsd) {
+    for (const auto& p : dagToUsd) {
         const MDagPath& dag = p.first;
-        const SdfPath& usdPrimPath = p.second;
+        const SdfPath&  usdPrimPath = p.second;
         if (!dag.isValid()) {
             continue;
         }
@@ -271,7 +241,7 @@ _SetMeshesSubDivisionScheme(
 
         if (UsdGeomMesh usdMesh = UsdGeomMesh::Get(stage, usdPrimPath)) {
             MPlug plug = meshFn.findPlug("SubDivisionMesh");
-            bool isSubDivisionMesh = (!plug.isNull() && plug.asBool());
+            bool  isSubDivisionMesh = (!plug.isNull() && plug.asBool());
 
             if (!isSubDivisionMesh) {
                 usdMesh.GetSubdivisionSchemeAttr().Set(UsdGeomTokens->none);
@@ -288,16 +258,16 @@ class AlembicChaser : public UsdMayaChaser
 {
 public:
     AlembicChaser(
-            UsdStagePtr stage,
-            const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd,
-            const std::map<std::string, std::string>& attrPrefixes,
-            const std::map<std::string, std::string>& primvarPrefixes)
-    : _stage(stage)
-    , _dagToUsd(dagToUsd)
+        UsdStagePtr                                               stage,
+        const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& dagToUsd,
+        const std::map<std::string, std::string>&                 attrPrefixes,
+        const std::map<std::string, std::string>&                 primvarPrefixes)
+        : _stage(stage)
+        , _dagToUsd(dagToUsd)
     {
-        for (const auto& p: dagToUsd) {
+        for (const auto& p : dagToUsd) {
             const MDagPath& dag = p.first;
-            const SdfPath& usdPrimPath = p.second;
+            const SdfPath&  usdPrimPath = p.second;
 
             UsdPrim usdPrim = stage->GetPrimAtPath(usdPrimPath);
             if (!dag.isValid() || !usdPrim) {
@@ -305,16 +275,13 @@ public:
             }
 
             _primEntries.push_back(_PrimEntry(dag, usdPrim));
-            _GatherPrefixedAttrs(attrPrefixes, primvarPrefixes, dag,
-                    &(_primEntries.back().attrs));
+            _GatherPrefixedAttrs(attrPrefixes, primvarPrefixes, dag, &(_primEntries.back().attrs));
         }
     }
 
-    virtual ~AlembicChaser() 
-    { 
-    }
+    virtual ~AlembicChaser() { }
 
-    virtual bool ExportDefault() override 
+    virtual bool ExportDefault() override
     {
         // we fix the meshes once, not per frame.
         _SetMeshesSubDivisionScheme(_stage, _dagToUsd);
@@ -322,7 +289,7 @@ public:
         return ExportFrame(UsdTimeCode::Default());
     }
 
-    virtual bool ExportFrame(const UsdTimeCode& frame) override 
+    virtual bool ExportFrame(const UsdTimeCode& frame) override
     {
         for (const auto& entry : _primEntries) {
             _WritePrefixedAttrs(frame, entry);
@@ -331,18 +298,16 @@ public:
     }
 
 private:
-    std::vector<_PrimEntry> _primEntries;
-    UsdStagePtr _stage;
+    std::vector<_PrimEntry>                                   _primEntries;
+    UsdStagePtr                                               _stage;
     const UsdMayaChaserRegistry::FactoryContext::DagToUsdMap& _dagToUsd;
 };
 
-static
-void
-_ParseMapArgument(
-        const std::map<std::string, std::string>& myArgs,
-        const std::string argName,
-        const std::string& defaultValue,
-        std::map<std::string, std::string>* outMap)
+static void _ParseMapArgument(
+    const std::map<std::string, std::string>& myArgs,
+    const std::string                         argName,
+    const std::string&                        defaultValue,
+    std::map<std::string, std::string>*       outMap)
 {
     const auto& it = myArgs.find(argName);
     if (it == myArgs.end()) {
@@ -351,20 +316,17 @@ _ParseMapArgument(
 
     const std::string& argValue = it->second;
     for (const std::string& token : TfStringSplit(argValue, ",")) {
-        std::vector<std::string> keyAndValue = TfStringSplit(
-                TfStringTrim(token), "=");
+        std::vector<std::string> keyAndValue = TfStringSplit(TfStringTrim(token), "=");
 
         std::string key;
         std::string value;
         if (keyAndValue.size() == 1) {
             key = keyAndValue[0];
             value = defaultValue;
-        }
-        else if (keyAndValue.size() == 2) {
+        } else if (keyAndValue.size() == 2) {
             key = keyAndValue[0];
             value = keyAndValue[1];
-        }
-        else {
+        } else {
             continue;
         }
 
@@ -402,17 +364,11 @@ PXRUSDMAYA_DEFINE_CHASER_FACTORY(alembic, ctx)
     // ABC2_attrName -> customPrefix_attrName
     // ABC3_attrName -> attrName
     std::map<std::string, std::string> attrPrefixes;
-    _ParseMapArgument(myArgs, "attrprefix", _tokens->userProperties.GetString(),
-            &attrPrefixes);
+    _ParseMapArgument(myArgs, "attrprefix", _tokens->userProperties.GetString(), &attrPrefixes);
     std::map<std::string, std::string> primvarPrefixes;
-    _ParseMapArgument(myArgs, "primvarprefix", std::string(),
-            &primvarPrefixes);
+    _ParseMapArgument(myArgs, "primvarprefix", std::string(), &primvarPrefixes);
 
-    return new AlembicChaser(
-            ctx.GetStage(),
-            ctx.GetDagToUsdMap(),
-            attrPrefixes,
-            primvarPrefixes);
+    return new AlembicChaser(ctx.GetStage(), ctx.GetDagToUsdMap(), attrPrefixes, primvarPrefixes);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

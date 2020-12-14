@@ -16,19 +16,19 @@
 #ifndef PXRUSDMAYA_PRIMREADERCONTEXT_H
 #define PXRUSDMAYA_PRIMREADERCONTEXT_H
 
-#include <maya/MObject.h>
+#include <mayaUsd/base/api.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
+#include <maya/MObject.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdMayaPrimReaderContext
 /// \brief This class provides an interface for reader plugins to communicate
 /// state back to the core usd maya logic as well as retrieve information set by
-/// other plugins.  
+/// other plugins.
 ///
 /// Maya operations should be made directly with the Maya API.  Any additional
 /// state that needs to be stored that isn't directly related to the Maya scene
@@ -50,9 +50,7 @@ public:
     ///
     /// Returns an invalid MObject if no such object exists.
     MAYAUSD_CORE_PUBLIC
-    MObject GetMayaNode(
-            const SdfPath& path,
-            bool findAncestors) const;
+    MObject GetMayaNode(const SdfPath& path, bool findAncestors) const;
 
     /// \brief Record \p mayaNode prim as being created \p path.
     ///
@@ -60,10 +58,10 @@ public:
     /// reasons for this may be:
     /// - looking up later (for shader bindings, relationship targets, etc)
     /// - undo/redo purposes
-    /// 
+    ///
     /// Plugins should call this as needed.
     MAYAUSD_CORE_PUBLIC
-    void RegisterNewMayaNode(const std::string &path, const MObject &mayaNode) const;
+    void RegisterNewMayaNode(const std::string& path, const MObject& mayaNode) const;
 
     /// \brief returns true if prim traversal of the children of the current
     /// node can be pruned.
@@ -71,21 +69,19 @@ public:
     bool GetPruneChildren() const;
 
     /// \brief If this plugin takes care of reading all of its children, it
-    /// should SetPruneChildren(true).  
+    /// should SetPruneChildren(true).
     MAYAUSD_CORE_PUBLIC
     void SetPruneChildren(bool prune);
 
     ~UsdMayaPrimReaderContext() { }
 
 private:
-
     bool _prune;
 
     // used to keep track of prims that are created.
     // for undo/redo
     ObjectRegistry* _pathNodeMap;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

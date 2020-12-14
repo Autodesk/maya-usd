@@ -16,19 +16,19 @@
 #ifndef PXRUSDMAYA_REGISTRYHELPER_H
 #define PXRUSDMAYA_REGISTRYHELPER_H
 
-#include <functional>
-
-#include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/dictionary.h>
+#include <pxr/pxr.h>
+
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// private helper so that both reader/writer registries can share the same
 /// plugin discovery/load mechanism.
-struct UsdMaya_RegistryHelper 
+struct UsdMaya_RegistryHelper
 {
-    /// searches plugInfo's for \p value at the specified \p scope.  
+    /// searches plugInfo's for \p value at the specified \p scope.
     ///
     /// The scope are the nested keys to search through in the plugInfo (for
     /// example, ["UsdMaya", "PrimReader"].
@@ -46,13 +46,10 @@ struct UsdMaya_RegistryHelper
     /// "providesTranslator" and "mayaPlugin".  If \p value matches the
     /// something in the "providesTranslator" list, it will proceed to try to
     /// load the "mayaPlugin".
-    static void 
-        FindAndLoadMayaPlug(
-                const std::vector<TfToken>& scope,
-                const std::string& value);
+    static void FindAndLoadMayaPlug(const std::vector<TfToken>& scope, const std::string& value);
 
     /// Searches the plugInfos and looks for ShadingModePlugin.
-    /// 
+    ///
     /// "UsdMaya" : {
     ///     "ShadingModePlugin" : {
     ///         "mayaPlugin" : "arnoldShaderExporter"
@@ -61,11 +58,10 @@ struct UsdMaya_RegistryHelper
     ///
     /// At that scope, it expects a dictionary with one key: "mayaPlugin".
     /// usdMaya will try to load the "mayaPlugin" when shading modes are first accessed.
-    static void
-        LoadShadingModePlugins();
+    static void LoadShadingModePlugins();
 
     /// Searches the plugInfos for metadata dictionaries at the given \p scope,
-    /// and composes them together. 
+    /// and composes them together.
     /// The scope are the nested keys to search through in the plugInfo (for
     /// example, ["UsdMaya", "UsdExport"]).
     /// The same key under the \p scope must not be defined in multiple
@@ -75,8 +71,7 @@ struct UsdMaya_RegistryHelper
     /// XXX We might relax the restriction on multiply-defined keys later on
     /// if there is a need to define values at different scopes, e.g.
     /// site-specific, department-specific, show-specific values.
-    static VtDictionary GetComposedInfoDictionary(
-            const std::vector<TfToken>& scope);
+    static VtDictionary GetComposedInfoDictionary(const std::vector<TfToken>& scope);
 
     static void AddUnloader(const std::function<void()>& func);
 };

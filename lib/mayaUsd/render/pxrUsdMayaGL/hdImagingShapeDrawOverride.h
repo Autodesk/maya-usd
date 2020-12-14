@@ -18,6 +18,10 @@
 
 /// \file pxrUsdMayaGL/hdImagingShapeDrawOverride.h
 
+#include <mayaUsd/base/api.h>
+
+#include <pxr/pxr.h>
+
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MDrawContext.h>
@@ -28,10 +32,6 @@
 #include <maya/MString.h>
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
-
-#include <pxr/pxr.h>
-
-#include <mayaUsd/base/api.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,62 +49,48 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// re-compute the selection.
 class PxrMayaHdImagingShapeDrawOverride : public MHWRender::MPxDrawOverride
 {
-    public:
+public:
+    MAYAUSD_CORE_PUBLIC
+    static const MString drawDbClassification;
 
-        MAYAUSD_CORE_PUBLIC
-        static const MString drawDbClassification;
+    MAYAUSD_CORE_PUBLIC
+    static MHWRender::MPxDrawOverride* creator(const MObject& obj);
 
-        MAYAUSD_CORE_PUBLIC
-        static MHWRender::MPxDrawOverride* creator(const MObject& obj);
+    MAYAUSD_CORE_PUBLIC
+    ~PxrMayaHdImagingShapeDrawOverride() override;
 
-        MAYAUSD_CORE_PUBLIC
-        ~PxrMayaHdImagingShapeDrawOverride() override;
+    MAYAUSD_CORE_PUBLIC
+    MHWRender::DrawAPI supportedDrawAPIs() const override;
 
-        MAYAUSD_CORE_PUBLIC
-        MHWRender::DrawAPI supportedDrawAPIs() const override;
+    MAYAUSD_CORE_PUBLIC
+    MMatrix transform(const MDagPath& objPath, const MDagPath& cameraPath) const override;
 
-        MAYAUSD_CORE_PUBLIC
-        MMatrix transform(
-                const MDagPath& objPath,
-                const MDagPath& cameraPath) const override;
+    MAYAUSD_CORE_PUBLIC
+    MBoundingBox boundingBox(const MDagPath& objPath, const MDagPath& cameraPath) const override;
 
-        MAYAUSD_CORE_PUBLIC
-        MBoundingBox boundingBox(
-                const MDagPath& objPath,
-                const MDagPath& cameraPath) const override;
+    MAYAUSD_CORE_PUBLIC
+    bool isBounded(const MDagPath& objPath, const MDagPath& cameraPath) const override;
 
-        MAYAUSD_CORE_PUBLIC
-        bool isBounded(
-                const MDagPath& objPath,
-                const MDagPath& cameraPath) const override;
+    MAYAUSD_CORE_PUBLIC
+    bool disableInternalBoundingBoxDraw() const override;
 
-        MAYAUSD_CORE_PUBLIC
-        bool disableInternalBoundingBoxDraw() const override;
+    MAYAUSD_CORE_PUBLIC
+    MUserData* prepareForDraw(
+        const MDagPath&                 objPath,
+        const MDagPath&                 cameraPath,
+        const MHWRender::MFrameContext& frameContext,
+        MUserData*                      oldData) override;
 
-        MAYAUSD_CORE_PUBLIC
-        MUserData* prepareForDraw(
-                const MDagPath& objPath,
-                const MDagPath& cameraPath,
-                const MHWRender::MFrameContext& frameContext,
-                MUserData* oldData) override;
+    MAYAUSD_CORE_PUBLIC
+    static void draw(const MHWRender::MDrawContext& context, const MUserData* data);
 
-        MAYAUSD_CORE_PUBLIC
-        static void draw(
-                const MHWRender::MDrawContext& context,
-                const MUserData* data);
+private:
+    PxrMayaHdImagingShapeDrawOverride(const MObject& obj);
 
-    private:
-
-        PxrMayaHdImagingShapeDrawOverride(const MObject& obj);
-
-        PxrMayaHdImagingShapeDrawOverride(
-                const PxrMayaHdImagingShapeDrawOverride&) = delete;
-        PxrMayaHdImagingShapeDrawOverride& operator=(
-                const PxrMayaHdImagingShapeDrawOverride&) = delete;
+    PxrMayaHdImagingShapeDrawOverride(const PxrMayaHdImagingShapeDrawOverride&) = delete;
+    PxrMayaHdImagingShapeDrawOverride& operator=(const PxrMayaHdImagingShapeDrawOverride&) = delete;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

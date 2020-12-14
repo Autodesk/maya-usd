@@ -16,17 +16,17 @@
 #ifndef HDVP2_BASIS_CURVES_H
 #define HDVP2_BASIS_CURVES_H
 
-#include <memory>
+#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
-#include <maya/MHWGeometry.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/imaging/hd/basisCurves.h>
 #include <pxr/imaging/hd/enums.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+#include <maya/MHWGeometry.h>
+
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -51,8 +51,9 @@ struct HdVP2BasisCurvesSharedData
     //! A local cache of primvar scene data. "data" is a copy-on-write handle to
     //! the actual primvar buffer, and "interpolation" is the interpolation mode
     //! to be used.
-    struct PrimvarSource {
-        VtValue data;
+    struct PrimvarSource
+    {
+        VtValue         data;
         HdInterpolation interpolation;
     };
     TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
@@ -85,59 +86,67 @@ struct HdVP2BasisCurvesSharedData
     in HdVP2RenderDelegate::CommitResources(), which runs on main-thread after
     all Rprims have been updated.
 */
-class HdVP2BasisCurves final: public HdBasisCurves
+class HdVP2BasisCurves final : public HdBasisCurves
 {
 public:
     HdVP2BasisCurves(
-        HdVP2RenderDelegate *delegate,
-        const SdfPath &id,
-        const SdfPath &instancerId = SdfPath());
+        HdVP2RenderDelegate* delegate,
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        const SdfPath& id);
+#else
+        const SdfPath& id,
+        const SdfPath& instancerId = SdfPath());
+#endif
 
     //! Destructor.
     ~HdVP2BasisCurves() override = default;
 
-    void Sync(HdSceneDelegate *delegate,
-              HdRenderParam   *renderParam,
-              HdDirtyBits     *dirtyBits,
-              TfToken const   &reprToken) override;
+    void Sync(
+        HdSceneDelegate* delegate,
+        HdRenderParam*   renderParam,
+        HdDirtyBits*     dirtyBits,
+        TfToken const&   reprToken) override;
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 protected:
     HdDirtyBits _PropagateDirtyBits(HdDirtyBits bits) const override;
 
-    void _InitRepr(TfToken const &reprToken, HdDirtyBits *dirtyBits) override;
+    void _InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBits) override;
 
 private:
-    void _UpdateRepr(HdSceneDelegate *sceneDelegate,
-                     TfToken const &reprToken);
+    void _UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken);
 
-    void _UpdateDrawItem(HdSceneDelegate *sceneDelegate,
-                         HdVP2DrawItem *drawItem,
-                         HdBasisCurvesReprDesc const &desc);
+    void _UpdateDrawItem(
+        HdSceneDelegate*             sceneDelegate,
+        HdVP2DrawItem*               drawItem,
+        HdBasisCurvesReprDesc const& desc);
 
     void _HideAllDrawItems(const TfToken& reprToken);
 
     void _UpdatePrimvarSources(
-        HdSceneDelegate *sceneDelegate,
-        HdDirtyBits dirtyBits,
-        TfTokenVector const &requiredPrimvars);
+        HdSceneDelegate*     sceneDelegate,
+        HdDirtyBits          dirtyBits,
+        TfTokenVector const& requiredPrimvars);
 
     MHWRender::MRenderItem* _CreatePatchRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateWireRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateBBoxRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
 
-    enum DirtyBits : HdDirtyBits {
-        DirtySelection          = HdChangeTracker::CustomBitsBegin,
-        DirtySelectionHighlight = (DirtySelection     << 1)
+    enum DirtyBits : HdDirtyBits
+    {
+        DirtySelection = HdChangeTracker::CustomBitsBegin,
+        DirtySelectionHighlight = (DirtySelection << 1)
     };
 
-    HdVP2RenderDelegate* _delegate { nullptr };       //!< VP2 render delegate for which this mesh was created
-    const MString        _rprimId;                    //!< Rprim id cached as a maya string for easier debugging and profiling
+    HdVP2RenderDelegate* _delegate {
+        nullptr
+    };                      //!< VP2 render delegate for which this mesh was created
+    const MString _rprimId; //!< Rprim id cached as a maya string for easier debugging and profiling
 
     //! Shared data for all draw items of the Rprim
-    HdVP2BasisCurvesSharedData  _curvesSharedData;
+    HdVP2BasisCurvesSharedData _curvesSharedData;
 
     //! Selection status of the Rprim
     HdVP2SelectionStatus _selectionStatus { kUnselected };

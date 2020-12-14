@@ -38,6 +38,7 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapUserTaggedAttribute.cpp
         wrapWriteUtil.cpp
         wrapXformStack.cpp
+        wrapUsdUndoManager.cpp
 )
 
 # -----------------------------------------------------------------------------

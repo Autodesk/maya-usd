@@ -18,20 +18,19 @@
 #define MAYA_EXPORT_COMMAND_H
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/writeJob.h>
 
 #include <pxr/pxr.h>
 
-#include <memory>
-
 #include <maya/MPxCommand.h>
 
-#include <mayaUsd/fileio/jobs/writeJob.h>
+#include <memory>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_CORE_PUBLIC MayaUSDExportCommand : public MPxCommand
 {
-  public:
+public:
     //
     // Command flags are a mix of Arg Tokens defined in writeJob.h
     // and some that are defined by this command itself.
@@ -95,16 +94,16 @@ class MAYAUSD_CORE_PUBLIC MayaUSDExportCommand : public MPxCommand
     static constexpr auto kFrameRangeFlagLong = "frameRange";
 
     MStatus doIt(const MArgList& args) override;
-    bool  isUndoable () const override { return false; };
+    bool    isUndoable() const override { return false; };
 
-    static MSyntax  createSyntax();
-    static void* creator();
+    static MSyntax createSyntax();
+    static void*   creator();
 
-  protected:
-    virtual std::unique_ptr<PXR_NS::UsdMaya_WriteJob> initializeWriteJob(const PXR_NS::UsdMayaJobExportArgs &);
-
+protected:
+    virtual std::unique_ptr<PXR_NS::UsdMaya_WriteJob>
+    initializeWriteJob(const PXR_NS::UsdMayaJobExportArgs&);
 };
 
-}
+} // namespace MAYAUSD_NS_DEF
 
 #endif

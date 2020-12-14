@@ -15,13 +15,10 @@
 //
 #include "adskExportCommand.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 const MString ADSKMayaUSDExportCommand::commandName("mayaUSDExport");
 
-void* ADSKMayaUSDExportCommand::creator()
-{
-    return new ADSKMayaUSDExportCommand();
-}
+void* ADSKMayaUSDExportCommand::creator() { return new ADSKMayaUSDExportCommand(); }
 
-}
+} // namespace MAYAUSD_NS_DEF

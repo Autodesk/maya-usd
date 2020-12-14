@@ -17,20 +17,22 @@
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-MAYAUSD_NS_DEF {
+#include <maya/MGlobal.h>
+
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdTransform3dHandler::UsdTransform3dHandler() : Ufe::Transform3dHandler()
-{}
-
-UsdTransform3dHandler::~UsdTransform3dHandler()
+UsdTransform3dHandler::UsdTransform3dHandler()
+    : Ufe::Transform3dHandler()
 {
 }
+
+UsdTransform3dHandler::~UsdTransform3dHandler() { }
 
 /*static*/
 UsdTransform3dHandler::Ptr UsdTransform3dHandler::create()
 {
-	return std::make_shared<UsdTransform3dHandler>();
+    return std::make_shared<UsdTransform3dHandler>();
 }
 
 //------------------------------------------------------------------------------
@@ -39,12 +41,24 @@ UsdTransform3dHandler::Ptr UsdTransform3dHandler::create()
 
 Ufe::Transform3d::Ptr UsdTransform3dHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-	assert(usdItem);
+    assert(usdItem);
 #endif
-	return UsdTransform3d::create(usdItem);
+
+    // According to USD docs, editing scene description via instance proxies and their properties is
+    // not allowed.
+    // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
+    if (usdItem->prim().IsInstanceProxy()) {
+        MGlobal::displayError(
+            MString("Authoring to the descendant of an instance [")
+            + MString(usdItem->prim().GetName().GetString().c_str()) + MString("] is not allowed.")
+            + MString("Please mark 'instanceable=false' to author edits to instance proxies."));
+        return nullptr;
+    }
+
+    return UsdTransform3d::create(usdItem);
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

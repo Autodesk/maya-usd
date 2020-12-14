@@ -23,67 +23,75 @@
 #endif
 #include <pxr/usd/usd/schemaRegistry.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdSceneItem::UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim)
-	: Ufe::SceneItem(path)
-	, fPrim(prim)
+    : Ufe::SceneItem(path)
+    , fPrim(prim)
 {
 }
 
 /*static*/
 UsdSceneItem::Ptr UsdSceneItem::create(const Ufe::Path& path, const UsdPrim& prim)
 {
-	return std::make_shared<UsdSceneItem>(path, prim);
+    return std::make_shared<UsdSceneItem>(path, prim);
 }
 
 //------------------------------------------------------------------------------
 // Ufe::SceneItem overrides
 //------------------------------------------------------------------------------
 
-std::string UsdSceneItem::nodeType() const
-{
-	return fPrim.GetTypeName();
-}
+std::string UsdSceneItem::nodeType() const { return fPrim.GetTypeName(); }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 std::vector<std::string> UsdSceneItem::ancestorNodeTypes() const
 {
-	std::vector<std::string> strAncestorTypes;
+    std::vector<std::string> strAncestorTypes;
 
 #if USD_VERSION_NUM < 2008
-	static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
-	const TfType schemaType = schemaBaseType.FindDerivedByName(fPrim.GetTypeName().GetString());
+    static const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
+    const TfType schemaType = schemaBaseType.FindDerivedByName(fPrim.GetTypeName().GetString());
 #else
-	// Get the actual schema type from the prim definition.
-	const TfType& schemaType = fPrim.GetPrimTypeInfo().GetSchemaType();
+    // Get the actual schema type from the prim definition.
+    const TfType& schemaType = fPrim.GetPrimTypeInfo().GetSchemaType();
 #endif
-	if (!schemaType) {
-		// No schema type, return empty ancestor types.
-		return strAncestorTypes;
-	}
+    if (!schemaType) {
+        // No schema type, return empty ancestor types.
+        return strAncestorTypes;
+    }
 
-	// According to the USD docs GetAllAncestorTypes() is expensive, so we keep a cache.
-	static std::map<TfType, std::vector<std::string>> ancestorTypesCache;
-	const auto iter = ancestorTypesCache.find(schemaType);
-	if (iter != ancestorTypesCache.end()) {
-		return iter->second;
-	}
+    // According to the USD docs GetAllAncestorTypes() is expensive, so we keep a cache.
+    static std::map<TfType, std::vector<std::string>> ancestorTypesCache;
+    const auto                                        iter = ancestorTypesCache.find(schemaType);
+    if (iter != ancestorTypesCache.end()) {
+        return iter->second;
+    }
 
-	const auto& schemaReg = UsdSchemaRegistry::GetInstance();
-	std::vector<TfType> tfAncestorTypes;
-	schemaType.GetAllAncestorTypes(&tfAncestorTypes);
-	for (const TfType& ty : tfAncestorTypes)
-	{
-		// If there is a concrete schema type name, we'll return that since it is what
-		// is used/shown in the UI (ex: 'Xform' vs 'UsdGeomXform').
-		strAncestorTypes.emplace_back(schemaReg.IsConcrete(ty) ? schemaReg.GetSchemaTypeName(ty) : ty.GetTypeName());
-	}
-	ancestorTypesCache[schemaType] = strAncestorTypes;
-	return strAncestorTypes;
+    const auto&         schemaReg = UsdSchemaRegistry::GetInstance();
+    std::vector<TfType> tfAncestorTypes;
+    schemaType.GetAllAncestorTypes(&tfAncestorTypes);
+    for (const TfType& ty : tfAncestorTypes) {
+        // If there is a concrete schema type name, we'll return that since it is what
+        // is used/shown in the UI (ex: 'Xform' vs 'UsdGeomXform').
+#if USD_VERSION_NUM >= 2005
+        strAncestorTypes.emplace_back(
+            schemaReg.IsConcrete(ty) ? schemaReg.GetSchemaTypeName(ty) : ty.GetTypeName());
+#else
+        // In USD 20.05 and earlier we cannot get the concrete schema type.
+        // Thus the USD prim icons that we provide will not be found correctly.
+        // There are two workarounds:
+        // 1) Incorporate the GetSchemaTypeName() method into your build of
+        //    USD. See https://github.com/PixarAnimationStudios/USD/commit/340759c
+        // 2) Rename the icon files to match the type name.
+        //    Ex: "out_USD_Cone_xxx.png" -> "out_USD_UsdGeomCone_xxx.png"
+        strAncestorTypes.emplace_back(ty.GetTypeName());
+#endif
+    }
+    ancestorTypesCache[schemaType] = strAncestorTypes;
+    return strAncestorTypes;
 }
 #endif
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

@@ -15,11 +15,7 @@
 //
 #include "Global.h"
 
-#include <string>
-#include <cassert>
-
-#include <ufe/hierarchyHandler.h>
-#include <ufe/runTimeMgr.h>
+#include "private/UfeNotifGuard.h"
 
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
 #include <mayaUsd/ufe/ProxyShapeHierarchyHandler.h>
@@ -28,14 +24,18 @@
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dHandler.h>
 
-#include "private/UfeNotifGuard.h"
+#include <ufe/hierarchyHandler.h>
+#include <ufe/runTimeMgr.h>
+
+#include <cassert>
+#include <string>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 // Note: must come after include of ufe files so we have the define.
-#include <mayaUsd/ufe/UsdAttributesHandler.h>
-#include <mayaUsd/ufe/UsdObject3dHandler.h>
-#include <mayaUsd/ufe/UsdContextOpsHandler.h>
 #include <mayaUsd/ufe/ProxyShapeContextOpsHandler.h>
+#include <mayaUsd/ufe/UsdAttributesHandler.h>
+#include <mayaUsd/ufe/UsdContextOpsHandler.h>
+#include <mayaUsd/ufe/UsdObject3dHandler.h>
 #if UFE_PREVIEW_VERSION_NUM >= 2022
 #include <mayaUsd/ufe/UsdUIInfoHandler.h>
 #endif
@@ -45,10 +45,10 @@
 #endif
 
 namespace {
-	int gRegistrationCount = 0;
+int gRegistrationCount = 0;
 }
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------
@@ -57,7 +57,7 @@ namespace ufe {
 
 // Maya's UFE run-time name and ID.
 static const std::string kMayaRunTimeName("Maya-DG");
-Ufe::Rtid g_MayaRtid = 0;
+Ufe::Rtid                g_MayaRtid = 0;
 
 // Register this run-time with UFE under the following name.
 static const std::string kUSDRunTimeName("USD");
@@ -90,92 +90,99 @@ bool InAddOrDeleteOperation::inGuard = false;
 // initialize the stage model.
 MStatus initialize()
 {
-	// If we're already registered, do nothing.
-	if (gRegistrationCount++ > 0)
-		return MS::kSuccess;
+    // If we're already registered, do nothing.
+    if (gRegistrationCount++ > 0)
+        return MS::kSuccess;
 
-	// Replace the Maya hierarchy handler with ours.
-	g_MayaRtid = Ufe::RunTimeMgr::instance().getId(kMayaRunTimeName);
+    // Replace the Maya hierarchy handler with ours.
+    g_MayaRtid = Ufe::RunTimeMgr::instance().getId(kMayaRunTimeName);
 #if !defined(NDEBUG)
-	assert(g_MayaRtid != 0);
+    assert(g_MayaRtid != 0);
 #endif
-	if (g_MayaRtid == 0)
-		return MS::kFailure;
+    if (g_MayaRtid == 0)
+        return MS::kFailure;
 
-	g_MayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
-	auto proxyShapeHierHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
-	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, proxyShapeHierHandler);
+    g_MayaHierarchyHandler = Ufe::RunTimeMgr::instance().hierarchyHandler(g_MayaRtid);
+    auto proxyShapeHierHandler = ProxyShapeHierarchyHandler::create(g_MayaHierarchyHandler);
+    Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, proxyShapeHierHandler);
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-	g_MayaContextOpsHandler = Ufe::RunTimeMgr::instance().contextOpsHandler(g_MayaRtid);
-	auto proxyShapeContextOpsHandler = ProxyShapeContextOpsHandler::create(g_MayaContextOpsHandler);
-	Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, proxyShapeContextOpsHandler);
+    g_MayaContextOpsHandler = Ufe::RunTimeMgr::instance().contextOpsHandler(g_MayaRtid);
+    auto proxyShapeContextOpsHandler = ProxyShapeContextOpsHandler::create(g_MayaContextOpsHandler);
+    Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, proxyShapeContextOpsHandler);
 #endif
 
-	auto usdHierHandler = UsdHierarchyHandler::create();
-	auto usdTrans3dHandler = UsdTransform3dHandler::create();
-	auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
-	UFE_V2(auto usdAttributesHandler = UsdAttributesHandler::create();)
-	UFE_V2(auto usdObject3dHandler = UsdObject3dHandler::create();)
-	UFE_V2(auto usdContextOpsHandler = UsdContextOpsHandler::create();)
+#if UFE_PREVIEW_VERSION_NUM >= 2028
+    Ufe::RunTimeMgr::Handlers handlers;
+    handlers.hierarchyHandler = UsdHierarchyHandler::create();
+    handlers.transform3dHandler = UsdTransform3dHandler::create();
+    handlers.sceneItemOpsHandler = UsdSceneItemOpsHandler::create();
+    handlers.attributesHandler = UsdAttributesHandler::create();
+    handlers.object3dHandler = UsdObject3dHandler::create();
+    handlers.contextOpsHandler = UsdContextOpsHandler::create();
+    handlers.uiInfoHandler = UsdUIInfoHandler::create();
+    g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
+#else
+    auto usdHierHandler = UsdHierarchyHandler::create();
+    auto usdTrans3dHandler = UsdTransform3dHandler::create();
+    auto usdSceneItemOpsHandler = UsdSceneItemOpsHandler::create();
+    UFE_V2(auto usdAttributesHandler = UsdAttributesHandler::create();)
+    UFE_V2(auto usdObject3dHandler = UsdObject3dHandler::create();)
+    UFE_V2(auto usdContextOpsHandler = UsdContextOpsHandler::create();)
 #if UFE_PREVIEW_VERSION_NUM >= 2022
-	UFE_V2(auto usdUIInfoHandler = UsdUIInfoHandler::create();)
+    UFE_V2(auto usdUIInfoHandler = UsdUIInfoHandler::create();)
 #endif
-	g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-		kUSDRunTimeName, usdHierHandler, usdTrans3dHandler, 
-        usdSceneItemOpsHandler
-        UFE_V2(, usdAttributesHandler, usdObject3dHandler)
-        UFE_V2(, usdContextOpsHandler)
+    g_USDRtid = Ufe::RunTimeMgr::instance().register_(
+        kUSDRunTimeName,
+        usdHierHandler,
+        usdTrans3dHandler,
+        usdSceneItemOpsHandler UFE_V2(, usdAttributesHandler, usdObject3dHandler)
+            UFE_V2(, usdContextOpsHandler)
 #if UFE_PREVIEW_VERSION_NUM >= 2022
-        UFE_V2(, usdUIInfoHandler)
+                UFE_V2(, usdUIInfoHandler)
 #endif
     );
+#endif
 
 #if !defined(NDEBUG)
-	assert(g_USDRtid != 0);
+    assert(g_USDRtid != 0);
 #endif
-	if (g_USDRtid == 0)
-		return MS::kFailure;
+    if (g_USDRtid == 0)
+        return MS::kFailure;
 
-	g_StagesSubject = StagesSubject::create();
+    g_StagesSubject = StagesSubject::create();
 
     // Register for UFE string to path service using path component separator '/'
     UFE_V2(Ufe::PathString::registerPathComponentSeparator(g_USDRtid, '/');)
 
-	return MS::kSuccess;
+    return MS::kSuccess;
 }
 
 MStatus finalize()
 {
-	// If more than one plugin still has us registered, do nothing.
-	if (gRegistrationCount-- > 1)
-		return MS::kSuccess;
+    // If more than one plugin still has us registered, do nothing.
+    if (gRegistrationCount-- > 1)
+        return MS::kSuccess;
 
-	// Restore the normal Maya hierarchy handler, and unregister.
-	Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, g_MayaHierarchyHandler);
+    // Restore the normal Maya hierarchy handler, and unregister.
+    Ufe::RunTimeMgr::instance().setHierarchyHandler(g_MayaRtid, g_MayaHierarchyHandler);
 #ifdef UFE_V2_FEATURES_AVAILABLE
-	// Restore the normal Maya context ops handler (can be empty).
-	if (g_MayaContextOpsHandler)
-		Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, g_MayaContextOpsHandler);
-	g_MayaContextOpsHandler.reset();
+    // Restore the normal Maya context ops handler (can be empty).
+    if (g_MayaContextOpsHandler)
+        Ufe::RunTimeMgr::instance().setContextOpsHandler(g_MayaRtid, g_MayaContextOpsHandler);
+    g_MayaContextOpsHandler.reset();
 #endif
-	Ufe::RunTimeMgr::instance().unregister(g_USDRtid);
-	g_MayaHierarchyHandler.reset();
+    Ufe::RunTimeMgr::instance().unregister(g_USDRtid);
+    g_MayaHierarchyHandler.reset();
 
-	g_StagesSubject.Reset();
+    g_StagesSubject.Reset();
 
-	return MS::kSuccess;
+    return MS::kSuccess;
 }
 
-Ufe::Rtid getUsdRunTimeId()
-{
-    return g_USDRtid;
-}
+Ufe::Rtid getUsdRunTimeId() { return g_USDRtid; }
 
-Ufe::Rtid getMayaRunTimeId()
-{
-    return g_MayaRtid;
-}
+Ufe::Rtid getMayaRunTimeId() { return g_MayaRtid; }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

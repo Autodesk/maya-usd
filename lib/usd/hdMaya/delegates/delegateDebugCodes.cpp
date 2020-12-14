@@ -19,10 +19,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfDebug) {
+TF_REGISTRY_FUNCTION(TfDebug)
+{
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET,
-        "Print information about 'Get' calls to the delegates.");
+        HDMAYA_DELEGATE_GET, "Print information about 'Get' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_CULL_STYLE,
@@ -41,8 +41,11 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information about 'GetDoubleSided' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_EXTENT,
-        "Print information about 'GetExtent' calls to the delegates.");
+        HDMAYA_DELEGATE_GET_EXTENT, "Print information about 'GetExtent' calls to the delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_INSTANCER_ID,
+        "Print information about 'GetInstancerId' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_INSTANCE_INDICES,
@@ -79,15 +82,6 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information about 'GetSubdivTags' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
-        "Print information about 'GetTextureResource' calls to the delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID,
-        "Print information about 'GetTextureResourceID' calls to the "
-        "delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_GET_TRANSFORM,
         "Print information about 'GetTransform' calls to the delegates.");
 
@@ -96,20 +90,17 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information about 'GetVisible' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_INSERTDAG,
-        "Print information about 'InsertDag' calls to the delegates.");
+        HDMAYA_DELEGATE_INSERTDAG, "Print information about 'InsertDag' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_IS_ENABLED,
-        "Print information about 'IsEnabled' calls to the delegates.");
+        HDMAYA_DELEGATE_IS_ENABLED, "Print information about 'IsEnabled' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_RECREATE_ADAPTER,
         "Print information when the delegate recreates adapters.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_REGISTRY,
-        "Print information about registration of HdMayaDelegates.");
+        HDMAYA_DELEGATE_REGISTRY, "Print information about registration of HdMayaDelegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         HDMAYA_DELEGATE_SAMPLE_PRIMVAR,
@@ -120,8 +111,20 @@ TF_REGISTRY_FUNCTION(TfDebug) {
         "Print information about 'SampleTransform' calls to the delegates.");
 
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_SELECTION,
-        "Print information about hdMaya delegate selection.");
+        HDMAYA_DELEGATE_SELECTION, "Print information about hdMaya delegate selection.");
+
+#if USD_VERSION_NUM < 2011
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
+        "Print information about 'GetTextureResource' calls to the delegates.");
+
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID,
+        "Print information about 'GetTextureResourceID' calls to the "
+        "delegates.");
+
+#endif // USD_VERSION_NUM < 2011
 
 #if USD_VERSION_NUM <= 1911
 

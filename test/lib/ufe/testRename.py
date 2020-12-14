@@ -18,7 +18,7 @@
 
 import maya.cmds as cmds
 
-from ufeTestUtils import usdUtils, mayaUtils
+import usdUtils, mayaUtils
 import ufe
 import mayaUsd.ufe
 
@@ -66,7 +66,7 @@ class RenameTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
         
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
         # Clear selection to start off
@@ -76,7 +76,7 @@ class RenameTestCase(unittest.TestCase):
         '''Rename proxy shape, UFE lookup should succeed.'''
 
         mayaSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
         usdSegment = usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")
 
         ball35Path = ufe.Path([mayaSegment, usdSegment])
@@ -105,7 +105,7 @@ class RenameTestCase(unittest.TestCase):
         # Rename the proxy shape node itself.  Stage and prim access should
         # still be valid, with the new path.
         mayaSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|potato")
+            "|transform1|potato")
         cmds.rename('|transform1|proxyShape1', 'potato')
         self.assertEqual(len(cmds.ls('potato')), 1)
 
@@ -116,14 +116,14 @@ class RenameTestCase(unittest.TestCase):
         assertStageAndPrimAccess(mayaSegment, ball35PathStr, usdSegment)
 
     def testRename(self):
-        # open tree.ma scene in test-samples
+        # open tree.ma scene in testSamples
         mayaUtils.openTreeScene()
 
         # clear selection to start off
         cmds.select(clear=True)
 
         # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|Tree_usd|Tree_usdShape')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
         usdPathSegment = usdUtils.createUfePathSegment('/TreeBase')
         treebasePath = ufe.Path([mayaPathSegment, usdPathSegment])
         treebaseItem = ufe.Hierarchy.createItem(treebasePath)
@@ -176,14 +176,14 @@ class RenameTestCase(unittest.TestCase):
     def testRenameUndo(self):
         '''Rename USD node.'''
 
-        # open usdCylinder.ma scene in test-samples
+        # open usdCylinder.ma scene in testSamples
         mayaUtils.openCylinderScene()
 
         # clear selection to start off
         cmds.select(clear=True)
 
         # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|mayaUsdTransform|shape')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|mayaUsdTransform|shape')
         usdPathSegment = usdUtils.createUfePathSegment('/pCylinder1')
         cylinderPath = ufe.Path([mayaPathSegment, usdPathSegment])
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
@@ -251,7 +251,7 @@ class RenameTestCase(unittest.TestCase):
         '''Restrict renaming USD node. Cannot rename a prim defined on another layer.'''
 
         # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|transform1|proxyShape1')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|transform1|proxyShape1')
         usdPathSegment = usdUtils.createUfePathSegment('/Room_set/Props/Ball_35')
         ball35Path = ufe.Path([mayaPathSegment, usdPathSegment])
         ball35Item = ufe.Hierarchy.createItem(ball35Path)
@@ -273,14 +273,14 @@ class RenameTestCase(unittest.TestCase):
     def testRenameRestrictionHasSpecs(self):
         '''Restrict renaming USD node. Cannot rename a node that doesn't contribute to the final composed prim'''
 
-        # open appleBite.ma scene in test-samples
+        # open appleBite.ma scene in testSamples
         mayaUtils.openAppleBiteScene()
 
         # clear selection to start off
         cmds.select(clear=True)
 
         # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Asset_flattened_instancing_and_class_removed_usd|Asset_flattened_instancing_and_class_removed_usdShape')
         usdPathSegment = usdUtils.createUfePathSegment('/apple/payload/geo')
         geoPath = ufe.Path([mayaPathSegment, usdPathSegment])
         geoItem = ufe.Hierarchy.createItem(geoPath)
@@ -296,14 +296,14 @@ class RenameTestCase(unittest.TestCase):
             cmds.rename("geo_renamed")
 
     def testRenameUniqueName(self):
-        # open tree.ma scene in test-samples
+        # open tree.ma scene in testSamples
         mayaUtils.openTreeScene()
 
         # clear selection to start off
         cmds.select(clear=True)
 
         # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|Tree_usd|Tree_usdShape')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Tree_usd|Tree_usdShape')
         usdPathSegment = usdUtils.createUfePathSegment('/TreeBase/trunk')
         trunkPath = ufe.Path([mayaPathSegment, usdPathSegment])
         trunkItem = ufe.Hierarchy.createItem(trunkPath)
@@ -331,14 +331,14 @@ class RenameTestCase(unittest.TestCase):
             stage.GetPrimAtPath("/TreeBase/leavesXform1"),])
 
     def testRenameSpecialCharacter(self):
-        # open twoSpheres.ma scene in test-samples
+        # open twoSpheres.ma scene in testSamples
         mayaUtils.openTwoSpheresScene()
 
         # clear selection to start off
         cmds.select(clear=True)
 
         # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|usdSphereParent|usdSphereParentShape')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|usdSphereParent|usdSphereParentShape')
         usdPathSegment = usdUtils.createUfePathSegment('/sphereXform/sphere')
         basePath = ufe.Path([mayaPathSegment, usdPathSegment])
         usdSphereItem = ufe.Hierarchy.createItem(basePath)
@@ -373,14 +373,14 @@ class RenameTestCase(unittest.TestCase):
     def testRenameNotifications(self):
         '''Rename a USD node and test for the UFE notifications.'''
 
-        # open usdCylinder.ma scene in test-samples
+        # open usdCylinder.ma scene in testSamples
         mayaUtils.openCylinderScene()
 
         # clear selection to start off
         cmds.select(clear=True)
 
         # select a USD object.
-        mayaPathSegment = mayaUtils.createUfePathSegment('|world|mayaUsdTransform|shape')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|mayaUsdTransform|shape')
         usdPathSegment = usdUtils.createUfePathSegment('/pCylinder1')
         cylinderPath = ufe.Path([mayaPathSegment, usdPathSegment])
         cylinderItem = ufe.Hierarchy.createItem(cylinderPath)

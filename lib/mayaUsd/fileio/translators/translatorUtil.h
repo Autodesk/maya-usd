@@ -17,19 +17,19 @@
 #define PXRUSDMAYA_TRANSLATOR_UTIL_H
 
 #include <mayaUsd/base/api.h>
-
-#include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primReaderArgs.h>
-
-#include <maya/MObject.h>
-#include <maya/MString.h>
+#include <mayaUsd/fileio/primReaderContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
+#include <maya/MObject.h>
+#include <maya/MString.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-enum class UsdMayaShadingNodeType {
+enum class UsdMayaShadingNodeType
+{
     NonShading,
     Light,
     PostProcess,
@@ -49,14 +49,13 @@ struct UsdMayaTranslatorUtil
     /// non-NULL, the new Maya node will be registered to the path of
     /// \p usdPrim.
     MAYAUSD_CORE_PUBLIC
-    static bool
-    CreateTransformNode(
-            const UsdPrim& usdPrim,
-            MObject& parentNode,
-            const UsdMayaPrimReaderArgs& args,
-            UsdMayaPrimReaderContext* context,
-            MStatus* status,
-            MObject* mayaNodeObj);
+    static bool CreateTransformNode(
+        const UsdPrim&               usdPrim,
+        MObject&                     parentNode,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext*    context,
+        MStatus*                     status,
+        MObject*                     mayaNodeObj);
 
     /// \brief Creates a "dummy" transform node for the given prim, where the
     /// dummy transform has all transform properties locked.
@@ -66,54 +65,50 @@ struct UsdMayaTranslatorUtil
     /// be applied on export. Otherwise, this attribute will be set to the
     /// empty string, so a typeless def will be generated on export.
     MAYAUSD_CORE_PUBLIC
-    static bool
-    CreateDummyTransformNode(
-            const UsdPrim& usdPrim,
-            MObject& parentNode,
-            bool importTypeName,
-            const UsdMayaPrimReaderArgs& args,
-            UsdMayaPrimReaderContext* context,
-            MStatus* status,
-            MObject* mayaNodeObj);
+    static bool CreateDummyTransformNode(
+        const UsdPrim&               usdPrim,
+        MObject&                     parentNode,
+        bool                         importTypeName,
+        const UsdMayaPrimReaderArgs& args,
+        UsdMayaPrimReaderContext*    context,
+        MStatus*                     status,
+        MObject*                     mayaNodeObj);
 
     /// \brief Helper to create a node for \p usdPrim of type \p
     /// nodeTypeName under \p parentNode. If \p context is non-NULL,
     /// the new Maya node will be registered to the path of \p usdPrim.
     MAYAUSD_CORE_PUBLIC
-    static bool
-    CreateNode(
-            const UsdPrim& usdPrim,
-            const MString& nodeTypeName,
-            MObject& parentNode,
-            UsdMayaPrimReaderContext* context,
-            MStatus* status,
-            MObject* mayaNodeObj);
+    static bool CreateNode(
+        const UsdPrim&            usdPrim,
+        const MString&            nodeTypeName,
+        MObject&                  parentNode,
+        UsdMayaPrimReaderContext* context,
+        MStatus*                  status,
+        MObject*                  mayaNodeObj);
 
     /// \brief Helper to create a node for \p usdPath of type \p
     /// nodeTypeName under \p parentNode. If \p context is non-NULL,
     /// the new Maya node will be registered to the path of \p usdPrim.
     MAYAUSD_CORE_PUBLIC
-    static bool
-    CreateNode(
-            const SdfPath& usdPath,
-            const MString& nodeTypeName,
-            MObject& parentNode,
-            UsdMayaPrimReaderContext* context,
-            MStatus* status,
-            MObject* mayaNodeObj);
+    static bool CreateNode(
+        const SdfPath&            usdPath,
+        const MString&            nodeTypeName,
+        MObject&                  parentNode,
+        UsdMayaPrimReaderContext* context,
+        MStatus*                  status,
+        MObject*                  mayaNodeObj);
 
     /// \brief Helper to create a node named \p nodeName of type \p
     /// nodeTypeName under \p parentNode. Note that this version does
     /// NOT take a context and cannot register the newly created Maya node
     /// since it does not know the SdfPath to an originating object.
     MAYAUSD_CORE_PUBLIC
-    static bool
-    CreateNode(
-            const MString& nodeName,
-            const MString& nodeTypeName,
-            MObject& parentNode,
-            MStatus* status,
-            MObject* mayaNodeObj);
+    static bool CreateNode(
+        const MString& nodeName,
+        const MString& nodeTypeName,
+        MObject&       parentNode,
+        MStatus*       status,
+        MObject*       mayaNodeObj);
 
     /// \brief Helper to create shadingNodes. Wrapper around mel "shadingNode".
     ///
@@ -128,14 +123,13 @@ struct UsdMayaTranslatorUtil
     /// determine the type of node automatically using it's classification
     /// string
     MAYAUSD_CORE_PUBLIC
-    static bool
-    CreateShaderNode(
-            const MString& nodeName,
-            const MString& nodeTypeName,
-            const UsdMayaShadingNodeType shadingNodeType,
-            MStatus* status,
-            MObject* shaderObj,
-            const MObject parentNode=MObject::kNullObj);
+    static bool CreateShaderNode(
+        const MString&               nodeName,
+        const MString&               nodeTypeName,
+        const UsdMayaShadingNodeType shadingNodeType,
+        MStatus*                     status,
+        MObject*                     shaderObj,
+        const MObject                parentNode = MObject::kNullObj);
 
     /// Gets an API schema of the requested type for the given \p usdPrim.
     ///
@@ -150,10 +144,7 @@ struct UsdMayaTranslatorUtil
 
         return APISchemaType(usdPrim);
     }
-
 };
-
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

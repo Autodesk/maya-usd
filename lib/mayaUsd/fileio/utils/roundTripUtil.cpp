@@ -26,29 +26,28 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     // We just store everything in a top level dictionary named "Maya".
     (Maya)
 
-        // This annotates data that was exported to maya but should not be
-        // re-imported into Maya when trying to "roundtrip" data.
-        (generated)
+    // This annotates data that was exported to maya but should not be
+    // re-imported into Maya when trying to "roundtrip" data.
+    (generated)
 
-        (clamped)
+    (clamped)
 
-        // This annotates if the attribute used to be a maya array.  The index
-        // of the array is likely encoded in the attribute name though we could
-        // extend this to store the name and index.
-        (arrayIndex)
+    // This annotates if the attribute used to be a maya array.  The index
+    // of the array is likely encoded in the attribute name though we could
+    // extend this to store the name and index.
+    (arrayIndex)
 );
-
+// clang-format on
 
 template <typename T>
-static
-bool
-_GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* outVal)
+static bool _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* outVal)
 {
     VtValue data = attr.GetCustomDataByKey(_tokens->Maya);
     if (data.IsEmpty()) {
@@ -56,9 +55,10 @@ _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* outVal)
     }
 
     if (!data.IsHolding<VtDictionary>()) {
-        TF_WARN("Expected %s on <%s> to be a dictionary.",
-                _tokens->Maya.GetText(),
-                attr.GetPath().GetText());
+        TF_WARN(
+            "Expected %s on <%s> to be a dictionary.",
+            _tokens->Maya.GetText(),
+            attr.GetPath().GetText());
         return false;
     }
 
@@ -67,12 +67,12 @@ _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* outVal)
         if (val.IsHolding<T>()) {
             *outVal = val.UncheckedGet<T>();
             return true;
-        }
-        else {
-            TF_WARN("Unexpected type for %s[%s] on <%s>.",
-                    _tokens->Maya.GetText(),
-                    key.GetText(),
-                    attr.GetPath().GetText());
+        } else {
+            TF_WARN(
+                "Unexpected type for %s[%s] on <%s>.",
+                _tokens->Maya.GetText(),
+                key.GetText(),
+                attr.GetPath().GetText());
         }
     }
 
@@ -80,12 +80,7 @@ _GetMayaDictValue(const UsdAttribute& attr, const TfToken& key, T* outVal)
 }
 
 template <typename T>
-static
-void
-_SetMayaDictValue(
-        const UsdAttribute& attr,
-        const TfToken& flagName,
-        const T& val)
+static void _SetMayaDictValue(const UsdAttribute& attr, const TfToken& flagName, const T& val)
 {
     VtValue data = attr.GetCustomDataByKey(_tokens->Maya);
 
@@ -93,11 +88,11 @@ _SetMayaDictValue(
     if (!data.IsEmpty()) {
         if (data.IsHolding<VtDictionary>()) {
             newDict = data.UncheckedGet<VtDictionary>();
-        }
-        else {
-            TF_WARN("Expected to get %s on <%s> to be a dictionary.",
-                    _tokens->Maya.GetText(),
-                    attr.GetPath().GetText());
+        } else {
+            TF_WARN(
+                "Expected to get %s on <%s> to be a dictionary.",
+                _tokens->Maya.GetText(),
+                attr.GetPath().GetText());
             return;
         }
     }
@@ -107,59 +102,47 @@ _SetMayaDictValue(
 }
 
 /* static */
-bool
-UsdMayaRoundTripUtil::IsAttributeUserAuthored(const UsdAttribute& attr)
+bool UsdMayaRoundTripUtil::IsAttributeUserAuthored(const UsdAttribute& attr)
 {
     return attr.HasAuthoredValue() && !IsAttributeMayaGenerated(attr);
 }
 
 /* static */
-bool
-UsdMayaRoundTripUtil::IsAttributeMayaGenerated(const UsdAttribute& attr)
+bool UsdMayaRoundTripUtil::IsAttributeMayaGenerated(const UsdAttribute& attr)
 {
     bool ret = false;
     return _GetMayaDictValue(attr, _tokens->generated, &ret) && ret;
 }
 
 /* static */
-void
-UsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(const UsdAttribute& attr)
+void UsdMayaRoundTripUtil::MarkAttributeAsMayaGenerated(const UsdAttribute& attr)
 {
     _SetMayaDictValue(attr, _tokens->generated, true);
 }
 
 /* static */
-bool
-UsdMayaRoundTripUtil::IsPrimvarClamped(const UsdGeomPrimvar& primvar)
+bool UsdMayaRoundTripUtil::IsPrimvarClamped(const UsdGeomPrimvar& primvar)
 {
     bool ret = false;
     return _GetMayaDictValue(primvar.GetAttr(), _tokens->clamped, &ret) && ret;
 }
 
 /* static */
-void
-UsdMayaRoundTripUtil::MarkPrimvarAsClamped(const UsdGeomPrimvar& primvar)
+void UsdMayaRoundTripUtil::MarkPrimvarAsClamped(const UsdGeomPrimvar& primvar)
 {
     _SetMayaDictValue(primvar.GetAttr(), _tokens->clamped, true);
 }
 
 /* static */
-bool
-UsdMayaRoundTripUtil::GetAttributeArray(
-        const UsdAttribute& attr,
-        unsigned int* index)
+bool UsdMayaRoundTripUtil::GetAttributeArray(const UsdAttribute& attr, unsigned int* index)
 {
     return _GetMayaDictValue(attr, _tokens->arrayIndex, index);
 }
 
 /* static */
-void
-UsdMayaRoundTripUtil::MarkAttributeAsArray(
-        const UsdAttribute& attr,
-        const unsigned int index)
+void UsdMayaRoundTripUtil::MarkAttributeAsArray(const UsdAttribute& attr, const unsigned int index)
 {
     _SetMayaDictValue(attr, _tokens->arrayIndex, index);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <memory>
-
-#include <boost/python.hpp>
+#include <mayaUsd/utils/blockSceneModificationContext.h>
 
 #include <pxr/pxr.h>
 
-#include <mayaUsd/utils/blockSceneModificationContext.h>
+#include <boost/python.hpp>
+
+#include <memory>
 
 using namespace boost::python;
 
@@ -31,30 +31,23 @@ namespace {
 // manager" object that can be used with the "with" statement.
 class _PyBlockSceneModificationContext
 {
-    public:
-        void __enter__() {
-            _context.reset(new UsdMayaBlockSceneModificationContext());
-        }
+public:
+    void __enter__() { _context.reset(new UsdMayaBlockSceneModificationContext()); }
 
-        void __exit__(object, object, object) {
-            _context.reset();
-        }
+    void __exit__(object, object, object) { _context.reset(); }
 
-    private:
-        std::shared_ptr<UsdMayaBlockSceneModificationContext> _context;
+private:
+    std::shared_ptr<UsdMayaBlockSceneModificationContext> _context;
 };
 
 } // anonymous namespace
 
-
-void
-wrapBlockSceneModificationContext()
+void wrapBlockSceneModificationContext()
 {
     typedef _PyBlockSceneModificationContext Context;
     class_<Context>(
-            "BlockSceneModificationContext",
-            "Context manager for blocking scene modification status changes")
+        "BlockSceneModificationContext",
+        "Context manager for blocking scene modification status changes")
         .def("__enter__", &Context::__enter__, return_self<>())
-        .def("__exit__", &Context::__exit__)
-    ;
+        .def("__exit__", &Context::__exit__);
 }

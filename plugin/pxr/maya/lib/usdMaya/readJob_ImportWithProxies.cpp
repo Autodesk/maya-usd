@@ -14,18 +14,17 @@
 // limitations under the License.
 //
 #include "usdMaya/readJobWithSceneAssembly.h"
+#include "usdMaya/translatorModelAssembly.h"
 
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primReaderRegistry.h>
-#include <mayaUsd/utils/stageCache.h>
-#include "usdMaya/translatorModelAssembly.h"
 #include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/utils/stageCache.h>
 
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/base/tf/token.h>
-
 #include <pxr/usd/kind/registry.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
@@ -47,31 +46,29 @@
 #include <string>
 #include <vector>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((PointInstancerTypeName, "PxPointInstancer"))
     ((XformTypeName, "Xform"))
     ((GeomRootName, "Geom"))
     ((ScopePrimTypeName, "Scope"))
-
     ((MayaProxyShapeNodeName, "GeomProxy"))
     ((ExcludePrimPathsPlugName, "excludePrimPaths"))
 );
-
+// clang-format on
 
 /*******************************************************************************
-*                                                                              *
-* XXX: These functions could potentially be plugin points studios might want   *
-*      to customize. At the moment, they reflect Pixar pipeline conventions.   *
-*                                                                              *
-*******************************************************************************/
+ *                                                                              *
+ * XXX: These functions could potentially be plugin points studios might want   *
+ *      to customize. At the moment, they reflect Pixar pipeline conventions.   *
+ *                                                                              *
+ *******************************************************************************/
 
-static
-bool
-_ShouldImportAsSubAssembly(const UsdPrim& prim)
+static bool _ShouldImportAsSubAssembly(const UsdPrim& prim)
 {
     // XXX: We need to identify dressGroups by prim type, since dressGroups
     // nested inside component models will have kind subcomponent rather than
@@ -81,23 +78,21 @@ _ShouldImportAsSubAssembly(const UsdPrim& prim)
         return true;
     }
 
-    TfToken kind;
+    TfToken     kind;
     UsdModelAPI usdModel(prim);
     usdModel.GetKind(&kind);
 
-    if (KindRegistry::IsA(kind, KindTokens->component) ||
-            KindRegistry::IsA(kind, KindTokens->assembly)) {
+    if (KindRegistry::IsA(kind, KindTokens->component)
+        || KindRegistry::IsA(kind, KindTokens->assembly)) {
         return true;
     }
 
     return false;
 }
 
-static
-bool
-_IsCollapsePoint(const UsdPrim& prim)
+static bool _IsCollapsePoint(const UsdPrim& prim)
 {
-    TfToken kind;
+    TfToken     kind;
     UsdModelAPI usdModel(prim);
     usdModel.GetKind(&kind);
 
@@ -111,12 +106,9 @@ _IsCollapsePoint(const UsdPrim& prim)
 // XXX: At the moment, the 'Geom' scope is just a convenient place to insert
 // a model's top-level proxy. Ultimately, we should always create the top-level
 // proxy for the imported model and not depend on the existence of this scope.
-static
-bool
-_IsPxrGeomRoot(const UsdPrim& prim)
+static bool _IsPxrGeomRoot(const UsdPrim& prim)
 {
-    if (prim.GetName() == _tokens->GeomRootName &&
-            prim.GetParent() && prim.GetParent().IsModel()) {
+    if (prim.GetName() == _tokens->GeomRootName && prim.GetParent() && prim.GetParent().IsModel()) {
         return true;
     }
 
@@ -124,21 +116,18 @@ _IsPxrGeomRoot(const UsdPrim& prim)
 }
 
 /*******************************************************************************
-*                                                                              *
-* XXX: End possible plugin section.                                            *
-*                                                                              *
-*******************************************************************************/
+ *                                                                              *
+ * XXX: End possible plugin section.                                            *
+ *                                                                              *
+ *******************************************************************************/
 
-static
-bool
-_CreateParentTransformNodes(
-        const UsdPrim& usdPrim,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context)
+static bool _CreateParentTransformNodes(
+    const UsdPrim&               usdPrim,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     const UsdPrim parentPrim = usdPrim.GetParent();
-    if (!parentPrim ||
-            parentPrim == usdPrim.GetStage()->GetPseudoRoot()) {
+    if (!parentPrim || parentPrim == usdPrim.GetStage()->GetPseudoRoot()) {
         return true;
     }
 
@@ -157,27 +146,22 @@ _CreateParentTransformNodes(
 
     // Get the parent node of parentPrim (usdPrim's grandparent) and use that
     // to create a node for parentPrim.
-    MObject grandParentNode =
-        context->GetMayaNode(parentPrim.GetPath().GetParentPath(), false);
+    MObject grandParentNode = context->GetMayaNode(parentPrim.GetPath().GetParentPath(), false);
 
     MStatus status;
-    return UsdMayaTranslatorUtil::CreateTransformNode(parentPrim,
-                                                         grandParentNode,
-                                                         args,
-                                                         context,
-                                                         &status,
-                                                         &parentNode);
+    return UsdMayaTranslatorUtil::CreateTransformNode(
+        parentPrim, grandParentNode, args, context, &status, &parentNode);
 }
 
-bool
-UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
-        const std::vector<UsdPrim>& proxyPrims,
-        const UsdPrim& pxrGeomRoot,
-        const std::vector<std::string>& collapsePointPathStrings)
+bool UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
+    const std::vector<UsdPrim>&     proxyPrims,
+    const UsdPrim&                  pxrGeomRoot,
+    const std::vector<std::string>& collapsePointPathStrings)
 {
-    TF_FOR_ALL(iter, proxyPrims) {
-        const UsdPrim proxyPrim = *iter;
-        UsdMayaPrimReaderArgs args(proxyPrim, mArgs);
+    TF_FOR_ALL(iter, proxyPrims)
+    {
+        const UsdPrim            proxyPrim = *iter;
+        UsdMayaPrimReaderArgs    args(proxyPrim, mArgs);
         UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (!_CreateParentTransformNodes(proxyPrim, args, &ctx)) {
@@ -185,11 +169,8 @@ UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
         }
 
         MObject parentNode = ctx.GetMayaNode(proxyPrim.GetPath().GetParentPath(), false);
-        if (!UsdMayaTranslatorModelAssembly::ReadAsProxy(proxyPrim,
-                                                            mImportData.rootVariantSelections(),
-                                                            parentNode,
-                                                            args,
-                                                            &ctx)) {
+        if (!UsdMayaTranslatorModelAssembly::ReadAsProxy(
+                proxyPrim, mImportData.rootVariantSelections(), parentNode, args, &ctx)) {
             return false;
         }
     }
@@ -197,23 +178,21 @@ UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
     // Author exclude paths on the top-level proxy using the list of collapse
     // points we found.
     if (!collapsePointPathStrings.empty()) {
-        MStatus status;
+        MStatus                  status;
         UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         // Get the geom root proxy shape node.
-        SdfPath proxyShapePath = pxrGeomRoot.GetPath().AppendChild(
-            _tokens->MayaProxyShapeNodeName);
+        SdfPath proxyShapePath = pxrGeomRoot.GetPath().AppendChild(_tokens->MayaProxyShapeNodeName);
         MObject proxyShapeObj = ctx.GetMayaNode(proxyShapePath, false);
         MFnDependencyNode depNodeFn(proxyShapeObj, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        std::string excludePathsString =
-            TfStringJoin(collapsePointPathStrings, ",");
+        std::string excludePathsString = TfStringJoin(collapsePointPathStrings, ",");
 
         // Set the excludePrimPaths attribute on the node.
         MDagModifier dagMod;
-        MPlug excludePathsPlug = depNodeFn.findPlug(
-            _tokens->ExcludePrimPathsPlugName.GetText(), true, &status);
+        MPlug        excludePathsPlug
+            = depNodeFn.findPlug(_tokens->ExcludePrimPathsPlugName.GetText(), true, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
         status = dagMod.newPlugValueString(excludePathsPlug, excludePathsString.c_str());
         CHECK_MSTATUS_AND_RETURN(status, false);
@@ -224,33 +203,34 @@ UsdMaya_ReadJobWithSceneAssembly::_ProcessProxyPrims(
     return true;
 }
 
-bool
-UsdMaya_ReadJobWithSceneAssembly::_ProcessSubAssemblyPrims(
-            const std::vector<UsdPrim>& subAssemblyPrims)
+bool UsdMaya_ReadJobWithSceneAssembly::_ProcessSubAssemblyPrims(
+    const std::vector<UsdPrim>& subAssemblyPrims)
 {
-    TF_FOR_ALL(iter, subAssemblyPrims) {
-        const UsdPrim subAssemblyPrim = *iter;
-        UsdMayaPrimReaderArgs args(subAssemblyPrim, mArgs);
+    TF_FOR_ALL(iter, subAssemblyPrims)
+    {
+        const UsdPrim            subAssemblyPrim = *iter;
+        UsdMayaPrimReaderArgs    args(subAssemblyPrim, mArgs);
         UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         // We use the file path of the file currently being imported and
         // the path to the prim within that file when creating the
         // subassembly.
         std::string subAssemblyUsdFilePath = mImportData.filename();
-        SdfPath subAssemblyUsdPrimPath = subAssemblyPrim.GetPath();
+        SdfPath     subAssemblyUsdPrimPath = subAssemblyPrim.GetPath();
 
         if (!_CreateParentTransformNodes(subAssemblyPrim, args, &ctx)) {
             return false;
         }
 
         MObject parentNode = ctx.GetMayaNode(subAssemblyPrim.GetPath().GetParentPath(), false);
-        if (!UsdMayaTranslatorModelAssembly::Read(subAssemblyPrim,
-                                                     subAssemblyUsdFilePath,
-                                                     subAssemblyUsdPrimPath,
-                                                     parentNode,
-                                                     args,
-                                                     &ctx,
-                                                     mArgs.assemblyRep)) {
+        if (!UsdMayaTranslatorModelAssembly::Read(
+                subAssemblyPrim,
+                subAssemblyUsdFilePath,
+                subAssemblyUsdPrimPath,
+                parentNode,
+                args,
+                &ctx,
+                mArgs.assemblyRep)) {
             return false;
         }
     }
@@ -258,20 +238,20 @@ UsdMaya_ReadJobWithSceneAssembly::_ProcessSubAssemblyPrims(
     return true;
 }
 
-bool
-UsdMaya_ReadJobWithSceneAssembly::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
+bool UsdMaya_ReadJobWithSceneAssembly::_ProcessCameraPrims(const std::vector<UsdPrim>& cameraPrims)
 {
-    TF_FOR_ALL(iter, cameraPrims) {
-        const UsdPrim cameraPrim = *iter;
-        UsdMayaPrimReaderArgs args(cameraPrim, mArgs);
+    TF_FOR_ALL(iter, cameraPrims)
+    {
+        const UsdPrim            cameraPrim = *iter;
+        UsdMayaPrimReaderArgs    args(cameraPrim, mArgs);
         UsdMayaPrimReaderContext ctx(&mNewNodeRegistry);
 
         if (!_CreateParentTransformNodes(cameraPrim, args, &ctx)) {
             return false;
         }
 
-        if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn =
-                UsdMayaPrimReaderRegistry::Find(cameraPrim.GetTypeName())) {
+        if (UsdMayaPrimReaderRegistry::ReaderFactoryFn factoryFn
+            = UsdMayaPrimReaderRegistry::Find(cameraPrim.GetTypeName())) {
             UsdMayaPrimReaderSharedPtr primReader = factoryFn(args);
             if (primReader) {
                 primReader->Read(&ctx);
@@ -282,8 +262,7 @@ UsdMaya_ReadJobWithSceneAssembly::_ProcessCameraPrims(const std::vector<UsdPrim>
     return true;
 }
 
-bool
-UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
+bool UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
 {
     MStatus status;
 
@@ -296,10 +275,10 @@ UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
     std::vector<UsdPrim> subAssemblyPrims;
     std::vector<UsdPrim> proxyPrims;
 
-    UsdPrim pxrGeomRoot;
+    UsdPrim                  pxrGeomRoot;
     std::vector<std::string> collapsePointPathStrings;
 
-    for(auto primIt = range.begin(); primIt != range.end(); ++primIt) {
+    for (auto primIt = range.begin(); primIt != range.end(); ++primIt) {
         const UsdPrim& prim = *primIt;
 
         if (prim.IsA<UsdGeomCamera>()) {
@@ -326,25 +305,25 @@ UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
         } else if (prim.GetTypeName() == _tokens->ScopePrimTypeName) {
             // XXX: This is completely wrong, but I don't want to deal
             // with the fallout of fixing it right now.
-            TF_WARN("Encountered Scope <%s>; currently cannot handle Scopes. "
-                    "Skipping all children.",
-                    prim.GetPath().GetText());
+            TF_WARN(
+                "Encountered Scope <%s>; currently cannot handle Scopes. "
+                "Skipping all children.",
+                prim.GetPath().GetText());
             primIt.PruneChildren();
         } else if (prim.GetTypeName() != _tokens->XformTypeName) {
             // Don't complain about Xform prims being unsupported. For the
             // "Expanded" representation of assemblies, we'll only create the
             // transforms we need to in order to reach supported prims.
-            TF_WARN("Prim type '%s' unsupported in 'Expanded' "
-                    "representation for prim <%s>. Skipping...",
-                    prim.GetTypeName().GetText(),
-                    prim.GetPath().GetText());
+            TF_WARN(
+                "Prim type '%s' unsupported in 'Expanded' "
+                "representation for prim <%s>. Skipping...",
+                prim.GetTypeName().GetText(),
+                prim.GetPath().GetText());
         }
     }
 
     // Create the proxy nodes and author exclude paths on the geom root proxy.
-    if (!_ProcessProxyPrims(proxyPrims,
-                               pxrGeomRoot,
-                               collapsePointPathStrings)) {
+    if (!_ProcessProxyPrims(proxyPrims, pxrGeomRoot, collapsePointPathStrings)) {
         return false;
     }
 
@@ -360,6 +339,5 @@ UsdMaya_ReadJobWithSceneAssembly::_DoImportWithProxies(UsdPrimRange& range)
 
     return true;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

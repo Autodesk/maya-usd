@@ -15,20 +15,19 @@
 //
 #include "nurbsSurfaceWriter.h"
 
-#include <maya/MDoubleArray.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MFnNurbsCurve.h>
-#include <maya/MFnNurbsSurface.h>
-#include <maya/MPointArray.h>
-#include <maya/MTrimBoundaryArray.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/utils/adaptor.h>
+#include <mayaUsd/fileio/utils/writeUtil.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/gf/vec2d.h>
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3d.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/nurbsCurves.h>
@@ -36,30 +35,29 @@
 #include <pxr/usd/usdGeom/pointBased.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/utils/adaptor.h>
-#include <mayaUsd/fileio/utils/writeUtil.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <maya/MDoubleArray.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnNurbsCurve.h>
+#include <maya/MFnNurbsSurface.h>
+#include <maya/MPointArray.h>
+#include <maya/MTrimBoundaryArray.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_WRITER(nurbsSurface, PxrUsdTranslators_NurbsSurfaceWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(nurbsSurface, UsdGeomNurbsPatch);
 
-
 PxrUsdTranslators_NurbsSurfaceWriter::PxrUsdTranslators_NurbsSurfaceWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
     if (!TF_VERIFY(GetDagPath().isValid())) {
         return;
     }
 
-    UsdGeomNurbsPatch primSchema =
-        UsdGeomNurbsPatch::Define(GetUsdStage(), GetUsdPath());
+    UsdGeomNurbsPatch primSchema = UsdGeomNurbsPatch::Define(GetUsdStage(), GetUsdPath());
     if (!TF_VERIFY(
             primSchema,
             "Could not define UsdGeomNurbsPatch at path '%s'\n",
@@ -75,14 +73,12 @@ PxrUsdTranslators_NurbsSurfaceWriter::PxrUsdTranslators_NurbsSurfaceWriter(
     }
 }
 
-static
-void
-_FixNormalizedKnotRange(
-        VtArray<double>& knots,
-        const unsigned int numKnots,
-        const unsigned int degree,
-        const double startVal,
-        const double endVal)
+static void _FixNormalizedKnotRange(
+    VtArray<double>&   knots,
+    const unsigned int numKnots,
+    const unsigned int degree,
+    const double       startVal,
+    const double       endVal)
 {
     // ensure we've produced valid knot ranges; the data coming
     // from Maya is fine but sometimes rounding errors in the normalization
@@ -109,8 +105,7 @@ _FixNormalizedKnotRange(
 }
 
 /* virtual */
-void
-PxrUsdTranslators_NurbsSurfaceWriter::Write(const UsdTimeCode& usdTimeCode)
+void PxrUsdTranslators_NurbsSurfaceWriter::Write(const UsdTimeCode& usdTimeCode)
 {
     UsdMayaPrimWriter::Write(usdTimeCode);
 
@@ -118,15 +113,14 @@ PxrUsdTranslators_NurbsSurfaceWriter::Write(const UsdTimeCode& usdTimeCode)
     writeNurbsSurfaceAttrs(usdTimeCode, primSchema);
 }
 
-bool
-PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
-        const UsdTimeCode& usdTimeCode,
-        UsdGeomNurbsPatch& primSchema)
+bool PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
+    const UsdTimeCode& usdTimeCode,
+    UsdGeomNurbsPatch& primSchema)
 {
     MStatus status = MS::kSuccess;
 
     // Return if usdTimeCode does not match if shape is animated
-    if (usdTimeCode.IsDefault() == _HasAnimCurves() ) {
+    if (usdTimeCode.IsDefault() == _HasAnimCurves()) {
         // skip shape as the usdTimeCode does not match if shape isAnimated value
         return true;
     }
@@ -134,8 +128,8 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     MFnNurbsSurface nurbs(GetDagPath(), &status);
     if (!status) {
         TF_RUNTIME_ERROR(
-                "MFnNurbsSurface() failed for surface at DAG path: %s",
-                GetDagPath().fullPathName().asChar());
+            "MFnNurbsSurface() failed for surface at DAG path: %s",
+            GetDagPath().fullPathName().asChar());
         return false;
     }
 
@@ -145,31 +139,29 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     // shader assignment possible.
     if (_GetExportArgs().exportDisplayColor) {
         VtArray<GfVec3f> RGBData;
-        VtArray<float> AlphaData;
-        TfToken interpolation;
-        VtArray<int> assignmentIndices;
-        if (UsdMayaUtil::GetLinearShaderColor(nurbs,
-                                                 &RGBData,
-                                                 &AlphaData,
-                                                 &interpolation,
-                                                 &assignmentIndices)) {
-            if (RGBData.size()>0) {
+        VtArray<float>   AlphaData;
+        TfToken          interpolation;
+        VtArray<int>     assignmentIndices;
+        if (UsdMayaUtil::GetLinearShaderColor(
+                nurbs, &RGBData, &AlphaData, &interpolation, &assignmentIndices)) {
+            if (RGBData.size() > 0) {
                 UsdGeomPrimvar dispColor = primSchema.CreateDisplayColorPrimvar();
                 if (interpolation != dispColor.GetInterpolation()) {
                     dispColor.SetInterpolation(interpolation);
                 }
-                UsdMayaWriteUtil::SetAttribute(dispColor.GetAttr(), RGBData, UsdTimeCode::Default(), _GetSparseValueWriter());
+                UsdMayaWriteUtil::SetAttribute(
+                    dispColor.GetAttr(), RGBData, UsdTimeCode::Default(), _GetSparseValueWriter());
                 if (!assignmentIndices.empty()) {
                     dispColor.SetIndices(assignmentIndices);
                 }
             }
-            if (AlphaData.size() > 0 &&
-                !GfIsClose(AlphaData[0], 1.0, 1e-9)) {
+            if (AlphaData.size() > 0 && !GfIsClose(AlphaData[0], 1.0, 1e-9)) {
                 UsdGeomPrimvar dispOpacity = primSchema.CreateDisplayOpacityPrimvar();
                 if (interpolation != dispOpacity.GetInterpolation()) {
                     dispOpacity.SetInterpolation(interpolation);
                 }
-                UsdMayaWriteUtil::SetAttribute(dispOpacity, AlphaData, UsdTimeCode::Default(), _GetSparseValueWriter());
+                UsdMayaWriteUtil::SetAttribute(
+                    dispOpacity, AlphaData, UsdTimeCode::Default(), _GetSparseValueWriter());
                 if (!assignmentIndices.empty()) {
                     dispOpacity.SetIndices(assignmentIndices);
                 }
@@ -181,9 +173,9 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     unsigned int numKnotsInV = nurbs.numKnotsInV();
     if (numKnotsInU < 2 || numKnotsInV < 2) {
         TF_RUNTIME_ERROR(
-                "MFnNurbsSurface '%s' has degenerate knot vectors. "
-                "Skipping...",
-                GetDagPath().fullPathName().asChar());
+            "MFnNurbsSurface '%s' has degenerate knot vectors. "
+            "Skipping...",
+            GetDagPath().fullPathName().asChar());
         return false;
     }
 
@@ -197,72 +189,75 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     nurbs.getKnotDomain(startU, endU, startV, endV);
 
     // Offset and scale to normalize knots from 0 to 1
-    double uOffset=0.0;
-    double vOffset=0.0;
+    double uOffset = 0.0;
+    double vOffset = 0.0;
     double uScale = 1.0;
     double vScale = 1.0;
 
     if (_GetExportArgs().normalizeNurbs) {
-        if (endU>startU && endV>startV) {
+        if (endU > startU && endV > startV) {
             uOffset = startU;
             vOffset = startV;
             uScale = 1.0 / (endU - startU);
             vScale = 1.0 / (endV - startV);
-            startU = 0; startV = 0;
-            endU = 1; endV = 1;
+            startU = 0;
+            startV = 0;
+            endU = 1;
+            endV = 1;
         }
     }
 
     GfVec2d uRange, vRange;
-    uRange[0]=startU; uRange[1]=endU;
-    vRange[0]=startV; vRange[1]=endV;
+    uRange[0] = startU;
+    uRange[1] = endU;
+    vRange[0] = startV;
+    vRange[1] = endV;
 
     // pad the start and end with a knot on each side, since thats what
     // most apps, like Houdini and Renderman want these two extra knots
-    VtArray<double> sampKnotsInU(numKnotsInU+2);
-    VtArray<double> sampKnotsInV(numKnotsInV+2);
+    VtArray<double> sampKnotsInU(numKnotsInU + 2);
+    VtArray<double> sampKnotsInV(numKnotsInV + 2);
 
     for (unsigned int i = 0; i < numKnotsInU; i++) {
-        sampKnotsInU[i+1]=(double)((knotsInU[i]-uOffset)*uScale);
+        sampKnotsInU[i + 1] = (double)((knotsInU[i] - uOffset) * uScale);
     }
 
     for (unsigned int i = 0; i < numKnotsInV; i++) {
-        sampKnotsInV[i+1]=(double)((knotsInV[i]-vOffset)*vScale);
+        sampKnotsInV[i + 1] = (double)((knotsInV[i] - vOffset) * vScale);
     }
 
     if (_GetExportArgs().normalizeNurbs) {
-        _FixNormalizedKnotRange(sampKnotsInU, numKnotsInU+2, nurbs.degreeU(), startU, endU);
-        _FixNormalizedKnotRange(sampKnotsInV, numKnotsInV+2, nurbs.degreeV(), startV, endV);
+        _FixNormalizedKnotRange(sampKnotsInU, numKnotsInU + 2, nurbs.degreeU(), startU, endU);
+        _FixNormalizedKnotRange(sampKnotsInV, numKnotsInV + 2, nurbs.degreeV(), startV, endV);
     }
 
-
     sampKnotsInU[0] = (2.0 * sampKnotsInU[1] - sampKnotsInU[2]);
-    sampKnotsInU[numKnotsInU+1] = (2.0 * sampKnotsInU[numKnotsInU] -
-                                        sampKnotsInU[numKnotsInU-1]);
+    sampKnotsInU[numKnotsInU + 1]
+        = (2.0 * sampKnotsInU[numKnotsInU] - sampKnotsInU[numKnotsInU - 1]);
     sampKnotsInV[0] = (2.0 * sampKnotsInV[1] - sampKnotsInV[2]);
-    sampKnotsInV[numKnotsInV+1] = (2.0 * sampKnotsInV[numKnotsInV] -
-                                        sampKnotsInV[numKnotsInV-1]);
+    sampKnotsInV[numKnotsInV + 1]
+        = (2.0 * sampKnotsInV[numKnotsInV] - sampKnotsInV[numKnotsInV - 1]);
 
     MPointArray cvArray;
     nurbs.getCVs(cvArray, MSpace::kObject);
     unsigned int numCVs = cvArray.length();
-    int numCVsInU = nurbs.numCVsInU();
-    int numCVsInV = nurbs.numCVsInV();
+    int          numCVsInU = nurbs.numCVsInU();
+    int          numCVsInV = nurbs.numCVsInV();
 
     VtArray<GfVec3f> sampPos(numCVs);
-    VtArray<double> sampPosWeights(numCVs);
-    bool setWeights = false;
+    VtArray<double>  sampPosWeights(numCVs);
+    bool             setWeights = false;
 
     // Create st vec2f vertex primvar
     VtArray<GfVec2f> stValues;
     if (_GetExportArgs().exportNurbsExplicitUV) {
-        stValues.resize(numCVsInU*numCVsInV);
+        stValues.resize(numCVsInU * numCVsInV);
     }
 
     // Maya stores the data where v varies the fastest (v,u order)
     // so we need to pack the data differently u,v order
     // WE DIFFER FROM ALEMBIC WRITER, WE DON'T FLIP V
-    int cvIndex=0;
+    int cvIndex = 0;
     for (int v = 0; v < numCVsInV; v++) {
         for (int u = 0; u < numCVsInU; u++) {
             int index = u * numCVsInV + v;
@@ -278,8 +273,8 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
             // No need to check for nurbsTexCoordParam yet since we only
             // support uniform in the code
             if (stValues.size() > static_cast<size_t>(cvIndex)) {
-                float sValue = static_cast<float>(u)/static_cast<float>(numCVsInU-1);
-                float tValue = static_cast<float>(v)/static_cast<float>(numCVsInV-1);
+                float sValue = static_cast<float>(u) / static_cast<float>(numCVsInU - 1);
+                float tValue = static_cast<float>(v) / static_cast<float>(numCVsInV - 1);
                 stValues[cvIndex] = GfVec2f(sValue, tValue);
             }
 
@@ -291,54 +286,103 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     // Compute the extent using the CVs.
     VtArray<GfVec3f> extent(2);
     UsdGeomPointBased::ComputeExtent(sampPos, &extent);
-    UsdMayaWriteUtil::SetAttribute(primSchema.CreateExtentAttr(), extent, usdTimeCode, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.CreateExtentAttr(), extent, usdTimeCode, _GetSparseValueWriter());
 
     // Set NurbsPatch attributes
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetUVertexCountAttr(), numCVsInU, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetVVertexCountAttr(), numCVsInV, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetUOrderAttr(), nurbs.degreeU() + 1, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetVOrderAttr(), nurbs.degreeV() + 1, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetUKnotsAttr(), sampKnotsInU, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetVKnotsAttr(), sampKnotsInV, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetURangeAttr(), uRange, UsdTimeCode::Default(),_GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetVRangeAttr(), vRange, UsdTimeCode::Default(),_GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetPointsAttr(), sampPos, usdTimeCode, _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetUVertexCountAttr(),
+        numCVsInU,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetVVertexCountAttr(),
+        numCVsInV,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetUOrderAttr(),
+        nurbs.degreeU() + 1,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetVOrderAttr(),
+        nurbs.degreeV() + 1,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetUKnotsAttr(), sampKnotsInU, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetVKnotsAttr(), sampKnotsInV, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetURangeAttr(), uRange, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetVRangeAttr(), vRange, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetPointsAttr(), sampPos, usdTimeCode, _GetSparseValueWriter());
     if (setWeights) {
-        UsdMayaWriteUtil::SetAttribute(primSchema.GetPointWeightsAttr(), 
-                                       sampPosWeights, UsdTimeCode::Default(), _GetSparseValueWriter());
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetPointWeightsAttr(),
+            sampPosWeights,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter());
     }
 
     // If stValues vector has vertex data, create and assign st
     if (stValues.size() == static_cast<size_t>(numCVsInU * numCVsInV)) {
-        SdfValueTypeName uvValueType = (UsdMayaWriteUtil::WriteUVAsFloat2())?
-            (SdfValueTypeNames->Float2Array) : (SdfValueTypeNames->TexCoord2fArray);
-        UsdGeomPrimvar uvSet =
-            primSchema.CreatePrimvar(UsdUtilsGetPrimaryUVSetName(),
-                                     uvValueType,
-                                     UsdGeomTokens->vertex);
-        UsdMayaWriteUtil::SetAttribute(uvSet.GetAttr(), &stValues, UsdTimeCode::Default(), _GetSparseValueWriter());
+        SdfValueTypeName uvValueType = (UsdMayaWriteUtil::WriteUVAsFloat2())
+            ? (SdfValueTypeNames->Float2Array)
+            : (SdfValueTypeNames->TexCoord2fArray);
+        UsdGeomPrimvar uvSet = primSchema.CreatePrimvar(
+            UsdUtilsGetPrimaryUVSetName(), uvValueType, UsdGeomTokens->vertex);
+        UsdMayaWriteUtil::SetAttribute(
+            uvSet.GetAttr(), &stValues, UsdTimeCode::Default(), _GetSparseValueWriter());
     }
 
     // Set Form
     switch (nurbs.formInU()) {
-        case MFnNurbsSurface::kClosed:
-            UsdMayaWriteUtil::SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->closed, UsdTimeCode::Default(), _GetSparseValueWriter());
+    case MFnNurbsSurface::kClosed:
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetUFormAttr(),
+            UsdGeomTokens->closed,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter());
         break;
-        case MFnNurbsSurface::kPeriodic:
-            UsdMayaWriteUtil::SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->periodic, UsdTimeCode::Default(), _GetSparseValueWriter());
+    case MFnNurbsSurface::kPeriodic:
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetUFormAttr(),
+            UsdGeomTokens->periodic,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter());
         break;
-        default:
-            UsdMayaWriteUtil::SetAttribute(primSchema.GetUFormAttr(), UsdGeomTokens->open, UsdTimeCode::Default(), _GetSparseValueWriter());
+    default:
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetUFormAttr(),
+            UsdGeomTokens->open,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter());
     }
     switch (nurbs.formInV()) {
-        case MFnNurbsSurface::kClosed:
-            UsdMayaWriteUtil::SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->closed, UsdTimeCode::Default(), _GetSparseValueWriter());
+    case MFnNurbsSurface::kClosed:
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetVFormAttr(),
+            UsdGeomTokens->closed,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter());
         break;
-        case MFnNurbsSurface::kPeriodic:
-            UsdMayaWriteUtil::SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->periodic, UsdTimeCode::Default(), _GetSparseValueWriter());
+    case MFnNurbsSurface::kPeriodic:
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetVFormAttr(),
+            UsdGeomTokens->periodic,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter());
         break;
-        default:
-            UsdMayaWriteUtil::SetAttribute(primSchema.GetVFormAttr(), UsdGeomTokens->open, UsdTimeCode::Default(), _GetSparseValueWriter());
+    default:
+        UsdMayaWriteUtil::SetAttribute(
+            primSchema.GetVFormAttr(),
+            UsdGeomTokens->open,
+            UsdTimeCode::Default(),
+            _GetSparseValueWriter());
     }
 
     // If not trimmed surface, you are done
@@ -362,24 +406,22 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
     //   in head-to-tail fashion and must be explicitly closed. "
 
     // A Maya boundary is equivalent to an USD/RenderMan loop
-    VtArray<int> trimNumCurves;
-    VtArray<int> trimNumPos;
-    VtArray<int> trimOrder;
-    VtArray<double> trimKnot;
+    VtArray<int>     trimNumCurves;
+    VtArray<int>     trimNumPos;
+    VtArray<int>     trimOrder;
+    VtArray<double>  trimKnot;
     VtArray<GfVec2d> trimRange;
     VtArray<GfVec3d> trimPoint;
 
     int numLoops = 0;
-    for (unsigned int i = 0; i < numRegions; i++)
-    {
+    for (unsigned int i = 0; i < numRegions; i++) {
         MTrimBoundaryArray result;
 
         // if the 3rd argument is set to be true, return the 2D curve
         nurbs.getTrimBoundaries(result, i, true);
         unsigned int numBoundaries = result.length();
 
-        for (unsigned int j = 0; j < numBoundaries; j++)
-        {
+        for (unsigned int j = 0; j < numBoundaries; j++) {
             /*
             WE DON'T NEED THIS BUT IT'S HERE FOR POSSIBLE FUTURE USE
             switch(fn.boundaryType(i,j)) {
@@ -395,34 +437,31 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
             unsigned int numTrimCurve = boundary.length();
             trimNumCurves.push_back(numTrimCurve);
             numLoops++;
-            for (unsigned int k = 0; k < numTrimCurve; k++)
-            {
+            for (unsigned int k = 0; k < numTrimCurve; k++) {
                 MObject curveObj = boundary[k];
-                if (curveObj.hasFn(MFn::kNurbsCurve))
-                {
+                if (curveObj.hasFn(MFn::kNurbsCurve)) {
                     MFnNurbsCurve mFnCurve(curveObj);
 
                     int numCVs = mFnCurve.numCVs();
                     trimNumPos.push_back(numCVs);
-                    trimOrder.push_back(mFnCurve.degree()+1);
+                    trimOrder.push_back(mFnCurve.degree() + 1);
 
                     double start, end;
                     mFnCurve.getKnotDomain(start, end);
                     GfVec2d range;
-                    range[0]=start;
-                    range[1]=end;
+                    range[0] = start;
+                    range[1] = end;
                     trimRange.push_back(range);
 
                     MPointArray cvArray;
                     mFnCurve.getCVs(cvArray);
                     // WE DIFFER FROM ALEMBIC WRITER, WE DON'T FLIP V
-                    for (int l = 0; l < numCVs; l++)
-                    {
+                    for (int l = 0; l < numCVs; l++) {
                         GfVec3d point;
 
-                        point[0]=(double)((cvArray[l].x-uOffset)*uScale);
-                        point[1]=(double)((cvArray[l].y-vOffset)*vScale);
-                        point[2]=cvArray[l].w;
+                        point[0] = (double)((cvArray[l].x - uOffset) * uScale);
+                        point[1] = (double)((cvArray[l].y - vOffset) * vScale);
+                        point[2] = cvArray[l].w;
                         trimPoint.push_back(point);
                     }
 
@@ -433,8 +472,7 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                     // push_back a dummy value, we will set it below
                     std::size_t totalNumKnots = trimKnot.size();
                     trimKnot.push_back(0.0);
-                    for (unsigned int l = 0; l < numKnots; l++)
-                    {
+                    for (unsigned int l = 0; l < numKnots; l++) {
                         trimKnot.push_back(knot[l]);
                     }
 
@@ -443,34 +481,53 @@ PxrUsdTranslators_NurbsSurfaceWriter::writeNurbsSurfaceAttrs(
                     // for a knot sequence with uniform end knots, create their
                     // the new knots offset at an interval equal to the existing
                     // first and last knot intervals
-                    double k1 = trimKnot[totalNumKnots+1];
-                    double k2 = trimKnot[totalNumKnots+2];
-                    double klast_1 = trimKnot[trimKnot.size()-1];
-                    double klast_2 = trimKnot[trimKnot.size()-2];
+                    double k1 = trimKnot[totalNumKnots + 1];
+                    double k2 = trimKnot[totalNumKnots + 2];
+                    double klast_1 = trimKnot[trimKnot.size() - 1];
+                    double klast_2 = trimKnot[trimKnot.size() - 2];
                     trimKnot[totalNumKnots] = 2.0 * k1 - k2;
                     trimKnot.push_back(2.0 * klast_1 - klast_2);
                 }
             } // for k
-        } // for j
-    } // for i
+        }     // for j
+    }         // for i
 
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveCountsAttr(), &trimNumCurves, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveOrdersAttr(), &trimOrder, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveVertexCountsAttr(), &trimNumPos, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveKnotsAttr(), &trimKnot, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurveRangesAttr(), &trimRange, UsdTimeCode::Default(), _GetSparseValueWriter());
-    UsdMayaWriteUtil::SetAttribute(primSchema.GetTrimCurvePointsAttr(), &trimPoint, UsdTimeCode::Default(), _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetTrimCurveCountsAttr(),
+        &trimNumCurves,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetTrimCurveOrdersAttr(),
+        &trimOrder,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetTrimCurveVertexCountsAttr(),
+        &trimNumPos,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetTrimCurveKnotsAttr(),
+        &trimKnot,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetTrimCurveRangesAttr(),
+        &trimRange,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
+    UsdMayaWriteUtil::SetAttribute(
+        primSchema.GetTrimCurvePointsAttr(),
+        &trimPoint,
+        UsdTimeCode::Default(),
+        _GetSparseValueWriter());
 
     // NO NON TRIM CODE HERE SINCE WE RETURN EARLIER IF NOT TRIMMED
     return true;
 }
 
 /* virtual */
-bool
-PxrUsdTranslators_NurbsSurfaceWriter::ExportsGprims() const
-{
-    return true;
-}
-
+bool PxrUsdTranslators_NurbsSurfaceWriter::ExportsGprims() const { return true; }
 
 PXR_NAMESPACE_CLOSE_SCOPE

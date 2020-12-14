@@ -17,63 +17,61 @@
 
 #include "private/Utils.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 TfToken UsdTranslateUndoableCommand::xlate("xformOp:translate");
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(const Ufe::Path& path, double x, double y, double z) 
+UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
+    const Ufe::Path& path,
+    double           x,
+    double           y,
+    double           z)
     : Ufe::TranslateUndoableCommand(path)
     , UsdTRSUndoableCommandBase(x, y, z)
-{}
+{
+}
 #else
 UsdTranslateUndoableCommand::UsdTranslateUndoableCommand(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-) : Ufe::TranslateUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, x, y, z)
-{}
+    const UsdSceneItem::Ptr& item,
+    double                   x,
+    double                   y,
+    double                   z)
+    : Ufe::TranslateUndoableCommand(item)
+    , UsdTRSUndoableCommandBase(item, x, y, z)
+{
+}
 #endif
 
-UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand()
-{}
+UsdTranslateUndoableCommand::~UsdTranslateUndoableCommand() { }
 
 /*static*/
 #ifdef UFE_V2_FEATURES_AVAILABLE
-UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
-    const Ufe::Path& path, double x, double y, double z
-)
+UsdTranslateUndoableCommand::Ptr
+UsdTranslateUndoableCommand::create(const Ufe::Path& path, double x, double y, double z)
 {
-    auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(
-        path, x, y, z);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(path, x, y, z);
     cmd->initialize();
     return cmd;
 }
 #else
-UsdTranslateUndoableCommand::Ptr UsdTranslateUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-)
+UsdTranslateUndoableCommand::Ptr
+UsdTranslateUndoableCommand::create(const UsdSceneItem::Ptr& item, double x, double y, double z)
 {
-    auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(
-        item, x, y, z);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdTranslateUndoableCommand>>(item, x, y, z);
     cmd->initialize();
     return cmd;
 }
 #endif
 
-void UsdTranslateUndoableCommand::undo()
-{
-    undoImp();
-}
+void UsdTranslateUndoableCommand::undo() { undoImp(); }
 
-void UsdTranslateUndoableCommand::redo()
-{
-    redoImp();
-}
+void UsdTranslateUndoableCommand::redo() { redoImp(); }
 
 void UsdTranslateUndoableCommand::addEmptyAttribute()
 {
-    performImp(0, 0, 0);    // Add an empty translate
+    performImp(0, 0, 0); // Add an empty translate
 }
 
 void UsdTranslateUndoableCommand::performImp(double x, double y, double z)
@@ -97,4 +95,4 @@ bool UsdTranslateUndoableCommand::translate(double x, double y, double z)
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

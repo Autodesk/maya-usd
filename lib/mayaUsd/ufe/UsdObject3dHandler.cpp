@@ -8,21 +8,24 @@
 
 #include "UsdObject3dHandler.h"
 
-#include <pxr/usd/usdGeom/imageable.h>
-
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-MAYAUSD_NS_DEF {
+#include <pxr/usd/usdGeom/imageable.h>
+
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdObject3dHandler::UsdObject3dHandler() : Ufe::Object3dHandler() {}
+UsdObject3dHandler::UsdObject3dHandler()
+    : Ufe::Object3dHandler()
+{
+}
 
-UsdObject3dHandler::~UsdObject3dHandler() {}
+UsdObject3dHandler::~UsdObject3dHandler() { }
 
 /*static*/
 UsdObject3dHandler::Ptr UsdObject3dHandler::create()
 {
-	return std::make_shared<UsdObject3dHandler>();
+    return std::make_shared<UsdObject3dHandler>();
 }
 
 //------------------------------------------------------------------------------
@@ -31,18 +34,19 @@ UsdObject3dHandler::Ptr UsdObject3dHandler::create()
 
 Ufe::Object3d::Ptr UsdObject3dHandler::object3d(const Ufe::SceneItem::Ptr& item) const
 {
-	UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
 #if !defined(NDEBUG)
-	assert(usdItem);
+    assert(usdItem);
 #endif
 
-	// Test if this item is imageable. If not, then we cannot create an object3d
-	// interface for it, which is a valid case (such as for a material node type).
-	UsdGeomImageable primSchema(usdItem->prim());
-	if (!primSchema) return nullptr;
+    // Test if this item is imageable. If not, then we cannot create an object3d
+    // interface for it, which is a valid case (such as for a material node type).
+    UsdGeomImageable primSchema(usdItem->prim());
+    if (!primSchema)
+        return nullptr;
 
-	return UsdObject3d::create(usdItem);
+    return UsdObject3d::create(usdItem);
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

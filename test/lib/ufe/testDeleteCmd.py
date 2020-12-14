@@ -18,7 +18,7 @@
 
 import maya.cmds as cmds
 
-from ufeTestUtils import ufeUtils, usdUtils, mayaUtils
+import ufeUtils, usdUtils, mayaUtils
 import ufe
 
 import unittest
@@ -77,7 +77,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         # Load plugins
         self.assertTrue(self.pluginsLoaded)
         
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
         # Create some extra Maya nodes
@@ -106,7 +106,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         sphereShapeItem = ufe.Hierarchy.createItem(sphereShapePath)
 
         mayaSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
         ball35Path = ufe.Path(
             [mayaSegment,
              usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
@@ -210,7 +210,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         sphereShapeItem = ufe.Hierarchy.createItem(sphereShapePath)
 
         mayaSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
         ball35Path = ufe.Path(
             [mayaSegment,
              usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])

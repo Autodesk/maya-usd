@@ -17,73 +17,67 @@
 
 #include "private/Utils.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 TfToken UsdScaleUndoableCommand::scaleTok("xformOp:scale");
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(
-    const Ufe::Path& path, double x, double y, double z
-) : Ufe::ScaleUndoableCommand(path),
-    UsdTRSUndoableCommandBase(x, y, z)
-{}
+    const Ufe::Path& path,
+    double           x,
+    double           y,
+    double           z)
+    : Ufe::ScaleUndoableCommand(path)
+    , UsdTRSUndoableCommandBase(x, y, z)
+{
+}
 #else
 UsdScaleUndoableCommand::UsdScaleUndoableCommand(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-) : Ufe::ScaleUndoableCommand(item),
-    UsdTRSUndoableCommandBase(item, x, y, z)
-{}
+    const UsdSceneItem::Ptr& item,
+    double                   x,
+    double                   y,
+    double                   z)
+    : Ufe::ScaleUndoableCommand(item)
+    , UsdTRSUndoableCommandBase(item, x, y, z)
+{
+}
 #endif
 
-UsdScaleUndoableCommand::~UsdScaleUndoableCommand()
-{}
+UsdScaleUndoableCommand::~UsdScaleUndoableCommand() { }
 
 /*static*/
 #ifdef UFE_V2_FEATURES_AVAILABLE
-UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
-    const Ufe::Path& path, double x, double y, double z
-)
+UsdScaleUndoableCommand::Ptr
+UsdScaleUndoableCommand::create(const Ufe::Path& path, double x, double y, double z)
 {
-    auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
-        path, x, y, z);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(path, x, y, z);
     cmd->initialize();
     return cmd;
-
 }
 #else
-UsdScaleUndoableCommand::Ptr UsdScaleUndoableCommand::create(
-    const UsdSceneItem::Ptr& item, double x, double y, double z
-)
+UsdScaleUndoableCommand::Ptr
+UsdScaleUndoableCommand::create(const UsdSceneItem::Ptr& item, double x, double y, double z)
 {
-    auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(
-        item, x, y, z);
+    auto cmd = std::make_shared<MakeSharedEnabler<UsdScaleUndoableCommand>>(item, x, y, z);
     cmd->initialize();
     return cmd;
-
 }
 #endif
 
-void UsdScaleUndoableCommand::undo()
-{
-    undoImp();
-}
+void UsdScaleUndoableCommand::undo() { undoImp(); }
 
-void UsdScaleUndoableCommand::redo()
-{
-	redoImp();
-}
+void UsdScaleUndoableCommand::redo() { redoImp(); }
 
 void UsdScaleUndoableCommand::addEmptyAttribute()
 {
-    performImp(1, 1, 1);	// Add a neutral scale
+    performImp(1, 1, 1); // Add a neutral scale
 }
 
 void UsdScaleUndoableCommand::performImp(double x, double y, double z)
 {
-	scaleOp(prim(), path(), x, y, z);
+    scaleOp(prim(), path(), x, y, z);
 }
-
 
 //------------------------------------------------------------------------------
 // Ufe::ScaleUndoableCommand overrides
@@ -96,9 +90,9 @@ bool UsdScaleUndoableCommand::set(double x, double y, double z)
 bool UsdScaleUndoableCommand::scale(double x, double y, double z)
 #endif
 {
-	perform(x, y, z);
-	return true;
+    perform(x, y, z);
+    return true;
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

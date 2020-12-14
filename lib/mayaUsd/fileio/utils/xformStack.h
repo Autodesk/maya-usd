@@ -15,18 +15,18 @@
 #ifndef PXRUSDMAYA_XFORM_STACK_H
 #define PXRUSDMAYA_XFORM_STACK_H
 
-#include <limits>
-#include <unordered_map>
-#include <vector>
+#include <mayaUsd/base/api.h>
+
+#include <pxr/base/tf/refPtr.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include <maya/MTransformationMatrix.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/refPtr.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/usdGeom/xformOp.h>
-
-#include <mayaUsd/base/api.h>
+#include <limits>
+#include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // at present, but there was some support for reading it, thus
 // why it's here
 
+// clang-format off
 /// \hideinitializer
 #define PXRUSDMAYA_XFORM_STACK_TOKENS \
     (translate) \
@@ -49,10 +50,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pivot) \
     (pivotTranslate) \
     (transform)
+// clang-format on
 
-TF_DECLARE_PUBLIC_TOKENS(UsdMayaXformStackTokens,
-        MAYAUSD_CORE_PUBLIC,
-        PXRUSDMAYA_XFORM_STACK_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdMayaXformStackTokens,
+    MAYAUSD_CORE_PUBLIC,
+    PXRUSDMAYA_XFORM_STACK_TOKENS);
 
 /// \class UsdMayaXformOpClassification
 /// \brief Defines a named "class" of xform operation
@@ -63,22 +66,24 @@ TF_DECLARE_PUBLIC_TOKENS(UsdMayaXformStackTokens,
 class UsdMayaXformOpClassification
 {
 public:
-    UsdMayaXformOpClassification(const TfToken &name,
-                                       UsdGeomXformOp::Type opType,
-                                       bool isInvertedTwin=false);
+    UsdMayaXformOpClassification(
+        const TfToken&       name,
+        UsdGeomXformOp::Type opType,
+        bool                 isInvertedTwin = false);
 
     UsdMayaXformOpClassification();
 
-    static UsdMayaXformOpClassification const & NullInstance();
+    static UsdMayaXformOpClassification const& NullInstance();
 
     MAYAUSD_CORE_PUBLIC
-    TfToken const &GetName() const;
+    TfToken const& GetName() const;
 
     MAYAUSD_CORE_PUBLIC
     UsdGeomXformOp::Type GetOpType() const;
 
     MAYAUSD_CORE_PUBLIC
-    bool IsInvertedTwin() const;;
+    bool IsInvertedTwin() const;
+    ;
 
     /// Return True if the given op type is compatible with this
     /// OpClassification (ie, is the same, or is, say rotateX, when
@@ -87,7 +92,7 @@ public:
     bool IsCompatibleType(UsdGeomXformOp::Type otherType) const;
 
     MAYAUSD_CORE_PUBLIC
-    bool operator ==(const UsdMayaXformOpClassification& other) const;
+    bool operator==(const UsdMayaXformOpClassification& other) const;
 
     MAYAUSD_CORE_PUBLIC
     bool IsNull() const;
@@ -103,7 +108,7 @@ private:
     // a RefPtr, while having easy-python-wrapping (without overhead
     // of WeakPtr)
     typedef TfRefPtr<_Data> _DataRefPtr;
-    _DataRefPtr _sharedData;
+    _DataRefPtr             _sharedData;
 };
 
 /// \class UsdMayaXformStack
@@ -114,55 +119,39 @@ private:
 class UsdMayaXformStack
 {
 public:
-    typedef UsdMayaXformOpClassification OpClass;
-    typedef std::vector<OpClass> OpClassList;
+    typedef UsdMayaXformOpClassification            OpClass;
+    typedef std::vector<OpClass>                    OpClassList;
     typedef std::pair<const OpClass, const OpClass> OpClassPair;
 
     // Internally, we use indices, because position sometimes matters...
     // should be safe, since _ops is const.
-    static constexpr size_t NO_INDEX = std::numeric_limits<size_t>::max();
+    static constexpr size_t           NO_INDEX = std::numeric_limits<size_t>::max();
     typedef std::pair<size_t, size_t> IndexPair;
-    typedef std::unordered_map<TfToken, IndexPair, TfToken::HashFunctor>
-            TokenIndexPairMap;
-    typedef std::unordered_map<size_t, size_t> IndexMap;
-
+    typedef std::unordered_map<TfToken, IndexPair, TfToken::HashFunctor> TokenIndexPairMap;
+    typedef std::unordered_map<size_t, size_t>                           IndexMap;
 
     // Templated because we want it to work with both MEulerRotation::RotationOrder
     // and MTransformationMatrix::RotationOrder
-    template<typename RotationOrder>
+    template <typename RotationOrder>
     static RotationOrder RotateOrderFromOpType(
-            UsdGeomXformOp::Type opType,
-            RotationOrder defaultRotOrder=RotationOrder::kXYZ)
+        UsdGeomXformOp::Type opType,
+        RotationOrder        defaultRotOrder = RotationOrder::kXYZ)
     {
-        switch(opType) {
-            case UsdGeomXformOp::TypeRotateXYZ:
-                return  RotationOrder::kXYZ;
-            break;
-            case UsdGeomXformOp::TypeRotateXZY:
-                return  RotationOrder::kXZY;
-            break;
-            case UsdGeomXformOp::TypeRotateYXZ:
-                return  RotationOrder::kYXZ;
-            break;
-            case UsdGeomXformOp::TypeRotateYZX:
-                return  RotationOrder::kYZX;
-            break;
-            case UsdGeomXformOp::TypeRotateZXY:
-                return  RotationOrder::kZXY;
-            break;
-            case UsdGeomXformOp::TypeRotateZYX:
-                return  RotationOrder::kZYX;
-            break;
-            default:
-                return defaultRotOrder;
-            break;
+        switch (opType) {
+        case UsdGeomXformOp::TypeRotateXYZ: return RotationOrder::kXYZ; break;
+        case UsdGeomXformOp::TypeRotateXZY: return RotationOrder::kXZY; break;
+        case UsdGeomXformOp::TypeRotateYXZ: return RotationOrder::kYXZ; break;
+        case UsdGeomXformOp::TypeRotateYZX: return RotationOrder::kYZX; break;
+        case UsdGeomXformOp::TypeRotateZXY: return RotationOrder::kZXY; break;
+        case UsdGeomXformOp::TypeRotateZYX: return RotationOrder::kZYX; break;
+        default: return defaultRotOrder; break;
         }
     }
 
     UsdMayaXformStack(
-            const OpClassList& ops,
-            const std::vector<IndexPair>& inversionTwins,
-            bool nameMatters=true);
+        const OpClassList&            ops,
+        const std::vector<IndexPair>& inversionTwins,
+        bool                          nameMatters = true);
 
     // Don't want to accidentally make a copy, since the only instances are supposed
     // to be static!
@@ -170,7 +159,7 @@ public:
     explicit UsdMayaXformStack(UsdMayaXformStack&& other) = default;
 
     MAYAUSD_CORE_PUBLIC
-    OpClassList const & GetOps() const;
+    OpClassList const& GetOps() const;
 
     MAYAUSD_CORE_PUBLIC
     const std::vector<IndexPair>& GetInversionTwins() const;
@@ -179,11 +168,10 @@ public:
     bool GetNameMatters() const;
 
     MAYAUSD_CORE_PUBLIC
-    UsdMayaXformOpClassification const & operator[] (const size_t index) const;
+    UsdMayaXformOpClassification const& operator[](const size_t index) const;
 
     MAYAUSD_CORE_PUBLIC
     size_t GetSize() const;
-
 
     /// \brief  Finds the index of the Op Classification with the given name in this stack
     /// \param  opName the name of the operator classification we  wish to find
@@ -193,7 +181,7 @@ public:
     /// return  Index to the op classification object with the given name (and
     ///         inverted twin state); will be NO_INDEX if no match could be found.
     MAYAUSD_CORE_PUBLIC
-    size_t FindOpIndex(const TfToken& opName, bool isInvertedTwin=false) const;
+    size_t FindOpIndex(const TfToken& opName, bool isInvertedTwin = false) const;
 
     /// \brief  Finds the Op Classification with the given name in this stack
     /// \param  opName the name of the operator classification we  wish to find
@@ -205,7 +193,7 @@ public:
     ///         inverted twin state); will be a reference to OpClass::NullInstance
     ///         if no match could be found.
     MAYAUSD_CORE_PUBLIC
-    const OpClass& FindOp(const TfToken& opName, bool isInvertedTwin=false) const;
+    const OpClass& FindOp(const TfToken& opName, bool isInvertedTwin = false) const;
 
     /// \brief  Finds the indices of Op Classification(s) with the given name in this stack
     /// \param  opName the name of the operator classification we  wish to find
@@ -241,9 +229,7 @@ public:
     /// size of this vector will be 0 if no complete match is found, or xformops.size()
     /// if a complete match is found.
     MAYAUSD_CORE_PUBLIC
-    OpClassList
-    MatchingSubstack(
-            const std::vector<UsdGeomXformOp>& xformops) const;
+    OpClassList MatchingSubstack(const std::vector<UsdGeomXformOp>& xformops) const;
 
     /// \brief The standard Maya xform stack
     ///
@@ -261,7 +247,6 @@ public:
     ///    scalePivot^-1 (inverted twin)
     MAYAUSD_CORE_PUBLIC
     static const UsdMayaXformStack& MayaStack();
-
 
     /// \brief The Common API xform stack
     ///
@@ -288,10 +273,9 @@ public:
     /// Returns the first non-empty result it finds; if all stacks
     /// return an empty vector, an empty vector is returned.
     MAYAUSD_CORE_PUBLIC
-    static OpClassList
-    FirstMatchingSubstack(
-            const std::vector<UsdMayaXformStack const *>& stacks,
-            const std::vector<UsdGeomXformOp>& xformops);
+    static OpClassList FirstMatchingSubstack(
+        const std::vector<UsdMayaXformStack const*>& stacks,
+        const std::vector<UsdGeomXformOp>&           xformops);
 
 private:
     class _Data;
@@ -301,7 +285,7 @@ private:
     // a RefPtr, while having easy-python-wrapping (without overhead
     // of WeakPtr)
     typedef TfRefPtr<_Data> _DataRefPtr;
-    _DataRefPtr _sharedData;
+    _DataRefPtr             _sharedData;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

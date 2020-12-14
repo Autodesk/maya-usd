@@ -36,11 +36,11 @@ namespace MAYAUSD_VERSIONED_NS {}
 namespace MAYAUSD_NS {
     using namespace MAYAUSD_VERSIONED_NS;
 }
- 
-// Macros to place the MayaUsd symbols in the versioned namespace, which is how
+
+// Macro to place the MayaUsd symbols in the versioned namespace, which is how
 // they will appear in the shared library, e.g. MayaUsd_v1::Class.
 #ifdef DOXYGEN
-#define MAYAUSD_NS_DEF namespace MAYAUSD_NS
+#define MAYAUSD_NS_DEF MAYAUSD_NS
 #else
-#define MAYAUSD_NS_DEF namespace MAYAUSD_VERSIONED_NS
+#define MAYAUSD_NS_DEF MAYAUSD_VERSIONED_NS
 #endif

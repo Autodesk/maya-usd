@@ -15,18 +15,24 @@
 //
 #include "testDelegate.h"
 
-#include <pxr/base/tf/envSetting.h>
-
 #include <hdMaya/delegates/delegateRegistry.h>
+
+#include <pxr/base/tf/envSetting.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(
-    HDMAYA_TEST_DELEGATE_FILE, "", "Path for HdMayaTestDelegate to load");
+TF_DEFINE_ENV_SETTING(HDMAYA_TEST_DELEGATE_FILE, "", "Path for HdMayaTestDelegate to load");
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens, (HdMayaTestDelegate));
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaTestDelegate) {
+    (HdMayaTestDelegate)
+);
+// clang-format on
+
+TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaTestDelegate)
+{
     if (!TfGetEnvSetting(HDMAYA_TEST_DELEGATE_FILE).empty()) {
         HdMayaDelegateRegistry::RegisterDelegate(
             _tokens->HdMayaTestDelegate,
@@ -38,12 +44,13 @@ TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaDelegateRegistry, HdMayaTestDelegate) {
 }
 
 HdMayaTestDelegate::HdMayaTestDelegate(const InitData& initData)
-    : HdMayaDelegate(initData) {
-    _delegate.reset(
-        new UsdImagingDelegate(initData.renderIndex, initData.delegateID));
+    : HdMayaDelegate(initData)
+{
+    _delegate.reset(new UsdImagingDelegate(initData.renderIndex, initData.delegateID));
 }
 
-void HdMayaTestDelegate::Populate() {
+void HdMayaTestDelegate::Populate()
+{
     _stage = UsdStage::Open(TfGetEnvSetting(HDMAYA_TEST_DELEGATE_FILE));
     _delegate->Populate(_stage->GetPseudoRoot());
 }

@@ -26,13 +26,14 @@
 #include <string>
 #include <vector>
 
-namespace MAYAUSD_NS {
+namespace MAYAUSD_NS_DEF {
 
 namespace Impl {
 class BaseCmd;
 }
 
-class MAYAUSD_CORE_PUBLIC LayerEditorCommand : public MPxCommand {
+class MAYAUSD_CORE_PUBLIC LayerEditorCommand : public MPxCommand
+{
 public:
     // plugin registration requirements
     static const char commandName[];
@@ -48,7 +49,13 @@ public:
 private:
     MStatus parseArgs(const MArgList& argList);
 
-    enum class Mode { Create, Edit, Query } _cmdMode = Mode::Create;
+    enum class Mode
+    {
+        Create,
+        Edit,
+        Query
+    } _cmdMode
+        = Mode::Create;
     bool isEdit() const { return _cmdMode == Mode::Edit; }
     bool isQuery() const { return _cmdMode == Mode::Query; }
 
@@ -56,4 +63,4 @@ private:
     std::vector<std::shared_ptr<Impl::BaseCmd>> _subCommands;
 };
 
-} // namespace MAYAUSD_NS
+} // namespace MAYAUSD_NS_DEF

@@ -16,15 +16,19 @@
 #ifndef USD_ADD_NEW_PRIM_COMMAND
 #define USD_ADD_NEW_PRIM_COMMAND
 
-#include <ufe/undoableCommand.h>
-#include <ufe/path.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+#include <mayaUsd/undo/UsdUndoableItem.h>
+#endif
+
+#include <ufe/path.h>
+#include <ufe/undoableCommand.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Undoable command for add new prim
@@ -33,27 +37,34 @@ class MAYAUSD_CORE_PUBLIC UsdUndoAddNewPrimCommand : public Ufe::UndoableCommand
 public:
     typedef std::shared_ptr<UsdUndoAddNewPrimCommand> Ptr;
 
-    UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdSceneItem,
-                              const std::string& name,
-                              const std::string& type);
-
+    UsdUndoAddNewPrimCommand(
+        const UsdSceneItem::Ptr& usdSceneItem,
+        const std::string&       name,
+        const std::string&       type);
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    void execute() override;
+#endif
     void undo() override;
     void redo() override;
 
     const Ufe::Path& newUfePath() const;
-    UsdPrim newPrim() const;
+    UsdPrim          newPrim() const;
 
-    static UsdUndoAddNewPrimCommand::Ptr create(const UsdSceneItem::Ptr& usdSceneItem,
-                              const std::string& name, const std::string& type);
+    static UsdUndoAddNewPrimCommand::Ptr
+    create(const UsdSceneItem::Ptr& usdSceneItem, const std::string& name, const std::string& type);
+
 private:
     PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath _primPath;
-    PXR_NS::TfToken _primToken;
-    Ufe::Path _newUfePath;
+    PXR_NS::SdfPath         _primPath;
+    PXR_NS::TfToken         _primToken;
+    Ufe::Path               _newUfePath;
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    UsdUndoableItem _undoableItem;
+#endif
 
 }; // UsdUndoAddNewPrimCommand
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF
 
 #endif

@@ -15,38 +15,37 @@
 //
 #pragma once
 
-#include <ufe/attributesHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdAttributes.h>
 
-MAYAUSD_NS_DEF {
+#include <ufe/attributesHandler.h>
+
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to create the USD Attributes interface objects.
 class UsdAttributesHandler : public Ufe::AttributesHandler
 {
 public:
-	typedef std::shared_ptr<UsdAttributesHandler> Ptr;
+    typedef std::shared_ptr<UsdAttributesHandler> Ptr;
 
-	UsdAttributesHandler();
-	~UsdAttributesHandler();
+    UsdAttributesHandler();
+    ~UsdAttributesHandler();
 
-	// Delete the copy/move constructors assignment operators.
-	UsdAttributesHandler(const UsdAttributesHandler&) = delete;
-	UsdAttributesHandler& operator=(const UsdAttributesHandler&) = delete;
-	UsdAttributesHandler(UsdAttributesHandler&&) = delete;
-	UsdAttributesHandler& operator=(UsdAttributesHandler&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdAttributesHandler(const UsdAttributesHandler&) = delete;
+    UsdAttributesHandler& operator=(const UsdAttributesHandler&) = delete;
+    UsdAttributesHandler(UsdAttributesHandler&&) = delete;
+    UsdAttributesHandler& operator=(UsdAttributesHandler&&) = delete;
 
-	//! Create a UsdAttributesHandler.
-	static UsdAttributesHandler::Ptr create();
+    //! Create a UsdAttributesHandler.
+    static UsdAttributesHandler::Ptr create();
 
-	// Ufe::AttributesHandler overrides
-	Ufe::Attributes::Ptr attributes(const Ufe::SceneItem::Ptr& item) const override;
+    // Ufe::AttributesHandler overrides
+    Ufe::Attributes::Ptr attributes(const Ufe::SceneItem::Ptr& item) const override;
 
 private:
-
 }; // UsdAttributesHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

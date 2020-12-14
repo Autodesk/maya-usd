@@ -15,9 +15,17 @@
 //
 #include "writeJob.h"
 
-#include <limits>
-#include <map>
-#include <unordered_set>
+#include <pxr/base/tf/fileUtils.h>
+#include <pxr/base/tf/hash.h>
+#include <pxr/base/tf/hashset.h>
+#include <pxr/base/tf/pathUtils.h>
+#include <pxr/base/tf/stl.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/primSpec.h>
 
 #include <maya/MAnimControl.h>
 #include <maya/MComputation.h>
@@ -31,32 +39,12 @@
 #include <maya/MStatus.h>
 #include <maya/MUuid.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/fileUtils.h>
-#include <pxr/base/tf/hash.h>
-#include <pxr/base/tf/hashset.h>
-#include <pxr/base/tf/pathUtils.h>
-#include <pxr/base/tf/stl.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/ar/resolver.h>
-#include <pxr/usd/kind/registry.h>
-#include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/sdf/primSpec.h>
+#include <limits>
+#include <map>
+#include <unordered_set>
 // Needed for directly removing a UsdVariant via Sdf
 //   Remove when UsdVariantSet::RemoveVariant() is exposed
 //   XXX [bug 75864]
-#include <pxr/usd/sdf/variantSetSpec.h>
-#include <pxr/usd/sdf/variantSpec.h>
-#include <pxr/usd/usd/modelAPI.h>
-#include <pxr/usd/usd/variantSets.h>
-#include <pxr/usd/usd/editContext.h>
-#include <pxr/usd/usd/primRange.h>
-#include <pxr/usd/usd/usdcFileFormat.h>
-#include <pxr/usd/usdGeom/metrics.h>
-#include <pxr/usd/usdGeom/xform.h>
-#include <pxr/usd/usdUtils/pipeline.h>
-#include <pxr/usd/usdUtils/dependencies.h>
-
 #include <mayaUsd/fileio/chaser/chaser.h>
 #include <mayaUsd/fileio/chaser/chaserRegistry.h>
 #include <mayaUsd/fileio/jobs/jobArgs.h>
@@ -68,41 +56,46 @@
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/usd/sdf/variantSetSpec.h>
+#include <pxr/usd/sdf/variantSpec.h>
+#include <pxr/usd/usd/editContext.h>
+#include <pxr/usd/usd/modelAPI.h>
+#include <pxr/usd/usd/primRange.h>
+#include <pxr/usd/usd/usdcFileFormat.h>
+#include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usdGeom/metrics.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdUtils/dependencies.h>
+#include <pxr/usd/usdUtils/pipeline.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMaya_WriteJob::UsdMaya_WriteJob(const UsdMayaJobExportArgs& iArgs)
-    : mJobCtx(iArgs),
-      _modelKindProcessor(new UsdMaya_ModelKindProcessor(iArgs))
+    : mJobCtx(iArgs)
+    , _modelKindProcessor(new UsdMaya_ModelKindProcessor(iArgs))
 {
 }
 
-UsdMaya_WriteJob::~UsdMaya_WriteJob()
-{
-}
+UsdMaya_WriteJob::~UsdMaya_WriteJob() { }
 
 /// Generates a name for a temporary usdc file in \p dir.
 /// Unless you are very, very unlucky, the stage name is unique because it's
 /// generated from a UUID.
-static
-std::string
-_MakeTmpStageName(const std::string& dir)
+static std::string _MakeTmpStageName(const std::string& dir)
 {
     MUuid uuid;
     uuid.generate();
 
-    const std::string fileName =
-            TfStringPrintf(
-                "tmp-%s.%s",
-                uuid.asString().asChar(),
-                UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
+    const std::string fileName = TfStringPrintf(
+        "tmp-%s.%s",
+        uuid.asString().asChar(),
+        UsdMayaTranslatorTokens->UsdFileExtensionCrate.GetText());
     return TfStringCatPaths(dir, fileName);
 }
 
 /// Chooses the fallback extension based on the compatibility profile, e.g.
 /// ARKit-compatible files should be usdz's by default.
-static
-TfToken
-_GetFallbackExtension(const TfToken& compatibilityMode)
+static TfToken _GetFallbackExtension(const TfToken& compatibilityMode)
 {
     if (compatibilityMode == UsdMayaJobExportArgsTokens->appleArKit) {
         return UsdMayaTranslatorTokens->UsdFileExtensionPackage;
@@ -110,8 +103,7 @@ _GetFallbackExtension(const TfToken& compatibilityMode)
     return UsdMayaTranslatorTokens->UsdFileExtensionDefault;
 }
 
-bool
-UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
+bool UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
 {
     const std::vector<double>& timeSamples = mJobCtx.mArgs.timeSamples;
 
@@ -119,8 +111,7 @@ UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     if (timeSamples.empty()) {
         // Non-animated export doesn't show progress.
         computation.beginComputation(/*showProgressBar*/ false);
-    }
-    else {
+    } else {
         // Animated export shows frame-by-frame progress.
         computation.beginComputation(/*showProgressBar*/ true);
         computation.setProgressRange(0, timeSamples.size());
@@ -172,45 +163,41 @@ UsdMaya_WriteJob::Write(const std::string& fileName, bool append)
     return true;
 }
 
-bool
-UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
+bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 {
     // Check for DAG nodes that are a child of an already specified DAG node to export
     // if that's the case, report the issue and skip the export
     UsdMayaUtil::MDagPathSet::const_iterator m, n;
     UsdMayaUtil::MDagPathSet::const_iterator endPath = mJobCtx.mArgs.dagPaths.end();
-    for (m = mJobCtx.mArgs.dagPaths.begin(); m != endPath; ) {
-        MDagPath path1 = *m; m++;
+    for (m = mJobCtx.mArgs.dagPaths.begin(); m != endPath;) {
+        MDagPath path1 = *m;
+        m++;
         for (n = m; n != endPath; n++) {
             MDagPath path2 = *n;
-            if (UsdMayaUtil::isAncestorDescendentRelationship(path1,path2)) {
+            if (UsdMayaUtil::isAncestorDescendentRelationship(path1, path2)) {
                 TF_RUNTIME_ERROR(
-                        "%s and %s are ancestors or descendants of each other. "
-                        "Please specify export DAG paths that don't overlap. "
-                        "Exiting.",
-                        path1.fullPathName().asChar(),
-                        path2.fullPathName().asChar());
+                    "%s and %s are ancestors or descendants of each other. "
+                    "Please specify export DAG paths that don't overlap. "
+                    "Exiting.",
+                    path1.fullPathName().asChar(),
+                    path2.fullPathName().asChar());
                 return false;
             }
-        }  // for n
-    }  // for m
+        } // for n
+    }     // for m
 
     // Make sure the file name is a valid one with a proper USD extension.
-    TfToken fileExt(TfGetExtension(fileName));
+    TfToken     fileExt(TfGetExtension(fileName));
     std::string fileNameWithExt;
-    if (!(SdfLayer::IsAnonymousLayerIdentifier(fileName) ||
-            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionDefault ||
-            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionASCII ||
-            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionCrate ||
-            fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage)) {
+    if (!(SdfLayer::IsAnonymousLayerIdentifier(fileName)
+          || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionDefault
+          || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionASCII
+          || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionCrate
+          || fileExt == UsdMayaTranslatorTokens->UsdFileExtensionPackage)) {
         // No extension; get fallback extension based on compatibility profile.
         fileExt = _GetFallbackExtension(mJobCtx.mArgs.compatibility);
-        fileNameWithExt = TfStringPrintf(
-                "%s.%s",
-                fileName.c_str(),
-                fileExt.GetText());
-    }
-    else {
+        fileNameWithExt = TfStringPrintf("%s.%s", fileName.c_str(), fileExt.GetText());
+    } else {
         // Has correct extension; use as-is.
         fileNameWithExt = fileName;
     }
@@ -229,22 +216,19 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         if (TfPathExists(_fileName)) {
             // This shouldn't happen (since we made the temp stage name from
             // a UUID). Don't try to recover.
-            TF_RUNTIME_ERROR(
-                    "Temporary stage '%s' already exists", _fileName.c_str());
+            TF_RUNTIME_ERROR("Temporary stage '%s' already exists", _fileName.c_str());
             return false;
         }
 
         // The packaged file gets written to fileNameWithExt.
         _packageName = fileNameWithExt;
-    }
-    else {
+    } else {
         _fileName = fileNameWithExt;
         _packageName = std::string();
     }
 
     TF_STATUS("Opening layer '%s' for writing", _fileName.c_str());
-    if (mJobCtx.mArgs.renderLayerMode ==
-            UsdMayaJobExportArgsTokens->modelingVariant) {
+    if (mJobCtx.mArgs.renderLayerMode == UsdMayaJobExportArgsTokens->modelingVariant) {
         // Handle usdModelRootOverridePath for USD Variants
         MFnRenderLayer::listAllRenderLayers(mRenderLayerObjs);
         if (mRenderLayerObjs.length() > 1) {
@@ -260,6 +244,8 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     if (!mJobCtx.mArgs.timeSamples.empty()) {
         mJobCtx.mStage->SetStartTimeCode(mJobCtx.mArgs.timeSamples.front());
         mJobCtx.mStage->SetEndTimeCode(mJobCtx.mArgs.timeSamples.back());
+        mJobCtx.mStage->SetTimeCodesPerSecond(UsdMayaUtil::GetSceneMTimeUnitAsFloat());
+        mJobCtx.mStage->SetFramesPerSecond(UsdMayaUtil::GetSceneMTimeUnitAsFloat());
     }
 
     // Setup the requested render layer mode:
@@ -279,14 +265,14 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 
     // Switch to the default render layer unless the renderLayerMode is
     // 'currentLayer', or the default layer is already the current layer.
-    if ((mJobCtx.mArgs.renderLayerMode !=
-            UsdMayaJobExportArgsTokens->currentLayer) &&
-            (MFnRenderLayer::currentLayer() !=
-            MFnRenderLayer::defaultRenderLayer())) {
+    if ((mJobCtx.mArgs.renderLayerMode != UsdMayaJobExportArgsTokens->currentLayer)
+        && (MFnRenderLayer::currentLayer() != MFnRenderLayer::defaultRenderLayer())) {
         // Set the RenderLayer to the default render layer
         MFnRenderLayer defaultLayer(MFnRenderLayer::defaultRenderLayer());
-        MGlobal::executeCommand(MString("editRenderLayerGlobals -currentRenderLayer ")+
-                                        defaultLayer.name(), false, false);
+        MGlobal::executeCommand(
+            MString("editRenderLayerGlobals -currentRenderLayer ") + defaultLayer.name(),
+            false,
+            false);
     }
 
     // Pre-process the argument dagPath path names into two sets. One set
@@ -294,14 +280,14 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     // arg dagPaths all the way up to the world root. Partial path names are
     // enough because Maya guarantees them to still be unique, and they require
     // less work to hash and compare than full path names.
-    TfHashSet<std::string, TfHash> argDagPaths;
-    TfHashSet<std::string, TfHash> argDagPathParents;
+    TfHashSet<std::string, TfHash>           argDagPaths;
+    TfHashSet<std::string, TfHash>           argDagPathParents;
     UsdMayaUtil::MDagPathSet::const_iterator end = mJobCtx.mArgs.dagPaths.end();
-    for (UsdMayaUtil::MDagPathSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin();
-            it != end; ++it) {
+    for (UsdMayaUtil::MDagPathSet::const_iterator it = mJobCtx.mArgs.dagPaths.begin(); it != end;
+         ++it) {
         MDagPath curDagPath = *it;
-        MStatus status;
-        bool curDagPathIsValid = curDagPath.isValid(&status);
+        MStatus  status;
+        bool     curDagPathIsValid = curDagPath.isValid(&status);
         if (status != MS::kSuccess || !curDagPathIsValid) {
             continue;
         }
@@ -362,12 +348,11 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
             continue;
         }
 
-        if (!mJobCtx._NeedToTraverse(curDagPath) &&
-            curDagPath.length() > 0) {
+        if (!mJobCtx._NeedToTraverse(curDagPath) && curDagPath.length() > 0) {
             // This dagPath and all of its children should be pruned.
             itDag.prune();
         } else {
-            const MFnDagNode dagNodeFn(curDagPath);
+            const MFnDagNode           dagNodeFn(curDagPath);
             UsdMayaPrimWriterSharedPtr primWriter = mJobCtx.CreatePrimWriter(dagNodeFn);
 
             if (primWriter) {
@@ -375,16 +360,14 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
 
                 // Write out data (non-animated/default values).
                 if (const auto& usdPrim = primWriter->GetUsdPrim()) {
-                    if (!_CheckNameClashes(
-                            usdPrim.GetPath(), primWriter->GetDagPath()))
-                    {
+                    if (!_CheckNameClashes(usdPrim.GetPath(), primWriter->GetDagPath())) {
                         return false;
                     }
 
                     primWriter->Write(UsdTimeCode::Default());
 
-                    const UsdMayaUtil::MDagPathMap<SdfPath>& mapping =
-                            primWriter->GetDagToUsdPathMapping();
+                    const UsdMayaUtil::MDagPathMap<SdfPath>& mapping
+                        = primWriter->GetDagToUsdPathMapping();
                     mDagPathToUsdPathMap.insert(mapping.begin(), mapping.end());
 
                     _modelKindProcessor->OnWritePrim(usdPrim, primWriter);
@@ -398,13 +381,11 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     }
 
     // Writing Materials/Shading
-    UsdMayaTranslatorMaterial::ExportShadingEngines(
-        mJobCtx,
-        mDagPathToUsdPathMap);
+    UsdMayaTranslatorMaterial::ExportShadingEngines(mJobCtx, mDagPathToUsdPathMap);
 
     // Perform post-processing for instances, skel, etc.
     // We shouldn't be creating new instance masters after this point, and we
-    // want to cleanup the InstanceSources prim before writing model hierarchy.
+    // want to cleanup the MayaExportedInstanceSources prim before writing model hierarchy.
     if (!mJobCtx._PostProcess()) {
         return false;
     }
@@ -417,11 +398,9 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     mChasers.clear();
     UsdMayaChaserRegistry::FactoryContext ctx(mJobCtx.mStage, mDagPathToUsdPathMap, mJobCtx.mArgs);
     for (const std::string& chaserName : mJobCtx.mArgs.chaserNames) {
-        if (UsdMayaChaserRefPtr fn =
-                UsdMayaChaserRegistry::GetInstance().Create(chaserName, ctx)) {
+        if (UsdMayaChaserRefPtr fn = UsdMayaChaserRegistry::GetInstance().Create(chaserName, ctx)) {
             mChasers.push_back(fn);
-        }
-        else {
+        } else {
             TF_RUNTIME_ERROR("Failed to create chaser: %s", chaserName.c_str());
         }
     }
@@ -435,13 +414,11 @@ UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
     return true;
 }
 
-bool
-UsdMaya_WriteJob::_WriteFrame(double iFrame)
+bool UsdMaya_WriteJob::_WriteFrame(double iFrame)
 {
     const UsdTimeCode usdTime(iFrame);
 
-    for (const UsdMayaPrimWriterSharedPtr& primWriter :
-            mJobCtx.mMayaPrimWriterList) {
+    for (const UsdMayaPrimWriterSharedPtr& primWriter : mJobCtx.mMayaPrimWriterList) {
         const UsdPrim& usdPrim = primWriter->GetUsdPrim();
         if (usdPrim) {
             primWriter->Write(usdTime);
@@ -459,8 +436,7 @@ UsdMaya_WriteJob::_WriteFrame(double iFrame)
     return true;
 }
 
-bool
-UsdMaya_WriteJob::_FinishWriting()
+bool UsdMaya_WriteJob::_FinishWriting()
 {
     UsdPrimSiblingRange usdRootPrims = mJobCtx.mStage->GetPseudoRoot().GetChildren();
 
@@ -473,24 +449,26 @@ UsdMaya_WriteJob::_FinishWriting()
         defaultPrim = usdRootPrim.GetName();
     }
 
-    if (usdRootPrim && mRenderLayerObjs.length() > 1 &&
-        !mJobCtx.mArgs.usdModelRootOverridePath.IsEmpty()) {
-            // Get RenderLayers
-            //   mArgs.usdModelRootOverridePath:
-            //     Require mArgs.usdModelRootOverridePath to be set so that
-            //     the variants are put under a UsdPrim that references a BaseModel
-            //     prim that has all of the geometry, transforms, and other details.
-            //     This needs to be done since "local" values have stronger precedence
-            //     than "variant" values, but "referencing" will cause the variant values
-            //     to take precedence.
+    if (usdRootPrim && mRenderLayerObjs.length() > 1
+        && !mJobCtx.mArgs.usdModelRootOverridePath.IsEmpty()) {
+        // Get RenderLayers
+        //   mArgs.usdModelRootOverridePath:
+        //     Require mArgs.usdModelRootOverridePath to be set so that
+        //     the variants are put under a UsdPrim that references a BaseModel
+        //     prim that has all of the geometry, transforms, and other details.
+        //     This needs to be done since "local" values have stronger precedence
+        //     than "variant" values, but "referencing" will cause the variant values
+        //     to take precedence.
         defaultPrim = _WriteVariants(usdRootPrim);
     }
 
     // Restoring the currentRenderLayer
     MFnRenderLayer currentLayer(MFnRenderLayer::currentLayer());
     if (currentLayer.name() != mCurrentRenderLayerName) {
-        MGlobal::executeCommand(MString("editRenderLayerGlobals -currentRenderLayer ")+
-                                        mCurrentRenderLayerName, false, false);
+        MGlobal::executeCommand(
+            MString("editRenderLayerGlobals -currentRenderLayer ") + mCurrentRenderLayerName,
+            false,
+            false);
     }
 
     // Unfortunately, MGlobal::isZAxisUp() is merely session state that does
@@ -498,33 +476,32 @@ UsdMaya_WriteJob::_FinishWriting()
     // properly.  Since "Y" is the more common upAxis, we'll just use
     // isZAxisUp as an override to whatever our pipeline is configured for.
     TfToken upAxis = UsdGeomGetFallbackUpAxis();
-    if (MGlobal::isZAxisUp()){
+    if (MGlobal::isZAxisUp()) {
         upAxis = UsdGeomTokens->z;
     }
     UsdGeomSetStageUpAxis(mJobCtx.mStage, upAxis);
 
     // XXX Currently all distance values are written directly to USD, and will
     // be in centimeters (Maya's internal unit) despite what the users UIUnit
-    // preference is. Future work could include converting exported values to 
-    // the UIUnit setting and writing that unit to metadata. 
+    // preference is. Future work could include converting exported values to
+    // the UIUnit setting and writing that unit to metadata.
     MDistance::Unit mayaInternalUnit = MDistance::internalUnit();
     if (mayaInternalUnit != MDistance::uiUnit()) {
         TF_WARN("Distance unit conversion is not yet supported. "
-            "All distance values will be exported in Maya's internal "
-            "distance unit.");
+                "All distance values will be exported in Maya's internal "
+                "distance unit.");
     }
     UsdGeomSetStageMetersPerUnit(
-        mJobCtx.mStage, 
-        UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit));
+        mJobCtx.mStage, UsdMayaUtil::ConvertMDistanceUnitToUsdGeomLinearUnit(mayaInternalUnit));
 
-    if (usdRootPrim){
+    if (usdRootPrim) {
         // We have already decided above that 'usdRootPrim' is the important
         // prim for the export... usdVariantRootPrimPath
         mJobCtx.mStage->GetRootLayer()->SetDefaultPrim(defaultPrim);
     }
 
     // Running post export function on all the prim writers.
-    for (auto& primWriter: mJobCtx.mMayaPrimWriterList) {
+    for (auto& primWriter : mJobCtx.mMayaPrimWriterList) {
         primWriter->PostExport();
     }
 
@@ -563,7 +540,7 @@ UsdMaya_WriteJob::_FinishWriting()
     return true;
 }
 
-TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
+TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim& usdRootPrim)
 {
     // Some notes about the expected structure that this function will create:
 
@@ -612,12 +589,16 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
     if (mJobCtx.mParentScopePath.IsEmpty()) {
         // Get the usdVariantRootPrimPath (optionally filter by renderLayer prefix)
         UsdMayaPrimWriterSharedPtr firstPrimWriterPtr = *mJobCtx.mMayaPrimWriterList.begin();
-        std::string firstPrimWriterPathStr( firstPrimWriterPtr->GetDagPath().fullPathName().asChar() );
-        std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), '|', '/');
-        std::replace( firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), ':', '_'); // replace namespace ":" with "_"
+        std::string                firstPrimWriterPathStr(
+            firstPrimWriterPtr->GetDagPath().fullPathName().asChar());
+        std::replace(firstPrimWriterPathStr.begin(), firstPrimWriterPathStr.end(), '|', '/');
+        std::replace(
+            firstPrimWriterPathStr.begin(),
+            firstPrimWriterPathStr.end(),
+            ':',
+            '_'); // replace namespace ":" with "_"
         usdVariantRootPrimPath = SdfPath(firstPrimWriterPathStr).GetPrefixes()[0];
-    }
-    else {
+    } else {
         // If they passed a parentScope, then use that for our new top-level
         // variant-switcher prim
         usdVariantRootPrimPath = mJobCtx.mParentScopePath;
@@ -632,23 +613,23 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
     usdRootPrim.SetActive(false);
 
     // Loop over all the renderLayers
-    for (unsigned int ir=0; ir < mRenderLayerObjs.length(); ++ir) {
+    for (unsigned int ir = 0; ir < mRenderLayerObjs.length(); ++ir) {
         SdfPathTable<bool> tableOfActivePaths;
-        MFnRenderLayer renderLayerFn( mRenderLayerObjs[ir] );
-        MString renderLayerName = renderLayerFn.name();
-        std::string variantName(renderLayerName.asChar());
+        MFnRenderLayer     renderLayerFn(mRenderLayerObjs[ir]);
+        MString            renderLayerName = renderLayerFn.name();
+        std::string        variantName(renderLayerName.asChar());
         // Determine default variant. Currently unsupported
-        //MPlug renderLayerDisplayOrderPlug = renderLayerFn.findPlug("displayOrder", true);
-        //int renderLayerDisplayOrder = renderLayerDisplayOrderPlug.asShort();
+        // MPlug renderLayerDisplayOrderPlug = renderLayerFn.findPlug("displayOrder", true);
+        // int renderLayerDisplayOrder = renderLayerDisplayOrderPlug.asShort();
 
         // The Maya default RenderLayer is also the default modeling variant
         if (mRenderLayerObjs[ir] == MFnRenderLayer::defaultRenderLayer()) {
-            defaultModelingVariant=variantName;
+            defaultModelingVariant = variantName;
         }
 
         // Make the renderlayer being looped the current one
-        MGlobal::executeCommand(MString("editRenderLayerGlobals -currentRenderLayer ")+
-                                        renderLayerName, false, false);
+        MGlobal::executeCommand(
+            MString("editRenderLayerGlobals -currentRenderLayer ") + renderLayerName, false, false);
 
         // == ModelingVariants ==
         // Identify prims to activate
@@ -657,45 +638,49 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
         // It has to be done this way since SetActive(false) disables access to all child prims.
         MObjectArray renderLayerMemberObjs;
         renderLayerFn.listMembers(renderLayerMemberObjs);
-        std::vector< SdfPath > activePaths;
-        for (unsigned int im=0; im < renderLayerMemberObjs.length(); ++im) {
+        std::vector<SdfPath> activePaths;
+        for (unsigned int im = 0; im < renderLayerMemberObjs.length(); ++im) {
             MFnDagNode dagFn(renderLayerMemberObjs[im]);
-            MDagPath dagPath;
+            MDagPath   dagPath;
             dagFn.getPath(dagPath);
             dagPath.extendToShape();
             SdfPath usdPrimPath;
             if (!TfMapLookup(mDagPathToUsdPathMap, dagPath, &usdPrimPath)) {
                 continue;
             }
-            usdPrimPath = usdPrimPath.ReplacePrefix(usdPrimPath.GetPrefixes()[0], usdVariantRootPrimPath); // Convert base to variant usdPrimPath
+            usdPrimPath = usdPrimPath.ReplacePrefix(
+                usdPrimPath.GetPrefixes()[0],
+                usdVariantRootPrimPath); // Convert base to variant usdPrimPath
             tableOfActivePaths[usdPrimPath] = true;
             activePaths.push_back(usdPrimPath);
-            //UsdPrim usdPrim = mStage->GetPrimAtPath(usdPrimPath);
-            //usdPrim.SetActive(true);
+            // UsdPrim usdPrim = mStage->GetPrimAtPath(usdPrimPath);
+            // usdPrim.SetActive(true);
         }
         if (!tableOfActivePaths.empty()) {
             { // == BEG: Scope for Variant EditContext
                 // Create the variantSet and variant
-                UsdVariantSet modelingVariantSet = usdVariantRootPrim.GetVariantSets().AddVariantSet("modelingVariant");
+                UsdVariantSet modelingVariantSet
+                    = usdVariantRootPrim.GetVariantSets().AddVariantSet("modelingVariant");
                 modelingVariantSet.AddVariant(variantName);
                 modelingVariantSet.SetVariantSelection(variantName);
                 // Set the Edit Context
-                UsdEditTarget editTarget = modelingVariantSet.GetVariantEditTarget();
+                UsdEditTarget  editTarget = modelingVariantSet.GetVariantEditTarget();
                 UsdEditContext editContext(mJobCtx.mStage, editTarget);
 
                 // == Activate/Deactivate UsdPrims
-                UsdPrimRange rng = UsdPrimRange::AllPrims(mJobCtx.mStage->GetPseudoRoot());
+                UsdPrimRange         rng = UsdPrimRange::AllPrims(mJobCtx.mStage->GetPseudoRoot());
                 std::vector<UsdPrim> primsToDeactivate;
                 for (auto it = rng.begin(); it != rng.end(); ++it) {
                     UsdPrim usdPrim = *it;
                     // For all xformable usdPrims...
                     if (usdPrim && usdPrim.IsA<UsdGeomXformable>()) {
-                        bool isActive=false;
+                        bool isActive = false;
                         for (const auto& activePath : activePaths) {
-                            //primPathD.HasPrefix(primPathA);
-                            if (usdPrim.GetPath().HasPrefix(activePath) ||
-                                    activePath.HasPrefix(usdPrim.GetPath())) {
-                                isActive=true; break;
+                            // primPathD.HasPrefix(primPathA);
+                            if (usdPrim.GetPath().HasPrefix(activePath)
+                                || activePath.HasPrefix(usdPrim.GetPath())) {
+                                isActive = true;
+                                break;
                             }
                         }
                         if (!isActive) {
@@ -706,7 +691,7 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
                 }
                 // Now deactivate the prims (done outside of the UsdPrimRange
                 // so not to modify the iterator while in the loop)
-                for ( UsdPrim const& prim : primsToDeactivate ) {
+                for (UsdPrim const& prim : primsToDeactivate) {
                     prim.SetActive(false);
                 }
             } // == END: Scope for Variant EditContext
@@ -721,19 +706,15 @@ TfToken UsdMaya_WriteJob::_WriteVariants(const UsdPrim &usdRootPrim)
     return defaultPrim;
 }
 
-void
-UsdMaya_WriteJob::_CreatePackage() const
+void UsdMaya_WriteJob::_CreatePackage() const
 {
     // Since we're packaging a temporary stage file that has an
     // auto-generated name, create a nicer name for the root layer from
     // the package layer name specified by the user.
     // (Otherwise, the name inside the package will be a random string!)
-    const std::string firstLayerBaseName =
-            TfStringGetBeforeSuffix(TfGetBaseName(_packageName));
-    const std::string firstLayerName = TfStringPrintf(
-            "%s.%s",
-            firstLayerBaseName.c_str(),
-            TfGetExtension(_fileName).c_str());
+    const std::string firstLayerBaseName = TfStringGetBeforeSuffix(TfGetBaseName(_packageName));
+    const std::string firstLayerName
+        = TfStringPrintf("%s.%s", firstLayerBaseName.c_str(), TfGetExtension(_fileName).c_str());
 
     if (mJobCtx.mArgs.compatibility == UsdMayaJobExportArgsTokens->appleArKit) {
         // If exporting with compatibility=appleArKit, there are additional
@@ -742,30 +723,24 @@ UsdMaya_WriteJob::_CreatePackage() const
         // UsdUtilsCreateNewARKitUsdzPackage will automatically flatten and
         // enforce that the first layer has a .usdc extension.
         if (!UsdUtilsCreateNewARKitUsdzPackage(
-                SdfAssetPath(_fileName),
-                _packageName,
-                firstLayerName)) {
+                SdfAssetPath(_fileName), _packageName, firstLayerName)) {
             TF_RUNTIME_ERROR(
-                    "Could not create package '%s' from temporary stage '%s'",
-                    _packageName.c_str(),
-                    _fileName.c_str());
+                "Could not create package '%s' from temporary stage '%s'",
+                _packageName.c_str(),
+                _fileName.c_str());
         }
-    }
-    else {
+    } else {
         // No compatibility options (standard).
-        if (!UsdUtilsCreateNewUsdzPackage(
-                SdfAssetPath(_fileName),
-                _packageName,
-                firstLayerName)) {
+        if (!UsdUtilsCreateNewUsdzPackage(SdfAssetPath(_fileName), _packageName, firstLayerName)) {
             TF_RUNTIME_ERROR(
-                    "Could not create package '%s' from temporary stage '%s'",
-                    _packageName.c_str(),
-                    _fileName.c_str());
+                "Could not create package '%s' from temporary stage '%s'",
+                _packageName.c_str(),
+                _fileName.c_str());
         }
     }
 }
 
-void UsdMaya_WriteJob::_PerFrameCallback(double  /*iFrame*/)
+void UsdMaya_WriteJob::_PerFrameCallback(double /*iFrame*/)
 {
     // XXX Should we be passing the frame number into the callback?
     // Unfortunately, we need to be careful that we don't affect existing
@@ -780,7 +755,6 @@ void UsdMaya_WriteJob::_PerFrameCallback(double  /*iFrame*/)
     }
 }
 
-
 // write the frame ranges and statistic string on the root
 // Also call the post callbacks
 void UsdMaya_WriteJob::_PostCallback()
@@ -794,13 +768,13 @@ void UsdMaya_WriteJob::_PostCallback()
     }
 }
 
-bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath &path, const MDagPath &dagPath)
+bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath& path, const MDagPath& dagPath)
 {
     if (!mJobCtx.mArgs.stripNamespaces) {
         return true;
     }
     auto foundPair = mUsdPathToDagPathMap.find(path);
-    if (foundPair != mUsdPathToDagPathMap.end()){
+    if (foundPair != mUsdPathToDagPathMap.end()) {
         if (mJobCtx.mArgs.mergeTransformAndShape) {
             // Shape should not conflict with xform
             MDagPath other = foundPair->second;
@@ -826,6 +800,4 @@ bool UsdMaya_WriteJob::_CheckNameClashes(const SdfPath &path, const MDagPath &da
     return true;
 }
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-

@@ -15,79 +15,79 @@
 //
 #pragma once
 
-#include <ufe/transform3dUndoableCommands.h>
-
-#include <pxr/usd/usd/attribute.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
 
+#include <pxr/usd/usd/attribute.h>
+
+#include <ufe/transform3dUndoableCommands.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Translation command of the given prim.
 /*!
-	Ability to perform undo to restore the original translate value.
+        Ability to perform undo to restore the original translate value.
  */
-class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand : public Ufe::TranslateUndoableCommand, public UsdTRSUndoableCommandBase<GfVec3d>
+class MAYAUSD_CORE_PUBLIC UsdTranslateUndoableCommand
+    : public Ufe::TranslateUndoableCommand
+    , public UsdTRSUndoableCommandBase<GfVec3d>
 {
 public:
-	typedef std::shared_ptr<UsdTranslateUndoableCommand> Ptr;
+    typedef std::shared_ptr<UsdTranslateUndoableCommand> Ptr;
 
-	UsdTranslateUndoableCommand(const UsdTranslateUndoableCommand&) = delete;
-	UsdTranslateUndoableCommand& operator=(const UsdTranslateUndoableCommand&) = delete;
-	UsdTranslateUndoableCommand(UsdTranslateUndoableCommand&&) = delete;
-	UsdTranslateUndoableCommand& operator=(UsdTranslateUndoableCommand&&) = delete;
+    UsdTranslateUndoableCommand(const UsdTranslateUndoableCommand&) = delete;
+    UsdTranslateUndoableCommand& operator=(const UsdTranslateUndoableCommand&) = delete;
+    UsdTranslateUndoableCommand(UsdTranslateUndoableCommand&&) = delete;
+    UsdTranslateUndoableCommand& operator=(UsdTranslateUndoableCommand&&) = delete;
 
-	#ifdef UFE_V2_FEATURES_AVAILABLE
-	//! Create a UsdTranslateUndoableCommand from a UFE scene path. The
-	//! command is not executed.
-	static UsdTranslateUndoableCommand::Ptr create(
-        const Ufe::Path& path, double x, double y, double z);
-	#else
-	//! Create a UsdTranslateUndoableCommand from a UFE scene item.  The
-	//! command is not executed.
-	static UsdTranslateUndoableCommand::Ptr create(
-        const UsdSceneItem::Ptr& item, double x, double y, double z);
-	#endif
-
-	// Ufe::TranslateUndoableCommand overrides.  translate() sets the command's
-	// translation value and executes the command.
-	void undo() override;
-	void redo() override;
-#if UFE_PREVIEW_VERSION_NUM >= 2025
-//#ifdef UFE_V2_FEATURES_AVAILABLE
-	bool set(double x, double y, double z) override;
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    //! Create a UsdTranslateUndoableCommand from a UFE scene path. The
+    //! command is not executed.
+    static UsdTranslateUndoableCommand::Ptr
+    create(const Ufe::Path& path, double x, double y, double z);
 #else
-	bool translate(double x, double y, double z) override;
+    //! Create a UsdTranslateUndoableCommand from a UFE scene item.  The
+    //! command is not executed.
+    static UsdTranslateUndoableCommand::Ptr
+         create(const UsdSceneItem::Ptr& item, double x, double y, double z);
 #endif
 
-	#ifdef UFE_V2_FEATURES_AVAILABLE
-	Ufe::Path getPath() const override { return path(); }
-	#endif
+    // Ufe::TranslateUndoableCommand overrides.  set() sets the command's
+    // translation value and executes the command.
+    void undo() override;
+    void redo() override;
+#if UFE_PREVIEW_VERSION_NUM >= 2025
+    //#ifdef UFE_V2_FEATURES_AVAILABLE
+    bool set(double x, double y, double z) override;
+#else
+    bool translate(double x, double y, double z) override;
+#endif
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    Ufe::Path getPath() const override { return path(); }
+#endif
 
 protected:
-
     //! Construct a UsdTranslateUndoableCommand.  The command is not executed.
-	#ifdef UFE_V2_FEATURES_AVAILABLE
-	UsdTranslateUndoableCommand(const Ufe::Path& path, double x, double y, double z);
-	#else
-	UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
-	#endif
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    UsdTranslateUndoableCommand(const Ufe::Path& path, double x, double y, double z);
+#else
+    UsdTranslateUndoableCommand(const UsdSceneItem::Ptr& item, double x, double y, double z);
+#endif
 
-	~UsdTranslateUndoableCommand() override;
+    ~UsdTranslateUndoableCommand() override;
 
 private:
-
     static TfToken xlate;
 
     TfToken attributeName() const override { return xlate; }
-    void performImp(double x, double y, double z) override;
-    void addEmptyAttribute() override;
+    void    performImp(double x, double y, double z) override;
+    void    addEmptyAttribute() override;
 
 }; // UsdTranslateUndoableCommand
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

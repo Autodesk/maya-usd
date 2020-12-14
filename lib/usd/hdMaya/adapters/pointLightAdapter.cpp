@@ -13,27 +13,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <memory>
-
-#include <maya/MFnPointLight.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/type.h>
-#include <pxr/imaging/hd/light.h>
-#include <pxr/usd/usdLux/tokens.h>
-
 #include <hdMaya/adapters/adapterDebugCodes.h>
 #include <hdMaya/adapters/adapterRegistry.h>
 #include <hdMaya/adapters/lightAdapter.h>
 
+#include <pxr/base/tf/type.h>
+#include <pxr/imaging/hd/light.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usdLux/tokens.h>
+
+#include <maya/MFnPointLight.h>
+
+#include <memory>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaPointLightAdapter : public HdMayaLightAdapter {
+class HdMayaPointLightAdapter : public HdMayaLightAdapter
+{
 public:
     HdMayaPointLightAdapter(HdMayaDelegateCtx* delegate, const MDagPath& dag)
-        : HdMayaLightAdapter(delegate, dag) {}
+        : HdMayaLightAdapter(delegate, dag)
+    {
+    }
 
-    const TfToken& LightType() const override {
+    const TfToken& LightType() const override
+    {
         if (GetDelegate()->IsHdSt()) {
             return HdPrimTypeTokens->simpleLight;
         } else {
@@ -41,14 +45,16 @@ public:
         }
     }
 
-    VtValue GetLightParamValue(const TfToken& paramName) override {
+    VtValue GetLightParamValue(const TfToken& paramName) override
+    {
         TF_DEBUG(HDMAYA_ADAPTER_GET_LIGHT_PARAM_VALUE)
             .Msg(
                 "Called HdMayaPointLightAdapter::GetLightParamValue(%s) - %s\n",
-                paramName.GetText(), GetDagPath().partialPathName().asChar());
+                paramName.GetText(),
+                GetDagPath().partialPathName().asChar());
 
         MFnPointLight light(GetDagPath());
-        if (paramName == UsdLuxTokens->radius) {
+        if (paramName == HdLightTokens->radius) {
             const float radius = light.shadowRadius();
             return VtValue(radius);
         } else if (paramName == UsdLuxTokens->treatAsPoint) {
@@ -59,18 +65,17 @@ public:
     }
 };
 
-TF_REGISTRY_FUNCTION(TfType) {
-    TfType::Define<
-        HdMayaPointLightAdapter, TfType::Bases<HdMayaLightAdapter> >();
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<HdMayaPointLightAdapter, TfType::Bases<HdMayaLightAdapter>>();
 }
 
-TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight) {
+TF_REGISTRY_FUNCTION_WITH_TAG(HdMayaAdapterRegistry, pointLight)
+{
     HdMayaAdapterRegistry::RegisterLightAdapter(
         TfToken("pointLight"),
-        [](HdMayaDelegateCtx* delegate,
-           const MDagPath& dag) -> HdMayaLightAdapterPtr {
-            return HdMayaLightAdapterPtr(
-                new HdMayaPointLightAdapter(delegate, dag));
+        [](HdMayaDelegateCtx* delegate, const MDagPath& dag) -> HdMayaLightAdapterPtr {
+            return HdMayaLightAdapterPtr(new HdMayaPointLightAdapter(delegate, dag));
         });
 }
 

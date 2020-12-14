@@ -15,11 +15,11 @@
 //
 #pragma once
 
-#include <ufe/contextOpsHandler.h>
-
 #include <mayaUsd/base/api.h>
 
-MAYAUSD_NS_DEF {
+#include <ufe/contextOpsHandler.h>
+
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Maya run-time context ops handler with support for USD gateway node.
@@ -36,27 +36,28 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC ProxyShapeContextOpsHandler : public Ufe::ContextOpsHandler
 {
 public:
-	typedef std::shared_ptr<ProxyShapeContextOpsHandler> Ptr;
+    typedef std::shared_ptr<ProxyShapeContextOpsHandler> Ptr;
 
-	ProxyShapeContextOpsHandler(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
-	~ProxyShapeContextOpsHandler() override;
+    ProxyShapeContextOpsHandler(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
+    ~ProxyShapeContextOpsHandler() override;
 
-	// Delete the copy/move constructors assignment operators.
-	ProxyShapeContextOpsHandler(const ProxyShapeContextOpsHandler&) = delete;
-	ProxyShapeContextOpsHandler& operator=(const ProxyShapeContextOpsHandler&) = delete;
-	ProxyShapeContextOpsHandler(ProxyShapeContextOpsHandler&&) = delete;
-	ProxyShapeContextOpsHandler& operator=(ProxyShapeContextOpsHandler&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    ProxyShapeContextOpsHandler(const ProxyShapeContextOpsHandler&) = delete;
+    ProxyShapeContextOpsHandler& operator=(const ProxyShapeContextOpsHandler&) = delete;
+    ProxyShapeContextOpsHandler(ProxyShapeContextOpsHandler&&) = delete;
+    ProxyShapeContextOpsHandler& operator=(ProxyShapeContextOpsHandler&&) = delete;
 
-	//! Create a ProxyShapeContextOpsHandler from a UFE hierarchy handler.
-	static ProxyShapeContextOpsHandler::Ptr create(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
+    //! Create a ProxyShapeContextOpsHandler from a UFE hierarchy handler.
+    static ProxyShapeContextOpsHandler::Ptr
+    create(const Ufe::ContextOpsHandler::Ptr& mayaContextOpsHandler);
 
-	// Ufe::ContextOpsHandler overrides
-	Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
+    // Ufe::ContextOpsHandler overrides
+    Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
 
 private:
-	Ufe::ContextOpsHandler::Ptr _mayaContextOpsHandler;
+    Ufe::ContextOpsHandler::Ptr _mayaContextOpsHandler;
 
 }; // ProxyShapeContextOpsHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

@@ -18,7 +18,7 @@
 
 import maya.cmds as cmds
 
-from ufeTestUtils import usdUtils, mayaUtils
+import usdUtils, mayaUtils
 import ufe
 
 import unittest
@@ -39,7 +39,7 @@ class SceneItemTestCase(unittest.TestCase):
         ''' Called initially to set up the maya test environment '''
         self.assertTrue(self.pluginsLoaded)
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
 
     @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2020', 'testNodeTypes only available in UFE preview version 0.2.20 and greater')
@@ -48,7 +48,7 @@ class SceneItemTestCase(unittest.TestCase):
 
         # Get a UFE scene item for one of the balls in the scene.
         ball35Path = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         ball35Item = ufe.Hierarchy.createItem(ball35Path)
 

@@ -8,14 +8,17 @@ target_sources(${PROJECT_NAME}
         baseListShadingModesCommand.cpp
         editTargetCommand.cpp
         layerEditorCommand.cpp
+        layerEditorWindowCommand.cpp
 )
 
 set(HEADERS
+        abstractLayerEditorWindow.h
         baseExportCommand.h
         baseImportCommand.h
         baseListShadingModesCommand.h
         editTargetCommand.h
         layerEditorCommand.h
+        layerEditorWindowCommand.h
 )
 
 # -----------------------------------------------------------------------------

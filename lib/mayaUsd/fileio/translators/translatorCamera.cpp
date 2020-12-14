@@ -15,39 +15,45 @@
 //
 #include "translatorCamera.h"
 
-#include <string>
-#include <vector>
-
-#include <maya/MDagModifier.h>
-#include <maya/MDistance.h>
-#include <maya/MFnAnimCurve.h>
-#include <maya/MPlug.h>
-#include <maya/MObject.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/shading/shadingModeRegistry.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/tf/type.h>
+#include <pxr/base/vt/dictionary.h>
+#include <pxr/base/vt/value.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/camera.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primReaderArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MDagModifier.h>
+#include <maya/MDistance.h>
+#include <maya/MFnAnimCurve.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 static bool _ReadToCamera(
-        const UsdGeomCamera& usdCamera,
-        MFnCamera& cameraObject,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context);
+    const UsdGeomCamera&         usdCamera,
+    MFnCamera&                   cameraObject,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context);
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens,
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
     ((MayaCameraTypeName, "camera"))
     ((MayaCameraShapeNameSuffix, "Shape"))
 
@@ -62,23 +68,23 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((MayaCameraAttrNameNearClippingPlane, "nearClipPlane"))
     ((MayaCameraAttrNameFarClippingPlane, "farClipPlane"))
 );
+// clang-format on
 
-
-static
-bool
-_CheckUsdTypeAndResizeArrays(
-        const UsdAttribute& usdAttr,
-        const TfType& expectedType,
-        const GfInterval& timeInterval,
-        std::vector<double>* timeSamples,
-        MTimeArray* timeArray,
-        MDoubleArray* valueArray)
+static bool _CheckUsdTypeAndResizeArrays(
+    const UsdAttribute&  usdAttr,
+    const TfType&        expectedType,
+    const GfInterval&    timeInterval,
+    std::vector<double>* timeSamples,
+    MTimeArray*          timeArray,
+    MDoubleArray*        valueArray)
 {
     // Validate that the attribute holds values of the expected type.
     const TfType type = usdAttr.GetTypeName().GetType();
     if (type != expectedType) {
-        TF_CODING_ERROR("Unsupported type name for USD attribute '%s': %s",
-            usdAttr.GetName().GetText(), type.GetTypeName().c_str());
+        TF_CODING_ERROR(
+            "Unsupported type name for USD attribute '%s': %s",
+            usdAttr.GetName().GetText(),
+            type.GetTypeName().c_str());
         return false;
     }
 
@@ -97,24 +103,18 @@ _CheckUsdTypeAndResizeArrays(
     return true;
 }
 
-static
-bool
-_GetTimeAndValueArrayForUsdAttribute(
-        const UsdAttribute& usdAttr,
-        const GfInterval& timeInterval,
-        MTimeArray* timeArray,
-        MDoubleArray* valueArray,
-        const MDistance::Unit convertToUnit = MDistance::kMillimeters)
+static bool _GetTimeAndValueArrayForUsdAttribute(
+    const UsdAttribute&   usdAttr,
+    const GfInterval&     timeInterval,
+    MTimeArray*           timeArray,
+    MDoubleArray*         valueArray,
+    const MDistance::Unit convertToUnit = MDistance::kMillimeters)
 {
     static const TfType& floatType = TfType::Find<float>();
-    std::vector<double> timeSamples;
+    std::vector<double>  timeSamples;
 
-    if (!_CheckUsdTypeAndResizeArrays(usdAttr,
-                                      floatType,
-                                      timeInterval,
-                                      &timeSamples,
-                                      timeArray,
-                                      valueArray)) {
+    if (!_CheckUsdTypeAndResizeArrays(
+            usdAttr, floatType, timeInterval, &timeSamples, timeArray, valueArray)) {
         return false;
     }
 
@@ -122,21 +122,17 @@ _GetTimeAndValueArrayForUsdAttribute(
 
     for (size_t i = 0; i < numTimeSamples; ++i) {
         const double timeSample = timeSamples[i];
-        float attrValue;
+        float        attrValue;
         if (!usdAttr.Get(&attrValue, timeSample)) {
             return false;
         }
 
         switch (convertToUnit) {
-            case MDistance::kInches:
-                attrValue = UsdMayaUtil::ConvertMMToInches(attrValue);
-                break;
-            case MDistance::kCentimeters:
-                attrValue = UsdMayaUtil::ConvertMMToCM(attrValue);
-                break;
-            default:
-                // The input is expected to be in millimeters.
-                break;
+        case MDistance::kInches: attrValue = UsdMayaUtil::ConvertMMToInches(attrValue); break;
+        case MDistance::kCentimeters: attrValue = UsdMayaUtil::ConvertMMToCM(attrValue); break;
+        default:
+            // The input is expected to be in millimeters.
+            break;
         }
 
         timeArray->set(MTime(timeSample), i);
@@ -149,24 +145,18 @@ _GetTimeAndValueArrayForUsdAttribute(
 // This is primarily intended for use in translating the clippingRange
 // USD attribute which is stored in USD as a single GfVec2f value but
 // in Maya as separate nearClipPlane and farClipPlane attributes.
-static
-bool
-_GetTimeAndValueArraysForUsdAttribute(
-        const UsdAttribute& usdAttr,
-        const GfInterval& timeInterval,
-        MTimeArray* timeArray,
-        MDoubleArray* valueArray1,
-        MDoubleArray* valueArray2)
+static bool _GetTimeAndValueArraysForUsdAttribute(
+    const UsdAttribute& usdAttr,
+    const GfInterval&   timeInterval,
+    MTimeArray*         timeArray,
+    MDoubleArray*       valueArray1,
+    MDoubleArray*       valueArray2)
 {
     static const TfType& vec2fType = TfType::Find<GfVec2f>();
-    std::vector<double> timeSamples;
+    std::vector<double>  timeSamples;
 
-    if (!_CheckUsdTypeAndResizeArrays(usdAttr,
-                                      vec2fType,
-                                      timeInterval,
-                                      &timeSamples,
-                                      timeArray,
-                                      valueArray1)) {
+    if (!_CheckUsdTypeAndResizeArrays(
+            usdAttr, vec2fType, timeInterval, &timeSamples, timeArray, valueArray1)) {
         return false;
     }
 
@@ -175,7 +165,7 @@ _GetTimeAndValueArraysForUsdAttribute(
 
     for (size_t i = 0; i < numTimeSamples; ++i) {
         const double timeSample = timeSamples[i];
-        GfVec2f attrValue;
+        GfVec2f      attrValue;
         if (!usdAttr.Get(&attrValue, timeSample)) {
             return false;
         }
@@ -187,17 +177,15 @@ _GetTimeAndValueArraysForUsdAttribute(
     return true;
 }
 
-static
-bool
-_CreateAnimCurveForPlug(
-        MPlug& plug,
-        MTimeArray& timeArray,
-        MDoubleArray& valueArray,
-        UsdMayaPrimReaderContext* context)
+static bool _CreateAnimCurveForPlug(
+    MPlug&                    plug,
+    MTimeArray&               timeArray,
+    MDoubleArray&             valueArray,
+    UsdMayaPrimReaderContext* context)
 {
     MFnAnimCurve animFn;
-    MStatus status;
-    MObject animObj = animFn.create(plug, nullptr, &status);
+    MStatus      status;
+    MObject      animObj = animFn.create(plug, nullptr, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     status = animFn.addKeys(&timeArray, &valueArray);
@@ -211,26 +199,21 @@ _CreateAnimCurveForPlug(
     return true;
 }
 
-static
-bool
-_TranslateAnimatedUsdAttributeToPlug(
-        const UsdAttribute& usdAttr,
-        MPlug& plug,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context,
-        const MDistance::Unit convertToUnit = MDistance::kMillimeters)
+static bool _TranslateAnimatedUsdAttributeToPlug(
+    const UsdAttribute&          usdAttr,
+    MPlug&                       plug,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context,
+    const MDistance::Unit        convertToUnit = MDistance::kMillimeters)
 {
     if (args.GetTimeInterval().IsEmpty()) {
         return false;
     }
 
-    MTimeArray timeArray;
+    MTimeArray   timeArray;
     MDoubleArray valueArray;
-    if (!_GetTimeAndValueArrayForUsdAttribute(usdAttr,
-                                              args.GetTimeInterval(),
-                                              &timeArray,
-                                              &valueArray,
-                                              convertToUnit)) {
+    if (!_GetTimeAndValueArrayForUsdAttribute(
+            usdAttr, args.GetTimeInterval(), &timeArray, &valueArray, convertToUnit)) {
         return false;
     }
 
@@ -241,27 +224,22 @@ _TranslateAnimatedUsdAttributeToPlug(
     return true;
 }
 
-static
-bool
-_TranslateAnimatedUsdAttributeToPlugs(
-        const UsdAttribute& usdAttr,
-        MPlug& plug1,
-        MPlug& plug2,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context)
+static bool _TranslateAnimatedUsdAttributeToPlugs(
+    const UsdAttribute&          usdAttr,
+    MPlug&                       plug1,
+    MPlug&                       plug2,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     if (args.GetTimeInterval().IsEmpty()) {
         return false;
     }
 
-    MTimeArray timeArray;
+    MTimeArray   timeArray;
     MDoubleArray valueArray1;
     MDoubleArray valueArray2;
-    if (!_GetTimeAndValueArraysForUsdAttribute(usdAttr,
-                                               args.GetTimeInterval(),
-                                               &timeArray,
-                                               &valueArray1,
-                                               &valueArray2)) {
+    if (!_GetTimeAndValueArraysForUsdAttribute(
+            usdAttr, args.GetTimeInterval(), &timeArray, &valueArray1, &valueArray2)) {
         return false;
     }
 
@@ -276,15 +254,13 @@ _TranslateAnimatedUsdAttributeToPlugs(
     return true;
 }
 
-static
-bool
-_TranslateUsdAttributeToPlug(
-        const UsdAttribute& usdAttr,
-        const MFnCamera& cameraFn,
-        const TfToken& plugName,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context,
-        const MDistance::Unit convertToUnit = MDistance::kMillimeters)
+static bool _TranslateUsdAttributeToPlug(
+    const UsdAttribute&          usdAttr,
+    const MFnCamera&             cameraFn,
+    const TfToken&               plugName,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context,
+    const MDistance::Unit        convertToUnit = MDistance::kMillimeters)
 {
     MStatus status;
 
@@ -292,26 +268,18 @@ _TranslateUsdAttributeToPlug(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // First check for and translate animation if there is any.
-    if (!_TranslateAnimatedUsdAttributeToPlug(usdAttr,
-                                              plug,
-                                              args,
-                                              context,
-                                              convertToUnit)) {
+    if (!_TranslateAnimatedUsdAttributeToPlug(usdAttr, plug, args, context, convertToUnit)) {
         // If that fails, then try just setting a static value.
         UsdTimeCode timeCode = UsdTimeCode::EarliestTime();
-        float attrValue;
+        float       attrValue;
         usdAttr.Get(&attrValue, timeCode);
 
         switch (convertToUnit) {
-            case MDistance::kInches:
-                attrValue = UsdMayaUtil::ConvertMMToInches(attrValue);
-                break;
-            case MDistance::kCentimeters:
-                attrValue = UsdMayaUtil::ConvertMMToCM(attrValue);
-                break;
-            default:
-                // The input is expected to be in millimeters.
-                break;
+        case MDistance::kInches: attrValue = UsdMayaUtil::ConvertMMToInches(attrValue); break;
+        case MDistance::kCentimeters: attrValue = UsdMayaUtil::ConvertMMToCM(attrValue); break;
+        default:
+            // The input is expected to be in millimeters.
+            break;
         }
 
         status = plug.setFloat(attrValue);
@@ -322,38 +290,32 @@ _TranslateUsdAttributeToPlug(
 }
 
 /* static */
-bool
-UsdMayaTranslatorCamera::Read(
-        const UsdGeomCamera& usdCamera,
-        MObject parentNode,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context)
+bool UsdMayaTranslatorCamera::Read(
+    const UsdGeomCamera&         usdCamera,
+    MObject                      parentNode,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     if (!usdCamera) {
         return false;
     }
 
     const UsdPrim& prim = usdCamera.GetPrim();
-    const SdfPath primPath = prim.GetPath();
+    const SdfPath  primPath = prim.GetPath();
 
     MStatus status;
 
     // Create the transform node for the camera.
     MObject transformObj;
-    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
-                                                       parentNode,
-                                                       args,
-                                                       context,
-                                                       &status,
-                                                       &transformObj)) {
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(
+            prim, parentNode, args, context, &status, &transformObj)) {
         return false;
     }
 
     // Create the camera shape node.
     MDagModifier dagMod;
-    MObject cameraObj = dagMod.createNode(_tokens->MayaCameraTypeName.GetText(),
-                                          transformObj,
-                                          &status);
+    MObject      cameraObj
+        = dagMod.createNode(_tokens->MayaCameraTypeName.GetText(), transformObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -361,8 +323,8 @@ UsdMayaTranslatorCamera::Read(
 
     MFnCamera cameraFn(cameraObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    const std::string cameraShapeName = prim.GetName().GetString() +
-        _tokens->MayaCameraShapeNameSuffix.GetString();
+    const std::string cameraShapeName
+        = prim.GetName().GetString() + _tokens->MayaCameraShapeNameSuffix.GetString();
     cameraFn.setName(cameraShapeName.c_str(), &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     if (context) {
@@ -374,32 +336,33 @@ UsdMayaTranslatorCamera::Read(
 }
 
 /* static */
-bool
-UsdMayaTranslatorCamera::ReadToCamera(
-        const UsdGeomCamera& usdCamera,
-        MFnCamera& cameraObject)
+bool UsdMayaTranslatorCamera::ReadToCamera(const UsdGeomCamera& usdCamera, MFnCamera& cameraObject)
 {
-    UsdMayaJobImportArgs defaultJobArgs =
-            UsdMayaJobImportArgs::CreateFromDictionary(
-                UsdMayaJobImportArgs::GetDefaultDictionary());
-    UsdMayaPrimReaderArgs args(usdCamera.GetPrim(), defaultJobArgs);
+    VtDictionary userArgsDict;
+
+    // Disable shading import since we're only interested in the camera.
+    userArgsDict[UsdMayaJobImportArgsTokens->shadingMode] = std::vector<VtValue> { VtValue(
+        std::vector<VtValue> { VtValue(UsdMayaShadingModeTokens->none.GetString()),
+                               VtValue(std::string("default")) }) };
+
+    UsdMayaJobImportArgs  importArgs = UsdMayaJobImportArgs::CreateFromDictionary(userArgsDict);
+    UsdMayaPrimReaderArgs args(usdCamera.GetPrim(), importArgs);
     return _ReadToCamera(usdCamera, cameraObject, args, nullptr);
 }
 
-bool
-_ReadToCamera(
-        const UsdGeomCamera& usdCamera,
-        MFnCamera& cameraFn,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context)
+bool _ReadToCamera(
+    const UsdGeomCamera&         usdCamera,
+    MFnCamera&                   cameraFn,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     MStatus status;
 
     // Now translate all of the USD camera attributes over to plugs on the
     // Maya cameraFn.
-    UsdTimeCode timeCode = UsdTimeCode::EarliestTime();
+    UsdTimeCode  timeCode = UsdTimeCode::EarliestTime();
     UsdAttribute usdAttr;
-    TfToken plugName;
+    TfToken      plugName;
 
     // Set the type of projection. This is NOT keyable in Maya.
     TfToken projection;
@@ -411,9 +374,13 @@ _ReadToCamera(
     // Setup the aperture.
     usdAttr = usdCamera.GetHorizontalApertureAttr();
     plugName = _tokens->MayaCameraAttrNameHorizontalAperture;
-    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                      args, context,
-                                      /* convertToUnit = */ MDistance::kInches)) {
+    if (!_TranslateUsdAttributeToPlug(
+            usdAttr,
+            cameraFn,
+            plugName,
+            args,
+            context,
+            /* convertToUnit = */ MDistance::kInches)) {
         return false;
     }
 
@@ -424,18 +391,26 @@ _ReadToCamera(
         // but we author them anyway so that the data is preserved. Note also
         // that Maya stores the orthographicWidth as centimeters.
         plugName = _tokens->MayaCameraAttrNameOrthographicWidth;
-        if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                          args, context,
-                                          /* convertToUnit = */ MDistance::kCentimeters)) {
+        if (!_TranslateUsdAttributeToPlug(
+                usdAttr,
+                cameraFn,
+                plugName,
+                args,
+                context,
+                /* convertToUnit = */ MDistance::kCentimeters)) {
             return false;
         }
     }
 
     usdAttr = usdCamera.GetVerticalApertureAttr();
     plugName = _tokens->MayaCameraAttrNameVerticalAperture;
-    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                      args, context,
-                                      /* convertToUnit = */ MDistance::kInches)) {
+    if (!_TranslateUsdAttributeToPlug(
+            usdAttr,
+            cameraFn,
+            plugName,
+            args,
+            context,
+            /* convertToUnit = */ MDistance::kInches)) {
         return false;
     }
 
@@ -446,39 +421,44 @@ _ReadToCamera(
 
     usdAttr = usdCamera.GetHorizontalApertureOffsetAttr();
     plugName = _tokens->MayaCameraAttrNameHorizontalApertureOffset;
-    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                      args, context,
-                                      /* convertToUnit = */ MDistance::kInches)) {
+    if (!_TranslateUsdAttributeToPlug(
+            usdAttr,
+            cameraFn,
+            plugName,
+            args,
+            context,
+            /* convertToUnit = */ MDistance::kInches)) {
         return false;
     }
 
     usdAttr = usdCamera.GetVerticalApertureOffsetAttr();
     plugName = _tokens->MayaCameraAttrNameVerticalApertureOffset;
-    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                      args, context,
-                                      /* convertToUnit = */ MDistance::kInches)) {
+    if (!_TranslateUsdAttributeToPlug(
+            usdAttr,
+            cameraFn,
+            plugName,
+            args,
+            context,
+            /* convertToUnit = */ MDistance::kInches)) {
         return false;
     }
 
     // Set the lens parameters.
     usdAttr = usdCamera.GetFocalLengthAttr();
     plugName = _tokens->MayaCameraAttrNameFocalLength;
-    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                      args, context)) {
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName, args, context)) {
         return false;
     }
 
     usdAttr = usdCamera.GetFocusDistanceAttr();
     plugName = _tokens->MayaCameraAttrNameFocusDistance;
-    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                      args, context)) {
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName, args, context)) {
         return false;
     }
 
     usdAttr = usdCamera.GetFStopAttr();
     plugName = _tokens->MayaCameraAttrNameFStop;
-    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName,
-                                      args, context)) {
+    if (!_TranslateUsdAttributeToPlug(usdAttr, cameraFn, plugName, args, context)) {
         return false;
     }
 
@@ -486,17 +466,13 @@ _ReadToCamera(
     // because it is stored in USD as a single GfVec2f value but in Maya as
     // separate nearClipPlane and farClipPlane attributes.
     usdAttr = usdCamera.GetClippingRangeAttr();
-    MPlug nearClipPlug = cameraFn.findPlug(
-        _tokens->MayaCameraAttrNameNearClippingPlane.GetText(), true, &status);
+    MPlug nearClipPlug
+        = cameraFn.findPlug(_tokens->MayaCameraAttrNameNearClippingPlane.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    MPlug farClipPlug = cameraFn.findPlug(
-        _tokens->MayaCameraAttrNameFarClippingPlane.GetText(), true, &status);
+    MPlug farClipPlug
+        = cameraFn.findPlug(_tokens->MayaCameraAttrNameFarClippingPlane.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    if (!_TranslateAnimatedUsdAttributeToPlugs(usdAttr,
-                                               nearClipPlug,
-                                               farClipPlug,
-                                               args,
-                                               context)) {
+    if (!_TranslateAnimatedUsdAttributeToPlugs(usdAttr, nearClipPlug, farClipPlug, args, context)) {
         GfVec2f clippingRange;
         usdCamera.GetClippingRangeAttr().Get(&clippingRange, timeCode);
         status = cameraFn.setNearClippingPlane(clippingRange[0]);
@@ -507,6 +483,5 @@ _ReadToCamera(
 
     return true;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

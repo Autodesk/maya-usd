@@ -16,11 +16,9 @@
 //
 #include "primUpdaterRegistry.h"
 
-#include <map>
-#include <string>
-#include <utility>
+#include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/fileio/registryHelper.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/plug/registry.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/diagnostic.h>
@@ -28,43 +26,43 @@
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stl.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/schemaBase.h>
 
-#include <mayaUsd/base/debugCodes.h>
-#include <mayaUsd/fileio/registryHelper.h>
+#include <map>
+#include <string>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens,
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+
     (UsdMaya)
         (PrimUpdater)
 );
+// clang-format on
 
 typedef std::map<TfToken, UsdMayaPrimUpdaterRegistry::RegisterItem> _Registry;
-static _Registry _reg;
-
+static _Registry                                                    _reg;
 
 /* static */
-void
-UsdMayaPrimUpdaterRegistry::Register(
-        const TfType& t, 
-        UsdMayaPrimUpdater::Supports sup,
-        UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn fn)
+void UsdMayaPrimUpdaterRegistry::Register(
+    const TfType&                                t,
+    UsdMayaPrimUpdater::Supports                 sup,
+    UsdMayaPrimUpdaterRegistry::UpdaterFactoryFn fn)
 {
     TfToken tfTypeName(t.GetTypeName());
 
-    TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-        "Registering UsdMayaPrimWriter for TfType type %s.\n",
-        tfTypeName.GetText());
+    TF_DEBUG(PXRUSDMAYA_REGISTRY)
+        .Msg("Registering UsdMayaPrimWriter for TfType type %s.\n", tfTypeName.GetText());
 
-    std::pair< _Registry::iterator, bool> insertStatus =
-        _reg.insert(std::make_pair(tfTypeName, std::make_tuple(sup,fn)));
+    std::pair<_Registry::iterator, bool> insertStatus
+        = _reg.insert(std::make_pair(tfTypeName, std::make_tuple(sup, fn)));
     if (insertStatus.second) {
-        UsdMaya_RegistryHelper::AddUnloader([tfTypeName]() {
-            _reg.erase(tfTypeName);
-        });
-    }
-    else {
+        UsdMaya_RegistryHelper::AddUnloader([tfTypeName]() { _reg.erase(tfTypeName); });
+    } else {
         TF_CODING_ERROR("Multiple updaters for TfType %s", tfTypeName.GetText());
     }
 }
@@ -77,32 +75,29 @@ UsdMayaPrimUpdaterRegistry::Find(const TfToken& usdTypeName)
 
     // unfortunately, usdTypeName is diff from the tfTypeName which we use to
     // register.  do the conversion here.
-    TfType tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(usdTypeName);
+    TfType      tfType = PlugRegistry::FindDerivedTypeByName<UsdSchemaBase>(usdTypeName);
     std::string typeNameStr = tfType.GetTypeName();
-    TfToken typeName(typeNameStr);
+    TfToken     typeName(typeNameStr);
 
     RegisterItem ret;
     if (TfMapLookup(_reg, typeName, &ret)) {
         return ret;
     }
 
-    static const TfTokenVector SCOPE = {
-        _tokens->UsdMaya,
-        _tokens->PrimUpdater
-    };
+    static const TfTokenVector SCOPE = { _tokens->UsdMaya, _tokens->PrimUpdater };
     UsdMaya_RegistryHelper::FindAndLoadMayaPlug(SCOPE, typeNameStr);
 
     // ideally something just registered itself.  if not, we at least put it in
     // the registry in case we encounter it again.
     if (!TfMapLookup(_reg, typeName, &ret)) {
-        TF_DEBUG(PXRUSDMAYA_REGISTRY).Msg(
-            "No usdMaya updater plugin for TfType %s. No maya plugin found.\n",
-            typeName.GetText());
+        TF_DEBUG(PXRUSDMAYA_REGISTRY)
+            .Msg(
+                "No usdMaya updater plugin for TfType %s. No maya plugin found.\n",
+                typeName.GetText());
         _reg[typeName] = {};
     }
 
     return ret;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

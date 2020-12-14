@@ -18,13 +18,13 @@
 
 /// \file
 
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <maya/MFnDependencyNode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,13 +43,11 @@ class PxrUsdTranslators_LocatorWriter : public UsdMayaPrimWriter
 {
 public:
     PxrUsdTranslators_LocatorWriter(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdPath,
-            UsdMayaWriteJobContext& jobCtx);
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

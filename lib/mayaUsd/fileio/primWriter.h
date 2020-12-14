@@ -16,14 +16,12 @@
 #ifndef PXRUSDMAYA_PRIM_WRITER_H
 #define PXRUSDMAYA_PRIM_WRITER_H
 
-#include <memory>
+#include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/utils/util.h>
 
-#include <maya/MDagPath.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/prim.h>
@@ -31,9 +29,11 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
-#include <mayaUsd/base/api.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MDagPath.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
+
+#include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -59,9 +59,9 @@ public:
     /// constructed with an MDagPath.
     MAYAUSD_CORE_PUBLIC
     UsdMayaPrimWriter(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdPath,
-            UsdMayaWriteJobContext& jobCtx);
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
     MAYAUSD_CORE_PUBLIC
     virtual ~UsdMayaPrimWriter();
@@ -135,8 +135,7 @@ public:
     /// The base implementation for DAG prim writers simply maps GetDagPath()
     /// to GetUsdPath(). For DG prim writers, an empty map is returned.
     MAYAUSD_CORE_PUBLIC
-    virtual const UsdMayaUtil::MDagPathMap<SdfPath>&
-            GetDagToUsdPathMapping() const;
+    virtual const UsdMayaUtil::MDagPathMap<SdfPath>& GetDagToUsdPathMapping() const;
 
     /// The source Maya DAG path that we are consuming.
     ///
@@ -177,7 +176,7 @@ protected:
     MAYAUSD_CORE_PUBLIC
     UsdUtilsSparseValueWriter* _GetSparseValueWriter();
 
-    UsdPrim _usdPrim;
+    UsdPrim                 _usdPrim;
     UsdMayaWriteJobContext& _writeJobCtx;
 
 private:
@@ -197,7 +196,7 @@ private:
     /// node prim writers.
     const MObject _mayaObject;
 
-    const SdfPath _usdPath;
+    const SdfPath                           _usdPath;
     const UsdMayaUtil::MDagPathMap<SdfPath> _baseDagToUsdPaths;
 
     UsdUtilsSparseValueWriter _valueWriter;
@@ -208,8 +207,6 @@ private:
 
 typedef std::shared_ptr<UsdMayaPrimWriter> UsdMayaPrimWriterSharedPtr;
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

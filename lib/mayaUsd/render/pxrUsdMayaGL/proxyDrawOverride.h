@@ -19,6 +19,9 @@
 /// \file pxrUsdMayaGL/proxyDrawOverride.h
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
+
+#include <pxr/pxr.h>
 
 #include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
@@ -33,78 +36,64 @@
 #include <maya/MUserData.h>
 #include <maya/MViewport2Renderer.h>
 
-#include <pxr/pxr.h>
-
-#include <mayaUsd/render/pxrUsdMayaGL/usdProxyShapeAdapter.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdMayaProxyDrawOverride : public MHWRender::MPxDrawOverride
 {
-    public:
-        MAYAUSD_CORE_PUBLIC
-        static const MString drawDbClassification;
+public:
+    MAYAUSD_CORE_PUBLIC
+    static const MString drawDbClassification;
 
-        MAYAUSD_CORE_PUBLIC
-        static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
+    MAYAUSD_CORE_PUBLIC
+    static MHWRender::MPxDrawOverride* Creator(const MObject& obj);
 
-        MAYAUSD_CORE_PUBLIC
-        ~UsdMayaProxyDrawOverride() override;
+    MAYAUSD_CORE_PUBLIC
+    ~UsdMayaProxyDrawOverride() override;
 
-        MAYAUSD_CORE_PUBLIC
-        MHWRender::DrawAPI supportedDrawAPIs() const override;
+    MAYAUSD_CORE_PUBLIC
+    MHWRender::DrawAPI supportedDrawAPIs() const override;
 
-        MAYAUSD_CORE_PUBLIC
-        MMatrix transform(
-                const MDagPath& objPath,
-                const MDagPath& cameraPath) const override;
+    MAYAUSD_CORE_PUBLIC
+    MMatrix transform(const MDagPath& objPath, const MDagPath& cameraPath) const override;
 
-        MAYAUSD_CORE_PUBLIC
-        MBoundingBox boundingBox(
-                const MDagPath& objPath,
-                const MDagPath& cameraPath) const override;
+    MAYAUSD_CORE_PUBLIC
+    MBoundingBox boundingBox(const MDagPath& objPath, const MDagPath& cameraPath) const override;
 
-        MAYAUSD_CORE_PUBLIC
-        bool isBounded(
-                const MDagPath& objPath,
-                const MDagPath& cameraPath) const override;
+    MAYAUSD_CORE_PUBLIC
+    bool isBounded(const MDagPath& objPath, const MDagPath& cameraPath) const override;
 
-        MAYAUSD_CORE_PUBLIC
-        bool disableInternalBoundingBoxDraw() const override;
+    MAYAUSD_CORE_PUBLIC
+    bool disableInternalBoundingBoxDraw() const override;
 
-        MAYAUSD_CORE_PUBLIC
-        MUserData* prepareForDraw(
-                const MDagPath& objPath,
-                const MDagPath& cameraPath,
-                const MHWRender::MFrameContext& frameContext,
-                MUserData* oldData) override;
+    MAYAUSD_CORE_PUBLIC
+    MUserData* prepareForDraw(
+        const MDagPath&                 objPath,
+        const MDagPath&                 cameraPath,
+        const MHWRender::MFrameContext& frameContext,
+        MUserData*                      oldData) override;
 
-        MAYAUSD_CORE_PUBLIC
-        bool wantUserSelection() const override;
+    MAYAUSD_CORE_PUBLIC
+    bool wantUserSelection() const override;
 
-        MAYAUSD_CORE_PUBLIC
-        bool userSelect(
-                MHWRender::MSelectionInfo& selectionInfo,
-                const MHWRender::MDrawContext& context,
-                MPoint& hitPoint,
-                const MUserData* data) override;
+    MAYAUSD_CORE_PUBLIC
+    bool userSelect(
+        MHWRender::MSelectionInfo&     selectionInfo,
+        const MHWRender::MDrawContext& context,
+        MPoint&                        hitPoint,
+        const MUserData*               data) override;
 
-        MAYAUSD_CORE_PUBLIC
-        static void draw(
-                const MHWRender::MDrawContext& context,
-                const MUserData* data);
+    MAYAUSD_CORE_PUBLIC
+    static void draw(const MHWRender::MDrawContext& context, const MUserData* data);
 
-    private:
-        UsdMayaProxyDrawOverride(const MObject& obj);
+private:
+    UsdMayaProxyDrawOverride(const MObject& obj);
 
-        UsdMayaProxyDrawOverride(const UsdMayaProxyDrawOverride&) = delete;
-        UsdMayaProxyDrawOverride& operator=(const UsdMayaProxyDrawOverride&) = delete;
+    UsdMayaProxyDrawOverride(const UsdMayaProxyDrawOverride&) = delete;
+    UsdMayaProxyDrawOverride& operator=(const UsdMayaProxyDrawOverride&) = delete;
 
-        PxrMayaHdUsdProxyShapeAdapter _shapeAdapter;
+    PxrMayaHdUsdProxyShapeAdapter _shapeAdapter;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

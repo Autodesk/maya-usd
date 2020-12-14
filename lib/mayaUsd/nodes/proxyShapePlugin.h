@@ -16,11 +16,11 @@
 #ifndef PXRUSDMAYA_PROXY_SHAPE_PLUGIN_H
 #define PXRUSDMAYA_PROXY_SHAPE_PLUGIN_H
 
-#include <maya/MApiNamespace.h>
+#include <mayaUsd/base/api.h>
 
 #include <pxr/pxr.h>
 
-#include <mayaUsd/base/api.h>
+#include <maya/MApiNamespace.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -37,18 +37,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class MayaUsdProxyShapePlugin
 {
-    public:
-        MAYAUSD_CORE_PUBLIC
-        static MStatus initialize(MFnPlugin&);
+public:
+    MAYAUSD_CORE_PUBLIC
+    static MStatus initialize(MFnPlugin&);
 
-        MAYAUSD_CORE_PUBLIC
-        static MStatus finalize(MFnPlugin&);
+    MAYAUSD_CORE_PUBLIC
+    static MStatus finalize(MFnPlugin&);
 
-        MAYAUSD_CORE_PUBLIC
-        static const MString* getProxyShapeClassification();
+    MAYAUSD_CORE_PUBLIC
+    static const MString* getProxyShapeClassification();
 
-        MAYAUSD_CORE_PUBLIC
-        static bool useVP2_NativeUSD_Rendering();
+    MAYAUSD_CORE_PUBLIC
+    static bool useVP2_NativeUSD_Rendering();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

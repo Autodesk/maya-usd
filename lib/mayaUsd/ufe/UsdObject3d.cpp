@@ -15,64 +15,63 @@
 //
 #include "UsdObject3d.h"
 
+#include <mayaUsd/ufe/Utils.h>
+
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/bboxCache.h>
+#include <pxr/usd/usdGeom/tokens.h>
+
 #include <ufe/attributes.h>
 #include <ufe/types.h>
 
 #include <stdexcept>
 
-#include <pxr/usd/usdGeom/bboxCache.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/tokens.h>
-
-#include <mayaUsd/ufe/Utils.h>
-
 namespace {
-Ufe::Vector3d toVector3d(const GfVec3d& v)
-{
-    return Ufe::Vector3d(v[0], v[1], v[2]);
-}
+Ufe::Vector3d toVector3d(const GfVec3d& v) { return Ufe::Vector3d(v[0], v[1], v[2]); }
 
 Ufe::AttributeEnumString::Ptr getVisibilityAttribute(Ufe::SceneItem::Ptr item)
 {
     auto objAttrs = Ufe::Attributes::attributes(item);
-    if (objAttrs)
-    {
-        auto visAttr = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(objAttrs->attribute(UsdGeomTokens->visibility));
+    if (objAttrs) {
+        auto visAttr = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
+            objAttrs->attribute(UsdGeomTokens->visibility));
         if (visAttr)
-           return visAttr;
+            return visAttr;
     }
 
     // Getting here is considered a serious error. In UsdObject3dHandler::object3d()
     // we only create and return a valid Ufe::Object3d interface for imageable geometry.
     // Those kind of prims must have a visibility attribute.
-    std::string err = TfStringPrintf("Could not get visibility attribute for Object3d: %s", item->path().string().c_str());
+    std::string err = TfStringPrintf(
+        "Could not get visibility attribute for Object3d: %s", item->path().string().c_str());
     throw std::runtime_error(err.c_str());
 }
 
-}
+} // namespace
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdObject3d::UsdObject3d(const UsdSceneItem::Ptr& item)
-    : Ufe::Object3d(), fItem(item), fPrim(item->prim()) {}
+    : Ufe::Object3d()
+    , fItem(item)
+    , fPrim(item->prim())
+{
+}
 
-UsdObject3d::~UsdObject3d() {}
+UsdObject3d::~UsdObject3d() { }
 
 /*static*/
 UsdObject3d::Ptr UsdObject3d::create(const UsdSceneItem::Ptr& item)
 {
-	return std::make_shared<UsdObject3d>(item);
+    return std::make_shared<UsdObject3d>(item);
 }
 
 //------------------------------------------------------------------------------
 // Ufe::Object3d overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItem::Ptr UsdObject3d::sceneItem() const
-{
-	return fItem;
-}
+Ufe::SceneItem::Ptr UsdObject3d::sceneItem() const { return fItem; }
 
 Ufe::BBox3d UsdObject3d::boundingBox() const
 {
@@ -90,11 +89,12 @@ Ufe::BBox3d UsdObject3d::boundingBox() const
     // we can bypass time computation and simply use UsdTimeCode::Default()
     // as the time.
 
-    auto bbox = UsdGeomImageable(fPrim).ComputeUntransformedBound(getTime(sceneItem()->path()), UsdGeomTokens->default_);
+    auto bbox = UsdGeomImageable(fPrim).ComputeUntransformedBound(
+        getTime(sceneItem()->path()), UsdGeomTokens->default_);
     auto range = bbox.ComputeAlignedRange();
     auto min = range.GetMin();
     auto max = range.GetMax();
-	return Ufe::BBox3d(toVector3d(min), toVector3d(max));
+    return Ufe::BBox3d(toVector3d(min), toVector3d(max));
 }
 
 bool UsdObject3d::visibility() const
@@ -115,4 +115,4 @@ void UsdObject3d::setVisibility(bool vis)
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

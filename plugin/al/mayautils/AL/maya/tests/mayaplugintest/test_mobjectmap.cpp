@@ -16,6 +16,7 @@
 
 //#include "AL/maya/utils/Utils.h"
 #include "AL/maya/utils/MObjectMap.h"
+
 #include <gtest/gtest.h>
 
 using namespace AL;
@@ -28,52 +29,47 @@ TEST(extraMaya_Utils, guid_compare)
 {
 
 #if AL_UTILS_ENABLE_SIMD
-  guid_compare gcmp;
-  i128 a = set16i8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-  i128 b = set16i8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    guid_compare gcmp;
+    i128         a = set16i8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
+    i128         b = set16i8(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
 
-  // identical guids should always return false
-  EXPECT_EQ(true, !gcmp(a, b) && !gcmp(b, a));
+    // identical guids should always return false
+    EXPECT_EQ(true, !gcmp(a, b) && !gcmp(b, a));
 
-  for(uint32_t i = 0; i < 16; ++i)
-  {
-    ALIGN16(uint8_t values[]) = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
-    values[i] += 1;
+    for (uint32_t i = 0; i < 16; ++i) {
+        ALIGN16(uint8_t values[]) = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+        values[i] += 1;
 
-    i128 c = load4i(values);
-    EXPECT_EQ(true, gcmp(a, c) && !gcmp(c, a));
-  }
+        i128 c = load4i(values);
+        EXPECT_EQ(true, gcmp(a, c) && !gcmp(c, a));
+    }
 
-  for(uint32_t i = 0; i < 16; ++i)
-  {
-    ALIGN16(uint8_t values[]) = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
-    values[i] -= 1;
+    for (uint32_t i = 0; i < 16; ++i) {
+        ALIGN16(uint8_t values[]) = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+        values[i] -= 1;
 
-    i128 c = load4i(values);
-    EXPECT_EQ(true, !gcmp(a, c) && gcmp(c, a));
-  }
+        i128 c = load4i(values);
+        EXPECT_EQ(true, !gcmp(a, c) && gcmp(c, a));
+    }
 #else
-  guid_compare gcmp;
-  guid a = {{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
-  guid b = {{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}};
+    guid_compare gcmp;
+    guid         a = { { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 } };
+    guid         b = { { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 } };
 
-  // identical guids should always return false
-  EXPECT_EQ(true, !gcmp(a, b) && !gcmp(b, a));
+    // identical guids should always return false
+    EXPECT_EQ(true, !gcmp(a, b) && !gcmp(b, a));
 
-  for(uint32_t i = 0; i < 16; ++i)
-  {
-    guid values = {{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 }};
-    values.uuid[i] += 1;
+    for (uint32_t i = 0; i < 16; ++i) {
+        guid values = { { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 } };
+        values.uuid[i] += 1;
 
-    EXPECT_EQ(true, gcmp(a, values) && !gcmp(values, a));
-  }
+        EXPECT_EQ(true, gcmp(a, values) && !gcmp(values, a));
+    }
 
-  for(uint32_t i = 0; i < 16; ++i)
-  {
-    guid values = {{ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 }};
-    values.uuid[i] -= 1;
-    EXPECT_EQ(true, !gcmp(a, values) && gcmp(values, a));
-  }
+    for (uint32_t i = 0; i < 16; ++i) {
+        guid values = { { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 } };
+        values.uuid[i] -= 1;
+        EXPECT_EQ(true, !gcmp(a, values) && gcmp(values, a));
+    }
 #endif
 }
-

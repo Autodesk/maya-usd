@@ -7,12 +7,12 @@
 // ===========================================================================
 #pragma once
 
-#include <ufe/object3d.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-MAYAUSD_NS_DEF {
+#include <ufe/object3d.h>
+
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief USD run-time 3D object interface
@@ -22,31 +22,31 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdObject3d : public Ufe::Object3d
 {
 public:
-	using Ptr = std::shared_ptr<UsdObject3d>;
+    using Ptr = std::shared_ptr<UsdObject3d>;
 
-	UsdObject3d(const UsdSceneItem::Ptr& item);
-	~UsdObject3d() override;
+    UsdObject3d(const UsdSceneItem::Ptr& item);
+    ~UsdObject3d() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdObject3d(const UsdObject3d&) = delete;
-	UsdObject3d& operator=(const UsdObject3d&) = delete;
-	UsdObject3d(UsdObject3d&&) = delete;
-	UsdObject3d& operator=(UsdObject3d&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdObject3d(const UsdObject3d&) = delete;
+    UsdObject3d& operator=(const UsdObject3d&) = delete;
+    UsdObject3d(UsdObject3d&&) = delete;
+    UsdObject3d& operator=(UsdObject3d&&) = delete;
 
-	//! Create a UsdObject3d.
-	static UsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);
+    //! Create a UsdObject3d.
+    static UsdObject3d::Ptr create(const UsdSceneItem::Ptr& item);
 
-	// Ufe::Object3d overrides
-	Ufe::SceneItem::Ptr sceneItem() const override;
-    Ufe::BBox3d boundingBox() const override;
-    bool visibility() const override;
-    void setVisibility(bool vis) override;
+    // Ufe::Object3d overrides
+    Ufe::SceneItem::Ptr sceneItem() const override;
+    Ufe::BBox3d         boundingBox() const override;
+    bool                visibility() const override;
+    void                setVisibility(bool vis) override;
 
 private:
-	UsdSceneItem::Ptr fItem;
-	UsdPrim fPrim;
+    UsdSceneItem::Ptr fItem;
+    UsdPrim           fPrim;
 
 }; // UsdObject3d
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

@@ -18,10 +18,10 @@
 
 /// \file usdMaya/editUtil.h
 
-#include <pxr/pxr.h>
 #include "usdMaya/api.h"
 
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 
@@ -32,21 +32,19 @@
 #include <string>
 #include <vector>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Utility class for handling edits on Assemblies in Maya.
 ///
 class UsdMayaEditUtil
 {
 public:
-
     /// \name Enums for inspecting edits
     /// \{
 
     /// Possible operations for a supported edit.
-    enum EditOp {
+    enum EditOp
+    {
         OP_TRANSLATE,
         OP_ROTATE,
         OP_SCALE
@@ -56,7 +54,8 @@ public:
     /// The values are explicit, such that X,Y,and Z can be used in []
     /// operators on Vec3s.
     ///
-    enum EditSet {
+    enum EditSet
+    {
         SET_ALL = -1,
         SET_X = 0,
         SET_Y = 1,
@@ -68,7 +67,7 @@ public:
     {
         std::string editString;
 
-        EditOp op;
+        EditOp  op;
         EditSet set;
         VtValue value;
     };
@@ -93,10 +92,10 @@ public:
     /// \returns true if translation was successful.
     PXRUSDMAYA_API
     static bool GetEditFromString(
-            const MFnAssembly& assemblyFn,
-            const std::string& editString,
-            SdfPath* outEditPath,
-            AssemblyEdit* outEdit);
+        const MFnAssembly& assemblyFn,
+        const std::string& editString,
+        SdfPath*           outEditPath,
+        AssemblyEdit*      outEdit);
 
     /// Inspects all edits on \p assemblyObj and returns a parsed set of proper
     /// edits in \p assemEdits and invalid edits in \p invalidEdits.
@@ -104,9 +103,9 @@ public:
     /// assembly.
     PXRUSDMAYA_API
     static void GetEditsForAssembly(
-            const MObject& assemblyObj,
-            PathEditMap* assemEdits,
-            std::vector<std::string>* invalidEdits);
+        const MObject&            assemblyObj,
+        PathEditMap*              assemEdits,
+        std::vector<std::string>* invalidEdits);
 
     /// Apply the assembly edits in \p assemEdits to the USD prim
     /// \p proxyRootPrim, which is the root prim for the assembly.
@@ -115,13 +114,11 @@ public:
     /// not be applied to \p proxyRootPrim.
     PXRUSDMAYA_API
     static void ApplyEditsToProxy(
-            const PathEditMap& assemEdits,
-            const UsdPrim& proxyRootPrim,
-            std::vector<std::string>* failedEdits);
+        const PathEditMap&        assemEdits,
+        const UsdPrim&            proxyRootPrim,
+        std::vector<std::string>* failedEdits);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

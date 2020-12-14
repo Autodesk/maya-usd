@@ -38,13 +38,13 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:TBB_USE_DEBUG>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_DEBUG_PYTHON>
         $<$<STREQUAL:${CMAKE_BUILD_TYPE},Debug>:BOOST_LINKING_PYTHON>
+        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
     PRIVATE
         MAYAUSD_MACROS_EXPORT
         MAYAUSD_CORE_EXPORT
         MFB_PACKAGE_NAME="${PROJECT_NAME}"
         MFB_ALT_PACKAGE_NAME="${PROJECT_NAME}"
         MFB_PACKAGE_MODULE="${PROJECT_NAME}"
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
         $<$<BOOL:${IS_MACOSX}>:OSMac_>
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
@@ -68,6 +68,13 @@ if(UFE_FOUND AND MSVC)
             /wd4251
     )
 endif()
+
+target_compile_definitions(${PROJECT_NAME}
+    PRIVATE
+        MAYA_USD_VERSION=${USD_VERSION}
+        MAYAUSD_VERSION=${MAYAUSD_VERSION}
+        MAYA_PY_VERSION=${MAYA_PY_VERSION}
+)
 
 mayaUsd_compile_config(${PROJECT_NAME})
 
@@ -174,6 +181,7 @@ add_subdirectory(resources)
 if(UFE_FOUND)
     add_subdirectory(ufe)
 endif()
+add_subdirectory(undo)
 add_subdirectory(utils)
 
 if(BUILD_HDMAYA)

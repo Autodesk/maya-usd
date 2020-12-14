@@ -15,8 +15,12 @@
 //
 #include "translatorMesh.h"
 
-#include <string>
-#include <vector>
+#include <mayaUsd/fileio/utils/meshReadUtils.h>
+#include <mayaUsd/fileio/utils/meshWriteUtils.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/nodes/pointBasedDeformerNode.h>
+#include <mayaUsd/nodes/stageNode.h>
+#include <mayaUsd/utils/util.h>
 
 #include <maya/MColor.h>
 #include <maya/MColorArray.h>
@@ -38,26 +42,23 @@
 #include <maya/MPointArray.h>
 #include <maya/MString.h>
 
-#include <mayaUsd/fileio/utils/meshReadUtils.h>
-#include <mayaUsd/fileio/utils/meshWriteUtils.h>
-#include <mayaUsd/fileio/utils/readUtil.h>
-#include <mayaUsd/nodes/pointBasedDeformerNode.h>
-#include <mayaUsd/nodes/stageNode.h>
-#include <mayaUsd/utils/util.h>
+#include <string>
+#include <vector>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
-TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh, 
-                                       const UsdPrim& prim, 
-                                       const MObject& transformObj,
-                                       const MObject& stageNode,
-                                       const GfInterval& frameRange,
-                                       bool wantCacheAnimation,
-                                       MStatus * status)
+TranslatorMeshRead::TranslatorMeshRead(
+    const UsdGeomMesh& mesh,
+    const UsdPrim&     prim,
+    const MObject&     transformObj,
+    const MObject&     stageNode,
+    const GfInterval&  frameRange,
+    bool               wantCacheAnimation,
+    MStatus*           status)
     : m_wantCacheAnimation(wantCacheAnimation)
     , m_pointsNumTimeSamples(0u)
 {
-    MStatus stat{MS::kSuccess};
+    MStatus stat { MS::kSuccess };
 
     // ==============================================
     // construct a Maya mesh
@@ -66,27 +67,27 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     VtIntArray faceVertexIndices;
 
     const UsdAttribute fvc = mesh.GetFaceVertexCountsAttr();
-    if (fvc.ValueMightBeTimeVarying()){
+    if (fvc.ValueMightBeTimeVarying()) {
         // at some point, it would be great, instead of failing, to create a usd/hydra proxy node
         // for the mesh, perhaps?  For now, better to give a more specific error
         TF_RUNTIME_ERROR(
-                "<%s> is a topologically varying Mesh (has animated "
-                "faceVertexCounts), which isn't currently supported. "
-                "Skipping...",
-                prim.GetPath().GetText());
+            "<%s> is a topologically varying Mesh (has animated "
+            "faceVertexCounts), which isn't currently supported. "
+            "Skipping...",
+            prim.GetPath().GetText());
     } else {
         fvc.Get(&faceVertexCounts, UsdTimeCode::EarliestTime());
     }
 
     const UsdAttribute fvi = mesh.GetFaceVertexIndicesAttr();
-    if (fvi.ValueMightBeTimeVarying()){
+    if (fvi.ValueMightBeTimeVarying()) {
         // at some point, it would be great, instead of failing, to create a usd/hydra proxy node
         // for the mesh, perhaps?  For now, better to give a more specific error
         TF_RUNTIME_ERROR(
-                "<%s> is a topologically varying Mesh (has animated "
-                "faceVertexIndices), which isn't currently supported. "
-                "Skipping...",
-                prim.GetPath().GetText());
+            "<%s> is a topologically varying Mesh (has animated "
+            "faceVertexIndices), which isn't currently supported. "
+            "Skipping...",
+            prim.GetPath().GetText());
     } else {
         fvi.Get(&faceVertexIndices, UsdTimeCode::EarliestTime());
     }
@@ -94,32 +95,31 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     // Sanity Checks. If the vertex arrays are empty, skip this mesh
     if (faceVertexCounts.empty() || faceVertexIndices.empty()) {
         TF_RUNTIME_ERROR(
-                "faceVertexCounts or faceVertexIndices array is empty "
-                "[count: %zu, indices:%zu] on Mesh <%s>. Skipping...",
-                faceVertexCounts.size(), faceVertexIndices.size(),
-                prim.GetPath().GetText());
+            "faceVertexCounts or faceVertexIndices array is empty "
+            "[count: %zu, indices:%zu] on Mesh <%s>. Skipping...",
+            faceVertexCounts.size(),
+            faceVertexIndices.size(),
+            prim.GetPath().GetText());
     }
 
     // Gather points and normals
     // If timeInterval is non-empty, pick the first available sample in the
     // timeInterval or default.
-    VtVec3fArray points;
-    VtVec3fArray normals;
-    UsdTimeCode pointsTimeSample = UsdTimeCode::EarliestTime();
-    UsdTimeCode normalsTimeSample = UsdTimeCode::EarliestTime();
+    VtVec3fArray        points;
+    VtVec3fArray        normals;
+    UsdTimeCode         pointsTimeSample = UsdTimeCode::EarliestTime();
+    UsdTimeCode         normalsTimeSample = UsdTimeCode::EarliestTime();
     std::vector<double> pointsTimeSamples;
 
     if (!frameRange.IsEmpty()) {
-        mesh.GetPointsAttr().GetTimeSamplesInInterval(frameRange,
-                                                      &pointsTimeSamples);
+        mesh.GetPointsAttr().GetTimeSamplesInInterval(frameRange, &pointsTimeSamples);
         if (!pointsTimeSamples.empty()) {
             m_pointsNumTimeSamples = pointsTimeSamples.size();
             pointsTimeSample = pointsTimeSamples.front();
         }
 
         std::vector<double> normalsTimeSamples;
-        mesh.GetNormalsAttr().GetTimeSamplesInInterval(frameRange,
-                                                       &normalsTimeSamples);
+        mesh.GetNormalsAttr().GetTimeSamplesInInterval(frameRange, &normalsTimeSamples);
         if (!normalsTimeSamples.empty()) {
             normalsTimeSample = normalsTimeSamples.front();
         }
@@ -129,24 +129,24 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     mesh.GetNormalsAttr().Get(&normals, normalsTimeSample);
 
     if (points.empty()) {
-        TF_RUNTIME_ERROR("points array is empty on Mesh <%s>. Skipping...",
-                         prim.GetPath().GetText());
+        TF_RUNTIME_ERROR(
+            "points array is empty on Mesh <%s>. Skipping...", prim.GetPath().GetText());
     }
 
     std::string reason;
-    if (!UsdGeomMesh::ValidateTopology(faceVertexIndices,
-                                       faceVertexCounts,
-                                       points.size(),
-                                       &reason)) {
-        TF_RUNTIME_ERROR("Skipping Mesh <%s> with invalid topology: %s",
-                         prim.GetPath().GetText(), reason.c_str());
+    if (!UsdGeomMesh::ValidateTopology(
+            faceVertexIndices, faceVertexCounts, points.size(), &reason)) {
+        TF_RUNTIME_ERROR(
+            "Skipping Mesh <%s> with invalid topology: %s",
+            prim.GetPath().GetText(),
+            reason.c_str());
         *status = MS::kFailure;
         return;
     }
 
     // == Convert data to Maya ( vertices, faces, indices )
     const size_t mayaNumVertices = points.size();
-    MPointArray mayaPoints(mayaNumVertices); 
+    MPointArray  mayaPoints(mayaNumVertices);
     for (size_t i = 0u; i < mayaNumVertices; ++i) {
         mayaPoints.set(i, points[i][0], points[i][1], points[i][2]);
     }
@@ -156,13 +156,14 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
 
     // == Create Mesh Shape Node
     MFnMesh meshFn;
-    m_meshObj = meshFn.create( mayaPoints.length(),
-                               polygonCounts.length(),
-                               mayaPoints,
-                               polygonCounts,
-                               polygonConnects,
-                               transformObj,
-                               &stat);
+    m_meshObj = meshFn.create(
+        mayaPoints.length(),
+        polygonCounts.length(),
+        mayaPoints,
+        polygonCounts,
+        polygonConnects,
+        transformObj,
+        &stat);
 
     if (!stat) {
         *status = stat;
@@ -171,12 +172,12 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
 
     // set mesh name
     const auto& primName = prim.GetName().GetString();
-    const auto shapeName = TfStringPrintf("%sShape", primName.c_str());
+    const auto  shapeName = TfStringPrintf("%sShape", primName.c_str());
     meshFn.setName(MString(shapeName.c_str()), false, &stat);
 
     if (!stat) {
-          *status = stat;
-          return;
+        *status = stat;
+        return;
     }
 
     // store the path
@@ -194,28 +195,23 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
         if (normalsFaceIds.length() == static_cast<size_t>(meshFn.numFaceVertices())) {
             MVectorArray mayaNormals(normals.size());
             for (size_t i = 0u; i < normals.size(); ++i) {
-                mayaNormals.set(MVector(normals[i][0u],
-                                        normals[i][1u],
-                                        normals[i][2u]),i);
+                mayaNormals.set(MVector(normals[i][0u], normals[i][1u], normals[i][2u]), i);
             }
 
-            meshFn.setFaceVertexNormals(mayaNormals,
-                                        normalsFaceIds,
-                                        polygonConnects);
+            meshFn.setFaceVertexNormals(mayaNormals, normalsFaceIds, polygonConnects);
         }
-     }
+    }
 
     // If we are dealing with polys, check if there are normals and set the
     // internal emit-normals tag so that the normals will round-trip.
     // If we are dealing with a subdiv, read additional subdiv tags.
     TfToken subdScheme;
     if (mesh.GetSubdivisionSchemeAttr().Get(&subdScheme) && subdScheme == UsdGeomTokens->none) {
-         if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices()) &&
-                 mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying) {
-             UsdMayaMeshReadUtils::setEmitNormalsTag(meshFn, true);
-         }
-    } 
-    else {
+        if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices())
+            && mesh.GetNormalsInterpolation() == UsdGeomTokens->faceVarying) {
+            UsdMayaMeshReadUtils::setEmitNormalsTag(meshFn, true);
+        }
+    } else {
         stat = UsdMayaMeshReadUtils::assignSubDivTagsToMesh(mesh, m_meshObj, meshFn);
     }
 
@@ -223,11 +219,9 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     UsdMayaReadUtil::ReadSchemaAttributesFromPrim<UsdGeomMesh>(
         prim,
         meshFn.object(),
-        {
-            UsdGeomTokens->subdivisionScheme,
-            UsdGeomTokens->interpolateBoundary,
-            UsdGeomTokens->faceVaryingLinearInterpolation
-        });
+        { UsdGeomTokens->subdivisionScheme,
+          UsdGeomTokens->interpolateBoundary,
+          UsdGeomTokens->faceVaryingLinearInterpolation });
 
     // ==================================================
     // construct blendshape object, PointBasedDeformer
@@ -245,7 +239,7 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
 
     // Use blendShapeDeformer so that all the points for a frame are contained in a single node.
     MPointArray mayaAnimPoints(mayaNumVertices);
-    MObject meshAnimObj;
+    MObject     meshAnimObj;
 
     MFnBlendShapeDeformer blendFn;
     m_meshBlendObj = blendFn.create(m_meshObj);
@@ -260,19 +254,19 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
         // == Create Mesh Shape Node
         MFnMesh meshFn;
         if (meshAnimObj.isNull()) {
-            meshAnimObj = meshFn.create(mayaAnimPoints.length(),
-                                        polygonCounts.length(),
-                                        mayaAnimPoints,
-                                        polygonCounts,
-                                        polygonConnects,
-                                        transformObj,
-                                        &stat);
+            meshAnimObj = meshFn.create(
+                mayaAnimPoints.length(),
+                polygonCounts.length(),
+                mayaAnimPoints,
+                polygonCounts,
+                polygonConnects,
+                transformObj,
+                &stat);
 
             if (!stat) {
                 continue;
             }
-        }
-        else {
+        } else {
             // Reuse the already created mesh by copying it and then setting the points
             meshAnimObj = meshFn.copy(meshAnimObj, transformObj, &stat);
             meshFn.setPoints(mayaAnimPoints);
@@ -280,21 +274,18 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
 
         // Set normals if supplied
         //
-        // NOTE: This normal information is not propagated through the blendShapes, only the controlPoints.
+        // NOTE: This normal information is not propagated through the blendShapes, only the
+        // controlPoints.
         //
         mesh.GetNormalsAttr().Get(&normals, pointsTimeSamples[ti]);
-        if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices()) &&
-                    normalsFaceIds.length() == static_cast<size_t>(meshFn.numFaceVertices())) {
+        if (normals.size() == static_cast<size_t>(meshFn.numFaceVertices())
+            && normalsFaceIds.length() == static_cast<size_t>(meshFn.numFaceVertices())) {
             MVectorArray mayaNormals(normals.size());
             for (size_t i = 0; i < normals.size(); ++i) {
-                mayaNormals.set(MVector(normals[i][0u],
-                                        normals[i][1u],
-                                        normals[i][2u]),i);
+                mayaNormals.set(MVector(normals[i][0u], normals[i][1u], normals[i][2u]), i);
             }
 
-            meshFn.setFaceVertexNormals(mayaNormals,
-                                        normalsFaceIds,
-                                        polygonConnects);
+            meshFn.setFaceVertexNormals(mayaNormals, normalsFaceIds, polygonConnects);
         }
 
         // Add as target and set as an intermediate object. We do *not*
@@ -318,7 +309,7 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     MPlug plgAry = blendFn.findPlug("weight");
     if (!plgAry.isNull() && plgAry.isArray()) {
         for (unsigned int ti = 0u; ti < m_pointsNumTimeSamples; ++ti) {
-            MPlug plg = plgAry.elementByLogicalIndex(ti, &stat);
+            MPlug        plg = plgAry.elementByLogicalIndex(ti, &stat);
             MDoubleArray valueArray(m_pointsNumTimeSamples, 0.0);
             valueArray[ti] = 1.0; // Set the time value where this mesh's weight should be 1.0
             MObject animObj = animFn.create(plg, nullptr, &stat);
@@ -332,10 +323,12 @@ TranslatorMeshRead::TranslatorMeshRead(const UsdGeomMesh& mesh,
     *status = stat;
 }
 
-MStatus
-TranslatorMeshRead::setPointBasedDeformerForMayaNode(const MObject& mayaObj, const MObject& stageNode, const UsdPrim& prim)
+MStatus TranslatorMeshRead::setPointBasedDeformerForMayaNode(
+    const MObject& mayaObj,
+    const MObject& stageNode,
+    const UsdPrim& prim)
 {
-    MStatus status{MS::kSuccess};
+    MStatus status { MS::kSuccess };
 
     // Get the output time plug and node for Maya's global time object.
     MPlug timePlug = UsdMayaUtil::GetMayaTimePlug();
@@ -352,23 +345,21 @@ TranslatorMeshRead::setPointBasedDeformerForMayaNode(const MObject& mayaObj, con
     CHECK_MSTATUS(status);
 
     // Create the point based deformer node for this prim.
-    const std::string pointBasedDeformerNodeName =
-        TfStringPrintf("usdPointBasedDeformerNode%s",
-                       TfStringReplace(prim.GetPath().GetString(),
-                                       SdfPathTokens->childDelimiter.GetString(),
-                                       "_").c_str());
+    const std::string pointBasedDeformerNodeName = TfStringPrintf(
+        "usdPointBasedDeformerNode%s",
+        TfStringReplace(prim.GetPath().GetString(), SdfPathTokens->childDelimiter.GetString(), "_")
+            .c_str());
 
     const std::string deformerCmd = TfStringPrintf(
         "from maya import cmds; cmds.deformer(name=\'%s\', type=\'%s\')[0]",
         pointBasedDeformerNodeName.c_str(),
         UsdMayaPointBasedDeformerNodeTokens->MayaTypeName.GetText());
-    status = MGlobal::executePythonCommand(deformerCmd.c_str(),
-                                           m_newPointBasedDeformerName);
+    status = MGlobal::executePythonCommand(deformerCmd.c_str(), m_newPointBasedDeformerName);
     CHECK_MSTATUS(status);
 
     // Get the newly created point based deformer node.
-    status = UsdMayaUtil::GetMObjectByName(m_newPointBasedDeformerName.asChar(),
-                                              m_pointBasedDeformerNode);
+    status = UsdMayaUtil::GetMObjectByName(
+        m_newPointBasedDeformerName.asChar(), m_pointBasedDeformerNode);
     CHECK_MSTATUS(status);
 
     MFnDependencyNode depNodeFn(m_pointBasedDeformerNode, &status);
@@ -377,27 +368,27 @@ TranslatorMeshRead::setPointBasedDeformerForMayaNode(const MObject& mayaObj, con
     MDGModifier dgMod;
 
     // Set the prim path on the deformer node.
-    MPlug primPathPlug =
-        depNodeFn.findPlug(UsdMayaPointBasedDeformerNode::primPathAttr,
-                           true,
-                           &status);
+    MPlug primPathPlug
+        = depNodeFn.findPlug(UsdMayaPointBasedDeformerNode::primPathAttr, true, &status);
     CHECK_MSTATUS(status);
 
     status = dgMod.newPlugValueString(primPathPlug, prim.GetPath().GetText());
     CHECK_MSTATUS(status);
 
     // Connect the stage node's stage output to the deformer node.
-    status = dgMod.connect(stageNode,
-                           UsdMayaStageNode::outUsdStageAttr,
-                           m_pointBasedDeformerNode,
-                           UsdMayaPointBasedDeformerNode::inUsdStageAttr);
+    status = dgMod.connect(
+        stageNode,
+        UsdMayaStageNode::outUsdStageAttr,
+        m_pointBasedDeformerNode,
+        UsdMayaPointBasedDeformerNode::inUsdStageAttr);
     CHECK_MSTATUS(status);
 
     // Connect the global Maya time to the deformer node.
-    status = dgMod.connect(timeNode,
-                           timePlug.attribute(),
-                           m_pointBasedDeformerNode,
-                           UsdMayaPointBasedDeformerNode::timeAttr);
+    status = dgMod.connect(
+        timeNode,
+        timePlug.attribute(),
+        m_pointBasedDeformerNode,
+        UsdMayaPointBasedDeformerNode::timeAttr);
     CHECK_MSTATUS(status);
 
     status = dgMod.doIt();
@@ -430,12 +421,12 @@ TranslatorMeshRead::setPointBasedDeformerForMayaNode(const MObject& mayaObj, con
     // XXX: This seems to be the "most sane" way of finding the tweak deformer
     // node's name...
     const std::string findTweakCmd = TfStringPrintf(
-        "from maya import cmds; [x for x in cmds.listHistory(\'%s\') if cmds.nodeType(x) == \'tweak\'][0]",
+        "from maya import cmds; [x for x in cmds.listHistory(\'%s\') if cmds.nodeType(x) == "
+        "\'tweak\'][0]",
         dagNodeFn.fullPathName().asChar());
 
     MString tweakDeformerNodeName;
-    status = MGlobal::executePythonCommand(findTweakCmd.c_str(),
-                                           tweakDeformerNodeName);
+    status = MGlobal::executePythonCommand(findTweakCmd.c_str(), tweakDeformerNodeName);
     CHECK_MSTATUS(status);
 
     // Do the reordering.
@@ -450,46 +441,23 @@ TranslatorMeshRead::setPointBasedDeformerForMayaNode(const MObject& mayaObj, con
     return status;
 }
 
-MObject 
-TranslatorMeshRead::meshObject() const
-{
-    return m_meshObj;
-}
+MObject TranslatorMeshRead::meshObject() const { return m_meshObj; }
 
-MObject 
-TranslatorMeshRead::blendObject() const
-{
-    return m_meshBlendObj;
-}
+MObject TranslatorMeshRead::blendObject() const { return m_meshBlendObj; }
 
-MObject 
-TranslatorMeshRead::pointBasedDeformerNode() const
-{
-    return m_pointBasedDeformerNode;
-}
+MObject TranslatorMeshRead::pointBasedDeformerNode() const { return m_pointBasedDeformerNode; }
 
-MString 
-TranslatorMeshRead::pointBasedDeformerName() const
-{
-    return m_newPointBasedDeformerName;
-}
+MString TranslatorMeshRead::pointBasedDeformerName() const { return m_newPointBasedDeformerName; }
 
-size_t 
-TranslatorMeshRead::pointsNumTimeSamples() const
-{
-    return m_pointsNumTimeSamples;
-}
+size_t TranslatorMeshRead::pointsNumTimeSamples() const { return m_pointsNumTimeSamples; }
 
-SdfPath 
-TranslatorMeshRead::shapePath() const
-{
-    return m_shapePath;
-}
+SdfPath TranslatorMeshRead::shapePath() const { return m_shapePath; }
 
-TranslatorMeshWrite::TranslatorMeshWrite(const MFnDependencyNode& depNodeFn,
-                                         const UsdStageRefPtr& stage,
-                                         const SdfPath& usdPath,
-                                         const MDagPath& dagPath)
+TranslatorMeshWrite::TranslatorMeshWrite(
+    const MFnDependencyNode& depNodeFn,
+    const UsdStageRefPtr&    stage,
+    const SdfPath&           usdPath,
+    const MDagPath&          dagPath)
 {
     if (!TF_VERIFY(dagPath.isValid())) {
         return;
@@ -500,20 +468,11 @@ TranslatorMeshWrite::TranslatorMeshWrite(const MFnDependencyNode& depNodeFn,
     }
 
     m_usdMesh = UsdGeomMesh::Define(stage, usdPath);
-    if (!TF_VERIFY(
-            m_usdMesh,
-            "Could not define UsdGeomMesh at path '%s'\n",
-            usdPath.GetText())) {
+    if (!TF_VERIFY(m_usdMesh, "Could not define UsdGeomMesh at path '%s'\n", usdPath.GetText())) {
         return;
     }
 }
 
-UsdGeomMesh 
-TranslatorMeshWrite::usdMesh() const
-{
-    return m_usdMesh;
-}
+UsdGeomMesh TranslatorMeshWrite::usdMesh() const { return m_usdMesh; }
 
-} // namespace MayaUsd
-
-
+} // namespace MAYAUSD_NS_DEF

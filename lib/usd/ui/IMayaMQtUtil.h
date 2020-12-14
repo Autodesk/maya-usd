@@ -17,16 +17,14 @@
 #ifndef MAYAUSDUI_I_MAYA_MQT_UTIL_H
 #define MAYAUSDUI_I_MAYA_MQT_UTIL_H
 
+#include <mayaUsd/base/api.h>
+#include <mayaUsdUI/ui/api.h>
 
 #include <string>
 
-#include <mayaUsd/base/api.h>
-
-#include <mayaUsdUI/ui/api.h>
-
 class QPixmap;
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 /**
  * \class IMayaMQtUtil
@@ -35,17 +33,16 @@ MAYAUSD_NS_DEF {
 class MAYAUSD_UI_PUBLIC IMayaMQtUtil
 {
 public:
-	virtual ~IMayaMQtUtil() {}
+    virtual ~IMayaMQtUtil() { }
 
-	//! Get the scaled size for Maya interface scaling. 
-	virtual int dpiScale(int size) const = 0;
-	virtual float dpiScale(float size) const = 0;
+    //! Get the scaled size for Maya interface scaling.
+    virtual int   dpiScale(int size) const = 0;
+    virtual float dpiScale(float size) const = 0;
 
-	//! Loads the a pixmap for the given resource name.
-	virtual QPixmap* createPixmap(const std::string& imageName) const = 0;
+    //! Loads the a pixmap for the given resource name.
+    virtual QPixmap* createPixmap(const std::string& imageName) const = 0;
 };
 
-} // namespace MayaUsd
-
+} // namespace MAYAUSD_NS_DEF
 
 #endif

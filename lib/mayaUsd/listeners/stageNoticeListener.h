@@ -16,15 +16,15 @@
 #ifndef PXRUSDMAYA_STAGE_NOTICE_LISTENER_H
 #define PXRUSDMAYA_STAGE_NOTICE_LISTENER_H
 
-#include <functional>
+#include <mayaUsd/base/api.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/notice.h>
 #include <pxr/base/tf/weakBase.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/notice.h>
 #include <pxr/usd/usd/stage.h>
 
-#include <mayaUsd/base/api.h>
+#include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,55 +36,53 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// stage.
 class UsdMayaStageNoticeListener : public TfWeakBase
 {
-    public:
-        MAYAUSD_CORE_PUBLIC
-        UsdMayaStageNoticeListener() = default;
+public:
+    MAYAUSD_CORE_PUBLIC
+    UsdMayaStageNoticeListener() = default;
 
-        MAYAUSD_CORE_PUBLIC
-        virtual ~UsdMayaStageNoticeListener();
+    MAYAUSD_CORE_PUBLIC
+    virtual ~UsdMayaStageNoticeListener();
 
-        /// Set the USD stage for which this instance will listen for notices.
-        MAYAUSD_CORE_PUBLIC
-        void SetStage(const UsdStageWeakPtr& stage);
+    /// Set the USD stage for which this instance will listen for notices.
+    MAYAUSD_CORE_PUBLIC
+    void SetStage(const UsdStageWeakPtr& stage);
 
-        /// Callback type for stage notices.
-        using StageContentsChangedCallback = std::function<void(const UsdNotice::StageContentsChanged& notice)>;
-        using StageObjectsChangedCallback = std::function<void(const UsdNotice::ObjectsChanged& notice)>;
+    /// Callback type for stage notices.
+    using StageContentsChangedCallback
+        = std::function<void(const UsdNotice::StageContentsChanged& notice)>;
+    using StageObjectsChangedCallback
+        = std::function<void(const UsdNotice::ObjectsChanged& notice)>;
 
-        /// Sets the callback to be invoked when the listener receives a
-        /// StageContentsChanged notice.
-        MAYAUSD_CORE_PUBLIC
-        void SetStageContentsChangedCallback(
-            const StageContentsChangedCallback& callback);
+    /// Sets the callback to be invoked when the listener receives a
+    /// StageContentsChanged notice.
+    MAYAUSD_CORE_PUBLIC
+    void SetStageContentsChangedCallback(const StageContentsChangedCallback& callback);
 
-        /// Sets the callback to be invoked when the listener receives a
-        /// ObjectsChanged notice.
-        MAYAUSD_CORE_PUBLIC
-        void SetStageObjectsChangedCallback(
-            const StageObjectsChangedCallback& callback);
+    /// Sets the callback to be invoked when the listener receives a
+    /// ObjectsChanged notice.
+    MAYAUSD_CORE_PUBLIC
+    void SetStageObjectsChangedCallback(const StageObjectsChangedCallback& callback);
 
-    private:
-        UsdMayaStageNoticeListener(const UsdMayaStageNoticeListener&) = delete;
-        UsdMayaStageNoticeListener& operator=(const UsdMayaStageNoticeListener&)  = delete;
+private:
+    UsdMayaStageNoticeListener(const UsdMayaStageNoticeListener&) = delete;
+    UsdMayaStageNoticeListener& operator=(const UsdMayaStageNoticeListener&) = delete;
 
-        UsdStageWeakPtr _stage;
+    UsdStageWeakPtr _stage;
 
-        /// Handling for UsdNotices
-        TfNotice::Key _stageContentsChangedKey{};
-        StageContentsChangedCallback _stageContentsChangedCallback{};
+    /// Handling for UsdNotices
+    TfNotice::Key                _stageContentsChangedKey {};
+    StageContentsChangedCallback _stageContentsChangedCallback {};
 
-        TfNotice::Key _stageObjectsChangedKey{};
-        StageObjectsChangedCallback _stageObjectsChangedCallback{};
+    TfNotice::Key               _stageObjectsChangedKey {};
+    StageObjectsChangedCallback _stageObjectsChangedCallback {};
 
-        void _UpdateStageContentsChangedRegistration();
-        void _OnStageContentsChanged(
-            const UsdNotice::StageContentsChanged& notice) const;
-        void _OnStageObjectsChanged(
-            const UsdNotice::ObjectsChanged& notice, const UsdStageWeakPtr& sender) const;
+    void _UpdateStageContentsChangedRegistration();
+    void _OnStageContentsChanged(const UsdNotice::StageContentsChanged& notice) const;
+    void _OnStageObjectsChanged(
+        const UsdNotice::ObjectsChanged& notice,
+        const UsdStageWeakPtr&           sender) const;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

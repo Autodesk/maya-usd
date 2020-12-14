@@ -16,9 +16,7 @@
 #pragma once
 
 #include "AL/usdmaya/utils/Api.h"
-
 #include "AL/usdmaya/utils/ForwardDeclares.h"
-
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -27,47 +25,48 @@ namespace usdmaya {
 namespace utils {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  A generalized set of USD attribute types that enable switch statements (instead of the if/else approach
+/// \brief  A generalized set of USD attribute types that enable switch statements (instead of the
+/// if/else approach
 ///         you require when using SdfValueTypeNames).
 /// \ingroup usdmaya
 //----------------------------------------------------------------------------------------------------------------------
 enum class UsdDataType : uint32_t
 {
-  kBool,
-  kUChar,
-  kInt,
-  kUInt,
-  kInt64,
-  kUInt64,
-  kHalf,
-  kFloat,
-  kDouble,
-  kString,
-  kMatrix2d,
-  kMatrix3d,
-  kMatrix4d,
-  kQuatd,
-  kQuatf,
-  kQuath,
-  kVec2d,
-  kVec2f,
-  kVec2h,
-  kVec2i,
-  kVec3d,
-  kVec3f,
-  kVec3h,
-  kVec3i,
-  kVec4d,
-  kVec4f,
-  kVec4h,
-  kVec4i,
-  kToken,
-  kAsset,
-  kFrame4d,
-  kColor3h,
-  kColor3f,
-  kColor3d,
-  kUnknown
+    kBool,
+    kUChar,
+    kInt,
+    kUInt,
+    kInt64,
+    kUInt64,
+    kHalf,
+    kFloat,
+    kDouble,
+    kString,
+    kMatrix2d,
+    kMatrix3d,
+    kMatrix4d,
+    kQuatd,
+    kQuatf,
+    kQuath,
+    kVec2d,
+    kVec2f,
+    kVec2h,
+    kVec2i,
+    kVec3d,
+    kVec3f,
+    kVec3h,
+    kVec3i,
+    kVec4d,
+    kVec4f,
+    kVec4h,
+    kVec4i,
+    kToken,
+    kAsset,
+    kFrame4d,
+    kColor3h,
+    kColor3f,
+    kColor3d,
+    kUnknown
 };
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -89,7 +88,7 @@ AL_USDMAYA_UTILS_PUBLIC
 UsdDataType getAttributeType(const SdfValueTypeName& typeName);
 
 //----------------------------------------------------------------------------------------------------------------------
-} // utils
-} // usdmaya
-} // AL
+} // namespace utils
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

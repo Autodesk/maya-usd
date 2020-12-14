@@ -19,12 +19,13 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_DEFINE_ENV_SETTING(PIXMAYA_LINEAR_COLORS, false,
-        "If colors from maya should be treated as linear.  "
-        "When false, colors are assumed to be gamma-corrected.");
+TF_DEFINE_ENV_SETTING(
+    PIXMAYA_LINEAR_COLORS,
+    false,
+    "If colors from maya should be treated as linear.  "
+    "When false, colors are assumed to be gamma-corrected.");
 
-bool
-UsdMayaColorSpace::IsColorManaged()
+bool UsdMayaColorSpace::IsColorManaged()
 {
     // in theory this could vary per scene, but we think mixing that within any
     // given pipeline is likely confusing.  Also, we want to avoid this function
