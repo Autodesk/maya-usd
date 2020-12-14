@@ -59,6 +59,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (defaultMeshScheme) \
     (defaultUSDFormat) \
     (eulerFilter) \
+    (exportBlendShapes) \
     (exportCollectionBasedBindings) \
     (exportColorSets) \
     (exportDisplayColor) \
@@ -68,7 +69,6 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportRefsAsInstanceable) \
     (exportSkels) \
     (exportSkin) \
-    (exportBlendShapes) \
     (exportUVs) \
     (exportVisibility) \
     (ignoreWarnings) \

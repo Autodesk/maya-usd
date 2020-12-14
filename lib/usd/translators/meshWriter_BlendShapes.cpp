@@ -62,7 +62,6 @@ constexpr char kMayaAttrNameBlendShapeInGeomTgt[] = "inputGeomTarget";
 constexpr char kMayaAttrNameBlendShapeInCompsTgt[] = "inputComponentsTarget";
 constexpr char kMayaAttrNameBlendShapeInPtsTgt[] = "inputPointsTarget";
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// The information about a single blendshape target.
@@ -344,7 +343,8 @@ MStatus mayaGetBlendShapeInfosForMesh(
         // The logical index of the weight plug should match that of the
         // inputTargetGroup that is being driven by said weight. (Confirmed by @williamkrick from
         // ADSK).
-        MPlug plgInTgtGrps = UsdMayaUtil::FindChildPlugWithName(plgInTgt, kMayaAttrNameBlendShapeInTgtGrp);
+        MPlug plgInTgtGrps
+            = UsdMayaUtil::FindChildPlugWithName(plgInTgt, kMayaAttrNameBlendShapeInTgtGrp);
         TF_VERIFY(!plgInTgtGrps.isNull());
 
         // NOTE: (yliangsiew) Problem: looks like there's a maya bug where you have to twiddle the
@@ -379,14 +379,14 @@ MStatus mayaGetBlendShapeInfosForMesh(
             for (unsigned int k = 0; k < weightInfo.targetItemIndices.length(); ++k) {
                 MPlug plgInTgtItem
                     = plgInTgtItems.elementByLogicalIndex(weightInfo.targetItemIndices[k]);
-                MPlug plgInGeomTgt
-                    = UsdMayaUtil::FindChildPlugWithName(plgInTgtItem, kMayaAttrNameBlendShapeInGeomTgt);
+                MPlug plgInGeomTgt = UsdMayaUtil::FindChildPlugWithName(
+                    plgInTgtItem, kMayaAttrNameBlendShapeInGeomTgt);
                 TF_VERIFY(!plgInGeomTgt.isNull());
 
                 // NOTE: (yliangsiew) Get the indices first so that we know which
                 // components to calculate the offsets for.
-                MPlug plgInComponentsTgt
-                    = UsdMayaUtil::FindChildPlugWithName(plgInTgtItem, kMayaAttrNameBlendShapeInCompsTgt);
+                MPlug plgInComponentsTgt = UsdMayaUtil::FindChildPlugWithName(
+                    plgInTgtItem, kMayaAttrNameBlendShapeInCompsTgt);
                 TF_VERIFY(!plgInComponentsTgt.isNull());
 
                 MayaBlendShapeTargetDatum meshTargetDatum = {};
@@ -433,8 +433,8 @@ MStatus mayaGetBlendShapeInfosForMesh(
                     // case we need to compute the deltas manually for the points.
                     meshTargetDatum.normalOffsets.resize(
                         numComponentIndices); // NOTE: (yliangsiew) Zeroed out normal offsets.
-                    MPlug plgInPtsTgt
-                        = UsdMayaUtil::FindChildPlugWithName(plgInTgtItem, kMayaAttrNameBlendShapeInPtsTgt);
+                    MPlug plgInPtsTgt = UsdMayaUtil::FindChildPlugWithName(
+                        plgInTgtItem, kMayaAttrNameBlendShapeInPtsTgt);
                     TF_VERIFY(!plgInPtsTgt.isNull());
                     MObject inPtsTgtData = plgInPtsTgt.asMObject(&stat);
                     CHECK_MSTATUS_AND_RETURN_IT(stat);
@@ -833,8 +833,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             TF_VERIFY(blendShapeNode.hasFn(MFn::kBlendShape));
                             MFnDependencyNode fnNode(blendShapeNode, &stat);
                             CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
-                            MPlug weightsPlug
-                                = fnNode.findPlug(kMayaAttrNameWeight, false, &stat);
+                            MPlug weightsPlug = fnNode.findPlug(kMayaAttrNameWeight, false, &stat);
                             CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                             TF_VERIFY(weightsPlug.isArray());
                             MPlug weightPlug = weightsPlug.elementByLogicalIndex(weightIndex);
