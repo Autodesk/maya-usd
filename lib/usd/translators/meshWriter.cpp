@@ -337,17 +337,13 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                                         if (fabs(vertexComponent - 0.0f) > FLT_EPSILON) {
                                             MFnDependencyNode fnNode(curIntermediate, &status);
                                             CHECK_MSTATUS_AND_RETURN(status, false);
-                                            MGlobal::displayError(
-                                                "Could not determine the original blendshape "
-                                                "source mesh due to the tweak node: "
-                                                + fnNode.name()
-                                                + ". Please either bake it down or remove the "
-                                                  "edits and attempt the export process again, or "
-                                                  "specify -ignoreWarnings.");
                                             TF_RUNTIME_ERROR(
                                                 "Could not determine the original blendshape "
-                                                "source mesh due to a non-empty tweak node, "
-                                                "aborting export.");
+                                                "source mesh due to a non-empty tweak node: %s. "
+                                                "Please either bake it down or remove the "
+                                                "edits and attempt the export process again, or "
+                                                "specify -ignoreWarnings.",
+                                                fnNode.name().asChar());
                                             return false;
                                         }
                                     }
@@ -357,10 +353,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                         continue; // NOTE: (yliangsiew) If the tweak node has no effect, go check
                                   // the next intermediate.
                     }
-                    MGlobal::displayError(
-                        "USDSkelBlendShape does not support animated blend shapes. Please bake "
-                        "down deformer history before attempting an export, or specify "
-                        "-ignoreWarnings during the export process.");
                     TF_RUNTIME_ERROR(
                         "USDSkelBlendShape does not support animated blend shapes. Please bake "
                         "down deformer history before attempting an export, or specify "
@@ -380,14 +372,11 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                         for (unsigned int k = 0; k < plgPnt.numChildren(); ++k) {
                             float tweakValue = plgPnt.child(k).asFloat();
                             if (fabs(tweakValue - 0.0f) > FLT_EPSILON) {
-                                MGlobal::displayError(
-                                    "The mesh: " + fnNode.name()
-                                    + " has local tweak data on its .pnts attribute. Please remove "
-                                      "it before attempting an export, or specify -ignoreWarnings "
-                                      "during the export process.");
                                 TF_RUNTIME_ERROR(
-                                    "Could not reliably verify the points of the original source "
-                                    "mesh for the blendshape export, aborting export.");
+                                    "The mesh: %s has local tweak data on its .pnts attribute. "
+                                    "Please remove it before attempting an export, or specify "
+                                    "-ignoreWarnings during the export process.",
+                                    fnNode.name().asChar());
                                 return false;
                             }
                         }
@@ -396,11 +385,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                 } else {
                     MFnDependencyNode fnNode(curIntermediate, &status);
                     CHECK_MSTATUS_AND_RETURN(status, false);
-                    MGlobal::displayError(
-                        "Unrecognized node encountered in blendshape deformation chain: "
-                        + fnNode.name()
-                        + "Please bake down deformer history before attempting an export, or "
-                          "specify -ignoreWarnings during the export process.");
                     TF_RUNTIME_ERROR(
                         "Unrecognized node encountered in blendshape deformation chain: %s. Please "
                         "bake down deformer history before attempting an export, or specify "
