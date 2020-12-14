@@ -278,8 +278,8 @@ MStatus mayaGetBlendShapeInfosForMesh(
     case 0: searchObject = MObject(deformedMesh); break;
     case 1: searchObject = MObject(skinClusters[0]); break;
     default:
-        MGlobal::displayWarning("More than one skinCluster was found; only the first one will be "
-                                "considered during the search!");
+        TF_WARN("More than one skinCluster was found; only the first one will be "
+                "considered during the search!");
         searchObject = MObject(skinClusters[0]);
         break;
     }
