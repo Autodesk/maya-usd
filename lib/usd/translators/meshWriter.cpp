@@ -65,7 +65,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* intermediates)
 {
-    assert(mesh.hasFn(MFn::kMesh));
+    TF_VERIFY(mesh.hasFn(MFn::kMesh));
     MStatus stat;
 
     // NOTE: (yliangsiew) If there's a skinCluster, find that first since that
@@ -106,7 +106,7 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
         // deformed meshes from a single blendshape deformer, we have
         // to walk back up the graph using the connected index to find
         // out what the _actual_ base mesh was.
-        if (intermediates == NULL) {
+        if (intermediates == nullptr) {
             MFnGeometryFilter fnGeoFilter;
             fnGeoFilter.setObject(curBlendShape);
             MObject inputGeo = fnGeoFilter.inputShapeAtIndex(outputGeomPlugIdx, &stat);
@@ -292,7 +292,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // assignments to materials.)
     if (exportArgs.exportBlendShapes && geomMeshObj.hasFn(MFn::kDependencyNode)) {
         if (exportArgs.ignoreWarnings) {
-            geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, NULL);
+            geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, nullptr);
         } else {
             MObjectArray intermediates;
             geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, &intermediates);
