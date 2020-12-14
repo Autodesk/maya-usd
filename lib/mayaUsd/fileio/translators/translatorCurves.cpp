@@ -243,8 +243,9 @@ bool UsdMayaTranslatorCurves::Create(
 
         // Construct the time array to be used for all the keys
         MTime::Unit timeUnit = MTime::uiUnit();
-        double      timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
-        MTimeArray  timeArray(numTimeSamples, MTime());
+        double      timeSampleMultiplier
+            = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+        MTimeArray timeArray(numTimeSamples, MTime());
         for (unsigned int ti = 0; ti < numTimeSamples; ++ti) {
             timeArray.set(MTime(pointsTimeSamples[ti] * timeSampleMultiplier, timeUnit), ti);
         }

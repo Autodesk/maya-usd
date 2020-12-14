@@ -211,7 +211,7 @@ static bool _pushUSDXformOpToMayaXform(
     const UsdMayaPrimReaderContext* context)
 {
     MTime::Unit timeUnit = MTime::uiUnit();
-    double      timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+    double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
 
     std::vector<double> xValue;
     std::vector<double> yValue;

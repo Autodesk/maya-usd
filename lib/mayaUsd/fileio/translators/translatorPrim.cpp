@@ -34,7 +34,7 @@ void UsdMayaTranslatorPrim::Read(
 {
     UsdGeomImageable primSchema(prim);
     MTime::Unit      timeUnit = MTime::uiUnit();
-    double           timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+    double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
     if (!primSchema) {
         TF_CODING_ERROR("Prim %s is not UsdGeomImageable.", prim.GetPath().GetText());
         return;

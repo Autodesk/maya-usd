@@ -477,7 +477,7 @@ bool _CopyAnimFromSkel(
     MTimeArray mayaTimes;
     mayaTimes.setLength(usdTimes.size());
     MTime::Unit timeUnit = MTime::uiUnit();
-    double      timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+    double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
     for (size_t i = 0; i < usdTimes.size(); ++i) {
         mayaTimes[i] = MTime(usdTimes[i] * timeSampleMultiplier, timeUnit);
     }

@@ -512,7 +512,7 @@ double UsdMaya_ReadJob::timeSampleMultiplier() const { return mTimeSampleMultipl
 
 double UsdMaya_ReadJob::_setTimeSampleMultiplierFrom(const double layerFPS)
 {
-    float sceneFPS = UsdMayaUtil::GetSceneMTimeUnitAsFloat();
+    double sceneFPS = UsdMayaUtil::GetSceneMTimeUnitAsDouble();
     mTimeSampleMultiplier = sceneFPS / layerFPS;
     return mTimeSampleMultiplier;
 }

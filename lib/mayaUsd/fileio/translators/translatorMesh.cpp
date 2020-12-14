@@ -301,7 +301,7 @@ TranslatorMeshRead::TranslatorMeshRead(
 
     // Get the values needed to convert time to the current maya scenes framerate
     MTime::Unit timeUnit = MTime::uiUnit();
-    double      timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+    double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
 
     // Construct the time array to be used for all the keys
     MTimeArray timeArray;

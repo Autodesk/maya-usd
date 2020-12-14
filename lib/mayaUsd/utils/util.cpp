@@ -2079,171 +2079,171 @@ void UsdMayaUtil::GetFilteredSelectionToExport(
     }
 }
 
-float UsdMayaUtil::ConvertMTimeUnitToFloat(const MTime::Unit& unit)
+double UsdMayaUtil::ConvertMTimeUnitToDouble(const MTime::Unit& unit)
 {
-    float ret = 0.f;
+    double ret = 0.0;
     switch (unit) {
     case MTime::k2FPS: {
-        ret = 2.f;
+        ret = 2.0;
     } break;
     case MTime::k3FPS: {
-        ret = 3.f;
+        ret = 3.0;
     } break;
     case MTime::k4FPS: {
-        ret = 4.f;
+        ret = 4.0;
     } break;
     case MTime::k5FPS: {
-        ret = 5.f;
+        ret = 5.0;
     } break;
     case MTime::k6FPS: {
-        ret = 6.f;
+        ret = 6.0;
     } break;
     case MTime::k8FPS: {
-        ret = 8.f;
+        ret = 8.0;
     } break;
     case MTime::k10FPS: {
-        ret = 10.f;
+        ret = 10.0;
     } break;
     case MTime::k12FPS: {
-        ret = 12.f;
+        ret = 12.0;
     } break;
     case MTime::k15FPS: {
-        ret = 15.f;
+        ret = 15.0;
     } break;
     case MTime::k16FPS: {
-        ret = 16.f;
+        ret = 16.0;
     } break;
     case MTime::k20FPS: {
-        ret = 20.f;
+        ret = 20.0;
     } break;
     case MTime::k23_976FPS: {
-        ret = 23.976f;
+        ret = (24.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k24FPS: {
-        ret = 24.f;
+        ret = 24.0;
     } break;
     case MTime::k25FPS: {
-        ret = 25.f;
+        ret = 25.0;
     } break;
     case MTime::k29_97FPS: {
-        ret = 29.97f;
+        ret = (30.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k29_97DF: {
-        ret = 29.97f;
+        ret = (30.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k30FPS: {
-        ret = 30.f;
+        ret = 30.0;
     } break;
     case MTime::k40FPS: {
-        ret = 40.f;
+        ret = 40.0;
     } break;
     case MTime::k47_952FPS: {
-        ret = 47.952f;
+        ret = (48.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k48FPS: {
-        ret = 48.f;
+        ret = 48.0;
     } break;
     case MTime::k50FPS: {
-        ret = 50.f;
+        ret = 50.0;
     } break;
     case MTime::k59_94FPS: {
-        ret = 59.94f;
+        ret = (60.0 * 1000.0) / 100;
     } break;
     case MTime::k60FPS: {
-        ret = 60.f;
+        ret = 60.0;
     } break;
     case MTime::k75FPS: {
-        ret = 75.f;
+        ret = 75.0;
     } break;
     case MTime::k80FPS: {
-        ret = 80.f;
+        ret = 80.0;
     } break;
 #if MAYA_API_VERSION >= 20200000
     case MTime::k90FPS: {
-        ret = 90.f;
+        ret = 90.0;
     } break;
 #endif
     case MTime::k100FPS: {
-        ret = 100.f;
+        ret = 100.0;
     } break;
     case MTime::k120FPS: {
-        ret = 120.f;
+        ret = 120.0;
     } break;
     case MTime::k125FPS: {
-        ret = 125.f;
+        ret = 125.0;
     } break;
     case MTime::k150FPS: {
-        ret = 150.f;
+        ret = 150.0;
     } break;
     case MTime::k200FPS: {
-        ret = 200.f;
+        ret = 200.0;
     } break;
     case MTime::k240FPS: {
-        ret = 240.f;
+        ret = 240.0;
     } break;
     case MTime::k250FPS: {
-        ret = 250.f;
+        ret = 250.0;
     } break;
     case MTime::k300FPS: {
-        ret = 300.f;
+        ret = 300.0;
     } break;
     case MTime::k375FPS: {
-        ret = 375.f;
+        ret = 375.0;
     } break;
     case MTime::k400FPS: {
-        ret = 400.f;
+        ret = 400.0;
     } break;
     case MTime::k500FPS: {
-        ret = 500.f;
+        ret = 500.0;
     } break;
     case MTime::k600FPS: {
-        ret = 600.f;
+        ret = 600.0;
     } break;
     case MTime::k750FPS: {
-        ret = 750.f;
+        ret = 750.0;
     } break;
     case MTime::k1200FPS: {
-        ret = 1200.f;
+        ret = 1200.0;
     } break;
     case MTime::k1500FPS: {
-        ret = 1500.f;
+        ret = 1500.0;
     } break;
     case MTime::k2000FPS: {
-        ret = 2000.f;
+        ret = 2000.0;
     } break;
     case MTime::k3000FPS: {
-        ret = 3000.f;
+        ret = 3000.0;
     } break;
     case MTime::k6000FPS: {
-        ret = 6000.f;
+        ret = 6000.0;
     } break;
     case MTime::k44100FPS: {
-        ret = 44100.f;
+        ret = 44100.0;
     } break;
     case MTime::k48000FPS: {
-        ret = 48000.f;
+        ret = 48000.0;
     } break;
     case MTime::kHours: {
-        ret = (1.f / 3600.f);
+        ret = (1.0 / 3600.0);
     } break;
     case MTime::kMinutes: {
-        ret = (1.f / 60.f);
+        ret = (1.0 / 60.0);
     } break;
     case MTime::kSeconds: {
-        ret = 1.0f;
+        ret = 1.0;
     } break;
     case MTime::kMilliseconds: {
-        ret = 1000.f;
+        ret = 1000.0;
     } break;
     default: {
-        ret = 0.0f;
+        ret = 0.0;
     } break;
     }
     return ret;
 }
 
-float UsdMayaUtil::GetSceneMTimeUnitAsFloat()
+double UsdMayaUtil::GetSceneMTimeUnitAsDouble()
 {
     const MTime::Unit sceneUnit = MTime::uiUnit();
-    return UsdMayaUtil::ConvertMTimeUnitToFloat(sceneUnit);
+    return UsdMayaUtil::ConvertMTimeUnitToDouble(sceneUnit);
 }
