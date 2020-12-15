@@ -27,8 +27,8 @@
 
 namespace UsdLayerEditor {
 
-typedef pxr::SdfLayerRefPtr UsdLayer;
-typedef pxr::UsdStageRefPtr UsdStage;
+typedef PXR_NS::SdfLayerRefPtr UsdLayer;
+typedef PXR_NS::UsdStageRefPtr UsdStage;
 
 class SessionState;
 

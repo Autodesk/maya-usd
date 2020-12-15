@@ -34,6 +34,7 @@
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 
 #include <pxr/base/plug/plugin.h>
@@ -313,6 +314,7 @@ MStatus initializePlugin(MObject obj)
     }
 
     UsdMayaSceneResetNotice::InstallListener();
+    UsdMayaDiagnosticDelegate::InstallDelegate();
 
     return status;
 }
@@ -394,6 +396,7 @@ MStatus uninitializePlugin(MObject obj)
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();
+    UsdMayaDiagnosticDelegate::RemoveDelegate();
 
     return status;
 }

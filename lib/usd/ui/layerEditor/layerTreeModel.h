@@ -48,7 +48,7 @@ enum class InRebuildModel
  */
 class LayerTreeModel
     : public QStandardItemModel
-    , public pxr::TfWeakBase
+    , public PXR_NS::TfWeakBase
 {
     Q_OBJECT
 public:
@@ -87,7 +87,7 @@ public:
     void toggleMuteLayer(LayerTreeItem* item, bool* forcedState = nullptr);
 
     // ask to select a layer in the near future
-    void selectUsdLayerOnIdle(const pxr::SdfLayerRefPtr& usdLayer);
+    void selectUsdLayerOnIdle(const PXR_NS::SdfLayerRefPtr& usdLayer);
 
     // drag and drop support
     Qt::ItemFlags   flags(const QModelIndex& index) const override;
@@ -116,14 +116,14 @@ protected:
     SessionState* _sessionState = nullptr;
 
     void registerUsdNotifications(bool in_register);
-    void usd_layerChanged(pxr::SdfNotice::LayersDidChangeSentPerLayer const& notice);
-    void usd_editTargetChanged(pxr::UsdNotice::StageEditTargetChanged const& notice);
+    void usd_layerChanged(PXR_NS::SdfNotice::LayersDidChangeSentPerLayer const& notice);
+    void usd_editTargetChanged(PXR_NS::UsdNotice::StageEditTargetChanged const& notice);
     void usd_layerDirtinessChanged(
-        pxr::SdfNotice::LayerDirtinessChanged const& notice,
-        const pxr::TfWeakPtr<pxr::SdfLayer>&         layer);
+        PXR_NS::SdfNotice::LayerDirtinessChanged const& notice,
+        const PXR_NS::TfWeakPtr<PXR_NS::SdfLayer>&      layer);
 
-    pxr::TfNotice::Keys _noticeKeys;
-    static bool         _blockUsdNotices;
+    PXR_NS::TfNotice::Keys _noticeKeys;
+    static bool            _blockUsdNotices;
     ;
 
     mutable int _lastAskedAnonLayerNameSinceRebuild = 0;
@@ -134,7 +134,7 @@ protected:
 
     void updateTargetLayer(InRebuildModel inRebuild);
 
-    LayerTreeItem* findUSDLayerItem(const pxr::SdfLayerRefPtr& usdLayer) const;
+    LayerTreeItem* findUSDLayerItem(const PXR_NS::SdfLayerRefPtr& usdLayer) const;
 };
 
 } // namespace UsdLayerEditor

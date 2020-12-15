@@ -115,12 +115,27 @@ main(module=${MODULE_NAME})
         set(PYTEST_CODE "${PREFIX_PYTHON_COMMAND}")
     elseif(PREFIX_PYTHON_SCRIPT)
         if (PREFIX_INTERACTIVE)
-            set(MEL_PY_EXEC_COMMAND "python(\"\
-file = \\\"${PREFIX_PYTHON_SCRIPT}\\\"\\\; \
-openMode = \\\"rb\\\"\\\; \
-compileMode = \\\"exec\\\"\\\; \
-globals = {\\\"__file__\\\": file, \\\"__name__\\\": \\\"__main__\\\"}\\\; \
-exec(compile(open(file, openMode).read(), file, compileMode), globals)\
+            set(MEL_PY_EXEC_COMMAND "python(\"\\n\
+import os\\n\
+import sys\\n\
+import time\\n\
+import traceback\\n\
+file = \\\"${PREFIX_PYTHON_SCRIPT}\\\"\\n\
+if not os.path.isabs(file):\\n\
+    file = os.path.join(\\\"${WORKING_DIR}\\\", file)\\n\
+openMode = \\\"rb\\\"\\n\
+compileMode = \\\"exec\\\"\\n\
+globals = {\\\"__file__\\\": file, \\\"__name__\\\": \\\"__main__\\\"}\\n\
+try:\\n\
+    exec(compile(open(file, openMode).read(), file, compileMode), globals)\\n\
+except Exception:\\n\
+    sys.__stderr__.write(traceback.format_exc() + os.linesep)\\n\
+    sys.__stderr__.flush()\\n\
+    sys.__stdout__.flush()\\n\
+    # sleep to give the output streams time to finish flushing - otherwise,\\n\
+    # os._exit quits so hard + fast, flush may not happen!\\n\
+    time.sleep(.1)\\n\
+    os._exit(1)\\n\
 \")")
             set(COMMAND_CALL ${MAYA_EXECUTABLE} -c ${MEL_PY_EXEC_COMMAND})
         else()

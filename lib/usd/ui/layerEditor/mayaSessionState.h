@@ -39,7 +39,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
  */
 class MayaSessionState
     : public SessionState
-    , public pxr::TfWeakBase
+    , public PXR_NS::TfWeakBase
 
 {
     Q_OBJECT
@@ -50,7 +50,7 @@ public:
     ~MayaSessionState();
 
     // API implementation
-    void                    setStage(pxr::UsdStageRefPtr const& in_stage) override;
+    void                    setStage(PXR_NS::UsdStageRefPtr const& in_stage) override;
     void                    setAutoHideSessionLayer(bool hide) override;
     AbstractCommandHook*    commandHook() override;
     std::vector<StageEntry> allStages() const override;
@@ -62,7 +62,7 @@ public:
     // ui to save a layer. returns the path and the file format (ex: "usda")
     bool saveLayerUI(QWidget* in_parent, std::string* out_filePath, std::string* out_pFormat)
         const override;
-    void printLayer(const pxr::SdfLayerRefPtr& layer) const override;
+    void printLayer(const PXR_NS::SdfLayerRefPtr& layer) const override;
 
     // main API
     void setupCreateMenu(QMenu* in_menu) override;
