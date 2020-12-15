@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/pxr.h>
-
 #include <pxr/base/tf/pyModule.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE {
+TF_WRAP_MODULE
+{
     TF_WRAP(Adaptor);
     TF_WRAP(BlockSceneModificationContext);
     TF_WRAP(ColorSpace);
@@ -34,4 +34,5 @@ TF_WRAP_MODULE {
     TF_WRAP(UserTaggedAttribute);
     TF_WRAP(WriteUtil);
     TF_WRAP(XformStack);
+    TF_WRAP(UsdUndoManager);
 }

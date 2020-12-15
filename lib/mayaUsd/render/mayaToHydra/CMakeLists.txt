@@ -31,6 +31,13 @@ target_compile_definitions(${TARGET_NAME}
         $<$<BOOL:${IS_WINDOWS}>:_WIN32>
 )
 
+if(DEFINED MAYAUSD_VERSION)
+    target_compile_definitions(${TARGET_NAME}
+        PRIVATE
+            MAYAUSD_VERSION=${MAYAUSD_VERSION}
+    )
+endif()
+
 mayaUsd_compile_config(${TARGET_NAME})
 
 # -----------------------------------------------------------------------------

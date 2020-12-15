@@ -15,41 +15,41 @@
 //
 #pragma once
 
-#include <pxr/pxr.h>
+#include "base/api.h"
 
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 
-#include "base/api.h"
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class ProxyShape : public MayaUsdProxyShapeBase
 {
-    public:
-        typedef MayaUsdProxyShapeBase ParentClass;
+public:
+    typedef MayaUsdProxyShapeBase ParentClass;
 
-        MAYAUSD_PLUGIN_PUBLIC
-        static const MTypeId typeId;
-        MAYAUSD_PLUGIN_PUBLIC
-        static const MString typeName;
+    MAYAUSD_PLUGIN_PUBLIC
+    static const MTypeId typeId;
+    MAYAUSD_PLUGIN_PUBLIC
+    static const MString typeName;
 
-        MAYAUSD_PLUGIN_PUBLIC
-        static void* creator();
+    MAYAUSD_PLUGIN_PUBLIC
+    static void* creator();
 
-        MAYAUSD_PLUGIN_PUBLIC
-        static MStatus initialize();
+    MAYAUSD_PLUGIN_PUBLIC
+    static MStatus initialize();
 
-        void postConstructor() override;
+    void postConstructor() override;
 
-    private:
-        ProxyShape();
+private:
+    ProxyShape();
 
-        ProxyShape(const ProxyShape&);
-        ~ProxyShape() override;
-        ProxyShape& operator=(const ProxyShape&);
+    ProxyShape(const ProxyShape&);
+    ~ProxyShape() override;
+    ProxyShape& operator=(const ProxyShape&);
 };
 
-} // MayaUsd
+} // namespace MAYAUSD_NS_DEF

@@ -19,12 +19,12 @@
 /// \file
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 
@@ -33,9 +33,7 @@
 
 #include <unordered_map>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class UsdMayaSymmetricShaderWriter
 /// \brief Provides "literal" translation of Maya shading nodes to USD Shader
@@ -78,35 +76,32 @@ public:
     /// TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry) block.
     MAYAUSD_CORE_PUBLIC
     static void RegisterWriter(
-            const TfToken& mayaNodeTypeName,
-            const TfToken& usdShaderId,
-            const TfToken& materialConversionName = TfToken());
+        const TfToken& mayaNodeTypeName,
+        const TfToken& usdShaderId,
+        const TfToken& materialConversionName = TfToken());
 
     MAYAUSD_CORE_PUBLIC
     static ContextSupport CanExport(
-            const UsdMayaJobExportArgs& exportArgs,
-            const TfToken& materialConversionName = TfToken());
+        const UsdMayaJobExportArgs& exportArgs,
+        const TfToken&              materialConversionName = TfToken());
 
     MAYAUSD_CORE_PUBLIC
     UsdMayaSymmetricShaderWriter(
-            const MFnDependencyNode& depNodeFn,
-            const SdfPath& usdPath,
-            UsdMayaWriteJobContext& jobCtx,
-            const TfToken& usdShaderId);
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx,
+        const TfToken&           usdShaderId);
 
     MAYAUSD_CORE_PUBLIC
     void Write(const UsdTimeCode& usdTime) override;
 
     MAYAUSD_CORE_PUBLIC
-    TfToken GetShadingAttributeNameForMayaAttrName(
-            const TfToken& mayaAttrName) override;
+    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 
 private:
     std::unordered_map<TfToken, MPlug, TfToken::HashFunctor> _inputNameAttrMap;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

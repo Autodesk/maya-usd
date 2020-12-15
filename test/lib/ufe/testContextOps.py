@@ -21,7 +21,7 @@ import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
 
 from pxr import UsdGeom
 
-from ufeTestUtils import usdUtils, mayaUtils
+import usdUtils, mayaUtils
 import ufe
 
 import unittest
@@ -68,7 +68,7 @@ class ContextOpsTestCase(unittest.TestCase):
         if self._testMethodName in ['testAddNewPrim', 'testAddNewPrimWithDelete']:
             return
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
 
         # Clear selection to start off.
@@ -76,7 +76,7 @@ class ContextOpsTestCase(unittest.TestCase):
         
         # Select Ball_35.
         ball35Path = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         self.ball35Item = ufe.Hierarchy.createItem(ball35Path)
         self.ball35Prim = usdUtils.getPrimFromSceneItem(self.ball35Item)
@@ -218,7 +218,7 @@ class ContextOpsTestCase(unittest.TestCase):
             ufe.Scene.addObserver(ufeObs)
 
         # Create a ContextOps interface for the proxy shape.
-        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage1|stageShape1")])
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|stage1|stageShape1")])
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
 
@@ -319,7 +319,7 @@ class ContextOpsTestCase(unittest.TestCase):
         mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
 
         # Create a ContextOps interface for the proxy shape.
-        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|world|stage1|stageShape1")])
+        proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|stage1|stageShape1")])
         proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
         contextOps = ufe.ContextOps.contextOps(proxyShapeItem)
 
@@ -358,7 +358,7 @@ class ContextOpsTestCase(unittest.TestCase):
         Descendants", and "Unload".
         '''
         proxyShapePathSegment = mayaUtils.createUfePathSegment(
-            '|world|transform1|proxyShape1')
+            '|transform1|proxyShape1')
 
         propsPath = ufe.Path([
             proxyShapePathSegment,

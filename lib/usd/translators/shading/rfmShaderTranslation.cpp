@@ -20,15 +20,14 @@
 #include <mayaUsd/fileio/shading/symmetricShaderReader.h>
 #include <mayaUsd/fileio/shading/symmetricShaderWriter.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
-
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -38,7 +37,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((exportDescription, "Exports bound shaders as a RenderMan for Maya UsdShade network."))
     ((importDescription, "Imports a RenderMan UsdShade network."))
 );
-
+// clang-format on
 
 REGISTER_SHADING_MODE_EXPORT_MATERIAL_CONVERSION(
     _tokens->conversionName,
@@ -58,10 +57,7 @@ REGISTER_SHADING_MODE_IMPORT_MATERIAL_CONVERSION(
 TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 {
     for (const auto& i : RfmNodesToShaderIds) {
-        UsdMayaSymmetricShaderWriter::RegisterWriter(
-            i.first,
-            i.second,
-            _tokens->conversionName);
+        UsdMayaSymmetricShaderWriter::RegisterWriter(i.first, i.second, _tokens->conversionName);
     }
 };
 
@@ -71,12 +67,8 @@ TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
 TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
 {
     for (const auto& i : RfmNodesToShaderIds) {
-        UsdMayaSymmetricShaderReader::RegisterReader(
-            i.second,
-            i.first,
-            _tokens->conversionName);
+        UsdMayaSymmetricShaderReader::RegisterReader(i.second, i.first, _tokens->conversionName);
     }
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

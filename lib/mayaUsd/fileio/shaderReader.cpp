@@ -43,6 +43,20 @@ UsdMayaShaderReader::ContextSupport UsdMayaShaderReader::CanImport(const UsdMaya
 }
 
 /* virtual */
+MPlug UsdMayaShaderReader::GetMayaPlugForUsdAttrName(
+    const TfToken& usdAttrName,
+    const MObject& mayaObject) const
+{
+    MStatus           status;
+    MFnDependencyNode depFn(mayaObject, &status);
+    if (status != MS::kSuccess) {
+        return MPlug();
+    }
+
+    return depFn.findPlug(GetMayaNameForUsdAttrName(usdAttrName).GetText());
+}
+
+/* virtual */
 TfToken UsdMayaShaderReader::GetMayaNameForUsdAttrName(const TfToken& usdAttrName) const
 {
     return TfToken();

@@ -13,6 +13,12 @@ set(GNU_CLANG_FLAGS
     -Wno-unused-local-typedefs
 )
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    list(APPEND GNU_CLANG_FLAGS
+            -Wrange-loop-analysis
+        )
+endif()
+
 set(MSVC_FLAGS
     # we want to be as strict as possible
     /W3
@@ -20,12 +26,21 @@ set(MSVC_FLAGS
     # enable pdb generation.
     /Zi
     # standards compliant.
-    /Zc:inline
     /Zc:rvalueCast
+    # The /Zc:inline option strips out the "arch_ctor_<name>" symbols used for
+    # library initialization by ARCH_CONSTRUCTOR starting in Visual Studio 2019,
+    # causing release builds to fail. Disable the option for this and later
+    # versions.
+    #
+    # For more details, see:
+    # https://developercommunity.visualstudio.com/content/problem/914943/zcinline-removes-extern-symbols-inside-anonymous-n.html
+    $<IF:$<VERSION_GREATER_EQUAL:${MSVC_VERSION},1920>,/Zc:inline-,/Zc:inline>
     # enable multiprocessor builds.
     /MP
     # enable exception handling.
     /EHsc
+    # enable initialization order as a level 3 warning
+    /w35038
     # disable warnings
     /wd4244
     /wd4267
@@ -34,6 +49,8 @@ set(MSVC_FLAGS
     /wd4506
     /wd4996
     /wd4180
+    # exporting STL classes
+    /wd4251
 )
 
 set(MSVC_DEFINITIONS

@@ -19,8 +19,8 @@
 import maya.api.OpenMaya as om
 import maya.cmds as cmds
 
-from ufeTestUtils import usdUtils, mayaUtils, ufeUtils
-from ufeTestUtils.testUtils import assertVectorAlmostEqual
+import usdUtils, mayaUtils, ufeUtils
+from testUtils import assertVectorAlmostEqual
 import testTRSBase
 import ufe
 
@@ -85,7 +85,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
         self.runTimeTranslation = None
         self.ufeTranslation = None
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
         
         # Create some extra Maya nodes
@@ -180,7 +180,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         # Select Ball_35 to move it.
         ball35Path = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment("/Room_set/Props/Ball_35")])
         ball35Item = ufe.Hierarchy.createItem(ball35Path)
 
@@ -215,7 +215,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         # Select multiple balls to move them.
         proxyShapePathSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
 
         balls = ['Ball_33', 'Ball_34']
         ballPaths = [

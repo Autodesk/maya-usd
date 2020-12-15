@@ -70,6 +70,10 @@ class testUsdImportUVSets(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.asFloat2 = mayaUsdLib.ReadUtil.ReadFloat2AsUV()
+        cls.defaultUVName = "st"
+        if mayaUsdLib.ReadUtil.ReadSTAsMap1():
+            cls.defaultUVName = "map1"
+
         cls.inputPath = fixturesUtils.readOnlySetUpClass(__file__)
 
         if cls.asFloat2: 
@@ -98,7 +102,7 @@ class testUsdImportUVSets(unittest.TestCase):
     def testImportDefaultUVSet(self):
         """
         Tests that a USD cube mesh with the Maya default values for the default
-        UV set (named 'st' in USD) gets imported correctly as 'map1'.
+        UV set (named 'st' in USD) gets imported correctly.
         """
         mayaCubeMesh = self._GetMayaMesh('DefaultUVSetCubeShape')
 
@@ -130,13 +134,51 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
+            expectedNumValues=14)
+
+    def testImportMap1UVSet(self):
+        """
+        Tests that a USD cube mesh with the Maya default values for the default
+        UV set (map1) gets imported correctly.
+        """
+        mayaCubeMesh = self._GetMayaMesh('Map1UVSetCubeShape')
+
+        # These are the default UV values for a regular Maya polycube.
+        expectedValues = {
+            0: Gf.Vec2f(0.375, 0.0),
+            1: Gf.Vec2f(0.625, 0.0),
+            2: Gf.Vec2f(0.625, 0.25),
+            3: Gf.Vec2f(0.375, 0.25),
+            4: Gf.Vec2f(0.375, 0.25),
+            5: Gf.Vec2f(0.625, 0.25),
+            6: Gf.Vec2f(0.625, 0.5),
+            7: Gf.Vec2f(0.375, 0.5),
+            8: Gf.Vec2f(0.375, 0.5),
+            9: Gf.Vec2f(0.625, 0.5),
+            10: Gf.Vec2f(0.625, 0.75),
+            11: Gf.Vec2f(0.375, 0.75),
+            12: Gf.Vec2f(0.375, 0.75),
+            13: Gf.Vec2f(0.625, 0.75),
+            14: Gf.Vec2f(0.625, 1.0),
+            15: Gf.Vec2f(0.375, 1.0),
+            16: Gf.Vec2f(0.625, 0.0),
+            17: Gf.Vec2f(0.875, 0.0),
+            18: Gf.Vec2f(0.875, 0.25),
+            19: Gf.Vec2f(0.625, 0.25),
+            20: Gf.Vec2f(0.125, 0.0),
+            21: Gf.Vec2f(0.375, 0.0),
+            22: Gf.Vec2f(0.375, 0.25),
+            23: Gf.Vec2f(0.125, 0.25)
+        }
+
+        self._AssertUVSet(mayaCubeMesh, "map1", expectedValues,
             expectedNumValues=14)
 
     def testImportOneMissingFaceUVSet(self):
         """
         Tests that a USD cube mesh with values for all but one face in the
-        default UV set (named 'st' in USD) gets imported correctly as 'map1'.
+        default UV set (named 'st' in USD) gets imported correctly.
         """
         mayaCubeMesh = self._GetMayaMesh('OneMissingFaceCubeShape')
 
@@ -163,13 +205,13 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
             expectedNumValues=14)
 
     def testImportOneAssignedFaceUVSet(self):
         """
         Tests that a USD cube mesh with values for only one face in the default
-        UV set (named 'st' in USD) gets imported correctly as 'map1'.
+        UV set (named 'st' in USD) gets imported correctly.
         """
         mayaCubeMesh = self._GetMayaMesh('OneAssignedFaceCubeShape')
 
@@ -180,7 +222,7 @@ class testUsdImportUVSets(unittest.TestCase):
             11: Gf.Vec2f(0.375, 0.75)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
             expectedNumValues=4)
 
     def testImportCompressibleUVSets(self):
@@ -344,7 +386,7 @@ class testUsdImportUVSets(unittest.TestCase):
             23: Gf.Vec2f(0.125, 0.25)
         }
 
-        self._AssertUVSet(mayaCubeMesh, 'map1', expectedValues,
+        self._AssertUVSet(mayaCubeMesh, self.defaultUVName, expectedValues,
             expectedNumValues=14)
 
 if __name__ == '__main__':

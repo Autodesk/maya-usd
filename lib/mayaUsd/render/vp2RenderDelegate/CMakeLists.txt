@@ -14,6 +14,7 @@ target_sources(${PROJECT_NAME}
         render_delegate.cpp
         render_param.cpp
         sampler.cpp
+        shader.cpp
         tokens.cpp
 )
 

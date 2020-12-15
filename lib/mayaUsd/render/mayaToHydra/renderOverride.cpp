@@ -15,11 +15,28 @@
 //
 #include "renderOverride.h"
 
-#include <atomic>
-#include <chrono>
-#include <exception>
+#include "pluginDebugCodes.h"
+#include "renderOverrideUtils.h"
+#include "tokens.h"
+#include "utils.h"
+
+#include <hdMaya/delegates/delegateRegistry.h>
+#include <hdMaya/delegates/sceneDelegate.h>
+#include <hdMaya/utils.h>
+#include <mayaUsd/render/px_vp20/utils.h>
+
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/instantiateSingleton.h>
+#include <pxr/base/vt/value.h>
+#include <pxr/imaging/glf/contextCaps.h>
+#include <pxr/imaging/hd/rendererPluginRegistry.h>
+#include <pxr/imaging/hd/rprim.h>
+#include <pxr/imaging/hdx/pickTask.h>
+#include <pxr/imaging/hdx/renderTask.h>
+#include <pxr/imaging/hdx/tokens.h>
 
 #include <maya/M3dView.h>
+#include <maya/MConditionMessage.h>
 #include <maya/MDrawContext.h>
 #include <maya/MEventMessage.h>
 #include <maya/MGlobal.h>
@@ -28,31 +45,12 @@
 #include <maya/MSelectionList.h>
 #include <maya/MTimerMessage.h>
 #include <maya/MUiMessage.h>
-#include <maya/MConditionMessage.h>
-
-#include <pxr/base/gf/matrix4d.h>
-#include <pxr/base/tf/instantiateSingleton.h>
-#include <pxr/base/vt/value.h>
-#include <pxr/imaging/glf/contextCaps.h>
-#include <pxr/imaging/hd/rprim.h>
-#include <pxr/imaging/hdx/pickTask.h>
-
-#include <hdMaya/delegates/delegateRegistry.h>
-#include <hdMaya/delegates/sceneDelegate.h>
-#include <hdMaya/utils.h>
-#include <mayaUsd/render/px_vp20/utils.h>
-
-#include "pluginDebugCodes.h"
-#include "renderOverrideUtils.h"
-#include "tokens.h"
-#include "utils.h"
-
-#include <pxr/imaging/hd/rendererPluginRegistry.h>
-#include <pxr/imaging/hdx/tokens.h>
-#include <pxr/imaging/hdx/renderTask.h>
 
 #include <boost/functional/hash.hpp>
 
+#include <atomic>
+#include <chrono>
+#include <exception>
 #include <limits>
 
 #if USD_VERSION_NUM > 2002
@@ -74,33 +72,40 @@ namespace {
 // Not sure if we actually need a mutex guarding _allInstances, but
 // everywhere that uses it isn't a "frequent" operation, so the
 // extra speed loss should be fine, and I'd rather be safe.
-std::mutex _allInstancesMutex;
+std::mutex                       _allInstancesMutex;
 std::vector<MtohRenderOverride*> _allInstances;
 
 #if WANT_UFE_BUILD
 
 // Observe UFE scene items for transformation changed only when they are
 // selected.
-class UfeSelectionObserver : public UFE_NS::Observer {
+class UfeSelectionObserver : public UFE_NS::Observer
+{
 public:
     UfeSelectionObserver(MtohRenderOverride& mtohRenderOverride)
-        : UFE_NS::Observer(), _mtohRenderOverride(mtohRenderOverride) {}
+        : UFE_NS::Observer()
+        , _mtohRenderOverride(mtohRenderOverride)
+    {
+    }
 
     //~UfeSelectionObserver() override {}
 
-    void operator()(const UFE_NS::Notification& notification) override {
+    void operator()(const UFE_NS::Notification& notification) override
+    {
         // During Maya file read, each node will be selected in turn, so we get
         // notified for each node in the scene.  Prune this out.
-        if (MFileIO::isOpeningFile()) { return; }
+        if (MFileIO::isOpeningFile()) {
+            return;
+        }
 
-        auto selectionChanged =
-            dynamic_cast<const UFE_NS::SelectionChanged*>(&notification);
-        if (selectionChanged == nullptr) { return; }
+        auto selectionChanged = dynamic_cast<const UFE_NS::SelectionChanged*>(&notification);
+        if (selectionChanged == nullptr) {
+            return;
+        }
 
         TF_DEBUG(HDMAYA_RENDEROVERRIDE_SELECTION)
-            .Msg(
-                "UfeSelectionObserver triggered (ufe selection change "
-                "triggered)\n");
+            .Msg("UfeSelectionObserver triggered (ufe selection change "
+                 "triggered)\n");
         _mtohRenderOverride.SelectionChanged();
     }
 
@@ -187,50 +192,58 @@ void ResolveUniqueHits_Workaround(const HdxPickHitVector& inHits, HdxPickHitVect
 } // namespace
 
 MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
-    : MHWRender::MRenderOverride(desc.overrideName.GetText()),
-      _rendererDesc(desc),
-      _globals(MtohRenderGlobals::GetInstance()),
+    : MHWRender::MRenderOverride(desc.overrideName.GetText())
+    , _rendererDesc(desc)
+    , _globals(MtohRenderGlobals::GetInstance())
+    ,
 #if USD_VERSION_NUM > 2002
 #if USD_VERSION_NUM > 2005
-      _hgi(Hgi::CreatePlatformDefaultHgi()),
+    _hgi(Hgi::CreatePlatformDefaultHgi())
+    ,
 #else
-      _hgi(Hgi::GetPlatformDefaultHgi()),
+    _hgi(Hgi::GetPlatformDefaultHgi())
+    ,
 #endif
-      _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())},
+    _hgiDriver { HgiTokens->renderDriver, VtValue(_hgi.get()) }
+    ,
 #endif
-      _selectionTracker(new HdxSelectionTracker),
-      _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin) {
+    _selectionTracker(new HdxSelectionTracker)
+    , _isUsingHdSt(desc.rendererName == MtohTokens->HdStormRendererPlugin)
+{
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
             "MtohRenderOverride created (%s - %s - %s)\n",
             _rendererDesc.rendererName.GetText(),
             _rendererDesc.overrideName.GetText(),
             _rendererDesc.displayName.GetText());
-    HdMayaDelegateRegistry::InstallDelegatesChangedSignal(
-        [this]() { _needsClear.store(true); });
+    HdMayaDelegateRegistry::InstallDelegatesChangedSignal([this]() { _needsClear.store(true); });
     _ID = SdfPath("/HdMayaViewportRenderer")
-              .AppendChild(TfToken(TfStringPrintf(
-                  "_HdMaya_%s_%p", desc.rendererName.GetText(), this)));
+              .AppendChild(
+                  TfToken(TfStringPrintf("_HdMaya_%s_%p", desc.rendererName.GetText(), this)));
 
     MStatus status;
-    auto id = MSceneMessage::addCallback(
-        MSceneMessage::kBeforeNew, _ClearHydraCallback, this, &status);
-    if (status) { _callbacks.push_back(id); }
-    id = MSceneMessage::addCallback(
-        MSceneMessage::kBeforeOpen, _ClearHydraCallback, this, &status);
-    if (status) { _callbacks.push_back(id); }
+    auto    id
+        = MSceneMessage::addCallback(MSceneMessage::kBeforeNew, _ClearHydraCallback, this, &status);
+    if (status) {
+        _callbacks.push_back(id);
+    }
+    id = MSceneMessage::addCallback(MSceneMessage::kBeforeOpen, _ClearHydraCallback, this, &status);
+    if (status) {
+        _callbacks.push_back(id);
+    }
     id = MEventMessage::addEventCallback(
         MString("SelectionChanged"), _SelectionChangedCallback, this, &status);
-    if (status) { _callbacks.push_back(id); }
+    if (status) {
+        _callbacks.push_back(id);
+    }
 
     // Setup the playblast watch.
     // _playBlasting is forced to true here so we can just use _PlayblastingChanged below
     //
     _playBlasting = true;
-    MConditionMessage::addConditionCallback("playblasting",
-        &MtohRenderOverride::_PlayblastingChanged, this, &status);
+    MConditionMessage::addConditionCallback(
+        "playblasting", &MtohRenderOverride::_PlayblastingChanged, this, &status);
     MtohRenderOverride::_PlayblastingChanged(false, this);
-
 
     _defaultLight.SetSpecular(GfVec4f(0.0f));
     _defaultLight.SetAmbient(GfVec4f(0.0f));
@@ -241,8 +254,7 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
     }
 
 #if WANT_UFE_BUILD
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection =
-        UFE_NS::GlobalSelection::get();
+    const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
     if (ufeSelection) {
         _ufeSelectionObserver = std::make_shared<UfeSelectionObserver>(*this);
         ufeSelection->addObserver(_ufeSelectionObserver);
@@ -250,7 +262,8 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
 #endif // WANT_UFE_BUILD
 }
 
-MtohRenderOverride::~MtohRenderOverride() {
+MtohRenderOverride::~MtohRenderOverride()
+{
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
             "MtohRenderOverride destroyed (%s - %s - %s)\n",
@@ -263,9 +276,13 @@ MtohRenderOverride::~MtohRenderOverride() {
 
     ClearHydraResources();
 
-    for (auto operation : _operations) { delete operation; }
+    for (auto operation : _operations) {
+        delete operation;
+    }
 
-    for (auto callback : _callbacks) { MMessage::removeCallback(callback); }
+    for (auto callback : _callbacks) {
+        MMessage::removeCallback(callback);
+    }
     for (auto& panelAndCallbacks : _renderPanelCallbacks) {
         MMessage::removeCallbacks(panelAndCallbacks.second);
     }
@@ -273,16 +290,19 @@ MtohRenderOverride::~MtohRenderOverride() {
     {
         std::lock_guard<std::mutex> lock(_allInstancesMutex);
         _allInstances.erase(
-            std::remove(_allInstances.begin(), _allInstances.end(), this),
-            _allInstances.end());
+            std::remove(_allInstances.begin(), _allInstances.end(), this), _allInstances.end());
     }
 }
 
-HdRenderDelegate* MtohRenderOverride::_GetRenderDelegate() {
+HdRenderDelegate* MtohRenderOverride::_GetRenderDelegate()
+{
     return _renderIndex ? _renderIndex->GetRenderDelegate() : nullptr;
 }
 
-void MtohRenderOverride::UpdateRenderGlobals(const MtohRenderGlobals& globals, const TfToken& attrName) {
+void MtohRenderOverride::UpdateRenderGlobals(
+    const MtohRenderGlobals& globals,
+    const TfToken&           attrName)
+{
     // If no attribute or attribute starts with 'mtoh', these setting wil be applied on the next
     // call to MtohRenderOverride::Render, so just force an invalidation
     // XXX: This will need to change if mtoh settings should ever make it to the delegate itself.
@@ -299,8 +319,10 @@ void MtohRenderOverride::UpdateRenderGlobals(const MtohRenderGlobals& globals, c
 
             // Will be applied in _InitHydraResources later anyway
             if (auto* renderDelegate = instance->_GetRenderDelegate()) {
-                instance->_globals.ApplySettings(renderDelegate,
-                    instance->_rendererDesc.rendererName, TfTokenVector(attrFilter, attrName));
+                instance->_globals.ApplySettings(
+                    renderDelegate,
+                    instance->_rendererDesc.rendererName,
+                    TfTokenVector(attrFilter, attrName));
                 if (attrFilter) {
                     break;
                 }
@@ -312,7 +334,8 @@ void MtohRenderOverride::UpdateRenderGlobals(const MtohRenderGlobals& globals, c
     MGlobal::executeCommandOnIdle("refresh -f");
 }
 
-std::vector<MString> MtohRenderOverride::AllActiveRendererNames() {
+std::vector<MString> MtohRenderOverride::AllActiveRendererNames()
+{
     std::vector<MString> renderers;
 
     std::lock_guard<std::mutex> lock(_allInstancesMutex);
@@ -324,21 +347,27 @@ std::vector<MString> MtohRenderOverride::AllActiveRendererNames() {
     return renderers;
 }
 
-SdfPathVector MtohRenderOverride::RendererRprims(
-    TfToken rendererName, bool visibleOnly) {
+SdfPathVector MtohRenderOverride::RendererRprims(TfToken rendererName, bool visibleOnly)
+{
     MtohRenderOverride* instance = _GetByName(rendererName);
-    if (!instance) { return SdfPathVector(); }
+    if (!instance) {
+        return SdfPathVector();
+    }
 
     auto* renderIndex = instance->_renderIndex;
-    if (!renderIndex) { return SdfPathVector(); }
+    if (!renderIndex) {
+        return SdfPathVector();
+    }
     auto primIds = renderIndex->GetRprimIds();
     if (visibleOnly) {
         primIds.erase(
             std::remove_if(
-                primIds.begin(), primIds.end(),
+                primIds.begin(),
+                primIds.end(),
                 [renderIndex](const SdfPath& primId) {
                     auto* rprim = renderIndex->GetRprim(primId);
-                    if (!rprim) return true;
+                    if (!rprim)
+                        return true;
                     return !rprim->IsVisible();
                 }),
             primIds.end());
@@ -346,10 +375,12 @@ SdfPathVector MtohRenderOverride::RendererRprims(
     return primIds;
 }
 
-SdfPath MtohRenderOverride::RendererSceneDelegateId(
-    TfToken rendererName, TfToken sceneDelegateName) {
+SdfPath MtohRenderOverride::RendererSceneDelegateId(TfToken rendererName, TfToken sceneDelegateName)
+{
     MtohRenderOverride* instance = _GetByName(rendererName);
-    if (!instance) { return SdfPath(); }
+    if (!instance) {
+        return SdfPath();
+    }
 
     for (auto& delegate : instance->_delegates) {
         if (delegate->GetName() == sceneDelegateName) {
@@ -359,38 +390,39 @@ SdfPath MtohRenderOverride::RendererSceneDelegateId(
     return SdfPath();
 }
 
-void MtohRenderOverride::_DetectMayaDefaultLighting(
-    const MHWRender::MDrawContext& drawContext) {
-    constexpr auto considerAllSceneLights =
-        MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
+void MtohRenderOverride::_DetectMayaDefaultLighting(const MHWRender::MDrawContext& drawContext)
+{
+    constexpr auto considerAllSceneLights = MHWRender::MDrawContext::kFilteredIgnoreLightLimit;
 
-    const auto numLights =
-        drawContext.numberOfActiveLights(considerAllSceneLights);
-    auto foundMayaDefaultLight = false;
+    const auto numLights = drawContext.numberOfActiveLights(considerAllSceneLights);
+    auto       foundMayaDefaultLight = false;
     if (numLights == 1) {
-        auto* lightParam =
-            drawContext.getLightParameterInformation(0, considerAllSceneLights);
+        auto* lightParam = drawContext.getLightParameterInformation(0, considerAllSceneLights);
         if (lightParam != nullptr && !lightParam->lightPath().isValid()) {
             // This light does not exist so it must be the
             // default maya light
             MFloatPointArray positions;
-            MFloatVector direction;
-            auto intensity = 0.0f;
-            MColor color;
-            auto hasDirection = false;
-            auto hasPosition = false;
+            MFloatVector     direction;
+            auto             intensity = 0.0f;
+            MColor           color;
+            auto             hasDirection = false;
+            auto             hasPosition = false;
 
             // Maya default light has no position, only direction
             drawContext.getLightInformation(
-                0, positions, direction, intensity, color, hasDirection,
-                hasPosition, considerAllSceneLights);
+                0,
+                positions,
+                direction,
+                intensity,
+                color,
+                hasDirection,
+                hasPosition,
+                considerAllSceneLights);
 
             if (hasDirection && !hasPosition) {
-                _defaultLight.SetPosition(
-                    {-direction.x, -direction.y, -direction.z, 0.0f});
-                _defaultLight.SetDiffuse({intensity * color.r,
-                                          intensity * color.g,
-                                          intensity * color.b, 1.0f});
+                _defaultLight.SetPosition({ -direction.x, -direction.y, -direction.z, 0.0f });
+                _defaultLight.SetDiffuse(
+                    { intensity * color.r, intensity * color.g, intensity * color.b, 1.0f });
                 foundMayaDefaultLight = true;
             }
         }
@@ -415,7 +447,8 @@ void MtohRenderOverride::_DetectMayaDefaultLighting(
     }
 }
 
-MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
+MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
+{
     // It would be good to clear the resources of the overrides that are
     // not in active use, but I'm not sure if we have a better way than
     // the idle time we use currently. The approach below would break if
@@ -425,13 +458,12 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     //         override->ClearHydraResources();
     //     }
     // }
-    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RENDER)
-        .Msg("MtohRenderOverride::Render()\n");
+    TF_DEBUG(HDMAYA_RENDEROVERRIDE_RENDER).Msg("MtohRenderOverride::Render()\n");
     auto renderFrame = [&](bool markTime = false) {
         const auto originX = 0;
         const auto originY = 0;
-        int width = 0;
-        int height = 0;
+        int        width = 0;
+        int        height = 0;
         drawContext.getRenderTargetSize(width, height);
 
         GfVec4d viewport(originX, originY, width, height);
@@ -440,10 +472,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 #else
         _taskController->SetCameraMatrices(
 #endif // USD_VERSION_NUM >= 1910
-            GetGfMatrixFromMaya(
-                drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
-            GetGfMatrixFromMaya(drawContext.getMatrix(
-                MHWRender::MFrameContext::kProjectionMtx)));
+            GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
+            GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
 #if USD_VERSION_NUM >= 1910
         _taskController->SetRenderViewport(viewport);
 #else
@@ -465,9 +495,11 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
             // XXX: Is this better as user-configurable ?
             constexpr auto msWait = std::chrono::duration<float, std::milli>(100);
 #if USD_VERSION_NUM >= 2005
-            std::shared_ptr<HdxRenderTask> renderTask = std::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
+            std::shared_ptr<HdxRenderTask> renderTask
+                = std::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
 #else
-            boost::shared_ptr<HdxRenderTask> renderTask = boost::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
+            boost::shared_ptr<HdxRenderTask> renderTask
+                = boost::dynamic_pointer_cast<HdxRenderTask>(tasks.front());
 #endif
             if (renderTask) {
                 HdTaskSharedPtrVector renderOnly = { renderTask };
@@ -495,7 +527,9 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     };
 
     _DetectMayaDefaultLighting(drawContext);
-    if (_needsClear.exchange(false)) { ClearHydraResources(); }
+    if (_needsClear.exchange(false)) {
+        ClearHydraResources();
+    }
 
     if (!_initializedViewport) {
         _InitHydraResources();
@@ -505,7 +539,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     _SelectionChanged();
 
-    const auto displayStyle = drawContext.getDisplayStyle();
+    const auto   displayStyle = drawContext.getDisplayStyle();
     HdMayaParams delegateParams = _globals.delegateParams;
     delegateParams.displaySmoothMeshes = !(displayStyle & MHWRender::MFrameContext::kFlatShaded);
 
@@ -519,7 +553,8 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
 
     HdxRenderTaskParams params;
     params.enableLighting = true;
-    params.enableSceneMaterials = !(drawContext.getDisplayStyle() & MHWRender::MFrameContext::kDefaultMaterial);
+    params.enableSceneMaterials
+        = !(drawContext.getDisplayStyle() & MHWRender::MFrameContext::kDefaultMaterial);
 
     /* TODO: Find replacement
      * if (displayStyle & MHWRender::MFrameContext::kBoundingBox) {
@@ -560,22 +595,22 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
     _taskController->SetCollection(_renderCollection);
     if (_isUsingHdSt) {
         // TODO: Is there a way to improve this? Quite silly.
-        auto enableShadows = true;
+        auto  enableShadows = true;
         auto* lightParam = drawContext.getLightParameterInformation(
             0, MHWRender::MDrawContext::kFilteredIgnoreLightLimit);
         if (lightParam != nullptr) {
             MIntArray intVals;
             if (lightParam->getParameter(
-                    MHWRender::MLightParameterInformation::kGlobalShadowOn,
-                    intVals) &&
-                intVals.length() > 0) {
+                    MHWRender::MLightParameterInformation::kGlobalShadowOn, intVals)
+                && intVals.length() > 0) {
                 enableShadows = intVals[0] != 0;
             }
         }
         HdxShadowTaskParams shadowParams;
         shadowParams.cullStyle = HdCullStyleNothing;
 
-        // The light & shadow parameters currently (19.11-20.08) are only used for tasks specific to Storm
+        // The light & shadow parameters currently (19.11-20.08) are only used for tasks specific to
+        // Storm
         _taskController->SetEnableShadows(enableShadows);
         _taskController->SetShadowParams(shadowParams);
 
@@ -592,19 +627,23 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext) {
         if (_globals.wireframeSelectionHighlight && !_selectionCollection.GetRootPaths().empty()) {
             _taskController->SetCollection(_selectionCollection);
             renderFrame();
-            // XXX: This call isn't 'free' and will be done again on the next MtohRenderOverride::Render call anyway
+            // XXX: This call isn't 'free' and will be done again on the next
+            // MtohRenderOverride::Render call anyway
             _taskController->SetCollection(_renderCollection);
         }
     } else {
         renderFrame(true);
     }
 
-    for (auto& it : _delegates) { it->PostFrame(); }
+    for (auto& it : _delegates) {
+        it->PostFrame();
+    }
 
     return MStatus::kSuccess;
 }
 
-MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName) {
+MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName)
+{
     std::lock_guard<std::mutex> lock(_allInstancesMutex);
     for (auto* instance : _allInstances) {
         if (instance->_rendererDesc.rendererName == rendererName) {
@@ -614,19 +653,17 @@ MtohRenderOverride* MtohRenderOverride::_GetByName(TfToken rendererName) {
     return nullptr;
 }
 
-void MtohRenderOverride::_InitHydraResources() {
+void MtohRenderOverride::_InitHydraResources()
+{
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
-        .Msg(
-            "MtohRenderOverride::_InitHydraResources(%s)\n",
-            _rendererDesc.rendererName.GetText());
+        .Msg("MtohRenderOverride::_InitHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
     GlfGlewInit();
     GlfContextCaps::InitInstance();
-    _rendererPlugin =
-        HdRendererPluginRegistry::GetInstance().GetRendererPlugin(
-            _rendererDesc.rendererName);
+    _rendererPlugin
+        = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);
     auto* renderDelegate = _rendererPlugin->CreateRenderDelegate();
 #if USD_VERSION_NUM > 2002
-    _renderIndex = HdRenderIndex::New(renderDelegate, {&_hgiDriver});
+    _renderIndex = HdRenderIndex::New(renderDelegate, { &_hgiDriver });
 #else
     _renderIndex = HdRenderIndex::New(renderDelegate);
 #endif
@@ -640,18 +677,25 @@ void MtohRenderOverride::_InitHydraResources() {
     _taskController->SetEnableShadows(true);
 
     HdMayaDelegate::InitData delegateInitData(
-        TfToken(), _engine, _renderIndex, _rendererPlugin, _taskController,
-        SdfPath(), _isUsingHdSt);
+        TfToken(),
+        _engine,
+        _renderIndex,
+        _rendererPlugin,
+        _taskController,
+        SdfPath(),
+        _isUsingHdSt);
 
     auto delegateNames = HdMayaDelegateRegistry::GetDelegateNames();
     auto creators = HdMayaDelegateRegistry::GetDelegateCreators();
     TF_VERIFY(delegateNames.size() == creators.size());
     for (size_t i = 0, n = creators.size(); i < n; ++i) {
         const auto& creator = creators[i];
-        if (creator == nullptr) { continue; }
+        if (creator == nullptr) {
+            continue;
+        }
         delegateInitData.name = delegateNames[i];
-        delegateInitData.delegateID = _ID.AppendChild(TfToken(TfStringPrintf(
-            "_Delegate_%s_%lu_%p", delegateNames[i].GetText(), i, this)));
+        delegateInitData.delegateID = _ID.AppendChild(
+            TfToken(TfStringPrintf("_Delegate_%s_%lu_%p", delegateNames[i].GetText(), i, this)));
         auto newDelegate = creator(delegateInitData);
         if (newDelegate) {
             // Call SetLightsEnabled before the delegate is populated
@@ -660,19 +704,20 @@ void MtohRenderOverride::_InitHydraResources() {
         }
     }
     if (_hasDefaultLighting) {
-        delegateInitData.delegateID = _ID.AppendChild(
-            TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
-        _defaultLightDelegate.reset(
-            new MtohDefaultLightDelegate(delegateInitData));
+        delegateInitData.delegateID
+            = _ID.AppendChild(TfToken(TfStringPrintf("_DefaultLightDelegate_%p", this)));
+        _defaultLightDelegate.reset(new MtohDefaultLightDelegate(delegateInitData));
     }
     VtValue selectionTrackerValue(_selectionTracker);
-    _engine.SetTaskContextData(
-        HdxTokens->selectionState, selectionTrackerValue);
-    for (auto& it : _delegates) { it->Populate(); }
-    if (_defaultLightDelegate) { _defaultLightDelegate->Populate(); }
+    _engine.SetTaskContextData(HdxTokens->selectionState, selectionTrackerValue);
+    for (auto& it : _delegates) {
+        it->Populate();
+    }
+    if (_defaultLightDelegate) {
+        _defaultLightDelegate->Populate();
+    }
 
-    _renderIndex->GetChangeTracker().AddCollection(
-        _selectionCollection.GetName());
+    _renderIndex->GetChangeTracker().AddCollection(_selectionCollection.GetName());
     _SelectionChanged();
 
     _initializedViewport = true;
@@ -682,18 +727,20 @@ void MtohRenderOverride::_InitHydraResources() {
         // but if not, fallback to user-defaults (current state) .
         const bool filterRenderer = true;
         const bool fallbackToUserDefaults = true;
-        _globals.GlobalChanged({_rendererDesc.rendererName, filterRenderer, fallbackToUserDefaults});
+        _globals.GlobalChanged(
+            { _rendererDesc.rendererName, filterRenderer, fallbackToUserDefaults });
         _globals.ApplySettings(renderDelegate, _rendererDesc.rendererName);
     }
 }
 
-void MtohRenderOverride::ClearHydraResources() {
-    if (!_initializedViewport) { return; }
+void MtohRenderOverride::ClearHydraResources()
+{
+    if (!_initializedViewport) {
+        return;
+    }
 
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
-        .Msg(
-            "MtohRenderOverride::ClearHydraResources(%s)\n",
-            _rendererDesc.rendererName.GetText());
+        .Msg("MtohRenderOverride::ClearHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
 
     _delegates.clear();
     _defaultLightDelegate.reset();
@@ -722,7 +769,8 @@ void MtohRenderOverride::ClearHydraResources() {
     SelectionChanged();
 }
 
-void MtohRenderOverride::_RemovePanel(MString panelName) {
+void MtohRenderOverride::_RemovePanel(MString panelName)
+{
     auto foundPanelCallbacks = _FindPanelCallbacks(panelName);
     if (foundPanelCallbacks != _renderPanelCallbacks.end()) {
         MMessage::removeCallbacks(foundPanelCallbacks->second);
@@ -736,11 +784,16 @@ void MtohRenderOverride::_RemovePanel(MString panelName) {
 
 void MtohRenderOverride::SelectionChanged() { _selectionChanged = true; }
 
-void MtohRenderOverride::_SelectionChanged() {
-    if (!_selectionChanged) { return; }
+void MtohRenderOverride::_SelectionChanged()
+{
+    if (!_selectionChanged) {
+        return;
+    }
     _selectionChanged = false;
     MSelectionList sel;
-    if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) { return; }
+    if (!TF_VERIFY(MGlobal::getActiveSelectionList(sel))) {
+        return;
+    }
     SdfPathVector selectedPaths;
 #if USD_VERSION_NUM > 2002
     auto selection = std::make_shared<HdSelection>();
@@ -749,16 +802,14 @@ void MtohRenderOverride::_SelectionChanged() {
 #endif // USD_VERSION_NUM > 2002
 
 #if WANT_UFE_BUILD
-    const UFE_NS::GlobalSelection::Ptr& ufeSelection =
-        UFE_NS::GlobalSelection::get();
+    const UFE_NS::GlobalSelection::Ptr& ufeSelection = UFE_NS::GlobalSelection::get();
 #endif // WANT_UFE_BUILD
 
     for (auto& it : _delegates) {
 #if WANT_UFE_BUILD
         if (it->SupportsUfeSelection()) {
             if (ufeSelection) {
-                it->PopulateSelectedPaths(
-                    *ufeSelection, selectedPaths, selection);
+                it->PopulateSelectedPaths(*ufeSelection, selectedPaths, selection);
             }
             // skip non-ufe PopulateSelectedPaths call
             continue;
@@ -769,16 +820,16 @@ void MtohRenderOverride::_SelectionChanged() {
     _selectionCollection.SetRootPaths(selectedPaths);
     _selectionTracker->SetSelection(HdSelectionSharedPtr(selection));
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_SELECTION)
-        .Msg(
-            "MtohRenderOverride::_SelectionChanged - num selected: %lu\n",
-            selectedPaths.size());
+        .Msg("MtohRenderOverride::_SelectionChanged - num selected: %lu\n", selectedPaths.size());
 }
 
-MHWRender::DrawAPI MtohRenderOverride::supportedDrawAPIs() const {
+MHWRender::DrawAPI MtohRenderOverride::supportedDrawAPIs() const
+{
     return MHWRender::kOpenGLCoreProfile | MHWRender::kOpenGL;
 }
 
-MStatus MtohRenderOverride::setup(const MString& destination) {
+MStatus MtohRenderOverride::setup(const MString& destination)
+{
     MStatus status;
 
     auto panelNameAndCallbacks = _FindPanelCallbacks(destination);
@@ -788,79 +839,85 @@ MStatus MtohRenderOverride::setup(const MString& destination) {
 
         auto id = MUiMessage::add3dViewDestroyMsgCallback(
             destination, _PanelDeletedCallback, this, &status);
-        if (status) { newCallbacks.append(id); }
+        if (status) {
+            newCallbacks.append(id);
+        }
 
         id = MUiMessage::add3dViewRendererChangedCallback(
             destination, _RendererChangedCallback, this, &status);
-        if (status) { newCallbacks.append(id); }
+        if (status) {
+            newCallbacks.append(id);
+        }
 
         id = MUiMessage::add3dViewRenderOverrideChangedCallback(
             destination, _RenderOverrideChangedCallback, this, &status);
-        if (status) { newCallbacks.append(id); }
+        if (status) {
+            newCallbacks.append(id);
+        }
 
         _renderPanelCallbacks.emplace_back(destination, newCallbacks);
     }
 
     auto* renderer = MHWRender::MRenderer::theRenderer();
-    if (renderer == nullptr) { return MStatus::kFailure; }
+    if (renderer == nullptr) {
+        return MStatus::kFailure;
+    }
 
     if (_operations.empty()) {
         // Clear and draw the grid
-        _operations.push_back(
-            new HdMayaPreRender("HydraRenderOverride_PreScene"));
+        _operations.push_back(new HdMayaPreRender("HydraRenderOverride_PreScene"));
 
         // The main hydra render
-        _operations.push_back(
-            new HdMayaRender("HydraRenderOverride_Hydra", this));
+        _operations.push_back(new HdMayaRender("HydraRenderOverride_Hydra", this));
 
         // Draw scene elements (cameras, CVs, grid, shapes not pushed into hydra)
-        _operations.push_back(
-            new HdMayaPostRender("HydraRenderOverride_PostScene"));
+        _operations.push_back(new HdMayaPostRender("HydraRenderOverride_PostScene"));
 
         // Draw HUD elements
         _operations.push_back(new MHWRender::MHUDRender());
 
         // Set final buffer options
-        auto* presentTarget =
-            new MHWRender::MPresentTarget("HydraRenderOverride_Present");
+        auto* presentTarget = new MHWRender::MPresentTarget("HydraRenderOverride_Present");
         presentTarget->setPresentDepth(true);
-        presentTarget->setTargetBackBuffer(
-            MHWRender::MPresentTarget::kCenterBuffer);
+        presentTarget->setTargetBackBuffer(MHWRender::MPresentTarget::kCenterBuffer);
         _operations.push_back(presentTarget);
     }
 
     return MS::kSuccess;
 }
 
-MStatus MtohRenderOverride::cleanup() {
+MStatus MtohRenderOverride::cleanup()
+{
     _currentOperation = -1;
     return MS::kSuccess;
 }
 
-bool MtohRenderOverride::startOperationIterator() {
+bool MtohRenderOverride::startOperationIterator()
+{
     _currentOperation = 0;
     return true;
 }
 
-MHWRender::MRenderOperation* MtohRenderOverride::renderOperation() {
-    if (_currentOperation >= 0 &&
-        _currentOperation < static_cast<int>(_operations.size())) {
+MHWRender::MRenderOperation* MtohRenderOverride::renderOperation()
+{
+    if (_currentOperation >= 0 && _currentOperation < static_cast<int>(_operations.size())) {
         return _operations[_currentOperation];
     }
     return nullptr;
 }
 
-bool MtohRenderOverride::nextRenderOperation() {
+bool MtohRenderOverride::nextRenderOperation()
+{
     return ++_currentOperation < static_cast<int>(_operations.size());
 }
 
 #if MAYA_API_VERSION >= 20210000
 bool MtohRenderOverride::select(
-    const MHWRender::MFrameContext& frameContext,
+    const MHWRender::MFrameContext&  frameContext,
     const MHWRender::MSelectionInfo& selectInfo,
     bool /*useDepth*/,
     MSelectionList& selectionList,
-    MPointArray& worldSpaceHitPts)
+    MPointArray&    worldSpaceHitPts)
 {
     MStatus status = MStatus::kFailure;
 
@@ -958,13 +1015,17 @@ bool MtohRenderOverride::select(
 }
 #endif
 
-void MtohRenderOverride::_ClearHydraCallback(void* data) {
+void MtohRenderOverride::_ClearHydraCallback(void* data)
+{
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
-    if (!TF_VERIFY(instance)) { return; }
+    if (!TF_VERIFY(instance)) {
+        return;
+    }
     instance->ClearHydraResources();
 }
 
-void MtohRenderOverride::_PlayblastingChanged(bool playBlasting, void* userData) {
+void MtohRenderOverride::_PlayblastingChanged(bool playBlasting, void* userData)
+{
     auto* instance = reinterpret_cast<MtohRenderOverride*>(userData);
     if (std::atomic_exchange(&instance->_playBlasting, playBlasting) == playBlasting)
         return;
@@ -972,62 +1033,79 @@ void MtohRenderOverride::_PlayblastingChanged(bool playBlasting, void* userData)
     MStatus status;
     if (!playBlasting) {
         assert(instance->_timerCallback == 0 && "Callback exists");
-        instance->_timerCallback = MTimerMessage::addTimerCallback(1.0f / 10.0f,
-            _TimerCallback, instance, &status);
-    }
-    else {
+        instance->_timerCallback
+            = MTimerMessage::addTimerCallback(1.0f / 10.0f, _TimerCallback, instance, &status);
+    } else {
         status = MMessage::removeCallback(instance->_timerCallback);
-        instance->_timerCallback= 0;
+        instance->_timerCallback = 0;
     }
     CHECK_MSTATUS(status);
 }
 
-void MtohRenderOverride::_TimerCallback(float, float, void* data) {
+void MtohRenderOverride::_TimerCallback(float, float, void* data)
+{
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
     if (instance->_playBlasting || instance->_isConverged) {
         return;
     }
 
     std::lock_guard<std::mutex> lock(instance->_lastRenderTimeMutex);
-    if ((std::chrono::system_clock::now() - instance->_lastRenderTime) <
-            std::chrono::seconds(5)) {
+    if ((std::chrono::system_clock::now() - instance->_lastRenderTime) < std::chrono::seconds(5)) {
         MGlobal::executeCommandOnIdle("refresh -f");
     }
 }
 
-void MtohRenderOverride::_PanelDeletedCallback(
-    const MString& panelName, void* data) {
+void MtohRenderOverride::_PanelDeletedCallback(const MString& panelName, void* data)
+{
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
-    if (!TF_VERIFY(instance)) { return; }
+    if (!TF_VERIFY(instance)) {
+        return;
+    }
 
     instance->_RemovePanel(panelName);
 }
 
 void MtohRenderOverride::_RendererChangedCallback(
-    const MString& panelName, const MString& oldRenderer,
-    const MString& newRenderer, void* data) {
+    const MString& panelName,
+    const MString& oldRenderer,
+    const MString& newRenderer,
+    void*          data)
+{
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
-    if (!TF_VERIFY(instance)) { return; }
+    if (!TF_VERIFY(instance)) {
+        return;
+    }
 
-    if (newRenderer != oldRenderer) { instance->_RemovePanel(panelName); }
+    if (newRenderer != oldRenderer) {
+        instance->_RemovePanel(panelName);
+    }
 }
 
 void MtohRenderOverride::_RenderOverrideChangedCallback(
-    const MString& panelName, const MString& oldOverride,
-    const MString& newOverride, void* data) {
+    const MString& panelName,
+    const MString& oldOverride,
+    const MString& newOverride,
+    void*          data)
+{
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
-    if (!TF_VERIFY(instance)) { return; }
+    if (!TF_VERIFY(instance)) {
+        return;
+    }
 
-    if (newOverride != instance->name()) { instance->_RemovePanel(panelName); }
+    if (newOverride != instance->name()) {
+        instance->_RemovePanel(panelName);
+    }
 }
 
-void MtohRenderOverride::_SelectionChangedCallback(void* data) {
+void MtohRenderOverride::_SelectionChangedCallback(void* data)
+{
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_SELECTION)
-        .Msg(
-            "MtohRenderOverride::_SelectionChangedCallback() (normal maya "
-            "selection triggered)\n");
+        .Msg("MtohRenderOverride::_SelectionChangedCallback() (normal maya "
+             "selection triggered)\n");
     auto* instance = reinterpret_cast<MtohRenderOverride*>(data);
-    if (!TF_VERIFY(instance)) { return; }
+    if (!TF_VERIFY(instance)) {
+        return;
+    }
     instance->SelectionChanged();
 }
 

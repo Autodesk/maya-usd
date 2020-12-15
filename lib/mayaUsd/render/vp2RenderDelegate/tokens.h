@@ -16,15 +16,16 @@
 #ifndef HD_VP2_TOKENS_H
 #define HD_VP2_TOKENS_H
 
-#include <pxr/pxr.h>
-
 #include <pxr/base/tf/staticTokens.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-#define HDVP2_REPR_TOKENS                          \
-    (bbox)                                         \
+// clang-format off
+#define HDVP2_REPR_TOKENS \
+    (bbox) \
     (selection)
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(HdVP2ReprTokens, , HDVP2_REPR_TOKENS);
 

@@ -1,0 +1,424 @@
+#usda 1.0
+(
+    defaultPrim = "pPlane1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def Mesh "pPlane1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, 0, -0.5), (0.5, 0, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+    rel material:binding = </blinn1SG_st_st0_st1>
+    point3f[] points = [(-0.5, 0, 0.5), (0, 0, 0.5), (0.5, 0, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 0, -0.5), (0, 0, -0.5), (0.5, 0, -0.5)]
+    texCoord2f[] primvars:st = [(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5), (1, 0), (1, 0.5), (0.5, 1), (0, 1), (1, 1)] (
+        interpolation = "vertex"
+    )
+    texCoord2f[] primvars:st0 = [(0.633502, 0.0017636716), (0.8158692, 0.31763285), (0.5, 0.5), (0.31763285, 0.18413082), (0.9982363, 0.633502), (0.68236715, 0.8158692), (0.18413082, 0.68236715), (0.0017636716, 0.366498), (0.366498, 0.9982363)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:st0:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    texCoord2f[] primvars:st1 = [(0.0017636716, 0.633502), (0.18413082, 0.31763285), (0.5, 0.5), (0.31763285, 0.8158692), (0.366498, 0.0017636716), (0.68236715, 0.18413082), (0.8158692, 0.68236715), (0.633502, 0.9982363), (0.9982363, 0.366498)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:st1:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    int[] primvars:st:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    float3 xformOp:rotateXYZ = (90, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+}
+
+def Mesh "pPlane2" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, -1.110223e-16, -0.5), (0.5, 1.110223e-16, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+    point3f[] points = [(-0.5, -1.110223e-16, 0.5), (0, -1.110223e-16, 0.5), (0.5, -1.110223e-16, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 1.110223e-16, -0.5), (0, 1.110223e-16, -0.5), (0.5, 1.110223e-16, -0.5)]
+    texCoord2f[] primvars:st = [(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5), (1, 0), (1, 0.5), (0.5, 1), (0, 1), (1, 1)] (
+        interpolation = "vertex"
+    )
+    texCoord2f[] primvars:st0 = [(0.633502, 0.0017636716), (0.8158692, 0.31763285), (0.5, 0.5), (0.31763285, 0.18413082), (0.9982363, 0.633502), (0.68236715, 0.8158692), (0.18413082, 0.68236715), (0.0017636716, 0.366498), (0.366498, 0.9982363)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:st0:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    texCoord2f[] primvars:st1 = [(0.0017636716, 0.633502), (0.18413082, 0.31763285), (0.5, 0.5), (0.31763285, 0.8158692), (0.366498, 0.0017636716), (0.68236715, 0.18413082), (0.8158692, 0.68236715), (0.633502, 0.9982363), (0.9982363, 0.366498)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:st1:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    int[] primvars:st:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    uniform token subsetFamily:materialBind:familyType = "partition"
+    float3 xformOp:rotateXYZ = (90, 0, 0)
+    double3 xformOp:translate = (1.2, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+    def GeomSubset "blinn1SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [1]
+        rel material:binding = </blinn1SG_st_st0_st1>
+    }
+
+    def GeomSubset "blinn2SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [2]
+        rel material:binding = </blinn2SG_st>
+    }
+
+    def GeomSubset "blinn3SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [3]
+        rel material:binding = </blinn3SG>
+    }
+
+    def GeomSubset "blinn4SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [0]
+        rel material:binding = </blinn4SG>
+    }
+}
+
+def Mesh "pPlane3" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, -1.110223e-16, -0.5), (0.5, 1.110223e-16, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+    rel material:binding = </blinn1SG>
+    point3f[] points = [(-0.5, -1.110223e-16, 0.5), (0, -1.110223e-16, 0.5), (0.5, -1.110223e-16, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 1.110223e-16, -0.5), (0, 1.110223e-16, -0.5), (0.5, 1.110223e-16, -0.5)]
+    texCoord2f[] primvars:map1 = [(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5), (1, 0), (1, 0.5), (0.5, 1), (0, 1), (1, 1)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:map1:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    texCoord2f[] primvars:uvSet1 = [(0.633502, 0.0017636716), (0.8158692, 0.31763285), (0.5, 0.5), (0.31763285, 0.18413082), (0.9982363, 0.633502), (0.68236715, 0.8158692), (0.18413082, 0.68236715), (0.0017636716, 0.366498), (0.366498, 0.9982363)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:uvSet1:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    texCoord2f[] primvars:uvSet2 = [(0.0017636716, 0.633502), (0.18413082, 0.31763285), (0.5, 0.5), (0.31763285, 0.8158692), (0.366498, 0.0017636716), (0.68236715, 0.18413082), (0.8158692, 0.68236715), (0.633502, 0.9982363), (0.9982363, 0.366498)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:uvSet2:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    float3 xformOp:rotateXYZ = (90, 0, 0)
+    double3 xformOp:translate = (0, 1.2, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+}
+
+def Mesh "pPlane4" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+    kind = "component"
+)
+{
+    uniform bool doubleSided = 1
+    float3[] extent = [(-0.5, -1.110223e-16, -0.5), (0.5, 1.110223e-16, 0.5)]
+    int[] faceVertexCounts = [4, 4, 4, 4]
+    int[] faceVertexIndices = [0, 1, 4, 3, 1, 2, 5, 4, 3, 4, 7, 6, 4, 5, 8, 7]
+    point3f[] points = [(-0.5, -1.110223e-16, 0.5), (0, -1.110223e-16, 0.5), (0.5, -1.110223e-16, 0.5), (-0.5, 0, 0), (0, 0, 0), (0.5, 0, 0), (-0.5, 1.110223e-16, -0.5), (0, 1.110223e-16, -0.5), (0.5, 1.110223e-16, -0.5)]
+    texCoord2f[] primvars:map1 = [(0, 0), (0.5, 0), (0.5, 0.5), (0, 0.5), (1, 0), (1, 0.5), (0.5, 1), (0, 1), (1, 1)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:map1:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    texCoord2f[] primvars:uvSet1 = [(0.633502, 0.0017636716), (0.8158692, 0.31763285), (0.5, 0.5), (0.31763285, 0.18413082), (0.9982363, 0.633502), (0.68236715, 0.8158692), (0.18413082, 0.68236715), (0.0017636716, 0.366498), (0.366498, 0.9982363)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:uvSet1:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    texCoord2f[] primvars:uvSet2 = [(0.0017636716, 0.633502), (0.18413082, 0.31763285), (0.5, 0.5), (0.31763285, 0.8158692), (0.366498, 0.0017636716), (0.68236715, 0.18413082), (0.8158692, 0.68236715), (0.633502, 0.9982363), (0.9982363, 0.366498)] (
+        interpolation = "vertex"
+    )
+    int[] primvars:uvSet2:indices = [0, 1, 4, 3, 2, 5, 7, 6, 8]
+    uniform token subsetFamily:materialBind:familyType = "partition"
+    float3 xformOp:rotateXYZ = (90, 0, 0)
+    double3 xformOp:translate = (1.2, 1.2, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+
+    def GeomSubset "blinn1SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [1]
+        rel material:binding = </blinn1SG>
+    }
+
+    def GeomSubset "blinn2SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [2]
+        rel material:binding = </blinn2SG>
+    }
+
+    def GeomSubset "blinn3SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [3]
+        rel material:binding = </blinn3SG_uvSet1>
+    }
+
+    def GeomSubset "blinn4SG" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        uniform token elementType = "face"
+        uniform token familyName = "materialBind"
+        int[] indices = [0]
+        rel material:binding = </blinn4SG_uvSet2>
+    }
+}
+
+def Material "blinn1SG" (
+    kind = "assembly"
+)
+{
+    token inputs:file1:varname = "map1"
+    token inputs:file2:varname = "uvSet1"
+    token inputs:file3:varname = "uvSet2"
+    token outputs:surface.connect = </blinn1SG/blinn1.outputs:surface>
+
+    def Shader "blinn1"
+    {
+        uniform token info:id = "UsdPreviewSurface"
+        color3f inputs:diffuseColor.connect = </blinn1SG/file1.outputs:rgb>
+        color3f inputs:emissiveColor.connect = </blinn1SG/file2.outputs:rgb>
+        normal3f inputs:normal = (1, 1, 1)
+        float inputs:roughness = 0.3
+        color3f inputs:specularColor.connect = </blinn1SG/file3.outputs:rgb>
+        int inputs:useSpecularWorkflow = 1
+        token outputs:displacement
+        token outputs:surface
+    }
+
+    def Shader "file1"
+    {
+        uniform token info:id = "UsdUVTexture"
+        float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+        asset inputs:file = @lines.png@
+        float2 inputs:st.connect = </blinn1SG/file1/TexCoordReader.outputs:result>
+        token inputs:wrapS = "repeat"
+        token inputs:wrapT = "repeat"
+        float3 outputs:rgb
+
+        def Shader "TexCoordReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname.connect = </blinn1SG.inputs:file1:varname>
+            float2 outputs:result
+        }
+    }
+
+    def Shader "file2"
+    {
+        uniform token info:id = "UsdUVTexture"
+        float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+        asset inputs:file = @lines.png@
+        float2 inputs:st.connect = </blinn1SG/file2/TexCoordReader.outputs:result>
+        token inputs:wrapS = "repeat"
+        token inputs:wrapT = "repeat"
+        float3 outputs:rgb
+
+        def Shader "TexCoordReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname.connect = </blinn1SG.inputs:file2:varname>
+            float2 outputs:result
+        }
+    }
+
+    def Shader "file3"
+    {
+        uniform token info:id = "UsdUVTexture"
+        float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+        asset inputs:file = @lines.png@
+        float2 inputs:st.connect = </blinn1SG/file3/TexCoordReader.outputs:result>
+        token inputs:wrapS = "repeat"
+        token inputs:wrapT = "repeat"
+        float3 outputs:rgb
+
+        def Shader "TexCoordReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname.connect = </blinn1SG.inputs:file3:varname>
+            float2 outputs:result
+        }
+    }
+}
+
+def Material "blinn1SG_st_st0_st1" (
+    prepend specializes = </blinn1SG>
+)
+{
+    token inputs:file1:varname = "st"
+    token inputs:file2:varname = "st0"
+    token inputs:file3:varname = "st1"
+}
+
+def Material "blinn2SG" (
+    kind = "assembly"
+)
+{
+    token inputs:file4:varname = "map1"
+    token outputs:surface.connect = </blinn2SG/blinn2.outputs:surface>
+
+    def Shader "blinn2"
+    {
+        uniform token info:id = "UsdPreviewSurface"
+        color3f inputs:diffuseColor.connect = </blinn2SG/file4.outputs:rgb>
+        normal3f inputs:normal = (1, 1, 1)
+        float inputs:roughness = 0.3
+        color3f inputs:specularColor = (0.35, 0.35, 0.35)
+        int inputs:useSpecularWorkflow = 1
+        token outputs:displacement
+        token outputs:surface
+    }
+
+    def Shader "file4"
+    {
+        uniform token info:id = "UsdUVTexture"
+        float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+        asset inputs:file = @lines.png@
+        float2 inputs:st.connect = </blinn2SG/file4/TexCoordReader.outputs:result>
+        token inputs:wrapS = "repeat"
+        token inputs:wrapT = "repeat"
+        float3 outputs:rgb
+
+        def Shader "TexCoordReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname.connect = </blinn2SG.inputs:file4:varname>
+            float2 outputs:result
+        }
+    }
+}
+
+def Material "blinn2SG_st" (
+    prepend specializes = </blinn2SG>
+)
+{
+    token inputs:file4:varname = "st"
+}
+
+def Material "blinn3SG" (
+    kind = "assembly"
+)
+{
+    token inputs:file5:varname = "st0"
+    token outputs:surface.connect = </blinn3SG/blinn3.outputs:surface>
+
+    def Shader "blinn3"
+    {
+        uniform token info:id = "UsdPreviewSurface"
+        color3f inputs:diffuseColor.connect = </blinn3SG/file5.outputs:rgb>
+        normal3f inputs:normal = (1, 1, 1)
+        float inputs:roughness = 0.3
+        color3f inputs:specularColor = (0.35, 0.35, 0.35)
+        int inputs:useSpecularWorkflow = 1
+        token outputs:displacement
+        token outputs:surface
+    }
+
+    def Shader "file5"
+    {
+        uniform token info:id = "UsdUVTexture"
+        float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+        asset inputs:file = @lines.png@
+        float2 inputs:st.connect = </blinn3SG/file5/TexCoordReader.outputs:result>
+        token inputs:wrapS = "repeat"
+        token inputs:wrapT = "repeat"
+        float3 outputs:rgb
+
+        def Shader "TexCoordReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname.connect = </blinn3SG.inputs:file5:varname>
+            float2 outputs:result
+        }
+    }
+}
+
+def Material "blinn3SG_uvSet1" (
+    prepend specializes = </blinn3SG>
+)
+{
+    token inputs:file5:varname = "uvSet1"
+    token not:mergeable:anymore = "becauseModified"
+}
+
+def Material "blinn4SG" (
+    kind = "assembly"
+)
+{
+    token inputs:file6:varname = "st1"
+    token outputs:surface.connect = </blinn4SG/blinn4.outputs:surface>
+
+    def Shader "blinn4"
+    {
+        uniform token info:id = "UsdPreviewSurface"
+        color3f inputs:diffuseColor.connect = </blinn4SG/file6.outputs:rgb>
+        normal3f inputs:normal = (1, 1, 1)
+        float inputs:roughness = 0.3
+        color3f inputs:specularColor = (0.35, 0.35, 0.35)
+        int inputs:useSpecularWorkflow = 1
+        token outputs:displacement
+        token outputs:surface
+    }
+
+    def Shader "file6"
+    {
+        uniform token info:id = "UsdUVTexture"
+        float4 inputs:fallback = (0.5, 0.5, 0.5, 1)
+        asset inputs:file = @lines.png@
+        float2 inputs:st.connect = </blinn4SG/file6/TexCoordReader.outputs:result>
+        token inputs:wrapS = "repeat"
+        token inputs:wrapT = "repeat"
+        float3 outputs:rgb
+
+        def Shader "TexCoordReader"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname.connect = </blinn4SG.inputs:file6:varname>
+            float2 outputs:result
+        }
+    }
+}
+
+def Material "blinn4SG_uvSet2" (
+    prepend specializes = </blinn4SG>
+)
+{
+    token inputs:file6:varname = "uvSet2"
+    def Shader "BlocksMerging"
+    {
+        uniform token info:id = "UsdPrimvarReader_float2"
+    }
+}
+

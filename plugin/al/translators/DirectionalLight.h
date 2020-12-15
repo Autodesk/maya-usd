@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AL/usdmaya/fileio/translators/TranslatorBase.h"
+
 #include <mayaUsdUtils/ForwardDeclares.h>
 
 namespace AL {
@@ -27,42 +28,45 @@ namespace translators {
 //----------------------------------------------------------------------------------------------------------------------
 /// \brief Class to translate a directional light in and out of maya.
 //----------------------------------------------------------------------------------------------------------------------
-class DirectionalLight
-  : public TranslatorBase
+class DirectionalLight : public TranslatorBase
 {
 public:
+    AL_USDMAYA_DECLARE_TRANSLATOR(DirectionalLight);
 
-  AL_USDMAYA_DECLARE_TRANSLATOR(DirectionalLight);
+    MStatus initialize() override;
+    MStatus import(const UsdPrim& prim, MObject& parent, MObject& createObj) override;
+    UsdPrim exportObject(
+        UsdStageRefPtr        stage,
+        MDagPath              dagPath,
+        const SdfPath&        usdPath,
+        const ExporterParams& params) override;
+    MStatus preTearDown(UsdPrim& prim) override;
+    MStatus tearDown(const SdfPath& path) override;
+    MStatus update(const UsdPrim& prim) override;
+    MStatus updateMayaAttributes(MObject mayaObj, const UsdPrim& prim);
+    bool    updateUsdPrim(const UsdStageRefPtr& stage, const SdfPath& path, const MObject& mayaObj);
+    bool    supportsUpdate() const override { return true; }
+    ExportFlag canExport(const MObject& obj) override
+    {
+        return obj.hasFn(MFn::kDirectionalLight) ? ExportFlag::kFallbackSupport
+                                                 : ExportFlag::kNotSupported;
+    }
+    bool canBeOverridden() override { return true; }
 
-  MStatus initialize() override;
-  MStatus import(const UsdPrim& prim, MObject& parent, MObject& createObj) override;
-  UsdPrim exportObject(UsdStageRefPtr stage, MDagPath dagPath, const SdfPath& usdPath,
-                       const ExporterParams& params) override;
-  MStatus preTearDown(UsdPrim& prim) override;
-  MStatus tearDown(const SdfPath &path) override;
-  MStatus update(const UsdPrim& prim) override;
-  MStatus updateMayaAttributes(MObject mayaObj, const UsdPrim& prim);
-  bool updateUsdPrim(const UsdStageRefPtr& stage, const SdfPath& path, const MObject& mayaObj);
-  bool supportsUpdate() const override
-    { return true; }
-  ExportFlag canExport(const MObject &obj) override
-    { return obj.hasFn(MFn::kDirectionalLight) ? ExportFlag::kFallbackSupport : ExportFlag::kNotSupported; }
-  bool canBeOverridden() override
-    { return true; }
 private:
-  static MObject m_pointWorld;
-  static MObject m_lightAngle;
-  static MObject m_color;
-  static MObject m_intensity;
-  static MObject m_exposure;
-  static MObject m_diffuse;
-  static MObject m_specular;
-  static MObject m_normalize;
-  static MObject m_enableColorTemperature;
+    static MObject m_pointWorld;
+    static MObject m_lightAngle;
+    static MObject m_color;
+    static MObject m_intensity;
+    static MObject m_exposure;
+    static MObject m_diffuse;
+    static MObject m_specular;
+    static MObject m_normalize;
+    static MObject m_enableColorTemperature;
 };
 
-} // translators
-} // fileio
-} // usdmaya
-} // AL
+} // namespace translators
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //-----------------------------------------------------------------------------

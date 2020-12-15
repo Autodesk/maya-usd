@@ -16,12 +16,12 @@
 #ifndef HD_VP2_MESH
 #define HD_VP2_MESH
 
-#include <maya/MHWGeometry.h>
-
-#include <pxr/pxr.h>
-#include <pxr/imaging/hd/mesh.h>
-
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
+
+#include <pxr/imaging/hd/mesh.h>
+#include <pxr/pxr.h>
+
+#include <maya/MHWGeometry.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -30,8 +30,9 @@ class HdVP2DrawItem;
 class HdVP2RenderDelegate;
 
 //! Primvar data and interpolation.
-struct PrimvarSource {
-    VtValue data;
+struct PrimvarSource
+{
+    VtValue         data;
     HdInterpolation interpolation;
 };
 
@@ -45,7 +46,8 @@ typedef TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> PrimvarSourceMap
     USD scene delegate during synchronization. Then each draw item can prepare
     draw data from these shared data as needed.
 */
-struct HdVP2MeshSharedData {
+struct HdVP2MeshSharedData
+{
     //! Cached scene topology. VtArrays are reference counted, so as long as we
     //! only call const accessors keeping them around doesn't incur a buffer
     //! copy.
@@ -92,16 +94,19 @@ struct HdVP2MeshSharedData {
     in HdVP2RenderDelegate::CommitResources(), which runs on main-thread after
     all prims have been updated.
 */
-class HdVP2Mesh final : public HdMesh {
+class HdVP2Mesh final : public HdMesh
+{
 public:
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    HdVP2Mesh(HdVP2RenderDelegate*, const SdfPath&);
+#else
     HdVP2Mesh(HdVP2RenderDelegate*, const SdfPath&, const SdfPath& instancerId = SdfPath());
+#endif
 
     //! Destructor.
     ~HdVP2Mesh() override = default;
 
-    void Sync(
-        HdSceneDelegate*, HdRenderParam*,
-        HdDirtyBits*, const TfToken& reprToken) override;
+    void Sync(HdSceneDelegate*, HdRenderParam*, HdDirtyBits*, const TfToken& reprToken) override;
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
@@ -113,15 +118,17 @@ private:
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
 
     void _UpdateDrawItem(
-        HdSceneDelegate*, HdVP2DrawItem*,
+        HdSceneDelegate*,
+        HdVP2DrawItem*,
         const HdMeshReprDesc& desc,
-        bool requireSmoothNormals, bool requireFlatNormals);
+        bool                  requireSmoothNormals,
+        bool                  requireFlatNormals);
 
     void _HideAllDrawItems(const TfToken& reprToken);
 
     void _UpdatePrimvarSources(
-        HdSceneDelegate* sceneDelegate,
-        HdDirtyBits dirtyBits,
+        HdSceneDelegate*     sceneDelegate,
+        HdDirtyBits          dirtyBits,
         const TfTokenVector& requiredPrimvars);
 
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
@@ -131,7 +138,8 @@ private:
     MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
 
     //! Custom dirty bits used by this mesh
-    enum DirtyBits : HdDirtyBits {
+    enum DirtyBits : HdDirtyBits
+    {
         DirtySmoothNormals = HdChangeTracker::CustomBitsBegin,
         DirtyFlatNormals = (DirtySmoothNormals << 1),
         DirtyIndices = (DirtyFlatNormals << 1),
@@ -140,14 +148,18 @@ private:
         DirtySelection = (DirtyPointsIndices << 1),
         DirtySelectionHighlight = (DirtySelection << 1)
     };
-    
-    HdVP2RenderDelegate* _delegate{ nullptr };          //!< VP2 render delegate for which this mesh was created
-    HdDirtyBits          _customDirtyBitsInUse{ 0 };    //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
-    const MString        _rprimId;                      //!< Rprim id cached as a maya string for easier debugging and profiling
-    HdVP2MeshSharedData  _meshSharedData;               //!< Shared data for all draw items of the Rprim
+
+    HdVP2RenderDelegate* _delegate {
+        nullptr
+    }; //!< VP2 render delegate for which this mesh was created
+    HdDirtyBits _customDirtyBitsInUse {
+        0
+    };                      //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
+    const MString _rprimId; //!< Rprim id cached as a maya string for easier debugging and profiling
+    HdVP2MeshSharedData _meshSharedData; //!< Shared data for all draw items of the Rprim
 
     //! Selection status of the Rprim
-    HdVP2SelectionStatus _selectionStatus{ kUnselected };
+    HdVP2SelectionStatus _selectionStatus { kUnselected };
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

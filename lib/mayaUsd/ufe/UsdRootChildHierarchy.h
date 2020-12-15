@@ -18,9 +18,9 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdHierarchy.h>
 
-//PXR_NAMESPACE_USING_DIRECTIVE
+// PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief USD run-time hierarchy interface for children of the USD root prim.
@@ -31,24 +31,24 @@ namespace ufe {
 class MAYAUSD_CORE_PUBLIC UsdRootChildHierarchy : public UsdHierarchy
 {
 public:
-	typedef std::shared_ptr<UsdRootChildHierarchy> Ptr;
+    typedef std::shared_ptr<UsdRootChildHierarchy> Ptr;
 
-	UsdRootChildHierarchy(const UsdSceneItem::Ptr& item);
-	~UsdRootChildHierarchy() override;
+    UsdRootChildHierarchy(const UsdSceneItem::Ptr& item);
+    ~UsdRootChildHierarchy() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdRootChildHierarchy(const UsdRootChildHierarchy&) = delete;
-	UsdRootChildHierarchy& operator=(const UsdRootChildHierarchy&) = delete;
-	UsdRootChildHierarchy(UsdRootChildHierarchy&&) = delete;
-	UsdRootChildHierarchy& operator=(UsdRootChildHierarchy&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdRootChildHierarchy(const UsdRootChildHierarchy&) = delete;
+    UsdRootChildHierarchy& operator=(const UsdRootChildHierarchy&) = delete;
+    UsdRootChildHierarchy(UsdRootChildHierarchy&&) = delete;
+    UsdRootChildHierarchy& operator=(UsdRootChildHierarchy&&) = delete;
 
-	//! Create a UsdRootChildHierarchy.
-	static UsdRootChildHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
+    //! Create a UsdRootChildHierarchy.
+    static UsdRootChildHierarchy::Ptr create(const UsdSceneItem::Ptr& item);
 
-	// Ufe::Hierarchy overrides
-	Ufe::SceneItem::Ptr parent() const override;
+    // Ufe::Hierarchy overrides
+    Ufe::SceneItem::Ptr parent() const override;
 
 }; // UsdRootChildHierarchy
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

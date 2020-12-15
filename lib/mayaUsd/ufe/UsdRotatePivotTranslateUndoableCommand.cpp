@@ -17,60 +17,62 @@
 
 #include "private/Utils.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const Ufe::Path& path)
+UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(
+    const Ufe::Path& path)
     : Ufe::TranslateUndoableCommand(path)
     , fPath(path)
     , fNoPivotOp(false)
 #else
-UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(const UsdPrim& prim, const Ufe::Path& path, const Ufe::SceneItem::Ptr& item)
+UsdRotatePivotTranslateUndoableCommand::UsdRotatePivotTranslateUndoableCommand(
+    const UsdPrim&             prim,
+    const Ufe::Path&           path,
+    const Ufe::SceneItem::Ptr& item)
     : Ufe::TranslateUndoableCommand(item)
     , fPrim(prim)
     , fPath(path)
     , fNoPivotOp(false)
 #endif
 {
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     // create a sceneItem on first access
     sceneItem();
-    #endif
+#endif
 
     // Prim does not have a pivot translate attribute
     const TfToken xpivot("xformOp:translate:pivot");
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     if (!prim().HasAttribute(xpivot))
-    #else
+#else
     if (!fPrim.HasAttribute(xpivot))
-    #endif
+#endif
     {
         fNoPivotOp = true;
-        // Add an empty pivot translate.
-        #ifdef UFE_V2_FEATURES_AVAILABLE
+// Add an empty pivot translate.
+#ifdef UFE_V2_FEATURES_AVAILABLE
         rotatePivotTranslateOp(prim(), fPath, 0, 0, 0);
-        #else
+#else
         rotatePivotTranslateOp(fPrim, fPath, 0, 0, 0);
-        #endif
+#endif
     }
 
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     fPivotAttrib = prim().GetAttribute(xpivot);
-    #else
+#else
     fPivotAttrib = fPrim.GetAttribute(xpivot);
-    #endif
+#endif
 
     fPivotAttrib.Get<GfVec3f>(&fPrevPivotValue);
 }
 
-UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand()
-{
-}
+UsdRotatePivotTranslateUndoableCommand::~UsdRotatePivotTranslateUndoableCommand() { }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-UsdSceneItem::Ptr
-UsdRotatePivotTranslateUndoableCommand::sceneItem() const {
+UsdSceneItem::Ptr UsdRotatePivotTranslateUndoableCommand::sceneItem() const
+{
     if (!fItem) {
         fItem = std::dynamic_pointer_cast<UsdSceneItem>(Ufe::Hierarchy::createItem(fPath));
     }
@@ -80,12 +82,16 @@ UsdRotatePivotTranslateUndoableCommand::sceneItem() const {
 
 /*static*/
 #ifdef UFE_V2_FEATURES_AVAILABLE
-UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const Ufe::Path& path)
+UsdRotatePivotTranslateUndoableCommand::Ptr
+UsdRotatePivotTranslateUndoableCommand::create(const Ufe::Path& path)
 {
     return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(path);
 }
 #else
-UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(const UsdPrim& prim, const Ufe::Path& ufePath, const Ufe::SceneItem::Ptr& item)
+UsdRotatePivotTranslateUndoableCommand::Ptr UsdRotatePivotTranslateUndoableCommand::create(
+    const UsdPrim&             prim,
+    const Ufe::Path&           ufePath,
+    const Ufe::SceneItem::Ptr& item)
 {
     return std::make_shared<UsdRotatePivotTranslateUndoableCommand>(prim, ufePath, item);
 }
@@ -116,14 +122,14 @@ bool UsdRotatePivotTranslateUndoableCommand::set(double x, double y, double z)
 bool UsdRotatePivotTranslateUndoableCommand::translate(double x, double y, double z)
 #endif
 {
-    #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     rotatePivotTranslateOp(prim(), fPath, x, y, z);
-    #else
+#else
     rotatePivotTranslateOp(fPrim, fPath, x, y, z);
-    #endif
-    
+#endif
+
     return true;
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

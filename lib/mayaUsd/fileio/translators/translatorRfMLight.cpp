@@ -15,14 +15,15 @@
 //
 #include "translatorRfMLight.h"
 
-#include <string>
-
-#include <maya/MColor.h>
-#include <maya/MFnDependencyNode.h>
-#include <maya/MObject.h>
-#include <maya/MPlug.h>
-#include <maya/MStatus.h>
-#include <maya/MString.h>
+#include <mayaUsd/fileio/primReaderArgs.h>
+#include <mayaUsd/fileio/primReaderContext.h>
+#include <mayaUsd/fileio/primReaderRegistry.h>
+#include <mayaUsd/fileio/primWriterArgs.h>
+#include <mayaUsd/fileio/primWriterContext.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/translators/translatorUtil.h>
+#include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/tf/staticTokens.h>
@@ -46,18 +47,18 @@
 #include <pxr/usd/usdRi/pxrAovLight.h>
 #include <pxr/usd/usdRi/pxrEnvDayLight.h>
 
-#include <mayaUsd/fileio/primReaderArgs.h>
-#include <mayaUsd/fileio/primReaderContext.h>
-#include <mayaUsd/fileio/primReaderRegistry.h>
-#include <mayaUsd/fileio/primWriterArgs.h>
-#include <mayaUsd/fileio/primWriterContext.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/translators/translatorUtil.h>
-#include <mayaUsd/fileio/translators/translatorXformable.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MColor.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MObject.h>
+#include <maya/MPlug.h>
+#include <maya/MStatus.h>
+#include <maya/MString.h>
+
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -125,31 +126,23 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((ShadowFalloffPlugName, "shadowFalloff"))
     ((ShadowFalloffGammaPlugName, "shadowFalloffGamma"))
 );
+// clang-format on
 
-
-static
-bool
-_ReportError(const std::string& msg, const SdfPath& primPath=SdfPath())
+static bool _ReportError(const std::string& msg, const SdfPath& primPath = SdfPath())
 {
     TF_RUNTIME_ERROR(
-            "%s%s",
-            msg.c_str(),
-            primPath.IsPrimPath()
-                ? TfStringPrintf(" for Light <%s>", primPath.GetText()).c_str()
-                : "");
+        "%s%s",
+        msg.c_str(),
+        primPath.IsPrimPath() ? TfStringPrintf(" for Light <%s>", primPath.GetText()).c_str() : "");
     return false;
 }
 
-
 // INTENSITY
 
-static
-bool
-_WriteLightIntensity(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteLightIntensity(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    MStatus status;
-    const MPlug lightIntensityPlug =
-        depFn.findPlug(_tokens->IntensityPlugName.GetText(), &status);
+    MStatus     status;
+    const MPlug lightIntensityPlug = depFn.findPlug(_tokens->IntensityPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -165,13 +158,10 @@ _WriteLightIntensity(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     return true;
 }
 
-static
-bool
-_ReadLightIntensity(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadLightIntensity(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     MStatus status;
-    MPlug lightIntensityPlug =
-        depFn.findPlug(_tokens->IntensityPlugName.GetText(), &status);
+    MPlug   lightIntensityPlug = depFn.findPlug(_tokens->IntensityPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -184,16 +174,12 @@ _ReadLightIntensity(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return (status == MS::kSuccess);
 }
 
-
 // EXPOSURE
 
-static
-bool
-_WriteLightExposure(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteLightExposure(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    MStatus status;
-    const MPlug lightExposurePlug =
-        depFn.findPlug(_tokens->ExposurePlugName.GetText(), &status);
+    MStatus     status;
+    const MPlug lightExposurePlug = depFn.findPlug(_tokens->ExposurePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -209,13 +195,10 @@ _WriteLightExposure(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     return true;
 }
 
-static
-bool
-_ReadLightExposure(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadLightExposure(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     MStatus status;
-    MPlug lightExposurePlug =
-        depFn.findPlug(_tokens->ExposurePlugName.GetText(), &status);
+    MPlug   lightExposurePlug = depFn.findPlug(_tokens->ExposurePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -228,16 +211,13 @@ _ReadLightExposure(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return (status == MS::kSuccess);
 }
 
-
 // DIFFUSE
 
-static
-bool
-_WriteLightDiffuse(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteLightDiffuse(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    MStatus status;
-    const MPlug lightDiffusePlug =
-        depFn.findPlug(_tokens->DiffuseAmountPlugName.GetText(), &status);
+    MStatus     status;
+    const MPlug lightDiffusePlug
+        = depFn.findPlug(_tokens->DiffuseAmountPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -253,13 +233,10 @@ _WriteLightDiffuse(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     return true;
 }
 
-static
-bool
-_ReadLightDiffuse(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadLightDiffuse(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     MStatus status;
-    MPlug lightDiffusePlug =
-        depFn.findPlug(_tokens->DiffuseAmountPlugName.GetText(), &status);
+    MPlug   lightDiffusePlug = depFn.findPlug(_tokens->DiffuseAmountPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -272,16 +249,13 @@ _ReadLightDiffuse(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return (status == MS::kSuccess);
 }
 
-
 // SPECULAR
 
-static
-bool
-_WriteLightSpecular(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteLightSpecular(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    MStatus status;
-    const MPlug lightSpecularPlug =
-        depFn.findPlug(_tokens->SpecularAmountPlugName.GetText(), &status);
+    MStatus     status;
+    const MPlug lightSpecularPlug
+        = depFn.findPlug(_tokens->SpecularAmountPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -297,13 +271,10 @@ _WriteLightSpecular(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     return true;
 }
 
-static
-bool
-_ReadLightSpecular(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadLightSpecular(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     MStatus status;
-    MPlug lightSpecularPlug =
-        depFn.findPlug(_tokens->SpecularAmountPlugName.GetText(), &status);
+    MPlug   lightSpecularPlug = depFn.findPlug(_tokens->SpecularAmountPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -316,18 +287,13 @@ _ReadLightSpecular(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return (status == MS::kSuccess);
 }
 
-
 // NORMALIZE POWER
 
-static
-bool
-_WriteLightNormalizePower(
-        const MFnDependencyNode& depFn,
-        UsdLuxLight& lightSchema)
+static bool _WriteLightNormalizePower(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    MStatus status;
-    const MPlug lightNormalizePowerPlug =
-        depFn.findPlug(_tokens->NormalizePowerPlugName.GetText(), &status);
+    MStatus     status;
+    const MPlug lightNormalizePowerPlug
+        = depFn.findPlug(_tokens->NormalizePowerPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -343,15 +309,11 @@ _WriteLightNormalizePower(
     return true;
 }
 
-static
-bool
-_ReadLightNormalizePower(
-        const UsdLuxLight& lightSchema,
-        MFnDependencyNode& depFn)
+static bool _ReadLightNormalizePower(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     MStatus status;
-    MPlug lightNormalizePowerPlug =
-        depFn.findPlug(_tokens->NormalizePowerPlugName.GetText(), &status);
+    MPlug   lightNormalizePowerPlug
+        = depFn.findPlug(_tokens->NormalizePowerPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -364,35 +326,29 @@ _ReadLightNormalizePower(
     return (status == MS::kSuccess);
 }
 
-
 // COLOR
 
-static
-bool
-_WriteLightColor(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteLightColor(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    MStatus status;
-    const MPlug lightColorPlug =
-        depFn.findPlug(_tokens->ColorPlugName.GetText(), &status);
+    MStatus     status;
+    const MPlug lightColorPlug = depFn.findPlug(_tokens->ColorPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
 
-    const GfVec3f lightColor(lightColorPlug.child(0).asFloat(),
-                             lightColorPlug.child(1).asFloat(),
-                             lightColorPlug.child(2).asFloat());
+    const GfVec3f lightColor(
+        lightColorPlug.child(0).asFloat(),
+        lightColorPlug.child(1).asFloat(),
+        lightColorPlug.child(2).asFloat());
     lightSchema.CreateColorAttr(VtValue(lightColor), true);
 
     return true;
 }
 
-static
-bool
-_ReadLightColor(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadLightColor(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     MStatus status;
-    MPlug lightColorPlug =
-        depFn.findPlug(_tokens->ColorPlugName.GetText(), &status);
+    MPlug   lightColorPlug = depFn.findPlug(_tokens->ColorPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -407,16 +363,13 @@ _ReadLightColor(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return (status == MS::kSuccess);
 }
 
-
 // TEMPERATURE
 
-static
-bool
-_WriteLightTemperature(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteLightTemperature(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    MStatus status;
-    const MPlug lightEnableTemperaturePlug =
-        depFn.findPlug(_tokens->EnableTemperaturePlugName.GetText(), &status);
+    MStatus     status;
+    const MPlug lightEnableTemperaturePlug
+        = depFn.findPlug(_tokens->EnableTemperaturePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -427,8 +380,8 @@ _WriteLightTemperature(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    const MPlug lightTemperaturePlug =
-        depFn.findPlug(_tokens->TemperaturePlugName.GetText(), &status);
+    const MPlug lightTemperaturePlug
+        = depFn.findPlug(_tokens->TemperaturePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -439,26 +392,22 @@ _WriteLightTemperature(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    lightSchema.CreateEnableColorTemperatureAttr(
-        VtValue(mayaLightEnableTemperature), true);
+    lightSchema.CreateEnableColorTemperatureAttr(VtValue(mayaLightEnableTemperature), true);
     lightSchema.CreateColorTemperatureAttr(VtValue(mayaLightTemperature), true);
 
     return true;
 }
 
-static
-bool
-_ReadLightTemperature(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadLightTemperature(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     MStatus status;
-    MPlug lightEnableTemperaturePlug =
-        depFn.findPlug(_tokens->EnableTemperaturePlugName.GetText(), &status);
+    MPlug   lightEnableTemperaturePlug
+        = depFn.findPlug(_tokens->EnableTemperaturePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
 
-    MPlug lightTemperaturePlug =
-        depFn.findPlug(_tokens->TemperaturePlugName.GetText(), &status);
+    MPlug lightTemperaturePlug = depFn.findPlug(_tokens->TemperaturePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -482,23 +431,18 @@ _ReadLightTemperature(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return true;
 }
 
-
 // DISTANT LIGHT ANGLE
 
-static
-bool
-_WriteDistantLightAngle(
-        const MFnDependencyNode& depFn,
-        UsdLuxLight& lightSchema)
+static bool _WriteDistantLightAngle(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
     UsdLuxDistantLight distantLightSchema(lightSchema);
     if (!distantLightSchema) {
         return false;
     }
 
-    MStatus status;
-    const MPlug lightAnglePlug =
-        depFn.findPlug(_tokens->DistantLightAnglePlugName.GetText(), &status);
+    MStatus     status;
+    const MPlug lightAnglePlug
+        = depFn.findPlug(_tokens->DistantLightAnglePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -514,9 +458,7 @@ _WriteDistantLightAngle(
     return true;
 }
 
-static
-bool
-_ReadDistantLightAngle(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadDistantLightAngle(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     const UsdLuxDistantLight distantLightSchema(lightSchema);
     if (!distantLightSchema) {
@@ -524,8 +466,7 @@ _ReadDistantLightAngle(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     MStatus status;
-    MPlug lightAnglePlug =
-        depFn.findPlug(_tokens->DistantLightAnglePlugName.GetText(), &status);
+    MPlug   lightAnglePlug = depFn.findPlug(_tokens->DistantLightAnglePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -538,12 +479,9 @@ _ReadDistantLightAngle(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return (status == MS::kSuccess);
 }
 
-
 // LIGHT TEXTURE FILE
 
-static
-bool
-_WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
     UsdLuxRectLight rectLightSchema(lightSchema);
     UsdLuxDomeLight domeLightSchema(lightSchema);
@@ -551,10 +489,9 @@ _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         return false;
     }
 
-    MStatus status;
-    const MPlug lightTextureFilePlug =
-        depFn.findPlug(_tokens->TextureFilePlugName.GetText(),
-                       &status);
+    MStatus     status;
+    const MPlug lightTextureFilePlug
+        = depFn.findPlug(_tokens->TextureFilePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -571,19 +508,15 @@ _WriteLightTextureFile(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 
     const SdfAssetPath lightTextureAssetPath(mayaLightTextureFile.asChar());
     if (rectLightSchema) {
-        rectLightSchema.CreateTextureFileAttr(VtValue(lightTextureAssetPath),
-                                              true);
+        rectLightSchema.CreateTextureFileAttr(VtValue(lightTextureAssetPath), true);
     } else if (domeLightSchema) {
-        domeLightSchema.CreateTextureFileAttr(VtValue(lightTextureAssetPath),
-                                              true);
+        domeLightSchema.CreateTextureFileAttr(VtValue(lightTextureAssetPath), true);
     }
 
     return true;
 }
 
-static
-bool
-_ReadLightTextureFile(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadLightTextureFile(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     const UsdLuxRectLight rectLightSchema(lightSchema);
     const UsdLuxDomeLight domeLightSchema(lightSchema);
@@ -592,9 +525,7 @@ _ReadLightTextureFile(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     MStatus status;
-    MPlug lightTextureFilePlug =
-        depFn.findPlug(_tokens->TextureFilePlugName.GetText(),
-                       &status);
+    MPlug   lightTextureFilePlug = depFn.findPlug(_tokens->TextureFilePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -612,11 +543,8 @@ _ReadLightTextureFile(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return (status == MS::kSuccess);
 }
 
-
 // AOV LIGHT
-static
-bool
-_WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
     UsdRiPxrAovLight aovLightSchema(lightSchema);
     if (!aovLightSchema) {
@@ -626,8 +554,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     MStatus status;
 
     // AOV Name.
-    MPlug aovNamePlug =
-        depFn.findPlug(_tokens->AovNamePlugName.GetText(), &status);
+    MPlug aovNamePlug = depFn.findPlug(_tokens->AovNamePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -643,8 +570,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // In Primary Hit.
-    MPlug inPrimaryHitPlug =
-        depFn.findPlug(_tokens->InPrimaryHitPlugName.GetText(), &status);
+    MPlug inPrimaryHitPlug = depFn.findPlug(_tokens->InPrimaryHitPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -660,8 +586,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // In Reflection.
-    MPlug inReflectionPlug =
-        depFn.findPlug(_tokens->InReflectionPlugName.GetText(), &status);
+    MPlug inReflectionPlug = depFn.findPlug(_tokens->InReflectionPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -677,8 +602,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // In Refraction.
-    MPlug inRefractionPlug =
-        depFn.findPlug(_tokens->InRefractionPlugName.GetText(), &status);
+    MPlug inRefractionPlug = depFn.findPlug(_tokens->InRefractionPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -694,8 +618,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // Invert.
-    MPlug invertPlug =
-        depFn.findPlug(_tokens->InvertPlugName.GetText(), &status);
+    MPlug invertPlug = depFn.findPlug(_tokens->InvertPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -711,8 +634,8 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // On Volume Boundaries.
-    MPlug onVolumeBoundariesPlug =
-        depFn.findPlug(_tokens->OnVolumeBoundariesPlugName.GetText(), &status);
+    MPlug onVolumeBoundariesPlug
+        = depFn.findPlug(_tokens->OnVolumeBoundariesPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -724,14 +647,11 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
             return false;
         }
 
-        aovLightSchema.CreateOnVolumeBoundariesAttr(
-            VtValue(mayaOnVolumeBoundaries),
-            true);
+        aovLightSchema.CreateOnVolumeBoundariesAttr(VtValue(mayaOnVolumeBoundaries), true);
     }
 
     // Use Color.
-    MPlug useColorPlug =
-        depFn.findPlug(_tokens->UseColorPlugName.GetText(), &status);
+    MPlug useColorPlug = depFn.findPlug(_tokens->UseColorPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -747,8 +667,7 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // Use Throughput.
-    MPlug useThroughputPlug =
-        depFn.findPlug(_tokens->UseThroughputPlugName.GetText(), &status);
+    MPlug useThroughputPlug = depFn.findPlug(_tokens->UseThroughputPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -760,16 +679,13 @@ _WriteAovLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
             return false;
         }
 
-        aovLightSchema.CreateUseThroughputAttr(VtValue(mayaUseThroughput),
-                                               true);
+        aovLightSchema.CreateUseThroughputAttr(VtValue(mayaUseThroughput), true);
     }
 
     return true;
 }
 
-static
-bool
-_ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     const UsdRiPxrAovLight aovLightSchema(lightSchema);
     if (!aovLightSchema) {
@@ -779,8 +695,7 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     MStatus status;
 
     // AOV Name.
-    MPlug lightAovNamePlug =
-        depFn.findPlug(_tokens->AovNamePlugName.GetText(), &status);
+    MPlug lightAovNamePlug = depFn.findPlug(_tokens->AovNamePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -794,8 +709,7 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // In Primary Hit.
-    MPlug lightInPrimaryHitPlug =
-        depFn.findPlug(_tokens->InPrimaryHitPlugName.GetText(), &status);
+    MPlug lightInPrimaryHitPlug = depFn.findPlug(_tokens->InPrimaryHitPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -809,8 +723,7 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // In Reflection.
-    MPlug lightInReflectionPlug =
-        depFn.findPlug(_tokens->InReflectionPlugName.GetText(), &status);
+    MPlug lightInReflectionPlug = depFn.findPlug(_tokens->InReflectionPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -824,8 +737,7 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // In Refraction.
-    MPlug lightInRefractionPlug =
-        depFn.findPlug(_tokens->InRefractionPlugName.GetText(), &status);
+    MPlug lightInRefractionPlug = depFn.findPlug(_tokens->InRefractionPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -839,8 +751,7 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Invert.
-    MPlug lightInvertPlug =
-        depFn.findPlug(_tokens->InvertPlugName.GetText(), &status);
+    MPlug lightInvertPlug = depFn.findPlug(_tokens->InvertPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -854,8 +765,8 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // On Volume Boundaries.
-    MPlug lightOnVolumeBoundariesPlug =
-        depFn.findPlug(_tokens->OnVolumeBoundariesPlugName.GetText(), &status);
+    MPlug lightOnVolumeBoundariesPlug
+        = depFn.findPlug(_tokens->OnVolumeBoundariesPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -869,8 +780,7 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Use Color.
-    MPlug lightUseColorPlug =
-        depFn.findPlug(_tokens->UseColorPlugName.GetText(), &status);
+    MPlug lightUseColorPlug = depFn.findPlug(_tokens->UseColorPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -884,8 +794,8 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Use Throughput.
-    MPlug lightUseThroughputPlug =
-        depFn.findPlug(_tokens->UseThroughputPlugName.GetText(), &status);
+    MPlug lightUseThroughputPlug
+        = depFn.findPlug(_tokens->UseThroughputPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -897,11 +807,8 @@ _ReadAovLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return status == MS::kSuccess;
 }
 
-
 // ENVDAY LIGHT
-static
-bool
-_WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
     UsdRiPxrEnvDayLight envDayLightSchema(lightSchema);
     if (!envDayLightSchema) {
@@ -927,8 +834,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // Haziness.
-    MPlug hazinessPlug =
-        depFn.findPlug(_tokens->HazinessPlugName.GetText(), &status);
+    MPlug hazinessPlug = depFn.findPlug(_tokens->HazinessPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -960,8 +866,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // Latitude.
-    MPlug latitudePlug =
-        depFn.findPlug(_tokens->LatitudePlugName.GetText(), &status);
+    MPlug latitudePlug = depFn.findPlug(_tokens->LatitudePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -977,8 +882,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // Longitude.
-    MPlug longitudePlug =
-        depFn.findPlug(_tokens->LongitudePlugName.GetText(), &status);
+    MPlug longitudePlug = depFn.findPlug(_tokens->LongitudePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -994,8 +898,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // Month.
-    MPlug monthPlug =
-        depFn.findPlug(_tokens->MonthPlugName.GetText(), &status);
+    MPlug monthPlug = depFn.findPlug(_tokens->MonthPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1011,38 +914,37 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // Sky tint.
-    MPlug skyTintPlug =
-        depFn.findPlug(_tokens->SkyTintPlugName.GetText(), &status);
+    MPlug skyTintPlug = depFn.findPlug(_tokens->SkyTintPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
 
     if (UsdMayaUtil::IsAuthored(skyTintPlug)) {
-        const GfVec3f mayaSkyTint(skyTintPlug.child(0).asFloat(),
-                                  skyTintPlug.child(1).asFloat(),
-                                  skyTintPlug.child(2).asFloat());
+        const GfVec3f mayaSkyTint(
+            skyTintPlug.child(0).asFloat(),
+            skyTintPlug.child(1).asFloat(),
+            skyTintPlug.child(2).asFloat());
 
         envDayLightSchema.CreateSkyTintAttr(VtValue(mayaSkyTint), true);
     }
 
     // Sun direction.
-    MPlug sunDirectionPlug =
-        depFn.findPlug(_tokens->SunDirectionPlugName.GetText(), &status);
+    MPlug sunDirectionPlug = depFn.findPlug(_tokens->SunDirectionPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
 
     if (UsdMayaUtil::IsAuthored(sunDirectionPlug)) {
-        const GfVec3f mayaSunDirection(sunDirectionPlug.child(0).asFloat(),
-                                       sunDirectionPlug.child(1).asFloat(),
-                                       sunDirectionPlug.child(2).asFloat());
+        const GfVec3f mayaSunDirection(
+            sunDirectionPlug.child(0).asFloat(),
+            sunDirectionPlug.child(1).asFloat(),
+            sunDirectionPlug.child(2).asFloat());
 
         envDayLightSchema.CreateSunDirectionAttr(VtValue(mayaSunDirection), true);
     }
 
     // Sun size.
-    MPlug sunSizePlug =
-        depFn.findPlug(_tokens->SunSizePlugName.GetText(), &status);
+    MPlug sunSizePlug = depFn.findPlug(_tokens->SunSizePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1058,16 +960,16 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // Sun tint.
-    MPlug sunTintPlug =
-        depFn.findPlug(_tokens->SunTintPlugName.GetText(), &status);
+    MPlug sunTintPlug = depFn.findPlug(_tokens->SunTintPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
 
     if (UsdMayaUtil::IsAuthored(sunTintPlug)) {
-        const GfVec3f mayaSunTint(sunTintPlug.child(0).asFloat(),
-                                  sunTintPlug.child(1).asFloat(),
-                                  sunTintPlug.child(2).asFloat());
+        const GfVec3f mayaSunTint(
+            sunTintPlug.child(0).asFloat(),
+            sunTintPlug.child(1).asFloat(),
+            sunTintPlug.child(2).asFloat());
 
         envDayLightSchema.CreateSunTintAttr(VtValue(mayaSunTint), true);
     }
@@ -1107,9 +1009,7 @@ _WriteEnvDayLight(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     return true;
 }
 
-static
-bool
-_ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     const UsdRiPxrEnvDayLight envDayLightSchema(lightSchema);
     if (!envDayLightSchema) {
@@ -1119,8 +1019,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     MStatus status;
 
     // Day.
-    MPlug lightDayPlug =
-        depFn.findPlug(_tokens->DayPlugName.GetText(), &status);
+    MPlug lightDayPlug = depFn.findPlug(_tokens->DayPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1134,8 +1033,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Haziness.
-    MPlug lightHazinessPlug =
-        depFn.findPlug(_tokens->HazinessPlugName.GetText(), &status);
+    MPlug lightHazinessPlug = depFn.findPlug(_tokens->HazinessPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1149,8 +1047,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Hour.
-    MPlug lightHourPlug =
-        depFn.findPlug(_tokens->HourPlugName.GetText(), &status);
+    MPlug lightHourPlug = depFn.findPlug(_tokens->HourPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1164,8 +1061,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Latitude.
-    MPlug lightLatitudePlug =
-        depFn.findPlug(_tokens->LatitudePlugName.GetText(), &status);
+    MPlug lightLatitudePlug = depFn.findPlug(_tokens->LatitudePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1179,8 +1075,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Longitude.
-    MPlug lightLongitudePlug =
-        depFn.findPlug(_tokens->LongitudePlugName.GetText(), &status);
+    MPlug lightLongitudePlug = depFn.findPlug(_tokens->LongitudePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1194,8 +1089,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Month.
-    MPlug lightMonthPlug =
-        depFn.findPlug(_tokens->MonthPlugName.GetText(), &status);
+    MPlug lightMonthPlug = depFn.findPlug(_tokens->MonthPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1209,8 +1103,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Sky tint.
-    MPlug lightSkyTintPlug =
-        depFn.findPlug(_tokens->SkyTintPlugName.GetText(), &status);
+    MPlug lightSkyTintPlug = depFn.findPlug(_tokens->SkyTintPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1226,8 +1119,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Sun direction.
-    MPlug lightSunDirectionPlug =
-        depFn.findPlug(_tokens->SunDirectionPlugName.GetText(), &status);
+    MPlug lightSunDirectionPlug = depFn.findPlug(_tokens->SunDirectionPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1243,8 +1135,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Sun size.
-    MPlug lightSunSizePlug =
-        depFn.findPlug(_tokens->SunSizePlugName.GetText(), &status);
+    MPlug lightSunSizePlug = depFn.findPlug(_tokens->SunSizePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1258,8 +1149,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Sun tint.
-    MPlug lightSunTintPlug =
-        depFn.findPlug(_tokens->SunTintPlugName.GetText(), &status);
+    MPlug lightSunTintPlug = depFn.findPlug(_tokens->SunTintPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1275,8 +1165,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Year.
-    MPlug lightYearPlug =
-        depFn.findPlug(_tokens->YearPlugName.GetText(), &status);
+    MPlug lightYearPlug = depFn.findPlug(_tokens->YearPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1290,8 +1179,7 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Zone.
-    MPlug lightZonePlug =
-        depFn.findPlug(_tokens->ZonePlugName.GetText(), &status);
+    MPlug lightZonePlug = depFn.findPlug(_tokens->ZonePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1303,16 +1191,12 @@ _ReadEnvDayLight(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return status == MS::kSuccess;
 }
 
-
 // SHAPING API
 
-static
-bool
-_WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    UsdLuxShapingAPI shapingAPI =
-        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShapingAPI>(
-            lightSchema.GetPrim());
+    UsdLuxShapingAPI shapingAPI
+        = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShapingAPI>(lightSchema.GetPrim());
     if (!shapingAPI) {
         return false;
     }
@@ -1320,8 +1204,7 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     MStatus status;
 
     // Focus.
-    MPlug lightFocusPlug =
-        depFn.findPlug(_tokens->FocusPlugName.GetText(), &status);
+    MPlug lightFocusPlug = depFn.findPlug(_tokens->FocusPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1337,23 +1220,22 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     }
 
     // Focus Tint.
-    MPlug lightFocusTintPlug =
-        depFn.findPlug(_tokens->FocusTintPlugName.GetText(), &status);
+    MPlug lightFocusTintPlug = depFn.findPlug(_tokens->FocusTintPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
 
     if (UsdMayaUtil::IsAuthored(lightFocusTintPlug)) {
-        const GfVec3f lightFocusTint(lightFocusTintPlug.child(0).asFloat(),
-                                     lightFocusTintPlug.child(1).asFloat(),
-                                     lightFocusTintPlug.child(2).asFloat());
+        const GfVec3f lightFocusTint(
+            lightFocusTintPlug.child(0).asFloat(),
+            lightFocusTintPlug.child(1).asFloat(),
+            lightFocusTintPlug.child(2).asFloat());
 
         shapingAPI.CreateShapingFocusTintAttr(VtValue(lightFocusTint), true);
     }
 
     // Cone Angle.
-    MPlug lightConeAnglePlug =
-        depFn.findPlug(_tokens->ConeAnglePlugName.GetText(), &status);
+    MPlug lightConeAnglePlug = depFn.findPlug(_tokens->ConeAnglePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1365,13 +1247,11 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
             return false;
         }
 
-        shapingAPI.CreateShapingConeAngleAttr(VtValue(mayaLightConeAngle),
-                                              true);
+        shapingAPI.CreateShapingConeAngleAttr(VtValue(mayaLightConeAngle), true);
     }
 
     // Cone Softness.
-    MPlug lightConeSoftnessPlug =
-        depFn.findPlug(_tokens->ConeSoftnessPlugName.GetText(), &status);
+    MPlug lightConeSoftnessPlug = depFn.findPlug(_tokens->ConeSoftnessPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1383,13 +1263,11 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
             return false;
         }
 
-        shapingAPI.CreateShapingConeSoftnessAttr(VtValue(mayaLightConeSoftness),
-                                                 true);
+        shapingAPI.CreateShapingConeSoftnessAttr(VtValue(mayaLightConeSoftness), true);
     }
 
     // Profile File.
-    MPlug lightProfileFilePlug =
-        depFn.findPlug(_tokens->ProfileFilePlugName.GetText(), &status);
+    MPlug lightProfileFilePlug = depFn.findPlug(_tokens->ProfileFilePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1402,16 +1280,13 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
         }
 
         if (mayaLightProfileFile.numChars() > 0u) {
-            const SdfAssetPath lightProfileAssetPath(
-                mayaLightProfileFile.asChar());
-            shapingAPI.CreateShapingIesFileAttr(VtValue(lightProfileAssetPath),
-                                                true);
+            const SdfAssetPath lightProfileAssetPath(mayaLightProfileFile.asChar());
+            shapingAPI.CreateShapingIesFileAttr(VtValue(lightProfileAssetPath), true);
         }
     }
 
     // Profile Scale.
-    MPlug lightProfileScalePlug =
-        depFn.findPlug(_tokens->ProfileScalePlugName.GetText(), &status);
+    MPlug lightProfileScalePlug = depFn.findPlug(_tokens->ProfileScalePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1423,16 +1298,13 @@ _WriteLightShapingAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
             return false;
         }
 
-        shapingAPI.CreateShapingIesAngleScaleAttr(VtValue(mayaLightProfileScale),
-                                                  true);
+        shapingAPI.CreateShapingIesAngleScaleAttr(VtValue(mayaLightProfileScale), true);
     }
 
     return true;
 }
 
-static
-bool
-_ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     const UsdLuxShapingAPI shapingAPI(lightSchema);
     if (!shapingAPI) {
@@ -1442,8 +1314,7 @@ _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     MStatus status;
 
     // Focus.
-    MPlug lightFocusPlug =
-        depFn.findPlug(_tokens->FocusPlugName.GetText(), &status);
+    MPlug lightFocusPlug = depFn.findPlug(_tokens->FocusPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1457,8 +1328,7 @@ _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Focus Tint.
-    MPlug lightFocusTintPlug =
-        depFn.findPlug(_tokens->FocusTintPlugName.GetText(), &status);
+    MPlug lightFocusTintPlug = depFn.findPlug(_tokens->FocusTintPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1474,8 +1344,7 @@ _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Cone Angle.
-    MPlug lightConeAnglePlug =
-        depFn.findPlug(_tokens->ConeAnglePlugName.GetText(), &status);
+    MPlug lightConeAnglePlug = depFn.findPlug(_tokens->ConeAnglePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1489,8 +1358,7 @@ _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Cone Softness.
-    MPlug lightConeSoftnessPlug =
-        depFn.findPlug(_tokens->ConeSoftnessPlugName.GetText(), &status);
+    MPlug lightConeSoftnessPlug = depFn.findPlug(_tokens->ConeSoftnessPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1504,8 +1372,7 @@ _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Profile File.
-    MPlug lightProfileFilePlug =
-        depFn.findPlug(_tokens->ProfileFilePlugName.GetText(), &status);
+    MPlug lightProfileFilePlug = depFn.findPlug(_tokens->ProfileFilePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1520,8 +1387,7 @@ _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Profile Scale.
-    MPlug lightProfileScalePlug =
-        depFn.findPlug(_tokens->ProfileScalePlugName.GetText(), &status);
+    MPlug lightProfileScalePlug = depFn.findPlug(_tokens->ProfileScalePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1533,16 +1399,12 @@ _ReadLightShapingAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return status == MS::kSuccess;
 }
 
-
 // SHADOW API
 
-static
-bool
-_WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
+static bool _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
 {
-    UsdLuxShadowAPI shadowAPI =
-        UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShadowAPI>(
-            lightSchema.GetPrim());
+    UsdLuxShadowAPI shadowAPI
+        = UsdMayaTranslatorUtil::GetAPISchemaForAuthoring<UsdLuxShadowAPI>(lightSchema.GetPrim());
     if (!shadowAPI) {
         return false;
     }
@@ -1550,8 +1412,8 @@ _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     MStatus status;
 
     // Enable Shadows.
-    MPlug lightEnableShadowsPlug =
-        depFn.findPlug(_tokens->EnableShadowsPlugName.GetText(), &status);
+    MPlug lightEnableShadowsPlug
+        = depFn.findPlug(_tokens->EnableShadowsPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1573,23 +1435,23 @@ _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
     // XXX: Not yet implemented.
 
     // Shadow Color.
-    MPlug lightShadowColorPlug =
-        depFn.findPlug(_tokens->ShadowColorPlugName.GetText(), &status);
+    MPlug lightShadowColorPlug = depFn.findPlug(_tokens->ShadowColorPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
 
     if (UsdMayaUtil::IsAuthored(lightShadowColorPlug)) {
-        const GfVec3f lightShadowColor(lightShadowColorPlug.child(0).asFloat(),
-                                       lightShadowColorPlug.child(1).asFloat(),
-                                       lightShadowColorPlug.child(2).asFloat());
+        const GfVec3f lightShadowColor(
+            lightShadowColorPlug.child(0).asFloat(),
+            lightShadowColorPlug.child(1).asFloat(),
+            lightShadowColorPlug.child(2).asFloat());
 
         shadowAPI.CreateShadowColorAttr(VtValue(lightShadowColor), true);
     }
 
     // Shadow Distance.
-    MPlug lightShadowDistancePlug =
-        depFn.findPlug(_tokens->ShadowDistancePlugName.GetText(), &status);
+    MPlug lightShadowDistancePlug
+        = depFn.findPlug(_tokens->ShadowDistancePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1601,13 +1463,12 @@ _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
             return false;
         }
 
-        shadowAPI.CreateShadowDistanceAttr(VtValue(mayaLightShadowDistance),
-                                           true);
+        shadowAPI.CreateShadowDistanceAttr(VtValue(mayaLightShadowDistance), true);
     }
 
     // Shadow Falloff.
-    MPlug lightShadowFalloffPlug =
-        depFn.findPlug(_tokens->ShadowFalloffPlugName.GetText(), &status);
+    MPlug lightShadowFalloffPlug
+        = depFn.findPlug(_tokens->ShadowFalloffPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1619,36 +1480,30 @@ _WriteLightShadowAPI(const MFnDependencyNode& depFn, UsdLuxLight& lightSchema)
             return false;
         }
 
-        shadowAPI.CreateShadowFalloffAttr(VtValue(mayaLightShadowFalloff),
-                                          true);
+        shadowAPI.CreateShadowFalloffAttr(VtValue(mayaLightShadowFalloff), true);
     }
 
     // Shadow Falloff Gamma.
-    MPlug lightShadowFalloffGammaPlug =
-        depFn.findPlug(_tokens->ShadowFalloffGammaPlugName.GetText(), &status);
+    MPlug lightShadowFalloffGammaPlug
+        = depFn.findPlug(_tokens->ShadowFalloffGammaPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
 
     if (UsdMayaUtil::IsAuthored(lightShadowFalloffGammaPlug)) {
         float mayaLightShadowFalloffGamma = 1.0f;
-        status =
-            lightShadowFalloffGammaPlug.getValue(mayaLightShadowFalloffGamma);
+        status = lightShadowFalloffGammaPlug.getValue(mayaLightShadowFalloffGamma);
         if (status != MS::kSuccess) {
             return false;
         }
 
-        shadowAPI.CreateShadowFalloffGammaAttr(
-            VtValue(mayaLightShadowFalloffGamma),
-            true);
+        shadowAPI.CreateShadowFalloffGammaAttr(VtValue(mayaLightShadowFalloffGamma), true);
     }
 
     return true;
 }
 
-static
-bool
-_ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
+static bool _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
 {
     const UsdLuxShadowAPI shadowAPI(lightSchema);
     if (!shadowAPI) {
@@ -1658,8 +1513,8 @@ _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     MStatus status;
 
     // Enable Shadows.
-    MPlug lightEnableShadowsPlug =
-        depFn.findPlug(_tokens->EnableShadowsPlugName.GetText(), &status);
+    MPlug lightEnableShadowsPlug
+        = depFn.findPlug(_tokens->EnableShadowsPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1679,8 +1534,7 @@ _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     // XXX: Not yet implemented.
 
     // Shadow Color.
-    MPlug lightShadowColorPlug =
-        depFn.findPlug(_tokens->ShadowColorPlugName.GetText(), &status);
+    MPlug lightShadowColorPlug = depFn.findPlug(_tokens->ShadowColorPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1696,8 +1550,8 @@ _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Shadow Distance.
-    MPlug lightShadowDistancePlug =
-        depFn.findPlug(_tokens->ShadowDistancePlugName.GetText(), &status);
+    MPlug lightShadowDistancePlug
+        = depFn.findPlug(_tokens->ShadowDistancePlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1711,8 +1565,8 @@ _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Shadow Falloff.
-    MPlug lightShadowFalloffPlug =
-        depFn.findPlug(_tokens->ShadowFalloffPlugName.GetText(), &status);
+    MPlug lightShadowFalloffPlug
+        = depFn.findPlug(_tokens->ShadowFalloffPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1726,8 +1580,8 @@ _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     }
 
     // Shadow Falloff Gamma.
-    MPlug lightShadowFalloffGammaPlug =
-        depFn.findPlug(_tokens->ShadowFalloffGammaPlugName.GetText(), &status);
+    MPlug lightShadowFalloffGammaPlug
+        = depFn.findPlug(_tokens->ShadowFalloffGammaPlugName.GetText(), &status);
     if (status != MS::kSuccess) {
         return false;
     }
@@ -1739,19 +1593,15 @@ _ReadLightShadowAPI(const UsdLuxLight& lightSchema, MFnDependencyNode& depFn)
     return status == MS::kSuccess;
 }
 
-
-static
-UsdLuxLight
-_DefineUsdLuxLightForMayaLight(
-        const MFnDependencyNode& depFn,
-        UsdMayaPrimWriterContext* context)
+static UsdLuxLight
+_DefineUsdLuxLightForMayaLight(const MFnDependencyNode& depFn, UsdMayaPrimWriterContext* context)
 {
     UsdLuxLight lightSchema;
 
     UsdStageRefPtr stage = context->GetUsdStage();
     const SdfPath& authorPath = context->GetAuthorPath();
 
-    MStatus status;
+    MStatus       status;
     const MString mayaLightTypeName = depFn.typeName(&status);
     if (status != MS::kSuccess) {
         _ReportError("Failed to get Maya light type name", authorPath);
@@ -1779,23 +1629,21 @@ _DefineUsdLuxLightForMayaLight(
     } else if (mayaLightTypeToken == _tokens->SphereLightMayaTypeName) {
         lightSchema = UsdLuxSphereLight::Define(stage, authorPath);
     } else {
-        _ReportError("Could not determine UsdLux schema for Maya light",
-                     authorPath);
+        _ReportError("Could not determine UsdLux schema for Maya light", authorPath);
     }
 
     return lightSchema;
 }
 
 /* static */
-bool
-UsdMayaTranslatorRfMLight::Write(
-        const UsdMayaPrimWriterArgs& args,
-        UsdMayaPrimWriterContext* context)
+bool UsdMayaTranslatorRfMLight::Write(
+    const UsdMayaPrimWriterArgs& args,
+    UsdMayaPrimWriterContext*    context)
 {
     const SdfPath& authorPath = context->GetAuthorPath();
 
-    MStatus status;
-    const MObject& lightObj = args.GetMObject();
+    MStatus                 status;
+    const MObject&          lightObj = args.GetMObject();
     const MFnDependencyNode depFn(lightObj, &status);
     if (status != MS::kSuccess) {
         return _ReportError("Failed to get Maya light", authorPath);
@@ -1833,10 +1681,7 @@ UsdMayaTranslatorRfMLight::Write(
     return true;
 }
 
-
-static
-TfToken
-_GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
+static TfToken _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
 {
     const UsdPrim& lightPrim = lightSchema.GetPrim();
 
@@ -1864,10 +1709,9 @@ _GetMayaTypeTokenForUsdLuxLight(const UsdLuxLight& lightSchema)
 }
 
 /* static */
-bool
-UsdMayaTranslatorRfMLight::Read(
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context)
+bool UsdMayaTranslatorRfMLight::Read(
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context)
 {
     const UsdPrim& usdPrim = args.GetUsdPrim();
     if (!usdPrim) {
@@ -1876,36 +1720,25 @@ UsdMayaTranslatorRfMLight::Read(
 
     const UsdLuxLight lightSchema(usdPrim);
     if (!lightSchema) {
-        return _ReportError("Failed to read UsdLuxLight prim",
-                            usdPrim.GetPath());
+        return _ReportError("Failed to read UsdLuxLight prim", usdPrim.GetPath());
     }
 
-    const TfToken mayaLightTypeToken =
-        _GetMayaTypeTokenForUsdLuxLight(lightSchema);
+    const TfToken mayaLightTypeToken = _GetMayaTypeTokenForUsdLuxLight(lightSchema);
     if (mayaLightTypeToken.IsEmpty()) {
         return _ReportError(
-            "Could not determine Maya light type for UsdLuxLight prim",
-            lightSchema.GetPath());
+            "Could not determine Maya light type for UsdLuxLight prim", lightSchema.GetPath());
     }
 
-    MObject parentNode =
-        context->GetMayaNode(lightSchema.GetPath().GetParentPath(), false);
+    MObject parentNode = context->GetMayaNode(lightSchema.GetPath().GetParentPath(), false);
 
     MStatus status;
     MObject mayaNodeTransformObj;
     if (!UsdMayaTranslatorUtil::CreateTransformNode(
-            usdPrim,
-            parentNode,
-            args,
-            context,
-            &status,
-            &mayaNodeTransformObj)) {
-        return _ReportError("Failed to create transform node",
-                            lightSchema.GetPath());
+            usdPrim, parentNode, args, context, &status, &mayaNodeTransformObj)) {
+        return _ReportError("Failed to create transform node", lightSchema.GetPath());
     }
 
-    const MString nodeName =
-        TfStringPrintf("%sShape", usdPrim.GetName().GetText()).c_str();
+    const MString nodeName = TfStringPrintf("%sShape", usdPrim.GetName().GetText()).c_str();
 
     MObject lightObj;
     if (!UsdMayaTranslatorUtil::CreateShaderNode(
@@ -1915,13 +1748,13 @@ UsdMayaTranslatorRfMLight::Read(
             &status,
             &lightObj,
             mayaNodeTransformObj)) {
-        return _ReportError(TfStringPrintf("Failed to create %s node",
-                                           mayaLightTypeToken.GetText()),
-                            lightSchema.GetPath());
+        return _ReportError(
+            TfStringPrintf("Failed to create %s node", mayaLightTypeToken.GetText()),
+            lightSchema.GetPath());
     }
 
-    const std::string nodePath = lightSchema.GetPath().AppendChild(
-        TfToken(nodeName.asChar())).GetString();
+    const std::string nodePath
+        = lightSchema.GetPath().AppendChild(TfToken(nodeName.asChar())).GetString();
     context->RegisterNewMayaNode(nodePath, lightObj);
 
     MFnDependencyNode depFn(lightObj, &status);
@@ -1955,6 +1788,5 @@ UsdMayaTranslatorRfMLight::Read(
 
     return true;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

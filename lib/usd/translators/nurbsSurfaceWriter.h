@@ -18,39 +18,35 @@
 
 /// \file
 
-#include <maya/MFnDependencyNode.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/writeJobContext.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/nurbsPatch.h>
 
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/writeJobContext.h>
+#include <maya/MFnDependencyNode.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Exports Maya nurbsSurface objects (MFnNurbsSurface) as UsdGeomNurbsPatch.
 class PxrUsdTranslators_NurbsSurfaceWriter : public UsdMayaPrimWriter
 {
-    public:
-        PxrUsdTranslators_NurbsSurfaceWriter(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrUsdTranslators_NurbsSurfaceWriter(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        void Write(const UsdTimeCode& usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 
-        bool ExportsGprims() const override;
+    bool ExportsGprims() const override;
 
-    protected:
-        bool writeNurbsSurfaceAttrs(
-                const UsdTimeCode& usdTime,
-                UsdGeomNurbsPatch& primSchema);
+protected:
+    bool writeNurbsSurfaceAttrs(const UsdTimeCode& usdTime, UsdGeomNurbsPatch& primSchema);
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

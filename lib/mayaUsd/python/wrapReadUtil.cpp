@@ -13,29 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <boost/python.hpp>
+#include <mayaUsd/fileio/utils/readUtil.h>
+#include <mayaUsd/utils/util.h>
 
-#include <maya/MObject.h>
-
-#include <pxr/pxr.h>
 #include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usd/attribute.h>
 #include <pxr/usd/usd/pyConversions.h>
 
-#include <mayaUsd/fileio/utils/readUtil.h>
-#include <mayaUsd/utils/util.h>
+#include <maya/MObject.h>
+
+#include <boost/python.hpp>
 
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE;
 
-static
-std::string _FindOrCreateMayaAttr(
+static std::string _FindOrCreateMayaAttr(
     const SdfValueTypeName& typeName,
-    const SdfVariability variability,
-    const std::string& nodeName,
-    const std::string& attrName,
-    const std::string& attrNiceName = std::string())
+    const SdfVariability    variability,
+    const std::string&      nodeName,
+    const std::string&      attrName,
+    const std::string&      attrNiceName = std::string())
 {
     std::string attrPath;
 
@@ -47,7 +46,7 @@ std::string _FindOrCreateMayaAttr(
     CHECK_MSTATUS_AND_RETURN(status, attrPath);
 
     MObject attrObj = UsdMayaReadUtil::FindOrCreateMayaAttr(
-            typeName, variability, depNode, attrName, attrNiceName);
+        typeName, variability, depNode, attrName, attrNiceName);
     if (attrObj.isNull()) {
         return attrPath;
     }
@@ -56,12 +55,9 @@ std::string _FindOrCreateMayaAttr(
     return attrPath;
 }
 
-static
-bool _SetMayaAttr(
-    const std::string& attrPath,
-    const VtValue& newValue)
+static bool _SetMayaAttr(const std::string& attrPath, const VtValue& newValue)
 {
-    MPlug plug;
+    MPlug   plug;
     MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
     if (!status) {
         TF_RUNTIME_ERROR("Couldn't find plug '%s'", attrPath.c_str());
@@ -71,12 +67,9 @@ bool _SetMayaAttr(
     return UsdMayaReadUtil::SetMayaAttr(plug, newValue);
 }
 
-static
-void _SetMayaAttrKeyableState(
-    const std::string& attrPath,
-    const SdfVariability variability)
+static void _SetMayaAttrKeyableState(const std::string& attrPath, const SdfVariability variability)
 {
-    MPlug plug;
+    MPlug   plug;
     MStatus status = UsdMayaUtil::GetPlugByName(attrPath, plug);
     if (!status) {
         TF_RUNTIME_ERROR("Couldn't find plug '%s'", attrPath.c_str());
@@ -92,13 +85,19 @@ void wrapReadUtil()
     class_<This>("ReadUtil", no_init)
         .def("ReadFloat2AsUV", This::ReadFloat2AsUV)
         .staticmethod("ReadFloat2AsUV")
-        .def("FindOrCreateMayaAttr", _FindOrCreateMayaAttr,
-            (arg("typeName"), arg("variability"), arg("nodeName"),
-             arg("attrName"), arg("attrNiceName")=std::string()))
+        .def("ReadSTAsMap1", This::ReadSTAsMap1)
+        .staticmethod("ReadSTAsMap1")
+        .def(
+            "FindOrCreateMayaAttr",
+            _FindOrCreateMayaAttr,
+            (arg("typeName"),
+             arg("variability"),
+             arg("nodeName"),
+             arg("attrName"),
+             arg("attrNiceName") = std::string()))
         .staticmethod("FindOrCreateMayaAttr")
         .def("SetMayaAttr", _SetMayaAttr)
         .staticmethod("SetMayaAttr")
         .def("SetMayaAttrKeyableState", _SetMayaAttrKeyableState)
-        .staticmethod("SetMayaAttrKeyableState")
-    ;
+        .staticmethod("SetMayaAttrKeyableState");
 }

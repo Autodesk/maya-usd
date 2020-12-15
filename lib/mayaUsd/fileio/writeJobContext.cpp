@@ -15,11 +15,29 @@
 //
 #include "writeJobContext.h"
 
-#include <sstream>
-#include <string>
-#include <typeinfo>
-#include <utility>
-#include <vector>
+#include <mayaUsd/fileio/instancedNodeWriter.h>
+#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include <mayaUsd/fileio/primWriter.h>
+#include <mayaUsd/fileio/primWriterRegistry.h>
+#include <mayaUsd/fileio/transformWriter.h>
+#include <mayaUsd/fileio/translators/skelBindingsProcessor.h>
+#include <mayaUsd/utils/stageCache.h>
+#include <mayaUsd/utils/util.h>
+
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolverContext.h>
+#include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/stage.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usd/usdFileFormat.h>
+#include <pxr/usd/usdGeom/scope.h>
+#include <pxr/usd/usdGeom/xform.h>
 
 #include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
@@ -33,68 +51,44 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/ar/resolver.h>
-#include <pxr/usd/ar/resolverContext.h>
-#include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/scope.h>
-#include <pxr/usd/usdGeom/xform.h>
-#include <pxr/usd/usd/usdFileFormat.h>
-
-#include <mayaUsd/fileio/instancedNodeWriter.h>
-#include <mayaUsd/fileio/jobs/jobArgs.h>
-#include <mayaUsd/fileio/primWriter.h>
-#include <mayaUsd/fileio/primWriterRegistry.h>
-#include <mayaUsd/fileio/transformWriter.h>
-#include <mayaUsd/fileio/translators/skelBindingsProcessor.h>
-#include <mayaUsd/utils/stageCache.h>
-#include <mayaUsd/utils/util.h>
+#include <sstream>
+#include <string>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-inline
-SdfPath
-_GetRootOverridePath(const UsdMayaJobExportArgs& args, const SdfPath& path)
+inline SdfPath _GetRootOverridePath(const UsdMayaJobExportArgs& args, const SdfPath& path)
 {
     if (!args.usdModelRootOverridePath.IsEmpty() && !path.IsEmpty()) {
-        return path.ReplacePrefix(
-            path.GetPrefixes()[0],
-            args.usdModelRootOverridePath);
+        return path.ReplacePrefix(path.GetPrefixes()[0], args.usdModelRootOverridePath);
     }
 
     return path;
 }
 
-const SdfPath INSTANCES_SCOPE_PATH("/InstanceSources");
+const SdfPath INSTANCES_SCOPE_PATH("/MayaExportedInstanceSources");
 
 } // anonymous namespace
 
-
 UsdMayaWriteJobContext::UsdMayaWriteJobContext(const UsdMayaJobExportArgs& args)
-    : mArgs(args),
-      _skelBindingsProcessor(new UsdMaya_SkelBindingsProcessor())
+    : mArgs(args)
+    , _skelBindingsProcessor(new UsdMaya_SkelBindingsProcessor())
 {
 }
 
 UsdMayaWriteJobContext::~UsdMayaWriteJobContext() = default;
 
-bool
-UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
+bool UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
 {
     if (!mArgs.mergeTransformAndShape) {
         return false;
     }
 
-    MStatus status;
+    MStatus    status;
     const bool isDagPathValid = path.isValid(&status);
     if (status != MS::kSuccess || !isDagPathValid) {
         return false;
@@ -134,7 +128,7 @@ UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
     // exportable.
     const unsigned int childCount = path.childCount();
     if (childCount != 1) {
-        MDagPath childDag(path);
+        MDagPath     childDag(path);
         unsigned int numExportableChildren = 0u;
         for (unsigned int i = 0u; i < childCount; ++i) {
             childDag.push(path.child(i));
@@ -151,11 +145,9 @@ UsdMayaWriteJobContext::IsMergedTransform(const MDagPath& path) const
     return true;
 }
 
-SdfPath
-UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) const
+SdfPath UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) const
 {
-    SdfPath path = UsdMayaUtil::MDagPathToUsdPath(
-            dagPath, false, mArgs.stripNamespaces);
+    SdfPath path = UsdMayaUtil::MDagPathToUsdPath(dagPath, false, mArgs.stripNamespaces);
 
     // If we're merging transforms and shapes and this is a shape node, then
     // write to the parent (transform) path instead.
@@ -168,9 +160,7 @@ UsdMayaWriteJobContext::ConvertDagToUsdPath(const MDagPath& dagPath) const
     if (!mParentScopePath.IsEmpty()) {
         // Since path is from MDagPathToUsdPath, it will always be
         // an absolute path...
-        path = path.ReplacePrefix(
-                SdfPath::AbsoluteRootPath(),
-                mParentScopePath);
+        path = path.ReplacePrefix(SdfPath::AbsoluteRootPath(), mParentScopePath);
     }
 
     return _GetRootOverridePath(mArgs, path);
@@ -184,7 +174,7 @@ UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) co
     }
 
     std::string fullName = instancePath.fullPathName().asChar();
-    if (mArgs.stripNamespaces){
+    if (mArgs.stripNamespaces) {
         fullName = UsdMayaUtil::stripNamespaces(fullName);
     }
 
@@ -196,8 +186,8 @@ UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) co
     // This should make a valid path component.
     fullName = TfMakeValidIdentifier(fullName);
 
-    const SdfPath path = _GetRootOverridePath(
-            mArgs, mInstancesPrim.GetPath().AppendChild(TfToken(fullName)));
+    const SdfPath path
+        = _GetRootOverridePath(mArgs, mInstancesPrim.GetPath().AppendChild(TfToken(fullName)));
 
     // In Maya, you can directly instance gprims or transforms, but
     // UsdImaging really wants you to instance at the transform level.
@@ -209,8 +199,7 @@ UsdMayaWriteJobContext::_GetInstanceMasterPaths(const MDagPath& instancePath) co
     if (instancePath.hasFn(MFn::kTransform)) {
         // Can directly instance transforms.
         return std::make_pair(path, path);
-    }
-    else {
+    } else {
         // Cannot directly instance gprims, so this must be exported underneath
         // a fake scope using the gprim name.
         MFnDagNode primNode(instancePath.node());
@@ -222,26 +211,24 @@ UsdMayaWriteJobContext::_ExportAndRefPaths
 UsdMayaWriteJobContext::_FindOrCreateInstanceMaster(const MDagPath& instancePath)
 {
     const MObjectHandle handle(instancePath.node());
-    const auto it = _objectsToMasterPaths.find(handle);
+    const auto          it = _objectsToMasterPaths.find(handle);
     if (it != _objectsToMasterPaths.end()) {
         return it->second;
-    }
-    else {
+    } else {
         MDagPathArray allInstances;
-        if (!MDagPath::getAllPathsTo(instancePath.node(), allInstances) ||
-                (allInstances.length() == 0)) {
-            TF_RUNTIME_ERROR("Could not find any instances for '%s'",
-                    instancePath.fullPathName().asChar());
+        if (!MDagPath::getAllPathsTo(instancePath.node(), allInstances)
+            || (allInstances.length() == 0)) {
+            TF_RUNTIME_ERROR(
+                "Could not find any instances for '%s'", instancePath.fullPathName().asChar());
             _objectsToMasterPaths[handle] = _ExportAndRefPaths();
             return _ExportAndRefPaths();
         }
 
         // We use the DAG path of the first instance to construct the name of
         // the master.
-        const _ExportAndRefPaths masterPaths =
-                _GetInstanceMasterPaths(allInstances[0]);
-        const SdfPath& exportPath = masterPaths.first;
-        const SdfPath& referencePath = masterPaths.second;
+        const _ExportAndRefPaths masterPaths = _GetInstanceMasterPaths(allInstances[0]);
+        const SdfPath&           exportPath = masterPaths.first;
+        const SdfPath&           referencePath = masterPaths.second;
 
         if (exportPath.IsEmpty()) {
             _objectsToMasterPaths[handle] = _ExportAndRefPaths();
@@ -254,11 +241,11 @@ UsdMayaWriteJobContext::_FindOrCreateInstanceMaster(const MDagPath& instancePath
         // once).
         std::vector<UsdMayaPrimWriterSharedPtr> primWriters;
         CreatePrimWriterHierarchy(
-                allInstances[0],
-                exportPath,
-                /*forceUninstance*/ true,
-                /*exportRootVisibility*/ true,
-                &primWriters);
+            allInstances[0],
+            exportPath,
+            /*forceUninstance*/ true,
+            /*exportRootVisibility*/ true,
+            &primWriters);
 
         if (primWriters.empty()) {
             _objectsToMasterPaths[handle] = _ExportAndRefPaths();
@@ -273,8 +260,8 @@ UsdMayaWriteJobContext::_FindOrCreateInstanceMaster(const MDagPath& instancePath
         // referencePath down to exportPath have empty type names by converting
         // prims to Xforms if necessary.
         for (UsdPrim prim = mStage->GetPrimAtPath(exportPath);
-                prim && prim.GetPath().HasPrefix(referencePath);
-                prim = prim.GetParent()) {
+             prim && prim.GetPath().HasPrefix(referencePath);
+             prim = prim.GetParent()) {
             if (prim.GetTypeName().IsEmpty()) {
                 UsdGeomXform::Define(mStage, prim.GetPath());
             }
@@ -282,29 +269,25 @@ UsdMayaWriteJobContext::_FindOrCreateInstanceMaster(const MDagPath& instancePath
 
         _objectsToMasterPaths[handle] = masterPaths;
         _objectsToMasterWriters[handle] = std::make_pair(
-                mMayaPrimWriterList.size(),
-                mMayaPrimWriterList.size() + primWriters.size());
+            mMayaPrimWriterList.size(), mMayaPrimWriterList.size() + primWriters.size());
         mMayaPrimWriterList.insert(
-                mMayaPrimWriterList.end(),
-                primWriters.begin(),
-                primWriters.end());
+            mMayaPrimWriterList.end(), primWriters.begin(), primWriters.end());
 
         return masterPaths;
     }
 }
 
-bool
-UsdMayaWriteJobContext::_GetInstanceMasterPrimWriters(
-    const MDagPath& instancePath,
+bool UsdMayaWriteJobContext::_GetInstanceMasterPrimWriters(
+    const MDagPath&                                          instancePath,
     std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* begin,
     std::vector<UsdMayaPrimWriterSharedPtr>::const_iterator* end) const
 {
     const MObjectHandle handle(instancePath.node());
-    const auto it = _objectsToMasterWriters.find(handle);
+    const auto          it = _objectsToMasterWriters.find(handle);
     if (it != _objectsToMasterWriters.end()) {
         std::pair<size_t, size_t> range = it->second;
-        if (range.first < mMayaPrimWriterList.size() &&
-                range.second <= mMayaPrimWriterList.size()) {
+        if (range.first < mMayaPrimWriterList.size()
+            && range.second <= mMayaPrimWriterList.size()) {
             *begin = mMayaPrimWriterList.cbegin() + range.first;
             *end = mMayaPrimWriterList.cbegin() + range.second;
             return true;
@@ -314,8 +297,7 @@ UsdMayaWriteJobContext::_GetInstanceMasterPrimWriters(
     return false;
 }
 
-bool
-UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
+bool UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
 {
     MObject ob = curDag.node();
     // NOTE: Already skipping all intermediate objects
@@ -337,10 +319,8 @@ UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
     if (!mArgs.exportDefaultCameras && ob.hasFn(MFn::kTransform) && curDag.length() == 1) {
         // Ignore transforms of default cameras
         MString fullPathName = curDag.fullPathName();
-        if (fullPathName == "|persp" ||
-            fullPathName == "|top" ||
-            fullPathName == "|front" ||
-            fullPathName == "|side") {
+        if (fullPathName == "|persp" || fullPathName == "|top" || fullPathName == "|front"
+            || fullPathName == "|side") {
             return false;
         }
     }
@@ -348,7 +328,7 @@ UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
     if (!mArgs.GetFilteredTypeIds().empty()) {
         MFnDependencyNode mfnNode(ob);
         if (mArgs.GetFilteredTypeIds().find(mfnNode.typeId().id())
-                != mArgs.GetFilteredTypeIds().end()) {
+            != mArgs.GetFilteredTypeIds().end()) {
             return false;
         }
     }
@@ -356,16 +336,14 @@ UsdMayaWriteJobContext::_NeedToTraverse(const MDagPath& curDag) const
     return true;
 }
 
-bool
-UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
+bool UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
 {
-    SdfLayerRefPtr layer;
+    SdfLayerRefPtr    layer;
     ArResolverContext resolverCtx = ArGetResolver().GetCurrentContext();
     if (append) {
         layer = SdfLayer::FindOrOpen(filename);
         if (!layer) {
-            TF_RUNTIME_ERROR(
-                    "Failed to open layer '%s' for append", filename.c_str());
+            TF_RUNTIME_ERROR("Failed to open layer '%s' for append", filename.c_str());
             return false;
         }
     } else {
@@ -378,12 +356,10 @@ UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
         UsdMayaStageCache::EraseAllStagesWithRootLayerPath(filename);
 
         if (SdfLayerRefPtr existingLayer = SdfLayer::Find(filename)) {
-            TF_STATUS(
-                    "Writing to already-open layer '%s'", filename.c_str());
+            TF_STATUS("Writing to already-open layer '%s'", filename.c_str());
             existingLayer->Clear();
             layer = existingLayer;
-        }
-        else {
+        } else {
             SdfLayer::FileFormatArguments args;
             args[UsdUsdFileFormatTokens->FormatArg] = mArgs.defaultUSDFormat.GetString();
 #if USD_VERSION_NUM > 2008
@@ -393,8 +369,7 @@ UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
 #endif
         }
         if (!layer) {
-            TF_RUNTIME_ERROR(
-                    "Failed to create layer '%s'", filename.c_str());
+            TF_RUNTIME_ERROR("Failed to create layer '%s'", filename.c_str());
             return false;
         }
     }
@@ -412,8 +387,8 @@ UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
         // usdModelRootOverridePath, then IT will take the name of our parent
         // scope, and will be created when we writ out the model variants
         if (mArgs.usdModelRootOverridePath.IsEmpty()) {
-            mParentScopePath = UsdGeomScope::Define(mStage,
-                                                    mParentScopePath).GetPrim().GetPrimPath();
+            mParentScopePath
+                = UsdGeomScope::Define(mStage, mParentScopePath).GetPrim().GetPrimPath();
         }
     }
 
@@ -424,40 +399,37 @@ UsdMayaWriteJobContext::_OpenFile(const std::string& filename, bool append)
     return true;
 }
 
-bool
-UsdMayaWriteJobContext::_PostProcess()
+bool UsdMayaWriteJobContext::_PostProcess()
 {
     if (mArgs.exportInstances) {
         if (_objectsToMasterWriters.empty()) {
             mStage->RemovePrim(mInstancesPrim.GetPrimPath());
         } else {
-            // The InstanceSources group should be an over and moved to the
+            // The MayaExportedInstanceSources group should be an over and moved to the
             // end of the layer.
             mInstancesPrim.SetSpecifier(SdfSpecifierOver);
 
             // We need to drop down to the Sdf level to reorder root prims.
             // (Note that we want to change the actual order in the layer, and
             // not just author a reorder statement.)
-            const SdfPath instancesPrimPath = mInstancesPrim.GetPrimPath();
+            const SdfPath           instancesPrimPath = mInstancesPrim.GetPrimPath();
             SdfPrimSpecHandleVector newRootPrims;
-            SdfPrimSpecHandle instancesPrimSpec;
-            for (const SdfPrimSpecHandle& rootPrimSpec :
-                    mStage->GetRootLayer()->GetRootPrims()) {
+            SdfPrimSpecHandle       instancesPrimSpec;
+            for (const SdfPrimSpecHandle& rootPrimSpec : mStage->GetRootLayer()->GetRootPrims()) {
                 if (rootPrimSpec->GetPath() == instancesPrimPath) {
                     instancesPrimSpec = rootPrimSpec;
-                }
-                else {
+                } else {
                     newRootPrims.push_back(rootPrimSpec);
                 }
             }
             if (instancesPrimSpec) {
                 newRootPrims.push_back(instancesPrimSpec);
                 mStage->GetRootLayer()->SetRootPrims(newRootPrims);
-            }
-            else {
-                TF_CODING_ERROR("Expected to find <%s> in the root prims; "
-                        "was it moved or removed?",
-                        instancesPrimPath.GetText());
+            } else {
+                TF_CODING_ERROR(
+                    "Expected to find <%s> in the root prims; "
+                    "was it moved or removed?",
+                    instancesPrimPath.GetText());
             }
         }
     }
@@ -469,16 +441,14 @@ UsdMayaWriteJobContext::_PostProcess()
     return true;
 }
 
-UsdMayaPrimWriterSharedPtr
-UsdMayaWriteJobContext::CreatePrimWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        const bool forceUninstance)
+UsdMayaPrimWriterSharedPtr UsdMayaWriteJobContext::CreatePrimWriter(
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    const bool               forceUninstance)
 {
     SdfPath writePath = usdPath;
 
-    const MDagPath dagPath =
-        UsdMayaUtil::getDagPath(depNodeFn, /* reportError = */ false);
+    const MDagPath dagPath = UsdMayaUtil::getDagPath(depNodeFn, /* reportError = */ false);
     if (!dagPath.isValid()) {
         // This must be a DG node. usdPath must be supplied for DG nodes.
         if (writePath.IsEmpty()) {
@@ -498,13 +468,10 @@ UsdMayaWriteJobContext::CreatePrimWriter(
         }
 
         const MFnDagNode dagNodeFn(dagPath);
-        const bool instanced = dagNodeFn.isInstanced(/* indirect = */ false);
+        const bool       instanced = dagNodeFn.isInstanced(/* indirect = */ false);
         if (mArgs.exportInstances && instanced && !forceUninstance) {
             // Deal with instances -- we use a special internal writer for them.
-            return std::make_shared<UsdMaya_InstancedNodeWriter>(
-                dagNodeFn,
-                writePath,
-                *this);
+            return std::make_shared<UsdMaya_InstancedNodeWriter>(dagNodeFn, writePath, *this);
         }
     }
 
@@ -512,12 +479,8 @@ UsdMayaWriteJobContext::CreatePrimWriter(
     // a writer plugin. We search through the node's type ancestors, working
     // backwards until we find a prim writer plugin.
     const std::string mayaTypeName(depNodeFn.typeName().asChar());
-    if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
-            _FindWriter(mayaTypeName)) {
-        if (UsdMayaPrimWriterSharedPtr primPtr = primWriterFactory(
-                depNodeFn,
-                writePath,
-                *this)) {
+    if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory = _FindWriter(mayaTypeName)) {
+        if (UsdMayaPrimWriterSharedPtr primPtr = primWriterFactory(depNodeFn, writePath, *this)) {
             // We found a registered user prim writer that handles this node
             // type, so return now.
             return primPtr;
@@ -538,11 +501,11 @@ UsdMayaWriteJobContext::_FindWriter(const std::string& mayaNodeType)
     }
 
     // Search up the ancestor hierarchy for a writer plugin.
-    const std::vector<std::string> ancestorTypes =
-            UsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaNodeType);
+    const std::vector<std::string> ancestorTypes
+        = UsdMayaUtil::GetAllAncestorMayaNodeTypes(mayaNodeType);
     for (auto i = ancestorTypes.rbegin(); i != ancestorTypes.rend(); ++i) {
-        if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory =
-                UsdMayaPrimWriterRegistry::Find(*i)) {
+        if (UsdMayaPrimWriterRegistry::WriterFactoryFn primWriterFactory
+            = UsdMayaPrimWriterRegistry::Find(*i)) {
             mWriterFactoryCache[mayaNodeType] = primWriterFactory;
             return primWriterFactory;
         }
@@ -553,13 +516,12 @@ UsdMayaWriteJobContext::_FindWriter(const std::string& mayaNodeType)
     return nullptr;
 }
 
-void
-UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
-        const MDagPath& rootDag,
-        const SdfPath& rootUsdPath,
-        const bool forceUninstance,
-        const bool exportRootVisibility,
-        std::vector<UsdMayaPrimWriterSharedPtr>* primWritersOut)
+void UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
+    const MDagPath&                          rootDag,
+    const SdfPath&                           rootUsdPath,
+    const bool                               forceUninstance,
+    const bool                               exportRootVisibility,
+    std::vector<UsdMayaPrimWriterSharedPtr>* primWritersOut)
 {
     if (!primWritersOut) {
         TF_CODING_ERROR("primWritersOut is null");
@@ -583,20 +545,17 @@ UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
 
         // The USD path of this prototype descendant prim if it were exported
         // at its current Maya location.
-        const SdfPath curComputedUsdPath =
-                this->ConvertDagToUsdPath(curDagPath);
+        const SdfPath curComputedUsdPath = this->ConvertDagToUsdPath(curDagPath);
 
         SdfPath curActualUsdPath;
         if (rootUsdPath.IsEmpty()) {
             // Just use the actual computed current path.
             curActualUsdPath = curComputedUsdPath;
-        }
-        else {
+        } else {
             // Compute the current prim's relative path w/r/t the prototype
             // root, and use this to re-anchor it under the USD stage location
             // where we want to write out the prototype.
-            const SdfPath curRelPath = curComputedUsdPath.MakeRelativePath(
-                    rootComputedUsdPath);
+            const SdfPath curRelPath = curComputedUsdPath.MakeRelativePath(rootComputedUsdPath);
             curActualUsdPath = rootUsdPath.AppendPath(curRelPath);
         }
 
@@ -606,9 +565,7 @@ UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
         // to descendant nodes (i.e. nested instancing will always occur).
         // Its purpose is to allow us to do the actual write of the master.
         UsdMayaPrimWriterSharedPtr writer = this->CreatePrimWriter(
-                dagNodeFn,
-                curActualUsdPath,
-                curDagPath == rootDag ? forceUninstance : false);
+            dagNodeFn, curActualUsdPath, curDagPath == rootDag ? forceUninstance : false);
         if (!writer) {
             continue;
         }
@@ -625,14 +582,12 @@ UsdMayaWriteJobContext::CreatePrimWriterHierarchy(
     }
 }
 
-void
-UsdMayaWriteJobContext::MarkSkelBindings(
+void UsdMayaWriteJobContext::MarkSkelBindings(
     const SdfPath& path,
     const SdfPath& skelPath,
     const TfToken& config)
 {
     _skelBindingsProcessor->MarkBindings(path, skelPath, config);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

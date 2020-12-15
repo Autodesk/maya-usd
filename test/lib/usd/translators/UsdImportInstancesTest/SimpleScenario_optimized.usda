@@ -8,7 +8,7 @@
 def Xform "pCube1" (
     instanceable = true
     kind = "component"
-    prepend references = </InstanceSources/pCube1_instanceParent>
+    prepend references = </MayaExportedInstanceSources/pCube1_instanceParent>
 )
 {
     double3 xformOp:translate = (-4, 2, 0)
@@ -18,7 +18,7 @@ def Xform "pCube1" (
 def Xform "pCube2" (
     instanceable = true
     kind = "component"
-    prepend references = </InstanceSources/pCube1_instanceParent>
+    prepend references = </MayaExportedInstanceSources/pCube1_instanceParent>
 )
 {
     double3 xformOp:translate = (0, 2, 0)
@@ -28,14 +28,14 @@ def Xform "pCube2" (
 def Xform "pCube3" (
     instanceable = true
     kind = "component"
-    prepend references = </InstanceSources/pCube1_instanceParent>
+    prepend references = </MayaExportedInstanceSources/pCube1_instanceParent>
 )
 {
     double3 xformOp:translate = (4, 2, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
 }
 
-over "InstanceSources"
+over "MayaExportedInstanceSources"
 {
     def Xform "pCube1_instanceParent"
     {

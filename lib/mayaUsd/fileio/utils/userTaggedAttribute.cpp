@@ -15,9 +15,14 @@
 //
 #include "userTaggedAttribute.h"
 
-#include <set>
-#include <string>
-#include <vector>
+#include <mayaUsd/utils/util.h>
+
+#include <pxr/base/js/json.h>
+#include <pxr/base/js/value.h>
+#include <pxr/base/tf/staticTokens.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/usdGeom/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
@@ -25,90 +30,63 @@
 #include <maya/MStatus.h>
 #include <maya/MString.h>
 
-#include <pxr/pxr.h>
-#include <pxr/base/js/json.h>
-#include <pxr/base/js/value.h>
-#include <pxr/base/tf/staticTokens.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/usd/usdGeom/tokens.h>
-
-#include <mayaUsd/utils/util.h>
+#include <set>
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(
-    UsdMayaUserTaggedAttributeTokens,
-    PXRUSDMAYA_ATTR_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(UsdMayaUserTaggedAttributeTokens, PXRUSDMAYA_ATTR_TOKENS);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+
     (USD_UserExportedAttributesJson)
     (usdAttrName)
     (usdAttrType)
     (translateMayaDoubleToUsdSinglePrecision)
     ((UserPropertiesNamespace, "userProperties:"))
 );
-
+// clang-format on
 
 UsdMayaUserTaggedAttribute::UsdMayaUserTaggedAttribute(
-        const MPlug& plug,
-        const std::string& name,
-        const TfToken& type,
-        const TfToken& interpolation,
-        const bool translateMayaDoubleToUsdSinglePrecision)
-        : _plug(plug),
-          _name(name),
-          _type(type),
-          _interpolation(interpolation),
-          _translateMayaDoubleToUsdSinglePrecision(
-              translateMayaDoubleToUsdSinglePrecision)
+    const MPlug&       plug,
+    const std::string& name,
+    const TfToken&     type,
+    const TfToken&     interpolation,
+    const bool         translateMayaDoubleToUsdSinglePrecision)
+    : _plug(plug)
+    , _name(name)
+    , _type(type)
+    , _interpolation(interpolation)
+    , _translateMayaDoubleToUsdSinglePrecision(translateMayaDoubleToUsdSinglePrecision)
 {
 }
 
-MPlug
-UsdMayaUserTaggedAttribute::GetMayaPlug() const
-{
-    return _plug;
-}
+MPlug UsdMayaUserTaggedAttribute::GetMayaPlug() const { return _plug; }
 
-std::string
-UsdMayaUserTaggedAttribute::GetMayaName() const
+std::string UsdMayaUserTaggedAttribute::GetMayaName() const
 {
     MString name = _plug.partialName();
     return std::string(name.asChar());
 }
 
-std::string
-UsdMayaUserTaggedAttribute::GetUsdName() const
-{
-    return _name;
-}
+std::string UsdMayaUserTaggedAttribute::GetUsdName() const { return _name; }
 
-TfToken
-UsdMayaUserTaggedAttribute::GetUsdType() const
-{
-    return _type;
-}
+TfToken UsdMayaUserTaggedAttribute::GetUsdType() const { return _type; }
 
-TfToken
-UsdMayaUserTaggedAttribute::GetUsdInterpolation() const
-{
-    return _interpolation;
-}
+TfToken UsdMayaUserTaggedAttribute::GetUsdInterpolation() const { return _interpolation; }
 
-bool
-UsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision() const
+bool UsdMayaUserTaggedAttribute::GetTranslateMayaDoubleToUsdSinglePrecision() const
 {
     return _translateMayaDoubleToUsdSinglePrecision;
 }
 
-static
-std::string
-_GetExportAttributeMetadata(
-        const JsObject& attrMetadata,
-        const TfToken& keyToken)
+static std::string
+_GetExportAttributeMetadata(const JsObject& attrMetadata, const TfToken& keyToken)
 {
-    std::string value;
+    std::string              value;
     JsObject::const_iterator attrMetadataIter = attrMetadata.find(keyToken);
     if (attrMetadataIter != attrMetadata.end()) {
         value = attrMetadataIter->second.GetString();
@@ -117,14 +95,12 @@ _GetExportAttributeMetadata(
     return value;
 }
 
-static
-bool
-_GetExportAttributeMetadata(
-        const JsObject& attrMetadata,
-        const TfToken& keyToken,
-        const bool defaultValue)
+static bool _GetExportAttributeMetadata(
+    const JsObject& attrMetadata,
+    const TfToken&  keyToken,
+    const bool      defaultValue)
 {
-    bool value = defaultValue;
+    bool                     value = defaultValue;
     JsObject::const_iterator attrMetadataIter = attrMetadata.find(keyToken);
     if (attrMetadataIter != attrMetadata.end()) {
         value = attrMetadataIter->second.GetBool();
@@ -135,41 +111,38 @@ _GetExportAttributeMetadata(
 
 /* static */
 std::vector<UsdMayaUserTaggedAttribute>
-UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
-        const MObject& mayaNode)
+UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(const MObject& mayaNode)
 {
     std::vector<UsdMayaUserTaggedAttribute> result;
 
-    MStatus status;
+    MStatus                 status;
     const MFnDependencyNode depNodeFn(mayaNode, &status);
     if (status != MS::kSuccess) {
         return result;
     }
 
-    const MPlug exportedAttrsJsonPlug =
-        depNodeFn.findPlug(
-            _tokens->USD_UserExportedAttributesJson.GetText(),
-            true,
-            &status);
+    const MPlug exportedAttrsJsonPlug
+        = depNodeFn.findPlug(_tokens->USD_UserExportedAttributesJson.GetText(), true, &status);
     if (status != MS::kSuccess || exportedAttrsJsonPlug.isNull()) {
         // No attributes specified for export on this node.
         return result;
     }
 
-    const std::string exportedAttrsJsonString(
-        exportedAttrsJsonPlug.asString().asChar());
+    const std::string exportedAttrsJsonString(exportedAttrsJsonPlug.asString().asChar());
     if (exportedAttrsJsonString.empty()) {
         return result;
     }
 
-    JsParseError jsError;
+    JsParseError  jsError;
     const JsValue jsValue = JsParseString(exportedAttrsJsonString, &jsError);
     if (!jsValue) {
         TF_RUNTIME_ERROR(
             "Failed to parse USD exported attributes JSON on node '%s' "
             "at line %d, column %d: %s",
             UsdMayaUtil::GetMayaNodeName(mayaNode).c_str(),
-            jsError.line, jsError.column, jsError.reason.c_str());
+            jsError.line,
+            jsError.column,
+            jsError.reason.c_str());
         return result;
     }
 
@@ -177,12 +150,11 @@ UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
     // and issue warnings for the subsequent definitions. JsObject is really
     // just a std::map, so we'll be considering attributes in sorted order.
     std::set<std::string> processedAttributeNames;
-    const JsObject& exportedAttrs = jsValue.GetJsObject();
+    const JsObject&       exportedAttrs = jsValue.GetJsObject();
     for (const auto& exportedAttr : exportedAttrs) {
         const std::string mayaAttrName = exportedAttr.first;
 
-        const MPlug attrPlug =
-            depNodeFn.findPlug(mayaAttrName.c_str(), true, &status);
+        const MPlug attrPlug = depNodeFn.findPlug(mayaAttrName.c_str(), true, &status);
         if (status != MS::kSuccess || attrPlug.isNull()) {
             TF_RUNTIME_ERROR(
                 "Could not find attribute '%s' for USD export on node '%s'",
@@ -196,32 +168,28 @@ UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
         // Check if this is a particular type of attribute (e.g. primvar or
         // usdRi attribute). If we don't recognize the type specified, we'll
         // fall back to a regular USD attribute.
-        const TfToken usdAttrType(
-            _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrType));
+        const TfToken usdAttrType(_GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrType));
 
         // Check whether an interpolation type was specified. This is only
         // relevant for primvars.
         const TfToken interpolation(
-            _GetExportAttributeMetadata(attrMetadata,
-                                        UsdGeomTokens->interpolation));
+            _GetExportAttributeMetadata(attrMetadata, UsdGeomTokens->interpolation));
 
         // Check whether it was specified that the double precision Maya
         // attribute type should be mapped to a single precision USD type.
         // If it wasn't specified, use the fallback value.
-        const bool translateMayaDoubleToUsdSinglePrecision(
-            _GetExportAttributeMetadata(
-                attrMetadata,
-                _tokens->translateMayaDoubleToUsdSinglePrecision,
-                GetFallbackTranslateMayaDoubleToUsdSinglePrecision()));
+        const bool translateMayaDoubleToUsdSinglePrecision(_GetExportAttributeMetadata(
+            attrMetadata,
+            _tokens->translateMayaDoubleToUsdSinglePrecision,
+            GetFallbackTranslateMayaDoubleToUsdSinglePrecision()));
 
         // Check whether the USD attribute name should be different than the
         // Maya attribute name.
-        std::string usdAttrName =
-            _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrName);
+        std::string usdAttrName = _GetExportAttributeMetadata(attrMetadata, _tokens->usdAttrName);
         if (usdAttrName.empty()) {
             const auto& tokens = UsdMayaUserTaggedAttributeTokens;
-            if (usdAttrType == tokens->USDAttrTypePrimvar ||
-                    usdAttrType == tokens->USDAttrTypeUsdRi) {
+            if (usdAttrType == tokens->USDAttrTypePrimvar
+                || usdAttrType == tokens->USDAttrTypeUsdRi) {
                 // Primvars and UsdRi attributes will be given a type-specific
                 // namespace, so just use the Maya attribute name.
                 usdAttrName = mayaAttrName;
@@ -229,8 +197,7 @@ UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
                 // For regular USD attributes, when no name was specified we
                 // prepend the userProperties namespace to the Maya attribute
                 // name to get the USD attribute name.
-                usdAttrName = _tokens->UserPropertiesNamespace.GetString() +
-                              mayaAttrName;
+                usdAttrName = _tokens->UserPropertiesNamespace.GetString() + mayaAttrName;
             }
         }
 
@@ -244,15 +211,15 @@ UsdMayaUserTaggedAttribute::GetUserTaggedAttributesForNode(
             continue;
         }
 
-        result.emplace_back(attrPlug,
-                            usdAttrName,
-                            usdAttrType,
-                            interpolation,
-                            translateMayaDoubleToUsdSinglePrecision);
+        result.emplace_back(
+            attrPlug,
+            usdAttrName,
+            usdAttrType,
+            interpolation,
+            translateMayaDoubleToUsdSinglePrecision);
     }
 
     return result;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

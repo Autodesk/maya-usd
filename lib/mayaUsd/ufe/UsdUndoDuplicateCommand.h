@@ -15,62 +15,61 @@
 //
 #pragma once
 
-#include <ufe/path.h>
-#include <ufe/undoableCommand.h>
-
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/usd/prim.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+#include <mayaUsd/undo/UsdUndoableItem.h>
+#endif
+
+#include <pxr/usd/sdf/path.h>
+
+#include <ufe/path.h>
+#include <ufe/undoableCommand.h>
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief UsdUndoDuplicateCommand
 class MAYAUSD_CORE_PUBLIC UsdUndoDuplicateCommand : public Ufe::UndoableCommand
 {
 public:
-	typedef std::shared_ptr<UsdUndoDuplicateCommand> Ptr;
+    typedef std::shared_ptr<UsdUndoDuplicateCommand> Ptr;
 
-	UsdUndoDuplicateCommand(const UsdPrim& srcPrim, const Ufe::Path& ufeSrcPath);
-	~UsdUndoDuplicateCommand() override;
+    UsdUndoDuplicateCommand(const UsdSceneItem::Ptr& srcItem);
+    ~UsdUndoDuplicateCommand() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdUndoDuplicateCommand(const UsdUndoDuplicateCommand&) = delete;
-	UsdUndoDuplicateCommand& operator=(const UsdUndoDuplicateCommand&) = delete;
-	UsdUndoDuplicateCommand(UsdUndoDuplicateCommand&&) = delete;
-	UsdUndoDuplicateCommand& operator=(UsdUndoDuplicateCommand&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdUndoDuplicateCommand(const UsdUndoDuplicateCommand&) = delete;
+    UsdUndoDuplicateCommand& operator=(const UsdUndoDuplicateCommand&) = delete;
+    UsdUndoDuplicateCommand(UsdUndoDuplicateCommand&&) = delete;
+    UsdUndoDuplicateCommand& operator=(UsdUndoDuplicateCommand&&) = delete;
 
-	//! Create a UsdUndoDuplicateCommand from a USD prim and UFE path.
-	static UsdUndoDuplicateCommand::Ptr create(const UsdPrim& srcPrim, const Ufe::Path& ufeSrcPath);
+    //! Create a UsdUndoDuplicateCommand from a USD prim and UFE path.
+    static UsdUndoDuplicateCommand::Ptr create(const UsdSceneItem::Ptr& srcItem);
 
-	const SdfPath& usdDstPath() const;
+    UsdSceneItem::Ptr duplicatedItem() const;
 
-	//! Return the USD destination path and layer.
-	static void primInfo(const UsdPrim& srcPrim, SdfPath& usdDstPath, SdfLayerHandle& srcLayer);
-
-	//! Duplicate the prim hierarchy at usdSrcPath.
-	//! \return True for success.
-	static bool duplicate(const SdfLayerHandle& layer, const SdfPath& usdSrcPath, const SdfPath& usdDstPath);
-
-	//! Return the USD destination path and layer.
-	static void primInfo();
-
-	// UsdUndoDuplicateCommand overrides
-	void undo() override;
-	void redo() override;
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    void execute() override;
+#endif
+    void undo() override;
+    void redo() override;
 
 private:
-	UsdPrim fSrcPrim;
-	UsdStageWeakPtr fStage;
-	SdfLayerHandle fLayer;
-	Ufe::Path fUfeSrcPath;
-	SdfPath fUsdDstPath;
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+    UsdUndoableItem _undoableItem;
+#else
+    bool duplicateUndo();
+    bool duplicateRedo();
+#endif
+
+    Ufe::Path _ufeSrcPath;
+    SdfPath   _usdDstPath;
 
 }; // UsdUndoDuplicateCommand
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

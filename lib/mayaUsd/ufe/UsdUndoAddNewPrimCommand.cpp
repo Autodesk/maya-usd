@@ -15,10 +15,14 @@
 //
 #include "UsdUndoAddNewPrimCommand.h"
 
+#include "private/UfeNotifGuard.h"
+
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/Utils.h>
 
-#include "private/UfeNotifGuard.h"
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+#include <mayaUsd/undo/UsdUndoBlock.h>
+#endif
 
 namespace {
 
@@ -26,22 +30,24 @@ Ufe::Path appendToPath(const Ufe::Path& path, const std::string& name)
 {
     Ufe::Path newUfePath;
     if (1 == path.getSegments().size()) {
-        newUfePath = path + Ufe::PathSegment(
-        Ufe::PathComponent(name), MayaUsd::ufe::getUsdRunTimeId(), '/');
+        newUfePath = path
+            + Ufe::PathSegment(Ufe::PathComponent(name), MayaUsd::ufe::getUsdRunTimeId(), '/');
     } else {
         newUfePath = path + name;
     }
     return newUfePath;
 }
 
-}
+} // namespace
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdSceneItem,
-                            const std::string& name, const std::string& type)
-: Ufe::UndoableCommand()
+UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(
+    const UsdSceneItem::Ptr& usdSceneItem,
+    const std::string&       name,
+    const std::string&       type)
+    : Ufe::UndoableCommand()
 {
     // First get the stage from the proxy shape.
     auto ufePath = usdSceneItem->path();
@@ -70,6 +76,35 @@ UsdUndoAddNewPrimCommand::UsdUndoAddNewPrimCommand(const UsdSceneItem::Ptr& usdS
     }
 }
 
+#if UFE_PREVIEW_VERSION_NUM >= 2029
+void UsdUndoAddNewPrimCommand::execute()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    UsdUndoBlock undoBlock(&_undoableItem);
+
+    if (_stage) {
+        MayaUsd::ufe::InAddOrDeleteOperation ad;
+        auto                                 prim = _stage->DefinePrim(_primPath, _primToken);
+        if (!prim.IsValid())
+            TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
+    }
+}
+
+void UsdUndoAddNewPrimCommand::undo()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.undo();
+}
+
+void UsdUndoAddNewPrimCommand::redo()
+{
+    MayaUsd::ufe::InAddOrDeleteOperation ad;
+
+    _undoableItem.redo();
+}
+#else
 void UsdUndoAddNewPrimCommand::undo()
 {
     if (_stage) {
@@ -82,32 +117,31 @@ void UsdUndoAddNewPrimCommand::redo()
 {
     if (_stage) {
         MayaUsd::ufe::InAddOrDeleteOperation ad;
-        auto prim = _stage->DefinePrim(_primPath, _primToken);
+        auto                                 prim = _stage->DefinePrim(_primPath, _primToken);
         if (!prim.IsValid())
             TF_RUNTIME_ERROR("Failed to create new prim type: %s", _primToken.GetText());
     }
 }
+#endif
 
-const Ufe::Path& UsdUndoAddNewPrimCommand::newUfePath() const
-{
-    return _newUfePath;
-}
+const Ufe::Path& UsdUndoAddNewPrimCommand::newUfePath() const { return _newUfePath; }
 
 PXR_NS::UsdPrim UsdUndoAddNewPrimCommand::newPrim() const
 {
     if (!_stage) {
         return UsdPrim();
     }
-    
+
     return _stage->GetPrimAtPath(_primPath);
 }
 
-/*static*/
-UsdUndoAddNewPrimCommand::Ptr UsdUndoAddNewPrimCommand::create(const UsdSceneItem::Ptr& usdSceneItem,
-                            const std::string& name, const std::string& type)
+UsdUndoAddNewPrimCommand::Ptr UsdUndoAddNewPrimCommand::create(
+    const UsdSceneItem::Ptr& usdSceneItem,
+    const std::string&       name,
+    const std::string&       type)
 {
-	return std::make_shared<UsdUndoAddNewPrimCommand>(usdSceneItem, name, type);
+    return std::make_shared<UsdUndoAddNewPrimCommand>(usdSceneItem, name, type);
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

@@ -14,32 +14,33 @@
 // limitations under the License.
 //
 #include "renderGlobals.h"
-#include "renderOverride.h"
 
-#include <functional>
-#include <sstream>
+#include "renderOverride.h"
+#include "utils.h"
+
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/imaging/hd/rendererPlugin.h>
+#include <pxr/imaging/hd/rendererPluginRegistry.h>
 
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnStringData.h>
 #include <maya/MFnTypedAttribute.h>
+#include <maya/MGlobal.h>
 #include <maya/MPlug.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
-#include <maya/MGlobal.h>
 
-#include <pxr/imaging/hd/renderDelegate.h>
-#include <pxr/imaging/hd/rendererPlugin.h>
-#include <pxr/imaging/hd/rendererPluginRegistry.h>
-
-#include "utils.h"
+#include <functional>
+#include <sstream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+
     (defaultRenderGlobals)
     (mtohTextureMemoryPerTexture)
     (mtohColorSelectionHighlight)
@@ -78,17 +79,17 @@ global proc mtohRenderOverride_AddMTOHAttributes(int $fromAE) {
     mtohRenderOverride_AddAttribute("mtoh", "Highlight Color for Selected Objects", "mtohColorSelectionHighlightColor", $fromAE);
 )mel"
 #if USD_VERSION_NUM >= 2005
-R"mel(
+                                          R"mel(
     mtohRenderOverride_AddAttribute("mtoh", "Highlight outline (in pixels, 0 to disable)", "mtohSelectionOutline", $fromAE);
 )mel"
 #endif
 #if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
-R"mel(
+                                          R"mel(
     mtohRenderOverride_AddAttribute("mtoh", "Enable color quantization", "mtohColorQuantization", $fromAE);
 )mel"
 #endif
 
-R"mel(
+                                          R"mel(
 }
 
 global proc mtohRenderOverride_AEAttributesCallback(string $nodeName) {
@@ -144,12 +145,12 @@ global proc {{override}}OptionBox() {
 }
 )mel";
 
-
 static constexpr const char* kMtohNSToken = "_mtohns_";
-static const std::string kMtohRendererPostFix("__");
+static const std::string     kMtohRendererPostFix("__");
 
-static MString _MangleColorAttribute(const MString& attrName, unsigned i) {
-    static const MString kMtohCmptToken("_mtohc_");
+static MString _MangleColorAttribute(const MString& attrName, unsigned i)
+{
+    static const MString                kMtohCmptToken("_mtohc_");
     static const std::array<MString, 4> kColorComponents = { "R", "G", "B", "A" };
     if (i < kColorComponents.size()) {
         return attrName + kMtohCmptToken + kColorComponents[i];
@@ -159,14 +160,18 @@ static MString _MangleColorAttribute(const MString& attrName, unsigned i) {
     return attrName + kMtohCmptToken + MString("INVALID");
 }
 
-static MString _AlphaAttribute(const MString& attrName) {
+static MString _AlphaAttribute(const MString& attrName)
+{
     return _MangleColorAttribute(attrName, 3);
 }
 
 template <typename HydraType, typename PrefType>
-bool _RestoreValue(MFnDependencyNode& node, const MString& attrName,
-    PrefType (*getter)(const MString&, bool* valid)) {
-    bool valid = false;
+bool _RestoreValue(
+    MFnDependencyNode& node,
+    const MString&     attrName,
+    PrefType (*getter)(const MString&, bool* valid))
+{
+    bool     valid = false;
     PrefType mayaPref = getter(attrName, &valid);
     if (valid) {
         auto plug = node.findPlug(attrName);
@@ -176,19 +181,26 @@ bool _RestoreValue(MFnDependencyNode& node, const MString& attrName,
 }
 
 void _CreateEnumAttribute(
-    MFnDependencyNode& node, const MString& attrName,
-    const TfTokenVector& values, const TfToken& defValue,
-    bool useUserOptions) {
+    MFnDependencyNode&   node,
+    const MString&       attrName,
+    const TfTokenVector& values,
+    const TfToken&       defValue,
+    bool                 useUserOptions)
+{
     const auto attr = node.attribute(attrName);
     const bool existed = !attr.isNull();
     if (existed) {
         const auto sameOrder = [&attr, &values]() -> bool {
-            MStatus status;
+            MStatus          status;
             MFnEnumAttribute eAttr(attr, &status);
-            if (!status) { return false; }
+            if (!status) {
+                return false;
+            }
             short id = 0;
             for (const auto& v : values) {
-                if (eAttr.fieldName(id++) != v.GetText()) { return false; }
+                if (eAttr.fieldName(id++) != v.GetText()) {
+                    return false;
+                }
             }
             return true;
         };
@@ -200,8 +212,8 @@ void _CreateEnumAttribute(
     }
 
     MFnEnumAttribute eAttr;
-    auto o = eAttr.create(attrName, attrName);
-    short id = 0;
+    auto             o = eAttr.create(attrName, attrName);
+    short            id = 0;
     for (const auto& v : values) {
         eAttr.addField(v.GetText(), id++);
     }
@@ -215,7 +227,7 @@ void _CreateEnumAttribute(
     // Enums stored as string to allow re-ordering
     // Why MPlug::setValue doesn't handle this ?
     //
-    bool valid = false;
+    bool    valid = false;
     TfToken mayaPref(MGlobal::optionVarStringValue(attrName, &valid).asChar());
     if (!valid) {
         return;
@@ -231,31 +243,41 @@ void _CreateEnumAttribute(
     TF_WARN("[mtoh] Cannot restore enum '%s'", mayaPref.GetText());
 }
 
-void _CreateEnumAttribute(MFnDependencyNode& node, const MString& attrName,
-    const TfEnum& defValue, bool useUserOptions) {
+void _CreateEnumAttribute(
+    MFnDependencyNode& node,
+    const MString&     attrName,
+    const TfEnum&      defValue,
+    bool               useUserOptions)
+{
     std::vector<std::string> names = TfEnum::GetAllNames(defValue);
-    TfTokenVector tokens(names.begin(), names.end());
-    return _CreateEnumAttribute(node, attrName, tokens,
-        TfToken(TfEnum::GetDisplayName(defValue)), useUserOptions);
+    TfTokenVector            tokens(names.begin(), names.end());
+    return _CreateEnumAttribute(
+        node, attrName, tokens, TfToken(TfEnum::GetDisplayName(defValue)), useUserOptions);
 }
 
-void _CreateStringAttribute(MFnDependencyNode& node, const MString& attrName,
-    const std::string& defValue, bool useUserOptions) {
+void _CreateStringAttribute(
+    MFnDependencyNode& node,
+    const MString&     attrName,
+    const std::string& defValue,
+    bool               useUserOptions)
+{
 
     const auto attr = node.attribute(attrName);
     const bool existed = !attr.isNull();
     if (existed) {
-        MStatus status;
+        MStatus           status;
         MFnTypedAttribute tAttr(attr, &status);
-        if (status && tAttr.attrType() == MFnData::kString) { return; }
+        if (status && tAttr.attrType() == MFnData::kString) {
+            return;
+        }
         node.removeAttribute(attr);
     }
 
     MFnTypedAttribute tAttr;
-    const auto obj = tAttr.create(attrName, attrName, MFnData::kString);
+    const auto        obj = tAttr.create(attrName, attrName, MFnData::kString);
     if (!defValue.empty()) {
         MFnStringData strData;
-        MObject defObj = strData.create(defValue.c_str());
+        MObject       defObj = strData.create(defValue.c_str());
         tAttr.setDefault(defObj);
     }
     node.addAttribute(obj);
@@ -267,22 +289,28 @@ void _CreateStringAttribute(MFnDependencyNode& node, const MString& attrName,
 
 template <typename T, typename MayaType>
 void _CreateNumericAttribute(
-    MFnDependencyNode& node, const MString& attrName, MFnNumericData::Type type,
-    typename std::enable_if<std::is_pod<T>::value, T>::type defValue, bool useUserOptions,
+    MFnDependencyNode&                                      node,
+    const MString&                                          attrName,
+    MFnNumericData::Type                                    type,
+    typename std::enable_if<std::is_pod<T>::value, T>::type defValue,
+    bool                                                    useUserOptions,
     MayaType (*getter)(const MString&, bool* valid),
-    std::function<void(MFnNumericAttribute& nAttr)> postCreate = {}) {
+    std::function<void(MFnNumericAttribute& nAttr)> postCreate = {})
+{
 
     const auto attr = node.attribute(attrName);
     const bool existed = !attr.isNull();
     if (existed) {
-        MStatus status;
+        MStatus             status;
         MFnNumericAttribute nAttr(attr, &status);
-        if (status && nAttr.unitType() == type) { return; }
+        if (status && nAttr.unitType() == type) {
+            return;
+        }
         node.removeAttribute(attr);
     }
 
     MFnNumericAttribute nAttr;
-    const auto obj = nAttr.create(attrName, attrName, type);
+    const auto          obj = nAttr.create(attrName, attrName, type);
     nAttr.setDefault(defValue);
     if (postCreate) {
         postCreate(nAttr);
@@ -296,11 +324,15 @@ void _CreateNumericAttribute(
 
 template <typename T>
 void _CreateColorAttribute(
-    MFnDependencyNode& node, const MString& attrName, T defValue, bool useUserOptions,
-    std::function<bool(MFnNumericAttribute& nAttr, bool doCreate)> alphaOp = {}) {
+    MFnDependencyNode&                                             node,
+    const MString&                                                 attrName,
+    T                                                              defValue,
+    bool                                                           useUserOptions,
+    std::function<bool(MFnNumericAttribute& nAttr, bool doCreate)> alphaOp = {})
+{
     const auto attr = node.attribute(attrName);
     if (!attr.isNull()) {
-        MStatus status;
+        MStatus             status;
         MFnNumericAttribute nAttr(attr, &status);
         if (status && nAttr.isUsedAsColor() && (!alphaOp || alphaOp(nAttr, false))) {
             return;
@@ -308,7 +340,7 @@ void _CreateColorAttribute(
         node.removeAttribute(attr);
     }
     MFnNumericAttribute nAttr;
-    const auto o = nAttr.createColor(attrName, attrName);
+    const auto          o = nAttr.createColor(attrName, attrName);
     nAttr.setDefault(defValue[0], defValue[1], defValue[2]);
     node.addAttribute(o);
 
@@ -318,25 +350,32 @@ void _CreateColorAttribute(
 
     if (useUserOptions) {
         for (unsigned i = 0; i < T::dimension; ++i) {
-            _RestoreValue<float>(node, _MangleColorAttribute(attrName, i),
-                MGlobal::optionVarDoubleValue);
+            _RestoreValue<float>(
+                node, _MangleColorAttribute(attrName, i), MGlobal::optionVarDoubleValue);
         }
     }
 }
 
 void _CreateColorAttribute(
-    MFnDependencyNode& node, const MString& attrName, GfVec4f defVec4, bool useUserOptions) {
-    _CreateColorAttribute(node, attrName, GfVec3f(defVec4.data()), useUserOptions,
-        [&](MFnNumericAttribute& nAttr, bool doCreate) -> bool
-        {
+    MFnDependencyNode& node,
+    const MString&     attrName,
+    GfVec4f            defVec4,
+    bool               useUserOptions)
+{
+    _CreateColorAttribute(
+        node,
+        attrName,
+        GfVec3f(defVec4.data()),
+        useUserOptions,
+        [&](MFnNumericAttribute& nAttr, bool doCreate) -> bool {
             const MString attrAName = _AlphaAttribute(attrName);
-            const auto attrA = node.attribute(attrAName);
+            const auto    attrA = node.attribute(attrAName);
             // If we previously found the color attribute, make sure the Alpha attribute
             // is also a match (MFnNumericData::kFloat), otherwise delete it and signal to re-create
             // the color too.
             if (!doCreate) {
                 if (!attrA.isNull()) {
-                    MStatus status;
+                    MStatus             status;
                     MFnNumericAttribute nAttr(attrA, &status);
                     if (status && nAttr.unitType() == MFnNumericData::kFloat) {
                         return true;
@@ -350,100 +389,124 @@ void _CreateColorAttribute(
             nAttr.setDefault(defVec4[3]);
             node.addAttribute(o);
             return true;
-        }
-    );
+        });
 }
 
-void _CreateBoolAttribute(MFnDependencyNode& node, const MString& attrName,
-    bool defValue, bool useUserOptions) {
-    _CreateNumericAttribute<bool>(node, attrName, MFnNumericData::kBoolean,
-        defValue, useUserOptions, MGlobal::optionVarIntValue);
+void _CreateBoolAttribute(
+    MFnDependencyNode& node,
+    const MString&     attrName,
+    bool               defValue,
+    bool               useUserOptions)
+{
+    _CreateNumericAttribute<bool>(
+        node,
+        attrName,
+        MFnNumericData::kBoolean,
+        defValue,
+        useUserOptions,
+        MGlobal::optionVarIntValue);
 }
 
-void _CreateIntAttribute(MFnDependencyNode& node, const MString& attrName,
-    int defValue, bool useUserOptions,
-    std::function<void(MFnNumericAttribute& nAttr)> postCreate = {}) {
-    _CreateNumericAttribute<int>(node, attrName, MFnNumericData::kInt,
-        defValue, useUserOptions, MGlobal::optionVarIntValue, std::move(postCreate));
+void _CreateIntAttribute(
+    MFnDependencyNode&                              node,
+    const MString&                                  attrName,
+    int                                             defValue,
+    bool                                            useUserOptions,
+    std::function<void(MFnNumericAttribute& nAttr)> postCreate = {})
+{
+    _CreateNumericAttribute<int>(
+        node,
+        attrName,
+        MFnNumericData::kInt,
+        defValue,
+        useUserOptions,
+        MGlobal::optionVarIntValue,
+        std::move(postCreate));
 }
 
-void _CreateFloatAttribute(MFnDependencyNode& node, const MString& attrName,
-    float defValue, bool useUserOptions) {
-    _CreateNumericAttribute<float>(node, attrName, MFnNumericData::kFloat,
-        defValue, useUserOptions, MGlobal::optionVarDoubleValue);
+void _CreateFloatAttribute(
+    MFnDependencyNode& node,
+    const MString&     attrName,
+    float              defValue,
+    bool               useUserOptions)
+{
+    _CreateNumericAttribute<float>(
+        node,
+        attrName,
+        MFnNumericData::kFloat,
+        defValue,
+        useUserOptions,
+        MGlobal::optionVarDoubleValue);
 }
 
-template <typename T>
-void _GetFromPlug(const MPlug& plug, T& out) {
-    assert(false);
-}
+template <typename T> void _GetFromPlug(const MPlug& plug, T& out) { assert(false); }
 
-template <>
-void _GetFromPlug<bool>(const MPlug& plug, bool& out) {
-    out = plug.asBool();
-}
+template <> void _GetFromPlug<bool>(const MPlug& plug, bool& out) { out = plug.asBool(); }
 
-template <>
-void _GetFromPlug<int>(const MPlug& plug, int& out) {
-    out = plug.asInt();
-}
+template <> void _GetFromPlug<int>(const MPlug& plug, int& out) { out = plug.asInt(); }
 
-template <>
-void _GetFromPlug<float>(const MPlug& plug, float& out) {
-    out = plug.asFloat();
-}
+template <> void _GetFromPlug<float>(const MPlug& plug, float& out) { out = plug.asFloat(); }
 
-template <>
-void _GetFromPlug<std::string>(const MPlug& plug, std::string& out) {
+template <> void _GetFromPlug<std::string>(const MPlug& plug, std::string& out)
+{
     out = plug.asString().asChar();
 }
 
-template <>
-void _GetFromPlug<TfEnum>(const MPlug& plug, TfEnum& out) {
+template <> void _GetFromPlug<TfEnum>(const MPlug& plug, TfEnum& out)
+{
     out = TfEnum(out.GetType(), plug.asInt());
 }
 
-template <typename T>
-bool _SetOptionVar(const MString& attrName, const T& value) {
+template <typename T> bool _SetOptionVar(const MString& attrName, const T& value)
+{
     return MGlobal::setOptionVarValue(attrName, value);
 }
 
-bool _SetOptionVar(const MString& attrName, const bool& value) {
+bool _SetOptionVar(const MString& attrName, const bool& value)
+{
     return _SetOptionVar(attrName, int(value));
 }
 
-bool _SetOptionVar(const MString& attrName, const float& value) {
+bool _SetOptionVar(const MString& attrName, const float& value)
+{
     return _SetOptionVar(attrName, double(value));
 }
 
-bool _SetOptionVar(const MString& attrName, const TfToken& value) {
+bool _SetOptionVar(const MString& attrName, const TfToken& value)
+{
     return _SetOptionVar(attrName, MString(value.GetText()));
 }
 
-bool _SetOptionVar(const MString& attrName, const std::string& value) {
+bool _SetOptionVar(const MString& attrName, const std::string& value)
+{
     return _SetOptionVar(attrName, MString(value.c_str()));
 }
 
-bool _SetOptionVar(const MString& attrName, const TfEnum& value) {
+bool _SetOptionVar(const MString& attrName, const TfEnum& value)
+{
     return _SetOptionVar(attrName, TfEnum::GetDisplayName(value));
 }
 
-template <typename T>
-bool _SetColorOptionVar(const MString& attrName, const T& values) {
+template <typename T> bool _SetColorOptionVar(const MString& attrName, const T& values)
+{
     bool rval = true;
     for (size_t i = 0; i < T::dimension; ++i) {
-        rval = _SetOptionVar(_MangleColorAttribute(attrName, i),
-            values[i]) && rval;
+        rval = _SetOptionVar(_MangleColorAttribute(attrName, i), values[i]) && rval;
     }
     return rval;
 }
 
 template <typename T>
 bool _GetAttribute(
-    const MFnDependencyNode& node, const MString& attrName, T& out,
-    bool storeUserSetting) {
+    const MFnDependencyNode& node,
+    const MString&           attrName,
+    T&                       out,
+    bool                     storeUserSetting)
+{
     const auto plug = node.findPlug(attrName, true);
-    if (plug.isNull()) { return false; }
+    if (plug.isNull()) {
+        return false;
+    }
     _GetFromPlug<T>(plug, out);
     if (storeUserSetting) {
         _SetOptionVar(attrName, out);
@@ -452,8 +515,12 @@ bool _GetAttribute(
 }
 
 void _GetColorAttribute(
-    const MFnDependencyNode& node, const MString& attrName, GfVec3f& out,
-    bool storeUserSetting, std::function<void(GfVec3f&, bool)> alphaOp = {}) {
+    const MFnDependencyNode&            node,
+    const MString&                      attrName,
+    GfVec3f&                            out,
+    bool                                storeUserSetting,
+    std::function<void(GfVec3f&, bool)> alphaOp = {})
+{
     const auto plug = node.findPlug(attrName, true);
     if (plug.isNull()) {
         return;
@@ -471,78 +538,89 @@ void _GetColorAttribute(
 }
 
 void _GetColorAttribute(
-    const MFnDependencyNode& node, const MString& attrName, GfVec4f& out,
-    bool storeUserSetting) {
+    const MFnDependencyNode& node,
+    const MString&           attrName,
+    GfVec4f&                 out,
+    bool                     storeUserSetting)
+{
     GfVec3f color3;
-    _GetColorAttribute(node, attrName, color3, storeUserSetting,
-        [&](GfVec3f& color3, bool storeUserSetting) {
-        const auto plugA = node.findPlug(_AlphaAttribute(attrName), true);
-        if (plugA.isNull()) {
-            TF_WARN("[mtoh] No Alpha plug for GfVec4f");
-            return;
-        }
-        out[0] = color3[0];
-        out[1] = color3[1];
-        out[2] = color3[2];
-        out[3] = plugA.asFloat();
-        if (storeUserSetting) {
-            _SetColorOptionVar(attrName, out);
-        }
-    });
+    _GetColorAttribute(
+        node, attrName, color3, storeUserSetting, [&](GfVec3f& color3, bool storeUserSetting) {
+            const auto plugA = node.findPlug(_AlphaAttribute(attrName), true);
+            if (plugA.isNull()) {
+                TF_WARN("[mtoh] No Alpha plug for GfVec4f");
+                return;
+            }
+            out[0] = color3[0];
+            out[1] = color3[1];
+            out[2] = color3[2];
+            out[3] = plugA.asFloat();
+            if (storeUserSetting) {
+                _SetColorOptionVar(attrName, out);
+            }
+        });
 }
 
-bool _IsSupportedAttribute(const VtValue& v) {
-    return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>() ||
-           v.IsHolding<GfVec3f>() || v.IsHolding<GfVec4f>() ||
-           v.IsHolding<TfToken>() || v.IsHolding<std::string>() ||
-           v.IsHolding<TfEnum>();
+bool _IsSupportedAttribute(const VtValue& v)
+{
+    return v.IsHolding<bool>() || v.IsHolding<int>() || v.IsHolding<float>()
+        || v.IsHolding<GfVec3f>() || v.IsHolding<GfVec4f>() || v.IsHolding<TfToken>()
+        || v.IsHolding<std::string>() || v.IsHolding<TfEnum>();
 }
 
-TfToken
-_MangleString(const std::string& settingKey, const std::string& token,
-    const std::string& replacement, std::string str = {}) {
+TfToken _MangleString(
+    const std::string& settingKey,
+    const std::string& token,
+    const std::string& replacement,
+    std::string        str = {})
+{
     std::size_t pos = 0;
-    auto delim = settingKey.find(token);
+    auto        delim = settingKey.find(token);
     while (delim != std::string::npos) {
-        str += settingKey.substr(pos, delim-pos).c_str();
+        str += settingKey.substr(pos, delim - pos).c_str();
         str += replacement;
         pos = delim + token.size();
         delim = settingKey.find(token, pos);
     }
-    str += settingKey.substr(pos, settingKey.size()-pos).c_str();
+    str += settingKey.substr(pos, settingKey.size() - pos).c_str();
     return TfToken(str, TfToken::Immortal);
 }
 
-std::string
-_MangleRenderer(const TfToken& rendererName) {
+std::string _MangleRenderer(const TfToken& rendererName)
+{
     return rendererName.IsEmpty() ? "" : (rendererName.GetString() + kMtohRendererPostFix);
 }
 
-TfToken
-_MangleString(const TfToken& settingKey, const TfToken& rendererName) {
+TfToken _MangleString(const TfToken& settingKey, const TfToken& rendererName)
+{
     return _MangleString(settingKey.GetString(), ":", kMtohNSToken, _MangleRenderer(rendererName));
 }
 
-TfToken
-_DeMangleString(const TfToken& settingKey, const TfToken& rendererName) {
+TfToken _DeMangleString(const TfToken& settingKey, const TfToken& rendererName)
+{
     assert(!rendererName.IsEmpty() && "No condition for this");
-    return _MangleString(settingKey.GetString().substr(rendererName.size()+kMtohRendererPostFix.size()),
-        kMtohNSToken, ":");
+    return _MangleString(
+        settingKey.GetString().substr(rendererName.size() + kMtohRendererPostFix.size()),
+        kMtohNSToken,
+        ":");
 }
 
-TfToken _MangleName(const TfToken& settingKey, const TfToken& rendererName = {}) {
-    assert(rendererName.GetString().find(':') == std::string::npos && "Unexpected : token in plug-in name");
+TfToken _MangleName(const TfToken& settingKey, const TfToken& rendererName = {})
+{
+    assert(
+        rendererName.GetString().find(':') == std::string::npos
+        && "Unexpected : token in plug-in name");
     return _MangleString(settingKey, rendererName);
 }
 
-
 } // namespace
 
-MtohRenderGlobals::MtohRenderGlobals() {}
+MtohRenderGlobals::MtohRenderGlobals() { }
 
 // Does the attribute in 'attrName' apply to the renderer
 // XXX: Not the greatest check in the world, but currently no overlap in renderer-names
-bool MtohRenderGlobals::AffectsRenderer(const TfToken& mangledAttr, const TfToken& rendererName) {
+bool MtohRenderGlobals::AffectsRenderer(const TfToken& mangledAttr, const TfToken& rendererName)
+{
     // If no explicit renderer, the setting affects them all
     if (rendererName.IsEmpty()) {
         return true;
@@ -550,8 +628,11 @@ bool MtohRenderGlobals::AffectsRenderer(const TfToken& mangledAttr, const TfToke
     return mangledAttr.GetString().find(_MangleRenderer(rendererName)) == 0;
 }
 
-bool MtohRenderGlobals::ApplySettings(HdRenderDelegate* delegate,
-    const TfToken& rendererName, const TfTokenVector& attrNames) const {
+bool MtohRenderGlobals::ApplySettings(
+    HdRenderDelegate*    delegate,
+    const TfToken&       rendererName,
+    const TfTokenVector& attrNames) const
+{
     const auto* settings = TfMapLookupPtr(_rendererSettings, rendererName);
     if (!settings) {
         return false;
@@ -561,15 +642,14 @@ bool MtohRenderGlobals::ApplySettings(HdRenderDelegate* delegate,
     if (!attrNames.empty()) {
         for (auto& mangledAttr : attrNames) {
             if (const auto* setting = TfMapLookupPtr(*settings, mangledAttr)) {
-                delegate->SetRenderSetting(_DeMangleString(mangledAttr, rendererName),
-                    *setting);
+                delegate->SetRenderSetting(_DeMangleString(mangledAttr, rendererName), *setting);
                 appliedAny = true;
             }
         }
     } else {
         for (auto&& setting : *settings) {
-            delegate->SetRenderSetting(_DeMangleString(setting.first, rendererName),
-                setting.second);
+            delegate->SetRenderSetting(
+                _DeMangleString(setting.first, rendererName), setting.second);
         }
         appliedAny = true;
     }
@@ -577,7 +657,8 @@ bool MtohRenderGlobals::ApplySettings(HdRenderDelegate* delegate,
     return appliedAny;
 }
 
-void MtohRenderGlobals::OptionsPreamble() {
+void MtohRenderGlobals::OptionsPreamble()
+{
     MStatus status = MGlobal::executeCommand(_renderOverride_PreAmble);
     if (status) {
         return;
@@ -585,27 +666,29 @@ void MtohRenderGlobals::OptionsPreamble() {
     TF_WARN("[mtoh] Error executing preamble:\n%s", _renderOverride_PreAmble);
 }
 
-void MtohRenderGlobals::BuildOptionsMenu(const MtohRendererDescription& rendererDesc,
+void MtohRenderGlobals::BuildOptionsMenu(
+    const MtohRendererDescription&       rendererDesc,
     const HdRenderSettingDescriptorList& rendererSettingDescriptors)
 {
     // FIXME: Horribly in-effecient, 3 parse/replace calls
     //
     auto optionBoxCommand = TfStringReplace(
-        _renderOverrideOptionBoxTemplate, "{{override}}",
-        rendererDesc.overrideName.GetText());
-    optionBoxCommand = TfStringReplace(optionBoxCommand, "{{hydraplugin}}",
-        rendererDesc.rendererName);
-    optionBoxCommand = TfStringReplace(optionBoxCommand, "{{hydraDisplayName}}",
-        rendererDesc.displayName);
+        _renderOverrideOptionBoxTemplate, "{{override}}", rendererDesc.overrideName.GetText());
+    optionBoxCommand
+        = TfStringReplace(optionBoxCommand, "{{hydraplugin}}", rendererDesc.rendererName);
+    optionBoxCommand
+        = TfStringReplace(optionBoxCommand, "{{hydraDisplayName}}", rendererDesc.displayName);
 
     auto status = MGlobal::executeCommand(optionBoxCommand.c_str());
     if (!status) {
-        TF_WARN("[mtoh] Error in render override option box command function: \n%s",
+        TF_WARN(
+            "[mtoh] Error in render override option box command function: \n%s",
             status.errorString().asChar());
     }
 
     auto quote = [&](std::string str, const char* strb = nullptr) -> std::string {
-        if (strb) str += strb;
+        if (strb)
+            str += strb;
         return "\"" + str + "\"";
     };
 
@@ -616,17 +699,15 @@ void MtohRenderGlobals::BuildOptionsMenu(const MtohRendererDescription& renderer
             continue;
         }
 
-        ss << "\tmtohRenderOverride_AddAttribute("
-           << quote(rendererDesc.rendererName.GetString())
-           << ',' << quote(desc.name)
-           << ',' << quote(_MangleName(desc.key, rendererDesc.rendererName).GetString())
+        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
+           << ',' << quote(desc.name) << ','
+           << quote(_MangleName(desc.key, rendererDesc.rendererName).GetString())
            << ", $fromAE);\n";
     }
     if (rendererDesc.rendererName == MtohTokens->HdStormRendererPlugin) {
-        ss << "\tmtohRenderOverride_AddAttribute("
-           << quote(rendererDesc.rendererName.GetString())
-           << ',' << quote("Maximum shadow map size")
-           << ',' << quote(_MangleName(MtohTokens->mtohMaximumShadowMapResolution).GetString())
+        ss << "\tmtohRenderOverride_AddAttribute(" << quote(rendererDesc.rendererName.GetString())
+           << ',' << quote("Maximum shadow map size") << ','
+           << quote(_MangleName(MtohTokens->mtohMaximumShadowMapResolution).GetString())
            << ", $fromAE);\n";
     }
     ss << "}\n";
@@ -634,23 +715,29 @@ void MtohRenderGlobals::BuildOptionsMenu(const MtohRendererDescription& renderer
     const auto optionsCommand = ss.str();
     status = MGlobal::executeCommand(optionsCommand.c_str());
     if (!status) {
-        TF_WARN("[mtoh] Error in render delegate options function: \n%s",
+        TF_WARN(
+            "[mtoh] Error in render delegate options function: \n%s",
             status.errorString().asChar());
     }
 }
 
-class MtohRenderGlobals::MtohSettingFilter {
-    TfToken _attrName;
-    MString _mayaString;
-    const TfToken  _inFilter;
-    bool _isAttributeFilt;
+class MtohRenderGlobals::MtohSettingFilter
+{
+    TfToken       _attrName;
+    MString       _mayaString;
+    const TfToken _inFilter;
+    bool          _isAttributeFilt;
+
 public:
     MtohSettingFilter(const GlobalParams& params)
         : _inFilter(params.filter)
-        , _isAttributeFilt(!(params.filterIsRenderer || _inFilter.IsEmpty())) {}
+        , _isAttributeFilt(!(params.filterIsRenderer || _inFilter.IsEmpty()))
+    {
+    }
 
     // Create the mangled key, and convert it to a Maya string if needed
-    bool operator() (const TfToken& attr, const TfToken& renderer = {}) {
+    bool operator()(const TfToken& attr, const TfToken& renderer = {})
+    {
         _attrName = _MangleName(attr, renderer);
         if (attributeFilter()) {
             if (_inFilter != _attrName) {
@@ -664,35 +751,29 @@ public:
         }
         _mayaString = MString(_attrName.GetText());
         return true;
-        
     }
-    bool attributeFilter() const {
-        return _isAttributeFilt;
-    }
-    bool renderFilter() const {
-        return !_isAttributeFilt && !_inFilter.IsEmpty();
-    }
-    bool affectsRenderer(const TfToken& renderer) {
+    bool attributeFilter() const { return _isAttributeFilt; }
+    bool renderFilter() const { return !_isAttributeFilt && !_inFilter.IsEmpty(); }
+    bool affectsRenderer(const TfToken& renderer)
+    {
         // If there's no filter, then the filter DOES affect this renderer
         if (_inFilter.IsEmpty()) {
             return true;
         }
-        // If it's an attribute-filter, test with mangling, otherwise the renderer-names should match
+        // If it's an attribute-filter, test with mangling, otherwise the renderer-names should
+        // match
         return _isAttributeFilt ? AffectsRenderer(_inFilter, renderer) : renderer == _inFilter;
     }
-    const TfToken& attrName() const {
-        return _attrName; 
-    }
-    const MString& mayaString() const {
-        return _mayaString;
-    }
+    const TfToken& attrName() const { return _attrName; }
+    const MString& mayaString() const { return _mayaString; }
 };
 
 // TODO : MtohRenderGlobals::CreateNode && MtohRenderGlobals::GetInstance
 //        are extrmely redundant in logic, with most divergance occurring
 //        at the leaf operation (_CreatXXXAttr vs. _GetAttribute)
 //
-MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params) {
+MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params)
+{
     MSelectionList slist;
     slist.add(_tokens->defaultRenderGlobals.GetText());
 
@@ -701,7 +782,7 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params) {
         return mayaObject;
     }
 
-    MStatus status;
+    MStatus           status;
     MFnDependencyNode node(mayaObject, &status);
     if (!status) {
         return MObject();
@@ -712,17 +793,19 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params) {
     static const MtohRenderGlobals defGlobals;
 
     MtohSettingFilter filter(params);
-    const bool userDefaults = params.fallbackToUserDefaults;
+    const bool        userDefaults = params.fallbackToUserDefaults;
 
     if (filter(_tokens->mtohEnableMotionSamples)) {
-        _CreateBoolAttribute(node, filter.mayaString(),
-            defGlobals.delegateParams.enableMotionSamples, userDefaults);
+        _CreateBoolAttribute(
+            node, filter.mayaString(), defGlobals.delegateParams.enableMotionSamples, userDefaults);
         if (filter.attributeFilter()) {
             return mayaObject;
         }
     }
     if (filter(_tokens->mtohTextureMemoryPerTexture)) {
-        _CreateIntAttribute(node, filter.mayaString(),
+        _CreateIntAttribute(
+            node,
+            filter.mayaString(),
             defGlobals.delegateParams.textureMemoryPerTexture / 1024,
             userDefaults,
             [](MFnNumericAttribute& nAttr) {
@@ -736,7 +819,9 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params) {
         }
     }
     if (filter(MtohTokens->mtohMaximumShadowMapResolution)) {
-        _CreateIntAttribute(node, filter.mayaString(),
+        _CreateIntAttribute(
+            node,
+            filter.mayaString(),
             defGlobals.delegateParams.maximumShadowMapResolution,
             userDefaults,
             [](MFnNumericAttribute& nAttr) {
@@ -748,36 +833,36 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params) {
         }
     }
     if (filter(_tokens->mtohWireframeSelectionHighlight)) {
-        _CreateBoolAttribute(node, filter.mayaString(),
-            defGlobals.wireframeSelectionHighlight, userDefaults);
+        _CreateBoolAttribute(
+            node, filter.mayaString(), defGlobals.wireframeSelectionHighlight, userDefaults);
         if (filter.attributeFilter()) {
             return mayaObject;
         }
     }
     if (filter(_tokens->mtohColorSelectionHighlight)) {
-        _CreateBoolAttribute(node, filter.mayaString(),
-            defGlobals.colorSelectionHighlight, userDefaults);
+        _CreateBoolAttribute(
+            node, filter.mayaString(), defGlobals.colorSelectionHighlight, userDefaults);
         if (filter.attributeFilter()) {
             return mayaObject;
         }
     }
     if (filter(_tokens->mtohColorSelectionHighlightColor)) {
-        _CreateColorAttribute(node, filter.mayaString(),
-            defGlobals.colorSelectionHighlightColor, userDefaults);
+        _CreateColorAttribute(
+            node, filter.mayaString(), defGlobals.colorSelectionHighlightColor, userDefaults);
         if (filter.attributeFilter()) {
             return mayaObject;
         }
     }
 #if USD_VERSION_NUM >= 2005
     if (filter(_tokens->mtohSelectionOutline)) {
-        _CreateFloatAttribute(node, filter.mayaString(),
-            defGlobals.outlineSelectionWidth, userDefaults);
+        _CreateFloatAttribute(
+            node, filter.mayaString(), defGlobals.outlineSelectionWidth, userDefaults);
     }
 #endif
 #if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
     if (filter(_tokens->mtohColorQuantization)) {
-        _CreateBoolAttribute(node, filter.mayaString(),
-            defGlobals.enableColorQuantization, userDefaults);
+        _CreateBoolAttribute(
+            node, filter.mayaString(), defGlobals.enableColorQuantization, userDefaults);
         if (filter.attributeFilter()) {
             return mayaObject;
         }
@@ -798,41 +883,58 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params) {
             }
 
             if (attr.defaultValue.IsHolding<bool>()) {
-                _CreateBoolAttribute(node, filter.mayaString(),
+                _CreateBoolAttribute(
+                    node,
+                    filter.mayaString(),
                     attr.defaultValue.UncheckedGet<bool>(),
                     userDefaults);
             } else if (attr.defaultValue.IsHolding<int>()) {
-                _CreateIntAttribute(node, filter.mayaString(),
-                    attr.defaultValue.UncheckedGet<int>(),
-                    userDefaults);
+                _CreateIntAttribute(
+                    node, filter.mayaString(), attr.defaultValue.UncheckedGet<int>(), userDefaults);
             } else if (attr.defaultValue.IsHolding<float>()) {
-                _CreateFloatAttribute(node, filter.mayaString(),
+                _CreateFloatAttribute(
+                    node,
+                    filter.mayaString(),
                     attr.defaultValue.UncheckedGet<float>(),
                     userDefaults);
             } else if (attr.defaultValue.IsHolding<GfVec3f>()) {
-                _CreateColorAttribute(node, filter.mayaString(),
+                _CreateColorAttribute(
+                    node,
+                    filter.mayaString(),
                     attr.defaultValue.UncheckedGet<GfVec3f>(),
                     userDefaults);
             } else if (attr.defaultValue.IsHolding<GfVec4f>()) {
-                _CreateColorAttribute(node, filter.mayaString(),
+                _CreateColorAttribute(
+                    node,
+                    filter.mayaString(),
                     attr.defaultValue.UncheckedGet<GfVec4f>(),
                     userDefaults);
             } else if (attr.defaultValue.IsHolding<TfToken>()) {
-                _CreateStringAttribute(node, filter.mayaString(),
+                _CreateStringAttribute(
+                    node,
+                    filter.mayaString(),
                     attr.defaultValue.UncheckedGet<TfToken>().GetString(),
                     userDefaults);
             } else if (attr.defaultValue.IsHolding<std::string>()) {
-                _CreateStringAttribute(node, filter.mayaString(),
+                _CreateStringAttribute(
+                    node,
+                    filter.mayaString(),
                     attr.defaultValue.UncheckedGet<std::string>(),
                     userDefaults);
             } else if (attr.defaultValue.IsHolding<TfEnum>()) {
-                _CreateEnumAttribute(node, filter.mayaString(),
+                _CreateEnumAttribute(
+                    node,
+                    filter.mayaString(),
                     attr.defaultValue.UncheckedGet<TfEnum>(),
                     userDefaults);
             } else {
-                assert(!_IsSupportedAttribute(attr.defaultValue) && "_IsSupportedAttribute out of synch");
+                assert(
+                    !_IsSupportedAttribute(attr.defaultValue)
+                    && "_IsSupportedAttribute out of synch");
 
-                TF_WARN("[mtoh] Ignoring setting: '%s' for %s", attr.key.GetText(),
+                TF_WARN(
+                    "[mtoh] Ignoring setting: '%s' for %s",
+                    attr.key.GetText(),
                     rendererName.GetText());
             }
             if (filter.attributeFilter()) {
@@ -843,15 +945,16 @@ MObject MtohRenderGlobals::CreateAttributes(const GlobalParams& params) {
     return mayaObject;
 }
 
-const MtohRenderGlobals& MtohRenderGlobals::GetInstance(const GlobalParams& params,
-    bool storeUserSetting) {
+const MtohRenderGlobals&
+MtohRenderGlobals::GetInstance(const GlobalParams& params, bool storeUserSetting)
+{
     static MtohRenderGlobals globals;
-    const auto obj = CreateAttributes(params);
+    const auto               obj = CreateAttributes(params);
     if (obj.isNull()) {
         return globals;
     }
 
-    MStatus status;
+    MStatus           status;
     MFnDependencyNode node(obj, &status);
     if (!status) {
         return globals;
@@ -859,53 +962,60 @@ const MtohRenderGlobals& MtohRenderGlobals::GetInstance(const GlobalParams& para
 
     MtohSettingFilter filter(params);
 
-    if (filter(_tokens->mtohTextureMemoryPerTexture) &&
-        _GetAttribute(node, filter.mayaString(),
-            globals.delegateParams.textureMemoryPerTexture, storeUserSetting)) {
+    if (filter(_tokens->mtohTextureMemoryPerTexture)
+        && _GetAttribute(
+            node,
+            filter.mayaString(),
+            globals.delegateParams.textureMemoryPerTexture,
+            storeUserSetting)) {
         globals.delegateParams.textureMemoryPerTexture *= 1024;
         if (filter.attributeFilter()) {
             return globals;
         }
     }
     if (filter(_tokens->mtohEnableMotionSamples)) {
-        _GetAttribute(node, filter.mayaString(),
-            globals.delegateParams.enableMotionSamples, storeUserSetting);
+        _GetAttribute(
+            node,
+            filter.mayaString(),
+            globals.delegateParams.enableMotionSamples,
+            storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }
     }
     if (filter(MtohTokens->mtohMaximumShadowMapResolution)) {
-        _GetAttribute(node, filter.mayaString(),
-            globals.delegateParams.maximumShadowMapResolution, storeUserSetting);
+        _GetAttribute(
+            node,
+            filter.mayaString(),
+            globals.delegateParams.maximumShadowMapResolution,
+            storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }
     }
     if (filter(_tokens->mtohWireframeSelectionHighlight)) {
-        _GetAttribute(node, filter.mayaString(),
-            globals.wireframeSelectionHighlight, storeUserSetting);
+        _GetAttribute(
+            node, filter.mayaString(), globals.wireframeSelectionHighlight, storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }
     }
     if (filter(_tokens->mtohColorSelectionHighlight)) {
-        _GetAttribute(node, filter.mayaString(),
-            globals.colorSelectionHighlight, storeUserSetting);
+        _GetAttribute(node, filter.mayaString(), globals.colorSelectionHighlight, storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }
     }
     if (filter(_tokens->mtohColorSelectionHighlightColor)) {
-        _GetColorAttribute(node, filter.mayaString(),
-            globals.colorSelectionHighlightColor, storeUserSetting);
+        _GetColorAttribute(
+            node, filter.mayaString(), globals.colorSelectionHighlightColor, storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }
     }
 #if USD_VERSION_NUM >= 2005
     if (filter(_tokens->mtohSelectionOutline)) {
-        _GetAttribute(node, filter.mayaString(),
-            globals.outlineSelectionWidth, storeUserSetting);
+        _GetAttribute(node, filter.mayaString(), globals.outlineSelectionWidth, storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }
@@ -913,8 +1023,7 @@ const MtohRenderGlobals& MtohRenderGlobals::GetInstance(const GlobalParams& para
 #endif
 #if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
     if (filter(_tokens->mtohColorQuantization)) {
-        _GetAttribute(node, filter.mayaString(),
-            globals.enableColorQuantization, storeUserSetting);
+        _GetAttribute(node, filter.mayaString(), globals.enableColorQuantization, storeUserSetting);
         if (filter.attributeFilter()) {
             return globals;
         }
@@ -970,9 +1079,13 @@ const MtohRenderGlobals& MtohRenderGlobals::GetInstance(const GlobalParams& para
                 _GetAttribute(node, filter.mayaString(), v, storeUserSetting);
                 settings[filter.attrName()] = v;
             } else {
-                assert(!_IsSupportedAttribute(attr.defaultValue) && "_IsSupportedAttribute out of synch");
+                assert(
+                    !_IsSupportedAttribute(attr.defaultValue)
+                    && "_IsSupportedAttribute out of synch");
 
-                TF_WARN("[mtoh] Can't get setting: '%s' for %s", attr.key.GetText(),
+                TF_WARN(
+                    "[mtoh] Can't get setting: '%s' for %s",
+                    attr.key.GetText(),
                     rendererName.GetText());
             }
             if (filter.attributeFilter()) {
@@ -983,12 +1096,14 @@ const MtohRenderGlobals& MtohRenderGlobals::GetInstance(const GlobalParams& para
     return globals;
 }
 
-const MtohRenderGlobals& MtohRenderGlobals::GetInstance(bool storeUserSetting) {
+const MtohRenderGlobals& MtohRenderGlobals::GetInstance(bool storeUserSetting)
+{
     return GetInstance(GlobalParams(), storeUserSetting);
 }
 
-const MtohRenderGlobals& MtohRenderGlobals::GlobalChanged(const GlobalParams& params,
-    bool storeUserSetting) {
+const MtohRenderGlobals&
+MtohRenderGlobals::GlobalChanged(const GlobalParams& params, bool storeUserSetting)
+{
     return GetInstance(params, storeUserSetting);
 }
 

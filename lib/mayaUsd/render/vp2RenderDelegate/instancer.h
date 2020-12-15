@@ -18,13 +18,13 @@
 #ifndef HD_VP2_INSTANCER
 #define HD_VP2_INSTANCER
 
-#include <mutex>
-
-#include <pxr/pxr.h>
 #include <pxr/base/tf/hashmap.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/instancer.h>
 #include <pxr/imaging/hd/vtBufferSource.h>
+#include <pxr/pxr.h>
+
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -35,15 +35,18 @@ PXR_NAMESPACE_OPEN_SCOPE
     cartesian product of the transform arrays at each nesting level, to
     create a flattened transform array.
 */
-class HdVP2Instancer final : public HdInstancer 
+class HdVP2Instancer final : public HdInstancer
 {
 public:
-    HdVP2Instancer(HdSceneDelegate* delegate, SdfPath const& id,
-                      SdfPath const &parentInstancerId);
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+    HdVP2Instancer(HdSceneDelegate* delegate, SdfPath const& id);
+#else
+    HdVP2Instancer(HdSceneDelegate* delegate, SdfPath const& id, SdfPath const& parentInstancerId);
+#endif
 
     ~HdVP2Instancer();
 
-    VtMatrix4dArray ComputeInstanceTransforms(SdfPath const &prototypeId);
+    VtMatrix4dArray ComputeInstanceTransforms(SdfPath const& prototypeId);
 
 private:
     void _SyncPrimvars();

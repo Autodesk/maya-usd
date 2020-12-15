@@ -18,22 +18,23 @@
 #include <mayaUsd/ufe/ProxyShapeHierarchy.h>
 #include <mayaUsd/ufe/Utils.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
-	: Ufe::HierarchyHandler()
-	, fMayaHierarchyHandler(mayaHierarchyHandler)
-{}
-
-ProxyShapeHierarchyHandler::~ProxyShapeHierarchyHandler()
+ProxyShapeHierarchyHandler::ProxyShapeHierarchyHandler(
+    const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
+    : Ufe::HierarchyHandler()
+    , fMayaHierarchyHandler(mayaHierarchyHandler)
 {
 }
 
+ProxyShapeHierarchyHandler::~ProxyShapeHierarchyHandler() { }
+
 /*static*/
-ProxyShapeHierarchyHandler::Ptr ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
+ProxyShapeHierarchyHandler::Ptr
+ProxyShapeHierarchyHandler::create(const Ufe::HierarchyHandler::Ptr& mayaHierarchyHandler)
 {
-	return std::make_shared<ProxyShapeHierarchyHandler>(mayaHierarchyHandler);
+    return std::make_shared<ProxyShapeHierarchyHandler>(mayaHierarchyHandler);
 }
 
 //------------------------------------------------------------------------------
@@ -42,31 +43,28 @@ ProxyShapeHierarchyHandler::Ptr ProxyShapeHierarchyHandler::create(const Ufe::Hi
 
 Ufe::Hierarchy::Ptr ProxyShapeHierarchyHandler::hierarchy(const Ufe::SceneItem::Ptr& item) const
 {
-	if (isAGatewayType(item->nodeType()))
-	{
-		return ProxyShapeHierarchy::create(fMayaHierarchyHandler, item);
-	}
-	else
-	{
-		return fMayaHierarchyHandler->hierarchy(item);
-	}
+    if (isAGatewayType(item->nodeType())) {
+        return ProxyShapeHierarchy::create(fMayaHierarchyHandler, item);
+    } else {
+        return fMayaHierarchyHandler->hierarchy(item);
+    }
 }
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchyHandler::createItem(const Ufe::Path& path) const
 {
-	return fMayaHierarchyHandler->createItem(path);
+    return fMayaHierarchyHandler->createItem(path);
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #if UFE_PREVIEW_VERSION_NUM >= 2022
 Ufe::Hierarchy::ChildFilter ProxyShapeHierarchyHandler::childFilter() const
 {
-	Ufe::Hierarchy::ChildFilter childFilters;
-	childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
-	return childFilters;
+    Ufe::Hierarchy::ChildFilter childFilters;
+    childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
+    return childFilters;
 }
 #endif
 #endif
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

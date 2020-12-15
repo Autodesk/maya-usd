@@ -13,7 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
+#include "api.h"
 
 #include <mayaUsd/fileio/shaderReaderRegistry.h>
 #include <mayaUsd/fileio/shaderWriterRegistry.h>
@@ -21,26 +21,29 @@
 #include <maya/MFnPlugin.h>
 #include <maya/MString.h>
 
-#include "api.h"
+#include <basePxrUsdPreviewSurface/usdPreviewSurfacePlugin.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
-const MString PxrUsdPreviewSurface_typeName("pxrUsdPreviewSurface");
-const MTypeId PxrUsdPreviewSurface_typeId(0x00126403);
+const MString  PxrUsdPreviewSurface_typeName("pxrUsdPreviewSurface");
+const MTypeId  PxrUsdPreviewSurface_typeId(0x00126403);
 const MString& PxrUsdPreviewSurface_registrantId = PxrUsdPreviewSurface_typeName;
-}
+} // namespace
 
 TF_REGISTRY_FUNCTION(UsdMayaShaderReaderRegistry)
-{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(PxrUsdPreviewSurface_typeName); };
+{
+    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceReader(PxrUsdPreviewSurface_typeName);
+};
 TF_REGISTRY_FUNCTION(UsdMayaShaderWriterRegistry)
-{ PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(PxrUsdPreviewSurface_typeName); };
+{
+    PxrMayaUsdPreviewSurfacePlugin::RegisterPreviewSurfaceWriter(PxrUsdPreviewSurface_typeName);
+};
 
 PXRUSDPREVIEWSURFACE_API
-MStatus
-initializePlugin(MObject obj)
+MStatus initializePlugin(MObject obj)
 {
-    MStatus status;
+    MStatus   status;
     MFnPlugin plugin(obj, "Pixar", "1.0", "Any");
 
     status = PxrMayaUsdPreviewSurfacePlugin::initialize(
@@ -54,12 +57,11 @@ initializePlugin(MObject obj)
 }
 
 PXRUSDPREVIEWSURFACE_API
-MStatus
-uninitializePlugin(MObject obj)
+MStatus uninitializePlugin(MObject obj)
 {
-    MStatus status;
+    MStatus   status;
     MFnPlugin plugin(obj);
-    
+
     status = PxrMayaUsdPreviewSurfacePlugin::finalize(
         plugin,
         PxrUsdPreviewSurface_typeName,

@@ -15,20 +15,20 @@
 //
 #include "AL/usdmaya/fileio/translators/DagNodeTranslator.h"
 
+#include <pxr/usd/usd/attribute.h>
+#include <pxr/usd/usdGeom/xform.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
+
 #include <maya/MAngle.h>
 #include <maya/MDGModifier.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnSet.h>
 #include <maya/MGlobal.h>
+#include <maya/MNodeClass.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
-#include <maya/MNodeClass.h>
 #include <maya/MSelectionList.h>
 #include <maya/MStatus.h>
-
-#include <pxr/usd/usd/attribute.h>
-#include <pxr/usd/usdGeom/xform.h>
-#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 namespace AL {
 namespace usdmaya {
@@ -41,71 +41,81 @@ MObject DagNodeTranslator::m_initialShadingGroup = MObject::kNullObj;
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DagNodeTranslator::registerType()
 {
-  const char* const errorString = "DagNodeTranslator::Unable to extract attribute for DagNodeTranslator";
-  MNodeClass fn("transform");
-  MStatus status;
+    const char* const errorString
+        = "DagNodeTranslator::Unable to extract attribute for DagNodeTranslator";
+    MNodeClass fn("transform");
+    MStatus    status;
 
-  m_visible = fn.attribute("v", &status);
-  AL_MAYA_CHECK_ERROR(status, errorString);
+    m_visible = fn.attribute("v", &status);
+    AL_MAYA_CHECK_ERROR(status, errorString);
 
-  DagNodeTranslator::initialiseDefaultShadingGroup(m_initialShadingGroup);
+    DagNodeTranslator::initialiseDefaultShadingGroup(m_initialShadingGroup);
 
-  return MS::kSuccess;
+    return MS::kSuccess;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 void DagNodeTranslator::initialiseDefaultShadingGroup(MObject& target)
 {
-  MSelectionList sl;
-  MGlobal::selectByName("initialShadingGroup", MGlobal::kReplaceList);
-  MGlobal::getActiveSelectionList(sl);
+    MSelectionList sl;
+    MGlobal::selectByName("initialShadingGroup", MGlobal::kReplaceList);
+    MGlobal::getActiveSelectionList(sl);
 
-  MObject shadingGroup;
-  sl.getDependNode(0, target);
+    MObject shadingGroup;
+    sl.getDependNode(0, target);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MObject DagNodeTranslator::createNode(const UsdPrim& from, MObject parent, const char* nodeType, const ImporterParams& params)
+MObject DagNodeTranslator::createNode(
+    const UsdPrim&        from,
+    MObject               parent,
+    const char*           nodeType,
+    const ImporterParams& params)
 {
-  std::string xformError = std::string("DagNodeTranslator::createNode error creating node of type ") + nodeType
-      + ". Create transform instead";
-  MStatus status;
-  MFnDagNode fn;
+    std::string xformError
+        = std::string("DagNodeTranslator::createNode error creating node of type ") + nodeType
+        + ". Create transform instead";
+    MStatus    status;
+    MFnDagNode fn;
 
-  MObject to = fn.create(nodeType, parent, &status);
-  AL_MAYA_CHECK_ERROR2(status, xformError.c_str());
-  if (status!= MS::kSuccess) {
-    to = fn.create("transform", parent, &status);
-  }
-  AL_MAYA_CHECK_ERROR2(status, "DagNodeTranslator::createNode error creating node of type transform");
+    MObject to = fn.create(nodeType, parent, &status);
+    AL_MAYA_CHECK_ERROR2(status, xformError.c_str());
+    if (status != MS::kSuccess) {
+        to = fn.create("transform", parent, &status);
+    }
+    AL_MAYA_CHECK_ERROR2(
+        status, "DagNodeTranslator::createNode error creating node of type transform");
 
-  status = copyAttributes(from, to, params);
-  AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(status, "DagNodeTranslator::createNode unable to copy attributes");
+    status = copyAttributes(from, to, params);
+    AL_MAYA_CHECK_ERROR_RETURN_NULL_MOBJECT(
+        status, "DagNodeTranslator::createNode unable to copy attributes");
 
-  return to;
+    return to;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-MStatus DagNodeTranslator::copyAttributes(const UsdPrim& from, MObject to, const ImporterParams& params)
+MStatus
+DagNodeTranslator::copyAttributes(const UsdPrim& from, MObject to, const ImporterParams& params)
 {
-  AL_MAYA_CHECK_ERROR2(DgNodeTranslator::copyAttributes(from, to, params), "Errr");
+    AL_MAYA_CHECK_ERROR2(DgNodeTranslator::copyAttributes(from, to, params), "Errr");
 
-  const UsdGeomXform xformSchema(from);
-  return copyBool(to, m_visible, xformSchema.GetVisibilityAttr());
+    const UsdGeomXform xformSchema(from);
+    return copyBool(to, m_visible, xformSchema.GetVisibilityAttr());
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 MStatus DagNodeTranslator::applyDefaultMaterialOnShape(MObject shape)
 {
-  MStatus status;
-  MFnSet fn(m_initialShadingGroup, &status);
-  AL_MAYA_CHECK_ERROR(status, "DagNodeTranslator::Unable to attach MfnSet to initialShadingGroup");
-  return fn.addMember(shape);
+    MStatus status;
+    MFnSet  fn(m_initialShadingGroup, &status);
+    AL_MAYA_CHECK_ERROR(
+        status, "DagNodeTranslator::Unable to attach MfnSet to initialShadingGroup");
+    return fn.addMember(shape);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-} // translators
-} // fileio
-} // usdmaya
-} // AL
+} // namespace translators
+} // namespace fileio
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

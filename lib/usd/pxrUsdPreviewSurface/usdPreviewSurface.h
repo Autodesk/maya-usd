@@ -20,9 +20,8 @@
 
 #include "api.h"
 
-#include <pxr/pxr.h>
-
 #include <pxr/base/tf/staticTokens.h>
+#include <pxr/pxr.h>
 
 #include <maya/MDataBlock.h>
 #include <maya/MObject.h>
@@ -32,63 +31,60 @@
 #include <maya/MString.h>
 #include <maya/MTypeId.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-#define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS \
-    ((ClearcoatAttrName, "clearcoat")) \
-    ((ClearcoatRoughnessAttrName, "clearcoatRoughness")) \
-    ((DiffuseColorAttrName, "diffuseColor")) \
-    ((DisplacementAttrName, "displacement")) \
-    ((EmissiveColorAttrName, "emissiveColor")) \
-    ((IorAttrName, "ior")) \
-    ((MetallicAttrName, "metallic")) \
-    ((NormalAttrName, "normal")) \
-    ((OcclusionAttrName, "occlusion")) \
-    ((OpacityAttrName, "opacity")) \
-    ((RoughnessAttrName, "roughness")) \
-    ((SpecularColorAttrName, "specularColor")) \
-    ((UseSpecularWorkflowAttrName, "useSpecularWorkflow")) \
-    ((OutColorAttrName, "outColor")) \
-    ((OutTransparencyAttrName, "outTransparency")) \
-    ((niceName, "USD Preview Surface")) \
+// clang-format off
+#define PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS                                          \
+    ((ClearcoatAttrName, "clearcoat"))                                                           \
+    ((ClearcoatRoughnessAttrName, "clearcoatRoughness"))                                         \
+    ((DiffuseColorAttrName, "diffuseColor"))                                                     \
+    ((DisplacementAttrName, "displacement"))                                                     \
+    ((EmissiveColorAttrName, "emissiveColor"))                                                   \
+    ((IorAttrName, "ior"))                                                                       \
+    ((MetallicAttrName, "metallic"))                                                             \
+    ((NormalAttrName, "normal"))                                                                 \
+    ((OcclusionAttrName, "occlusion"))                                                           \
+    ((OpacityAttrName, "opacity"))                                                               \
+    ((OpacityThresholdAttrName, "opacityThreshold"))                                             \
+    ((RoughnessAttrName, "roughness"))                                                           \
+    ((SpecularColorAttrName, "specularColor"))                                                   \
+    ((UseSpecularWorkflowAttrName, "useSpecularWorkflow"))                                       \
+    ((OutColorAttrName, "outColor"))                                                             \
+    ((OutTransparencyAttrName, "outTransparency"))                                               \
+    ((OutTransparencyOnAttrName, "outTransparencyOn"))                                           \
+    ((niceName, "USD Preview Surface"))                                                          \
     ((exportDescription, "Exports the bound shader as a USD preview surface UsdShade network.")) \
     ((importDescription, "Search for a USD preview surface UsdShade network to import."))
-
+// clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(
     PxrMayaUsdPreviewSurfaceTokens,
     PXRUSDPREVIEWSURFACE_API,
     PXRUSDPREVIEWSURFACE_USD_PREVIEW_SURFACE_TOKENS);
 
-
 class PxrMayaUsdPreviewSurface : public MPxNode
 {
-    public:
-        PXRUSDPREVIEWSURFACE_API
-        static void* creator();
+public:
+    PXRUSDPREVIEWSURFACE_API
+    static void* creator();
 
-        PXRUSDPREVIEWSURFACE_API
-        static MStatus initialize();
+    PXRUSDPREVIEWSURFACE_API
+    static MStatus initialize();
 
-        PXRUSDPREVIEWSURFACE_API
-        void postConstructor() override;
+    PXRUSDPREVIEWSURFACE_API
+    void postConstructor() override;
 
-        PXRUSDPREVIEWSURFACE_API
-        MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
+    PXRUSDPREVIEWSURFACE_API
+    MStatus compute(const MPlug& plug, MDataBlock& dataBlock) override;
 
-    private:
-        PxrMayaUsdPreviewSurface();
-        ~PxrMayaUsdPreviewSurface() override;
+private:
+    PxrMayaUsdPreviewSurface();
+    ~PxrMayaUsdPreviewSurface() override;
 
-        PxrMayaUsdPreviewSurface(const PxrMayaUsdPreviewSurface&) = delete;
-        PxrMayaUsdPreviewSurface& operator=(
-                const PxrMayaUsdPreviewSurface&) = delete;
+    PxrMayaUsdPreviewSurface(const PxrMayaUsdPreviewSurface&) = delete;
+    PxrMayaUsdPreviewSurface& operator=(const PxrMayaUsdPreviewSurface&) = delete;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

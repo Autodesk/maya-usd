@@ -16,18 +16,19 @@
 #ifndef HD_VP2_RENDER_DELEGATE
 #define HD_VP2_RENDER_DELEGATE
 
-#include <mutex>
-#include <atomic>
-
-#include <maya/MString.h>
-#include <maya/MShaderManager.h>
-
-#include <pxr/pxr.h>
-#include <pxr/imaging/hd/renderDelegate.h>
-#include <pxr/imaging/hd/resourceRegistry.h>
-
 #include "render_param.h"
 #include "resource_registry.h"
+#include "shader.h"
+
+#include <pxr/imaging/hd/renderDelegate.h>
+#include <pxr/imaging/hd/resourceRegistry.h>
+#include <pxr/pxr.h>
+
+#include <maya/MShaderManager.h>
+#include <maya/MString.h>
+
+#include <atomic>
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -59,13 +60,14 @@ class ProxyRenderDelegate;
     The render delegate also has a hook for the main hydra execution algorithm
     (HdEngine::Execute()): between HdRenderIndex::SyncAll(), which pulls new
     scene data, and execution of tasks, the engine calls back to
-    CommitResources(). This commit is perfoming execution which must happen 
+    CommitResources(). This commit is perfoming execution which must happen
     on the main-thread. In the future we will further split engine execution,
-    levering evaluation time to do HdRenderIndex::SyncAll together with 
+    levering evaluation time to do HdRenderIndex::SyncAll together with
     parallel DG computation and perform commit from reserved thread
     via main-thread tasks.
 */
-class HdVP2RenderDelegate final : public HdRenderDelegate {
+class HdVP2RenderDelegate final : public HdRenderDelegate
+{
 public:
     HdVP2RenderDelegate(ProxyRenderDelegate& proxyDraw);
 
@@ -83,21 +85,37 @@ public:
 
     HdVP2ResourceRegistry& GetVP2ResourceRegistry();
 
-    HdRenderPassSharedPtr CreateRenderPass(HdRenderIndex* index, HdRprimCollection const& collection) override;
+    HdRenderPassSharedPtr
+    CreateRenderPass(HdRenderIndex* index, HdRprimCollection const& collection) override;
 
-    HdInstancer* CreateInstancer(HdSceneDelegate* delegate, SdfPath const& id, SdfPath const& instancerId) override;    
+    HdInstancer* CreateInstancer(
+        HdSceneDelegate* delegate,
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        SdfPath const& id) override;
+#else
+        SdfPath const& id,
+        SdfPath const& instancerId) override;
+#endif
     void DestroyInstancer(HdInstancer* instancer) override;
 
-    HdRprim* CreateRprim(TfToken const& typeId, SdfPath const& rprimId, SdfPath const& instancerId) override;
+    HdRprim* CreateRprim(
+        TfToken const& typeId,
+#if defined(HD_API_VERSION) && HD_API_VERSION >= 36
+        SdfPath const& rprimId) override;
+#else
+        SdfPath const& rprimId,
+        SdfPath const& instancerId) override;
+#endif
+
     void DestroyRprim(HdRprim* rPrim) override;
 
     HdSprim* CreateSprim(TfToken const& typeId, SdfPath const& sprimId) override;
     HdSprim* CreateFallbackSprim(TfToken const& typeId) override;
-    void DestroySprim(HdSprim* sPrim) override;
+    void     DestroySprim(HdSprim* sPrim) override;
 
     HdBprim* CreateBprim(TfToken const& typeId, SdfPath const& bprimId) override;
     HdBprim* CreateFallbackBprim(TfToken const& typeId) override;
-    void DestroyBprim(HdBprim* bPrim) override;
+    void     DestroyBprim(HdBprim* bPrim) override;
 
     void CommitResources(HdChangeTracker* tracker) override;
 
@@ -111,27 +129,42 @@ public:
     MHWRender::MShaderInstance* Get3dCPVSolidShader() const;
     MHWRender::MShaderInstance* Get3dFatPointShader() const;
 
-    MHWRender::MShaderInstance* GetBasisCurvesLinearFallbackShader(const MColor& color) const;
-    MHWRender::MShaderInstance* GetBasisCurvesCubicFallbackShader(const MColor& color) const;
+    MHWRender::MShaderInstance* GetBasisCurvesFallbackShader(
+        const TfToken& curveType,
+        const TfToken& curveBasis,
+        const MColor&  color) const;
 
-    const MHWRender::MSamplerState* GetSamplerState(
-        const MHWRender::MSamplerStateDesc& desc) const;
+    MHWRender::MShaderInstance*
+    GetBasisCurvesCPVShader(const TfToken& curveType, const TfToken& curveBasis) const;
+
+    MHWRender::MShaderInstance* GetShaderFromCache(const TfToken& id);
+    bool AddShaderToCache(const TfToken& id, const MHWRender::MShaderInstance& shader);
+
+    const MHWRender::MSamplerState* GetSamplerState(const MHWRender::MSamplerStateDesc& desc) const;
 
     const HdVP2BBoxGeom& GetSharedBBoxGeom() const;
 
-    static const int sProfilerCategory;                             //!< Profiler category
+    static const int sProfilerCategory; //!< Profiler category
 
 private:
     HdVP2RenderDelegate(const HdVP2RenderDelegate&) = delete;
     HdVP2RenderDelegate& operator=(const HdVP2RenderDelegate&) = delete;
 
-    static std::atomic_int                _renderDelegateCounter;   //!< Number of render delegates. First one creates shared resources and last one deletes them.
-    static std::mutex                     _renderDelegateMutex;     //!< Mutex protecting construction/destruction of render delegate
-    static HdResourceRegistrySharedPtr    _resourceRegistry;        //!< Shared and unused by VP2 resource registry
+    static std::atomic_int
+        _renderDelegateCounter; //!< Number of render delegates. First one creates shared resources
+                                //!< and last one deletes them.
+    static std::mutex
+        _renderDelegateMutex; //!< Mutex protecting construction/destruction of render delegate
+    static HdResourceRegistrySharedPtr
+        _resourceRegistry; //!< Shared and unused by VP2 resource registry
 
-    std::unique_ptr<HdVP2RenderParam>     _renderParam;             //!< Render param used to provided access to VP2 during prim synchronization
-    SdfPath                               _id;                      //!< Render delegate IDs
-    HdVP2ResourceRegistry                 _resourceRegistryVP2;     //!< VP2 resource registry used for enqueue and execution of commits
+    std::unique_ptr<HdVP2RenderParam>
+            _renderParam; //!< Render param used to provided access to VP2 during prim synchronization
+    SdfPath _id;          //!< Render delegate ID
+    HdVP2ResourceRegistry
+        _resourceRegistryVP2; //!< VP2 resource registry used for enqueue and execution of commits
+
+    HdVP2ShaderCache _shaderCache; //!< A thread-safe cache of named shaders.
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

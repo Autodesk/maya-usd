@@ -17,25 +17,22 @@
 #ifndef MAYAUSDUI_USD_QT_UTIL_H
 #define MAYAUSDUI_USD_QT_UTIL_H
 
-
 #include <mayaUsd/mayaUsd.h>
-
-#include <mayaUsdUI/ui/api.h>
 #include <mayaUsdUI/ui/IMayaMQtUtil.h>
+#include <mayaUsdUI/ui/api.h>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 class MAYAUSD_UI_PUBLIC USDQtUtil : public IMayaMQtUtil
 {
 public:
-	~USDQtUtil() override = default;
+    ~USDQtUtil() override = default;
 
-	int dpiScale(int size) const override;
-	float dpiScale(float size) const override;
-	QPixmap* createPixmap(const std::string& imageName) const override;
+    int      dpiScale(int size) const override;
+    float    dpiScale(float size) const override;
+    QPixmap* createPixmap(const std::string& imageName) const override;
 };
 
-} // namespace MayaUsd
-
+} // namespace MAYAUSD_NS_DEF
 
 #endif

@@ -16,8 +16,8 @@
 #ifndef HDMAYA_DELEGATE_DEBUG_CODES_H
 #define HDMAYA_DELEGATE_DEBUG_CODES_H
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/debug.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -29,6 +29,7 @@ TF_DEBUG_CODES(
     HDMAYA_DELEGATE_GET_DISPLAY_STYLE,
     HDMAYA_DELEGATE_GET_DOUBLE_SIDED,
     HDMAYA_DELEGATE_GET_EXTENT,
+    HDMAYA_DELEGATE_GET_INSTANCER_ID,
     HDMAYA_DELEGATE_GET_INSTANCE_INDICES,
     HDMAYA_DELEGATE_GET_LIGHT_PARAM_VALUE,
     HDMAYA_DELEGATE_GET_MATERIAL_ID,
@@ -37,8 +38,6 @@ TF_DEBUG_CODES(
     HDMAYA_DELEGATE_GET_PRIMVAR_DESCRIPTORS,
     HDMAYA_DELEGATE_GET_RENDER_TAG,
     HDMAYA_DELEGATE_GET_SUBDIV_TAGS,
-    HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
-    HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID,
     HDMAYA_DELEGATE_GET_TRANSFORM,
     HDMAYA_DELEGATE_GET_VISIBLE,
     HDMAYA_DELEGATE_INSERTDAG,
@@ -49,6 +48,18 @@ TF_DEBUG_CODES(
     HDMAYA_DELEGATE_SAMPLE_TRANSFORM,
     HDMAYA_DELEGATE_SELECTION);
 // clang-format on
+
+// Debug codes for Hydra API that was deprecated with USD 20.11.
+// These are declared in a separate block to avoid using a preprocessor
+// directive inside the TF_DEBUG_CODES() macro invocation, which breaks
+// compilation on Windows.
+#if USD_VERSION_NUM < 2011
+// clang-format off
+TF_DEBUG_CODES(
+    HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE,
+    HDMAYA_DELEGATE_GET_TEXTURE_RESOURCE_ID);
+// clang-format on
+#endif // USD_VERSION_NUM < 2011
 
 // Debug codes for Hydra API that was deprecated after USD 19.11.
 // These are declared in a separate block to avoid using a preprocessor
@@ -64,7 +75,6 @@ TF_DEBUG_CODES(
     HDMAYA_DELEGATE_GET_SURFACE_SHADER_SOURCE);
 // clang-format on
 #endif // USD_VERSION_NUM <= 1911
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

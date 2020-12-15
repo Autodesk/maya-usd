@@ -171,7 +171,6 @@ target_compile_definitions(${LIBRARY_NAME}
         AL_MAYA_MACROS_EXPORT
         AL_USDMAYA_EXPORT
         AL_USDMAYA_LOCATION_NAME="${AL_USDMAYA_LOCATION_NAME}"
-        $<$<BOOL:${UFE_FOUND}>:WANT_UFE_BUILD>
 )
 
 target_include_directories(
@@ -209,7 +208,7 @@ target_link_libraries(${LIBRARY_NAME}
     usdImaging
     usdImagingGL
     vt
-    Boost::python
+    ${Boost_PYTHON_LIBRARY}
     $<IF:$<VERSION_GREATER_EQUAL:${Boost_VERSION},${boost_1_70_0_ver_string}>,Boost::thread,${Boost_THREAD_LIBRARY}>
     $<$<BOOL:${IS_WINDOWS}>:Boost::chrono>
     $<$<BOOL:${IS_WINDOWS}>:Boost::date_time>

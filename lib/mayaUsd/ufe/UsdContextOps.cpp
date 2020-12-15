@@ -17,32 +17,30 @@
 
 #include "private/UfeNotifGuard.h"
 
-#include <algorithm>
-#include <cassert>
-#include <utility>
-#include <vector>
-
-#include <maya/MGlobal.h>
-
-#include <ufe/attributes.h>
-#include <ufe/attribute.h>
-#include <ufe/path.h>
+#include <mayaUsd/ufe/UsdSceneItem.h>
+#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/sdf/reference.h>
 #include <pxr/usd/usd/common.h>
 #include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/references.h>
+#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/variantSets.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include <mayaUsd/utils/util.h>
+#include <maya/MGlobal.h>
+#include <ufe/attribute.h>
+#include <ufe/attributes.h>
+#include <ufe/path.h>
 
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/ufe/UsdSceneItem.h>
-#include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+#include <algorithm>
+#include <cassert>
+#include <utility>
+#include <vector>
 
 namespace {
 
@@ -52,59 +50,59 @@ namespace {
 // - the "Image" is used for icon in the context menu. Directly used std::string
 //   for these so the emplace_back() will choose the right constructor. With char[]
 //   it would convert that param to a bool and choose the wrong constructor.
-static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
-static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor...";
-static const std::string kUSDLayerEditorImage{"USD_generic.png"};
-static constexpr char kUSDLoadItem[] = "Load";
-static constexpr char kUSDLoadLabel[] = "Load";
-static constexpr char kUSDLoadWithDescendantsItem[] = "Load with Descendants";
-static constexpr char kUSDLoadWithDescendantsLabel[] = "Load with Descendants";
-static constexpr char kUSDUnloadItem[] = "Unload";
-static constexpr char kUSDUnloadLabel[] = "Unload";
-static constexpr char kUSDVariantSetsItem[] = "Variant Sets";
-static constexpr char kUSDVariantSetsLabel[] = "Variant Sets";
-static constexpr char kUSDToggleVisibilityItem[] = "Toggle Visibility";
-static constexpr char kUSDMakeVisibleLabel[] = "Make Visible";
-static constexpr char kUSDMakeInvisibleLabel[] = "Make Invisible";
-static constexpr char kUSDToggleActiveStateItem[] = "Toggle Active State";
-static constexpr char kUSDActivatePrimLabel[] = "Activate Prim";
-static constexpr char kUSDDeactivatePrimLabel[] = "Deactivate Prim";
-static constexpr char kUSDAddNewPrimItem[] = "Add New Prim";
-static constexpr char kUSDAddNewPrimLabel[] = "Add New Prim";
-static constexpr char kUSDDefPrimItem[] = "Def";
-static constexpr char kUSDDefPrimLabel[] = "Def";
-static const std::string kUSDDefPrimImage{"out_USD_Def.png"};
-static constexpr char kUSDScopePrimItem[] = "Scope";
-static constexpr char kUSDScopePrimLabel[] = "Scope";
-static const std::string kUSDScopePrimImage{"out_USD_Scope.png"};
-static constexpr char kUSDXformPrimItem[] = "Xform";
-static constexpr char kUSDXformPrimLabel[] = "Xform";
-static const std::string kUSDXformPrimImage{"out_USD_UsdGeomXformable.png"};
-static constexpr char kUSDCapsulePrimItem[] = "Capsule";
-static constexpr char kUSDCapsulePrimLabel[] = "Capsule";
-static const std::string kUSDCapsulePrimImage{"out_USD_Capsule.png"};
-static constexpr char kUSDConePrimItem[] = "Cone";
-static constexpr char kUSDConePrimLabel[] = "Cone";
-static const std::string kUSDConePrimImage{"out_USD_Cone.png"};
-static constexpr char kUSDCubePrimItem[] = "Cube";
-static constexpr char kUSDCubePrimLabel[] = "Cube";
-static const std::string kUSDCubePrimImage{"out_USD_Cube.png"};
-static constexpr char kUSDCylinderPrimItem[] = "Cylinder";
-static constexpr char kUSDCylinderPrimLabel[] = "Cylinder";
-static const std::string kUSDCylinderPrimImage{"out_USD_Cylinder.png"};
-static constexpr char kUSDSpherePrimItem[] = "Sphere";
-static constexpr char kUSDSpherePrimLabel[] = "Sphere";
-static const std::string kUSDSpherePrimImage{"out_USD_Sphere.png"};
+static constexpr char    kUSDLayerEditorItem[] = "USD Layer Editor";
+static constexpr char    kUSDLayerEditorLabel[] = "USD Layer Editor...";
+static const std::string kUSDLayerEditorImage { "USD_generic.png" };
+static constexpr char    kUSDLoadItem[] = "Load";
+static constexpr char    kUSDLoadLabel[] = "Load";
+static constexpr char    kUSDLoadWithDescendantsItem[] = "Load with Descendants";
+static constexpr char    kUSDLoadWithDescendantsLabel[] = "Load with Descendants";
+static constexpr char    kUSDUnloadItem[] = "Unload";
+static constexpr char    kUSDUnloadLabel[] = "Unload";
+static constexpr char    kUSDVariantSetsItem[] = "Variant Sets";
+static constexpr char    kUSDVariantSetsLabel[] = "Variant Sets";
+static constexpr char    kUSDToggleVisibilityItem[] = "Toggle Visibility";
+static constexpr char    kUSDMakeVisibleLabel[] = "Make Visible";
+static constexpr char    kUSDMakeInvisibleLabel[] = "Make Invisible";
+static constexpr char    kUSDToggleActiveStateItem[] = "Toggle Active State";
+static constexpr char    kUSDActivatePrimLabel[] = "Activate Prim";
+static constexpr char    kUSDDeactivatePrimLabel[] = "Deactivate Prim";
+static constexpr char    kUSDAddNewPrimItem[] = "Add New Prim";
+static constexpr char    kUSDAddNewPrimLabel[] = "Add New Prim";
+static constexpr char    kUSDDefPrimItem[] = "Def";
+static constexpr char    kUSDDefPrimLabel[] = "Def";
+static const std::string kUSDDefPrimImage { "out_USD_Def.png" };
+static constexpr char    kUSDScopePrimItem[] = "Scope";
+static constexpr char    kUSDScopePrimLabel[] = "Scope";
+static const std::string kUSDScopePrimImage { "out_USD_Scope.png" };
+static constexpr char    kUSDXformPrimItem[] = "Xform";
+static constexpr char    kUSDXformPrimLabel[] = "Xform";
+static const std::string kUSDXformPrimImage { "out_USD_UsdGeomXformable.png" };
+static constexpr char    kUSDCapsulePrimItem[] = "Capsule";
+static constexpr char    kUSDCapsulePrimLabel[] = "Capsule";
+static const std::string kUSDCapsulePrimImage { "out_USD_Capsule.png" };
+static constexpr char    kUSDConePrimItem[] = "Cone";
+static constexpr char    kUSDConePrimLabel[] = "Cone";
+static const std::string kUSDConePrimImage { "out_USD_Cone.png" };
+static constexpr char    kUSDCubePrimItem[] = "Cube";
+static constexpr char    kUSDCubePrimLabel[] = "Cube";
+static const std::string kUSDCubePrimImage { "out_USD_Cube.png" };
+static constexpr char    kUSDCylinderPrimItem[] = "Cylinder";
+static constexpr char    kUSDCylinderPrimLabel[] = "Cylinder";
+static const std::string kUSDCylinderPrimImage { "out_USD_Cylinder.png" };
+static constexpr char    kUSDSpherePrimItem[] = "Sphere";
+static constexpr char    kUSDSpherePrimLabel[] = "Sphere";
+static const std::string kUSDSpherePrimImage { "out_USD_Sphere.png" };
 
 //! \brief Undoable command for loading a USD prim.
 class LoadUndoableCommand : public Ufe::UndoableCommand
 {
 public:
-    LoadUndoableCommand(const UsdPrim& prim, UsdLoadPolicy policy) :
-        _stage(prim.GetStage()),
-        _primPath(prim.GetPath()),
-        _oldLoadSet(prim.GetStage()->GetLoadSet()),
-        _policy(policy)
+    LoadUndoableCommand(const UsdPrim& prim, UsdLoadPolicy policy)
+        : _stage(prim.GetStage())
+        , _primPath(prim.GetPath())
+        , _oldLoadSet(prim.GetStage()->GetLoadSet())
+        , _policy(policy)
     {
     }
 
@@ -114,7 +112,7 @@ public:
             return;
         }
 
-        _stage->LoadAndUnload(_oldLoadSet, SdfPathSet({_primPath}));
+        _stage->LoadAndUnload(_oldLoadSet, SdfPathSet({ _primPath }));
     }
 
     void redo() override
@@ -128,19 +126,19 @@ public:
 
 private:
     const UsdStageWeakPtr _stage;
-    const SdfPath _primPath;
-    const SdfPathSet _oldLoadSet;
-    const UsdLoadPolicy _policy;
+    const SdfPath         _primPath;
+    const SdfPathSet      _oldLoadSet;
+    const UsdLoadPolicy   _policy;
 };
 
 //! \brief Undoable command for unloading a USD prim.
 class UnloadUndoableCommand : public Ufe::UndoableCommand
 {
 public:
-    UnloadUndoableCommand(const UsdPrim& prim) :
-        _stage(prim.GetStage()),
-        _primPath({prim.GetPath()}),
-        _oldLoadSet(prim.GetStage()->GetLoadSet())
+    UnloadUndoableCommand(const UsdPrim& prim)
+        : _stage(prim.GetStage())
+        , _primPath({ prim.GetPath() })
+        , _oldLoadSet(prim.GetStage()->GetLoadSet())
     {
     }
 
@@ -164,29 +162,28 @@ public:
 
 private:
     const UsdStageWeakPtr _stage;
-    const SdfPath _primPath;
-    const SdfPathSet _oldLoadSet;
+    const SdfPath         _primPath;
+    const SdfPathSet      _oldLoadSet;
 };
 
 //! \brief Undoable command for variant selection change
 class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand
 {
 public:
-    
     SetVariantSelectionUndoableCommand(
         const UsdPrim&                   prim,
-        const Ufe::ContextOps::ItemPath& itemPath
-    ) : fVarSet(prim.GetVariantSets().GetVariantSet(itemPath[1])),
-        fOldSelection(fVarSet.GetVariantSelection()),
-        fNewSelection(itemPath[2])
-    {}
+        const Ufe::ContextOps::ItemPath& itemPath)
+        : fVarSet(prim.GetVariantSets().GetVariantSet(itemPath[1]))
+        , fOldSelection(fVarSet.GetVariantSelection())
+        , fNewSelection(itemPath[2])
+    {
+    }
 
     void undo() override { fVarSet.SetVariantSelection(fOldSelection); }
 
     void redo() override { fVarSet.SetVariantSelection(fNewSelection); }
 
 private:
-
     UsdVariantSet     fVarSet;
     const std::string fOldSelection;
     const std::string fNewSelection;
@@ -227,8 +224,8 @@ public:
 
 private:
     PXR_NS::UsdStageWeakPtr _stage;
-    PXR_NS::SdfPath _primPath;
-    bool _active;
+    PXR_NS::SdfPath         _primPath;
+    bool                    _active;
 };
 
 const char* selectUSDFileScript = R"(
@@ -264,22 +261,23 @@ class AddReferenceUndoableCommand : public Ufe::UndoableCommand
 public:
     static const std::string commandName;
 
-    AddReferenceUndoableCommand(
-        const UsdPrim& prim,
-        const std::string& filePath
-    ) : _prim(prim),
-        _sdfRef(),
-        _filePath(filePath)
-    {}
+    AddReferenceUndoableCommand(const UsdPrim& prim, const std::string& filePath)
+        : _prim(prim)
+        , _sdfRef()
+        , _filePath(filePath)
+    {
+    }
 
-    void undo() override { 
+    void undo() override
+    {
         if (_prim.IsValid()) {
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.RemoveReference(_sdfRef);
         }
     }
 
-    void redo() override { 
+    void redo() override
+    {
         if (_prim.IsValid()) {
             _sdfRef = SdfReference(_filePath);
             UsdReferences primRefs = _prim.GetReferences();
@@ -288,8 +286,8 @@ public:
     }
 
 private:
-    UsdPrim _prim;
-    SdfReference _sdfRef;
+    UsdPrim           _prim;
+    SdfReference      _sdfRef;
     const std::string _filePath;
 };
 const std::string AddReferenceUndoableCommand::commandName("Add Reference...");
@@ -298,18 +296,17 @@ class ClearAllReferencesUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     static const std::string commandName;
-    static const MString cancelRemoval;
+    static const MString     cancelRemoval;
 
-    ClearAllReferencesUndoableCommand(
-        const UsdPrim& prim
-    ) : _prim(prim)
-    {}
-
-    void undo() override { 
-
+    ClearAllReferencesUndoableCommand(const UsdPrim& prim)
+        : _prim(prim)
+    {
     }
 
-    void redo() override { 
+    void undo() override { }
+
+    void redo() override
+    {
         if (_prim.IsValid()) {
             UsdReferences primRefs = _prim.GetReferences();
             primRefs.ClearReferences();
@@ -320,7 +317,7 @@ private:
     UsdPrim _prim;
 };
 const std::string ClearAllReferencesUndoableCommand::commandName("Clear All References");
-const MString ClearAllReferencesUndoableCommand::cancelRemoval("No");
+const MString     ClearAllReferencesUndoableCommand::cancelRemoval("No");
 
 std::vector<std::pair<const char* const, const char* const>>
 _computeLoadAndUnloadItems(const UsdPrim& prim)
@@ -338,7 +335,7 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
         return itemLabelPairs;
     }
 
-    UsdStageWeakPtr stage = prim.GetStage();
+    UsdStageWeakPtr  stage = prim.GetStage();
     const SdfPathSet stageLoadSet = stage->GetLoadSet();
     const SdfPathSet loadableSet = stage->FindLoadable(prim.GetPath());
 
@@ -347,8 +344,10 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
     // contain all paths that are loaded at or below this prim path.
     SdfPathSet loadedSet;
     std::set_intersection(
-        loadableSet.cbegin(), loadableSet.cend(),
-        stageLoadSet.cbegin(), stageLoadSet.cend(),
+        loadableSet.cbegin(),
+        loadableSet.cend(),
+        stageLoadSet.cbegin(),
+        stageLoadSet.cend(),
         std::inserter(loadedSet, loadedSet.end()));
 
     // Subtract the set of what *is* loaded on the stage from the set of what
@@ -357,16 +356,17 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
     // below this prim path.
     SdfPathSet unloadedSet;
     std::set_difference(
-        loadableSet.cbegin(), loadableSet.cend(),
-        stageLoadSet.cbegin(), stageLoadSet.cend(),
+        loadableSet.cbegin(),
+        loadableSet.cend(),
+        stageLoadSet.cbegin(),
+        stageLoadSet.cend(),
         std::inserter(unloadedSet, unloadedSet.end()));
 
     if (!unloadedSet.empty()) {
         // Loading without descendants is only meaningful for context ops when
         // the current prim has an unloaded payload.
         if (prim.HasPayload() && !prim.IsLoaded()) {
-            itemLabelPairs.emplace_back(
-                std::make_pair(kUSDLoadItem, kUSDLoadLabel));
+            itemLabelPairs.emplace_back(std::make_pair(kUSDLoadItem, kUSDLoadLabel));
         }
 
         // We always add an item for loading with descendants when there are
@@ -380,78 +380,58 @@ _computeLoadAndUnloadItems(const UsdPrim& prim)
         // - The current prim does not have a payload, so there must be paths
         //   below it that are still unloaded.
         itemLabelPairs.emplace_back(
-            std::make_pair(
-                kUSDLoadWithDescendantsItem,
-                kUSDLoadWithDescendantsLabel));
+            std::make_pair(kUSDLoadWithDescendantsItem, kUSDLoadWithDescendantsLabel));
     }
 
     // If anything is loaded at this prim path or any of its descendants, add
     // an item for unload.
     if (!loadedSet.empty()) {
-        itemLabelPairs.emplace_back(
-            std::make_pair(kUSDUnloadItem, kUSDUnloadLabel));
+        itemLabelPairs.emplace_back(std::make_pair(kUSDUnloadItem, kUSDUnloadLabel));
     }
 
     return itemLabelPairs;
 }
 
-}
+} // namespace
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 UsdContextOps::UsdContextOps(const UsdSceneItem::Ptr& item)
-	: Ufe::ContextOps()
+    : Ufe::ContextOps()
     , fItem(item)
 {
 }
 
-UsdContextOps::~UsdContextOps()
-{
-}
+UsdContextOps::~UsdContextOps() { }
 
 /*static*/
 UsdContextOps::Ptr UsdContextOps::create(const UsdSceneItem::Ptr& item)
 {
-	return std::make_shared<UsdContextOps>(item);
+    return std::make_shared<UsdContextOps>(item);
 }
 
-void UsdContextOps::setItem(const UsdSceneItem::Ptr& item)
-{
-	fItem = item;
-}
+void UsdContextOps::setItem(const UsdSceneItem::Ptr& item) { fItem = item; }
 
-const Ufe::Path& UsdContextOps::path() const
-{
-	return fItem->path();
-}
+const Ufe::Path& UsdContextOps::path() const { return fItem->path(); }
 
 //------------------------------------------------------------------------------
 // Ufe::ContextOps overrides
 //------------------------------------------------------------------------------
 
-Ufe::SceneItem::Ptr UsdContextOps::sceneItem() const
-{
-	return fItem;
-}
+Ufe::SceneItem::Ptr UsdContextOps::sceneItem() const { return fItem; }
 
-Ufe::ContextOps::Items UsdContextOps::getItems(
-    const Ufe::ContextOps::ItemPath& itemPath
-) const
+Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& itemPath) const
 {
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
         // Top-level item - USD Layer editor (for all context op types).
-        int hasLayerEditorCmd{0};
-        MGlobal::executeCommand("runTimeCommand -exists UsdLayerEditor", hasLayerEditorCmd);
-        if (hasLayerEditorCmd) {
 #if UFE_PREVIEW_VERSION_NUM >= 2023
-            items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
+        items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
 #else
-            items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
+        items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
 #endif
-            items.emplace_back(Ufe::ContextItem::kSeparator);
-        }
+        items.emplace_back(Ufe::ContextItem::kSeparator);
 
         // Top-level items (do not add for gateway type node):
         if (!fIsAGatewayType) {
@@ -471,34 +451,35 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
             // Note: certain prim types such as shaders & materials don't support visibility.
             auto attributes = Ufe::Attributes::attributes(sceneItem());
             if (attributes && attributes->hasAttribute(UsdGeomTokens->visibility)) {
-                auto visibility =
-                    std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
-                        attributes->attribute(UsdGeomTokens->visibility));
+                auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
+                    attributes->attribute(UsdGeomTokens->visibility));
                 if (visibility) {
-                    auto current = visibility->get();
-                    const std::string l = (current == UsdGeomTokens->invisible) ?
-                        std::string(kUSDMakeVisibleLabel) : std::string(kUSDMakeInvisibleLabel);
+                    auto              current = visibility->get();
+                    const std::string l = (current == UsdGeomTokens->invisible)
+                        ? std::string(kUSDMakeVisibleLabel)
+                        : std::string(kUSDMakeInvisibleLabel);
                     items.emplace_back(kUSDToggleVisibilityItem, l);
                 }
             }
             // Prim active state:
-            items.emplace_back(kUSDToggleActiveStateItem, prim().IsActive() ? kUSDDeactivatePrimLabel : kUSDActivatePrimLabel);
+            items.emplace_back(
+                kUSDToggleActiveStateItem,
+                prim().IsActive() ? kUSDDeactivatePrimLabel : kUSDActivatePrimLabel);
         }
 
         // Top level item - Add New Prim (for all context op types).
-        items.emplace_back(
-            kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
+        items.emplace_back(kUSDAddNewPrimItem, kUSDAddNewPrimLabel, Ufe::ContextItem::kHasChildren);
 
         if (!fIsAGatewayType) {
-            items.emplace_back(AddReferenceUndoableCommand::commandName,
-                                AddReferenceUndoableCommand::commandName);
-            items.emplace_back(ClearAllReferencesUndoableCommand::commandName,
-                                ClearAllReferencesUndoableCommand::commandName);
+            items.emplace_back(
+                AddReferenceUndoableCommand::commandName, AddReferenceUndoableCommand::commandName);
+            items.emplace_back(
+                ClearAllReferencesUndoableCommand::commandName,
+                ClearAllReferencesUndoableCommand::commandName);
         }
-    }
-    else {
+    } else {
         if (itemPath[0] == kUSDVariantSetsItem) {
-            UsdVariantSets varSets = prim().GetVariantSets();
+            UsdVariantSets           varSets = prim().GetVariantSets();
             std::vector<std::string> varSetsNames;
             varSets.GetNames(&varSetsNames);
 
@@ -507,27 +488,31 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
                 for (auto i = varSetsNames.crbegin(); i != varSetsNames.crend(); ++i) {
                     items.emplace_back(*i, *i, Ufe::ContextItem::kHasChildren);
                 }
-            }
-            else {
+            } else {
                 // Variants of a given variant set.  Second item in the path is
                 // the variant set name.
                 assert(itemPath.size() == 2u);
 
                 UsdVariantSet varSet = varSets.GetVariantSet(itemPath[1]);
-                auto selected = varSet.GetVariantSelection();
+                auto          selected = varSet.GetVariantSelection();
 
                 const auto varNames = varSet.GetVariantNames();
                 for (const auto& vn : varNames) {
                     const bool checked(vn == selected);
-                    items.emplace_back(vn, vn, Ufe::ContextItem::kNoChildren,
-                                       Ufe::ContextItem::kCheckable, checked,
-                                       Ufe::ContextItem::kExclusive);
+                    items.emplace_back(
+                        vn,
+                        vn,
+                        Ufe::ContextItem::kNoChildren,
+                        Ufe::ContextItem::kCheckable,
+                        checked,
+                        Ufe::ContextItem::kExclusive);
                 }
             } // Variants of a variant set
-        } // Variant sets
+        }     // Variant sets
         else if (itemPath[0] == kUSDAddNewPrimItem) {
 #if UFE_PREVIEW_VERSION_NUM >= 2023
-            items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage);  // typeless prim
+            items.emplace_back(
+                kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
             items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);
             items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel, kUSDXformPrimImage);
             items.emplace_back(Ufe::ContextItem::kSeparator);
@@ -537,7 +522,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(
             items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
             items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
 #else
-            items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel);  // typeless prim
+            items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel); // typeless prim
             items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel);
             items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel);
             items.emplace_back(Ufe::ContextItem::kSeparator);
@@ -561,19 +546,15 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return nullptr;
     }
 
-    if (itemPath[0u] == kUSDLoadItem ||
-            itemPath[0u] == kUSDLoadWithDescendantsItem) {
-        const UsdLoadPolicy policy =
-            (itemPath[0u] == kUSDLoadWithDescendantsItem) ?
-                UsdLoadWithDescendants :
-                UsdLoadWithoutDescendants;
+    if (itemPath[0u] == kUSDLoadItem || itemPath[0u] == kUSDLoadWithDescendantsItem) {
+        const UsdLoadPolicy policy = (itemPath[0u] == kUSDLoadWithDescendantsItem)
+            ? UsdLoadWithDescendants
+            : UsdLoadWithoutDescendants;
 
         return std::make_shared<LoadUndoableCommand>(prim(), policy);
-    }
-    else if (itemPath[0u] == kUSDUnloadItem) {
+    } else if (itemPath[0u] == kUSDUnloadItem) {
         return std::make_shared<UnloadUndoableCommand>(prim());
-    }
-    else if (itemPath[0] == kUSDVariantSetsItem) {
+    } else if (itemPath[0] == kUSDVariantSetsItem) {
         // Operation is to set a variant in a variant set.  Need both the
         // variant set and the variant as arguments to the operation.
         if (itemPath.size() != 3u) {
@@ -583,8 +564,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 
         // At this point we know we have enough arguments to execute the
         // operation.
-        return std::make_shared<SetVariantSelectionUndoableCommand>(
-            prim(), itemPath);
+        return std::make_shared<SetVariantSelectionUndoableCommand>(prim(), itemPath);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
         auto attributes = Ufe::Attributes::attributes(sceneItem());
@@ -594,7 +574,8 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         assert(visibility);
         auto current = visibility->get();
         return visibility->setCmd(
-            current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited : UsdGeomTokens->invisible);
+            current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited
+                                                : UsdGeomTokens->invisible);
     } // Visibility
     else if (itemPath[0] == kUSDToggleActiveStateItem) {
         return std::make_shared<ToggleActiveStateCommand>(prim());
@@ -609,23 +590,26 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // At this point we know we have 2 arguments to execute the operation.
         // itemPath[1] contains the new prim type to create.
         return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
-    }
-    else if (itemPath[0] == kUSDLayerEditorItem) {
+    } else if (itemPath[0] == kUSDLayerEditorItem) {
         // Just open the editor directly and return null so we don't have undo.
-        MGlobal::executeCommand("UsdLayerEditor");
+        auto ufePath = ufe::stagePath(prim().GetStage());
+        auto noWorld = ufePath.popHead().string();
+        auto dagPath = UsdMayaUtil::nameToDagPath(noWorld);
+        auto shapePath = dagPath.fullPathName();
+
+        MString script;
+        script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
+        MGlobal::executeCommand(script);
         return nullptr;
-    }
-    else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
+    } else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
         MString fileRef = MGlobal::executeCommandStringResult(selectUSDFileScript);
 
         std::string path = UsdMayaUtil::convert(fileRef);
         if (path.empty())
             return nullptr;
 
-        return std::make_shared<AddReferenceUndoableCommand>(
-            prim(), path);
-    }
-    else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
+        return std::make_shared<AddReferenceUndoableCommand>(prim(), path);
+    } else if (itemPath[0] == ClearAllReferencesUndoableCommand::commandName) {
         MString confirmation = MGlobal::executeCommandStringResult(clearAllReferencesConfirmScript);
         if (ClearAllReferencesUndoableCommand::cancelRemoval == confirmation)
             return nullptr;
@@ -637,4 +621,4 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 }
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

@@ -15,19 +15,18 @@
 //
 #include "usdMaya/translatorModelAssembly.h"
 
-#include <mayaUsd/fileio/jobs/jobArgs.h>
+#include "usdMaya/editUtil.h"
+#include "usdMaya/referenceAssembly.h"
+
 #include <mayaUsd/fileio/jobs/jobArgs.h>
 #include <mayaUsd/fileio/primReaderArgs.h>
 #include <mayaUsd/fileio/primReaderContext.h>
 #include <mayaUsd/fileio/primWriterArgs.h>
 #include <mayaUsd/fileio/primWriterContext.h>
-#include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/fileio/translators/translatorUtil.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
-
-#include "usdMaya/editUtil.h"
-#include "usdMaya/referenceAssembly.h"
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/stringUtils.h>
@@ -63,15 +62,15 @@
 #include <string>
 #include <vector>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
 
-TF_DEFINE_PRIVATE_TOKENS(_tokens,
     ((FilePathPlugName, "filePath"))
     ((PrimPathPlugName, "primPath"))
     ((KindPlugName, "kind"))
-
     ((MayaProxyShapeNameSuffix, "Proxy"))
 
     // XXX: These should eventually be replaced/removed when the proxy shape
@@ -79,27 +78,25 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
     (variantKey)
     (modelingVariant)
 );
-
+// clang-format on
 
 /* static */
-bool
-UsdMayaTranslatorModelAssembly::Create(
-        const UsdMayaPrimWriterArgs& args,
-        UsdMayaPrimWriterContext* context)
+bool UsdMayaTranslatorModelAssembly::Create(
+    const UsdMayaPrimWriterArgs& args,
+    UsdMayaPrimWriterContext*    context)
 {
     UsdStageRefPtr stage = context->GetUsdStage();
-    SdfPath authorPath = context->GetAuthorPath();
-    UsdTimeCode usdTime = context->GetTimeCode();
+    SdfPath        authorPath = context->GetAuthorPath();
+    UsdTimeCode    usdTime = context->GetTimeCode();
 
     context->SetExportsGprims(false);
     context->SetPruneChildren(true);
-    context->SetModelPaths({authorPath});
+    context->SetModelPaths({ authorPath });
 
     UsdPrim prim = stage->DefinePrim(authorPath);
     if (!prim) {
         TF_RUNTIME_ERROR(
-                "Failed to create prim for USD reference assembly at path <%s>",
-                authorPath.GetText());
+            "Failed to create prim for USD reference assembly at path <%s>", authorPath.GetText());
         return false;
     }
 
@@ -116,10 +113,9 @@ UsdMayaTranslatorModelAssembly::Create(
     // Instead, always write out an empty xformOpOrder if the transform writer
     // did not write out an xformOpOrder in its constructor. This guarantees
     // that we get an identity transform as expected (instead of inheriting).
-    bool resetsXformStack;
-    UsdGeomXformable xformable(prim);
-    std::vector<UsdGeomXformOp> orderedXformOps =
-            xformable.GetOrderedXformOps(&resetsXformStack);
+    bool                        resetsXformStack;
+    UsdGeomXformable            xformable(prim);
+    std::vector<UsdGeomXformOp> orderedXformOps = xformable.GetOrderedXformOps(&resetsXformStack);
     if (orderedXformOps.empty() && !resetsXformStack) {
         xformable.CreateXformOpOrderAttr().Block();
     }
@@ -132,19 +128,17 @@ UsdMayaTranslatorModelAssembly::Create(
     const MFnDagNode assemblyNode(currPath.transform());
 
     MStatus status;
-    MPlug usdRefFilepathPlg = assemblyNode.findPlug(
-        _tokens->FilePathPlugName.GetText(), &status);
+    MPlug   usdRefFilepathPlg = assemblyNode.findPlug(_tokens->FilePathPlugName.GetText(), &status);
     if (status == MS::kSuccess) {
         UsdReferences refs = prim.GetReferences();
-        std::string refAssetPath(usdRefFilepathPlg.asString().asChar());
+        std::string   refAssetPath(usdRefFilepathPlg.asString().asChar());
 
-        std::string resolvedRefPath =
-            stage->ResolveIdentifierToEditTarget(refAssetPath);
+        std::string resolvedRefPath = stage->ResolveIdentifierToEditTarget(refAssetPath);
 
         if (!resolvedRefPath.empty()) {
             std::string refPrimPathStr;
-            MPlug usdRefPrimPathPlg = assemblyNode.findPlug(
-                _tokens->PrimPathPlugName.GetText(), &status);
+            MPlug       usdRefPrimPathPlg
+                = assemblyNode.findPlug(_tokens->PrimPathPlugName.GetText(), &status);
             if (status == MS::kSuccess) {
                 refPrimPathStr = usdRefPrimPathPlg.asString().asChar();
             }
@@ -158,18 +152,18 @@ UsdMayaTranslatorModelAssembly::Create(
                     refs.AddReference(SdfReference(refAssetPath, refPrimPath));
                 } else {
                     TF_RUNTIME_ERROR(
-                            "Not creating reference for assembly node '%s' "
-                            "with non-root prim path <%s>",
-                            assemblyNode.fullPathName().asChar(),
-                            refPrimPath.GetText());
+                        "Not creating reference for assembly node '%s' "
+                        "with non-root prim path <%s>",
+                        assemblyNode.fullPathName().asChar(),
+                        refPrimPath.GetText());
                 }
             }
         } else {
             const std::string errorMsg = TfStringPrintf(
-                    "Could not resolve reference '%s'; creating placeholder "
-                    "Xform for <%s>",
-                    refAssetPath.c_str(),
-                    authorPath.GetText());
+                "Could not resolve reference '%s'; creating placeholder "
+                "Xform for <%s>",
+                refAssetPath.c_str(),
+                authorPath.GetText());
             TF_RUNTIME_ERROR(errorMsg);
             prim.SetDocumentation(errorMsg);
         }
@@ -178,18 +172,16 @@ UsdMayaTranslatorModelAssembly::Create(
     auto registeredVariantSets = UsdUtilsGetRegisteredVariantSets();
     if (!registeredVariantSets.empty()) {
         // import variant selections: we only import the "persistent" ones.
-        for (const auto& regVarSet: registeredVariantSets) {
+        for (const auto& regVarSet : registeredVariantSets) {
             switch (regVarSet.selectionExportPolicy) {
-                case UsdUtilsRegisteredVariantSet::SelectionExportPolicy::Never:
-                case UsdUtilsRegisteredVariantSet::SelectionExportPolicy::IfAuthored:
-                    continue;
-                case UsdUtilsRegisteredVariantSet::SelectionExportPolicy::Always:
-                    break;
+            case UsdUtilsRegisteredVariantSet::SelectionExportPolicy::Never:
+            case UsdUtilsRegisteredVariantSet::SelectionExportPolicy::IfAuthored: continue;
+            case UsdUtilsRegisteredVariantSet::SelectionExportPolicy::Always: break;
             }
 
             const std::string& variantSetName = regVarSet.name;
-            std::string variantSetPlugName = TfStringPrintf("%s%s",
-                UsdMayaVariantSetTokens->PlugNamePrefix.GetText(), variantSetName.c_str());
+            std::string        variantSetPlugName = TfStringPrintf(
+                "%s%s", UsdMayaVariantSetTokens->PlugNamePrefix.GetText(), variantSetName.c_str());
 
             MPlug modelingVariantPlg = assemblyNode.findPlug(variantSetPlugName.c_str(), &status);
             if (status == MS::kSuccess) {
@@ -198,12 +190,11 @@ UsdMayaTranslatorModelAssembly::Create(
                 prim.GetVariantSet(variantSetName).SetVariantSelection(variant.asChar());
             }
         }
-    }
-    else {
+    } else {
         // export all that we can.
-        if (UsdMayaReferenceAssembly* usdRefAssem =
-            dynamic_cast<UsdMayaReferenceAssembly*>(assemblyNode.userNode())) {
-            for (const auto& varSels: usdRefAssem->GetVariantSetSelections()) {
+        if (UsdMayaReferenceAssembly* usdRefAssem
+            = dynamic_cast<UsdMayaReferenceAssembly*>(assemblyNode.userNode())) {
+            for (const auto& varSels : usdRefAssem->GetVariantSetSelections()) {
                 const std::string& variantSetName = varSels.first;
                 const std::string& variant = varSels.second;
                 prim.GetVariantSet(variantSetName).SetVariantSelection(variant);
@@ -213,11 +204,8 @@ UsdMayaTranslatorModelAssembly::Create(
 
     // Apply assembly edits, if any are present.
     UsdMayaEditUtil::PathEditMap assemblyEdits;
-    std::vector<std::string> invalidEdits;
-    UsdMayaEditUtil::GetEditsForAssembly(
-        assemblyNode.object(),
-        &assemblyEdits,
-        &invalidEdits);
+    std::vector<std::string>     invalidEdits;
+    UsdMayaEditUtil::GetEditsForAssembly(assemblyNode.object(), &assemblyEdits, &invalidEdits);
 
     if (!invalidEdits.empty()) {
         TF_WARN(
@@ -231,10 +219,7 @@ UsdMayaTranslatorModelAssembly::Create(
 
     if (!assemblyEdits.empty()) {
         std::vector<std::string> failedEdits;
-        UsdMayaEditUtil::ApplyEditsToProxy(
-            assemblyEdits,
-            prim,
-            &failedEdits);
+        UsdMayaEditUtil::ApplyEditsToProxy(assemblyEdits, prim, &failedEdits);
 
         if (!failedEdits.empty()) {
             TF_WARN(
@@ -257,8 +242,8 @@ UsdMayaTranslatorModelAssembly::Create(
         // end of the export after the model hierarchy has been fixed up.
         TfToken kind;
         UsdModelAPI(prim).GetKind(&kind);
-        if (!prim.HasAuthoredInstanceable() &&
-                !KindRegistry::GetInstance().IsA(kind, KindTokens->group)) {
+        if (!prim.HasAuthoredInstanceable()
+            && !KindRegistry::GetInstance().IsA(kind, KindTokens->group)) {
             prim.SetInstanceable(true);
         }
     }
@@ -266,14 +251,9 @@ UsdMayaTranslatorModelAssembly::Create(
     return true;
 }
 
-static
-bool
-_GetAssetInfo(
-        const UsdPrim& prim,
-        std::string* assetIdentifier,
-        SdfPath* assetPrimPath)
+static bool _GetAssetInfo(const UsdPrim& prim, std::string* assetIdentifier, SdfPath* assetPrimPath)
 {
-    UsdModelAPI usdModel(prim);
+    UsdModelAPI  usdModel(prim);
     SdfAssetPath identifier;
     if (!usdModel.GetAssetIdentifier(&identifier)) {
         return false;
@@ -285,14 +265,10 @@ _GetAssetInfo(
     return true;
 }
 
-static
-bool
-_GetReferenceInfo(
-        const UsdPrim& prim,
-        std::string* assetIdentifier,
-        SdfPath* assetPrimPath)
+static bool
+_GetReferenceInfo(const UsdPrim& prim, std::string* assetIdentifier, SdfPath* assetPrimPath)
 {
-    SdfReferenceListOp refsOp;
+    SdfReferenceListOp             refsOp;
     SdfReferenceListOp::ItemVector refs;
     prim.GetMetadata(SdfFieldKeys->References, &refsOp);
     refsOp.ApplyOperations(&refs);
@@ -309,12 +285,11 @@ _GetReferenceInfo(
 }
 
 /* static */
-bool
-UsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
-        const UsdPrim& usdImportRootPrim,
-        const UsdPrim& prim,
-        std::string* assetIdentifier,
-        SdfPath* assetPrimPath)
+bool UsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
+    const UsdPrim& usdImportRootPrim,
+    const UsdPrim& prim,
+    std::string*   assetIdentifier,
+    SdfPath*       assetPrimPath)
 {
     if (!prim) {
         return false;
@@ -342,16 +317,15 @@ UsdMayaTranslatorModelAssembly::ShouldImportAsAssembly(
     return false;
 }
 
-static
-std::map<std::string, std::string>
-_GetVariantSelections(const UsdPrim& prim)
+static std::map<std::string, std::string> _GetVariantSelections(const UsdPrim& prim)
 {
     std::map<std::string, std::string> varSels;
-    UsdVariantSets varSets = prim.GetVariantSets();
-    std::vector<std::string> varSetNames = varSets.GetNames();
-    TF_FOR_ALL(iter, varSetNames) {
+    UsdVariantSets                     varSets = prim.GetVariantSets();
+    std::vector<std::string>           varSetNames = varSets.GetNames();
+    TF_FOR_ALL(iter, varSetNames)
+    {
         const std::string& varSetName = *iter;
-        std::string varSel = varSets.GetVariantSelection(varSetName);
+        std::string        varSel = varSets.GetVariantSelection(varSetName);
         if (!varSel.empty()) {
             varSels[varSetName] = varSel;
         }
@@ -360,24 +334,23 @@ _GetVariantSelections(const UsdPrim& prim)
 }
 
 /* static */
-bool
-UsdMayaTranslatorModelAssembly::Read(
-        const UsdPrim& prim,
-        const std::string& assetIdentifier,
-        const SdfPath& assetPrimPath,
-        const MObject& parentNode,
-        const UsdMayaPrimReaderArgs& args,
-        UsdMayaPrimReaderContext* context,
-        const TfToken& assemblyRep)
+bool UsdMayaTranslatorModelAssembly::Read(
+    const UsdPrim&               prim,
+    const std::string&           assetIdentifier,
+    const SdfPath&               assetPrimPath,
+    const MObject&               parentNode,
+    const UsdMayaPrimReaderArgs& args,
+    UsdMayaPrimReaderContext*    context,
+    const TfToken&               assemblyRep)
 {
     // This translator does not apply if assemblyRep == "Import".
     if (assemblyRep == UsdMayaJobImportArgsTokens->Import) {
         return false;
     }
 
-    const bool loadAll = true;
+    const bool           loadAll = true;
     UsdStageCacheContext stageCacheContext(UsdMayaStageCache::Get(loadAll));
-    UsdStageRefPtr usdStage = UsdStage::Open(assetIdentifier);
+    UsdStageRefPtr       usdStage = UsdStage::Open(assetIdentifier);
     if (!usdStage) {
         TF_RUNTIME_ERROR("Cannot open USD file %s", assetIdentifier.c_str());
         return false;
@@ -393,8 +366,7 @@ UsdMayaTranslatorModelAssembly::Read(
     }
 
     if (!modelPrim) {
-        TF_RUNTIME_ERROR("Could not find model prim in USD file %s",
-                assetIdentifier.c_str());
+        TF_RUNTIME_ERROR("Could not find model prim in USD file %s", assetIdentifier.c_str());
         return false;
     }
 
@@ -402,19 +374,17 @@ UsdMayaTranslatorModelAssembly::Read(
     // opposed to using MDagModifier's createNode() or any other method. That
     // seems to be the only way to ensure that the assembly's namespace and
     // container are setup correctly.
-    const std::string assemblyCmd =
-        TfStringPrintf("import maya.cmds; maya.cmds.assembly(name=\'%s\', type=\'%s\')",
-                       prim.GetName().GetText(),
-                       UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText());
+    const std::string assemblyCmd = TfStringPrintf(
+        "import maya.cmds; maya.cmds.assembly(name=\'%s\', type=\'%s\')",
+        prim.GetName().GetText(),
+        UsdMayaReferenceAssemblyTokens->MayaTypeName.GetText());
     MString newAssemblyName;
-    MStatus status = MGlobal::executePythonCommand(assemblyCmd.c_str(),
-                                                   newAssemblyName);
+    MStatus status = MGlobal::executePythonCommand(assemblyCmd.c_str(), newAssemblyName);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Now we get the MObject for the assembly node we just created.
     MObject assemblyObj;
-    status = UsdMayaUtil::GetMObjectByName(newAssemblyName.asChar(),
-                                              assemblyObj);
+    status = UsdMayaUtil::GetMObjectByName(newAssemblyName.asChar(), assemblyObj);
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Re-parent the assembly node underneath parentNode.
@@ -430,20 +400,18 @@ UsdMayaTranslatorModelAssembly::Read(
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Set the filePath and primPath attributes.
-    MPlug filePathPlug = depNodeFn.findPlug(_tokens->FilePathPlugName.GetText(),
-        true, &status);
+    MPlug filePathPlug = depNodeFn.findPlug(_tokens->FilePathPlugName.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.newPlugValueString(filePathPlug, assetIdentifier.c_str());
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    MPlug primPathPlug = depNodeFn.findPlug(_tokens->PrimPathPlugName.GetText(),
-        true, &status);
+    MPlug primPathPlug = depNodeFn.findPlug(_tokens->PrimPathPlugName.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.newPlugValueString(primPathPlug, modelPrim.GetPath().GetText());
     CHECK_MSTATUS_AND_RETURN(status, false);
 
     // Set the kind attribute.
-    TfToken modelKind;
+    TfToken     modelKind;
     UsdModelAPI usdModel(modelPrim);
     if (!usdModel.GetKind(&modelKind) || modelKind.IsEmpty()) {
         modelKind = KindTokens->component;
@@ -456,20 +424,22 @@ UsdMayaTranslatorModelAssembly::Read(
 
     // Apply variant selections.
     std::map<std::string, std::string> variantSelections = _GetVariantSelections(prim);
-    TF_FOR_ALL(iter, variantSelections) {
+    TF_FOR_ALL(iter, variantSelections)
+    {
         std::string variantSetName = iter->first;
         std::string variantSelection = iter->second;
 
-        std::string variantSetPlugName = TfStringPrintf("%s%s",
-            UsdMayaVariantSetTokens->PlugNamePrefix.GetText(), variantSetName.c_str());
+        std::string variantSetPlugName = TfStringPrintf(
+            "%s%s", UsdMayaVariantSetTokens->PlugNamePrefix.GetText(), variantSetName.c_str());
         MPlug varSetPlug = depNodeFn.findPlug(variantSetPlugName.c_str(), true, &status);
         if (status != MStatus::kSuccess) {
             MFnTypedAttribute typedAttrFn;
-            MObject attrObj = typedAttrFn.create(variantSetPlugName.c_str(),
-                                                 variantSetPlugName.c_str(),
-                                                 MFnData::kString,
-                                                 MObject::kNullObj,
-                                                 &status);
+            MObject           attrObj = typedAttrFn.create(
+                variantSetPlugName.c_str(),
+                variantSetPlugName.c_str(),
+                MFnData::kString,
+                MObject::kNullObj,
+                &status);
             CHECK_MSTATUS_AND_RETURN(status, false);
             status = depNodeFn.addAttribute(attrObj);
             CHECK_MSTATUS_AND_RETURN(status, false);
@@ -506,13 +476,12 @@ UsdMayaTranslatorModelAssembly::Read(
 }
 
 /* static */
-bool
-UsdMayaTranslatorModelAssembly::ReadAsProxy(
-    const UsdPrim& prim,
+bool UsdMayaTranslatorModelAssembly::ReadAsProxy(
+    const UsdPrim&                            prim,
     const std::map<std::string, std::string>& variantSetSelections,
-    MObject parentNode,
-    const UsdMayaPrimReaderArgs& args,
-    UsdMayaPrimReaderContext* context)
+    MObject                                   parentNode,
+    const UsdMayaPrimReaderArgs&              args,
+    UsdMayaPrimReaderContext*                 context)
 {
     if (!prim) {
         return false;
@@ -524,26 +493,21 @@ UsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     // Create a transform node for the proxy node under its parent node.
     MObject transformObj;
-    if (!UsdMayaTranslatorUtil::CreateTransformNode(prim,
-                                                          parentNode,
-                                                          args,
-                                                          context,
-                                                          &status,
-                                                          &transformObj)) {
+    if (!UsdMayaTranslatorUtil::CreateTransformNode(
+            prim, parentNode, args, context, &status, &transformObj)) {
         return false;
     }
 
     // Create the proxy shape node.
     MDagModifier dagMod;
-    MObject proxyObj = dagMod.createNode(UsdMayaProxyShapeTokens->MayaTypeName.GetText(),
-                                         transformObj,
-                                         &status);
+    MObject      proxyObj
+        = dagMod.createNode(UsdMayaProxyShapeTokens->MayaTypeName.GetText(), transformObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.doIt();
     CHECK_MSTATUS_AND_RETURN(status, false);
     TF_VERIFY(!proxyObj.isNull());
-    const std::string proxyShapeNodeName = TfStringPrintf("%s%s",
-            prim.GetName().GetText(), _tokens->MayaProxyShapeNameSuffix.GetText());
+    const std::string proxyShapeNodeName = TfStringPrintf(
+        "%s%s", prim.GetName().GetText(), _tokens->MayaProxyShapeNameSuffix.GetText());
     status = dagMod.renameNode(proxyObj, proxyShapeNodeName.c_str());
     CHECK_MSTATUS_AND_RETURN(status, false);
     if (context) {
@@ -554,15 +518,13 @@ UsdMayaTranslatorModelAssembly::ReadAsProxy(
     // Set the filePath and primPath attributes.
     MFnDependencyNode depNodeFn(proxyObj, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
-    MPlug filePathPlug = depNodeFn.findPlug(_tokens->FilePathPlugName.GetText(),
-        true, &status);
+    MPlug filePathPlug = depNodeFn.findPlug(_tokens->FilePathPlugName.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     const std::string rootLayerRealPath = prim.GetStage()->GetRootLayer()->GetRealPath();
     status = dagMod.newPlugValueString(filePathPlug, rootLayerRealPath.c_str());
     CHECK_MSTATUS_AND_RETURN(status, false);
 
-    MPlug primPathPlug = depNodeFn.findPlug(_tokens->PrimPathPlugName.GetText(),
-        true, &status);
+    MPlug primPathPlug = depNodeFn.findPlug(_tokens->PrimPathPlugName.GetText(), true, &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
     status = dagMod.newPlugValueString(primPathPlug, primPath.GetText());
     CHECK_MSTATUS_AND_RETURN(status, false);
@@ -570,15 +532,13 @@ UsdMayaTranslatorModelAssembly::ReadAsProxy(
     // XXX: For now, the proxy shape only support modelingVariant with the
     // 'variantKey' attribute. Eventually, it should support any/all
     // variantSets.
-    const std::map<std::string, std::string>::const_iterator varSetIter =
-        variantSetSelections.find(_tokens->modelingVariant.GetString());
+    const std::map<std::string, std::string>::const_iterator varSetIter
+        = variantSetSelections.find(_tokens->modelingVariant.GetString());
     if (varSetIter != variantSetSelections.end()) {
         const std::string modelingVariantSelection = varSetIter->second;
-        MPlug variantKeyPlug = depNodeFn.findPlug(_tokens->variantKey.GetText(),
-            true, &status);
+        MPlug variantKeyPlug = depNodeFn.findPlug(_tokens->variantKey.GetText(), true, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
-        status = dagMod.newPlugValueString(variantKeyPlug,
-            modelingVariantSelection.c_str());
+        status = dagMod.newPlugValueString(variantKeyPlug, modelingVariantSelection.c_str());
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
@@ -591,6 +551,5 @@ UsdMayaTranslatorModelAssembly::ReadAsProxy(
 
     return true;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

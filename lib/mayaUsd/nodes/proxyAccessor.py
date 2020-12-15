@@ -24,11 +24,12 @@ For the time being, this set of helper functions can be used as a reference to u
 the concepts necessary to build tooling on top of the proxy accessor.
 """
 
-from pxr import Sdf, Usd, UsdGeom, Vt
+from pxr import Gf, Sdf, Usd, UsdGeom, Vt
 from mayaUsd import lib as mayaUsdLib
 import maya.cmds as cmds
 import maya.OpenMaya as om
 import ufe
+import re
 
 def getUfeSelection():
     try:
@@ -57,7 +58,7 @@ def getSelectedDagAndPrim():
     return getDagAndPrimFromUfe(getUfeSelection())
 
 def getAccessPlugName(sdfPath):
-    plugNameValueAttr = 'AccessValue_' + str(sdfPath.__hash__())
+    plugNameValueAttr = 'AP_' + re.sub(r'[^a-zA-Z0-9_]',r'_',str(sdfPath))
     
     return plugNameValueAttr
 
@@ -69,6 +70,11 @@ def isUfeUsdPath(ufeObject):
     lastSegment = ufeObject.path().segments[segmentCount-1]
     return Sdf.Path.IsValidPathString(str(lastSegment))
 
+def createUfeSceneItem(dagPath, sdfPath=None):
+    ufePath = ufe.PathString.path('{},{}'.format(dagPath,sdfPath) if sdfPath != None else '{}'.format(dagPath))
+    ufeItem = ufe.Hierarchy.createItem(ufePath)
+    return ufeItem
+
 def createXformOps(ufeObject):
     selDag, selPrim = getDagAndPrimFromUfe(ufeObject)
     stage = mayaUsdLib.GetPrim(selDag).GetStage()
@@ -77,10 +83,17 @@ def createXformOps(ufeObject):
     prim = stage.GetPrimAtPath(primPath)
 
     xformAPI = UsdGeom.XformCommonAPI(prim)
-    xformAPI.CreateXformOps(
+    t, p, r, s, pInv = xformAPI.CreateXformOps(
                 UsdGeom.XformCommonAPI.OpTranslate,
                 UsdGeom.XformCommonAPI.OpRotate,
                 UsdGeom.XformCommonAPI.OpScale)
+          
+    if not t.GetAttr().HasAuthoredValue():
+        t.GetAttr().Set(Gf.Vec3d(0,0,0))
+    if not r.GetAttr().HasAuthoredValue():
+        r.GetAttr().Set(Gf.Vec3f(0,0,0))
+    if not s.GetAttr().HasAuthoredValue():
+        s.GetAttr().Set(Gf.Vec3f(1,1,1))
 
 def createAccessPlug(proxyDagPath, sdfPath, sdfValueType):
     plugNameValueAttr = getAccessPlugName(sdfPath)
@@ -272,3 +285,60 @@ def connect(attrToConnect=[('translate','xformOp:translate'), ('rotate','xformOp
     ufeSelectionIter = None
     
     connectItems(ufeObjectSrc,ufeObjectDst,attrToConnect)
+
+def parentConstraintItems(ufeItem, ufeTarget):
+    itemDagPath, itemPrimPath = getDagAndPrimFromUfe(ufeItem)
+    targetDagPath, targetPrimPath = getDagAndPrimFromUfe(ufeTarget)
+    
+    itemParentPath = Sdf.Path(itemPrimPath).GetParentPath()
+    targetParentPath = Sdf.Path(targetPrimPath).GetParentPath()
+    
+    createXformOps(ufeItem)
+    createXformOps(ufeTarget)
+    
+    itemTranslatePlug = getOrCreateAccessPlug(ufeItem, 'xformOp:translate')
+    itemRotatePlug = getOrCreateAccessPlug(ufeItem, 'xformOp:rotateXYZ')
+    itemScalePlug = getOrCreateAccessPlug(ufeItem, 'xformOp:scale')
+    
+    targetTranslatePlug = getOrCreateAccessPlug(ufeTarget, 'xformOp:translate')
+    targetRotatePlug = getOrCreateAccessPlug(ufeTarget, 'xformOp:rotateXYZ')
+    targetScalePlug = getOrCreateAccessPlug(ufeTarget, 'xformOp:scale')
+    
+    constraintNode = cmds.createNode('parentConstraint')
+
+    # Connect the target to the constraint
+    cmds.connectAttr('{}.{}'.format(targetDagPath,targetTranslatePlug), '{}.target[0].targetTranslate'.format(constraintNode), f=True)
+    cmds.connectAttr('{}.{}'.format(targetDagPath,targetRotatePlug), '{}.target[0].targetRotate'.format(constraintNode), f=True)
+    cmds.connectAttr('{}.{}'.format(targetDagPath,targetScalePlug), '{}.target[0].targetScale'.format(constraintNode), f=True)
+
+    # Connect target parent and constraint parent inverse matrix
+    if not targetParentPath.IsAbsoluteRootPath():
+        ufeTargetParent = createUfeSceneItem(targetDagPath,targetParentPath)
+        targetParentPlug = getOrCreateAccessPlug(ufeTargetParent, '', Sdf.ValueTypeNames.Matrix4d )
+        cmds.connectAttr('{}.{}[0]'.format(targetDagPath,targetParentPlug), '{}.target[0].targetParentMatrix'.format(constraintNode), f=True)
+    
+    if not itemParentPath.IsAbsoluteRootPath():
+        ufeItemParent = createUfeSceneItem(itemDagPath,itemParentPath)
+        itemParentPlug = getOrCreateAccessPlug(ufeItemParent, '', Sdf.ValueTypeNames.Matrix4d )
+        inverseNode = cmds.createNode('inverseMatrix')
+        cmds.connectAttr('{}.{}[0]'.format(itemDagPath,itemParentPlug), '{}.inputMatrix'.format(inverseNode), f=True)
+        cmds.connectAttr('{}.outputMatrix'.format(inverseNode), '{}.constraintParentInverseMatrix'.format(constraintNode), f=True)
+   
+    # Connect outputs of the constraint to drive the item
+    cmds.connectAttr('{}.constraintTranslate'.format(constraintNode), '{}.{}'.format(itemDagPath,itemTranslatePlug), f=True)
+    cmds.connectAttr('{}.constraintRotate'.format(constraintNode), '{}.{}'.format(itemDagPath,itemRotatePlug), f=True)
+    
+def parentConstraint():
+    ufeSelection = ufe.GlobalSelection.get()
+    if len(ufeSelection) != 2:
+        print('Must select exactly two objects to parentConstraint')
+        return
+
+    ufeSelectionIter = iter(ufeSelection)
+
+    ufeObjectSrc = next(ufeSelectionIter)
+    ufeObjectDst = next(ufeSelectionIter)
+    
+    ufeSelectionIter = None
+    
+    parentConstraintItems(ufeObjectSrc, ufeObjectDst)

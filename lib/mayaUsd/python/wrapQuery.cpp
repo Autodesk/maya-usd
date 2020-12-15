@@ -13,13 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <boost/python/def.hpp>
-#include <boost/python.hpp>
-
-#include <pxr/pxr.h>
-#include <pxr/base/tf/pyResultConversions.h>
-
 #include <mayaUsd/utils/query.h>
+
+#include <pxr/base/tf/pyResultConversions.h>
+#include <pxr/pxr.h>
+
+#include <boost/python.hpp>
+#include <boost/python/def.hpp>
 
 using namespace std;
 using namespace boost::python;

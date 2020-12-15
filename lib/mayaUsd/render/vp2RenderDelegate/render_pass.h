@@ -16,31 +16,37 @@
 #ifndef HD_VP2_RENDER_PASS
 #define HD_VP2_RENDER_PASS
 
-#include <pxr/pxr.h>
-
 #include <pxr/imaging/hd/renderPass.h>
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HdVP2RenderDelegate;
 
-/*! \brief    Empty render pass class. Unused for rendering with VP2 but required by HdEngine & HdRenderDelegate.
-    \class    HdVP2RenderPass
+/*! \brief    Empty render pass class. Unused for rendering with VP2 but required by HdEngine &
+   HdRenderDelegate. \class    HdVP2RenderPass
 */
 class HdVP2RenderPass final : public HdRenderPass
 {
 public:
     //! \brief  Constructor
-    HdVP2RenderPass(HdVP2RenderDelegate* delegate, HdRenderIndex *index, HdRprimCollection const &collection)
+    HdVP2RenderPass(
+        HdVP2RenderDelegate*     delegate,
+        HdRenderIndex*           index,
+        HdRprimCollection const& collection)
         : HdRenderPass(index, collection)
-    {}
+    {
+    }
 
     //! \brief  Destructor
-    virtual ~HdVP2RenderPass() {}
+    virtual ~HdVP2RenderPass() { }
 
     //! \brief  Empty execute
-    void _Execute(HdRenderPassStateSharedPtr const &renderPassState, TfTokenVector const &renderTags) override {}
-
+    void _Execute(
+        HdRenderPassStateSharedPtr const& renderPassState,
+        TfTokenVector const&              renderTags) override
+    {
+    }
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

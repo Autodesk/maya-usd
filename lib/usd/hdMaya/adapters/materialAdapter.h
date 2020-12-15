@@ -16,17 +16,17 @@
 #ifndef HDMAYA_MATERIAL_ADAPTER_H
 #define HDMAYA_MATERIAL_ADAPTER_H
 
-#include <pxr/pxr.h>
-
 #include <hdMaya/adapters/adapter.h>
+
+#include <pxr/pxr.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdMayaMaterialAdapter : public HdMayaAdapter {
+class HdMayaMaterialAdapter : public HdMayaAdapter
+{
 public:
     HDMAYA_API
-    HdMayaMaterialAdapter(
-        const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& node);
+    HdMayaMaterialAdapter(const SdfPath& id, HdMayaDelegateCtx* delegate, const MObject& node);
     HDMAYA_API
     virtual ~HdMayaMaterialAdapter() = default;
 
@@ -43,7 +43,14 @@ public:
     HDMAYA_API
     void Populate() override;
 
-#if USD_VERSION_NUM <= 1911
+#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM < 2011
+
+    HDMAYA_API
+    virtual HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId);
+    HDMAYA_API
+    virtual HdTextureResource::ID GetTextureResourceID(const TfToken& paramName);
+
+#elif USD_VERSION_NUM <= 1911
 
     HDMAYA_API
     virtual std::string GetSurfaceShaderSource();
@@ -66,24 +73,14 @@ public:
     HDMAYA_API
     static const std::string& GetPreviewDisplacementSource();
     HDMAYA_API
-    static const VtValue& GetPreviewMaterialParamValue(
-        const TfToken& paramName);
+    static const VtValue& GetPreviewMaterialParamValue(const TfToken& paramName);
     HDMAYA_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(
-        const TfToken& paramName);
-
-#else // USD_VERSION_NUM > 1911
-
+    virtual HdTextureResourceSharedPtr GetTextureResource(const TfToken& paramName);
     HDMAYA_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(
-            const SdfPath& textureShaderId);
-
+    virtual HdTextureResource::ID GetTextureResourceID(const TfToken& paramName);
 
 #endif // USD_VERSION_NUM <= 1911
 
-    HDMAYA_API
-    virtual HdTextureResource::ID GetTextureResourceID(
-        const TfToken& paramName);
     HDMAYA_API
     virtual VtValue GetMaterialResource();
 

@@ -16,8 +16,7 @@
 # limitations under the License.
 #
 
-from ufeTestUtils import usdUtils, mayaUtils
-import ufeTestUtils.testUtils
+import usdUtils, mayaUtils, testUtils
 import ufe
 from pxr import UsdGeom
 import random
@@ -51,7 +50,7 @@ class AttributeTestCase(unittest.TestCase):
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
-        # Open top_layer.ma scene in test-samples
+        # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
 
         random.seed()
@@ -66,7 +65,7 @@ class AttributeTestCase(unittest.TestCase):
         self.assertTrue(self.pluginsLoaded)
 
     def assertVectorAlmostEqual(self, ufeVector, usdVector):
-        ufeTestUtils.testUtils.assertVectorAlmostEqual(
+        testUtils.assertVectorAlmostEqual(
             self, ufeVector.vector, usdVector)
 
     def assertColorAlmostEqual(self, ufeColor, usdColor):
@@ -97,7 +96,7 @@ class AttributeTestCase(unittest.TestCase):
 
         # Get a UFE scene item the input path in the scene.
         itemPath = ufe.Path([
-            mayaUtils.createUfePathSegment("|world|transform1|proxyShape1"), 
+            mayaUtils.createUfePathSegment("|transform1|proxyShape1"), 
             usdUtils.createUfePathSegment(path)])
         ufeItem = ufe.Hierarchy.createItem(itemPath)
 
@@ -421,7 +420,7 @@ class AttributeTestCase(unittest.TestCase):
         # Create three observers, one for global attribute observation, and two
         # on different UFE items.
         proxyShapePathSegment = mayaUtils.createUfePathSegment(
-            "|world|transform1|proxyShape1")
+            "|transform1|proxyShape1")
         path = ufe.Path([
             proxyShapePathSegment, 
             usdUtils.createUfePathSegment('/Room_set/Props/Ball_34')])

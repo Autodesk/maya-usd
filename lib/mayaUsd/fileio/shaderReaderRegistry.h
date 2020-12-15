@@ -39,25 +39,39 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// reader class with the registry.
 ///
 /// In order for the core system to discover the plugin, you need a
-/// \c plugInfo.json that contains the usdInfoId and the Maya plugin to load:
+/// \c plugInfo.json that contains the usdInfoId:
 /// \code
 /// {
-///     "UsdMaya": {
-///         "ShaderReader": {
-///             "mayaPlugin": "myMayaPlugin",
+///   "Plugins": [
+///     {
+///       "Info": {
+///         "UsdMaya": {
+///           "ShaderReader": {
+///             "mayaPlugin": "myMayaPlugin", // (optional)
 ///             "providesTranslator": [
-///                 "myCustomShaderId"
+///               "myCustomShaderId"
 ///             ]
+///           }
 ///         }
+///       },
+///       "Name": "myUsdPlugin",
+///       "LibraryPath": "../myUsdPlugin.[dll|dylib|so]",
+///       "Type": "library"
 ///     }
+///   ]
 /// }
 /// \endcode
+///
+/// If a mayaPlugin entry is provided, the plugin will be loaded via a call to loadPlugin inside
+/// Maya. Otherwise, the plugin at LibraryPath will be loaded via the regular USD plugin loading
+/// mechanism.
 ///
 /// The registry contains information for both Maya built-in node types
 /// and for any user-defined plugin types. If UsdMaya does not ship with a
 /// reader plugin for some Maya built-in type, you can register your own
 /// plugin for that Maya built-in type.
-struct UsdMayaShaderReaderRegistry {
+struct UsdMayaShaderReaderRegistry
+{
     /// Predicate function, i.e. a function that can tell the level of support
     /// the reader function will provide for a given context.
     using ContextPredicateFn
@@ -95,9 +109,7 @@ struct UsdMayaShaderReaderRegistry {
     ///
     /// If there is no supported reader plugin for \p usdInfoId, returns nullptr.
     MAYAUSD_CORE_PUBLIC
-    static ReaderFactoryFn Find(
-        const TfToken&              usdInfoId,
-        const UsdMayaJobImportArgs& importArgs);
+    static ReaderFactoryFn Find(const TfToken& usdInfoId, const UsdMayaJobImportArgs& importArgs);
 };
 
 /// \brief Registers a pre-existing reader class for the given USD info:id;

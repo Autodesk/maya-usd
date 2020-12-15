@@ -14,9 +14,9 @@
 // limitations under the License.
 //
 #pragma once
-#include <maya/MPxCommand.h>
 #include "AL/maya/test/Api.h"
 
+#include <maya/MPxCommand.h>
 
 namespace AL {
 namespace maya {
@@ -25,19 +25,17 @@ namespace test {
 class UnitTestHarness : public MPxCommand
 {
 public:
-
-  AL_MAYA_TEST_PUBLIC static void* creator();
-  AL_MAYA_TEST_PUBLIC static MSyntax createSyntax();
-  AL_MAYA_TEST_PUBLIC static const MString kName;
-  AL_MAYA_TEST_PUBLIC MStatus doIt(const MArgList& args) override;
+    AL_MAYA_TEST_PUBLIC static void*         creator();
+    AL_MAYA_TEST_PUBLIC static MSyntax       createSyntax();
+    AL_MAYA_TEST_PUBLIC static const MString kName;
+    AL_MAYA_TEST_PUBLIC MStatus              doIt(const MArgList& args) override;
 
 private:
-  void cleanTemporaryFiles() const;
-
+    void cleanTemporaryFiles() const;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-} // test
-} // maya
-} // AL
+} // namespace test
+} // namespace maya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

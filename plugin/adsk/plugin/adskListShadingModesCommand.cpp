@@ -15,7 +15,7 @@
 //
 #include "adskListShadingModesCommand.h"
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
 const MString ADSKMayaUSDListShadingModesCommand::commandName("mayaUSDListShadingModes");
 
@@ -24,4 +24,4 @@ void* ADSKMayaUSDListShadingModesCommand::creator()
     return new ADSKMayaUSDListShadingModesCommand();
 }
 
-}
+} // namespace MAYAUSD_NS_DEF

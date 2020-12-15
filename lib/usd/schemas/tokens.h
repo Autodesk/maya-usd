@@ -19,22 +19,21 @@
 /// \file mayaUsd_Schemas/tokens.h
 
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-// 
+//
 // This is an automatically generated file (by usdGenSchema.py).
 // Do not hand-edit!
-// 
+//
 // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-#include <vector>
+#include <mayaUsd_Schemas/api.h>
 
 #include <pxr/base/tf/staticData.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 
-#include <mayaUsd_Schemas/api.h>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// \class MayaUsd_SchemasTokensType
 ///
@@ -54,14 +53,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \code
 ///     gprim.GetMyTokenValuedAttr().Set(MayaUsd_SchemasTokens->mayaNamespace);
 /// \endcode
-struct MayaUsd_SchemasTokensType {
+struct MayaUsd_SchemasTokensType
+{
     MAYAUSD_SCHEMAS_API MayaUsd_SchemasTokensType();
     /// \brief "mayaNamespace"
-    /// 
+    ///
     /// MayaUsd_SchemasMayaReference
     const TfToken mayaNamespace;
     /// \brief "mayaReference"
-    /// 
+    ///
     /// MayaUsd_SchemasMayaReference
     const TfToken mayaReference;
     /// A vector of all of the tokens listed above.

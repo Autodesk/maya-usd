@@ -15,37 +15,37 @@
 //
 #pragma once
 
-#include <ufe/contextOpsHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdContextOps.h>
 
-//PXR_NAMESPACE_USING_DIRECTIVE
+#include <ufe/contextOpsHandler.h>
 
-MAYAUSD_NS_DEF {
+// PXR_NAMESPACE_USING_DIRECTIVE
+
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to create a UsdContextOps interface object.
 class MAYAUSD_CORE_PUBLIC UsdContextOpsHandler : public Ufe::ContextOpsHandler
 {
 public:
-	typedef std::shared_ptr<UsdContextOpsHandler> Ptr;
+    typedef std::shared_ptr<UsdContextOpsHandler> Ptr;
 
-	UsdContextOpsHandler();
-	~UsdContextOpsHandler() override;
+    UsdContextOpsHandler();
+    ~UsdContextOpsHandler() override;
 
-	// Delete the copy/move constructors assignment operators.
-	UsdContextOpsHandler(const UsdContextOpsHandler&) = delete;
-	UsdContextOpsHandler& operator=(const UsdContextOpsHandler&) = delete;
-	UsdContextOpsHandler(UsdContextOpsHandler&&) = delete;
-	UsdContextOpsHandler& operator=(UsdContextOpsHandler&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdContextOpsHandler(const UsdContextOpsHandler&) = delete;
+    UsdContextOpsHandler& operator=(const UsdContextOpsHandler&) = delete;
+    UsdContextOpsHandler(UsdContextOpsHandler&&) = delete;
+    UsdContextOpsHandler& operator=(UsdContextOpsHandler&&) = delete;
 
-	//! Create a UsdContextOpsHandler.
-	static UsdContextOpsHandler::Ptr create();
+    //! Create a UsdContextOpsHandler.
+    static UsdContextOpsHandler::Ptr create();
 
-	// Ufe::ContextOpsHandler overrides
-	Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
+    // Ufe::ContextOpsHandler overrides
+    Ufe::ContextOps::Ptr contextOps(const Ufe::SceneItem::Ptr& item) const override;
 }; // UsdContextOpsHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

@@ -21,35 +21,30 @@
 #include <mayaUsd/fileio/shaderWriter.h>
 #include <mayaUsd/fileio/writeJobContext.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/timeCode.h>
 
 #include <maya/MFnDependencyNode.h>
 
-
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 class PxrMayaUsdPreviewSurface_Writer : public UsdMayaShaderWriter
 {
-    public:
-        PxrMayaUsdPreviewSurface_Writer(
-                const MFnDependencyNode& depNodeFn,
-                const SdfPath& usdPath,
-                UsdMayaWriteJobContext& jobCtx);
+public:
+    PxrMayaUsdPreviewSurface_Writer(
+        const MFnDependencyNode& depNodeFn,
+        const SdfPath&           usdPath,
+        UsdMayaWriteJobContext&  jobCtx);
 
-        static ContextSupport CanExport(const UsdMayaJobExportArgs&);
+    static ContextSupport CanExport(const UsdMayaJobExportArgs&);
 
-        void Write(const UsdTimeCode& usdTime) override;
+    void Write(const UsdTimeCode& usdTime) override;
 
-        TfToken GetShadingAttributeNameForMayaAttrName(
-                const TfToken& mayaAttrName) override;
+    TfToken GetShadingAttributeNameForMayaAttrName(const TfToken& mayaAttrName) override;
 };
 
-
 PXR_NAMESPACE_CLOSE_SCOPE
-
 
 #endif

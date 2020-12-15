@@ -15,48 +15,48 @@
 //
 #pragma once
 
-#include <string>
-#include <vector>
+#include <mayaUsd/base/api.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/prim.h>
 
-#include <mayaUsd/base/api.h>
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 /*!
-	Proxy shape abstraction, to support use of USD proxy shape with any plugin
-	that has a proxy shape derived from MayaUsdProxyShapeBase.
+        Proxy shape abstraction, to support use of USD proxy shape with any plugin
+        that has a proxy shape derived from MayaUsdProxyShapeBase.
  */
 class MAYAUSD_CORE_PUBLIC ProxyShapeHandler
 {
 public:
-	ProxyShapeHandler() = default;
-	~ProxyShapeHandler() = default;
+    ProxyShapeHandler() = default;
+    ~ProxyShapeHandler() = default;
 
-	// Delete the copy/move constructors assignment operators.
-	ProxyShapeHandler(const ProxyShapeHandler&) = delete;
-	ProxyShapeHandler& operator=(const ProxyShapeHandler&) = delete;
-	ProxyShapeHandler(ProxyShapeHandler&&) = delete;
-	ProxyShapeHandler& operator=(ProxyShapeHandler&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    ProxyShapeHandler(const ProxyShapeHandler&) = delete;
+    ProxyShapeHandler& operator=(const ProxyShapeHandler&) = delete;
+    ProxyShapeHandler(ProxyShapeHandler&&) = delete;
+    ProxyShapeHandler& operator=(ProxyShapeHandler&&) = delete;
 
-	//! \return Type of the Maya shape node at the root of a USD hierarchy.
-	static const std::string& gatewayNodeType();
+    //! \return Type of the Maya shape node at the root of a USD hierarchy.
+    static const std::string& gatewayNodeType();
 
-	static std::vector<std::string> getAllNames();
+    static std::vector<std::string> getAllNames();
 
-	static UsdStageWeakPtr dagPathToStage(const std::string& dagPath);
+    static UsdStageWeakPtr dagPathToStage(const std::string& dagPath);
 
-	static std::vector<UsdStageRefPtr> getAllStages();
+    static std::vector<UsdStageRefPtr> getAllStages();
 
 private:
-	static const std::string fMayaUsdGatewayNodeType;
+    static const std::string fMayaUsdGatewayNodeType;
 
 }; // ProxyShapeHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

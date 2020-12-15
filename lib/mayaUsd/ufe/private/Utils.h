@@ -15,17 +15,17 @@
 //
 #pragma once
 
-#include <ufe/path.h>
+#include <mayaUsd/base/api.h>
 
-#include <pxr/usd/usd/prim.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 
-#include <mayaUsd/base/api.h>
+#include <ufe/path.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------
@@ -34,14 +34,14 @@ namespace ufe {
 const std::string kIllegalUSDPath = "Illegal USD run-time path %s.";
 
 #if !defined(NDEBUG)
-	#define TEST_USD_PATH(SEG, PATH) \
-		assert(SEG.size() == 2); \
-		if (SEG.size() != 2) \
-			TF_WARN(kIllegalUSDPath.c_str(), PATH.string().c_str());
+#define TEST_USD_PATH(SEG, PATH) \
+    assert(SEG.size() == 2);     \
+    if (SEG.size() != 2)         \
+        TF_WARN(kIllegalUSDPath.c_str(), PATH.string().c_str());
 #else
-	#define TEST_USD_PATH(SEG, PATH) \
-		if (SEG.size() != 2) \
-			TF_WARN(kIllegalUSDPath.c_str(), PATH.string().c_str());
+#define TEST_USD_PATH(SEG, PATH) \
+    if (SEG.size() != 2)         \
+        TF_WARN(kIllegalUSDPath.c_str(), PATH.string().c_str());
 #endif
 
 //------------------------------------------------------------------------------
@@ -68,7 +68,12 @@ void rotateOp(const UsdPrim& prim, const Ufe::Path& path, double x, double y, do
 void scaleOp(const UsdPrim& prim, const Ufe::Path& path, double x, double y, double z);
 
 //! Absolute translation of the given prim's pivot point.
-void rotatePivotTranslateOp(const UsdPrim& prim, const Ufe::Path& path, double x, double y, double z);
+void rotatePivotTranslateOp(
+    const UsdPrim&   prim,
+    const Ufe::Path& path,
+    double           x,
+    double           y,
+    double           z);
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

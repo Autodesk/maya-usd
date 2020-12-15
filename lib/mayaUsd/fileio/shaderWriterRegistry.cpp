@@ -27,21 +27,24 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 
-#include <unordered_map>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
     (UsdMaya)
         (ShaderWriter)
 );
+// clang-format on
 
 namespace {
-struct _RegistryEntry {
+struct _RegistryEntry
+{
     UsdMayaShaderWriterRegistry::ContextPredicateFn _pred;
     UsdMayaShaderWriterRegistry::WriterFactoryFn    _writer;
     int                                             _index;
@@ -49,11 +52,10 @@ struct _RegistryEntry {
 
 using _Registry = std::unordered_multimap<TfToken, _RegistryEntry, TfToken::HashFunctor>;
 static _Registry _reg;
-static int _indexCounter = 0;
+static int       _indexCounter = 0;
 
-_Registry::const_iterator _Find(
-    const TfToken&              usdInfoId,
-    const UsdMayaJobExportArgs& exportArgs) {
+_Registry::const_iterator _Find(const TfToken& usdInfoId, const UsdMayaJobExportArgs& exportArgs)
+{
     using ContextSupport = UsdMayaShaderWriter::ContextSupport;
 
     _Registry::const_iterator ret = _reg.cend();
@@ -104,13 +106,14 @@ void UsdMayaShaderWriterRegistry::Register(
 }
 
 /* static */
-UsdMayaShaderWriterRegistry::WriterFactoryFn
-UsdMayaShaderWriterRegistry::Find(const TfToken& mayaTypeName, const UsdMayaJobExportArgs& exportArgs)
+UsdMayaShaderWriterRegistry::WriterFactoryFn UsdMayaShaderWriterRegistry::Find(
+    const TfToken&              mayaTypeName,
+    const UsdMayaJobExportArgs& exportArgs)
 {
     TfRegistryManager::GetInstance().SubscribeTo<UsdMayaShaderWriterRegistry>();
 
     _Registry::const_iterator it = _Find(mayaTypeName, exportArgs);
-    
+
     if (it != _reg.end()) {
         return it->second._writer;
     }

@@ -8,6 +8,7 @@ target_sources(${PROJECT_NAME}
         converter.cpp
         diagnosticDelegate.cpp
         query.cpp
+        plugRegistryHelper.cpp
         stageCache.cpp
         undoHelperCommand
         util.cpp
@@ -20,6 +21,7 @@ set(HEADERS
     converter.h
     diagnosticDelegate.h
     query.h
+    plugRegistryHelper.h
     stageCache.h
     undoHelperCommand.h
     util.h

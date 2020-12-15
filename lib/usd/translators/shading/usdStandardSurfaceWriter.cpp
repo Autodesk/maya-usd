@@ -15,21 +15,22 @@
 //
 #include "usdMaterialWriter.h"
 
-#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/utils/writeUtil.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/value.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/sdf/valueTypeName.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
 #include <maya/MFnDependencyNode.h>
+#include <maya/MPlug.h>
 #include <maya/MStatus.h>
 
 #include <basePxrUsdPreviewSurface/usdPreviewSurface.h>
@@ -38,7 +39,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdTranslators_StandardSurfaceWriter : public PxrUsdTranslators_MaterialWriter {
+class PxrUsdTranslators_StandardSurfaceWriter : public PxrUsdTranslators_MaterialWriter
+{
     typedef PxrUsdTranslators_MaterialWriter BaseClass;
 
 public:
@@ -54,6 +56,7 @@ public:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(standardSurface, PxrUsdTranslators_StandardSurfaceWriter);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -72,6 +75,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (transmission)
     (normalCamera)
 );
+// clang-format on
 
 PxrUsdTranslators_StandardSurfaceWriter::PxrUsdTranslators_StandardSurfaceWriter(
     const MFnDependencyNode& depNodeFn,
@@ -196,7 +200,9 @@ void PxrUsdTranslators_StandardSurfaceWriter::Write(const UsdTimeCode& usdTime)
         _tokens->normalCamera,
         shaderSchema,
         PxrMayaUsdPreviewSurfaceTokens->NormalAttrName,
-        usdTime);
+        usdTime,
+        /* ignoreIfUnauthored = */ false,
+        /* inputTypeName = */ SdfValueTypeNames->Normal3f);
 }
 
 /* virtual */

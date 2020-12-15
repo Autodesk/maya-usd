@@ -15,14 +15,7 @@
 //
 #include "stageCache.h"
 
-#include <map>
-#include <memory>
-#include <mutex>
-#include <sstream>
-#include <string>
-
-#include <maya/MFileIO.h>
-#include <maya/MSceneMessage.h>
+#include <mayaUsd/listeners/notice.h>
 
 #include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
@@ -31,16 +24,24 @@
 #include <pxr/usd/usd/stageCache.h>
 #include <pxr/usd/usdGeom/tokens.h>
 
-#include <mayaUsd/listeners/notice.h>
+#include <maya/MFileIO.h>
+#include <maya/MSceneMessage.h>
+
+#include <map>
+#include <memory>
+#include <mutex>
+#include <sstream>
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
 static std::map<std::string, SdfLayerRefPtr> _sharedSessionLayers;
-static std::mutex _sharedSessionLayersMutex;
+static std::mutex                            _sharedSessionLayersMutex;
 
-struct _OnSceneResetListener : public TfWeakBase {
+struct _OnSceneResetListener : public TfWeakBase
+{
     _OnSceneResetListener()
     {
         TfWeakPtr<_OnSceneResetListener> me(this);
@@ -60,27 +61,26 @@ struct _OnSceneResetListener : public TfWeakBase {
 } // anonymous namespace
 
 /* static */
-UsdStageCache&
-UsdMayaStageCache::Get(const bool loadAll)
+UsdStageCache& UsdMayaStageCache::Get(const bool loadAll)
 {
-    static UsdStageCache theCacheLoadAll;  // used when UsdStage::Open() will be called with UsdStage::InitialLoadSet::LoadAll
-    static UsdStageCache theCache;         // used when UsdStage::Open() will be called with UsdStage::InitialLoadSet::LoadNode
+    static UsdStageCache theCacheLoadAll; // used when UsdStage::Open() will be called with
+                                          // UsdStage::InitialLoadSet::LoadAll
+    static UsdStageCache theCache;        // used when UsdStage::Open() will be called with
+                                          // UsdStage::InitialLoadSet::LoadNode
     static _OnSceneResetListener onSceneResetListener;
 
     return loadAll ? theCacheLoadAll : theCache;
 }
 
 /* static */
-void
-UsdMayaStageCache::Clear()
+void UsdMayaStageCache::Clear()
 {
     Get(true).Clear();
     Get(false).Clear();
 }
 
 /* static */
-size_t
-UsdMayaStageCache::EraseAllStagesWithRootLayerPath(const std::string& layerPath)
+size_t UsdMayaStageCache::EraseAllStagesWithRootLayerPath(const std::string& layerPath)
 {
     size_t erasedStages = 0u;
 
@@ -95,11 +95,10 @@ UsdMayaStageCache::EraseAllStagesWithRootLayerPath(const std::string& layerPath)
     return erasedStages;
 }
 
-SdfLayerRefPtr
-UsdMayaStageCache::GetSharedSessionLayer(
-    const SdfPath& rootPath,
+SdfLayerRefPtr UsdMayaStageCache::GetSharedSessionLayer(
+    const SdfPath&                            rootPath,
     const std::map<std::string, std::string>& variantSelections,
-    const TfToken& drawMode)
+    const TfToken&                            drawMode)
 {
     // Example key: "/Root/Path:modelingVariant=round|shadingVariant=red|:cards"
     std::ostringstream key;
@@ -111,9 +110,9 @@ UsdMayaStageCache::GetSharedSessionLayer(
     key << ":";
     key << drawMode;
 
-    std::string keyString = key.str();
+    std::string                 keyString = key.str();
     std::lock_guard<std::mutex> lock(_sharedSessionLayersMutex);
-    auto iter = _sharedSessionLayers.find(keyString);
+    auto                        iter = _sharedSessionLayers.find(keyString);
     if (iter == _sharedSessionLayers.end()) {
         SdfLayerRefPtr newLayer = SdfLayer::CreateAnonymous();
 
@@ -126,23 +125,22 @@ UsdMayaStageCache::GetSharedSessionLayer(
 
         if (!drawMode.IsEmpty()) {
             SdfAttributeSpecHandle drawModeAttr = SdfAttributeSpec::New(
-                    over,
-                    UsdGeomTokens->modelDrawMode,
-                    SdfValueTypeNames->Token,
-                    SdfVariabilityUniform);
+                over,
+                UsdGeomTokens->modelDrawMode,
+                SdfValueTypeNames->Token,
+                SdfVariabilityUniform);
             drawModeAttr->SetDefaultValue(VtValue(drawMode));
             SdfAttributeSpecHandle applyDrawModeAttr = SdfAttributeSpec::New(
-                    over,
-                    UsdGeomTokens->modelApplyDrawMode,
-                    SdfValueTypeNames->Bool,
-                    SdfVariabilityUniform);
+                over,
+                UsdGeomTokens->modelApplyDrawMode,
+                SdfValueTypeNames->Bool,
+                SdfVariabilityUniform);
             applyDrawModeAttr->SetDefaultValue(VtValue(true));
         }
 
         _sharedSessionLayers[keyString] = newLayer;
         return newLayer;
-    }
-    else {
+    } else {
         return iter->second;
     }
 }

@@ -4,11 +4,15 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         debugCodes.cpp
+        tokens.cpp
 )
 
 set(HEADERS
     api.h
     debugCodes.h
+    id.h
+    syncId.h
+    tokens.h
 )
 
 # -----------------------------------------------------------------------------

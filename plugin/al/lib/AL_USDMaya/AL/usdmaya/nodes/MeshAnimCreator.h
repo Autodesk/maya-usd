@@ -15,14 +15,14 @@
 //
 #pragma once
 
-#include "AL/maya/utils/NodeHelper.h"
 #include "AL/maya/utils/MayaHelperMacros.h"
+#include "AL/maya/utils/NodeHelper.h"
 
 #include <pxr/usd/usd/stage.h>
 
-#include <maya/MPxNode.h>
 #include <maya/MNodeMessage.h>
 #include <maya/MObjectHandle.h>
+#include <maya/MPxNode.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -31,53 +31,55 @@ namespace usdmaya {
 namespace nodes {
 
 //----------------------------------------------------------------------------------------------------------------------
-/// \brief  The MeshAnimCreator node acts as a polyCreator node within the DG that is driven by time. When the time
-///         changes, 
+/// \brief  The MeshAnimCreator node acts as a polyCreator node within the DG that is driven by
+/// time. When the time
+///         changes,
 /// \ingroup nodes
 //----------------------------------------------------------------------------------------------------------------------
 class MeshAnimCreator
-  : public MPxNode,
-    public AL::maya::utils::NodeHelper
+    : public MPxNode
+    , public AL::maya::utils::NodeHelper
 {
 public:
+    /// \brief  ctor
+    inline MeshAnimCreator()
+        : MPxNode()
+        , NodeHelper()
+    {
+    }
 
-  /// \brief  ctor
-  inline MeshAnimCreator()
-    : MPxNode(), NodeHelper()
-     {}
+    inline ~MeshAnimCreator() { MNodeMessage::removeCallback(m_attributeChanged); }
 
-  inline ~MeshAnimCreator()
-    { MNodeMessage::removeCallback(m_attributeChanged); }
+    //--------------------------------------------------------------------------------------------------------------------
+    /// Type Info & Registration
+    //--------------------------------------------------------------------------------------------------------------------
+    AL_MAYA_DECLARE_NODE();
 
-  //--------------------------------------------------------------------------------------------------------------------
-  /// Type Info & Registration
-  //--------------------------------------------------------------------------------------------------------------------
-  AL_MAYA_DECLARE_NODE();
+    //--------------------------------------------------------------------------------------------------------------------
+    /// Type Info & Registration
+    //--------------------------------------------------------------------------------------------------------------------
 
-  //--------------------------------------------------------------------------------------------------------------------
-  /// Type Info & Registration
-  //--------------------------------------------------------------------------------------------------------------------
-
-  AL_DECL_ATTRIBUTE(primPath);
-  AL_DECL_ATTRIBUTE(inTime);
-  AL_DECL_ATTRIBUTE(inStageData);
-  AL_DECL_ATTRIBUTE(outMesh);
+    AL_DECL_ATTRIBUTE(primPath);
+    AL_DECL_ATTRIBUTE(inTime);
+    AL_DECL_ATTRIBUTE(inStageData);
+    AL_DECL_ATTRIBUTE(outMesh);
 
 private:
-  void postConstructor() override;
-  MStatus connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
-  MStatus connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
-  static void onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
-  MStatus compute(const MPlug& plug, MDataBlock& data) override;
-  UsdStageRefPtr getStage();
+    void           postConstructor() override;
+    MStatus        connectionMade(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
+    MStatus        connectionBroken(const MPlug& plug, const MPlug& otherPlug, bool asSrc) override;
+    static void    onAttributeChanged(MNodeMessage::AttributeMessage, MPlug&, MPlug&, void*);
+    MStatus        compute(const MPlug& plug, MDataBlock& data) override;
+    UsdStageRefPtr getStage();
+
 private:
-  SdfPath m_cachePath;
-  MObjectHandle proxyShapeHandle;
-  MCallbackId m_attributeChanged = 0;
+    SdfPath       m_cachePath;
+    MObjectHandle proxyShapeHandle;
+    MCallbackId   m_attributeChanged = 0;
 };
 
 //----------------------------------------------------------------------------------------------------------------------
-} // nodes
-} // usdmaya
-} // AL
+} // namespace nodes
+} // namespace usdmaya
+} // namespace AL
 //----------------------------------------------------------------------------------------------------------------------

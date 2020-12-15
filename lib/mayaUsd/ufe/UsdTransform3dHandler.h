@@ -15,36 +15,36 @@
 //
 #pragma once
 
-#include <ufe/transform3dHandler.h>
-
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTransform3d.h>
 
-MAYAUSD_NS_DEF {
+#include <ufe/transform3dHandler.h>
+
+namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //! \brief Interface to create a UsdTransform3d interface object.
 class MAYAUSD_CORE_PUBLIC UsdTransform3dHandler : public Ufe::Transform3dHandler
 {
 public:
-	typedef std::shared_ptr<UsdTransform3dHandler> Ptr;
+    typedef std::shared_ptr<UsdTransform3dHandler> Ptr;
 
-	UsdTransform3dHandler();
-	~UsdTransform3dHandler();
+    UsdTransform3dHandler();
+    ~UsdTransform3dHandler();
 
-	// Delete the copy/move constructors assignment operators.
-	UsdTransform3dHandler(const UsdTransform3dHandler&) = delete;
-	UsdTransform3dHandler& operator=(const UsdTransform3dHandler&) = delete;
-	UsdTransform3dHandler(UsdTransform3dHandler&&) = delete;
-	UsdTransform3dHandler& operator=(UsdTransform3dHandler&&) = delete;
+    // Delete the copy/move constructors assignment operators.
+    UsdTransform3dHandler(const UsdTransform3dHandler&) = delete;
+    UsdTransform3dHandler& operator=(const UsdTransform3dHandler&) = delete;
+    UsdTransform3dHandler(UsdTransform3dHandler&&) = delete;
+    UsdTransform3dHandler& operator=(UsdTransform3dHandler&&) = delete;
 
-	//! Create a UsdTransform3dHandler.
-	static UsdTransform3dHandler::Ptr create();
+    //! Create a UsdTransform3dHandler.
+    static UsdTransform3dHandler::Ptr create();
 
-	// Ufe::Transform3dHandler overrides
-	Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
+    // Ufe::Transform3dHandler overrides
+    Ufe::Transform3d::Ptr transform3d(const Ufe::SceneItem::Ptr& item) const override;
 
 }; // UsdTransform3dHandler
 
 } // namespace ufe
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

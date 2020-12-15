@@ -15,14 +15,14 @@
 //
 #include "usdReflectWriter.h"
 
-#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/fileio/shaderWriter.h>
+#include <mayaUsd/fileio/shaderWriterRegistry.h>
 #include <mayaUsd/utils/util.h>
 
-#include <pxr/pxr.h>
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/pxr.h>
 #include <pxr/usd/usdShade/shader.h>
 #include <pxr/usd/usdShade/tokens.h>
 
@@ -35,7 +35,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class PxrUsdTranslators_BlinnWriter : public PxrUsdTranslators_ReflectWriter {
+class PxrUsdTranslators_BlinnWriter : public PxrUsdTranslators_ReflectWriter
+{
     typedef PxrUsdTranslators_ReflectWriter BaseClass;
 
 public:
@@ -54,6 +55,7 @@ protected:
 
 PXRUSDMAYA_REGISTER_SHADER_WRITER(blinn, PxrUsdTranslators_BlinnWriter);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
 
@@ -62,6 +64,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (specularColor)
     (specularRollOff)
 );
+// clang-format on
 
 PxrUsdTranslators_BlinnWriter::PxrUsdTranslators_BlinnWriter(
     const MFnDependencyNode& depNodeFn,
@@ -134,7 +137,7 @@ PxrUsdTranslators_BlinnWriter::GetShadingAttributeNameForMayaAttrName(const TfTo
         return UsdShadeUtils::GetFullName(
             PxrMayaUsdPreviewSurfaceTokens->RoughnessAttrName, UsdShadeAttributeType::Input);
     }
-    
+
     return BaseClass::GetShadingAttributeNameForMayaAttrName(mayaAttrName);
 }
 

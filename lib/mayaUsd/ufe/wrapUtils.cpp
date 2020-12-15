@@ -13,26 +13,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <boost/python.hpp>
-
-#include <ufe/runTimeMgr.h>
-#include <ufe/rtid.h>
-
-#include <pxr/base/tf/stringUtils.h>
-
 #include <mayaUsd/ufe/Global.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+
+#include <pxr/base/tf/stringUtils.h>
+
+#include <ufe/rtid.h>
+#include <ufe/runTimeMgr.h>
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/pathString.h>
+#endif
+
+#include <boost/python.hpp>
 
 using namespace MayaUsd;
 using namespace boost::python;
 
 UsdPrim getPrimFromRawItem(uint64_t rawItem)
 {
-    Ufe::SceneItem* item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
+    Ufe::SceneItem*    item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
     ufe::UsdSceneItem* usdItem = dynamic_cast<ufe::UsdSceneItem*>(item);
-    if (nullptr != usdItem)
-    {
+    if (nullptr != usdItem) {
         return usdItem->prim();
     }
     return UsdPrim();
@@ -41,7 +43,7 @@ UsdPrim getPrimFromRawItem(uint64_t rawItem)
 #ifdef UFE_V2_FEATURES_AVAILABLE
 std::string getNodeNameFromRawItem(uint64_t rawItem)
 {
-    std::string name;
+    std::string     name;
     Ufe::SceneItem* item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
     if (nullptr != item)
         name = item->nodeName();
@@ -51,10 +53,9 @@ std::string getNodeNameFromRawItem(uint64_t rawItem)
 
 std::string getNodeTypeFromRawItem(uint64_t rawItem)
 {
-    std::string type;
+    std::string     type;
     Ufe::SceneItem* item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
-    if (nullptr != item)
-    {
+    if (nullptr != item) {
         // Prepend the name of the runtime manager of this item to the type.
         type = Ufe::RunTimeMgr::instance().getName(item->runTimeId()) + item->nodeType();
     }
@@ -63,10 +64,14 @@ std::string getNodeTypeFromRawItem(uint64_t rawItem)
 
 UsdStageWeakPtr getStage(const std::string& ufePathString)
 {
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    return ufe::getStage(Ufe::PathString::path(ufePathString));
+#else
     // This function works on a single-segment path, i.e. the Maya Dag path
     // segment to the proxy shape.  We know the Maya run-time ID is 1,
     // separator is '|'.
     return ufe::getStage(Ufe::Path(Ufe::PathSegment(ufePathString, 1, '|')));
+#endif
 }
 
 std::string stagePath(UsdStageWeakPtr stage)
@@ -78,6 +83,9 @@ std::string stagePath(UsdStageWeakPtr stage)
 
 UsdPrim ufePathToPrim(const std::string& ufePathString)
 {
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    return ufe::ufePathToPrim(Ufe::PathString::path(ufePathString));
+#else
     // The path string is a list of segment strings separated by ',' comma
     // separator.
     auto segmentStrings = TfStringTokenize(ufePathString, ",");
@@ -92,25 +100,24 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
     // segment at a time.  The path segment separator is the first character
     // of each segment.  We know that USD's separator is '/' and Maya's
     // separator is '|', so use a map to get the corresponding UFE run-time ID.
-    Ufe::Path path;
-    static std::map<char, Ufe::Rtid> sepToRtid = {
-        {'/', ufe::getUsdRunTimeId()}, {'|', 1}};
+    Ufe::Path                        path;
+    static std::map<char, Ufe::Rtid> sepToRtid = { { '/', ufe::getUsdRunTimeId() }, { '|', 1 } };
     for (std::size_t i = 0; i < segmentStrings.size(); ++i) {
         const auto& segmentString = segmentStrings[i];
-        char sep = segmentString[0];
+        char        sep = segmentString[0];
         path = path + Ufe::PathSegment(segmentString, sepToRtid.at(sep), sep);
     }
     return ufe::ufePathToPrim(path);
+#endif
 }
 
-void
-wrapUtils()
+void wrapUtils()
 {
     def("getPrimFromRawItem", getPrimFromRawItem);
-    
-    #ifdef UFE_V2_FEATURES_AVAILABLE
-        def("getNodeNameFromRawItem", getNodeNameFromRawItem);
-    #endif
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    def("getNodeNameFromRawItem", getNodeNameFromRawItem);
+#endif
 
     def("getNodeTypeFromRawItem", getNodeTypeFromRawItem);
 

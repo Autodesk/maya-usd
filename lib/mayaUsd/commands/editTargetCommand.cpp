@@ -36,10 +36,11 @@ void reportError(const MString& errorString) { MGlobal::displayError(errorString
 
 } // namespace
 
-namespace MAYAUSD_NS {
+namespace MAYAUSD_NS_DEF {
 
 namespace Impl {
-class SetEditTarget {
+class SetEditTarget
+{
 public:
     bool doIt(UsdStagePtr stage)
     {
@@ -76,10 +77,7 @@ public:
 const char EditTargetCommand::commandName[] = "mayaUsdEditTarget";
 
 // plug-in callback to create the command object
-void* EditTargetCommand::creator()
-{
-    return static_cast<MPxCommand*>(new EditTargetCommand());
-}
+void* EditTargetCommand::creator() { return static_cast<MPxCommand*>(new EditTargetCommand()); }
 
 // plug-in callback to register the command syntax
 MSyntax EditTargetCommand::createSyntax()
@@ -195,4 +193,4 @@ MStatus EditTargetCommand::undoIt()
     return MS::kSuccess;
 }
 
-} //  namespace MAYAUSD_NS
+} //  namespace MAYAUSD_NS_DEF

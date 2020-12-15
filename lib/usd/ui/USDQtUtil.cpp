@@ -19,21 +19,15 @@
 
 #include <QtGui/QPixmap>
 
-MAYAUSD_NS_DEF {
+namespace MAYAUSD_NS_DEF {
 
-int USDQtUtil::dpiScale(int size) const
-{
-	return MQtUtil::dpiScale(size);
-}
+int USDQtUtil::dpiScale(int size) const { return MQtUtil::dpiScale(size); }
 
-float USDQtUtil::dpiScale(float size) const
-{
-	return MQtUtil::dpiScale(size);
-}
+float USDQtUtil::dpiScale(float size) const { return MQtUtil::dpiScale(size); }
 
 QPixmap* USDQtUtil::createPixmap(const std::string& imageName) const
 {
-	return MQtUtil::createPixmap(imageName.c_str());
+    return MQtUtil::createPixmap(imageName.c_str());
 }
 
-} // namespace MayaUsd
+} // namespace MAYAUSD_NS_DEF

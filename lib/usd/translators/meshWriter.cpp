@@ -15,34 +15,6 @@
 //
 #include "meshWriter.h"
 
-#include <set>
-#include <string>
-#include <vector>
-
-#include <maya/MFnDependencyNode.h>
-#include <maya/MFnMesh.h>
-#include <maya/MIntArray.h>
-#include <maya/MPlug.h>
-#include <maya/MPlugArray.h>
-#include <maya/MString.h>
-#include <maya/MStringArray.h>
-#include <maya/MUintArray.h>
-
-#include <pxr/pxr.h>
-#include <pxr/base/gf/vec2f.h>
-#include <pxr/base/gf/vec3f.h>
-#include <pxr/base/gf/vec4f.h>
-#include <pxr/base/tf/token.h>
-#include <pxr/base/vt/array.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/types.h>
-#include <pxr/usd/usd/timeCode.h>
-#include <pxr/usd/usdGeom/mesh.h>
-#include <pxr/usd/usdGeom/pointBased.h>
-#include <pxr/usd/usdGeom/primvar.h>
-#include <pxr/usd/usdSkel/root.h>
-#include <pxr/usd/usdUtils/pipeline.h>
-
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMesh.h>
@@ -54,28 +26,56 @@
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/gf/vec2f.h>
+#include <pxr/base/gf/vec3f.h>
+#include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/token.h>
+#include <pxr/base/vt/array.h>
+#include <pxr/pxr.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usd/sdf/types.h>
+#include <pxr/usd/usd/timeCode.h>
+#include <pxr/usd/usdGeom/mesh.h>
+#include <pxr/usd/usdGeom/pointBased.h>
+#include <pxr/usd/usdGeom/primvar.h>
+#include <pxr/usd/usdSkel/root.h>
+#include <pxr/usd/usdUtils/pipeline.h>
+
+#include <maya/MFnDependencyNode.h>
+#include <maya/MFnMesh.h>
+#include <maya/MIntArray.h>
+#include <maya/MPlug.h>
+#include <maya/MPlugArray.h>
+#include <maya/MString.h>
+#include <maya/MStringArray.h>
+#include <maya/MUintArray.h>
+
+#include <set>
+#include <string>
+#include <vector>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 PXRUSDMAYA_REGISTER_WRITER(mesh, PxrUsdTranslators_MeshWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mesh, UsdGeomMesh);
 
+// clang-format off
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+
     ((skelJointIndices, "skel:jointIndices"))
     ((skelJointWeights, "skel:jointWeights"))
     ((skelGeomBindTransform, "skel:geomBindTransform"))
 );
+// clang-format on
 
 PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
-        const MFnDependencyNode& depNodeFn,
-        const SdfPath& usdPath,
-        UsdMayaWriteJobContext& jobCtx) :
-    UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
+    const MFnDependencyNode& depNodeFn,
+    const SdfPath&           usdPath,
+    UsdMayaWriteJobContext&  jobCtx)
+    : UsdMayaPrimWriter(depNodeFn, usdPath, jobCtx)
 {
-    MayaUsd::TranslatorMeshWrite meshWriter( depNodeFn,
-                                             GetUsdStage(),
-                                             GetUsdPath(),
-                                             GetDagPath());
+    MayaUsd::TranslatorMeshWrite meshWriter(depNodeFn, GetUsdStage(), GetUsdPath(), GetDagPath());
     _usdPrim = meshWriter.usdMesh().GetPrim();
     if (!TF_VERIFY(
             _usdPrim,
@@ -85,14 +85,9 @@ PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
     }
 }
 
-void
-PxrUsdTranslators_MeshWriter::PostExport()
-{
-    cleanupPrimvars();
-}
+void PxrUsdTranslators_MeshWriter::PostExport() { cleanupPrimvars(); }
 
-void
-PxrUsdTranslators_MeshWriter::Write(const UsdTimeCode& usdTime)
+void PxrUsdTranslators_MeshWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaPrimWriter::Write(usdTime);
 
@@ -100,11 +95,11 @@ PxrUsdTranslators_MeshWriter::Write(const UsdTimeCode& usdTime)
     writeMeshAttrs(usdTime, primSchema);
 }
 
-bool
-PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
-                                             UsdGeomMesh& primSchema)
+bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
+    const UsdTimeCode& usdTime,
+    UsdGeomMesh&       primSchema)
 {
-    MStatus status{MS::kSuccess};
+    MStatus status { MS::kSuccess };
 
     // Exporting reference object only once
     if (usdTime.IsDefault() && _GetExportArgs().exportReferenceObjects) {
@@ -116,32 +111,34 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
     // mesh geometry. This should only be run once at default time.
     if (usdTime.IsDefault()) {
         const TfToken& exportSkin = _GetExportArgs().exportSkin;
-        if (exportSkin != UsdMayaJobExportArgsTokens->auto_ &&
-            exportSkin != UsdMayaJobExportArgsTokens->explicit_) {
+        if (exportSkin != UsdMayaJobExportArgsTokens->auto_
+            && exportSkin != UsdMayaJobExportArgsTokens->explicit_) {
 
             _skelInputMesh = MObject();
 
-        }else if (exportSkin == UsdMayaJobExportArgsTokens->explicit_ &&
-                  !UsdSkelRoot::Find(primSchema.GetPrim())) {
+        } else if (
+            exportSkin == UsdMayaJobExportArgsTokens->explicit_
+            && !UsdSkelRoot::Find(primSchema.GetPrim())) {
 
             _skelInputMesh = MObject();
 
-        }else {
+        } else {
 
             SdfPath skelPath;
-            _skelInputMesh = UsdMayaJointUtil::writeSkinningData(primSchema,
-                                                                 GetUsdPath(),
-                                                                 GetDagPath(),
-                                                                 skelPath,
-                                                                 _GetExportArgs().stripNamespaces, 
-                                                                 _GetSparseValueWriter());
+            _skelInputMesh = UsdMayaJointUtil::writeSkinningData(
+                primSchema,
+                GetUsdPath(),
+                GetDagPath(),
+                skelPath,
+                _GetExportArgs().stripNamespaces,
+                _GetSparseValueWriter());
 
-            if(!_skelInputMesh.isNull()) {
+            if (!_skelInputMesh.isNull()) {
                 // Add all skel primvars to the exclude set.
                 // We don't want later processing to stomp on any of our data.
-                _excludeColorSets.insert({_tokens->skelJointIndices,
-                                          _tokens->skelJointWeights,
-                                          _tokens->skelGeomBindTransform});
+                _excludeColorSets.insert({ _tokens->skelJointIndices,
+                                           _tokens->skelJointWeights,
+                                           _tokens->skelGeomBindTransform });
 
                 // Mark the bindings for post processing.
                 _writeJobCtx.MarkSkelBindings(primSchema.GetPrim().GetPath(), skelPath, exportSkin);
@@ -155,8 +152,7 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
     MFnMesh finalMesh(GetDagPath(), &status);
     if (!status) {
         TF_RUNTIME_ERROR(
-            "Failed to get final mesh at DAG path: %s",
-            GetDagPath().fullPathName().asChar());
+            "Failed to get final mesh at DAG path: %s", GetDagPath().fullPathName().asChar());
         return false;
     }
 
@@ -164,15 +160,13 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
     // meshes. The general rule is to use geomMesh only for geometric data such
     // as vertices, faces, normals, but use finalMesh for UVs, color sets,
     // and user-defined tagging (e.g. subdiv tags).
-    MObject geomMeshObj = _skelInputMesh.isNull() ?
-            finalMesh.object() : _skelInputMesh;
+    MObject geomMeshObj = _skelInputMesh.isNull() ? finalMesh.object() : _skelInputMesh;
     // do not pass these to functions that need access to geomMeshObj!
     // geomMesh.object() returns nil for meshes of type kMeshData.
-    MFnMesh geomMesh(geomMeshObj, &status); 
+    MFnMesh geomMesh(geomMeshObj, &status);
     if (!status) {
         TF_RUNTIME_ERROR(
-            "Failed to get geom mesh at DAG path: %s",
-            GetDagPath().fullPathName().asChar());
+            "Failed to get geom mesh at DAG path: %s", GetDagPath().fullPathName().asChar());
         return false;
     }
 
@@ -189,7 +183,8 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
     UsdMayaMeshWriteUtils::writePointsData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
 
     // Write faceVertexIndices
-    UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+    UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(
+        geomMesh, primSchema, usdTime, _GetSparseValueWriter());
 
     // Read subdiv scheme tagging. If not set, we default to defaultMeshScheme
     // flag (this is specified by the job args but defaults to catmullClark).
@@ -204,15 +199,19 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
         bool emitNormals = true; // Default to emitting normals if no tagging.
         UsdMayaMeshReadUtils::getEmitNormalsTag(finalMesh, &emitNormals);
         if (emitNormals) {
-            UsdMayaMeshWriteUtils::writeNormalsData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+            UsdMayaMeshWriteUtils::writeNormalsData(
+                geomMesh, primSchema, usdTime, _GetSparseValueWriter());
         }
     } else {
         // Subdivision surface - export subdiv-specific attributes.
-        UsdMayaMeshWriteUtils::writeSubdivInterpBound(finalMesh, primSchema, _GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::writeSubdivInterpBound(
+            finalMesh, primSchema, _GetSparseValueWriter());
 
-        UsdMayaMeshWriteUtils::writeSubdivFVLinearInterpolation(finalMesh, primSchema, _GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::writeSubdivFVLinearInterpolation(
+            finalMesh, primSchema, _GetSparseValueWriter());
 
-        UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(finalMesh, primSchema, _GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::assignSubDivTagsToUSDPrim(
+            finalMesh, primSchema, _GetSparseValueWriter());
     }
 
     // Holes - we treat InvisibleFaces as holes
@@ -220,7 +219,8 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
 
     // == Write UVSets as Vec2f Primvars
     if (_GetExportArgs().exportMeshUVs) {
-        UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(finalMesh, primSchema, usdTime, _GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
+            finalMesh, primSchema, usdTime, _GetSparseValueWriter());
     }
 
     // == Gather ColorSets
@@ -237,23 +237,24 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
     std::set<std::string> colorSetNamesSet(colorSetNames.begin(), colorSetNames.end());
 
     VtArray<GfVec3f> shadersRGBData;
-    VtArray<float> shadersAlphaData;
-    TfToken shadersInterpolation;
-    VtArray<int> shadersAssignmentIndices;
+    VtArray<float>   shadersAlphaData;
+    TfToken          shadersInterpolation;
+    VtArray<int>     shadersAssignmentIndices;
 
     // If we're exporting displayColor or we have color sets, gather colors and
     // opacities from the shaders assigned to the mesh and/or its faces.
     // If we find a displayColor color set, the shader colors and opacities
     // will be used to fill in unauthored/unpainted faces in the color set.
     if (_GetExportArgs().exportDisplayColor || !colorSetNames.empty()) {
-        UsdMayaUtil::GetLinearShaderColor(finalMesh,
-                                          &shadersRGBData,
-                                          &shadersAlphaData,
-                                          &shadersInterpolation,
-                                          &shadersAssignmentIndices);
+        UsdMayaUtil::GetLinearShaderColor(
+            finalMesh,
+            &shadersRGBData,
+            &shadersAlphaData,
+            &shadersInterpolation,
+            &shadersAssignmentIndices);
     }
 
-    for (const std::string& colorSetName: colorSetNames) {
+    for (const std::string& colorSetName : colorSetNames) {
 
         if (_excludeColorSets.count(colorSetName) > 0)
             continue;
@@ -264,98 +265,106 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
             if (!_GetExportArgs().exportDisplayColor) {
                 continue;
             }
-            isDisplayColor=true;
+            isDisplayColor = true;
         }
 
         if (colorSetName == UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetString()) {
-            TF_WARN("Mesh \"%s\" has a color set named \"%s\", "
+            TF_WARN(
+                "Mesh \"%s\" has a color set named \"%s\", "
                 "which is a reserved Primvar name in USD. Skipping...",
                 finalMesh.fullPathName().asChar(),
-                UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName
-                    .GetText());
+                UsdMayaMeshPrimvarTokens->DisplayOpacityColorSetName.GetText());
             continue;
         }
 
-        VtArray<GfVec3f> RGBData;
-        VtArray<float> AlphaData;
-        TfToken interpolation;
-        VtArray<int> assignmentIndices;
+        VtArray<GfVec3f>              RGBData;
+        VtArray<float>                AlphaData;
+        TfToken                       interpolation;
+        VtArray<int>                  assignmentIndices;
         MFnMesh::MColorRepresentation colorSetRep;
-        bool clamped = false;
+        bool                          clamped = false;
 
-        if (!UsdMayaMeshWriteUtils::getMeshColorSetData(finalMesh,
-                                                        MString(colorSetName.c_str()),
-                                                        isDisplayColor,
-                                                        shadersRGBData,
-                                                        shadersAlphaData,
-                                                        shadersAssignmentIndices,
-                                                        &RGBData,
-                                                        &AlphaData,
-                                                        &interpolation,
-                                                        &assignmentIndices,
-                                                        &colorSetRep,
-                                                        &clamped)) {
-            TF_WARN("Unable to retrieve colorSet data: %s on mesh: %s. "
-                    "Skipping...",
-                    colorSetName.c_str(), finalMesh.fullPathName().asChar());
+        if (!UsdMayaMeshWriteUtils::getMeshColorSetData(
+                finalMesh,
+                MString(colorSetName.c_str()),
+                isDisplayColor,
+                shadersRGBData,
+                shadersAlphaData,
+                shadersAssignmentIndices,
+                &RGBData,
+                &AlphaData,
+                &interpolation,
+                &assignmentIndices,
+                &colorSetRep,
+                &clamped)) {
+            TF_WARN(
+                "Unable to retrieve colorSet data: %s on mesh: %s. "
+                "Skipping...",
+                colorSetName.c_str(),
+                finalMesh.fullPathName().asChar());
             continue;
         }
 
         if (isDisplayColor) {
             // We tag the resulting displayColor/displayOpacity primvar as
             // authored to make sure we reconstruct the color set on import.
-            UsdMayaMeshWriteUtils::addDisplayPrimvars(primSchema,
-                                                usdTime,
-                                                colorSetRep,
-                                                RGBData,
-                                                AlphaData,
-                                                interpolation,
-                                                assignmentIndices,
-                                                clamped,
-                                                true,
-                                                _GetSparseValueWriter());
+            UsdMayaMeshWriteUtils::addDisplayPrimvars(
+                primSchema,
+                usdTime,
+                colorSetRep,
+                RGBData,
+                AlphaData,
+                interpolation,
+                assignmentIndices,
+                clamped,
+                true,
+                _GetSparseValueWriter());
         } else {
             const std::string sanitizedName = UsdMayaUtil::SanitizeColorSetName(colorSetName);
             // if our sanitized name is different than our current one and the
             // sanitized name already exists, it means 2 things are trying to
             // write to the same primvar.  warn and continue.
-            if (colorSetName != sanitizedName &&
-                    colorSetNamesSet.count(sanitizedName) > 0) {
-                TF_WARN("Skipping colorSet '%s' as the colorSet '%s' exists as "
-                        "well.",
-                        colorSetName.c_str(), sanitizedName.c_str());
+            if (colorSetName != sanitizedName && colorSetNamesSet.count(sanitizedName) > 0) {
+                TF_WARN(
+                    "Skipping colorSet '%s' as the colorSet '%s' exists as "
+                    "well.",
+                    colorSetName.c_str(),
+                    sanitizedName.c_str());
                 continue;
             }
 
             TfToken colorSetNameToken = TfToken(sanitizedName);
             if (colorSetRep == MFnMesh::kAlpha) {
-                UsdMayaMeshWriteUtils::createAlphaPrimVar(primSchema,
-                                                    colorSetNameToken,
-                                                    usdTime,
-                                                    AlphaData,
-                                                    interpolation,
-                                                    assignmentIndices,
-                                                    clamped,
-                                                    _GetSparseValueWriter());
+                UsdMayaMeshWriteUtils::createAlphaPrimVar(
+                    primSchema,
+                    colorSetNameToken,
+                    usdTime,
+                    AlphaData,
+                    interpolation,
+                    assignmentIndices,
+                    clamped,
+                    _GetSparseValueWriter());
             } else if (colorSetRep == MFnMesh::kRGB) {
-                UsdMayaMeshWriteUtils::createRGBPrimVar(primSchema,
-                                                  colorSetNameToken,
-                                                  usdTime,
-                                                  RGBData,
-                                                  interpolation,
-                                                  assignmentIndices,
-                                                  clamped,
-                                                  _GetSparseValueWriter());
+                UsdMayaMeshWriteUtils::createRGBPrimVar(
+                    primSchema,
+                    colorSetNameToken,
+                    usdTime,
+                    RGBData,
+                    interpolation,
+                    assignmentIndices,
+                    clamped,
+                    _GetSparseValueWriter());
             } else if (colorSetRep == MFnMesh::kRGBA) {
-                UsdMayaMeshWriteUtils::createRGBAPrimVar(primSchema,
-                                                   colorSetNameToken,
-                                                   usdTime,
-                                                   RGBData,
-                                                   AlphaData,
-                                                   interpolation,
-                                                   assignmentIndices,
-                                                   clamped,
-                                                   _GetSparseValueWriter());
+                UsdMayaMeshWriteUtils::createRGBAPrimVar(
+                    primSchema,
+                    colorSetNameToken,
+                    usdTime,
+                    RGBData,
+                    AlphaData,
+                    interpolation,
+                    assignmentIndices,
+                    clamped,
+                    _GetSparseValueWriter());
             }
         }
     }
@@ -372,37 +381,32 @@ PxrUsdTranslators_MeshWriter::writeMeshAttrs(const UsdTimeCode& usdTime,
         // not adding the clamp attribute as custom data. We also don't need to
         // reconstruct a color set from them on import since they originated
         // from the bound shader(s), so the authored flag is set to false.
-        UsdMayaMeshWriteUtils::addDisplayPrimvars(primSchema,
-                                            usdTime,
-                                            MFnMesh::kRGBA,
-                                            shadersRGBData,
-                                            shadersAlphaData,
-                                            shadersInterpolation,
-                                            shadersAssignmentIndices,
-                                            false,
-                                            false,
-                                            _GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::addDisplayPrimvars(
+            primSchema,
+            usdTime,
+            MFnMesh::kRGBA,
+            shadersRGBData,
+            shadersAlphaData,
+            shadersInterpolation,
+            shadersAssignmentIndices,
+            false,
+            false,
+            _GetSparseValueWriter());
     }
 
     return true;
 }
 
-bool
-PxrUsdTranslators_MeshWriter::ExportsGprims() const
-{
-    return true;
-}
+bool PxrUsdTranslators_MeshWriter::ExportsGprims() const { return true; }
 
-bool
-PxrUsdTranslators_MeshWriter::isMeshAnimated() const
+bool PxrUsdTranslators_MeshWriter::isMeshAnimated() const
 {
     // Note that _HasAnimCurves() as computed by UsdMayaTransformWriter is
     // whether the finalMesh is animated.
     return _skelInputMesh.isNull() ? _HasAnimCurves() : false;
 }
 
-void
-PxrUsdTranslators_MeshWriter::cleanupPrimvars()
+void PxrUsdTranslators_MeshWriter::cleanupPrimvars()
 {
     if (!isMeshAnimated()) {
         // Based on how setPrimvar() works, the cleanup phase doesn't apply to
@@ -416,7 +420,7 @@ PxrUsdTranslators_MeshWriter::cleanupPrimvars()
     // of the indices are assigned), then we can remove the unassigned value
     // and shift all the indices down.
     const UsdGeomMesh primSchema(GetUsdPrim());
-    for (const UsdGeomPrimvar& primvar: primSchema.GetPrimvars()) {
+    for (const UsdGeomPrimvar& primvar : primSchema.GetPrimvars()) {
         if (!primvar) {
             continue;
         }

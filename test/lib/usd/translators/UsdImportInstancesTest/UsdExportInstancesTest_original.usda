@@ -14,21 +14,21 @@ def Xform "pCube1" (
 
     def Scope "pCubeShape1" (
         instanceable = true
-        prepend references = </InstanceSources/pCube1_pCubeShape1>
+        prepend references = </MayaExportedInstanceSources/pCube1_pCubeShape1>
     )
     {
     }
 
     def Scope "pCube2" (
         instanceable = true
-        prepend references = </InstanceSources/pCube1_pCube2>
+        prepend references = </MayaExportedInstanceSources/pCube1_pCube2>
     )
     {
     }
 
     def Scope "pCube3" (
         instanceable = true
-        prepend references = </InstanceSources/pCube1_pCube3>
+        prepend references = </MayaExportedInstanceSources/pCube1_pCube3>
     )
     {
     }
@@ -43,27 +43,27 @@ def Xform "pCube4" (
 
     def Scope "pCubeShape1" (
         instanceable = true
-        prepend references = </InstanceSources/pCube1_pCubeShape1>
+        prepend references = </MayaExportedInstanceSources/pCube1_pCubeShape1>
     )
     {
     }
 
     def Scope "pCube2" (
         instanceable = true
-        prepend references = </InstanceSources/pCube1_pCube2>
+        prepend references = </MayaExportedInstanceSources/pCube1_pCube2>
     )
     {
     }
 
     def Scope "pCube3" (
         instanceable = true
-        prepend references = </InstanceSources/pCube1_pCube3>
+        prepend references = </MayaExportedInstanceSources/pCube1_pCube3>
     )
     {
     }
 }
 
-over "InstanceSources"
+over "MayaExportedInstanceSources"
 {
     def Xform "pCube1_pCubeShape1"
     {
@@ -85,7 +85,7 @@ over "InstanceSources"
 
         def Scope "pCubeShape2" (
             instanceable = true
-            prepend references = </InstanceSources/pCube1_pCube2_pCubeShape2>
+            prepend references = </MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2>
         )
         {
         }
@@ -111,7 +111,7 @@ over "InstanceSources"
 
         def Scope "pCubeShape2" (
             instanceable = true
-            prepend references = </InstanceSources/pCube1_pCube2_pCubeShape2>
+            prepend references = </MayaExportedInstanceSources/pCube1_pCube2_pCubeShape2>
         )
         {
         }
