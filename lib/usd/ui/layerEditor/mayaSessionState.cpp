@@ -59,7 +59,7 @@ MayaSessionState::~MayaSessionState()
     //
 }
 
-void MayaSessionState::setStage(pxr::UsdStageRefPtr const& in_stage)
+void MayaSessionState::setStage(PXR_NS::UsdStageRefPtr const& in_stage)
 {
     PARENT_CLASS::setStage(in_stage);
     if (in_stage) {
@@ -356,7 +356,7 @@ void MayaSessionState::setAutoHideSessionLayer(bool hideIt)
     PARENT_CLASS::setAutoHideSessionLayer(hideIt);
 }
 
-void MayaSessionState::printLayer(const pxr::SdfLayerRefPtr& layer) const
+void MayaSessionState::printLayer(const PXR_NS::SdfLayerRefPtr& layer) const
 {
     MString result, temp;
 

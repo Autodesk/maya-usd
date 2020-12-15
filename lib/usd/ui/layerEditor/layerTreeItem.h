@@ -68,10 +68,10 @@ class LayerTreeItem : public QStandardItem
 {
 public:
     LayerTreeItem(
-        pxr::SdfLayerRefPtr in_usdLayer,
-        LayerType           in_layerType = LayerType::SubLayer,
-        std::string         in_subLayerPath = "",
-        RecursionDetector*  in_recursionDetector = nullptr);
+        PXR_NS::SdfLayerRefPtr in_usdLayer,
+        LayerType              in_layerType = LayerType::SubLayer,
+        std::string            in_subLayerPath = "",
+        RecursionDetector*     in_recursionDetector = nullptr);
 
     // refresh our data from the USD Layer
     void fetchData(RebuildChildren in_rebuild, RecursionDetector* in_recursionDetector = nullptr);
@@ -90,7 +90,7 @@ public:
     // if a sublayer, get the path we were saved with in the parent
     const std::string& subLayerPath() const { return _subLayerPath; }
     // shortcut to get stage from model
-    pxr::UsdStageRefPtr const& stage() const;
+    PXR_NS::UsdStageRefPtr const& stage() const;
 
     // is the layer muted at the stage level?
     bool isMuted() const;
@@ -108,15 +108,15 @@ public:
     // is this sublayer with a path that doesn't load?
     bool isInvalidLayer() const { return !_layer; }
     // update the target layer flags -- meant to be called from invisible root
-    void updateTargetLayerRecursive(const pxr::SdfLayerRefPtr& newTargetLayer);
+    void updateTargetLayerRecursive(const PXR_NS::SdfLayerRefPtr& newTargetLayer);
 
     // USD Layer type query
-    bool                isSessionLayer() const { return _layerType == LayerType::SessionLayer; }
-    bool                isSublayer() const { return _layerType == LayerType::SubLayer; }
-    bool                isTargetLayer() const { return _isTargetLayer; }
-    bool                isAnonymous() const { return _layer ? _layer->IsAnonymous() : false; }
-    bool                isRootLayer() const { return _layerType == LayerType::RootLayer; }
-    pxr::SdfLayerRefPtr layer() const { return _layer; }
+    bool                   isSessionLayer() const { return _layerType == LayerType::SessionLayer; }
+    bool                   isSublayer() const { return _layerType == LayerType::SubLayer; }
+    bool                   isTargetLayer() const { return _isTargetLayer; }
+    bool                   isAnonymous() const { return _layer ? _layer->IsAnonymous() : false; }
+    bool                   isRootLayer() const { return _layerType == LayerType::RootLayer; }
+    PXR_NS::SdfLayerRefPtr layer() const { return _layer; }
 
     // allows c++ iteration of children
     LayerItemVector childrenVector() const;
@@ -127,11 +127,11 @@ public:
     void discardEdits();
 
     // there are two addAnonymousSubLayer , because the menu needs all method to be void
-    void                addAnonymousSublayer();
-    pxr::SdfLayerRefPtr addAnonymousSublayerAndReturn();
-    void                loadSubLayers(QWidget* in_parent);
-    void                printLayer();
-    void                clearLayer();
+    void                   addAnonymousSublayer();
+    PXR_NS::SdfLayerRefPtr addAnonymousSublayerAndReturn();
+    void                   loadSubLayers(QWidget* in_parent);
+    void                   printLayer();
+    void                   clearLayer();
 
     // delegate Action API for command buttons
     int getActionButtonCount() const { return (isSublayer() && !isInvalidLayer()) ? 1 : 0; }
@@ -140,11 +140,11 @@ public:
     static const std::vector<LayerActionInfo>& actionButtonsDefinition();
 
 protected:
-    pxr::SdfLayerRefPtr _layer;
-    std::string         _displayName;
-    bool                _isTargetLayer = false;
-    LayerType           _layerType = LayerType::SubLayer;
-    std::string         _subLayerPath; // name of the layer as it was found in the parent's stack
+    PXR_NS::SdfLayerRefPtr _layer;
+    std::string            _displayName;
+    bool                   _isTargetLayer = false;
+    LayerType              _layerType = LayerType::SubLayer;
+    std::string            _subLayerPath; // name of the layer as it was found in the parent's stack
 
     static std::vector<LayerActionInfo> _actionButtons;
 

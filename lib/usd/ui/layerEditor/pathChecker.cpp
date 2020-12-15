@@ -32,8 +32,8 @@
 namespace {
 using namespace UsdLayerEditor;
 
-typedef pxr::SdfLayerRefPtr   UsdLayer;
-typedef std::vector<UsdLayer> UsdLayerVector;
+typedef PXR_NS::SdfLayerRefPtr UsdLayer;
+typedef std::vector<UsdLayer>  UsdLayerVector;
 
 // helper for checkIfPathIsSafeToAdd
 UsdLayerVector getAllParentHandles(LayerTreeItem* parentItem)
@@ -79,7 +79,7 @@ bool checkPathRecursive(
         return false;
     }
 
-    auto& resolver = pxr::ArGetResolver();
+    auto& resolver = PXR_NS::ArGetResolver();
     auto  anchor = toForwardSlashes(testLayer->GetRealPath());
 
     // now check all children of the testLayer recursivly down for conflicts with any of the parents
@@ -89,7 +89,7 @@ bool checkPathRecursive(
     for (const auto path : proxy) {
         auto actualpath = computePathToLoadSublayer(path, anchor, resolver);
 
-        auto childLayer = pxr::SdfLayer::FindOrOpen(actualpath);
+        auto childLayer = PXR_NS::SdfLayer::FindOrOpen(actualpath);
         if (childLayer != nullptr) {
             if (!checkPathRecursive(
                     in_errorTitle,
@@ -121,7 +121,7 @@ bool checkIfPathIsSafeToAdd(
     // checking if the handles were already loaded
 
     auto  parentLayer = in_parentItem->layer();
-    auto& resolver = pxr::ArGetResolver();
+    auto& resolver = PXR_NS::ArGetResolver();
 
     // first check if the path is already in the stack
     auto proxy = parentLayer->GetSubLayerPaths();
@@ -133,7 +133,7 @@ bool checkIfPathIsSafeToAdd(
         // now we're going to check if the layer is already in the stack, through
         // another path
         bool foundLayerInStack = false;
-        auto subLayer = pxr::SdfLayer::FindOrOpen(pathToAdd);
+        auto subLayer = PXR_NS::SdfLayer::FindOrOpen(pathToAdd);
         if (subLayer == nullptr) {
             return true; // always safe to add a bad path, unless it's already in the stack
         } else {
@@ -141,7 +141,7 @@ bool checkIfPathIsSafeToAdd(
             for (const auto path : proxy) {
                 std::string actualpath = computePathToLoadSublayer(path, anchor, resolver);
 
-                auto childLayer = pxr::SdfLayer::FindOrOpen(actualpath);
+                auto childLayer = PXR_NS::SdfLayer::FindOrOpen(actualpath);
                 if (childLayer == subLayer) {
                     foundLayerInStack = true;
                     break;
@@ -164,11 +164,11 @@ bool checkIfPathIsSafeToAdd(
 }
 
 bool saveSubLayer(
-    const QString&      in_errorTitle,
-    LayerTreeItem*      in_parentItem,
-    pxr::SdfLayerRefPtr in_layer,
-    const std::string&  in_absolutePath,
-    const std::string&  in_formatTag)
+    const QString&         in_errorTitle,
+    LayerTreeItem*         in_parentItem,
+    PXR_NS::SdfLayerRefPtr in_layer,
+    const std::string&     in_absolutePath,
+    const std::string&     in_formatTag)
 {
     std::string backupFileName;
     QFileInfo   fileInfo(QString::fromStdString(in_absolutePath));
@@ -184,7 +184,7 @@ bool saveSubLayer(
     }
 
     if (!fileError) {
-        pxr::SdfFileFormat::FileFormatArguments formatArgs;
+        PXR_NS::SdfFileFormat::FileFormatArguments formatArgs;
         formatArgs["format"] = in_formatTag;
 
         if (!in_layer->Export(in_absolutePath, "", formatArgs)) {

@@ -116,7 +116,7 @@ LayerItemVector LayerTreeItem::childrenVector() const
 }
 
 // recursively update the target layer data member. Meant to be called from invisibleRoot
-void LayerTreeItem::updateTargetLayerRecursive(const pxr::SdfLayerRefPtr& newTargetLayer)
+void LayerTreeItem::updateTargetLayerRecursive(const PXR_NS::SdfLayerRefPtr& newTargetLayer)
 {
     if (!_layer)
         return;
@@ -174,7 +174,7 @@ AbstractCommandHook* LayerTreeItem::commandHook() const
     return parentModel()->sessionState()->commandHook();
 }
 
-pxr::UsdStageRefPtr const& LayerTreeItem::stage() const
+PXR_NS::UsdStageRefPtr const& LayerTreeItem::stage() const
 {
     return parentModel()->sessionState()->stage();
 }
@@ -308,7 +308,7 @@ void LayerTreeItem::addAnonymousSublayer()
     addAnonymousSublayerAndReturn();
 }
 
-pxr::SdfLayerRefPtr LayerTreeItem::addAnonymousSublayerAndReturn()
+PXR_NS::SdfLayerRefPtr LayerTreeItem::addAnonymousSublayerAndReturn()
 {
     auto model = parentModel();
     auto newLayer
