@@ -55,21 +55,8 @@ class testUsdExportStripNamespaces(unittest.TestCase):
 
         usdFilePath = os.path.abspath('UsdExportStripNamespaces_EXPORTED.usda')
 
-        # https://github.com/Autodesk/maya-usd/blob/dev/lib/mayaUsd/fileio/jobs/writeJob.cpp#L814
-        # does indeed generate the proper TF_RUNTIME_ERROR originally tested
-        # below, and
-        # http://graphics.pixar.com/usd/docs/api/group__group__tf___diagnostic.html#ga4abf7754e5dbf161d2a5a4160fd3b891
-        # describes that "Generally, an error handling delegate will take action
-        # to turn this error into a python exception [...]".
-        #
-        # Unfortunately, at time of writing, this is not happening correctly,
-        # as the Python exception is generated, but the detailed error string
-        # is lost.  We are left with the generic 'Maya command error'
-        # string, which is far weaker.  PPT, 16-Jun-20.
-        #
-        # errorRegexp = "Multiple dag nodes map to the same prim path" \
-        #     ".+|cube1 - |foo:cube1.*"
-        errorRegexp = 'Maya command error'
+        errorRegexp = "Multiple dag nodes map to the same prim path" \
+            ".+|cube1 - |foo:cube1.*"
 
         with self.assertRaisesRegex(RuntimeError, errorRegexp) as cm:
             cmds.usdExport(mergeTransformAndShape=True,
