@@ -311,7 +311,7 @@ Ufe::Vector3d UsdTransform3dMatrixOp::scale() const
     GfMatrix4d unusedR, unusedP, unusedU;
     GfVec3d    s, unusedT;
     if (!local.Factor(&unusedR, &s, &unusedU, &unusedT, &unusedP)) {
-        TF_WARN("Cannot decompose local transform for %s", pathCStr());
+        TF_WARN("Cannot decompose local transform for %s", path().string().c_str());
         return Ufe::Vector3d(1, 1, 1);
     }
 
