@@ -486,6 +486,10 @@ void PxrUsdTranslators_MeshWriter::cleanupPrimvars()
             }
         }
     }
+
+    // The function checks within itself if it is required to be called, so no conditional check
+    // here
+    MakeSingleSamplesStatic();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
