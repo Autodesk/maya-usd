@@ -85,8 +85,12 @@
 // clang-format wants to re-order these two includes but they must be done in this order or
 // the code will not compile.
 // clang-format off
-#include "pxr/imaging/glf/glew.h"   // needs to be included before anything else includes gl.h
-#include "../px_vp20/glslProgram.h" // this includes gl.h and not glew.
+#if USD_VERSION_NUM < 2102
+#include <pxr/imaging/glf/glew.h> // needs to be included before anything else includes gl.h
+#else
+#include <pxr/imaging/garch/glApi.h>
+#endif
+#include <mayaUsd/render/px_vp20/glslProgram.h> // this includes gl.h and no GL loader.
 //clang-format on
 #endif
 

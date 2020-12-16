@@ -14,8 +14,13 @@
 // limitations under the License.
 //
 
-// glew must be included before any other GL header.
+// GL loading library needs to be included before any other OpenGL headers.
+#include <pxr/pxr.h>
+#if USD_VERSION_NUM < 2102
 #include <pxr/imaging/glf/glew.h>
+#else
+#include <pxr/imaging/garch/glApi.h>
+#endif
 
 #include "glslProgram.h"
 

@@ -16,10 +16,12 @@
 #ifndef MTOH_VIEW_OVERRIDE_H
 #define MTOH_VIEW_OVERRIDE_H
 
+#include <pxr/pxr.h>
+#if USD_VERSION_NUM < 2102
 #include <pxr/imaging/glf/glew.h>
+#endif
 
 #include <pxr/base/tf/singleton.h>
-#include <pxr/pxr.h>
 
 #include <maya/MCallbackIdArray.h>
 #include <maya/MMessage.h>

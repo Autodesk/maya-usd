@@ -657,7 +657,9 @@ void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::_InitHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
+#if USD_VERSION_NUM < 2102
     GlfGlewInit();
+#endif
     GlfContextCaps::InitInstance();
     _rendererPlugin
         = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);
