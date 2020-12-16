@@ -164,9 +164,10 @@ class testUsdImportCamera(unittest.TestCase):
         return animCurveFn
 
     def _ValidateAnimValuesAtTimes(self, animCurveFn, expectedTimesToValues):
+        timeUnit = OpenMaya.MTime.uiUnit()
         for time in expectedTimesToValues.keys():
             expectedValue = expectedTimesToValues[time]
-            value = animCurveFn.evaluate(OpenMaya.MTime(time))
+            value = animCurveFn.evaluate(OpenMaya.MTime(time, timeUnit))
             self.assertTrue(Gf.IsClose(expectedValue, value, 1e-6))
 
     def testImportPerspectiveCameraAnimatedTransform(self):

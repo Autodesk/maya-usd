@@ -64,8 +64,9 @@ class testPointBasedDeformerNode(unittest.TestCase):
         Tests that a native Maya mesh is deformed correctly by a point based
         deformer node.
         """
+        timeUnit = OM.MTime.uiUnit()
         OMA.MAnimControl.setAnimationStartEndTime(
-            OM.MTime(self.START_TIMECODE), OM.MTime(self.END_TIMECODE))
+            OM.MTime(self.START_TIMECODE, timeUnit), OM.MTime(self.END_TIMECODE, timeUnit))
 
         # Create the cube that will be affected by the deformer.
         testCube = cmds.polyCube(depth=1.0, height=1.0, width=1.0)[0]
