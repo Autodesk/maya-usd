@@ -206,7 +206,7 @@ bool UsdMayaPrimWriter::ExportsGprims() const { return false; }
 bool UsdMayaPrimWriter::ShouldPruneChildren() const { return false; }
 
 /* virtual */
-void UsdMayaPrimWriter::PostExport() { }
+void UsdMayaPrimWriter::PostExport() { MakeSingleSamplesStatic(); }
 
 void UsdMayaPrimWriter::SetExportVisibility(const bool exportVis) { _exportVisibility = exportVis; }
 
@@ -241,6 +241,41 @@ const UsdMayaJobExportArgs& UsdMayaPrimWriter::_GetExportArgs() const
 }
 
 UsdUtilsSparseValueWriter* UsdMayaPrimWriter::_GetSparseValueWriter() { return &_valueWriter; }
+
+void UsdMayaPrimWriter::MakeSingleSamplesStatic()
+{
+    auto exportArgs = _GetExportArgs();
+
+    if (!exportArgs.staticSingleSample) {
+        return;
+    }
+
+    UsdPrim prim = GetUsdPrim();
+    if (!prim.IsValid()) {
+        return;
+    }
+
+    for (auto& attr : prim.GetAttributes()) {
+        MakeSingleSamplesStatic(attr);
+    }
+};
+
+void UsdMayaPrimWriter::MakeSingleSamplesStatic(UsdAttribute attr)
+{
+    std::vector<double> samples;
+    if (attr.GetNumTimeSamples() != 1) {
+        return;
+    }
+
+    attr.GetTimeSamples(&samples);
+
+    VtValue sample;
+    attr.Get(&sample, samples[0]);
+
+    // Clear all time samples and then sets a default
+    attr.Clear();
+    attr.Set(sample);
+}
 
 /* virtual */
 bool UsdMayaPrimWriter::_HasAnimCurves() const { return _hasAnimCurves; }

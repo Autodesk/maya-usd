@@ -103,6 +103,7 @@ bool MayaUsdPrimReaderMesh::Read(UsdMayaPrimReaderContext* context)
         stageNode,
         _GetArgs().GetTimeInterval(),
         _GetArgs().GetUseAsAnimationCache(),
+        context,
         &status);
     CHECK_MSTATUS_AND_RETURN(status, false);
 

@@ -156,6 +156,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->pythonPostCallback.GetText(),
         MSyntax::kString);
     syntax.addFlag(kVerboseFlag, UsdMayaJobExportArgsTokens->verbose.GetText(), MSyntax::kNoArg);
+    syntax.addFlag(
+        kStaticSingleSample,
+        UsdMayaJobExportArgsTokens->staticSingleSample.GetText(),
+        MSyntax::kBoolean);
 
     // These are additional flags under our control.
     syntax.addFlag(kFrameRangeFlag, kFrameRangeFlagLong, MSyntax::kDouble, MSyntax::kDouble);

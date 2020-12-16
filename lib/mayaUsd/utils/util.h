@@ -570,15 +570,15 @@ void GetFilteredSelectionToExport(
     MSelectionList&           objectList,
     UsdMayaUtil::MDagPathSet& dagPaths);
 
-/// Coverts a given \pMTime::\pUnit enum to a \pfloat value of samples per second
-/// Returns 0.0f if the result is invalid.
+/// Coverts a given \pMTime::\pUnit enum to a \pdouble value of samples per second
+/// Returns 0.0 if the result is invalid.
 MAYAUSD_CORE_PUBLIC
-float ConvertMTimeUnitToFloat(const MTime::Unit& unit);
+double ConvertMTimeUnitToDouble(const MTime::Unit& unit);
 
-/// Get's the scene's \pMTime::\pUnit as a \pfloat value of samples per second
-/// Returns 0.0f if the result is invalid.
+/// Get's the scene's \pMTime::\pUnit as a \pdouble value of samples per second
+/// Returns 0.0 if the result is invalid.
 MAYAUSD_CORE_PUBLIC
-float GetSceneMTimeUnitAsFloat();
+double GetSceneMTimeUnitAsDouble();
 
 } // namespace UsdMayaUtil
 

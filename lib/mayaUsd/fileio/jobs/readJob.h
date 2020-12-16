@@ -65,6 +65,9 @@ public:
     MAYAUSD_CORE_PUBLIC
     const MDagPath& GetMayaRootDagPath() const;
 
+    MAYAUSD_CORE_PUBLIC
+    double timeSampleMultiplier() const;
+
 protected:
     // Types
     using _PrimReaderMap = std::unordered_map<SdfPath, UsdMayaPrimReaderSharedPtr, SdfPath::Hash>;
@@ -122,9 +125,12 @@ private:
         const UsdPrim&            usdRootPrim,
         UsdMayaPrimReaderContext& readCtx);
 
+    double _setTimeSampleMultiplierFrom(const double layerFPS);
+
     // Data
     MDagModifier mDagModifierUndo;
     bool         mDagModifierSeeded;
+    double       mTimeSampleMultiplier;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

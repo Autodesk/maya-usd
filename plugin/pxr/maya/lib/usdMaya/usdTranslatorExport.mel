@@ -202,6 +202,8 @@ global proc int usdTranslatorExport (string $parent,
 
         checkBox -l "Apply Euler Filter" eulerFilterCheckBox;
 
+        checkBox -l "Static Single Sample" staticSingleSampleCheckBox;
+
         columnLayout -width 100 animOptsCol;
         intFieldGrp -l "Start Time:" -v1 1 startTimeField;
         intFieldGrp -l "End Time:" -v1 1 endTimeField;
@@ -262,6 +264,8 @@ global proc int usdTranslatorExport (string $parent,
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "animationCheckBox");
                 } else if ($optionBreakDown[0] == "eulerFilter") {
                     usdTranslatorExport_SetCheckbox($optionBreakDown[1], "eulerFilterCheckBox");
+                } else if ($optionBreakDown[0] == "staticSingleSample") {
+                    usdTranslatorExport_SetCheckbox($optionBreakDown[1], "staticSingleSampleCheckBox");
                 } else if ($optionBreakDown[0] == "startTime") {
                     int $startTime=$optionBreakDown[1];
                     intFieldGrp -e -v1 $startTime startTimeField;
@@ -308,6 +312,7 @@ global proc int usdTranslatorExport (string $parent,
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "stripNamespaces", "stripNamespacesCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "animation", "animationCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "eulerFilter", "eulerFilterCheckBox");
+        $currentOptions = usdTranslatorExport_AppendFromCheckbox($currentOptions, "staticSingleSample", "staticSingleSampleCheckBox");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "startTime", "startTimeField");
         $currentOptions = usdTranslatorExport_AppendFromIntField($currentOptions, "endTime", "endTimeField");
         $currentOptions = usdTranslatorExport_AppendFromFloatField($currentOptions, "frameStride", "frameStrideField");

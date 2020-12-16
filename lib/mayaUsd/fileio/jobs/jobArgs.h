@@ -86,6 +86,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (convertMaterialsTo) \
     (stripNamespaces) \
     (verbose) \
+    (staticSingleSample) \
     /* Special "none" token */ \
     (none) \
     /* renderLayerMode values */ \
@@ -177,6 +178,7 @@ struct UsdMayaJobExportArgs
     const TfToken shadingMode;
     const TfToken convertMaterialsTo;
     const bool    verbose;
+    const bool    staticSingleSample;
 
     typedef std::map<std::string, std::string> ChaserArgs;
     const std::vector<std::string>             chaserNames;
