@@ -1,7 +1,3 @@
-import os
-import sys
-import unittest
-
 import maya.cmds as cmds
 
 import fixturesUtils
@@ -20,9 +16,8 @@ class TestCommand(mtohUtils.MtohTestCase):
         # we assume the results of `listRenderIndex=..., visibileOnly=1` are
         # sufficient
 
-        cubeUnselectedImg = os.path.join("..", "MtohBasicRenderTest",
-                                         "cube_unselected.png")
-        nothingImg = os.path.join("..", "MtohDagChangesTest", "instances_0.png")
+        cubeUnselectedImg = "cube_unselected.png"
+        nothingImg = "nothing.png"
 
         cmds.refresh()
         self.assertIn(
