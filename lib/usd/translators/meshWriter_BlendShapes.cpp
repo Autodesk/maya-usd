@@ -173,11 +173,11 @@ MStatus mayaFindPtAndNormalOffsetsBetweenMeshes(
         const int     componentIdx = indices[i];
         const GfVec3f ptA = pVtPtsA[componentIdx];
         const GfVec3f ptB = pVtPtsB[componentIdx];
-        ptOffsets[i] = ptA - ptB;
+        ptOffsets[i] = ptB - ptA;
 
         const GfVec3f nrmA = pVtNrmsA[componentIdx];
         const GfVec3f nrmB = pVtNrmsB[componentIdx];
-        nrmOffsets[i] = nrmA - nrmB;
+        nrmOffsets[i] = nrmB - nrmA;
     }
 
     return status;
