@@ -18,14 +18,20 @@
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/pathString.h>
 #endif
 
 #include <boost/python.hpp>
+
+#include <string>
 
 using namespace MayaUsd;
 using namespace boost::python;
@@ -81,6 +87,13 @@ std::string stagePath(UsdStageWeakPtr stage)
     return ufe::stagePath(stage).string();
 }
 
+std::string usdPathToUfePathSegment(
+    const SdfPath& usdPath,
+    int            instanceIndex = UsdImagingDelegate::ALL_INSTANCES)
+{
+    return ufe::usdPathToUfePathSegment(usdPath, instanceIndex).string();
+}
+
 UsdPrim ufePathToPrim(const std::string& ufePathString)
 {
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -129,5 +142,8 @@ void wrapUtils()
     // the USD path separator is '/'.  PPT, 8-Dec-2019.
     def("getStage", getStage);
     def("stagePath", stagePath);
+    def("usdPathToUfePathSegment",
+        usdPathToUfePathSegment,
+        (arg("usdPath"), arg("instanceIndex") = UsdImagingDelegate::ALL_INSTANCES));
     def("ufePathToPrim", ufePathToPrim);
 }
