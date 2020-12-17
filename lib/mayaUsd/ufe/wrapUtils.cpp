@@ -21,6 +21,7 @@
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <ufe/path.h>
 #include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
@@ -127,6 +128,17 @@ static Ufe::Path _UfeV1StringToUsdPath(const std::string& ufePathString)
 }
 #endif
 
+std::string stripInstanceIndexFromUfePath(const std::string& ufePathString)
+{
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    const Ufe::Path path = Ufe::PathString::path(ufePathString);
+    return Ufe::PathString::string(ufe::stripInstanceIndexFromUfePath(path));
+#else
+    const Ufe::Path path = _UfeV1StringToUsdPath(ufePathString);
+    return ufe::stripInstanceIndexFromUfePath(path).string();
+#endif
+}
+
 UsdPrim ufePathToPrim(const std::string& ufePathString)
 {
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -182,6 +194,7 @@ void wrapUtils()
     def("usdPathToUfePathSegment",
         usdPathToUfePathSegment,
         (arg("usdPath"), arg("instanceIndex") = UsdImagingDelegate::ALL_INSTANCES));
+    def("stripInstanceIndexFromUfePath", stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", ufePathToPrim);
     def("ufePathToInstanceIndex", ufePathToInstanceIndex);
 }
