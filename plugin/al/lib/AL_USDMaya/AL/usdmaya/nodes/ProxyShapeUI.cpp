@@ -15,6 +15,19 @@
 //
 #include "AL/usdmaya/nodes/ProxyShapeUI.h"
 
+// In Maya-2019 and less, on Linux, Xlib.h will get included
+//     (from GL/glx.h < MGl.h < M3dView.h < MPxSurfaceShapeUI.h)
+// ...and Xlib.h "helpfully" does:
+//   #define Bool int
+// This messes with sdf/types.h:
+//   SdfValueTypeName Bool;
+// So, we #undef bool to get around.
+// In Maya-2020+, MGl.h now includes GL/gl.h (not glx.h), which doesn't have
+// this annoyance...
+#if defined(LINUX) && MAYA_API_VERSION < 20200000 && defined(Bool)
+#undef Bool
+#endif
+
 #include "AL/usdmaya/DebugCodes.h"
 #include "AL/usdmaya/nodes/Engine.h"
 #include "AL/usdmaya/nodes/ProxyShape.h"
