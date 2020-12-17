@@ -525,6 +525,9 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         status = mayaDisableAllBlendShapesForMesh(deformedMesh, blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
+        // NOTE: (yliangsiew) Because the `geomMesh` fnset cached the previous MObject (from the inputGeom skinCluster plug),
+        // the point positions reported will be out-of-date even after we disable blendshape deformers. So
+        // this code re-acquires the mesh in question to write out the points for, and then we actually write it out.
         MFnMesh fnMesh;
         MObject skinCls = UsdMayaJointUtil::getSkinCluster(GetDagPath());
         if (skinCls.isNull()) {
@@ -542,9 +545,6 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             CHECK_MSTATUS_AND_RETURN(status, false);
         }
 
-        // TODO: (yliangsiew) This is still somehow writing out the points with the blendshape weights applied.
-        // Seems like MFnMesh cached earlier will cache down the old point positions when the function set is
-        // first applied to groupParts input plug. Need to work around this...
         UsdMayaMeshWriteUtils::writePointsData(fnMesh, primSchema, usdTime, _GetSparseValueWriter());
         /*
           NOTE: (yliangsiew) Now we can re-enable the blendshapes' envelopes after
@@ -553,6 +553,9 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         status = mayaEnableGeometryFilterNodesForMesh(blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
         CHECK_MSTATUS_AND_RETURN(status, false);
     } else {
+        // TODO: (yliangsiew) Any other deformers that get implemented in the future will have to make
+        // sure that they don't just enter this scope; otherwise, their deformed point positions will get
+        // "baked" into the pref pose as well.
         UsdMayaMeshWriteUtils::writePointsData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
     }
 
