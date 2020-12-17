@@ -2147,7 +2147,7 @@ double UsdMayaUtil::ConvertMTimeUnitToDouble(const MTime::Unit& unit)
         ret = 50.0;
     } break;
     case MTime::k59_94FPS: {
-        ret = (60.0 * 1000.0) / 100;
+        ret = (60.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k60FPS: {
         ret = 60.0;
