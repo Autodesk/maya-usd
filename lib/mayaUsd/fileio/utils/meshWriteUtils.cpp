@@ -386,7 +386,7 @@ MStatus UsdMayaMeshWriteUtils::getSkinClustersUpstreamOfMesh(
     MObjectArray&  skinClusters)
 {
     MStatus stat;
-    if (!mesh.hasFn(MFn::kMesh)) {
+    if (mesh.isNull() || !mesh.hasFn(MFn::kMesh)) {
         return MStatus::kInvalidParameter;
     }
 

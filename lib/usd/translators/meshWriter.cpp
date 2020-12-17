@@ -15,6 +15,8 @@
 //
 #include "meshWriter.h"
 
+#include "maya/MApiNamespace.h"
+#include "maya/MStatus.h"
 #include "pxr/base/tf/diagnostic.h"
 
 #include <mayaUsd/fileio/primWriter.h>
@@ -43,10 +45,12 @@
 #include <pxr/usd/usdSkel/root.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <maya/MFloatArray.h>
 #include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnGeometryFilter.h>
 #include <maya/MFnMesh.h>
+#include <maya/MFnSkinCluster.h>
 #include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
 #include <maya/MItDependencyGraph.h>
@@ -62,6 +66,70 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+MStatus mayaDisableAllBlendShapesForMesh(const MObject &mesh, MObjectArray &blendShapeNodes, MFloatArray &envelopes)
+{
+    MStatus status;
+    // NOTE: (yliangsiew) If there's a skinCluster, find that first since that
+    // will be the intermediate to the blendShape node. If not, just search for any
+    // blendshape deformers upstream of the mesh.
+    MObjectArray skinClusters;
+    status = UsdMayaMeshWriteUtils::getSkinClustersUpstreamOfMesh(mesh, skinClusters);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    unsigned int numSkinClusters = skinClusters.length();
+    MObjectArray searchObjs;
+    if (numSkinClusters == 0) {
+        searchObjs.append(MObject(mesh));
+    } else {
+        searchObjs = MObjectArray(skinClusters);
+    }
+    for (unsigned int i=0; i < searchObjs.length(); ++i) {
+        MObject searchObject = searchObjs[i];
+        MFnGeometryFilter     fnGeoFilter;
+        MItDependencyGraph    itDg(
+            searchObject,
+            MFn::kBlendShape,
+            MItDependencyGraph::kUpstream,
+            MItDependencyGraph::kDepthFirst,
+            MItDependencyGraph::kPlugLevel,
+            &status);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+        MFnDependencyNode fnNode;
+        for (; !itDg.isDone(); itDg.next()) {
+            MObject curBlendShape = itDg.currentItem();
+            TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
+            status = fnGeoFilter.setObject(curBlendShape);
+            printf("Disabling: %s\n", fnGeoFilter.name().asChar());
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+            float curEnvelope = fnGeoFilter.envelope();
+            blendShapeNodes.append(curBlendShape);
+            envelopes.append(curEnvelope);
+            fnGeoFilter.setEnvelope(0.0f);
+        }
+    }
+
+    return MStatus::kSuccess;
+}
+
+
+MStatus mayaEnableGeometryFilterNodesForMesh(const MObjectArray &nodes, const MFloatArray &envelopes)
+{
+    MStatus status;
+    MFnGeometryFilter fnGeoFilter;
+    for (unsigned int i=0; i < nodes.length(); ++i) {
+        MObject node = nodes[i];
+        if (!node.hasFn(MFn::kGeometryFilt)) { return MStatus::kInvalidParameter; }
+        status = fnGeoFilter.setObject(node);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+
+        float env = envelopes[i];
+        status = fnGeoFilter.setEnvelope(env);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+    }
+
+    return MStatus::kSuccess;
+}
+
 
 MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* intermediates)
 {
@@ -442,7 +510,51 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 
     // Set mesh attrs ==========
     // Write points
-    UsdMayaMeshWriteUtils::writePointsData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+    /*
+     NOTE: (yliangsiew) Because we cannot assume that the first frame of export
+     will have no blendshape targets activated, and we want to write out the
+     points _without_ the influence of any blendshapes, (or any other deformers,
+     for that matter; just that we haven't implemented support for other
+     deformers yet, so until we do that, we can leave the effect of other
+     deformers "baked" into the base/"pref" pose) we need to deactivate all the
+     blendshape targets here _before_ writing out the data.
+    */
+    if (exportArgs.exportBlendShapes) {
+        MObjectArray blendShapeNodesDisabled;
+        MFloatArray blendShapeNodesOrigEnvelopeWeights;
+        status = mayaDisableAllBlendShapesForMesh(deformedMesh, blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+
+        MFnMesh fnMesh;
+        MObject skinCls = UsdMayaJointUtil::getSkinCluster(GetDagPath());
+        if (skinCls.isNull()) {
+            status = fnMesh.setObject(finalMesh.object());
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        } else {
+            MFnSkinCluster fnSkin(skinCls, &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            MObject inMeshObj = UsdMayaJointUtil::getInputMesh(skinCls);
+            if (inMeshObj.isNull()) {
+                TF_RUNTIME_ERROR("Could not determine an input mesh for the skinCluster: %s, aborting export!", fnSkin.name().asChar());
+                return false;
+            }
+            status = fnMesh.setObject(inMeshObj);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+        }
+
+        // TODO: (yliangsiew) This is still somehow writing out the points with the blendshape weights applied.
+        // Seems like MFnMesh cached earlier will cache down the old point positions when the function set is
+        // first applied to groupParts input plug. Need to work around this...
+        UsdMayaMeshWriteUtils::writePointsData(fnMesh, primSchema, usdTime, _GetSparseValueWriter());
+        /*
+          NOTE: (yliangsiew) Now we can re-enable the blendshapes' envelopes after
+          writing out the base/"pref" pose.
+        */
+        status = mayaEnableGeometryFilterNodesForMesh(blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+    } else {
+        UsdMayaMeshWriteUtils::writePointsData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+    }
 
     // Write faceVertexIndices
     UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(
