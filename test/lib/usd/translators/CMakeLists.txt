@@ -1,6 +1,7 @@
 set(TARGET_NAME IMPORT_EXPORT_TEST)
 
 set(TEST_SCRIPT_FILES
+    testUsdExportAnimation.py
     testUsdExportAsClip.py
     testUsdExportCamera.py
     testUsdExportColorSets.py
