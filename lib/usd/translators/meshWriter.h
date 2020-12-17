@@ -71,9 +71,9 @@ private:
     /// skinCluster is applied but we don't support that right now.
     bool isMeshAnimated() const;
 
-    MObject          writeBlendShapeData(UsdGeomMesh& primSchema);
-    bool             writeBlendShapeAnimation(const UsdTimeCode& usdTime);
-    bool writeAnimatedMeshExtents(const MObject& deformedMesh, const UsdTimeCode& usdTime);
+    MObject writeBlendShapeData(UsdGeomMesh& primSchema);
+    bool    writeBlendShapeAnimation(const UsdTimeCode& usdTime);
+    bool    writeAnimatedMeshExtents(const MObject& deformedMesh, const UsdTimeCode& usdTime);
 
     /// Input mesh before any skeletal deformations, cached between iterations.
     MObject _skelInputMesh;

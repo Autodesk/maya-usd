@@ -67,7 +67,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-MStatus mayaDisableAllBlendShapesForMesh(const MObject &mesh, MObjectArray &blendShapeNodes, MFloatArray &envelopes)
+MStatus mayaDisableAllBlendShapesForMesh(
+    const MObject& mesh,
+    MObjectArray&  blendShapeNodes,
+    MFloatArray&   envelopes)
 {
     MStatus status;
     // NOTE: (yliangsiew) If there's a skinCluster, find that first since that
@@ -83,10 +86,10 @@ MStatus mayaDisableAllBlendShapesForMesh(const MObject &mesh, MObjectArray &blen
     } else {
         searchObjs = MObjectArray(skinClusters);
     }
-    for (unsigned int i=0; i < searchObjs.length(); ++i) {
-        MObject searchObject = searchObjs[i];
-        MFnGeometryFilter     fnGeoFilter;
-        MItDependencyGraph    itDg(
+    for (unsigned int i = 0; i < searchObjs.length(); ++i) {
+        MObject            searchObject = searchObjs[i];
+        MFnGeometryFilter  fnGeoFilter;
+        MItDependencyGraph itDg(
             searchObject,
             MFn::kBlendShape,
             MItDependencyGraph::kUpstream,
@@ -111,14 +114,16 @@ MStatus mayaDisableAllBlendShapesForMesh(const MObject &mesh, MObjectArray &blen
     return MStatus::kSuccess;
 }
 
-
-MStatus mayaEnableGeometryFilterNodesForMesh(const MObjectArray &nodes, const MFloatArray &envelopes)
+MStatus
+mayaEnableGeometryFilterNodesForMesh(const MObjectArray& nodes, const MFloatArray& envelopes)
 {
-    MStatus status;
+    MStatus           status;
     MFnGeometryFilter fnGeoFilter;
-    for (unsigned int i=0; i < nodes.length(); ++i) {
+    for (unsigned int i = 0; i < nodes.length(); ++i) {
         MObject node = nodes[i];
-        if (!node.hasFn(MFn::kGeometryFilt)) { return MStatus::kInvalidParameter; }
+        if (!node.hasFn(MFn::kGeometryFilt)) {
+            return MStatus::kInvalidParameter;
+        }
         status = fnGeoFilter.setObject(node);
         CHECK_MSTATUS_AND_RETURN_IT(status);
 
@@ -129,7 +134,6 @@ MStatus mayaEnableGeometryFilterNodesForMesh(const MObjectArray &nodes, const MF
 
     return MStatus::kSuccess;
 }
-
 
 MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* intermediates)
 {
@@ -521,13 +525,15 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     */
     if (exportArgs.exportBlendShapes) {
         MObjectArray blendShapeNodesDisabled;
-        MFloatArray blendShapeNodesOrigEnvelopeWeights;
-        status = mayaDisableAllBlendShapesForMesh(deformedMesh, blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
+        MFloatArray  blendShapeNodesOrigEnvelopeWeights;
+        status = mayaDisableAllBlendShapesForMesh(
+            deformedMesh, blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
         CHECK_MSTATUS_AND_RETURN(status, false);
 
-        // NOTE: (yliangsiew) Because the `geomMesh` fnset cached the previous MObject (from the inputGeom skinCluster plug),
-        // the point positions reported will be out-of-date even after we disable blendshape deformers. So
-        // this code re-acquires the mesh in question to write out the points for, and then we actually write it out.
+        // NOTE: (yliangsiew) Because the `geomMesh` fnset cached the previous MObject (from the
+        // inputGeom skinCluster plug), the point positions reported will be out-of-date even after
+        // we disable blendshape deformers. So this code re-acquires the mesh in question to write
+        // out the points for, and then we actually write it out.
         MFnMesh fnMesh;
         MObject skinCls = UsdMayaJointUtil::getSkinCluster(GetDagPath());
         if (skinCls.isNull()) {
@@ -538,25 +544,30 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             CHECK_MSTATUS_AND_RETURN(status, false);
             MObject inMeshObj = UsdMayaJointUtil::getInputMesh(skinCls);
             if (inMeshObj.isNull()) {
-                TF_RUNTIME_ERROR("Could not determine an input mesh for the skinCluster: %s, aborting export!", fnSkin.name().asChar());
+                TF_RUNTIME_ERROR(
+                    "Could not determine an input mesh for the skinCluster: %s, aborting export!",
+                    fnSkin.name().asChar());
                 return false;
             }
             status = fnMesh.setObject(inMeshObj);
             CHECK_MSTATUS_AND_RETURN(status, false);
         }
 
-        UsdMayaMeshWriteUtils::writePointsData(fnMesh, primSchema, usdTime, _GetSparseValueWriter());
+        UsdMayaMeshWriteUtils::writePointsData(
+            fnMesh, primSchema, usdTime, _GetSparseValueWriter());
         /*
           NOTE: (yliangsiew) Now we can re-enable the blendshapes' envelopes after
           writing out the base/"pref" pose.
         */
-        status = mayaEnableGeometryFilterNodesForMesh(blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
+        status = mayaEnableGeometryFilterNodesForMesh(
+            blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
         CHECK_MSTATUS_AND_RETURN(status, false);
     } else {
-        // TODO: (yliangsiew) Any other deformers that get implemented in the future will have to make
-        // sure that they don't just enter this scope; otherwise, their deformed point positions will get
-        // "baked" into the pref pose as well.
-        UsdMayaMeshWriteUtils::writePointsData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+        // TODO: (yliangsiew) Any other deformers that get implemented in the future will have to
+        // make sure that they don't just enter this scope; otherwise, their deformed point
+        // positions will get "baked" into the pref pose as well.
+        UsdMayaMeshWriteUtils::writePointsData(
+            geomMesh, primSchema, usdTime, _GetSparseValueWriter());
     }
 
     // Write faceVertexIndices
