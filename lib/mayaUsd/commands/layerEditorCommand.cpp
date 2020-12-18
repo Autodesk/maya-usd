@@ -490,8 +490,7 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
                 auto shapePath = listOfArgs.asString(1);
                 auto prim = UsdMayaQuery::GetPrim(shapePath.asChar());
                 if (prim == UsdPrim()) {
-                    displayError(
-                        MString("Invalid proxy shape \"") + shapePath.asChar() + "\"");
+                    displayError(MString("Invalid proxy shape \"") + shapePath.asChar() + "\"");
                     return MS::kInvalidParameter;
                 }
 
