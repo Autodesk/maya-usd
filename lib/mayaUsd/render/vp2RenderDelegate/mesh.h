@@ -16,6 +16,8 @@
 #ifndef HD_VP2_MESH
 #define HD_VP2_MESH
 
+#include "meshViewportCompute.h"
+
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 #include <pxr/imaging/hd/mesh.h>
@@ -64,6 +66,10 @@ struct HdVP2MeshSharedData
     //! The number of vertices in each vertex buffer.
     size_t _numVertices;
 
+    //! An array to store a rendering face vertex index for each original scene
+    //! face vertex index.
+    std::vector<int> _sceneToRenderingFaceVtxIds;
+
     //! A local cache of primvar scene data. "data" is a copy-on-write handle to
     //! the actual primvar buffer, and "interpolation" is the interpolation mode
     //! to be used.
@@ -78,6 +84,9 @@ struct HdVP2MeshSharedData
 
     //! Render tag of the Rprim.
     TfToken _renderTag;
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+    MSharedPtr<MeshViewportCompute> _viewportCompute;
+#endif
 };
 
 /*! \brief  VP2 representation of poly-mesh object.
@@ -117,6 +126,13 @@ private:
 
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
 
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+    void _CreateViewportCompute(const HdVP2DrawItem& drawItem);
+#endif
+#ifdef HDVP2_ENABLE_GPU_OSD
+    void _CreateOSDTables();
+#endif
+
     void _UpdateDrawItem(
         HdSceneDelegate*,
         HdVP2DrawItem*,
@@ -137,6 +153,8 @@ private:
     MHWRender::MRenderItem* _CreatePointsRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateBoundingBoxRenderItem(const MString& name) const;
 
+    static void _InitGPUCompute();
+
     //! Custom dirty bits used by this mesh
     enum DirtyBits : HdDirtyBits
     {
@@ -156,10 +174,18 @@ private:
         0
     };                      //!< Storage for custom dirty bits. See _PropagateDirtyBits for details.
     const MString _rprimId; //!< Rprim id cached as a maya string for easier debugging and profiling
-    HdVP2MeshSharedData _meshSharedData; //!< Shared data for all draw items of the Rprim
+    std::shared_ptr<HdVP2MeshSharedData>
+        _meshSharedData; //!< Shared data for all draw items of the Rprim
 
     //! Selection status of the Rprim
     HdVP2SelectionStatus _selectionStatus { kUnselected };
+
+    //! Control GPU compute behavior
+    //! Having these in place even without HDVP2_ENABLE_GPU_COMPUTE or HDVP2_ENABLE_GPU_OSD defined
+    //! makes the expressions using these variables much simpler
+    bool _gpuNormalsEnabled { true }; //!< Use GPU Compute for normal calculation, only used when
+                                      //!< HDVP2_ENABLE_GPU_COMPUTE is defined
+    static size_t _gpuNormalsComputeThreshold;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
