@@ -10,6 +10,7 @@ target_sources(${PROJECT_NAME}
         instancer.cpp
         material.cpp
         mesh.cpp
+        meshViewportCompute.cpp
         proxyRenderDelegate.cpp
         render_delegate.cpp
         render_param.cpp

@@ -207,7 +207,8 @@ foreach(MAYA_LIB
     IMFbase
     tbb
     cg
-    cgGL)
+    cgGL
+    clew)
 
     find_library(MAYA_${MAYA_LIB}_LIBRARY
             ${MAYA_LIB}
