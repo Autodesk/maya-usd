@@ -123,7 +123,7 @@ public:
                 _index = (int)layer->GetNumSubLayerPaths();
             }
             if (_index != 0) {
-                if (!validateAndReportIndex(layer, _index)) {
+                if (!validateAndReportIndex(layer, _index, (int)layer->GetNumSubLayerPaths() + 1)) {
                     return false;
                 }
             }
@@ -131,7 +131,7 @@ public:
             TF_VERIFY(layer->GetSubLayerPaths()[_index] == _subPath);
         } else {
             TF_VERIFY(_cmdId == CmdId::kRemove);
-            if (!validateAndReportIndex(layer, _index)) {
+            if (!validateAndReportIndex(layer, _index, (int)layer->GetNumSubLayerPaths())) {
                 return false;
             }
             _subPath = layer->GetSubLayerPaths()[_index];
@@ -168,9 +168,9 @@ public:
         return !(index < 0 || index > (int)layer->GetNumSubLayerPaths());
     }
 
-    static bool validateAndReportIndex(SdfLayerHandle layer, int index)
+    static bool validateAndReportIndex(SdfLayerHandle layer, int index, int maxIndex)
     {
-        if (index < 0 || index > (int)layer->GetNumSubLayerPaths()) {
+        if (index < 0 || index >= maxIndex) {
             std::string message = std::string("Index ") + std::to_string(index)
                 + std::string(" out-of-bound for ") + layer->GetIdentifier();
             MPxCommand::displayError(message.c_str());
