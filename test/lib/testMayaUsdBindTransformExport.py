@@ -37,7 +37,6 @@ class MayaUsdBindTransformExportTestCase(unittest.TestCase):
         stage = Usd.Stage.Open(temp_export_file)
         prim = stage.GetPrimAtPath('/a/b/c')
         bindTransforms = prim.GetAttribute('bindTransforms').Get()
-        print bindTransforms
         self.assertNotEqual(bindTransforms, [[1, 0, 0, 0],
                                              [0, 1, 0, 0],
                                              [0, 0, 1, 0],
