@@ -13,16 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import os
-import unittest
-
-import maya.cmds as cmds
-import maya.OpenMaya as om
-import maya.standalone as mayastandalone
+#
 
 import fixturesUtils
-
+import maya.cmds as cmds
+import maya.standalone as mayastandalone
+import os
+import unittest
 from pxr import Usd
 
 
@@ -31,14 +28,14 @@ class TestUsdExportBindTransform(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not cmds.pluginInfo(cls.MAYAUSD_PLUGIN_NAME, q=True, loaded=True):
-            cmds.loadPlugin('mayaUsdPlugin')
-
         cls.temp_dir = fixturesUtils.setUpClass(__file__)
 
     def setUp(self):
-        testSceneFilePath = os.path.join(os.path.dirname(os.path.dirname((os.path.realpath(__file__)))), 'UsdExportBindTransformsTest', 'bindTransformsExport.ma')
-        om.MFileIO.open(testSceneFilePath, None, True)
+        scene_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)),
+            "UsdExportBindTransformsTest", "bindTransformsExport.ma"
+        )
+        cmds.file(scene_path, open=True, force=True)
 
     @classmethod
     def tearDownClass(cls):
@@ -47,7 +44,8 @@ class TestUsdExportBindTransform(unittest.TestCase):
     def testBindTransformExport(self):
         temp_export_file = os.path.join(self.temp_dir, 'test_output.usda')
         cmds.select('a', r=True)
-        cmds.mayaUSDExport(v=True, sl=True, f=temp_export_file, skl='auto', skn='auto', defaultMeshScheme='catmullClark')
+        cmds.mayaUSDExport(v=True, sl=True, f=temp_export_file, skl='auto', skn='auto',
+                           defaultMeshScheme='catmullClark')
 
         stage = Usd.Stage.Open(temp_export_file)
         prim = stage.GetPrimAtPath('/a/b/c')
@@ -56,6 +54,7 @@ class TestUsdExportBindTransform(unittest.TestCase):
                                              [0, 1, 0, 0],
                                              [0, 0, 1, 0],
                                              [0, 0, 0, 1]])
+
 
 if __name__ == '__main__':
     unittest.main()
