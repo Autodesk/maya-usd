@@ -183,6 +183,7 @@ MStatus mayaFindPtAndNormalOffsetsBetweenMeshes(
     return status;
 }
 
+#if MAYA_BLENDSHAPE_EVAL_HOTFIX
 MStatus mayaBlendShapeTriggerAllTargets(MObject& blendShape)
 {
     MStatus status;
@@ -249,6 +250,7 @@ MStatus mayaBlendShapeTriggerAllTargets(MObject& blendShape)
 
     return status;
 }
+#endif
 
 /**
  * Gets information about available blend shapes for a given deformed mesh (i.e. final result)
@@ -634,11 +636,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
                         // have to put a numeric suffix in the target name.
-                        int   lenSuffix = snprintf(nullptr, 0, "%zu", k);
-                        char* suffix = (char*)malloc((sizeof(char) * lenSuffix) + 1);
-                        snprintf(suffix, lenSuffix + 1, "%zu", k);
-                        curTargetNameMStr = plgBlendShapeName + MString(suffix);
-                        free(suffix);
+                        curTargetNameMStr
+                            = TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str();
                     }
 
                     TF_VERIFY(curTargetNameMStr.length() != 0);
@@ -805,11 +804,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
                         // have to put a numeric suffix in the target name.
-                        int   lenSuffix = snprintf(nullptr, 0, "%zu", k);
-                        char* suffix = (char*)malloc((sizeof(char) * lenSuffix) + 1);
-                        snprintf(suffix, lenSuffix, "%zu", k);
-                        curTargetNameMStr = plgBlendShapeName + MString(suffix);
-                        free(suffix);
+                        curTargetNameMStr
+                            = TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str();
                     }
                     TF_VERIFY(curTargetNameMStr.length() != 0);
                     std::string curTargetName

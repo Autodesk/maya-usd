@@ -607,12 +607,14 @@ double GetSceneMTimeUnitAsDouble();
  * @param a         The element to search for.
  * @param array     The array to search within.
  * @param idx       Storage for the index of the element within the array if it exists.
- *                  If it does not exist, this will be undefined.
+ *                  If it does not exist, this will be undefined. May be set to `NULL` if
+ *                  you're only interested in finding out whether the element exists, and
+ *                  not where the element is actually located in the array.
  *
  * @return          Returns ``true`` if the element exists in the array, ``false`` otherwise.
  */
 MAYAUSD_CORE_PUBLIC
-bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx);
+bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx = nullptr);
 
 MAYAUSD_CORE_PUBLIC
 MStatus GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MIntArray& indices);

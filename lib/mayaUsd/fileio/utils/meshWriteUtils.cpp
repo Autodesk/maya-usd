@@ -51,7 +51,7 @@
 #include <maya/MUintArray.h>
 #include <maya/MVector.h>
 
-#define MAYA_ATTR_NAME_INMESH "inMesh"
+static constexpr char kMayaAttrNameInMesh[] = "inMesh";
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -357,7 +357,7 @@ UsdMayaMeshWriteUtils::getSkinClusterConnectedToMesh(const MObject& mesh, MObjec
     MFnDependencyNode fnNode(mesh, &stat);
     CHECK_MSTATUS_AND_RETURN_IT(stat);
 
-    MPlug inMeshPlug = fnNode.findPlug(MAYA_ATTR_NAME_INMESH, false, &stat);
+    MPlug inMeshPlug = fnNode.findPlug(kMayaAttrNameInMesh, false, &stat);
     CHECK_MSTATUS_AND_RETURN_IT(stat);
 
     bool isDest = inMeshPlug.isDestination(&stat);

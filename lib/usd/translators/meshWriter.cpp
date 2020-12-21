@@ -15,10 +15,6 @@
 //
 #include "meshWriter.h"
 
-#include "maya/MApiNamespace.h"
-#include "maya/MStatus.h"
-#include "pxr/base/tf/diagnostic.h"
-
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMesh.h>
@@ -33,6 +29,7 @@
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/pxr.h>
