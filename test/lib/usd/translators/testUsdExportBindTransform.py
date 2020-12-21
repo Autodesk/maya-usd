@@ -10,7 +10,7 @@ import fixturesUtils
 from pxr import Usd
 
 
-class MayaUsdBindTransformExportTestCase(unittest.TestCase):
+class TestUsdExportBindTransform(unittest.TestCase):
     MAYAUSD_PLUGIN_NAME = 'mayaUsdPlugin'
 
     @classmethod
@@ -21,8 +21,7 @@ class MayaUsdBindTransformExportTestCase(unittest.TestCase):
         cls.temp_dir = fixturesUtils.setUpClass(__file__)
 
     def setUp(self):
-        testSceneFilePath = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__)))), "testSamples", 'bindTransforms', 'bindTransformsExport.ma')
-        print testSceneFilePath
+        testSceneFilePath = os.path.join(os.path.dirname(os.path.dirname((os.path.realpath(__file__)))), 'UsdExportBindTransformsTest', 'bindTransformsExport.ma')
         om.MFileIO.open(testSceneFilePath, None, True)
 
     @classmethod
