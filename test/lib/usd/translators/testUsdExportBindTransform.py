@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 #
 # Copyright 2020 Apple
 #
@@ -20,7 +20,7 @@ import maya.cmds as cmds
 import maya.standalone as mayastandalone
 import os
 import unittest
-from pxr import Usd
+from pxr import Usd, Gf
 
 
 class TestUsdExportBindTransform(unittest.TestCase):
@@ -31,10 +31,7 @@ class TestUsdExportBindTransform(unittest.TestCase):
         cls.temp_dir = fixturesUtils.setUpClass(__file__)
 
     def setUp(self):
-        scene_path = os.path.join(
-            os.path.dirname(os.path.abspath(__file__)),
-            "UsdExportBindTransformsTest", "bindTransformsExport.ma"
-        )
+        scene_path = os.path.join(self.temp_dir, "UsdExportBindTransformsTest", "bindTransformsExport.ma")
         cmds.file(scene_path, open=True, force=True)
 
     @classmethod
@@ -50,11 +47,16 @@ class TestUsdExportBindTransform(unittest.TestCase):
         stage = Usd.Stage.Open(temp_export_file)
         prim = stage.GetPrimAtPath('/a/b/c')
         bindTransforms = prim.GetAttribute('bindTransforms').Get()
-        self.assertNotEqual(bindTransforms, [[1, 0, 0, 0],
-                                             [0, 1, 0, 0],
-                                             [0, 0, 1, 0],
-                                             [0, 0, 0, 1]])
+        bindTransform = bindTransforms[3]  # NOTE: (yliangsiew) The 4th joint is the rt_joint that we're interested in.
+        self.assertNotEqual(bindTransform, Gf.Matrix4d(1, 0, 0, 0,
+                                                       0, 1, 0, 0,
+                                                       0, 0, 1, 0,
+                                                       0, 0, 0, 1))
 
+        self.assertEqual(bindTransform, Gf.Matrix4d(-0.002290224357008666, -0.0056947280722030105, 0.9999807051930374, 0.0,
+                                                    0.01567493647243696, 0.9998602653154095, 0.005729941968379492, 0.0,
+                                                    -0.9998745177471474, 0.01568775712160303, -0.0022006397844859227, 0.0,
+                                                    -4.625417221923634, 16.113398996722644, 5.401075137997586, 1.0))
 
 if __name__ == '__main__':
     unittest.main()
