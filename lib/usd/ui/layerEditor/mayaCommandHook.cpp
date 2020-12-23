@@ -103,6 +103,7 @@ void MayaCommandHook::removeSubLayerPath(UsdLayer usdLayer, Path path)
     std::string cmd;
     cmd = "mayaUsdLayerEditor -edit -removeSubPath ";
     cmd += std::to_string(index);
+    cmd += quote(proxyShapePath());
     cmd += quote(usdLayer->GetIdentifier());
     executeMel(cmd);
 }
