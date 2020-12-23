@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 #
 # Copyright 2018 Pixar
 #
@@ -147,15 +147,4 @@ class testProxyShapeLiveSurface(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(
-        testProxyShapeLiveSurface)
-
-    results = unittest.TextTestRunner(stream=sys.__stderr__).run(suite)
-    if results.wasSuccessful():
-        exitCode = 0
-    else:
-        exitCode = 1
-    # maya running interactively often absorbs all the output.  comment out the
-    # following to prevent maya from exiting and open the script editor to look
-    # at failures.
-    cmds.quit(abort=True, exitCode=exitCode)
+    fixturesUtils.runTests(globals())

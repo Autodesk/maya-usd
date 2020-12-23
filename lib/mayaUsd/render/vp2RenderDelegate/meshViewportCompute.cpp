@@ -765,7 +765,14 @@ bool MeshViewportCompute::hasOpenGL()
     return nullptr != glBindBufferBase;
 }
 
-void MeshViewportCompute::initializeOpenGL() { glewInit(); }
+void MeshViewportCompute::initializeOpenGL()
+{
+#if USD_VERSION_NUM < 2102
+    GlfGlewInit();
+#else
+    GarchGLApiLoad();
+#endif
+}
 
 void MeshViewportCompute::compileNormalsProgram()
 {

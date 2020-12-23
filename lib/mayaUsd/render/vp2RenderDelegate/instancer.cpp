@@ -15,8 +15,6 @@
 //
 // Modifications copyright (C) 2019 Autodesk
 //
-#include <pxr/imaging/glf/glew.h>
-
 #include "instancer.h"
 
 #include "sampler.h"

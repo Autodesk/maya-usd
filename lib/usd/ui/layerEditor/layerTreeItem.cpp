@@ -225,9 +225,6 @@ void LayerTreeItem::getActionButton(int index, LayerActionInfo* out_info) const
 void LayerTreeItem::removeSubLayer()
 {
     if (isSublayer()) { // can't remove session or root layer
-        if (_isTargetLayer) {
-            commandHook()->setEditTarget(stage()->GetRootLayer());
-        }
         commandHook()->removeSubLayerPath(parentLayerItem()->layer(), subLayerPath());
     }
 }
