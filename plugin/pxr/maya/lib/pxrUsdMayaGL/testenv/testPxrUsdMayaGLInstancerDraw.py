@@ -20,6 +20,8 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
+
 
 class testPxrUsdMayaGLInstancerDraw(unittest.TestCase):
 
@@ -99,16 +101,6 @@ class testPxrUsdMayaGLInstancerDraw(unittest.TestCase):
         self._SetModelPanelsToViewport2()
         self._WriteViewportImage("InstancerTest", "reload")
 
-if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(
-            testPxrUsdMayaGLInstancerDraw)
 
-    results = unittest.TextTestRunner(stream=sys.__stderr__).run(suite)
-    if results.wasSuccessful():
-        exitCode = 0
-    else:
-        exitCode = 1
-    # maya running interactively often absorbs all the output.  comment out the
-    # following to prevent maya from exiting and open the script editor to look
-    # at failures.
-    cmds.quit(abort=True, exitCode=exitCode)
+if __name__ == '__main__':
+    fixturesUtils.runTests(globals())
