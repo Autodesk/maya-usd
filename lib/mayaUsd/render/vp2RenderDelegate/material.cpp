@@ -46,8 +46,13 @@
 #include <string>
 
 #if USD_VERSION_NUM >= 2002
-#include <pxr/imaging/glf/udimTexture.h>
 #include <pxr/usdImaging/usdImaging/textureUtils.h>
+#endif
+
+#if USD_VERSION_NUM >= 2102
+#include <pxr/imaging/hdSt/udimTextureObject.h>
+#elif USD_VERSION_NUM >= 2002
+#include <pxr/imaging/glf/udimTexture.h>
 #endif
 
 #if USD_VERSION_NUM >= 2102
@@ -371,8 +376,13 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
     */
 
     // test for a UDIM texture
+#if USD_VERSION_NUM >= 2102
+    if (!HdStIsSupportedUdimTexture(path))
+        return nullptr;
+#else
     if (!GlfIsSupportedUdimTexture(path))
         return nullptr;
+#endif
 
     /*
         Maya's tiled texture support is implemented quite differently from Usd's UDIM support.
@@ -489,8 +499,13 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 {
 #if USD_VERSION_NUM >= 2002
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
+#if USD_VERSION_NUM >= 2102
+    if (HdStIsSupportedUdimTexture(path))
+        return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
+#else
     if (GlfIsSupportedUdimTexture(path))
         return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
+#endif
 #endif
 
     MHWRender::MRenderer* const       renderer = MHWRender::MRenderer::theRenderer();

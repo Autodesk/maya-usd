@@ -36,10 +36,6 @@
 
 #include <maya/MGlobal.h>
 
-#if USD_VERSION_NUM >= 2102
-#include <pxr/imaging/garch/glApi.h>
-#endif
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
@@ -68,9 +64,7 @@ MtohInitializeRenderPlugins()
 
             // XXX: As of 22.02, this needs to be called for Storm
             if (pluginDesc.id == MtohTokens->HdStormRendererPlugin) {
-#if USD_VERSION_NUM >= 2102
-                GarchGLApiLoad();
-#else
+#if USD_VERSION_NUM < 2102
                 GlfGlewInit();
 #endif
                 GlfContextCaps::InitInstance();
