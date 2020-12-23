@@ -279,7 +279,10 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
     //          minimal interop. It will be replaced by proper use of Maya and
     //          USD asset resolvers. For package files, the exporter needs full
     //          paths.
-    const std::string& fileName = GetUsdStage()->GetRootLayer()->GetRealPath();
+
+    // We use the ExportArgs fileName here instead of the USD root layer path
+    // to make sure that we are basing logic of the final export location
+    const std::string& fileName = _GetExportArgs().fileName;
     TfToken            fileExt(TfGetExtension(fileName));
     if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
         boost::filesystem::path usdDir(fileName);

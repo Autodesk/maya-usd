@@ -51,6 +51,7 @@ MStatus UsdMayaExportTranslator::writer(
     double       frameStride = 1.0;
     bool         append = false;
 
+    userArgs["fileName"] = fileName;
     MStringArray filteredTypes;
     // Get the options
     if (optionsString.length() > 0) {
