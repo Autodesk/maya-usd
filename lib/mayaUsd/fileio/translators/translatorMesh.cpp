@@ -138,7 +138,7 @@ TranslatorMeshRead::TranslatorMeshRead(
     }
     else {
       mesh.GetNormalsAttr().Get(&normals, normalsTimeSample);
-      normals_interpolation = mesh_.GetNormalsInterpolation();
+      normals_interpolation = mesh.GetNormalsInterpolation();
     }
 
     if (points.empty()) {
