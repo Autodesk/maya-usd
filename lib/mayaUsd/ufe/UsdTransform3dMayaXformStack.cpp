@@ -34,7 +34,7 @@ namespace {
 #if UFE_PREVIEW_VERSION_NUM >= 2031
 using BaseUndoableCommand = Ufe::BaseUndoableCommand;
 #else
-using BaseUndoableCommand = BaseUndoableCommand;
+using BaseUndoableCommand = Ufe::BaseTransformUndoableCommand;
 #endif
 using OpFunc = std::function<UsdGeomXformOp(const BaseUndoableCommand&)>;
 
