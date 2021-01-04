@@ -31,7 +31,12 @@
 
 namespace {
 
-using OpFunc = std::function<UsdGeomXformOp(const Ufe::BaseTransformUndoableCommand&)>;
+#if UFE_PREVIEW_VERSION_NUM >= 2031
+using BaseUndoableCommand = Ufe::BaseUndoableCommand;
+#else
+using BaseUndoableCommand = BaseUndoableCommand;
+#endif
+using OpFunc = std::function<UsdGeomXformOp(const BaseUndoableCommand&)>;
 
 using namespace MayaUsd::ufe;
 
@@ -429,14 +434,14 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
     // If there is no rotate transform op, we will create a RotXYZ.
     CvtRotXYZToAttrFn cvt = hasRotate ? getCvtRotXYZToAttrFn(op.GetOpName()) : toXYZ;
     OpFunc            f = hasRotate
-        ? OpFunc([attrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
               return UsdGeomXformOp(attr);
           })
         : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const Ufe::BaseTransformUndoableCommand& cmd) {
+                     const BaseUndoableCommand& cmd) {
               // Use notification guard, otherwise will generate one notification
               // for the xform op add, and another for the reorder.
               InTransform3dChange guard(cmd.path());
@@ -465,14 +470,14 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
         attrName = op.GetOpName();
     }
     OpFunc f = hasScale
-        ? OpFunc([attrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
               return UsdGeomXformOp(attr);
           })
         : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const Ufe::BaseTransformUndoableCommand& cmd) {
+                     const BaseUndoableCommand& cmd) {
               InTransform3dChange guard(cmd.path());
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
@@ -565,14 +570,14 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
 {
     auto   attr = prim().GetAttribute(attrName);
     OpFunc f = attr
-        ? OpFunc([attrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
               return UsdGeomXformOp(attr);
           })
         : OpFunc([opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const Ufe::BaseTransformUndoableCommand& cmd) {
+                     const BaseUndoableCommand& cmd) {
               InTransform3dChange guard(cmd.path());
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
@@ -596,14 +601,14 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
     GfVec3f v(x, y, z);
     auto    attr = prim().GetAttribute(pvtAttrName);
     OpFunc  f = attr
-        ? OpFunc([pvtAttrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+        ? OpFunc([pvtAttrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
               return UsdGeomXformOp(attr);
           })
         : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const Ufe::BaseTransformUndoableCommand& cmd) {
+                     const BaseUndoableCommand& cmd) {
               // Without a notification guard each operation (each transform op
               // addition, setting the attribute value, and setting the transform
               // op order) will notify.  Observers would see an object in an
