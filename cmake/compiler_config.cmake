@@ -107,4 +107,10 @@ function(mayaUsd_compile_config TARGET)
                 ${MSVC_DEFINITIONS}
         )
     endif()
+
+    # Remove annoying TBB warnings.
+    target_compile_definitions(${TARGET}
+        PRIVATE
+            TBB_SUPPRESS_DEPRECATED_MESSAGES
+    )
 endfunction()
