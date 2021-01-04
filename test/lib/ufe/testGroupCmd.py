@@ -20,9 +20,7 @@ import os
 
 import maya.cmds as cmds
 
-import usdUtils
-import mayaUtils
-import ufeUtils
+import usdUtils, mayaUtils, ufeUtils, testUtils
 import ufe
 import mayaUsd.ufe
 
@@ -137,11 +135,11 @@ class GroupCmdTestCase(unittest.TestCase):
 
     @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Requires Maya fixes only available in Maya Preview Release 121 or later.')
     def testGroupAcrossProxies(self):
-        sphereFile = mayaUtils.getTestScene("groupCmd", "sphere.usda")
+        sphereFile = testUtils.getTestScene("groupCmd", "sphere.usda")
         sphereDagPath, sphereStage = mayaUtils.createProxyFromFile(sphereFile)
         usdSphere = sphereDagPath + ",/pSphere1"
 
-        torusFile = mayaUtils.getTestScene("groupCmd", "torus.usda")
+        torusFile = testUtils.getTestScene("groupCmd", "torus.usda")
         torusDagPath, torusStage = mayaUtils.createProxyFromFile(torusFile)
         usdTorus = torusDagPath + ",/pTorus1"
 
