@@ -576,18 +576,18 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
               return UsdGeomXformOp(attr);
           })
-        : OpFunc([opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const BaseUndoableCommand& cmd) {
-              InTransform3dChange guard(cmd.path());
-              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-              TF_AXIOM(usdSceneItem);
-              UsdGeomXformable xformable(usdSceneItem->prim());
-              auto             op = xformable.AddTranslateOp(OpPrecision<V>::precision, opSuffix);
-              TF_AXIOM(op);
-              op.Set(v);
-              setXformOpOrderFn(xformable);
-              return op;
-          });
+        : OpFunc(
+            [opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](const BaseUndoableCommand& cmd) {
+                InTransform3dChange guard(cmd.path());
+                auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+                TF_AXIOM(usdSceneItem);
+                UsdGeomXformable xformable(usdSceneItem->prim());
+                auto             op = xformable.AddTranslateOp(OpPrecision<V>::precision, opSuffix);
+                TF_AXIOM(op);
+                op.Set(v);
+                setXformOpOrderFn(xformable);
+                return op;
+            });
 
     return std::make_shared<UsdVecOpUndoableCmd<V>>(
         v, path(), std::move(f), UsdTimeCode::Default());
