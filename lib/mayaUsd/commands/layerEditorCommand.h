@@ -21,6 +21,7 @@
 
 #include <maya/MPxCommand.h>
 #include <maya/MString.h>
+#include <maya/MTypeId.h>
 
 #include <memory>
 #include <string>
@@ -45,6 +46,13 @@ public:
     MStatus undoIt() override;
     MStatus redoIt() override;
     bool    isUndoable() const override;
+
+    // Maya will query the Layer Editor to see if there are any unsaved changes
+    // before resetting the scene.  Plugins can register the MTypeId of the proxy
+    // shape node that they want to have the Layer Editor check for unsaved changes.
+    //
+    static void registerSceneResetCheckCallback(MTypeId nodeId);
+    static void deregisterSceneResetCheckCallback(MTypeId nodeId);
 
 private:
     MStatus parseArgs(const MArgList& argList);

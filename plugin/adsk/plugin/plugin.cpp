@@ -316,6 +316,8 @@ MStatus initializePlugin(MObject obj)
     UsdMayaSceneResetNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
 
+    MayaUsd::LayerEditorCommand::registerSceneResetCheckCallback(MayaUsd::ProxyShape::typeId);
+
     return status;
 }
 
@@ -397,6 +399,8 @@ MStatus uninitializePlugin(MObject obj)
 
     UsdMayaSceneResetNotice::RemoveListener();
     UsdMayaDiagnosticDelegate::RemoveDelegate();
+
+    MayaUsd::LayerEditorCommand::deregisterSceneResetCheckCallback(MayaUsd::ProxyShape::typeId);
 
     return status;
 }

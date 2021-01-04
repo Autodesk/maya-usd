@@ -16,16 +16,20 @@
 
 #include "layerEditorCommand.h"
 
+#include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/utils/query.h>
 
 #include <pxr/base/tf/diagnostic.h>
 
 #include <maya/MArgList.h>
 #include <maya/MArgParser.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MItDependencyNodes.h>
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
 
 #include <cstddef>
+#include <set>
 #include <string>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -46,6 +50,11 @@ const char kAddAnonSublayerFlagL[] = "addAnonymous";
 const char kMuteLayerFlag[] = "mt";
 const char kMuteLayerFlagL[] = "muteLayer";
 
+const char kAnyDirtyLayerFlag[] = "ad";
+const char kAnyDirtyLayerFlagL[] = "anyDirty";
+
+std::set<unsigned int> _supportedTypesForDirtyQuery;
+
 } // namespace
 
 namespace MAYAUSD_NS_DEF {
@@ -60,7 +69,8 @@ enum class CmdId
     kDiscardEdit,
     kClearLayer,
     kAddAnonLayer,
-    kMuteLayer
+    kMuteLayer,
+    kAnyDirtyLayers
 };
 
 class BaseCmd
@@ -408,6 +418,54 @@ protected:
     PXR_NS::SdfLayerRefPtr _mutedLayer;
 };
 
+class AnyDirtyLayers : public BaseCmd
+{
+public:
+    AnyDirtyLayers()
+        : BaseCmd(CmdId::kAnyDirtyLayers)
+    {
+    }
+
+    bool doIt(SdfLayerHandle) override
+    {
+        _cmdResult = "0";
+
+        bool atLeastOneDirty = false;
+
+        MFnDependencyNode  fn;
+        MItDependencyNodes iter(MFn::kPluginDependNode);
+
+        for (; !iter.isDone() && !atLeastOneDirty; iter.next()) {
+            MObject mobj = iter.item();
+            fn.setObject(mobj);
+
+            if (_supportedTypesForDirtyQuery.find(fn.typeId().id())
+                != _supportedTypesForDirtyQuery.end()) {
+                MayaUsdProxyShapeBase* pShape = dynamic_cast<MayaUsdProxyShapeBase*>(fn.userNode());
+                if (pShape) {
+                    UsdStageRefPtr stage = pShape ? pShape->getUsdStage() : nullptr;
+                    if (!stage) {
+                        continue;
+                    }
+
+                    SdfLayerHandleVector allLayers = stage->GetLayerStack(true);
+                    for (auto layer : allLayers) {
+                        if (layer->IsDirty()) {
+                            atLeastOneDirty = true;
+                            _cmdResult = "1";
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    bool undoIt(SdfLayerHandle) override { return true; }
+};
+
 } // namespace Impl
 
 const char LayerEditorCommand::commandName[] = "mayaUsdLayerEditor";
@@ -420,7 +478,7 @@ MSyntax LayerEditorCommand::createSyntax()
 {
     MSyntax syntax;
 
-    // syntax.enableQuery(true);
+    syntax.enableQuery(true);
     syntax.enableEdit(true);
 
     // layer id
@@ -439,6 +497,9 @@ MSyntax LayerEditorCommand::createSyntax()
     syntax.makeFlagMultiUse(kAddAnonSublayerFlag);
     // paramter: proxy shape name
     syntax.addFlag(kMuteLayerFlag, kMuteLayerFlagL, MSyntax::kBoolean, MSyntax::kString);
+
+    // Query only flag to return if there any dirty layers
+    syntax.addFlag(kAnyDirtyLayerFlag, kAnyDirtyLayerFlagL);
 
     return syntax;
 }
@@ -461,11 +522,11 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
         _cmdMode = Mode::Create;
     }
 
-    MStringArray objects;
-    argParser.getObjects(objects);
-    _layerIdentifier = objects[0].asChar();
-
     if (!isQuery()) {
+        MStringArray objects;
+        argParser.getObjects(objects);
+        _layerIdentifier = objects[0].asChar();
+
         if (argParser.isFlagSet(kInsertSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kInsertSubPathFlag);
             for (unsigned i = 0; i < count; i++) {
@@ -554,6 +615,11 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
             cmd->_proxyShapePath = proxyShapeName.asChar();
             _subCommands.push_back(std::move(cmd));
         }
+    } else {
+        if (argParser.isFlagSet(kAnyDirtyLayerFlag)) {
+            auto cmd = std::make_shared<Impl::AnyDirtyLayers>();
+            _subCommands.push_back(std::move(cmd));
+        }
     }
 
     return MS::kSuccess;
@@ -561,6 +627,16 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
 
 // MPxCommand undo ability callback
 bool LayerEditorCommand::isUndoable() const { return !isQuery(); }
+
+void LayerEditorCommand::registerSceneResetCheckCallback(MTypeId nodeId)
+{
+    _supportedTypesForDirtyQuery.insert(nodeId.id());
+}
+
+void LayerEditorCommand::deregisterSceneResetCheckCallback(MTypeId nodeId)
+{
+    _supportedTypesForDirtyQuery.erase(nodeId.id());
+}
 
 // main MPxCommand execution point
 MStatus LayerEditorCommand::doIt(const MArgList& argList)
@@ -578,9 +654,12 @@ MStatus LayerEditorCommand::doIt(const MArgList& argList)
 // main MPxCommand execution point
 MStatus LayerEditorCommand::redoIt()
 {
+    // Now flags are "queriable with full args" so we only need the layer command
+    // object if we are in edit mode.
+    auto layerRequired = !isQuery();
 
-    auto layer = SdfLayer::FindOrOpen(_layerIdentifier);
-    if (!layer) {
+    auto layer = layerRequired ? SdfLayer::FindOrOpen(_layerIdentifier) : nullptr;
+    if (layerRequired && !layer) {
         return MS::kInvalidParameter;
     }
 
