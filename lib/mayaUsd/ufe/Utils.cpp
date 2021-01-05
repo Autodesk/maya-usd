@@ -50,6 +50,10 @@ template <> struct iterator_traits<MStringArray::Iterator>
 } // namespace std
 #endif
 
+namespace {
+    static constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
+}
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
@@ -77,8 +81,12 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
     // Assume that there are only two segments in the path, the first a Maya
     // Dag path segment to the proxy shape, which identifies the stage, and
     // the second the USD segment.
+    // When called we do not make any assumption on whether or not the
+    // input path is valid.
     const Ufe::Path::Segments& segments = path.getSegments();
-    TEST_USD_PATH(segments, path);
+    if (!TF_VERIFY(segments.size() == 2, kIllegalUSDPath, path.string().c_str())) {
+        return UsdPrim();
+    }
 
     UsdPrim prim;
     if (auto stage = getStage(Ufe::Path(segments[0]))) {
@@ -89,8 +97,12 @@ UsdPrim ufePathToPrim(const Ufe::Path& path)
 
 bool isRootChild(const Ufe::Path& path)
 {
+    // When called we make the assumption that we are given a valid
+    // path and we are only testing whether or not we are a root child.
     auto segments = path.getSegments();
-    TEST_USD_PATH(segments, path);
+    if (segments.size() != 2) {
+        TF_RUNTIME_ERROR(kIllegalUSDPath, path.string().c_str());
+    }
     return (segments[1].size() == 1);
 }
 
