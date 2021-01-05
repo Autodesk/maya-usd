@@ -2,6 +2,7 @@ set(TARGET_NAME MAYAUSD_UTILS_TEST)
 
 set(TEST_SCRIPT_FILES
     testBlockSceneModificationContext.py
+    testDiagnosticDelegate.py
 )
 
 add_custom_target(${TARGET_NAME} ALL)
