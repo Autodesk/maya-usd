@@ -70,7 +70,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportSkin) \
     (exportUVs) \
     (exportVisibility) \
-    (fileName) \
+    (file) \
     (kind) \
     (materialCollectionsPath) \
     (materialsScopeName) \
@@ -155,7 +155,7 @@ struct UsdMayaJobExportArgs
     const TfToken     exportSkels;
     const TfToken     exportSkin;
     const bool        exportVisibility;
-    const std::string fileName;
+    const std::string file;
 
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of
@@ -224,6 +224,10 @@ struct UsdMayaJobExportArgs
     /// "parentConstraint")
     MAYAUSD_CORE_PUBLIC
     void AddFilteredTypeName(const MString& typeName);
+
+    /// Returns the resolved file name of the final export location
+    MAYAUSD_CORE_PUBLIC
+    std::string GetResolvedFileName() const;
 
     const std::set<unsigned int>& GetFilteredTypeIds() const { return _filteredTypeIds; }
 

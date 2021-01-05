@@ -205,7 +205,7 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
         }
 
         // Read all of the dictionary args first.
-        VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
+        const VtDictionary userArgs = UsdMayaUtil::GetDictionaryFromArgDatabase(
             argData, UsdMayaJobExportArgs::GetDefaultDictionary());
 
         // Now read all of the other args that are specific to this command.
@@ -231,8 +231,6 @@ MStatus MayaUSDExportCommand::doIt(const MArgList& args)
             if (fileName.empty()) {
                 fileName = tmpVal.asChar();
             }
-
-            userArgs["fileName"] = fileName;
         } else {
             TF_RUNTIME_ERROR("-file not specified.");
             return MS::kFailure;

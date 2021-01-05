@@ -282,8 +282,8 @@ void PxrUsdTranslators_FileTextureWriter::Write(const UsdTimeCode& usdTime)
 
     // We use the ExportArgs fileName here instead of the USD root layer path
     // to make sure that we are basing logic of the final export location
-    const std::string& fileName = _GetExportArgs().fileName;
-    TfToken            fileExt(TfGetExtension(fileName));
+    const std::string fileName = _GetExportArgs().GetResolvedFileName();
+    TfToken           fileExt(TfGetExtension(fileName));
     if (fileExt != UsdMayaTranslatorTokens->UsdFileExtensionPackage) {
         boost::filesystem::path usdDir(fileName);
         usdDir = usdDir.parent_path();
