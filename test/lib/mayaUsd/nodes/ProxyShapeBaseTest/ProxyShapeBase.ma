@@ -1,9 +1,9 @@
 //Maya ASCII 2016 scene
-//Name: ProxyShape.ma
+//Name: ProxyShapeBase.ma
 //Last modified: Tue, Feb 28, 2017 03:36:01 PM
 //Codeset: UTF-8
 requires maya "2016";
-requires -nodeType "pxrUsdProxyShape" -dataType "pxrUsdStageData" "pxrUsd" "1.0";
+requires -nodeType "mayaUsdProxyShapeBase" "mayaUsdPlugin" "1.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2016";
@@ -76,7 +76,7 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".o" yes;
 createNode transform -n "Cube_usd";
 	rename -uid "DEA728C0-0000-6384-58B6-09150000024D";
-createNode pxrUsdProxyShape -n "Cube_usdShape" -p "Cube_usd";
+createNode mayaUsdProxyShapeBase -n "Cube_usdShape" -p "Cube_usd";
 	rename -uid "DEA728C0-0000-6384-58B6-09150000024E";
 	setAttr -k off ".v";
 	setAttr ".covm[0]"  0 1 1;
@@ -192,4 +192,4 @@ relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":default
 connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
-// End of ProxyShape.ma
+// End of ProxyShapeBase.ma

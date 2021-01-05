@@ -2,6 +2,7 @@ set(TARGET_NAME MAYAUSD_NODES_TEST)
 
 set(TEST_SCRIPT_FILES
     testPointBasedDeformerNode.py
+    testProxyShapeBase.py
 )
 
 add_custom_target(${TARGET_NAME} ALL)
