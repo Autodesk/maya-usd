@@ -17,6 +17,7 @@
 
 #include "private/UfeNotifGuard.h"
 
+#include <mayaUsd/ufe/UsdObject3d.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -35,6 +36,7 @@
 #include <maya/MGlobal.h>
 #include <ufe/attribute.h>
 #include <ufe/attributes.h>
+#include <ufe/object3d.h>
 #include <ufe/path.h>
 
 #include <algorithm>
@@ -567,15 +569,10 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return std::make_shared<SetVariantSelectionUndoableCommand>(prim(), itemPath);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
-        auto attributes = Ufe::Attributes::attributes(sceneItem());
-        assert(attributes);
-        auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
-            attributes->attribute(UsdGeomTokens->visibility));
-        assert(visibility);
-        auto current = visibility->get();
-        return visibility->setCmd(
-            current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited
-                                                : UsdGeomTokens->invisible);
+        auto object3d = UsdObject3d::create(fItem);
+        auto current = object3d->visibility();
+        auto cmd = object3d->setVisibleCmd(!current);
+        cmd->execute();
     } // Visibility
     else if (itemPath[0] == kUSDToggleActiveStateItem) {
         return std::make_shared<ToggleActiveStateCommand>(prim());
