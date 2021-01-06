@@ -42,7 +42,6 @@ set(TEST_SCRIPT_FILES
     testUsdExportSkeleton.py
     testUsdExportStripNamespaces.py
     testUsdExportStroke.py
-    testUsdExportUVTransforms.py
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
@@ -72,6 +71,15 @@ set(TEST_SCRIPT_FILES
     testUsdMayaAdaptorMetadata.py
     testUsdMayaAdaptorUndoRedo.py
 )
+
+if(BUILD_PXR_PLUGIN)
+    # This test uses the file "UsdExportUVTransforms.ma" which
+    # requires the plugin "pxrUsdPreviewSurface" that is built by the
+    # Pixar plugin.
+    list(APPEND TEST_SCRIPT_FILES
+        testUsdExportUVTransforms.py
+    )
+endif()
 
 if (BUILD_RFM_TRANSLATORS)
     list(APPEND TEST_SCRIPT_FILES
