@@ -1,5 +1,5 @@
 //Maya ASCII 2016 scene
-//Name: UserExportedAttributesTest.ma
+//Name: UserTaggedAttributesTest.ma
 //Last modified: Wed, Dec 07, 2016 01:06:04 PM
 //Codeset: UTF-8
 requires maya "2016";
@@ -70,9 +70,9 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".man" -type "string" "side_mask";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
-createNode transform -n "UserExportedAttributesTest";
+createNode transform -n "UserTaggedAttributesTest";
 	rename -uid "6D105860-0000-7362-5717-EDC100000248";
-createNode transform -n "Geom" -p "UserExportedAttributesTest";
+createNode transform -n "Geom" -p "UserTaggedAttributesTest";
 	rename -uid "6D105860-0000-7362-5717-EDCA00000249";
 createNode transform -n "Cube" -p "Geom";
 	rename -uid "6D105860-0000-7362-5717-ED9700000247";
@@ -855,4 +855,4 @@ connectAttr "CubeTypedAttrsShape.iog" ":initialShadingGroup.dsm" -na;
 connectAttr "AllTypesCubeShape.iog" ":initialShadingGroup.dsm" -na;
 connectAttr "AllTypesCastDoubleToFloatCubeShape.iog" ":initialShadingGroup.dsm" 
 		-na;
-// End of UserExportedAttributesTest.ma
+// End of UserTaggedAttributesTest.ma

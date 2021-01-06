@@ -15,50 +15,56 @@
 # limitations under the License.
 #
 
-import os
-import math
-import unittest
-
+from pxr import Gf
 from pxr import Sdf
 from pxr import Usd
 from pxr import UsdGeom
 from pxr import UsdRi
 from pxr import Vt
-from pxr import Gf
 
 from maya import cmds
 from maya import standalone
 
+import fixturesUtils
 
-class testUsdMayaUserExportedAttributes(unittest.TestCase):
+import os
+import math
+import unittest
+
+
+class testUsdExportUserTaggedAttributes(unittest.TestCase):
 
     COMMON_ATTR_NAME = 'userProperties:transformAndShapeAttr'
+
+    @classmethod
+    def setUpClass(cls):
+        inputPath = fixturesUtils.setUpClass(__file__)
+
+        mayaSceneFilePath = os.path.join(inputPath,
+            'UsdExportUserTaggedAttributesTest', 'UserTaggedAttributesTest.ma')
+
+        cmds.file(mayaSceneFilePath, open=True, force=True)
+
+        usdFilePathFormat = 'UserTaggedAttributesTest_EXPORTED_%s.usda'
+        
+        cls._mergedUsdFilePath = os.path.abspath(usdFilePathFormat % 'MERGED')
+        cls._unmergedUsdFilePath = os.path.abspath(usdFilePathFormat % 'UNMERGED')
+
+        cmds.mayaUSDExport(file=cls._mergedUsdFilePath,
+            mergeTransformAndShape=True)
+        cmds.mayaUSDExport(file=cls._unmergedUsdFilePath,
+            mergeTransformAndShape=False)
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    @classmethod
-    def setUpClass(cls):
-        standalone.initialize('usd')
-        cmds.file(os.path.abspath('UserExportedAttributesTest.ma'), open=True, force=True)
-
-        usdFilePathFormat = 'UserExportedAttributesTest_EXPORTED_%s.usda'
-        
-        mergedUsdFilePath = os.path.abspath(usdFilePathFormat % 'MERGED')
-        unmergedUsdFilePath = os.path.abspath(usdFilePathFormat % 'UNMERGED')
-
-        cmds.loadPlugin('pxrUsd', quiet=True)
-
-        cmds.usdExport(file=mergedUsdFilePath, mergeTransformAndShape=True)
-        cmds.usdExport(file=unmergedUsdFilePath, mergeTransformAndShape=False)
-
     def _GetExportedStage(self, mergeTransformAndShape=True):
-        usdFilePathFormat = 'UserExportedAttributesTest_EXPORTED_%s.usda'
         if mergeTransformAndShape:
-            usdFilePath = usdFilePathFormat % 'MERGED'
+            usdFilePath = self._mergedUsdFilePath
         else:
-            usdFilePath = usdFilePathFormat % 'UNMERGED'
+            usdFilePath = self._unmergedUsdFilePath
+
         usdFilePath = os.path.abspath(usdFilePath)
 
         stage = Usd.Stage.Open(usdFilePath)
@@ -73,7 +79,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         """
         stage = self._GetExportedStage()
 
-        prim = stage.GetPrimAtPath('/UserExportedAttributesTest/Geom/Cube')
+        prim = stage.GetPrimAtPath('/UserTaggedAttributesTest/Geom/Cube')
         self.assertTrue(prim)
 
         exportedAttrs = {
@@ -130,8 +136,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         # Since this test is merging transform and shape nodes, the value on
         # the USD prim for an attribute that is tagged on BOTH Maya nodes
         # should end up coming from the shape node.
-        commonAttr = prim.GetAttribute(
-            testUsdMayaUserExportedAttributes.COMMON_ATTR_NAME)
+        commonAttr = prim.GetAttribute(self.COMMON_ATTR_NAME)
         self.assertTrue(commonAttr)
         self.assertEqual(commonAttr.Get(), 'this node is a mesh')
 
@@ -145,17 +150,15 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         # Since this test is NOT merging transform and shape nodes, there
         # should be a USD prim for each node, and they should have distinct
         # values for similarly named tagged attributes.
-        prim = stage.GetPrimAtPath('/UserExportedAttributesTest/Geom/Cube')
+        prim = stage.GetPrimAtPath('/UserTaggedAttributesTest/Geom/Cube')
         self.assertTrue(prim)
-        commonAttr = prim.GetAttribute(
-            testUsdMayaUserExportedAttributes.COMMON_ATTR_NAME)
+        commonAttr = prim.GetAttribute(self.COMMON_ATTR_NAME)
         self.assertTrue(commonAttr)
         self.assertEqual(commonAttr.Get(), 'this node is a transform')
 
-        prim = stage.GetPrimAtPath('/UserExportedAttributesTest/Geom/Cube/CubeShape')
+        prim = stage.GetPrimAtPath('/UserTaggedAttributesTest/Geom/Cube/CubeShape')
         self.assertTrue(prim)
-        commonAttr = prim.GetAttribute(
-            testUsdMayaUserExportedAttributes.COMMON_ATTR_NAME)
+        commonAttr = prim.GetAttribute(self.COMMON_ATTR_NAME)
         self.assertTrue(commonAttr)
         self.assertEqual(commonAttr.Get(), 'this node is a mesh')
 
@@ -166,7 +169,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         """
         stage = self._GetExportedStage()
 
-        prim = stage.GetPrimAtPath('/UserExportedAttributesTest/Geom/CubeTypedAttrs')
+        prim = stage.GetPrimAtPath('/UserTaggedAttributesTest/Geom/CubeTypedAttrs')
         self.assertTrue(prim)
 
         # Validate Usd attributes.
@@ -237,8 +240,8 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         }
         expectedPrimvarNames = set(expectedPrimvars.keys())
         # Getting all primvars will also include the built-in displayColor,
-        # displayOpacity, and st.
-        expectedPrimvarNames.update(['displayColor', 'displayOpacity', 'st'])
+        # displayOpacity, and the Maya default "map1" UV set.
+        expectedPrimvarNames.update(['displayColor', 'displayOpacity', 'map1'])
 
         gprim = UsdGeom.Gprim(prim)
         self.assertTrue(gprim)
@@ -463,7 +466,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         """
         usdStage = self._GetExportedStage()
         usdPrim = usdStage.GetPrimAtPath(
-            '/UserExportedAttributesTest/Geom/AllMayaTypesTestingCubes/AllTypesCube')
+            '/UserTaggedAttributesTest/Geom/AllMayaTypesTestingCubes/AllTypesCube')
 
         exportedAttrsDict = self._GetExportedAttributesDict()
 
@@ -478,7 +481,7 @@ class testUsdMayaUserExportedAttributes(unittest.TestCase):
         """
         usdStage = self._GetExportedStage()
         usdPrim = usdStage.GetPrimAtPath(
-            '/UserExportedAttributesTest/Geom/AllMayaTypesTestingCubes/AllTypesCastDoubleToFloatCube')
+            '/UserTaggedAttributesTest/Geom/AllMayaTypesTestingCubes/AllTypesCastDoubleToFloatCube')
 
         exportedAttrsDict = self._GetExportedAttributesDict(True)
 
