@@ -51,7 +51,7 @@ template <> struct iterator_traits<MStringArray::Iterator>
 #endif
 
 namespace {
-    static constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
+constexpr auto kIllegalUSDPath = "Illegal USD run-time path %s.";
 }
 
 namespace MAYAUSD_NS_DEF {
