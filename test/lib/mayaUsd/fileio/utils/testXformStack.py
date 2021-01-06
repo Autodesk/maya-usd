@@ -15,28 +15,26 @@
 # limitations under the License.
 #
 
-from pxr import Gf
-from pxr import Usd
-
 import mayaUsd.lib as mayaUsdLib
+
+from pxr import Usd
 
 from maya import cmds
 from maya import standalone
 from maya.api import OpenMaya as OM
 
+import fixturesUtils
+
 from collections import OrderedDict
 import itertools
-import os
-import pprint
 import sys
 import unittest
 
 
-class testUsdMayaXformStack(unittest.TestCase):
+class testXformStack(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
-        cmds.loadPlugin('pxrUsd')
+        fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
