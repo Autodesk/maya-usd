@@ -18,10 +18,8 @@
 
 import maya.cmds as cmds
 
-import usdUtils
-import mayaUtils
+import usdUtils, mayaUtils, ufeUtils, testUtils
 import ufe
-import ufeUtils
 
 import unittest
 
@@ -192,7 +190,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
     @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 121, 'Requires Maya fixes only available in Maya Preview Release 121 or later.')
     def testSmartTransformDuplicate(self):
         '''Test smart transform option of duplicate command.'''
-        torusFile = mayaUtils.getTestScene("groupCmd", "torus.usda")
+        torusFile = testUtils.getTestScene("groupCmd", "torus.usda")
         torusDagPath, torusStage = mayaUtils.createProxyFromFile(torusFile)
         usdTorusPathString = torusDagPath + ",/pTorus1"
 

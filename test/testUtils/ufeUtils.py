@@ -21,7 +21,6 @@
 """
 
 import ufe
-from maya import cmds
 try:
     from maya.internal.ufeSupport import ufeSelectCmd
 except ImportError:
