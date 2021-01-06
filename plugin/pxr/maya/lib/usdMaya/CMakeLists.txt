@@ -77,7 +77,6 @@ pxr_test_scripts(
         testenv/testUsdImportNestedAssemblyAnimation.py
         testenv/testUsdMayaGetVariantSetSelections.py
         testenv/testUsdMayaModelKindProcessor.py
-        testenv/testUsdMayaReadWriteUtils.py
         testenv/testUsdMayaReferenceAssemblyEdits.py
         testenv/testUsdMayaUserExportedAttributes.py
         testenv/testUsdMayaXformStack.py
@@ -224,18 +223,6 @@ pxr_register_test(testUsdMayaModelKindProcessor
     CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
     COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaModelKindProcessor"
     TESTENV testUsdMayaModelKindProcessor
-    ENV
-        MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
-        MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
-        MAYA_DISABLE_CIP=1
-        MAYA_NO_STANDALONE_ATEXIT=1
-        MAYA_APP_DIR=<PXR_TEST_DIR>/maya_profile
-)
-
-pxr_register_test(testUsdMayaReadWriteUtils
-    CUSTOM_PYTHON ${MAYA_PY_EXECUTABLE}
-    COMMAND "${TEST_INSTALL_PREFIX}/tests/testUsdMayaReadWriteUtils"
-    TESTENV testUsdMayaReadWriteUtils
     ENV
         MAYA_PLUG_IN_PATH=${TEST_INSTALL_PREFIX}/maya/plugin
         MAYA_SCRIPT_PATH=${TEST_INSTALL_PREFIX}/maya/lib/usd/usdMaya/resources
