@@ -201,6 +201,8 @@ Ufe::Matrix4d UsdTransform3d::matrix() const
     // Note: Gf matrices are row-major.
     // https://graphics.pixar.com/usd/docs/api/class_gf_matrix4d.html
     GfMatrix4d m(1);
+
+    // 4x4 local affine transformation matrix. 4th column of matrix is [0 0 0 1]
     if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path()))) {
         TF_FATAL_ERROR(
             "Local transformation computation for prim %s failed.", prim().GetPath().GetText());
