@@ -100,6 +100,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+//! Prefix of VP2-specific simplified node path to enable reuse of shader effects among material
+//! networks which have the same node identifiers and relationships but different node paths.
+const std::string kNodePathPrefix = "node";
+
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
 bool _IsUsdPrimvarReader(const HdMaterialNode& node)
 {
@@ -125,30 +129,15 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
     std::string result;
 
     if (ARCH_LIKELY(!materialNetwork.nodes.empty())) {
-        const size_t numNodes = materialNetwork.nodes.size();
-
-        SdfPathVector paths;
-        paths.reserve(numNodes);
-
-        for (size_t i = 0; i < numNodes; i++) {
-            paths.push_back(materialNetwork.nodes[i].path);
-        }
-
-        // We use concise relative paths to generate the same string for duplicate material
-        // networks.
-        const SdfPathVector conciseRelativePaths = SdfPath::GetConciseRelativePaths(paths);
-
         // Reserve enough memory to avoid memory reallocation.
         result.reserve(1024);
 
         result += "<nodes>\n";
 
         if (includeParams) {
-            for (size_t i = 0; i < numNodes; i++) {
-                const HdMaterialNode& node = materialNetwork.nodes[i];
-
+            for (const HdMaterialNode& node : materialNetwork.nodes) {
                 result += "  <node path=\"";
-                result += conciseRelativePaths[i].GetString();
+                result += node.path.GetString();
                 result += "\" id=\"";
                 result += node.identifier;
                 result += "\">\n";
@@ -168,11 +157,9 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
                 result += "  </node>\n";
             }
         } else {
-            for (size_t i = 0; i < numNodes; i++) {
-                const HdMaterialNode& node = materialNetwork.nodes[i];
-
+            for (const HdMaterialNode& node : materialNetwork.nodes) {
                 result += "  <node path=\"";
-                result += conciseRelativePaths[i].GetString();
+                result += node.path.GetString();
                 result += "\" id=\"";
                 result += node.identifier;
                 result += "\"/>\n";
@@ -182,20 +169,15 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
         result += "</nodes>\n";
 
         if (!materialNetwork.relationships.empty()) {
-            std::unordered_map<SdfPath, SdfPath, SdfPath::Hash> pathMappings;
-            for (size_t i = 0; i < numNodes; i++) {
-                pathMappings[paths[i]] = conciseRelativePaths[i];
-            }
-
             result += "<relationships>\n";
 
             for (const HdMaterialRelationship& rel : materialNetwork.relationships) {
                 result += "  <rel from=\"";
-                result += pathMappings[rel.inputId].GetString();
+                result += rel.inputId.GetString();
                 result += ".";
                 result += rel.inputName;
                 result += "\" to=\"";
-                result += pathMappings[rel.outputId].GetString();
+                result += rel.outputId.GetString();
                 result += ".";
                 result += rel.outputName;
                 result += "\"/>\n";
@@ -218,100 +200,6 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
     }
 
     return result;
-}
-
-//! Helper utility function to apply VP2-specific fixes to the material network.
-//! - Add passthrough nodes to read vector component(s).
-//! - Fix UsdImagingMaterialAdapter issue for not producing primvar requirements.
-//! - Temporary workaround of missing support for normal map.
-void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
-{
-    unsigned int numPassThroughNodes = 0;
-
-    // To avoid relocation, reserve enough space for possible maximal size. The
-    // output network is temporary C++ object that will be released after use.
-    const size_t numNodes = inNet.nodes.size();
-    const size_t numRelationships = inNet.relationships.size();
-    outNet.nodes.reserve(numNodes + numRelationships);
-    outNet.relationships.reserve(numRelationships * 2);
-    outNet.primvars.reserve(numNodes);
-
-    for (const HdMaterialNode& node : inNet.nodes) {
-        TfToken primvarToRead;
-
-        const bool isUsdPrimvarReader = _IsUsdPrimvarReader(node);
-        if (isUsdPrimvarReader) {
-            auto it = node.parameters.find(_tokens->varname);
-            if (it != node.parameters.end()) {
-                primvarToRead = TfToken(TfStringify(it->second));
-            }
-        }
-
-        outNet.nodes.push_back(node);
-
-        // If the primvar reader is reading color or opacity, change it to
-        // UsdPrimvarReader_color which can create COLOR stream requirement
-        // instead of generic TEXCOORD stream.
-        if (primvarToRead == HdTokens->displayColor || primvarToRead == HdTokens->displayOpacity) {
-            auto& nodeToChange = outNet.nodes.back();
-            nodeToChange.identifier = _tokens->UsdPrimvarReader_color;
-        }
-
-        // Copy outgoing connections and if needed add passthrough node/connection.
-        for (const HdMaterialRelationship& rel : inNet.relationships) {
-            if (rel.inputId != node.path) {
-                continue;
-            }
-
-            TfToken passThroughId;
-            if (rel.inputName == _tokens->rgb || rel.inputName == _tokens->xyz) {
-                passThroughId = _tokens->Float4ToFloat3;
-            } else if (rel.inputName == _tokens->r || rel.inputName == _tokens->x) {
-                passThroughId = _tokens->Float4ToFloatX;
-            } else if (rel.inputName == _tokens->g || rel.inputName == _tokens->y) {
-                passThroughId = _tokens->Float4ToFloatY;
-            } else if (rel.inputName == _tokens->b || rel.inputName == _tokens->z) {
-                passThroughId = _tokens->Float4ToFloatZ;
-            } else if (rel.inputName == _tokens->a || rel.inputName == _tokens->w) {
-                passThroughId = _tokens->Float4ToFloatW;
-            } else if (primvarToRead == HdTokens->displayColor) {
-                passThroughId = _tokens->Float4ToFloat3;
-            } else if (primvarToRead == HdTokens->displayOpacity) {
-                passThroughId = _tokens->Float4ToFloatW;
-            } else {
-                outNet.relationships.push_back(rel);
-                continue;
-            }
-
-            const SdfPath passThroughPath = rel.inputId.ReplaceName(
-                TfToken(TfStringPrintf("HdVP2PassThrough%d", numPassThroughNodes++)));
-
-            const HdMaterialNode passThroughNode = { passThroughPath, passThroughId, {} };
-            outNet.nodes.push_back(passThroughNode);
-
-            HdMaterialRelationship newRel
-                = { rel.inputId, _tokens->output, passThroughPath, _tokens->input };
-            outNet.relationships.push_back(newRel);
-
-            newRel = { passThroughPath, _tokens->output, rel.outputId, rel.outputName };
-            outNet.relationships.push_back(newRel);
-        }
-
-        // Normal map is not supported yet. For now primvars:normals is used for
-        // shading, which is also the current behavior of USD/Hydra.
-        // https://groups.google.com/d/msg/usd-interest/7epU16C3eyY/X9mLW9VFEwAJ
-        if (node.identifier == UsdImagingTokens->UsdPreviewSurface) {
-            outNet.primvars.push_back(HdTokens->normals);
-        }
-        // UsdImagingMaterialAdapter doesn't create primvar requirements as
-        // expected. Workaround by manually looking up "varname" parameter.
-        // https://groups.google.com/forum/#!msg/usd-interest/z-14AgJKOcU/1uJJ1thXBgAJ
-        else if (isUsdPrimvarReader) {
-            if (!primvarToRead.IsEmpty()) {
-                outNet.primvars.push_back(primvarToRead);
-            }
-        }
-    }
 }
 
 //! Helper utility function to convert Hydra texture addressing token to VP2 enum.
@@ -497,6 +385,12 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
 MHWRender::MTexture*
 _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
 {
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorD_L2,
+        "LoadTexture",
+        path.c_str());
+
 #if USD_VERSION_NUM >= 2002
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
 #if USD_VERSION_NUM >= 2102
@@ -706,7 +600,14 @@ void HdVP2Material::Sync(
 {
     if (*dirtyBits & (HdMaterial::DirtyResource | HdMaterial::DirtyParams)) {
         const SdfPath& id = GetId();
-        VtValue        vtMatResource = sceneDelegate->GetMaterialResource(id);
+
+        MProfilingScope profilingScope(
+            HdVP2RenderDelegate::sProfilerCategory,
+            MProfiler::kColorC_L2,
+            "HdVP2Material::Sync",
+            id.GetText());
+
+        VtValue vtMatResource = sceneDelegate->GetMaterialResource(id);
 
         if (vtMatResource.IsHolding<HdMaterialNetworkMap>()) {
             const HdMaterialNetworkMap& networkMap
@@ -718,6 +619,11 @@ void HdVP2Material::Sync(
             TfMapLookup(networkMap.map, HdMaterialTerminalTokens->displacement, &dispNet);
 
             if (*dirtyBits & HdMaterial::DirtyResource) {
+                MProfilingScope subProfilingScope(
+                    HdVP2RenderDelegate::sProfilerCategory,
+                    MProfiler::kColorD_L2,
+                    "CreateShaderInstance");
+
                 // Apply VP2 fixes to the material network
                 HdMaterialNetwork vp2BxdfNet;
                 _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
@@ -730,7 +636,7 @@ void HdVP2Material::Sync(
 #ifndef HDVP2_DISABLE_SHADER_CACHE
                 // Generate a XML string from the material network and convert it to a token for
                 // faster hashing and comparison.
-                const TfToken bxdfNetToken(_GenerateXMLString(bxdfNet, false));
+                const TfToken bxdfNetToken(_GenerateXMLString(vp2BxdfNet, false));
 
                 // Acquire a shader instance from the shader cache. If a shader instance has been
                 // cached with the same token, a clone of the shader instance will be returned.
@@ -795,6 +701,128 @@ void HdVP2Material::Sync(
 change tracker for use in the first sync of this prim.
 */
 HdDirtyBits HdVP2Material::GetInitialDirtyBitsMask() const { return HdMaterial::AllDirty; }
+
+/*! \brief  Applies VP2-specific fixes to the material network.
+*/
+void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
+{
+    // To avoid relocation, reserve enough space for possible maximal size. The
+    // output network is temporary C++ object that will be released after use.
+    const size_t numNodes = inNet.nodes.size();
+    const size_t numRelationships = inNet.relationships.size();
+
+    size_t nodeCounter = 0;
+
+    _nodePathMap.clear();
+    _nodePathMap.reserve(numNodes);
+
+    HdMaterialNetwork tmpNet;
+    tmpNet.nodes.reserve(numNodes);
+    tmpNet.relationships.reserve(numRelationships);
+
+    // Replace the authored node paths with simplified paths in the form of "node#". By doing so
+    // we will be able to reuse shader effects among material networks which have the same node
+    // identifiers and relationships but different node paths, reduce shader compilation overhead
+    // and enable material consolidation for faster rendering.
+    for (const HdMaterialNode& node : inNet.nodes) {
+        tmpNet.nodes.push_back(node);
+
+        HdMaterialNode& outNode = tmpNet.nodes.back();
+        outNode.path = SdfPath(kNodePathPrefix + std::to_string(++nodeCounter));
+
+        _nodePathMap[node.path] = outNode.path;
+    }
+
+    // Update the relationships to use the new node paths.
+    for (const HdMaterialRelationship& rel : inNet.relationships) {
+        tmpNet.relationships.push_back(rel);
+
+        HdMaterialRelationship& outRel = tmpNet.relationships.back();
+        outRel.inputId = _nodePathMap[outRel.inputId];
+        outRel.outputId = _nodePathMap[outRel.outputId];
+    }
+
+    outNet.nodes.reserve(numNodes + numRelationships);
+    outNet.relationships.reserve(numRelationships * 2);
+    outNet.primvars.reserve(numNodes);
+
+    // Add passthrough nodes for vector component access.
+    for (const HdMaterialNode& node : tmpNet.nodes) {
+        TfToken primvarToRead;
+
+        const bool isUsdPrimvarReader = _IsUsdPrimvarReader(node);
+        if (isUsdPrimvarReader) {
+            auto it = node.parameters.find(_tokens->varname);
+            if (it != node.parameters.end()) {
+                primvarToRead = TfToken(TfStringify(it->second));
+            }
+        }
+
+        outNet.nodes.push_back(node);
+
+        // If the primvar reader is reading color or opacity, replace it with
+        // UsdPrimvarReader_color which can create COLOR stream requirement
+        // instead of generic TEXCOORD stream.
+        if (primvarToRead == HdTokens->displayColor || primvarToRead == HdTokens->displayOpacity) {
+            HdMaterialNode& nodeToChange = outNet.nodes.back();
+            nodeToChange.identifier = _tokens->UsdPrimvarReader_color;
+        }
+
+        // Copy outgoing connections and if needed add passthrough node/connection.
+        for (const HdMaterialRelationship& rel : tmpNet.relationships) {
+            if (rel.inputId != node.path) {
+                continue;
+            }
+
+            TfToken passThroughId;
+            if (rel.inputName == _tokens->rgb || rel.inputName == _tokens->xyz) {
+                passThroughId = _tokens->Float4ToFloat3;
+            } else if (rel.inputName == _tokens->r || rel.inputName == _tokens->x) {
+                passThroughId = _tokens->Float4ToFloatX;
+            } else if (rel.inputName == _tokens->g || rel.inputName == _tokens->y) {
+                passThroughId = _tokens->Float4ToFloatY;
+            } else if (rel.inputName == _tokens->b || rel.inputName == _tokens->z) {
+                passThroughId = _tokens->Float4ToFloatZ;
+            } else if (rel.inputName == _tokens->a || rel.inputName == _tokens->w) {
+                passThroughId = _tokens->Float4ToFloatW;
+            } else if (primvarToRead == HdTokens->displayColor) {
+                passThroughId = _tokens->Float4ToFloat3;
+            } else if (primvarToRead == HdTokens->displayOpacity) {
+                passThroughId = _tokens->Float4ToFloatW;
+            } else {
+                outNet.relationships.push_back(rel);
+                continue;
+            }
+
+            const SdfPath passThroughPath(kNodePathPrefix + std::to_string(++nodeCounter));
+
+            const HdMaterialNode passThroughNode = { passThroughPath, passThroughId, {} };
+            outNet.nodes.push_back(passThroughNode);
+
+            HdMaterialRelationship newRel
+                = { rel.inputId, _tokens->output, passThroughPath, _tokens->input };
+            outNet.relationships.push_back(newRel);
+
+            newRel = { passThroughPath, _tokens->output, rel.outputId, rel.outputName };
+            outNet.relationships.push_back(newRel);
+        }
+
+        // Normal map is not supported yet. For now primvars:normals is used for
+        // shading, which is also the current behavior of USD/Hydra.
+        // https://groups.google.com/d/msg/usd-interest/7epU16C3eyY/X9mLW9VFEwAJ
+        if (node.identifier == UsdImagingTokens->UsdPreviewSurface) {
+            outNet.primvars.push_back(HdTokens->normals);
+        }
+        // UsdImagingMaterialAdapter doesn't create primvar requirements as
+        // expected. Workaround by manually looking up "varname" parameter.
+        // https://groups.google.com/forum/#!msg/usd-interest/z-14AgJKOcU/1uJJ1thXBgAJ
+        else if (isUsdPrimvarReader) {
+            if (!primvarToRead.IsEmpty()) {
+                outNet.primvars.push_back(primvarToRead);
+            }
+        }
+    }
+}
 
 /*! \brief  Creates a shader instance for the surface shader.
  */
@@ -1000,8 +1028,22 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
         return;
     }
 
+    MProfilingScope profilingScope(
+        HdVP2RenderDelegate::sProfilerCategory,
+        MProfiler::kColorD_L2,
+        "UpdateShaderInstance");
+
     for (const HdMaterialNode& node : mat.nodes) {
-        const MString nodeName = node.path != _surfaceShaderId ? node.path.GetName().c_str() : "";
+        // Find the simplified path for the authored node path from the map which has been created
+        // when applying VP2-specific fixes.
+        const auto it = _nodePathMap.find(node.path);
+        if (it == _nodePathMap.end()) {
+            continue;
+        }
+
+        // The simplified path has only one token which is the node name.
+        const SdfPath& nodePath = it->second;
+        const MString nodeName(nodePath != _surfaceShaderId ? nodePath.GetText() : "");
 
         MStatus samplerStatus = MStatus::kFailure;
 
