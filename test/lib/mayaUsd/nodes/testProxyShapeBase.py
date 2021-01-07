@@ -15,9 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import Tf
-from pxr import Usd
-
 from maya import cmds
 from maya import standalone
 
@@ -46,43 +43,6 @@ class testProxyShapeBase(unittest.TestCase):
         # Verify that the proxy shape read something from the USD file.
         bboxSize = cmds.getAttr('Cube_usd.boundingBoxSize')[0]
         self.assertEqual(bboxSize, (1.0, 1.0, 1.0))
-
-        # The VP2 render delegate doesn't use an additional imaging shape
-        if not Tf.GetEnvSetting('VP2_RENDER_DELEGATE_PROXY'):
-            # The proxy shape is imaged by the pxrHdImagingShape, which should
-            # be created by the proxy shape's postConstructor() method. Make
-            # sure the pxrHdImagingShape (and its parent transform) exist.
-            hdImagingTransformPath = '|HdImaging'
-            hdImagingShapePath = '%s|HdImagingShape' % hdImagingTransformPath
-
-            self.assertTrue(cmds.objExists(hdImagingTransformPath))
-            self.assertEqual(cmds.nodeType(hdImagingTransformPath), 'transform')
-
-            self.assertTrue(cmds.objExists(hdImagingShapePath))
-            self.assertEqual(cmds.nodeType(hdImagingShapePath), 'pxrHdImagingShape')
-
-            self.assertNotEqual(
-                cmds.ls(hdImagingTransformPath, uuid=True),
-                cmds.ls(hdImagingShapePath, uuid=True))
-
-        # The pxrHdImagingShape and its parent transform are set so that they
-        # do not write to the Maya scene file and are not exported to USD, so
-        # do a test export and make sure that's the case.
-        usdFilePath = os.path.abspath('ProxyShapeBaseExportTest.usda')
-        cmds.mayaUSDExport(file=usdFilePath)
-
-        usdStage = Usd.Stage.Open(usdFilePath)
-        prim = usdStage.GetPrimAtPath('/HdImaging')
-        self.assertFalse(prim)
-        prim = usdStage.GetPrimAtPath('/HdImaging/HdImagingShape')
-        self.assertFalse(prim)
-
-        # Make sure that we can reorder root nodes in the scene with the
-        # pxrHdImagingShape present.
-        cmds.polyCube(n="testNode1")
-        cmds.polyCube(n="testNode2")
-        cmds.reorder("testNode1", back=True)
-        cmds.reorder("testNode2", front=True)
 
 
 if __name__ == '__main__':

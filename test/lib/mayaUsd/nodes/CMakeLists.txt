@@ -24,3 +24,13 @@ foreach(script ${TEST_SCRIPT_FILES})
     # Add a ctest label to these tests for easy filtering.
     set_property(TEST ${target} APPEND PROPERTY LABELS nodes)
 endforeach()
+
+# The testHdImagingShape test requires that we're using the legacy Pixar batch
+# renderer and that the Viewport 2.0 render delegate is disabled.
+mayaUsd_add_test(testHdImagingShape
+    PYTHON_MODULE testHdImagingShape
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    ENV
+        "VP2_RENDER_DELEGATE_PROXY=0"
+)
+set_property(TEST testHdImagingShape APPEND PROPERTY LABELS nodes)
