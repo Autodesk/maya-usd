@@ -198,6 +198,8 @@ Ufe::Matrix4d UsdTransform3d::matrix() const
     bool             unused;
     auto             ops = xformable.GetOrderedXformOps(&unused);
 
+    // Note: Gf matrices are row-major.
+    // https://graphics.pixar.com/usd/docs/api/class_gf_matrix4d.html
     GfMatrix4d m(1);
     if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path()))) {
         TF_FATAL_ERROR(
