@@ -386,10 +386,7 @@ MHWRender::MTexture*
 _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
 {
     MProfilingScope profilingScope(
-        HdVP2RenderDelegate::sProfilerCategory,
-        MProfiler::kColorD_L2,
-        "LoadTexture",
-        path.c_str());
+        HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "LoadTexture", path.c_str());
 
 #if USD_VERSION_NUM >= 2002
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
@@ -703,7 +700,7 @@ change tracker for use in the first sync of this prim.
 HdDirtyBits HdVP2Material::GetInitialDirtyBitsMask() const { return HdMaterial::AllDirty; }
 
 /*! \brief  Applies VP2-specific fixes to the material network.
-*/
+ */
 void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet)
 {
     // To avoid relocation, reserve enough space for possible maximal size. The
@@ -1029,9 +1026,7 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
     }
 
     MProfilingScope profilingScope(
-        HdVP2RenderDelegate::sProfilerCategory,
-        MProfiler::kColorD_L2,
-        "UpdateShaderInstance");
+        HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "UpdateShaderInstance");
 
     for (const HdMaterialNode& node : mat.nodes) {
         // Find the simplified path for the authored node path from the map which has been created
@@ -1043,7 +1038,7 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
 
         // The simplified path has only one token which is the node name.
         const SdfPath& nodePath = it->second;
-        const MString nodeName(nodePath != _surfaceShaderId ? nodePath.GetText() : "");
+        const MString  nodeName(nodePath != _surfaceShaderId ? nodePath.GetText() : "");
 
         MStatus samplerStatus = MStatus::kFailure;
 
