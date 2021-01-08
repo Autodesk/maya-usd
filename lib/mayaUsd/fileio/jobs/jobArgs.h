@@ -144,22 +144,22 @@ struct UsdMayaJobExportArgs
     /// material-collections are created and bindings are made to the
     /// collections at \p materialCollectionsPath, instead of direct
     /// per-gprim bindings.
-    const bool    exportCollectionBasedBindings;
-    const bool    exportColorSets;
-    const bool    exportDefaultCameras;
-    const bool    exportDisplayColor;
-    const bool    exportInstances;
-    const bool    exportMaterialCollections;
-    const bool    exportMeshUVs;
-    const bool    exportNurbsExplicitUV;
-    const bool    exportReferenceObjects;
-    const bool    exportRefsAsInstanceable;
-    const TfToken exportSkels;
-    const TfToken exportSkin;
-    const bool    exportBlendShapes;
-    const bool    exportVisibility;
+    const bool        exportCollectionBasedBindings;
+    const bool        exportColorSets;
+    const bool        exportDefaultCameras;
+    const bool        exportDisplayColor;
+    const bool        exportInstances;
+    const bool        exportMaterialCollections;
+    const bool        exportMeshUVs;
+    const bool        exportNurbsExplicitUV;
+    const bool        exportReferenceObjects;
+    const bool        exportRefsAsInstanceable;
+    const TfToken     exportSkels;
+    const TfToken     exportSkin;
+    const bool        exportBlendShapes;
+    const bool        exportVisibility;
     const std::string file;
-    const bool    ignoreWarnings;
+    const bool        ignoreWarnings;
 
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of
