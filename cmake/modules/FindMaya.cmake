@@ -196,7 +196,7 @@ if(NOT "${MAYA_DEVKIT_INC_DIR}" STREQUAL "MAYA_DEVKIT_INC_DIR-NOTFOUND")
     list(APPEND MAYA_INCLUDE_DIRS ${MAYA_DEVKIT_INC_DIR})
 endif()
 
-foreach(MAYA_LIB
+set(MAYA_LIBS_TO_FIND
     OpenMaya
     OpenMayaAnim
     OpenMayaFX
@@ -205,11 +205,17 @@ foreach(MAYA_LIB
     Image
     Foundation
     IMFbase
-    tbb
     cg
     cgGL
-    clew)
+    clew
+)
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+    list(APPEND MAYA_LIBS_TO_FIND tbb_debug)
+else()
+    list(APPEND MAYA_LIBS_TO_FIND tbb)
+endif()
 
+foreach(MAYA_LIB ${MAYA_LIBS_TO_FIND})
     find_library(MAYA_${MAYA_LIB}_LIBRARY
             ${MAYA_LIB}
         HINTS
@@ -220,7 +226,6 @@ foreach(MAYA_LIB
         # Maya's Foundation library and OSX's framework.
         NO_CMAKE_SYSTEM_PATH
     )
-
 
     if (MAYA_${MAYA_LIB}_LIBRARY)
         list(APPEND MAYA_LIBRARIES ${MAYA_${MAYA_LIB}_LIBRARY})
