@@ -15,8 +15,6 @@
 # limitations under the License.
 #
 
-from pxr import UsdMaya
-
 import mayaUsd.lib as mayaUsdLib
 
 from pxr import Gf
@@ -27,22 +25,24 @@ from pxr import Vt
 from maya import cmds
 from maya import standalone
 
+import fixturesUtils
+
 import unittest
 
 
-class testUsdMayaReadWriteUtils(unittest.TestCase):
+class testReadWriteUtils(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
-        cmds.loadPlugin('pxrUsd')
+        fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testGetVtValue(self):
+    def setUp(self):
         cmds.file(new=True, force=True)
 
+    def testGetVtValue(self):
         cmds.group(name="group1", empty=True)
 
         mat = mayaUsdLib.WriteUtil.GetVtValue("group1.matrix",
@@ -98,8 +98,6 @@ class testUsdMayaReadWriteUtils(unittest.TestCase):
         self.assertAlmostEqual(vec3f[0], 0.5)
 
     def testFindOrCreateMayaAttr(self):
-        cmds.file(new=True, force=True)
-
         cmds.group(name="group1", empty=True)
         attrName = mayaUsdLib.ReadUtil.FindOrCreateMayaAttr(
                 Sdf.ValueTypeNames.Asset,
@@ -153,8 +151,6 @@ class testUsdMayaReadWriteUtils(unittest.TestCase):
                     "dolphins")
 
     def testSetMayaAttr(self):
-        cmds.file(new=True, force=True)
-
         cmds.group(name="group1", empty=True)
         attrName = mayaUsdLib.ReadUtil.FindOrCreateMayaAttr(
                 Sdf.ValueTypeNames.Asset,
@@ -193,8 +189,6 @@ class testUsdMayaReadWriteUtils(unittest.TestCase):
         self.assertEqual(cmds.getAttr("group1.scale"), [(1.0, 2.0, 3.0)])
 
     def testSetMayaAttrKeyableState(self):
-        cmds.file(new=True, force=True)
-
         cmds.group(name="group1", empty=True)
         mayaUsdLib.ReadUtil.SetMayaAttrKeyableState("group1.scaleX",
                 Sdf.VariabilityUniform)
