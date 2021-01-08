@@ -164,26 +164,33 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
         MItDependencyGraph::kPlugLevel,
         &stat);
     MFnDependencyNode fnNode;
-    for (; !itDg.isDone(); itDg.next()) {
-        MObject curBlendShape = itDg.currentItem();
-        TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
-        MPlug outputGeomPlug = itDg.thisPlug();
-        TF_VERIFY(outputGeomPlug.isElement() == true);
-        unsigned int outputGeomPlugIdx = outputGeomPlug.logicalIndex();
+    if (intermediates == nullptr) {
+        for (; !itDg.isDone(); itDg.next()) {
+            MObject curBlendShape = itDg.currentItem();
+            TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
+            MPlug outputGeomPlug = itDg.thisPlug();
+            TF_VERIFY(outputGeomPlug.isElement() == true);
+            unsigned int outputGeomPlugIdx = outputGeomPlug.logicalIndex();
 
-        // NOTE: (yliangsiew) Because we can have multiple output
-        // deformed meshes from a single blendshape deformer, we have
-        // to walk back up the graph using the connected index to find
-        // out what the _actual_ base mesh was.
-        if (intermediates == nullptr) {
+            // NOTE: (yliangsiew) Because we can have multiple output
+            // deformed meshes from a single blendshape deformer, we have
+            // to walk back up the graph using the connected index to find
+            // out what the _actual_ base mesh was.
             MFnGeometryFilter fnGeoFilter;
             fnGeoFilter.setObject(curBlendShape);
             MObject inputGeo = fnGeoFilter.inputShapeAtIndex(outputGeomPlugIdx, &stat);
             if (inputGeo.hasFn(MFn::kMesh)) {
                 return inputGeo;
             }
-        } else {
-            intermediates->clear();
+        }
+    } else {
+        intermediates->clear();
+        for (; !itDg.isDone(); itDg.next()) {
+            MObject curBlendShape = itDg.currentItem();
+            TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
+            MPlug outputGeomPlug = itDg.thisPlug();
+            TF_VERIFY(outputGeomPlug.isElement() == true);
+
             MItDependencyGraph itDgBS(
                 curBlendShape,
                 MFn::kInvalid,
@@ -201,7 +208,7 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
                     &stat);
                 for (itDgBS.next(); !itDgBS.isDone();
                      itDgBS.next()) { // NOTE: (yliangsiew) Skip the first node which starts at the
-                                      // root, which is the blendshape deformer itself.
+                    // root, which is the blendshape deformer itself.
                     MObject curNode = itDgBS.thisNode();
                     if (curNode.hasFn(MFn::kMesh)) {
                         return curNode;
@@ -211,7 +218,113 @@ MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* 
             }
         }
     }
+
     return mesh;
+}
+
+MStatus mayaCheckIntermediateNodesForMeshEdits(const MObjectArray& intermediates)
+{
+    // TODO: (yliangsiew) In future, have this function not be responsible for printing diagnostic
+    // info and just return results instead if necessary.
+    MStatus      status;
+    unsigned int numIntermediates = intermediates.length();
+    for (unsigned int i = 0; i < numIntermediates; ++i) {
+        MObject curIntermediate = intermediates[i];
+        if (curIntermediate.hasFn(MFn::kGroupParts)) {
+            continue;
+        } else if (curIntermediate.hasFn(MFn::kGeometryFilt)) {
+            // NOTE: (yliangsiew) We make sure the tweak node is empty first, since
+            // that could potentially affect deformation of the origShape before it hits the
+            // blendshape node.
+            MFnGeometryFilter fnGeoFilt(curIntermediate, &status);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+            float envelope = fnGeoFilt.envelope();
+            if (fabs(envelope - 0.0f) < FLT_EPSILON) {
+                continue; // deformer has no effect
+            }
+
+            if (curIntermediate.hasFn(MFn::kTweak)) {
+                // NOTE: (yliangsiew) Make sure tweak really has no effect even if it's on
+                MPlug plgVLists = fnGeoFilt.findPlug("vlist");
+                TF_VERIFY(plgVLists.isArray());
+                unsigned int numPlgVlists = plgVLists.numElements();
+                for (unsigned int j = 0; j < numPlgVlists; ++j) {
+                    MPlug plgVlist = plgVLists.elementByPhysicalIndex(j); // vlist[0]
+                    TF_VERIFY(plgVlist.isCompound());
+                    unsigned int plgVlistNumChildren = plgVlist.numChildren();
+                    for (unsigned int k = 0; k < plgVlistNumChildren; ++k) {
+                        MPlug plgVlistChild = plgVlist.child(k); // vlist[0].vertex
+                        TF_VERIFY(plgVlistChild.isArray());
+                        unsigned int numPlgVlistChildElements = plgVlistChild.numElements();
+                        for (unsigned int x = 0; x < numPlgVlistChildElements; ++x) {
+                            MPlug plgVertex
+                                = plgVlistChild.elementByPhysicalIndex(x); // vlist[0].vertex[0]
+                            TF_VERIFY(plgVertex.isCompound());
+                            unsigned int plgVertexNumChildren = plgVertex.numChildren();
+                            for (unsigned int y = 0; y < plgVertexNumChildren; ++y) {
+                                MPlug plgVertexComponent
+                                    = plgVertex.child(y); // vlist[0].vertex[0].xVertex
+                                float vertexComponent = plgVertexComponent.asFloat();
+                                if (fabs(vertexComponent - 0.0f) > FLT_EPSILON) {
+                                    MFnDependencyNode fnNode(curIntermediate, &status);
+                                    CHECK_MSTATUS_AND_RETURN_IT(status);
+                                    TF_RUNTIME_ERROR(
+                                        "Could not determine the original blendshape "
+                                        "source mesh due to a non-empty tweak node: %s. "
+                                        "Please either bake it down or remove the "
+                                        "edits and attempt the export process again, or "
+                                        "specify -ignoreWarnings.",
+                                        fnNode.name().asChar());
+                                    return MStatus::kFailure;
+                                }
+                            }
+                        }
+                    }
+                }
+                continue; // NOTE: (yliangsiew) If the tweak node has no effect, go check
+                // the next intermediate.
+            }
+            TF_RUNTIME_ERROR(
+                "USDSkelBlendShape does not support animated blend shapes. Please bake "
+                "down deformer history before attempting an export, or specify "
+                "-ignoreWarnings during the export process.");
+            return MStatus::kFailure;
+
+        } else if (curIntermediate.hasFn(MFn::kMesh)) {
+            // NOTE: (yliangsiew) Need to check that the mesh itself does not include any
+            // tweaks.
+            MFnDependencyNode fnNode(curIntermediate, &status);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+            MPlug plgPnts = fnNode.findPlug("pnts");
+            TF_VERIFY(plgPnts.isArray());
+            for (unsigned int j = 0; j < plgPnts.numElements(); ++j) {
+                MPlug plgPnt = plgPnts.elementByPhysicalIndex(j);
+                TF_VERIFY(plgPnt.isCompound());
+                for (unsigned int k = 0; k < plgPnt.numChildren(); ++k) {
+                    float tweakValue = plgPnt.child(k).asFloat();
+                    if (fabs(tweakValue - 0.0f) > FLT_EPSILON) {
+                        TF_RUNTIME_ERROR(
+                            "The mesh: %s has local tweak data on its .pnts attribute. "
+                            "Please remove it before attempting an export, or specify "
+                            "-ignoreWarnings during the export process.",
+                            fnNode.name().asChar());
+                        return MStatus::kFailure;
+                    }
+                }
+            }
+
+        } else {
+            MFnDependencyNode fnNode(curIntermediate, &status);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+            TF_RUNTIME_ERROR(
+                "Unrecognized node encountered in blendshape deformation chain: %s. Please "
+                "bake down deformer history before attempting an export, or specify "
+                "-ignoreWarnings during the export process.",
+                fnNode.name().asChar());
+            return MStatus::kFailure;
+        }
+    }
+    return MStatus::kSuccess;
 }
 
 PXRUSDMAYA_REGISTER_WRITER(mesh, PxrUsdTranslators_MeshWriter);
@@ -365,102 +478,12 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         } else {
             MObjectArray intermediates;
             geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, &intermediates);
-            unsigned int numIntermediates = intermediates.length();
-            for (unsigned int i = 0; i < numIntermediates; ++i) {
-                MObject curIntermediate = intermediates[i];
-                if (curIntermediate.hasFn(MFn::kGroupParts)) {
-                    continue;
-                } else if (curIntermediate.hasFn(MFn::kGeometryFilt)) {
-                    // NOTE: (yliangsiew) We make sure the tweak node is empty first, since
-                    // that could potentially affect deformation of the origShape before it hits the
-                    // blendshape node.
-                    MFnGeometryFilter fnGeoFilt(curIntermediate, &status);
-                    CHECK_MSTATUS_AND_RETURN(status, false);
-                    float envelope = fnGeoFilt.envelope();
-                    if (fabs(envelope - 0.0f) < FLT_EPSILON) {
-                        continue; // deformer has no effect
-                    }
-
-                    if (curIntermediate.hasFn(MFn::kTweak)) {
-                        // NOTE: (yliangsiew) Make sure tweak really has no effect even if it's on
-                        MPlug plgVLists = fnGeoFilt.findPlug("vlist");
-                        TF_VERIFY(plgVLists.isArray());
-                        unsigned int numPlgVlists = plgVLists.numElements();
-                        for (unsigned int j = 0; j < numPlgVlists; ++j) {
-                            MPlug plgVlist = plgVLists.elementByPhysicalIndex(j); // vlist[0]
-                            TF_VERIFY(plgVlist.isCompound());
-                            unsigned int plgVlistNumChildren = plgVlist.numChildren();
-                            for (unsigned int k = 0; k < plgVlistNumChildren; ++k) {
-                                MPlug plgVlistChild = plgVlist.child(k); // vlist[0].vertex
-                                TF_VERIFY(plgVlistChild.isArray());
-                                unsigned int numPlgVlistChildElements = plgVlistChild.numElements();
-                                for (unsigned int x = 0; x < numPlgVlistChildElements; ++x) {
-                                    MPlug plgVertex = plgVlistChild.elementByPhysicalIndex(
-                                        x); // vlist[0].vertex[0]
-                                    TF_VERIFY(plgVertex.isCompound());
-                                    unsigned int plgVertexNumChildren = plgVertex.numChildren();
-                                    for (unsigned int y = 0; y < plgVertexNumChildren; ++y) {
-                                        MPlug plgVertexComponent
-                                            = plgVertex.child(y); // vlist[0].vertex[0].xVertex
-                                        float vertexComponent = plgVertexComponent.asFloat();
-                                        if (fabs(vertexComponent - 0.0f) > FLT_EPSILON) {
-                                            MFnDependencyNode fnNode(curIntermediate, &status);
-                                            CHECK_MSTATUS_AND_RETURN(status, false);
-                                            TF_RUNTIME_ERROR(
-                                                "Could not determine the original blendshape "
-                                                "source mesh due to a non-empty tweak node: %s. "
-                                                "Please either bake it down or remove the "
-                                                "edits and attempt the export process again, or "
-                                                "specify -ignoreWarnings.",
-                                                fnNode.name().asChar());
-                                            return false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        continue; // NOTE: (yliangsiew) If the tweak node has no effect, go check
-                                  // the next intermediate.
-                    }
-                    TF_RUNTIME_ERROR(
-                        "USDSkelBlendShape does not support animated blend shapes. Please bake "
-                        "down deformer history before attempting an export, or specify "
-                        "-ignoreWarnings during the export process.");
-                    return false;
-
-                } else if (curIntermediate.hasFn(MFn::kMesh)) {
-                    // NOTE: (yliangsiew) Need to check that the mesh itself does not include any
-                    // tweaks.
-                    MFnDependencyNode fnNode(curIntermediate, &status);
-                    CHECK_MSTATUS_AND_RETURN(status, false);
-                    MPlug plgPnts = fnNode.findPlug("pnts");
-                    TF_VERIFY(plgPnts.isArray());
-                    for (unsigned int j = 0; j < plgPnts.numElements(); ++j) {
-                        MPlug plgPnt = plgPnts.elementByPhysicalIndex(j);
-                        TF_VERIFY(plgPnt.isCompound());
-                        for (unsigned int k = 0; k < plgPnt.numChildren(); ++k) {
-                            float tweakValue = plgPnt.child(k).asFloat();
-                            if (fabs(tweakValue - 0.0f) > FLT_EPSILON) {
-                                TF_RUNTIME_ERROR(
-                                    "The mesh: %s has local tweak data on its .pnts attribute. "
-                                    "Please remove it before attempting an export, or specify "
-                                    "-ignoreWarnings during the export process.",
-                                    fnNode.name().asChar());
-                                return false;
-                            }
-                        }
-                    }
-
-                } else {
-                    MFnDependencyNode fnNode(curIntermediate, &status);
-                    CHECK_MSTATUS_AND_RETURN(status, false);
-                    TF_RUNTIME_ERROR(
-                        "Unrecognized node encountered in blendshape deformation chain: %s. Please "
-                        "bake down deformer history before attempting an export, or specify "
-                        "-ignoreWarnings during the export process.",
-                        fnNode.name().asChar());
-                    return false;
-                }
+            status = mayaCheckIntermediateNodesForMeshEdits(intermediates);
+            if (!status) {
+                TF_RUNTIME_ERROR(
+                    "Blendshapes failed pre-export checks at DAG path: %s",
+                    GetDagPath().fullPathName().asChar());
+                return false;
             }
         }
     }
