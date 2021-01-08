@@ -613,7 +613,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
                 "xformOp:rotateZ", "!invert!xformOp:translate:pivot",
                 "xformOp:rotateXYZ:maya_fallback")))
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 122 , 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 121 , 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
     def testFallback(self):
         '''Transformable not handled by standard Transform3d handlers must be
     handled by fallback handler.'''
