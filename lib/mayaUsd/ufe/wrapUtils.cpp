@@ -70,7 +70,16 @@ UsdStageWeakPtr getStage(const std::string& ufePathString)
     // This function works on a single-segment path, i.e. the Maya Dag path
     // segment to the proxy shape.  We know the Maya run-time ID is 1,
     // separator is '|'.
-    return ufe::getStage(Ufe::Path(Ufe::PathSegment(ufePathString, 1, '|')));
+    // The helper function proxyShapeHandle() assumes Maya path starts
+    // with "|world" and will pop it off. So make sure our string has it.
+    // Note: std::string starts_with only added for C++20. So use diff trick.
+    std::string proxyPath;
+    if (ufePathString.rfind("|world", 0) == std::string::npos) {
+        proxyPath = "|world" + ufePathString;
+    } else {
+        proxyPath = ufePathString;
+    }
+    return ufe::getStage(Ufe::Path(Ufe::PathSegment(proxyPath, 1, '|')));
 #endif
 }
 
