@@ -51,8 +51,8 @@ namespace {
 //   for these so the emplace_back() will choose the right constructor. With char[]
 //   it would convert that param to a bool and choose the wrong constructor.
 #ifdef WANT_QT_BUILD
-static constexpr char    kUSDLayerEditorItem[] = "USD Layer Editor";
-static constexpr char    kUSDLayerEditorLabel[] = "USD Layer Editor...";
+static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
+static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor...";
 #endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 static constexpr char    kUSDLoadItem[] = "Load";
@@ -596,7 +596,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // itemPath[1] contains the new prim type to create.
         return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
 #ifdef WANT_QT_BUILD
-    // When building without Qt there is no LayerEditor
+        // When building without Qt there is no LayerEditor
     } else if (itemPath[0] == kUSDLayerEditorItem) {
         // Just open the editor directly and return null so we don't have undo.
         auto ufePath = ufe::stagePath(prim().GetStage());
