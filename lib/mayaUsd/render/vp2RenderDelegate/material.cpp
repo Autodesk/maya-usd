@@ -100,10 +100,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
-//! Prefix of VP2-specific simplified node path to enable reuse of shader effects among material
-//! networks which have the same node identifiers and relationships but different node paths.
-const std::string kNodePathPrefix = "node";
-
 //! Helper utility function to test whether a node is a UsdShade primvar reader.
 bool _IsUsdPrimvarReader(const HdMaterialNode& node)
 {
@@ -725,7 +721,7 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
         tmpNet.nodes.push_back(node);
 
         HdMaterialNode& outNode = tmpNet.nodes.back();
-        outNode.path = SdfPath(kNodePathPrefix + std::to_string(++nodeCounter));
+        outNode.path = SdfPath(outNode.identifier.GetString() + std::to_string(++nodeCounter));
 
         _nodePathMap[node.path] = outNode.path;
     }
@@ -791,7 +787,8 @@ void HdVP2Material::_ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNe
                 continue;
             }
 
-            const SdfPath passThroughPath(kNodePathPrefix + std::to_string(++nodeCounter));
+            const SdfPath passThroughPath(
+                passThroughId.GetString() + std::to_string(++nodeCounter));
 
             const HdMaterialNode passThroughNode = { passThroughPath, passThroughId, {} };
             outNet.nodes.push_back(passThroughNode);
