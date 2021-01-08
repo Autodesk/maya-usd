@@ -84,12 +84,16 @@ public:
     const TfTokenVector& GetRequiredPrimvars() const { return _requiredPrimvars; }
 
 private:
+    void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet);
     MHWRender::MShaderInstance* _CreateShaderInstance(const HdMaterialNetwork& mat);
     void                        _UpdateShaderInstance(const HdMaterialNetwork& mat);
     const HdVP2TextureInfo&     _AcquireTexture(const std::string& path);
 
     HdVP2RenderDelegate* const
         _renderDelegate; //!< VP2 render delegate for which this material was created
+
+    std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>
+        _nodePathMap; //!< Mapping from authored node paths to VP2-specific simplified pathes
 
     HdVP2ShaderUniquePtr _surfaceShader;    //!< VP2 surface shader instance
     SdfPath              _surfaceShaderId;  //!< Path of the surface shader
