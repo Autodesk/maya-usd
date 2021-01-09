@@ -107,9 +107,20 @@ class testDiagnosticDelegate(unittest.TestCase):
         log = self._StopRecording()
         self.assertEqual(len(log), 1)
         logText, logCode = log[0]
+
+        # When this test is executed as a result of the unittest.main() call at
+        # the bottom of this file (e.g. when this script is executed directly
+        # via the shebang, when the script file is passed to a Python
+        # interpreter on the command-line, or when the script file's contents
+        # is read and executed through compile() and exec(), the module will be
+        # reported as "__main__". Otherwise, when this file is imported as a
+        # module and then executed using unittest.main(module=<module name>),
+        # the module name will match the file name and be reported as
+        # "testDiagnosticDelegate". We make the regex here recognize both
+        # cases.
         self.assertRegex(logText,
             "^Python coding error: blah -- Coding Error in "
-            "testDiagnosticDelegate\.testError at line [0-9]+ of ")
+            "(__main__|testDiagnosticDelegate)\.testError at line [0-9]+ of ")
         self.assertEqual(logCode, OM.MCommandMessage.kError)
 
     def testError_Python(self):
