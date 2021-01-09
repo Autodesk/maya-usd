@@ -626,13 +626,6 @@ void HdVP2Material::Sync(
                     MProfiler::kColorD_L2,
                     "CreateShaderInstance");
 
-                // The token is saved and will be used to determine whether a new shader instance
-                // is needed during the next sync.
-                _surfaceNetworkToken = token;
-
-                // Store primvar requirements.
-                _requiredPrimvars = std::move(vp2BxdfNet.primvars);
-
                 // Remember the path of the surface shader for special handling: unlike other
                 // fragments, the parameters of the surface shader fragment can't be renamed.
                 _surfaceShaderId = vp2BxdfNet.nodes.back().path;
@@ -681,6 +674,13 @@ void HdVP2Material::Sync(
                         std::cout << "  " << tmpDir << "\n";
                     }
                 }
+
+                // Store primvar requirements.
+                _requiredPrimvars = std::move(vp2BxdfNet.primvars);
+
+                // The token is saved and will be used to determine whether a new shader instance
+                // is needed during the next sync.
+                _surfaceNetworkToken = token;
             }
 
             _UpdateShaderInstance(bxdfNet);
