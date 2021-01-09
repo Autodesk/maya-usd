@@ -56,6 +56,7 @@
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MUintArray.h>
+#include <maya/MStatus.h>
 
 #include <cfloat>
 #include <set>
@@ -99,7 +100,6 @@ MStatus mayaDisableAllBlendShapesForMesh(
             MObject curBlendShape = itDg.currentItem();
             TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
             status = fnGeoFilter.setObject(curBlendShape);
-            printf("Disabling: %s\n", fnGeoFilter.name().asChar());
             CHECK_MSTATUS_AND_RETURN_IT(status);
             float curEnvelope = fnGeoFilter.envelope();
             blendShapeNodes.append(curBlendShape);
@@ -544,43 +544,49 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
      blendshape targets here _before_ writing out the data.
     */
     if (exportArgs.exportBlendShapes) {
-        MObjectArray blendShapeNodesDisabled;
-        MFloatArray  blendShapeNodesOrigEnvelopeWeights;
-        status = mayaDisableAllBlendShapesForMesh(
-            deformedMesh, blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
+        // TODO: (yliangsiew) Basically at this point: we have the deformed mesh, so
+        // to find the "pref" pose (but _only_ taking blendshapes into account) we walk
+        // the DG from the deformed mesh upstream to the end of the first blendshape deformer
+        // and query the mesh data from its inputGeom plug.
+        MItDependencyGraph itDg(deformedMesh, MFn::kInvalid, MItDependencyGraph::kUpstream, MItDependencyGraph::kDepthFirst, MItDependencyGraph::kPlugLevel, &status);
+        MObject upstreamBlendShape = MObject::kNullObj;
+        unsigned int idxGeo = 0;
+        for (; !itDg.isDone(); itDg.next()) {
+            MObject curNode = itDg.thisNode();
+            if (!curNode.hasFn(MFn::kBlendShape)) {
+                itDg.next();
+                continue;
+            }
+            upstreamBlendShape = curNode;
+            MPlug curPlug = itDg.thisPlug();  // NOTE: (yliangsiew) This _should_ be the outputGeometry[x] plug that it's connected to.
+            TF_VERIFY(curPlug.isElement());
+            idxGeo = curPlug.logicalIndex();
+        }
+
+        if (!upstreamBlendShape.hasFn(MFn::kBlendShape)) {
+            TF_RUNTIME_ERROR("Blendshapes were requested to be exported, but no upstream blendshapes could be found.");
+            return false;
+        }
+
+        MFnDependencyNode fnNode(upstreamBlendShape, &status);
         CHECK_MSTATUS_AND_RETURN(status, false);
+        TF_VERIFY(fnNode.hasAttribute("input"));
+        MPlug plgBlendShapeInputs = fnNode.findPlug("input", &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
+        MPlug plgBlendShapeInput = plgBlendShapeInputs.elementByLogicalIndex(idxGeo);
+        MPlug plgBlendShapeInputGeometry = UsdMayaUtil::FindChildPlugWithName(plgBlendShapeInput, "inputGeometry");
+        MObject inputGeo = plgBlendShapeInputGeometry.asMObject();  // NOTE: (yliangsiew) This should be the pref mesh.
+        TF_VERIFY(inputGeo.hasFn(MFn::kMesh));
 
         // NOTE: (yliangsiew) Because the `geomMesh` fnset cached the previous MObject (from the
         // inputGeom skinCluster plug), the point positions reported will be out-of-date even after
         // we disable blendshape deformers. So this code re-acquires the mesh in question to write
         // out the points for, and then we actually write it out.
-        MFnMesh fnMesh;
-        MObject skinCls = UsdMayaJointUtil::getSkinCluster(GetDagPath());
-        if (skinCls.isNull()) {
-            status = fnMesh.setObject(finalMesh.object());
-            CHECK_MSTATUS_AND_RETURN(status, false);
-        } else {
-            MFnSkinCluster fnSkin(skinCls, &status);
-            CHECK_MSTATUS_AND_RETURN(status, false);
-            MObject inMeshObj = UsdMayaJointUtil::getInputMesh(skinCls);
-            if (inMeshObj.isNull()) {
-                TF_RUNTIME_ERROR(
-                    "Could not determine an input mesh for the skinCluster: %s, aborting export!",
-                    fnSkin.name().asChar());
-                return false;
-            }
-            status = fnMesh.setObject(inMeshObj);
-            CHECK_MSTATUS_AND_RETURN(status, false);
-        }
+        MFnMesh fnMesh(inputGeo, &status);
+        CHECK_MSTATUS_AND_RETURN(status, false);
 
         UsdMayaMeshWriteUtils::writePointsData(
             fnMesh, primSchema, usdTime, _GetSparseValueWriter());
-        /*
-          NOTE: (yliangsiew) Now we can re-enable the blendshapes' envelopes after
-          writing out the base/"pref" pose.
-        */
-        status = mayaEnableGeometryFilterNodesForMesh(
-            blendShapeNodesDisabled, blendShapeNodesOrigEnvelopeWeights);
         CHECK_MSTATUS_AND_RETURN(status, false);
     } else {
         // TODO: (yliangsiew) Any other deformers that get implemented in the future will have to
