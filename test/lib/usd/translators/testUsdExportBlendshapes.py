@@ -19,9 +19,11 @@ import os
 import unittest
 
 import fixturesUtils
+import maya.OpenMaya as om
 from maya import cmds
 from maya import standalone
 from pxr import Usd
+from pxr import UsdSkel
 
 
 class TestUsdExportBlendshapes(unittest.TestCase):
@@ -32,13 +34,15 @@ class TestUsdExportBlendshapes(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.temp_dir = fixturesUtils.setUpClass(__file__)
+        cls.scene_path = os.path.join(cls.temp_dir, "UsdExportBlendShapesTest", "blendShapesExport.ma")
 
     @classmethod
     def tearDownClass(cls):
         standalone.uninitialize()
 
     def testBlendShapesExport(self):
-        cmds.file(new=True, force=True)
+        # NOTE: (yliangsiew) Basic blendshape export test.
+        om.MFileIO.newFile(True)
         parent = cmds.group(name="root", empty=True)
         base, _ = cmds.polyCube(name="base")
         cmds.parent(base, parent)
@@ -62,7 +66,7 @@ class TestUsdExportBlendshapes(unittest.TestCase):
 
         """
         Sample BlendShape prim:
-        
+
         def BlendShape "blendShape"
         {
             uniform vector3f[] normalOffsets = [(0, 0, 0), (0, 0, 0), (0, 0, 0)]
@@ -70,6 +74,26 @@ class TestUsdExportBlendshapes(unittest.TestCase):
             uniform int[] pointIndices = [0, 1, 2]
         }
         """
+
+        # NOTE: (yliangsiew) Test simple inbetween setup.
+        om.MFileIO.open(self.scene_path, None, True)
+        cmds.select("basic_cube_2_inbetweens_no_anim|base", r=True)
+        cmds.mayaUSDExport(f=temp_file, v=True, sl=True, ebs=True, skl="auto", skn="auto")
+        stage = Usd.Stage.Open(temp_file)
+        prim = stage.GetPrimAtPath("/basic_cube_2_inbetweens_no_anim/base/pCube2")
+        blendShape = UsdSkel.BlendShape(prim)
+        inbetweens = blendShape.GetInbetweens()
+        self.assertEqual(len(inbetweens), 2)  # NOTE: (yliangsiew) This particular setup has two additional inbetweens.
+
+        # NOTE: (yliangsiew) Test simple multiple targets setup.
+        om.MFileIO.open(self.scene_path, None, True)
+        cmds.select("basic_cube_4_blendshapes_no_anim|base", r=True)
+        cmds.mayaUSDExport(f=temp_file, v=True, sl=True, ebs=True, skl="auto", skn="auto")
+        stage = Usd.Stage.Open(temp_file)
+        prim = stage.GetPrimAtPath("/basic_cube_4_blendshapes_no_anim/base")
+        blendShapes = prim.GetChildren()
+        for bs in blendShapes:
+            self.assertEqual(bs.GetTypeName(), 'BlendShape')
 
 
 if __name__ == '__main__':
