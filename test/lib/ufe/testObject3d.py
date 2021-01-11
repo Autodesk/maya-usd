@@ -23,6 +23,8 @@ import ufe
 
 from pxr import Usd, UsdGeom
 
+import mayaUsd.ufe
+
 import maya.cmds as cmds
 import maya.api.OpenMaya as OpenMaya
 
@@ -228,3 +230,69 @@ class Object3dTestCase(unittest.TestCase):
         ufe.Object3d.removeObserver(visObs)
         self.assertFalse(ufe.Object3d.hasObserver(visObs))
         self.assertEqual(ufe.Object3d.nbObservers(), 0)
+
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 122 , ' setVisibleCmd is only available in Maya Preview Release 122 or later.')
+    def testUndoVisibleCmd(self):
+
+        ''' Verify the token / attribute values for visibility after performing undo/redo '''
+
+        cmds.file(new=True, force=True)
+
+        # create a Capsule via contextOps menu
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        # create an Object3d interface.
+        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+
+        # stage / primSpec
+        stage = mayaUsd.ufe.getStage(str(proxyShapePath))
+        primSpec = stage.GetEditTarget().GetPrimSpecForScenePath('/Capsule1');
+
+        object3d = ufe.Object3d.object3d(capsuleItem)
+
+        # initially capsuleItem should be visible.
+        self.assertTrue(object3d.visibility())
+
+        # make it invisible.
+        visibleCmd = object3d.setVisibleCmd(False)
+        visibleCmd.execute()
+
+        # get the visibility "attribute"
+        visibleAttr = capsulePrim.GetAttribute('visibility')
+
+        # expect the visibility attribute to be 'invisible'
+        self.assertEqual(visibleAttr.Get(), 'invisible')
+
+        # visibility "token" must exists now in the USD data model
+        self.assertTrue(bool(primSpec and UsdGeom.Tokens.visibility in primSpec.attributes))
+
+        # undo
+        visibleCmd.undo()
+
+        # expect the visibility attribute to be 'inherited'
+        self.assertEqual(visibleAttr.Get(), 'inherited')
+
+        # visibility token must not exists now in the USD data model after undo
+        self.assertFalse(bool(primSpec and UsdGeom.Tokens.visibility in primSpec.attributes))
+
+        # capsuleItem must be visible now
+        self.assertTrue(object3d.visibility())
+
+        # redo
+        visibleCmd.redo()
+
+        # expect the visibility attribute to be 'invisible'
+        self.assertEqual(visibleAttr.Get(), 'invisible')
+
+        # visibility token must exists now in the USD data model after redo
+        self.assertTrue(bool(primSpec and UsdGeom.Tokens.visibility in primSpec.attributes))
+
+        # capsuleItem must be invisible now
+        self.assertFalse(object3d.visibility())
