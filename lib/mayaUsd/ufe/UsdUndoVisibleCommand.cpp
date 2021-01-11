@@ -18,7 +18,7 @@
 #include <mayaUsd/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
-#include <pxr/usd/usdGeom/xformCommonAPI.h>
+#include <pxr/usd/usdGeom/imageable.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
