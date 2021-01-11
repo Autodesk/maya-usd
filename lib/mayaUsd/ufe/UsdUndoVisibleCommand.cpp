@@ -15,14 +15,10 @@
 //
 #include "UsdUndoVisibleCommand.h"
 
-#include "private/Utils.h"
-
 #include <mayaUsd/undo/UsdUndoBlock.h>
-#include <mayaUsdUtils/util.h>
 
 #include <pxr/usd/usdGeom/tokens.h>
-
-#include <ufe/log.h>
+#include <pxr/usd/usdGeom/xformCommonAPI.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
