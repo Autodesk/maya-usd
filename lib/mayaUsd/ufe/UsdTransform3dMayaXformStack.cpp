@@ -569,6 +569,7 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
     const TfToken& opSuffix)
 {
     auto   attr = prim().GetAttribute(attrName);
+    auto   setXformOpOrderFn = getXformOpOrderFn();
     OpFunc f = attr
         ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
@@ -577,7 +578,12 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
               return UsdGeomXformOp(attr);
           })
         : OpFunc(
-            [opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](const BaseUndoableCommand& cmd) {
+            // MAYA-108612: generalized lambda capture below is incorrect with
+            // gcc 6.3.1 on Linux.  Call to getXformOpOrderFn() is non-virtual;
+            // work around by calling in function body.  PPT, 11-Jan-2021.
+            // [opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](const BaseUndoableCommand&
+            // cmd) {
+            [opSuffix, setXformOpOrderFn, v](const BaseUndoableCommand& cmd) {
                 InTransform3dChange guard(cmd.path());
                 auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
                 TF_AXIOM(usdSceneItem);
