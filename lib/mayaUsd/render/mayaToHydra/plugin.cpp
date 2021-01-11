@@ -30,6 +30,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <memory>
+#include <vector>
+
+using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;
+static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
+
 #if defined(MAYAUSD_VERSION)
 #define STRINGIFY(x) #x
 #define TOSTRING(x)  STRINGIFY(x)
@@ -71,10 +77,12 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
 
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
         for (const auto& desc : MtohGetRendererDescriptions()) {
-            std::unique_ptr<MtohRenderOverride> mtohRenderer(new MtohRenderOverride(desc));
-            renderer->registerOverride(mtohRenderer.get());
-            // registerOverride took the pointer, so release ownership
-            mtohRenderer.release();
+            MtohRenderOverridePtr mtohRenderer(new MtohRenderOverride(desc));
+            MStatus status = renderer->registerOverride(mtohRenderer.get());
+            if (status == MS::kSuccess) {
+                gsRenderOverrides.push_back(std::move(mtohRenderer));
+            } 
+            else mtohRenderer = nullptr; 
         }
     }
 
@@ -85,17 +93,13 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj)
 {
     MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
     MStatus   ret = MS::kSuccess;
-
-    auto* renderer = MHWRender::MRenderer::theRenderer();
-    if (renderer) {
-        for (const auto& desc : MtohGetRendererDescriptions()) {
-            const auto* override = renderer->findRenderOverride(desc.overrideName.GetText());
-            if (override) {
-                renderer->deregisterOverride(override);
-                delete override;
-            }
+    if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
+        for (int i = 0; i < gsRenderOverrides.size(); i++) {
+            renderer->deregisterOverride(gsRenderOverrides[i].get());
+            gsRenderOverrides[i] = nullptr;
         }
     }
+    gsRenderOverrides.clear();
 
     // Clear any registered callbacks
     MGlobal::executeCommand("callbacks -cc mtoh;");
