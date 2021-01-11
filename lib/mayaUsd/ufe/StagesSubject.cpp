@@ -192,6 +192,9 @@ void StagesSubject::stageChanged(
     if (stagePath(sender).empty())
         return;
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    bool anyUfeV2NotifSent = false;
+#endif
     auto stage = notice.GetStage();
     for (const auto& changedPath : notice.GetResyncedPaths()) {
         // When visibility is toggled for the first time or you add a xformop we enter
@@ -234,6 +237,7 @@ void StagesSubject::stageChanged(
                 if (prim.IsActive()) {
 #ifdef UFE_V2_FEATURES_AVAILABLE
                     Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
+                    anyUfeV2NotifSent = true;
 #else
                     auto notification = Ufe::ObjectAdd(sceneItem);
                     Ufe::Scene::notifyObjectAdd(notification);
@@ -241,6 +245,7 @@ void StagesSubject::stageChanged(
                 } else {
 #ifdef UFE_V2_FEATURES_AVAILABLE
                     Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
+                    anyUfeV2NotifSent = true;
 #else
                     auto notification = Ufe::ObjectPostDelete(sceneItem);
                     Ufe::Scene::notifyObjectDelete(notification);
@@ -253,6 +258,7 @@ void StagesSubject::stageChanged(
                 // - Resyncs imply entire subtree invalidation of all descendant prims and
                 // properties. So we send the UFE subtree invalidate notif.
                 Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+                anyUfeV2NotifSent = true;
             }
 #endif
         }
@@ -264,6 +270,7 @@ void StagesSubject::stageChanged(
             } else {
                 Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
             }
+            anyUfeV2NotifSent = true;
         }
 #endif
     }
@@ -281,6 +288,7 @@ void StagesSubject::stageChanged(
                 pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
             } else {
                 Ufe::Attributes::notify(ufePath, changedPath.GetName());
+                anyUfeV2NotifSent = true;
             }
         }
 
@@ -288,6 +296,7 @@ void StagesSubject::stageChanged(
         if (changedPath.GetNameToken() == UsdGeomTokens->visibility) {
             Ufe::VisibilityChanged vis(ufePath);
             Ufe::Object3d::notify(vis);
+            anyUfeV2NotifSent = true;
         }
 #endif
 
@@ -296,9 +305,37 @@ void StagesSubject::stageChanged(
             const TfToken nameToken = changedPath.GetNameToken();
             if (nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken)) {
                 Ufe::Transform3d::notify(ufePath);
+#ifdef UFE_V2_FEATURES_AVAILABLE
+                anyUfeV2NotifSent = true;
+#endif
             }
         }
     }
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    // If we get here and didn't send any UFE notif, but yet have paths
+    // then we'll send a catch-all subtree invalidate notification.
+    if (!anyUfeV2NotifSent) {
+        SdfPathVector allPaths = (SdfPathVector)notice.GetResyncedPaths();
+        allPaths.insert(
+            allPaths.end(),
+            notice.GetChangedInfoOnlyPaths().begin(),
+            notice.GetChangedInfoOnlyPaths().end());
+        SdfPath::RemoveDescendentPaths(&allPaths);
+        for (const auto& changedPath : allPaths) {
+            Ufe::Path ufePath;
+            if (changedPath == SdfPath::AbsoluteRootPath()) {
+                ufePath = stagePath(sender);
+            } else {
+                const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
+                ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
+            }
+
+            auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
+            Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+        }
+    }
+#endif
 }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2025
