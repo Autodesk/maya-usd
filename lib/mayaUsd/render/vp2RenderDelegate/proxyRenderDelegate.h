@@ -81,9 +81,9 @@ enum HdVP2SelectionStatus
     of data between scene delegate and VP2. Final rendering is done by VP2
     as part of subscene override mechanism.
 
-    USD Proxy can be rendered in a number of ways, to enable this drawing
-    path set VP2_RENDER_DELEGATE_PROXY env variable before loading USD
-    plugin.
+    USD Proxy can be rendered in a number of ways and by default we use VP2RenderDelegate.
+    Use MAYAUSD_DISABLE_VP2_RENDER_DELEGATE  env variable before loading USD
+    plugin to switch to the legacy rendering with draw override approach.
 */
 class ProxyRenderDelegate : public MHWRender::MPxSubSceneOverride
 {
