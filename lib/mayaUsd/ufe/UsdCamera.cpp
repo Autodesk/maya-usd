@@ -37,9 +37,6 @@ UsdCamera::UsdCamera(const UsdSceneItem::Ptr& item)
 {
 }
 
-/*static*/
-UsdCamera::Ptr UsdCamera::create() { return std::make_shared<UsdCamera>(); }
-
 /* static */
 UsdCamera::Ptr UsdCamera::create(const UsdSceneItem::Ptr& item)
 {
@@ -49,7 +46,7 @@ UsdCamera::Ptr UsdCamera::create(const UsdSceneItem::Ptr& item)
 void UsdCamera::setItem(const UsdSceneItem::Ptr& item) { fItem = item; }
 
 //------------------------------------------------------------------------------
-// Ufe::Transform3d overrides
+// Ufe::Camera overrides
 //------------------------------------------------------------------------------
 
 const Ufe::Path& UsdCamera::path() const { return fItem->path(); }

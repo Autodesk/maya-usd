@@ -45,7 +45,6 @@ public:
     UsdCamera& operator=(UsdCamera&&) = delete;
 
     //! Create a UsdCamera.
-    static UsdCamera::Ptr create();
     static UsdCamera::Ptr create(const UsdSceneItem::Ptr& item);
 
     void           setItem(const UsdSceneItem::Ptr& item);

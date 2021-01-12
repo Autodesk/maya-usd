@@ -15,6 +15,7 @@
 //
 #include "UsdCameraHandler.h"
 
+#include "UsdCamera.h"
 #include "pxr/usd/usdGeom/camera.h"
 
 #include <mayaUsd/ufe/UsdSceneItem.h>

@@ -16,14 +16,13 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
-#include <mayaUsd/ufe/UsdCamera.h>
 
 #include <ufe/cameraHandler.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-//! \brief Interface to create a UsdTransform3d interface object.
+//! \brief Interface to create a UsdCameraHandler interface object.
 class MAYAUSD_CORE_PUBLIC UsdCameraHandler : public Ufe::CameraHandler
 {
 public:
@@ -41,7 +40,7 @@ public:
     //! Create a UsdCameraHandler.
     static UsdCameraHandler::Ptr create();
 
-    // Ufe::Transform3dHandler overrides
+    // Ufe::CameraHandler overrides
     Ufe::Camera::Ptr camera(const Ufe::SceneItem::Ptr& item) const override;
 
 }; // UsdCameraHandler
