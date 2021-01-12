@@ -443,13 +443,15 @@ public:
 
             switch (splitName.size()) {
             case 3: _nodesWithUVInput.push_back(TfToken(splitName[1])); break;
-            case 4: // NOTE: (yliangsiew) Means we have a Maya node already with a namespace.
+            default:  // NOTE: (yliangsiew) Means that we have a Maya node with a namespace/multiple namespaces.
             {
-                std::string nodeName = splitName[1] + ":" + splitName[2];
-                _nodesWithUVInput.push_back(TfToken(nodeName));
+                std::string mayaNodeName = splitName[1];
+                for (size_t i = 2; i < splitName.size() - 1; ++i) {
+                    mayaNodeName += ":" + splitName[i];
+                }
+                _nodesWithUVInput.push_back(TfToken(mayaNodeName));
                 break;
             }
-            default: break;
             }
         }
 
