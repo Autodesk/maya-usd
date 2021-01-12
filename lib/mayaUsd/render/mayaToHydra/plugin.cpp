@@ -27,11 +27,11 @@
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <memory>
 #include <vector>
+
+#include <stdio.h>
+#include <stdlib.h>
 
 using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;
 static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
@@ -78,11 +78,11 @@ PLUGIN_EXPORT MStatus initializePlugin(MObject obj)
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
         for (const auto& desc : MtohGetRendererDescriptions()) {
             MtohRenderOverridePtr mtohRenderer(new MtohRenderOverride(desc));
-            MStatus status = renderer->registerOverride(mtohRenderer.get());
+            MStatus               status = renderer->registerOverride(mtohRenderer.get());
             if (status == MS::kSuccess) {
                 gsRenderOverrides.push_back(std::move(mtohRenderer));
-            } 
-            else mtohRenderer = nullptr; 
+            } else
+                mtohRenderer = nullptr;
         }
     }
 
