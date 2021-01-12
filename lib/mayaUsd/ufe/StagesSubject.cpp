@@ -192,9 +192,6 @@ void StagesSubject::stageChanged(
     if (stagePath(sender).empty())
         return;
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
-    bool anyUfeV2NotifSent = false;
-#endif
     auto stage = notice.GetStage();
     for (const auto& changedPath : notice.GetResyncedPaths()) {
         // When visibility is toggled for the first time or you add a xformop we enter
@@ -237,7 +234,6 @@ void StagesSubject::stageChanged(
                 if (prim.IsActive()) {
 #ifdef UFE_V2_FEATURES_AVAILABLE
                     Ufe::Scene::instance().notify(Ufe::ObjectAdd(sceneItem));
-                    anyUfeV2NotifSent = true;
 #else
                     auto notification = Ufe::ObjectAdd(sceneItem);
                     Ufe::Scene::notifyObjectAdd(notification);
@@ -245,7 +241,6 @@ void StagesSubject::stageChanged(
                 } else {
 #ifdef UFE_V2_FEATURES_AVAILABLE
                     Ufe::Scene::instance().notify(Ufe::ObjectPostDelete(sceneItem));
-                    anyUfeV2NotifSent = true;
 #else
                     auto notification = Ufe::ObjectPostDelete(sceneItem);
                     Ufe::Scene::notifyObjectDelete(notification);
@@ -258,7 +253,6 @@ void StagesSubject::stageChanged(
                 // - Resyncs imply entire subtree invalidation of all descendant prims and
                 // properties. So we send the UFE subtree invalidate notif.
                 Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-                anyUfeV2NotifSent = true;
             }
 #endif
         }
@@ -270,7 +264,6 @@ void StagesSubject::stageChanged(
             } else {
                 Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
             }
-            anyUfeV2NotifSent = true;
         }
 #endif
     }
@@ -280,6 +273,8 @@ void StagesSubject::stageChanged(
         auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+        bool sendValueChangedFallback = true;
+
         // isPrimPropertyPath() does not consider relational attributes
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
@@ -287,16 +282,21 @@ void StagesSubject::stageChanged(
             if (inAttributeChangedNotificationGuard()) {
                 pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
             } else {
+#if UFE_PREVIEW_VERSION_NUM >= 2036
+                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
+                Ufe::Attributes::notify(vc);
+#else
                 Ufe::Attributes::notify(ufePath, changedPath.GetName());
-                anyUfeV2NotifSent = true;
+#endif
             }
+            sendValueChangedFallback = false;
         }
 
         // Send a special message when visibility has changed.
         if (changedPath.GetNameToken() == UsdGeomTokens->visibility) {
             Ufe::VisibilityChanged vis(ufePath);
             Ufe::Object3d::notify(vis);
-            anyUfeV2NotifSent = true;
+            sendValueChangedFallback = false;
         }
 #endif
 
@@ -306,35 +306,38 @@ void StagesSubject::stageChanged(
             if (nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken)) {
                 Ufe::Transform3d::notify(ufePath);
 #ifdef UFE_V2_FEATURES_AVAILABLE
-                anyUfeV2NotifSent = true;
+                sendValueChangedFallback = false;
 #endif
             }
         }
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        if (sendValueChangedFallback) {
+            // We didn't send any other UFE notif above, so send a UFE
+            // attribute value changed as a fallback notification.
+            if (inAttributeChangedNotificationGuard()) {
+                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
+            } else {
+#if UFE_PREVIEW_VERSION_NUM >= 2036
+                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
+                Ufe::Attributes::notify(vc);
+#else
+                Ufe::Attributes::notify(ufePath, changedPath.GetName());
+#endif
+            }
+        }
+#endif
     }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-    // If we get here and didn't send any UFE notif, but yet have paths
-    // then we'll send a catch-all subtree invalidate notification.
-    if (!anyUfeV2NotifSent) {
-        SdfPathVector allPaths = (SdfPathVector)notice.GetResyncedPaths();
-        allPaths.insert(
-            allPaths.end(),
-            notice.GetChangedInfoOnlyPaths().begin(),
-            notice.GetChangedInfoOnlyPaths().end());
-        SdfPath::RemoveDescendentPaths(&allPaths);
-        for (const auto& changedPath : allPaths) {
-            Ufe::Path ufePath;
-            if (changedPath == SdfPath::AbsoluteRootPath()) {
-                ufePath = stagePath(sender);
-            } else {
-                const std::string& usdPrimPathStr = changedPath.GetPrimPath().GetString();
-                ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
-            }
-
-            auto sceneItem = Ufe::Hierarchy::createItem(ufePath);
-            Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-        }
+#if UFE_PREVIEW_VERSION_NUM >= 2036
+    // Special case when we are notified, but no paths given.
+    if (notice.GetResyncedPaths().empty() && notice.GetChangedInfoOnlyPaths().empty()) {
+        auto                       ufePath = stagePath(sender);
+        Ufe::AttributeValueChanged vc(ufePath, "/");
+        Ufe::Attributes::notify(vc);
     }
+#endif
 #endif
 }
 
@@ -424,7 +427,12 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
+#if UFE_PREVIEW_VERSION_NUM >= 2036
+        Ufe::AttributeValueChanged vc(notificationInfo.first, notificationInfo.second);
+        Ufe::Attributes::notify(vc);
+#else
         Ufe::Attributes::notify(notificationInfo.first, notificationInfo.second);
+#endif
     }
 
     pendingAttributeChangedNotifications.clear();
