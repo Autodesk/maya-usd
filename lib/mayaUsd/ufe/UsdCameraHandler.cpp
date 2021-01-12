@@ -15,8 +15,9 @@
 //
 #include "UsdCameraHandler.h"
 
-#include <mayaUsd/ufe/UsdSceneItem.h>
 #include "pxr/usd/usdGeom/camera.h"
+
+#include <mayaUsd/ufe/UsdSceneItem.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -29,10 +30,7 @@ UsdCameraHandler::UsdCameraHandler()
 UsdCameraHandler::~UsdCameraHandler() { }
 
 /*static*/
-UsdCameraHandler::Ptr UsdCameraHandler::create()
-{
-    return std::make_shared<UsdCameraHandler>();
-}
+UsdCameraHandler::Ptr UsdCameraHandler::create() { return std::make_shared<UsdCameraHandler>(); }
 
 //------------------------------------------------------------------------------
 // Ufe::CameraHandler overrides
