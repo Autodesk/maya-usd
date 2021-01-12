@@ -32,7 +32,6 @@ from pxr import UsdGeom, Vt
 
 import unittest
 import os
-import platform
 
 from functools import partial
 
@@ -615,9 +614,8 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
     # Name test such that it runs last.  Otherwise, it runs before 
     # testRotateScalePivotCompensation(), and causes it to fail.  To be 
-    # investigated --- MAYA-108067.  Fails on Linux, both Python 2 and 3
-    # --- MAYA-108612.
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 121 or platform.system() == 'Linux', 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
+    # investigated --- MAYA-108067.
+    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 121, 'Fallback transform op handling only available in Maya Preview Release 121 or later.')
     def testZFallback(self):
         '''Transformable not handled by standard Transform3d handlers must be
     handled by fallback handler.'''
