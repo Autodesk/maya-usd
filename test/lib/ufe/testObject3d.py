@@ -381,3 +381,25 @@ class Object3dTestCase(unittest.TestCase):
         self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
         self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
 
+        # undo the showHidden command
+        cmds.undo()
+
+        # expect the visibility attribute to be 'invisible'
+        self.assertEqual(capsuleVisibleAttr.Get(), 'invisible')
+        self.assertEqual(cylinderVisibleAttr.Get(), 'invisible')
+
+        # visibility "token" must exists now in the USD data model
+        self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
+        self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+        # redo 
+        cmds.redo()
+
+        # expect the visibility attribute to be 'inherited'
+        self.assertEqual(capsuleVisibleAttr.Get(), 'inherited')
+        self.assertEqual(cylinderVisibleAttr.Get(), 'inherited')
+
+        # visibility "token" must exists now in the USD data model
+        self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
+        self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+        
