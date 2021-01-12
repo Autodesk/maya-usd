@@ -575,17 +575,17 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
 #if UFE_PREVIEW_VERSION_NUM < 2034
         auto attributes = Ufe::Attributes::attributes(sceneItem());
-        assert(attributes);
+        TF_AXIOM(attributes);
         auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
             attributes->attribute(UsdGeomTokens->visibility));
-        assert(visibility);
+        TF_AXIOM(visibility);
         auto current = visibility->get();
         return visibility->setCmd(
             current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited
                                                 : UsdGeomTokens->invisible);
 #else
         auto object3d = UsdObject3d::create(fItem);
-        assert(object3d);
+        TF_AXIOM(object3d);
         auto current = object3d->visibility();
         return object3d->setVisibleCmd(!current);
 #endif
