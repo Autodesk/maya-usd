@@ -23,7 +23,7 @@
 #include <mayaUsd/ufe/UsdHierarchyHandler.h>
 #include <mayaUsd/ufe/UsdSceneItemOpsHandler.h>
 #include <mayaUsd/ufe/UsdTransform3dHandler.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2029
+#if UFE_PREVIEW_VERSION_NUM >= 2031
 #include <mayaUsd/ufe/UsdCameraHandler.h>
 #endif
 
@@ -124,7 +124,7 @@ MStatus initialize()
     handlers.object3dHandler = UsdObject3dHandler::create();
     handlers.contextOpsHandler = UsdContextOpsHandler::create();
     handlers.uiInfoHandler = UsdUIInfoHandler::create();
-#if UFE_PREVIEW_VERSION_NUM >= 2029
+#if UFE_PREVIEW_VERSION_NUM >= 2031
     handlers.cameraHandler = UsdCameraHandler::create();
 #endif
     g_USDRtid = Ufe::RunTimeMgr::instance().register_(
