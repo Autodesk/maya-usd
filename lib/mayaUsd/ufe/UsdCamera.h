@@ -47,7 +47,6 @@ public:
     //! Create a UsdCamera.
     static UsdCamera::Ptr create(const UsdSceneItem::Ptr& item);
 
-    void           setItem(const UsdSceneItem::Ptr& item);
     inline UsdPrim prim() const
     {
         TF_AXIOM(fItem != nullptr);

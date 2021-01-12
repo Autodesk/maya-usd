@@ -43,8 +43,6 @@ UsdCamera::Ptr UsdCamera::create(const UsdSceneItem::Ptr& item)
     return std::make_shared<UsdCamera>(item);
 }
 
-void UsdCamera::setItem(const UsdSceneItem::Ptr& item) { fItem = item; }
-
 //------------------------------------------------------------------------------
 // Ufe::Camera overrides
 //------------------------------------------------------------------------------
