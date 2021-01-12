@@ -127,8 +127,7 @@ MStatus initialize()
 #if UFE_PREVIEW_VERSION_NUM >= 2031
     handlers.cameraHandler = UsdCameraHandler::create();
 #endif
-    g_USDRtid = Ufe::RunTimeMgr::instance().register_(
-        kUSDRunTimeName, handlers);
+    g_USDRtid = Ufe::RunTimeMgr::instance().register_(kUSDRunTimeName, handlers);
 #else
     auto usdHierHandler = UsdHierarchyHandler::create();
     auto usdTrans3dHandler = UsdTransform3dHandler::create();
