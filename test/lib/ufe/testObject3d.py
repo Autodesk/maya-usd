@@ -231,7 +231,7 @@ class Object3dTestCase(unittest.TestCase):
         self.assertFalse(ufe.Object3d.hasObserver(visObs))
         self.assertEqual(ufe.Object3d.nbObservers(), 0)
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 122 , ' setVisibleCmd is only available in Maya Preview Release 122 or later.')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2034', 'testUndoVisibleCmd is only available in UFE preview version 0.2.34 and greater')
     def testUndoVisibleCmd(self):
 
         ''' Verify the token / attribute values for visibility after performing undo/redo '''
@@ -296,7 +296,7 @@ class Object3dTestCase(unittest.TestCase):
         # capsuleItem must be invisible now
         self.assertFalse(object3d.visibility())
 
-    @unittest.skipIf(mayaUtils.previewReleaseVersion() < 122 , ' setVisibleCmd is only available in Maya Preview Release 122 or later.')
+    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2034', 'testMayaHideAndShowHiddenUndoCommands is only available in UFE preview version 0.2.34 and greater')
     def testMayaHideAndShowHiddenUndoCommands(self):
         ''' Verify the token / attribute values for visibility via "hide", "showHidden" commands + Undo/Redo '''
 
@@ -402,4 +402,3 @@ class Object3dTestCase(unittest.TestCase):
         # visibility "token" must exists now in the USD data model
         self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
         self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
-        
