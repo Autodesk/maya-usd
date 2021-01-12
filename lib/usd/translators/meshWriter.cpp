@@ -436,16 +436,20 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         if (usdTime.IsDefault()) {
             _skelInputMesh = this->writeBlendShapeData(primSchema);
             if (_skelInputMesh.isNull()) {
-                TF_WARN("Failed to write out initial blendshape data.");
-                return false;
+                TF_WARN("Failed to write out initial blendshape data for the following: %s.", GetDagPath().fullPathName().asChar());
+                if (!exportArgs.ignoreWarnings) {
+                    return false;
+                }
             }
         } else {
             // NOTE: (yliangsiew) This is going to get called once for each time sampled.
             if (!_skelInputMesh.isNull()) {
                 bStat = this->writeBlendShapeAnimation(usdTime);
                 if (!bStat) {
-                    TF_RUNTIME_ERROR("Failed to write out blendshape animation.");
-                    return bStat;
+                    TF_WARN("Failed to write out blendshape animation for the following: %s.", GetDagPath().fullPathName().asChar());
+                    if (!exportArgs.ignoreWarnings) {
+                        return bStat;
+                    }
                 }
             }
         }
