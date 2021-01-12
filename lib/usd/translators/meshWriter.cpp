@@ -436,7 +436,9 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         if (usdTime.IsDefault()) {
             _skelInputMesh = this->writeBlendShapeData(primSchema);
             if (_skelInputMesh.isNull()) {
-                TF_WARN("Failed to write out initial blendshape data for the following: %s.", GetDagPath().fullPathName().asChar());
+                TF_WARN(
+                    "Failed to write out initial blendshape data for the following: %s.",
+                    GetDagPath().fullPathName().asChar());
                 if (!exportArgs.ignoreWarnings) {
                     return false;
                 }
@@ -446,7 +448,9 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
             if (!_skelInputMesh.isNull()) {
                 bStat = this->writeBlendShapeAnimation(usdTime);
                 if (!bStat) {
-                    TF_WARN("Failed to write out blendshape animation for the following: %s.", GetDagPath().fullPathName().asChar());
+                    TF_WARN(
+                        "Failed to write out blendshape animation for the following: %s.",
+                        GetDagPath().fullPathName().asChar());
                     if (!exportArgs.ignoreWarnings) {
                         return bStat;
                     }
