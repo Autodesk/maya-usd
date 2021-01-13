@@ -16,6 +16,8 @@
 # limitations under the License.
 #
 
+import os
+
 import usdUtils, mayaUtils, testUtils
 import ufe
 from pxr import UsdGeom
@@ -32,8 +34,12 @@ class TestObserver(ufe.Observer):
         self._notifications = 0
 
     def __call__(self, notification):
-        if isinstance(notification, ufe.AttributeValueChanged):
-            self._notifications += 1
+        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '2036'):
+            if isinstance(notification, ufe.AttributeValueChanged):
+                self._notifications += 1
+        else:
+            if isinstance(notification, ufe.AttributeChanged):
+                self._notifications += 1
 
     @property
     def notifications(self):
