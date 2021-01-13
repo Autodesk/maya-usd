@@ -27,11 +27,11 @@
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 
-#include <stdio.h>
-#include <stdlib.h>
-
 #include <memory>
 #include <vector>
+
+#include <stdio.h>
+#include <stdlib.h>
 
 using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;
 static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
