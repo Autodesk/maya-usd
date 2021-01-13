@@ -48,9 +48,9 @@ MString _registrantPluginName;
 bool _useVP2RenderDelegate = false;
 
 TF_DEFINE_ENV_SETTING(
-    VP2_RENDER_DELEGATE_PROXY,
+    MAYAUSD_DISABLE_VP2_RENDER_DELEGATE,
     false,
-    "Switch proxy shape rendering to VP2 render delegate.");
+    "Disable VP2RenderDelegate from handling rendering of the proxy shape. Switch to legacy mode");
 } // namespace
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -68,7 +68,7 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
 
     _registrantPluginName = plugin.name();
 
-    _useVP2RenderDelegate = TfGetEnvSetting(VP2_RENDER_DELEGATE_PROXY);
+    _useVP2RenderDelegate = !TfGetEnvSetting(MAYAUSD_DISABLE_VP2_RENDER_DELEGATE);
 
     MStatus status;
 

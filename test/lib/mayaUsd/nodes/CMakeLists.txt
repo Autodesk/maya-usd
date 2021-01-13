@@ -31,6 +31,6 @@ mayaUsd_add_test(testHdImagingShape
     PYTHON_MODULE testHdImagingShape
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     ENV
-        "VP2_RENDER_DELEGATE_PROXY=0"
+        "MAYAUSD_DISABLE_VP2_RENDER_DELEGATE=1"
 )
 set_property(TEST testHdImagingShape APPEND PROPERTY LABELS nodes)
