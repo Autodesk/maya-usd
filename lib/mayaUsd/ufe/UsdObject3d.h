@@ -42,6 +42,10 @@ public:
     bool                visibility() const override;
     void                setVisibility(bool vis) override;
 
+#if UFE_PREVIEW_VERSION_NUM >= 2034
+    Ufe::UndoableCommand::Ptr setVisibleCmd(bool vis) override;
+#endif
+
 private:
     UsdSceneItem::Ptr fItem;
     UsdPrim           fPrim;
