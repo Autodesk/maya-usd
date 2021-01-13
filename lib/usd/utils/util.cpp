@@ -19,6 +19,8 @@
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usd/inherits.h>
+#include <pxr/usd/usd/specializes.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/primRange.h>
 #include <pxr/usd/usd/references.h>
@@ -62,7 +64,7 @@ std::map<std::string, std::string> getDict(const UsdPrimCompositionQueryArc& arc
     };
 }
 
-void replaceReferenceItems(
+void replaceInternalReferencePath(
     const UsdPrim&            oldPrim,
     const SdfPath&            newPath,
     const SdfReferencesProxy& referencesList,
@@ -102,6 +104,46 @@ void replaceReferenceItems(
         }
     }
 }
+
+// This template method updates the SdfPath for inherited or specialized arcs 
+// when the path to the concrete prim they refer to has changed.
+// HS January 13, 2021: Find a better generic way to consolidate this method with replaceReferenceItems
+template<typename T>
+void replacePath(
+    const UsdPrim&            oldPrim,
+    const SdfPath&            newPath,
+    const T&                  proxy,
+    SdfListOpType             op)
+{
+    // set the listProxy based on the SdfListOpType
+    T::ListProxy listProxy = proxy.GetAppendedItems();
+    if (op == SdfListOpTypePrepended) {
+        listProxy = proxy.GetPrependedItems();
+    } else if (op == SdfListOpTypeOrdered) {
+        listProxy = proxy.GetOrderedItems();
+    } else if (op == SdfListOpTypeAdded) {
+        listProxy = proxy.GetAddedItems();
+    } else if (op == SdfListOpTypeDeleted) {
+        listProxy = proxy.GetDeletedItems();
+    }
+
+    for (const SdfPath path : listProxy) {
+        SdfPath finalPath;
+        if (oldPrim.GetPath() == path.GetPrimPath()) {
+            finalPath = newPath;
+        } else if (path.GetPrimPath().HasPrefix(oldPrim.GetPath())) {
+            finalPath = path.GetPrimPath().ReplacePrefix(oldPrim.GetPath(), newPath);
+        }
+
+        if (finalPath.IsEmpty()) {
+            continue;
+        }
+
+        // replace the old SdfPath with new one
+        listProxy.Replace(path, finalPath);
+    }
+}
+
 } // namespace
 
 namespace MayaUsdUtils {
@@ -151,18 +193,42 @@ void printCompositionQuery(const UsdPrim& prim, std::ostream& os)
     os << "]\n\n";
 }
 
-bool updateInternalReferencesPath(const UsdPrim& oldPrim, const SdfPath& newPath)
+bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
 {
     SdfChangeBlock changeBlock;
+
     for (const auto& p : oldPrim.GetStage()->Traverse()) {
+
+        auto primSpec = getPrimSpecAtEditTarget(p);
+        // check different composition arcs
         if (p.HasAuthoredReferences()) {
-            auto primSpec = getPrimSpecAtEditTarget(p);
             if (primSpec) {
+
                 SdfReferencesProxy referencesList = primSpec->GetReferenceList();
 
                 // update append/prepend lists individually
-                replaceReferenceItems(oldPrim, newPath, referencesList, SdfListOpTypeAppended);
-                replaceReferenceItems(oldPrim, newPath, referencesList, SdfListOpTypePrepended);
+                replaceInternalReferencePath(oldPrim, newPath, referencesList, SdfListOpTypeAppended);
+                replaceInternalReferencePath(oldPrim, newPath, referencesList, SdfListOpTypePrepended);
+            }
+        }
+        else if (p.HasAuthoredInherits()) {
+            if (primSpec) {
+
+                SdfInheritsProxy inheritsList = primSpec->GetInheritPathList();
+
+                // update append/prepend lists individually
+                replacePath<SdfInheritsProxy>(oldPrim, newPath, inheritsList, SdfListOpTypeAppended);
+                replacePath<SdfInheritsProxy>(oldPrim, newPath, inheritsList, SdfListOpTypePrepended);
+            }
+        }
+        else if (p.HasAuthoredSpecializes()) {
+            if (primSpec) 
+            {
+                SdfSpecializesProxy specializesList = primSpec->GetSpecializesList();
+
+                // update append/prepend lists individually
+                replacePath<SdfSpecializesProxy>(oldPrim, newPath, specializesList, SdfListOpTypeAppended);
+                replacePath<SdfSpecializesProxy>(oldPrim, newPath, specializesList, SdfListOpTypePrepended);
             }
         }
     }

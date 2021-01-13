@@ -112,7 +112,7 @@ bool UsdUndoRenameCommand::renameRedo()
         const UsdPrim& prim = _stage->GetPrimAtPath(_ufeSrcItem->prim().GetPath());
 
         auto ufeSiblingPath = _ufeSrcItem->path().sibling(Ufe::PathComponent(_newName));
-        bool status = MayaUsdUtils::updateInternalReferencesPath(
+        bool status = MayaUsdUtils::updateReferencedPath(
             prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
         if (!status) {
             return false;
@@ -157,7 +157,7 @@ bool UsdUndoRenameCommand::renameUndo()
 
         auto ufeSiblingPath
             = _ufeSrcItem->path().sibling(Ufe::PathComponent(_ufeSrcItem->prim().GetName()));
-        bool status = MayaUsdUtils::updateInternalReferencesPath(
+        bool status = MayaUsdUtils::updateReferencedPath(
             prim, SdfPath(ufeSiblingPath.getSegments()[1].string()));
         if (!status) {
             return false;
