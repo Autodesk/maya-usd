@@ -58,6 +58,13 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
                 UsdUIInfoHandler.cpp
         )
     endif()
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
+        target_sources(${PROJECT_NAME}
+            PRIVATE
+                UsdCamera.cpp
+                UsdCameraHandler.cpp
+        )
+    endif()
 endif()
 
 set(HEADERS
@@ -110,6 +117,13 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoReorderCommand.h
         UsdUndoVisibleCommand.h
     )
+    # Why no if for UsdUIInfoHandler.h ?
+    if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2031)
+        list(APPEND HEADERS
+            UsdCamera.h
+            UsdCameraHandler.h
+        )
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------
