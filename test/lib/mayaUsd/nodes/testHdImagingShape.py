@@ -16,7 +16,7 @@
 #
 
 # mayaUsdLib is not used in the test, but we import it here to force the
-# library to load so that the VP2_RENDER_DELEGATE_PROXY TfEnvSetting gets
+# library to load so that the MAYAUSD_DISABLE_VP2_RENDER_DELEGATE TfEnvSetting gets
 # registered.
 from mayaUsd import lib as mayaUsdLib
 
@@ -32,7 +32,7 @@ import os
 import unittest
 
 
-@unittest.skipIf(Tf.GetEnvSetting('VP2_RENDER_DELEGATE_PROXY'),
+@unittest.skipIf(not Tf.GetEnvSetting('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE'),
     'Not applicable when using the Viewport 2.0 render deleggate')
 class testHdImagingShape(unittest.TestCase):
 
