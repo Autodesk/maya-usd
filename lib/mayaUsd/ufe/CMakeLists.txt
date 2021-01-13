@@ -50,6 +50,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
             UsdUndoReorderCommand.cpp
+            UsdUndoVisibleCommand.cpp
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2022)
         target_sources(${PROJECT_NAME}
@@ -107,6 +108,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
         UsdUndoReorderCommand.h
+        UsdUndoVisibleCommand.h
     )
 endif()
 
