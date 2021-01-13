@@ -27,11 +27,11 @@
 #include <maya/MFnPlugin.h>
 #include <maya/MGlobal.h>
 
-#include <memory>
-#include <vector>
-
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <memory>
+#include <vector>
 
 using MtohRenderOverridePtr = std::unique_ptr<MtohRenderOverride>;
 static std::vector<MtohRenderOverridePtr> gsRenderOverrides;
@@ -94,7 +94,7 @@ PLUGIN_EXPORT MStatus uninitializePlugin(MObject obj)
     MFnPlugin plugin(obj, "Autodesk", TOSTRING(MAYAUSD_VERSION), "Any");
     MStatus   ret = MS::kSuccess;
     if (auto* renderer = MHWRender::MRenderer::theRenderer()) {
-        for (int i = 0; i < gsRenderOverrides.size(); i++) {
+        for (unsigned int i = 0; i < gsRenderOverrides.size(); i++) {
             renderer->deregisterOverride(gsRenderOverrides[i].get());
             gsRenderOverrides[i] = nullptr;
         }
