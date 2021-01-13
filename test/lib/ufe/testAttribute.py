@@ -32,7 +32,7 @@ class TestObserver(ufe.Observer):
         self._notifications = 0
 
     def __call__(self, notification):
-        if isinstance(notification, ufe.AttributeChanged):
+        if isinstance(notification, ufe.AttributeValueChanged):
             self._notifications += 1
 
     @property
