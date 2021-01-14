@@ -191,18 +191,15 @@ public:
     {
         // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
         // nor GfTransform decomposition provide results that match Maya,
-        // so use MTransformationMatrix.  Struggle a bit to get the
-        // Ufe::Matrix4d into MTransformationMatrix --- even though their
-        // underlying matrix layout is exactly the same.
-        double mArray[4][4];
-        std::memcpy(mArray, &newM.matrix[0][0], sizeof(double) * 16);
-        MMatrix                              m(mArray);
+        // so use MTransformationMatrix.
+        MMatrix m;
+        std::memcpy(m[0], &newM.matrix[0][0], sizeof(double) * 16);
         MTransformationMatrix                xformM(m);
         auto                                 t = xformM.getTranslation(MSpace::kTransform);
         double                               r[3];
+        double                               s[3];
         MTransformationMatrix::RotationOrder rotOrder;
         xformM.getRotation(r, rotOrder);
-        double s[3];
         xformM.getScale(s, MSpace::kTransform);
         constexpr double radToDeg = 57.295779506;
 
