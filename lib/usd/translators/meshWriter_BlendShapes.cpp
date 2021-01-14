@@ -397,7 +397,7 @@ MStatus mayaGetBlendShapeInfosForMesh(
                     plgInComponentsTgt, indices);
                 CHECK_MSTATUS_AND_RETURN_IT(stat);
                 for (unsigned int m = 0; m < indices.length(); ++m) {
-                    meshTargetDatum.indices.emplace_back(indices[m]);
+                    meshTargetDatum.indices.push_back(indices[m]);
                 }
 
                 unsigned int numComponentIndices = meshTargetDatum.indices.size();
@@ -446,10 +446,10 @@ MStatus mayaGetBlendShapeInfosForMesh(
                     MPointArray ptDeltas = fnPtArrayData.array();
                     for (unsigned int m = 0; m < numComponentIndices; ++m) {
                         MPoint pt = ptDeltas[m];
-                        meshTargetDatum.ptOffsets.emplace_back(GfVec3f(pt.x, pt.y, pt.z));
+                        meshTargetDatum.ptOffsets.push_back(GfVec3f(pt.x, pt.y, pt.z));
                     }
                 }
-                weightInfo.targets.emplace_back(meshTargetDatum);
+                weightInfo.targets.push_back(meshTargetDatum);
             }
 
             // NOTE: (yliangsiew) If the target mesh has "in-between" weights, in
@@ -657,7 +657,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     usdBlendShape.CreateOffsetsAttr(VtValue(targetDatum.ptOffsets));
                     usdBlendShape.CreateNormalOffsetsAttr(VtValue(targetDatum.normalOffsets));
 
-                    usdBlendShapePaths.emplace_back(usdBlendShapePath);
+                    usdBlendShapePaths.push_back(usdBlendShapePath);
                     usdBlendShapeNames.push_back(TfToken(curTargetName));
 
                     // NOTE: (yliangsiew) Because animation export is deferred until subsequent
@@ -817,7 +817,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         usdBlendShape.CreateOffsetsAttr(VtValue(processedOffsetsArrays[k]));
                         usdBlendShape.CreateNormalOffsetsAttr(
                             VtValue(processedNormalsOffsetsArrays[k]));
-                        usdBlendShapePaths.emplace_back(usdBlendShapePath);
+                        usdBlendShapePaths.push_back(usdBlendShapePath);
                         usdBlendShapeNames.push_back(TfToken(curTargetName));
 
                         // NOTE: (yliangsiew) Because animation export is deferred until subsequent
