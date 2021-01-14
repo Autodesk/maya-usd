@@ -355,6 +355,18 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double
         UsdTimeCode::Default());
 }
 
+Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dMatrixOp::setMatrixCmd(const Ufe::Matrix4d& m)
+{
+    return nullptr;
+}
+
+void UsdTransform3dMatrixOp::setMatrix(const Ufe::Matrix4d& m) { _op.Set(toUsd(m)); }
+
+Ufe::Matrix4d UsdTransform3dMatrixOp::matrix() const
+{
+    return toUfe(_op.GetOpTransform(getTime(path())));
+}
+
 Ufe::Matrix4d UsdTransform3dMatrixOp::segmentInclusiveMatrix() const
 {
     // Get the parent transform plus all ops including the requested one.
