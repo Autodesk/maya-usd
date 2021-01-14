@@ -2341,3 +2341,28 @@ MStatus UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MI
 
     return status;
 }
+
+bool UsdMayaUtil::CheckMeshUpstreamForBlendShapes(const MObject& mesh)
+{
+    MStatus stat;
+    if (!MObjectHandle(mesh).isValid()) {
+        return false;
+    }
+    MObject            searchObj = MObject(mesh);
+    MItDependencyGraph itDg(
+        searchObj,
+        MFn::kBlendShape,
+        MItDependencyGraph::kUpstream,
+        MItDependencyGraph::kDepthFirst,
+        MItDependencyGraph::kNodeLevel,
+        &stat);
+    CHECK_MSTATUS_AND_RETURN(stat, false);
+    for (; !itDg.isDone(); itDg.next()) {
+        MObject curBlendShape = itDg.currentItem();
+        if (curBlendShape.hasFn(MFn::kBlendShape)) {
+            return true;
+        }
+    }
+
+    return false;
+}

@@ -619,6 +619,17 @@ bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx 
 MAYAUSD_CORE_PUBLIC
 MStatus GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MIntArray& indices);
 
+/**
+ * Checks if the given mesh has any blendshape deformers driving it.
+ *
+ * @param mesh      The mesh to check.
+ *
+ * @return          ``true`` if the mesh is being driven by blendshape deformers, ``false``
+ * otherwise.
+ */
+MAYAUSD_CORE_PUBLIC
+bool CheckMeshUpstreamForBlendShapes(const MObject& mesh);
+
 } // namespace UsdMayaUtil
 
 PXR_NAMESPACE_CLOSE_SCOPE

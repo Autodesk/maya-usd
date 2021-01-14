@@ -393,6 +393,22 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         return false;
     }
 
+    // NOTE: (yliangsiew) We decide early-on if the mesh needs to have blendshapes exported, or not.
+    // Since a user usually exports multiple meshes at the same time, it is inevitable that some
+    // meshes will have blendshape export requested even though they do not have any blendshape
+    // deformers driving them. So we double-check here first. Additionally, we check `finalMesh`
+    // instead of `_skelInputMesh`, since the latter can end up being of type `kMeshData` (since it
+    // could be a portion of the mesh rather than the full MObject node itself), which will segfault
+    // MItDependencyGraph when initialized with it.
+    bool shouldExportBlendShapes = exportArgs.exportBlendShapes;
+    if (shouldExportBlendShapes
+        && !UsdMayaUtil::CheckMeshUpstreamForBlendShapes(finalMesh.object())) {
+        TF_WARN(
+            "Blendshapes were requested to be exported for: %s, but none could be found.",
+            GetDagPath().fullPathName().asChar());
+        shouldExportBlendShapes = false;
+    }
+
     // If exporting skinning, then geomMesh and finalMesh will be different
     // meshes. The general rule is to use geomMesh only for geometric data such
     // as vertices, faces, normals, but use finalMesh for UVs, color sets,
@@ -406,8 +422,10 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // in the deform stack here, we walk past it to the original shape instead.
     // Also check if the mesh is a valid DG node (mesh geo subsets are
     // kMeshData in cases where a single mesh has multiple face
-    // assignments to materials.)
-    if (exportArgs.exportBlendShapes && geomMeshObj.hasFn(MFn::kDependencyNode)) {
+    // assignments to materials.) This also reduces the chance of something going wrong
+    // by meshes that do not have blendshapes being affected by the wrong code path (such
+    // as when exporting sparse frame ranges).
+    if (shouldExportBlendShapes && geomMeshObj.hasFn(MFn::kDependencyNode)) {
         if (exportArgs.ignoreWarnings) {
             geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, nullptr);
         } else {
@@ -432,7 +450,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // Write UsdSkelBlendShape data next. This also expands the _unionBBox member as
     // needed to encompass all the target blendshapes and writes it to the SkelRoot.
     bool bStat;
-    if (exportArgs.exportBlendShapes) {
+    if (shouldExportBlendShapes) {
         if (usdTime.IsDefault()) {
             _skelInputMesh = this->writeBlendShapeData(primSchema);
             if (_skelInputMesh.isNull()) {
@@ -486,7 +504,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
      deformers "baked" into the base/"pref" pose) we need to deactivate all the
      blendshape targets here _before_ writing out the data.
     */
-    if (exportArgs.exportBlendShapes) {
+    if (shouldExportBlendShapes) {
         // NOTE: (yliangsiew) Basically at this point: we have the deformed mesh, so
         // to find the "pref" pose (but _only_ taking blendshapes into account) we walk
         // the DG from the deformed mesh upstream to the end of the first blendshape deformer
