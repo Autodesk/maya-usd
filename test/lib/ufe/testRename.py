@@ -448,7 +448,7 @@ class RenameTestCase(unittest.TestCase):
     def testAutomaticRenameCompArcs(self):
 
         '''
-        Verify that SdfPath updates happens automatically for "internal reference", 
+        Verify that SdfPath update happens automatically for "internal reference", 
         "inherit", "specialize" after the rename.
         '''
         cmds.file(new=True, force=True)
