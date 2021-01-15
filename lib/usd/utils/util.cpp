@@ -113,7 +113,7 @@ template <typename T>
 void replacePath(const UsdPrim& oldPrim, const SdfPath& newPath, const T& proxy, SdfListOpType op)
 {
     // set the listProxy based on the SdfListOpType
-    typename T::ListProxy listProxy{proxy.GetAppendedItems()}; 
+    typename T::ListProxy listProxy { proxy.GetAppendedItems() };
     if (op == SdfListOpTypePrepended) {
         listProxy = proxy.GetPrependedItems();
     } else if (op == SdfListOpTypeOrdered) {
