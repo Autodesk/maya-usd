@@ -453,11 +453,11 @@ class RenameTestCase(unittest.TestCase):
         '''
         cmds.file(new=True, force=True)
 
-        # open compitionArcs.ma scene in testSamples
+        # open compositionArcs.ma scene in testSamples
         mayaUtils.openCompositionArcsScene()
 
         # stage
-        mayaPathSegment = mayaUtils.createUfePathSegment('|CompitionArcs_usd|CompitionArcs_usdShape')
+        mayaPathSegment = mayaUtils.createUfePathSegment('|CompositionArcs_usd|CompositionArcs_usdShape')
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
         # first check for ArcType, nodePath values. I am only interested in the composition Arc other than "root".
@@ -471,7 +471,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects/geos/cube'])
 
         # rename /objects/geos/cube ---> /objects/geos/cube_banana
-        cubePath = ufe.PathString.path('|CompitionArcs_usd|CompitionArcs_usdShape,/objects/geos/cube')
+        cubePath = ufe.PathString.path('|CompositionArcs_usd|CompositionArcs_usdShape,/objects/geos/cube')
         cubeItem = ufe.Hierarchy.createItem(cubePath)
         ufe.GlobalSelection.get().append(cubeItem)
         cmds.rename("cube_banana")
@@ -488,7 +488,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects/geos/cube_banana'])
 
         # rename /objects/geos ---> /objects/geos_cucumber
-        geosPath = ufe.PathString.path('|CompitionArcs_usd|CompitionArcs_usdShape,/objects/geos')
+        geosPath = ufe.PathString.path('|CompositionArcs_usd|CompositionArcs_usdShape,/objects/geos')
         geosItem = ufe.Hierarchy.createItem(geosPath)
         cmds.select(clear=True)
         ufe.GlobalSelection.get().append(geosItem)
@@ -506,7 +506,7 @@ class RenameTestCase(unittest.TestCase):
         self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects/geos_cucumber/cube_banana'])
 
         # rename /objects ---> /objects_eggplant
-        objectsPath = ufe.PathString.path('|CompitionArcs_usd|CompitionArcs_usdShape,/objects')
+        objectsPath = ufe.PathString.path('|CompositionArcs_usd|CompositionArcs_usdShape,/objects')
         objectsItem = ufe.Hierarchy.createItem(objectsPath)
         cmds.select(clear=True)
         ufe.GlobalSelection.get().append(objectsItem)

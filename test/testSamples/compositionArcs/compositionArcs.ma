@@ -1,5 +1,5 @@
 //Maya ASCII 2020 scene
-//Name: compitionArcs.ma
+//Name: compositionArcs.ma
 //Last modified: Thu, Jan 14, 2021 10:38:37 PM
 //Codeset: 1252
 requires maya "2020";
@@ -73,9 +73,9 @@ createNode camera -s -n "sideShape" -p "side";
 	setAttr ".man" -type "string" "side_mask";
 	setAttr ".hc" -type "string" "viewSet -s %camera";
 	setAttr ".o" yes;
-createNode transform -n "CompitionArcs_usd";
+createNode transform -n "CompositionArcs_usd";
 	rename -uid "4ED4111F-4E04-A02A-0238-09B00D67E072";
-createNode mayaUsdProxyShape -n "CompitionArcs_usdShape" -p "CompitionArcs_usd";
+createNode mayaUsdProxyShape -n "CompositionArcs_usdShape" -p "CompositionArcs_usd";
 	rename -uid "EEA6EAA6-4B2B-9D49-CEEF-5281D38688E4";
 	addAttr -r false -ci true -h true -sn "forceCompute" -ln "forceCompute" -min 0 
 		-max 1 -at "bool";
@@ -179,7 +179,7 @@ select -ne :defaultColorMgtGlobals;
 select -ne :hardwareRenderGlobals;
 	setAttr ".ctrs" 256;
 	setAttr ".btrs" 512;
-connectAttr ":time1.o" "CompitionArcs_usdShape.tm";
+connectAttr ":time1.o" "CompositionArcs_usdShape.tm";
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
@@ -187,4 +187,4 @@ relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":default
 connectAttr "layerManager.dli[0]" "defaultLayer.id";
 connectAttr "renderLayerManager.rlmi[0]" "defaultRenderLayer.rlid";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
-// End of compitionArcs.ma
+// End of compositionArcs.ma

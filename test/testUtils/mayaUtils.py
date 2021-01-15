@@ -168,7 +168,7 @@ def openPrimitivesScene():
     return openTestScene("reorderCmd", "primitives.ma" )
 
 def openCompositionArcsScene():
-    return openTestScene("compositionArcs", "compitionArcs.ma" )
+    return openTestScene("compositionArcs", "compositionArcs.ma" )
 
 def createProxyAndStage():
     """
