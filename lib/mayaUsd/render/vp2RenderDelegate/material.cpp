@@ -701,8 +701,12 @@ void HdVP2Material::Sync(
                 // is needed during the next sync.
                 _surfaceNetworkToken = token;
 
-                // The shader is transparent if the surface shader has its opacity attribute
-                // connected to a node which isn't a USD primvar reader.
+                // If the surface shader has its opacity attribute connected to a node which isn't
+                // a primvar reader, it is set as transparent. If the opacity attr is connected to
+                // a primvar reader, the Rprim side will determine the transparency state
+                // according to the primvars:displayOpacity data. If the opacity attr isn't
+                // connected, the transparency state will be set in _UpdateShaderInstance()
+                // according to the opacity value.
                 if (shader) {
                     shader->setIsTransparent(_IsTransparent(bxdfNet));
                 }
