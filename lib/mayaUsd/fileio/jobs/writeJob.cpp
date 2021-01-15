@@ -248,6 +248,11 @@ bool UsdMaya_WriteJob::_BeginWriting(const std::string& fileName, bool append)
         mJobCtx.mStage->SetFramesPerSecond(UsdMayaUtil::GetSceneMTimeUnitAsDouble());
     }
 
+    // Set the customLayerData on the layer
+    if (!mJobCtx.mArgs.customLayerData.empty()) {
+        mJobCtx.mStage->GetRootLayer()->SetCustomLayerData(mJobCtx.mArgs.customLayerData);
+    }
+
     // Setup the requested render layer mode:
     //     defaultLayer    - Switch to the default render layer before exporting,
     //                       then switch back afterwards (no layer switching if

@@ -88,6 +88,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (stripNamespaces) \
     (verbose) \
     (staticSingleSample) \
+    (customLayerData) \
     /* Special "none" token */ \
     (none) \
     /* renderLayerMode values */ \
@@ -185,6 +186,7 @@ struct UsdMayaJobExportArgs
     typedef std::map<std::string, std::string> ChaserArgs;
     const std::vector<std::string>             chaserNames;
     const std::map<std::string, ChaserArgs>    allChaserArgs;
+    const VtDictionary                         customLayerData;
 
     const std::string melPerFrameCallback;
     const std::string melPostCallback;

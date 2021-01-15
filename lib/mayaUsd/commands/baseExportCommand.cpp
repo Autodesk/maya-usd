@@ -161,6 +161,14 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->staticSingleSample.GetText(),
         MSyntax::kBoolean);
 
+    syntax.addFlag(
+        kCustomLayerData,
+        UsdMayaJobExportArgsTokens->customLayerData.GetText(),
+        MSyntax::kString,
+        MSyntax::kString,
+        MSyntax::kString);
+    syntax.makeFlagMultiUse(UsdMayaJobExportArgsTokens->customLayerData.GetText());
+
     // These are additional flags under our control.
     syntax.addFlag(kFrameRangeFlag, kFrameRangeFlagLong, MSyntax::kDouble, MSyntax::kDouble);
     syntax.addFlag(kFrameStrideFlag, kFrameStrideFlagLong, MSyntax::kDouble);

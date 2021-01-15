@@ -57,6 +57,14 @@ class testMayaUsdExportLayerAttributes(unittest.TestCase):
             self.assertEqual(stage.GetTimeCodesPerSecond(), fps)
             self.assertEqual(stage.GetFramesPerSecond(), fps)
 
+    def test_customLayerData(self):
+        temp_file = os.path.join(self.temp_dir, 'test_customLayerData.usda')
+        cmds.mayaUSDExport(f=temp_file,
+                           customLayerData=[
+                               ["foo", "spam", "string"],
+                               ["eggs", "green", "string"]
+                           ])
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -77,6 +77,7 @@ public:
     static constexpr auto kPythonPostCallbackFlag = "ppc";
     static constexpr auto kVerboseFlag = "v";
     static constexpr auto kStaticSingleSample = "sss";
+    static constexpr auto kCustomLayerData = "cld";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";

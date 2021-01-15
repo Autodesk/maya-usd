@@ -208,6 +208,39 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
+static VtDictionary _CustomLayerData(const VtDictionary& userArgs, const TfToken& userArgKey)
+{
+    const std::vector<std::vector<VtValue>> keyValueTypes
+        = _Vector<std::vector<VtValue>>(userArgs, userArgKey);
+
+    VtDictionary data = VtDictionary(keyValueTypes.size());
+
+    for (const std::vector<VtValue>& argTriple : keyValueTypes) {
+        if (argTriple.size() != 3) {
+            TF_CODING_ERROR("Each customLayerData argument must be a triple (key, value, type)");
+            return VtDictionary();
+        }
+
+        const std::string& key = argTriple[0].Get<std::string>();
+        const std::string& value = argTriple[1].Get<std::string>();
+        const std::string& type = argTriple[2].Get<std::string>();
+
+        VtValue val = VtValue();
+
+        if (type == "string") {
+            val = value;
+        } else {
+            TF_CODING_ERROR("Unsupported customLayerData type %s for %s",
+                            type.c_str(), key.c_str());
+            return VtDictionary();
+        }
+
+        data[key] = val;
+    }
+
+    return data;
+}
+
 // The shadingMode args are stored as vectors of vectors (since this is how you
 // would need to pass them in the Maya Python command API).
 static UsdMayaJobImportArgs::ShadingModes
@@ -354,6 +387,7 @@ UsdMayaJobExportArgs::UsdMayaJobExportArgs(
 
     chaserNames(_Vector<std::string>(userArgs, UsdMayaJobExportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobExportArgsTokens->chaserArgs))
+    , customLayerData(_CustomLayerData(userArgs, UsdMayaJobExportArgsTokens->customLayerData))
     ,
 
     melPerFrameCallback(_String(userArgs, UsdMayaJobExportArgsTokens->melPerFrameCallback))
@@ -495,6 +529,7 @@ const VtDictionary& UsdMayaJobExportArgs::GetDefaultDictionary()
         d[UsdMayaJobExportArgsTokens->stripNamespaces] = false;
         d[UsdMayaJobExportArgsTokens->verbose] = false;
         d[UsdMayaJobExportArgsTokens->staticSingleSample] = false;
+        d[UsdMayaJobExportArgsTokens->customLayerData] = std::vector<VtValue>();
 
         // plugInfo.json site defaults.
         // The defaults dict should be correctly-typed, so enable
