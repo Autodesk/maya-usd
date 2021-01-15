@@ -136,17 +136,6 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     }
 #endif
 
-    // According to USD docs, editing scene description via instance proxies and their properties is
-    // not allowed.
-    // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
-    if (usdItem->prim().IsInstanceProxy()) {
-        MGlobal::displayError(
-            MString("Authoring to the descendant of an instance [")
-            + MString(usdItem->prim().GetName().GetString().c_str()) + MString("] is not allowed. ")
-            + MString("Please mark 'instanceable=false' to author edits to instance proxies."));
-        return nullptr;
-    }
-
     // If the prim isn't transformable, can't create a Transform3d interface
     // for it.
     UsdGeomXformable xformSchema(usdItem->prim());
@@ -744,6 +733,24 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
 #endif
 ) const
 {
+    // MAYA-109190: Moved the IsInstanceProxy() check here since it was causing the
+    // camera framing not properly be applied.
+    //
+    // HS January 15, 2021: After speaking with Pierre, there is a more robust solution to move this
+    // check entirely from here.
+
+    // According to USD docs, editing scene description via instance proxies and their properties is
+    // not allowed.
+    // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    if (usdItem->prim().IsInstanceProxy()) {
+        MGlobal::displayError(
+            MString("Authoring to the descendant of an instance [")
+            + MString(usdItem->prim().GetName().GetString().c_str()) + MString("] is not allowed. ")
+            + MString("Please mark 'instanceable=false' to author edits to instance proxies."));
+        return nullptr;
+    }
+
     return createTransform3d(item, [&]() {
         return _nextHandler->editTransform3d(
             item
