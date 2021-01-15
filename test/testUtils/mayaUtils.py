@@ -167,6 +167,9 @@ def openGroupBallsScene():
 def openPrimitivesScene():
     return openTestScene("reorderCmd", "primitives.ma" )
 
+def openVariantSetScene():
+    return openTestScene("variantSet", "Variant.ma" )
+
 def openCompositionArcsScene():
     return openTestScene("compositionArcs", "compositionArcs.ma" )
 

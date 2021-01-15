@@ -1,6 +1,9 @@
 <RCC>
     <qresource prefix="/UsdLayerEditor">
 
+        <file alias="LE_addCreateGeneric.png">resources/addCreateGeneric_100.png</file>
+        <file alias="LE_addCreateGeneric_150.png">resources/addCreateGeneric_150.png</file>
+        <file alias="LE_addCreateGeneric_200.png">resources/addCreateGeneric_200.png</file>
         <file alias="LE_save_all_100.png">resources/save_all_100.png</file>
         <file alias="LE_save_all_150.png">resources/save_all_150.png</file>
         <file alias="LE_save_all_200.png">resources/save_all_200.png</file>

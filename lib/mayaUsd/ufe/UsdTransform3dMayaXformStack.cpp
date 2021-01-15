@@ -25,7 +25,11 @@
 
 #include <maya/MEulerRotation.h>
 #include <maya/MGlobal.h>
+#include <maya/MMatrix.h>
+#include <maya/MTransformationMatrix.h>
+#include <maya/MVector.h>
 
+#include <cstring>
 #include <functional>
 #include <map>
 
@@ -136,17 +140,6 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     }
 #endif
 
-    // According to USD docs, editing scene description via instance proxies and their properties is
-    // not allowed.
-    // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
-    if (usdItem->prim().IsInstanceProxy()) {
-        MGlobal::displayError(
-            MString("Authoring to the descendant of an instance [")
-            + MString(usdItem->prim().GetName().GetString().c_str()) + MString("] is not allowed. ")
-            + MString("Please mark 'instanceable=false' to author edits to instance proxies."));
-        return nullptr;
-    }
-
     // If the prim isn't transformable, can't create a Transform3d interface
     // for it.
     UsdGeomXformable xformSchema(usdItem->prim());
@@ -168,6 +161,69 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
 
     return stackOps.empty() ? nextTransform3dFn() : UsdTransform3dMayaXformStack::create(usdItem);
 }
+
+// Class for setMatrixCmd() implementation.  Should be rolled into a future
+// command class with full undo / redo support
+class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
+{
+public:
+    UsdSetMatrix4dUndoableCmd(
+        const Ufe::Path&     path,
+        const Ufe::Vector3d& oldT,
+        const Ufe::Vector3d& oldR,
+        const Ufe::Vector3d& oldS,
+        const Ufe::Matrix4d& newM)
+        : Ufe::SetMatrix4dUndoableCommand(path)
+        , _oldT(oldT)
+        , _oldR(oldR)
+        , _oldS(oldS)
+    {
+        // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
+        // nor GfTransform decomposition provide results that match Maya,
+        // so use MTransformationMatrix.
+        MMatrix m;
+        std::memcpy(m[0], &newM.matrix[0][0], sizeof(double) * 16);
+        MTransformationMatrix                xformM(m);
+        auto                                 t = xformM.getTranslation(MSpace::kTransform);
+        double                               r[3];
+        double                               s[3];
+        MTransformationMatrix::RotationOrder rotOrder;
+        xformM.getRotation(r, rotOrder);
+        xformM.getScale(s, MSpace::kTransform);
+        constexpr double radToDeg = 57.295779506;
+
+        _newT = Ufe::Vector3d(t[0], t[1], t[2]);
+        _newR = Ufe::Vector3d(r[0] * radToDeg, r[1] * radToDeg, r[2] * radToDeg);
+        _newS = Ufe::Vector3d(s[0], s[1], s[2]);
+    }
+
+    ~UsdSetMatrix4dUndoableCmd() override { }
+
+    bool set(const Ufe::Matrix4d&) override
+    {
+        // No-op: Maya does not set matrices through interactive manipulation.
+        TF_WARN("Illegal call to UsdSetMatrix4dUndoableCmd::set()");
+        return true;
+    }
+
+    void undo() override { perform(_oldT, _oldR, _oldS); }
+    void redo() override { perform(_newT, _newR, _newS); }
+
+private:
+    void perform(const Ufe::Vector3d& t, const Ufe::Vector3d& r, const Ufe::Vector3d& s)
+    {
+        auto t3d = Ufe::Transform3d::transform3d(sceneItem());
+        t3d->translate(t.x(), t.y(), t.z());
+        t3d->rotate(r.x(), r.y(), r.z());
+        t3d->scale(s.x(), s.y(), s.z());
+    }
+    Ufe::Vector3d _oldT;
+    Ufe::Vector3d _oldR;
+    Ufe::Vector3d _oldS;
+    Ufe::Vector3d _newT;
+    Ufe::Vector3d _newR;
+    Ufe::Vector3d _newS;
+};
 
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
@@ -639,6 +695,13 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
         v, path(), std::move(f), UsdTimeCode::Default());
 }
 
+Ufe::SetMatrix4dUndoableCommand::Ptr
+UsdTransform3dMayaXformStack::setMatrixCmd(const Ufe::Matrix4d& m)
+{
+    return std::make_shared<UsdSetMatrix4dUndoableCmd>(
+        path(), translation(), rotation(), scale(), m);
+}
+
 UsdTransform3dMayaXformStack::SetXformOpOrderFn
 UsdTransform3dMayaXformStack::getXformOpOrderFn() const
 {
@@ -744,6 +807,24 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
 #endif
 ) const
 {
+    // MAYA-109190: Moved the IsInstanceProxy() check here since it was causing the
+    // camera framing not properly be applied.
+    //
+    // HS January 15, 2021: After speaking with Pierre, there is a more robust solution to move this
+    // check entirely from here.
+
+    // According to USD docs, editing scene description via instance proxies and their properties is
+    // not allowed.
+    // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    if (usdItem->prim().IsInstanceProxy()) {
+        MGlobal::displayError(
+            MString("Authoring to the descendant of an instance [")
+            + MString(usdItem->prim().GetName().GetString().c_str()) + MString("] is not allowed. ")
+            + MString("Please mark 'instanceable=false' to author edits to instance proxies."));
+        return nullptr;
+    }
+
     return createTransform3d(item, [&]() {
         return _nextHandler->editTransform3d(
             item
