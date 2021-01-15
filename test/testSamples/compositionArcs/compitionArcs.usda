@@ -1,0 +1,37 @@
+#usda 1.0
+def Xform "objects"
+ {
+    def Xform "geos"
+    {
+        def Cube "cube"
+        {
+            bool doubleSided = 0
+            double size = 2
+        }
+
+        def "cube_A" (
+            append references = </objects/geos/cube>
+        )
+        {
+            matrix4d xformOp:transform:duplicate1 = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (3, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform:duplicate1"]
+        }
+
+        def "cube_B" (
+            append inherits = </objects/geos/cube>
+        )
+        {
+            matrix4d xformOp:transform:duplicate2 = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (6, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform:duplicate2"]
+        }
+
+        def "cube_C" (
+            append specializes = </objects/geos/cube>
+        )
+        {
+            matrix4d xformOp:transform:duplicate3 = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (9, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform:duplicate3"]
+        }
+    }
+}
+

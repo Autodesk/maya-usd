@@ -167,6 +167,9 @@ def openGroupBallsScene():
 def openPrimitivesScene():
     return openTestScene("reorderCmd", "primitives.ma" )
 
+def openCompositionArcsScene():
+    return openTestScene("compositionArcs", "compitionArcs.ma" )
+
 def createProxyAndStage():
     """
     Create in-memory stage
