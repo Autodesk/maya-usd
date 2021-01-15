@@ -460,7 +460,7 @@ class RenameTestCase(unittest.TestCase):
         mayaPathSegment = mayaUtils.createUfePathSegment('|CompitionArcs_usd|CompitionArcs_usdShape')
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
-        # first check for ArcType, nodePath values. I am only intested in the composition Arc itself.
+        # first check for ArcType, nodePath values. I am only interested in the composition Arc other than "root".
         compPrimDataA = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_A'))
         self.assertTrue(list(compPrimDataA.getData()[1].values()), ['reference', '/objects/geos/cube'])
 
