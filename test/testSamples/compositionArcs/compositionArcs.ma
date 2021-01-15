@@ -82,7 +82,7 @@ createNode mayaUsdProxyShape -n "CompitionArcs_usdShape" -p "CompitionArcs_usd";
 	setAttr -k off ".v";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr ".fp" -type "string" "./compitionArcs.usda";
+	setAttr ".fp" -type "string" "./compositionArcs.usda";
 createNode lightLinker -s -n "lightLinker1";
 	rename -uid "0760E298-442B-C293-B84F-C8BDB3641D08";
 	setAttr -s 2 ".lnk";
