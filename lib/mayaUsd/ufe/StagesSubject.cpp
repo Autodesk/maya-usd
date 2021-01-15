@@ -273,6 +273,8 @@ void StagesSubject::stageChanged(
         auto ufePath = stagePath(sender) + Ufe::PathSegment(usdPrimPathStr, g_USDRtid, '/');
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
+        bool sendValueChangedFallback = true;
+
         // isPrimPropertyPath() does not consider relational attributes
         // isPropertyPath() does consider relational attributes
         // isRelationalAttributePath() considers only relational attributes
@@ -280,14 +282,21 @@ void StagesSubject::stageChanged(
             if (inAttributeChangedNotificationGuard()) {
                 pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
             } else {
+#if UFE_PREVIEW_VERSION_NUM >= 2036
+                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
+                Ufe::Attributes::notify(vc);
+#else
                 Ufe::Attributes::notify(ufePath, changedPath.GetName());
+#endif
             }
+            sendValueChangedFallback = false;
         }
 
         // Send a special message when visibility has changed.
         if (changedPath.GetNameToken() == UsdGeomTokens->visibility) {
             Ufe::VisibilityChanged vis(ufePath);
             Ufe::Object3d::notify(vis);
+            sendValueChangedFallback = false;
         }
 #endif
 
@@ -296,9 +305,40 @@ void StagesSubject::stageChanged(
             const TfToken nameToken = changedPath.GetNameToken();
             if (nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken)) {
                 Ufe::Transform3d::notify(ufePath);
+#ifdef UFE_V2_FEATURES_AVAILABLE
+                sendValueChangedFallback = false;
+#endif
             }
         }
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        if (sendValueChangedFallback) {
+            // We didn't send any other UFE notif above, so send a UFE
+            // attribute value changed as a fallback notification.
+            if (inAttributeChangedNotificationGuard()) {
+                pendingAttributeChangedNotifications[ufePath] = changedPath.GetName();
+            } else {
+#if UFE_PREVIEW_VERSION_NUM >= 2036
+                Ufe::AttributeValueChanged vc(ufePath, changedPath.GetName());
+                Ufe::Attributes::notify(vc);
+#else
+                Ufe::Attributes::notify(ufePath, changedPath.GetName());
+#endif
+            }
+        }
+#endif
     }
+
+#ifdef UFE_V2_FEATURES_AVAILABLE
+#if UFE_PREVIEW_VERSION_NUM >= 2036
+    // Special case when we are notified, but no paths given.
+    if (notice.GetResyncedPaths().empty() && notice.GetChangedInfoOnlyPaths().empty()) {
+        auto                       ufePath = stagePath(sender);
+        Ufe::AttributeValueChanged vc(ufePath, "/");
+        Ufe::Attributes::notify(vc);
+    }
+#endif
+#endif
 }
 
 #if UFE_PREVIEW_VERSION_NUM >= 2025
@@ -387,7 +427,12 @@ AttributeChangedNotificationGuard::~AttributeChangedNotificationGuard()
     }
 
     for (const auto& notificationInfo : pendingAttributeChangedNotifications) {
+#if UFE_PREVIEW_VERSION_NUM >= 2036
+        Ufe::AttributeValueChanged vc(notificationInfo.first, notificationInfo.second);
+        Ufe::Attributes::notify(vc);
+#else
         Ufe::Attributes::notify(notificationInfo.first, notificationInfo.second);
+#endif
     }
 
     pendingAttributeChangedNotifications.clear();

@@ -15,6 +15,10 @@
 //
 #include "UsdObject3d.h"
 
+#if UFE_PREVIEW_VERSION_NUM >= 2034
+#include <mayaUsd/ufe/UsdUndoVisibleCommand.h>
+#endif
+
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/usd/usd/timeCode.h>
@@ -91,6 +95,13 @@ void UsdObject3d::setVisibility(bool vis)
 {
     vis ? UsdGeomImageable(fPrim).MakeVisible() : UsdGeomImageable(fPrim).MakeInvisible();
 }
+
+#if UFE_PREVIEW_VERSION_NUM >= 2034
+Ufe::UndoableCommand::Ptr UsdObject3d::setVisibleCmd(bool vis)
+{
+    return UsdUndoVisibleCommand::create(fPrim, vis);
+}
+#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

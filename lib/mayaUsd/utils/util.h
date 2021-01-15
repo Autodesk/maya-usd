@@ -127,6 +127,12 @@ inline double ConvertMMToInches(const double mm) { return mm / MillimetersPerInc
 /// in millimeters.
 inline double ConvertInchesToMM(const double inches) { return inches * MillimetersPerInch; }
 
+/// Converts the given value \p d from units \p from to the equivalent value in units \p
+inline double ConvertUnit(double d, double from, double to)
+{
+    return from == to ? d : d * from / to;
+}
+
 const double MillimetersPerCentimeter = 10.0;
 
 /// Converts the given value \p mm in millimeters to the equivalent value
