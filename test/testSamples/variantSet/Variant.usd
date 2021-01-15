@@ -1,0 +1,20 @@
+#usda 1.0
+def Xform "objects" (
+    variants = {
+        string model = "PotatoA"
+    }
+    append variantSets = "model"
+)
+{
+    variantSet "model" = {
+        "PotatoA" {
+            def Xform "Geom"
+            {
+                def Sphere "Small_Potato"
+                {
+                    double size = 2
+                }
+            }
+        }
+    }
+}

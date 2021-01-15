@@ -18,6 +18,7 @@
 #include <mayaUsdUtils/util.h>
 
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usdGeom/xformable.h>
 
 #include <ufe/log.h>
@@ -162,6 +163,20 @@ void applyCommandRestriction(const UsdPrim& prim, const std::string& commandName
                 break;
             }
             continue;
+        }
+    }
+
+    // Per design request, we need a more clear message to indicate that renaming a prim inside a
+    // variantset is not allowed. This restriction was already caught in the above loop but the
+    // message was a bit generic.
+    UsdPrimCompositionQuery query(prim);
+    for (const auto& compQueryArc : query.GetCompositionArcs()) {
+        if (!primSpec && PcpArcTypeVariant == compQueryArc.GetArcType()) {
+            std::string err = TfStringPrintf(
+                "Cannot rename [%s] because it is defined inside the variant composition arc %s.",
+                prim.GetName().GetString().c_str(),
+                layerDisplayName.c_str());
+            throw std::runtime_error(err.c_str());
         }
     }
 
