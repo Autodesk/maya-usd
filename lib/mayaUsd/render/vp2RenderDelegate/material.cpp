@@ -606,36 +606,38 @@ void HdVP2Material::Sync(
             const HdMaterialNetworkMap& networkMap
                 = vtMatResource.UncheckedGet<HdMaterialNetworkMap>();
 
-            HdMaterialNetwork bxdfNet, dispNet;
+            HdMaterialNetwork bxdfNet, dispNet, vp2BxdfNet;
 
             TfMapLookup(networkMap.map, HdMaterialTerminalTokens->surface, &bxdfNet);
             TfMapLookup(networkMap.map, HdMaterialTerminalTokens->displacement, &dispNet);
 
-            if (*dirtyBits & HdMaterial::DirtyResource) {
+            _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
+
+            // Generate a XML string from the material network and convert it to a token for faster
+            // hashing and comparison.
+            const TfToken token(_GenerateXMLString(vp2BxdfNet, false));
+
+            // Skip creating a new shader instance if the token is unchanged. There is no plan to
+            // implement fine-grain dirty bit in Hydra for the same purpose:
+            // https://groups.google.com/g/usd-interest/c/xytT2azlJec/m/22Tnw4yXAAAJ
+            if (_surfaceNetworkToken != token) {
                 MProfilingScope subProfilingScope(
                     HdVP2RenderDelegate::sProfilerCategory,
                     MProfiler::kColorD_L2,
                     "CreateShaderInstance");
 
-                // Apply VP2 fixes to the material network
-                HdMaterialNetwork vp2BxdfNet;
-                _ApplyVP2Fixes(vp2BxdfNet, bxdfNet);
-
-                // Remember the path of the surface shader for special handling.
+                // Remember the path of the surface shader for special handling: unlike other
+                // fragments, the parameters of the surface shader fragment can't be renamed.
                 _surfaceShaderId = vp2BxdfNet.nodes.back().path;
 
                 MHWRender::MShaderInstance* shader;
 
 #ifndef HDVP2_DISABLE_SHADER_CACHE
-                // Generate a XML string from the material network and convert it to a token for
-                // faster hashing and comparison.
-                const TfToken bxdfNetToken(_GenerateXMLString(vp2BxdfNet, false));
-
-                // Acquire a shader instance from the shader cache. If a shader instance has been
-                // cached with the same token, a clone of the shader instance will be returned.
-                // Multiple clones of a shader instance will share the same shader effect, thus
-                // reduce compilation overhead and enable MDI consolidation.
-                shader = _renderDelegate->GetShaderFromCache(bxdfNetToken);
+                // Acquire a shader instance from the shader cache. If a shader instance has
+                // been cached with the same token, a clone of the shader instance will be
+                // returned. Multiple clones of a shader instance will share the same shader
+                // effect, thus reduce compilation overhead and enable material consolidation.
+                shader = _renderDelegate->GetShaderFromCache(token);
 
                 // If the shader instance is not found in the cache, create one from the material
                 // network and add a clone to the cache for reuse.
@@ -643,7 +645,7 @@ void HdVP2Material::Sync(
                     shader = _CreateShaderInstance(vp2BxdfNet);
 
                     if (shader) {
-                        _renderDelegate->AddShaderToCache(bxdfNetToken, *shader);
+                        _renderDelegate->AddShaderToCache(token, *shader);
                     }
                 }
 #else
@@ -675,6 +677,10 @@ void HdVP2Material::Sync(
 
                 // Store primvar requirements.
                 _requiredPrimvars = std::move(vp2BxdfNet.primvars);
+
+                // The token is saved and will be used to determine whether a new shader instance
+                // is needed during the next sync.
+                _surfaceNetworkToken = token;
             }
 
             _UpdateShaderInstance(bxdfNet);

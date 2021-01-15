@@ -95,6 +95,8 @@ private:
     std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>
         _nodePathMap; //!< Mapping from authored node paths to VP2-specific simplified pathes
 
+    TfToken _surfaceNetworkToken; //!< Generated token to uniquely identify a material network
+
     HdVP2ShaderUniquePtr _surfaceShader;    //!< VP2 surface shader instance
     SdfPath              _surfaceShaderId;  //!< Path of the surface shader
     HdVP2TextureMap      _textureMap;       //!< Textures used by this material
