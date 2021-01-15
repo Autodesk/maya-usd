@@ -198,6 +198,25 @@ std::string _GenerateXMLString(const HdMaterialNetwork& materialNetwork, bool in
     return result;
 }
 
+//! Return true if the surface shader has its opacity attribute connected to a node which isn't
+//! a USD primvar reader.
+bool _IsTransparent(const HdMaterialNetwork& network)
+{
+    const HdMaterialNode& surfaceShader = network.nodes.back();
+
+    for (const HdMaterialRelationship& rel : network.relationships) {
+        if (rel.outputName == _tokens->opacity && rel.outputId == surfaceShader.path) {
+            for (const HdMaterialNode& node : network.nodes) {
+                if (node.path == rel.inputId) {
+                    return !_IsUsdPrimvarReader(node);
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 //! Helper utility function to convert Hydra texture addressing token to VP2 enum.
 MHWRender::MSamplerState::TextureAddress _ConvertToTextureSamplerAddressEnum(const TfToken& token)
 {
@@ -681,6 +700,12 @@ void HdVP2Material::Sync(
                 // The token is saved and will be used to determine whether a new shader instance
                 // is needed during the next sync.
                 _surfaceNetworkToken = token;
+
+                // The shader is transparent if the surface shader has its opacity attribute
+                // connected to a node which isn't a USD primvar reader.
+                if (shader) {
+                    shader->setIsTransparent(_IsTransparent(bxdfNet));
+                }
             }
 
             _UpdateShaderInstance(bxdfNet);
@@ -879,10 +904,6 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateShaderInstance(const HdMateria
                     inputNames.append(str.c_str());
                 } else {
                     inputNames.append(rel.outputName.GetText());
-
-                    if (rel.outputName == _tokens->opacity) {
-                        shaderInstance->setIsTransparent(true);
-                    }
                 }
             }
         }
@@ -952,10 +973,6 @@ MHWRender::MShaderInstance* HdVP2Material::_CreateShaderInstance(const HdMateria
             if (rel.inputId == node.path) {
                 outputNames.append(rel.inputName.GetText());
                 inputNames.append(rel.outputName.GetText());
-
-                if (rel.outputName == _tokens->opacity) {
-                    shaderInstance->setIsTransparent(true);
-                }
             }
 
             if (_IsUsdUVTexture(node)) {
@@ -1069,8 +1086,8 @@ void HdVP2Material::_UpdateShaderInstance(const HdMaterialNetwork& mat)
                 // The opacity parameter can be found and updated only when it
                 // has no connection. In this case, transparency of the shader
                 // is solely determined by the opacity value.
-                if (nodeName.length() == 0 && token == _tokens->opacity) {
-                    _surfaceShader->setIsTransparent(!status || val < 0.999f);
+                if (status && nodeName.length() == 0 && token == _tokens->opacity) {
+                    _surfaceShader->setIsTransparent(val < 0.999f);
                 }
             } else if (value.IsHolding<GfVec2f>()) {
                 const float* val = value.UncheckedGet<GfVec2f>().data();
