@@ -18,12 +18,12 @@
 
 #include <pxr/usd/pcp/layerStack.h>
 #include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/inherits.h>
-#include <pxr/usd/usd/specializes.h>
+#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/primCompositionQuery.h>
 #include <pxr/usd/usd/primRange.h>
 #include <pxr/usd/usd/references.h>
+#include <pxr/usd/usd/specializes.h>
 #include <pxr/usd/usd/stage.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
