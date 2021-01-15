@@ -105,15 +105,12 @@ void replaceInternalReferencePath(
     }
 }
 
-// This template method updates the SdfPath for inherited or specialized arcs 
+// This template method updates the SdfPath for inherited or specialized arcs
 // when the path to the concrete prim they refer to has changed.
-// HS January 13, 2021: Find a better generic way to consolidate this method with replaceReferenceItems
-template<typename T>
-void replacePath(
-    const UsdPrim&            oldPrim,
-    const SdfPath&            newPath,
-    const T&                  proxy,
-    SdfListOpType             op)
+// HS January 13, 2021: Find a better generic way to consolidate this method with
+// replaceReferenceItems
+template <typename T>
+void replacePath(const UsdPrim& oldPrim, const SdfPath& newPath, const T& proxy, SdfListOpType op)
 {
     // set the listProxy based on the SdfListOpType
     T::ListProxy listProxy = proxy.GetAppendedItems();
@@ -207,28 +204,31 @@ bool updateReferencedPath(const UsdPrim& oldPrim, const SdfPath& newPath)
                 SdfReferencesProxy referencesList = primSpec->GetReferenceList();
 
                 // update append/prepend lists individually
-                replaceInternalReferencePath(oldPrim, newPath, referencesList, SdfListOpTypeAppended);
-                replaceInternalReferencePath(oldPrim, newPath, referencesList, SdfListOpTypePrepended);
+                replaceInternalReferencePath(
+                    oldPrim, newPath, referencesList, SdfListOpTypeAppended);
+                replaceInternalReferencePath(
+                    oldPrim, newPath, referencesList, SdfListOpTypePrepended);
             }
-        }
-        else if (p.HasAuthoredInherits()) {
+        } else if (p.HasAuthoredInherits()) {
             if (primSpec) {
 
                 SdfInheritsProxy inheritsList = primSpec->GetInheritPathList();
 
                 // update append/prepend lists individually
-                replacePath<SdfInheritsProxy>(oldPrim, newPath, inheritsList, SdfListOpTypeAppended);
-                replacePath<SdfInheritsProxy>(oldPrim, newPath, inheritsList, SdfListOpTypePrepended);
+                replacePath<SdfInheritsProxy>(
+                    oldPrim, newPath, inheritsList, SdfListOpTypeAppended);
+                replacePath<SdfInheritsProxy>(
+                    oldPrim, newPath, inheritsList, SdfListOpTypePrepended);
             }
-        }
-        else if (p.HasAuthoredSpecializes()) {
-            if (primSpec) 
-            {
+        } else if (p.HasAuthoredSpecializes()) {
+            if (primSpec) {
                 SdfSpecializesProxy specializesList = primSpec->GetSpecializesList();
 
                 // update append/prepend lists individually
-                replacePath<SdfSpecializesProxy>(oldPrim, newPath, specializesList, SdfListOpTypeAppended);
-                replacePath<SdfSpecializesProxy>(oldPrim, newPath, specializesList, SdfListOpTypePrepended);
+                replacePath<SdfSpecializesProxy>(
+                    oldPrim, newPath, specializesList, SdfListOpTypeAppended);
+                replacePath<SdfSpecializesProxy>(
+                    oldPrim, newPath, specializesList, SdfListOpTypePrepended);
             }
         }
     }

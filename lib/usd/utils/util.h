@@ -36,7 +36,7 @@ SdfPrimSpecHandle getPrimSpecAtEditTarget(const UsdPrim& prim);
 MAYA_USD_UTILS_PUBLIC
 void printCompositionQuery(const UsdPrim& prim, std::ostream& os);
 
-//! This function automatically updates the SdfPath for different 
+//! This function automatically updates the SdfPath for different
 //  composition arcs (internal references, inherits, specializes) when
 //  the path to the concrete prim they refer to has changed.
 MAYA_USD_UTILS_PUBLIC
