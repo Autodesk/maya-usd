@@ -208,6 +208,10 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
+// The Custom Layer Data is stored as a vector of vectors (as this is
+// how a multi use , multi argument flag is passed in).
+// This function converts it to a VtDictionary.
+// Parsing failures skip the value instead of early returning.
 static VtDictionary _CustomLayerData(const VtDictionary& userArgs, const TfToken& userArgKey)
 {
     const std::vector<std::vector<VtValue>> keyValueTypes
@@ -217,22 +221,43 @@ static VtDictionary _CustomLayerData(const VtDictionary& userArgs, const TfToken
 
     for (const std::vector<VtValue>& argTriple : keyValueTypes) {
         if (argTriple.size() != 3) {
-            TF_CODING_ERROR("Each customLayerData argument must be a triple (key, value, type)");
-            return VtDictionary();
+            TF_WARN("Each customLayerData argument must be a triple (key, value, type)");
+            continue;
         }
 
         const std::string& key = argTriple[0].Get<std::string>();
-        const std::string& value = argTriple[1].Get<std::string>();
+        const std::string& raw_value = argTriple[1].Get<std::string>();
         const std::string& type = argTriple[2].Get<std::string>();
 
         VtValue val = VtValue();
+        MString m_value = MString(raw_value.c_str());
 
         if (type == "string") {
-            val = value;
+            val = raw_value;
+        } else if (type == "int") {
+            if (m_value.isInt()) {
+                val = m_value.asInt();
+            } else {
+                TF_WARN("Could not parse '%s' as int", raw_value.c_str());
+                continue;
+            }
+        } else if (type == "float") {
+            if (m_value.isFloat()) {
+                val = m_value.asFloat();
+            } else {
+                TF_WARN("Could not parse '%s' as float", raw_value.c_str());
+                continue;
+            }
+        } else if (type == "double") {
+            if (m_value.isDouble()) {
+                val = m_value.asDouble();
+            } else {
+                TF_WARN("Could not parse '%s' as double", raw_value.c_str());
+                continue;
+            }
         } else {
-            TF_CODING_ERROR("Unsupported customLayerData type %s for %s",
-                            type.c_str(), key.c_str());
-            return VtDictionary();
+            TF_WARN("Unsupported customLayerData type '%s' for '%s'", type.c_str(), key.c_str());
+            continue;
         }
 
         data[key] = val;
