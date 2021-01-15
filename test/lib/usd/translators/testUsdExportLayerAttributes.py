@@ -67,11 +67,14 @@ class testMayaUsdExportLayerAttributes(unittest.TestCase):
                                ["age", 10, "int"],
                                ["floaty", 0.1, "float"],
                                ["pi", math.pi, "double"],
+                               ["works", 1, "bool"],
+                               ["fail", False, "bool"],
                                # These should fail but continue
                                ["a", "0", "unknown"],
                                ["b", "b", "int"],
                                ["c", "c", "float"],
-                               ["d", "d", "double"]
+                               ["d", "d", "double"],
+                               ["e", "e", "bool"]
                            ])
 
         stage = Usd.Stage.Open(temp_file)
@@ -81,8 +84,10 @@ class testMayaUsdExportLayerAttributes(unittest.TestCase):
         self.assertEqual(data['age'], 10)
         self.assertAlmostEqual(data['floaty'], 0.1)
         self.assertAlmostEqual(data['pi'], math.pi)
+        self.assertTrue(data['works'])
+        self.assertFalse(data['fail'])
 
-        invalid = ('a', 'b', 'c', 'd')
+        invalid = ('a', 'b', 'c', 'd', 'e')
         for i in invalid:
             self.assertNotIn(i, data)
 

@@ -255,10 +255,21 @@ static VtDictionary _CustomLayerData(const VtDictionary& userArgs, const TfToken
                 TF_WARN("Could not parse '%s' as double", raw_value.c_str());
                 continue;
             }
+        } else if (type == "bool") {
+            m_value = m_value.toLowerCase();
+            if (m_value == "1" || m_value == "true") {
+                val = true;
+            } else if (m_value == "0" || m_value == "false"){
+                val = false;
+            } else {
+                TF_WARN("Could not parse '%s' as bool", raw_value.c_str());
+                continue;
+            }
         } else {
-            TF_WARN("Unsupported customLayerData type '%s' for '%s'", type.c_str(), key.c_str());
-            continue;
+                TF_WARN("Unsupported customLayerData type '%s' for '%s'", type.c_str(), key.c_str());
+                continue;
         }
+
 
         data[key] = val;
     }
