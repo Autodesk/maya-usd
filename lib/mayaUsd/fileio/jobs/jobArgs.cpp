@@ -37,6 +37,7 @@
 #include <maya/MNodeClass.h>
 #include <maya/MTypeId.h>
 
+#include <cstdlib>
 #include <ostream>
 #include <string>
 
@@ -208,6 +209,19 @@ _ChaserArgs(const VtDictionary& userArgs, const TfToken& key)
     return result;
 }
 
+bool _striequals(const std::string& a, const std::string& b)
+{
+    size_t aSize = a.size();
+    if (b.size() != aSize) {
+        return false;
+    }
+    for (size_t i = 0; i < aSize; ++i)
+        if (std::tolower(a[i]) != std::tolower(b[i])) {
+            return false;
+        }
+    return true;
+}
+
 // The Custom Layer Data is stored as a vector of vectors (as this is
 // how a multi use , multi argument flag is passed in).
 // This function converts it to a VtDictionary.
@@ -230,46 +244,74 @@ static VtDictionary _CustomLayerData(const VtDictionary& userArgs, const TfToken
         const std::string& type = argTriple[2].Get<std::string>();
 
         VtValue val = VtValue();
-        MString m_value = MString(raw_value.c_str());
-
         if (type == "string") {
             val = raw_value;
         } else if (type == "int") {
-            if (m_value.isInt()) {
-                val = m_value.asInt();
-            } else {
-                TF_WARN("Could not parse '%s' as int", raw_value.c_str());
+            char* e = NULL;
+            val = static_cast<int>(std::strtol(raw_value.c_str(), &e, 10));
+            if (e != &raw_value[0] + raw_value.size()) {
+                TF_WARN(
+                    "Could not parse '%s' as an integer; the first invalid digit was: %s",
+                    raw_value.c_str(),
+                    e);
+                continue;
+            } else if (errno == ERANGE) {
+                TF_WARN(
+                    "Could not parse '%s' as an integer; it would have exceeded the valid range.",
+                    raw_value.c_str());
                 continue;
             }
         } else if (type == "float") {
-            if (m_value.isFloat()) {
-                val = m_value.asFloat();
-            } else {
-                TF_WARN("Could not parse '%s' as float", raw_value.c_str());
+            char* e = NULL;
+            val = static_cast<float>(std::strtof(raw_value.c_str(), &e));
+            if (e != &raw_value[0] + raw_value.size()) {
+                TF_WARN(
+                    "Could not parse '%s' as a float; the first invalid digit was: %s",
+                    raw_value.c_str(),
+                    e);
+                errno = 0;
+                continue;
+            } else if (errno == ERANGE) {
+                TF_WARN(
+                    "Could not parse '%s' as a float; it would have exceeded the valid range.",
+                    raw_value.c_str());
+                errno = 0;
                 continue;
             }
         } else if (type == "double") {
-            if (m_value.isDouble()) {
-                val = m_value.asDouble();
-            } else {
-                TF_WARN("Could not parse '%s' as double", raw_value.c_str());
+            char* e = NULL;
+            val = static_cast<double>(std::strtod(raw_value.c_str(), &e));
+            if (e != &raw_value[0] + raw_value.size()) {
+                TF_WARN(
+                    "Could not parse '%s' as a double; the first invalid digit was: %s",
+                    raw_value.c_str(),
+                    e);
+                errno = 0;
+                continue;
+            } else if (errno == ERANGE) {
+                TF_WARN(
+                    "Could not parse '%s' as a double; it would have exceeded the valid range.",
+                    raw_value.c_str());
+                errno = 0;
                 continue;
             }
         } else if (type == "bool") {
-            m_value = m_value.toLowerCase();
-            if (m_value == "1" || m_value == "true") {
+            if (raw_value == "1") {
                 val = true;
-            } else if (m_value == "0" || m_value == "false"){
+            } else if (raw_value == "0") {
+                val = false;
+            } else if (_striequals(raw_value, "true")) {
+                val = true;
+            } else if (_striequals(raw_value, "false")) {
                 val = false;
             } else {
                 TF_WARN("Could not parse '%s' as bool", raw_value.c_str());
                 continue;
             }
         } else {
-                TF_WARN("Unsupported customLayerData type '%s' for '%s'", type.c_str(), key.c_str());
-                continue;
+            TF_WARN("Unsupported customLayerData type '%s' for '%s'", type.c_str(), key.c_str());
+            continue;
         }
-
 
         data[key] = val;
     }
