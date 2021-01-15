@@ -19,7 +19,7 @@
 #include "private/Utils.h"
 
 #include <mayaUsd/ufe/Utils.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2029
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #endif
 #include <mayaUsdUtils/util.h>
@@ -62,7 +62,7 @@ UsdSceneItem::Ptr UsdUndoDuplicateCommand::duplicatedItem() const
     return createSiblingSceneItem(_ufeSrcPath, _usdDstPath.GetElementString());
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2029
+#ifdef UFE_V2_FEATURES_AVAILABLE
 void UsdUndoDuplicateCommand::execute()
 {
     MayaUsd::ufe::InAddOrDeleteOperation ad;

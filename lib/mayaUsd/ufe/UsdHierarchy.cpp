@@ -93,7 +93,6 @@ Ufe::SceneItemList UsdHierarchy::children() const
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2022
 Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter) const
 {
     // Note: for now the only child filter flag we support is "Inactive Prims".
@@ -109,7 +108,6 @@ Ufe::SceneItemList UsdHierarchy::filteredChildren(const ChildFilter& childFilter
     UFE_LOG("Unknown child filter");
     return Ufe::SceneItemList();
 }
-#endif
 #endif
 
 Ufe::SceneItemList UsdHierarchy::createUFEChildList(const UsdPrimSiblingRange& range) const
@@ -224,7 +222,6 @@ Ufe::SceneItem::Ptr UsdHierarchy::defaultParent() const
     return createItem(proxyShapePath);
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2026
 Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 {
     std::vector<TfToken> orderedTokens;
@@ -236,7 +233,6 @@ Ufe::UndoableCommand::Ptr UsdHierarchy::reorderCmd(const Ufe::SceneItemList& ord
     // create a reorder command and pass in the parent and its reordered children list
     return UsdUndoReorderCommand::create(downcast(sceneItem())->prim(), orderedTokens);
 }
-#endif
 
 #endif // UFE_V2_FEATURES_AVAILABLE
 

@@ -15,9 +15,7 @@
 //
 #include "UsdUndoReorderCommand.h"
 
-#if UFE_PREVIEW_VERSION_NUM >= 2029
 #include <mayaUsd/undo/UsdUndoBlock.h>
-#endif
 
 #include "private/Utils.h"
 
@@ -35,13 +33,11 @@ UsdUndoReorderCommand::UsdUndoReorderCommand(
     , _parentPrim(parentPrim)
     , _orderedTokens(tokenList)
 {
-#if UFE_PREVIEW_VERSION_NUM >= 2029
     // Apply restriction rules
     for (const auto& childPrim : parentPrim.GetChildren()) {
         ufe::applyCommandRestriction(childPrim, "reorder");
         break;
     }
-#endif
 }
 
 UsdUndoReorderCommand::~UsdUndoReorderCommand() { }
@@ -55,8 +51,6 @@ UsdUndoReorderCommand::create(const UsdPrim& parentPrim, const std::vector<TfTok
     return std::make_shared<UsdUndoReorderCommand>(parentPrim, tokenList);
 }
 
-// HS TODO: Get rif of this ugly guard once PR 121 is out.
-#if UFE_PREVIEW_VERSION_NUM >= 2029
 void UsdUndoReorderCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
@@ -68,36 +62,6 @@ void UsdUndoReorderCommand::execute()
 void UsdUndoReorderCommand::undo() { _undoableItem.undo(); }
 
 void UsdUndoReorderCommand::redo() { _undoableItem.redo(); }
-
-#else
-bool UsdUndoReorderCommand::reorder()
-{
-    const auto& parentPrimSpec = MayaUsdUtils::getPrimSpecAtEditTarget(_parentPrim);
-
-    parentPrimSpec->SetNameChildrenOrder(_orderedTokens);
-
-    return true;
-}
-
-void UsdUndoReorderCommand::undo()
-{
-    try {
-        if (!reorder()) {
-            UFE_LOG("reorder undo failed");
-        }
-    } catch (const std::exception& e) {
-        UFE_LOG(e.what());
-        throw; // re-throw the same exception
-    }
-}
-
-void UsdUndoReorderCommand::redo()
-{
-    if (!reorder()) {
-        UFE_LOG("reorder redo failed");
-    }
-}
-#endif
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF
