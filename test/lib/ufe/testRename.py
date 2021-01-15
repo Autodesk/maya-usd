@@ -477,7 +477,7 @@ class RenameTestCase(unittest.TestCase):
         # primSpec is expected to be None
         self.assertIsNone(primspecSmallPotato)
 
-        # rename "/objects/Small_Potato" to "/objects/Small_Potato_something"
+        # rename "/objects/Geom/Small_Potato" to "/objects/Geom/Small_Potato_something"
         # expect the exception happens
         with self.assertRaises(RuntimeError):
             cmds.rename("Small_Potato_something")
