@@ -461,14 +461,14 @@ class RenameTestCase(unittest.TestCase):
         stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
 
         # first check for ArcType, nodePath values. I am only interested in the composition Arc other than "root".
-        compPrimDataA = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_A'))
-        self.assertTrue(list(compPrimDataA.getData()[1].values()), ['reference', '/objects/geos/cube'])
+        compQueryPrimA = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_A'))
+        self.assertTrue(list(compQueryPrimA.getData()[1].values()), ['reference', '/objects/geos/cube'])
 
-        compPrimDataB = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_B'))
-        self.assertTrue(list(compPrimDataB.getData()[1].values()), ['inherit', '/objects/geos/cube'])
+        compQueryPrimB = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_B'))
+        self.assertTrue(list(compQueryPrimB.getData()[1].values()), ['inherit', '/objects/geos/cube'])
 
-        compPrimDataC = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_C'))
-        self.assertTrue(list(compPrimDataC.getData()[1].values()), ['specialize', '/objects/geos/cube'])
+        compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_C'))
+        self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects/geos/cube'])
 
         # rename /objects/geos/cube ---> /objects/geos/cube_banana
         cubePath = ufe.PathString.path('|CompitionArcs_usd|CompitionArcs_usdShape,/objects/geos/cube')
@@ -478,14 +478,14 @@ class RenameTestCase(unittest.TestCase):
 
         # check for ArcType, nodePath values again. 
         # expect nodePath to be updated for all the arc compositions
-        compPrimDataA = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_A'))
-        self.assertTrue(list(compPrimDataA.getData()[1].values()), ['reference', '/objects/geos/cube_banana'])
+        compQueryPrimA = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_A'))
+        self.assertTrue(list(compQueryPrimA.getData()[1].values()), ['reference', '/objects/geos/cube_banana'])
 
-        compPrimDataB = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_B'))
-        self.assertTrue(list(compPrimDataB.getData()[1].values()), ['inherit', '/objects/geos/cube_banana'])
+        compQueryPrimB = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_B'))
+        self.assertTrue(list(compQueryPrimB.getData()[1].values()), ['inherit', '/objects/geos/cube_banana'])
 
-        compPrimDataC = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_C'))
-        self.assertTrue(list(compPrimDataC.getData()[1].values()), ['specialize', '/objects/geos/cube_banana'])
+        compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_C'))
+        self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects/geos/cube_banana'])
 
         # rename /objects/geos ---> /objects/geos_cucumber
         geosPath = ufe.PathString.path('|CompitionArcs_usd|CompitionArcs_usdShape,/objects/geos')
@@ -496,14 +496,14 @@ class RenameTestCase(unittest.TestCase):
 
         # check for ArcType, nodePath values again. 
         # expect nodePath to be updated for all the arc compositions
-        compPrimDataA = CompositionQuery(stage.GetPrimAtPath('/objects/geos_cucumber/cube_A'))
-        self.assertTrue(list(compPrimDataA.getData()[1].values()), ['reference', '/objects/geos_cucumber/cube_banana'])
+        compQueryPrimA = CompositionQuery(stage.GetPrimAtPath('/objects/geos_cucumber/cube_A'))
+        self.assertTrue(list(compQueryPrimA.getData()[1].values()), ['reference', '/objects/geos_cucumber/cube_banana'])
 
-        compPrimDataB = CompositionQuery(stage.GetPrimAtPath('/objects/geos_cucumber/cube_B'))
-        self.assertTrue(list(compPrimDataB.getData()[1].values()), ['inherit', '/objects/geos_cucumber/cube_banana'])
+        compQueryPrimB = CompositionQuery(stage.GetPrimAtPath('/objects/geos_cucumber/cube_B'))
+        self.assertTrue(list(compQueryPrimB.getData()[1].values()), ['inherit', '/objects/geos_cucumber/cube_banana'])
 
-        compPrimDataC = CompositionQuery(stage.GetPrimAtPath('/objects/geos_cucumber/cube_C'))
-        self.assertTrue(list(compPrimDataC.getData()[1].values()), ['specialize', '/objects/geos_cucumber/cube_banana'])
+        compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects/geos_cucumber/cube_C'))
+        self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects/geos_cucumber/cube_banana'])
 
         # rename /objects ---> /objects_eggplant
         objectsPath = ufe.PathString.path('|CompitionArcs_usd|CompitionArcs_usdShape,/objects')
@@ -514,11 +514,11 @@ class RenameTestCase(unittest.TestCase):
 
         # check for ArcType, nodePath values again. 
         # expect nodePath to be updated for all the arc compositions
-        compPrimDataA = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_A'))
-        self.assertTrue(list(compPrimDataA.getData()[1].values()), ['reference', '/objects_eggplant/geos_cucumber/cube_banana'])
+        compQueryPrimA = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_A'))
+        self.assertTrue(list(compQueryPrimA.getData()[1].values()), ['reference', '/objects_eggplant/geos_cucumber/cube_banana'])
 
-        compPrimDataB = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_B'))
-        self.assertTrue(list(compPrimDataB.getData()[1].values()), ['inherit', '/objects_eggplant/geos_cucumber/cube_banana'])
+        compQueryPrimB = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_B'))
+        self.assertTrue(list(compQueryPrimB.getData()[1].values()), ['inherit', '/objects_eggplant/geos_cucumber/cube_banana'])
 
-        compPrimDataC = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_C'))
-        self.assertTrue(list(compPrimDataC.getData()[1].values()), ['specialize', '/objects_eggplant/geos_cucumber/cube_banana'])
+        compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_C'))
+        self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects_eggplant/geos_cucumber/cube_banana'])
