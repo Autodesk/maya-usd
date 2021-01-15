@@ -421,3 +421,63 @@ class RenameTestCase(unittest.TestCase):
         # After the rename we should have 1 rename notif and no unexepected notifs.
         self.assertEqual(ufeObs.notifications(), 1)
         self.assertFalse(ufeObs.receivedUnexpectedNotif())
+
+    def testRenameRestrictionVariant(self):
+
+        '''Renaming prims inside a variantSet is not allowed.'''
+
+        cmds.file(new=True, force=True)
+
+        # open Variant.ma scene in testSamples
+        mayaUtils.openVariantSetScene()
+
+        # stage
+        mayaPathSegment = mayaUtils.createUfePathSegment('|Variant_usd|Variant_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # first check that we have a VariantSets
+        objectPrim = stage.GetPrimAtPath('/objects')
+        self.assertTrue(objectPrim.HasVariantSets())
+
+        # Geom
+        usdPathSegment = usdUtils.createUfePathSegment('/objects/Geom')
+        geomPath = ufe.Path([mayaPathSegment, usdPathSegment])
+        geomItem = ufe.Hierarchy.createItem(geomPath)
+        geomPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(geomPath))
+
+        # Small_Potato
+        smallPotatoUsdPathSegment = usdUtils.createUfePathSegment('/objects/Geom/Small_Potato')
+        smallPotatoPath = ufe.Path([mayaPathSegment, smallPotatoUsdPathSegment])
+        smallPotatoItem = ufe.Hierarchy.createItem(smallPotatoPath)
+        smallPotatoPrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(smallPotatoPath))
+
+        # add Geom to selection list
+        ufe.GlobalSelection.get().append(geomItem)
+
+        # get prim spec for Geom prim
+        primspecGeom = stage.GetEditTarget().GetPrimSpecForScenePath(geomPrim.GetPath());
+
+        # primSpec is expected to be None
+        self.assertIsNone(primspecGeom)
+
+        # rename "/objects/Geom" to "/objects/Geom_something"
+        # expect the exception happens
+        with self.assertRaises(RuntimeError):
+            cmds.rename("Geom_something")
+
+        # clear selection
+        cmds.select(clear=True)
+
+        # add Small_Potato to selection list 
+        ufe.GlobalSelection.get().append(smallPotatoItem)
+
+        # get prim spec for Small_Potato prim
+        primspecSmallPotato = stage.GetEditTarget().GetPrimSpecForScenePath(smallPotatoPrim.GetPath());
+
+        # primSpec is expected to be None
+        self.assertIsNone(primspecSmallPotato)
+
+        # rename "/objects/Geom/Small_Potato" to "/objects/Geom/Small_Potato_something"
+        # expect the exception happens
+        with self.assertRaises(RuntimeError):
+            cmds.rename("Small_Potato_something")
