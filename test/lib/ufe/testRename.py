@@ -18,6 +18,10 @@
 
 import maya.cmds as cmds
 
+from pxr import Usd
+
+import collections
+
 import usdUtils, mayaUtils
 import ufe
 import mayaUsd.ufe
@@ -25,6 +29,25 @@ import mayaUsd.ufe
 import unittest
 import re
 import os
+
+# This class is used for composition arcs query.
+class CompositionQuery(object):
+    def __init__(self, prim):
+        super(CompositionQuery, self).__init__()
+        self._prim = prim
+
+    def _getDict(self, arc):
+        dic = collections.OrderedDict()
+
+        dic['ArcType'] = str(arc.GetArcType().displayName)
+        dic['nodePath'] = str(arc.GetTargetNode().path)
+
+        return dic
+
+    def getData(self):
+        query = Usd.PrimCompositionQuery(self._prim)
+        arcValueDicList = [self._getDict(arc) for arc in query.GetCompositionArcs()]
+        return arcValueDicList
 
 class TestObserver(ufe.Observer):
     def __init__(self):
@@ -481,3 +504,81 @@ class RenameTestCase(unittest.TestCase):
         # expect the exception happens
         with self.assertRaises(RuntimeError):
             cmds.rename("Small_Potato_something")
+
+    def testAutomaticRenameCompArcs(self):
+
+        '''
+        Verify that SdfPath update happens automatically for "internal reference", 
+        "inherit", "specialize" after the rename.
+        '''
+        cmds.file(new=True, force=True)
+
+        # open compositionArcs.ma scene in testSamples
+        mayaUtils.openCompositionArcsScene()
+
+        # stage
+        mayaPathSegment = mayaUtils.createUfePathSegment('|CompositionArcs_usd|CompositionArcs_usdShape')
+        stage = mayaUsd.ufe.getStage(str(mayaPathSegment))
+
+        # first check for ArcType, nodePath values. I am only interested in the composition Arc other than "root".
+        compQueryPrimA = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_A'))
+        self.assertTrue(list(compQueryPrimA.getData()[1].values()), ['reference', '/objects/geos/cube'])
+
+        compQueryPrimB = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_B'))
+        self.assertTrue(list(compQueryPrimB.getData()[1].values()), ['inherit', '/objects/geos/cube'])
+
+        compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_C'))
+        self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects/geos/cube'])
+
+        # rename /objects/geos/cube ---> /objects/geos/cube_banana
+        cubePath = ufe.PathString.path('|CompositionArcs_usd|CompositionArcs_usdShape,/objects/geos/cube')
+        cubeItem = ufe.Hierarchy.createItem(cubePath)
+        ufe.GlobalSelection.get().append(cubeItem)
+        cmds.rename("cube_banana")
+
+        # check for ArcType, nodePath values again. 
+        # expect nodePath to be updated for all the arc compositions
+        compQueryPrimA = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_A'))
+        self.assertTrue(list(compQueryPrimA.getData()[1].values()), ['reference', '/objects/geos/cube_banana'])
+
+        compQueryPrimB = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_B'))
+        self.assertTrue(list(compQueryPrimB.getData()[1].values()), ['inherit', '/objects/geos/cube_banana'])
+
+        compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects/geos/cube_C'))
+        self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects/geos/cube_banana'])
+
+        # rename /objects/geos ---> /objects/geos_cucumber
+        geosPath = ufe.PathString.path('|CompositionArcs_usd|CompositionArcs_usdShape,/objects/geos')
+        geosItem = ufe.Hierarchy.createItem(geosPath)
+        cmds.select(clear=True)
+        ufe.GlobalSelection.get().append(geosItem)
+        cmds.rename("geos_cucumber")
+
+        # check for ArcType, nodePath values again. 
+        # expect nodePath to be updated for all the arc compositions
+        compQueryPrimA = CompositionQuery(stage.GetPrimAtPath('/objects/geos_cucumber/cube_A'))
+        self.assertTrue(list(compQueryPrimA.getData()[1].values()), ['reference', '/objects/geos_cucumber/cube_banana'])
+
+        compQueryPrimB = CompositionQuery(stage.GetPrimAtPath('/objects/geos_cucumber/cube_B'))
+        self.assertTrue(list(compQueryPrimB.getData()[1].values()), ['inherit', '/objects/geos_cucumber/cube_banana'])
+
+        compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects/geos_cucumber/cube_C'))
+        self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects/geos_cucumber/cube_banana'])
+
+        # rename /objects ---> /objects_eggplant
+        objectsPath = ufe.PathString.path('|CompositionArcs_usd|CompositionArcs_usdShape,/objects')
+        objectsItem = ufe.Hierarchy.createItem(objectsPath)
+        cmds.select(clear=True)
+        ufe.GlobalSelection.get().append(objectsItem)
+        cmds.rename("objects_eggplant")
+
+        # check for ArcType, nodePath values again. 
+        # expect nodePath to be updated for all the arc compositions
+        compQueryPrimA = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_A'))
+        self.assertTrue(list(compQueryPrimA.getData()[1].values()), ['reference', '/objects_eggplant/geos_cucumber/cube_banana'])
+
+        compQueryPrimB = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_B'))
+        self.assertTrue(list(compQueryPrimB.getData()[1].values()), ['inherit', '/objects_eggplant/geos_cucumber/cube_banana'])
+
+        compQueryPrimC = CompositionQuery(stage.GetPrimAtPath('/objects_eggplant/geos_cucumber/cube_C'))
+        self.assertTrue(list(compQueryPrimC.getData()[1].values()), ['specialize', '/objects_eggplant/geos_cucumber/cube_banana'])
