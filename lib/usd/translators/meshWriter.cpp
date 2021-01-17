@@ -29,6 +29,7 @@
 #include <pxr/base/gf/vec2f.h>
 #include <pxr/base/gf/vec3f.h>
 #include <pxr/base/gf/vec4f.h>
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/base/vt/array.h>
 #include <pxr/pxr.h>
@@ -41,20 +42,225 @@
 #include <pxr/usd/usdSkel/root.h>
 #include <pxr/usd/usdUtils/pipeline.h>
 
+#include <maya/MFloatArray.h>
+#include <maya/MFnBlendShapeDeformer.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MFnGeometryFilter.h>
 #include <maya/MFnMesh.h>
+#include <maya/MFnSkinCluster.h>
+#include <maya/MGlobal.h>
 #include <maya/MIntArray.h>
+#include <maya/MItDependencyGraph.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MStatus.h>
 #include <maya/MString.h>
 #include <maya/MStringArray.h>
 #include <maya/MUintArray.h>
 
+#include <cfloat>
 #include <set>
 #include <string>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+MObject mayaFindOrigMeshFromBlendShapeTarget(const MObject& mesh, MObjectArray* intermediates)
+{
+    TF_VERIFY(mesh.hasFn(MFn::kMesh));
+    MStatus stat;
+
+    // NOTE: (yliangsiew) If there's a skinCluster, find that first since that
+    // will be the intermediate to the blendShape node. If not, just search for any
+    // blendshape deformers upstream of the mesh.
+    MObject searchObject;
+    MObject skinCluster;
+    stat = UsdMayaMeshWriteUtils::getSkinClusterConnectedToMesh(mesh, skinCluster);
+    if (stat) {
+        searchObject = MObject(skinCluster);
+    } else {
+        searchObject = MObject(mesh);
+    }
+
+    // NOTE: (yliangsiew) Problem: if there are _intermediate deformers between blendshapes,
+    // then oh-no: what do we do? Like blendshape1 -> wrap -> blendshape2. This won't find
+    // that correctly...so we just tell the client what we found and let them decide how to
+    // handle it.
+    MFnGeometryFilter fnGeoFilter;
+    TF_VERIFY(MObjectHandle(searchObject).isValid());
+    MFnBlendShapeDeformer fnBlendShape;
+    MItDependencyGraph    itDg(
+        searchObject,
+        MFn::kBlendShape,
+        MItDependencyGraph::kUpstream,
+        MItDependencyGraph::kDepthFirst,
+        MItDependencyGraph::kPlugLevel,
+        &stat);
+    MFnDependencyNode fnNode;
+    if (intermediates == nullptr) {
+        for (; !itDg.isDone(); itDg.next()) {
+            MObject curBlendShape = itDg.currentItem();
+            TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
+            MPlug outputGeomPlug = itDg.thisPlug();
+            TF_VERIFY(outputGeomPlug.isElement() == true);
+            unsigned int outputGeomPlugIdx = outputGeomPlug.logicalIndex();
+
+            // NOTE: (yliangsiew) Because we can have multiple output
+            // deformed meshes from a single blendshape deformer, we have
+            // to walk back up the graph using the connected index to find
+            // out what the _actual_ base mesh was.
+            MFnGeometryFilter fnGeoFilter;
+            fnGeoFilter.setObject(curBlendShape);
+            MObject inputGeo = fnGeoFilter.inputShapeAtIndex(outputGeomPlugIdx, &stat);
+            if (inputGeo.hasFn(MFn::kMesh)) {
+                return inputGeo;
+            }
+        }
+    } else {
+        intermediates->clear();
+        for (; !itDg.isDone(); itDg.next()) {
+            MObject curBlendShape = itDg.currentItem();
+            TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
+            MPlug outputGeomPlug = itDg.thisPlug();
+            TF_VERIFY(outputGeomPlug.isElement() == true);
+
+            MItDependencyGraph itDgBS(
+                curBlendShape,
+                MFn::kInvalid,
+                MItDependencyGraph::kUpstream,
+                MItDependencyGraph::kDepthFirst,
+                MItDependencyGraph::kPlugLevel,
+                &stat);
+            for (; !itDgBS.isDone(); itDgBS.next()) {
+                MItDependencyGraph itDgBS(
+                    curBlendShape,
+                    MFn::kInvalid,
+                    MItDependencyGraph::kUpstream,
+                    MItDependencyGraph::kDepthFirst,
+                    MItDependencyGraph::kNodeLevel,
+                    &stat);
+                for (itDgBS.next(); !itDgBS.isDone();
+                     itDgBS.next()) { // NOTE: (yliangsiew) Skip the first node which starts at the
+                    // root, which is the blendshape deformer itself.
+                    MObject curNode = itDgBS.thisNode();
+                    if (curNode.hasFn(MFn::kMesh)) {
+                        return curNode;
+                    }
+                    intermediates->append(curNode);
+                }
+            }
+        }
+    }
+
+    return mesh;
+}
+
+MStatus mayaCheckIntermediateNodesForMeshEdits(const MObjectArray& intermediates)
+{
+    // TODO: (yliangsiew) In future, have this function not be responsible for printing diagnostic
+    // info and just return results instead if necessary.
+    MStatus      status;
+    unsigned int numIntermediates = intermediates.length();
+    for (unsigned int i = 0; i < numIntermediates; ++i) {
+        MObject curIntermediate = intermediates[i];
+        if (curIntermediate.hasFn(MFn::kGroupParts)) {
+            continue;
+        } else if (curIntermediate.hasFn(MFn::kGeometryFilt)) {
+            // NOTE: (yliangsiew) We make sure the tweak node is empty first, since
+            // that could potentially affect deformation of the origShape before it hits the
+            // blendshape node.
+            MFnGeometryFilter fnGeoFilt(curIntermediate, &status);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+            float envelope = fnGeoFilt.envelope();
+            if (fabs(envelope - 0.0f) < FLT_EPSILON) {
+                continue; // deformer has no effect
+            }
+
+            if (curIntermediate.hasFn(MFn::kTweak)) {
+                // NOTE: (yliangsiew) Make sure tweak really has no effect even if it's on
+                MPlug plgVLists = fnGeoFilt.findPlug("vlist");
+                TF_VERIFY(plgVLists.isArray());
+                unsigned int numPlgVlists = plgVLists.numElements();
+                for (unsigned int j = 0; j < numPlgVlists; ++j) {
+                    MPlug plgVlist = plgVLists.elementByPhysicalIndex(j); // vlist[0]
+                    TF_VERIFY(plgVlist.isCompound());
+                    unsigned int plgVlistNumChildren = plgVlist.numChildren();
+                    for (unsigned int k = 0; k < plgVlistNumChildren; ++k) {
+                        MPlug plgVlistChild = plgVlist.child(k); // vlist[0].vertex
+                        TF_VERIFY(plgVlistChild.isArray());
+                        unsigned int numPlgVlistChildElements = plgVlistChild.numElements();
+                        for (unsigned int x = 0; x < numPlgVlistChildElements; ++x) {
+                            MPlug plgVertex
+                                = plgVlistChild.elementByPhysicalIndex(x); // vlist[0].vertex[0]
+                            TF_VERIFY(plgVertex.isCompound());
+                            unsigned int plgVertexNumChildren = plgVertex.numChildren();
+                            for (unsigned int y = 0; y < plgVertexNumChildren; ++y) {
+                                MPlug plgVertexComponent
+                                    = plgVertex.child(y); // vlist[0].vertex[0].xVertex
+                                float vertexComponent = plgVertexComponent.asFloat();
+                                if (fabs(vertexComponent - 0.0f) > FLT_EPSILON) {
+                                    MFnDependencyNode fnNode(curIntermediate, &status);
+                                    CHECK_MSTATUS_AND_RETURN_IT(status);
+                                    TF_RUNTIME_ERROR(
+                                        "Could not determine the original blendshape "
+                                        "source mesh due to a non-empty tweak node: %s. "
+                                        "Please either bake it down or remove the "
+                                        "edits and attempt the export process again, or "
+                                        "specify -ignoreWarnings.",
+                                        fnNode.name().asChar());
+                                    return MStatus::kFailure;
+                                }
+                            }
+                        }
+                    }
+                }
+                continue; // NOTE: (yliangsiew) If the tweak node has no effect, go check
+                // the next intermediate.
+            }
+            TF_RUNTIME_ERROR(
+                "USDSkelBlendShape does not support animated blend shapes and a node: %s was found "
+                "that could potentially cause it. Please bake "
+                "down deformer history before attempting an export, or specify "
+                "-ignoreWarnings during the export process.",
+                fnGeoFilt.name().asChar());
+            return MStatus::kFailure;
+
+        } else if (curIntermediate.hasFn(MFn::kMesh)) {
+            // NOTE: (yliangsiew) Need to check that the mesh itself does not include any
+            // tweaks.
+            MFnDependencyNode fnNode(curIntermediate, &status);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+            MPlug plgPnts = fnNode.findPlug("pnts");
+            TF_VERIFY(plgPnts.isArray());
+            for (unsigned int j = 0; j < plgPnts.numElements(); ++j) {
+                MPlug plgPnt = plgPnts.elementByPhysicalIndex(j);
+                TF_VERIFY(plgPnt.isCompound());
+                for (unsigned int k = 0; k < plgPnt.numChildren(); ++k) {
+                    float tweakValue = plgPnt.child(k).asFloat();
+                    if (fabs(tweakValue - 0.0f) > FLT_EPSILON) {
+                        TF_RUNTIME_ERROR(
+                            "The mesh: %s has local tweak data on its .pnts attribute. "
+                            "Please remove it before attempting an export, or specify "
+                            "-ignoreWarnings during the export process.",
+                            fnNode.name().asChar());
+                        return MStatus::kFailure;
+                    }
+                }
+            }
+
+        } else {
+            MFnDependencyNode fnNode(curIntermediate, &status);
+            CHECK_MSTATUS_AND_RETURN_IT(status);
+            TF_RUNTIME_ERROR(
+                "Unrecognized node encountered in blendshape deformation chain: %s. Please "
+                "bake down deformer history before attempting an export, or specify "
+                "-ignoreWarnings during the export process.",
+                fnNode.name().asChar());
+            return MStatus::kFailure;
+        }
+    }
+    return MStatus::kSuccess;
+}
 
 PXRUSDMAYA_REGISTER_WRITER(mesh, PxrUsdTranslators_MeshWriter);
 PXRUSDMAYA_REGISTER_ADAPTOR_SCHEMA(mesh, UsdGeomMesh);
@@ -87,6 +293,35 @@ PxrUsdTranslators_MeshWriter::PxrUsdTranslators_MeshWriter(
 
 void PxrUsdTranslators_MeshWriter::PostExport() { cleanupPrimvars(); }
 
+bool PxrUsdTranslators_MeshWriter::writeAnimatedMeshExtents(
+    const MObject&     deformedMesh,
+    const UsdTimeCode& usdTime)
+{
+    // NOTE: (yliangsiew) We also cache the animated extents out here; this
+    // will be written at the SkelRoot level later on.
+    TF_VERIFY(!deformedMesh.isNull());
+    TF_VERIFY(deformedMesh.hasFn(MFn::kMesh));
+    MStatus stat;
+    MFnMesh fnMesh(deformedMesh, &stat);
+    CHECK_MSTATUS_AND_RETURN(stat, false);
+    unsigned int numVertices = fnMesh.numVertices();
+    const float* meshPts = fnMesh.getRawPoints(&stat);
+    CHECK_MSTATUS_AND_RETURN(stat, false);
+
+    const GfVec3f* pVtMeshPts = reinterpret_cast<const GfVec3f*>(meshPts);
+    VtVec3fArray   vtMeshPts(pVtMeshPts, pVtMeshPts + numVertices);
+    VtVec3fArray   meshBBox(2);
+    UsdGeomPointBased::ComputeExtent(vtMeshPts, &meshBBox);
+    bool bStat = true;
+    if (meshBBox != this->_prevMeshExtentsSample) {
+        bStat = this->_writeJobCtx.UpdateSkelBindingsWithExtent(
+            this->GetUsdStage(), meshBBox, usdTime);
+    }
+    this->_prevMeshExtentsSample = meshBBox;
+
+    return bStat;
+}
+
 void PxrUsdTranslators_MeshWriter::Write(const UsdTimeCode& usdTime)
 {
     UsdMayaPrimWriter::Write(usdTime);
@@ -101,8 +336,10 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 {
     MStatus status { MS::kSuccess };
 
+    const UsdMayaJobExportArgs& exportArgs = _GetExportArgs();
+
     // Exporting reference object only once
-    if (usdTime.IsDefault() && _GetExportArgs().exportReferenceObjects) {
+    if (usdTime.IsDefault() && exportArgs.exportReferenceObjects) {
         UsdMayaMeshWriteUtils::exportReferenceMesh(primSchema, GetMayaObject());
     }
 
@@ -110,7 +347,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // determine whether we use the "input" or "final" mesh when exporting
     // mesh geometry. This should only be run once at default time.
     if (usdTime.IsDefault()) {
-        const TfToken& exportSkin = _GetExportArgs().exportSkin;
+        const TfToken& exportSkin = exportArgs.exportSkin;
         if (exportSkin != UsdMayaJobExportArgsTokens->auto_
             && exportSkin != UsdMayaJobExportArgsTokens->explicit_) {
 
@@ -130,7 +367,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
                 GetUsdPath(),
                 GetDagPath(),
                 skelPath,
-                _GetExportArgs().stripNamespaces,
+                exportArgs.stripNamespaces,
                 _GetSparseValueWriter());
 
             if (!_skelInputMesh.isNull()) {
@@ -156,6 +393,22 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         return false;
     }
 
+    // NOTE: (yliangsiew) We decide early-on if the mesh needs to have blendshapes exported, or not.
+    // Since a user usually exports multiple meshes at the same time, it is inevitable that some
+    // meshes will have blendshape export requested even though they do not have any blendshape
+    // deformers driving them. So we double-check here first. Additionally, we check `finalMesh`
+    // instead of `_skelInputMesh`, since the latter can end up being of type `kMeshData` (since it
+    // could be a portion of the mesh rather than the full MObject node itself), which will segfault
+    // MItDependencyGraph when initialized with it.
+    bool shouldExportBlendShapes = exportArgs.exportBlendShapes;
+    if (shouldExportBlendShapes
+        && !UsdMayaUtil::CheckMeshUpstreamForBlendShapes(finalMesh.object())) {
+        TF_WARN(
+            "Blendshapes were requested to be exported for: %s, but none could be found.",
+            GetDagPath().fullPathName().asChar());
+        shouldExportBlendShapes = false;
+    }
+
     // If exporting skinning, then geomMesh and finalMesh will be different
     // meshes. The general rule is to use geomMesh only for geometric data such
     // as vertices, faces, normals, but use finalMesh for UVs, color sets,
@@ -163,10 +416,72 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     MObject geomMeshObj = _skelInputMesh.isNull() ? finalMesh.object() : _skelInputMesh;
     // do not pass these to functions that need access to geomMeshObj!
     // geomMesh.object() returns nil for meshes of type kMeshData.
+
+    // NOTE: (yliangsiew) Because we need to write out the _actual_ base mesh,
+    // not the deformed mesh as as result of blendshapes, if there is a blendshape
+    // in the deform stack here, we walk past it to the original shape instead.
+    // Also check if the mesh is a valid DG node (mesh geo subsets are
+    // kMeshData in cases where a single mesh has multiple face
+    // assignments to materials.) This also reduces the chance of something going wrong
+    // by meshes that do not have blendshapes being affected by the wrong code path (such
+    // as when exporting sparse frame ranges).
+    if (shouldExportBlendShapes && geomMeshObj.hasFn(MFn::kDependencyNode)) {
+        if (exportArgs.ignoreWarnings) {
+            geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, nullptr);
+        } else {
+            MObjectArray intermediates;
+            geomMeshObj = mayaFindOrigMeshFromBlendShapeTarget(geomMeshObj, &intermediates);
+            status = mayaCheckIntermediateNodesForMeshEdits(intermediates);
+            if (!status) {
+                TF_RUNTIME_ERROR(
+                    "Blendshapes failed pre-export checks at DAG path: %s",
+                    GetDagPath().fullPathName().asChar());
+                return false;
+            }
+        }
+    }
     MFnMesh geomMesh(geomMeshObj, &status);
     if (!status) {
         TF_RUNTIME_ERROR(
             "Failed to get geom mesh at DAG path: %s", GetDagPath().fullPathName().asChar());
+        return false;
+    }
+
+    // Write UsdSkelBlendShape data next. This also expands the _unionBBox member as
+    // needed to encompass all the target blendshapes and writes it to the SkelRoot.
+    bool bStat;
+    if (shouldExportBlendShapes) {
+        if (usdTime.IsDefault()) {
+            _skelInputMesh = this->writeBlendShapeData(primSchema);
+            if (_skelInputMesh.isNull()) {
+                TF_WARN(
+                    "Failed to write out initial blendshape data for the following: %s.",
+                    GetDagPath().fullPathName().asChar());
+                if (!exportArgs.ignoreWarnings) {
+                    return false;
+                }
+            }
+        } else {
+            // NOTE: (yliangsiew) This is going to get called once for each time sampled.
+            if (!_skelInputMesh.isNull()) {
+                bStat = this->writeBlendShapeAnimation(usdTime);
+                if (!bStat) {
+                    TF_WARN(
+                        "Failed to write out blendshape animation for the following: %s.",
+                        GetDagPath().fullPathName().asChar());
+                    if (!exportArgs.ignoreWarnings) {
+                        return bStat;
+                    }
+                }
+            }
+        }
+    }
+
+    // NOTE: (yliangsiew) Write out the final deformed mesh extents for each frame here.
+    MDagPath deformedMeshDagPath = this->GetDagPath();
+    MObject  deformedMesh = deformedMeshDagPath.node();
+    bStat = this->writeAnimatedMeshExtents(deformedMesh, usdTime);
+    if (!bStat) {
         return false;
     }
 
@@ -180,7 +495,79 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
 
     // Set mesh attrs ==========
     // Write points
-    UsdMayaMeshWriteUtils::writePointsData(geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+    /*
+     NOTE: (yliangsiew) Because we cannot assume that the first frame of export
+     will have no blendshape targets activated, and we want to write out the
+     points _without_ the influence of any blendshapes, (or any other deformers,
+     for that matter; just that we haven't implemented support for other
+     deformers yet, so until we do that, we can leave the effect of other
+     deformers "baked" into the base/"pref" pose) we need to deactivate all the
+     blendshape targets here _before_ writing out the data.
+    */
+    if (shouldExportBlendShapes) {
+        // NOTE: (yliangsiew) Basically at this point: we have the deformed mesh, so
+        // to find the "pref" pose (but _only_ taking blendshapes into account) we walk
+        // the DG from the deformed mesh upstream to the end of the first blendshape deformer
+        // and query the mesh data from its inputGeom plug.
+        MItDependencyGraph itDg(
+            deformedMesh,
+            MFn::kInvalid,
+            MItDependencyGraph::kUpstream,
+            MItDependencyGraph::kDepthFirst,
+            MItDependencyGraph::kPlugLevel,
+            &status);
+        MObject      upstreamBlendShape = MObject::kNullObj;
+        unsigned int idxGeo = 0;
+        for (; !itDg.isDone(); itDg.next()) {
+            MObject curNode = itDg.thisNode();
+            if (!curNode.hasFn(MFn::kBlendShape)) {
+                itDg.next();
+                continue;
+            }
+            upstreamBlendShape = curNode;
+            MPlug curPlug = itDg.thisPlug(); // NOTE: (yliangsiew) This _should_ be the
+                                             // outputGeometry[x] plug that it's connected to.
+            TF_VERIFY(curPlug.isElement());
+            idxGeo = curPlug.logicalIndex();
+        }
+
+        if (!upstreamBlendShape.hasFn(MFn::kBlendShape)) {
+            TF_WARN("Blendshapes were requested to be exported, but no upstream blendshapes could "
+                    "be found.");
+            UsdMayaMeshWriteUtils::writePointsData(
+                geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+        } else {
+            MFnDependencyNode fnNode(upstreamBlendShape, &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            TF_VERIFY(fnNode.hasAttribute("input"));
+            MPlug plgBlendShapeInputs = fnNode.findPlug("input", &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            MPlug plgBlendShapeInput = plgBlendShapeInputs.elementByLogicalIndex(idxGeo);
+            MPlug plgBlendShapeInputGeometry
+                = UsdMayaUtil::FindChildPlugWithName(plgBlendShapeInput, "inputGeometry");
+            MDataHandle dhInputGeo
+                = plgBlendShapeInputGeometry
+                      .asMDataHandle(); // NOTE: (yliangsiew) This should be the pref mesh.
+            TF_VERIFY(dhInputGeo.type() == MFnData::kMesh);
+            MObject inputGeo = dhInputGeo.asMesh();
+            TF_VERIFY(inputGeo.hasFn(MFn::kMesh));
+
+            // NOTE: (yliangsiew) Because the `geomMesh` fnset cached the previous MObject (from the
+            // inputGeom skinCluster plug), the point positions reported will be out-of-date even
+            // after we disable blendshape deformers. So this code re-acquires the mesh in question
+            // to write out the points for, and then we actually write it out.
+            MFnMesh fnMesh(inputGeo, &status);
+            CHECK_MSTATUS_AND_RETURN(status, false);
+            UsdMayaMeshWriteUtils::writePointsData(
+                fnMesh, primSchema, usdTime, _GetSparseValueWriter());
+        }
+    } else {
+        // TODO: (yliangsiew) Any other deformers that get implemented in the future will have to
+        // make sure that they don't just enter this scope; otherwise, their deformed point
+        // positions will get "baked" into the pref pose as well.
+        UsdMayaMeshWriteUtils::writePointsData(
+            geomMesh, primSchema, usdTime, _GetSparseValueWriter());
+    }
 
     // Write faceVertexIndices
     UsdMayaMeshWriteUtils::writeFaceVertexIndicesData(
@@ -190,7 +577,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // flag (this is specified by the job args but defaults to catmullClark).
     TfToken sdScheme = UsdMayaMeshWriteUtils::getSubdivScheme(finalMesh);
     if (sdScheme.IsEmpty()) {
-        sdScheme = _GetExportArgs().defaultMeshScheme;
+        sdScheme = exportArgs.defaultMeshScheme;
     }
     primSchema.CreateSubdivisionSchemeAttr(VtValue(sdScheme), true);
 
@@ -218,14 +605,14 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     UsdMayaMeshWriteUtils::writeInvisibleFacesData(finalMesh, primSchema, _GetSparseValueWriter());
 
     // == Write UVSets as Vec2f Primvars
-    if (_GetExportArgs().exportMeshUVs) {
+    if (exportArgs.exportMeshUVs) {
         UsdMayaMeshWriteUtils::writeUVSetsAsVec2fPrimvars(
             finalMesh, primSchema, usdTime, _GetSparseValueWriter());
     }
 
     // == Gather ColorSets
     std::vector<std::string> colorSetNames;
-    if (_GetExportArgs().exportColorSets) {
+    if (exportArgs.exportColorSets) {
         MStringArray mayaColorSetNames;
         status = finalMesh.getColorSetNames(mayaColorSetNames);
         colorSetNames.reserve(mayaColorSetNames.length());
@@ -245,7 +632,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // opacities from the shaders assigned to the mesh and/or its faces.
     // If we find a displayColor color set, the shader colors and opacities
     // will be used to fill in unauthored/unpainted faces in the color set.
-    if (_GetExportArgs().exportDisplayColor || !colorSetNames.empty()) {
+    if (exportArgs.exportDisplayColor || !colorSetNames.empty()) {
         UsdMayaUtil::GetLinearShaderColor(
             finalMesh,
             &shadersRGBData,
@@ -262,7 +649,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
         bool isDisplayColor = false;
 
         if (colorSetName == UsdMayaMeshPrimvarTokens->DisplayColorColorSetName.GetString()) {
-            if (!_GetExportArgs().exportDisplayColor) {
+            if (!exportArgs.exportDisplayColor) {
                 continue;
             }
             isDisplayColor = true;
@@ -372,7 +759,7 @@ bool PxrUsdTranslators_MeshWriter::writeMeshAttrs(
     // UsdMayaMeshWriteUtils::addDisplayPrimvars() will only author displayColor and displayOpacity
     // if no authored opinions exist, so the code below only has an effect if
     // we did NOT find a displayColor color set above.
-    if (_GetExportArgs().exportDisplayColor) {
+    if (exportArgs.exportDisplayColor) {
         // Using the shader default values (an alpha of zero, in particular)
         // results in Gprims rendering the same way in usdview as they do in
         // Maya (i.e. unassigned components are invisible).

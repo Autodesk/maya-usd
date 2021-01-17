@@ -4,7 +4,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportAnimation.py
     testUsdExportAsClip.py
     testUsdExportBindTransform.py
-    testUsdExportCamera.py
+    testUsdExportBlendshapes.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
     testUsdExportDisplacement.py
