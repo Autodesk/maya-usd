@@ -23,6 +23,7 @@
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
+#include <maya/MFnComponentListData.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -31,6 +32,7 @@
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnSet.h>
+#include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyGraph.h>
@@ -185,6 +187,18 @@ std::string UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
     return nodeName.asChar();
 }
 
+MString UsdMayaUtil::GetUniqueNameOfDAGNode(const MObject& node)
+{
+    if (!TF_VERIFY(!node.isNull() && node.hasFn(MFn::kDagNode))) {
+        return MString();
+    }
+    MStatus    stat;
+    MFnDagNode fnNode(node, &stat);
+    CHECK_MSTATUS_AND_RETURN(stat, MString());
+    MString nodeName = fnNode.partialPathName(&stat);
+    return nodeName;
+}
+
 MStatus UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
 {
     MSelectionList selectionList;
@@ -237,6 +251,39 @@ MStatus UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
 
     plug = tmpPlug;
     return status;
+}
+
+MPlug UsdMayaUtil::FindChildPlugWithName(const MPlug& parent, const MString& name)
+{
+    MPlug sentinel;
+    if (parent.isNull() || !parent.isCompound()) {
+        return sentinel;
+    }
+    MStatus      stat;
+    unsigned int numChildren = parent.numChildren(&stat);
+    CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+    if (numChildren == 0) {
+        return sentinel;
+    }
+
+    MFnAttribute fnAttr;
+
+    // TODO: (yliangsiew) for a certain threshold of child plugs, might want to
+    //       binary search instead.
+    for (unsigned int i = 0; i < numChildren; ++i) {
+        MPlug plgChild = parent.child(i, &stat);
+        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+        MObject attrChild = plgChild.attribute(&stat);
+        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+        stat = fnAttr.setObject(attrChild);
+        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+        const MString attrName = fnAttr.name();
+        if (attrName == name) {
+            return plgChild;
+        }
+    }
+
+    return sentinel;
 }
 
 MPlug UsdMayaUtil::GetMayaTimePlug()
@@ -2246,4 +2293,76 @@ double UsdMayaUtil::GetSceneMTimeUnitAsDouble()
 {
     const MTime::Unit sceneUnit = MTime::uiUnit();
     return UsdMayaUtil::ConvertMTimeUnitToDouble(sceneUnit);
+}
+
+bool UsdMayaUtil::mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx)
+{
+    for (unsigned int i = 0; i < array.length(); ++i) {
+        if (array[i] == a) {
+            if (idx != nullptr) {
+                *idx = i;
+            }
+            return true;
+        }
+    }
+    if (idx != nullptr) {
+        *idx = -1;
+    }
+    return false;
+}
+
+MStatus UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MIntArray& indices)
+{
+    MStatus     status;
+    MDataHandle dh = plg.asMDataHandle(&status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    MObject indicesData = dh.data();
+    if (indicesData.isNull() || !indicesData.hasFn(MFn::kComponentListData)) {
+        return MStatus::kFailure;
+    }
+    MFnComponentListData fnComponentListData(indicesData, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    indices.clear();
+    unsigned int numIndices = fnComponentListData.length();
+    if (numIndices == 0) {
+        return MStatus::kSuccess;
+    }
+    for (unsigned int i = 0; i < numIndices; ++i) {
+        MObject                   curComponent = fnComponentListData[i];
+        MFnSingleIndexedComponent fnSingleIndexedComponent(curComponent, &status);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+        MIntArray curIndices;
+        status = fnSingleIndexedComponent.getElements(curIndices);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+        for (unsigned int j = 0; j < curIndices.length(); ++j) {
+            indices.append(curIndices[j]);
+        }
+    }
+
+    return status;
+}
+
+bool UsdMayaUtil::CheckMeshUpstreamForBlendShapes(const MObject& mesh)
+{
+    MStatus stat;
+    if (!MObjectHandle(mesh).isValid()) {
+        return false;
+    }
+    MObject            searchObj = MObject(mesh);
+    MItDependencyGraph itDg(
+        searchObj,
+        MFn::kBlendShape,
+        MItDependencyGraph::kUpstream,
+        MItDependencyGraph::kDepthFirst,
+        MItDependencyGraph::kNodeLevel,
+        &stat);
+    CHECK_MSTATUS_AND_RETURN(stat, false);
+    for (; !itDg.isDone(); itDg.next()) {
+        MObject curBlendShape = itDg.currentItem();
+        if (curBlendShape.hasFn(MFn::kBlendShape)) {
+            return true;
+        }
+    }
+
+    return false;
 }

@@ -59,6 +59,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (defaultMeshScheme) \
     (defaultUSDFormat) \
     (eulerFilter) \
+    (exportBlendShapes) \
     (exportCollectionBasedBindings) \
     (exportColorSets) \
     (exportDisplayColor) \
@@ -71,6 +72,7 @@ TF_DECLARE_PUBLIC_TOKENS(
     (exportUVs) \
     (exportVisibility) \
     (file) \
+    (ignoreWarnings) \
     (kind) \
     (materialCollectionsPath) \
     (materialsScopeName) \
@@ -154,8 +156,10 @@ struct UsdMayaJobExportArgs
     const bool        exportRefsAsInstanceable;
     const TfToken     exportSkels;
     const TfToken     exportSkin;
+    const bool        exportBlendShapes;
     const bool        exportVisibility;
     const std::string file;
+    const bool        ignoreWarnings;
 
     /// If this is not empty, then a set of collections are exported on the
     /// prim pointed to by the path, each representing the collection of

@@ -29,6 +29,7 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
+#include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
