@@ -110,6 +110,7 @@ target_link_libraries(${PROJECT_NAME}
         usdImaging
         usdImagingGL
         usdLux
+        usdRender
         usdRi
         usdShade
         usdSkel
