@@ -1389,6 +1389,11 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 */
 HdDirtyBits HdVP2BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
 {
+    // Visibility and selection result in highlight changes:
+    if ((bits & HdChangeTracker::DirtyVisibility) && (bits & DirtySelection)) {
+        bits |= DirtySelectionHighlight;
+    }
+
     // Propagate dirty bits to all draw items.
     for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
         const HdReprSharedPtr& repr = pair.second;
