@@ -30,6 +30,7 @@
 using namespace MayaUsd;
 using namespace boost::python;
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdPrim getPrimFromRawItem(uint64_t rawItem)
 {
     Ufe::SceneItem*    item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
@@ -40,7 +41,6 @@ UsdPrim getPrimFromRawItem(uint64_t rawItem)
     return UsdPrim();
 }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 std::string getNodeNameFromRawItem(uint64_t rawItem)
 {
     std::string     name;
@@ -122,13 +122,8 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
 
 void wrapUtils()
 {
-    // This python wrapper should actually be UFE v2 only since it relies
-    // on the raw item from scene item which was only added to UFE v2.
-    // However the test 'testUfePythonImport.py' relies on this method
-    // so I left it.
-    def("getPrimFromRawItem", getPrimFromRawItem);
-
 #ifdef UFE_V2_FEATURES_AVAILABLE
+    def("getPrimFromRawItem", getPrimFromRawItem);
     def("getNodeNameFromRawItem", getNodeNameFromRawItem);
     def("getNodeTypeFromRawItem", getNodeTypeFromRawItem);
 #endif

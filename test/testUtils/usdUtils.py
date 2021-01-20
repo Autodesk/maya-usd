@@ -46,7 +46,7 @@ def getPrimFromSceneItem(item):
         prim = mayaUsd.ufe.getPrimFromRawItem(rawItem)
         return prim
     else:
-        return None
+        return Usd.Prim()
 
 def createAnimatedHierarchy(stage):
     """
