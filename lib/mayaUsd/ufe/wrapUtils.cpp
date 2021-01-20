@@ -49,7 +49,6 @@ std::string getNodeNameFromRawItem(uint64_t rawItem)
         name = item->nodeName();
     return name;
 }
-#endif
 
 std::string getNodeTypeFromRawItem(uint64_t rawItem)
 {
@@ -61,6 +60,7 @@ std::string getNodeTypeFromRawItem(uint64_t rawItem)
     }
     return type;
 }
+#endif
 
 UsdStageWeakPtr getStage(const std::string& ufePathString)
 {
@@ -122,13 +122,16 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
 
 void wrapUtils()
 {
+    // This python wrapper should actually be UFE v2 only since it relies
+    // on the raw item from scene item which was only added to UFE v2.
+    // However the test 'testUfePythonImport.py' relies on this method
+    // so I left it.
     def("getPrimFromRawItem", getPrimFromRawItem);
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
     def("getNodeNameFromRawItem", getNodeNameFromRawItem);
-#endif
-
     def("getNodeTypeFromRawItem", getNodeTypeFromRawItem);
+#endif
 
     // Because mayaUsd and UFE have incompatible Python bindings that do not
     // know about each other (provided by Boost Python and pybind11,

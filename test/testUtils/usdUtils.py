@@ -41,9 +41,12 @@ def createUfePathSegment(usdPath):
     return ufe.PathSegment(usdPath, mayaUsd.ufe.getUsdRunTimeId(), usdSeparator)
 
 def getPrimFromSceneItem(item):
-    rawItem = item.getRawAddress()
-    prim = mayaUsd.ufe.getPrimFromRawItem(rawItem)
-    return prim
+    if ufeUtils.ufeFeatureSetVersion() >= 2:
+        rawItem = item.getRawAddress()
+        prim = mayaUsd.ufe.getPrimFromRawItem(rawItem)
+        return prim
+    else:
+        return None
 
 def createAnimatedHierarchy(stage):
     """

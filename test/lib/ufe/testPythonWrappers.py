@@ -18,7 +18,7 @@
 
 import unittest
 
-import mayaUtils, ufeUtils
+import mayaUtils, ufeUtils, usdUtils
 import mayaUsd
 import ufe
 
@@ -47,10 +47,7 @@ class PythonWrappersTestCase(unittest.TestCase):
         # Create empty stage and add a prim.
         import mayaUsd_createStageWithNewLayer
         mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
-        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
-        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
-        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
-        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+        proxyShapePath = ufe.Path(mayaUtils.createUfePathSegment('|stage1|stageShape1'))
 
         # Test maya-usd getStage() wrapper.
         mayaUsdStage = mayaUsd.ufe.getStage(str(proxyShapePath))
@@ -72,23 +69,27 @@ class PythonWrappersTestCase(unittest.TestCase):
         self.assertEqual(shapeNode, stagePath.replace('|world', ''))
 
         # Test the maya-usd ufePathToPrim() wrapper.
-        capsulePrim = mayaUsd.ufe.ufePathToPrim('|stage1|stageShape1,/Capsule1')
+        mayaUsdStage.DefinePrim("/Capsule1", "Capsule")
+        if ufeUtils.ufeFeatureSetVersion() >= 2:
+            capsulePrim = mayaUsd.ufe.ufePathToPrim('|stage1|stageShape1,/Capsule1')
+        else:
+            capsulePrim = mayaUsd.ufe.ufePathToPrim('|world|stage1|stageShape1,/Capsule1')
         self.assertIsNotNone(capsulePrim)
 
-        # Test the maya-usd getPrimFromRawItem() wrapper.
-        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
-        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
-        rawItem = capsuleItem.getRawAddress()
-        capsulePrim2 = mayaUsd.ufe.getPrimFromRawItem(rawItem)
-        self.assertIsNotNone(capsulePrim2)
-        self.assertEqual(capsulePrim, capsulePrim2)
-
-        # Test the maya-usd getNodeTypeFromRawItem() wrapper.
-        nodeType = mayaUsd.ufe.getNodeTypeFromRawItem(rawItem)
-        self.assertIsNotNone(nodeType)
-
-        # Test the maya-usd getNodeNameFromRawItem() wrapper.
         if ufeUtils.ufeFeatureSetVersion() >= 2:
+            # Test the maya-usd getPrimFromRawItem() wrapper.
+            capsulePath = proxyShapePath + usdUtils.createUfePathSegment('/Capsule1')
+            capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+            rawItem = capsuleItem.getRawAddress()
+            capsulePrim2 = mayaUsd.ufe.getPrimFromRawItem(rawItem)
+            self.assertIsNotNone(capsulePrim2)
+            self.assertEqual(capsulePrim, capsulePrim2)
+
+            # Test the maya-usd getNodeTypeFromRawItem() wrapper.
+            nodeType = mayaUsd.ufe.getNodeTypeFromRawItem(rawItem)
+            self.assertIsNotNone(nodeType)
+
+            # Test the maya-usd getNodeNameFromRawItem() wrapper.
             nodeName = mayaUsd.ufe.getNodeNameFromRawItem(rawItem)
             self.assertIsNotNone(nodeName)
 
