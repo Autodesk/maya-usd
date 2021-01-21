@@ -16,9 +16,11 @@
 #include "UsdUndoCreateGroupCommand.h"
 
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
+#include <mayaUsd/ufe/UsdUndoSetKindCommand.h>
 
+#include <pxr/usd/kind/registry.h>
+#include <pxr/usd/usd/modelAPI.h>
 #include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
 
 #include <ufe/hierarchy.h>
 #include <ufe/scene.h>
@@ -61,6 +63,17 @@ void UsdUndoCreateGroupCommand::execute()
     addPrimCmd->execute();
 
     _group = UsdSceneItem::create(addPrimCmd->newUfePath(), addPrimCmd->newPrim());
+
+    // If the parent prim is part of the model hierarchy, set the kind of the
+    // newly created group prim to make sure that the model hierarchy remains
+    // contiguous.
+    const PXR_NS::UsdPrim& parentPrim = _parentItem->prim();
+    if (UsdModelAPI(parentPrim).IsModel()) {
+        const PXR_NS::UsdPrim& groupPrim = _group->prim();
+        auto setKindCmd = UsdUndoSetKindCommand::create(groupPrim, PXR_NS::KindTokens->group);
+        append(setKindCmd);
+        setKindCmd->execute();
+    }
 
     auto newParentHierarchy = Ufe::Hierarchy::hierarchy(_group);
     if (newParentHierarchy) {
