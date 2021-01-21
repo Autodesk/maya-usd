@@ -264,10 +264,13 @@ bool UsdMayaTranslatorNurbsPatch::Read(
         MFnAnimCurve animFn;
 
         // Construct the time array to be used for all the keys
+        MTime::Unit timeUnit = MTime::uiUnit();
+        double      timeSampleMultiplier
+            = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
         MTimeArray timeArray;
         timeArray.setLength(numTimeSamples);
         for (unsigned int ti = 0; ti < numTimeSamples; ++ti) {
-            timeArray.set(MTime(pointsTimeSamples[ti]), ti);
+            timeArray.set(MTime(pointsTimeSamples[ti] * timeSampleMultiplier, timeUnit), ti);
         }
 
         // Key/Animate the weights

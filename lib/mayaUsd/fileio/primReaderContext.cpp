@@ -19,6 +19,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMayaPrimReaderContext::UsdMayaPrimReaderContext(ObjectRegistry* pathNodeMap)
     : _prune(false)
+    , _timeSampleMultiplier(1.0)
     , _pathNodeMap(pathNodeMap)
 {
 }
@@ -60,5 +61,12 @@ bool UsdMayaPrimReaderContext::GetPruneChildren() const { return _prune; }
 /// UsdMayaPrimReader::PostReadSubtree() step, since in the latter, the
 /// children have already been processed.
 void UsdMayaPrimReaderContext::SetPruneChildren(bool prune) { _prune = prune; }
+
+double UsdMayaPrimReaderContext::GetTimeSampleMultiplier() const { return _timeSampleMultiplier; };
+
+void UsdMayaPrimReaderContext::SetTimeSampleMultiplier(double multiplier)
+{
+    _timeSampleMultiplier = multiplier;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,6 +27,8 @@ from AL import usdmaya
 
 from pxr import Usd, UsdUtils, Tf
 
+import fixturesUtils
+
 class CubeGenerator(usdmaya.TranslatorBase):
     '''
     Basic Translator which doesn't support update
@@ -38,7 +40,7 @@ class CubeGenerator(usdmaya.TranslatorBase):
     importObjectCount = 0
     updateCount = 0
     importObjectMObjects = []
-    
+
     @classmethod
     def resetState(cls):
         cls.initializeCount = 0
@@ -48,12 +50,12 @@ class CubeGenerator(usdmaya.TranslatorBase):
         cls.importObjectCount = 0
         cls.updateCount = 0
         cls.importObjectMObjects = []
-        
+
     @classmethod
     def getState(cls):
-        return {"initializeCount": cls.initializeCount, 
-                "preTearDownCount": cls.preTearDownCount, 
-                "tearDownCount": cls.tearDownCount, 
+        return {"initializeCount": cls.initializeCount,
+                "preTearDownCount": cls.preTearDownCount,
+                "tearDownCount": cls.tearDownCount,
                 "postImportCount":cls.postImportCount,
                 "importObjectCount":cls.importObjectCount,
                 "updateCount":cls.updateCount,
@@ -61,37 +63,37 @@ class CubeGenerator(usdmaya.TranslatorBase):
 
     def initialize(self):
         return True
-    
+
     def preTearDown(self, prim):
         self.__class__.preTearDownCount +=1
         return True
-    
+
     def tearDown(self, path):
         self.__class__.tearDownCount +=1
         self.removeItems(path)
         return True
-    
+
     def canExport(self, mayaObjectName):
         return False
-    
+
     def needsTransformParent(self):
         return True
-    
+
     def supportsUpdate(self):
         return False
-    
+
     def importableByDefault(self):
         return True
-    
+
     def exportObject(self, stage, path, usdPath, params):
         return
-    
+
     def postImport(self, prim):
         return True
 
     def getTranslatedType(self):
         return Tf.Type.Unknown
-       
+
 
     def importObject(self, prim, parent=None):
         self.__class__.importObjectCount +=1
@@ -115,7 +117,7 @@ class CubeGenerator(usdmaya.TranslatorBase):
 
         self.__class__.importObjectMObjects = self.context().getMObjectsPath(prim)
         return True
-    
+
 
     def update(self, prim):
         self.__class__.updateCount +=1
@@ -181,18 +183,18 @@ class DeleteParentNodeOnPostImport(usdmaya.TranslatorBase):
 
 
 class TestPythonTranslators(unittest.TestCase):
-    
+
     def setUp(self):
         cmds.file(force=True, new=True)
         cmds.loadPlugin("AL_USDMayaPlugin", quiet=True)
         self.assertTrue(cmds.pluginInfo("AL_USDMayaPlugin", query=True, loaded=True))
-        
-        
+
+
     def tearDown(self):
         CubeGenerator.resetState()
         UsdUtils.StageCache.Get().Clear()
         usdmaya.TranslatorBase.clearTranslators()
-    
+
     def test_registration(self):
         import examplecubetranslator  #This registers the translator
 
@@ -675,11 +677,5 @@ class TestPythonTranslatorsUniqueKey(unittest.TestCase):
         self.assertTrue(cmds.objExists('|bindings_grp|root|dynamic_five_cubes'))
 
 
-if __name__ == "__main__":
-
-    tests = [unittest.TestLoader().loadTestsFromTestCase(TestPythonTranslators)]
-    tests += [unittest.TestLoader().loadTestsFromTestCase(TestPythonTranslatorsUniqueKey)]
-    
-    results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
-    exitCode = int(not all([result.wasSuccessful() for result in results]))
-    cmds.quit(force=True, exitCode=(exitCode))
+if __name__ == '__main__':
+    fixturesUtils.runTests(globals())

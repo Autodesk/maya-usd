@@ -123,7 +123,5 @@ Ufe::Matrix4d UsdTransform3dBase::segmentExclusiveMatrix() const
     return toUfe(xformCache.GetParentToWorldTransform(fPrim));
 }
 
-const char* UsdTransform3dBase::pathCStr() const { return path().string().c_str(); }
-
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

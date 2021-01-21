@@ -333,7 +333,7 @@ void SaveLayersDialog::onSaveAll()
 
         QString path = row->pathToSaveAs();
         if (!path.isEmpty()) {
-            pxr::SdfFileFormat::FileFormatArguments formatArgs;
+            PXR_NS::SdfFileFormat::FileFormatArguments formatArgs;
             formatArgs["format"] = row->usdFormatTag().toStdString();
 
             auto sessionState = item->parentModel()->sessionState();

@@ -49,6 +49,7 @@ target_compile_definitions(${PROJECT_NAME}
         $<$<BOOL:${IS_LINUX}>:LINUX>
         $<$<BOOL:${IS_LINUX}>:GL_GLEXT_PROTOTYPES>
         $<$<BOOL:${IS_LINUX}>:GLX_GLXEXT_PROTOTYPES>
+        $<$<BOOL:${Qt5_FOUND}>:WANT_QT_BUILD>
 
         # this flag is needed when building maya-usd in Maya
         $<$<BOOL:${IS_WINDOWS}>:WIN32>

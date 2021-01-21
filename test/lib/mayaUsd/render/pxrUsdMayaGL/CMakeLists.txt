@@ -42,7 +42,7 @@ foreach(script ${TEST_SCRIPT_FILES})
 
             # All of the pxrUsdMayaGL tests exercise Pixar's batch renderer, so
             # we turn the Viewport 2.0 render delegate off.
-            "VP2_RENDER_DELEGATE_PROXY=0"
+            "MAYAUSD_DISABLE_VP2_RENDER_DELEGATE=1"
     )
 
     # Assign a CTest label to these tests for easy filtering.

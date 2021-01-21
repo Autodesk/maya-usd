@@ -48,6 +48,7 @@ public:
     static constexpr auto kExportUVsFlag = "uvs";
     static constexpr auto kEulerFilterFlag = "ef";
     static constexpr auto kExportVisibilityFlag = "vis";
+    static constexpr auto kIgnoreWarningsFlag = "ign";
     static constexpr auto kExportInstancesFlag = "ein";
     static constexpr auto kMergeTransformAndShapeFlag = "mt";
     static constexpr auto kStripNamespacesFlag = "sn";
@@ -63,6 +64,7 @@ public:
     static constexpr auto kExportReferenceObjectsFlag = "ero";
     static constexpr auto kExportSkelsFlag = "skl";
     static constexpr auto kExportSkinFlag = "skn";
+    static constexpr auto kExportBlendShapesFlag = "ebs";
     static constexpr auto kParentScopeFlag = "psc";
     static constexpr auto kRenderableOnlyFlag = "ro";
     static constexpr auto kDefaultCamerasFlag = "dc";
@@ -76,6 +78,7 @@ public:
     static constexpr auto kPythonPerFrameCallbackFlag = "pfc";
     static constexpr auto kPythonPostCallbackFlag = "ppc";
     static constexpr auto kVerboseFlag = "v";
+    static constexpr auto kStaticSingleSample = "sss";
 
     // Short and Long forms of flags defined by this command itself:
     static constexpr auto kAppendFlag = "a";

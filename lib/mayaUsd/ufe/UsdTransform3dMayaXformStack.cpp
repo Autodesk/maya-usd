@@ -25,13 +25,22 @@
 
 #include <maya/MEulerRotation.h>
 #include <maya/MGlobal.h>
+#include <maya/MMatrix.h>
+#include <maya/MTransformationMatrix.h>
+#include <maya/MVector.h>
 
+#include <cstring>
 #include <functional>
 #include <map>
 
 namespace {
 
-using OpFunc = std::function<UsdGeomXformOp(const Ufe::BaseTransformUndoableCommand&)>;
+#if UFE_PREVIEW_VERSION_NUM >= 2031
+using BaseUndoableCommand = Ufe::BaseUndoableCommand;
+#else
+using BaseUndoableCommand = Ufe::BaseTransformUndoableCommand;
+#endif
+using OpFunc = std::function<UsdGeomXformOp(const BaseUndoableCommand&)>;
 
 using namespace MayaUsd::ufe;
 
@@ -131,17 +140,6 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     }
 #endif
 
-    // According to USD docs, editing scene description via instance proxies and their properties is
-    // not allowed.
-    // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
-    if (usdItem->prim().IsInstanceProxy()) {
-        MGlobal::displayError(
-            MString("Authoring to the descendant of an instance [")
-            + MString(usdItem->prim().GetName().GetString().c_str()) + MString("] is not allowed. ")
-            + MString("Please mark 'instanceable=false' to author edits to instance proxies."));
-        return nullptr;
-    }
-
     // If the prim isn't transformable, can't create a Transform3d interface
     // for it.
     UsdGeomXformable xformSchema(usdItem->prim());
@@ -163,6 +161,69 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
 
     return stackOps.empty() ? nextTransform3dFn() : UsdTransform3dMayaXformStack::create(usdItem);
 }
+
+// Class for setMatrixCmd() implementation.  Should be rolled into a future
+// command class with full undo / redo support
+class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
+{
+public:
+    UsdSetMatrix4dUndoableCmd(
+        const Ufe::Path&     path,
+        const Ufe::Vector3d& oldT,
+        const Ufe::Vector3d& oldR,
+        const Ufe::Vector3d& oldS,
+        const Ufe::Matrix4d& newM)
+        : Ufe::SetMatrix4dUndoableCommand(path)
+        , _oldT(oldT)
+        , _oldR(oldR)
+        , _oldS(oldS)
+    {
+        // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
+        // nor GfTransform decomposition provide results that match Maya,
+        // so use MTransformationMatrix.
+        MMatrix m;
+        std::memcpy(m[0], &newM.matrix[0][0], sizeof(double) * 16);
+        MTransformationMatrix                xformM(m);
+        auto                                 t = xformM.getTranslation(MSpace::kTransform);
+        double                               r[3];
+        double                               s[3];
+        MTransformationMatrix::RotationOrder rotOrder;
+        xformM.getRotation(r, rotOrder);
+        xformM.getScale(s, MSpace::kTransform);
+        constexpr double radToDeg = 57.295779506;
+
+        _newT = Ufe::Vector3d(t[0], t[1], t[2]);
+        _newR = Ufe::Vector3d(r[0] * radToDeg, r[1] * radToDeg, r[2] * radToDeg);
+        _newS = Ufe::Vector3d(s[0], s[1], s[2]);
+    }
+
+    ~UsdSetMatrix4dUndoableCmd() override { }
+
+    bool set(const Ufe::Matrix4d&) override
+    {
+        // No-op: Maya does not set matrices through interactive manipulation.
+        TF_WARN("Illegal call to UsdSetMatrix4dUndoableCmd::set()");
+        return true;
+    }
+
+    void undo() override { perform(_oldT, _oldR, _oldS); }
+    void redo() override { perform(_newT, _newR, _newS); }
+
+private:
+    void perform(const Ufe::Vector3d& t, const Ufe::Vector3d& r, const Ufe::Vector3d& s)
+    {
+        auto t3d = Ufe::Transform3d::transform3d(sceneItem());
+        t3d->translate(t.x(), t.y(), t.z());
+        t3d->rotate(r.x(), r.y(), r.z());
+        t3d->scale(s.x(), s.y(), s.z());
+    }
+    Ufe::Vector3d _oldT;
+    Ufe::Vector3d _oldR;
+    Ufe::Vector3d _oldS;
+    Ufe::Vector3d _newT;
+    Ufe::Vector3d _newR;
+    Ufe::Vector3d _newS;
+};
 
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
@@ -429,14 +490,14 @@ UsdTransform3dMayaXformStack::rotateCmd(double x, double y, double z)
     // If there is no rotate transform op, we will create a RotXYZ.
     CvtRotXYZToAttrFn cvt = hasRotate ? getCvtRotXYZToAttrFn(op.GetOpName()) : toXYZ;
     OpFunc            f = hasRotate
-        ? OpFunc([attrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
               return UsdGeomXformOp(attr);
           })
         : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const Ufe::BaseTransformUndoableCommand& cmd) {
+                     const BaseUndoableCommand& cmd) {
               // Use notification guard, otherwise will generate one notification
               // for the xform op add, and another for the reorder.
               InTransform3dChange guard(cmd.path());
@@ -465,14 +526,14 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMayaXformStack::scaleCmd(double x, 
         attrName = op.GetOpName();
     }
     OpFunc f = hasScale
-        ? OpFunc([attrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
               return UsdGeomXformOp(attr);
           })
         : OpFunc([opSuffix = getTRSOpSuffix(), setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const Ufe::BaseTransformUndoableCommand& cmd) {
+                     const BaseUndoableCommand& cmd) {
               InTransform3dChange guard(cmd.path());
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
@@ -564,25 +625,31 @@ Ufe::SetVector3dUndoableCommand::Ptr UsdTransform3dMayaXformStack::setVector3dCm
     const TfToken& opSuffix)
 {
     auto   attr = prim().GetAttribute(attrName);
+    auto   setXformOpOrderFn = getXformOpOrderFn();
     OpFunc f = attr
-        ? OpFunc([attrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+        ? OpFunc([attrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(attrName);
               return UsdGeomXformOp(attr);
           })
-        : OpFunc([opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const Ufe::BaseTransformUndoableCommand& cmd) {
-              InTransform3dChange guard(cmd.path());
-              auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
-              TF_AXIOM(usdSceneItem);
-              UsdGeomXformable xformable(usdSceneItem->prim());
-              auto             op = xformable.AddTranslateOp(OpPrecision<V>::precision, opSuffix);
-              TF_AXIOM(op);
-              op.Set(v);
-              setXformOpOrderFn(xformable);
-              return op;
-          });
+        : OpFunc(
+            // MAYA-108612: generalized lambda capture below is incorrect with
+            // gcc 6.3.1 on Linux.  Call to getXformOpOrderFn() is non-virtual;
+            // work around by calling in function body.  PPT, 11-Jan-2021.
+            // [opSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](const BaseUndoableCommand&
+            // cmd) {
+            [opSuffix, setXformOpOrderFn, v](const BaseUndoableCommand& cmd) {
+                InTransform3dChange guard(cmd.path());
+                auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
+                TF_AXIOM(usdSceneItem);
+                UsdGeomXformable xformable(usdSceneItem->prim());
+                auto             op = xformable.AddTranslateOp(OpPrecision<V>::precision, opSuffix);
+                TF_AXIOM(op);
+                op.Set(v);
+                setXformOpOrderFn(xformable);
+                return op;
+            });
 
     return std::make_shared<UsdVecOpUndoableCmd<V>>(
         v, path(), std::move(f), UsdTimeCode::Default());
@@ -596,14 +663,14 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
     GfVec3f v(x, y, z);
     auto    attr = prim().GetAttribute(pvtAttrName);
     OpFunc  f = attr
-        ? OpFunc([pvtAttrName](const Ufe::BaseTransformUndoableCommand& cmd) {
+        ? OpFunc([pvtAttrName](const BaseUndoableCommand& cmd) {
               auto usdSceneItem = std::dynamic_pointer_cast<UsdSceneItem>(cmd.sceneItem());
               TF_AXIOM(usdSceneItem);
               auto attr = usdSceneItem->prim().GetAttribute(pvtAttrName);
               return UsdGeomXformOp(attr);
           })
         : OpFunc([pvtOpSuffix, setXformOpOrderFn = getXformOpOrderFn(), v](
-                     const Ufe::BaseTransformUndoableCommand& cmd) {
+                     const BaseUndoableCommand& cmd) {
               // Without a notification guard each operation (each transform op
               // addition, setting the attribute value, and setting the transform
               // op order) will notify.  Observers would see an object in an
@@ -626,6 +693,13 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 
     return std::make_shared<UsdVecOpUndoableCmd<GfVec3f>>(
         v, path(), std::move(f), UsdTimeCode::Default());
+}
+
+Ufe::SetMatrix4dUndoableCommand::Ptr
+UsdTransform3dMayaXformStack::setMatrixCmd(const Ufe::Matrix4d& m)
+{
+    return std::make_shared<UsdSetMatrix4dUndoableCmd>(
+        path(), translation(), rotation(), scale(), m);
 }
 
 UsdTransform3dMayaXformStack::SetXformOpOrderFn
@@ -733,6 +807,24 @@ Ufe::Transform3d::Ptr UsdTransform3dMayaXformStackHandler::editTransform3d(
 #endif
 ) const
 {
+    // MAYA-109190: Moved the IsInstanceProxy() check here since it was causing the
+    // camera framing not properly be applied.
+    //
+    // HS January 15, 2021: After speaking with Pierre, there is a more robust solution to move this
+    // check entirely from here.
+
+    // According to USD docs, editing scene description via instance proxies and their properties is
+    // not allowed.
+    // https://graphics.pixar.com/usd/docs/api/_usd__page__scenegraph_instancing.html#Usd_ScenegraphInstancing_InstanceProxies
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+    if (usdItem->prim().IsInstanceProxy()) {
+        MGlobal::displayError(
+            MString("Authoring to the descendant of an instance [")
+            + MString(usdItem->prim().GetName().GetString().c_str()) + MString("] is not allowed. ")
+            + MString("Please mark 'instanceable=false' to author edits to instance proxies."));
+        return nullptr;
+    }
+
     return createTransform3d(item, [&]() {
         return _nextHandler->editTransform3d(
             item

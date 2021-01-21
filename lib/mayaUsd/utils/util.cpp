@@ -23,6 +23,7 @@
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
+#include <maya/MFnComponentListData.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnEnumAttribute.h>
@@ -31,6 +32,7 @@
 #include <maya/MFnMatrixData.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnSet.h>
+#include <maya/MFnSingleIndexedComponent.h>
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MGlobal.h>
 #include <maya/MItDependencyGraph.h>
@@ -185,6 +187,18 @@ std::string UsdMayaUtil::GetMayaNodeName(const MObject& mayaNode)
     return nodeName.asChar();
 }
 
+MString UsdMayaUtil::GetUniqueNameOfDAGNode(const MObject& node)
+{
+    if (!TF_VERIFY(!node.isNull() && node.hasFn(MFn::kDagNode))) {
+        return MString();
+    }
+    MStatus    stat;
+    MFnDagNode fnNode(node, &stat);
+    CHECK_MSTATUS_AND_RETURN(stat, MString());
+    MString nodeName = fnNode.partialPathName(&stat);
+    return nodeName;
+}
+
 MStatus UsdMayaUtil::GetMObjectByName(const std::string& nodeName, MObject& mObj)
 {
     MSelectionList selectionList;
@@ -237,6 +251,39 @@ MStatus UsdMayaUtil::GetPlugByName(const std::string& attrPath, MPlug& plug)
 
     plug = tmpPlug;
     return status;
+}
+
+MPlug UsdMayaUtil::FindChildPlugWithName(const MPlug& parent, const MString& name)
+{
+    MPlug sentinel;
+    if (parent.isNull() || !parent.isCompound()) {
+        return sentinel;
+    }
+    MStatus      stat;
+    unsigned int numChildren = parent.numChildren(&stat);
+    CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+    if (numChildren == 0) {
+        return sentinel;
+    }
+
+    MFnAttribute fnAttr;
+
+    // TODO: (yliangsiew) for a certain threshold of child plugs, might want to
+    //       binary search instead.
+    for (unsigned int i = 0; i < numChildren; ++i) {
+        MPlug plgChild = parent.child(i, &stat);
+        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+        MObject attrChild = plgChild.attribute(&stat);
+        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+        stat = fnAttr.setObject(attrChild);
+        CHECK_MSTATUS_AND_RETURN(stat, sentinel);
+        const MString attrName = fnAttr.name();
+        if (attrName == name) {
+            return plgChild;
+        }
+    }
+
+    return sentinel;
 }
 
 MPlug UsdMayaUtil::GetMayaTimePlug()
@@ -2079,171 +2126,243 @@ void UsdMayaUtil::GetFilteredSelectionToExport(
     }
 }
 
-float UsdMayaUtil::ConvertMTimeUnitToFloat(const MTime::Unit& unit)
+double UsdMayaUtil::ConvertMTimeUnitToDouble(const MTime::Unit& unit)
 {
-    float ret = 0.f;
+    double ret = 0.0;
     switch (unit) {
     case MTime::k2FPS: {
-        ret = 2.f;
+        ret = 2.0;
     } break;
     case MTime::k3FPS: {
-        ret = 3.f;
+        ret = 3.0;
     } break;
     case MTime::k4FPS: {
-        ret = 4.f;
+        ret = 4.0;
     } break;
     case MTime::k5FPS: {
-        ret = 5.f;
+        ret = 5.0;
     } break;
     case MTime::k6FPS: {
-        ret = 6.f;
+        ret = 6.0;
     } break;
     case MTime::k8FPS: {
-        ret = 8.f;
+        ret = 8.0;
     } break;
     case MTime::k10FPS: {
-        ret = 10.f;
+        ret = 10.0;
     } break;
     case MTime::k12FPS: {
-        ret = 12.f;
+        ret = 12.0;
     } break;
     case MTime::k15FPS: {
-        ret = 15.f;
+        ret = 15.0;
     } break;
     case MTime::k16FPS: {
-        ret = 16.f;
+        ret = 16.0;
     } break;
     case MTime::k20FPS: {
-        ret = 20.f;
+        ret = 20.0;
     } break;
     case MTime::k23_976FPS: {
-        ret = 23.976f;
+        ret = (24.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k24FPS: {
-        ret = 24.f;
+        ret = 24.0;
     } break;
     case MTime::k25FPS: {
-        ret = 25.f;
+        ret = 25.0;
     } break;
     case MTime::k29_97FPS: {
-        ret = 29.97f;
+        ret = (30.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k29_97DF: {
-        ret = 29.97f;
+        ret = (30.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k30FPS: {
-        ret = 30.f;
+        ret = 30.0;
     } break;
     case MTime::k40FPS: {
-        ret = 40.f;
+        ret = 40.0;
     } break;
     case MTime::k47_952FPS: {
-        ret = 47.952f;
+        ret = (48.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k48FPS: {
-        ret = 48.f;
+        ret = 48.0;
     } break;
     case MTime::k50FPS: {
-        ret = 50.f;
+        ret = 50.0;
     } break;
     case MTime::k59_94FPS: {
-        ret = 59.94f;
+        ret = (60.0 * 1000.0) / 1001.0;
     } break;
     case MTime::k60FPS: {
-        ret = 60.f;
+        ret = 60.0;
     } break;
     case MTime::k75FPS: {
-        ret = 75.f;
+        ret = 75.0;
     } break;
     case MTime::k80FPS: {
-        ret = 80.f;
+        ret = 80.0;
     } break;
 #if MAYA_API_VERSION >= 20200000
     case MTime::k90FPS: {
-        ret = 90.f;
+        ret = 90.0;
     } break;
 #endif
     case MTime::k100FPS: {
-        ret = 100.f;
+        ret = 100.0;
     } break;
     case MTime::k120FPS: {
-        ret = 120.f;
+        ret = 120.0;
     } break;
     case MTime::k125FPS: {
-        ret = 125.f;
+        ret = 125.0;
     } break;
     case MTime::k150FPS: {
-        ret = 150.f;
+        ret = 150.0;
     } break;
     case MTime::k200FPS: {
-        ret = 200.f;
+        ret = 200.0;
     } break;
     case MTime::k240FPS: {
-        ret = 240.f;
+        ret = 240.0;
     } break;
     case MTime::k250FPS: {
-        ret = 250.f;
+        ret = 250.0;
     } break;
     case MTime::k300FPS: {
-        ret = 300.f;
+        ret = 300.0;
     } break;
     case MTime::k375FPS: {
-        ret = 375.f;
+        ret = 375.0;
     } break;
     case MTime::k400FPS: {
-        ret = 400.f;
+        ret = 400.0;
     } break;
     case MTime::k500FPS: {
-        ret = 500.f;
+        ret = 500.0;
     } break;
     case MTime::k600FPS: {
-        ret = 600.f;
+        ret = 600.0;
     } break;
     case MTime::k750FPS: {
-        ret = 750.f;
+        ret = 750.0;
     } break;
     case MTime::k1200FPS: {
-        ret = 1200.f;
+        ret = 1200.0;
     } break;
     case MTime::k1500FPS: {
-        ret = 1500.f;
+        ret = 1500.0;
     } break;
     case MTime::k2000FPS: {
-        ret = 2000.f;
+        ret = 2000.0;
     } break;
     case MTime::k3000FPS: {
-        ret = 3000.f;
+        ret = 3000.0;
     } break;
     case MTime::k6000FPS: {
-        ret = 6000.f;
+        ret = 6000.0;
     } break;
     case MTime::k44100FPS: {
-        ret = 44100.f;
+        ret = 44100.0;
     } break;
     case MTime::k48000FPS: {
-        ret = 48000.f;
+        ret = 48000.0;
     } break;
     case MTime::kHours: {
-        ret = (1.f / 3600.f);
+        ret = (1.0 / 3600.0);
     } break;
     case MTime::kMinutes: {
-        ret = (1.f / 60.f);
+        ret = (1.0 / 60.0);
     } break;
     case MTime::kSeconds: {
-        ret = 1.0f;
+        ret = 1.0;
     } break;
     case MTime::kMilliseconds: {
-        ret = 1000.f;
+        ret = 1000.0;
     } break;
     default: {
-        ret = 0.0f;
+        ret = 0.0;
     } break;
     }
     return ret;
 }
 
-float UsdMayaUtil::GetSceneMTimeUnitAsFloat()
+double UsdMayaUtil::GetSceneMTimeUnitAsDouble()
 {
     const MTime::Unit sceneUnit = MTime::uiUnit();
-    return UsdMayaUtil::ConvertMTimeUnitToFloat(sceneUnit);
+    return UsdMayaUtil::ConvertMTimeUnitToDouble(sceneUnit);
+}
+
+bool UsdMayaUtil::mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx)
+{
+    for (unsigned int i = 0; i < array.length(); ++i) {
+        if (array[i] == a) {
+            if (idx != nullptr) {
+                *idx = i;
+            }
+            return true;
+        }
+    }
+    if (idx != nullptr) {
+        *idx = -1;
+    }
+    return false;
+}
+
+MStatus UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MIntArray& indices)
+{
+    MStatus     status;
+    MDataHandle dh = plg.asMDataHandle(&status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    MObject indicesData = dh.data();
+    if (indicesData.isNull() || !indicesData.hasFn(MFn::kComponentListData)) {
+        return MStatus::kFailure;
+    }
+    MFnComponentListData fnComponentListData(indicesData, &status);
+    CHECK_MSTATUS_AND_RETURN_IT(status);
+    indices.clear();
+    unsigned int numIndices = fnComponentListData.length();
+    if (numIndices == 0) {
+        return MStatus::kSuccess;
+    }
+    for (unsigned int i = 0; i < numIndices; ++i) {
+        MObject                   curComponent = fnComponentListData[i];
+        MFnSingleIndexedComponent fnSingleIndexedComponent(curComponent, &status);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+        MIntArray curIndices;
+        status = fnSingleIndexedComponent.getElements(curIndices);
+        CHECK_MSTATUS_AND_RETURN_IT(status);
+        for (unsigned int j = 0; j < curIndices.length(); ++j) {
+            indices.append(curIndices[j]);
+        }
+    }
+
+    return status;
+}
+
+bool UsdMayaUtil::CheckMeshUpstreamForBlendShapes(const MObject& mesh)
+{
+    MStatus stat;
+    if (!MObjectHandle(mesh).isValid()) {
+        return false;
+    }
+    MObject            searchObj = MObject(mesh);
+    MItDependencyGraph itDg(
+        searchObj,
+        MFn::kBlendShape,
+        MItDependencyGraph::kUpstream,
+        MItDependencyGraph::kDepthFirst,
+        MItDependencyGraph::kNodeLevel,
+        &stat);
+    CHECK_MSTATUS_AND_RETURN(stat, false);
+    for (; !itDg.isDone(); itDg.next()) {
+        MObject curBlendShape = itDg.currentItem();
+        if (curBlendShape.hasFn(MFn::kBlendShape)) {
+            return true;
+        }
+    }
+
+    return false;
 }

@@ -437,10 +437,24 @@ public:
         for (const UsdShadeInput& input : material.GetInputs()) {
             const UsdAttribute&      usdAttr = input.GetAttr();
             std::vector<std::string> splitName = usdAttr.SplitName();
-            if (splitName.size() != 3 || splitName[2] != _tokens->varname.GetString()) {
+            if (splitName.back() != _tokens->varname.GetString()) {
                 continue;
             }
-            _nodesWithUVInput.push_back(TfToken(splitName[1]));
+
+            switch (splitName.size()) {
+            case 3: _nodesWithUVInput.push_back(TfToken(splitName[1])); break;
+            default
+                : // NOTE: (yliangsiew) Means that we have a Maya node with a namespace/multiple
+                  // namespaces.
+            {
+                std::string mayaNodeName = splitName[1];
+                for (size_t i = 2; i < splitName.size() - 1; ++i) {
+                    mayaNodeName += ":" + splitName[i];
+                }
+                _nodesWithUVInput.push_back(TfToken(mayaNodeName));
+                break;
+            }
+            }
         }
 
         if (_nodesWithUVInput.empty()) {

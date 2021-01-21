@@ -94,6 +94,21 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         cmds.undo()
         self.assertEqual(stage.GetEditTarget().GetLayer().identifier, undoStepTwo)
 
+        # test removing the edit target
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, greenLayerId)
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[0,shapePath])
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayerID)
+        cmds.undo()
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, greenLayerId)
+
+        cmds.mayaUsdEditTarget(shapePath, edit=True, editTarget=redLayerId)
+
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, redLayerId)
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[1,shapePath])
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayerID)
+        cmds.undo()
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, redLayerId)
+
         # test bad input
         with self.assertRaises(RuntimeError):
             cmds.mayaUsdEditTarget("bogusShape", query=True, editTarget=True)
@@ -141,18 +156,18 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
 
         # -removeSubPath
         # remove second sublayer
-        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=1)
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[1,_shapePath])
         afterDeletion = [layer1Id, layer3Id]
         self.assertEqual(rootLayer.subLayerPaths, afterDeletion)
 
         # remove second sublayer again to leave only one
         afterDeletion = [layer1Id, layer3Id]
-        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=1)
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[1,_shapePath])
         self.assertEqual(rootLayer.subLayerPaths, [layer1Id])
 
         # remove second sublayer  -- this time it's out of bounds
         with self.assertRaises(RuntimeError):
-            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=1)
+            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[1,_shapePath])
 
         # undo twice to get back to three layers
         cmds.undo()
@@ -168,7 +183,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         grandChildLayerId = cmds.mayaUsdLayerEditor(childLayerId, edit=True, addAnonymous="GrandChild")[0]
 
         # delete the top layer.  See if it comes back after redo.
-        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=0)
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[0,_shapePath])
         # check layer1 was deleted
         self.assertEqual(rootLayer.subLayerPaths, [layer2Id, layer3Id])
         # bring it back
@@ -198,7 +213,7 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[-2, "bogus"])
         with self.assertRaises(RuntimeError):
-            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[2, "bogus"])
+            cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[3, "bogus"])
 
         # -replaceSubPath
 

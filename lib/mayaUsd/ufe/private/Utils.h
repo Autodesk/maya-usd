@@ -29,22 +29,6 @@ namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
 //------------------------------------------------------------------------------
-// Private globals and macros
-//------------------------------------------------------------------------------
-const std::string kIllegalUSDPath = "Illegal USD run-time path %s.";
-
-#if !defined(NDEBUG)
-#define TEST_USD_PATH(SEG, PATH) \
-    assert(SEG.size() == 2);     \
-    if (SEG.size() != 2)         \
-        TF_WARN(kIllegalUSDPath.c_str(), PATH.string().c_str());
-#else
-#define TEST_USD_PATH(SEG, PATH) \
-    if (SEG.size() != 2)         \
-        TF_WARN(kIllegalUSDPath.c_str(), PATH.string().c_str());
-#endif
-
-//------------------------------------------------------------------------------
 // Private helper functions
 //------------------------------------------------------------------------------
 

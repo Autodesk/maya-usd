@@ -14,8 +14,13 @@
 // limitations under the License.
 //
 
-// glew needs to be included before any other OpenGL headers.
+// GL loading library needs to be included before any other OpenGL headers.
+#include <pxr/pxr.h>
+#if USD_VERSION_NUM < 2102
 #include <pxr/imaging/glf/glew.h>
+#else
+#include <pxr/imaging/garch/glApi.h>
+#endif
 
 #include "batchRenderer.h"
 
@@ -48,7 +53,6 @@
 #include <pxr/imaging/hd/tokens.h>
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/imaging/hdx/tokens.h>
-#include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
 
 #include <maya/M3dView.h>
@@ -108,7 +112,9 @@ const int UsdMayaGLBatchRenderer::ProfilerCategory = MProfiler::addCategory(
 /* static */
 void UsdMayaGLBatchRenderer::Init()
 {
+#if USD_VERSION_NUM < 2102
     GlfGlewInit();
+#endif
     GlfContextCaps::InitInstance();
 
     GetInstance();

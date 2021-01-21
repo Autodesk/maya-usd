@@ -19,6 +19,7 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/fileio/primReaderRegistry.h>
 
 #include <pxr/pxr.h>
 #include <pxr/usd/usdGeom/mesh.h>
@@ -36,13 +37,14 @@ class MAYAUSD_CORE_PUBLIC TranslatorMeshRead
 {
 public:
     TranslatorMeshRead(
-        const UsdGeomMesh& mesh,
-        const UsdPrim&     prim,
-        const MObject&     transformObj,
-        const MObject&     stageNode,
-        const GfInterval&  frameRange,
-        bool               wantCacheAnimation,
-        MStatus*           status = nullptr);
+        const UsdGeomMesh&        mesh,
+        const UsdPrim&            prim,
+        const MObject&            transformObj,
+        const MObject&            stageNode,
+        const GfInterval&         frameRange,
+        bool                      wantCacheAnimation,
+        UsdMayaPrimReaderContext* context,
+        MStatus*                  status = nullptr);
 
     ~TranslatorMeshRead() = default;
 

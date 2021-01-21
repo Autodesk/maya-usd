@@ -1,5 +1,50 @@
 # Changelog
 
+## [0.7.0] - 2021-01-20
+
+This release changes to highlight:
+* Ufe cameras
+* Blendshape export support
+* Maya's scene will get modified by changes to USD data model 
+* VP2RenderDelegate is enabled by default and doesn't require env variable flag anymore
+* Maya-To-Hydra compilation is disabled for Maya 2019 with USD 20.08 or 20.11 
+
+**Build:**
+* Migrated more tests from plugin/pxr to core mayaUsd [#1042](https://github.com/Autodesk/maya-usd/pull/1042)
+* Cleaned up UI folder [#1037](https://github.com/Autodesk/maya-usd/pull/1037)
+* Cleaned up test utils [#1034](https://github.com/Autodesk/maya-usd/pull/1034)
+* Updates for building with latest post-20.11 dev branch of core USD [#1025](https://github.com/Autodesk/maya-usd/pull/1025)
+* Fixed  a build issue on Linux with maya < 2020 [#1013](https://github.com/Autodesk/maya-usd/pull/1013)
+* Fixed interactive tests to ensure output streams are flushed before quitting [#1009](https://github.com/Autodesk/maya-usd/pull/1009)
+* Added UsdMayaDiagnosticDelegate to adsk plugin to enable Tf errors reporting using Maya's routines [#1003](https://github.com/Autodesk/maya-usd/pull/1003)
+* Added basic tests for HdMaya / mtoh [#915](https://github.com/Autodesk/maya-usd/pull/915) [#1006](https://github.com/Autodesk/maya-usd/pull/1006)
+
+**Translation Framework:**
+* Fixed issue where referenced scenes have incorrect UV set attribute name written out. [#1062](https://github.com/Autodesk/maya-usd/pull/1062)
+* Fixed texture writer path resolver to work relative to final export path [#1028](https://github.com/Autodesk/maya-usd/pull/1028)
+* Fixed incorrect `bindTransforms` being determined during export [#1024](https://github.com/Autodesk/maya-usd/pull/1024)
+* Added Blendshape export functionality [#1016](https://github.com/Autodesk/maya-usd/pull/1016) 
+* Added staticSingleSample flag, and optimize mesh attributes by default [#989](https://github.com/Autodesk/maya-usd/pull/989) [#1012](https://github.com/Autodesk/maya-usd/pull/1012)
+* Added convert for USD timeSamples to Maya FPS [#970](https://github.com/Autodesk/maya-usd/pull/970) [#1010](https://github.com/Autodesk/maya-usd/pull/1010)
+
+**Workflow:**
+* Fixed camera frame for instance proxies. [#1082](https://github.com/Autodesk/maya-usd/pull/1082)
+* Removed dependency between LayerEditor and HIK image resources [#1072](https://github.com/Autodesk/maya-usd/pull/1072)
+* Fixed rename for inherits and specializes update [#1071](https://github.com/Autodesk/maya-usd/pull/1071)
+* Added support for Ufe cameras [#1066](https://github.com/Autodesk/maya-usd/pull/1066)
+* Editing USD should mark scene as dirty [#1061](https://github.com/Autodesk/maya-usd/pull/1061)
+* Fixed crash when manipulating certain assets on Linux [#1060](https://github.com/Autodesk/maya-usd/pull/1060)
+* Made visibility Undo/Redo correct [#1056](https://github.com/Autodesk/maya-usd/pull/1056)
+* Fixed crash in LayerEditor when removing layer used as edit target [#1015](https://github.com/Autodesk/maya-usd/pull/1015)
+* Fixed disappearing layer when moved under last layer in LayerEditor [#994](https://github.com/Autodesk/maya-usd/pull/994)
+
+**Render:**
+* Fixed false positive transparency [#1080](https://github.com/Autodesk/maya-usd/pull/1080)
+* Made VP2RenderDelegate enabled by default [#1065](https://github.com/Autodesk/maya-usd/pull/1065)
+* Fixed mtoh crash with DirectX [#1059](https://github.com/Autodesk/maya-usd/pull/1059)
+* Optimized VP2RenderDelegate for many materials [#1043](https://github.com/Autodesk/maya-usd/pull/1043)  [#1048](https://github.com/Autodesk/maya-usd/pull/1048) [#1052](https://github.com/Autodesk/maya-usd/pull/1052)
+* Disabled building of mtoh for Maya 2019 with USD 20.08 and 20.11 [#1023](https://github.com/Autodesk/maya-usd/pull/1023)
+
 ## [0.6.0] - 2020-12-14
 
 This release includes many changes, like:

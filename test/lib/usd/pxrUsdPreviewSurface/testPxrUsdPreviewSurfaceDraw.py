@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 #
 # Copyright 2018 Pixar
 #
@@ -22,6 +22,7 @@ import os
 import sys
 import unittest
 
+import fixturesUtils
 
 class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
 
@@ -86,14 +87,4 @@ class testPxrUsdPreviewSurfaceDraw(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(testPxrUsdPreviewSurfaceDraw)
-
-    results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
-    if results.wasSuccessful():
-        exitCode = 0
-    else:
-        exitCode = 1
-    # Maya running interactively often absorbs all the output. Comment out the
-    # following to prevent Maya from exiting and open the script editor to look
-    # at failures.
-    cmds.quit(abort=True, exitCode=exitCode)
+    fixturesUtils.runTests(globals())

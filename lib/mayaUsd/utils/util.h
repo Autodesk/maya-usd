@@ -127,6 +127,12 @@ inline double ConvertMMToInches(const double mm) { return mm / MillimetersPerInc
 /// in millimeters.
 inline double ConvertInchesToMM(const double inches) { return inches * MillimetersPerInch; }
 
+/// Converts the given value \p d from units \p from to the equivalent value in units \p
+inline double ConvertUnit(double d, double from, double to)
+{
+    return from == to ? d : d * from / to;
+}
+
 const double MillimetersPerCentimeter = 10.0;
 
 /// Converts the given value \p mm in millimeters to the equivalent value
@@ -160,6 +166,16 @@ MDistance::Unit ConvertUsdGeomLinearUnitToMDistanceUnit(const double linearUnit)
 MAYAUSD_CORE_PUBLIC
 std::string GetMayaNodeName(const MObject& mayaNode);
 
+/**
+ * Gets the minimum unique name of a DAG node.
+ *
+ * @param node  The node to find the name of.
+ *
+ * @return      The name as a Maya string.
+ */
+MAYAUSD_CORE_PUBLIC
+MString GetUniqueNameOfDAGNode(const MObject& node);
+
 /// Gets the Maya MObject for the node named \p nodeName.
 MAYAUSD_CORE_PUBLIC
 MStatus GetMObjectByName(const std::string& nodeName, MObject& mObj);
@@ -173,6 +189,17 @@ MStatus GetDagPathByName(const std::string& nodeName, MDagPath& dagPath);
 /// used by MEL).
 MAYAUSD_CORE_PUBLIC
 MStatus GetPlugByName(const std::string& attrPath, MPlug& plug);
+
+/**
+ * Finds a child plug with the given `name`.
+ *
+ * @param parent    The parent plug to start the search from.
+ * @param name      The name of the child plug to find. This should be the short name.
+ *
+ * @return          The plug if it can be found, or a null `MPlug` otherwise.
+ */
+MAYAUSD_CORE_PUBLIC
+MPlug FindChildPlugWithName(const MPlug& parent, const MString& name);
 
 /// Get the MPlug for the output time attribute of Maya's global time object
 ///
@@ -570,15 +597,44 @@ void GetFilteredSelectionToExport(
     MSelectionList&           objectList,
     UsdMayaUtil::MDagPathSet& dagPaths);
 
-/// Coverts a given \pMTime::\pUnit enum to a \pfloat value of samples per second
-/// Returns 0.0f if the result is invalid.
+/// Coverts a given \pMTime::\pUnit enum to a \pdouble value of samples per second
+/// Returns 0.0 if the result is invalid.
 MAYAUSD_CORE_PUBLIC
-float ConvertMTimeUnitToFloat(const MTime::Unit& unit);
+double ConvertMTimeUnitToDouble(const MTime::Unit& unit);
 
-/// Get's the scene's \pMTime::\pUnit as a \pfloat value of samples per second
-/// Returns 0.0f if the result is invalid.
+/// Get's the scene's \pMTime::\pUnit as a \pdouble value of samples per second
+/// Returns 0.0 if the result is invalid.
 MAYAUSD_CORE_PUBLIC
-float GetSceneMTimeUnitAsFloat();
+double GetSceneMTimeUnitAsDouble();
+
+/**
+ * Searches the given array for an element.
+ *
+ * @param a         The element to search for.
+ * @param array     The array to search within.
+ * @param idx       Storage for the index of the element within the array if it exists.
+ *                  If it does not exist, this will be undefined. May be set to `NULL` if
+ *                  you're only interested in finding out whether the element exists, and
+ *                  not where the element is actually located in the array.
+ *
+ * @return          Returns ``true`` if the element exists in the array, ``false`` otherwise.
+ */
+MAYAUSD_CORE_PUBLIC
+bool mayaSearchMIntArray(const int a, const MIntArray& array, unsigned int* idx = nullptr);
+
+MAYAUSD_CORE_PUBLIC
+MStatus GetAllIndicesFromComponentListDataPlug(const MPlug& plg, MIntArray& indices);
+
+/**
+ * Checks if the given mesh has any blendshape deformers driving it.
+ *
+ * @param mesh      The mesh to check.
+ *
+ * @return          ``true`` if the mesh is being driven by blendshape deformers, ``false``
+ * otherwise.
+ */
+MAYAUSD_CORE_PUBLIC
+bool CheckMeshUpstreamForBlendShapes(const MObject& mesh);
 
 } // namespace UsdMayaUtil
 

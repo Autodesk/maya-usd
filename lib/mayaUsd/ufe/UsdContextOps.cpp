@@ -17,6 +17,9 @@
 
 #include "private/UfeNotifGuard.h"
 
+#if UFE_PREVIEW_VERSION_NUM >= 2034
+#include <mayaUsd/ufe/UsdObject3d.h>
+#endif
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/UsdUndoAddNewPrimCommand.h>
 #include <mayaUsd/ufe/Utils.h>
@@ -35,6 +38,9 @@
 #include <maya/MGlobal.h>
 #include <ufe/attribute.h>
 #include <ufe/attributes.h>
+#if UFE_PREVIEW_VERSION_NUM >= 2034
+#include <ufe/object3d.h>
+#endif
 #include <ufe/path.h>
 
 #include <algorithm>
@@ -50,8 +56,10 @@ namespace {
 // - the "Image" is used for icon in the context menu. Directly used std::string
 //   for these so the emplace_back() will choose the right constructor. With char[]
 //   it would convert that param to a bool and choose the wrong constructor.
-static constexpr char    kUSDLayerEditorItem[] = "USD Layer Editor";
-static constexpr char    kUSDLayerEditorLabel[] = "USD Layer Editor...";
+#ifdef WANT_QT_BUILD
+static constexpr char kUSDLayerEditorItem[] = "USD Layer Editor";
+static constexpr char kUSDLayerEditorLabel[] = "USD Layer Editor...";
+#endif
 static const std::string kUSDLayerEditorImage { "USD_generic.png" };
 static constexpr char    kUSDLoadItem[] = "Load";
 static constexpr char    kUSDLoadLabel[] = "Load";
@@ -425,13 +433,16 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 {
     Ufe::ContextOps::Items items;
     if (itemPath.empty()) {
+#ifdef WANT_QT_BUILD
         // Top-level item - USD Layer editor (for all context op types).
+        // Only available when building with Qt enabled.
 #if UFE_PREVIEW_VERSION_NUM >= 2023
         items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
 #else
         items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
 #endif
         items.emplace_back(Ufe::ContextItem::kSeparator);
+#endif
 
         // Top-level items (do not add for gateway type node):
         if (!fIsAGatewayType) {
@@ -567,15 +578,23 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         return std::make_shared<SetVariantSelectionUndoableCommand>(prim(), itemPath);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
+#if UFE_PREVIEW_VERSION_NUM < 2034
         auto attributes = Ufe::Attributes::attributes(sceneItem());
-        assert(attributes);
+        TF_AXIOM(attributes);
         auto visibility = std::dynamic_pointer_cast<Ufe::AttributeEnumString>(
             attributes->attribute(UsdGeomTokens->visibility));
-        assert(visibility);
+        TF_AXIOM(visibility);
         auto current = visibility->get();
         return visibility->setCmd(
             current == UsdGeomTokens->invisible ? UsdGeomTokens->inherited
                                                 : UsdGeomTokens->invisible);
+#else
+        auto object3d = UsdObject3d::create(fItem);
+        TF_AXIOM(object3d);
+        auto current = object3d->visibility();
+        return object3d->setVisibleCmd(!current);
+#endif
+
     } // Visibility
     else if (itemPath[0] == kUSDToggleActiveStateItem) {
         return std::make_shared<ToggleActiveStateCommand>(prim());
@@ -590,6 +609,8 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         // At this point we know we have 2 arguments to execute the operation.
         // itemPath[1] contains the new prim type to create.
         return UsdUndoAddNewPrimCommand::create(fItem, itemPath[1], itemPath[1]);
+#ifdef WANT_QT_BUILD
+        // When building without Qt there is no LayerEditor
     } else if (itemPath[0] == kUSDLayerEditorItem) {
         // Just open the editor directly and return null so we don't have undo.
         auto ufePath = ufe::stagePath(prim().GetStage());
@@ -601,6 +622,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
         script.format("mayaUsdLayerEditorWindow -proxyShape ^1s mayaUsdLayerEditor", shapePath);
         MGlobal::executeCommand(script);
         return nullptr;
+#endif
     } else if (itemPath[0] == AddReferenceUndoableCommand::commandName) {
         MString fileRef = MGlobal::executeCommandStringResult(selectUSDFileScript);
 

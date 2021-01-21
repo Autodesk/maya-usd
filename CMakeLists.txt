@@ -24,7 +24,10 @@ option(BUILD_MAYAUSD_LIBRARY "Build Core USD libraries." ON)
 option(BUILD_ADSK_PLUGIN "Build Autodesk USD plugin." ON)
 option(BUILD_PXR_PLUGIN "Build the Pixar USD plugin and libraries." ON)
 option(BUILD_AL_PLUGIN "Build the Animal Logic USD plugin and libraries." ON)
-option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+# Default value made dependent on maya + usd version - see below
+#   Convert back to a normal option if we no longer support maya-2019, or
+#   no longer support USD-20.11
+#option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
 option(BUILD_RFM_TRANSLATORS "Build translators for RenderMan for Maya shaders." ON)
 option(BUILD_TESTS "Build tests." ON)
 option(BUILD_STRICT_MODE "Enforce all warnings as errors." ON)
@@ -96,6 +99,17 @@ find_package(Maya 2018 REQUIRED)
 find_package(USD REQUIRED)
 include(cmake/usd.cmake)
 include(${USD_CONFIG_FILE})
+
+if( MAYA_APP_VERSION LESS 2020 AND USD_VERSION_NUM GREATER 2005 AND USD_VERSION_NUM LESS 2102 )
+    # Default to OFF if maya==2019 AND USD==(20.08||20.11)
+    #   Due to a problem with glew - if you force on with these versions, you
+    #   will probably need to LD_PRELOAD your glew lib.
+    #   See:
+    #      https://github.com/Autodesk/maya-usd/discussions/1017
+    option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." OFF)
+else()
+    option(BUILD_HDMAYA "Build the Maya-To-Hydra plugin and scene delegate." ON)
+endif()
 
 if(${MAYA_APP_VERSION} STRLESS "2019" AND CMAKE_WANT_UFE_BUILD)
     set(CMAKE_WANT_UFE_BUILD OFF)

@@ -39,12 +39,13 @@ public:
     StageSelectorWidget(SessionState* in_sessionState, QWidget* in_parent);
 
 protected:
-    void                setSessionState(SessionState* in_sessionState);
-    pxr::UsdStageRefPtr selectedStage();
+    void                   setSessionState(SessionState* in_sessionState);
+    PXR_NS::UsdStageRefPtr selectedStage();
 
     // slot:
-    void updateFromSessionState(pxr::UsdStageRefPtr const& stageToSelect = pxr::UsdStageRefPtr());
-    void stageRenamed(std::string const& name, pxr::UsdStageRefPtr const& stage);
+    void
+         updateFromSessionState(PXR_NS::UsdStageRefPtr const& stageToSelect = PXR_NS::UsdStageRefPtr());
+    void stageRenamed(std::string const& name, PXR_NS::UsdStageRefPtr const& stage);
     void sessionStageChanged();
     void selectedIndexChanged(int index);
 

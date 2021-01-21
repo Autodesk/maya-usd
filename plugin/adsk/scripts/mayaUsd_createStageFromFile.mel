@@ -28,6 +28,40 @@ proc setOptionVars(int $forceFactorySettings)
     }
 }
 
+proc setLatestLoadStageFolder( string $sceneFolder )
+{
+    optionVar -stringValue mayaUsd_LatestLoadStageFolder $sceneFolder;
+}
+
+proc string getLatestLoadStageFolder()
+{
+    string $sceneFolder;
+
+    // First check if we've saved a location in the option var
+    if (`optionVar -exists mayaUsd_LatestLoadStageFolder`)
+    {
+        $sceneFolder = `optionVar -q mayaUsd_LatestLoadStageFolder`;
+    }
+
+    // Then check if there is a current Maya scene, if so choose that as
+    // a starting point.
+    if ("" == $sceneFolder)
+    {
+        $sceneFolder = dirname(`file -q -sceneName`);
+    }
+
+    // If we are really starting from scratch then just go with the 
+    // current workspace location for scenes.
+    if ("" == $sceneFolder)
+    {
+        string $workspaceLocation = `workspace -q -fn`;
+        string $scenesFolder = `workspace -q -fileRuleEntry "scene"`;
+        $sceneFolder = $workspaceLocation + "/" + $scenesFolder;
+    }
+
+    return $sceneFolder;
+}
+
 // stageFromFile_UISetup
 // creates the options of the stageFromFile dialog
 global proc string stageFromFile_UISetup(string $parent) {
@@ -183,17 +217,21 @@ global proc mayaUsd_createStageFromFile() {
     $caption = getMayaUsdString("kCreateUsdStageFromFile");
     $fileFilter = getMayaUsdString("kAllUsdFiles") + " (*.usd *.usda *.usdc *.usdz);;*.usd;;*.usda;;*.usdc;;*.usdz";
     $okCaption = getMayaUsdString("kCreate");
+    
+    string $startFolder = getLatestLoadStageFolder();
 
     string $result[] = `fileDialog2 
         -fileMode 1
         -caption $caption
         -fileFilter $fileFilter 
         -okCaption $okCaption
+        -dir $startFolder
         -optionsUICreate "stageFromFile_UISetup"
         -optionsUIInit "stageFromFile_UIInit"
         -optionsUICommit "stageFromFile_UICommit"`;
 
     if (size($result) > 0) {
+        setLatestLoadStageFolder( dirname($result[0]) );
         doCreateStage($result[0]);
     }
 }

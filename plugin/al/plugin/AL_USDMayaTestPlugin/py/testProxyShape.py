@@ -30,6 +30,8 @@ from pxr import Usd, UsdUtils
 from maya import cmds
 from maya.api import OpenMaya as om2
 
+import fixturesUtils
+
 
 class TestProxyShapeGetUsdPrimFromMayaPath(unittest.TestCase):
     """Test cases for static function: AL.usdmaya.ProxyShape.getUsdPrimFromMayaPath"""
@@ -424,13 +426,5 @@ class TestProxyShapeVariantFallbacks(unittest.TestCase):
         self.assertEqual(savedAttrValue, json.dumps(custom))
 
 
-if __name__ == "__main__":
-
-    tests = [unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetUsdPrimFromMayaPath),
-             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeGetMayaPathFromUsdPrim),
-             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeAnonymousLayer),
-             unittest.TestLoader().loadTestsFromTestCase(TestProxyShapeVariantFallbacks)
-              ]
-    results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
-    exitCode = int(not all([result.wasSuccessful() for result in results]))
-    cmds.quit(exitCode=(exitCode))
+if __name__ == '__main__':
+    fixturesUtils.runTests(globals())

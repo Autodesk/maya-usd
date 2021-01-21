@@ -25,6 +25,8 @@
 #include <mayaUsd/fileio/writeJobContext.h>
 #include <mayaUsd/utils/util.h>
 
+#include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
@@ -47,6 +49,8 @@
 #include <maya/MMatrix.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
+#include <maya/MPxNode.h>
+#include <maya/MStatus.h>
 
 #include <vector>
 
@@ -106,7 +110,42 @@ static GfMatrix4d _GetJointWorldBindTransform(const MDagPath& dagPath)
     if (UsdMayaUtil::getPlugMatrix(dagNode, "bindPose", &restTransformWorld)) {
         return GfMatrix4d(restTransformWorld.matrix);
     }
-    // No bindPose. Assume it's identity.
+    // NOTE: (yliangsiew) Instead of assuming an identity matrix, we check if the joint is linked to
+    // a corresponding bindPose, and attempt to grab the bind transform matrix there. If it's
+    // _still_ empty, then we assume identity. This catches odd edge cases where a joint is bound,
+    // but its `bindPose` attribute is empty and the `bindPose` node stores the actual bind
+    // transform matrix.
+    MStatus status;
+    MPlug   plgMsg = dagNode.findPlug(MPxNode::message, false, &status);
+    if (!status || !plgMsg.isSource()) {
+        return GfMatrix4d(1);
+    }
+    MPlugArray plgsDest;
+    plgMsg.destinations(plgsDest);
+    for (unsigned int i = 0; i < plgsDest.length(); ++i) {
+        MPlug   plgDest = plgsDest[i];
+        MObject curNode = plgDest.node();
+        if (!curNode.hasFn(MFn::kDagPose)) {
+            continue;
+        }
+
+        // NOTE: (yliangsiew) We should be connected to a members[x] plug.
+        TF_VERIFY(plgDest.isElement());
+        unsigned int      membersIdx = plgDest.logicalIndex();
+        MFnDependencyNode fnNode(curNode, &status);
+        CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
+        MPlug plgWorldMatrices = fnNode.findPlug("worldMatrix", false, &status);
+        CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
+        TF_VERIFY(membersIdx < plgWorldMatrices.numElements());
+        MPlug         plgWorldMatrix = plgWorldMatrices.elementByLogicalIndex(membersIdx);
+        MObject       plgWorldMatrixData = plgWorldMatrix.asMObject();
+        MFnMatrixData fnMatrixData(plgWorldMatrixData, &status);
+        CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
+        MMatrix result = fnMatrixData.matrix();
+
+        return GfMatrix4d(result.matrix);
+    }
+
     return GfMatrix4d(1);
 }
 

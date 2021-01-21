@@ -18,8 +18,6 @@
 #ifndef HD_VP2_SAMPLER_H
 #define HD_VP2_SAMPLER_H
 
-#include <pxr/imaging/glf/glew.h>
-
 #include <pxr/base/gf/matrix4d.h>
 #include <pxr/base/gf/matrix4f.h>
 #include <pxr/base/gf/vec2d.h>

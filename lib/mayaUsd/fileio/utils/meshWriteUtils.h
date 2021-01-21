@@ -29,6 +29,7 @@
 #include <pxr/usd/usdGeom/mesh.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
+#include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnMesh.h>
 #include <maya/MObject.h>
@@ -40,6 +41,41 @@ class UsdGeomMesh;
 
 // Utilities for dealing with writing USD from Maya mesh/subdiv tags.
 namespace UsdMayaMeshWriteUtils {
+/**
+ * Finds a skinCluster directly connected upstream in the DG to the given mesh.
+ *
+ * @param mesh              The mesh to search from.
+ * @param skinCluster       Storage for the result. If no skinCluster can be found,
+ *                          this will be a null `MObject`.
+ *
+ * @return                  `MStatus::kSuccess` if the operation completed successfully.
+ */
+MAYAUSD_CORE_PUBLIC
+MStatus getSkinClusterConnectedToMesh(const MObject& mesh, MObject& skinCluster);
+
+/**
+ * Similar to `getSkinClusterConnectedToMesh`, except that instead of finding a
+ * directly-connected skinCluster, it searches the DG upstream of the mesh for any
+ * other skinClusters as well.
+ *
+ * @param mesh              The mesh to start the search from.
+ * @param skinClusters      Storage for the result.
+ *
+ * @return                  `MStatus::kSuccess` if the operation completed successfully.
+ */
+MAYAUSD_CORE_PUBLIC
+MStatus getSkinClustersUpstreamOfMesh(const MObject& mesh, MObjectArray& skinClusters);
+
+/**
+ * Calculates the union bounding box of a given array of meshes.
+ *
+ * @param meshes    The meshes to calculate the union bounding box of.
+ *
+ * @return          The union bounding box.
+ */
+MAYAUSD_CORE_PUBLIC
+MBoundingBox calcBBoxOfMeshes(const MObjectArray& meshes);
+
 /// Helper method for getting Maya mesh normals as a VtVec3fArray.
 MAYAUSD_CORE_PUBLIC
 bool getMeshNormals(const MFnMesh& mesh, VtVec3fArray* normalsArray, TfToken* interpolation);

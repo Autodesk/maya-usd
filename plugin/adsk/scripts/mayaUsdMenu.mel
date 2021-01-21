@@ -101,15 +101,17 @@ proc initRuntimeCommands() {
             mayaUsdCreateStageFromFileOptions;
     }    
 
-    if (!`runTimeCommand -exists mayaUsdOpenUsdLayerEditor`) {
-        runTimeCommand -default true
-            -label 		"USD Layer Editor"
-            -annotation "Organize and edit USD data in layers"
-            -category   "Menu items.Common.Windows.General Editors"
-            -command 	"mayaUsdLayerEditorWindow mayaUsdLayerEditor"
-            -image		"USD_generic.png"
-            mayaUsdOpenUsdLayerEditor;
-    }    
+    if (`exists mayaUsdLayerEditorWindow`) {
+        if (!`runTimeCommand -exists mayaUsdOpenUsdLayerEditor`) {
+            runTimeCommand -default true
+                -label 		"USD Layer Editor"
+                -annotation "Organize and edit USD data in layers"
+                -category   "Menu items.Common.Windows.General Editors"
+                -command 	"mayaUsdLayerEditorWindow mayaUsdLayerEditor"
+                -image		"USD_generic.png"
+                mayaUsdOpenUsdLayerEditor;
+        }
+    }
 
     source "mayaUsd_createStageFromFile.mel";
     source "mayaUsd_layerEditorFileDialogs.mel";
@@ -165,7 +167,7 @@ global proc mayaUsdMenu_windowMenuCallback() {
 // mayaUsdMenu_windowMenuCallback
 // setup the items in Maya's "Window->General Editors" menu
 global proc mayaUsdMenu_generalEditorsMenuCallback() {
-    if (!(`menuItem -query -exists wmUsdLayerEditorMenuitem`))
+    if (`exists mayaUsdLayerEditorWindow` && !(`menuItem -query -exists wmUsdLayerEditorMenuitem`))
     {
         global string $gMayaUsdOpenUsdLayerEditorMenuItem;
         $gMayaUsdOpenUsdLayerEditorMenuItem = `menuItem
@@ -229,6 +231,10 @@ proc string makeCommand(string $panelName, string $command) {
 }
 
 global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
+
+    if (!`exists mayaUsdLayerEditorWindow`) {
+        return;
+    }
 
     int $invalidLayer = `mayaUsdLayerEditorWindow -q -isInvalidLayer $panelName`;
     string $cmd;

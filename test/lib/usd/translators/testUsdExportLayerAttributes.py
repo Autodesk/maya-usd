@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 
 
 #
@@ -36,7 +36,7 @@ class testMayaUsdExportLayerAttributes(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def test_fps_30(self):
+    def test_fps(self):
         fps_map = {
             "ntsc": 30,
             "game": 15,

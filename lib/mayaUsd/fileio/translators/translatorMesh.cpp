@@ -48,13 +48,14 @@
 namespace MAYAUSD_NS_DEF {
 
 TranslatorMeshRead::TranslatorMeshRead(
-    const UsdGeomMesh& mesh,
-    const UsdPrim&     prim,
-    const MObject&     transformObj,
-    const MObject&     stageNode,
-    const GfInterval&  frameRange,
-    bool               wantCacheAnimation,
-    MStatus*           status)
+    const UsdGeomMesh&        mesh,
+    const UsdPrim&            prim,
+    const MObject&            transformObj,
+    const MObject&            stageNode,
+    const GfInterval&         frameRange,
+    bool                      wantCacheAnimation,
+    UsdMayaPrimReaderContext* context,
+    MStatus*                  status)
     : m_wantCacheAnimation(wantCacheAnimation)
     , m_pointsNumTimeSamples(0u)
 {
@@ -298,11 +299,15 @@ TranslatorMeshRead::TranslatorMeshRead(
     // Animate the weights so that mesh0 has a weight of 1 at frame 0, etc.
     MFnAnimCurve animFn;
 
+    // Get the values needed to convert time to the current maya scenes framerate
+    MTime::Unit timeUnit = MTime::uiUnit();
+    double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+
     // Construct the time array to be used for all the keys
     MTimeArray timeArray;
     timeArray.setLength(m_pointsNumTimeSamples);
     for (unsigned int ti = 0u; ti < m_pointsNumTimeSamples; ++ti) {
-        timeArray.set(MTime(pointsTimeSamples[ti]), ti);
+        timeArray.set(MTime(pointsTimeSamples[ti] * timeSampleMultiplier, timeUnit), ti);
     }
 
     // Key/Animate the weights
