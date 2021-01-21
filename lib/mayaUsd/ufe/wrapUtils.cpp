@@ -18,14 +18,21 @@
 #include <mayaUsd/ufe/Utils.h>
 
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/usd/sdf/path.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
+#include <ufe/path.h>
+#include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
 #include <ufe/runTimeMgr.h>
+
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/pathString.h>
 #endif
 
 #include <boost/python.hpp>
+
+#include <string>
 
 using namespace MayaUsd;
 using namespace boost::python;
@@ -90,33 +97,88 @@ std::string stagePath(UsdStageWeakPtr stage)
     return ufe::stagePath(stage).string();
 }
 
+std::string usdPathToUfePathSegment(
+    const SdfPath& usdPath,
+    int            instanceIndex = UsdImagingDelegate::ALL_INSTANCES)
+{
+    return ufe::usdPathToUfePathSegment(usdPath, instanceIndex).string();
+}
+
+#ifndef UFE_V2_FEATURES_AVAILABLE
+// Helper function for UFE versions before version 2 for converting a path
+// string to a UFE path.
+static Ufe::Path _UfeV1StringToUsdPath(const std::string& ufePathString)
+{
+    Ufe::Path path;
+
+    // The path string is a list of segment strings separated by ',' comma
+    // separator.
+    auto segmentStrings = TfStringTokenize(ufePathString, ",");
+
+    // If there are fewer than two segments, there cannot be a USD segment, so
+    // return an invalid path.
+    if (segmentStrings.size() < 2u) {
+        return path;
+    }
+
+    // We have the path string split into segments. Build up the Ufe::Path one
+    // segment at a time. The path segment separator is the first character
+    // of each segment. We know that USD's separator is '/' and Maya's
+    // separator is '|', so use a map to get the corresponding UFE run-time ID.
+    static std::map<char, Ufe::Rtid> sepToRtid
+        = { { '/', ufe::getUsdRunTimeId() }, { '|', ufe::getMayaRunTimeId() } };
+    for (size_t i = 0u; i < segmentStrings.size(); ++i) {
+        const auto& segmentString = segmentStrings[i];
+        char        sep = segmentString[0u];
+        path = path + Ufe::PathSegment(segmentString, sepToRtid.at(sep), sep);
+    }
+
+    return path;
+}
+#endif
+
+std::string stripInstanceIndexFromUfePath(const std::string& ufePathString)
+{
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    const Ufe::Path path = Ufe::PathString::path(ufePathString);
+    return Ufe::PathString::string(ufe::stripInstanceIndexFromUfePath(path));
+#else
+    const Ufe::Path path = _UfeV1StringToUsdPath(ufePathString);
+    return ufe::stripInstanceIndexFromUfePath(path).string();
+#endif
+}
+
 UsdPrim ufePathToPrim(const std::string& ufePathString)
 {
 #ifdef UFE_V2_FEATURES_AVAILABLE
     return ufe::ufePathToPrim(Ufe::PathString::path(ufePathString));
 #else
-    // The path string is a list of segment strings separated by ',' comma
-    // separator.
-    auto segmentStrings = TfStringTokenize(ufePathString, ",");
+    Ufe::Path path = _UfeV1StringToUsdPath(ufePathString);
 
-    // If there's just one segment, it's the Maya Dag path segment, so it can't
-    // have a prim.
-    if (segmentStrings.size() == 1) {
+    // If there are fewer than two segments, there cannot be a USD segment, so
+    // return an invalid UsdPrim.
+    if (path.getSegments().size() < 2u) {
         return UsdPrim();
     }
 
-    // We have the path string split into segments.  Build up the Ufe::Path one
-    // segment at a time.  The path segment separator is the first character
-    // of each segment.  We know that USD's separator is '/' and Maya's
-    // separator is '|', so use a map to get the corresponding UFE run-time ID.
-    Ufe::Path                        path;
-    static std::map<char, Ufe::Rtid> sepToRtid = { { '/', ufe::getUsdRunTimeId() }, { '|', 1 } };
-    for (std::size_t i = 0; i < segmentStrings.size(); ++i) {
-        const auto& segmentString = segmentStrings[i];
-        char        sep = segmentString[0];
-        path = path + Ufe::PathSegment(segmentString, sepToRtid.at(sep), sep);
-    }
     return ufe::ufePathToPrim(path);
+#endif
+}
+
+int ufePathToInstanceIndex(const std::string& ufePathString)
+{
+#ifdef UFE_V2_FEATURES_AVAILABLE
+    return ufe::ufePathToInstanceIndex(Ufe::PathString::path(ufePathString));
+#else
+    Ufe::Path path = _UfeV1StringToUsdPath(ufePathString);
+
+    // If there are fewer than two segments, there cannot be a USD segment, so
+    // return ALL_INSTANCES.
+    if (path.getSegments().size() < 2u) {
+        return UsdImagingDelegate::ALL_INSTANCES;
+    }
+
+    return ufe::ufePathToInstanceIndex(path);
 #endif
 }
 
@@ -136,5 +198,10 @@ void wrapUtils()
     // the USD path separator is '/'.  PPT, 8-Dec-2019.
     def("getStage", getStage);
     def("stagePath", stagePath);
+    def("usdPathToUfePathSegment",
+        usdPathToUfePathSegment,
+        (arg("usdPath"), arg("instanceIndex") = UsdImagingDelegate::ALL_INSTANCES));
+    def("stripInstanceIndexFromUfePath", stripInstanceIndexFromUfePath, (arg("ufePathString")));
     def("ufePathToPrim", ufePathToPrim);
+    def("ufePathToInstanceIndex", ufePathToInstanceIndex);
 }
