@@ -47,6 +47,14 @@ public:
         // If creating the attribute for the first time, immediately set to a user default
         const bool fallbackToUserDefaults = true;
         // TODO: Extend this and mtoh with a setting to ignore scene settings
+
+        GlobalParams() = default;
+        GlobalParams(const TfToken f, bool fir, bool ftud)
+            : filter(f)
+            , filterIsRenderer(fir)
+            , fallbackToUserDefaults(ftud)
+        {
+        }
     };
 
     // Creating render globals attributes on "defaultRenderGlobals"
