@@ -30,6 +30,7 @@
 using namespace MayaUsd;
 using namespace boost::python;
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
 UsdPrim getPrimFromRawItem(uint64_t rawItem)
 {
     Ufe::SceneItem*    item = reinterpret_cast<Ufe::SceneItem*>(rawItem);
@@ -40,7 +41,6 @@ UsdPrim getPrimFromRawItem(uint64_t rawItem)
     return UsdPrim();
 }
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
 std::string getNodeNameFromRawItem(uint64_t rawItem)
 {
     std::string     name;
@@ -49,7 +49,6 @@ std::string getNodeNameFromRawItem(uint64_t rawItem)
         name = item->nodeName();
     return name;
 }
-#endif
 
 std::string getNodeTypeFromRawItem(uint64_t rawItem)
 {
@@ -61,6 +60,7 @@ std::string getNodeTypeFromRawItem(uint64_t rawItem)
     }
     return type;
 }
+#endif
 
 UsdStageWeakPtr getStage(const std::string& ufePathString)
 {
@@ -70,7 +70,16 @@ UsdStageWeakPtr getStage(const std::string& ufePathString)
     // This function works on a single-segment path, i.e. the Maya Dag path
     // segment to the proxy shape.  We know the Maya run-time ID is 1,
     // separator is '|'.
-    return ufe::getStage(Ufe::Path(Ufe::PathSegment(ufePathString, 1, '|')));
+    // The helper function proxyShapeHandle() assumes Maya path starts
+    // with "|world" and will pop it off. So make sure our string has it.
+    // Note: std::string starts_with only added for C++20. So use diff trick.
+    std::string proxyPath;
+    if (ufePathString.rfind("|world", 0) == std::string::npos) {
+        proxyPath = "|world" + ufePathString;
+    } else {
+        proxyPath = ufePathString;
+    }
+    return ufe::getStage(Ufe::Path(Ufe::PathSegment(proxyPath, 1, '|')));
 #endif
 }
 
@@ -113,13 +122,11 @@ UsdPrim ufePathToPrim(const std::string& ufePathString)
 
 void wrapUtils()
 {
-    def("getPrimFromRawItem", getPrimFromRawItem);
-
 #ifdef UFE_V2_FEATURES_AVAILABLE
+    def("getPrimFromRawItem", getPrimFromRawItem);
     def("getNodeNameFromRawItem", getNodeNameFromRawItem);
-#endif
-
     def("getNodeTypeFromRawItem", getNodeTypeFromRawItem);
+#endif
 
     // Because mayaUsd and UFE have incompatible Python bindings that do not
     // know about each other (provided by Boost Python and pybind11,

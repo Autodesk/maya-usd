@@ -16,14 +16,17 @@
 # limitations under the License.
 #
 
-import os
+import mayaUsd.ufe
+
+from pxr import Kind
+from pxr import Usd
 
 import maya.cmds as cmds
 
 import usdUtils, mayaUtils, ufeUtils, testUtils
 import ufe
-import mayaUsd.ufe
 
+import os
 import unittest
 
 
@@ -147,3 +150,69 @@ class GroupCmdTestCase(unittest.TestCase):
             cmds.group(usdSphere, usdTorus)
         except Exception as e:
             self.assertTrue('cannot group across usd proxies')
+
+    def testGroupKind(self):
+        """
+        Tests that grouping maintains a contiguous model hierarchy when the
+        parent of the group is in the model hierarchy.
+        """
+        mayaPathSegment = mayaUtils.createUfePathSegment(
+            "|transform1|proxyShape1")
+
+        usdSegmentBall3 = usdUtils.createUfePathSegment(
+            "/Ball_set/Props/Ball_3")
+        ball3Path = ufe.Path([mayaPathSegment, usdSegmentBall3])
+        ball3Item = ufe.Hierarchy.createItem(ball3Path)
+
+        usdSegmentBall5 = usdUtils.createUfePathSegment(
+            "/Ball_set/Props/Ball_5")
+        ball5Path = ufe.Path([mayaPathSegment, usdSegmentBall5])
+        ball5Item = ufe.Hierarchy.createItem(ball5Path)
+
+        usdSegmentProps = usdUtils.createUfePathSegment("/Ball_set/Props")
+        propsPath = ufe.Path([mayaPathSegment, usdSegmentProps])
+        propsItem = ufe.Hierarchy.createItem(propsPath)
+
+        ufeSelection = ufe.GlobalSelection.get()
+        ufeSelection.append(ball3Item)
+        ufeSelection.append(ball5Item)
+
+        groupName = "newGroup"
+        cmds.group(name=groupName)
+
+        newGroupPath = propsPath + ufe.PathComponent("%s1" % groupName)
+        newGroupItem = ufe.Hierarchy.createItem(newGroupPath)
+        newGroupPrim = usdUtils.getPrimFromSceneItem(newGroupItem)
+
+        # The "Props" prim that was the parent of both "Ball" prims has
+        # kind=group and is part of the model hierarchy, so the new group prim
+        # should also have kind=group and be included in the model hierarchy.
+        self.assertEqual(Usd.ModelAPI(newGroupPrim).GetKind(), Kind.Tokens.group)
+        self.assertTrue(newGroupPrim.IsModel())
+
+        cmds.undo()
+
+        # Clear the kind metadata on the "Props" prim before testing again.
+        propsPrim = usdUtils.getPrimFromSceneItem(propsItem)
+        Usd.ModelAPI(propsPrim).SetKind("")
+        self.assertFalse(propsPrim.IsModel())
+
+        # Freshen the UFE scene items so they have valid handles to their
+        # UsdPrims.
+        ball3Item = ufe.Hierarchy.createItem(ball3Path)
+        ball5Item = ufe.Hierarchy.createItem(ball5Path)
+
+        ufeSelection.clear()
+        ufeSelection.append(ball3Item)
+        ufeSelection.append(ball5Item)
+
+        cmds.group(name=groupName)
+
+        newGroupItem = ufe.Hierarchy.createItem(newGroupPath)
+        newGroupPrim = usdUtils.getPrimFromSceneItem(newGroupItem)
+
+        # When the "Props" prim does not have an authored kind and is not part
+        # of the model hierarchy, the new group prim should not have any kind
+        # authored either.
+        self.assertEqual(Usd.ModelAPI(newGroupPrim).GetKind(), "")
+        self.assertFalse(newGroupPrim.IsModel())

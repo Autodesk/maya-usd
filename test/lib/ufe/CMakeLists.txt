@@ -6,6 +6,7 @@ set(TEST_SCRIPT_FILES
     testDeleteCmd.py
     testMatrices.py
     testMayaPickwalk.py
+    testPythonWrappers.py
     testSelection.py
     testUfePythonImport.py
 )

@@ -178,6 +178,17 @@ public:
         TfToken importDescription;
         bool    hasExporter = false;
         bool    hasImporter = false;
+
+        ConversionInfo() = default;
+        ConversionInfo(TfToken rc, TfToken nn, TfToken ed, TfToken id, bool he, bool hi)
+            : renderContext(rc)
+            , niceName(nn)
+            , exportDescription(ed)
+            , importDescription(id)
+            , hasExporter(he)
+            , hasImporter(hi)
+        {
+        }
     };
 
     /// Gets the conversion information associated with \p materialConversion on export and import

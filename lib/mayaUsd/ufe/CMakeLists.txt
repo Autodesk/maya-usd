@@ -50,6 +50,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
             UsdUndoCreateGroupCommand.cpp
             UsdUndoInsertChildCommand.cpp
             UsdUndoReorderCommand.cpp
+            UsdUndoSetKindCommand.cpp
             UsdUndoVisibleCommand.cpp
     )
     if(UFE_PREVIEW_VERSION_NUM GREATER_EQUAL 2022)
@@ -115,6 +116,7 @@ if(CMAKE_UFE_V2_FEATURES_AVAILABLE)
         UsdUndoCreateGroupCommand.h
         UsdUndoInsertChildCommand.h
         UsdUndoReorderCommand.h
+        UsdUndoSetKindCommand.h
         UsdUndoVisibleCommand.h
     )
     # Why no if for UsdUIInfoHandler.h ?

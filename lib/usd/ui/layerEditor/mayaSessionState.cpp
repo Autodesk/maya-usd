@@ -282,7 +282,8 @@ MayaSessionState::loadLayersUI(const QString& in_title, const std::string& in_de
         return std::vector<std::string>();
     else {
         std::vector<std::string> results;
-        for (const auto& file : files) {
+        for (uint32_t i = 0; i < files.length(); i++) {
+            const auto& file = files[i];
             results.push_back(file.asChar());
         }
         return results;

@@ -45,6 +45,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportStroke.py
     testUsdExportUserTaggedAttributes.py
     testUsdExportVisibilityDefault.py
+    testUsdImportAnonymousLayer.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
     testUsdImportDisplacement.py

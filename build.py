@@ -294,7 +294,7 @@ def RunCTest(context, extraArgs=None):
         Run(context,
             'ctest '
             '--output-on-failure ' 
-            '--timeout 300 '
+            '--timeout 500 '
             '-C {variant} '
             '{extraArgs} '
             .format(variant=variant,
