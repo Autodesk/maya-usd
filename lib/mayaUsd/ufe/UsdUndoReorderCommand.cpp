@@ -15,10 +15,9 @@
 //
 #include "UsdUndoReorderCommand.h"
 
-#include <mayaUsd/undo/UsdUndoBlock.h>
-
 #include "private/Utils.h"
 
+#include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsdUtils/util.h>
 
 #include <ufe/log.h>
