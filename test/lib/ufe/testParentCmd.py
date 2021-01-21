@@ -19,7 +19,7 @@
 import mayaUtils, usdUtils, testUtils
 from testUtils import assertVectorAlmostEqual
 
-from pxr import UsdGeom
+from pxr import UsdGeom, Vt
 
 import ufe
 import mayaUsd.ufe
@@ -240,6 +240,136 @@ class ParentCmdTestCase(unittest.TestCase):
         # Undo everything.
         for i in range(2):
             cmds.undo()
+
+        cylChildren = cylHier.children()
+        self.assertEqual(len(cylChildren), 1)
+
+    def testParentAbsoluteSingleMatrixOp(self):
+        """Test parent -absolute on prim with a single matrix op."""
+
+        # Our test strategy is the following: we use the existing scene's cube
+        # prim as reference, and set its local matrix onto a new prim that has
+        # a single matrix op.  The cube prim is used as a reference.
+        #
+        # We then parent -absolute the new prim as well as the cube, and assert
+        # that neither the new prim or the cube have moved in world space.
+
+        # Create scene items for the cube, the cylinder, and the proxy shape.
+        proxyShapePathStr = '|mayaUsdProxy1|mayaUsdProxyShape1'
+        proxyShapePath = ufe.PathString.path(proxyShapePathStr)
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        shapeSegment = mayaUtils.createUfePathSegment(proxyShapePathStr)
+        cubePath = ufe.Path(
+            [shapeSegment, usdUtils.createUfePathSegment("/cubeXform")])
+        cubeItem = ufe.Hierarchy.createItem(cubePath)
+        cylinderPath = ufe.Path(
+            [shapeSegment, usdUtils.createUfePathSegment("/cylinderXform")])
+        cylinderItem = ufe.Hierarchy.createItem(cylinderPath)
+
+        # get the USD stage
+        stage = mayaUsd.ufe.getStage(str(shapeSegment))
+
+        # check GetLayerStack behavior
+        self.assertEqual(stage.GetEditTarget().GetLayer(), stage.GetRootLayer())
+
+        # Create a capsule prim directly under the proxy shape
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        capsulePath = ufe.PathString.path(proxyShapePathStr+',/Capsule1')
+
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(
+            ufe.PathString.string(capsulePath))
+        capsuleXformable = UsdGeom.Xformable(capsulePrim)
+
+        # The capsule is not a child of the cylinder.
+        cylHier = ufe.Hierarchy.hierarchy(cylinderItem)
+        cylChildren = cylHier.children()
+        self.assertEqual(len(cylChildren), 1)
+
+        # Add a single matrix transform op to the capsule.
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+        capsuleXformable = UsdGeom.Xformable(capsulePrim)
+        capsuleXformable.AddTransformOp()
+
+        self.assertEqual(
+            capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray([
+                "xformOp:transform"]))
+        
+        # Delay creating the Transform3d interface until after we've added our
+        # single matrix transform op, so that we get a UsdTransform3dMatrixOp.
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
+
+        # The cube is a direct child of the proxy shape, whose transform is the
+        # identity, so the cube's world and local space transforms are identical
+        cubeT3d = ufe.Transform3d.transform3d(cubeItem)
+        cubeLocal = cubeT3d.matrix()
+        cubeWorld = cubeT3d.inclusiveMatrix()
+        cubeWorldListPre = matrixToList(cubeWorld)
+
+        # Set the capsule's transform to be the same as the cube's.
+        capsuleT3d.setMatrix(cubeLocal)
+
+        self.assertEqual(
+            capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray([
+                "xformOp:transform"]))
+
+        capsuleLocal = capsuleT3d.matrix()
+        capsuleWorld = capsuleT3d.inclusiveMatrix()
+        capsuleWorldListPre = matrixToList(capsuleWorld)
+
+        assertVectorAlmostEqual(
+            self, matrixToList(cubeLocal), matrixToList(capsuleLocal))
+        assertVectorAlmostEqual(
+            self, matrixToList(cubeWorld), matrixToList(capsuleWorld))
+
+        # Parent cube and capsule to cylinder in absolute mode (default), using
+        # UFE path strings.
+        cmds.parent("|mayaUsdProxy1|mayaUsdProxyShape1,/cubeXform",
+                    "|mayaUsdProxy1|mayaUsdProxyShape1,/Capsule1",
+                    "|mayaUsdProxy1|mayaUsdProxyShape1,/cylinderXform")
+
+        # Confirm that the cube and capsule are now children of the cylinder.
+        cylChildren = cylHier.children()
+        self.assertEqual(len(cylChildren), 3)
+        self.assertIn("cubeXform", childrenNames(cylChildren))
+        self.assertIn("Capsule1", childrenNames(cylChildren))
+
+        # Undo: cylinder no longer has children.
+        cmds.undo()
+
+        cylChildren = cylHier.children()
+        self.assertEqual(len(cylChildren), 1)
+
+        # Redo: confirm children are back.
+        cmds.redo()
+
+        cylChildren = cylHier.children()
+        self.assertEqual(len(cylChildren), 3)
+        self.assertIn("cubeXform", childrenNames(cylChildren))
+        self.assertIn("Capsule1", childrenNames(cylChildren))
+
+        # Confirm that the cube and capsule's world transform has not changed.
+        # Must re-create the items, as their path has changed.
+        cubeChildPath = ufe.Path(
+            [shapeSegment, usdUtils.createUfePathSegment("/cylinderXform/cubeXform")])
+        cubeChildItem = ufe.Hierarchy.createItem(cubeChildPath)
+        cubeChildT3d = ufe.Transform3d.transform3d(cubeChildItem)
+        capsuleChildPath = ufe.Path(
+            [shapeSegment, usdUtils.createUfePathSegment("/cylinderXform/Capsule1")])
+        capsuleChildItem = ufe.Hierarchy.createItem(capsuleChildPath)
+        capsuleChildT3d = ufe.Transform3d.transform3d(capsuleChildItem)
+
+        cubeWorld = cubeChildT3d.inclusiveMatrix()
+        capsuleWorld = capsuleChildT3d.inclusiveMatrix()
+        assertVectorAlmostEqual(
+            self, cubeWorldListPre, matrixToList(cubeWorld), places=6)
+        assertVectorAlmostEqual(
+            self, capsuleWorldListPre, matrixToList(capsuleWorld), places=6)
+
+        # Undo everything.
+        cmds.undo()
 
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)

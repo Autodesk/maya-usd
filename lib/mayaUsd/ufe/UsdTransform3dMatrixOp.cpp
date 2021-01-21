@@ -17,6 +17,8 @@
 
 #include <mayaUsd/ufe/UsdSceneItem.h>
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/base/gf/rotation.h>
 #include <pxr/base/gf/transform.h>
@@ -30,6 +32,7 @@
 
 namespace {
 
+using namespace MayaUsd;
 using namespace MayaUsd::ufe;
 
 VtValue getValue(const UsdAttribute& attr, const UsdTimeCode& time)
@@ -75,6 +78,42 @@ computeLocalTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTi
 
 auto computeLocalInclusiveTransform = computeLocalTransform<true>;
 auto computeLocalExclusiveTransform = computeLocalTransform<false>;
+
+// Class for setMatrixCmd() implementation.  UsdUndoBlock data member and
+// undo() / redo() should be factored out into a future command base class.
+class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
+{
+public:
+    UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
+        : Ufe::SetMatrix4dUndoableCommand(path)
+        , _newM(newM)
+    {
+    }
+
+    ~UsdSetMatrix4dUndoableCmd() override { }
+
+    bool set(const Ufe::Matrix4d&) override
+    {
+        // No-op: Maya does not set matrices through interactive manipulation.
+        TF_WARN("Illegal call to UsdSetMatrix4dUndoableCmd::set()");
+        return true;
+    }
+
+    void execute() override
+    {
+        UsdUndoBlock undoBlock(&_undoableItem);
+
+        auto t3d = Ufe::Transform3d::transform3d(sceneItem());
+        t3d->setMatrix(_newM);
+    }
+
+    void undo() override { _undoableItem.undo(); }
+    void redo() override { _undoableItem.redo(); }
+
+private:
+    UsdUndoableItem     _undoableItem;
+    const Ufe::Matrix4d _newM;
+};
 
 // Helper class to factor out common code for translate, rotate, scale
 // undoable commands.
@@ -351,7 +390,7 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double
 
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dMatrixOp::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    return nullptr;
+    return std::make_shared<UsdSetMatrix4dUndoableCmd>(path(), m);
 }
 
 void UsdTransform3dMatrixOp::setMatrix(const Ufe::Matrix4d& m) { _op.Set(toUsd(m)); }
@@ -402,11 +441,34 @@ UsdTransform3dMatrixOpHandler::create(const Ufe::Transform3dHandler::Ptr& nextHa
 Ufe::Transform3d::Ptr
 UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) const
 {
-    // This method can be used to edit the 3D transform of the argument, but at
-    // time of writing this is not implemented in UsdTransform3dMatrixOp, and
-    // our UsdTransform3dBaseHandler base class does not know how to edit the
-    // argument either.  Simply delegate to the next handler in the list.
-    return _nextHandler->transform3d(item);
+    // Remove code duplication with editTransform3d().  PPT, 21-Jan-2021.
+    UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
+#if !defined(NDEBUG)
+    assert(usdItem);
+#endif
+
+    auto             opName = getMatrixOp();
+    UsdGeomXformable xformable(usdItem->prim());
+    bool             unused;
+    auto             xformOps = xformable.GetOrderedXformOps(&unused);
+    auto i = std::find_if(xformOps.begin(), xformOps.end(), [opName](const UsdGeomXformOp& op) {
+        return (op.GetOpType() == UsdGeomXformOp::TypeTransform)
+            && (!opName || std::string(opName) == op.GetOpName());
+    });
+    bool foundMatrix = (i != xformOps.end());
+
+    bool moreLocalNonMatrix = foundMatrix
+        ? (std::find_if(
+               i,
+               xformOps.end(),
+               [](const UsdGeomXformOp& op) {
+                   return op.GetOpType() != UsdGeomXformOp::TypeTransform;
+               })
+           != xformOps.end())
+        : false;
+
+    return (foundMatrix && !moreLocalNonMatrix) ? UsdTransform3dMatrixOp::create(usdItem, *i)
+                                                : _nextHandler->transform3d(item);
 }
 
 Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
