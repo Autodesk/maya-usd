@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 #
 # Copyright 2016 Pixar
 #
@@ -80,14 +80,14 @@ class testUsdExportAsClip(unittest.TestCase):
         # first 5 frames have no animation
         usdFile = os.path.abspath('UsdExportAsClip_cube.001.usda')
         clipFiles.append(usdFile)
-        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, frameRange=(1, 5))
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, frameRange=(1, 5), sss=False)
         stage = Usd.Stage.Open(usdFile)
         self._ValidateNumSamples(stage,'/world/pCube1', 'points',  1)
 
         # next 5 frames have no animation
         usdFile = os.path.abspath('UsdExportAsClip_cube.005.usda')
         clipFiles.append(usdFile)
-        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, frameRange=(5, 10))
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, frameRange=(5, 10), sss=False)
         stage = Usd.Stage.Open(usdFile)
         self._ValidateNumSamples(stage, '/world/pCube1', 'points', 1)
 
@@ -95,14 +95,14 @@ class testUsdExportAsClip(unittest.TestCase):
         usdFile = os.path.abspath('UsdExportAsClip_cube.010.usda')
         clipFiles.append(usdFile)
         frames = (10, 15)
-        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, frameRange=frames)
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, frameRange=frames, sss=False)
         stage = Usd.Stage.Open(usdFile)
         self._ValidateNumSamples(stage, '/world/pCube1', 'points', frames[1] + 1 - frames[0])
 
         # next 5 frames have no animation
         usdFile = os.path.abspath('UsdExportAsClip_cube.015.usda')
         clipFiles.append(usdFile)
-        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, frameRange=(15, 20))
+        cmds.usdExport(mergeTransformAndShape=True, file=usdFile, frameRange=(15, 20), sss=False)
         stage = Usd.Stage.Open(usdFile)
         self._ValidateNumSamples(stage, '/world/pCube1', 'points', 1)
 
@@ -125,7 +125,7 @@ class testUsdExportAsClip(unittest.TestCase):
 
         # export a non clip version for comparison
         canonicalUsdFile = os.path.abspath('canonical.usda')
-        cmds.usdExport(mergeTransformAndShape=True, file=canonicalUsdFile, frameRange=(1, 20))
+        cmds.usdExport(mergeTransformAndShape=True, file=canonicalUsdFile, frameRange=(1, 20), sss=False)
 
         print('comparing: \nnormal: {}\nstitched: {}'.format(canonicalUsdFile, stitchedPath))
         canonicalStage = Usd.Stage.Open(canonicalUsdFile)

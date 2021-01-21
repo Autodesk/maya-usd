@@ -16,8 +16,6 @@
 #ifndef HDMAYA_DELEGATE_H
 #define HDMAYA_DELEGATE_H
 
-#include <pxr/imaging/glf/glew.h>
-
 #include <hdMaya/api.h>
 #include <hdMaya/delegates/params.h>
 

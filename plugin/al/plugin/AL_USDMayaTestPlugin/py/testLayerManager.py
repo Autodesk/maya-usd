@@ -23,6 +23,8 @@ import unittest
 from maya import cmds
 from AL.usdmaya import ProxyShape
 
+import fixturesUtils
+
 class TestLayerManagerSerialisation(unittest.TestCase):
     """Test cases for layer manager serialisation and deserialisation"""
 
@@ -76,7 +78,7 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         self._stage.DefinePrim(newPrimPath, "xform")
         self._stage.SetEditTarget(self._stage.GetSessionLayer())
 
-        _tmpMayafile = tempfile.NamedTemporaryFile(delete=True, suffix=".ma") 
+        _tmpMayafile = tempfile.NamedTemporaryFile(delete=True, suffix=".ma")
         _tmpMayafile.close()
 
         cmds.file(rename=_tmpMayafile.name)
@@ -97,7 +99,7 @@ class TestLayerManagerSerialisation(unittest.TestCase):
     def test_sessionLayerSerialisation(self):
         """ A clean session layer should not be serialised on Maya scene save, nor we get
             any complain form usdMaya on Maya scene reopen.
-            A dirty session layer should be serialised correctly on Maya scene save, and 
+            A dirty session layer should be serialised correctly on Maya scene save, and
             we should get it deserialised on Maya scene reopen. We should also be able to
             reload on session layer to clear it.
         """
@@ -141,10 +143,5 @@ class TestLayerManagerSerialisation(unittest.TestCase):
         os.remove(_tmpMayafile.name)
 
 
-
-if __name__ == "__main__":
-
-    tests = [unittest.TestLoader().loadTestsFromTestCase(TestLayerManagerSerialisation),]
-    results = [unittest.TextTestRunner(verbosity=2).run(test) for test in tests]
-    exitCode = int(not all([result.wasSuccessful() for result in results]))
-    cmds.quit(exitCode=(exitCode))
+if __name__ == '__main__':
+    fixturesUtils.runTests(globals())

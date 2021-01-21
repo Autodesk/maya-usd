@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 #
 # Copyright 2018 Pixar
 #
@@ -20,14 +20,16 @@ import mayaUsd.lib as mayaUsdLib
 from maya import cmds
 from maya import standalone
 
+import fixturesUtils
+
 import unittest
 
 
-class testUsdMayaBlockSceneModificationContext(unittest.TestCase):
+class testBlockSceneModificationContext(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
+        fixturesUtils.setUpClass(__file__)
 
     @classmethod
     def tearDownClass(cls):

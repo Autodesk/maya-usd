@@ -89,6 +89,8 @@ public:
 
     Ufe::Vector3d scalePivotTranslation() const override;
 
+    Ufe::SetMatrix4dUndoableCommand::Ptr setMatrixCmd(const Ufe::Matrix4d& m) override;
+
 protected:
     bool                                    hasOp(OpNdx ndx) const;
     UsdGeomXformOp                          getOp(OpNdx ndx) const;

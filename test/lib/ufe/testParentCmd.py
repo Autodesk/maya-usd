@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-import mayaUtils, usdUtils
+import mayaUtils, usdUtils, testUtils
 from testUtils import assertVectorAlmostEqual
 
 from pxr import UsdGeom
@@ -424,7 +424,7 @@ class ParentCmdTestCase(unittest.TestCase):
             # opened file.  Layers are then shared between the stages, because
             # they come from the same USD file, causing changes done below one
             # proxy shape to be seen in the other.  Import from another file.
-            filePath = mayaUtils.getTestScene("parentCmd", "simpleSceneUSD_TRS.ma")
+            filePath = testUtils.getTestScene("parentCmd", "simpleSceneUSD_TRS.ma")
             cmds.file(filePath, i=True)
 
             # Unparent a USD node in each stage.  Unparenting Lambert node is

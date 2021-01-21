@@ -82,9 +82,6 @@ public:
     Ufe::Matrix4d segmentInclusiveMatrix() const override;
     Ufe::Matrix4d segmentExclusiveMatrix() const override;
 
-protected:
-    const char* pathCStr() const;
-
 private:
     UsdSceneItem::Ptr fItem;
     UsdPrim           fPrim;

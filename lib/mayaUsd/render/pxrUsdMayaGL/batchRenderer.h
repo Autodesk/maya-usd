@@ -114,7 +114,7 @@ public:
     /// Initialize the batch renderer.
     ///
     /// This should be called at least once and it is OK to call it multiple
-    /// times. This handles things like initializing OpenGL/Glew.
+    /// times. This handles things like initializing OpenGL Loading Library.
     MAYAUSD_CORE_PUBLIC
     static void Init();
 

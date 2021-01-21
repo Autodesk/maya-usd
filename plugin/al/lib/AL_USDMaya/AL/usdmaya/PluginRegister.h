@@ -14,7 +14,12 @@
 // limitations under the License.
 //
 #pragma once
+#include <pxr/pxr.h>
+#if USD_VERSION_NUM < 2102
 #include <pxr/imaging/glf/glew.h>
+#else
+#include <pxr/imaging/garch/glApi.h>
+#endif
 
 #include "AL/maya/utils/CommandGuiHelper.h"
 #include "AL/maya/utils/MenuBuilder.h"
@@ -51,7 +56,6 @@
 #include <pxr/base/plug/registry.h>
 #include <pxr/imaging/glf/contextCaps.h>
 #include <pxr/imaging/glf/glContext.h>
-#include <pxr/pxr.h>
 
 #include <maya/MDrawRegistry.h>
 #include <maya/MGlobal.h>
@@ -171,7 +175,11 @@ global proc AL_usdmaya_meshAnimImport()
 //----------------------------------------------------------------------------------------------------------------------
 template <typename AFnPlugin> MStatus registerPlugin(AFnPlugin& plugin)
 {
+#if USD_VERSION_NUM < 2102
     GlfGlewInit();
+#else
+    GarchGLApiLoad();
+#endif
 
     // We may be in a non-gui maya... if so,
     // GlfContextCaps::InitInstance() will error

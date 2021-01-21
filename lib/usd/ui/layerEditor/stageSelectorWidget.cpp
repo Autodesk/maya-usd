@@ -24,7 +24,7 @@
 #include <QtWidgets/QHBoxLayout>
 #include <QtWidgets/QLabel>
 
-Q_DECLARE_METATYPE(pxr::UsdStageRefPtr);
+Q_DECLARE_METATYPE(PXR_NS::UsdStageRefPtr);
 
 namespace UsdLayerEditor {
 
@@ -69,17 +69,17 @@ void StageSelectorWidget::setSessionState(SessionState* in_sessionState)
     updateFromSessionState();
 }
 
-pxr::UsdStageRefPtr StageSelectorWidget::selectedStage()
+PXR_NS::UsdStageRefPtr StageSelectorWidget::selectedStage()
 {
     if (_dropDown->currentIndex() != -1) {
         auto const& data = _dropDown->currentData();
-        return data.value<pxr::UsdStageRefPtr>();
+        return data.value<PXR_NS::UsdStageRefPtr>();
     }
 
-    return pxr::UsdStageRefPtr();
+    return PXR_NS::UsdStageRefPtr();
 }
 // repopulates the combo based on the session stage list
-void StageSelectorWidget::updateFromSessionState(pxr::UsdStageRefPtr const& stageToSelect)
+void StageSelectorWidget::updateFromSessionState(PXR_NS::UsdStageRefPtr const& stageToSelect)
 {
     QSignalBlocker blocker(_dropDown);
     _dropDown->clear();
@@ -118,7 +118,7 @@ void StageSelectorWidget::sessionStageChanged()
     }
 }
 
-void StageSelectorWidget::stageRenamed(std::string const& name, pxr::UsdStageRefPtr const& stage)
+void StageSelectorWidget::stageRenamed(std::string const& name, PXR_NS::UsdStageRefPtr const& stage)
 {
     auto index = _dropDown->findData(QVariant::fromValue(stage));
     if (index != -1) {

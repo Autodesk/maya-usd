@@ -95,7 +95,7 @@ LayerPathRow::LayerPathRow(LoadLayersDialog* in_parent)
     _trashIcon->setToolTip(StringResources::getAsQString(StringResources::kRemoveSublayer));
     gridLayout->addWidget(_trashIcon, 0, 3);
 
-    icon = utils->createIcon(":/addCreateGeneric.png");
+    icon = utils->createIcon(":/UsdLayerEditor/LE_addCreateGeneric.png");
     _addPathIcon = new GeneratedIconButton(this, icon);
     _addPathIcon->setVisible(false);
     _addPathIcon->setToolTip(StringResources::getAsQString(StringResources::kAddSublayer));

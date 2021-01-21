@@ -1,7 +1,10 @@
 set(TARGET_NAME IMPORT_EXPORT_TEST)
 
 set(TEST_SCRIPT_FILES
+    testUsdExportAnimation.py
     testUsdExportAsClip.py
+    testUsdExportBindTransform.py
+    testUsdExportBlendshapes.py
     testUsdExportCamera.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
@@ -20,6 +23,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportNurbsCurve.py
     testUsdExportOpenLayer.py
     testUsdExportOverImport.py
+    testUsdExportPackage.py
     testUsdExportParentScope.py
     # To investigate: following test asserts in MFnParticleSystem, but passes.
     # PPT, 17-Jun-20.
@@ -39,7 +43,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportSkeleton.py
     testUsdExportStripNamespaces.py
     testUsdExportStroke.py
-    testUsdExportUVTransforms.py
+    testUsdExportUserTaggedAttributes.py
     testUsdExportVisibilityDefault.py
     testUsdImportCamera.py
     testUsdImportColorSets.py
@@ -49,6 +53,7 @@ set(TEST_SCRIPT_FILES
     # To investigate: following test asserts in TDNshapeEditorManager.cpp, but
     # passes.  PPT, 17-Jun-20.
     testUsdImportFrameRange.py
+    testUsdImportFramerates.py
     testUsdImportInstances.py
     testUsdImportMayaReference.py
     testUsdImportMesh.py
@@ -68,6 +73,15 @@ set(TEST_SCRIPT_FILES
     testUsdMayaAdaptorMetadata.py
     testUsdMayaAdaptorUndoRedo.py
 )
+
+if(BUILD_PXR_PLUGIN)
+    # This test uses the file "UsdExportUVTransforms.ma" which
+    # requires the plugin "pxrUsdPreviewSurface" that is built by the
+    # Pixar plugin.
+    list(APPEND TEST_SCRIPT_FILES
+        testUsdExportUVTransforms.py
+    )
+endif()
 
 if (BUILD_RFM_TRANSLATORS)
     list(APPEND TEST_SCRIPT_FILES

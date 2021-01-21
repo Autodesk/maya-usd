@@ -107,6 +107,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->exportVisibility.GetText(),
         MSyntax::kBoolean);
     syntax.addFlag(
+        kIgnoreWarningsFlag,
+        UsdMayaJobExportArgsTokens->ignoreWarnings.GetText(),
+        MSyntax::kBoolean);
+    syntax.addFlag(
         kExportReferenceObjectsFlag,
         UsdMayaJobExportArgsTokens->exportReferenceObjects.GetText(),
         MSyntax::kBoolean);
@@ -114,6 +118,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         kExportSkelsFlag, UsdMayaJobExportArgsTokens->exportSkels.GetText(), MSyntax::kString);
     syntax.addFlag(
         kExportSkinFlag, UsdMayaJobExportArgsTokens->exportSkin.GetText(), MSyntax::kString);
+    syntax.addFlag(
+        kExportBlendShapesFlag,
+        UsdMayaJobExportArgsTokens->exportBlendShapes.GetText(),
+        MSyntax::kBoolean);
     syntax.addFlag(
         kParentScopeFlag, UsdMayaJobExportArgsTokens->parentScope.GetText(), MSyntax::kString);
     syntax.addFlag(
@@ -156,6 +164,10 @@ MSyntax MayaUSDExportCommand::createSyntax()
         UsdMayaJobExportArgsTokens->pythonPostCallback.GetText(),
         MSyntax::kString);
     syntax.addFlag(kVerboseFlag, UsdMayaJobExportArgsTokens->verbose.GetText(), MSyntax::kNoArg);
+    syntax.addFlag(
+        kStaticSingleSample,
+        UsdMayaJobExportArgsTokens->staticSingleSample.GetText(),
+        MSyntax::kBoolean);
 
     // These are additional flags under our control.
     syntax.addFlag(kFrameRangeFlag, kFrameRangeFlagLong, MSyntax::kDouble, MSyntax::kDouble);

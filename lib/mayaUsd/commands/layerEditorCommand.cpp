@@ -6,7 +6,7 @@
 // You may obtain a copy of the License at
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
-//ı
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -110,6 +110,7 @@ class InsertRemoveSubPathBase : public BaseCmd
 public:
     int         _index = -1;
     std::string _subPath;
+    std::string _proxyShapePath;
 
     InsertRemoveSubPathBase(CmdId id)
         : BaseCmd(id)
@@ -123,7 +124,7 @@ public:
                 _index = (int)layer->GetNumSubLayerPaths();
             }
             if (_index != 0) {
-                if (!validateAndReportIndex(layer, _index)) {
+                if (!validateAndReportIndex(layer, _index, (int)layer->GetNumSubLayerPaths() + 1)) {
                     return false;
                 }
             }
@@ -131,11 +132,23 @@ public:
             TF_VERIFY(layer->GetSubLayerPaths()[_index] == _subPath);
         } else {
             TF_VERIFY(_cmdId == CmdId::kRemove);
-            if (!validateAndReportIndex(layer, _index)) {
+            if (!validateAndReportIndex(layer, _index, (int)layer->GetNumSubLayerPaths())) {
                 return false;
             }
             _subPath = layer->GetSubLayerPaths()[_index];
             holdOnPathIfDirty(layer, _subPath);
+
+            // if the layer to remove is the current edit target,
+            // set the root layer as the current edit target
+            auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _subPath);
+            auto stage = getStage();
+            auto currentTarget = stage->GetEditTarget().GetLayer();
+            if (currentTarget
+                && currentTarget->GetIdentifier() == subLayerHandle->GetIdentifier()) {
+                _isEditTarget = true;
+                stage->SetEditTarget(stage->GetRootLayer());
+            }
+
             layer->RemoveSubLayerPath(_index);
         }
         return true;
@@ -157,6 +170,14 @@ public:
             TF_VERIFY(_index != -1);
             if (validateUndoIndex(layer, _index)) {
                 layer->InsertSubLayerPath(_subPath, _index);
+
+                // if the removed layer was the edit target,
+                // set it back to the current edit target
+                if (_isEditTarget) {
+                    auto stage = getStage();
+                    auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _subPath);
+                    stage->SetEditTarget(subLayerHandle);
+                }
             } else {
                 return false;
             }
@@ -168,9 +189,9 @@ public:
         return !(index < 0 || index > (int)layer->GetNumSubLayerPaths());
     }
 
-    static bool validateAndReportIndex(SdfLayerHandle layer, int index)
+    static bool validateAndReportIndex(SdfLayerHandle layer, int index, int maxIndex)
     {
-        if (index < 0 || index >= (int)layer->GetNumSubLayerPaths()) {
+        if (index < 0 || index >= maxIndex) {
             std::string message = std::string("Index ") + std::to_string(index)
                 + std::string(" out-of-bound for ") + layer->GetIdentifier();
             MPxCommand::displayError(message.c_str());
@@ -178,6 +199,16 @@ public:
         } else {
             return true;
         }
+    }
+
+protected:
+    bool _isEditTarget = false;
+
+    UsdStageWeakPtr getStage()
+    {
+        auto prim = UsdMayaQuery::GetPrim(_proxyShapePath.c_str());
+        auto stage = prim.GetStage();
+        return stage;
     }
 };
 
@@ -397,7 +428,7 @@ MSyntax LayerEditorCommand::createSyntax()
 
     syntax.addFlag(kInsertSubPathFlag, kInsertSubPathFlagL, MSyntax::kLong, MSyntax::kString);
     syntax.makeFlagMultiUse(kInsertSubPathFlag);
-    syntax.addFlag(kRemoveSubPathFlag, kRemoveSubPathFlagL, MSyntax::kLong);
+    syntax.addFlag(kRemoveSubPathFlag, kRemoveSubPathFlagL, MSyntax::kLong, MSyntax::kString);
     syntax.makeFlagMultiUse(kRemoveSubPathFlag);
     syntax.addFlag(kReplaceSubPathFlag, kReplaceSubPathFlagL, MSyntax::kString, MSyntax::kString);
     syntax.makeFlagMultiUse(kReplaceSubPathFlag);
@@ -451,11 +482,21 @@ MStatus LayerEditorCommand::parseArgs(const MArgList& argList)
         if (argParser.isFlagSet(kRemoveSubPathFlag)) {
             auto count = argParser.numberOfFlagUses(kRemoveSubPathFlag);
             for (unsigned i = 0; i < count; i++) {
-                auto cmd = std::make_shared<Impl::RemoveSubPath>();
 
                 MArgList listOfArgs;
                 argParser.getFlagArgumentList(kRemoveSubPathFlag, i, listOfArgs);
-                cmd->_index = listOfArgs.asInt(0);
+
+                auto index = listOfArgs.asInt(0);
+                auto shapePath = listOfArgs.asString(1);
+                auto prim = UsdMayaQuery::GetPrim(shapePath.asChar());
+                if (prim == UsdPrim()) {
+                    displayError(MString("Invalid proxy shape \"") + shapePath.asChar() + "\"");
+                    return MS::kInvalidParameter;
+                }
+
+                auto cmd = std::make_shared<Impl::RemoveSubPath>();
+                cmd->_index = index;
+                cmd->_proxyShapePath = shapePath.asChar();
                 _subCommands.push_back(std::move(cmd));
             }
         }

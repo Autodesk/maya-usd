@@ -93,7 +93,10 @@ class MayaQtUtils : public QtUtils
     QIcon  createIcon(const char* iconName) override
     {
         QIcon* icon = MQtUtil::createIcon(iconName);
-        QIcon  copy(*icon);
+        QIcon  copy;
+        if (icon) {
+            copy = QIcon(*icon);
+        }
         delete icon;
         return copy;
     }

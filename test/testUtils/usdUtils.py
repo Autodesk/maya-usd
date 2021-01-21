@@ -24,6 +24,9 @@ import mayaUsd.ufe
 
 import ufe
 
+from pxr import Usd
+from pxr import UsdGeom
+
 usdSeparator = '/'
 
 
@@ -41,3 +44,36 @@ def getPrimFromSceneItem(item):
     rawItem = item.getRawAddress()
     prim = mayaUsd.ufe.getPrimFromRawItem(rawItem)
     return prim
+
+def createAnimatedHierarchy(stage):
+    """
+    Create simple hierarchy in the stage:
+    /ParentA
+        /Sphere
+        /Cube
+    /ParenB
+    
+    Entire ParentA hierarchy will receive time samples on translate for time 1 and 100
+    """
+    parentA = "/ParentA"
+    parentB = "/ParentB"
+    childSphere = "/ParentA/Sphere"
+    childCube = "/ParentA/Cube"
+    
+    parentPrimA = stage.DefinePrim(parentA, 'Xform')
+    parentPrimB = stage.DefinePrim(parentB, 'Xform')
+    childPrimSphere = stage.DefinePrim(childSphere, 'Sphere')
+    childPrimCube = stage.DefinePrim(childCube, 'Cube')
+    
+    UsdGeom.XformCommonAPI(parentPrimA).SetRotate((0,0,0))
+    UsdGeom.XformCommonAPI(parentPrimB).SetTranslate((1,10,0))
+    
+    time1 = Usd.TimeCode(1.)
+    UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,0,0),time1)
+    UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((5,0,0),time1)
+    UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,5),time1)
+    
+    time2 = Usd.TimeCode(100.)
+    UsdGeom.XformCommonAPI(parentPrimA).SetTranslate((0,5,0),time2)
+    UsdGeom.XformCommonAPI(childPrimSphere).SetTranslate((-5,0,0),time2)
+    UsdGeom.XformCommonAPI(childPrimCube).SetTranslate((0,0,-5),time2)

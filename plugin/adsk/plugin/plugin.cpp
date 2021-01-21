@@ -34,6 +34,7 @@
 #include <mayaUsd/render/pxrUsdMayaGL/proxyShapeUI.h>
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 #include <mayaUsd/undo/UsdUndoBlock.h>
+#include <mayaUsd/utils/diagnosticDelegate.h>
 #include <mayaUsd/utils/undoHelperCommand.h>
 
 #include <pxr/base/plug/plugin.h>
@@ -207,7 +208,9 @@ MStatus initializePlugin(MObject obj)
     registerCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     registerCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     registerCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+#if defined(WANT_QT_BUILD)
     registerCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
+#endif
 
     status = plugin.registerCommand(
         MayaUsd::UsdUndoBlockCmd::commandName, MayaUsd::UsdUndoBlockCmd::creator);
@@ -313,6 +316,7 @@ MStatus initializePlugin(MObject obj)
     }
 
     UsdMayaSceneResetNotice::InstallListener();
+    UsdMayaDiagnosticDelegate::InstallDelegate();
 
     return status;
 }
@@ -360,8 +364,10 @@ MStatus uninitializePlugin(MObject obj)
     deregisterCommandCheck<MayaUsd::ADSKMayaUSDImportCommand>(plugin);
     deregisterCommandCheck<MayaUsd::EditTargetCommand>(plugin);
     deregisterCommandCheck<MayaUsd::LayerEditorCommand>(plugin);
+#if defined(WANT_QT_BUILD)
     deregisterCommandCheck<MayaUsd::LayerEditorWindowCommand>(plugin);
     MayaUsd::LayerEditorWindowCommand::cleanupOnPluginUnload();
+#endif
 
     status = plugin.deregisterNode(MayaUsd::ProxyShape::typeId);
     CHECK_MSTATUS(status);
@@ -394,6 +400,7 @@ MStatus uninitializePlugin(MObject obj)
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();
+    UsdMayaDiagnosticDelegate::RemoveDelegate();
 
     return status;
 }

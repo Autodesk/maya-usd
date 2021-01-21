@@ -29,6 +29,7 @@
 #include <maya/MObjectHandle.h>
 
 #include <memory>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -126,6 +127,12 @@ public:
     /// mark an invalid binding.
     MAYAUSD_CORE_PUBLIC
     void MarkSkelBindings(const SdfPath& path, const SdfPath& skelPath, const TfToken& config);
+
+    MAYAUSD_CORE_PUBLIC
+    bool UpdateSkelBindingsWithExtent(
+        const UsdStagePtr&  stage,
+        const VtVec3fArray& bbox,
+        const UsdTimeCode&  timeSample);
 
 protected:
     /// Opens the stage with the given \p filename for writing.

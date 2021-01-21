@@ -23,7 +23,7 @@ void SessionState::setAutoHideSessionLayer(bool hideIt)
     Q_EMIT autoHideSessionLayerSignal(_autoHideSessionLayer);
 }
 
-void SessionState::setStage(pxr::UsdStageRefPtr const& in_stage)
+void SessionState::setStage(PXR_NS::UsdStageRefPtr const& in_stage)
 {
     if (in_stage != _stage) {
         _stage = in_stage;
@@ -31,7 +31,7 @@ void SessionState::setStage(pxr::UsdStageRefPtr const& in_stage)
     }
 }
 
-pxr::SdfLayerRefPtr SessionState::targetLayer() const
+PXR_NS::SdfLayerRefPtr SessionState::targetLayer() const
 {
     if (_stage != nullptr) {
         const auto& target = _stage->GetEditTarget();

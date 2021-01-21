@@ -27,12 +27,14 @@
 #include <mayaUsd/utils/colorSpace.h>
 
 #include <pxr/base/gf/matrix4d.h>
+#include <pxr/base/tf/getenv.h>
 #include <pxr/imaging/hd/meshUtil.h>
 #include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hd/smoothNormals.h>
 #include <pxr/imaging/hd/version.h>
 #include <pxr/imaging/hd/vertexAdjacency.h>
 
+#include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
@@ -327,6 +329,21 @@ void setWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
 }
 } // namespace
 
+void HdVP2Mesh::_InitGPUCompute()
+{
+    // check that the viewport is using OpenGL, we need it for the OpenGL normals computation
+    MRenderer* renderer = MRenderer::theRenderer();
+    // would also be nice to check the openGL version but renderer->drawAPIVersion() returns 4.
+    // Compute was added in 4.3 so I don't have enough information to make the check
+    if (renderer && renderer->drawAPIIsOpenGL()
+        && (TfGetenvInt("HDVP2_USE_GPU_NORMAL_COMPUTATION", 0) > 0)) {
+        int threshold = TfGetenvInt("HDVP2_GPU_NORMAL_COMPUTATION_MINIMUM_THRESHOLD", 8000);
+        _gpuNormalsComputeThreshold = threshold >= 0 ? (size_t)threshold : SIZE_MAX;
+    } else
+        _gpuNormalsComputeThreshold = SIZE_MAX;
+}
+
+size_t HdVP2Mesh::_gpuNormalsComputeThreshold = SIZE_MAX;
 //! \brief  Constructor
 #if defined(HD_API_VERSION) && HD_API_VERSION >= 36
 HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id)
@@ -338,9 +355,16 @@ HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id, const Sdf
     , _delegate(delegate)
     , _rprimId(id.GetText())
 {
+    _meshSharedData = std::make_shared<HdVP2MeshSharedData>();
     const MHWRender::MVertexBufferDescriptor vbDesc(
         "", MHWRender::MGeometry::kPosition, MHWRender::MGeometry::kFloat, 3);
-    _meshSharedData._positionsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+    _meshSharedData->_positionsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+    // HdChangeTracker::IsVarying() can check dirty bits to tell us if an object is animated or not.
+    // Not sure if it is correct on file load
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+    static std::once_flag initGPUComputeOnce;
+    std::call_once(initGPUComputeOnce, _InitGPUCompute);
+#endif
 }
 
 //! \brief  Synchronize VP2 state with scene delegate state based on dirty bits and representation
@@ -398,18 +422,28 @@ void HdVP2Mesh::Sync(
     }
 
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
-        _meshSharedData._topology = GetMeshTopology(delegate);
+        _meshSharedData->_topology = GetMeshTopology(delegate);
 
-        const HdMeshTopology& topology = _meshSharedData._topology;
+        const HdMeshTopology& topology = _meshSharedData->_topology;
         const VtIntArray&     faceVertexIndices = topology.GetFaceVertexIndices();
         const size_t          numFaceVertexIndices = faceVertexIndices.size();
 
         VtIntArray newFaceVertexIndices;
         newFaceVertexIndices.resize(numFaceVertexIndices);
 
-        if (_IsUnsharedVertexLayoutRequired(_meshSharedData._primvarSourceMap)) {
-            _meshSharedData._numVertices = numFaceVertexIndices;
-            _meshSharedData._renderingToSceneFaceVtxIds = faceVertexIndices;
+        if (_IsUnsharedVertexLayoutRequired(_meshSharedData->_primvarSourceMap)) {
+            _meshSharedData->_numVertices = numFaceVertexIndices;
+            _meshSharedData->_renderingToSceneFaceVtxIds = faceVertexIndices;
+            _meshSharedData->_sceneToRenderingFaceVtxIds.clear();
+            _meshSharedData->_sceneToRenderingFaceVtxIds.resize(topology.GetNumPoints(), -1);
+
+            for (size_t i = 0; i < numFaceVertexIndices; i++) {
+                const int sceneFaceVtxId = faceVertexIndices[i];
+                _meshSharedData->_sceneToRenderingFaceVtxIds[sceneFaceVtxId]
+                    = i; // could check if the existing value is -1, but it doesn't matter. we just
+                         // need to map to a vertex in the position buffer that has the correct
+                         // value.
+            }
 
             // Fill with sequentially increasing values, starting from 0. The new
             // face vertex indices will be used to populate index data for unshared
@@ -419,31 +453,37 @@ void HdVP2Mesh::Sync(
             // should update _FillPrimvarData() code to remap indices correctly.
             std::iota(newFaceVertexIndices.begin(), newFaceVertexIndices.end(), 0);
         } else {
-            _meshSharedData._numVertices = topology.GetNumPoints();
-            _meshSharedData._renderingToSceneFaceVtxIds.clear();
+            _meshSharedData->_numVertices = topology.GetNumPoints();
+            _meshSharedData->_renderingToSceneFaceVtxIds.clear();
 
             // Allocate large enough memory with initial value of -1 to indicate
             // the rendering face vertex index is not determined yet.
-            std::vector<int> authorToRenderFaceVtxIds(numFaceVertexIndices, -1);
+            _meshSharedData->_sceneToRenderingFaceVtxIds.clear();
+            _meshSharedData->_sceneToRenderingFaceVtxIds.resize(numFaceVertexIndices, -1);
+            unsigned int sceneToRenderingFaceVtxIdsCount = 0;
 
             // Sort vertices to avoid drastically jumping indices. Cache efficiency
             // is important to fast rendering performance for dense mesh.
             for (size_t i = 0; i < numFaceVertexIndices; i++) {
-                const int authorFaceVtxId = faceVertexIndices[i];
+                const int sceneFaceVtxId = faceVertexIndices[i];
 
-                int renderFaceVtxId = authorToRenderFaceVtxIds[authorFaceVtxId];
+                int renderFaceVtxId = _meshSharedData->_sceneToRenderingFaceVtxIds[sceneFaceVtxId];
                 if (renderFaceVtxId < 0) {
-                    renderFaceVtxId = _meshSharedData._renderingToSceneFaceVtxIds.size();
-                    _meshSharedData._renderingToSceneFaceVtxIds.push_back(authorFaceVtxId);
+                    renderFaceVtxId = _meshSharedData->_renderingToSceneFaceVtxIds.size();
+                    _meshSharedData->_renderingToSceneFaceVtxIds.push_back(sceneFaceVtxId);
 
-                    authorToRenderFaceVtxIds[authorFaceVtxId] = renderFaceVtxId;
+                    _meshSharedData->_sceneToRenderingFaceVtxIds[sceneFaceVtxId] = renderFaceVtxId;
+                    sceneToRenderingFaceVtxIdsCount++;
                 }
 
                 newFaceVertexIndices[i] = renderFaceVtxId;
             }
+
+            _meshSharedData->_sceneToRenderingFaceVtxIds.resize(
+                sceneToRenderingFaceVtxIdsCount); // drop any extra -1 values.
         }
 
-        _meshSharedData._renderingTopology = HdMeshTopology(
+        _meshSharedData->_renderingTopology = HdMeshTopology(
             topology.GetScheme(),
             topology.GetOrientation(),
             topology.GetFaceVertexCounts(),
@@ -456,39 +496,46 @@ void HdVP2Mesh::Sync(
     // be updated only once when it gets dirty.
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)) {
         const VtValue value = delegate->Get(id, HdTokens->points);
-        _meshSharedData._points = value.Get<VtVec3fArray>();
+        _meshSharedData->_points = value.Get<VtVec3fArray>();
 
-        const HdMeshTopology& topology = _meshSharedData._topology;
-        const size_t          numVertices = _meshSharedData._numVertices;
+        const HdMeshTopology& topology = _meshSharedData->_topology;
+        const size_t          numVertices = _meshSharedData->_numVertices;
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+        _gpuNormalsEnabled = _gpuNormalsEnabled && numVertices >= _gpuNormalsComputeThreshold;
+#else
+        _gpuNormalsEnabled = false;
+#endif
 
-        void* bufferData = _meshSharedData._positionsBuffer->acquire(numVertices, true);
-        if (bufferData) {
-            _FillPrimvarData(
-                static_cast<GfVec3f*>(bufferData),
-                numVertices,
-                0,
-                _meshSharedData._renderingToSceneFaceVtxIds,
-                _rprimId,
-                topology,
-                HdTokens->points,
-                _meshSharedData._points,
-                HdInterpolationVertex);
+        if (numVertices > 0) {
+            void* bufferData = _meshSharedData->_positionsBuffer->acquire(numVertices, true);
+            if (bufferData) {
+                _FillPrimvarData(
+                    static_cast<GfVec3f*>(bufferData),
+                    numVertices,
+                    0,
+                    _meshSharedData->_renderingToSceneFaceVtxIds,
+                    _rprimId,
+                    topology,
+                    HdTokens->points,
+                    _meshSharedData->_points,
+                    HdInterpolationVertex);
 
-            // Capture class member for lambda
-            MHWRender::MVertexBuffer* const positionsBuffer
-                = _meshSharedData._positionsBuffer.get();
-            const MString& rprimId = _rprimId;
+                // Capture class member for lambda
+                MHWRender::MVertexBuffer* const positionsBuffer
+                    = _meshSharedData->_positionsBuffer.get();
+                const MString& rprimId = _rprimId;
 
-            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-                [positionsBuffer, bufferData, rprimId]() {
-                    MProfilingScope profilingScope(
-                        HdVP2RenderDelegate::sProfilerCategory,
-                        MProfiler::kColorC_L2,
-                        rprimId.asChar(),
-                        "CommitPositions");
+                _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                    [positionsBuffer, bufferData, rprimId]() {
+                        MProfilingScope profilingScope(
+                            HdVP2RenderDelegate::sProfilerCategory,
+                            MProfiler::kColorC_L2,
+                            rprimId.asChar(),
+                            "CommitPositions");
 
-                    positionsBuffer->commit(bufferData);
-                });
+                        positionsBuffer->commit(bufferData);
+                    });
+            }
         }
     }
 
@@ -510,7 +557,7 @@ void HdVP2Mesh::Sync(
            | HdChangeTracker::DirtyVisibility
 #endif
            )) {
-        _meshSharedData._renderTag = delegate->GetRenderTag(id);
+        _meshSharedData->_renderTag = delegate->GetRenderTag(id);
     }
 
     *dirtyBits = HdChangeTracker::Clean;
@@ -848,20 +895,26 @@ void HdVP2Mesh::_UpdateDrawItem(
 
     const HdRenderIndex& renderIndex = sceneDelegate->GetRenderIndex();
 
-    const HdMeshTopology& topology = _meshSharedData._topology;
-    const auto&           primvarSourceMap = _meshSharedData._primvarSourceMap;
-    const size_t          numVertices = _meshSharedData._numVertices;
+    const HdMeshTopology& topology = _meshSharedData->_topology;
+    const auto&           primvarSourceMap = _meshSharedData->_primvarSourceMap;
+    const size_t          numVertices = _meshSharedData->_numVertices;
 
     // The bounding box item uses a globally-shared geometry data therefore it
     // doesn't need to extract index data from topology. Points use non-indexed
     // draw.
     const bool isBBoxItem = (renderItem->drawMode() == MHWRender::MGeometry::kBoundingBox);
     const bool isPointSnappingItem = (renderItem->primitive() == MHWRender::MGeometry::kPoints);
+#ifdef HDVP2_ENABLE_GPU_OSD
+    const bool isLineItem = (renderItem->primitive() == MHWRender::MGeometry::kLines);
+    // when we do OSD we don't bother creating indexing until after we have a smooth mesh
+    const bool requiresIndexUpdate = !isBBoxItem && !isPointSnappingItem && isLineItem;
+#else
     const bool requiresIndexUpdate = !isBBoxItem && !isPointSnappingItem;
+#endif
 
     // Prepare index buffer.
     if (requiresIndexUpdate && (itemDirtyBits & HdChangeTracker::DirtyTopology)) {
-        const HdMeshTopology& topologyToUse = _meshSharedData._renderingTopology;
+        const HdMeshTopology& topologyToUse = _meshSharedData->_renderingTopology;
 
         if (desc.geomStyle == HdMeshGeomStyleHull) {
             HdMeshUtil   meshUtil(&topologyToUse, id);
@@ -871,19 +924,31 @@ void HdVP2Mesh::_UpdateDrawItem(
 
             const int numIndex = trianglesFaceVertexIndices.size() * 3;
 
-            stateToCommit._indexBufferData
-                = static_cast<int*>(drawItemData._indexBuffer->acquire(numIndex, true));
+            stateToCommit._indexBufferData = numIndex > 0
+                ? static_cast<int*>(drawItemData._indexBuffer->acquire(numIndex, true))
+                : nullptr;
+            if (stateToCommit._indexBufferData)
+                memcpy(
+                    stateToCommit._indexBufferData,
+                    trianglesFaceVertexIndices.data(),
+                    numIndex * sizeof(int));
 
-            memcpy(
-                stateToCommit._indexBufferData,
-                trianglesFaceVertexIndices.data(),
-                numIndex * sizeof(int));
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+            if (requireSmoothNormals && _gpuNormalsEnabled) {
+                // these function only do something if HDVP2_ENABLE_GPU_COMPUTE or
+                // HDVP2_ENABLE_GPU_OSD is defined
+                _CreateViewportCompute(*drawItem);
+#ifdef HDVP2_ENABLE_GPU_OSD
+                _CreateOSDTables();
+#endif
+            }
+#endif
         } else if (desc.geomStyle == HdMeshGeomStyleHullEdgeOnly) {
             unsigned int numIndex = _GetNumOfEdgeIndices(topologyToUse);
 
-            stateToCommit._indexBufferData
-                = static_cast<int*>(drawItemData._indexBuffer->acquire(numIndex, true));
-
+            stateToCommit._indexBufferData = numIndex
+                ? static_cast<int*>(drawItemData._indexBuffer->acquire(numIndex, true))
+                : nullptr;
             _FillEdgeIndices(stateToCommit._indexBufferData, topologyToUse);
         }
     }
@@ -910,23 +975,36 @@ void HdVP2Mesh::_UpdateDrawItem(
         if (!normals.empty()) {
             prepareNormals = ((itemDirtyBits & HdChangeTracker::DirtyNormals) != 0);
         } else if (requireSmoothNormals && (itemDirtyBits & DirtySmoothNormals)) {
-            // note: normals gets dirty when points are marked as dirty,
-            // at change tracker.
-            // HdC_TODO: move the normals computation to GPU to save expensive
-            // computation and buffer transfer.
-            Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
-            HdBufferSourceSharedPtr     adjacencyComputation
-                = adjacency->GetSharedAdjacencyBuilderComputation(&topology);
-            adjacencyComputation->Resolve(); // IS the adjacency updated now?
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+            if (_gpuNormalsEnabled) {
+                if (!_meshSharedData->_viewportCompute) {
+                    _CreateViewportCompute(*drawItem);
+#ifdef HDVP2_ENABLE_GPU_OSD
+                    _CreateOSDTables();
+#endif
+                }
+                _meshSharedData->_viewportCompute->setNormalVertexBufferGPUDirty();
+                prepareNormals = false;
+            } else
+#endif
+            {
+                // note: normals gets dirty when points are marked as dirty,
+                // at change tracker.
+                Hd_VertexAdjacencySharedPtr adjacency(new Hd_VertexAdjacency());
+                HdBufferSourceSharedPtr     adjacencyComputation
+                    = adjacency->GetSharedAdjacencyBuilderComputation(&topology);
+                adjacencyComputation->Resolve(); // IS the adjacency updated now?
 
-            // Only the points referenced by the topology are used to compute
-            // smooth normals.
-            normals = Hd_SmoothNormals::ComputeSmoothNormals(
-                adjacency.get(), _meshSharedData._points.size(), _meshSharedData._points.cdata());
+                // Only the points referenced by the topology are used to compute
+                // smooth normals.
+                normals = Hd_SmoothNormals::ComputeSmoothNormals(
+                    adjacency.get(),
+                    _meshSharedData->_points.size(),
+                    _meshSharedData->_points.cdata());
+                interp = HdInterpolationVertex;
 
-            interp = HdInterpolationVertex;
-
-            prepareNormals = !normals.empty();
+                prepareNormals = !normals.empty();
+            }
         }
 
         if (prepareNormals) {
@@ -937,13 +1015,15 @@ void HdVP2Mesh::_UpdateDrawItem(
                 drawItemData._normalsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
             }
 
-            void* bufferData = drawItemData._normalsBuffer->acquire(numVertices, true);
+            void* bufferData = numVertices > 0
+                ? drawItemData._normalsBuffer->acquire(numVertices, true)
+                : nullptr;
             if (bufferData) {
                 _FillPrimvarData(
                     static_cast<GfVec3f*>(bufferData),
                     numVertices,
                     0,
-                    _meshSharedData._renderingToSceneFaceVtxIds,
+                    _meshSharedData->_renderingToSceneFaceVtxIds,
                     _rprimId,
                     topology,
                     HdTokens->normals,
@@ -1040,7 +1120,9 @@ void HdVP2Mesh::_UpdateDrawItem(
                     drawItemData._colorBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
                 }
 
-                void* bufferData = drawItemData._colorBuffer->acquire(numVertices, true);
+                void* bufferData = numVertices > 0
+                    ? drawItemData._colorBuffer->acquire(numVertices, true)
+                    : nullptr;
 
                 // Fill color and opacity into the float4 color stream.
                 if (bufferData) {
@@ -1048,7 +1130,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                         static_cast<GfVec4f*>(bufferData),
                         numVertices,
                         0,
-                        _meshSharedData._renderingToSceneFaceVtxIds,
+                        _meshSharedData->_renderingToSceneFaceVtxIds,
                         _rprimId,
                         topology,
                         HdTokens->displayColor,
@@ -1059,7 +1141,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                         static_cast<GfVec4f*>(bufferData),
                         numVertices,
                         3,
-                        _meshSharedData._renderingToSceneFaceVtxIds,
+                        _meshSharedData->_renderingToSceneFaceVtxIds,
                         _rprimId,
                         topology,
                         HdTokens->displayOpacity,
@@ -1118,13 +1200,13 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
 
                 if (buffer) {
-                    bufferData = buffer->acquire(numVertices, true);
+                    bufferData = numVertices > 0 ? buffer->acquire(numVertices, true) : nullptr;
                     if (bufferData) {
                         _FillPrimvarData(
                             static_cast<float*>(bufferData),
                             numVertices,
                             0,
-                            _meshSharedData._renderingToSceneFaceVtxIds,
+                            _meshSharedData->_renderingToSceneFaceVtxIds,
                             _rprimId,
                             topology,
                             token,
@@ -1142,13 +1224,13 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
 
                 if (buffer) {
-                    bufferData = buffer->acquire(numVertices, true);
+                    bufferData = numVertices > 0 ? buffer->acquire(numVertices, true) : nullptr;
                     if (bufferData) {
                         _FillPrimvarData(
                             static_cast<GfVec2f*>(bufferData),
                             numVertices,
                             0,
-                            _meshSharedData._renderingToSceneFaceVtxIds,
+                            _meshSharedData->_renderingToSceneFaceVtxIds,
                             _rprimId,
                             topology,
                             token,
@@ -1166,13 +1248,13 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
 
                 if (buffer) {
-                    bufferData = buffer->acquire(numVertices, true);
+                    bufferData = numVertices > 0 ? buffer->acquire(numVertices, true) : nullptr;
                     if (bufferData) {
                         _FillPrimvarData(
                             static_cast<GfVec3f*>(bufferData),
                             numVertices,
                             0,
-                            _meshSharedData._renderingToSceneFaceVtxIds,
+                            _meshSharedData->_renderingToSceneFaceVtxIds,
                             _rprimId,
                             topology,
                             token,
@@ -1190,13 +1272,13 @@ void HdVP2Mesh::_UpdateDrawItem(
                 }
 
                 if (buffer) {
-                    bufferData = buffer->acquire(numVertices, true);
+                    bufferData = numVertices > 0 ? buffer->acquire(numVertices, true) : nullptr;
                     if (bufferData) {
                         _FillPrimvarData(
                             static_cast<GfVec4f*>(bufferData),
                             numVertices,
                             0,
-                            _meshSharedData._renderingToSceneFaceVtxIds,
+                            _meshSharedData->_renderingToSceneFaceVtxIds,
                             _rprimId,
                             topology,
                             token,
@@ -1403,7 +1485,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag
                | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent
                | DirtySelectionHighlight))) {
-        bool enable = drawItem->GetVisible() && !_meshSharedData._points.empty()
+        bool enable = drawItem->GetVisible() && !_meshSharedData->_points.empty()
             && !instancerWithNoInstances;
 
         if (isDedicatedSelectionHighlightItem) {
@@ -1414,7 +1496,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             enable = enable && !range.IsEmpty();
         }
 
-        enable = enable && drawScene.DrawRenderTag(_meshSharedData._renderTag);
+        enable = enable && drawScene.DrawRenderTag(_meshSharedData->_renderTag);
 
         if (drawItemData._enabled != enable) {
             drawItemData._enabled = enable;
@@ -1431,7 +1513,7 @@ void HdVP2Mesh::_UpdateDrawItem(
     drawItem->ResetDirtyBits();
 
     // Capture the valid position buffer and index buffer
-    MHWRender::MVertexBuffer* positionsBuffer = _meshSharedData._positionsBuffer.get();
+    MHWRender::MVertexBuffer* positionsBuffer = _meshSharedData->_positionsBuffer.get();
     MHWRender::MIndexBuffer*  indexBuffer = drawItemData._indexBuffer.get();
 
     if (isBBoxItem) {
@@ -1611,6 +1693,143 @@ void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)
     }
 }
 
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+/*! \brief  Save topology information for later GPGPU evaluation
+
+    This function pulls topology and UV data from the scene delegate and save that
+    information to be used as an input to the normal calculation later.
+*/
+void HdVP2Mesh::_CreateViewportCompute(const HdVP2DrawItem& drawItem)
+{
+    if (_meshSharedData->_viewportCompute) {
+        // I can't handle multiple draw items that require normals
+        TF_VERIFY(_meshSharedData->_viewportCompute->verifyDrawItem(drawItem));
+    } else {
+        _meshSharedData->_viewportCompute
+            = MSharedPtr<MeshViewportCompute>::make<>(_meshSharedData, &drawItem);
+        MHWRender::MRenderItem* renderItem = drawItem.GetRenderItem();
+        renderItem->addViewportComputeItem(_meshSharedData->_viewportCompute);
+    }
+}
+#endif
+
+#ifdef HDVP2_ENABLE_GPU_OSD
+void HdVP2Mesh::_CreateOSDTables()
+{
+#if defined(DO_CPU_OSD) || defined(DO_OPENGL_OSD)
+
+    assert(_meshSharedData->_viewportCompute);
+    MProfilingScope subProfilingScope(
+        HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "createOSDTables");
+
+    // create topology refiner
+    PxOsdTopologyRefinerSharedPtr refiner;
+
+    OpenSubdiv::Far::StencilTable const* vertexStencils = nullptr;
+    OpenSubdiv::Far::StencilTable const* varyingStencils = nullptr;
+    OpenSubdiv::Far::PatchTable const*   patchTable = nullptr;
+
+    HdMeshTopology* topology
+        = &_meshSharedData->_renderingTopology; // TODO: something with _topology?
+
+    // for empty topology, we don't need to refine anything.
+    // but still need to return the typed buffer for codegen
+    if (topology->GetFaceVertexCounts().size() == 0) {
+        // leave refiner empty
+    } else {
+        refiner = PxOsdRefinerFactory::Create(
+            topology->GetPxOsdMeshTopology(), TfToken(_meshSharedData->_renderTag.GetText()));
+    }
+
+    if (refiner) {
+        OpenSubdiv::Far::PatchTableFactory::Options patchOptions(
+            _meshSharedData->_viewportCompute->level);
+        if (_meshSharedData->_viewportCompute->adaptive) {
+            patchOptions.endCapType
+                = OpenSubdiv::Far::PatchTableFactory::Options::ENDCAP_BSPLINE_BASIS;
+#if OPENSUBDIV_VERSION_NUMBER >= 30400
+            // Improve fidelity when refining to limit surface patches
+            // These options supported since v3.1.0 and v3.2.0 respectively.
+            patchOptions.useInfSharpPatch = true;
+            patchOptions.generateLegacySharpCornerPatches = false;
+#endif
+        }
+
+        // split trace scopes.
+        {
+            MProfilingScope subProfilingScope(
+                HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "refine");
+            if (_meshSharedData->_viewportCompute->adaptive) {
+                OpenSubdiv::Far::TopologyRefiner::AdaptiveOptions adaptiveOptions(
+                    _meshSharedData->_viewportCompute->level);
+#if OPENSUBDIV_VERSION_NUMBER >= 30400
+                adaptiveOptions = patchOptions.GetRefineAdaptiveOptions();
+#endif
+                refiner->RefineAdaptive(adaptiveOptions);
+            } else {
+                refiner->RefineUniform(_meshSharedData->_viewportCompute->level);
+            }
+        }
+#define GENERATE_SOURCE_TABLES
+#ifdef GENERATE_SOURCE_TABLES
+        {
+            MProfilingScope subProfilingScope(
+                HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "stencilFactory");
+            OpenSubdiv::Far::StencilTableFactory::Options options;
+            options.generateOffsets = true;
+            options.generateIntermediateLevels = _meshSharedData->_viewportCompute->adaptive;
+            options.interpolationMode = OpenSubdiv::Far::StencilTableFactory::INTERPOLATE_VERTEX;
+            vertexStencils = OpenSubdiv::Far::StencilTableFactory::Create(*refiner, options);
+
+            options.interpolationMode = OpenSubdiv::Far::StencilTableFactory::INTERPOLATE_VARYING;
+            varyingStencils = OpenSubdiv::Far::StencilTableFactory::Create(*refiner, options);
+        }
+        {
+            MProfilingScope subProfilingScope(
+                HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "patchFactory");
+            patchTable = OpenSubdiv::Far::PatchTableFactory::Create(*refiner, patchOptions);
+        }
+#else
+        // grab the values we need from the refiner.
+        const OpenSubdiv::Far::TopologyLevel& refinedLevel
+            = refiner->GetLevel(refiner->GetMaxLevel());
+        size_t indexLength = refinedLevel.GetNumFaces()
+            * 4; // i know it is quads but not always? can we do this more safely?
+        size_t vertexLength = GetNumVerticesTotal();
+        // save these values and use them to create the updated geometry index mapping.
+#endif
+    }
+#ifdef GENERATE_SOURCE_TABLES
+    // merge endcap
+    if (patchTable && patchTable->GetLocalPointStencilTable()) {
+        // append stencils
+        if (OpenSubdiv::Far::StencilTable const* vertexStencilsWithLocalPoints
+            = OpenSubdiv::Far::StencilTableFactory::AppendLocalPointStencilTable(
+                *refiner, vertexStencils, patchTable->GetLocalPointStencilTable())) {
+            delete vertexStencils;
+            vertexStencils = vertexStencilsWithLocalPoints;
+        }
+        if (OpenSubdiv::Far::StencilTable const* varyingStencilsWithLocalPoints
+            = OpenSubdiv::Far::StencilTableFactory::AppendLocalPointStencilTable(
+                *refiner, varyingStencils, patchTable->GetLocalPointStencilTable())) {
+            delete varyingStencils;
+            varyingStencils = varyingStencilsWithLocalPoints;
+        }
+    }
+
+    // save values for the next loop
+    _meshSharedData->_viewportCompute->vertexStencils.reset(vertexStencils);
+    _meshSharedData->_viewportCompute->varyingStencils.reset(varyingStencils);
+    _meshSharedData->_viewportCompute->patchTable.reset(patchTable);
+#endif
+
+    // if there is a sourceMeshSharedData it should have entries for every vertex in that geometry
+    // source.
+
+#endif
+}
+#endif
+
 /*! \brief  Update _primvarSourceMap, our local cache of raw primvar data.
 
     This function pulls data from the scene delegate, but defers processing.
@@ -1637,10 +1856,10 @@ void HdVP2Mesh::_UpdatePrimvarSources(
             if (std::find(begin, end, pv.name) != end) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
                     const VtValue value = GetPrimvar(sceneDelegate, pv.name);
-                    _meshSharedData._primvarSourceMap[pv.name] = { value, interp };
+                    _meshSharedData->_primvarSourceMap[pv.name] = { value, interp };
                 }
             } else {
-                _meshSharedData._primvarSourceMap.erase(pv.name);
+                _meshSharedData->_primvarSourceMap.erase(pv.name);
             }
         }
     }
@@ -1662,6 +1881,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) 
     selectionMask.addMask(MSelectionMask::kSelectMeshVerts);
     renderItem->setSelectionMask(selectionMask);
 
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
+
     setWantConsolidation(*renderItem, true);
 
     return renderItem;
@@ -1681,6 +1904,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& nam
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
+
     setWantConsolidation(*renderItem, true);
 
     return renderItem;
@@ -1698,6 +1925,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateBoundingBoxRenderItem(const MString& n
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
+
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
 
     setWantConsolidation(*renderItem, true);
 
@@ -1720,6 +1951,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
     renderItem->setShader(_delegate->GetFallbackShader(kOpaqueGray));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
+
     setWantConsolidation(*renderItem, true);
 
     return renderItem;
@@ -1740,6 +1975,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MSt
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask());
+
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
 
     setWantConsolidation(*renderItem, true);
 

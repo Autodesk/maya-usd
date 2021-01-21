@@ -37,6 +37,12 @@ TF_DEFINE_ENV_SETTING(
 // Globally-shared delegate. Uses shared_ptr so we can have weak ptrs.
 static std::shared_ptr<UsdMayaDiagnosticDelegate> _sharedDelegate;
 
+// The delegate can be installed by multiple plugins (e.g. pxrUsd and
+// mayaUsdPlugin), so keep track of installations to ensure that we only add
+// the delegate for the first installation call, and that we only remove it for
+// the last removal call.
+static int _installationCount = 0;
+
 namespace {
 
 class _StatusOnlyDelegate : public UsdUtilsCoalescingDiagnosticDelegate
@@ -152,6 +158,11 @@ void UsdMayaDiagnosticDelegate::InstallDelegate()
     if (!ArchIsMainThread()) {
         TF_FATAL_CODING_ERROR("Cannot install delegate from secondary thread");
     }
+
+    if (_installationCount++ > 0) {
+        return;
+    }
+
     _sharedDelegate.reset(new UsdMayaDiagnosticDelegate());
 }
 
@@ -161,6 +172,11 @@ void UsdMayaDiagnosticDelegate::RemoveDelegate()
     if (!ArchIsMainThread()) {
         TF_FATAL_CODING_ERROR("Cannot remove delegate from secondary thread");
     }
+
+    if (_installationCount == 0 || _installationCount-- > 1) {
+        return;
+    }
+
     _sharedDelegate.reset();
 }
 

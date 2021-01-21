@@ -114,6 +114,14 @@ inline Ufe::Matrix4d toUfe(const GfMatrix4d& src)
     return dst;
 }
 
+//! Copy the argument matrix into the return matrix.
+inline GfMatrix4d toUsd(const Ufe::Matrix4d& src)
+{
+    GfMatrix4d dst;
+    std::memcpy(dst.GetArray(), &src.matrix[0][0], sizeof(double) * 16);
+    return dst;
+}
+
 //! Copy the argument vector into the return vector.
 inline Ufe::Vector3d toUfe(const GfVec3d& src) { return Ufe::Vector3d(src[0], src[1], src[2]); }
 

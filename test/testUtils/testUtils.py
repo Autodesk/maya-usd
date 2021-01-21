@@ -15,8 +15,16 @@
 #
 
 """
-    General test utilities.
+    General test utilities. The functions here should not use Maya, Ufe or Usd.
 """
+
+import os
+
+
+def stripPrefix(input_str, prefix):
+    if input_str.startswith(prefix):
+        return input_str[len(prefix):]
+    return input_str
 
 def assertVectorAlmostEqual(testCase, a, b, places=7):
     for va, vb in zip(a, b):
@@ -25,3 +33,6 @@ def assertVectorAlmostEqual(testCase, a, b, places=7):
 def assertVectorEqual(testCase, a, b):
     for va, vb in zip(a, b):
         testCase.assertEqual(va, vb)
+
+def getTestScene(*args):
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "testSamples", *args)

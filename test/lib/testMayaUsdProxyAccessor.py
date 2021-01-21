@@ -27,7 +27,8 @@ import usdUtils, mayaUtils, testUtils
 
 from cachingUtils import NonCachingScope, CachingScope
 from ufeUtils import createUfeSceneItem, selectUfeItems
-from mayaUtils import createProxyAndStage, createProxyFromFile, createAnimatedHierarchy
+from mayaUtils import createProxyAndStage, createProxyFromFile
+from usdUtils import createAnimatedHierarchy
 
 from mayaUsd import lib as mayaUsdLib
 from mayaUsd.lib import GetPrim

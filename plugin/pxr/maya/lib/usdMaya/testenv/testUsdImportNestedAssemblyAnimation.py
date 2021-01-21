@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 #
 # Copyright 2016 Pixar
 #
@@ -53,7 +53,8 @@ class testUsdImportNestedAssemblyAnimation(unittest.TestCase):
         # current frame range in Maya to be expanded to include that. We set
         # it to something inside that range now so we can make sure that that
         # happens.
-        OMA.MAnimControl.setAnimationStartEndTime(OM.MTime(121), OM.MTime(130))
+        timeUnit = OM.MTime.uiUnit()
+        OMA.MAnimControl.setAnimationStartEndTime(OM.MTime(121, timeUnit), OM.MTime(130, timeUnit))
 
         cmds.assembly(assemblyNode, edit=True, active='Full')
 

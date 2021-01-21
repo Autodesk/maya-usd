@@ -311,7 +311,7 @@ Ufe::Vector3d UsdTransform3dMatrixOp::scale() const
     GfMatrix4d unusedR, unusedP, unusedU;
     GfVec3d    s, unusedT;
     if (!local.Factor(&unusedR, &s, &unusedU, &unusedT, &unusedP)) {
-        TF_WARN("Cannot decompose local transform for %s", pathCStr());
+        TF_WARN("Cannot decompose local transform for %s", path().string().c_str());
         return Ufe::Vector3d(1, 1, 1);
     }
 
@@ -353,6 +353,18 @@ Ufe::ScaleUndoableCommand::Ptr UsdTransform3dMatrixOp::scaleCmd(double x, double
 #endif
         _op,
         UsdTimeCode::Default());
+}
+
+Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dMatrixOp::setMatrixCmd(const Ufe::Matrix4d& m)
+{
+    return nullptr;
+}
+
+void UsdTransform3dMatrixOp::setMatrix(const Ufe::Matrix4d& m) { _op.Set(toUsd(m)); }
+
+Ufe::Matrix4d UsdTransform3dMatrixOp::matrix() const
+{
+    return toUfe(_op.GetOpTransform(getTime(path())));
 }
 
 Ufe::Matrix4d UsdTransform3dMatrixOp::segmentInclusiveMatrix() const

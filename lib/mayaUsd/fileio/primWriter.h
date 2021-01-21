@@ -29,6 +29,7 @@
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdUtils/sparseValueWriter.h>
 
+#include <maya/MBoundingBox.h>
 #include <maya/MDagPath.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MObject.h>
@@ -76,7 +77,7 @@ public:
 
     /// Post export function that runs before saving the stage.
     ///
-    /// Base implementation does nothing.
+    /// Base implementation handles optional optimization of data.
     MAYAUSD_CORE_PUBLIC
     virtual void PostExport();
 
@@ -159,6 +160,15 @@ public:
     /// Gets the USD stage that we're writing to.
     MAYAUSD_CORE_PUBLIC
     const UsdStageRefPtr& GetUsdStage() const;
+
+    /// Modify all primvars on this prim with single time samples to be static instead.
+    MAYAUSD_CORE_PUBLIC
+    void MakeSingleSamplesStatic();
+
+    /// Modify a specific primvar attribute with single time samples
+    /// to be static.
+    MAYAUSD_CORE_PUBLIC
+    void MakeSingleSamplesStatic(UsdAttribute attr);
 
 protected:
     /// Helper function for determining whether the current node has input

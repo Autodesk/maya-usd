@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 #
 # Copyright 2018 Pixar
 #
@@ -332,7 +332,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
         self._WriteViewportImage(self._testName, 'selection_append_4')
 
     def _ValidateSelection(self, expectedSelectionSet):
-        if Tf.GetEnvSetting('VP2_RENDER_DELEGATE_PROXY'):
+        if not Tf.GetEnvSetting('MAYAUSD_DISABLE_VP2_RENDER_DELEGATE'):
             # When the Viewport 2.0 render delegate is being used, we will have
             # selected USD prims rather than proxy shape nodes or their
             # transform nodes, so we query UFE for the selection and manipulate
@@ -438,15 +438,4 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    suite = unittest.TestLoader().loadTestsFromTestCase(
-        testProxyShapeSelectionPerformance)
-
-    results = unittest.TextTestRunner(stream=sys.stdout).run(suite)
-    if results.wasSuccessful():
-        exitCode = 0
-    else:
-        exitCode = 1
-    # maya running interactively often absorbs all the output.  comment out the
-    # following to prevent maya from exiting and open the script editor to look
-    # at failures.
-    cmds.quit(abort=True, exitCode=exitCode)
+    fixturesUtils.runTests(globals())

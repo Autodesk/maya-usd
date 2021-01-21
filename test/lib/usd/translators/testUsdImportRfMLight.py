@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 #
 # Copyright 2017 Pixar
 #
@@ -169,9 +169,9 @@ class testUsdImportRfMLight(unittest.TestCase):
         self.assertEqual(animObjs.length(), 1)
 
         animCurveFn = OpenMayaAnim.MFnAnimCurve(animObjs[0])
-
+        timeUnit = OpenMaya.MTime.uiUnit()
         for frame in range(int(self.START_TIMECODE), int(self.END_TIMECODE + 1.0)):
-            value = animCurveFn.evaluate(OpenMaya.MTime(frame))
+            value = animCurveFn.evaluate(OpenMaya.MTime(frame, timeUnit))
             self.assertTrue(Gf.IsClose(float(frame), value, 1e-6))
 
     def _ValidatePxrDistantLightAngle(self):

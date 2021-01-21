@@ -1,4 +1,4 @@
-#!/pxrpythonsubst
+#!/usr/bin/env mayapy
 #
 # Copyright 2018 Pixar
 #
@@ -15,21 +15,25 @@
 # limitations under the License.
 #
 
-from pxr import Tf
-
 import mayaUsd.lib as mayaUsdLib
+
+from pxr import Tf
 
 from maya import cmds
 from maya import standalone
 from maya import OpenMaya as OM
 
+import fixturesUtils
+
 import sys
 import unittest
 
-class testUsdMayaDiagnosticDelegate(unittest.TestCase):
+
+class testDiagnosticDelegate(unittest.TestCase):
+
     @classmethod
     def setUpClass(cls):
-        standalone.initialize('usd')
+        fixturesUtils.setUpClass(__file__)
 
         # Deprecated since version 3.2: assertRegexpMatches and assertRaisesRegexp
         # have been renamed to assertRegex() and assertRaisesRegex()
@@ -44,7 +48,8 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
     def setUp(self):
         self.messageLog = []
         self.callback = None
-        cmds.loadPlugin('pxrUsd', quiet=True)
+        cmds.loadPlugin('mayaUsdPlugin', quiet=True)
+
         # assertCountEqual in python 3 is equivalent to assertItemsEqual
         if sys.version_info[0] >= 3:
             self.assertItemsEqual = self.assertCountEqual
@@ -102,9 +107,20 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
         log = self._StopRecording()
         self.assertEqual(len(log), 1)
         logText, logCode = log[0]
+
+        # When this test is executed as a result of the unittest.main() call at
+        # the bottom of this file (e.g. when this script is executed directly
+        # via the shebang, when the script file is passed to a Python
+        # interpreter on the command-line, or when the script file's contents
+        # is read and executed through compile() and exec(), the module will be
+        # reported as "__main__". Otherwise, when this file is imported as a
+        # module and then executed using unittest.main(module=<module name>),
+        # the module name will match the file name and be reported as
+        # "testDiagnosticDelegate". We make the regex here recognize both
+        # cases.
         self.assertRegex(logText,
-                "^Python coding error: blah -- Coding Error in "
-                "__main__\.testError at line [0-9]+ of ")
+            "^Python coding error: blah -- Coding Error in "
+            "(__main__|testDiagnosticDelegate)\.testError at line [0-9]+ of ")
         self.assertEqual(logCode, OM.MCommandMessage.kError)
 
     def testError_Python(self):
@@ -142,7 +158,6 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
             ("spam warning 0 -- and 2 similar", OM.MCommandMessage.kWarning)
         ])
 
-    @unittest.skip("Skip due to issue with unloading pxrUsd, see bug 161884")
     def testBatching_DelegateRemoved(self):
         """Tests removing the diagnostic delegate when the batch context is
         still open."""
@@ -151,7 +166,7 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
             Tf.Warn("this warning won't be lost")
             Tf.Status("this status won't be lost")
 
-            cmds.unloadPlugin('pxrUsd', force=True)
+            cmds.unloadPlugin('mayaUsdPlugin', force=True)
 
             for i in range(5):
                 Tf.Status("no delegate, this will be lost %d" % i)
@@ -173,6 +188,7 @@ class testUsdMayaDiagnosticDelegate(unittest.TestCase):
         self.assertEqual(count, 2)
         count = mayaUsdLib.DiagnosticDelegate.GetBatchCount()
         self.assertEqual(count, 0)
+
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

@@ -50,6 +50,12 @@ public:
     /// Performs final processing for skel bindings.
     bool PostProcessSkelBindings(const UsdStagePtr& stage) const;
 
+    /// Updates the SkelRoots with a given extent value and time sample.
+    bool UpdateSkelRootsWithExtent(
+        const UsdStagePtr&  stage,
+        const VtVec3fArray& bbox,
+        const UsdTimeCode&  timeSample);
+
 private:
     bool _VerifyOrMakeSkelRoots(const UsdStagePtr& stage) const;
 

@@ -108,7 +108,8 @@ static bool _GetTimeAndValueArrayForUsdAttribute(
     const GfInterval&     timeInterval,
     MTimeArray*           timeArray,
     MDoubleArray*         valueArray,
-    const MDistance::Unit convertToUnit = MDistance::kMillimeters)
+    const MDistance::Unit convertToUnit = MDistance::kMillimeters,
+    const double          timeSampleMultiplier = 1.0)
 {
     static const TfType& floatType = TfType::Find<float>();
     std::vector<double>  timeSamples;
@@ -118,8 +119,8 @@ static bool _GetTimeAndValueArrayForUsdAttribute(
         return false;
     }
 
-    size_t numTimeSamples = timeSamples.size();
-
+    size_t      numTimeSamples = timeSamples.size();
+    MTime::Unit timeUnit = MTime::uiUnit();
     for (size_t i = 0; i < numTimeSamples; ++i) {
         const double timeSample = timeSamples[i];
         float        attrValue;
@@ -135,7 +136,7 @@ static bool _GetTimeAndValueArrayForUsdAttribute(
             break;
         }
 
-        timeArray->set(MTime(timeSample), i);
+        timeArray->set(MTime(timeSample * timeSampleMultiplier, timeUnit), i);
         valueArray->set(attrValue, i);
     }
 
@@ -150,7 +151,8 @@ static bool _GetTimeAndValueArraysForUsdAttribute(
     const GfInterval&   timeInterval,
     MTimeArray*         timeArray,
     MDoubleArray*       valueArray1,
-    MDoubleArray*       valueArray2)
+    MDoubleArray*       valueArray2,
+    const double        timeSampleMultiplier = 1.0)
 {
     static const TfType& vec2fType = TfType::Find<GfVec2f>();
     std::vector<double>  timeSamples;
@@ -162,6 +164,7 @@ static bool _GetTimeAndValueArraysForUsdAttribute(
 
     size_t numTimeSamples = timeSamples.size();
     valueArray2->setLength(numTimeSamples);
+    MTime::Unit timeUnit = MTime::uiUnit();
 
     for (size_t i = 0; i < numTimeSamples; ++i) {
         const double timeSample = timeSamples[i];
@@ -169,7 +172,7 @@ static bool _GetTimeAndValueArraysForUsdAttribute(
         if (!usdAttr.Get(&attrValue, timeSample)) {
             return false;
         }
-        timeArray->set(MTime(timeSample), i);
+        timeArray->set(MTime(timeSample * timeSampleMultiplier, timeUnit), i);
         valueArray1->set(attrValue[0], i);
         valueArray2->set(attrValue[1], i);
     }
@@ -213,7 +216,12 @@ static bool _TranslateAnimatedUsdAttributeToPlug(
     MTimeArray   timeArray;
     MDoubleArray valueArray;
     if (!_GetTimeAndValueArrayForUsdAttribute(
-            usdAttr, args.GetTimeInterval(), &timeArray, &valueArray, convertToUnit)) {
+            usdAttr,
+            args.GetTimeInterval(),
+            &timeArray,
+            &valueArray,
+            convertToUnit,
+            (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0)) {
         return false;
     }
 
@@ -239,7 +247,12 @@ static bool _TranslateAnimatedUsdAttributeToPlugs(
     MDoubleArray valueArray1;
     MDoubleArray valueArray2;
     if (!_GetTimeAndValueArraysForUsdAttribute(
-            usdAttr, args.GetTimeInterval(), &timeArray, &valueArray1, &valueArray2)) {
+            usdAttr,
+            args.GetTimeInterval(),
+            &timeArray,
+            &valueArray1,
+            &valueArray2,
+            (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0)) {
         return false;
     }
 

@@ -13,7 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
+
+// GL loading library needs to be included before any other OpenGL headers.
+// We also disable clang-format for this block, since otherwise v10.0.0 fails
+// to recognize that "ProxyDrawOverride.h" is the related header.
+// clang-format off
+#include <pxr/pxr.h>
+#if USD_VERSION_NUM < 2102
 #include <pxr/imaging/glf/glew.h>
+#else
+#include <pxr/imaging/garch/glApi.h>
+#endif
+// clang-format on
 
 #include "AL/usdmaya/nodes/ProxyDrawOverride.h"
 

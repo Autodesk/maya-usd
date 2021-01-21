@@ -106,7 +106,7 @@ bool UsdMayaPrimReaderSkeleton::Read(UsdMayaPrimReaderContext* context)
                 skelQuery, parentNode, _GetArgs(), context, &joints)) {
 
             // Add a dagPose node to hold the rest pose.
-            // This is not necessary for skinning to function i Maya, but is not
+            // This is not necessary for skinning to function in Maya, but is
             // necessary in order to properly round-trip the Skeleton's
             // restTransforms, and is a requirement of some exporters.
             // The dagPose command also will not work without this.
