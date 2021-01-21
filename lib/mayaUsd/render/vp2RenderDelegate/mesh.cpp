@@ -34,6 +34,7 @@
 #include <pxr/imaging/hd/version.h>
 #include <pxr/imaging/hd/vertexAdjacency.h>
 
+#include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
 #include <maya/MProfiler.h>
 #include <maya/MSelectionMask.h>
@@ -1880,6 +1881,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) 
     selectionMask.addMask(MSelectionMask::kSelectMeshVerts);
     renderItem->setSelectionMask(selectionMask);
 
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
+
     setWantConsolidation(*renderItem, true);
 
     return renderItem;
@@ -1899,6 +1904,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& nam
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
+
     setWantConsolidation(*renderItem, true);
 
     return renderItem;
@@ -1916,6 +1925,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateBoundingBoxRenderItem(const MString& n
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
+
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
 
     setWantConsolidation(*renderItem, true);
 
@@ -1938,6 +1951,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
     renderItem->setShader(_delegate->GetFallbackShader(kOpaqueGray));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
+
     setWantConsolidation(*renderItem, true);
 
     return renderItem;
@@ -1958,6 +1975,10 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MSt
     renderItem->receivesShadows(false);
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask());
+
+#if MAYA_API_VERSION >= 20210000
+    renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
+#endif
 
     setWantConsolidation(*renderItem, true);
 
