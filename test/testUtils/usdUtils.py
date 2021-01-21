@@ -23,6 +23,7 @@
 import mayaUsd.ufe
 
 import ufe
+import ufeUtils
 
 from pxr import Usd
 from pxr import UsdGeom
@@ -41,9 +42,12 @@ def createUfePathSegment(usdPath):
     return ufe.PathSegment(usdPath, mayaUsd.ufe.getUsdRunTimeId(), usdSeparator)
 
 def getPrimFromSceneItem(item):
-    rawItem = item.getRawAddress()
-    prim = mayaUsd.ufe.getPrimFromRawItem(rawItem)
-    return prim
+    if ufeUtils.ufeFeatureSetVersion() >= 2:
+        rawItem = item.getRawAddress()
+        prim = mayaUsd.ufe.getPrimFromRawItem(rawItem)
+        return prim
+    else:
+        return Usd.Prim()
 
 def createAnimatedHierarchy(stage):
     """
