@@ -23,6 +23,7 @@
 import mayaUsd.ufe
 
 import ufe
+import ufeUtils
 
 from pxr import Usd
 from pxr import UsdGeom

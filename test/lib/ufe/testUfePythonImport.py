@@ -33,12 +33,12 @@ class UfePythonImportTestCase(unittest.TestCase):
         # ufe library also loaded its dependencies (i.e. the core USD
         # libraries). We test the type name as a string to ensure that we're
         # not causing USD libraries to be loaded any other way.
-        if ufe.VersionInfo.getMajorVersion() >= 2:
+        if ufe.VersionInfo.getMajorVersion() == 1:
+            # In UFE v1 if the Nb segments == 1, returns invalid prim
+            invalidPrim = mayaUsdUfe.ufePathToPrim('a')
+        else:
             # raw item only introduced in UFE v2
             invalidPrim = mayaUsdUfe.getPrimFromRawItem(0)
-        else:
-            # In UFE v2 if the Nb segments == 1, returns invalid prim
-            invalidPrim = mayaUsdUfe.ufePathToPrim('a')
 
         # Prior to USD version 20.05, a default constructed UsdPrim() in C++
         # would be returned to Python as a Usd.Object rather than a Usd.Prim.
