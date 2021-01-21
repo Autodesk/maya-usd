@@ -5,6 +5,7 @@ set(TEST_SCRIPT_FILES
     testUsdExportAsClip.py
     testUsdExportBindTransform.py
     testUsdExportBlendshapes.py
+    testUsdExportCamera.py
     testUsdExportColorSets.py
     testUsdExportConnected.py
     testUsdExportDisplacement.py
