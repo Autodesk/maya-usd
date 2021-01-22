@@ -420,22 +420,11 @@ class RenameTestCase(unittest.TestCase):
         # Create our UFE notification observer
         ufeObs = TestObserver()
 
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
-            # We start off with no observers
-            self.assertFalse(ufe.Scene.hasObjectAddObserver(ufeObs))
-            self.assertFalse(ufe.Scene.hasObjectDeleteObserver(ufeObs))
-            self.assertFalse(ufe.Scene.hasObjectPathChangeObserver(ufeObs))
+        # We start off with no observers
+        self.assertFalse(ufe.Scene.hasObserver(ufeObs))
 
-            # Add the UFE observers we want to test
-            ufe.Scene.addObjectAddObserver(ufeObs)
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectPathChangeObserver(ufeObs)
-        else:
-            # We start off with no observers
-            self.assertFalse(ufe.Scene.hasObserver(ufeObs))
-
-            # Add the UFE observer we want to test
-            ufe.Scene.addObserver(ufeObs)
+        # Add the UFE observer we want to test
+        ufe.Scene.addObserver(ufeObs)
 
         # rename
         newName = 'pCylinder1_Renamed'

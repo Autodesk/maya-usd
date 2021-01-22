@@ -107,7 +107,7 @@ protected:
 #endif
 
 private:
-#if UFE_PREVIEW_VERSION_NUM < 2021
+#ifndef UFE_V2_FEATURES_AVAILABLE
     // Overridden from Ufe::Observer
     void operator()(const Ufe::Notification& notification) override;
 

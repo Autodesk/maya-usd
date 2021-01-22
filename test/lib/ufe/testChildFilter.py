@@ -25,7 +25,6 @@ import ufe
 
 import unittest
 
-@unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2022', 'ChildFilterTestCase is only available in Maya with UFE preview version 0.2.22 and greater')
 class ChildFilterTestCase(unittest.TestCase):
     '''Verify the ChildFilter USD implementation.
     '''

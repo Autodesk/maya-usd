@@ -44,13 +44,9 @@ public:
 
     // Ufe::UIInfoHandler overrides
     bool treeViewCellInfo(const Ufe::SceneItem::Ptr& item, Ufe::CellInfo& info) const override;
-#if UFE_PREVIEW_VERSION_NUM >= 2024
     Ufe::UIInfoHandler::Icon treeViewIcon(const Ufe::SceneItem::Ptr& item) const override;
     std::string              treeViewTooltip(const Ufe::SceneItem::Ptr& item) const override;
-#else
-    std::string treeViewIcon(const Ufe::SceneItem::Ptr& item) const override;
-#endif
-    std::string getLongRunTimeLabel() const override;
+    std::string              getLongRunTimeLabel() const override;
 }; // UsdUIInfoHandler
 
 } // namespace ufe

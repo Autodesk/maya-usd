@@ -42,7 +42,6 @@ class SceneItemTestCase(unittest.TestCase):
         # Open top_layer.ma scene in testSamples
         mayaUtils.openTopLayerScene()
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2020', 'testNodeTypes only available in UFE preview version 0.2.20 and greater')
     def testNodeTypes(self):
         '''Engine method to run scene item test.'''
 

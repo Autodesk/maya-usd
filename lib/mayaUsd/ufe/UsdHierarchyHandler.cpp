@@ -53,14 +53,12 @@ Ufe::SceneItem::Ptr UsdHierarchyHandler::createItem(const Ufe::Path& path) const
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2022
 Ufe::Hierarchy::ChildFilter UsdHierarchyHandler::childFilter() const
 {
     Ufe::Hierarchy::ChildFilter childFilters;
     childFilters.emplace_back("InactivePrims", "Inactive Prims", true);
     return childFilters;
 }
-#endif
 #endif
 
 } // namespace ufe

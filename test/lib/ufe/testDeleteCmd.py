@@ -92,7 +92,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         # Create our UFE notification observer
         ufeObs = TestObserver()
 
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
+        if ufeUtils.ufeFeatureSetVersion() < 2:
             ufe.Scene.addObjectDeleteObserver(ufeObs)
             ufe.Scene.addObjectAddObserver(ufeObs)
         else:
@@ -197,11 +197,7 @@ class DeleteCmdTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestObserver()
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
+        ufe.Scene.addObserver(ufeObs)
 
         spherePath = ufe.Path(mayaUtils.createUfePathSegment("|pSphere1"))
         sphereItem = ufe.Hierarchy.createItem(spherePath)

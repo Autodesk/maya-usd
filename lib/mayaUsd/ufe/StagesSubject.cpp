@@ -19,9 +19,10 @@
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2025
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoManager.h>
 #endif
 
@@ -305,9 +306,7 @@ void StagesSubject::stageChanged(
             const TfToken nameToken = changedPath.GetNameToken();
             if (nameToken == UsdGeomTokens->xformOpOrder || UsdGeomXformOp::IsXformOp(nameToken)) {
                 Ufe::Transform3d::notify(ufePath);
-#ifdef UFE_V2_FEATURES_AVAILABLE
-                sendValueChangedFallback = false;
-#endif
+                UFE_V2(sendValueChangedFallback = false;)
             }
         }
 
@@ -341,7 +340,7 @@ void StagesSubject::stageChanged(
 #endif
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2025
+#ifdef UFE_V2_FEATURES_AVAILABLE
 void StagesSubject::stageEditTargetChanged(
     UsdNotice::StageEditTargetChanged const& notice,
     UsdStageWeakPtr const&                   sender)
@@ -353,7 +352,7 @@ void StagesSubject::stageEditTargetChanged(
 
 void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
 {
-#if UFE_PREVIEW_VERSION_NUM >= 2025
+#ifdef UFE_V2_FEATURES_AVAILABLE
     auto noticeStage = notice.GetStage();
     // Check if stage received from notice is valid. We could have cases where a ProxyShape has an
     // invalid stage.
@@ -376,9 +375,8 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
             NoticeKeys noticeKeys;
 
             noticeKeys[0] = TfNotice::Register(me, &StagesSubject::stageChanged, stage);
-#if UFE_PREVIEW_VERSION_NUM >= 2025
-            noticeKeys[1] = TfNotice::Register(me, &StagesSubject::stageEditTargetChanged, stage);
-#endif
+            UFE_V2(noticeKeys[1]
+                   = TfNotice::Register(me, &StagesSubject::stageEditTargetChanged, stage);)
             fStageListeners[stage] = noticeKeys;
         }
 

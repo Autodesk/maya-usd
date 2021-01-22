@@ -436,11 +436,7 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
 #ifdef WANT_QT_BUILD
         // Top-level item - USD Layer editor (for all context op types).
         // Only available when building with Qt enabled.
-#if UFE_PREVIEW_VERSION_NUM >= 2023
         items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel, kUSDLayerEditorImage);
-#else
-        items.emplace_back(kUSDLayerEditorItem, kUSDLayerEditorLabel);
-#endif
         items.emplace_back(Ufe::ContextItem::kSeparator);
 #endif
 
@@ -521,7 +517,6 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             } // Variants of a variant set
         }     // Variant sets
         else if (itemPath[0] == kUSDAddNewPrimItem) {
-#if UFE_PREVIEW_VERSION_NUM >= 2023
             items.emplace_back(
                 kUSDDefPrimItem, kUSDDefPrimLabel, kUSDDefPrimImage); // typeless prim
             items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel, kUSDScopePrimImage);
@@ -532,17 +527,6 @@ Ufe::ContextOps::Items UsdContextOps::getItems(const Ufe::ContextOps::ItemPath& 
             items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel, kUSDCubePrimImage);
             items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel, kUSDCylinderPrimImage);
             items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel, kUSDSpherePrimImage);
-#else
-            items.emplace_back(kUSDDefPrimItem, kUSDDefPrimLabel); // typeless prim
-            items.emplace_back(kUSDScopePrimItem, kUSDScopePrimLabel);
-            items.emplace_back(kUSDXformPrimItem, kUSDXformPrimLabel);
-            items.emplace_back(Ufe::ContextItem::kSeparator);
-            items.emplace_back(kUSDCapsulePrimItem, kUSDCapsulePrimLabel);
-            items.emplace_back(kUSDConePrimItem, kUSDConePrimLabel);
-            items.emplace_back(kUSDCubePrimItem, kUSDCubePrimLabel);
-            items.emplace_back(kUSDCylinderPrimItem, kUSDCylinderPrimLabel);
-            items.emplace_back(kUSDSpherePrimItem, kUSDSpherePrimLabel);
-#endif
         }
     } // Top-level items
 

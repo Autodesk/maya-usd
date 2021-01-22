@@ -47,7 +47,6 @@ class TestObserver(ufe.Observer):
     def notifications(self):
         return [self.add, self.delete, self.pathChange, self.subtreeInvalidate, self.composite]
 
-@unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021', 'testObservableScene is only available in Maya with UFE preview version 0.2.21 and greater')
 class UFEObservableSceneTest(unittest.TestCase):
 
     def checkNotifications(self, testObserver, listNotifications):

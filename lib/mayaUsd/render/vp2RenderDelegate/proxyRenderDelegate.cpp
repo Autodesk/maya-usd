@@ -49,7 +49,7 @@
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
 #include <ufe/globalSelection.h>
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/namedSelection.h>
 #endif
 #include <ufe/observableSelection.h>
@@ -758,7 +758,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // each intersection.
 #if defined(MAYA_ENABLE_UPDATE_FOR_SELECTION)
     const TfToken& selectionKind = _selectionKind;
-#if UFE_PREVIEW_VERSION_NUM < 2027 // #ifndef UFE_V2_FEATURES_AVAILABLE
+#ifndef UFE_V2_FEATURES_AVAILABLE
     const MGlobal::ListAdjustment& listAdjustment = _globalListAdjustment;
 #endif
 #else
@@ -788,7 +788,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         return false;
     }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2027 // #ifdef UFE_V2_FEATURES_AVAILABLE
+#ifdef UFE_V2_FEATURES_AVAILABLE
     auto ufeSel = Ufe::NamedSelection::get("MayaSelectTool");
     ufeSel->append(si);
 #else
