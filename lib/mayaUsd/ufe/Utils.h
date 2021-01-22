@@ -20,8 +20,10 @@
 
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/layer.h>
+#include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/timeCode.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MDagPath.h>
 #include <ufe/path.h>
@@ -53,9 +55,30 @@ UsdStageWeakPtr getStage(const Ufe::Path& path);
 MAYAUSD_CORE_PUBLIC
 Ufe::Path stagePath(UsdStageWeakPtr stage);
 
+//! Get the UFE path segment corresponding to the argument USD path.
+//! If an instanceIndex is provided, the path segment for a point instance with
+//! that USD path and index is returned.
+MAYAUSD_CORE_PUBLIC
+Ufe::PathSegment usdPathToUfePathSegment(
+    const SdfPath& usdPath,
+    int            instanceIndex = UsdImagingDelegate::ALL_INSTANCES);
+
+//! Get the UFE path representing just the USD prim for the argument UFE path.
+//! Any instance index component at the tail of the given path is removed from
+//! the returned path.
+MAYAUSD_CORE_PUBLIC
+Ufe::Path stripInstanceIndexFromUfePath(const Ufe::Path& path);
+
 //! Return the USD prim corresponding to the argument UFE path.
 MAYAUSD_CORE_PUBLIC
 UsdPrim ufePathToPrim(const Ufe::Path& path);
+
+//! Return the instance index corresponding to the argument UFE path if it
+//! represents a point instance.
+//! If the given path does not represent a point instance,
+//! UsdImagingDelegate::ALL_INSTANCES (-1) will be returned.
+MAYAUSD_CORE_PUBLIC
+int ufePathToInstanceIndex(const Ufe::Path& path);
 
 MAYAUSD_CORE_PUBLIC
 bool isRootChild(const Ufe::Path& path);

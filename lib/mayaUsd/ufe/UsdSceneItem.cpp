@@ -26,16 +26,18 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-UsdSceneItem::UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim)
+UsdSceneItem::UsdSceneItem(const Ufe::Path& path, const UsdPrim& prim, int instanceIndex)
     : Ufe::SceneItem(path)
     , fPrim(prim)
+    , _instanceIndex(instanceIndex)
 {
 }
 
 /*static*/
-UsdSceneItem::Ptr UsdSceneItem::create(const Ufe::Path& path, const UsdPrim& prim)
+UsdSceneItem::Ptr
+UsdSceneItem::create(const Ufe::Path& path, const UsdPrim& prim, int instanceIndex)
 {
-    return std::make_shared<UsdSceneItem>(path, prim);
+    return std::make_shared<UsdSceneItem>(path, prim, instanceIndex);
 }
 
 //------------------------------------------------------------------------------
