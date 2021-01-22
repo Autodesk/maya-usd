@@ -96,7 +96,7 @@ UsdTransform3dBase::translateScalePivotCmd(double, double, double)
 
 Ufe::Vector3d UsdTransform3dBase::scalePivotTranslation() const { return Ufe::Vector3d(0, 0, 0); }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2021
+#ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dBase::setMatrixCmd(const Ufe::Matrix4d& m)
 {
     // TODO: HS Aug25,2020 dummy code to pass the compiler errors

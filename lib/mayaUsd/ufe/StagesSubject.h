@@ -73,7 +73,7 @@ private:
     //! Call the stageChanged() methods on stage observers.
     void stageChanged(UsdNotice::ObjectsChanged const& notice, UsdStageWeakPtr const& sender);
 
-#if UFE_PREVIEW_VERSION_NUM >= 2025
+#ifdef UFE_V2_FEATURES_AVAILABLE
     //! Call the stageEditTargetChanged() methods on stage observers.
     void stageEditTargetChanged(
         UsdNotice::StageEditTargetChanged const& notice,
@@ -88,7 +88,7 @@ private:
     void onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& notice);
 
     // Array of Notice::Key for registered listener
-#if UFE_PREVIEW_VERSION_NUM >= 2025
+#ifdef UFE_V2_FEATURES_AVAILABLE
     using NoticeKeys = std::array<TfNotice::Key, 2>;
 #else
     using NoticeKeys = std::array<TfNotice::Key, 1>;

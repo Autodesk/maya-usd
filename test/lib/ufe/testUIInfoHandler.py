@@ -25,7 +25,6 @@ import ufe
 
 import unittest
 
-@unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2022', 'UIInfoHandlerTestCase is only available in Maya with UFE preview version 0.2.22 and greater')
 class UIInfoHandlerTestCase(unittest.TestCase):
     '''Verify the UIInfoHandler USD implementation.
     '''
@@ -76,8 +75,7 @@ class UIInfoHandlerTestCase(unittest.TestCase):
         self.assertTrue(ci.fontStrikeout)
         self.assertTrue(initTextFgClr != ci.textFgColor)
 
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') >= '2024'):
-            # Ball_3 should have a specific node type icon set and no badge.
-            icon = ufeUIInfo.treeViewIcon(ball3Hier)
-            self.assertEqual(icon.baseIcon, "out_USD_Sphere.png")
-            self.assertFalse(icon.badgeIcon)    # empty string
+        # Ball_3 should have a specific node type icon set and no badge.
+        icon = ufeUIInfo.treeViewIcon(ball3Hier)
+        self.assertEqual(icon.baseIcon, "out_USD_Sphere.png")
+        self.assertFalse(icon.badgeIcon)    # empty string

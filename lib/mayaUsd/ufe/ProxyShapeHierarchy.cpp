@@ -138,7 +138,6 @@ Ufe::SceneItemList ProxyShapeHierarchy::children() const
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
-#if UFE_PREVIEW_VERSION_NUM >= 2022
 Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& childFilter) const
 {
     // Return filtered children of the USD root.
@@ -159,7 +158,6 @@ Ufe::SceneItemList ProxyShapeHierarchy::filteredChildren(const ChildFilter& chil
     UFE_LOG("Unknown child filter");
     return Ufe::SceneItemList();
 }
-#endif
 #endif
 
 // Return UFE child list from input USD child list.
@@ -235,7 +233,6 @@ Ufe::UndoableCommand::Ptr ProxyShapeHierarchy::createGroupCmd(
     return UsdUndoCreateGroupCommand::create(usdItem, selection, name.string());
 }
 
-#if UFE_PREVIEW_VERSION_NUM >= 2026
 Ufe::UndoableCommand::Ptr
 ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
 {
@@ -248,7 +245,6 @@ ProxyShapeHierarchy::reorderCmd(const Ufe::SceneItemList& orderedList) const
     // create a reorder command and pass in the parent and its ordered children list
     return UsdUndoReorderCommand::create(getUsdRootPrim(), orderedTokens);
 }
-#endif
 
 Ufe::SceneItem::Ptr ProxyShapeHierarchy::defaultParent() const
 {

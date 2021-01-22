@@ -16,9 +16,10 @@
 #pragma once
 
 #include <mayaUsd/base/api.h>
+#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdSceneItem.h>
 
-#if UFE_PREVIEW_VERSION_NUM >= 2029
+#ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/undo/UsdUndoableItem.h>
 #endif
 
@@ -52,16 +53,14 @@ public:
 
     UsdSceneItem::Ptr duplicatedItem() const;
 
-#if UFE_PREVIEW_VERSION_NUM >= 2029
-    void execute() override;
-#endif
+    UFE_V2(void execute() override;)
     void undo() override;
     void redo() override;
 
 private:
-#if UFE_PREVIEW_VERSION_NUM >= 2029
-    UsdUndoableItem _undoableItem;
-#else
+    UFE_V2(UsdUndoableItem _undoableItem;)
+
+#ifndef UFE_V2_FEATURES_AVAILABLE
     bool duplicateUndo();
     bool duplicateRedo();
 #endif

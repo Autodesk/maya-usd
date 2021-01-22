@@ -211,11 +211,7 @@ class ContextOpsTestCase(unittest.TestCase):
 
         # Create our UFE notification observer
         ufeObs = TestAddPrimObserver()
-        if(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2021'):
-            ufe.Scene.addObjectDeleteObserver(ufeObs)
-            ufe.Scene.addObjectAddObserver(ufeObs)
-        else:
-            ufe.Scene.addObserver(ufeObs)
+        ufe.Scene.addObserver(ufeObs)
 
         # Create a ContextOps interface for the proxy shape.
         proxyShapePath = ufe.Path([mayaUtils.createUfePathSegment("|stage1|stageShape1")])
@@ -310,7 +306,6 @@ class ContextOpsTestCase(unittest.TestCase):
         self.assertEqual(ufeObs.nbAddNotif(), 2)
         self.assertEqual(ufeObs.nbDeleteNotif(), 2)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2015', 'testAddNewPrimWithDelete only available in UFE preview version 0.2.15 and greater')
     def testAddNewPrimWithDelete(self):
         cmds.file(new=True, force=True)
 

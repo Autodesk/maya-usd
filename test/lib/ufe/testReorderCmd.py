@@ -32,7 +32,6 @@ def findIndex(childItem):
     index = childrenList.index(childItem)
     return index
 
-@unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2026', 'testReorderCmd is only available in Maya with UFE preview version 0.2.26 and greater')
 class ReorderCmdTestCase(unittest.TestCase):
     '''Verify the Maya reorder command on a USD scene.'''
 

@@ -381,7 +381,6 @@ class ParentCmdTestCase(unittest.TestCase):
             self.assertIn("pSphere1", childrenNames(children))
             self.assertIn("pCylinderShape1", childrenNames(children))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2020', 'testUnparentUSD only available in Maya with UFE preview version 0.2.20 and greater')
     def testUnparentUSD(self):
         '''Unparent USD node.'''
 
@@ -415,7 +414,6 @@ class ParentCmdTestCase(unittest.TestCase):
             cmds.redo()
             checkUnparent(done=True)
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2020', 'testUnparentMixed only available in Maya with UFE preview version 0.2.20 and greater')
     def testUnparentMultiStage(self):
         '''Unparent USD nodes in more than one stage.'''
 
