@@ -30,4 +30,8 @@ bool UsdMayaImportChaser::PostImport(
     return true;
 }
 
+bool UsdMayaImportChaser::Redo() { return true; }
+
+bool UsdMayaImportChaser::Undo() { return true; }
+
 PXR_NAMESPACE_CLOSE_SCOPE

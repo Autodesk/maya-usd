@@ -56,6 +56,12 @@ public:
         const MDagPathArray&        dagPaths,
         const SdfPathVector&        sdfPaths,
         const UsdMayaJobImportArgs& jobArgs);
+
+    MAYAUSD_CORE_PUBLIC
+    virtual bool Redo();
+
+    MAYAUSD_CORE_PUBLIC
+    virtual bool Undo();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

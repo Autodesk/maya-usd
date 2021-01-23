@@ -98,9 +98,42 @@ public:
             CHECK_MSTATUS_AND_RETURN(stat, false);
             stat = fnDagNode.addAttribute(strAttr);
             CHECK_MSTATUS_AND_RETURN(stat, false);
+
+            this->nodesEditedRecord.append(fnDagNode.object());
+            this->editsRecord.append(strAttr);
         }
         return true;
     }
+
+    virtual bool Redo() override
+    {
+        undoRecord.undoIt(); // NOTE: (yliangsiew) Undo the undo to re-do.
+        return true;
+    }
+
+    virtual bool Undo() override
+    {
+        for (unsigned int i = 0; i < editsRecord.length(); ++i) {
+            MObject nodeEdited = nodesEditedRecord[i];
+            // TODO: (yliangsiew) This seems like a bit of a code smell...why would this crash
+            // otherwise? But for now, this guards an undo-redo chain crash where the MObject is no
+            // longer valid between invocations. Need to look at this further.
+            if (!MObjectHandle(nodeEdited).isValid()) {
+                continue;
+            }
+            MObject attrToDelete = editsRecord[i];
+            if (!MObjectHandle(attrToDelete).isValid()) {
+                continue;
+            }
+            undoRecord.removeAttribute(nodesEditedRecord[i], editsRecord[i]);
+        }
+        undoRecord.doIt();
+        return true;
+    }
+
+    MDGModifier  undoRecord;
+    MObjectArray editsRecord;
+    MObjectArray nodesEditedRecord;
 };
 
 USDMAYA_DEFINE_IMPORT_CHASER_FACTORY(info, ctx)

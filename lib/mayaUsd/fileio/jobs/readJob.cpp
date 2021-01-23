@@ -301,6 +301,7 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         bool bStat
             = chaser->PostImport(predicate, stage, currentAddedDagPaths, fromSdfPaths, this->mArgs);
         if (!bStat) {
+            TF_WARN("Failed to execute import chaser!");
             return false;
         }
     }
@@ -497,11 +498,29 @@ bool UsdMaya_ReadJob::Redo()
     // Undo the undo
     MStatus status = mDagModifierUndo.undoIt();
 
+    // NOTE: (yliangsiew) All chasers need to have their Redo run as well.
+    for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
+        bool bStat = chaser->Redo();
+        if (!bStat) {
+            TF_WARN("Failed to execute import chaser's Redo()!");
+            return false;
+        }
+    }
+
     return (status == MS::kSuccess);
 }
 
 bool UsdMaya_ReadJob::Undo()
 {
+    // NOTE: (yliangsiew) All chasers need to have their Undo run as well.
+    for (const UsdMayaImportChaserRefPtr& chaser : this->mImportChasers) {
+        bool bStat = chaser->Undo();
+        if (!bStat) {
+            TF_WARN("Failed to execute import chaser's Redo()!");
+            return false;
+        }
+    }
+
     if (!mDagModifierSeeded) {
         mDagModifierSeeded = true;
         MStatus dagStatus;
