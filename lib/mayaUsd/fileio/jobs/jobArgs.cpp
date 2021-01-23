@@ -587,11 +587,12 @@ UsdMayaJobImportArgs::UsdMayaJobImportArgs(
           UsdMayaJobImportArgsTokens->preferredMaterial,
           UsdMayaPreferredMaterialTokens->none,
           UsdMayaPreferredMaterialTokens->allTokens))
+    , importUSDZTexturesFilePath(
+          _String(userArgs, UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath))
+    , importUSDZTextures(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importUSDZTextures))
     , importInstances(_Boolean(userArgs, UsdMayaJobImportArgsTokens->importInstances))
     , useAsAnimationCache(_Boolean(userArgs, UsdMayaJobImportArgsTokens->useAsAnimationCache))
-    ,
-
-    importWithProxyShapes(importWithProxyShapes)
+    , importWithProxyShapes(importWithProxyShapes)
     , timeInterval(timeInterval)
     , chaserNames(_Vector<std::string>(userArgs, UsdMayaJobImportArgsTokens->chaser))
     , allChaserArgs(_ChaserArgs(userArgs, UsdMayaJobImportArgsTokens->chaserArgs))
@@ -634,6 +635,8 @@ const VtDictionary& UsdMayaJobImportArgs::GetDefaultDictionary()
         d[UsdMayaJobImportArgsTokens->preferredMaterial]
             = UsdMayaPreferredMaterialTokens->none.GetString();
         d[UsdMayaJobImportArgsTokens->importInstances] = true;
+        d[UsdMayaJobImportArgsTokens->importUSDZTextures] = false;
+        d[UsdMayaJobImportArgsTokens->importUSDZTexturesFilePath] = "";
         d[UsdMayaJobImportArgsTokens->useAsAnimationCache] = false;
         d[UsdMayaJobExportArgsTokens->chaser] = std::vector<VtValue>();
         d[UsdMayaJobExportArgsTokens->chaserArgs] = std::vector<VtValue>();
@@ -659,6 +662,9 @@ std::ostream& operator<<(std::ostream& out, const UsdMayaJobImportArgs& importAr
     out << "preferredMaterial: " << importArgs.preferredMaterial << std::endl
         << "assemblyRep: " << importArgs.assemblyRep << std::endl
         << "importInstances: " << TfStringify(importArgs.importInstances) << std::endl
+        << "importUSDZTextures: " << TfStringify(importArgs.importUSDZTextures) << std::endl
+        << "importUSDZTexturesFilePath: " << TfStringify(importArgs.importUSDZTexturesFilePath)
+        << std::endl
         << "timeInterval: " << importArgs.timeInterval << std::endl
         << "useAsAnimationCache: " << TfStringify(importArgs.useAsAnimationCache) << std::endl
         << "importWithProxyShapes: " << TfStringify(importArgs.importWithProxyShapes) << std::endl;

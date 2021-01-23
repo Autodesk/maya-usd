@@ -49,6 +49,10 @@ std::string generateUniqueName()
     return uniqueName;
 }
 } // namespace
+#include <boost/filesystem.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/system/error_code.hpp>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -176,4 +180,65 @@ std::string UsdMayaUtilFileSystem::getUniqueFileName(
     pathModel.append(fileNameModel);
 
     return pathModel.generic_string();
+}
+
+bool UsdMayaUtilFileSystem::isDirectory(const char* dirPath)
+{
+    // TODO: (yliangsiew) Is there a platform wrapper somewhere so I can implement the OS native
+    // calls for something simple like this without having to add yet another dependency on Boost?
+    boost::filesystem::path p(dirPath);
+    return boost::filesystem::is_directory(p);
+}
+
+bool UsdMayaUtilFileSystem::isFile(const char* filePath)
+{
+    boost::system::error_code ec;
+    bool                      bStat = boost::filesystem::is_regular_file(filePath, ec);
+    return bStat;
+}
+
+bool UsdMayaUtilFileSystem::pathAppendPath(char* a, const char* b)
+{
+    // TODO: (yliangsiew) Is there a platform wrapper somewhere so I can implement the OS native
+    // calls for something simple like this without having to add yet another dependency on Boost?
+    if (!boost::filesystem::is_directory(a)) {
+        return false;
+    }
+    boost::filesystem::path aPath(a);
+    boost::filesystem::path bPath(b);
+    aPath /= b;
+    memcpy(a, aPath.c_str(), aPath.size());
+    memset(a + aPath.size(), 0, 1);
+    return true;
+}
+
+size_t
+UsdMayaUtilFileSystem::writeToFilePath(const char* filePath, const void* buffer, const size_t size)
+{
+    std::FILE* stream = std::fopen(filePath, "w");
+    if (stream == nullptr) {
+        return 0;
+    }
+    size_t numObjectsWritten = std::fwrite(buffer, size, 1, stream);
+    if (numObjectsWritten != 1) {
+        return 0;
+    }
+    int stat = std::fclose(stream);
+    if (stat != 0) {
+        return 0;
+    }
+
+    return size;
+}
+
+void UsdMayaUtilFileSystem::pathStripPath(char* filePath)
+{
+    // TODO: (yliangsiew) Again, need a platform layer I can write simpler versions of these for to
+    // avoid using boost.
+    boost::filesystem::path p(filePath);
+    boost::filesystem::path filename = p.filename();
+    memcpy(filePath, filename.c_str(), filename.size());
+    memset(filePath + filename.size(), 0, 1);
+
+    return;
 }

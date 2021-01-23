@@ -142,6 +142,9 @@ global proc int mayaUsdTranslatorImport (string $parent,
         string $instancedAnn = "Converts instanced prims to Maya instances. Instanced prims share parts of\nthe USD scenegraph through instancing. Each instanced prim is associated\nwith a master prim that serves as the root of the scenegraph. This hierarchy\nreduces the time needed to load the file. Instanced prims must be manually\ntagged.";
         checkBoxGrp -label "Instanced Prims: " -label1 "Convert to Instances" -cw 1 $cw1 -value1 1 -ann $instancedAnn mayaUsdTranslator_ImportInstancesCheckBox;
 
+        string $importUSDZTexturesAnn = "Imports texture files from USDZ archives and copies them to new files on disk.";
+        checkBoxGrp -label "Import USDZ Textures: " -cw 1 $cw1 -ann $importUSDZTexturesAnn mayaUsdTranslator_ImportUSDZTexturesCheckBox;
+
 //        optionMenuGrp -label "Include Metadata: " -cw 1 $cw1 mayaUsdTranslator_IncludeMetadataOptionMenu;
 //            menuItem "All";
 //            menuItem "None";
@@ -190,6 +193,8 @@ global proc int mayaUsdTranslatorImport (string $parent,
                     mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_CustomFrameRangeCheckBox");
                 } else if ($optionBreakDown[0] == "importInstances") {
                     mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_ImportInstancesCheckBox");
+                } else if ($optionBreakDown[0] == "importUSDZTextures") {
+                    mayaUsdTranslatorImport_SetCheckBoxGrp($optionBreakDown[1], "mayaUsdTranslator_ImportUSDZTexturesCheckBox");
                 }
             }
         }
@@ -205,7 +210,7 @@ global proc int mayaUsdTranslatorImport (string $parent,
         $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "useCustomFrameRange", "mayaUsdTranslator_CustomFrameRangeCheckBox");
         $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "startTime", 1, "mayaUsdTranslator_CustomFrameRange");
         $currentOptions = mayaUsdTranslatorImport_AppendFromIntFieldGrp($currentOptions, "endTime", 2, "mayaUsdTranslator_CustomFrameRange");
-        $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importInstances", "mayaUsdTranslator_ImportInstancesCheckBox");
+        $currentOptions = mayaUsdTranslatorImport_AppendFromCheckBoxGrp($currentOptions, "importUSDZTextures", "mayaUsdTranslator_ImportUSDZTexturesCheckBox");
 
         eval($resultCallback+" \""+$currentOptions+"\"");
         $bResult = 1;

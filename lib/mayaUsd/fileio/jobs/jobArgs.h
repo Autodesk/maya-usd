@@ -23,6 +23,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/zipFile.h>
 
 #include <maya/MString.h>
 
@@ -119,6 +120,8 @@ TF_DECLARE_PUBLIC_TOKENS(
     (preferredMaterial) \
     (useAsAnimationCache) \
     (importInstances) \
+    (importUSDZTextures) \
+    (importUSDZTexturesFilePath) \
     /* assemblyRep values */ \
     (Collapsed) \
     (Full) \
@@ -271,8 +274,14 @@ struct UsdMayaJobImportArgs
     using ShadingModes = std::vector<ShadingMode>;
     ShadingModes  shadingModes; // XXX can we make this const?
     const TfToken preferredMaterial;
-    const bool    importInstances;
-    const bool    useAsAnimationCache;
+    std::string   importUSDZTexturesFilePath; // TODO: (yliangsiew) Is it ok to mutate this during
+                                              // import based on determining the best directory to
+                                              // write to? If not, can make a second buffer instead
+                                              // for the determined directory.
+    const bool importUSDZTextures;
+    UsdZipFile zipFile; // TODO: (yliangsiew) If the import is a USDZ, this will be a valid object.
+    const bool importInstances;
+    const bool useAsAnimationCache;
 
     const bool importWithProxyShapes;
     /// The interval over which to import animated data.

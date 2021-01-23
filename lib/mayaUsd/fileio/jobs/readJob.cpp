@@ -19,11 +19,15 @@
 #include <mayaUsd/fileio/primReaderRegistry.h>
 #include <mayaUsd/fileio/translators/translatorMaterial.h>
 #include <mayaUsd/fileio/translators/translatorXformable.h>
+#include <mayaUsd/fileio/utils/readUtil.h>
 #include <mayaUsd/nodes/stageNode.h>
 #include <mayaUsd/utils/stageCache.h>
 #include <mayaUsd/utils/util.h>
+#include <mayaUsd/utils/utilFileSystem.h>
 
+#include <pxr/base/tf/debug.h>
 #include <pxr/base/tf/token.h>
+#include <pxr/usd/sdf/fileFormat.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/prim.h>
@@ -33,6 +37,7 @@
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usd/variantSets.h>
+#include <pxr/usd/usd/zipFile.h>
 #include <pxr/usd/usdGeom/metrics.h>
 #include <pxr/usd/usdGeom/xform.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
@@ -45,6 +50,7 @@
 #include <maya/MDagPathArray.h>
 #include <maya/MDistance.h>
 #include <maya/MFnDependencyNode.h>
+#include <maya/MItDependencyGraph.h>
 #include <maya/MObject.h>
 #include <maya/MPlug.h>
 #include <maya/MStatus.h>
@@ -253,6 +259,75 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
         CHECK_MSTATUS_AND_RETURN(status, false);
     }
 
+    if (this->mArgs.importUSDZTextures == true) {
+        // NOTE: (yliangsiew) First we check if the archive in question _is_ even a USDZ archive...
+        if (!stage->GetRootLayer()->GetFileFormat()->IsPackage()) {
+            TF_WARN(
+                "The layer being imported: %s is not a USDZ file.",
+                stage->GetRootLayer()->GetRealPath().c_str());
+            return MStatus::kFailure;
+        }
+
+        char importTexturesRootDirPath[FILENAME_MAX] = { 0 };
+        if (this->mArgs.importUSDZTexturesFilePath.size() == 0) {
+            MString currentMayaWorkspacePath = UsdMayaUtil::GetCurrentMayaWorkspacePath();
+            MString currentMayaSceneFilePath = UsdMayaUtil::GetCurrentSceneFilePath();
+            if (strstr(currentMayaSceneFilePath.asChar(), currentMayaWorkspacePath.asChar())
+                == NULL) {
+                TF_RUNTIME_ERROR(
+                    "The current scene does not seem to be part of the current Maya project set. "
+                    "Could not automatically determine a path to write out USDZ texture imports.");
+                return MStatus::kFailure;
+            }
+            if (currentMayaWorkspacePath.length() == 0
+                || !UsdMayaUtilFileSystem::isDirectory(currentMayaWorkspacePath.asChar())) {
+                TF_RUNTIME_ERROR(
+                    "Could not automatically determine a path to write out USDZ texture imports. "
+                    "Please specify a location using the -importUSDZTexturesFilePath argument, or "
+                    "set the Maya project appropriately.");
+                return MStatus::kFailure;
+            } else {
+                // NOTE: (yliangsiew) Textures are, by convention, supposed to be located in the
+                // `sourceimages` folder under a Maya project root folder.
+                // TODO: (yliangsiew) Need to find where the string library is here and have this be
+                // a custom strncpy.
+                memcpy(
+                    importTexturesRootDirPath,
+                    currentMayaWorkspacePath.asChar(),
+                    currentMayaWorkspacePath.length());
+                memset(importTexturesRootDirPath + currentMayaWorkspacePath.length(), 0, 1);
+                bool bStat = UsdMayaUtilFileSystem::pathAppendPath(
+                    importTexturesRootDirPath, "sourceimages");
+                if (!bStat) {
+                    TF_RUNTIME_ERROR(
+                        "Unable to determine the texture directory for the Maya project: %s.",
+                        currentMayaWorkspacePath.asChar());
+                    return MStatus::kFailure;
+                }
+                TF_WARN(
+                    "Because -importUSDZTexturesFilePath was not explicitly specified, textures "
+                    "will be imported to the workspace folder: %s.",
+                    currentMayaWorkspacePath.asChar());
+            }
+        } else {
+            memcpy(
+                importTexturesRootDirPath,
+                this->mArgs.importUSDZTexturesFilePath.c_str(),
+                this->mArgs.importUSDZTexturesFilePath.size());
+            memset(
+                importTexturesRootDirPath + this->mArgs.importUSDZTexturesFilePath.length(), 0, 1);
+        }
+
+        if (!UsdMayaUtilFileSystem::isDirectory(importTexturesRootDirPath)) {
+            TF_RUNTIME_ERROR(
+                "The directory specified for USDZ texture imports: %s is not valid.",
+                importTexturesRootDirPath);
+            return MStatus::kFailure;
+        }
+        this->mArgs.importUSDZTexturesFilePath = std::string(importTexturesRootDirPath);
+        this->mArgs.zipFile = UsdZipFile::Open(stage->GetRootLayer()->GetRealPath());
+    }
+
     DoImport(range, usdRootPrim);
 
     // NOTE: (yliangsiew) Storage to later pass on to `PostImport` for import chasers.
@@ -305,6 +380,8 @@ bool UsdMaya_ReadJob::Read(std::vector<MDagPath>* addedDagPaths)
             return false;
         }
     }
+
+    UsdMayaReadUtil::mapFileHashes.clear();
 
     return (status == MS::kSuccess);
 }

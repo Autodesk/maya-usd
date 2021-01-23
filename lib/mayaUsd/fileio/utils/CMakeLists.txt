@@ -4,6 +4,7 @@
 target_sources(${PROJECT_NAME} 
     PRIVATE
         adaptor.cpp
+        hashUtil.cpp
         jointWriteUtils.cpp
         meshReadUtils.cpp
         meshWriteUtils.cpp
@@ -17,6 +18,7 @@ target_sources(${PROJECT_NAME}
 
 set(HEADERS
     adaptor.h
+    hashUtil.h
     jointWriteUtils.h
     meshReadUtils.h
     meshWriteUtils.h

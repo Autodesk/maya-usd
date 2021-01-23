@@ -23,6 +23,7 @@
 #include <maya/MColor.h>
 #include <maya/MDGModifier.h>
 #include <maya/MDagPath.h>
+#include <maya/MFileIO.h>
 #include <maya/MFnComponentListData.h>
 #include <maya/MFnDagNode.h>
 #include <maya/MFnDependencyNode.h>
@@ -2365,4 +2366,32 @@ bool UsdMayaUtil::CheckMeshUpstreamForBlendShapes(const MObject& mesh)
     }
 
     return false;
+}
+
+MString UsdMayaUtil::GetCurrentMayaWorkspacePath()
+{
+    // NOTE: (yliangsiew) Not thread-safe.
+    MStatus stat;
+    MString result
+        = MGlobal::executeCommandStringResult("workspace -q -rootDirectory", false, false, &stat);
+
+    return result;
+}
+
+MString UsdMayaUtil::GetCurrentSceneFilePath()
+{
+    static const char untitledKey[] = "/untitled";
+    size_t            lenUntitledKey = strlen(untitledKey);
+    MString           currentSceneFilePath = MFileIO::currentFile();
+    if (currentSceneFilePath.length() < lenUntitledKey) {
+        return currentSceneFilePath;
+    }
+    unsigned int lenCurrentSceneFilePath = currentSceneFilePath.length();
+    if (currentSceneFilePath.substring(
+            lenCurrentSceneFilePath - lenUntitledKey, lenCurrentSceneFilePath)
+        == untitledKey) {
+        return MString("");
+    }
+
+    return currentSceneFilePath;
 }
