@@ -80,7 +80,12 @@ bool MatchingSubstack(const std::vector<UsdGeomXformOp>& ops)
     // current op's index, since each index can appear only once.
     int orderedNdx = UsdTransform3dMayaXformStack::NdxTranslate;
     for (const auto& op : ops) {
-        auto opNdx = gOpNameToNdx.at(op.GetOpName());
+        auto found = gOpNameToNdx.find(op.GetOpName());
+        if (found == gOpNameToNdx.end()) {
+            // Found an op that doesn't match a Maya fallback stack op.
+            return false;
+        }
+        auto opNdx = found->second;
         if (opNdx < orderedNdx) {
             return false;
         }

@@ -612,6 +612,67 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
                 "xformOp:rotateZ", "!invert!xformOp:translate:pivot",
                 "xformOp:rotateXYZ:maya_fallback")))
 
+    def testBrokenFallback(self):
+        '''Maya fallback transform stack must be final on prim transform op stack.'''
+        # Create a prim and add transform ops to it that don't match the Maya
+        # transform stack.  Then, transform it with Maya: this will trigger the
+        # creation of a Maya fallback transform stack.  Finally, append another
+        # transform op to the prim transform stack.  Because there is now a
+        # transform op beyond the Maya fallback transform stack, the Maya
+        # fallback has been "corrupted", and any further transformation of the
+        # prim must be a no-op.
+
+        cmds.file(new=True, force=True)
+
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+        capsuleXformable = UsdGeom.Xformable(capsulePrim)
+        capsuleXformable.AddRotateXOp()
+        capsuleXformable.AddRotateYOp()
+
+        self.assertEqual(
+            capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:rotateX", "xformOp:rotateY")))
+
+        # Select capsule.
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(capsuleItem)
+
+        # Rotate sphere around X.
+        cmds.rotate(30, 0, 0, r=True, os=True, fo=True)
+
+        # Fallback interface will have added a RotXYZ transform op.
+        self.assertEqual(
+            capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:rotateX", "xformOp:rotateY",
+                "xformOp:rotateXYZ:maya_fallback")))
+
+        capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
+        self.assertIsNotNone(capsuleT3d)
+
+        # Add another transform op to break the Maya fallback stack.
+        capsuleXformable.AddRotateZOp()
+
+        self.assertEqual(
+            capsuleXformable.GetXformOpOrderAttr().Get(), Vt.TokenArray((
+                "xformOp:rotateX", "xformOp:rotateY",
+                "xformOp:rotateXYZ:maya_fallback", "xformOp:rotateZ")))
+
+        # Do any transform editing with Maya.
+        cmds.rotate(0, 0, 30, r=True, os=True, fo=True)
+
+        capsuleT3d = ufe.Transform3d.transform3d(capsuleItem)
+        self.assertIsNone(capsuleT3d)
+
     # Name test such that it runs last.  Otherwise, it runs before 
     # testRotateScalePivotCompensation(), and causes it to fail.  To be 
     # investigated --- MAYA-108067.
