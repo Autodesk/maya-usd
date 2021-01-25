@@ -24,6 +24,7 @@
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/diagnostic.h>
+#include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
 #include <pxr/imaging/hd/basisCurves.h>
 #include <pxr/imaging/hd/enums.h>
@@ -143,6 +144,36 @@ TfToken GetSelectionKind()
         return TfToken(optionVarValue.asChar());
     }
     return TfToken();
+}
+
+// clang-format off
+TF_DEFINE_PRIVATE_TOKENS(
+    _pointInstancesPickModeTokens,
+
+    (PointInstancer)
+    (Instances)
+    (Prototypes)
+);
+// clang-format on
+
+UsdPointInstancesPickMode GetPointInstancesPickMode()
+{
+    static const MString kOptionVarName(MayaUsdOptionVars->PointInstancesPickMode.GetText());
+
+    UsdPointInstancesPickMode pickMode = UsdPointInstancesPickMode::PointInstancer;
+
+    if (MGlobal::optionVarExists(kOptionVarName)) {
+        const MString optionVarValue = MGlobal::optionVarStringValue(kOptionVarName);
+        const TfToken pickModeToken(UsdMayaUtil::convert(optionVarValue));
+
+        if (pickModeToken == _pointInstancesPickModeTokens->Instances) {
+            pickMode = UsdPointInstancesPickMode::Instances;
+        } else if (pickModeToken == _pointInstancesPickModeTokens->Prototypes) {
+            pickMode = UsdPointInstancesPickMode::Prototypes;
+        }
+    }
+
+    return pickMode;
 }
 
 //! \brief  Populate Rprims into the Hydra selection from the UFE scene item.
