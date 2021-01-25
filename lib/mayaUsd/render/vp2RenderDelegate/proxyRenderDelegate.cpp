@@ -646,9 +646,11 @@ void ProxyRenderDelegate::_Execute(const MHWRender::MFrameContext& frameContext)
     if (inSelectionPass && !inPointSnapping) {
         _globalListAdjustment = GetListAdjustment();
         _selectionKind = GetSelectionKind();
+        _pointInstancesPickMode = GetPointInstancesPickMode();
     } else {
         _globalListAdjustment = MGlobal::kReplaceList;
         _selectionKind = TfToken();
+        _pointInstancesPickMode = UsdPointInstancesPickMode::PointInstancer;
     }
 #endif // defined(WANT_UFE_BUILD)
 
