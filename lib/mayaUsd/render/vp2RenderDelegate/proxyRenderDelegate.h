@@ -75,6 +75,11 @@ enum HdVP2SelectionStatus
     kFullyLead          //!< A Rprim is lead (meaning fully lead for instanced Rprims)
 };
 
+// Forward declaration of UsdPointInstancesPickMode so that it can be added as
+// a private member of ProxyRenderDelegate. The values and usage of this enum
+// are otherwise an implementation detail.
+enum class UsdPointInstancesPickMode;
+
 /*! \brief  USD Proxy rendering routine via VP2 MPxSubSceneOverride
 
     This drawing routine leverages HdVP2RenderDelegate for synchronization
@@ -262,6 +267,9 @@ private:
 
     //! Token of the Kind to be selected from viewport. If it empty, select the exact prims.
     TfToken _selectionKind;
+
+    //! Pick resolution behavior to use when the picked object is a point instance.
+    UsdPointInstancesPickMode _pointInstancesPickMode;
 #endif
 };
 

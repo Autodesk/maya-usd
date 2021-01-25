@@ -64,6 +64,29 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Pick resolution behavior to use when the picked object is a point instance.
+//
+// This enum is defined in the PXR_NS namespace, since it is declared that way
+// in the header so it can be added as a private member of ProxyRenderDelegate.
+enum class UsdPointInstancesPickMode
+{
+    // The PointInstancer prim that generated the point instance is picked.
+    // If multiple nested PointInstancers are involved, the top-level
+    // PointInstancer is the one picked. If a selection kind is specified,
+    // the traversal up the hierarchy looking for a kind match will begin at
+    // that PointInstancer.
+    PointInstancer,
+    // The specific point instance is picked. These are represented as
+    // UsdSceneItems with UFE paths to a PointInstancer prim and a non-negative
+    // instanceIndex for the specific point instance. In this mode, any setting
+    // for selection kind is ignored.
+    Instances,
+    // The prototype being instanced by the point instance is picked. If a
+    // selection kind is specified, the traversal up the hierarchy looking
+    // for a kind match will begin at the prototype prim.
+    Prototypes
+};
+
 namespace {
 //! Representation selector for shaded and textured viewport mode
 const HdReprSelector kSmoothHullReprSelector(HdReprTokens->smoothHull);
