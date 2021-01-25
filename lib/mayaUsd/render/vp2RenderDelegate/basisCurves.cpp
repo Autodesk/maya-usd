@@ -564,7 +564,11 @@ void HdVP2BasisCurves::Sync(
     const SdfPath& id = GetId();
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+#if HD_API_VERSION < 37
         _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(), delegate->GetMaterialId(id));
+#else
+        SetMaterialId(delegate->GetMaterialId(id));
+#endif
     }
 
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)

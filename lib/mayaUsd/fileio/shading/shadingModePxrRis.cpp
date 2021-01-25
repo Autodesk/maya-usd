@@ -251,7 +251,7 @@ private:
                 = _ExportShadingNodeHelper(materialPrim, connectedDepFn, context, processedPaths)) {
                 UsdShadeConnectableAPI::ConnectToSource(
                     input,
-                    UsdShadeShader(cPrim),
+                    UsdShadeConnectableAPI(cPrim),
                     TfToken(UsdMayaShadingUtil::GetStandardAttrName(connectedPlug, false)));
             }
         }
