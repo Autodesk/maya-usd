@@ -782,21 +782,20 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const SdfPath     rprimId(renderItemName.substr(0, pos));
 
     // If drawInstID is positive, it means the selection hit comes from one instanced render item,
-    // in this case its instance transform matrices have been sorted w.r.t. USD instance ID, thus
-    // usdInstID is drawInstID minus 1 because VP2 instance IDs start from 1.  Otherwise the
+    // in this case its instance transform matrices have been sorted w.r.t. USD instance index, thus
+    // instanceIndex is drawInstID minus 1 because VP2 instance IDs start from 1.  Otherwise the
     // selection hit is from one regular render item, but the Rprim can be either plain or single
     // instance, because we don't use instanced draw for single instance render items in order to
     // improve draw performance in Maya 2020 and before.
     const int drawInstID = intersection.instanceID();
+    int       instanceIndex = (drawInstID > 0) ? drawInstID - 1 : UsdImagingDelegate::ALL_INSTANCES;
 
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
-    const int usdInstID = drawInstID > 0 ? drawInstID - 1 : 0;
-    SdfPath   usdPath = _sceneDelegate->GetScenePrimPath(rprimId, usdInstID);
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex);
 #else
     SdfPath indexPath;
     if (drawInstID > 0) {
-        const int usdInstID = drawInstID - 1;
-        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, usdInstID, nullptr);
+        indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, instanceIndex, nullptr);
     } else {
         indexPath = rprimId;
     }
