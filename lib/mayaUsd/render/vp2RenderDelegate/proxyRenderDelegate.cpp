@@ -32,6 +32,7 @@
 #include <pxr/imaging/hd/primGather.h>
 #include <pxr/imaging/hd/repr.h>
 #include <pxr/imaging/hd/rprimCollection.h>
+#include <pxr/imaging/hd/sceneDelegate.h>
 #include <pxr/imaging/hdx/renderTask.h>
 #include <pxr/imaging/hdx/selectionTracker.h>
 #include <pxr/imaging/hdx/taskController.h>
@@ -790,8 +791,20 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const int drawInstID = intersection.instanceID();
     int       instanceIndex = (drawInstID > 0) ? drawInstID - 1 : UsdImagingDelegate::ALL_INSTANCES;
 
+    SdfPath topLevelPath;
+    int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
+
 #if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
-    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex);
+    HdInstancerContext instancerContext;
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
+
+    if (!instancerContext.empty()) {
+        // Store the top-level instancer and instance index if the Rprim is the
+        // result of point instancing. These will be used for the "Instances"
+        // point instances pick mode.
+        topLevelPath = instancerContext.front().first;
+        topLevelInstanceIndex = instancerContext.front().second;
+    }
 #else
     SdfPath indexPath;
     if (drawInstID > 0) {
@@ -809,6 +822,10 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         indexPath = _sceneDelegate->GetPathForInstanceIndex(rprimId, 0, nullptr);
         usdPath = _sceneDelegate->ConvertIndexPathToCachePath(indexPath);
     }
+
+    // The "Instances" point instances pick mode is not supported for
+    // USD_IMAGING_API_VERSION < 13 (core USD versions earlier than 20.05), so
+    // no setting of topLevelPath or topLevelInstanceIndex here.
 #endif
 
     // If update for selection is enabled, we can query Maya selection list adjustment and USD kind
