@@ -21,8 +21,6 @@
 
 #include <maya/MFnDagNode.h>
 
-#include <cassert>
-
 namespace {
 
 MObjectHandle proxyShapeHandle(const Ufe::Path& path)

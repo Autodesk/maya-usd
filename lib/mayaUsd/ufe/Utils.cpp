@@ -24,11 +24,6 @@
 #include <mayaUsd/utils/util.h>
 
 #include <pxr/base/tf/hashset.h>
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/tokens.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/pointInstancer.h>
 #include <pxr/usdImaging/usdImaging/delegate.h>
 
@@ -38,9 +33,7 @@
 #include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
 
-#include <cassert>
 #include <cctype>
-#include <memory>
 #include <regex>
 #include <stdexcept>
 #include <string>

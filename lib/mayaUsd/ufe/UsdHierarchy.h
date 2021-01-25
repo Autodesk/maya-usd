@@ -21,7 +21,6 @@
 
 #include <ufe/hierarchy.h>
 #include <ufe/path.h>
-#include <ufe/selection.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {

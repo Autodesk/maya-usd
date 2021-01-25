@@ -21,7 +21,6 @@
 #include <pxr/usd/usd/prim.h>
 
 #include <ufe/camera.h>
-#include <ufe/path.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 

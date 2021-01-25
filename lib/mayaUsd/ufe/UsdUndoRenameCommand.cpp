@@ -21,13 +21,10 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsdUtils/util.h>
 
-#include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/changeBlock.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/editContext.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
 
 #include <ufe/log.h>
 #include <ufe/scene.h>

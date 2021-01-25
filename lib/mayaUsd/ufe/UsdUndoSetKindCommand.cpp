@@ -17,9 +17,7 @@
 
 #include <mayaUsd/undo/UsdUndoBlock.h>
 
-#include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/modelAPI.h>
-#include <pxr/usd/usd/prim.h>
 
 #include <ufe/undoableCommand.h>
 

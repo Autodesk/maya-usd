@@ -18,8 +18,6 @@
 #include <mayaUsd/base/api.h>
 #include <mayaUsd/ufe/UsdTRSUndoableCommandBase.h>
 
-#include <pxr/usd/usd/attribute.h>
-
 #include <ufe/transform3dUndoableCommands.h>
 
 #include <exception>

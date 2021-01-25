@@ -27,9 +27,6 @@
 
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/usd/sdf/path.h>
-#include <pxr/usd/sdf/reference.h>
-#include <pxr/usd/usd/common.h>
-#include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/references.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/variantSets.h>
@@ -41,7 +38,6 @@
 #if UFE_PREVIEW_VERSION_NUM >= 2034
 #include <ufe/object3d.h>
 #endif
-#include <ufe/path.h>
 
 #include <algorithm>
 #include <cassert>

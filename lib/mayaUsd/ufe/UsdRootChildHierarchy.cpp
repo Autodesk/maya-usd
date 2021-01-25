@@ -17,8 +17,6 @@
 
 #include <ufe/runTimeMgr.h>
 
-#include <cassert>
-
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 

@@ -24,15 +24,7 @@
 #endif
 #include <mayaUsdUtils/util.h>
 
-#include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/copyUtils.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
-
-#include <ufe/log.h>
-#include <ufe/path.h>
-#include <ufe/scene.h>
-#include <ufe/sceneNotification.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {

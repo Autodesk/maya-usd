@@ -17,7 +17,6 @@
 
 #include <mayaUsd/base/api.h>
 
-#include <pxr/base/tf/token.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usdGeom/xformCommonAPI.h>
 

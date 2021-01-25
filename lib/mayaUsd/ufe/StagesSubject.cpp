@@ -19,7 +19,6 @@
 
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/ufe/ProxyShapeHandler.h>
-#include <mayaUsd/ufe/UfeVersionCompat.h>
 #include <mayaUsd/ufe/UsdStageMap.h>
 #include <mayaUsd/ufe/Utils.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -32,7 +31,6 @@
 #include <maya/MMessage.h>
 #include <maya/MSceneMessage.h>
 #include <ufe/hierarchy.h>
-#include <ufe/path.h>
 #include <ufe/scene.h>
 #include <ufe/sceneNotification.h>
 #include <ufe/transform3d.h>

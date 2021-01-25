@@ -25,9 +25,6 @@
 #include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
 
-#include <cassert>
-#include <stdexcept>
-
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <mayaUsd/ufe/UsdUndoCreateGroupCommand.h>
 #include <mayaUsd/ufe/UsdUndoInsertChildCommand.h>

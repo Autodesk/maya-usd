@@ -21,18 +21,9 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsdUtils/util.h>
 
-#include <pxr/base/tf/stringUtils.h>
-#include <pxr/usd/sdf/copyUtils.h>
-#include <pxr/usd/sdf/layer.h>
-#include <pxr/usd/usd/prim.h>
-#include <pxr/usd/usd/stage.h>
-#include <pxr/usd/usdGeom/xform.h>
-
 #include <ufe/log.h>
-#include <ufe/path.h>
 #include <ufe/pathComponent.h>
 #include <ufe/scene.h>
-#include <ufe/sceneNotification.h>
 
 #include <cassert>
 #include <stdexcept>

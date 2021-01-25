@@ -15,7 +15,6 @@
 //
 #include "UfeNotifGuard.h"
 
-#include <ufe/path.h>
 #include <ufe/transform3d.h>
 
 namespace {

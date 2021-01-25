@@ -25,7 +25,6 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/usd/sdf/copyUtils.h>
 #include <pxr/usd/usd/editContext.h>
-#include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usdGeom/gprim.h>
 
 #include <ufe/log.h>

@@ -19,7 +19,6 @@
 #include "private/Utils.h"
 
 #include <ufe/scene.h>
-#include <ufe/sceneNotification.h>
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
