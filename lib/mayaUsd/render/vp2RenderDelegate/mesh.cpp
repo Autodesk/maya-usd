@@ -540,7 +540,10 @@ void HdVP2Mesh::Sync(
     }
 
     if (HdChangeTracker::IsExtentDirty(*dirtyBits, id)) {
-        _sharedData.bounds.SetRange(delegate->GetExtent(id));
+        // Do not trust GPrim extents until we add code to restore the integrity of the data model
+        // following an attribute change. See UsdGeomBoundable::GetExtentAttr() for details.
+        // TODO: call `delegate->GetExtent(id)` once the issue is fixed.
+        _sharedData.bounds.SetRange(GfRange3d());
     }
 
     if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
