@@ -26,6 +26,7 @@
 #include <pxr/base/tf/diagnostic.h>
 #include <pxr/base/tf/staticTokens.h>
 #include <pxr/base/tf/stringUtils.h>
+#include <pxr/base/tf/token.h>
 #include <pxr/imaging/hd/basisCurves.h>
 #include <pxr/imaging/hd/enums.h>
 #include <pxr/imaging/hd/mesh.h>
@@ -175,6 +176,27 @@ UsdPointInstancesPickMode GetPointInstancesPickMode()
     }
 
     return pickMode;
+}
+
+//! \brief  Returns the prim or an ancestor of it that is of the given kind.
+//
+// If neither the prim itself nor any of its ancestors above it in the
+// namespace hierarchy have an authored kind that matches, an invalid null
+// prim is returned.
+UsdPrim GetPrimOrAncestorWithKind(const UsdPrim& prim, const TfToken& kind)
+{
+    UsdPrim iterPrim = prim;
+
+    while (iterPrim) {
+        TfToken primKind;
+        if (UsdModelAPI(iterPrim).GetKind(&primKind) && KindRegistry::IsA(primKind, kind)) {
+            break;
+        }
+
+        iterPrim = iterPrim.GetParent();
+    }
+
+    return iterPrim;
 }
 
 //! \brief  Populate Rprims into the Hydra selection from the UFE scene item.
@@ -845,13 +867,9 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     // thus no need to walk the scene hierarchy.
     if (!selectionKind.IsEmpty()) {
         UsdPrim prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
-        while (prim) {
-            TfToken kind;
-            if (UsdModelAPI(prim).GetKind(&kind) && KindRegistry::IsA(kind, selectionKind)) {
-                usdPath = prim.GetPath();
-                break;
-            }
-            prim = prim.GetParent();
+        prim = GetPrimOrAncestorWithKind(prim, selectionKind);
+        if (prim) {
+            usdPath = prim.GetPath();
         }
     }
 
