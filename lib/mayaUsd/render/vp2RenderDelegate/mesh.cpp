@@ -33,6 +33,7 @@
 #include <pxr/imaging/hd/smoothNormals.h>
 #include <pxr/imaging/hd/version.h>
 #include <pxr/imaging/hd/vertexAdjacency.h>
+#include <pxr/usd/usdGeom/pointBased.h>
 
 #include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
@@ -543,7 +544,9 @@ void HdVP2Mesh::Sync(
         // Do not trust GPrim extents until we add code to restore the integrity of the data model
         // following an attribute change. See UsdGeomBoundable::GetExtentAttr() for details.
         // TODO: call `delegate->GetExtent(id)` once the issue is fixed.
-        _sharedData.bounds.SetRange(GfRange3d());
+        VtVec3fArray extent(2);
+        UsdGeomPointBased::ComputeExtent(_meshSharedData->_points, &extent);
+        _sharedData.bounds.SetRange(GfRange3d(extent[0], extent[1]));
     }
 
     if (HdChangeTracker::IsTransformDirty(*dirtyBits, id)) {
