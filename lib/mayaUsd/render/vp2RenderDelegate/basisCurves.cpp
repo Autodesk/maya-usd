@@ -1421,11 +1421,11 @@ HdDirtyBits HdVP2BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
             const HdReprSharedPtr& repr = pair.second;
             const auto&            items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
-            for (HdDrawItem* item : items) {
-                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+            for (const HdDrawItem* item : items) {
+                if (const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item)) {
 #else
             for (const HdRepr::DrawItemUniquePtr& item : items) {
-                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+                if (const HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
 #endif
                     // Is this Repr dirty and in need of a Sync?
                     if (drawItem->GetDirtyBits() & HdChangeTracker::DirtyRepr) {
@@ -1489,11 +1489,11 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         const HdReprSharedPtr& repr = it->second;
         const auto&            items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
-        for (const HdDrawItem* item : items) {
+        for (HdDrawItem* item : items) {
             HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item);
 #else
         for (const HdRepr::DrawItemUniquePtr& item : items) {
-            HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item.get());
+            HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get());
 #endif
             if (drawItem) {
                 if (drawItem->GetDirtyBits() & HdChangeTracker::AllDirty) {
