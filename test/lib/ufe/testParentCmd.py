@@ -244,6 +244,7 @@ class ParentCmdTestCase(unittest.TestCase):
         cylChildren = cylHier.children()
         self.assertEqual(len(cylChildren), 1)
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
     def testParentAbsoluteSingleMatrixOp(self):
         """Test parent -absolute on prim with a single matrix op."""
 

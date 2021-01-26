@@ -443,9 +443,7 @@ UsdTransform3dMatrixOpHandler::transform3d(const Ufe::SceneItem::Ptr& item) cons
 {
     // Remove code duplication with editTransform3d().  PPT, 21-Jan-2021.
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-#if !defined(NDEBUG)
-    assert(usdItem);
-#endif
+    TF_AXIOM(usdItem);
 
     auto             opName = getMatrixOp();
     UsdGeomXformable xformable(usdItem->prim());
@@ -475,9 +473,7 @@ Ufe::Transform3d::Ptr UsdTransform3dMatrixOpHandler::editTransform3d(
     const Ufe::SceneItem::Ptr& item UFE_V2(, const Ufe::EditTransform3dHint& hint)) const
 {
     UsdSceneItem::Ptr usdItem = std::dynamic_pointer_cast<UsdSceneItem>(item);
-#if !defined(NDEBUG)
-    assert(usdItem);
-#endif
+    TF_AXIOM(usdItem);
 
     // Beware: the default UsdGeomXformOp constructor
     // https://github.com/PixarAnimationStudios/USD/blob/71b4baace2044ea4400ba802e91667f9ebe342f0/pxr/usd/usdGeom/xformOp.h#L148
