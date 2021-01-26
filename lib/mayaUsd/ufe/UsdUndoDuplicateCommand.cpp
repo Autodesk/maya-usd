@@ -26,6 +26,11 @@
 
 #include <pxr/usd/sdf/copyUtils.h>
 
+#ifndef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/log.h>
+#include <ufe/sceneNotification.h>
+#endif
+
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 

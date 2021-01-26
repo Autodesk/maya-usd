@@ -21,9 +21,16 @@
 #include <mayaUsd/ufe/Utils.h>
 #include <mayaUsdUtils/util.h>
 
+#ifndef UFE_V2_FEATURES_AVAILABLE
+#include <pxr/usd/sdf/copyUtils.h>
+#endif
+
 #include <ufe/log.h>
 #include <ufe/pathComponent.h>
 #include <ufe/scene.h>
+#ifndef UFE_V2_FEATURES_AVAILABLE
+#include <ufe/sceneNotification.h>
+#endif
 
 #include <cassert>
 #include <stdexcept>
