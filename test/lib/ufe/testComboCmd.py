@@ -612,6 +612,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
                 "xformOp:rotateZ", "!invert!xformOp:translate:pivot",
                 "xformOp:rotateXYZ:maya_fallback")))
 
+    @unittest.skipUnless(mayaUtils.previewReleaseVersion() >= 123, 'Requires Maya fixes only available in Maya Preview Release 123 or later.') 
     def testBrokenFallback(self):
         '''Maya fallback transform stack must be final on prim transform op stack.'''
         # Create a prim and add transform ops to it that don't match the Maya
