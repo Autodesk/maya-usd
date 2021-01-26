@@ -285,12 +285,12 @@ void LayerTreeItem::discardEdits()
     } else {
         MString title;
         title.format(
-            StringResources::getAsMString(StringResources::kDiscardEditsTitle),
+            StringResources::getAsMString(StringResources::kRevertToFileTitle),
             MQtUtil::toMString(text()));
 
         MString desc;
         desc.format(
-            StringResources::getAsMString(StringResources::kDiscardEditsMsg),
+            StringResources::getAsMString(StringResources::kRevertToFileMsg),
             MQtUtil::toMString(text()));
 
         if (confirmDialog(MQtUtil::toQString(title), MQtUtil::toQString(desc))) {

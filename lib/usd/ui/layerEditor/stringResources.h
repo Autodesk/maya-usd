@@ -58,9 +58,9 @@ const auto kClearLayerConfirmMessage { create("kClearLayerConfirmMessage",
                                               " \"^1s\"  will remain in the Layer Editor"
                                               " but all contents will be cleared, including sublayer paths.") };
 const auto kCreate                   { create("kCreate", "Create") };
-const auto kDiscardEditsTitle        { create("kDiscardEditsTitle", "Discard Edits \"^1s\"") };
-const auto kDiscardEditsMsg          { create("kDiscardEditsMsg", "Are you sure you want to revert these edits?"
-                                                                  " \"^1s\" will revert to its state on disk") };
+const auto kRevertToFileTitle        { create("kRevertToFileTitle", "Revert to File \"^1s\"") };
+const auto kRevertToFileMsg          { create("kRevertToFileMsg", "Are you sure you want to revert \"^1s\" to its "
+                                               "state on disk? All edits will be discarded.") };
 const auto kHelp                     { create("kHelp", "Help") };
 const auto kHelpOnUSDLayerEditor     { create("kHelpOnUSDLayerEditor", "Help on USD Layer Editor") };
 const auto kLoadExistingLayer        { create("kLoadExistingLayer", "Load an Existing Layer") };
