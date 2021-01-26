@@ -4,10 +4,11 @@ set(TARGET_NAME VP2_RENDER_DELEGATE_TEST)
 set(TEST_SCRIPT_FILES "")
 
 if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND USD_VERSION_NUM GREATER_EQUAL 2005)
-    # The point instance selection test requires UsdImaging API version 13 or
+    # The point instance selection tests requires UsdImaging API version 13 or
     # later, which is only provided by core USD 20.05 or later.
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePointInstanceSelection.py
+        testVP2RenderDelegatePointInstancesPickMode.py
     )
 endif()
 
