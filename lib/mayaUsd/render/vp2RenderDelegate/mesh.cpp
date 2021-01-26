@@ -386,7 +386,8 @@ void HdVP2Mesh::Sync(
     // existing render items because they should not be drawn.
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    if (!drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()))) {
+    HdRenderIndex&       renderIndex = delegate->GetRenderIndex();
+    if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()))) {
         _HideAllDrawItems(reprToken);
         *dirtyBits &= ~(
             HdChangeTracker::DirtyRenderTag
@@ -406,17 +407,40 @@ void HdVP2Mesh::Sync(
     const SdfPath& id = GetId();
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+        const SdfPath materialId = delegate->GetMaterialId(id);
+
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        const SdfPath& origMaterialId = GetMaterialId();
+        if (materialId != origMaterialId) {
+            if (!origMaterialId.IsEmpty()) {
+                HdVP2Material* material = static_cast<HdVP2Material*>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->material, origMaterialId));
+                if (material) {
+                    material->UnsubscribeFromMaterialUpdates(id);
+                }
+            }
+
+            if (!materialId.IsEmpty()) {
+                HdVP2Material* material = static_cast<HdVP2Material*>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+                if (material) {
+                    material->SubscribeForMaterialUpdates(id);
+                }
+            }
+        }
+#endif
+
 #if HD_API_VERSION < 37
-        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(), delegate->GetMaterialId(id));
+        _SetMaterialId(renderIndex.GetChangeTracker(), materialId);
 #else
-        SetMaterialId(delegate->GetMaterialId(id));
+        SetMaterialId(materialId);
 #endif
     }
 
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
         const HdVP2Material* material = static_cast<const HdVP2Material*>(
-            delegate->GetRenderIndex().GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
+            renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
         const TfTokenVector& requiredPrimvars = material && material->GetSurfaceShader()
             ? material->GetRequiredPrimvars()
