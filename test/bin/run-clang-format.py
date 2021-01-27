@@ -69,7 +69,7 @@ def canonicalpath(path):
     return path.replace('\\', '/')
 
 
-def run_clang_format(paths=(), verbose=False):
+def run_clang_format(paths=(), verbose=False, commit=None):
     """Runs clang-format in-place on repo files
 
     Returns
@@ -77,8 +77,16 @@ def run_clang_format(paths=(), verbose=False):
     List[str]
         Files altered by clang-format
     """
-    if not paths:
+    if not paths and not commit:
         paths = [REPO_ROOT]
+
+    if commit:
+        subprocess.check_call(['git', 'checkout', commit], cwd=REPO_ROOT)
+        text = subprocess.check_output(
+            ['git', 'diff-tree', '--no-commit-id', '--name-only', '-r',
+             commit], cwd=REPO_ROOT)
+        commit_paths = text.splitlines()
+        paths.extend(os.path.join(REPO_ROOT, p) for p in commit_paths)
     
     files = set()
     folders = set()
@@ -179,6 +187,11 @@ def get_parser():
         help='Paths to run clang-format on; defaults to all files in repo')
     parser.add_argument('-v', '--verbose', action='store_true',
         help='Enable more output (ie, progress messages)')
+    parser.add_argument('-c', '--commit',
+        help='Git commit / revision / branch; will first check out that commit,'
+            " then query it for it's list of affected files, to use as the files"
+            ' to run clang-format on; if PATHS are also manually given, they are'
+            ' appended')
     return parser
 
 
@@ -186,7 +199,8 @@ def main(raw_args=None):
     parser = get_parser()
     args = parser.parse_args(raw_args)
     try:
-        altered = run_clang_format(paths=args.paths, verbose=args.verbose)
+        altered = run_clang_format(paths=args.paths, verbose=args.verbose,
+            commit=args.commit)
     except Exception:
         import traceback
         traceback.print_exc()
