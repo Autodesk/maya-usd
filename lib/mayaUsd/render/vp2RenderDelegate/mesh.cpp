@@ -33,7 +33,6 @@
 #include <pxr/imaging/hd/smoothNormals.h>
 #include <pxr/imaging/hd/version.h>
 #include <pxr/imaging/hd/vertexAdjacency.h>
-#include <pxr/usd/usdGeom/pointBased.h>
 
 #include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
