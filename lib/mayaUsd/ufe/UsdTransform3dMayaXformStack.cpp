@@ -213,9 +213,9 @@ public:
 
 private:
     UsdUndoableItem _undoableItem;
-    Ufe::Vector3d _newT;
-    Ufe::Vector3d _newR;
-    Ufe::Vector3d _newS;
+    Ufe::Vector3d   _newT;
+    Ufe::Vector3d   _newR;
+    Ufe::Vector3d   _newS;
 };
 
 // Helper class to factor out common code for translate, rotate, scale
