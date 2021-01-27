@@ -24,6 +24,8 @@
 #include "mayaSessionState.h"
 #include "qtUtils.h"
 #include "sessionState.h"
+#include "stringResources.h"
+#include "warningDialogs.h"
 
 #include <mayaUsd/utils/query.h>
 
@@ -196,8 +198,35 @@ void MayaLayerEditorWindow::saveEdits()
 {
     auto item = treeView()->currentLayerItem();
     if (item) {
-        QString name = item->isAnonymous() ? "Save As..." : "Save Edits";
-        treeView()->callMethodOnSelection(name, &LayerTreeItem::saveEdits);
+        bool shouldSaveEdits = true;
+
+        // the layer is already saved on disk.
+        // ask the user a confirmation before overwrite it.
+        if (!item->isAnonymous()) {
+            const MString titleFormat
+                = StringResources::getAsMString(StringResources::kSaveLayerWarnTitle);
+            const MString msgFormat
+                = StringResources::getAsMString(StringResources::kSaveLayerWarnMsg);
+
+            MString title;
+            title.format(titleFormat, item->displayName().c_str());
+
+            MString msg;
+            msg.format(msgFormat, item->layer()->GetRealPath().c_str());
+
+            const QString okButtonText = StringResources::getAsQString(StringResources::kSave);
+
+            shouldSaveEdits = confirmDialog(
+                MQtUtil::toQString(title),
+                MQtUtil::toQString(msg),
+                nullptr /*bulletList*/,
+                &okButtonText);
+        }
+
+        if (shouldSaveEdits) {
+            QString name = item->isAnonymous() ? "Save As..." : "Save Edits";
+            treeView()->callMethodOnSelection(name, &LayerTreeItem::saveEdits);
+        }
     }
 }
 
