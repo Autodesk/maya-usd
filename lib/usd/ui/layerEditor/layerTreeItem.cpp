@@ -248,10 +248,10 @@ void LayerTreeItem::saveEdits()
 
         QString okButtonText = StringResources::getAsQString(StringResources::kSave);
         shouldSaveEdits = confirmDialog(
-                MQtUtil::toQString(title),
-                MQtUtil::toQString(msg),
-                nullptr /*bulletList*/,
-                &okButtonText);
+            MQtUtil::toQString(title),
+            MQtUtil::toQString(msg),
+            nullptr /*bulletList*/,
+            &okButtonText);
     }
 
     if (shouldSaveEdits) {
