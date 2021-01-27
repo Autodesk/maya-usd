@@ -70,6 +70,13 @@ def canonicalpath(path):
 
 
 def run_clang_format(paths=(), verbose=False):
+    """Runs clang-format in-place on repo files
+
+    Returns
+    -------
+    List[str]
+        Files altered by clang-format
+    """
     if not paths:
         paths = [REPO_ROOT]
     
@@ -141,7 +148,7 @@ def run_clang_format(paths=(), verbose=False):
                 p = os.path.relpath(p, REPO_ROOT)
         return p
 
-    num_altered = 0
+    altered = []
     for i, path in enumerate(files):
         if verbose:
             now = time.time()
@@ -159,8 +166,9 @@ def run_clang_format(paths=(), verbose=False):
         mtime_new = os.path.getmtime(path)
         if mtime_new != mtime_orig:
             post_update_print("File altered: {}".format(print_path(path)))
-            num_altered += 1
-    post_update_print("Done - altered {} files".format(num_altered))
+            altered.append(path)
+    post_update_print("Done - altered {} files".format(len(altered)))
+    return altered
 
 
 def get_parser():
@@ -178,10 +186,12 @@ def main(raw_args=None):
     parser = get_parser()
     args = parser.parse_args(raw_args)
     try:
-        run_clang_format(paths=args.paths, verbose=args.verbose)
+        altered = run_clang_format(paths=args.paths, verbose=args.verbose)
     except Exception:
         import traceback
         traceback.print_exc()
+        return 1
+    if altered:
         return 1
     return 0
 
