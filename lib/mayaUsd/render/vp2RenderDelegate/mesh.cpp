@@ -652,18 +652,39 @@ HdDirtyBits HdVP2Mesh::_PropagateDirtyBits(HdDirtyBits bits) const
         bits |= DirtySelectionHighlight;
     }
 
-    // Propagate dirty bits to all draw items.
-    for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
-        const HdReprSharedPtr& repr = pair.second;
-        const auto&            items = repr->GetDrawItems();
+    if (bits & HdChangeTracker::AllDirty) {
+        // RPrim is dirty, propagate dirty bits to all draw items.
+        for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
+            const HdReprSharedPtr& repr = pair.second;
+            const auto&            items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
-        for (HdDrawItem* item : items) {
-            if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+            for (HdDrawItem* item : items) {
+                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
 #else
-        for (const HdRepr::DrawItemUniquePtr& item : items) {
-            if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+            for (const HdRepr::DrawItemUniquePtr& item : items) {
+                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
 #endif
-                drawItem->SetDirtyBits(bits);
+                    drawItem->SetDirtyBits(bits);
+                }
+            }
+        }
+    } else {
+        // RPrim is clean, find out if any drawItem about to be shown is dirty:
+        for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
+            const HdReprSharedPtr& repr = pair.second;
+            const auto&            items = repr->GetDrawItems();
+#if HD_API_VERSION < 35
+            for (const HdDrawItem* item : items) {
+                if (const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item)) {
+#else
+            for (const HdRepr::DrawItemUniquePtr& item : items) {
+                if (const HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
+                    // Is this Repr dirty and in need of a Sync?
+                    if (drawItem->GetDirtyBits() & HdChangeTracker::DirtyRepr) {
+                        bits |= (drawItem->GetDirtyBits() & ~HdChangeTracker::DirtyRepr);
+                    }
+                }
             }
         }
     }
@@ -721,15 +742,22 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
         const HdReprSharedPtr& repr = it->second;
         const auto&            items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
-        for (const HdDrawItem* item : items) {
-            const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item);
+        for (HdDrawItem* item : items) {
+            HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item);
 #else
         for (const HdRepr::DrawItemUniquePtr& item : items) {
-            const HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get());
+            HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get());
 #endif
-            if (drawItem && (drawItem->GetDirtyBits() & DirtySelection)) {
-                *dirtyBits |= DirtySelectionHighlight;
-                break;
+            if (drawItem) {
+                if (drawItem->GetDirtyBits() & HdChangeTracker::AllDirty) {
+                    // About to be drawn, but the Repr is dirty. Add DirtyRepr so we know in
+                    // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
+                    // items to ensure proper Sync
+                    drawItem->SetDirtyBits(HdChangeTracker::DirtyRepr);
+                }
+                if (drawItem->GetDirtyBits() & DirtySelection) {
+                    *dirtyBits |= DirtySelectionHighlight;
+                }
             }
         }
         return;
