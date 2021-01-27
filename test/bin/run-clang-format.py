@@ -64,21 +64,17 @@ def regex_from_file(path, glob=False):
     return re.compile(regex)
 
 
-def is_git_ignored(path):
-    # special case - `git check-ignore` thinks the .git dir itself is not
-    # ignored!
-    if '.git' in path.split('/'):
-        return True
-    result = subprocess.call(['git', 'check-ignore', '-q', path], cwd=REPO_ROOT)
-    return not bool(result)
+def canonicalpath(path):
+    path = os.path.abspath(os.path.realpath(os.path.normpath(os.path.normcase(path))))
+    return path.replace('\\', '/')
 
 
 def run_clang_format(paths=(), verbose=False):
     if not paths:
         paths = [REPO_ROOT]
     
-    files = []
-    folders = []
+    files = set()
+    folders = set()
 
     include_path = os.path.join(REPO_ROOT, '.clang-format-include')
     include_regex = regex_from_file(include_path)
@@ -90,7 +86,7 @@ def run_clang_format(paths=(), verbose=False):
     # too much special git syntax. Instead just using `git ls-files`
     # as a filter...
     git_files = subprocess.check_output(['git', 'ls-files'], cwd=REPO_ROOT)
-    git_files = ['./' + x for x in git_files.splitlines()]
+    git_files = set(canonicalpath(x.strip()) for x in git_files.splitlines())
 
     def print_path(p):
         if p.startswith(REPO_ROOT):
@@ -103,8 +99,6 @@ def run_clang_format(paths=(), verbose=False):
         # standardize on '/', because that's what's used in files,
         # and output by `git ls-files`
         match_path = match_path.replace('\\', '/')
-        if match_path not in git_files:
-            return False
         if not include_regex.search(match_path):
             return False
         if ignore_regex.search(match_path):
@@ -118,43 +112,23 @@ def run_clang_format(paths=(), verbose=False):
         try:
             st_mode = os.stat(path).st_mode
             if stat.S_ISDIR(st_mode):
-                folders.append(path)
+                folders.add(path)
             elif stat.S_ISREG(st_mode):
-                # We apply filters even to fed-in paths... this is to aid
-                # in use of globs on command line
-                if passes_filter(path):
-                    files.append(path)
+                if canonicalpath(path) in git_files:
+                    files.add(path)
         except Exception:
             print("Given path did not exist: {}".format(path))
             raise
 
-    if folders:
-        if verbose:
-            print("Finding files...")
-            last_update = time.time()
-            num_checked = 0
+    for folder in folders:
+        # we already have list of potential files in git_files...
+        # filter to ones in this folder
+        folder = canonicalpath(folder) + '/'
+        files.update(x for x in git_files if x.startswith(folder))
 
-        for folder in folders:
-            if is_git_ignored(folder):
-                continue
-            for dirpath, dirnames, filenames in os.walk(folder):
-                # if we modify dirnames in-place, os.walk will prune
-                # them...
-                dirnames[:] = [x for x in dirnames if not is_git_ignored(os.path.join(dirpath, x))]
-                for filename in filenames:
-                    path = os.path.join(dirpath, filename)
-                    if verbose:
-                        num_checked += 1
-                        now = time.time()
-                        if now - last_update > UPDATE_INTERVAL:
-                            last_update = now
-                            update_status('Checked {} - Found {} - {}'.format(
-                                num_checked, len(files), print_path(path)))
-                    if passes_filter(path):
-                        files.append(path)
-        if verbose:
-            post_update_print("...done finding files. Found: {}"
-                .format(len(files)))
+    # We apply filters even to fed-in paths... this is to aid
+    # in use of globs on command line
+    files = sorted(x for x in files if passes_filter(x))
 
     clang_format_executable = os.environ.get('CLANG_FORMAT_EXECUTABLE',
                                              'clang-format')
