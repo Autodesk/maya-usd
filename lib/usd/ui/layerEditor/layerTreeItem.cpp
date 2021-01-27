@@ -235,7 +235,24 @@ void LayerTreeItem::saveEdits()
         if (!isSessionLayer())
             saveAnonymousLayer();
     } else {
-        layer()->Save();
+        const MString titleFormat
+            = StringResources::getAsMString(StringResources::kSaveLayerWarnTitle);
+        const MString msgFormat = StringResources::getAsMString(StringResources::kSaveLayerWarnMsg);
+
+        MString title;
+        title.format(titleFormat, displayName().c_str());
+
+        MString msg;
+        msg.format(msgFormat, layer()->GetRealPath().c_str());
+
+        QString okButtonText = StringResources::getAsQString(StringResources::kSave);
+        if (confirmDialog(
+                MQtUtil::toQString(title),
+                MQtUtil::toQString(msg),
+                nullptr /*bulletList*/,
+                &okButtonText)) {
+            layer()->Save();
+        }
     }
 }
 
