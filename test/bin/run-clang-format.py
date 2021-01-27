@@ -53,6 +53,22 @@ def post_update_print(text):
     _on_update_line = False
 
 
+def regex_from_file(path, glob=False):
+    with io.open(path, 'r') as f:
+        patterns = f.read().splitlines()
+    # ignore comment lines
+    patterns = [x for x in patterns if x.strip() and not x.lstrip().startswith('#')]
+    if glob:
+        patterns = [fnmatch.translate(x) for x in patterns]
+    regex = '({})'.format('|'.join(patterns))
+    return re.compile(regex)
+
+
+def is_git_ignored(path):
+    result = subprocess.call(['git', 'check-ignore', '-q', path], cwd=REPO_ROOT)
+    return not bool(result)
+
+
 def run_clang_format(paths=(), verbose=False):
     if not paths:
         paths = [REPO_ROOT]
@@ -61,16 +77,16 @@ def run_clang_format(paths=(), verbose=False):
     folders = []
 
     include_path = os.path.join(REPO_ROOT, '.clang-format-include')
-    with io.open(include_path, 'r') as f:
-        include = f.read()
-    include_patterns = include.splitlines()
-    include_regex = re.compile('({})'.format('|'.join(include_patterns)))
+    include_regex = regex_from_file(include_path)
 
     ignore_path = os.path.join(REPO_ROOT, '.clang-format-ignore')
-    with io.open(ignore_path, 'r') as f:
-        ignore = f.read()
-    ignore_patterns = [fnmatch.translate(x) for x in ignore.splitlines()]
-    ignore_regex = re.compile('({})'.format('|'.join(ignore_patterns)))
+    ignore_regex = regex_from_file(ignore_path, glob=True)
+
+    # tried to parse .gitignore with regex_from_file, but it has
+    # too much special git syntax. Instead just using `git ls-files`
+    # as a filter...
+    git_files = subprocess.check_output(['git', 'ls-files'], cwd=REPO_ROOT)
+    git_files = ['./' + x for x in git_files.splitlines()]
 
     def print_path(p):
         if p.startswith(REPO_ROOT):
@@ -80,7 +96,16 @@ def run_clang_format(paths=(), verbose=False):
     def passes_filter(path):
         rel_path = os.path.relpath(path, REPO_ROOT)
         match_path = os.path.join('.', rel_path)
-        return include_regex.search(match_path) and not ignore_regex.search(match_path)
+        # standardize on '/', because that's what's used in files,
+        # and output by `git ls-files`
+        match_path = match_path.replace('\\', '/')
+        if match_path not in git_files:
+            return False
+        if not include_regex.search(match_path):
+            return False
+        if ignore_regex.search(match_path):
+            return False
+        return True
 
     # parse the initial fed-in paths, which may be files or folders
     for path in paths:
@@ -106,7 +131,11 @@ def run_clang_format(paths=(), verbose=False):
             num_checked = 0
 
         for folder in folders:
+            if is_git_ignored(folder):
+                continue
             for dirpath, dirnames, filenames in os.walk(folder):
+                if is_git_ignored(dirpath):
+                    continue
                 for filename in filenames:
                     path = os.path.join(dirpath, filename)
                     if verbose:
