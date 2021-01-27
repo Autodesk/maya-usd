@@ -65,6 +65,10 @@ def regex_from_file(path, glob=False):
 
 
 def is_git_ignored(path):
+    # special case - `git check-ignore` thinks the .git dir itself is not
+    # ignored!
+    if '.git' in path.split('/'):
+        return True
     result = subprocess.call(['git', 'check-ignore', '-q', path], cwd=REPO_ROOT)
     return not bool(result)
 
@@ -134,8 +138,9 @@ def run_clang_format(paths=(), verbose=False):
             if is_git_ignored(folder):
                 continue
             for dirpath, dirnames, filenames in os.walk(folder):
-                if is_git_ignored(dirpath):
-                    continue
+                # if we modify dirnames in-place, os.walk will prune
+                # them...
+                dirnames[:] = [x for x in dirnames if not is_git_ignored(os.path.join(dirpath, x))]
                 for filename in filenames:
                     path = os.path.join(dirpath, filename)
                     if verbose:
