@@ -68,7 +68,7 @@ class TestCommand(unittest.TestCase):
     def test_getRendererDisplayName(self):
         # needs at least one arg
         self.assertRaises(RuntimeError, mel.eval,
-                          "moth -getRendererDisplayName")
+                          "mtoh -getRendererDisplayName")
 
         displayName = cmds.mtoh(renderer=mtohUtils.HD_STORM,
                                 getRendererDisplayName=True)

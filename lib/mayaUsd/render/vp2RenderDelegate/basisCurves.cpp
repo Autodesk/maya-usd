@@ -544,7 +544,8 @@ void HdVP2BasisCurves::Sync(
     // existing render items because they should not be drawn.
     auto* const          param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
     ProxyRenderDelegate& drawScene = param->GetDrawScene();
-    if (!drawScene.DrawRenderTag(delegate->GetRenderIndex().GetRenderTag(GetId()))) {
+    HdRenderIndex&       renderIndex = delegate->GetRenderIndex();
+    if (!drawScene.DrawRenderTag(renderIndex.GetRenderTag(GetId()))) {
         _HideAllDrawItems(reprToken);
         *dirtyBits &= ~(
             HdChangeTracker::DirtyRenderTag
@@ -564,17 +565,40 @@ void HdVP2BasisCurves::Sync(
     const SdfPath& id = GetId();
 
     if (*dirtyBits & HdChangeTracker::DirtyMaterialId) {
+        const SdfPath materialId = delegate->GetMaterialId(id);
+
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+        const SdfPath& origMaterialId = GetMaterialId();
+        if (materialId != origMaterialId) {
+            if (!origMaterialId.IsEmpty()) {
+                HdVP2Material* material = static_cast<HdVP2Material*>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->material, origMaterialId));
+                if (material) {
+                    material->UnsubscribeFromMaterialUpdates(id);
+                }
+            }
+
+            if (!materialId.IsEmpty()) {
+                HdVP2Material* material = static_cast<HdVP2Material*>(
+                    renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+                if (material) {
+                    material->SubscribeForMaterialUpdates(id);
+                }
+            }
+        }
+#endif
+
 #if HD_API_VERSION < 37
-        _SetMaterialId(delegate->GetRenderIndex().GetChangeTracker(), delegate->GetMaterialId(id));
+        _SetMaterialId(renderIndex.GetChangeTracker(), materialId);
 #else
-        SetMaterialId(delegate->GetMaterialId(id));
+        SetMaterialId(materialId);
 #endif
     }
 
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
         const HdVP2Material* material = static_cast<const HdVP2Material*>(
-            delegate->GetRenderIndex().GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
+            renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
         const TfTokenVector& requiredPrimvars = (material && material->GetSurfaceShader())
             ? material->GetRequiredPrimvars()
@@ -1399,18 +1423,39 @@ HdDirtyBits HdVP2BasisCurves::_PropagateDirtyBits(HdDirtyBits bits) const
         bits |= DirtySelectionHighlight;
     }
 
-    // Propagate dirty bits to all draw items.
-    for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
-        const HdReprSharedPtr& repr = pair.second;
-        const auto&            items = repr->GetDrawItems();
+    if (bits & HdChangeTracker::AllDirty) {
+        // RPrim is dirty, propagate dirty bits to all draw items.
+        for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
+            const HdReprSharedPtr& repr = pair.second;
+            const auto&            items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
-        for (HdDrawItem* item : items) {
-            if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
+            for (HdDrawItem* item : items) {
+                if (HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item)) {
 #else
-        for (const HdRepr::DrawItemUniquePtr& item : items) {
-            if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+            for (const HdRepr::DrawItemUniquePtr& item : items) {
+                if (HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
 #endif
-                drawItem->SetDirtyBits(bits);
+                    drawItem->SetDirtyBits(bits);
+                }
+            }
+        }
+    } else {
+        // RPrim is clean, find out if any drawItem about to be shown is dirty:
+        for (const std::pair<TfToken, HdReprSharedPtr>& pair : _reprs) {
+            const HdReprSharedPtr& repr = pair.second;
+            const auto&            items = repr->GetDrawItems();
+#if HD_API_VERSION < 35
+            for (const HdDrawItem* item : items) {
+                if (const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item)) {
+#else
+            for (const HdRepr::DrawItemUniquePtr& item : items) {
+                if (const HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get())) {
+#endif
+                    // Is this Repr dirty and in need of a Sync?
+                    if (drawItem->GetDirtyBits() & HdChangeTracker::DirtyRepr) {
+                        bits |= (drawItem->GetDirtyBits() & ~HdChangeTracker::DirtyRepr);
+                    }
+                }
             }
         }
     }
@@ -1468,15 +1513,22 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
         const HdReprSharedPtr& repr = it->second;
         const auto&            items = repr->GetDrawItems();
 #if HD_API_VERSION < 35
-        for (const HdDrawItem* item : items) {
-            const HdVP2DrawItem* drawItem = static_cast<const HdVP2DrawItem*>(item);
+        for (HdDrawItem* item : items) {
+            HdVP2DrawItem* drawItem = static_cast<HdVP2DrawItem*>(item);
 #else
         for (const HdRepr::DrawItemUniquePtr& item : items) {
-            const HdVP2DrawItem* const drawItem = static_cast<const HdVP2DrawItem*>(item.get());
+            HdVP2DrawItem* const drawItem = static_cast<HdVP2DrawItem*>(item.get());
 #endif
-            if (drawItem && (drawItem->GetDirtyBits() & DirtySelection)) {
-                *dirtyBits |= DirtySelectionHighlight;
-                break;
+            if (drawItem) {
+                if (drawItem->GetDirtyBits() & HdChangeTracker::AllDirty) {
+                    // About to be drawn, but the Repr is dirty. Add DirtyRepr so we know in
+                    // _PropagateDirtyBits that we need to propagate the dirty bits of this draw
+                    // items to ensure proper Sync
+                    drawItem->SetDirtyBits(HdChangeTracker::DirtyRepr);
+                }
+                if (drawItem->GetDirtyBits() & DirtySelection) {
+                    *dirtyBits |= DirtySelectionHighlight;
+                }
             }
         }
         return;

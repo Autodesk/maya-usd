@@ -24,7 +24,16 @@
 
 #include <maya/MShaderManager.h>
 
+#include <mutex>
+#include <set>
 #include <unordered_map>
+
+// Workaround for a material consolidation update issue in VP2. Before USD 0.20.11, a Rprim will be
+// recreated if its material has any change, so everything gets refreshed and the update issue gets
+// masked. Once the update issue is fixed in VP2 we will disable this workaround.
+#if USD_VERSION_NUM >= 2011 && MAYA_API_VERSION >= 20210000
+#define HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -83,11 +92,24 @@ public:
     //! Get primvar tokens required by this material.
     const TfTokenVector& GetRequiredPrimvars() const { return _requiredPrimvars; }
 
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+    //! The specified Rprim starts listening to changes on this material.
+    void SubscribeForMaterialUpdates(const SdfPath& rprimId);
+
+    //! The specified Rprim stops listening to changes on this material.
+    void UnsubscribeFromMaterialUpdates(const SdfPath& rprimId);
+#endif
+
 private:
     void _ApplyVP2Fixes(HdMaterialNetwork& outNet, const HdMaterialNetwork& inNet);
     MHWRender::MShaderInstance* _CreateShaderInstance(const HdMaterialNetwork& mat);
     void                        _UpdateShaderInstance(const HdMaterialNetwork& mat);
     const HdVP2TextureInfo&     _AcquireTexture(const std::string& path);
+
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+    //! Trigger sync on all Rprims which are listening to changes on this material.
+    void _MaterialChanged(HdSceneDelegate* sceneDelegate);
+#endif
 
     HdVP2RenderDelegate* const
         _renderDelegate; //!< VP2 render delegate for which this material was created
@@ -101,6 +123,14 @@ private:
     SdfPath              _surfaceShaderId;  //!< Path of the surface shader
     HdVP2TextureMap      _textureMap;       //!< Textures used by this material
     TfTokenVector        _requiredPrimvars; //!< primvars required by this material
+
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+    //! Mutex protecting concurrent access to the Rprim set
+    std::mutex _materialSubscriptionsMutex;
+
+    //! The set of Rprims listening to changes on this material
+    std::set<SdfPath> _materialSubscriptions;
+#endif
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -713,6 +713,10 @@ void HdVP2Material::Sync(
             }
 
             _UpdateShaderInstance(bxdfNet);
+
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+            _MaterialChanged(sceneDelegate);
+#endif
         } else {
             TF_WARN(
                 "Expected material resource for <%s> to hold HdMaterialNetworkMap,"
@@ -1182,5 +1186,33 @@ const HdVP2TextureInfo& HdVP2Material::_AcquireTexture(const std::string& path)
     }
     return info;
 }
+
+#ifdef HDVP2_MATERIAL_CONSOLIDATION_UPDATE_WORKAROUND
+
+void HdVP2Material::SubscribeForMaterialUpdates(const SdfPath& rprimId)
+{
+    std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
+
+    _materialSubscriptions.insert(rprimId);
+}
+
+void HdVP2Material::UnsubscribeFromMaterialUpdates(const SdfPath& rprimId)
+{
+    std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
+
+    _materialSubscriptions.erase(rprimId);
+}
+
+void HdVP2Material::_MaterialChanged(HdSceneDelegate* sceneDelegate)
+{
+    std::lock_guard<std::mutex> lock(_materialSubscriptionsMutex);
+
+    HdChangeTracker& changeTracker = sceneDelegate->GetRenderIndex().GetChangeTracker();
+    for (const SdfPath& rprimId : _materialSubscriptions) {
+        changeTracker.MarkRprimDirty(rprimId, HdChangeTracker::DirtyMaterialId);
+    }
+}
+
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
