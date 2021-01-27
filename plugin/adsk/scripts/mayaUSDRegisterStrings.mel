@@ -37,7 +37,7 @@ global proc mayaUSDRegisterStrings() {
     register("kMenuAddSublayer", "Add Sublayer");
     register("kMenuAddParentLayer", "Add Parent Layer");
     register("kMenuClear", "Clear");
-    register("kMenuDiscardEdits", "Discard Edits");
+    register("kMenuRevertToFile", "Revert to File");
     register("kMenuLoadSublayers", "Load Sublayers...");
     register("kMenuMute", "Mute");
     register("kMenuPrintToScriptEditor", "Print to Script Editor");
