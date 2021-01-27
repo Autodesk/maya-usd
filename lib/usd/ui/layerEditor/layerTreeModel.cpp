@@ -452,7 +452,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 const auto layers = getAllNeedsSavingLayers();
                 for (auto layer : layers) {
                     if (!layer->isAnonymous())
-                        layer->saveEdits();
+                        layer->saveEditsNoPrompt();
                 }
             }
         }
@@ -481,7 +481,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
 
             if (confirmDialog(dialogTitle, message, &layersQStringList, &buttonText)) {
                 for (auto layer : layers) {
-                    layer->saveEdits();
+                    layer->saveEditsNoPrompt();
                 }
             }
         }
