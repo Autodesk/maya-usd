@@ -241,10 +241,9 @@ static bool _FindDagPoseMembers(
     for (size_t i = 0; i < visitedIndices.size(); ++i) {
         uint8_t visited = visitedIndices[i];
         if (visited != 1) {
-            unsigned int index = (*indices)[i];
             TF_WARN(
                 "Node '%s' is not a member of dagPose '%s'.",
-                MFnDependencyNode(dagPaths[index].node()).name().asChar(),
+                MFnDependencyNode(dagPaths[i].node()).name().asChar(),
                 dagPoseDep.name().asChar());
             return false;
         }
