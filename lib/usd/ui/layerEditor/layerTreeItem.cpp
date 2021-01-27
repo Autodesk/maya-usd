@@ -235,7 +235,7 @@ void LayerTreeItem::saveEdits()
         if (!isSessionLayer())
             saveAnonymousLayer();
     } else {
-            layer()->Save();
+        layer()->Save();
     }
 }
 
