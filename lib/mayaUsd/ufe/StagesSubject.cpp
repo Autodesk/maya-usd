@@ -392,9 +392,9 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
                 Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
             }
         }
+#endif
 
         fInvalidStages.clear();
-#endif
 
         stageSetGuardCount = false;
     }
@@ -404,14 +404,12 @@ void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& n
 {
     afterOpen();
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     auto p = notice.GetProxyShape().ufePath();
     if (!p.empty()) {
         // We can't send notification to clients from dirty propagation.
         // Delay it till the new stage is actually set during compute.
         fInvalidStages.insert(p);
     }
-#endif
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
