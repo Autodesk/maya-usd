@@ -143,7 +143,7 @@ public:
             auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _subPath);
             auto stage = getStage();
             auto currentTarget = stage->GetEditTarget().GetLayer();
-            if (currentTarget
+            if (currentTarget && subLayerHandle
                 && currentTarget->GetIdentifier() == subLayerHandle->GetIdentifier()) {
                 _isEditTarget = true;
                 stage->SetEditTarget(stage->GetRootLayer());
