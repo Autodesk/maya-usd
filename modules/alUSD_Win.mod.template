@@ -2,5 +2,5 @@
 plug-ins: plugin
 PYTHONPATH+:=lib/python
 PATH+:=lib
-PXR_PLUGINPATH_NAME+:=lib/usd
-PXR_PLUGINPATH_NAME+:=plugin
+${PXR_OVERRIDE_PLUGINPATH_NAME}+:=lib/usd
+${PXR_OVERRIDE_PLUGINPATH_NAME}+:=plugin
