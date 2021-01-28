@@ -1,4 +1,5 @@
-name: Run clang-format Linter
+name: Run clang-format-lint
+# https://github.com/marketplace/actions/clang-format-lint
 
 # Trigger the workflow on pull request (assigned) event for the branch
 # https://help.github.com/en/actions/reference/events-that-trigger-workflows
