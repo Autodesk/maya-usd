@@ -35,6 +35,9 @@ option(BUILD_SHARED_LIBS "Build libraries as shared or static." ON)
 option(BUILD_WITH_PYTHON_3 "Build with python 3." OFF)
 option(CMAKE_WANT_UFE_BUILD "Enable building with UFE (if found)." ON)
 
+set(PXR_OVERRIDE_PLUGINPATH_NAME PXR_PLUGINPATH_NAME
+    CACHE STRING "Name of env var USD searches to find plugins")
+
 #------------------------------------------------------------------------------
 # internal flags to control build
 #------------------------------------------------------------------------------
