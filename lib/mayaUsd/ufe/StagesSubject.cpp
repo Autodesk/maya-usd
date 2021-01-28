@@ -120,7 +120,11 @@ StagesSubject::Ptr StagesSubject::create() { return TfCreateWeakPtr(new StagesSu
 
 bool StagesSubject::beforeNewCallback() const { return fBeforeNewCallback; }
 
-void StagesSubject::beforeNewCallback(bool b) { fBeforeNewCallback = b; }
+void StagesSubject::beforeNewCallback(bool b)
+{
+    fBeforeNewCallback = b;
+    fInvalidStages.clear();
+}
 
 /*static*/
 void StagesSubject::beforeNewCallback(void* clientData)
@@ -380,6 +384,18 @@ void StagesSubject::onStageSet(const MayaUsdProxyStageSetNotice& notice)
             fStageListeners[stage] = noticeKeys;
         }
 
+#ifdef UFE_V2_FEATURES_AVAILABLE
+        // Now we can send the notifications about stage change.
+        for (auto& path : fInvalidStages) {
+            Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(path);
+            if (sceneItem) {
+                Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
+            }
+        }
+#endif
+
+        fInvalidStages.clear();
+
         stageSetGuardCount = false;
     }
 }
@@ -388,15 +404,12 @@ void StagesSubject::onStageInvalidate(const MayaUsdProxyStageInvalidateNotice& n
 {
     afterOpen();
 
-#ifdef UFE_V2_FEATURES_AVAILABLE
     auto p = notice.GetProxyShape().ufePath();
     if (!p.empty()) {
-        Ufe::SceneItem::Ptr sceneItem = Ufe::Hierarchy::createItem(p);
-        if (sceneItem) {
-            Ufe::Scene::instance().notify(Ufe::SubtreeInvalidate(sceneItem));
-        }
+        // We can't send notification to clients from dirty propagation.
+        // Delay it till the new stage is actually set during compute.
+        fInvalidStages.insert(p);
     }
-#endif
 }
 
 #ifdef UFE_V2_FEATURES_AVAILABLE

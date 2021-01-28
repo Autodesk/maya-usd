@@ -25,7 +25,10 @@
 #include <pxr/usd/usd/stage.h>
 
 #include <maya/MCallbackIdArray.h>
+#include <ufe/path.h>
 #include <ufe/ufe.h> // For UFE_V2_FEATURES_AVAILABLE
+
+#include <unordered_set>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -97,6 +100,15 @@ private:
     // Map of per-stage listeners, indexed by stage.
     typedef TfHashMap<UsdStageWeakPtr, NoticeKeys, TfHash> StageListenerMap;
     StageListenerMap                                       fStageListeners;
+
+    /*! \brief  Store invalidated ufe paths during dirty propagation.
+
+       We need to delay notification till stage changes, but at that time it could be too costly to
+       discover what changed in the stage map. Instead, we store all gateway notes that changed
+       during dirty propagation and send invalidation from compute, when the new stage is set. This
+       cache is only useful between onStageInvalidate and onStageSet notifications.
+    */
+    std::unordered_set<Ufe::Path> fInvalidStages;
 
     bool fBeforeNewCallback = false;
 
