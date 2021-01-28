@@ -231,6 +231,36 @@ void LayerTreeItem::removeSubLayer()
 
 void LayerTreeItem::saveEdits()
 {
+    bool shouldSaveEdits = true;
+
+    // the layer is already saved on disk.
+    // ask the user a confirmation before overwrite it.
+    if (!isAnonymous()) {
+        const MString titleFormat
+            = StringResources::getAsMString(StringResources::kSaveLayerWarnTitle);
+        const MString msgFormat = StringResources::getAsMString(StringResources::kSaveLayerWarnMsg);
+
+        MString title;
+        title.format(titleFormat, displayName().c_str());
+
+        MString msg;
+        msg.format(msgFormat, layer()->GetRealPath().c_str());
+
+        QString okButtonText = StringResources::getAsQString(StringResources::kSave);
+        shouldSaveEdits = confirmDialog(
+            MQtUtil::toQString(title),
+            MQtUtil::toQString(msg),
+            nullptr /*bulletList*/,
+            &okButtonText);
+    }
+
+    if (shouldSaveEdits) {
+        saveEditsNoPrompt();
+    }
+}
+
+void LayerTreeItem::saveEditsNoPrompt()
+{
     if (isAnonymous()) {
         if (!isSessionLayer())
             saveAnonymousLayer();
