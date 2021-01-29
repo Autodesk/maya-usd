@@ -17,7 +17,6 @@
 
 #include "bboxGeom.h"
 #include "debugCodes.h"
-#include "draw_item.h"
 #include "instancer.h"
 #include "material.h"
 #include "render_delegate.h"
@@ -33,6 +32,7 @@
 #include <pxr/imaging/hd/smoothNormals.h>
 #include <pxr/imaging/hd/version.h>
 #include <pxr/imaging/hd/vertexAdjacency.h>
+#include <pxr/usdImaging/usdImaging/delegate.h>
 
 #include <maya/MFrameContext.h>
 #include <maya/MMatrix.h>
@@ -66,7 +66,7 @@ using PrimvarBufferDataMap = std::unordered_map<TfToken, void*, TfToken::HashFun
 //!         (such commit task will be executed on main-thread)
 struct CommitState
 {
-    HdVP2DrawItem::RenderItemData& _drawItemData;
+    HdVP2DrawItem::RenderItemData& _renderItemData;
 
     //! If valid, new index buffer data to commit
     int* _indexBufferData { nullptr };
@@ -104,8 +104,8 @@ struct CommitState
     bool _geometryDirty { false };
 
     //! Construct valid commit state
-    CommitState(HdVP2DrawItem& item)
-        : _drawItemData(item.GetRenderItemData())
+    CommitState(HdVP2DrawItem::RenderItemData& renderItemData)
+        : _renderItemData(renderItemData)
     {
     }
 
@@ -437,21 +437,54 @@ void HdVP2Mesh::Sync(
 #endif
     }
 
+    // Geom subsets are accessed through the meshes topology. I need to know about
+    // the additional materialIds that get bound by geom subsets before we build the
+    // _primvarSourceMap. So the very first thing I need to do is grab the topology.
+    if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id))
+        _meshSharedData->_topology = GetMeshTopology(delegate);
+
     if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
-        const HdVP2Material* material = static_cast<const HdVP2Material*>(
-            renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
 
-        const TfTokenVector& requiredPrimvars = material && material->GetSurfaceShader()
-            ? material->GetRequiredPrimvars()
-            : sFallbackShaderPrimvars;
+        auto addRequiredPrimvars = [&](const SdfPath& materialId, TfTokenVector& allRequiredPrimvars) {
+            const HdVP2Material* material = static_cast<const HdVP2Material*>(
+                renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
+            const TfTokenVector& requiredPrimvars = material && material->GetSurfaceShader()
+                ? material->GetRequiredPrimvars()
+                : sFallbackShaderPrimvars;
 
-        _UpdatePrimvarSources(delegate, *dirtyBits, requiredPrimvars);
+            for(const auto& requiredPrimvar : requiredPrimvars)
+            {
+                TfTokenVector::const_iterator begin = allRequiredPrimvars.cbegin();
+                TfTokenVector::const_iterator end = allRequiredPrimvars.cend();
+
+                if (std::find(begin, end, requiredPrimvar) == end)
+                {
+                    allRequiredPrimvars.push_back(requiredPrimvar);
+                }
+            }
+        };
+
+        // there is a chance that the geom subsets cover all the faces of the
+        // mesh and that the overall material id is unused. I don't figure that
+        // out until much later, so for now just accept that we might pull unnecessary
+        // primvars required by the overall material but not by any of the geom subset
+        // materials.
+        TfTokenVector allRequiredPrimvars;
+        addRequiredPrimvars(GetMaterialId(), allRequiredPrimvars);
+
+        // now get the primvar sources for any geom subset materials
+        for (const auto& geomSubset : _meshSharedData->_topology.GetGeomSubsets())
+        {
+            addRequiredPrimvars(
+                dynamic_cast<UsdImagingDelegate*>(delegate)->ConvertCachePathToIndexPath(
+                    geomSubset.materialId), allRequiredPrimvars);
+        }
+
+        _UpdatePrimvarSources(delegate, *dirtyBits, allRequiredPrimvars);
     }
 
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
-        _meshSharedData->_topology = GetMeshTopology(delegate);
-
         const HdMeshTopology& topology = _meshSharedData->_topology;
         const VtIntArray&     faceVertexIndices = topology.GetFaceVertexIndices();
         const size_t          numFaceVertexIndices = faceVertexIndices.size();
@@ -760,7 +793,7 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
 
     // If the repr has any draw item with the DirtySelection bit, mark the
     // DirtySelectionHighlight bit to invoke the synchronization call.
-    _ReprVector::iterator it
+    _ReprVector::const_iterator it
         = std::find_if(_reprs.begin(), _reprs.end(), _ReprComparator(reprToken));
     if (it != _reprs.end()) {
         const HdReprSharedPtr& repr = it->second;
@@ -812,12 +845,12 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
             = std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData);
 #endif
 
-        const MString& renderItemName = drawItem->GetRenderItemName();
+        const MString& renderItemName = drawItem->GetDrawItemName();
 
         MHWRender::MRenderItem* renderItem = nullptr;
 
         switch (desc.geomStyle) {
-        case HdMeshGeomStyleHull: renderItem = _CreateSmoothHullRenderItem(renderItemName); break;
+        case HdMeshGeomStyleHull: break; // Creating the hull render items requires geom subsets from the topology, and we can't access that here.
         case HdMeshGeomStyleHullEdgeOnly:
             // The smoothHull repr uses the wireframe item for selection
             // highlight only.
@@ -871,6 +904,77 @@ void HdVP2Mesh::_InitRepr(const TfToken& reprToken, HdDirtyBits* dirtyBits)
     }
 }
 
+void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
+{
+    // 2021-01-29: Changing topology is not tested
+    TF_VERIFY(drawItem.GetRenderItems().size() == 0);
+    drawItem.GetRenderItems().clear();
+
+    auto* const         param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+    MSubSceneContainer* subSceneContainer = param->GetContainer();
+    if (ARCH_UNLIKELY(!subSceneContainer))
+        return;
+
+    // Need to topology to check for geom subsets.
+    const HdMeshTopology& topology = _meshSharedData->_topology;
+    const HdGeomSubsets& geomSubsets = topology.GetGeomSubsets();
+
+    // If the geom subsets do not cover all the faces in the mesh we need
+    // to add an additional render item for those faces.
+    int numFacesWithoutRenderItem = topology.GetNumFaces();
+
+    // Initialize the face to subset item mapping with an invalid item.
+    _meshSharedData->_faceIdToRenderItem.clear();
+    _meshSharedData->_faceIdToRenderItem.resize(topology.GetNumFaces(), nullptr);
+
+    // Create the geom subset render items, and fill in the face to subset item mapping for later use.
+    for (const auto& geomSubset : geomSubsets) {
+        // Right now geom subsets only support face sets, but edge or vertex sets
+        // are possible in the future.
+        TF_VERIFY(geomSubset.type == HdGeomSubset::TypeFaceSet);
+        if (geomSubset.type != HdGeomSubset::TypeFaceSet)
+            continue;
+
+        // There can be geom subsets on the object which are not material subsets. I've seen
+        // familyName = "object" in usda files. If there is no materialId on the subset then
+        // don't create a render item for it.
+        if (SdfPath::EmptyPath() == geomSubset.materialId)
+            continue;
+
+        MString renderItemName = drawItem.GetDrawItemName();
+        renderItemName += geomSubset.id.GetString().c_str(); //TODO: add a separator?
+        MHWRender::MRenderItem* renderItem = _CreateSmoothHullRenderItem(renderItemName);
+        drawItem.AddRenderItem(renderItem, &geomSubset);
+
+        // now fill in _faceIdToRenderItem at geomSubset.indices with the subset item pointer
+        for (auto faceId : geomSubset.indices) {
+            // we expect that material binding geom subsets will not overlap
+            TF_VERIFY(nullptr == _meshSharedData->_faceIdToRenderItem[faceId]);
+            _meshSharedData->_faceIdToRenderItem[faceId] = renderItem;
+        }
+        numFacesWithoutRenderItem -= geomSubset.indices.size();
+    }
+
+    TF_VERIFY(numFacesWithoutRenderItem >= 0);
+
+    if (numFacesWithoutRenderItem > 0)
+    {
+        // create an item for the remaining faces
+        MHWRender::MRenderItem* renderItem = _CreateSmoothHullRenderItem(drawItem.GetDrawItemName());
+        drawItem.AddRenderItem(renderItem);
+
+        // now fill in _faceIdToRenderItem at geomSubset.indices with the MRenderItem
+        for (auto renderItemId : _meshSharedData->_faceIdToRenderItem) {
+            if (nullptr == renderItemId) {
+                renderItemId = renderItem;
+                numFacesWithoutRenderItem--;
+            }
+        }
+    }
+
+    TF_VERIFY(numFacesWithoutRenderItem == 0);
+}
+
 /*! \brief  Update the named repr object for this Rprim.
 
     Repr objects are created to support specific reprName tokens, and contain a list of
@@ -890,6 +994,8 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
     // are required, we will calculate them once and clean the bits.
     bool requireSmoothNormals = false;
     bool requireFlatNormals = false;
+    bool requireIndexUpdate = false;
+    int  drawItemIndex = 0;
     for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
         const HdMeshReprDesc& desc = reprDescs[descIdx];
         if (desc.geomStyle == HdMeshGeomStyleHull) {
@@ -898,22 +1004,68 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
             } else {
                 requireSmoothNormals = true;
             }
+            auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
+            if (drawItem && (drawItem->GetDirtyBits() & HdChangeTracker::DirtyTopology)) {
+                requireIndexUpdate = true;
+            }
         }
     }
 
+    // All the render items to draw the shaded (Hull) style share the topology calculation
+    if (requireIndexUpdate)
+    {
+        HdMeshUtil   meshUtil(&_meshSharedData->_renderingTopology, GetId());
+        _meshSharedData->_trianglesFaceVertexIndices.clear();
+        _meshSharedData->_primitiveParam.clear();
+        meshUtil.ComputeTriangleIndices(
+            &_meshSharedData->_trianglesFaceVertexIndices,
+            &_meshSharedData->_primitiveParam,
+            nullptr);
+    }
+
     // For each relevant draw item, update dirty buffer sources.
-    int drawItemIndex = 0;
-    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx) {
+    drawItemIndex = 0;
+    for (size_t descIdx = 0; descIdx < reprDescs.size(); ++descIdx, drawItemIndex++) {
         const HdMeshReprDesc& desc = reprDescs[descIdx];
         if (desc.geomStyle == HdMeshGeomStyleInvalid) {
             continue;
         }
+        auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex));
+        if (!drawItem)
+            continue;
+        if (desc.geomStyle == HdMeshGeomStyleHull) {
+            // it is possible we haven't created MRenderItems for this HdDrawItem yet.
+            // if there are no MRenderItems, create them.
+            if (drawItem->GetRenderItems().size() == 0)
+            {
+                _CreateSmoothHullRenderItems(*drawItem);
 
-        auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
-        if (drawItem) {
-            _UpdateDrawItem(
-                sceneDelegate, drawItem, desc, requireSmoothNormals, requireFlatNormals);
+                auto* const param = static_cast<HdVP2RenderParam*>(_delegate->GetRenderParam());
+                MSubSceneContainer* subSceneContainer = param->GetContainer();
+                if (ARCH_UNLIKELY(!subSceneContainer))
+                    return;
+
+                for (const auto& renderItemData : drawItem->GetRenderItems()) {
+                    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                        [subSceneContainer, &renderItemData]() {
+                            subSceneContainer->add(renderItemData._renderItem);
+                        });
+                }
+            }
         }
+
+        for (auto& renderItemData : drawItem->GetRenderItems())
+        {
+            _UpdateDrawItem(
+                sceneDelegate,
+                drawItem,
+                renderItemData,
+                desc,
+                requireSmoothNormals,
+                requireFlatNormals);
+        }
+        // Reset dirty bits because we've prepared commit state for this draw item.
+        drawItem->ResetDirtyBits();
     }
 }
 
@@ -923,17 +1075,13 @@ void HdVP2Mesh::_UpdateRepr(HdSceneDelegate* sceneDelegate, const TfToken& reprT
     in CommitState and enqueued for Commit on main-thread using CommitTasks
 */
 void HdVP2Mesh::_UpdateDrawItem(
-    HdSceneDelegate*      sceneDelegate,
-    HdVP2DrawItem*        drawItem,
-    const HdMeshReprDesc& desc,
-    bool                  requireSmoothNormals,
-    bool                  requireFlatNormals)
+    HdSceneDelegate*              sceneDelegate,
+    HdVP2DrawItem*                drawItem,
+    HdVP2DrawItem::RenderItemData& renderItemData,
+    const HdMeshReprDesc&         desc,
+    bool                          requireSmoothNormals,
+    bool                          requireFlatNormals)
 {
-    const MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-    if (ARCH_UNLIKELY(!renderItem)) {
-        return;
-    }
-
     HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
     // We don't need to update the dedicated selection highlight item when there
@@ -946,8 +1094,12 @@ void HdVP2Mesh::_UpdateDrawItem(
         return;
     }
 
-    CommitState                    stateToCommit(*drawItem);
-    HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
+    MHWRender::MRenderItem*        renderItem = renderItemData._renderItem;
+    CommitState                    stateToCommit(renderItemData);
+    HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
+    if (ARCH_UNLIKELY(!renderItem)) {
+        return;
+    }
 
     const SdfPath& id = GetId();
 
@@ -978,10 +1130,19 @@ void HdVP2Mesh::_UpdateDrawItem(
         const HdMeshTopology& topologyToUse = _meshSharedData->_renderingTopology;
 
         if (desc.geomStyle == HdMeshGeomStyleHull) {
-            HdMeshUtil   meshUtil(&topologyToUse, id);
-            VtVec3iArray trianglesFaceVertexIndices;
-            VtIntArray   primitiveParam;
-            meshUtil.ComputeTriangleIndices(&trianglesFaceVertexIndices, &primitiveParam, nullptr);
+            // _trianglesFaceVertexIndices has the full triangulation calculated in
+            // _updateRepr. Find the triangles which represent faces in the matching
+            // geom subset and add those triangles to the index buffer for renderItem.
+
+            VtVec3iArray trianglesFaceVertexIndices; // for this item only!
+            for (size_t triangleId = 0; triangleId < _meshSharedData->_primitiveParam.size(); triangleId++)
+            {
+                size_t faceId = HdMeshUtil::DecodeFaceIndexFromCoarseFaceParam(_meshSharedData->_primitiveParam[triangleId]);
+                if (_meshSharedData->_faceIdToRenderItem[faceId] == renderItem) {
+                    trianglesFaceVertexIndices.push_back(
+                        _meshSharedData->_trianglesFaceVertexIndices[triangleId]);
+                }
+            }
 
             const int numIndex = trianglesFaceVertexIndices.size() * 3;
 
@@ -1097,8 +1258,15 @@ void HdVP2Mesh::_UpdateDrawItem(
 
         // Prepare color buffer.
         if ((itemDirtyBits & HdChangeTracker::DirtyMaterialId) != 0) {
-            const HdVP2Material* material = static_cast<const HdVP2Material*>(
-                renderIndex.GetSprim(HdPrimTypeTokens->material, GetMaterialId()));
+            SdfPath materialId = GetMaterialId(); // This is an index path
+            if (drawItemData._geomSubset.id != SdfPath::EmptyPath())
+            {
+                SdfPath cachePathMaterialId = drawItemData._geomSubset.materialId;
+                // This is annoying! The saved materialId is a cache path, but to look up the material in the
+                // render index we need the index path.
+                materialId = dynamic_cast<UsdImagingDelegate*>(sceneDelegate)->ConvertCachePathToIndexPath(cachePathMaterialId);
+            }
+            const HdVP2Material* material = static_cast<const HdVP2Material*>(renderIndex.GetSprim(HdPrimTypeTokens->material, materialId));
 
             if (material) {
                 MHWRender::MShaderInstance* shader = material->GetSurfaceShader();
@@ -1570,9 +1738,6 @@ void HdVP2Mesh::_UpdateDrawItem(
            & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyNormals
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology));
 
-    // Reset dirty bits because we've prepared commit state for this draw item.
-    drawItem->ResetDirtyBits();
-
     // Capture the valid position buffer and index buffer
     MHWRender::MVertexBuffer* positionsBuffer = _meshSharedData->_positionsBuffer.get();
     MHWRender::MIndexBuffer*  indexBuffer = drawItemData._indexBuffer.get();
@@ -1588,18 +1753,18 @@ void HdVP2Mesh::_UpdateDrawItem(
                                                        param,
                                                        positionsBuffer,
                                                        indexBuffer]() {
-        MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
+        const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
+        MHWRender::MRenderItem*              renderItem = drawItemData._renderItem;
         if (ARCH_UNLIKELY(!renderItem))
             return;
 
         MProfilingScope profilingScope(
             HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L2,
-            drawItem->GetRenderItemName().asChar(),
+            renderItem->name().asChar(),
             "Commit");
 
-        const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
-
+        
         MHWRender::MVertexBuffer* colorBuffer = drawItemData._colorBuffer.get();
         MHWRender::MVertexBuffer* normalsBuffer = drawItemData._normalsBuffer.get();
 
@@ -1672,12 +1837,12 @@ void HdVP2Mesh::_UpdateDrawItem(
         }
 
         // Important, update instance transforms after setting geometry on render items!
-        auto& oldInstanceCount = stateToCommit._drawItemData._instanceCount;
+        auto& oldInstanceCount = stateToCommit._renderItemData._instanceCount;
         auto  newInstanceCount = stateToCommit._instanceTransforms.length();
 
         // GPU instancing has been enabled. We cannot switch to consolidation
         // without recreating render item, so we keep using GPU instancing.
-        if (stateToCommit._drawItemData._usingInstancedDraw) {
+        if (stateToCommit._renderItemData._usingInstancedDraw) {
             if (oldInstanceCount == newInstanceCount) {
                 for (unsigned int i = 0; i < newInstanceCount; i++) {
                     // VP2 defines instance ID of the first instance to be 1.
@@ -1712,7 +1877,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                     *renderItem, kSolidColorStr, stateToCommit._instanceColors);
             }
 
-            stateToCommit._drawItemData._usingInstancedDraw = true;
+            stateToCommit._renderItemData._usingInstancedDraw = true;
         } else if (stateToCommit._worldMatrix != nullptr) {
             // Regular non-instanced prims. Consolidation has been turned on by
             // default and will be kept enabled on this case.

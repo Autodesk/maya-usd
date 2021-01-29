@@ -20,6 +20,7 @@
 #include <pxr/base/vt/array.h>
 #include <pxr/imaging/hd/drawItem.h>
 #include <pxr/imaging/hd/mesh.h>
+#include <pxr/imaging/hd/geomSubset.h>
 #include <pxr/pxr.h>
 #include <pxr/usd/usd/timeCode.h>
 
@@ -45,6 +46,14 @@ public:
     //! Helper struct providing storage for render item data
     struct RenderItemData
     {
+        //! Unique name for easier debugging and profiling.
+        MString _renderItemName;
+        //! Pointer of the render item for fast access. No ownership is held.
+        MHWRender::MRenderItem* _renderItem { nullptr };
+
+        //! The geom subset this render item represents. _geomSubset.id is StdPath::EmptyPath() if there is no geom subset.
+        HdGeomSubset _geomSubset;
+
         //! Render item color buffer - use when updating data
         std::unique_ptr<MHWRender::MVertexBuffer> _colorBuffer;
         //! Render item normals buffer - use when updating data
@@ -65,7 +74,7 @@ public:
         bool _enabled { true };
 
         //! Primitive type of the render item
-        MHWRender::MGeometry::Primitive _primitiveType { MHWRender::MGeometry::kInvalidPrimitive };
+        MHWRender::MGeometry::Primitive _primitiveType { MHWRender::MGeometry::kInvalidPrimitive }; // TODO: this is stored on the MRenderItem, do we need it here too?
         //! Primitive stride of the render item (valid only if the primitive type is kPatch)
         int _primitiveStride { 0 };
 
@@ -89,21 +98,44 @@ public:
 
     ~HdVP2DrawItem();
 
+    void AddRenderItem(MHWRender::MRenderItem* item, const HdGeomSubset* geomSubset = nullptr);
+
+    using RenderItemDataVector = std::vector<RenderItemData>;
+    RenderItemDataVector& GetRenderItems() { return _renderItems; }
+
     /*! \brief  Get access to render item data.
      */
-    RenderItemData& GetRenderItemData() { return _renderItemData; }
+    RenderItemData& GetRenderItemData()
+    {
+        TF_VERIFY(_renderItems.size() == 1);
+        return _renderItems[0];
+    }
+
+    /*! \brief Get acces to render item data.
+     */
+    const RenderItemData& GetRenderItemData() const {
+        TF_VERIFY(_renderItems.size() == 1);
+        return _renderItems[0];
+    }
+
+    /*! \brief  Get draw item name
+     */
+    const MString& GetDrawItemName() const { return _drawItemName; }
 
     /*! \brief  Get render item name
      */
-    const MString& GetRenderItemName() const { return _renderItemName; }
+    const MString& GetRenderItemName() const { return GetRenderItemData()._renderItemName; }
 
     /*! \brief  Get pointer of the associated render item
      */
-    MHWRender::MRenderItem* GetRenderItem() const { return _renderItem; }
+    MHWRender::MRenderItem* GetRenderItem() const { return GetRenderItemData()._renderItem; }
 
     /*! \brief  Set pointer of the associated render item
      */
-    void SetRenderItem(MHWRender::MRenderItem* item) { _renderItem = item; }
+    void SetRenderItem(MHWRender::MRenderItem* item) {
+        TF_VERIFY(_renderItems.size() == 0);
+        AddRenderItem(item);
+    }
 
     /*! \brief  Set a usage to the render item
      */
@@ -115,11 +147,15 @@ public:
 
     /*! \brief  Is the render item created for this usage?
      */
-    bool ContainsUsage(RenderItemUsage usage) const { return (_renderItemUsage & usage) != 0; }
+    bool ContainsUsage(RenderItemUsage usage) const {
+        return (_renderItemUsage & usage) != 0;
+    }
 
     /*! \brief  Is the render item created for this usage only?
      */
-    bool MatchesUsage(RenderItemUsage usage) const { return _renderItemUsage == usage; }
+    bool MatchesUsage(RenderItemUsage usage) const {
+        return _renderItemUsage == usage;
+    }
 
     /*! \brief  Bitwise OR with the input dirty bits.
      */
@@ -134,19 +170,27 @@ public:
     HdDirtyBits GetDirtyBits() const { return _dirtyBits; }
 
 private:
-    HdVP2RenderDelegate* _delegate {
-        nullptr
-    }; //!< VP2 render delegate for which this draw item was created
-    MString                 _renderItemName; //!< Unique name for easier debugging and profiling.
-    MHWRender::MRenderItem* _renderItem {
-        nullptr
-    }; //!< Pointer of the render item for fast access. No ownership is held.
-    RenderItemData _renderItemData; //!< VP2 render item data
+    /*
+        Data stored directly on the HdVP2DrawItem can be shared across all the MRenderItems
+        *this represents.
 
-    uint32_t    _renderItemUsage { kRegular }; //!< What is the render item created for
-    HdDirtyBits _dirtyBits {
-        HdChangeTracker::AllDirty
-    }; //!< Dirty bits to control data update of render item
+        2021-01-29 TODO: Share vertex buffers within a draw item so that geom subset items
+        no long duplicate data.
+    */
+
+    //! VP2 render delegate for which this draw item was created
+    HdVP2RenderDelegate* _delegate { nullptr };
+    //! Unique name for easier debugging and profiling.
+    MString _drawItemName;
+    //!< What is the render item created for
+    uint32_t _renderItemUsage { kRegular };
+    //! Dirty bits to control data update of draw item
+    HdDirtyBits _dirtyBits { HdChangeTracker::AllDirty };
+
+    /*
+        The list of MRenderItems used to represent *this in VP2.
+    */
+    RenderItemDataVector _renderItems; //!< VP2 render item data
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
