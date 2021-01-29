@@ -106,6 +106,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Values for wrapS and wrapT
     (black)
+    (mirror)
     (repeat)
 
     // UsdUVTexture Output Names
@@ -311,25 +312,36 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
         }
     }
 
-    // Wrap U
-    usdInput = shaderSchema.GetInput(_tokens->wrapS);
-    mayaAttr = uvDepFn.findPlug(_tokens->wrapU.GetText(), true, &status);
-    if (usdInput && status == MS::kSuccess) {
-        if (usdInput.Get(&val) && val.IsHolding<TfToken>()) {
-            TfToken wrapS = val.UncheckedGet<TfToken>();
-            val = wrapS == _tokens->repeat;
-            UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
-        }
-    }
+    // Wrap U/V
+    for (auto wrapMirrorTriple :
+         (const TfToken[2][3]) { { _tokens->wrapU, _tokens->mirrorU, _tokens->wrapS },
+                                 { _tokens->wrapV, _tokens->mirrorV, _tokens->wrapT } }) {
+        auto wrapUVToken = wrapMirrorTriple[0];
+        auto mirrorUVToken = wrapMirrorTriple[1];
+        auto wrapSTToken = wrapMirrorTriple[2];
 
-    // Wrap V
-    usdInput = shaderSchema.GetInput(_tokens->wrapT);
-    mayaAttr = uvDepFn.findPlug(_tokens->wrapV.GetText(), true, &status);
-    if (usdInput && status == MS::kSuccess) {
-        if (usdInput.Get(&val) && val.IsHolding<TfToken>()) {
-            TfToken wrapT = val.UncheckedGet<TfToken>();
-            val = wrapT == _tokens->repeat;
-            UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
+        usdInput = shaderSchema.GetInput(wrapSTToken);
+        if (usdInput) {
+            if (usdInput.Get(&val) && val.IsHolding<TfToken>()) {
+                TfToken wrapVal = val.UncheckedGet<TfToken>();
+                TfToken plugName;
+
+                if (wrapVal == _tokens->repeat) {
+                    // do nothing - will repeat by default
+                    continue;
+                } else if (wrapVal == _tokens->mirror) {
+                    plugName = mirrorUVToken;
+                    val = true;
+                } else {
+                    plugName = wrapUVToken;
+                    val = false;
+                }
+                mayaAttr = uvDepFn.findPlug(plugName.GetText(), true, &status);
+                if (status != MS::kSuccess) {
+                    continue;
+                }
+                UsdMayaReadUtil::SetMayaAttr(mayaAttr, val);
+            }
         }
     }
 
