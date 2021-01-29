@@ -16,14 +16,20 @@
 # limitations under the License.
 #
 
+import fixturesUtils
+import mayaUtils
+import testUtils
+import ufeUtils
+import usdUtils
+
 import mayaUsd.ufe
 
 from pxr import Kind
 from pxr import Usd
 
-import maya.cmds as cmds
+from maya import cmds
+from maya import standalone
 
-import usdUtils, mayaUtils, ufeUtils, testUtils
 import ufe
 
 import os
@@ -41,8 +47,14 @@ class GroupCmdTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -216,3 +228,7 @@ class GroupCmdTestCase(unittest.TestCase):
         # authored either.
         self.assertEqual(Usd.ModelAPI(newGroupPrim).GetKind(), "")
         self.assertFalse(newGroupPrim.IsModel())
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

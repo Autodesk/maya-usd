@@ -16,20 +16,26 @@
 # limitations under the License.
 #
 
-import mayaUtils, usdUtils
-from testUtils import assertVectorAlmostEqual, assertVectorEqual
-
-import ufe
-
-from pxr import Usd, UsdGeom
+import fixturesUtils
+import mayaUtils
+from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorEqual
+import usdUtils
 
 import mayaUsd.ufe
 
-import maya.cmds as cmds
-import maya.api.OpenMaya as OpenMaya
+from pxr import Usd
+from pxr import UsdGeom
 
-import unittest
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as OpenMaya
+
+import ufe
+
 import os
+import unittest
+
 
 def nameToPlug(nodeName):
     selection = OpenMaya.MSelectionList()
@@ -56,8 +62,14 @@ class Object3dTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -402,3 +414,7 @@ class Object3dTestCase(unittest.TestCase):
         # visibility "token" must exists now in the USD data model
         self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
         self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)
