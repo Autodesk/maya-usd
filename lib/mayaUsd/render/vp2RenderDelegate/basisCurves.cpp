@@ -1263,7 +1263,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
         MProfilingScope profilingScope(
             HdVP2RenderDelegate::sProfilerCategory,
             MProfiler::kColorC_L2,
-            drawItem->GetRenderItemName().asChar(),
+            drawItem->GetDrawItemName().asChar(),
             "Commit");
 
         const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
@@ -1561,7 +1561,7 @@ void HdVP2BasisCurves::_InitRepr(TfToken const& reprToken, HdDirtyBits* dirtyBit
             = std::make_unique<HdVP2DrawItem>(_delegate, &_sharedData);
 #endif
 
-        const MString& renderItemName = drawItem->GetRenderItemName();
+        const MString& renderItemName = drawItem->GetDrawItemName();
 
         MHWRender::MRenderItem* renderItem = nullptr;
 

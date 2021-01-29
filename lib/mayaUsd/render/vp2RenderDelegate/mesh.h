@@ -16,6 +16,7 @@
 #ifndef HD_VP2_MESH
 #define HD_VP2_MESH
 
+#include "draw_item.h"
 #include "meshViewportCompute.h"
 
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
@@ -59,6 +60,12 @@ struct HdVP2MeshSharedData
     //! for efficient GPU rendering.
     HdMeshTopology _renderingTopology;
 
+    //! triangulation of the _renderingTopology
+    VtVec3iArray _trianglesFaceVertexIndices;
+
+    //! triangleId to faceId of _trianglesFaceVertexIndices
+    VtIntArray _primitiveParam;
+
     //! An array to store original scene face vertex index of each rendering
     //! face vertex index.
     VtIntArray _renderingToSceneFaceVtxIds;
@@ -69,6 +76,10 @@ struct HdVP2MeshSharedData
     //! An array to store a rendering face vertex index for each original scene
     //! face vertex index.
     std::vector<int> _sceneToRenderingFaceVtxIds;
+
+    //! Map from the original topology faceId to the void* pointer to the MRenderItem
+    //! that face is a part of
+    std::vector<void *> _faceIdToRenderItem;
 
     //! A local cache of primvar scene data. "data" is a copy-on-write handle to
     //! the actual primvar buffer, and "interpolation" is the interpolation mode
@@ -136,6 +147,7 @@ private:
     void _UpdateDrawItem(
         HdSceneDelegate*,
         HdVP2DrawItem*,
+        HdVP2DrawItem::RenderItemData&,
         const HdMeshReprDesc& desc,
         bool                  requireSmoothNormals,
         bool                  requireFlatNormals);
@@ -146,6 +158,8 @@ private:
         HdSceneDelegate*     sceneDelegate,
         HdDirtyBits          dirtyBits,
         const TfTokenVector& requiredPrimvars);
+
+    void _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem);
 
     MHWRender::MRenderItem* _CreateSelectionHighlightRenderItem(const MString& name) const;
     MHWRender::MRenderItem* _CreateSmoothHullRenderItem(const MString& name) const;

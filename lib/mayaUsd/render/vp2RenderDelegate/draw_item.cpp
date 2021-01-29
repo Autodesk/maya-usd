@@ -25,21 +25,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 Data holder for its corresponding render item to facilitate parallelized evaluation.
 */
-HdVP2DrawItem::HdVP2DrawItem(HdVP2RenderDelegate* delegate, const HdRprimSharedData* sharedData)
+HdVP2DrawItem::HdVP2DrawItem(
+    HdVP2RenderDelegate*     delegate,
+    const HdRprimSharedData* sharedData)
     : HdDrawItem(sharedData)
     , _delegate(delegate)
 {
     // In the case of instancing, the ID of a proto has an attribute at the end,
-    // we keep this info in _renderItemName so if needed we can extract proto ID
+    // we keep this info in _drawItemName so if needed we can extract proto ID
     // and use it to figure out Rprim path for each instance. For example:
     //
     //   "/Proxy/TreePatch/Tree_1.proto_leaves_id0"
     //
-    _renderItemName = GetRprimID().GetText();
-    _renderItemName += TfStringPrintf("/DrawItem_%p", this).c_str();
-
-    _renderItemData._indexBuffer.reset(
-        new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
+    _drawItemName = GetRprimID().GetText();
+    _drawItemName += TfStringPrintf("/DrawItem_%p", this).c_str();
 }
 
 //! \brief  Destructor.
@@ -52,6 +51,25 @@ HdVP2DrawItem::~HdVP2DrawItem()
             subSceneContainer->remove(GetRenderItemName());
         }
     }
+}
+
+void HdVP2DrawItem::AddRenderItem(
+    MHWRender::MRenderItem* item,
+    const HdGeomSubset*     geomSubset)
+{
+    _renderItems.push_back(RenderItemData());
+    RenderItemData& renderItemData = _renderItems.back();
+
+    renderItemData._renderItem = item;
+    renderItemData._renderItemName = _drawItemName;
+    if (geomSubset)
+    {
+        renderItemData._geomSubset = *geomSubset;
+        renderItemData._renderItemName += geomSubset->id.GetString().c_str();
+    }
+
+    renderItemData._indexBuffer.reset(
+        new MHWRender::MIndexBuffer(MHWRender::MGeometry::kUnsignedInt32));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
