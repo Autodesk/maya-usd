@@ -43,43 +43,14 @@ public:
     HDMAYA_API
     void Populate() override;
 
-#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM < 2011
+#if USD_VERSION_NUM < 2011
 
     HDMAYA_API
     virtual HdTextureResourceSharedPtr GetTextureResource(const SdfPath& textureShaderId);
     HDMAYA_API
     virtual HdTextureResource::ID GetTextureResourceID(const TfToken& paramName);
 
-#elif USD_VERSION_NUM <= 1911
-
-    HDMAYA_API
-    virtual std::string GetSurfaceShaderSource();
-    HDMAYA_API
-    virtual std::string GetDisplacementShaderSource();
-    HDMAYA_API
-    virtual VtValue GetMaterialParamValue(const TfToken& paramName);
-    HDMAYA_API
-    virtual HdMaterialParamVector GetMaterialParams();
-    /// \brief Gets the Metadata for the Material.
-    ///
-    /// \return Dictionary holding the metadata.
-    HDMAYA_API
-    virtual VtDictionary GetMaterialMetadata();
-
-    HDMAYA_API
-    static const HdMaterialParamVector& GetPreviewMaterialParams();
-    HDMAYA_API
-    static const std::string& GetPreviewSurfaceSource();
-    HDMAYA_API
-    static const std::string& GetPreviewDisplacementSource();
-    HDMAYA_API
-    static const VtValue& GetPreviewMaterialParamValue(const TfToken& paramName);
-    HDMAYA_API
-    virtual HdTextureResourceSharedPtr GetTextureResource(const TfToken& paramName);
-    HDMAYA_API
-    virtual HdTextureResource::ID GetTextureResourceID(const TfToken& paramName);
-
-#endif // USD_VERSION_NUM <= 1911
+#endif // USD_VERSION_NUM < 2011
 
     HDMAYA_API
     virtual VtValue GetMaterialResource();
