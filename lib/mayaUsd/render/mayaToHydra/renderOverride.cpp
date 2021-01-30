@@ -969,7 +969,8 @@ bool MtohRenderOverride::select(
 
     // Execute picking tasks.
     HdTaskSharedPtrVector pickingTasks = _taskController->GetPickingTasks();
-    _engine.SetTaskContextData(HdxPickTokens->pickParams, VtValue(pickParams));
+    VtValue               pickParamsValue(pickParams);
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParamsValue);
     _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
 
     if (pointSnappingActive) {
