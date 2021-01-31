@@ -9,10 +9,22 @@ on:
 
 jobs:
 
+  clang_format_linter:
+      timeout-minutes: 30
+      runs-on: ubuntu-latest
+      if: ${{ github.event.assignee.login == 'ecp-maya-devops-adsk' }}
+      steps:
+      - uses: actions/checkout@v2
+      - uses: DoozyX/clang-format-lint-action@v0.11
+        with:
+          source: '.'
+          clangFormatVersion: 10
+
   # Wait for remote build to start and finish, report results
   build_preflight:
       timeout-minutes: 400
       runs-on: ubuntu-latest
+      needs: clang_format_linter
       if: ${{ github.event.assignee.login == 'ecp-maya-devops-adsk' }}
       steps:
 
