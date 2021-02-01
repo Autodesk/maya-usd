@@ -65,6 +65,8 @@ public:
 private:
     MStatus setPointBasedDeformerForMayaNode(const MObject&, const MObject&, const UsdPrim&);
 
+    static bool isPrimitiveLeftHanded(const UsdGeomGprim& prim);
+
 private:
     MObject m_meshObj;
     MObject m_meshBlendObj;
