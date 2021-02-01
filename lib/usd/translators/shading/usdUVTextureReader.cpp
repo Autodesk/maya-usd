@@ -313,9 +313,9 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
     }
 
     // Wrap U/V
-    for (auto wrapMirrorTriple :
-         (const TfToken[2][3]) { { _tokens->wrapU, _tokens->mirrorU, _tokens->wrapS },
-                                 { _tokens->wrapV, _tokens->mirrorV, _tokens->wrapT } }) {
+    const TfToken wrapMirrorTriples[2][3] { { _tokens->wrapU, _tokens->mirrorU, _tokens->wrapS },
+                                            { _tokens->wrapV, _tokens->mirrorV, _tokens->wrapT } };
+    for (auto wrapMirrorTriple : wrapMirrorTriples) {
         auto wrapUVToken = wrapMirrorTriple[0];
         auto mirrorUVToken = wrapMirrorTriple[1];
         auto wrapSTToken = wrapMirrorTriple[2];
