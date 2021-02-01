@@ -209,7 +209,7 @@ class testUsdExportSkeleton(unittest.TestCase):
 
     def testSkelRestXformsWithNoDagPose(self):
         """
-        Tests export of of rest xforms when there is no dagPose node at all.
+        Tests export of rest xforms when there is no dagPose node at all.
         """
         mayaFile = os.path.join(self.inputPath, "UsdExportSkeletonTest",
             "UsdExportSkeletonNoDagPose.ma")

@@ -317,14 +317,13 @@ static bool _GetJointLocalRestTransformsFromDagPose(
     for (size_t i = 0; i < xforms->size(); ++i) {
         if (!_GetLocalTransformForDagPoseMember(
                 bindPoseDep, memberIndices[i], xforms->data() + i)) {
-            TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
-                .Msg(
-                    "%s -- Failed retrieving the local transform of joint '%s' "
-                    "from dagPose '%s': The Skeleton's 'restTransforms' "
-                    "property will be calculated from the 'bindTransforms'.",
-                    skelPath.GetText(),
-                    jointDagPaths[i].fullPathName().asChar(),
-                    bindPoseDep.name().asChar());
+            TF_WARN(
+                "%s -- Failed retrieving the local transform of joint '%s' "
+                "from dagPose '%s': The Skeleton's 'restTransforms' "
+                "property will be calculated from the 'bindTransforms'.",
+                skelPath.GetText(),
+                jointDagPaths[i].fullPathName().asChar(),
+                bindPoseDep.name().asChar());
             return false;
         }
     }
