@@ -37,7 +37,7 @@ USDImportDialog::USDImportDialog(
     QWidget*            parent /*= nullptr*/)
     : QDialog { parent }
     , fUI { new Ui::ImportDialog() }
-    , fStage { UsdStage::Open(filename, UsdStage::InitialLoadSet::LoadNone) }
+    , fStage { UsdStage::Open(filename, UsdStage::InitialLoadSet::LoadAll) }
     , fFilename { filename }
     , fRootPrimPath("/")
 {
