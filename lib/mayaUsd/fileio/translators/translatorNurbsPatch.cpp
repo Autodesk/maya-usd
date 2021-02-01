@@ -211,7 +211,8 @@ bool UsdMayaTranslatorNurbsPatch::Read(
     //       order to be right-handed when imported.
     TfToken orientation;
     if (usdNurbsPatch.GetOrientationAttr().Get(&orientation)) {
-        UsdMayaUtil::setPlugValue(surfaceObj, "opposite", (orientation == UsdGeomTokens->leftHanded));
+        UsdMayaUtil::setPlugValue(
+            surfaceObj, "opposite", (orientation == UsdGeomTokens->leftHanded));
     }
 
     // == Animate points ==
