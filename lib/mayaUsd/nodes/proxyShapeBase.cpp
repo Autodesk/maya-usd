@@ -1199,8 +1199,6 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
         return;
     }
 
-    UsdEditContext editContext(stage, stage->GetSessionLayer());
-
     for (const auto& changedPath : notice.GetChangedInfoOnlyPaths()) {
         if (!changedPath.IsPrimPropertyPath()) {
             continue;
@@ -1234,6 +1232,13 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
         }
 
         UsdAttribute extentsAttr = boundableObj.GetExtentAttr();
+        if (extentsAttr.GetNumTimeSamples() > 0) {
+            TF_CODING_ERROR(
+                "Can not fix animated extents of %s made dirty by a change on %s.",
+                changedPrimPath.GetAsString().c_str(),
+                changedPropertyToken.GetText());
+            continue;
+        }
         if (extentsAttr && extentsAttr.HasValue()) {
             VtVec3fArray extent(2);
             if (UsdGeomBoundable::ComputeExtentFromPlugins(
