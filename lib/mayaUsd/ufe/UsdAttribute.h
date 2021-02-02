@@ -92,9 +92,10 @@ public:
     UFE_ATTRIBUTE_OVERRIDES
 
     // Ufe::AttributeEnumString overrides
-    std::string get() const override;
-    void        set(const std::string& value) override;
-    EnumValues  getEnumValues() const override;
+    std::string               get() const override;
+    void                      set(const std::string& value) override;
+    Ufe::UndoableCommand::Ptr setCmd(const std::string& value) override;
+    EnumValues                getEnumValues() const override;
 }; // UsdAttributeEnumString
 
 //! \brief Internal helper template class to implement the get/set methods from Ufe::TypeAttribute.
@@ -110,8 +111,9 @@ public:
     UFE_ATTRIBUTE_OVERRIDES
 
     // Ufe::TypedAttribute overrides
-    T    get() const override;
-    void set(const T& value) override;
+    T                         get() const override;
+    void                      set(const T& value) override;
+    Ufe::UndoableCommand::Ptr setCmd(const T& value) override;
 }; // TypedUsdAttribute
 
 //! \brief Interface for USD bool attributes.

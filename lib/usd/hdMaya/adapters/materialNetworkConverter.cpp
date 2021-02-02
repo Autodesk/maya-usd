@@ -890,32 +890,4 @@ const HdMayaShaderParams& HdMayaMaterialNetworkConverter::GetPreviewShaderParams
     return _previewShaderParams;
 }
 
-#if USD_VERSION_NUM <= 1911
-
-// This is required quite often, so we precalc.
-std::mutex            _previewMaterialParamVector_mutex;
-bool                  _previewMaterialParamVector_initialized = false;
-HdMaterialParamVector _previewMaterialParamVector;
-
-const HdMaterialParamVector& HdMayaMaterialNetworkConverter::GetPreviewMaterialParamVector()
-{
-    if (!_previewMaterialParamVector_initialized) {
-        std::lock_guard<std::mutex> lock(_previewMaterialParamVector_mutex);
-        // Once we have the lock, recheck to make sure it's still
-        // uninitialized...
-        if (!_previewMaterialParamVector_initialized) {
-            auto& shaderParams = HdMayaMaterialNetworkConverter::GetPreviewShaderParams();
-            _previewMaterialParamVector.reserve(shaderParams.size());
-            for (const auto& it : shaderParams) {
-                _previewMaterialParamVector.emplace_back(
-                    HdMaterialParam::ParamTypeFallback, it.name, it.fallbackValue);
-            }
-            _previewMaterialParamVector_initialized = true;
-        }
-    }
-    return _previewMaterialParamVector;
-}
-
-#endif // USD_VERSION_NUM <= 1911
-
 PXR_NAMESPACE_CLOSE_SCOPE
