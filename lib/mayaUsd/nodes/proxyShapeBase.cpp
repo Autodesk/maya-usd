@@ -143,12 +143,12 @@ namespace {
 const int _shapeBaseProfilerCategory = MProfiler::addCategory(
 #if MAYA_API_VERSION >= 20190000
     "ProxyShapeBase",
-    "ProxyShapeBase"
+    "ProxyShapeBase events"
 #else
     "ProxyShapeBase"
 #endif
 );
-}
+} // namespace
 
 /* static */
 void* MayaUsdProxyShapeBase::creator() { return new MayaUsdProxyShapeBase(); }
