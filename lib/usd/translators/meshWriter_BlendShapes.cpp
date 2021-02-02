@@ -694,7 +694,6 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                 // it in the exporter either.
                 for (size_t k = 0; k < numOfTargets; ++k) {
                     MayaBlendShapeTargetDatum targetDatum = weightInfo.targets[k];
-                    MString                   curTargetNameMStr;
                     MObject                   targetMesh = targetDatum.targetMesh;
                     if (!targetMesh.isNull() && MObjectHandle(targetMesh).isAlive()
                         && targetMesh.hasFn(MFn::kMesh) && MAnimUtil::isAnimated(targetMesh)) {
@@ -770,6 +769,9 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     processedOffsetsArrays,
                     processedNormalsOffsetsArrays);
 
+                // NOTE: (yliangsiew) For in-between targets, we need to store the
+                // original target name rather than the suffixed ones.
+                MString parentTargetNameMStr;
                 for (size_t k = 0; k < numOfTargets; ++k) {
                     MayaBlendShapeTargetDatum targetDatum = weightInfo.targets[k];
                     MObject                   targetMesh = targetDatum.targetMesh;
@@ -809,6 +811,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         // have to put a numeric suffix in the target name.
                         if (k == 0) {
                             curTargetNameMStr = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
+                            parentTargetNameMStr = MString(curTargetNameMStr);
                         } else {
                             curTargetNameMStr = MString(TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
                         }
@@ -816,6 +819,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     TF_VERIFY(curTargetNameMStr.length() != 0);
                     std::string curTargetName
                         = TfMakeValidIdentifier(std::string(curTargetNameMStr.asChar()));
+                    std::string parentTargetName
+                        = TfMakeValidIdentifier(std::string(parentTargetNameMStr.asChar()));
                     unsigned int targetWeightIndex = weightInfo.targetItemIndices[k];
                     if (targetWeightIndex == 6000) { // NOTE: (yliangsiew) For default fullweight,
                                                      // we don't append the weight name.
@@ -824,7 +829,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         usdBlendShape.CreateNormalOffsetsAttr(
                             VtValue(processedNormalsOffsetsArrays[k]));
                         usdBlendShapePaths.push_back(usdBlendShapePath);
-                        usdBlendShapeNames.push_back(TfToken(curTargetName));
+                        usdBlendShapeNames.push_back(TfToken(parentTargetName));
 
                         // NOTE: (yliangsiew) Because animation export is deferred until subsequent
                         // calls in meshWriter.cpp, we just store the plugs to retrieve the samples
