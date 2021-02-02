@@ -636,8 +636,11 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
                         // have to put a numeric suffix in the target name.
-                        curTargetNameMStr
-                            = TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str();
+                        if (k == 0) {
+                            curTargetNameMStr = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
+                        } else {
+                            curTargetNameMStr = MString(TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
+                        }
                     }
 
                     TF_VERIFY(curTargetNameMStr.length() != 0);
@@ -804,8 +807,11 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
                         // have to put a numeric suffix in the target name.
-                        curTargetNameMStr
-                            = TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str();
+                        if (k == 0) {
+                            curTargetNameMStr = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
+                        } else {
+                            curTargetNameMStr = MString(TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
+                        }
                     }
                     TF_VERIFY(curTargetNameMStr.length() != 0);
                     std::string curTargetName
