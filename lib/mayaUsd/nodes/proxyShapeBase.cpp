@@ -77,6 +77,7 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MPoint.h>
+#include <maya/MProfiler.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>
@@ -136,6 +137,18 @@ MObject MayaUsdProxyShapeBase::drawGuidePurposeAttr;
 MObject MayaUsdProxyShapeBase::outTimeAttr;
 MObject MayaUsdProxyShapeBase::outStageDataAttr;
 MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
+
+namespace {
+//! Profiler category for proxy accessor events
+const int _shapeBaseProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "ProxyShapeBase",
+    "ProxyShapeBase"
+#else
+    "ProxyShapeBase"
+#endif
+);
+}
 
 /* static */
 void* MayaUsdProxyShapeBase::creator() { return new MayaUsdProxyShapeBase(); }
@@ -776,6 +789,9 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
 {
     TRACE_FUNCTION();
 
+    MProfilingScope profilingScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Get shape BoundingBox");
+
     MStatus status;
 
     // Make sure outStage is up to date
@@ -1189,6 +1205,9 @@ void MayaUsdProxyShapeBase::_OnStageContentsChanged(const UsdNotice::StageConten
 
 void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)
 {
+    MProfilingScope profilingScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
+
     ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);
 
     // Recompute the extents of any UsdGeomBoundable that has authored extents
@@ -1217,8 +1236,14 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
         }
 
         // If the attribute is not part of the primitive schema, it does not affect extents
-        const UsdPrimDefinition& primDefinition = changedPrim.GetPrimDefinition();
-        if (!primDefinition.GetSchemaAttributeSpec(changedPropertyToken)) {
+#if USD_VERSION_NUM > 2002
+        auto attrDefn
+            = changedPrim.GetPrimDefinition().GetSchemaAttributeSpec(changedPropertyToken);
+#else
+        auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(
+            changedPrim.GetTypeName(), changedPropertyToken);
+#endif
+        if (!attrDefn) {
             continue;
         }
 
@@ -1235,7 +1260,7 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
         if (extentsAttr.GetNumTimeSamples() > 0) {
             TF_CODING_ERROR(
                 "Can not fix animated extents of %s made dirty by a change on %s.",
-                changedPrimPath.GetAsString().c_str(),
+                changedPrimPath.GetString().c_str(),
                 changedPropertyToken.GetText());
             continue;
         }
