@@ -39,10 +39,6 @@ class HdVP2RenderDelegate;
 class HdVP2DrawItem final : public HdDrawItem
 {
 public:
-    //! A primvar vertex buffer map indexed by primvar name.
-    using PrimvarBufferMap = std::
-        unordered_map<TfToken, std::unique_ptr<MHWRender::MVertexBuffer>, TfToken::HashFunctor>;
-
     //! Helper struct providing storage for render item data
     struct RenderItemData
     {
@@ -54,12 +50,6 @@ public:
         //! The geom subset this render item represents. _geomSubset.id is StdPath::EmptyPath() if there is no geom subset.
         HdGeomSubset _geomSubset;
 
-        //! Render item color buffer - use when updating data
-        std::unique_ptr<MHWRender::MVertexBuffer> _colorBuffer;
-        //! Render item normals buffer - use when updating data
-        std::unique_ptr<MHWRender::MVertexBuffer> _normalsBuffer;
-        //! Render item primvar buffers - use when updating data
-        PrimvarBufferMap _primvarBuffers;
         //! Render item index buffer - use when updating data
         std::unique_ptr<MHWRender::MIndexBuffer> _indexBuffer;
         //! Bounding box of the render item.

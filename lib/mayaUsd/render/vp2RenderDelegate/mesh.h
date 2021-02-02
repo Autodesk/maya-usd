@@ -42,6 +42,10 @@ struct PrimvarSource
 //! A hash map of primvar scene data using primvar name as the key.
 typedef TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> PrimvarSourceMap;
 
+//! A primvar vertex buffer map indexed by primvar name.
+using PrimvarBufferMap
+    = std::unordered_map<TfToken, std::unique_ptr<MHWRender::MVertexBuffer>, TfToken::HashFunctor>;
+
 /*! \brief  HdVP2Mesh-specific data shared among all its draw items.
     \class  HdVP2MeshSharedData
 
@@ -60,26 +64,30 @@ struct HdVP2MeshSharedData
     //! for efficient GPU rendering.
     HdMeshTopology _renderingTopology;
 
-    //! triangulation of the _renderingTopology
-    VtVec3iArray _trianglesFaceVertexIndices;
-
-    //! triangleId to faceId of _trianglesFaceVertexIndices
-    VtIntArray _primitiveParam;
-
     //! An array to store original scene face vertex index of each rendering
     //! face vertex index.
     VtIntArray _renderingToSceneFaceVtxIds;
-
-    //! The number of vertices in each vertex buffer.
-    size_t _numVertices;
 
     //! An array to store a rendering face vertex index for each original scene
     //! face vertex index.
     std::vector<int> _sceneToRenderingFaceVtxIds;
 
-    //! Map from the original topology faceId to the void* pointer to the MRenderItem
-    //! that face is a part of
-    std::vector<void *> _faceIdToRenderItem;
+    //! triangulation of the _renderingTopology
+    VtVec3iArray _trianglesFaceVertexIndices;
+
+    //! encoded triangleId to faceId of _trianglesFaceVertexIndices, use
+    //! HdMeshUtil::DecodeFaceIndexFromCoarseFaceParam when accessing.
+    VtIntArray _primitiveParam;
+    
+    //! Map from the original topology faceId to the void* pointer to
+    //! the MRenderItem that face is a part of
+    std::vector<void*> _faceIdToRenderItem;
+
+    //! The number of vertices in each vertex buffer.
+    size_t _numVertices;
+
+    //! The primvar tokens of all the smooth hull material bindings (overall object + geom subsets)
+    TfTokenVector _allRequiredPrimvars;
 
     //! A local cache of primvar scene data. "data" is a copy-on-write handle to
     //! the actual primvar buffer, and "interpolation" is the interpolation mode
@@ -92,6 +100,21 @@ struct HdVP2MeshSharedData
 
     //! Position buffer of the Rprim to be shared among all its draw items.
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer;
+
+    //! Render item color buffer - use when updating data
+    std::unique_ptr<MHWRender::MVertexBuffer> _colorBuffer;
+
+    bool _isTransparent { false };
+    HdInterpolation _colorInterp;
+    HdInterpolation _alphaInterp;
+    VtVec3fArray    _colorArray;
+    VtFloatArray    _alphaArray;
+
+    //! Render item normals buffer - use when updating data
+    std::unique_ptr<MHWRender::MVertexBuffer> _normalsBuffer;
+
+    //! Render item primvar buffers - use when updating data
+    PrimvarBufferMap _primvarBuffers;
 
     //! Render tag of the Rprim.
     TfToken _renderTag;
@@ -137,6 +160,11 @@ private:
 
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
 
+    void
+    _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
+
+    bool _PrimvarIsRequired(const TfToken&) const;
+
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
     void _CreateViewportCompute(const HdVP2DrawItem& drawItem);
 #endif
@@ -148,9 +176,7 @@ private:
         HdSceneDelegate*,
         HdVP2DrawItem*,
         HdVP2DrawItem::RenderItemData&,
-        const HdMeshReprDesc& desc,
-        bool                  requireSmoothNormals,
-        bool                  requireFlatNormals);
+        const HdMeshReprDesc& desc);
 
     void _HideAllDrawItems(const TfToken& reprToken);
 
@@ -158,6 +184,11 @@ private:
         HdSceneDelegate*     sceneDelegate,
         HdDirtyBits          dirtyBits,
         const TfTokenVector& requiredPrimvars);
+
+    void _PrepareSharedVertexBuffers(
+        HdSceneDelegate* delegate,
+        const HdDirtyBits& rprimDirtyBits,
+        const TfToken&                        reprToken);
 
     void _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem);
 

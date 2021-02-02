@@ -34,6 +34,10 @@ class HdSceneDelegate;
 class HdVP2DrawItem;
 class HdVP2RenderDelegate;
 
+//! A primvar vertex buffer map indexed by primvar name.
+using PrimvarBufferMap
+    = std::unordered_map<TfToken, std::unique_ptr<MHWRender::MVertexBuffer>, TfToken::HashFunctor>;
+
 /*! \brief  HdVP2BasisCurves-specific data shared among all its draw items.
     \class  HdVP2BasisCurvesSharedData
 
@@ -58,12 +62,21 @@ struct HdVP2BasisCurvesSharedData
     };
     TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> _primvarSourceMap;
 
+    //! Render item primvar buffers - use when updating data
+    PrimvarBufferMap _primvarBuffers;
+
     //! A local cache of points. It is not cached in the above primvar map
     //! but a separate VtArray for easier access.
     VtVec3fArray _points;
 
     //! Position buffer of the Rprim to be shared among all its draw items.
     std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer;
+
+    //! Render item color buffer - use when updating data
+    std::unique_ptr<MHWRender::MVertexBuffer> _colorBuffer;
+
+    //! Render item normals buffer - use when updating data
+    std::unique_ptr<MHWRender::MVertexBuffer> _normalsBuffer;
 
     //! The display style.
     HdDisplayStyle _displayStyle;
@@ -116,6 +129,8 @@ protected:
 
 private:
     void _UpdateRepr(HdSceneDelegate* sceneDelegate, TfToken const& reprToken);
+
+    void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     void _UpdateDrawItem(
         HdSceneDelegate*             sceneDelegate,
