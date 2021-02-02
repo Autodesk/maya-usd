@@ -28,6 +28,7 @@
 #include <pxr/usd/ar/packageUtils.h>
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/usd/usdHydra/tokens.h>
+#include <pxr/usdImaging/usdImaging/textureUtils.h>
 #include <pxr/usdImaging/usdImaging/tokens.h>
 
 #include <maya/MFragmentManager.h>
@@ -45,13 +46,9 @@
 #include <iostream>
 #include <string>
 
-#if USD_VERSION_NUM >= 2002
-#include <pxr/usdImaging/usdImaging/textureUtils.h>
-#endif
-
 #if USD_VERSION_NUM >= 2102
 #include <pxr/imaging/hdSt/udimTextureObject.h>
-#elif USD_VERSION_NUM >= 2002
+#else
 #include <pxr/imaging/glf/udimTexture.h>
 #endif
 
@@ -264,7 +261,6 @@ MHWRender::MSamplerStateDesc _GetSamplerStateDesc(const HdMaterialNode& node)
     return desc;
 }
 
-#if USD_VERSION_NUM >= 2002
 MHWRender::MTexture*
 _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvScaleOffset)
 {
@@ -394,7 +390,6 @@ _LoadUdimTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& u
 
     return texture;
 }
-#endif
 
 //! Load texture from the specified path
 MHWRender::MTexture*
@@ -403,7 +398,6 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
     MProfilingScope profilingScope(
         HdVP2RenderDelegate::sProfilerCategory, MProfiler::kColorD_L2, "LoadTexture", path.c_str());
 
-#if USD_VERSION_NUM >= 2002
     // If it is a UDIM texture we need to modify the path before calling OpenForReading
 #if USD_VERSION_NUM >= 2102
     if (HdStIsSupportedUdimTexture(path))
@@ -411,7 +405,6 @@ _LoadTexture(const std::string& path, bool& isColorSpaceSRGB, MFloatArray& uvSca
 #else
     if (GlfIsSupportedUdimTexture(path))
         return _LoadUdimTexture(path, isColorSpaceSRGB, uvScaleOffset);
-#endif
 #endif
 
     MHWRender::MRenderer* const       renderer = MHWRender::MRenderer::theRenderer();

@@ -156,14 +156,7 @@ public:
         return {};
     }
 
-    TfToken GetRenderTag() const override
-    {
-#if USD_VERSION_NUM >= 1910
-        return HdRenderTagTokens->guide;
-#else
-        return HdTokens->guide;
-#endif
-    }
+    TfToken GetRenderTag() const override { return HdRenderTagTokens->guide; }
 
 private:
     static void NodeDirtiedCallback(MObject& node, MPlug& plug, void* clientData)
