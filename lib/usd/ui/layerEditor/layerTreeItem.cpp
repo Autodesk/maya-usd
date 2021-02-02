@@ -233,6 +233,33 @@ void LayerTreeItem::saveEdits()
 {
     bool shouldSaveEdits = true;
 
+    // if the current layer contains anonymous layer(s),
+    // display a warning and abort the saving operation.
+    LayerItemVector anonymLayerItems = parentModel()->getAllAnonymousLayers(this);
+    if (!anonymLayerItems.empty()) {
+        const MString titleFormat
+            = StringResources::getAsMString(StringResources::kSaveLayerWarnTitle);
+        const MString msgFormat
+            = StringResources::getAsMString(StringResources::kSaveLayerSaveNestedAnonymLayer);
+
+        MString title;
+        title.format(titleFormat, displayName().c_str());
+
+        MString nbAnonymLayer;
+        nbAnonymLayer += static_cast<unsigned int>(anonymLayerItems.size());
+
+        MString msg;
+        msg.format(msgFormat, displayName().c_str(), nbAnonymLayer);
+
+        QStringList anonymLayerNames;
+        for (auto item : anonymLayerItems) {
+            anonymLayerNames.append(item->displayName().c_str());
+        }
+
+        warningDialog(MQtUtil::toQString(title), MQtUtil::toQString(msg), &anonymLayerNames);
+        return;
+    }
+
     // the layer is already saved on disk.
     // ask the user a confirmation before overwrite it.
     if (!isAnonymous()) {
