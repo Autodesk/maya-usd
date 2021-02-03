@@ -527,19 +527,31 @@ void findUnionAndProcessArrays(
     for (size_t i = 0; i < numArrays; ++i) {
         const VtVec3fArray& origOffsetsArray = offsetsArrays[i];
         const size_t        numOrigOffsets = origOffsetsArray.size();
-        TF_VERIFY(numOrigOffsets != 0);
         VtVec3fArray& newOffsetsArray = unionOffsetsArrays[i];
         newOffsetsArray.assign(numUnionIndices, GfVec3f(0.0f));
 
         const VtVec3fArray& origNormalsArray = normalsArrays[i];
-#ifdef _DEBUG
         const size_t numOrigNormals = origNormalsArray.size();
+#ifdef _DEBUG
         TF_VERIFY(numOrigOffsets == numOrigNormals);
 #endif
+        if (numOrigNormals == 0 && numOrigOffsets == 0) {
+            // NOTE: (yliangsiew) Means that the target is completely empty (no deltas, no effect). If so, we don't even bother
+            // trying to match, because whatever is stored in the offsets and normals for this target is
+            // meaningless.
+            continue;
+        }
+
         VtVec3fArray& newNormalsArray = unionNormalsArrays[i];
         newNormalsArray.assign(numUnionIndices, GfVec3f(0.0f));
 
         const VtIntArray& origIndicesArray = indicesArrays[i];
+        if (origIndicesArray.size() == 0) {
+            // NOTE: (yliangsiew) Means that the target is completely empty (no indices, no effect). If so, we don't even bother
+            // trying to match, because whatever is stored in the offsets and normals for this target is
+            // meaningless.
+            continue;
+        }
         for (size_t j = 0, k = 0; j < numUnionIndices; ++j) {
             int index = unionIndices[j];
             int origIndex = origIndicesArray[k];
