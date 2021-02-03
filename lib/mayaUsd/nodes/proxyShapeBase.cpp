@@ -496,7 +496,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     } else if (!dataBlock.context().isNormal()) {
         // Create the output outData ========
         MFnPluginData pluginDataFn;
-        MObject       stageDataObj = pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+        pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         MayaUsdStageData* outData
@@ -635,7 +635,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         // Create the output outData ========
         MFnPluginData pluginDataFn;
-        MObject       stageDataObj = pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+        pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         MayaUsdStageData* stageData
@@ -721,7 +721,7 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 
     // Create the output outData
     MFnPluginData pluginDataFn;
-    MObject       stageDataObj = pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+    pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     MayaUsdStageData* stageData = reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
