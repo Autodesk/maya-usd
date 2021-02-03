@@ -1,11 +1,11 @@
 global proc AEmayaUsdProxyShapeInfoNew(string $input)
 {
-    textFieldGrp -label "Root Layer" -editable 0
-                 -ann "Identifies the root layer of a stage. If a file path is shown in this field, the root layer is a file on disk. If a layerName is shown in this field, the root layer is an anonymous layer."
+    textFieldGrp -label `getMayaUsdString("kRootLayer")` -editable 0
+                 -ann `getMayaUsdString("kRootLayerAnn")`
                  mayaUsdProxyShapeRootLayer;
 
-    textFieldGrp -label "Default Prim" -editable 0
-                 -ann "As part of its metadata, each stage can identify a default prim. This is the primitive that is referenced in if you reference in a file."
+    textFieldGrp -label `getMayaUsdString("kDefaultPrim")` -editable 0
+                 -ann `getMayaUsdString("kDefaultPrimAnn")`
                  mayaUsdProxyShapeDefaultPrim;
 
     AEmayaUsdProxyShapeInfoReplace($input);
@@ -38,7 +38,7 @@ global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
         editorTemplate -suppress "stageCacheId";
         editorTemplate -suppress "outStageCacheId";
 
-        editorTemplate -beginLayout "Stage" -collapse 0;
+        editorTemplate -beginLayout `getMayaUsdString("kLabelStage")` -collapse 0;
             // We aren't displaying the "inStageData" attribute in the ProxyShapeInfo. We simply
             // pass it in order to get the current nodename. Cannot use the input one here as it
             // changes based on which proxy shape the AE is viewing.
@@ -46,12 +46,12 @@ global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
             editorTemplate -addControl "loadPayloads";
         editorTemplate -endLayout;
 
-        editorTemplate -beginLayout "Stage Source" -collapse 0;
+        editorTemplate -beginLayout `getMayaUsdString("kLabelStageSource")` -collapse 0;
             editorTemplate -addControl "filePath";
         editorTemplate -endLayout;
 
-        editorTemplate -beginLayout "Stage Display" -collapse 0;
-            editorTemplate -ann "Edits the current time value of a stage, which corresponds to the animation frame drawn in the viewport. By default, this value connects to Maya's global time node."
+        editorTemplate -beginLayout `getMayaUsdString("kLabelStageDisplay")` -collapse 0;
+            editorTemplate -ann `getMayaUsdString("kTimeAnn")`
                            -addControl "time";
             editorTemplate -addControl "drawGuidePurpose";
             editorTemplate -addControl "drawProxyPurpose";
