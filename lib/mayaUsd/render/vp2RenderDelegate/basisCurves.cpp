@@ -107,8 +107,8 @@ struct CommitState
     bool _geometryDirty { false };
 
     //! Construct valid commit state
-    CommitState(HdVP2DrawItem& item)
-        : _drawItemData(item.GetRenderItemData())
+    CommitState(HdVP2DrawItem::RenderItemData& renderItemData)
+        : _drawItemData(renderItemData)
     {
     }
 
@@ -711,7 +711,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
 
     HdDirtyBits itemDirtyBits = drawItem->GetDirtyBits();
 
-    CommitState                    stateToCommit(*drawItem);
+    CommitState                    stateToCommit(drawItem->GetRenderItemData());
     HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
 
     const SdfPath& id = GetId();
@@ -811,8 +811,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             unsigned int numNormals = normals.size();
             if (_curvesSharedData._normalsBuffer && numNormals > 0) {
                 void* bufferData = _curvesSharedData._normalsBuffer->acquire(numNormals, true);
-                if (bufferData)
-                {
+                if (bufferData) {
                     memcpy(bufferData, normals.cdata(), numNormals * sizeof(GfVec3f));
                     _CommitMVertexBuffer(_curvesSharedData._normalsBuffer.get(), bufferData);
                 }
@@ -1255,7 +1254,7 @@ void HdVP2BasisCurves::_UpdateDrawItem(
     MHWRender::MVertexBuffer* positionsBuffer = _curvesSharedData._positionsBuffer.get();
     MHWRender::MVertexBuffer* colorBuffer = _curvesSharedData._colorBuffer.get();
     MHWRender::MVertexBuffer* normalsBuffer = _curvesSharedData._normalsBuffer.get();
-    const PrimvarBufferMap* primvarBuffers = &_curvesSharedData._primvarBuffers;
+    const PrimvarBufferMap*   primvarBuffers = &_curvesSharedData._primvarBuffers;
     MHWRender::MIndexBuffer*  indexBuffer = drawItemData._indexBuffer.get();
 
     if (isBoundingBoxItem) {
@@ -1283,8 +1282,6 @@ void HdVP2BasisCurves::_UpdateDrawItem(
             "Commit");
 
         const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._drawItemData;
-
-        
 
         // If available, something changed
         for (const auto& entry : stateToCommit._primvarBufferDataMap) {
@@ -1675,14 +1672,12 @@ void HdVP2BasisCurves::_HideAllDrawItems(const TfToken& reprToken)
         auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
         if (!drawItem)
             continue;
-        MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-        if (!renderItem)
-            continue;
 
-        drawItem->GetRenderItemData()._enabled = false;
-
-        _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-            [renderItem]() { renderItem->enable(false); });
+        for (auto& renderItemData : drawItem->GetRenderItems()) {
+            renderItemData._enabled = false;
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                [&]() { renderItemData._renderItem->enable(false); });
+        }
     }
 }
 

@@ -104,7 +104,6 @@ struct HdVP2MeshSharedData
     //! Render item color buffer - use when updating data
     std::unique_ptr<MHWRender::MVertexBuffer> _colorBuffer;
 
-    bool _isTransparent { false };
     HdInterpolation _colorInterp;
     HdInterpolation _alphaInterp;
     VtVec3fArray    _colorArray;

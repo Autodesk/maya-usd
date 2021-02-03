@@ -380,12 +380,12 @@ void HdVP2Mesh::_CommitMVertexBuffer(MHWRender::MVertexBuffer* const buffer, voi
 }
 
 void HdVP2Mesh::_PrepareSharedVertexBuffers(
-    HdSceneDelegate* delegate,
-    const HdDirtyBits&     rprimDirtyBits,
-    const TfToken&   reprToken)
+    HdSceneDelegate*   delegate,
+    const HdDirtyBits& rprimDirtyBits,
+    const TfToken&     reprToken)
 {
     const SdfPath& id = GetId();
-    const auto& primvarSourceMap = _meshSharedData->_primvarSourceMap;
+    const auto&    primvarSourceMap = _meshSharedData->_primvarSourceMap;
 
     // Prepare position buffer. It is shared among all draw items so it should
     // be updated only once when it gets dirty.
@@ -598,25 +598,6 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                 _meshSharedData->_alphaInterp);
 
             _CommitMVertexBuffer(_meshSharedData->_colorBuffer.get(), bufferData);
-        }
-
-        // It is possible that all elements in the opacity array are 1.
-        // Due to the performance indication about transparency, we have to
-        // traverse the array and enable transparency only when needed.
-        // TODO: if there are per-face material bindings then we consider ALL
-        // materials transparent, even if every face a material is bound to
-        // has an alpha of 1.
-        if (!_meshSharedData->_isTransparent) { // is this still a correct filter?
-            if (_meshSharedData->_alphaInterp == HdInterpolationConstant) {
-                _meshSharedData->_isTransparent = (_meshSharedData->_alphaArray[0] < 0.999f);
-            } else {
-                for (size_t i = 0; i < _meshSharedData->_alphaArray.size(); i++) {
-                    if (_meshSharedData->_alphaArray[i] < 0.999f) {
-                        _meshSharedData->_isTransparent = true;
-                        break;
-                    }
-                }
-            }
         }
     }
 
@@ -1328,19 +1309,19 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
 
     TF_VERIFY(numFacesWithoutRenderItem >= 0);
 
-    if (numFacesWithoutRenderItem == topology.GetNumFaces())
-    {
-        // If there are no geom subsets that are material bind geom subsets, then we don't need the
-        // _faceIdToRenderItem mapping, we'll just create one item and use the full topology for it.
-        _meshSharedData->_faceIdToRenderItem.clear();
-    } 
-    else if (numFacesWithoutRenderItem > 0)
-    {
-            // create an item for the remaining faces
-            MHWRender::MRenderItem* renderItem
-                = _CreateSmoothHullRenderItem(drawItem.GetDrawItemName());
-            drawItem.AddRenderItem(renderItem);
+    if (numFacesWithoutRenderItem > 0) {
+        // create an item for the remaining faces
+        MHWRender::MRenderItem* renderItem
+            = _CreateSmoothHullRenderItem(drawItem.GetDrawItemName());
+        drawItem.AddRenderItem(renderItem);
 
+        if (numFacesWithoutRenderItem == topology.GetNumFaces()) {
+            // If there are no geom subsets that are material bind geom subsets, then we don't need
+            // the _faceIdToRenderItem mapping, we'll just create one item and use the full topology
+            // for it.
+            _meshSharedData->_faceIdToRenderItem.clear();
+            numFacesWithoutRenderItem = 0;
+        } else {
             // now fill in _faceIdToRenderItem at geomSubset.indices with the MRenderItem
             for (auto& renderItemId : _meshSharedData->_faceIdToRenderItem) {
                 if (nullptr == renderItemId) {
@@ -1349,6 +1330,7 @@ void HdVP2Mesh::_CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem)
                 }
             }
         }
+    }
 
     TF_VERIFY(numFacesWithoutRenderItem == 0);
 }
@@ -1465,15 +1447,12 @@ void HdVP2Mesh::_UpdateDrawItem(
             // geom subset and add those triangles to the index buffer for renderItem.
 
             VtVec3iArray trianglesFaceVertexIndices; // for this item only!
-            if (_meshSharedData->_faceIdToRenderItem.size() == 0)
-            {
+            if (_meshSharedData->_faceIdToRenderItem.size() == 0) {
                 // If there is no mapping from face to render item, then all the faces are on this
                 // render item.
                 // VtArray has copy-on-write semantics so this is fast
-                trianglesFaceVertexIndices = _trianglesFaceVertexIndices;
-            }
-            else
-            {
+                trianglesFaceVertexIndices = _meshSharedData->_trianglesFaceVertexIndices;
+            } else {
                 for (size_t triangleId = 0; triangleId < _meshSharedData->_primitiveParam.size();
                      triangleId++) {
                     size_t faceId = HdMeshUtil::DecodeFaceIndexFromCoarseFaceParam(
@@ -1481,6 +1460,29 @@ void HdVP2Mesh::_UpdateDrawItem(
                     if (_meshSharedData->_faceIdToRenderItem[faceId] == renderItem) {
                         trianglesFaceVertexIndices.push_back(
                             _meshSharedData->_trianglesFaceVertexIndices[triangleId]);
+                    }
+                }
+            }
+
+            // It is possible that all elements in the opacity array are 1.
+            // Due to the performance implications of transparency, we have to
+            // traverse the array and enable transparency only when needed.
+            renderItemData._transparent = false;
+            if (_meshSharedData->_alphaArray.size() > 0) {
+                if (_meshSharedData->_alphaInterp == HdInterpolationConstant) {
+                    renderItemData._transparent = (_meshSharedData->_alphaArray[0] < 0.999f);
+                } else {
+                    for (const auto& triangle : trianglesFaceVertexIndices) {
+
+                        int x = _meshSharedData->_renderingToSceneFaceVtxIds[triangle[0]];
+                        int y = _meshSharedData->_renderingToSceneFaceVtxIds[triangle[1]];
+                        int z = _meshSharedData->_renderingToSceneFaceVtxIds[triangle[2]];
+                        if (_meshSharedData->_alphaArray[x] < 0.999f
+                            || _meshSharedData->_alphaArray[y] < 0.999f
+                            || _meshSharedData->_alphaArray[z] < 0.999f) {
+                            renderItemData._transparent = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -1534,13 +1536,14 @@ void HdVP2Mesh::_UpdateDrawItem(
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
-                    stateToCommit._isTransparent = shader->isTransparent() || _meshSharedData->_isTransparent;
+                    stateToCommit._isTransparent
+                        = shader->isTransparent() || renderItemData._transparent;
                 }
             }
 
-            // TODO: this used to get called when there was something in the color or opacity primvar map,
-            // but it seems to rely on the material being dirtied at the same time?
-            // Use fallback shader if there is no material binding or we failed to create a shader
+            // TODO: this used to get called when there was something in the color or opacity
+            // primvar map, but it seems to rely on the material being dirtied at the same time? Use
+            // fallback shader if there is no material binding or we failed to create a shader
             // instance for the material.
             if (!stateToCommit._shader && _PrimvarIsRequired(HdTokens->displayColor)) {
                 MHWRender::MShaderInstance* shader = nullptr;
@@ -1572,6 +1575,7 @@ void HdVP2Mesh::_UpdateDrawItem(
                 if (shader != nullptr && shader != drawItemData._shader) {
                     drawItemData._shader = shader;
                     stateToCommit._shader = shader;
+                    stateToCommit._isTransparent = renderItemData._transparent;
                 }
             }
         }
@@ -1942,14 +1946,12 @@ void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)
         auto* drawItem = static_cast<HdVP2DrawItem*>(curRepr->GetDrawItem(drawItemIndex++));
         if (!drawItem)
             continue;
-        MHWRender::MRenderItem* renderItem = drawItem->GetRenderItem();
-        if (!renderItem)
-            continue;
 
-        drawItem->GetRenderItemData()._enabled = false;
-
-        _delegate->GetVP2ResourceRegistry().EnqueueCommit(
-            [renderItem]() { renderItem->enable(false); });
+        for (auto& renderItemData : drawItem->GetRenderItems()) {
+            renderItemData._enabled = false;
+            _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+                [&]() { renderItemData._renderItem->enable(false); });
+        }
     }
 }
 

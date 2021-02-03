@@ -63,6 +63,9 @@ public:
         //! Whether or not the render item is enabled
         bool _enabled { true };
 
+        //! Whether or not the render item is transparent
+        bool _transparent { false };
+
         //! Primitive type of the render item
         MHWRender::MGeometry::Primitive _primitiveType { MHWRender::MGeometry::kInvalidPrimitive }; // TODO: this is stored on the MRenderItem, do we need it here too?
         //! Primitive stride of the render item (valid only if the primitive type is kPatch)
