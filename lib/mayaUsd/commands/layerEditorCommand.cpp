@@ -378,15 +378,11 @@ public:
         if (_muteIt) {
             // Muting a layer will cause all scene items under the proxy shape
             // to be stale.
-#if defined(WANT_UFE_BUILD)
             saveSelection();
-#endif
             stage->MuteLayer(layer->GetIdentifier());
         } else {
             stage->UnmuteLayer(layer->GetIdentifier());
-#if defined(WANT_UFE_BUILD)
             restoreSelection();
-#endif
         }
 
         // we perfer not holding to pointers needlessly, but we need to hold on to the layer if we
@@ -403,15 +399,11 @@ public:
             return false;
         if (_muteIt) {
             stage->UnmuteLayer(layer->GetIdentifier());
-#if defined(WANT_UFE_BUILD)
             restoreSelection();
-#endif
         } else {
             // Muting a layer will cause all scene items under the proxy shape
             // to be stale.
-#if defined(WANT_UFE_BUILD)
             saveSelection();
-#endif
             stage->MuteLayer(layer->GetIdentifier());
         }
         // we can release the pointer
@@ -430,9 +422,9 @@ private:
         return stage;
     }
 
-#if defined(WANT_UFE_BUILD)
     void saveSelection()
     {
+#if defined(WANT_UFE_BUILD)
         // Make a copy of the global selection, to restore it on unmute.
         auto globalSn = Ufe::GlobalSelection::get();
         _savedSn.replaceWith(*globalSn);
@@ -445,10 +437,12 @@ private:
             "world"+_proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         globalSn->replaceWith(
             MayaUsd::ufe::removeDescendants(_savedSn, path));
+#endif
     }
 
     void restoreSelection()
     {
+#if defined(WANT_UFE_BUILD)
         // Restore the saved selection to the global selection.  If a saved
         // selection item started with the proxy shape path, re-create it.
         // We know the path to the proxy shape has a single segment.  Not
@@ -460,8 +454,10 @@ private:
         auto globalSn = Ufe::GlobalSelection::get();
         globalSn->replaceWith(
             MayaUsd::ufe::recreateDescendants(_savedSn, path));
+#endif
     }
 
+#if defined(WANT_UFE_BUILD)
     Ufe::Selection         _savedSn;
 #endif
     PXR_NS::SdfLayerRefPtr _mutedLayer;
