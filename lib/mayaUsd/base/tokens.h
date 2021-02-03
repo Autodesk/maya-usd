@@ -28,9 +28,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // Tokens that are used as optionVars in MayaUSD
 //
-#define MAYA_USD_OPTIONVAR_TOKENS                        \
-    /* Always target a session layer on a mayaUsdProxy*/ \
-    (mayaUsd_ProxyTargetsSessionLayerOnOpen)
+// mayaUsd_ProxyTargetsSessionLayerOnOpen: Always target a session layer on a mayaUsdProxy
+// mayaUsd_SaveLayerFormatArgBinaryOption: When saving as .usd, should the format be binary
+// mayaUsd_SerializedUsdEditsLocation: Option for what to do with Usd edits when the current
+// Maya scene is about to be saved.  optionVar values are:
+//    1: save all edits back to usd files.
+//    2: export the dirty usd layers to Maya string attributes to be serialized to the Maya file.
+//    3: ignore all Usd edits.
+// mayaUsd_SerializedUsdEditsLocationPrompt: optionVar to force a prompt on every save
+#define MAYA_USD_OPTIONVAR_TOKENS                                                     \
+    (mayaUsd_ProxyTargetsSessionLayerOnOpen)(mayaUsd_SaveLayerFormatArgBinaryOption)( \
+        mayaUsd_SerializedUsdEditsLocation)(mayaUsd_SerializedUsdEditsLocationPrompt)
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
 

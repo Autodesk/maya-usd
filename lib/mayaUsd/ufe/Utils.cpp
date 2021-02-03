@@ -101,6 +101,8 @@ UsdStageWeakPtr getStage(const Ufe::Path& path) { return g_StageMap.stage(path);
 
 Ufe::Path stagePath(UsdStageWeakPtr stage) { return g_StageMap.path(stage); }
 
+TfHashSet<UsdStageWeakPtr, TfHash> getAllStages() { return g_StageMap.allStages(); }
+
 Ufe::PathSegment usdPathToUfePathSegment(const SdfPath& usdPath, int instanceIndex)
 {
     const Ufe::Rtid   usdRuntimeId = getUsdRunTimeId();

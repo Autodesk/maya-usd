@@ -16,11 +16,13 @@
 #include "utilFileSystem.h"
 
 #include <mayaUsd/base/debugCodes.h>
+#include <mayaUsd/utils/util.h>
 
 #include <pxr/usd/ar/resolver.h>
 
 #include <maya/MFileIO.h>
 #include <maya/MFnReference.h>
+#include <maya/MGlobal.h>
 #include <maya/MItDependencyNodes.h>
 
 #include <boost/filesystem.hpp>
@@ -89,6 +91,30 @@ std::string UsdMayaUtilFileSystem::getMayaSceneFileDir()
     return std::string();
 }
 
+const char* getScenesFolderScript = R"(
+global proc string UsdMayaUtilFileSystem_GetScenesFolder()
+{
+    string $workspaceLocation = `workspace -q -fn`;
+    string $scenesFolder = `workspace -q -fileRuleEntry "scene"`;
+    $sceneFolder = $workspaceLocation + "/" + $scenesFolder;
+
+    return $sceneFolder;
+}
+UsdMayaUtilFileSystem_GetScenesFolder;
+)";
+
+std::string UsdMayaUtilFileSystem::getMayaWorkspaceScenesDir()
+{
+    MString scenesFolder;
+    MGlobal::executeCommand(
+        getScenesFolderScript,
+        scenesFolder,
+        /*display*/ false,
+        /*undo*/ false);
+
+    return UsdMayaUtil::convert(scenesFolder);
+}
+
 std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
     const MObject&     proxyShape,
     const std::string& relativeFilePath)
@@ -112,4 +138,17 @@ std::string UsdMayaUtilFileSystem::resolveRelativePathWithinMayaContext(
     }
 
     return path.string();
+}
+
+std::string UsdMayaUtilFileSystem::getUniqueFileName(
+    const std::string& dir,
+    const std::string& basename,
+    const std::string& ext)
+{
+    std::string fileNameModel = basename + "-%%%%%%." + ext;
+
+    boost::filesystem::path pathModel(dir);
+    pathModel.append(fileNameModel);
+
+    return boost::filesystem::unique_path(pathModel).generic_string();
 }
