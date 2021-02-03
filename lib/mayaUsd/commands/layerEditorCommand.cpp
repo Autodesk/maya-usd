@@ -16,7 +16,10 @@
 
 #include "layerEditorCommand.h"
 
+#if defined(WANT_UFE_BUILD)
 #include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/Global.h>
+#endif
 #include <mayaUsd/utils/query.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -25,10 +28,10 @@
 #include <maya/MArgParser.h>
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
+#if defined(WANT_UFE_BUILD)
 #include <ufe/globalSelection.h>
-#include <ufe/hierarchy.h>
 #include <ufe/observableSelection.h>
-#include <ufe/pathString.h>
+#endif
 
 #include <cstddef>
 #include <string>
@@ -375,11 +378,15 @@ public:
         if (_muteIt) {
             // Muting a layer will cause all scene items under the proxy shape
             // to be stale.
+#if defined(WANT_UFE_BUILD)
             saveSelection();
+#endif
             stage->MuteLayer(layer->GetIdentifier());
         } else {
             stage->UnmuteLayer(layer->GetIdentifier());
+#if defined(WANT_UFE_BUILD)
             restoreSelection();
+#endif
         }
 
         // we perfer not holding to pointers needlessly, but we need to hold on to the layer if we
@@ -396,11 +403,15 @@ public:
             return false;
         if (_muteIt) {
             stage->UnmuteLayer(layer->GetIdentifier());
+#if defined(WANT_UFE_BUILD)
             restoreSelection();
+#endif
         } else {
             // Muting a layer will cause all scene items under the proxy shape
             // to be stale.
+#if defined(WANT_UFE_BUILD)
             saveSelection();
+#endif
             stage->MuteLayer(layer->GetIdentifier());
         }
         // we can release the pointer
@@ -419,27 +430,41 @@ private:
         return stage;
     }
 
+#if defined(WANT_UFE_BUILD)
     void saveSelection()
     {
         // Make a copy of the global selection, to restore it on unmute.
         auto globalSn = Ufe::GlobalSelection::get();
         _savedSn.replaceWith(*globalSn);
         // Filter the global selection, removing items below our proxy shape.
+        // We know the path to the proxy shape has a single segment.  Not
+        // using Ufe::PathString::path() for UFE v1 compatibility, which
+        // unfortunately reveals leading "world" path component implementation
+        // detail.
+        Ufe::Path path(Ufe::PathSegment(
+            "world"+_proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         globalSn->replaceWith(
-            MayaUsd::ufe::removeDescendants(_savedSn, Ufe::PathString::path(_proxyShapePath)));
+            MayaUsd::ufe::removeDescendants(_savedSn, path));
     }
 
     void restoreSelection()
     {
         // Restore the saved selection to the global selection.  If a saved
         // selection item started with the proxy shape path, re-create it.
+        // We know the path to the proxy shape has a single segment.  Not
+        // using Ufe::PathString::path() for UFE v1 compatibility, which
+        // unfortunately reveals leading "world" path component implementation
+        // detail.
+        Ufe::Path path(Ufe::PathSegment(
+            "world"+_proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         auto globalSn = Ufe::GlobalSelection::get();
         globalSn->replaceWith(
-            MayaUsd::ufe::recreateDescendants(_savedSn, Ufe::PathString::path(_proxyShapePath)));
+            MayaUsd::ufe::recreateDescendants(_savedSn, path));
     }
 
-    PXR_NS::SdfLayerRefPtr _mutedLayer;
     Ufe::Selection         _savedSn;
+#endif
+    PXR_NS::SdfLayerRefPtr _mutedLayer;
 };
 
 } // namespace Impl
