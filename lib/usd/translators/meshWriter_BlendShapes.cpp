@@ -268,7 +268,7 @@ MStatus mayaBlendShapeTriggerAllTargets(MObject& blendShape)
 MStatus mayaGetBlendShapeInfosForMesh(
     const MObject&                    deformedMesh,
     std::vector<MayaBlendShapeDatum>& outInfos,
-    const bool getEmptyBlendShapes)
+    const bool                        getEmptyBlendShapes)
 {
     // TODO: (yliangsiew) Eh, find a way to avoid incremental allocations like these and just
     // allocate upfront. But hard to do with the iterative search functions of the DG...
@@ -412,7 +412,10 @@ MStatus mayaGetBlendShapeInfosForMesh(
                     weightInfo.targets.push_back(meshTargetDatum);
                     continue;
                 } else if (stat != MStatus::kSuccess) {
-                    TF_RUNTIME_ERROR("Found uninitialized plug; unable to determine blendshape target info from it: %s", plgInComponentsTgt.name().asChar());
+                    TF_RUNTIME_ERROR(
+                        "Found uninitialized plug; unable to determine blendshape target info from "
+                        "it: %s",
+                        plgInComponentsTgt.name().asChar());
                     continue;
                 }
 
@@ -660,9 +663,11 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
                         // have to put a numeric suffix in the target name.
                         if (k == 0) {
-                            curTargetNameMStr = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
+                            curTargetNameMStr
+                                = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
                         } else {
-                            curTargetNameMStr = MString(TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
+                            curTargetNameMStr = MString(
+                                TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
                         }
                     }
 
@@ -833,10 +838,12 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
                         // have to put a numeric suffix in the target name.
                         if (k == 0) {
-                            curTargetNameMStr = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
+                            curTargetNameMStr
+                                = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
                             parentTargetNameMStr = MString(curTargetNameMStr);
                         } else {
-                            curTargetNameMStr = MString(TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
+                            curTargetNameMStr = MString(
+                                TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
                         }
                     }
                     TF_VERIFY(curTargetNameMStr.length() != 0);
