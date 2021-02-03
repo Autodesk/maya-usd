@@ -255,14 +255,20 @@ MStatus mayaBlendShapeTriggerAllTargets(MObject& blendShape)
 /**
  * Gets information about available blend shapes for a given deformed mesh (i.e. final result)
  *
- * @param mesh        The deformed mesh to find the blendshape info(s) for.
- * @param outInfos    Storage for the result.
+ * @param mesh                   The deformed mesh to find the blendshape info(s) for.
  *
- * @return            A status code.
+ * @param outInfos               Storage for the result.
+ *
+ * @param getEmptyBlendShapes    If set to `true`, will also consider empty/blendshape targets valid
+ *                               and retrieve them. If not, empty targets will be skipped in the
+ *                               final result.
+ *
+ * @return                       A status code.
  */
 MStatus mayaGetBlendShapeInfosForMesh(
     const MObject&                    deformedMesh,
-    std::vector<MayaBlendShapeDatum>& outInfos)
+    std::vector<MayaBlendShapeDatum>& outInfos,
+    const bool getEmptyBlendShapes)
 {
     // TODO: (yliangsiew) Eh, find a way to avoid incremental allocations like these and just
     // allocate upfront. But hard to do with the iterative search functions of the DG...
@@ -395,14 +401,27 @@ MStatus mayaGetBlendShapeInfosForMesh(
                 MIntArray                 indices;
                 stat = UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(
                     plgInComponentsTgt, indices);
-                CHECK_MSTATUS_AND_RETURN_IT(stat);
+                // NOTE: (yliangsiew) If the plug has no indices data (i.e. "blank" blendshape),
+                // or if it is a zero-length array,
+                // create an empty meshTargetDatum to represent a "no-op" blendshape target.
+                if (getEmptyBlendShapes && (stat != MStatus::kSuccess || indices.length() == 0)) {
+                    meshTargetDatum.indices.clear();
+                    meshTargetDatum.normalOffsets.clear();
+                    meshTargetDatum.ptOffsets.clear();
+                    meshTargetDatum.targetMesh = MObject::kNullObj;
+                    weightInfo.targets.push_back(meshTargetDatum);
+                    continue;
+                } else if (stat != MStatus::kSuccess) {
+                    TF_RUNTIME_ERROR("Found uninitialized plug; unable to determine blendshape target info from it: %s", plgInComponentsTgt.name().asChar());
+                    continue;
+                }
+
                 for (unsigned int m = 0; m < indices.length(); ++m) {
                     meshTargetDatum.indices.push_back(indices[m]);
                 }
-
                 unsigned int numComponentIndices = meshTargetDatum.indices.size();
                 if (numComponentIndices == 0) {
-                    TF_WARN(
+                    TF_RUNTIME_ERROR(
                         "Found zero-length component indices on a plug; cannot determine "
                         "blendshape target info from it: %s",
                         plgInComponentsTgt.name().asChar());
@@ -553,7 +572,11 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
     // TODO: (yliangsiew) Figure out if this can be isolated. It's kind of hard
     // because we want to avoid repeated walks through the DG.
     std::vector<MayaBlendShapeDatum> blendShapeDeformerInfos;
-    stat = mayaGetBlendShapeInfosForMesh(deformedMesh, blendShapeDeformerInfos);
+    if (exportArgs.ignoreWarnings) {
+        stat = mayaGetBlendShapeInfosForMesh(deformedMesh, blendShapeDeformerInfos, true);
+    } else {
+        stat = mayaGetBlendShapeInfosForMesh(deformedMesh, blendShapeDeformerInfos, false);
+    }
     if (stat != MStatus::kSuccess) {
         TF_WARN(
             "Could not read blendshape information for the mesh: %s.",
