@@ -410,81 +410,31 @@ LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) 
 
 void LayerTreeModel::saveStage(QWidget* in_parent)
 {
-    QString dialogTitle = StringResources::getAsQString(StringResources::kSaveStage);
-    QString message;
+    SaveLayersDialog dlg(_sessionState, in_parent);
+    if (QDialog::Accepted == dlg.exec()) {
 
-    const auto anonLayerItems = getAllAnonymousLayers();
-    auto       nbAnon = anonLayerItems.size();
-    if (0 < nbAnon) {
-        if (1 < nbAnon) {
-            MString msg;
-            MString size;
-            size = nbAnon;
-            msg.format(
-                StringResources::getAsMString(StringResources::kToSaveTheStageAnonFilesWillBeSaved),
-                size);
-            message = MQtUtil::toQString(msg);
+        if (!dlg.layersWithErrorPairs().isEmpty()) {
+            const QStringList& errors = dlg.layersWithErrorPairs();
+            MString            resultMsg;
+            for (int i = 0; i < errors.length() - 1; i += 2) {
+                MString errorMsg;
+                errorMsg.format(
+                    StringResources::getAsMString(StringResources::kSaveAnonymousLayersErrors),
+                    MQtUtil::toMString(errors[i]),
+                    MQtUtil::toMString(errors[i + 1]));
+                resultMsg += errorMsg + "\n";
+            }
 
+            MGlobal::displayError(resultMsg);
+
+            warningDialog(
+                StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
+                StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
         } else {
-            message = StringResources::getAsQString(
-                StringResources::kToSaveTheStageAnonFileWillBeSaved);
-        }
-
-        SaveLayersDialog dlg(dialogTitle, message, anonLayerItems, in_parent);
-        if (QDialog::Accepted == dlg.exec()) {
-
-            if (!dlg.layersWithErrorPairs().isEmpty()) {
-                const QStringList& errors = dlg.layersWithErrorPairs();
-                MString            resultMsg;
-                for (int i = 0; i < errors.length() - 1; i += 2) {
-                    MString errorMsg;
-                    errorMsg.format(
-                        StringResources::getAsMString(StringResources::kSaveAnonymousLayersErrors),
-                        MQtUtil::toMString(errors[i]),
-                        MQtUtil::toMString(errors[i + 1]));
-                    resultMsg += errorMsg + "\n";
-                }
-
-                MGlobal::displayError(resultMsg);
-
-                warningDialog(
-                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsTitle),
-                    StringResources::getAsQString(StringResources::kSaveAnonymousLayersErrorsMsg));
-            } else {
-                const auto layers = getAllNeedsSavingLayers();
-                for (auto layer : layers) {
-                    if (!layer->isAnonymous())
-                        layer->saveEditsNoPrompt();
-                }
-            }
-        }
-    } else {
-        QString    buttonText;
-        const auto layers = getAllNeedsSavingLayers();
-        const auto layersQStringList = getLayerListAsQStringList(layers);
-        if (layers.size()) {
-            if (layers.size() == 1) {
-                message
-                    = StringResources::getAsQString(StringResources::kToSaveTheStageFileWillBeSave);
-                buttonText = StringResources::getAsQString(StringResources::kSave);
-            } else {
-                MString msg;
-                MString size;
-                size = layers.size();
-                msg.format(
-                    StringResources::getAsMString(StringResources::kToSaveTheStageFilesWillBeSave),
-                    size);
-                message = MQtUtil::toQString(msg);
-                buttonText = StringResources::getAsQString(StringResources::kSaveAll);
-            }
-
-            message += " ";
-            message += StringResources::getAsQString(StringResources::kNotUndoable);
-
-            if (confirmDialog(dialogTitle, message, &layersQStringList, &buttonText)) {
-                for (auto layer : layers) {
+            const auto layers = getAllNeedsSavingLayers();
+            for (auto layer : layers) {
+                if (!layer->isAnonymous())
                     layer->saveEditsNoPrompt();
-                }
             }
         }
     }
