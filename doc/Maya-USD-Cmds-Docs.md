@@ -73,16 +73,16 @@ can also explicitly unload and reload the plug-in by toggling the
 The Maya USD plug-in provides file translators to import and export
 USD files and commands to import and export USD files from scripts.
 
-| Name                     | Type       | Purpose                            |
-| ------------------------ | ---------- | ---------------------------------- |
-| USD Import               | Translator | Handle the import of USD files.    |
-| USD Export               | Translator | Handle the export of USD files.    |
-| mayaUSDImport            | Command    | Command to import from a USD file. |
-| mayaUSDExport            | Command    | Command to export into a USD file. |
-| mayaUSDListShadingModes  | Command    |                                    |
-| mayaUsdEditTarget        | Command    |                                    |
-| mayaUsdLayerEditor       | Command    |                                    |
-| mayaUsdLayerEditorWindow | Command    |                                    |
+| Name                     | Type       | Purpose                                 |
+| ------------------------ | ---------- | --------------------------------------- |
+| USD Import               | Translator | Handle the import of USD files.         |
+| USD Export               | Translator | Handle the export of USD files.         |
+| mayaUSDImport            | Command    | Command to import from a USD file.      |
+| mayaUSDExport            | Command    | Command to export into a USD file.      |
+| mayaUSDListShadingModes  | Command    | Command to get available shading modes. |
+| mayaUsdEditTarget        | Command    | Command to set or get the edit target   |
+| mayaUsdLayerEditor       | Command    | Manipulate layers                       |
+| mayaUsdLayerEditorWindow | Command    | Open or manipulate the layer window     |
 
 Each command is documented below.
 
@@ -108,7 +108,7 @@ Each command is documented below.
 | `-readAnimData`        | `-ani`     | bool           | false                             | Read animation data from prims while importing the specified USD file. If the USD file being imported specifies `startTimeCode` and/or `endTimeCode`, Maya's MinTime and/or MaxTime will be expanded if necessary to include that frame range. **Note**: Only some types of animation are currently supported, for example: animated visibility, animated transforms, animated cameras, mesh and NURBS surface animation via blend shape deformers. Other types are not yet supported, for example: time-varying curve points, time-varying mesh points/normals, time-varying NURBS surface points |
 | `-shadingMode`         | `-shd`     | string[2] multi| `useRegistry` `UsdPreviewSurface` | Ordered list of shading mode importers to try when importing materials. The search stops as soon as one valid material is found. Allowed values for the first parameter are: `none` (stop search immediately, must be used to signal no material import), `displayColor` (if there are bound materials in the USD, create corresponding Lambertian shaders and bind them to the appropriate Maya geometry nodes), `pxrRis` (attempt to reconstruct a Maya shading network from (presumed) Renderman RIS shading networks in the USD), `useRegistry` (attempt to reconstruct a Maya shading network from (presumed) UsdShade shading networks in the USD) the second item in the parameter pair is a convertMaterialFrom flag which allows specifying which one of the registered USD material sources to explore. The full list of registered USD material sources can be found via the `mayaUSDListShadingModes` command. |
 | `-useAsAnimationCache` | `-uac`     | bool           | false                             | Imports geometry prims with time-sampled point data using a point-based deformer node that references the imported USD file. When this parameter is enabled, `mayaUSDImport` will create a `pxrUsdStageNode` for the USD file that is being imported. Then for each geometry prim being imported that has time-sampled points, a `pxrUsdPointBasedDeformerNode` will be created that reads the points for that prim from USD and uses them to deform the imported Maya geometry. This provides better import and playback performance when importing time-sampled geometry from USD, and it should reduce the weight of the resulting Maya scene since it will bypass creating blend shape deformers with per-object, per-time sample geometry. Only point data from the geometry prim will be computed by the deformer from the referenced USD. Transform data from the geometry prim will still be imported into native Maya form on the Maya shape's transform node. **Note**: This means that a link is created between the resulting Maya scene and the USD file that was imported. With this parameter off (as is the default), the USD file that was imported can be freely changed or deleted post-import. With the parameter on, however, the Maya scene will have a dependency on that USD file, as well as other layers that it may reference. Currently, this functionality is only implemented for Mesh prims/Maya mesh nodes. |
-| `-verbose`             | `-v`       | none           | none                              | Make the command output more verbose. |
+| `-verbose`             | `-v`       | noarg          | false                             | Make the command output more verbose. |
 | `-variant`             | `-var`     | string[2]      | none                              | Set variant key value pairs |
 
 ### Return Value
@@ -225,7 +225,7 @@ Maya as assembly edits.
 | `-selection`                     | `-sl`      | noarg            | false               | When set, only selected nodes (and their descendants) will be exported |
 | `-stripNamespaces`               | `-sn`      | bool             | false               | Remove namespaces during export. By default, namespaces are exported to the USD file in the following format: nameSpaceExample_pPlatonic1 |
 | `-staticSingleSample`            | `-sss`     | bool             | false               | Converts animated values with a single time sample to be static instead |
-| `-verbose`                       | `-v`       |                  | false               | Make the command output more verbose |
+| `-verbose`                       | `-v`       | noarg            | false               | Make the command output more verbose |
 
 #### Frame Samples
 
@@ -578,3 +578,79 @@ wanted the default flags mentioned above:
 This also works for the `mayaUSDImport` command and the "File > Import"
 menu item; use the `mayaUSDImport` key in the `plugInfo.json` file to
 configure your site-specific defaults.
+
+
+---
+
+## `mayaUSDListShadingModes`
+
+### Command Flags
+
+| Long flag              | Short flag | Type           | Description |
+| ---------------------- | ---------- | -------------- | ----------- |
+| `-export`              | `-ex`      | noarg          | Retrieve the list of export shading mode nice names. |
+| `-exportOptions`       | `-eo`      | string         | Retrieve the real name of the shading mode given its nice name. These can be used in the `shadingMode` option of the export command. |
+| `-exportAnnotation`    | `-ea`      | string         | Retrieve the description of the export shading mode option |
+| `-findExportName`      | `-fen`     | string         | Retrieve the nice name of an export shading mode |
+| `-findImportName`      | `-fin`     | string         | Retrieve the nice name of an import shading mode |
+| `-import`              | `-im`      | noarg          | Retrieve the list of import shading mode nice names. |
+| `-importOptions`       | `-io`      | string         | Retrieve the real name of the shading mode given its nice name. These can be used in the `shadingMode` option of the export command. |
+| `-importAnnotation`    | `-ia`      | string         | Retrieve the description of the import shading mode option |
+
+## `mayaUSDEditTarget`
+
+### Command Flags
+
+| Long flag      | Short flag | Type           | Description |
+| -------------- | ---------- | -------------- | ----------- |
+| `-edit`        | `-e`       | noarg          | Set the current edit target, chosen by naming it in the `-editTarget` flag |
+| `-query`       | `-q`       | noarg          | Retrieve the current edit target |
+| `-editTarget`  | `-et`      | string         | The name of the target to set with the `-edit` flag |
+
+
+## `mayaUsdLayerEditor`
+
+### Command Flags
+
+| Long flag           | Short flag | Type           | Description                              |
+| ------------------- | ---------- | -------------- | ---------------------------------------- |
+| `-edit`             | `-e`       | noarg          | Edit various element of a layer          |
+| `-clear`            | `-cl`      | noarg          | Erase everything in a layer              |
+| `-discardEdits`     | `-de`      | noarg          | Discard changes made on a layer          |
+| `-addAnonymous`     | `-aa`      | string         | Add an anonynous layer at the top of the stack, returns it |
+| `-insertSubPath`    | `-is`      | int string     | Insert a sub layer path at a given index |
+| `-muteLayer`        | `-mt`      | bool string    | Mute or unmute the named layer           |
+| `-replaceSubPath`   | `-rp`      | string string  | Replaces a path in the layer stack       |
+| `-removeSubPath`    | `-rs`      | int string     | Remove a sub layer at a given index      |
+
+
+## `mayaUsdLayerEditorWindow`
+
+### Command Flags
+
+| Long flag               | Short flag | Description                                   |
+| ----------------------- | ---------- | --------------------------------------------- |
+| `-edit`                 | `-e`       | Edit various aspects of the editor window     |
+| `-query`                | `-q`       | Retrieve various aspects of the editor window |
+| `-addAnonymousSublayer` | `-aa`      | Add an anonynous layer at the top of the stack, returns it |
+| `-addParentLayer`       | `-ap`      | Add a parent layer                            |
+| `-loadSubLayers`        | `-lo`      | Open a dialog to load sub-layers              |
+| `-removeSubLayer`       | `-rs`      | Remove sub-layers                             |
+| `-clearLayer`           | `-cl`      | Erase everything in a layer                   |
+| `-discardEdits`         | `-de`      | Discard changes made on a layer               |
+| `-isAnonymousLayer`     | `-al`      | Query if the layer is anonymous               |
+| `-isLayerDirty`         | `-dl`      | Query if the layer has been modified          |
+| `-isInvalidLayer`       | `-il`      | Query if the layer is not found or invalid    |
+| `-isSubLayer`           | `-su`      | Query if the layer is a sub-layer             |
+| `-layerAppearsMuted`    | `-am`      | Query if the layer or any parent is muted     |
+| `-layerIsMuted`         | `-mu`      | Query if the layer itself is muted            |
+| `-muteLayer`            | `-mt`      | Toggle the muting of a layer                  |
+| `-layerNeedsSaving`     | `-ns`      | Query if the layer is dirty or anonymous      |
+| `-printLayer`           | `-pl`      | Print the layer to the script editor output   |
+| `-proxyShape`           | `-ps`      | Sets the selected shape by its path. Takes the path as argument |
+| `-reload`               | `-rl`      | Open or show the editor window                |
+| `-selectionLength`      | `-se`      | Query the number of items selected            |
+| `-isSessionLayer`       | `-sl`      | Query if the layer is a session layer         |
+| `-selectPrimsWithSpec`  | `-sp`      | Select the prims with spec in a layer         |
+| `-saveEdits`            | `-sv`      | Save the modifications                        |
+
