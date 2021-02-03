@@ -67,7 +67,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(1, len(proxyShapeHier.children()))
 
         # child name is expected to be Capsule1
-        self.assertEqual(str(proxyShapeHier.children()[0].path().back()), "Capsule1")
+        self.assertEqual(str(proxyShapeHier.children()[0].nodeName()), "Capsule1")
 
         # validate session name and anonymous tag name 
         stage = mayaUsd.ufe.getStage(str(proxyShapePath))
@@ -87,18 +87,18 @@ class testProxyShapeBase(unittest.TestCase):
         duplStageItem = next(snIter)
 
         # duplicated stage name is expected to be incremented correctly
-        self.assertEqual(str(duplStageItem.path().back()), "stage2")
+        self.assertEqual(str(duplStageItem.nodeName()), "stage2")
 
         # duplicated proxyShape name is expected to be incremented correctly
         duplProxyShapeHier = ufe.Hierarchy.hierarchy(duplStageItem)
         duplProxyShapeItem = duplProxyShapeHier.children()[0]
-        self.assertEqual(str(duplProxyShapeItem.path().back()), "stageShape2")
+        self.assertEqual(str(duplProxyShapeItem.nodeName()), "stageShape2")
 
         # duplicated ProxyShapeItem should have exactly one children
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
 
         # child name is expected to be Capsule1
-        childName = str(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()[0].path().back())
+        childName = str(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()[0].nodeName())
         self.assertEqual(childName, "Capsule1")
 
         # validate session name and anonymous tag name 
@@ -149,18 +149,18 @@ class testProxyShapeBase(unittest.TestCase):
         duplStageItem = next(snIter)
 
         # duplicated stage name is expected to be incremented correctly
-        self.assertEqual(str(duplStageItem.path().back()), "Tree_usd1")
+        self.assertEqual(str(duplStageItem.nodeName()), "Tree_usd1")
 
         # duplicated proxyShape name is expected to be incremented correctly
         duplProxyShapeHier = ufe.Hierarchy.hierarchy(duplStageItem)
         duplProxyShapeItem = duplProxyShapeHier.children()[0]
-        self.assertEqual(str(duplProxyShapeItem.path().back()), "Tree_usd1Shape")
+        self.assertEqual(str(duplProxyShapeItem.nodeName()), "Tree_usd1Shape")
 
-        # duplicated ProxyShapeItem should have exactly one children
+        # duplicated ProxyShapeItem should have exactly one child
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
 
         # child name is expected to be Capsule1
-        childName = str(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()[0].path().back())
+        childName = str(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()[0].nodeName())
         self.assertEqual(childName, "TreeBase")
 
         # validate session name and anonymous tag name 

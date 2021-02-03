@@ -149,9 +149,9 @@ std::string extractAnonTagName(const std::string& identifier)
 // recursive function to create new anonymous Sublayer(s)
 // and set the edit target accordingly.
 void createNewAnonSubLayerRecursive(
-    UsdStageRefPtr newUsdStage,
-    SdfLayerRefPtr targetLayer,
-    SdfLayerRefPtr parentLayer)
+    const UsdStageRefPtr& newUsdStage,
+    const SdfLayerRefPtr& targetLayer,
+    const SdfLayerRefPtr& parentLayer)
 {
     if (!parentLayer->IsAnonymous()) {
         return;
@@ -823,7 +823,7 @@ void MayaUsdProxyShapeBase::copyInternalData(MPxNode* srcNode)
 {
     MStatus retValue { MS::kSuccess };
 
-    // get the srource data block
+    // get the source data block
     MayaUsdProxyShapeBase* srcProxyShapeBase = static_cast<MayaUsdProxyShapeBase*>(srcNode);
     MDataBlock             srcDataBlock = srcProxyShapeBase->forceCache();
 
@@ -838,7 +838,7 @@ void MayaUsdProxyShapeBase::copyInternalData(MPxNode* srcNode)
         return;
     }
 
-    // query form the destination block to make sure inStageDataCachedAttr attribute is clean. If it
+    // query from the destination block to make sure inStageDataCachedAttr attribute is clean. If it
     // is clean that means we already have the attr value.
     MDataBlock dataBlock = forceCache();
     if (dataBlock.isClean(inStageDataCachedAttr)) {
@@ -867,8 +867,9 @@ void MayaUsdProxyShapeBase::copyInternalData(MPxNode* srcNode)
     sessionLayer->TransferContent(srcUsdStage->GetSessionLayer());
 
     // decide if the root layer needs to be shared or deep copied.
-    SdfLayerRefPtr rootLayer = SdfLayer::CreateAnonymous(kAnonymousLayerName);
+    SdfLayerRefPtr rootLayer;
     if (srcUsdStage->GetRootLayer()->IsAnonymous()) {
+        rootLayer = SdfLayer::CreateAnonymous(kAnonymousLayerName);
         rootLayer->TransferContent(srcUsdStage->GetRootLayer());
     } else {
         rootLayer = srcUsdStage->GetRootLayer();
