@@ -1,95 +1,29 @@
-# Maya USD Plug-in
+# Common Plug-in Commands
 
-This documentation explain how to configure your environment to load
-a locally-built version of the Maya USD plug-in. It also documents
-the commands that are added to Maya to import and export USD files.
+This read-me documents the common commands that are shared by the various
+USD plug-ins made by Autodesk, Pixar and Animal Logic.
 
-## Configure Your Environment
+## Common Plug-in Contents
 
-The Maya USD plug-in is described to Maya with a `module` file.
-This is a file with the `.mod` extension that tells Maya where to
-find the various components of the plug-in.
+The common parts of Maya USD plug-in provides base commands to import and
+export USD files from scripts. The name of the command as seen by the
+end-user will vary for each specific plug-in. In the following table,
+we give an example of what the final command name would be in Maya,
+in this instance for the mayaUsd plug-in.
 
-There are two ways Maya can load the USD plug-in: by setting an
-environment variable or by manually loading the plug-in in Maya.
-We will explain both alternatives.
+| Class Name                     | Example Real Cmd Name    | Purpose                                |
+| ------------------------------ | ------------------------ | -------------------------------------- |
+| MayaUSDImportCommand           | mayaUSDimport            | Command to import from a USD file      |
+| MayaUSDExportCommand           | mayaUSDExport            | Command to export into a USD file      |
+| MayaUSDListShadingModesCommand | mayaUSDListShadingModes  | Command to get available shading modes |
+| EditTargetCommand              | mayaUsdEditTarget        | Command to set or get the edit target  |
+| LayerEditorCommand             | mayaUsdLayerEditor       | Manipulate layers                      |
+| LayerEditorWindowCommand       | mayaUsdLayerEditorWindow | Open or manipulate the layer window    |
 
-### Loading with an Environment Variable
-
-The advantage of using an environment variable to load the plug-in
-is that Maya will automatically load the plug-in on launch. You will
-need to set the `MAYA_MODULE_PATH` environment variable to tell Maya
-where the `module` file is located. For correct results, you need to
-provide an absolute path to the directory, otherwise Maya will not
-find the plug-in.
-
-If we assume the plug-in `module` file, normally named `mayaUSD.mod`,
-is in the folder named `/FILE/PATH/TO/MODULE`, the environment variable
-would be set with the following command, the first for MacOS or Linux,
-the second for Windows (assuming on Windows the files are on drive C):
-
-    ```Bash
-    export MAYA_MODULE_PATH=$MAYA_MODULE_PATH:/FILE/PATH/TO/MODULE
-    ```
-
-    ```Cmd
-    set MAYA_MODULE_PATH=%MAYA_MODULE_PATH%;C:/FILE/PATH/TO/MODULE
-    ```
-
-You can then starts Maya from the same shell where you set the
-envoironment variable,
-
-### Loading Manually
-
-The advantage of loading the plug-in manually is that you can do it
-entirely from within Maya without setting anything else by hand.
-You can still make it so that Maya will reload the plug-in automatically
-afterward. Follow these instructions:
-
-- In the `Windows` menu, in the `Settings/Preferences` sub-menu,
-  select the last item, `Plug-in Manager`.
-- The `Plug-in Manager` window will open with the list of all
-  currently-known plug-in and their `loaded` status.
-- Click the `Browse` button found at the bottom of the windows.
-- A file browser titled `Load Plugin` will open.
-- Navigate to the location of the `module` 
-- Select the file named `mayaUSD.mod` and click 'Open'.
-
-The result will be that the plug-in will be loaded and will now appear
-in the list of plug-ins in the `Plug-in Manager` windows. Beware that
-the Maya USD plug-in will actually be named `mayaUsdPlugin.mll`.
-The reason being that the `mod` file was descriing the plug-in.
-This `mll` is the real plug-in, as far as Maya is concerned.
-
-If you wish the plug-in to always be automatically loaded, check
-the `Auto load` option next to the plug-in name in the list. You
-can also explicitly unload and reload the plug-in by toggling the
-`Loaded` check-mark.
-
----
-
-## Plug-in Contents
-
-The Maya USD plug-in provides file translators to import and export
-USD files and commands to import and export USD files from scripts.
-
-| Name                     | Type       | Purpose                                 |
-| ------------------------ | ---------- | --------------------------------------- |
-| USD Import               | Translator | Handle the import of USD files.         |
-| USD Export               | Translator | Handle the export of USD files.         |
-| mayaUSDImport            | Command    | Command to import from a USD file.      |
-| mayaUSDExport            | Command    | Command to export into a USD file.      |
-| mayaUSDListShadingModes  | Command    | Command to get available shading modes. |
-| mayaUsdEditTarget        | Command    | Command to set or get the edit target   |
-| mayaUsdLayerEditor       | Command    | Manipulate layers                       |
-| mayaUsdLayerEditorWindow | Command    | Open or manipulate the layer window     |
-
-Each command is documented below.
-
----
+Each base command class is documented in the following sections.
 
 
-## `mayaUSDImport`
+## `MayaUSDImportCommand`
 
 ### Command Flags
 
@@ -106,81 +40,20 @@ Each command is documented below.
 | `-primPath`            | `-pp`      | string         | none (defaultPrim)                | Name of the USD scope where traversing will being. The prim at the specified primPath (including the prim) will be imported. Specifying the pseudo-root (`/`) means you want to import everything in the file. If the passed prim path is empty, it will first try to import the defaultPrim for the rootLayer if it exists. Otherwise, it will behave as if the pseudo-root was passed in. |
 | `-preferredMaterial`   | `-prm`     | string         | `lambert`                         | Indicate a preference towards a Maya native surface material for importers that can resolve to multiple Maya materials. Allowed values are `none` (prefer plugin nodes like pxrUsdPreviewSurface and aiStandardSurface) or one of `lambert`, `standardSurface`, `blinn`, `phong`. In displayColor shading mode, a value of `none` will default to `lambert`.
 | `-readAnimData`        | `-ani`     | bool           | false                             | Read animation data from prims while importing the specified USD file. If the USD file being imported specifies `startTimeCode` and/or `endTimeCode`, Maya's MinTime and/or MaxTime will be expanded if necessary to include that frame range. **Note**: Only some types of animation are currently supported, for example: animated visibility, animated transforms, animated cameras, mesh and NURBS surface animation via blend shape deformers. Other types are not yet supported, for example: time-varying curve points, time-varying mesh points/normals, time-varying NURBS surface points |
-| `-shadingMode`         | `-shd`     | string[2] multi| `useRegistry` `UsdPreviewSurface` | Ordered list of shading mode importers to try when importing materials. The search stops as soon as one valid material is found. Allowed values for the first parameter are: `none` (stop search immediately, must be used to signal no material import), `displayColor` (if there are bound materials in the USD, create corresponding Lambertian shaders and bind them to the appropriate Maya geometry nodes), `pxrRis` (attempt to reconstruct a Maya shading network from (presumed) Renderman RIS shading networks in the USD), `useRegistry` (attempt to reconstruct a Maya shading network from (presumed) UsdShade shading networks in the USD) the second item in the parameter pair is a convertMaterialFrom flag which allows specifying which one of the registered USD material sources to explore. The full list of registered USD material sources can be found via the `mayaUSDListShadingModes` command. |
-| `-useAsAnimationCache` | `-uac`     | bool           | false                             | Imports geometry prims with time-sampled point data using a point-based deformer node that references the imported USD file. When this parameter is enabled, `mayaUSDImport` will create a `pxrUsdStageNode` for the USD file that is being imported. Then for each geometry prim being imported that has time-sampled points, a `pxrUsdPointBasedDeformerNode` will be created that reads the points for that prim from USD and uses them to deform the imported Maya geometry. This provides better import and playback performance when importing time-sampled geometry from USD, and it should reduce the weight of the resulting Maya scene since it will bypass creating blend shape deformers with per-object, per-time sample geometry. Only point data from the geometry prim will be computed by the deformer from the referenced USD. Transform data from the geometry prim will still be imported into native Maya form on the Maya shape's transform node. **Note**: This means that a link is created between the resulting Maya scene and the USD file that was imported. With this parameter off (as is the default), the USD file that was imported can be freely changed or deleted post-import. With the parameter on, however, the Maya scene will have a dependency on that USD file, as well as other layers that it may reference. Currently, this functionality is only implemented for Mesh prims/Maya mesh nodes. |
+| `-shadingMode`         | `-shd`     | string[2] multi| `useRegistry` `UsdPreviewSurface` | Ordered list of shading mode importers to try when importing materials. The search stops as soon as one valid material is found. Allowed values for the first parameter are: `none` (stop search immediately, must be used to signal no material import), `displayColor` (if there are bound materials in the USD, create corresponding Lambertian shaders and bind them to the appropriate Maya geometry nodes), `pxrRis` (attempt to reconstruct a Maya shading network from (presumed) Renderman RIS shading networks in the USD), `useRegistry` (attempt to reconstruct a Maya shading network from (presumed) UsdShade shading networks in the USD) the second item in the parameter pair is a convertMaterialFrom flag which allows specifying which one of the registered USD material sources to explore. The full list of registered USD material sources can be found via the `mayaUSDListShadingModesCommand` command. |
+| `-useAsAnimationCache` | `-uac`     | bool           | false                             | Imports geometry prims with time-sampled point data using a point-based deformer node that references the imported USD file. When this parameter is enabled, `MayaUSDImportCommand` will create a `pxrUsdStageNode` for the USD file that is being imported. Then for each geometry prim being imported that has time-sampled points, a `pxrUsdPointBasedDeformerNode` will be created that reads the points for that prim from USD and uses them to deform the imported Maya geometry. This provides better import and playback performance when importing time-sampled geometry from USD, and it should reduce the weight of the resulting Maya scene since it will bypass creating blend shape deformers with per-object, per-time sample geometry. Only point data from the geometry prim will be computed by the deformer from the referenced USD. Transform data from the geometry prim will still be imported into native Maya form on the Maya shape's transform node. **Note**: This means that a link is created between the resulting Maya scene and the USD file that was imported. With this parameter off (as is the default), the USD file that was imported can be freely changed or deleted post-import. With the parameter on, however, the Maya scene will have a dependency on that USD file, as well as other layers that it may reference. Currently, this functionality is only implemented for Mesh prims/Maya mesh nodes. |
 | `-verbose`             | `-v`       | noarg          | false                             | Make the command output more verbose. |
 | `-variant`             | `-var`     | string[2]      | none                              | Set variant key value pairs |
 
 ### Return Value
 
-`mayaUSDImport` will return an array containing the fullDagPath
+`MayaUSDImportCommand` will return an array containing the fullDagPath
 of the highest prim(s) imported. This is generally the fullDagPath
 that corresponds to the imported primPath but could be multiple
 paths if primPath="/".
 
-### Import Behaviors
 
-#### Importing as Assemblies
-
-If you use USD to construct aggregates of other models, then
-`mayaUSDImport` can preserve your referencing structure as assemblies.
-Typically, we want to avoid reasoning about the precise referencing
-structure of a scene. Instead, we use model hierarchy and `kind`
-to decide what can be imported, and `assetInfo` to determine what
-to import. Your scene must have a proper model hierarchy to import
-a particular prim as a reference assembly: it is insufficient for
-the prim `</World/anim/chars/Bob>` to have `kind=component` -
-additionally, all of its ancestor prims must have `kind` that
-`IsA` `group`. We plan to make the import behavior customizable
-via plugin, but for now, it behaves as follows:
-
-* If the `assemblyRep` parameter is given a value of `Import`,
-  we do not create any USD reference assembly nodes.
-* All USD assembly nodes created by an import will have their
-  file path set to the file being imported. Their prim paths
-  will be set accordingly based on their path in that file.
-  This ensures that opinions in stronger layers doing the
-  referencing will retain their effect on prims in weaker
-  layers being referenced.
-* If `kind` `IsA` `model` and we have `assetInfo['identifier']`,
-  we generate a new USD assembly node.
-* If `kind` `IsA` `model` and we do not have `assetInfo['identifier']`,
-  we fall back to checking for any references on the prim.
-  If a reference is found, we generate a new USD assembly node.
-* In all other cases, we continue to import the scene description
-  as if there was no kind specified.
-
-
-#### Import and Playback of Animation with USD Assemblies
-
-USD assembly and proxy nodes have a `time` attribute to support
-referencing USD that contains animation. When a representation
-of an assembly is activated, we create a connection from the assembly
-node's time attribute to the time attribute(s) on any/all of its
-immediate proxies. We do **not**, however, create a connection
-between Maya's global time and the assembly's time. While doing so
-is necessary for animation to be displayed with assemblies in
-`Collapsed` and `Expanded` representations, having large numbers
-of assembly nodes with connections to Maya's global time incurs
-significant overhead within Maya. As a result, these connections
-should be created manually if animation is desired for `Collapsed`
-or `Expanded` representations. The following bit of Python code
-provides an example of how these connections can be made:
-
-```python
-# Connecting Maya's global time to all assembly nodes in a scene 
-assemblyNodes = cmds.ls(type='pxrUsdReferenceAssembly')
-for assemblyNode in assemblyNodes:
-    cmds.connectAttr('time1.outTime', '%s.time' % assemblyNode)
-```
-
-Currently, edits on reference models do not get imported into
-Maya as assembly edits.
-
----
-
-
-## `mayaUSDExport`
+## `MayaUSDExportCommand`
 
 ### Command Flags
 
@@ -189,7 +62,7 @@ Maya as assembly edits.
 | `-append`                        | `-a`       | bool             | false               | Appends into an existing USD file |
 | `-chaser`                        | `-chr`     | string(multi)    | none                | Specify the export chasers to execute as part of the export. See "Export Chasers" below. |
 | `-chaserArgs`                    | `-cha`     | string[3](multi) | none                | Pass argument names and values to export chasers. Each argument to `-chaserArgs` should be a triple of the form: (`<chaser name>`, `<argument name>`, `<argument value>`). See "Export Chasers" below. |
-| `-convertMaterialsTo`            | `-cmt`     | string           | `UsdPreviewSurface` | Selects how to convert materials on export. The default value `UsdPreviewSurface` will export to a UsdPreviewSurface shading network. A plugin mechanism allows more conversions to be registered. Use the `mayaUSDListShadingModes` command to explore the possible options. |
+| `-convertMaterialsTo`            | `-cmt`     | string           | `UsdPreviewSurface` | Selects how to convert materials on export. The default value `UsdPreviewSurface` will export to a UsdPreviewSurface shading network. A plugin mechanism allows more conversions to be registered. Use the `mayaUSDListShadingModesCommand` command to explore the possible options. |
 | `-compatibility`                 | `-com`     | string           | none                | Specifies a compatibility profile when exporting the USD file. The compatibility profile may limit features in the exported USD file so that it is compatible with the limitations or requirements of third-party applications. Currently, there are only two profiles: `none` - Standard export with no compatibility options, `appleArKit` - Ensures that exported usdz packages are compatible with Apple's implementation (as of ARKit 2/iOS 12/macOS Mojave). Packages referencing multiple layers will be flattened into a single layer, and the first layer will have the extension `.usdc`. This compatibility profile only applies when exporting usdz packages; if you enable this profile and don't specify a file extension in the `-file` flag, the `.usdz` extension will be used instead. |
 | `-defaultCameras`                | `-dc`      | noarg            | false               | Export the four Maya default cameras |
 | `-defaultMeshScheme`             | `-dms`     | string           | `catmullClark`      | Sets the default subdivision scheme for exported Maya meshes, if the `USD_subdivisionScheme` attribute is not present on the Mesh. Valid values are: `none`, `catmullClark`, `loop`, `bilinear` |
@@ -212,7 +85,7 @@ Maya as assembly edits.
 | `-frameSample`                   | `-fs`      | double (multi)   | `0.0`               | Specifies sample times used to multi-sample frames during animation export, where `0.0` refers to the current time sample. **This is an advanced option**; chances are, you probably want to set the `frameStride` parameter instead. But if you really do need fine-grained control on multi-sampling frames, see "Frame Samples" below. |
 | `-frameStride`                   | `-ft`      | double           | `1.0`               | Specifies the increment between frames during animation export, e.g. a stride of `0.5` will give you twice as many time samples, whereas a stride of `2.0` will only give you time samples every other frame. The frame stride is computed before the frame samples are taken into account. **Note**: Depending on the frame stride, the last frame of the frame range may be skipped. For example, if your frame range is `[1.0, 3.0]` but you specify a stride of `0.3`, then the time samples in your USD file will be `1.0, 1.3, 1.6, 1.9, 2.2, 2.5, 2.8`, skipping the last frame time (`3.0`). |
 | `-ignoreWarnings`                | `-ign`     | bool             | false               | Ignore warnings, do not fail to export due to warnings |
-| `-kind`                          | `-k`       | string           | none                | Specifies the required USD kind for *root prims* in the scene. (Does not affect kind for non-root prims.) If this flag is non-empty, then the specified kind will be set on any root prims in the scene without a `USD_kind` attribute (see the "Maya Custom Attributes" table below). Furthermore, if there are any root prims in the scene that do have a `USD_kind` attribute, then their `USD_kind` values will be validated to ensure they are derived from the kind specified by the `-kind` flag. For example, if the `-kind` flag is set to `group` and a root prim has `USD_kind=assembly`, then this is allowed because `assembly` derives from `group`. However, if the root prim has `USD_kind=subcomponent` instead, then `mayaUSDExport` would stop with an error, since `subcomponent` does not derive from `group`. The validation behavior understands custom kinds that are registered using the USD kind registry, in addition to the built-in kinds. |
+| `-kind`                          | `-k`       | string           | none                | Specifies the required USD kind for *root prims* in the scene. (Does not affect kind for non-root prims.) If this flag is non-empty, then the specified kind will be set on any root prims in the scene without a `USD_kind` attribute (see the "Maya Custom Attributes" table below). Furthermore, if there are any root prims in the scene that do have a `USD_kind` attribute, then their `USD_kind` values will be validated to ensure they are derived from the kind specified by the `-kind` flag. For example, if the `-kind` flag is set to `group` and a root prim has `USD_kind=assembly`, then this is allowed because `assembly` derives from `group`. However, if the root prim has `USD_kind=subcomponent` instead, then `MayaUSDExportCommand` would stop with an error, since `subcomponent` does not derive from `group`. The validation behavior understands custom kinds that are registered using the USD kind registry, in addition to the built-in kinds. |
 | `-materialCollectionsPath`       | `-mcp`     | string           | none                | Path to the prim where material collections must be exported. |
 | `-mergeTransformAndShape`        | `-mt`      | bool             | true                | Combine Maya transform and shape into a single USD prim that has transform and geometry, for all "geometric primitives" (gprims). This results in smaller and faster scenes. Gprims will be "unpacked" back into transform and shape nodes when imported into Maya from USD. |
 | `-normalizeNurbs`                | `-nnu`     | bool             | false               | When setm the UV coordinates of nurbs are normalized to be between zero and one. |
@@ -263,14 +136,14 @@ This is how it will be processed:
 
 #### Model Hierarchy and Kind
 
-`mayaUSDExport` currently attempts to make each root prim in the
+`MayaUSDExportCommand` currently attempts to make each root prim in the
 exported USD file a valid model, and may author a computed `kind`
 on one or more prims to do so. In the future, we plan to support
 annotating desired `kind` in the Maya scenegraph, and possibly make
 further `kind`/model inference optional. The current behavior is:
 
 * We initially author the kinds on prims based on the `-kind` flag
-  in `mayaUSDExport` (see the `mayaUSDExport` flags above) or the
+  in `MayaUSDExportCommand` (see the `MayaUSDExportCommand` flags above) or the
   `USD_kind` attribute on individual Maya nodes (see the "Maya
   Custom Attributes" table below).
 
@@ -280,7 +153,7 @@ further `kind`/model inference optional. The current behavior is:
     from `assembly`), then we check to make sure that Maya has not
     created any gprims (UsdGeomGprim-derived prim-type) below the
     root prim. If there are any gprims below the root prim, then
-    `mayaUSDExport` will halt with an error.
+    `MayaUSDExportCommand` will halt with an error.
   * If the root prim has no kind, then we will compute a value
     for the kind to ensure that all root prims have a kind.
     We determine whether a root prim represents a `component`
@@ -316,7 +189,7 @@ The translation is reversed on importing USD into Maya.
 
 ### Custom Attributes and Tagging for USD
 
-`mayaUSDExport` has several ways to export user-defined "blind data"
+`MayaUSDExportCommand` has several ways to export user-defined "blind data"
 (such as custom primvars) and USD-specific data (such as mesh
 subdivision scheme).
 
@@ -332,7 +205,7 @@ using the Python "adaptor" helper; see the section on
 | **All DAG nodes (internal for UsdMaya)**: Internal to Maya; cannot be set using adaptors. |
 | `USD_UserExportedAttributesJson`          | string | JSON dictionary | Specifies additional arbitrary attributes on the Maya DAG node to be exported as USD attributes. You probably don't want to author this directly (but can if you need to). See "Specifying Arbitrary Attributes for Export" below. |
 | **All DAG nodes (USD metadata)**: These attributes get converted into USD metadata. You can use UsdMaya adaptors to author them. Note that these are only the most common metadata keys; you can export any registered metadata key using UsdMaya adaptors.|
-| `USD_hidden`                              | bool   | true/false      | Equivalent to calling `UsdPrim::SetHidden()` for the exported prim. **Note**: in USD, "hidden" is a GUI property intended to be meaningful only to hierarchy browsers, as a complexity management feature indicating whether prims and properties so-tagged should be displayed, similar to how Maya allows you to show/hide shape nodes in the Outliner. Maya's "Hide Selection" GUI operation will cause `UsdGeomImageable::CreateVisibilityAttr("invisible")` to be authored on export if the `-exportVisibility` option is specified to `mayaUSDExport`. |
+| `USD_hidden`                              | bool   | true/false      | Equivalent to calling `UsdPrim::SetHidden()` for the exported prim. **Note**: in USD, "hidden" is a GUI property intended to be meaningful only to hierarchy browsers, as a complexity management feature indicating whether prims and properties so-tagged should be displayed, similar to how Maya allows you to show/hide shape nodes in the Outliner. Maya's "Hide Selection" GUI operation will cause `UsdGeomImageable::CreateVisibilityAttr("invisible")` to be authored on export if the `-exportVisibility` option is specified to `MayaUSDExportCommand`. |
 | `USD_instanceable`                        | bool   | true/false      | Equivalent to calling `UsdPrim::SetInstanceable()` with the given value for the exported prim corresponding to the node on which the attribute is authored, overriding the fallback behavior specified via the `-exportRefsAsInstanceable` export option. |
 | `USD_kind`                                | string | e.g. `component`, `assembly`, or any other custom kind | Equivalent to calling `UsdModelAPI::SetKind()` with the given value for the exported prim corresponding to the node on which the attribute is authored. Note that setting the USD kind on root prims may trigger some additional model hierarchy validation. Please see the "Model Hierarchy and kind" section above. |
 | `USD_typeName`                            | string | e.g. `SkelRoot` or any other USD type name | Equivalent to calling `UsdPrim::SetTypeName()` with the given value for the exported prim corresponding to the node on which the attribute is authored. |
@@ -346,111 +219,13 @@ using the Python "adaptor" helper; see the section on
 | `USD_ATTR_subdivisionScheme`              | string | `none`, `bilinear`, `catmullClark`, `loop` | Determines the Mesh subdivision scheme. Default can be configured using the `-defaultMeshScheme` export option for meshes without `USD_ATTR_subdivisionScheme` manually specified; we currently default to `catmullClark`. |
 
 
-#### Registered Metadata and Schema Attributes
-
-You can set the above attributes by hand, but an easier way is to use
-the Python "adaptor" helpers provided with UsdMaya. They provide an API
-that is similar to working with the USD API (but note that it's not 100%
-the same). For example, to set the `kind` metadata on a node in Maya,
-you can do the following:
-
-```python
-from pxr import UsdMaya
-UsdMaya.Adaptor("|my|dag|path").SetMetadata("kind", "group") # set kind=group
-UsdMaya.Adaptor("|my|dag|path").ClearMetadata("kind") # clear kind
-```
-
-And you can set USD attributes for a mesh like this:
-
-```python
-from pxr import UsdGeom, UsdMaya
-UsdMaya.Adaptor("|my|mesh|shape").GetSchema(UsdGeom.Mesh).CreateAttribute(UsdGeom.Tokens.subdivisionScheme).Set(UsdGeom.Tokens.loop) # set subdivisionScheme=loop
-UsdMaya.Adaptor("|my|mesh|shape").GetSchema(UsdGeom.Mesh).RemoveAttribute(UsdGeom.Tokens.subdivisionScheme) # unauthor subdivisionScheme
-UsdMaya.Adaptor("|my|mesh|shape").GetSchema(UsdGeom.Mesh).CreateAttribute(UsdGeom.Tokens.purpose).Set(UsdGeom.Tokens.proxy) # this works because a Mesh is an Imageable
-```
-
-#### Specifying Arbitrary Attributes for Export
-
-Attributes on a Maya DAG node that are not part of an existing schema
-or are otherwise unknown to USD can still be tagged for export using
-the User Exported Attributes Editor UI.
-
-Here is an example of how to launch the User Exported Attributes UI
-in a style that looks like Maya's channel box:
-
-```python
-from pxr.UsdMaya import userExportedAttributesUI
-userExportedAttributesUI.UserExportedAttributeWidget().show(dockable=True, area='right', floating=False)
-```
-
-Attributes tagged using this UI will be added to the Maya attribute
-`USD_UserExportedAttributesJson` as a JSON dictionary. During export,
-this attribute is used to find the names of additional Maya attributes
-to export as USD attributes, as well as any additional metadata about
-how the attribute should be exported. Here is example of what the JSON
-in this attribute might look like after tagging:
-
-```javascript
-{
-    "myMayaAttributeOne": {
-    },
-    "myMayaAttributeTwo": {
-        "usdAttrName": "my:namespace:attributeTwo"
-    },
-    "attributeAsPrimvar": {
-        "usdAttrType": "primvar"
-    },
-    "attributeAsVertexInterpPrimvar": {
-        "usdAttrType": "primvar",
-        "interpolation": "vertex"
-    },
-    "attributeAsRibAttribute": {
-        "usdAttrType": "usdRi"
-    }
-    "doubleAttributeAsFloatAttribute": {
-        "translateMayaDoubleToUsdSinglePrecision": true
-    }
-}
-```
-
-If the attribute metadata contains a value for `usdAttrName`, the
-attribute will be given that name in USD. Otherwise, the Maya
-attribute name will be used, and for regular USD attributes,
-that name will be prepended with the `userProperties:` namespace.
-Note that other types of attributes such as primvars and UsdRi
-attributes have specific namespacing schemes, so attributes of
-those types will follow those namespacing conventions. Maya
-attributes in the JSON will be processed in sorted order. Any USD
-attribute name collisions will be resolved by using the first
-attribute visited, and a warning will be issued about subsequent
-attribute tags for the same USD attribute. The attribute metadata
-can also contain a value for `usdAttrType` which can be set to
-`primvar` to create the attribute as a UsdGeomPrimvar, or to
-`usdRi` to create the attribute using `UsdRiStatements::CreateRiAttribute()`.
-Any other value for `usdAttrType` will result in a regular USD
-attribute. Attributes to be exported as primvars can also have
-their interpolation specified by providing a value for the
-`interpolation` key in the attribute metadata.
-
-There is not always a direct mapping between Maya-native types and
-USD/Sdf types, and often it's desirable to intentionally use a single
-precision type when the extra precision is not needed to reduce size,
-I/O bandwidth, etc. For example, there is no native Maya attribute
-type to represent an array of float triples. To get an attribute with
-a `VtVec3fArray` type in USD, you can create a `vectorArray` data-typed
-attribute in Maya (which stores an array of `MVector`s, which contain
-doubles) and set the attribute metadata `translateMayaDoubleToUsdSinglePrecision`
-to true so that the data is cast to single precision on export.
-It will be up-cast back to double precision on re-import.
-
-
 #### Export Chasers (Advanced)
 
 Export chasers are plugins that run as part of the export and can
 implement prim post-processing that executes immediately after prims
 are written (and/or after animation is written to a prim in time-based
 exports). Chasers are registered with a particular name and can be
-passed argument name/value pairs in an invocation of `mayaUSDExport`.
+passed argument name/value pairs in an invocation of `MayaUSDExportCommand`.
 There is no "plugin discovery" method here – the developer/user is
 responsible for making sure the chaser is registered.
 
@@ -541,21 +316,21 @@ cmds.mayaUSDExport(
     ])
 ```
 
----
 
-
-## Setting Site-Specific Defaults for mayaUSDImport/mayaUSDExport
+## Setting Site-Specific Defaults for MayaUSDImportCommand/MayaUSDExportCommand
 
 Suppose that at your site you always want to export with the flags
 `-exportMaterialCollections` and `-chaser alembic` and `-chaserArgs ...`,
-even when exporting using the "File > Export All > pxrUsdExport"
- menu item, where you wouldn't normally be able to set some more
- advanced options like `-chaser` that are only available via the
- `mayaUSDExport` command. You can configure these options as the
- "site-specific" defaults for your installation of the Maya USD
- plugins by creating a plugin and adding some information to its
- `plugInfo.json` file (see the USD Plug library documentation
- for more information).
+even when exporting using the "File > Export All" menu item, where
+you wouldn't normally be able to set some more advanced options like
+`-chaser` that are only available via the specific command, for example
+the `mayaUSDExport` command.
+
+You can configure these options as the "site-specific" defaults for
+your installation of the plug-in, for example the Autodesk Maya USD
+plugins by creating a plugin and adding some information to its
+`plugInfo.json` file (see the USD Plug library documentation for more
+information).
 
 For example, your `plugInfo.json` would contain these keys if you
 wanted the default flags mentioned above:
@@ -575,14 +350,16 @@ wanted the default flags mentioned above:
 }
 ```
 
-This also works for the `mayaUSDImport` command and the "File > Import"
-menu item; use the `mayaUSDImport` key in the `plugInfo.json` file to
-configure your site-specific defaults.
+This also works for the `MayaUSDImportCommand` base command, for example
+in the `mayaUSDimport` command and the "File > Import" menu item; use
+the `mayaUSDimport` key in the `plugInfo.json` file to configure your
+site-specific defaults.
 
 
----
+## `mayaUSDListShadingModesCommand`
 
-## `mayaUSDListShadingModes`
+The purpose of this command is to translate between nice-names, internal
+names and annotations for various elements passed to the other commands.
 
 ### Command Flags
 
@@ -597,7 +374,10 @@ configure your site-specific defaults.
 | `-importOptions`       | `-io`      | string         | Retrieve the real name of the shading mode given its nice name. These can be used in the `shadingMode` option of the export command. |
 | `-importAnnotation`    | `-ia`      | string         | Retrieve the description of the import shading mode option |
 
-## `mayaUSDEditTarget`
+
+## `EditTargetCommand`
+
+The purpose of this command is to set the current edit target.
 
 ### Command Flags
 
@@ -608,7 +388,9 @@ configure your site-specific defaults.
 | `-editTarget`  | `-et`      | string         | The name of the target to set with the `-edit` flag |
 
 
-## `mayaUsdLayerEditor`
+## `LayerEditorCommand`
+
+The purpose of this command is edit layers.
 
 ### Command Flags
 
@@ -624,7 +406,9 @@ configure your site-specific defaults.
 | `-removeSubPath`    | `-rs`      | int string     | Remove a sub layer at a given index      |
 
 
-## `mayaUsdLayerEditorWindow`
+## `LayerEditorWindowCommand`
+
+The purpose of this command is to control the layer editor window.
 
 ### Command Flags
 
