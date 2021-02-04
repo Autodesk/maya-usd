@@ -16,17 +16,23 @@
 # limitations under the License.
 #
 
-import os
+import fixturesUtils
+import mayaUtils
+import testUtils
+import usdUtils
 
-import usdUtils, mayaUtils, testUtils
-import ufe
 from pxr import UsdGeom
+
+from maya import cmds
+from maya import standalone
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
+
+import ufe
+
+import os
 import random
-
-import maya.cmds as cmds
-import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
-
 import unittest
+
 
 class TestObserver(ufe.Observer):
     def __init__(self):
@@ -53,6 +59,8 @@ class AttributeTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
@@ -65,6 +73,8 @@ class AttributeTestCase(unittest.TestCase):
     def tearDownClass(cls):
         # See comments in MayaUFEPickWalkTesting.tearDownClass
         cmds.file(new=True, force=True)
+
+        standalone.uninitialize()
 
     def setUp(self):
         '''Called initially to set up the maya test environment'''
@@ -604,3 +614,7 @@ class AttributeTestCase(unittest.TestCase):
         radiusAttr = attrs.attribute('radius')
         
         self.assertEqual(radiusAttr.get(), newRadius)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

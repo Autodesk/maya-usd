@@ -16,24 +16,31 @@
 # limitations under the License.
 #
 
-import maya.api.OpenMaya as om
-import maya.cmds as cmds
-from math import radians, degrees
+import fixturesUtils
+import mayaUtils
+from testUtils import assertVectorAlmostEqual
+import testTRSBase
+import ufeUtils
+import usdUtils
 
 import mayaUsd.ufe
 import mayaUsd.lib
 
-import usdUtils, mayaUtils, ufeUtils
-from testUtils import assertVectorAlmostEqual
-import testTRSBase
+from pxr import UsdGeom
+from pxr import Vt
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as om
+
 import ufe
 
-from pxr import UsdGeom, Vt
-
-import unittest
-import os
-
 from functools import partial
+from math import degrees
+from math import radians
+import os
+import unittest
+
 
 def transform3dScale(transform3d):
     matrix = om.MMatrix(transform3d.inclusiveMatrix().matrix)
@@ -133,8 +140,14 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.setUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
     
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
@@ -794,3 +807,7 @@ class ComboCmdTestCase(testTRSBase.TRSTestCaseBase):
 
         checkPivotsAndCompensations(self, mayaObj, usdSphere3d)
         checkPivotsAndCompensations(self, mayaObj, usdFallbackSphere3d)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

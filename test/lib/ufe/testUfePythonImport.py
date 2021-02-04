@@ -16,6 +16,10 @@
 # limitations under the License.
 #
 
+import fixturesUtils
+
+from maya import standalone
+
 import unittest
 
 
@@ -23,6 +27,14 @@ class UfePythonImportTestCase(unittest.TestCase):
     """
     Verify that the ufe Python module imports correctly.
     """
+
+    @classmethod
+    def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def testImportModule(self):
         from mayaUsd import ufe as mayaUsdUfe
@@ -46,3 +58,7 @@ class UfePythonImportTestCase(unittest.TestCase):
         # of the two.
         typeName = type(invalidPrim).__name__
         self.assertIn(typeName, ['Prim', 'Object'])
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

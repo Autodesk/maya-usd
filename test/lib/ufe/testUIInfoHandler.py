@@ -16,14 +16,17 @@
 # limitations under the License.
 #
 
-import os
-
-import maya.cmds as cmds
-
+import fixturesUtils
 import mayaUtils
+
+from maya import cmds
+from maya import standalone
+
 import ufe
 
+import os
 import unittest
+
 
 class UIInfoHandlerTestCase(unittest.TestCase):
     '''Verify the UIInfoHandler USD implementation.
@@ -33,8 +36,14 @@ class UIInfoHandlerTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -79,3 +88,7 @@ class UIInfoHandlerTestCase(unittest.TestCase):
         icon = ufeUIInfo.treeViewIcon(ball3Hier)
         self.assertEqual(icon.baseIcon, "out_USD_Sphere.png")
         self.assertFalse(icon.badgeIcon)    # empty string
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

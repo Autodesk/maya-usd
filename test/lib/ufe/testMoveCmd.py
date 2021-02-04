@@ -16,17 +16,22 @@
 # limitations under the License.
 #
 
-import maya.api.OpenMaya as om
-import maya.cmds as cmds
-
-import usdUtils, mayaUtils, ufeUtils
-from testUtils import assertVectorAlmostEqual
+import fixturesUtils
+import mayaUtils
 import testTRSBase
+from testUtils import assertVectorAlmostEqual
+import ufeUtils
+import usdUtils
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as om
+
 import ufe
 
+from functools import partial
 import unittest
 
-from functools import partial
 
 def matrix4dTranslation(matrix4d):
     translation = matrix4d.matrix[-1]
@@ -69,8 +74,14 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
     
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
@@ -264,3 +275,7 @@ class MoveCmdTestCase(testTRSBase.TRSTestCaseBase):
         expected = [usdSceneItemTranslation(ballItem) for ballItem in ballItems]
 
         self.runMultiSelectTestMove(ballItems, expected)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

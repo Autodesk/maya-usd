@@ -16,15 +16,21 @@
 # limitations under the License.
 #
 
-import usdUtils, mayaUtils
+import fixturesUtils
+import mayaUtils
+import usdUtils
+
+import mayaUsd.ufe
+
+from maya import cmds
+from maya import standalone
 
 import ufe
-import mayaUsd.ufe
-import maya.cmds as cmds
 
-import unittest
-import re
 import os
+import re
+import unittest
+
 
 def findIndex(childItem):
     hier = ufe.Hierarchy.hierarchy(childItem)
@@ -39,12 +45,16 @@ class ReorderCmdTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
     @classmethod
     def tearDownClass(cls):
         cmds.file(new=True, force=True)
+
+        standalone.uninitialize()
 
     def setUp(self):
         # load plugins
@@ -143,3 +153,7 @@ class ReorderCmdTestCase(unittest.TestCase):
         self.assertEqual(findIndex(capsuleItem), 1)
         self.assertEqual(findIndex(coneItem),    2) 
         self.assertEqual(findIndex(cubeItem),    3)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)
