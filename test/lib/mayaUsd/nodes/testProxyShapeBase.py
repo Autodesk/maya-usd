@@ -94,7 +94,7 @@ class testProxyShapeBase(unittest.TestCase):
         duplProxyShapeItem = duplProxyShapeHier.children()[0]
         self.assertEqual(str(duplProxyShapeItem.nodeName()), "stageShape2")
 
-        # duplicated ProxyShapeItem should have exactly one children
+        # duplicated ProxyShapeItem should have exactly one child
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
 
         # child name is expected to be Capsule1
