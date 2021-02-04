@@ -311,9 +311,21 @@ MStatus mayaGetBlendShapeInfosForMesh(
         MObject curBlendShape = itDg.currentItem();
         TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
 
-        MPlug outputGeomPlug = itDg.thisPlug();
-        TF_VERIFY(outputGeomPlug.isElement() == true);
-        unsigned int outputGeomPlugIdx = outputGeomPlug.logicalIndex();
+        MPlug outputGeomElemPlug = itDg.thisPlug();
+        // NOTE: (yliangsiew) Because this can end up grabbing the wrong plug (i.e.
+        // blendShape.weight[1]), we double-check here and advance the iterator if necessary.
+        if (!outputGeomElemPlug.isElement()) {
+            itDg.next();
+            continue;
+        }
+        MPlug outputGeomPlug = outputGeomElemPlug.array(&stat);
+        CHECK_MSTATUS_AND_RETURN_IT(stat);
+        MString outputGeomPlugName = outputGeomPlug.partialName(0, 0, 0, 0, 0, 1);
+        if (outputGeomPlugName != "outputGeometry") {
+            itDg.next();
+            continue;
+        }
+        unsigned int outputGeomPlugIdx = outputGeomElemPlug.logicalIndex();
 
         // NOTE: (yliangsiew) Because we can have multiple output
         // deformed meshes from a single blendshape deformer, we have
@@ -527,29 +539,26 @@ void findUnionAndProcessArrays(
     for (size_t i = 0; i < numArrays; ++i) {
         const VtVec3fArray& origOffsetsArray = offsetsArrays[i];
         const size_t        numOrigOffsets = origOffsetsArray.size();
-        VtVec3fArray& newOffsetsArray = unionOffsetsArrays[i];
+        VtVec3fArray&       newOffsetsArray = unionOffsetsArrays[i];
         newOffsetsArray.assign(numUnionIndices, GfVec3f(0.0f));
 
         const VtVec3fArray& origNormalsArray = normalsArrays[i];
-        const size_t numOrigNormals = origNormalsArray.size();
-#ifdef _DEBUG
-        TF_VERIFY(numOrigOffsets == numOrigNormals);
-#endif
+        const size_t        numOrigNormals = origNormalsArray.size();
         if (numOrigNormals == 0 && numOrigOffsets == 0) {
-            // NOTE: (yliangsiew) Means that the target is completely empty (no deltas, no effect). If so, we don't even bother
-            // trying to match, because whatever is stored in the offsets and normals for this target is
-            // meaningless.
+            // NOTE: (yliangsiew) Means that the target is completely empty (no deltas, no effect).
+            // If so, we don't even bother trying to match, because whatever is stored in the
+            // offsets and normals for this target is meaningless.
             continue;
         }
-
+        TF_VERIFY(numOrigOffsets == numOrigNormals);
         VtVec3fArray& newNormalsArray = unionNormalsArrays[i];
         newNormalsArray.assign(numUnionIndices, GfVec3f(0.0f));
 
         const VtIntArray& origIndicesArray = indicesArrays[i];
         if (origIndicesArray.size() == 0) {
-            // NOTE: (yliangsiew) Means that the target is completely empty (no indices, no effect). If so, we don't even bother
-            // trying to match, because whatever is stored in the offsets and normals for this target is
-            // meaningless.
+            // NOTE: (yliangsiew) Means that the target is completely empty (no indices, no effect).
+            // If so, we don't even bother trying to match, because whatever is stored in the
+            // offsets and normals for this target is meaningless.
             continue;
         }
         for (size_t j = 0, k = 0; j < numUnionIndices; ++j) {
@@ -672,12 +681,12 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             &stat); // NOTE: (yliangsiew) The target name is set as an alias, so
                                     // we'll use that instead of calling our target "weight_".
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
-                        // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
-                        // have to put a numeric suffix in the target name.
                         if (k == 0) {
                             curTargetNameMStr
                                 = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
                         } else {
+                            // NOTE: (yliangsiew) Because a single weight can drive multiple
+                            // targets, we have to put a numeric suffix in the target name.
                             curTargetNameMStr = MString(
                                 TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
                         }
@@ -847,13 +856,13 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             &stat); // NOTE: (yliangsiew) The target name is set as an alias, so
                                     // we'll use that instead of calling our target "weight_".
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
-                        // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
-                        // have to put a numeric suffix in the target name.
                         if (k == 0) {
                             curTargetNameMStr
                                 = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
                             parentTargetNameMStr = MString(curTargetNameMStr);
                         } else {
+                            // NOTE: (yliangsiew) Because a single weight can drive multiple
+                            // targets, we have to put a numeric suffix in the target name.
                             curTargetNameMStr = MString(
                                 TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
                         }
@@ -988,7 +997,6 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
     } else {
         skelAnimBlendShapesAttr = _skelAnim.CreateBlendShapesAttr();
     }
-
     skelAnimBlendShapesAttr.Set(usdBlendShapeNames);
 
     return deformedMesh;
