@@ -591,31 +591,41 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 loadSet = UsdStage::InitialLoadSet::LoadNone;
             }
 
-            if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
-                SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+            {
+                // When opening or creating stages we must have an active UsdStageCache.
+                // The stage cache is the only one who holds a strong reference to the
+                // UsdStage. See https://github.com/Autodesk/maya-usd/issues/528 for
+                // more information.
+                UsdStageCacheContext ctx(
+                    UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
 
-                bool targetSession = MGlobal::optionVarIntValue(UsdMayaUtil::convert(
-                                         MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
-                    == 1;
-                targetSession = targetSession || !rootLayer->PermissionToEdit();
+                if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+                    SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
 
-                if (sessionLayer || targetSession) {
-                    if (!sessionLayer)
-                        sessionLayer = SdfLayer::CreateAnonymous();
-                    usdStage = UsdStage::Open(
-                        rootLayer, sessionLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                    bool targetSession
+                        = MGlobal::optionVarIntValue(UsdMayaUtil::convert(
+                              MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
+                        == 1;
+                    targetSession = targetSession || !rootLayer->PermissionToEdit();
+
+                    if (sessionLayer || targetSession) {
+                        if (!sessionLayer)
+                            sessionLayer = SdfLayer::CreateAnonymous();
+                        usdStage = UsdStage::Open(
+                            rootLayer, sessionLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                    } else {
+                        usdStage = UsdStage::Open(
+                            rootLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                    }
+                    if (sessionLayer && targetSession) {
+                        usdStage->SetEditTarget(sessionLayer);
+                    } else {
+                        usdStage->SetEditTarget(usdStage->GetRootLayer());
+                    }
                 } else {
-                    usdStage
-                        = UsdStage::Open(rootLayer, ArGetResolver().GetCurrentContext(), loadSet);
+                    // Create a new stage in memory with an anonymous root layer.
+                    usdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
                 }
-                if (sessionLayer && targetSession) {
-                    usdStage->SetEditTarget(sessionLayer);
-                } else {
-                    usdStage->SetEditTarget(usdStage->GetRootLayer());
-                }
-            } else {
-                // Create a new stage in memory with an anonymous root layer.
-                usdStage = UsdStage::CreateInMemory(kAnonymousLayerName, loadSet);
             }
         }
         SdfPath primPath;
