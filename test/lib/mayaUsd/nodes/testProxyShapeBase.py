@@ -23,7 +23,7 @@ import fixturesUtils
 import os
 import unittest
 
-import usdUtils, mayaUtils
+import usdUtils, mayaUtils, ufeUtils
 
 import ufe
 import mayaUsd.ufe
