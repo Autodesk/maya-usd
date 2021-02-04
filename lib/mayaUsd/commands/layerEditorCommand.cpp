@@ -16,10 +16,6 @@
 
 #include "layerEditorCommand.h"
 
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/ufe/Utils.h>
-#include <mayaUsd/ufe/Global.h>
-#endif
 #include <mayaUsd/utils/query.h>
 
 #include <pxr/base/tf/diagnostic.h>
@@ -28,7 +24,11 @@
 #include <maya/MArgParser.h>
 #include <maya/MStringArray.h>
 #include <maya/MSyntax.h>
+
 #if defined(WANT_UFE_BUILD)
+#include <mayaUsd/ufe/Utils.h>
+#include <mayaUsd/ufe/Global.h>
+
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #endif
