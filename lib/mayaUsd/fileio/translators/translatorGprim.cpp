@@ -28,11 +28,6 @@ void UsdMayaTranslatorGprim::Read(
 {
     MFnDagNode fnGprim(mayaNode);
 
-    TfToken orientation;
-    if (gprim.GetOrientationAttr().Get(&orientation)) {
-        UsdMayaUtil::setPlugValue(fnGprim, "opposite", (orientation == UsdGeomTokens->leftHanded));
-    }
-
     bool doubleSided;
     if (gprim.GetDoubleSidedAttr().Get(&doubleSided)) {
         UsdMayaUtil::setPlugValue(fnGprim, "doubleSided", doubleSided);

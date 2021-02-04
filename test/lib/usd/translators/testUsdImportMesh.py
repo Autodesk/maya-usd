@@ -40,8 +40,7 @@ class testUsdImportMesh(unittest.TestCase):
     def tearDownClass(cls):
         standalone.uninitialize()
 
-    def testImportPoly(self):
-        mesh = 'PolyMeshShape'
+    def verifyPolyMeshCommonAttributes(self, mesh):
         self.assertTrue(cmds.objExists(mesh))
 
         schema = mayaUsdLib.Adaptor(mesh).GetSchema(UsdGeom.Mesh)
@@ -60,8 +59,13 @@ class testUsdImportMesh(unittest.TestCase):
         self.assertTrue(
                 cmds.attributeQuery("USD_EmitNormals", node=mesh, exists=True))
 
-    def testImportSubdiv(self):
-        mesh = 'SubdivMeshShape'
+    def testImportPoly(self):
+        self.verifyPolyMeshCommonAttributes('PolyMeshShape')
+
+    def testImportLeftHandedPoly(self):
+        self.verifyPolyMeshCommonAttributes('LeftHandedPolyMeshShape')
+
+    def verifySubdivCommonAttributes(self, mesh):
         self.assertTrue(cmds.objExists(mesh))
 
         schema = mayaUsdLib.Adaptor(mesh).GetSchema(UsdGeom.Mesh)
@@ -79,6 +83,12 @@ class testUsdImportMesh(unittest.TestCase):
 
         self.assertFalse(
                 cmds.attributeQuery("USD_EmitNormals", node=mesh, exists=True))
+
+    def testImportSubdiv(self):
+        self.verifySubdivCommonAttributes('SubdivMeshShape')
+
+    def testImportLeftHandedSubdiv(self):
+        self.verifySubdivCommonAttributes('LeftHandedSubdivMeshShape')
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
