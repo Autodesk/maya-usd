@@ -15,6 +15,7 @@
 # limitations under the License.
 #
 
+import fixturesUtils
 import mayaUtils
 import usdUtils
 
@@ -23,6 +24,7 @@ from mayaUsd import ufe as mayaUsdUfe
 from pxr import UsdGeom
 
 from maya import cmds
+from maya import standalone
 
 import ufe
 
@@ -39,6 +41,8 @@ class PointInstancesTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls._pluginsLoaded:
             cls._pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
@@ -46,6 +50,10 @@ class PointInstancesTestCase(unittest.TestCase):
         self.assertTrue(self._pluginsLoaded)
 
         mayaUtils.openPointInstancesGrid14Scene()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def testPointInstances(self):
         # Create a UFE path to a PointInstancer prim with an instanceIndex on
@@ -138,3 +146,7 @@ class PointInstancesTestCase(unittest.TestCase):
         self.assertEqual(
             ufePathString,
             '|UsdProxy|UsdProxyShape,/PointInstancerGrid/PointInstancer')
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

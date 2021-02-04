@@ -138,7 +138,7 @@ sys.exit(maya.cmds.AL_maya_test_UnitTestHarness())
 mayaUsd_add_test(${TARGET_NAME}
     PYTHON_COMMAND "${pycode}"
     ENV
-        "PXR_PLUGINPATH_NAME=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
+        "${PXR_OVERRIDE_PLUGINPATH_NAME}=${ADDITIONAL_PXR_PLUGINPATH_NAME}"
         "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 )
 

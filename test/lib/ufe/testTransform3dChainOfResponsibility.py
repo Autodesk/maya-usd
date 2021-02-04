@@ -16,16 +16,21 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
+import fixturesUtils
+import mayaUtils
 
 import mayaUsd.ufe
 
-import mayaUtils
+from pxr import UsdGeom
+from pxr import Vt
+
+from maya import cmds
+from maya import standalone
+
 import ufe
 
-from pxr import UsdGeom, Vt
-
 import unittest
+
 
 class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
     '''Verify the Transform3d chain of responsibility for USD.'''
@@ -34,9 +39,15 @@ class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
     def testXformCommonAPI(self):
         '''The Maya transform API is preferred to the USD common API.'''
 
@@ -144,3 +155,7 @@ class Transform3dChainOfResponsibilityTestCase(unittest.TestCase):
             Vt.TokenArray(("xformOp:translate:pivot", "xformOp:rotateXYZ",
                            "!invert!xformOp:translate:pivot")))
         self.assertTrue(UsdGeom.XformCommonAPI(cubeXformable))
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

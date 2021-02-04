@@ -115,6 +115,15 @@ global proc mayaUsdTranslatorExport_AnimationCB() {
     columnLayout -e -visible (`checkBoxGrp -q -v1 animationCheckBox`) animOptsCol;
 }
 
+// Callback called when the animation frame layout is expanded.
+// Set the animOptsCol layout visibility status based on the
+// animationCheckBox checkbox value. By default, maya look
+// to set all childs widget of frameLayout visible when the
+// frameLayout is expanded.
+global proc mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB() {
+    columnLayout -e -visible (`checkBoxGrp -q -v1 animationCheckBox`) animOptsCol;
+}
+
 global proc mayaUsdTranslatorExport_AnimationRangeCB() {
     int $startTime = `playbackOptions -q -animationStartTime`;
     int $endTime = `playbackOptions -q -animationEndTime`;
@@ -283,7 +292,8 @@ global proc int mayaUsdTranslatorExport (string $parent,
             separator -style "none";
         setParent ..;
 
-        frameLayout -label "Animation" -collapsable true -collapse false;
+        frameLayout -label "Animation" -collapsable true -collapse false 
+                    -expandCommand("mayaUsdTranslatorExport_AnimationFrameLayoutExpandCB");
             separator -style "none";
 
             checkBoxGrp -l "Animation Data: " -cc ("mayaUsdTranslatorExport_AnimationCB")

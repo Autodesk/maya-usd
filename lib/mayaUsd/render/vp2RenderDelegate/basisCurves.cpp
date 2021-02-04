@@ -1728,7 +1728,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateWireRenderItem(const MString& n
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
     renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
 
-#if MAYA_API_VERSION >= 20210000
+#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
 #endif
 
@@ -1750,7 +1750,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreateBBoxRenderItem(const MString& n
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
     renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
 
-#if MAYA_API_VERSION >= 20210000
+#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
 #endif
 
@@ -1773,7 +1773,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePatchRenderItem(const MString& 
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueGray));
     renderItem->setSelectionMask(MSelectionMask::kSelectCurves);
 
-#if MAYA_API_VERSION >= 20210000
+#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
 #endif
 
@@ -1798,7 +1798,7 @@ MHWRender::MRenderItem* HdVP2BasisCurves::_CreatePointsRenderItem(const MString&
     selectionMask.addMask(MSelectionMask::kSelectCurves);
     renderItem->setSelectionMask(selectionMask);
 
-#if MAYA_API_VERSION >= 20210000
+#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeNurbsCurves);
 #endif
 
