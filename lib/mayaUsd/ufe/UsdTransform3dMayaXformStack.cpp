@@ -206,12 +206,28 @@ public:
         t3d->translate(_newT.x(), _newT.y(), _newT.z());
         t3d->rotate(_newR.x(), _newR.y(), _newR.z());
         t3d->scale(_newS.x(), _newS.y(), _newS.z());
+
+#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
+        _executeCalled = true;
+#endif
     }
 
     void undo() override { _undoableItem.undo(); }
-    void redo() override { _undoableItem.redo(); }
+    void redo() override
+    {
+#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
+        if (!_executeCalled) {
+            execute();
+            return;
+        }
+#endif
+        _undoableItem.redo();
+    }
 
 private:
+#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
+    bool _executeCalled { false };
+#endif
     UsdUndoableItem _undoableItem;
     Ufe::Vector3d   _newT;
     Ufe::Vector3d   _newR;
