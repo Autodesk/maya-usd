@@ -225,15 +225,17 @@ Export chasers are plugins that run as part of the export and can
 implement prim post-processing that executes immediately after prims
 are written (and/or after animation is written to a prim in time-based
 exports). Chasers are registered with a particular name and can be
-passed argument name/value pairs in an invocation of `MayaUSDExportCommand`.
-There is no "plugin discovery" method here – the developer/user is
-responsible for making sure the chaser is registered.
+passed argument name/value pairs in an invocation of a concrete
+`MayaUSDExportCommand` command. There is no "plugin discovery" method
+here – the developer/user is responsible for making sure the chaser is
+registered.
 
-We provide one such chaser plugin called `AlembicChaser` to try to make
-integrating USD into Alembic-heavy pipelines easier. One of its features
-is that it can export all Maya attributes whose name matches a particular
-prefix (e.g. `ABC_`) as USD attributes by using its `attrprefix` argument.
-Here is an example of what that call to `mayaUSDExport` might look like:
+For example the pxr plug-in provides one such chaser plugin called
+`AlembicChaser` to try to make integrating USD into Alembic-heavy
+pipelines easier. One of its features is that it can export all Maya
+attributes whose name matches a particular prefix (e.g. `ABC_`) as USD
+attributes by using its `attrprefix` argument. Here is an example of
+what that call to `mayaUSDExport` might look like:
 
 ```python
 cmds.mayaUSDExport(
