@@ -29,7 +29,7 @@ class testUsdImportCustomConverter(unittest.TestCase):
     def setUpClass(cls):
         # In case tests are run in parallel, make sure we export to separate
         # directories:
-        plugin_path = os.getenv("PXR_PLUGINPATH_NAME")
+        plugin_path = os.getenv("@PXR_OVERRIDE_PLUGINPATH_NAME@")
         maya_path = [i for i in plugin_path.split(os.pathsep) if i.endswith("Maya")]
         if maya_path:
             suffix = "Maya"

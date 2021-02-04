@@ -16,17 +16,23 @@
 # limitations under the License.
 #
 
-import os
+import fixturesUtils
+import mayaUtils
+import testUtils
+import usdUtils
 
-import usdUtils, mayaUtils, testUtils
-import ufe
 from pxr import UsdGeom
+
+from maya import cmds
+from maya import standalone
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
+
+import ufe
+
+import os
 import random
-
-import maya.cmds as cmds
-import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
-
 import unittest
+
 
 class TestObserver(ufe.Observer):
     def __init__(self):
@@ -53,6 +59,8 @@ class AttributeTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
@@ -65,6 +73,8 @@ class AttributeTestCase(unittest.TestCase):
     def tearDownClass(cls):
         # See comments in MayaUFEPickWalkTesting.tearDownClass
         cmds.file(new=True, force=True)
+
+        standalone.uninitialize()
 
     def setUp(self):
         '''Called initially to set up the maya test environment'''
@@ -557,3 +567,54 @@ class AttributeTestCase(unittest.TestCase):
         self.assertEqual(ball34Obs.notifications, 3)
         self.assertEqual(ball35Obs.notifications, 3)
         self.assertEqual(globalObs.notifications, 7)
+
+    # Run last to avoid file new disturbing other tests.
+    def testZAttrChangeRedoAfterPrimCreateRedo(self):
+        '''Redo attribute change after redo of prim creation.'''
+        cmds.file(new=True, force=True)
+
+        # Create a capsule, change one of its attributes.
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        cmd = proxyShapeContextOps.doOpCmd(['Add New Prim', 'Capsule'])
+        ufeCmd.execute(cmd)
+
+        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+
+        # Create the attributes interface for the item.
+        attrs = ufe.Attributes.attributes(capsuleItem)
+        self.assertIsNotNone(attrs)
+        self.assertTrue(attrs.hasAttribute('radius'))
+        radiusAttr = attrs.attribute('radius')
+
+        oldRadius = radiusAttr.get()
+
+        ufeCmd.execute(radiusAttr.setCmd(2))
+        
+        newRadius = radiusAttr.get()
+
+        self.assertEqual(newRadius, 2)
+        self.assertNotEqual(oldRadius, newRadius)
+
+        # Undo 2x: undo attr change and prim creation.
+        cmds.undo()
+        cmds.undo()
+
+        # Redo 2x: prim creation, attr change.
+        cmds.redo()
+        cmds.redo()
+
+        # Re-create item, as its underlying prim was re-created.
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        attrs = ufe.Attributes.attributes(capsuleItem)
+        radiusAttr = attrs.attribute('radius')
+        
+        self.assertEqual(radiusAttr.get(), newRadius)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

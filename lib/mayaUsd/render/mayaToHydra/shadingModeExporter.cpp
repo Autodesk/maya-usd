@@ -118,7 +118,7 @@ protected:
             return UsdShadeConnectableAPI::ConnectToSource(input, output);
         }
         return UsdShadeConnectableAPI::ConnectToSource(
-            input, outputShader, relationship.inputName,
+            input, outputShader.ConnectableAPI(), relationship.inputName,
             UsdShadeAttributeType::Output, typeName);
     }
 

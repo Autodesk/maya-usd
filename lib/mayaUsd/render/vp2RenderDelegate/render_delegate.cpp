@@ -63,7 +63,7 @@ inline const TfTokenVector& _SupportedSprimTypes()
  */
 inline const TfTokenVector& _SupportedBprimTypes()
 {
-    static const TfTokenVector r { HdPrimTypeTokens->texture };
+    static const TfTokenVector r {};
     return r;
 }
 
@@ -710,9 +710,6 @@ void HdVP2RenderDelegate::DestroySprim(HdSprim* sPrim) { delete sPrim; }
 HdBprim* HdVP2RenderDelegate::CreateBprim(const TfToken& typeId, const SdfPath& bprimId)
 {
     /*
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new HdVP2Texture(this, bprimId);
-    }
     if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdVP2RenderBuffer(bprimId);
     }
@@ -736,9 +733,6 @@ HdBprim* HdVP2RenderDelegate::CreateBprim(const TfToken& typeId, const SdfPath& 
 HdBprim* HdVP2RenderDelegate::CreateFallbackBprim(const TfToken& typeId)
 {
     /*
-    if (typeId == HdPrimTypeTokens->texture) {
-        return new HdVP2Texture(this, SdfPath::EmptyPath());
-    }
     if (typeId == HdPrimTypeTokens->renderBuffer) {
         return new HdVP2RenderBuffer(SdfPath::EmptyPath());
     }

@@ -169,9 +169,7 @@ GetFileTextureResource(const MObject& fileObj, const TfToken& filePath, int maxT
         textureType,
         std::get<0>(wrapping),
         std::get<1>(wrapping),
-#if USD_VERSION_NUM >= 1910
         HdWrapClamp,
-#endif
         HdMinFilterLinearMipmapLinear,
         HdMagFilterLinear,
         maxTextureMemory));

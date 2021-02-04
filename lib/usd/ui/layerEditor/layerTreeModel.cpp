@@ -381,11 +381,12 @@ void layerItemVectorRecurs(
     }
 }
 
-LayerItemVector LayerTreeModel::getAllItems(ConditionFunc filter) const
+LayerItemVector
+LayerTreeModel::getAllItems(ConditionFunc filter, const LayerTreeItem* item /* = nullptr*/) const
 {
 
     LayerItemVector result;
-    auto            root = invisibleRootItem();
+    auto            root = item ? item : invisibleRootItem();
     for (int i = 0, count = root->rowCount(); i < count; i++) {
         auto child = dynamic_cast<LayerTreeItem*>(root->child(i));
         layerItemVectorRecurs(child, filter, result);
@@ -399,11 +400,12 @@ LayerItemVector LayerTreeModel::getAllNeedsSavingLayers() const
     return getAllItems(filter);
 }
 
-LayerItemVector LayerTreeModel::getAllAnonymousLayers() const
+LayerItemVector
+LayerTreeModel::getAllAnonymousLayers(const LayerTreeItem* item /* = nullptr*/) const
 {
     auto filter
         = [](const LayerTreeItem* item) { return item->isAnonymous() && !item->isSessionLayer(); };
-    return getAllItems(filter);
+    return getAllItems(filter, item);
 }
 
 void LayerTreeModel::saveStage(QWidget* in_parent)
@@ -452,7 +454,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
                 const auto layers = getAllNeedsSavingLayers();
                 for (auto layer : layers) {
                     if (!layer->isAnonymous())
-                        layer->saveEdits();
+                        layer->saveEditsNoPrompt();
                 }
             }
         }
@@ -481,7 +483,7 @@ void LayerTreeModel::saveStage(QWidget* in_parent)
 
             if (confirmDialog(dialogTitle, message, &layersQStringList, &buttonText)) {
                 for (auto layer : layers) {
-                    layer->saveEdits();
+                    layer->saveEditsNoPrompt();
                 }
             }
         }

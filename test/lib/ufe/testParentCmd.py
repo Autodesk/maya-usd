@@ -16,17 +16,24 @@
 # limitations under the License.
 #
 
-import mayaUtils, usdUtils, testUtils
+import fixturesUtils
+import mayaUtils
+import testUtils
 from testUtils import assertVectorAlmostEqual
+import usdUtils
+
+import mayaUsd.ufe
 
 from pxr import UsdGeom, Vt
 
-import ufe
-import mayaUsd.ufe
-import maya.cmds as cmds
+from maya import cmds
+from maya import standalone
 
-import unittest
+import ufe
+
 import os
+import unittest
+
 
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
@@ -55,12 +62,16 @@ class ParentCmdTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
 
     @classmethod
     def tearDownClass(cls):
         cmds.file(new=True, force=True)
+
+        standalone.uninitialize()
 
     def setUp(self):
         # Load plugins
@@ -610,4 +621,6 @@ class ParentCmdTestCase(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             cmds.parent("|Tree_usd|Tree_usdShape,/TreeBase/trunk",
                         "|Tree_usd|Tree_usdShape,/TreeBase/leavesXform/leaves")
-        
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

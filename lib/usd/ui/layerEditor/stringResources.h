@@ -58,9 +58,9 @@ const auto kClearLayerConfirmMessage { create("kClearLayerConfirmMessage",
                                               " \"^1s\"  will remain in the Layer Editor"
                                               " but all contents will be cleared, including sublayer paths.") };
 const auto kCreate                   { create("kCreate", "Create") };
-const auto kDiscardEditsTitle        { create("kDiscardEditsTitle", "Discard Edits \"^1s\"") };
-const auto kDiscardEditsMsg          { create("kDiscardEditsMsg", "Are you sure you want to revert these edits?"
-                                                                  " \"^1s\" will revert to its state on disk") };
+const auto kRevertToFileTitle        { create("kRevertToFileTitle", "Revert to File \"^1s\"") };
+const auto kRevertToFileMsg          { create("kRevertToFileMsg", "Are you sure you want to revert \"^1s\" to its "
+                                               "state on disk? All edits will be discarded.") };
 const auto kHelp                     { create("kHelp", "Help") };
 const auto kHelpOnUSDLayerEditor     { create("kHelpOnUSDLayerEditor", "Help on USD Layer Editor") };
 const auto kLoadExistingLayer        { create("kLoadExistingLayer", "Load an Existing Layer") };
@@ -79,6 +79,10 @@ const auto kSave                     { create("kSave", "Save") };
 const auto kSaveAll                  { create("kSaveAll", "Save All") };
 const auto kSaveAllEditsInLayerStack { create("kSaveAllEditsInLayerStack", "Save all edits in the Layer Stack")};
 const auto kSaveLayer                { create("kSaveLayer", "Save Layer") };
+const auto kSaveLayerSaveNestedAnonymLayer { create("kSaveLayerSaveNestedAnonymLayer",
+                                                    "To save ^1s, you must save your ^2s anonymous layer(s) that are nested under it.") };
+const auto kSaveLayerWarnTitle       { create("kSaveLayerWarnTitle", "Save ^1s") };
+const auto kSaveLayerWarnMsg         { create("kSaveLayerWarnMsg", "Saving edits to ^1s will overwrite your file.") };
 const auto kSaveStage                { create("kSaveStage", "Save Stage") };
 const auto kToSaveTheStageSaveAnonym { create("kToSaveTheStageSaveAnonym", "To save the stage, you must save your anonymous layer")};
 const auto kToSaveTheStageSaveAnonyms{ create("kToSaveTheStageSaveAnonyms", "To save the stage, you must save your ^1s anonymous layers")};
