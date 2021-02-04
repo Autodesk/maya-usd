@@ -63,13 +63,13 @@ public:
     LayerTreeItem* layerItemFromIndex(const QModelIndex& index) const;
     // gets everything recursivly as an array : used to simplify iteration
     typedef bool (*ConditionFunc)(const LayerTreeItem*);
-    LayerItemVector getAllItems(ConditionFunc filter = [](const LayerTreeItem*) {
-        return true;
-    }) const;
+    LayerItemVector getAllItems(
+        ConditionFunc        filter = [](const LayerTreeItem*) { return true; },
+        const LayerTreeItem* item = nullptr) const;
     // get all the layers that need saving
     LayerItemVector getAllNeedsSavingLayers() const;
     // get all anonymous layers except the session layer
-    LayerItemVector getAllAnonymousLayers() const;
+    LayerItemVector getAllAnonymousLayers(const LayerTreeItem* item = nullptr) const;
 
     // get an appropriate name for a new anonymous layer
     std::string findNameForNewAnonymousLayer() const;

@@ -103,6 +103,18 @@ TranslatorMeshRead::TranslatorMeshRead(
             prim.GetPath().GetText());
     }
 
+    // If the USD mesh was left-handed, then the faces had their vertices in left-handed order.
+    // Fix them to be in right-handed order, as expected by Maya.
+    if (isPrimitiveLeftHanded(mesh)) {
+        size_t firstIndex = 0;
+        for (int vertexCount : faceVertexCounts) {
+            std::reverse(
+                faceVertexIndices.begin() + firstIndex,
+                faceVertexIndices.begin() + firstIndex + vertexCount);
+            firstIndex += vertexCount;
+        }
+    }
+
     // Gather points and normals
     // If timeInterval is non-empty, pick the first available sample in the
     // timeInterval or default.
@@ -326,6 +338,16 @@ TranslatorMeshRead::TranslatorMeshRead(
     }
 
     *status = stat;
+}
+
+bool TranslatorMeshRead::isPrimitiveLeftHanded(const UsdGeomGprim& prim)
+{
+    TfToken orientation;
+    if (!prim.GetOrientationAttr().Get(&orientation)) {
+        return false;
+    }
+
+    return orientation == UsdGeomTokens->leftHanded;
 }
 
 MStatus TranslatorMeshRead::setPointBasedDeformerForMayaNode(

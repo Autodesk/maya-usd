@@ -38,12 +38,16 @@ global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
         editorTemplate -suppress "stageCacheId";
         editorTemplate -suppress "outStageCacheId";
 
+        // MAYA-109438 - temp suppress these non-functional attributes.
+        editorTemplate -suppress "primPath";
+        editorTemplate -suppress "loadPayloads";
+
         editorTemplate -beginLayout "Stage" -collapse 0;
             // We aren't displaying the "inStageData" attribute in the ProxyShapeInfo. We simply
             // pass it in order to get the current nodename. Cannot use the input one here as it
             // changes based on which proxy shape the AE is viewing.
             editorTemplate -callCustom "AEmayaUsdProxyShapeInfoNew" "AEmayaUsdProxyShapeInfoReplace" inStageData;
-            editorTemplate -addControl "loadPayloads";
+            //editorTemplate -addControl "loadPayloads";
         editorTemplate -endLayout;
 
         editorTemplate -beginLayout "Stage Source" -collapse 0;
@@ -56,7 +60,7 @@ global proc AEmayaUsdProxyShapeTemplate( string $nodeName )
             editorTemplate -addControl "drawGuidePurpose";
             editorTemplate -addControl "drawProxyPurpose";
             editorTemplate -addControl "drawRenderPurpose";
-            editorTemplate -addControl "primPath";
+            //editorTemplate -addControl "primPath";
             editorTemplate -addControl "excludePrimPaths";
         editorTemplate -endLayout;
 

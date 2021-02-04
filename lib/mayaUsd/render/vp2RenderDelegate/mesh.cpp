@@ -1942,7 +1942,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreatePointsRenderItem(const MString& name) 
     selectionMask.addMask(MSelectionMask::kSelectMeshVerts);
     renderItem->setSelectionMask(selectionMask);
 
-#if MAYA_API_VERSION >= 20210000
+#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 
@@ -1965,7 +1965,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateWireframeRenderItem(const MString& nam
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 
-#if MAYA_API_VERSION >= 20210000
+#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 
@@ -1987,7 +1987,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateBoundingBoxRenderItem(const MString& n
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 
-#if MAYA_API_VERSION >= 20210000
+#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 
@@ -2012,7 +2012,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSmoothHullRenderItem(const MString& na
     renderItem->setShader(_delegate->GetFallbackShader(kOpaqueGray));
     renderItem->setSelectionMask(MSelectionMask::kSelectMeshes);
 
-#if MAYA_API_VERSION >= 20210000
+#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 
@@ -2037,7 +2037,7 @@ MHWRender::MRenderItem* HdVP2Mesh::_CreateSelectionHighlightRenderItem(const MSt
     renderItem->setShader(_delegate->Get3dSolidShader(kOpaqueBlue));
     renderItem->setSelectionMask(MSelectionMask());
 
-#if MAYA_API_VERSION >= 20210000
+#if MAYA_API_VERSION >= 20220000
     renderItem->setObjectTypeExclusionFlag(MHWRender::MFrameContext::kExcludeMeshes);
 #endif
 

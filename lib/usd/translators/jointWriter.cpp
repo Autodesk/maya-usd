@@ -15,6 +15,7 @@
 //
 #include "jointWriter.h"
 
+#include <mayaUsd/base/debugCodes.h>
 #include <mayaUsd/fileio/primWriter.h>
 #include <mayaUsd/fileio/primWriterRegistry.h>
 #include <mayaUsd/fileio/translators/translatorSkel.h>
@@ -136,7 +137,6 @@ static GfMatrix4d _GetJointWorldBindTransform(const MDagPath& dagPath)
         CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
         MPlug plgWorldMatrices = fnNode.findPlug("worldMatrix", false, &status);
         CHECK_MSTATUS_AND_RETURN(status, GfMatrix4d(1));
-        TF_VERIFY(membersIdx < plgWorldMatrices.numElements());
         MPlug         plgWorldMatrix = plgWorldMatrices.elementByLogicalIndex(membersIdx);
         MObject       plgWorldMatrixData = plgWorldMatrix.asMObject();
         MFnMatrixData fnMatrixData(plgWorldMatrixData, &status);
@@ -222,16 +222,16 @@ static bool _FindDagPoseMembers(
     indices->resize(numDagPaths);
 
     std::vector<uint8_t> visitedIndices(numDagPaths, 0);
-    for (unsigned int i = 0; i < membersPlug.numElements(); ++i) {
+    for (unsigned int i = 0; i < membersPlug.numConnectedElements(); ++i) {
 
-        MPlug memberPlug = membersPlug[i];
+        MPlug memberPlug = membersPlug.connectionByPhysicalIndex(i);
         memberPlug.connectedTo(inputs, /*asDst*/ true, /*asSrc*/ false);
 
         for (unsigned int j = 0; j < inputs.length(); ++j) {
             MObjectHandle connNode(inputs[j].node());
             auto          it = pathIndexMap.find(connNode);
             if (it != pathIndexMap.end()) {
-                (*indices)[it->second] = i;
+                (*indices)[it->second] = memberPlug.logicalIndex();
                 visitedIndices[it->second] = 1;
             }
         }
@@ -241,10 +241,9 @@ static bool _FindDagPoseMembers(
     for (size_t i = 0; i < visitedIndices.size(); ++i) {
         uint8_t visited = visitedIndices[i];
         if (visited != 1) {
-            unsigned int index = (*indices)[i];
             TF_WARN(
                 "Node '%s' is not a member of dagPose '%s'.",
-                MFnDependencyNode(dagPaths[index].node()).name().asChar(),
+                MFnDependencyNode(dagPaths[i].node()).name().asChar(),
                 dagPoseDep.name().asChar());
             return false;
         }
@@ -254,25 +253,35 @@ static bool _FindDagPoseMembers(
 
 bool _GetLocalTransformForDagPoseMember(
     const MFnDependencyNode& dagPoseDep,
-    unsigned int             index,
+    unsigned int             logicalIndex,
     GfMatrix4d*              xform)
 {
     MStatus status;
 
     MPlug xformMatrixPlug = dagPoseDep.findPlug("xformMatrix");
-    if (index < xformMatrixPlug.numElements()) {
-        MPlug xformPlug = xformMatrixPlug[index];
-
-        MObject plugObj = xformPlug.asMObject(MDGContext::fsNormal, &status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
-
-        MFnMatrixData plugMatrixData(plugObj, &status);
-        CHECK_MSTATUS_AND_RETURN(status, false);
-
-        *xform = GfMatrix4d(plugMatrixData.matrix().matrix);
-        return true;
+    if (TfDebug::IsEnabled(PXRUSDMAYA_TRANSLATORS)) {
+        // As an extra debug sanity check, make sure that the logicalIndex
+        // already exists
+        MIntArray allIndices;
+        xformMatrixPlug.getExistingArrayAttributeIndices(allIndices);
+        if (std::find(allIndices.cbegin(), allIndices.cend(), logicalIndex) == allIndices.cend()) {
+            TfDebug::Helper().Msg(
+                "Warning - attempting to retrieve %s[%u], but that index did not exist yet",
+                xformMatrixPlug.name().asChar(),
+                logicalIndex);
+        }
     }
-    return false;
+    MPlug xformPlug = xformMatrixPlug.elementByLogicalIndex(logicalIndex, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MObject plugObj = xformPlug.asMObject(MDGContext::fsNormal, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    MFnMatrixData plugMatrixData(plugObj, &status);
+    CHECK_MSTATUS_AND_RETURN(status, false);
+
+    *xform = GfMatrix4d(plugMatrixData.matrix().matrix);
+    return true;
 }
 
 /// Get local-space bind transforms to use as rest transforms.
@@ -286,11 +295,12 @@ static bool _GetJointLocalRestTransformsFromDagPose(
     // Use whatever bindPose the root joint is a member of.
     MObject bindPose = _FindBindPose(rootJoint);
     if (bindPose.isNull()) {
-        TF_WARN(
-            "%s -- Could not find a dagPose node holding a bind pose: "
-            "The Skeleton's 'restTransforms' property will not be "
-            "authored.",
-            skelPath.GetText());
+        TF_DEBUG(PXRUSDMAYA_TRANSLATORS)
+            .Msg(
+                "%s -- Could not find a dagPose node holding a bind pose: "
+                "The Skeleton's 'restTransforms' property will be "
+                "calculated from the 'bindTransforms'.\n",
+                skelPath.GetText());
         return false;
     }
 
@@ -310,7 +320,7 @@ static bool _GetJointLocalRestTransformsFromDagPose(
             TF_WARN(
                 "%s -- Failed retrieving the local transform of joint '%s' "
                 "from dagPose '%s': The Skeleton's 'restTransforms' "
-                "property will not be authored.",
+                "property will be calculated from the 'bindTransforms'.",
                 skelPath.GetText(),
                 jointDagPaths[i].fullPathName().asChar(),
                 bindPoseDep.name().asChar());
@@ -318,6 +328,49 @@ static bool _GetJointLocalRestTransformsFromDagPose(
         }
     }
     return true;
+}
+
+/// Set local-space rest transform by converting from the world-space bind xforms.
+static bool
+_GetJointLocalRestTransformsFromBindTransforms(UsdSkelSkeleton& skel, VtMatrix4dArray& restXforms)
+{
+    auto bindXformsAttr = skel.GetBindTransformsAttr();
+    if (!bindXformsAttr) {
+        TF_WARN("skeleton was missing bind transforms attr: %s", skel.GetPath().GetText());
+        return false;
+    }
+    VtMatrix4dArray bindXforms;
+    if (!bindXformsAttr.Get(&bindXforms)) {
+        TF_WARN("error retrieving bind transforms: %s", skel.GetPath().GetText());
+        return false;
+    }
+
+    auto jointsAttr = skel.GetJointsAttr();
+    if (!jointsAttr) {
+        TF_WARN("skeleton was missing bind joints attr: %s", skel.GetPath().GetText());
+        return false;
+    }
+    VtTokenArray joints;
+    if (!jointsAttr.Get(&joints)) {
+        TF_WARN("error retrieving bind joints: %s", skel.GetPath().GetText());
+        return false;
+    }
+
+    auto restXformsAttr = skel.GetRestTransformsAttr();
+    if (!restXformsAttr) {
+        restXformsAttr = skel.CreateRestTransformsAttr();
+        if (!restXformsAttr) {
+            TF_WARN(
+                "skeleton had no rest transforms attr, and was unable to "
+                "create it: %s",
+                skel.GetPath().GetText());
+            return false;
+        }
+    }
+
+    UsdSkelTopology topology(joints);
+    restXforms.resize(bindXforms.size());
+    return UsdSkelComputeJointLocalTransforms(topology, bindXforms, restXforms);
 }
 
 /// Gets the world-space transform of \p dagPath at the current time.
@@ -501,12 +554,15 @@ bool PxrUsdTranslators_JointWriter::_WriteRestState()
         _skel.GetBindTransformsAttr(), bindXforms, UsdTimeCode::Default(), _GetSparseValueWriter());
 
     VtMatrix4dArray restXforms;
-    if (_GetJointLocalRestTransformsFromDagPose(skelPath, GetDagPath(), _joints, &restXforms)) {
+    if (_GetJointLocalRestTransformsFromDagPose(skelPath, GetDagPath(), _joints, &restXforms)
+        || _GetJointLocalRestTransformsFromBindTransforms(_skel, restXforms)) {
         UsdMayaWriteUtil::SetAttribute(
             _skel.GetRestTransformsAttr(),
             restXforms,
             UsdTimeCode::Default(),
             _GetSparseValueWriter());
+    } else {
+        TF_WARN("Unable to set rest transforms");
     }
 
     VtTokenArray animJointNames;

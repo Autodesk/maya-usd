@@ -125,34 +125,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
         "delegates.");
 
 #endif // USD_VERSION_NUM < 2011
-
-#if USD_VERSION_NUM <= 1911
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_DISPLACEMENT_SHADER_SOURCE,
-        "Print information about 'GetDisplacementShaderSource' calls to the "
-        "delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_MATERIAL_METADATA,
-        "Print information about 'GetMaterialMetadata' calls to the "
-        "delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_MATERIAL_PARAM_VALUE,
-        "Print information about 'GetMaterialParamValue' calls to the "
-        "delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_MATERIAL_PARAMS,
-        "Print information about 'GetMaterialParams' calls to the delegates.");
-
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        HDMAYA_DELEGATE_GET_SURFACE_SHADER_SOURCE,
-        "Print information about 'GetSurfaceShaderSource' calls to the "
-        "delegates.");
-
-#endif // USD_VERSION_NUM <= 1911
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

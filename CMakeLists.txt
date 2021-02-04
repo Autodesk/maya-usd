@@ -99,7 +99,7 @@ include(cmake/utils.cmake)
 include(cmake/jinja.cmake)
 
 find_package(Maya 2018 REQUIRED)
-find_package(USD REQUIRED)
+find_package(USD 0.20.02 REQUIRED)
 include(cmake/usd.cmake)
 include(${USD_CONFIG_FILE})
 
