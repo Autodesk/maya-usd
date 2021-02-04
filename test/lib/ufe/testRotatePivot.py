@@ -16,17 +16,22 @@
 # limitations under the License.
 #
 
-import usdUtils, mayaUtils
+import fixturesUtils
+import mayaUtils
+import usdUtils
+
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as om
 
 import ufe
 
-import maya.api.OpenMaya as om
-import maya.cmds as cmds
-
-from math import radians, degrees, sin
+from math import degrees
+from math import radians
+from math import sin
 import os
-
 import unittest
+
 
 def v3dToMPoint(v):
     return om.MPoint(v.x(), v.y(), v.z())
@@ -58,8 +63,14 @@ class RotatePivotTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
@@ -183,3 +194,7 @@ class RotatePivotTestCase(unittest.TestCase):
         cmds.rotate(degrees(rot[0]), degrees(rot[1]), degrees(rot[2]))
         sphereMatrix = om.MMatrix(t3d.inclusiveMatrix().matrix)
         self.checkPos(sphereMatrix, [xyWorldValue, xyWorldValue, 0])
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

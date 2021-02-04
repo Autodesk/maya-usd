@@ -16,11 +16,15 @@
 # limitations under the License.
 #
 
-import mayaUtils, usdUtils, ufeUtils
+import fixturesUtils
+import mayaUtils
+import ufeUtils
+import usdUtils
+
+from maya import cmds
+from maya import standalone
 
 import ufe
-
-import maya.cmds as cmds
 
 try:
     from maya.internal.ufeSupport import ufeSelectCmd
@@ -28,22 +32,27 @@ except ImportError:
     # Maya 2019 and 2020 don't have ufeSupport plugin, so use fallback.
     from ufeScripts import ufeSelectCmd
 
-import unittest
 import os
+import unittest
+
 
 class SelectTestCase(unittest.TestCase):
     '''Verify UFE selection on a USD scene.'''
 
     pluginsLoaded = False
-    
+
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
     
     @classmethod
     def tearDownClass(cls):
         cmds.file(new=True, force=True)
+
+        standalone.uninitialize()
 
     def setUp(self):
         # Load plugins
@@ -264,3 +273,7 @@ class SelectTestCase(unittest.TestCase):
         cmds.select(ufe.PathString.string(first.path()), add=True)
         self.assertTrue(globalSn.contains(first.path()))
         self.assertEqual(globalSn.back(), first)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)
