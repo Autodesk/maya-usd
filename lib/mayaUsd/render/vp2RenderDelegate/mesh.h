@@ -32,19 +32,41 @@ class HdSceneDelegate;
 class HdVP2DrawItem;
 class HdVP2RenderDelegate;
 
-//! Primvar data and interpolation.
+//! Primvar data and interpolation, from the scene delegate
 struct PrimvarSource
 {
-    VtValue         data;
+    PrimvarSource(VtValue d, HdInterpolation interp, bool comp)
+        : data(d)
+        , interpolation(interp)
+        , computed(comp)
+    {
+    }
+
+    //! a copy-on-write handle to the actual primvar buffer
+    VtValue data;
+
+    //! the interpolation mode to be used.
     HdInterpolation interpolation;
+
+    //! data was computed instead of authored by the scene delegate
+    bool computed { false };
 };
 
-//! A hash map of primvar scene data using primvar name as the key.
-typedef TfHashMap<TfToken, PrimvarSource, TfToken::HashFunctor> PrimvarSourceMap;
+//! Everything about a primvar
+struct PrimvarInfo
+{
+    PrimvarInfo(const PrimvarSource& source, MHWRender::MVertexBuffer* buffer)
+        : _source(source)
+        , _buffer(buffer)
+    {
+    }
 
-//! A primvar vertex buffer map indexed by primvar name.
-using PrimvarBufferMap
-    = std::unordered_map<TfToken, std::unique_ptr<MHWRender::MVertexBuffer>, TfToken::HashFunctor>;
+    PrimvarSource                             _source;
+    std::unique_ptr<MHWRender::MVertexBuffer> _buffer;
+};
+
+using PrimvarInfoMap
+    = std::unordered_map<TfToken, std::unique_ptr<PrimvarInfo>, TfToken::HashFunctor>;
 
 /*! \brief  HdVP2Mesh-specific data shared among all its draw items.
     \class  HdVP2MeshSharedData
@@ -78,7 +100,7 @@ struct HdVP2MeshSharedData
     //! encoded triangleId to faceId of _trianglesFaceVertexIndices, use
     //! HdMeshUtil::DecodeFaceIndexFromCoarseFaceParam when accessing.
     VtIntArray _primitiveParam;
-    
+
     //! Map from the original topology faceId to the void* pointer to
     //! the MRenderItem that face is a part of
     std::vector<void*> _faceIdToRenderItem;
@@ -89,31 +111,8 @@ struct HdVP2MeshSharedData
     //! The primvar tokens of all the smooth hull material bindings (overall object + geom subsets)
     TfTokenVector _allRequiredPrimvars;
 
-    //! A local cache of primvar scene data. "data" is a copy-on-write handle to
-    //! the actual primvar buffer, and "interpolation" is the interpolation mode
-    //! to be used.
-    PrimvarSourceMap _primvarSourceMap;
-
-    //! A local cache of points. It is not cached in the above primvar map
-    //! but a separate VtArray for easier access.
-    VtVec3fArray _points;
-
-    //! Position buffer of the Rprim to be shared among all its draw items.
-    std::unique_ptr<MHWRender::MVertexBuffer> _positionsBuffer;
-
-    //! Render item color buffer - use when updating data
-    std::unique_ptr<MHWRender::MVertexBuffer> _colorBuffer;
-
-    HdInterpolation _colorInterp;
-    HdInterpolation _alphaInterp;
-    VtVec3fArray    _colorArray;
-    VtFloatArray    _alphaArray;
-
-    //! Render item normals buffer - use when updating data
-    std::unique_ptr<MHWRender::MVertexBuffer> _normalsBuffer;
-
-    //! Render item primvar buffers - use when updating data
-    PrimvarBufferMap _primvarBuffers;
+    //! Cache of the primvar data on this mesh, along with the MVertexBuffer holding that data.
+    PrimvarInfoMap _primvarInfo;
 
     //! Render tag of the Rprim.
     TfToken _renderTag;
@@ -159,8 +158,7 @@ private:
 
     void _UpdateRepr(HdSceneDelegate*, const TfToken&);
 
-    void
-    _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
+    void _CommitMVertexBuffer(MHWRender::MVertexBuffer* const, void*) const;
 
     bool _PrimvarIsRequired(const TfToken&) const;
 
@@ -185,9 +183,9 @@ private:
         const TfTokenVector& requiredPrimvars);
 
     void _PrepareSharedVertexBuffers(
-        HdSceneDelegate* delegate,
+        HdSceneDelegate*   delegate,
         const HdDirtyBits& rprimDirtyBits,
-        const TfToken&                        reprToken);
+        const TfToken&     reprToken);
 
     void _CreateSmoothHullRenderItems(HdVP2DrawItem& drawItem);
 
@@ -225,10 +223,10 @@ private:
     HdVP2SelectionStatus _selectionStatus { kUnselected };
 
     //! Control GPU compute behavior
-    //! Having these in place even without HDVP2_ENABLE_GPU_COMPUTE or HDVP2_ENABLE_GPU_OSD defined
-    //! makes the expressions using these variables much simpler
-    bool _gpuNormalsEnabled { true }; //!< Use GPU Compute for normal calculation, only used when
-                                      //!< HDVP2_ENABLE_GPU_COMPUTE is defined
+    //! Having these in place even without HDVP2_ENABLE_GPU_COMPUTE or HDVP2_ENABLE_GPU_OSD
+    //! defined makes the expressions using these variables much simpler
+    bool _gpuNormalsEnabled { true }; //!< Use GPU Compute for normal calculation, only used
+                                      //!< when HDVP2_ENABLE_GPU_COMPUTE is defined
     static size_t _gpuNormalsComputeThreshold;
 };
 

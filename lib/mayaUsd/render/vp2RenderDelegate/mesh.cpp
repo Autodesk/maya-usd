@@ -271,10 +271,10 @@ void _FillPrimvarData(
 //! If there is uniform or face-varying primvar, we have to create unshared
 //! vertex layout on CPU because SSBO technique is not widely supported by
 //! GPUs and 3D APIs.
-bool _IsUnsharedVertexLayoutRequired(const PrimvarSourceMap& primvarSources)
+bool _IsUnsharedVertexLayoutRequired(const PrimvarInfoMap& primvarInfo)
 {
-    for (const auto& it : primvarSources) {
-        const HdInterpolation interp = it.second.interpolation;
+    for (const auto& it : primvarInfo) {
+        const HdInterpolation interp = it.second->_source.interpolation;
         if (interp == HdInterpolationUniform || interp == HdInterpolationFaceVarying) {
             return true;
         }
@@ -324,6 +324,74 @@ void setWantConsolidation(MHWRender::MRenderItem& renderItem, bool state)
     renderItem.setWantSubSceneConsolidation(state);
 #endif
 }
+
+PrimvarInfo* _getInfo(const PrimvarInfoMap& infoMap, const TfToken& token)
+{
+    auto it = infoMap.find(token);
+    if (it != infoMap.end()) {
+        return it->second.get();
+    }
+    return nullptr;
+}
+
+void _getColorData(
+    PrimvarInfoMap&  infoMap,
+    VtVec3fArray&    colorArray,
+    HdInterpolation& interpolation)
+{
+    PrimvarInfo* info = _getInfo(infoMap, HdTokens->displayColor);
+    if (info) {
+        const VtValue& value = info->_source.data;
+        if (value.IsHolding<VtVec3fArray>() && value.GetArraySize() > 0) {
+            colorArray = value.UncheckedGet<VtVec3fArray>();
+            interpolation = info->_source.interpolation;
+        }
+    } else {
+        // If color/opacity is not found, the 18% gray color will be used
+        // to match the default color of Hydra Storm.
+        TF_VERIFY(colorArray.empty());
+        colorArray.push_back(GfVec3f(0.18f, 0.18f, 0.18f));
+        interpolation = HdInterpolationConstant;
+
+        infoMap[HdTokens->displayColor] = std::make_unique<PrimvarInfo>(
+            PrimvarSource(VtValue(colorArray), interpolation, true), nullptr);
+    }
+}
+
+void _getOpacityData(
+    PrimvarInfoMap&  infoMap,
+    VtFloatArray&    opacityArray,
+    HdInterpolation& interpolation)
+{
+    PrimvarInfo* info = _getInfo(infoMap, HdTokens->displayOpacity);
+    if (info) {
+        const VtValue& value = info->_source.data;
+        if (value.IsHolding<VtFloatArray>() && value.GetArraySize() > 0) {
+            opacityArray = value.UncheckedGet<VtFloatArray>();
+            interpolation = info->_source.interpolation;
+        }
+    } else {
+        TF_VERIFY(opacityArray.empty());
+        opacityArray.push_back(1.0f);
+        interpolation = HdInterpolationConstant;
+
+        infoMap[HdTokens->displayOpacity] = std::make_unique<PrimvarInfo>(
+            PrimvarSource(VtValue(opacityArray), interpolation, true), nullptr);
+    }
+}
+
+//! Access the points
+VtVec3fArray _points(PrimvarInfoMap& infoMap)
+{
+    if (PrimvarInfo* info = _getInfo(infoMap, HdTokens->points)) {
+        VtValue data = info->_source.data;
+        TF_VERIFY(data.IsHolding<VtVec3fArray>());
+        return data.UncheckedGet<VtVec3fArray>();
+    }
+
+    return VtVec3fArray();
+}
+
 } // namespace
 
 void HdVP2Mesh::_InitGPUCompute()
@@ -353,9 +421,6 @@ HdVP2Mesh::HdVP2Mesh(HdVP2RenderDelegate* delegate, const SdfPath& id, const Sdf
     , _rprimId(id.GetText())
 {
     _meshSharedData = std::make_shared<HdVP2MeshSharedData>();
-    const MHWRender::MVertexBufferDescriptor vbDesc(
-        "", MHWRender::MGeometry::kPosition, MHWRender::MGeometry::kFloat, 3);
-    _meshSharedData->_positionsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
     // HdChangeTracker::IsVarying() can check dirty bits to tell us if an object is animated or not.
     // Not sure if it is correct on file load
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
@@ -385,60 +450,16 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
     const TfToken&     reprToken)
 {
     const SdfPath& id = GetId();
-    const auto&    primvarSourceMap = _meshSharedData->_primvarSourceMap;
 
-    // Prepare position buffer. It is shared among all draw items so it should
-    // be updated only once when it gets dirty.
-    if (HdChangeTracker::IsPrimvarDirty(rprimDirtyBits, id, HdTokens->points)) {
-        const VtValue value = delegate->Get(id, HdTokens->points);
-        _meshSharedData->_points = value.Get<VtVec3fArray>();
-
-        const HdMeshTopology& topology = _meshSharedData->_topology;
-        const size_t          numVertices = _meshSharedData->_numVertices;
-#ifdef HDVP2_ENABLE_GPU_COMPUTE
-        _gpuNormalsEnabled = _gpuNormalsEnabled && numVertices >= _gpuNormalsComputeThreshold;
-#else
-        _gpuNormalsEnabled = false;
-#endif
-
-        if (numVertices > 0) {
-            void* bufferData = _meshSharedData->_positionsBuffer->acquire(numVertices, true);
-            if (bufferData) {
-                _FillPrimvarData(
-                    static_cast<GfVec3f*>(bufferData),
-                    numVertices,
-                    0,
-                    _meshSharedData->_renderingToSceneFaceVtxIds,
-                    _rprimId,
-                    topology,
-                    HdTokens->points,
-                    _meshSharedData->_points,
-                    HdInterpolationVertex);
-
-                _CommitMVertexBuffer(_meshSharedData->_positionsBuffer.get(), bufferData);
-            }
-        }
-    }
-
-    // Prepare normal buffer.
-    if (_PrimvarIsRequired(HdTokens->normals)) {
-        // Normals have two possible sources. They could be authored by the scene delegate,
-        // in which case we should find them in primvarSourceMap, or they could be computed
-        // normals.
-        VtVec3fArray    normals;
-        HdInterpolation interp = HdInterpolationConstant;
-        bool            updateNormals = false;
-
-        // look for authored normals.
-        const auto it = primvarSourceMap.find(HdTokens->normals);
-        if (it != primvarSourceMap.end()) {
-            const VtValue& value = it->second.data;
-            if (ARCH_LIKELY(value.IsHolding<VtVec3fArray>())) {
-                normals = value.UncheckedGet<VtVec3fArray>();
-                interp = it->second.interpolation;
-            }
-        }
-
+    // Normals have two possible sources. They could be authored by the scene delegate,
+    // in which case we should find them in _primvarInfo, or they could be computed
+    // normals. Compute the normal buffer if necessary.
+    PrimvarInfo* normalsInfo = _getInfo(_meshSharedData->_primvarInfo, HdTokens->normals);
+    bool         needNormals = _PrimvarIsRequired(HdTokens->normals);
+    bool         computeNormals = !normalsInfo || normalsInfo->_source.computed;
+    bool         hasCleanNormals
+        = normalsInfo && (0 == (rprimDirtyBits & (DirtySmoothNormals | DirtyFlatNormals)));
+    if (needNormals && computeNormals && !hasCleanNormals) {
         _MeshReprConfig::DescArray reprDescs = _GetReprDesc(reprToken);
         // Iterate through all reprdescs for the current repr to figure out if any
         // of them requires smooth normals or flat normals. If either (or both)
@@ -460,9 +481,7 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
         // If there are authored normals, prepare buffer only when it is dirty.
         // otherwise, compute smooth normals from points and adjacency and we
         // have a custom dirty bit to determine whether update is needed.
-        if (!normals.empty()) {
-            updateNormals = ((rprimDirtyBits & HdChangeTracker::DirtyNormals) != 0);
-        } else if (requireSmoothNormals && (rprimDirtyBits & DirtySmoothNormals)) {
+        if (requireSmoothNormals && (rprimDirtyBits & DirtySmoothNormals)) {
 #ifdef HDVP2_ENABLE_GPU_COMPUTE
             if (_gpuNormalsEnabled) {
                 if (!_meshSharedData->_viewportCompute) {
@@ -472,7 +491,8 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
 #endif
                 }
                 _meshSharedData->_viewportCompute->setNormalVertexBufferGPUDirty();
-                updateNormals = false;
+                updateNormals
+                    = false; // mark rprimDirtyBits clean? Add something to the update code?
             } else
 #endif
             {
@@ -485,92 +505,58 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
 
                 // Only the points referenced by the topology are used to compute
                 // smooth normals.
-                // TODO: compute the flat normals if they are required
-                normals = Hd_SmoothNormals::ComputeSmoothNormals(
+                VtValue normals(Hd_SmoothNormals::ComputeSmoothNormals(
                     adjacency.get(),
-                    _meshSharedData->_points.size(),
-                    _meshSharedData->_points.cdata());
-                interp = HdInterpolationVertex;
+                    _points(_meshSharedData->_primvarInfo).size(),
+                    _points(_meshSharedData->_primvarInfo).cdata()));
 
-                updateNormals = !normals.empty();
+                if (!normalsInfo) {
+                    _meshSharedData->_primvarInfo[HdTokens->normals]
+                        = std::make_unique<PrimvarInfo>(
+                            PrimvarSource(normals, HdInterpolationVertex, true), nullptr);
+                } else {
+                    normalsInfo->_source.data = normals;
+                    normalsInfo->_source.interpolation = HdInterpolationVertex;
+                }
             }
         }
 
-        if (updateNormals) {
-            if (!_meshSharedData->_normalsBuffer) {
-                const MHWRender::MVertexBufferDescriptor vbDesc(
-                    "", MHWRender::MGeometry::kNormal, MHWRender::MGeometry::kFloat, 3);
-
-                _meshSharedData->_normalsBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
-            }
-
-            void* bufferData = _meshSharedData->_numVertices > 0
-                ? _meshSharedData->_normalsBuffer->acquire(_meshSharedData->_numVertices, true)
-                : nullptr;
-            if (bufferData) {
-                _FillPrimvarData(
-                    static_cast<GfVec3f*>(bufferData),
-                    _meshSharedData->_numVertices,
-                    0,
-                    _meshSharedData->_renderingToSceneFaceVtxIds,
-                    _rprimId,
-                    _meshSharedData->_topology,
-                    HdTokens->normals,
-                    normals,
-                    interp);
-
-                _CommitMVertexBuffer(_meshSharedData->_normalsBuffer.get(), bufferData);
-            }
+        if (requireFlatNormals && (rprimDirtyBits & DirtyFlatNormals)) {
+            // TODO:
         }
     }
 
     // Prepare color buffer.
-    auto itColor = primvarSourceMap.find(HdTokens->displayColor);
-    auto itOpacity = primvarSourceMap.find(HdTokens->displayOpacity);
-
     if (((rprimDirtyBits & HdChangeTracker::DirtyPrimvar) != 0)
-        && (itColor != primvarSourceMap.end() || itOpacity != primvarSourceMap.end())) {
+        && (_PrimvarIsRequired(HdTokens->displayColor)
+            || _PrimvarIsRequired(HdTokens->displayOpacity))) {
+        HdInterpolation colorInterp = HdInterpolationConstant;
+        HdInterpolation alphaInterp = HdInterpolationConstant;
+        VtVec3fArray    colorArray;
+        VtFloatArray    alphaArray;
 
-        _meshSharedData->_colorInterp = HdInterpolationConstant;
-        _meshSharedData->_alphaInterp = HdInterpolationConstant;
+        _getColorData(_meshSharedData->_primvarInfo, colorArray, colorInterp);
+        _getOpacityData(_meshSharedData->_primvarInfo, alphaArray, alphaInterp);
 
-        if (itColor != primvarSourceMap.end()) {
-            const VtValue& value = itColor->second.data;
-            if (value.IsHolding<VtVec3fArray>() && value.GetArraySize() > 0) {
-                _meshSharedData->_colorArray = value.UncheckedGet<VtVec3fArray>();
-                _meshSharedData->_colorInterp = itColor->second.interpolation;
-            }
+        PrimvarInfo* colorAndOpacityInfo
+            = _getInfo(_meshSharedData->_primvarInfo, HdVP2Tokens->displayColorAndOpacity);
+        if (!colorAndOpacityInfo) {
+            _meshSharedData->_primvarInfo[HdVP2Tokens->displayColorAndOpacity]
+                = std::make_unique<PrimvarInfo>(
+                    PrimvarSource(VtValue(), HdInterpolationConstant, true), nullptr);
+            colorAndOpacityInfo
+                = _getInfo(_meshSharedData->_primvarInfo, HdVP2Tokens->displayColorAndOpacity);
         }
 
-        if (itOpacity != primvarSourceMap.end()) {
-            const VtValue& value = itOpacity->second.data;
-            if (value.IsHolding<VtFloatArray>() && value.GetArraySize() > 0) {
-                _meshSharedData->_alphaArray = value.UncheckedGet<VtFloatArray>();
-                _meshSharedData->_alphaInterp = itOpacity->second.interpolation;
-            }
-        }
-
-        // If color/opacity is not found, the 18% gray color will be used
-        // to match the default color of Hydra Storm.
-        if (_meshSharedData->_colorArray.empty()) {
-            _meshSharedData->_colorArray.push_back(GfVec3f(0.18f, 0.18f, 0.18f));
-            _meshSharedData->_colorInterp = HdInterpolationConstant;
-        }
-
-        if (_meshSharedData->_alphaArray.empty()) {
-            _meshSharedData->_alphaArray.push_back(1.0f);
-            _meshSharedData->_alphaInterp = HdInterpolationConstant;
-        }
-
-        if (!_meshSharedData->_colorBuffer) {
+        if (!colorAndOpacityInfo->_buffer) {
             const MHWRender::MVertexBufferDescriptor vbDesc(
                 "", MHWRender::MGeometry::kColor, MHWRender::MGeometry::kFloat, 4);
 
-            _meshSharedData->_colorBuffer.reset(new MHWRender::MVertexBuffer(vbDesc));
+            colorAndOpacityInfo->_buffer.reset(new MHWRender::MVertexBuffer(vbDesc));
         }
 
         void* bufferData = _meshSharedData->_numVertices > 0
-            ? _meshSharedData->_colorBuffer->acquire(_meshSharedData->_numVertices, true)
+            ? colorAndOpacityInfo->_buffer->acquire(_meshSharedData->_numVertices, true)
             : nullptr;
 
         // Fill color and opacity into the float4 color stream.
@@ -583,8 +569,8 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                 _rprimId,
                 _meshSharedData->_topology,
                 HdTokens->displayColor,
-                _meshSharedData->_colorArray,
-                _meshSharedData->_colorInterp);
+                colorArray,
+                colorInterp);
 
             _FillPrimvarData(
                 static_cast<GfVec4f*>(bufferData),
@@ -594,40 +580,55 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
                 _rprimId,
                 _meshSharedData->_topology,
                 HdTokens->displayOpacity,
-                _meshSharedData->_alphaArray,
-                _meshSharedData->_alphaInterp);
+                alphaArray,
+                alphaInterp);
 
-            _CommitMVertexBuffer(_meshSharedData->_colorBuffer.get(), bufferData);
+            _CommitMVertexBuffer(colorAndOpacityInfo->_buffer.get(), bufferData);
         }
     }
 
     // prepare the other primvar buffers
     // Prepare primvar buffers.
-    if (rprimDirtyBits & HdChangeTracker::DirtyPrimvar) {
-        for (const auto& it : primvarSourceMap) {
+    if (rprimDirtyBits
+        & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyNormals
+           | HdChangeTracker::DirtyPrimvar)) {
+        for (const auto& it : _meshSharedData->_primvarInfo) {
             const TfToken& token = it.first;
-            // Color, opacity and normal have been prepared separately.
+            // Color, opacity have been prepared separately.
             if ((token == HdTokens->displayColor) || (token == HdTokens->displayOpacity)
-                || (token == HdTokens->normals))
+                || (token == HdVP2Tokens->displayColorAndOpacity))
                 continue;
 
-            const VtValue&         value = it.second.data;
-            const HdInterpolation& interp = it.second.interpolation;
+            MHWRender::MGeometry::Semantic semantic = MHWRender::MGeometry::kTexture;
+            if (token == HdTokens->points) {
+                if ((rprimDirtyBits & HdChangeTracker::DirtyPoints) == 0)
+                    continue;
+                semantic = MHWRender::MGeometry::kPosition;
+            } else if (token == HdTokens->normals) {
+                if ((rprimDirtyBits & (HdChangeTracker::DirtyNormals | DirtySmoothNormals)) == 0)
+                    continue;
+                semantic = MHWRender::MGeometry::kNormal;
+            } else if ((rprimDirtyBits & HdChangeTracker::DirtyPrimvar) == 0) {
+                continue;
+            }
+
+            const VtValue&         value = it.second->_source.data;
+            const HdInterpolation& interp = it.second->_source.interpolation;
 
             if (!value.IsArrayValued() || value.GetArraySize() == 0)
                 continue;
 
-            MHWRender::MVertexBuffer* buffer = _meshSharedData->_primvarBuffers[token].get();
+            MHWRender::MVertexBuffer* buffer = _meshSharedData->_primvarInfo[token]->_buffer.get();
 
             void* bufferData = nullptr;
 
             if (value.IsHolding<VtFloatArray>()) {
                 if (!buffer) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
-                        "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 1);
+                        "", semantic, MHWRender::MGeometry::kFloat, 1);
 
                     buffer = new MHWRender::MVertexBuffer(vbDesc);
-                    _meshSharedData->_primvarBuffers[token].reset(buffer);
+                    _meshSharedData->_primvarInfo[token]->_buffer.reset(buffer);
                 }
 
                 if (buffer) {
@@ -650,10 +651,10 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
             } else if (value.IsHolding<VtVec2fArray>()) {
                 if (!buffer) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
-                        "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 2);
+                        "", semantic, MHWRender::MGeometry::kFloat, 2);
 
                     buffer = new MHWRender::MVertexBuffer(vbDesc);
-                    _meshSharedData->_primvarBuffers[token].reset(buffer);
+                    _meshSharedData->_primvarInfo[token]->_buffer.reset(buffer);
                 }
 
                 if (buffer) {
@@ -676,10 +677,10 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
             } else if (value.IsHolding<VtVec3fArray>()) {
                 if (!buffer) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
-                        "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 3);
+                        "", semantic, MHWRender::MGeometry::kFloat, 3);
 
                     buffer = new MHWRender::MVertexBuffer(vbDesc);
-                    _meshSharedData->_primvarBuffers[token].reset(buffer);
+                    _meshSharedData->_primvarInfo[token]->_buffer.reset(buffer);
                 }
 
                 if (buffer) {
@@ -702,10 +703,10 @@ void HdVP2Mesh::_PrepareSharedVertexBuffers(
             } else if (value.IsHolding<VtVec4fArray>()) {
                 if (!buffer) {
                     const MHWRender::MVertexBufferDescriptor vbDesc(
-                        "", MHWRender::MGeometry::kTexture, MHWRender::MGeometry::kFloat, 4);
+                        "", semantic, MHWRender::MGeometry::kFloat, 4);
 
                     buffer = new MHWRender::MVertexBuffer(vbDesc);
-                    _meshSharedData->_primvarBuffers[token].reset(buffer);
+                    _meshSharedData->_primvarInfo[token]->_buffer.reset(buffer);
                 }
 
                 if (buffer) {
@@ -816,11 +817,12 @@ void HdVP2Mesh::Sync(
 
     // Geom subsets are accessed through the meshes topology. I need to know about
     // the additional materialIds that get bound by geom subsets before we build the
-    // _primvarSourceMap. So the very first thing I need to do is grab the topology.
+    // _primvaInfo. So the very first thing I need to do is grab the topology.
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id))
         _meshSharedData->_topology = GetMeshTopology(delegate);
 
-    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
+    if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->points)
+        || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->normals)
         || HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, HdTokens->primvar)) {
 
         auto addRequiredPrimvars = [&](const SdfPath& materialId) {
@@ -865,7 +867,17 @@ void HdVP2Mesh::Sync(
                         geomSubset.materialId));
             }
         }
+
+        // also, we always require points
+        _meshSharedData->_allRequiredPrimvars.push_back(HdTokens->points);
+
         _UpdatePrimvarSources(delegate, *dirtyBits, _meshSharedData->_allRequiredPrimvars);
+
+#ifdef HDVP2_ENABLE_GPU_COMPUTE
+        _gpuNormalsEnabled = _gpuNormalsEnabled && numVertices >= _gpuNormalsComputeThreshold;
+#else
+        _gpuNormalsEnabled = false;
+#endif
     }
 
     if (HdChangeTracker::IsTopologyDirty(*dirtyBits, id)) {
@@ -876,7 +888,7 @@ void HdVP2Mesh::Sync(
         VtIntArray newFaceVertexIndices;
         newFaceVertexIndices.resize(numFaceVertexIndices);
 
-        if (_IsUnsharedVertexLayoutRequired(_meshSharedData->_primvarSourceMap)) {
+        if (_IsUnsharedVertexLayoutRequired(_meshSharedData->_primvarInfo)) {
             _meshSharedData->_numVertices = numFaceVertexIndices;
             _meshSharedData->_renderingToSceneFaceVtxIds = faceVertexIndices;
             _meshSharedData->_sceneToRenderingFaceVtxIds.clear();
@@ -1468,18 +1480,20 @@ void HdVP2Mesh::_UpdateDrawItem(
             // Due to the performance implications of transparency, we have to
             // traverse the array and enable transparency only when needed.
             renderItemData._transparent = false;
-            if (_meshSharedData->_alphaArray.size() > 0) {
-                if (_meshSharedData->_alphaInterp == HdInterpolationConstant) {
-                    renderItemData._transparent = (_meshSharedData->_alphaArray[0] < 0.999f);
+            HdInterpolation alphaInterp = HdInterpolationConstant;
+            VtFloatArray    alphaArray;
+            _getOpacityData(_meshSharedData->_primvarInfo, alphaArray, alphaInterp);
+            if (alphaArray.size() > 0) {
+                if (alphaInterp == HdInterpolationConstant) {
+                    renderItemData._transparent = (alphaArray[0] < 0.999f);
                 } else {
                     for (const auto& triangle : trianglesFaceVertexIndices) {
 
                         int x = _meshSharedData->_renderingToSceneFaceVtxIds[triangle[0]];
                         int y = _meshSharedData->_renderingToSceneFaceVtxIds[triangle[1]];
                         int z = _meshSharedData->_renderingToSceneFaceVtxIds[triangle[2]];
-                        if (_meshSharedData->_alphaArray[x] < 0.999f
-                            || _meshSharedData->_alphaArray[y] < 0.999f
-                            || _meshSharedData->_alphaArray[z] < 0.999f) {
+                        if (alphaArray[x] < 0.999f || alphaArray[y] < 0.999f
+                            || alphaArray[z] < 0.999f) {
                             renderItemData._transparent = true;
                             break;
                         }
@@ -1548,25 +1562,18 @@ void HdVP2Mesh::_UpdateDrawItem(
             if (!stateToCommit._shader && _PrimvarIsRequired(HdTokens->displayColor)) {
                 MHWRender::MShaderInstance* shader = nullptr;
 
-                if (_meshSharedData->_colorInterp == HdInterpolationConstant
-                    && _meshSharedData->_alphaInterp == HdInterpolationConstant) {
+                HdInterpolation colorInterp = HdInterpolationConstant;
+                HdInterpolation alphaInterp = HdInterpolationConstant;
+                VtVec3fArray    colorArray;
+                VtFloatArray    alphaArray;
 
-                    // If color/opacity is not found, the 18% gray color will be used
-                    // to match the default color of Hydra Storm.
-                    if (_meshSharedData->_colorArray.empty()) {
-                        _meshSharedData->_colorArray.push_back(GfVec3f(0.18f, 0.18f, 0.18f));
-                        _meshSharedData->_colorInterp = HdInterpolationConstant;
-                    }
+                _getColorData(_meshSharedData->_primvarInfo, colorArray, colorInterp);
+                _getOpacityData(_meshSharedData->_primvarInfo, alphaArray, alphaInterp);
 
-                    if (_meshSharedData->_alphaArray.empty()) {
-                        _meshSharedData->_alphaArray.push_back(1.0f);
-                        _meshSharedData->_alphaInterp = HdInterpolationConstant;
-                    }
-
-                    const GfVec3f& clr3f
-                        = UsdMayaColorSpace::ConvertLinearToMaya(_meshSharedData->_colorArray[0]);
-                    const MColor color(
-                        clr3f[0], clr3f[1], clr3f[2], _meshSharedData->_alphaArray[0]);
+                if (colorInterp == HdInterpolationConstant
+                    && alphaInterp == HdInterpolationConstant) {
+                    const GfVec3f& clr3f = UsdMayaColorSpace::ConvertLinearToMaya(colorArray[0]);
+                    const MColor   color(clr3f[0], clr3f[1], clr3f[2], alphaArray[0]);
                     shader = _delegate->GetFallbackShader(color);
                 } else {
                     shader = _delegate->GetFallbackCPVShader();
@@ -1772,7 +1779,7 @@ void HdVP2Mesh::_UpdateDrawItem(
             & (HdChangeTracker::DirtyVisibility | HdChangeTracker::DirtyRenderTag
                | HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyExtent
                | DirtySelectionHighlight))) {
-        bool enable = drawItem->GetVisible() && !_meshSharedData->_points.empty()
+        bool enable = drawItem->GetVisible() && !_points(_meshSharedData->_primvarInfo).empty()
             && !instancerWithNoInstances;
 
         if (isDedicatedSelectionHighlightItem) {
@@ -1796,134 +1803,126 @@ void HdVP2Mesh::_UpdateDrawItem(
            & (HdChangeTracker::DirtyPoints | HdChangeTracker::DirtyNormals
               | HdChangeTracker::DirtyPrimvar | HdChangeTracker::DirtyTopology));
 
-    // Capture the valid position buffer and index buffer
-    MHWRender::MVertexBuffer* positionsBuffer = _meshSharedData->_positionsBuffer.get();
-    MHWRender::MVertexBuffer* colorBuffer = _meshSharedData->_colorBuffer.get();
-    MHWRender::MVertexBuffer* normalsBuffer = _meshSharedData->_normalsBuffer.get();
-    MHWRender::MIndexBuffer*  indexBuffer = drawItemData._indexBuffer.get();
-    PrimvarBufferMap*         primvarBuffers = &_meshSharedData->_primvarBuffers;
-
+    // Capture buffers we need
+    MHWRender::MIndexBuffer* indexBuffer = drawItemData._indexBuffer.get();
+    PrimvarInfoMap*          primvarInfo = &_meshSharedData->_primvarInfo;
+    const HdVP2BBoxGeom&     sharedBBoxGeom = _delegate->GetSharedBBoxGeom();
     if (isBBoxItem) {
-        const HdVP2BBoxGeom& sharedBBoxGeom = _delegate->GetSharedBBoxGeom();
-        positionsBuffer = const_cast<MHWRender::MVertexBuffer*>(sharedBBoxGeom.GetPositionBuffer());
         indexBuffer = const_cast<MHWRender::MIndexBuffer*>(sharedBBoxGeom.GetIndexBuffer());
     }
 
-    _delegate->GetVP2ResourceRegistry().EnqueueCommit([drawItem,
-                                                       stateToCommit,
-                                                       param,
-                                                       positionsBuffer,
-                                                       colorBuffer,
-                                                       normalsBuffer,
-                                                       primvarBuffers,
-                                                       indexBuffer]() {
-        const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
-        MHWRender::MRenderItem*              renderItem = drawItemData._renderItem;
-        if (ARCH_UNLIKELY(!renderItem))
-            return;
+    _delegate->GetVP2ResourceRegistry().EnqueueCommit(
+        [drawItem, stateToCommit, param, primvarInfo, indexBuffer, isBBoxItem, &sharedBBoxGeom]() {
+            const HdVP2DrawItem::RenderItemData& drawItemData = stateToCommit._renderItemData;
+            MHWRender::MRenderItem*              renderItem = drawItemData._renderItem;
+            if (ARCH_UNLIKELY(!renderItem))
+                return;
 
-        MProfilingScope profilingScope(
-            HdVP2RenderDelegate::sProfilerCategory,
-            MProfiler::kColorC_L2,
-            renderItem->name().asChar(),
-            "Commit");
+            MProfilingScope profilingScope(
+                HdVP2RenderDelegate::sProfilerCategory,
+                MProfiler::kColorC_L2,
+                renderItem->name().asChar(),
+                "Commit");
 
-        // If available, something changed
-        if (stateToCommit._indexBufferData)
-            indexBuffer->commit(stateToCommit._indexBufferData);
+            // If available, something changed
+            if (stateToCommit._indexBufferData)
+                indexBuffer->commit(stateToCommit._indexBufferData);
 
-        // If available, something changed
-        if (stateToCommit._shader != nullptr) {
-            renderItem->setShader(stateToCommit._shader);
-            renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
-        }
+            // If available, something changed
+            if (stateToCommit._shader != nullptr) {
+                renderItem->setShader(stateToCommit._shader);
+                renderItem->setTreatAsTransparent(stateToCommit._isTransparent);
+            }
 
-        // If the enable state is changed, then update it.
-        if (stateToCommit._enabled != nullptr) {
-            renderItem->enable(*stateToCommit._enabled);
-        }
+            // If the enable state is changed, then update it.
+            if (stateToCommit._enabled != nullptr) {
+                renderItem->enable(*stateToCommit._enabled);
+            }
 
-        ProxyRenderDelegate& drawScene = param->GetDrawScene();
+            ProxyRenderDelegate& drawScene = param->GetDrawScene();
 
-        // TODO: this is now including all buffers for the requirements of all
-        // the render items on this rprim. We could filter it down based on the
-        // requirements of the shader.
-        if (stateToCommit._geometryDirty || stateToCommit._boundingBox) {
-            MHWRender::MVertexBufferArray vertexBuffers;
-            vertexBuffers.addBuffer(kPositionsStr, positionsBuffer);
+            // TODO: this is now including all buffers for the requirements of all
+            // the render items on this rprim. We could filter it down based on the
+            // requirements of the shader.
+            if (stateToCommit._geometryDirty || stateToCommit._boundingBox) {
+                MHWRender::MVertexBufferArray vertexBuffers;
 
-            if (colorBuffer)
-                vertexBuffers.addBuffer(kDiffuseColorStr, colorBuffer);
+                for (auto& entry : *primvarInfo) {
+                    const TfToken&            primvarName = entry.first;
+                    MHWRender::MVertexBuffer* primvarBuffer = nullptr;
+                    if (isBBoxItem && primvarName == HdTokens->points) {
+                        primvarBuffer = const_cast<MHWRender::MVertexBuffer*>(
+                            sharedBBoxGeom.GetPositionBuffer());
+                    } else {
+                        primvarBuffer = entry.second->_buffer.get();
+                    }
+                    if (primvarBuffer) { // this filters out the separate color & alpha entries
+                        vertexBuffers.addBuffer(primvarName.GetText(), primvarBuffer);
+                    }
+                }
 
-            if (normalsBuffer)
-                vertexBuffers.addBuffer(kNormalsStr, normalsBuffer);
+                // The API call does three things:
+                // - Associate geometric buffers with the render item.
+                // - Update bounding box.
+                // - Trigger consolidation/instancing update.
+                drawScene.setGeometryForRenderItem(
+                    *renderItem, vertexBuffers, *indexBuffer, stateToCommit._boundingBox);
+            }
 
-            for (auto& entry : *primvarBuffers) {
-                const TfToken&            primvarName = entry.first;
-                MHWRender::MVertexBuffer* primvarBuffer = entry.second.get();
-                if (primvarBuffer) {
-                    vertexBuffers.addBuffer(primvarName.GetText(), primvarBuffer);
+            // Important, update instance transforms after setting geometry on render items!
+            auto& oldInstanceCount = stateToCommit._renderItemData._instanceCount;
+            auto  newInstanceCount = stateToCommit._instanceTransforms.length();
+
+            // GPU instancing has been enabled. We cannot switch to consolidation
+            // without recreating render item, so we keep using GPU instancing.
+            if (stateToCommit._renderItemData._usingInstancedDraw) {
+                if (oldInstanceCount == newInstanceCount) {
+                    for (unsigned int i = 0; i < newInstanceCount; i++) {
+                        // VP2 defines instance ID of the first instance to be 1.
+                        drawScene.updateInstanceTransform(
+                            *renderItem, i + 1, stateToCommit._instanceTransforms[i]);
+                    }
+                } else {
+                    drawScene.setInstanceTransformArray(
+                        *renderItem, stateToCommit._instanceTransforms);
+                }
+
+                if (stateToCommit._instanceColors.length()
+                    == newInstanceCount * kNumColorChannels) {
+                    drawScene.setExtraInstanceData(
+                        *renderItem, kSolidColorStr, stateToCommit._instanceColors);
                 }
             }
-
-            // The API call does three things:
-            // - Associate geometric buffers with the render item.
-            // - Update bounding box.
-            // - Trigger consolidation/instancing update.
-            drawScene.setGeometryForRenderItem(
-                *renderItem, vertexBuffers, *indexBuffer, stateToCommit._boundingBox);
-        }
-
-        // Important, update instance transforms after setting geometry on render items!
-        auto& oldInstanceCount = stateToCommit._renderItemData._instanceCount;
-        auto  newInstanceCount = stateToCommit._instanceTransforms.length();
-
-        // GPU instancing has been enabled. We cannot switch to consolidation
-        // without recreating render item, so we keep using GPU instancing.
-        if (stateToCommit._renderItemData._usingInstancedDraw) {
-            if (oldInstanceCount == newInstanceCount) {
-                for (unsigned int i = 0; i < newInstanceCount; i++) {
-                    // VP2 defines instance ID of the first instance to be 1.
-                    drawScene.updateInstanceTransform(
-                        *renderItem, i + 1, stateToCommit._instanceTransforms[i]);
-                }
-            } else {
-                drawScene.setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
-            }
-
-            if (stateToCommit._instanceColors.length() == newInstanceCount * kNumColorChannels) {
-                drawScene.setExtraInstanceData(
-                    *renderItem, kSolidColorStr, stateToCommit._instanceColors);
-            }
-        }
 #if MAYA_API_VERSION >= 20210000
-        else if (newInstanceCount >= 1) {
+            else if (newInstanceCount >= 1) {
 #else
-        // In Maya 2020 and before, GPU instancing and consolidation are two separate systems that
-        // cannot be used by a render item at the same time. In case of single instance, we keep
-        // the original render item to allow consolidation with other prims. In case of multiple
-        // instances, we need to disable consolidation to allow GPU instancing to be used.
-        else if (newInstanceCount == 1) {
-            renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
-        } else if (newInstanceCount > 1) {
-            setWantConsolidation(*renderItem, false);
+            // In Maya 2020 and before, GPU instancing and consolidation are two separate systems
+            // that cannot be used by a render item at the same time. In case of single instance, we
+            // keep the original render item to allow consolidation with other prims. In case of
+            // multiple instances, we need to disable consolidation to allow GPU instancing to be
+            // used.
+            else if (newInstanceCount == 1) {
+                renderItem->setMatrix(&stateToCommit._instanceTransforms[0]);
+            } else if (newInstanceCount > 1) {
+                setWantConsolidation(*renderItem, false);
 #endif
-            drawScene.setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
+                drawScene.setInstanceTransformArray(*renderItem, stateToCommit._instanceTransforms);
 
-            if (stateToCommit._instanceColors.length() == newInstanceCount * kNumColorChannels) {
-                drawScene.setExtraInstanceData(
-                    *renderItem, kSolidColorStr, stateToCommit._instanceColors);
+                if (stateToCommit._instanceColors.length()
+                    == newInstanceCount * kNumColorChannels) {
+                    drawScene.setExtraInstanceData(
+                        *renderItem, kSolidColorStr, stateToCommit._instanceColors);
+                }
+
+                stateToCommit._renderItemData._usingInstancedDraw = true;
+            } else if (stateToCommit._worldMatrix != nullptr) {
+                // Regular non-instanced prims. Consolidation has been turned on by
+                // default and will be kept enabled on this case.
+                renderItem->setMatrix(stateToCommit._worldMatrix);
             }
 
-            stateToCommit._renderItemData._usingInstancedDraw = true;
-        } else if (stateToCommit._worldMatrix != nullptr) {
-            // Regular non-instanced prims. Consolidation has been turned on by
-            // default and will be kept enabled on this case.
-            renderItem->setMatrix(stateToCommit._worldMatrix);
-        }
-
-        oldInstanceCount = newInstanceCount;
-    });
+            oldInstanceCount = newInstanceCount;
+        });
 }
 
 void HdVP2Mesh::_HideAllDrawItems(const TfToken& reprToken)
@@ -2092,9 +2091,9 @@ void HdVP2Mesh::_CreateOSDTables()
 }
 #endif
 
-/*! \brief  Update _primvarSourceMap, our local cache of raw primvar data.
+/*! \brief  Update the _primvarInfo's _source information for all required primvars.
 
-    This function pulls data from the scene delegate, but defers processing.
+    This function pulls data from the scene delegate & caches it, but defers processing.
 
     While iterating primvars, we skip "points" (vertex positions) because
     the points primvar is processed separately for direct access later. We
@@ -2118,10 +2117,11 @@ void HdVP2Mesh::_UpdatePrimvarSources(
             if (std::find(begin, end, pv.name) != end) {
                 if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
                     const VtValue value = GetPrimvar(sceneDelegate, pv.name);
-                    _meshSharedData->_primvarSourceMap[pv.name] = { value, interp };
+                    _meshSharedData->_primvarInfo[pv.name] = std::make_unique<PrimvarInfo>(
+                        PrimvarSource(value, interp, false), nullptr);
                 }
             } else {
-                _meshSharedData->_primvarSourceMap.erase(pv.name);
+                _meshSharedData->_primvarInfo.erase(pv.name);
             }
         }
     }
