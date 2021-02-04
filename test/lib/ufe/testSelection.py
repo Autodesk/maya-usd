@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import mayaUsd
 import fixturesUtils
 import mayaUtils
 import ufeUtils

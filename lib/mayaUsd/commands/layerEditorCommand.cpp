@@ -26,8 +26,8 @@
 #include <maya/MSyntax.h>
 
 #if defined(WANT_UFE_BUILD)
-#include <mayaUsd/ufe/Utils.h>
 #include <mayaUsd/ufe/Global.h>
+#include <mayaUsd/ufe/Utils.h>
 
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
@@ -433,10 +433,9 @@ private:
         // using Ufe::PathString::path() for UFE v1 compatibility, which
         // unfortunately reveals leading "world" path component implementation
         // detail.
-        Ufe::Path path(Ufe::PathSegment(
-            "world"+_proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
-        globalSn->replaceWith(
-            MayaUsd::ufe::removeDescendants(_savedSn, path));
+        Ufe::Path path(
+            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+        globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, path));
 #endif
     }
 
@@ -449,16 +448,15 @@ private:
         // using Ufe::PathString::path() for UFE v1 compatibility, which
         // unfortunately reveals leading "world" path component implementation
         // detail.
-        Ufe::Path path(Ufe::PathSegment(
-            "world"+_proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
+        Ufe::Path path(
+            Ufe::PathSegment("world" + _proxyShapePath, MayaUsd::ufe::getMayaRunTimeId(), '|'));
         auto globalSn = Ufe::GlobalSelection::get();
-        globalSn->replaceWith(
-            MayaUsd::ufe::recreateDescendants(_savedSn, path));
+        globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, path));
 #endif
     }
 
 #if defined(WANT_UFE_BUILD)
-    Ufe::Selection         _savedSn;
+    Ufe::Selection _savedSn;
 #endif
     PXR_NS::SdfLayerRefPtr _mutedLayer;
 };
