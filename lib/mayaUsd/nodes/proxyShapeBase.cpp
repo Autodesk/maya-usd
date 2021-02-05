@@ -790,9 +790,6 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
 {
     TRACE_FUNCTION();
 
-    MProfilingScope profilingScope(
-        _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Get shape BoundingBox");
-
     MStatus status;
 
     // Make sure outStage is up to date
@@ -813,6 +810,9 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
     if (cacheLookup != _boundingBoxCache.end()) {
         return cacheLookup->second;
     }
+
+    MProfilingScope profilingScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Compute USD Stage BoundingBox");
 
     UsdPrim prim = _GetUsdPrim(dataBlock);
     if (!prim) {
@@ -1208,6 +1208,11 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
 {
     MProfilingScope profilingScope(
         _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
+
+    // This will definitely force a BBox recomputation on "Frame All" or when framing a selected
+    // stage. Computing bounds in USD is expensive, so if it pops up in other frequently used
+    // scenarios we will have to investigate ways to make this cache clearing less expensive.
+    clearBoundingBoxCache();
 
     ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);
 
