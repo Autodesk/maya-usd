@@ -16,9 +16,15 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
+import fixturesUtils
+import mayaUtils
+import testUtils
+import ufeUtils
+import usdUtils
 
-import usdUtils, mayaUtils, ufeUtils, testUtils
+from maya import cmds
+from maya import standalone
+
 import ufe
 
 import unittest
@@ -44,8 +50,14 @@ class DuplicateCmdTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -205,3 +217,7 @@ class DuplicateCmdTestCase(unittest.TestCase):
         correctResult = [20, 0, 0, 1]
 
         self.assertEqual(correctResult, transVector)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

@@ -378,14 +378,16 @@ static bool _pushUSDXformToMayaXform(
     const UsdMayaPrimReaderArgs&    args,
     const UsdMayaPrimReaderContext* context)
 {
+    MTime::Unit timeUnit = MTime::uiUnit();
+    double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
+
     std::vector<double> timeSamples;
-    xformSchema.GetTimeSamplesInInterval(args.GetTimeInterval(), &timeSamples);
+    if (!args.GetTimeInterval().IsEmpty()) {
+        xformSchema.GetTimeSamplesInInterval(args.GetTimeInterval(), &timeSamples);
+    }
 
     std::vector<UsdTimeCode> timeCodes;
     MTimeArray               timeArray;
-    MTime::Unit              timeUnit = MTime::uiUnit();
-
-    double timeSampleMultiplier = (context != nullptr) ? context->GetTimeSampleMultiplier() : 1.0;
 
     if (!timeSamples.empty()) {
         // Convert all the time samples to UsdTimeCodes.
@@ -397,9 +399,9 @@ static bool _pushUSDXformToMayaXform(
 
         timeArray.setLength(timeCodes.size());
     } else {
-        // If there were no time samples, we'll just use the default time and
+        // If there were no time samples, pick the first available sample or default and
         // leave the MTimeArray empty.
-        timeCodes.push_back(UsdTimeCode::Default());
+        timeCodes.push_back(UsdTimeCode::EarliestTime());
     }
 
     // Storage for all of the components of the Maya transform attributes. Maya
@@ -486,7 +488,7 @@ static bool _pushUSDXformToMayaXform(
         ShearXZVal[ti] = shear[1];
         ShearYZVal[ti] = shear[2];
 
-        if (!timeCode.IsDefault()) {
+        if (!timeSamples.empty()) {
             timeArray.set(MTime(timeCode.GetValue() * timeSampleMultiplier, timeUnit), ti);
         }
     }

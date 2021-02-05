@@ -101,6 +101,19 @@ MStatus UsdMayaExportTranslator::writer(
                     }
                 }
             } else {
+                if (argName == "shadingMode") {
+                    TfToken shadingMode(theOption[1].asChar());
+                    if (!shadingMode.IsEmpty()
+                        && UsdMayaShadingModeRegistry::GetInstance().GetExporter(shadingMode)
+                            == nullptr
+                        && shadingMode != UsdMayaShadingModeTokens->none) {
+
+                        MGlobal::displayError(
+                            TfStringPrintf("No shadingMode '%s' found.", shadingMode.GetText())
+                                .c_str());
+                        return MS::kFailure;
+                    }
+                }
                 userArgs[argName] = UsdMayaUtil::ParseArgumentValue(
                     argName,
                     theOption[1].asChar(),

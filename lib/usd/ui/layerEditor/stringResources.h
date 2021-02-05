@@ -79,6 +79,10 @@ const auto kSave                     { create("kSave", "Save") };
 const auto kSaveAll                  { create("kSaveAll", "Save All") };
 const auto kSaveAllEditsInLayerStack { create("kSaveAllEditsInLayerStack", "Save all edits in the Layer Stack")};
 const auto kSaveLayer                { create("kSaveLayer", "Save Layer") };
+const auto kSaveLayerSaveNestedAnonymLayer { create("kSaveLayerSaveNestedAnonymLayer",
+                                                    "To save ^1s, you must save your ^2s anonymous layer(s) that are nested under it.") };
+const auto kSaveLayerWarnTitle       { create("kSaveLayerWarnTitle", "Save ^1s") };
+const auto kSaveLayerWarnMsg         { create("kSaveLayerWarnMsg", "Saving edits to ^1s will overwrite your file.") };
 const auto kSaveStage                { create("kSaveStage", "Save Stage") };
 const auto kToSaveTheStageSaveAnonym { create("kToSaveTheStageSaveAnonym", "To save the stage, you must save your anonymous layer")};
 const auto kToSaveTheStageSaveAnonyms{ create("kToSaveTheStageSaveAnonyms", "To save the stage, you must save your ^1s anonymous layers")};

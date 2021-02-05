@@ -38,6 +38,7 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/trace/trace.h>
 #include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
 #include <pxr/usd/usd/editContext.h>

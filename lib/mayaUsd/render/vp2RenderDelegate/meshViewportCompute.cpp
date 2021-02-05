@@ -22,6 +22,8 @@
 #include <mayaUsd/render/vp2RenderDelegate/proxyRenderDelegate.h>
 
 #include <pxr/imaging/hd/vertexAdjacency.h>
+#include <pxr/imaging/pxOsd/refinerFactory.h>
+#include <pxr/imaging/pxOsd/tokens.h>
 
 #include <maya/MProfiler.h>
 
