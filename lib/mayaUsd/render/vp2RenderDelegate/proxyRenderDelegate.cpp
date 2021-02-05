@@ -18,6 +18,7 @@
 #include "render_delegate.h"
 #include "tokens.h"
 
+#include <mayaUsd/base/tokens.h>
 #include <mayaUsd/nodes/proxyShapeBase.h>
 #include <mayaUsd/nodes/stageData.h>
 #include <mayaUsd/utils/util.h>
@@ -111,7 +112,7 @@ MGlobal::ListAdjustment GetListAdjustment()
 //!         in the viewport will be selected.
 TfToken GetSelectionKind()
 {
-    static const MString kOptionVarName("UsdSelectionKind");
+    static const MString kOptionVarName(MayaUsdOptionVars->mayaUsd_SelectionKind.GetText());
 
     if (MGlobal::optionVarExists(kOptionVarName)) {
         MString optionVarValue = MGlobal::optionVarStringValue(kOptionVarName);

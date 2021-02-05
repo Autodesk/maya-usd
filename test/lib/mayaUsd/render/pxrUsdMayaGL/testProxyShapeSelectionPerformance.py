@@ -96,7 +96,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
         # Store the previous USD selection kind (or None if there wasn't one)
         # so we can restore the state later.
-        cls._selKindOptionVarName = 'UsdSelectionKind'
+        cls._selKindOptionVarName = 'mayaUsd_SelectionKind'
         cls._prevSelKind = cmds.optionVar(query=cls._selKindOptionVarName) or None
 
         # Set the USD selection kind to "assembly" so that we select entire
