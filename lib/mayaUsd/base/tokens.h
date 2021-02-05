@@ -40,7 +40,17 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* or if the selection kind is unspecified or     */ \
     /* empty, the exact prim picked in the viewport   */ \
     /* is selected.                                   */ \
-    ((SelectionKind, "mayaUsd_SelectionKind"))
+    ((SelectionKind, "mayaUsd_SelectionKind"))           \
+    /* The method to use to resolve viewport picking  */ \
+    /* when the picked object is a point instance.    */ \
+    /* The default behavior is "PointInstancer" which */ \
+    /* will resolve to the PointInstancer prim that   */ \
+    /* generated the point instance. The optionVar    */ \
+    /* can also be set to "Instances" which will      */ \
+    /* resolve to individual point instances, or to   */ \
+    /* "Prototypes" which will resolve to the prim    */ \
+    /* that is being instanced by the point instance. */ \
+    ((PointInstancesPickMode, "mayaUsd_PointInstancesPickMode"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
