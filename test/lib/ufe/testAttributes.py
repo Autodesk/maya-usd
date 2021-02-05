@@ -16,11 +16,18 @@
 # limitations under the License.
 #
 
-import usdUtils, mayaUtils
-import ufe
+import fixturesUtils
+import mayaUtils
+import usdUtils
+
 from pxr import UsdGeom
 
+from maya import standalone
+
+import ufe
+
 import unittest
+
 
 class AttributesTestCase(unittest.TestCase):
     '''Verify the Attributes UFE interface, for multiple runtimes.
@@ -30,8 +37,14 @@ class AttributesTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
@@ -67,3 +80,7 @@ class AttributesTestCase(unittest.TestCase):
 
         # Visibility should be in this list.
         self.assertIn(UsdGeom.Tokens.visibility, ball35AttrNames)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

@@ -16,13 +16,20 @@
 # limitations under the License.
 #
 
+import fixturesUtils
+import mayaUtils
+import ufeUtils
+import usdUtils
+
+from maya import cmds
+from maya import standalone
+
+import ufe
+
+import os
+import sys
 import unittest
 
-import maya.cmds as cmds
-import sys, os
-
-import usdUtils, mayaUtils, ufeUtils
-import ufe
 
 class MayaUFEPickWalkTesting(unittest.TestCase):
     '''
@@ -49,9 +56,11 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
     '''
     
     pluginsLoaded = False
-    
+
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
     
@@ -61,6 +70,8 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
         # exit while cleaning out the undo stack, because the Python commands 
         # we use in this test are destroyed after the Python interpreter exits.
         cmds.file(new=True, force=True)
+
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
@@ -220,3 +231,7 @@ class MayaUFEPickWalkTesting(unittest.TestCase):
         self.rewindMemento()
         self.fforwardMemento()
         '''
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

@@ -38,13 +38,17 @@
 #include <pxr/base/tf/token.h>
 #include <pxr/base/trace/trace.h>
 #include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/sdf/attributeSpec.h>
 #include <pxr/usd/sdf/layer.h>
 #include <pxr/usd/sdf/path.h>
+#include <pxr/usd/usd/editContext.h>
 #include <pxr/usd/usd/prim.h>
 #include <pxr/usd/usd/stage.h>
 #include <pxr/usd/usd/stageCacheContext.h>
 #include <pxr/usd/usd/timeCode.h>
 #include <pxr/usd/usdGeom/bboxCache.h>
+#include <pxr/usd/usdGeom/boundable.h>
+#include <pxr/usd/usdGeom/gprim.h>
 #include <pxr/usd/usdGeom/imageable.h>
 #include <pxr/usd/usdGeom/tokens.h>
 #include <pxr/usd/usdUtils/stageCache.h>
@@ -74,6 +78,7 @@
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
 #include <maya/MPoint.h>
+#include <maya/MProfiler.h>
 #include <maya/MPxSurfaceShape.h>
 #include <maya/MSelectionMask.h>
 #include <maya/MStatus.h>
@@ -183,6 +188,15 @@ void createNewAnonSubLayerRecursive(
         }
     }
 }
+//! Profiler category for proxy accessor events
+const int _shapeBaseProfilerCategory = MProfiler::addCategory(
+#if MAYA_API_VERSION >= 20190000
+    "ProxyShapeBase",
+    "ProxyShapeBase events"
+#else
+    "ProxyShapeBase"
+#endif
+);
 } // namespace
 
 /* static */
@@ -918,6 +932,9 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
 {
     TRACE_FUNCTION();
 
+    MProfilingScope profilingScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Get shape BoundingBox");
+
     MStatus status;
 
     // Make sure outStage is up to date
@@ -1331,7 +1348,73 @@ void MayaUsdProxyShapeBase::_OnStageContentsChanged(const UsdNotice::StageConten
 
 void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChanged& notice)
 {
+    MProfilingScope profilingScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
+
     ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);
+
+    // Recompute the extents of any UsdGeomBoundable that has authored extents
+    const auto& stage = notice.GetStage();
+    if (stage != getUsdStage()) {
+        TF_CODING_ERROR("We shouldn't be receiving notification for other stages than one "
+                        "returned by stage provider");
+        return;
+    }
+
+    for (const auto& changedPath : notice.GetChangedInfoOnlyPaths()) {
+        if (!changedPath.IsPrimPropertyPath()) {
+            continue;
+        }
+
+        const TfToken& changedPropertyToken = changedPath.GetNameToken();
+        if (changedPropertyToken == UsdGeomTokens->extent) {
+            continue;
+        }
+
+        SdfPath          changedPrimPath = changedPath.GetPrimPath();
+        const UsdPrim&   changedPrim = stage->GetPrimAtPath(changedPrimPath);
+        UsdGeomBoundable boundableObj = UsdGeomBoundable(changedPrim);
+        if (!boundableObj) {
+            continue;
+        }
+
+        // If the attribute is not part of the primitive schema, it does not affect extents
+#if USD_VERSION_NUM > 2002
+        auto attrDefn
+            = changedPrim.GetPrimDefinition().GetSchemaAttributeSpec(changedPropertyToken);
+#else
+        auto attrDefn = PXR_NS::UsdSchemaRegistry::GetAttributeDefinition(
+            changedPrim.GetTypeName(), changedPropertyToken);
+#endif
+        if (!attrDefn) {
+            continue;
+        }
+
+        // Ignore all attributes known to GPrim and its base classes as they
+        // are guaranteed not to affect extents:
+        static const std::unordered_set<TfToken, TfToken::HashFunctor> ignoredAttributes(
+            UsdGeomGprim::GetSchemaAttributeNames(true).cbegin(),
+            UsdGeomGprim::GetSchemaAttributeNames(true).cend());
+        if (ignoredAttributes.count(changedPropertyToken) > 0) {
+            continue;
+        }
+
+        UsdAttribute extentsAttr = boundableObj.GetExtentAttr();
+        if (extentsAttr.GetNumTimeSamples() > 0) {
+            TF_CODING_ERROR(
+                "Can not fix animated extents of %s made dirty by a change on %s.",
+                changedPrimPath.GetString().c_str(),
+                changedPropertyToken.GetText());
+            continue;
+        }
+        if (extentsAttr && extentsAttr.HasValue()) {
+            VtVec3fArray extent(2);
+            if (UsdGeomBoundable::ComputeExtentFromPlugins(
+                    boundableObj, UsdTimeCode::Default(), &extent)) {
+                extentsAttr.Set(extent);
+            }
+        }
+    }
 }
 
 bool MayaUsdProxyShapeBase::closestPoint(

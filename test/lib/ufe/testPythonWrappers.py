@@ -16,13 +16,19 @@
 # limitations under the License.
 #
 
-import unittest
+import fixturesUtils
+import mayaUtils
+import ufeUtils
+import usdUtils
 
-import mayaUtils, ufeUtils, usdUtils
 import mayaUsd
+
+from maya import cmds
+from maya import standalone
+
 import ufe
 
-import maya.cmds as cmds
+import unittest
 
 
 class PythonWrappersTestCase(unittest.TestCase):
@@ -33,8 +39,14 @@ class PythonWrappersTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -99,3 +111,7 @@ class PythonWrappersTestCase(unittest.TestCase):
         self.assertTrue(mayaRtid > 0)
         self.assertTrue(usdRtid > 0)
         self.assertNotEqual(mayaRtid, usdRtid)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

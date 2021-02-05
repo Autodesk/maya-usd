@@ -16,13 +16,18 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
+import fixturesUtils
+import mayaUtils
+import usdUtils
 
-import usdUtils, mayaUtils
+from maya import cmds
+from maya import standalone
+
 import ufe
 
-import unittest
 import os
+import unittest
+
 
 class SceneItemTestCase(unittest.TestCase):
     '''Verify the SceneItem UFE interface.
@@ -32,8 +37,14 @@ class SceneItemTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
@@ -60,3 +71,7 @@ class SceneItemTestCase(unittest.TestCase):
         ball35AncestorNodeTypes = ball35Item.ancestorNodeTypes()
         self.assertEqual(ball35NodeType, ball35AncestorNodeTypes[0])
         self.assertTrue(len(ball35AncestorNodeTypes) > 1)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)
