@@ -1,7 +1,7 @@
 # Common Plug-in Commands
 
 This read-me documents the common commands that are shared by the various
-USD plug-ins made by Autodesk, Pixar and Animal Logic.
+USD plug-ins made by Autodesk and Pixar.
 
 ## Common Plug-in Contents
 
@@ -13,7 +13,7 @@ in this instance for the mayaUsd plug-in.
 
 | Class Name                     | Example Real Cmd Name    | Purpose                                |
 | ------------------------------ | ------------------------ | -------------------------------------- |
-| MayaUSDImportCommand           | mayaUSDimport            | Command to import from a USD file      |
+| MayaUSDImportCommand           | mayaUSDImport            | Command to import from a USD file      |
 | MayaUSDExportCommand           | mayaUSDExport            | Command to export into a USD file      |
 | MayaUSDListShadingModesCommand | mayaUSDListShadingModes  | Command to get available shading modes |
 | EditTargetCommand              | mayaUsdEditTarget        | Command to set or get the edit target  |
@@ -65,6 +65,7 @@ paths if primPath="/".
 | `-compatibility`                 | `-com`     | string           | none                | Specifies a compatibility profile when exporting the USD file. The compatibility profile may limit features in the exported USD file so that it is compatible with the limitations or requirements of third-party applications. Currently, there are only two profiles: `none` - Standard export with no compatibility options, `appleArKit` - Ensures that exported usdz packages are compatible with Apple's implementation (as of ARKit 2/iOS 12/macOS Mojave). Packages referencing multiple layers will be flattened into a single layer, and the first layer will have the extension `.usdc`. This compatibility profile only applies when exporting usdz packages; if you enable this profile and don't specify a file extension in the `-file` flag, the `.usdz` extension will be used instead. |
 | `-defaultCameras`                | `-dc`      | noarg            | false               | Export the four Maya default cameras |
 | `-defaultMeshScheme`             | `-dms`     | string           | `catmullClark`      | Sets the default subdivision scheme for exported Maya meshes, if the `USD_subdivisionScheme` attribute is not present on the Mesh. Valid values are: `none`, `catmullClark`, `loop`, `bilinear` |
+| `-exportDisplayColor`            | `-dsp`     | bool             | false               | Export display color |
 | `-defaultUSDFormat`              | `-duf`     | string           | `usdc`              | The exported USD file format, can be `usdc` for binary format or `usda` for ASCII format. |
 | `-exportBlendShapes`             | `-ebs`     | bool             | false               | Enable or disable export of blend shapes |
 | `-exportCollectionBasedBindings` | `-cbb`     | bool             | false               | Enable or disable export of collection-based material assigments. If this option is enabled, export of material collections (`-mcs`) is also enabled, which causes collections representing sets of geometry with the same material binding to be exported. Materials are bound to the created collections on the prim at `materialCollectionsPath` (specfied via the `-mcp` option). Direct (or per-gprim) bindings are not authored when collection-based bindings are enabled. |
@@ -82,10 +83,13 @@ paths if primPath="/".
 | `-file`                          | `-f`       | string           |                     | The name of the file being exported. The file format used for export is determined by the extension: `(none)`: By default, adds `.usd` extension and uses USD's crate (binary) format, `.usd`: usdc (binary) format, `.usda`: usda (ASCII), format, `.usdc`: usdc (binary) format, `.usdz`: usdz (packaged) format. This will also package asset dependencies, such as textures and other layers, into the usdz package. See `-compatibility` flag for more details. |
 | `-frameRange`                    | `-fr`      | double[2]        | `[1, 1]`            | Sets the first and last frame for an anim export (inclusive). |
 | `-frameSample`                   | `-fs`      | double (multi)   | `0.0`               | Specifies sample times used to multi-sample frames during animation export, where `0.0` refers to the current time sample. **This is an advanced option**; chances are, you probably want to set the `frameStride` parameter instead. But if you really do need fine-grained control on multi-sampling frames, see "Frame Samples" below. |
-| `-frameStride`                   | `-ft`      | double           | `1.0`               | Specifies the increment between frames during animation export, e.g. a stride of `0.5` will give you twice as many time samples, whereas a stride of `2.0` will only give you time samples every other frame. The frame stride is computed before the frame samples are taken into account. **Note**: Depending on the frame stride, the last frame of the frame range may be skipped. For example, if your frame range is `[1.0, 3.0]` but you specify a stride of `0.3`, then the time samples in your USD file will be `1.0, 1.3, 1.6, 1.9, 2.2, 2.5, 2.8`, skipping the last frame time (`3.0`). |
+| `-frameStride`                   | `-fst`     | double           | `1.0`               | Specifies the increment between frames during animation export, e.g. a stride of `0.5` will give you twice as many time samples, whereas a stride of `2.0` will only give you time samples every other frame. The frame stride is computed before the frame samples are taken into account. **Note**: Depending on the frame stride, the last frame of the frame range may be skipped. For example, if your frame range is `[1.0, 3.0]` but you specify a stride of `0.3`, then the time samples in your USD file will be `1.0, 1.3, 1.6, 1.9, 2.2, 2.5, 2.8`, skipping the last frame time (`3.0`). |
 | `-ignoreWarnings`                | `-ign`     | bool             | false               | Ignore warnings, do not fail to export due to warnings |
 | `-kind`                          | `-k`       | string           | none                | Specifies the required USD kind for *root prims* in the scene. (Does not affect kind for non-root prims.) If this flag is non-empty, then the specified kind will be set on any root prims in the scene without a `USD_kind` attribute (see the "Maya Custom Attributes" table below). Furthermore, if there are any root prims in the scene that do have a `USD_kind` attribute, then their `USD_kind` values will be validated to ensure they are derived from the kind specified by the `-kind` flag. For example, if the `-kind` flag is set to `group` and a root prim has `USD_kind=assembly`, then this is allowed because `assembly` derives from `group`. However, if the root prim has `USD_kind=subcomponent` instead, then `MayaUSDExportCommand` would stop with an error, since `subcomponent` does not derive from `group`. The validation behavior understands custom kinds that are registered using the USD kind registry, in addition to the built-in kinds. |
 | `-materialCollectionsPath`       | `-mcp`     | string           | none                | Path to the prim where material collections must be exported. |
+| `-melPerFrameCallback`           | `-mfc`     | string           | none                | Mel function called after each frame is exported |
+| `-melPostCallback`               | `-mpc`     | string           | none                | Mel function called when the export is done |
+| `-materialsScopeName`            | `-msn`     | string           | `Looks`             | Materials Scope Name |
 | `-mergeTransformAndShape`        | `-mt`      | bool             | true                | Combine Maya transform and shape into a single USD prim that has transform and geometry, for all "geometric primitives" (gprims). This results in smaller and faster scenes. Gprims will be "unpacked" back into transform and shape nodes when imported into Maya from USD. |
 | `-normalizeNurbs`                | `-nnu`     | bool             | false               | When setm the UV coordinates of nurbs are normalized to be between zero and one. |
 | `-pythonPerFrameCallback`        | `-pfc`     | string           | none                | Python function called after each frame is exported |
@@ -352,8 +356,8 @@ wanted the default flags mentioned above:
 ```
 
 This also works for the `MayaUSDImportCommand` base command, for example
-in the `mayaUSDimport` command and the "File > Import" menu item; use
-the `mayaUSDimport` key in the `plugInfo.json` file to configure your
+in the `mayaUSDImport` command and the "File > Import" menu item; use
+the `mayaUSDImport` key in the `plugInfo.json` file to configure your
 site-specific defaults.
 
 
