@@ -35,10 +35,11 @@ target_sources(${PYTHON_TARGET_NAME}
         wrapReadUtil.cpp
         wrapRoundTripUtil.cpp
         wrapStageCache.cpp
+        wrapTokens.cpp
+        wrapUsdUndoManager.cpp
         wrapUserTaggedAttribute.cpp
         wrapWriteUtil.cpp
         wrapXformStack.cpp
-        wrapUsdUndoManager.cpp
 )
 
 # -----------------------------------------------------------------------------
