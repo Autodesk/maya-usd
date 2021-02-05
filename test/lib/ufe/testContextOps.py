@@ -16,16 +16,21 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
-import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
+import fixturesUtils
+import mayaUtils
+import usdUtils
 
 from pxr import UsdGeom
 
-import usdUtils, mayaUtils
+from maya import cmds
+from maya import standalone
+from maya.internal.ufeSupport import ufeCmdWrapper as ufeCmd
+
 import ufe
 
-import unittest
 import os
+import unittest
+
 
 class TestAddPrimObserver(ufe.Observer):
     def __init__(self):
@@ -56,9 +61,15 @@ class ContextOpsTestCase(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
     def setUp(self):
         ''' Called initially to set up the maya test environment '''
         # Load plugins
@@ -461,3 +472,7 @@ class ContextOpsTestCase(unittest.TestCase):
         _validateLoadAndUnloadItems(propsItem, ['Load with Descendants'])
         _validateLoadAndUnloadItems(ball1Item, ['Load', 'Load with Descendants'])
         _validateLoadAndUnloadItems(ball15Item, ['Load', 'Load with Descendants'])
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

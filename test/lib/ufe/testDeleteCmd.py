@@ -16,13 +16,19 @@
 # limitations under the License.
 #
 
-import maya.cmds as cmds
+import fixturesUtils
+import mayaUtils
+import ufeUtils
+import usdUtils
 
-import ufeUtils, usdUtils, mayaUtils
+from maya import cmds
+from maya import standalone
+
 import ufe
 
-import unittest
 import os
+import unittest
+
 
 def childrenNames(children):
     return [str(child.path().back()) for child in children]
@@ -69,9 +75,15 @@ class DeleteCmdTestCase(unittest.TestCase):
     
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
-    
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
+
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
         # Load plugins
@@ -301,3 +313,7 @@ class DeleteCmdTestCase(unittest.TestCase):
         self.assertNotIn(ball35Name, propsChildrenNames)
         self.assertNotIn(ball34Name, propsChildrenNames)
         self.assertFalse(cmds.objExists("|pSphere1|pSphereShape1"))
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

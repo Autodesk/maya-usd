@@ -16,20 +16,26 @@
 # limitations under the License.
 #
 
-import mayaUtils, usdUtils
-from testUtils import assertVectorAlmostEqual, assertVectorEqual
-
-import ufe
-
-from pxr import Usd, UsdGeom
+import fixturesUtils
+import mayaUtils
+from testUtils import assertVectorAlmostEqual
+from testUtils import assertVectorEqual
+import usdUtils
 
 import mayaUsd.ufe
 
-import maya.cmds as cmds
-import maya.api.OpenMaya as OpenMaya
+from pxr import Usd
+from pxr import UsdGeom
 
-import unittest
+from maya import cmds
+from maya import standalone
+from maya.api import OpenMaya as OpenMaya
+
+import ufe
+
 import os
+import unittest
+
 
 def nameToPlug(nodeName):
     selection = OpenMaya.MSelectionList()
@@ -56,8 +62,14 @@ class Object3dTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        fixturesUtils.readOnlySetUpClass(__file__, loadPlugin=False)
+
         if not cls.pluginsLoaded:
             cls.pluginsLoaded = mayaUtils.isMayaUsdPluginLoaded()
+
+    @classmethod
+    def tearDownClass(cls):
+        standalone.uninitialize()
 
     def setUp(self):
         ''' Called initially to set up the Maya test environment '''
@@ -402,3 +414,41 @@ class Object3dTestCase(unittest.TestCase):
         # visibility "token" must exists now in the USD data model
         self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
         self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
+
+    def testMayaGeomExtentsRecomputation(self):
+        ''' Verify the automatic extents computation in when geom attributes change '''
+
+        cmds.file(new=True, force=True)
+
+        # create a Capsule via contextOps menu
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePath = ufe.PathString.path('|stage1|stageShape1')
+        proxyShapeItem = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        # capsule
+        capsulePath = ufe.PathString.path('|stage1|stageShape1,/Capsule1')
+        capsuleItem = ufe.Hierarchy.createItem(capsulePath)
+        capsulePrim = mayaUsd.ufe.ufePathToPrim(ufe.PathString.string(capsulePath))
+
+        # get the height and extent "attributes"
+        capsuleHeightAttr = capsulePrim.GetAttribute('height')
+        capsuleExtentAttr = capsulePrim.GetAttribute('extent')
+
+        self.assertAlmostEqual(capsuleHeightAttr.Get(), 1.0)
+        capsuleExtent = capsuleExtentAttr.Get()
+        self.assertAlmostEqual(capsuleExtent[0][2], -1.0)
+        self.assertAlmostEqual(capsuleExtent[1][2], 1.0)
+
+        capsuleHeightAttr.Set(10.0)
+
+        self.assertAlmostEqual(capsuleHeightAttr.Get(), 10.0)
+        # Extent will have been recomputed:
+        capsuleExtent = capsuleExtentAttr.Get()
+        self.assertAlmostEqual(capsuleExtent[0][2], -5.5)
+        self.assertAlmostEqual(capsuleExtent[1][2], 5.5)
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

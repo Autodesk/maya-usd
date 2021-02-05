@@ -52,9 +52,9 @@ public:
     void redo() override;
 
 private:
-    UsdPrim _prim;
+    PXR_NS::UsdPrim _prim;
 
-    TfToken _kind;
+    PXR_NS::TfToken _kind;
 
     UsdUndoableItem _undoableItem;
 
