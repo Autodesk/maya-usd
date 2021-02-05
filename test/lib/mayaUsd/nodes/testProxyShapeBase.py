@@ -48,8 +48,7 @@ class testProxyShapeBase(unittest.TestCase):
         bboxSize = cmds.getAttr('Cube_usd.boundingBoxSize')[0]
         self.assertEqual(bboxSize, (1.0, 1.0, 1.0))
 
-    # protect against Maya flavor: Maya PR 121 now has support for UFE path string.
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 121)), 'testDuplicateProxyStageAnonymous is only available in Maya Preview Release 121 or later.')
+    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2)), 'testDuplicateProxyStageAnonymous is available only in Ufe 2.0 or later.')
     def testDuplicateProxyStageAnonymous(self):
         '''
         Verify stage with new anonymous layer is duplicated properly.
@@ -115,8 +114,7 @@ class testProxyShapeBase(unittest.TestCase):
         self.assertEqual(0, len(ufe.Hierarchy.hierarchy(duplProxyShapeItem).children()))
         self.assertEqual(1, len(ufe.Hierarchy.hierarchy(proxyShapeItem).children()))
 
-    # protect against Maya flavor: Maya PR 121 now has support for UFE path string.
-    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 121)), 'testDuplicateProxyStageFileBacked is only available in Maya Preview Release 121 or later.')    
+    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2)), 'testDuplicateProxyStageFileBacked is available only in Ufe 2.0 or later.')  
     def testDuplicateProxyStageFileBacked(self):
         '''
         Verify stage from file is duplicated properly.
