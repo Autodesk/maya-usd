@@ -16,6 +16,7 @@
 # limitations under the License.
 #
 
+import mayaUsd
 import fixturesUtils
 import mayaUtils
 import ufeUtils
@@ -274,6 +275,176 @@ class SelectTestCase(unittest.TestCase):
         self.assertTrue(globalSn.contains(first.path()))
         self.assertEqual(globalSn.back(), first)
 
+    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 123)), 'testMayaSelectMuteLayer only available in UFE v2 or greater and Maya Preview Release 123 or later.')
+    def testMayaSelectMuteLayer(self):
+        '''Stale selection items must be removed on mute layer.'''
+        
+        # Create new stage
+        import mayaUsd_createStageWithNewLayer
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        proxyShapePathStr    = '|stage1|stageShape1'
+        proxyShapePath       = ufe.PathString.path(proxyShapePathStr)
+        proxyShapeItem       = ufe.Hierarchy.createItem(proxyShapePath)
+        proxyShapeContextOps = ufe.ContextOps.contextOps(proxyShapeItem)
+
+        # Create a sub-layer.
+        stage     = mayaUsd.lib.GetPrim(proxyShapePathStr).GetStage()
+        rootLayer = stage.GetRootLayer()
+        subLayerId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Layer1")[0]
+
+        # Set the edit target to new sub-layer.
+        cmds.mayaUsdEditTarget(
+            proxyShapePathStr, edit=True, editTarget=subLayerId)
+
+        # Create a prim.  This will create the primSpec in the new sub-layer.
+        proxyShapeContextOps.doOp(['Add New Prim', 'Capsule'])
+
+        capsulePathStr = '|stage1|stageShape1,/Capsule1'
+        capsulePath    = ufe.PathString.path(capsulePathStr)
+        capsuleItem    = ufe.Hierarchy.createItem(capsulePath)
+        
+        # Select the prim.  This is the core of the test: on subtree invalidate,
+        # the prim's UFE scene item should be removed from the selection.
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(capsuleItem)
+
+        self.assertTrue(sn.contains(capsulePath))
+
+        # Mute sub-layer
+        cmds.mayaUsdLayerEditor(
+            subLayerId, edit=True, muteLayer=[1, proxyShapePathStr])
+
+        # Should be nothing on the selection list.
+        self.assertTrue(sn.empty())
+
+        # Undo: capsule should be back on the selection list.
+        cmds.undo()
+
+        self.assertTrue(sn.contains(capsulePath))
+        
+        # Redo: selection list now empty.
+        cmds.redo()
+
+        self.assertTrue(sn.empty())
+
+        cmds.undo()
+
+        # Change attribute on the capsule, using the item from the selection,
+        # which must be valid.
+        self.assertTrue(len(sn), 1)
+        capsuleItem = sn.front()
+        capsuleAttrs = ufe.Attributes.attributes(capsuleItem)
+        self.assertIsNotNone(capsuleAttrs)
+
+        capsuleRadius = capsuleAttrs.attribute('radius')
+        capsuleRadius.set(2)
+
+        self.assertEqual(capsuleRadius.get(), 2)
+
+        # Now mute the layer outside a Maya command.  Stale scene items must be
+        # removed from the selection.
+        self.assertTrue(len(sn), 1)
+        self.assertTrue(sn.contains(capsulePath))
+
+        stage.MuteLayer(subLayerId)
+
+        self.assertTrue(sn.empty())
+
+    @unittest.skipUnless(((ufeUtils.ufeFeatureSetVersion() >= 2) and (mayaUtils.previewReleaseVersion() >= 123)), 'testMayaSelectSwitchVariant only available in UFE v2 or greater and Maya Preview Release 123 or later.')
+    def testMayaSelectSwitchVariant(self):
+        '''Stale selection items must be removed on variant switch.'''
+
+        import mayaUsd_createStageWithNewLayer
+        import maya.internal.ufeSupport.ufeCmdWrapper as ufeCmd
+
+        # Create a scene with two variants.
+        mayaUsd_createStageWithNewLayer.createStageWithNewLayer()
+        stage = mayaUsd.lib.GetPrim('|stage1|stageShape1').GetStage()
+        top = stage.DefinePrim('/Xform1', 'Xform')
+        vset = top.GetVariantSets().AddVariantSet('modelingVariant')
+        vset.AddVariant('cube')
+        vset.AddVariant('sphere')
+        vset.SetVariantSelection('cube')
+        with vset.GetVariantEditContext():
+            stage.DefinePrim('/Xform1/Cube', 'Cube')
+        vset.SetVariantSelection('sphere')
+        with vset.GetVariantEditContext():
+            stage.DefinePrim('/Xform1/Sphere', 'Sphere')
+
+        # The sphere is the sole child of Xform1.  Get an attribute from it,
+        # select it.
+        xformPath  = ufe.PathString.path('|stage1|stageShape1,/Xform1')
+        spherePath = ufe.PathString.path('|stage1|stageShape1,/Xform1/Sphere')
+        xformItem  = ufe.Hierarchy.createItem(xformPath)
+        sphereItem = ufe.Hierarchy.createItem(spherePath)
+
+        xformHier = ufe.Hierarchy.hierarchy(xformItem)
+        xformChildren = xformHier.children()
+        self.assertEqual(len(xformChildren), 1)
+        self.assertEqual(xformChildren[0].path(), spherePath)
+        sphereAttrs = ufe.Attributes.attributes(sphereItem)
+        sphereRadius = sphereAttrs.attribute('radius')
+        self.assertEqual(sphereRadius.get(), 1)
+
+        sn = ufe.GlobalSelection.get()
+        sn.clear()
+        sn.append(sphereItem)
+
+        self.assertEqual(len(sn), 1)
+
+        # Switch variants using a command: the cube is now the sole child of
+        # Xform1, we can get an attribute from the cube.  The selection must
+        # now be empty.
+        xformCtxOps = ufe.ContextOps.contextOps(xformItem)
+        cmd = xformCtxOps.doOpCmd(['Variant Sets', 'modelingVariant', 'cube'])
+        ufeCmd.execute(cmd)
+
+        cubePath = ufe.PathString.path('|stage1|stageShape1,/Xform1/Cube')
+        cubeItem = ufe.Hierarchy.createItem(cubePath)
+
+        xformChildren = xformHier.children()
+        self.assertEqual(len(xformChildren), 1)
+        self.assertEqual(xformChildren[0].path(), cubePath)
+        cubeAttrs = ufe.Attributes.attributes(cubeItem)
+        cubeRadius = cubeAttrs.attribute('size')
+        self.assertEqual(cubeRadius.get(), 2)
+
+        self.assertTrue(sn.empty())
+
+        # Undo: selection is restored, seletion item is valid.
+        cmds.undo()
+
+        self.assertEqual(len(sn), 1)
+        sphereItem = sn.front()
+        self.assertEqual(sphereItem.path(), spherePath)
+        sphereAttrs = ufe.Attributes.attributes(sphereItem)
+        sphereRadius = sphereAttrs.attribute('radius')
+        self.assertEqual(sphereRadius.get(), 1)
+        xformChildren = xformHier.children()
+        self.assertEqual(len(xformChildren), 1)
+        self.assertEqual(xformChildren[0].path(), spherePath)
+
+        # Redo: selection is cleared.
+        cmds.redo()
+
+        self.assertTrue(sn.empty())
+        xformChildren = xformHier.children()
+        self.assertEqual(len(xformChildren), 1)
+        self.assertEqual(xformChildren[0].path(), cubePath)
+
+        # Undo: selection restored to sphere.
+        cmds.undo()
+
+        self.assertEqual(len(sn), 1)
+        sphereItem = sn.front()
+        self.assertEqual(sphereItem.path(), spherePath)
+
+        # Now set the variant outside a Maya command.  Stale scene items must be
+        # removed from the selection.
+        vset.SetVariantSelection('cube')
+
+        self.assertTrue(sn.empty())
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
