@@ -112,7 +112,7 @@ MStatus UsdMayaStageNode::compute(const MPlug& plug, MDataBlock& dataBlock)
             UsdStageCacheContext ctx(UsdMayaStageCache::Get(loadAll));
 
             bool targetSession = MGlobal::optionVarIntValue(UsdMayaUtil::convert(
-                                     MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
+                                     MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen))
                 == 1;
             targetSession = targetSession || !rootLayer->PermissionToEdit();
 

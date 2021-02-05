@@ -112,7 +112,7 @@ MGlobal::ListAdjustment GetListAdjustment()
 //!         in the viewport will be selected.
 TfToken GetSelectionKind()
 {
-    static const MString kOptionVarName(MayaUsdOptionVars->mayaUsd_SelectionKind.GetText());
+    static const MString kOptionVarName(MayaUsdOptionVars->SelectionKind.GetText());
 
     if (MGlobal::optionVarExists(kOptionVarName)) {
         MString optionVarValue = MGlobal::optionVarStringValue(kOptionVarName);

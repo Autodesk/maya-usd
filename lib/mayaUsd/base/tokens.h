@@ -31,7 +31,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // clang-format off
 #define MAYA_USD_OPTIONVAR_TOKENS                        \
     /* Always target a session layer on a mayaUsdProxy*/ \
-    (mayaUsd_ProxyTargetsSessionLayerOnOpen)             \
+    ((ProxyTargetsSessionLayerOnOpen, "mayaUsd_ProxyTargetsSessionLayerOnOpen")) \
     /* The kind to be selected when viewport picking. */ \
     /* After resolving the picked prim, a search from */ \
     /* that prim up the USD namespace hierarchy will  */ \
@@ -40,7 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* or if the selection kind is unspecified or     */ \
     /* empty, the exact prim picked in the viewport   */ \
     /* is selected.                                   */ \
-    (mayaUsd_SelectionKind)
+    ((SelectionKind, "mayaUsd_SelectionKind"))
 // clang-format on
 
 TF_DECLARE_PUBLIC_TOKENS(MayaUsdOptionVars, MAYAUSD_CORE_PUBLIC, MAYA_USD_OPTIONVAR_TOKENS);
