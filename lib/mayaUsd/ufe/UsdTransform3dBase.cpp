@@ -99,15 +99,22 @@ Ufe::Vector3d UsdTransform3dBase::scalePivotTranslation() const { return Ufe::Ve
 #ifdef UFE_V2_FEATURES_AVAILABLE
 Ufe::SetMatrix4dUndoableCommand::Ptr UsdTransform3dBase::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    // TODO: HS Aug25,2020 dummy code to pass the compiler errors
     return nullptr;
 }
 
 Ufe::Matrix4d UsdTransform3dBase::matrix() const
 {
-    // TODO: HS Aug25,2020 dummy code to pass the compiler errors
-    Ufe::Matrix4d m {};
-    return m;
+    UsdGeomXformable xformable(prim());
+    bool             unused;
+    auto             ops = xformable.GetOrderedXformOps(&unused);
+
+    GfMatrix4d m(1);
+    if (!UsdGeomXformable::GetLocalTransformation(&m, ops, getTime(path()))) {
+        TF_FATAL_ERROR(
+            "Local transformation computation for prim %s failed.", prim().GetPath().GetText());
+    }
+
+    return toUfe(m);
 }
 #endif
 
