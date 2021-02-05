@@ -15,6 +15,8 @@
 # limitations under the License.
 #
 
+from mayaUsd import lib as mayaUsdLib
+
 from pxr import Gf
 from pxr import Tf
 from pxr import Trace
@@ -96,7 +98,7 @@ class testProxyShapeSelectionPerformance(unittest.TestCase):
 
         # Store the previous USD selection kind (or None if there wasn't one)
         # so we can restore the state later.
-        cls._selKindOptionVarName = 'mayaUsd_SelectionKind'
+        cls._selKindOptionVarName = mayaUsdLib.OptionVarTokens.SelectionKind
         cls._prevSelKind = cmds.optionVar(query=cls._selKindOptionVarName) or None
 
         # Set the USD selection kind to "assembly" so that we select entire
