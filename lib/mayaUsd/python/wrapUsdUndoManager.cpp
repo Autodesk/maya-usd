@@ -16,7 +16,6 @@
 
 #include <mayaUsd/undo/UsdUndoBlock.h>
 #include <mayaUsd/undo/UsdUndoManager.h>
-#include <mayaUsd/undo/UsdUndoableItem.h>
 
 #include <pxr/base/tf/pyContainerConversions.h>
 #include <pxr/base/tf/pyNoticeWrapper.h>

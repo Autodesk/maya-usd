@@ -51,7 +51,7 @@ void UsdUndoSetKindCommand::execute()
 {
     UsdUndoBlock undoBlock(&_undoableItem);
 
-    UsdModelAPI(_prim).SetKind(_kind);
+    PXR_NS::UsdModelAPI(_prim).SetKind(_kind);
 }
 
 void UsdUndoSetKindCommand::redo() { _undoableItem.redo(); }
