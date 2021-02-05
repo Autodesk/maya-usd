@@ -403,7 +403,6 @@ class Object3dTestCase(unittest.TestCase):
         self.assertTrue(bool(primSpecCapsule and UsdGeom.Tokens.visibility in primSpecCapsule.attributes))
         self.assertTrue(bool(primSpecCylinder and UsdGeom.Tokens.visibility in primSpecCylinder.attributes))
 
-    @unittest.skipIf(os.getenv('UFE_PREVIEW_VERSION_NUM', '0000') < '2034', 'testMayaGeomExtentsRecomputation is only available in UFE preview version 0.2.34 and greater')
     def testMayaGeomExtentsRecomputation(self):
         ''' Verify the automatic extents computation in when geom attributes change '''
 
