@@ -362,15 +362,16 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                     int counter = 0;
                     while (UsdMayaUtilFileSystem::isFile(extractedFilePath)) {
                         char newFileName[FILENAME_MAX] = { 0 };
-                        int  numChars
-                            = snprintf(newFileName, FILENAME_MAX, "%s_%d", extractedFilePath, counter);
+                        int  numChars = snprintf(
+                            newFileName, FILENAME_MAX, "%s_%d", extractedFilePath, counter);
                         TF_VERIFY(numChars > 0);
                         memcpy(extractedFilePath, newFileName, strlen(newFileName));
                         memset(extractedFilePath + strlen(newFileName), 0, 1);
                     }
                     TF_WARN(
                         "A duplicate file exists, but was unique in content. Writing a new"
-                        "file with a suffix instead: %s", extractedFilePath);
+                        "file with a suffix instead: %s",
+                        extractedFilePath);
                 }
             }
             if (needsWrite) {
