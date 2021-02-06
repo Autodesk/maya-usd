@@ -297,7 +297,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                         unresolvedFilePath.c_str());
                     unresolvedFilePath = itExistingHash->first;
                 } else {
-                    // TODO: (yliangsiew) Means that a duplicate texture with the same name but with
+                    // NOTE: (yliangsiew) Means that a duplicate texture with the same name but with
                     // different contents was found. Instead of failing, continue extraction with a
                     // different filename instead and point to that one.
                     needsUniqueFilename = true;
@@ -336,10 +336,10 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
             }
 
             // NOTE: (yliangsiew) Check if the texture already exists on disk and skip overwriting
-            // it.
-            // TODO: (yliangsiew) Is this worth it? Can Boost md5 hashing of larger texture files
-            // take longer than the time it takes to just overwrite the texture? Unlikely, so this
-            // should still be useful...right...?
+            // it if necessary. This is because what happens if two USDZ files are imported, but
+            // they have textures with the same names in them? We can't overwrite them....
+            // If the texture exists on disk already and it is has the same contents, however, we
+            // skip overwriting it.
             bool needsWrite = true;
             if (UsdMayaUtilFileSystem::isFile(extractedFilePath)) {
                 FILE* pFile = fopen(extractedFilePath, "rb");
@@ -355,9 +355,22 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                 free(buf);
                 if (memcmp(md5Digest, existingFileMD5Digest, 32) == 0) {
                     TF_WARN(
-                        "The texture: %s already exists on disk, skipping overwriting it.",
+                        "The texture: %s already on disk is the same, skipping overwriting it.",
                         extractedFilePath);
                     needsWrite = false;
+                } else {
+                    int counter = 0;
+                    while (UsdMayaUtilFileSystem::isFile(extractedFilePath)) {
+                        char newFileName[FILENAME_MAX] = { 0 };
+                        int  numChars
+                            = snprintf(newFileName, FILENAME_MAX, "%s_%d", extractedFilePath, counter);
+                        TF_VERIFY(numChars > 0);
+                        memcpy(extractedFilePath, newFileName, strlen(newFileName));
+                        memset(extractedFilePath + strlen(newFileName), 0, 1);
+                    }
+                    TF_WARN(
+                        "A duplicate file exists, but was unique in content. Writing a new"
+                        "file with a suffix instead: %s", extractedFilePath);
                 }
             }
             if (needsWrite) {
