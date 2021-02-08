@@ -58,7 +58,7 @@ def almostEqualBBox(bbox1, bbox2):
         else:
             vec1 = bbox1[bound]
         for axis in (0, 1, 2):
-            if round(vec1[axis] - bbox2[bound][axis]) != 0:
+            if round(vec1[axis] - bbox2[bound][axis], 7) != 0:
                 return False
     return True
 
