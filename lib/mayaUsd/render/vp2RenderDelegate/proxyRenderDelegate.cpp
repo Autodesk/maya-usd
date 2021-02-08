@@ -854,10 +854,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     const MGlobal::ListAdjustment listAdjustment = GetListAdjustment();
 #endif
 
-    UsdPrim prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
-    UsdPrim topLevelPrim = topLevelPath.IsEmpty()
-        ? UsdPrim()
-        : _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
+    UsdPrim       prim = _proxyShapeData->UsdStage()->GetPrimAtPath(usdPath);
+    const UsdPrim topLevelPrim = _proxyShapeData->UsdStage()->GetPrimAtPath(topLevelPath);
 
     // Resolve the selection based on the point instances pick mode.
     // Note that in all cases except for "Instances" when the picked
