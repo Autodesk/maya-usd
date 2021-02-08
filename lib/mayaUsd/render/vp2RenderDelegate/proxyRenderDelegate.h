@@ -75,10 +75,25 @@ enum HdVP2SelectionStatus
     kFullyLead          //!< A Rprim is lead (meaning fully lead for instanced Rprims)
 };
 
-// Forward declaration of UsdPointInstancesPickMode so that it can be added as
-// a private member of ProxyRenderDelegate. The values and usage of this enum
-// are otherwise an implementation detail.
-enum class UsdPointInstancesPickMode;
+//! Pick resolution behavior to use when the picked object is a point instance.
+enum class UsdPointInstancesPickMode
+{
+    //! The PointInstancer prim that generated the point instance is picked. If
+    //! multiple nested PointInstancers are involved, the top-level
+    //! PointInstancer is the one picked. If a selection kind is specified, the
+    //! traversal up the hierarchy looking for a kind match will begin at that
+    //! PointInstancer.
+    PointInstancer,
+    //! The specific point instance is picked. These are represented as
+    //! UsdSceneItems with UFE paths to a PointInstancer prim and a non-negative
+    //! instanceIndex for the specific point instance. In this mode, any setting
+    //! for selection kind is ignored.
+    Instances,
+    //! The prototype being instanced by the point instance is picked. If a
+    //! selection kind is specified, the traversal up the hierarchy looking for
+    //! a kind match will begin at the prototype prim.
+    Prototypes
+};
 
 /*! \brief  USD Proxy rendering routine via VP2 MPxSubSceneOverride
 
