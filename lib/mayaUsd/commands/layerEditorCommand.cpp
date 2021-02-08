@@ -161,18 +161,16 @@ public:
             // ignore : Optional layer used has the root of a hierarchy that
             //          we don't want to check in.
             // ignoreSubPath : Optional subpath used whith ignore layer.
-            auto isInHierarchy = [this](
-                                     const SdfLayerHandle& rootLayer,
-                                     const SdfLayerHandle& layer,
-                                     const SdfLayerHandle* ignore = nullptr,
-                                     const std::string*    ignoreSubPath = nullptr) {
+            auto isInHierarchy = [](const SdfLayerHandle& rootLayer,
+                                    const SdfLayerHandle& layer,
+                                    const SdfLayerHandle* ignore = nullptr,
+                                    const std::string*    ignoreSubPath = nullptr) {
                 // Impl used for recursive call
-                auto isInHierarchyImpl = [this](
-                                             const SdfLayerHandle& rootLayer,
-                                             const SdfLayerHandle& layer,
-                                             const SdfLayerHandle* ignore,
-                                             const std::string*    ignoreSubPath,
-                                             auto&                 implRef) {
+                auto isInHierarchyImpl = [](const SdfLayerHandle& rootLayer,
+                                            const SdfLayerHandle& layer,
+                                            const SdfLayerHandle* ignore,
+                                            const std::string*    ignoreSubPath,
+                                            auto&                 implRef) {
                     if (!rootLayer || !layer)
                         return false;
 
