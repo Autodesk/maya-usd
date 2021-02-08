@@ -18,6 +18,7 @@
 
 import unittest
 import tempfile
+from os import path
 from maya import cmds
 import mayaUsd_createStageWithNewLayer
 import mayaUsd
@@ -262,3 +263,105 @@ class MayaUsdLayerEditorCommandsTestCase(unittest.TestCase):
             self.assertEqual(rootLayer.subLayerPaths[0], childLayerId)
             childLayer = Sdf.Layer.Find(childLayerId)
             self.assertEqual(childLayer.subLayerPaths[0], grandChildLayerId)
+
+    def testRemoveEditTarget(self):
+
+        shapePath, stage = getCleanMayaStage()
+        rootLayer = stage.GetRootLayer()
+        rootLayerID = rootLayer.identifier
+
+        def setAndRemoveEditTargetRecursive(layer, index, editLayer):
+            cmds.mayaUsdEditTarget(shapePath, edit=True, editTarget=editLayer)
+            cmds.mayaUsdLayerEditor(layer.identifier, edit=True, removeSubPath=[index,shapePath])
+            self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayerID)
+            cmds.undo()
+            self.assertEqual(stage.GetEditTarget().GetLayer().identifier, editLayer)
+
+            subLayer = Sdf.Layer.FindRelativeToLayer(layer, editLayer)
+            for subLayerOffset, subLayerId in enumerate(subLayer.subLayerPaths):
+                setAndRemoveEditTargetRecursive(subLayer, subLayerOffset, subLayerId) 
+
+        # build a layer hierarchy
+        layerColorId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="Color")[0]
+        myLayerId = cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, addAnonymous="MyLayer")[0]
+
+        layerRedId = cmds.mayaUsdLayerEditor(layerColorId, edit=True, addAnonymous="Red")[0]
+        layerGreen = cmds.mayaUsdLayerEditor(layerColorId, edit=True, addAnonymous="Green")[0]
+        layerBlue = cmds.mayaUsdLayerEditor(layerColorId, edit=True, addAnonymous="Blue")[0]
+
+        layerDarkRed = cmds.mayaUsdLayerEditor(layerRedId, edit=True, addAnonymous="DarkRed")[0]
+        layerLightRed = cmds.mayaUsdLayerEditor(layerRedId, edit=True, addAnonymous="LightRed")[0]
+
+        mySubLayerId = cmds.mayaUsdLayerEditor(myLayerId, edit=True, addAnonymous="MySubLayer")[0]
+
+        # traverse the layer tree
+        # for each layer, set it as the edit target and remove it.
+        for subLayerOffset, subLayerPath in enumerate(rootLayer.subLayerPaths):
+            setAndRemoveEditTargetRecursive(rootLayer, subLayerOffset, subLayerPath)
+
+        #
+        # Test when the editTarget's parent (direct/ indirect) layer is removed
+        #
+        cmds.mayaUsdEditTarget(shapePath, edit=True, editTarget=layerDarkRed)
+ 
+        # remove the Red layer (direct parent of DarkRed layer)
+        cmds.mayaUsdLayerEditor(layerColorId, edit=True, removeSubPath=[2,shapePath])
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayerID)
+        cmds.undo()
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, layerDarkRed)
+
+        # remove the Color layer (indirect parent of DarkRed layer)
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[1,shapePath])
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayerID)
+        cmds.undo()
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, layerDarkRed)
+
+        #
+        # Test with a layer that is a sublayer multiple times.
+        #
+        sharedLayerFile = tempfile.NamedTemporaryFile(suffix=".usda", prefix="sharedLayer", delete=False, mode="w")
+        sharedLayerFile.write("#usda 1.0")
+        sharedLayerFile.close()
+
+        sharedLayer = path.normcase(sharedLayerFile.name)
+
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, insertSubPath=[0, sharedLayer])
+        cmds.mayaUsdLayerEditor(mySubLayerId, edit=True, insertSubPath=[0, sharedLayer])
+
+        cmds.mayaUsdEditTarget(shapePath, edit=True, editTarget=sharedLayer)
+
+        # remove the sharedLayer under the root layer.
+        # the edit target should still be the shared layer
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[0,shapePath])
+        self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+        cmds.undo()
+        self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+
+        # remove the sharedLayer under the MySubLayer.
+        # the edit target should still be the shared layer
+        cmds.mayaUsdLayerEditor(mySubLayerId, edit=True, removeSubPath=[0,shapePath])
+        self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+        cmds.undo()
+        self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+
+        # remove MySubLayer (Direct parent of SharedLayer).
+        # the edit target should still be the shared layer
+        cmds.mayaUsdLayerEditor(myLayerId, edit=True, removeSubPath=[0,shapePath])
+        self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+        cmds.undo()
+        self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+
+        # remove MyLayer (Indirect parent of SharedLayer).
+        # the edit target should still be the shared layer
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[0,shapePath])
+        self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+        cmds.undo()
+        self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
+
+        # remove SharedLayer everywhere.
+        # the edit target should become the root layer
+        cmds.mayaUsdLayerEditor(rootLayer.identifier, edit=True, removeSubPath=[0,shapePath])
+        cmds.mayaUsdLayerEditor(mySubLayerId, edit=True, removeSubPath=[0,shapePath])
+        self.assertEqual(stage.GetEditTarget().GetLayer().identifier, rootLayerID)
+        cmds.undo()
+        self.assertEqual(path.normcase(stage.GetEditTarget().GetLayer().identifier), sharedLayer)
