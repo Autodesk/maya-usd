@@ -38,7 +38,11 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-UFE_NS_DEF { class PathSegment; }
+UFE_NS_DEF
+{
+    class PathSegment;
+    class Selection;
+}
 
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
@@ -147,6 +151,14 @@ inline GfMatrix4d toUsd(const Ufe::Matrix4d& src)
 
 //! Copy the argument vector into the return vector.
 inline Ufe::Vector3d toUfe(const GfVec3d& src) { return Ufe::Vector3d(src[0], src[1], src[2]); }
+
+//! Filter a source selection by removing descendants of filterPath.
+Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
+
+//! Re-build a source selection by copying scene items that are not descendants
+//! of filterPath to the destination, and re-creating the others into the
+//! destination using the source scene item path.
+Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath);
 
 } // namespace ufe
 } // namespace MAYAUSD_NS_DEF

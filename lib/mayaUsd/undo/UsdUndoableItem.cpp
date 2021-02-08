@@ -16,7 +16,7 @@
 
 #include "UsdUndoableItem.h"
 
-#include "UsdUndoBlock.h"
+#include <mayaUsd/undo/UsdUndoBlock.h>
 
 #include <pxr/usd/sdf/changeBlock.h>
 

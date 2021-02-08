@@ -41,6 +41,8 @@
 #if UFE_PREVIEW_VERSION_NUM >= 2034
 #include <ufe/object3d.h>
 #endif
+#include <ufe/globalSelection.h>
+#include <ufe/observableSelection.h>
 #include <ufe/path.h>
 
 #include <algorithm>
@@ -179,22 +181,41 @@ class SetVariantSelectionUndoableCommand : public Ufe::UndoableCommand
 {
 public:
     SetVariantSelectionUndoableCommand(
+        const Ufe::Path&                 path,
         const UsdPrim&                   prim,
         const Ufe::ContextOps::ItemPath& itemPath)
-        : fVarSet(prim.GetVariantSets().GetVariantSet(itemPath[1]))
-        , fOldSelection(fVarSet.GetVariantSelection())
-        , fNewSelection(itemPath[2])
+        : _path(path)
+        , _varSet(prim.GetVariantSets().GetVariantSet(itemPath[1]))
+        , _oldSelection(_varSet.GetVariantSelection())
+        , _newSelection(itemPath[2])
     {
     }
 
-    void undo() override { fVarSet.SetVariantSelection(fOldSelection); }
+    void undo() override
+    {
+        _varSet.SetVariantSelection(_oldSelection);
+        // Restore the saved selection to the global selection.  If a saved
+        // selection item started with the prim's path, re-create it.
+        auto globalSn = Ufe::GlobalSelection::get();
+        globalSn->replaceWith(MayaUsd::ufe::recreateDescendants(_savedSn, _path));
+    }
 
-    void redo() override { fVarSet.SetVariantSelection(fNewSelection); }
+    void redo() override
+    {
+        // Make a copy of the global selection, to restore it on unmute.
+        auto globalSn = Ufe::GlobalSelection::get();
+        _savedSn.replaceWith(*globalSn);
+        // Filter the global selection, removing items below our prim.
+        globalSn->replaceWith(MayaUsd::ufe::removeDescendants(_savedSn, _path));
+        _varSet.SetVariantSelection(_newSelection);
+    }
 
 private:
-    UsdVariantSet     fVarSet;
-    const std::string fOldSelection;
-    const std::string fNewSelection;
+    const Ufe::Path   _path;
+    UsdVariantSet     _varSet;
+    const std::string _oldSelection;
+    const std::string _newSelection;
+    Ufe::Selection    _savedSn; // For global selection save and restore.
 };
 
 //! \brief Undoable command for prim active state change
@@ -559,7 +580,7 @@ Ufe::UndoableCommand::Ptr UsdContextOps::doOpCmd(const ItemPath& itemPath)
 
         // At this point we know we have enough arguments to execute the
         // operation.
-        return std::make_shared<SetVariantSelectionUndoableCommand>(prim(), itemPath);
+        return std::make_shared<SetVariantSelectionUndoableCommand>(path(), prim(), itemPath);
     } // Variant sets
     else if (itemPath[0] == kUSDToggleVisibilityItem) {
 #if UFE_PREVIEW_VERSION_NUM < 2034

@@ -162,21 +162,13 @@ createTransform3d(const Ufe::SceneItem::Ptr& item, NextTransform3dFn nextTransfo
     return stackOps.empty() ? nextTransform3dFn() : UsdTransform3dMayaXformStack::create(usdItem);
 }
 
-// Class for setMatrixCmd() implementation.  Should be rolled into a future
-// command class with full undo / redo support
+// Class for setMatrixCmd() implementation.  UsdUndoBlock data member and
+// undo() / redo() should be factored out into a future command base class.
 class UsdSetMatrix4dUndoableCmd : public Ufe::SetMatrix4dUndoableCommand
 {
 public:
-    UsdSetMatrix4dUndoableCmd(
-        const Ufe::Path&     path,
-        const Ufe::Vector3d& oldT,
-        const Ufe::Vector3d& oldR,
-        const Ufe::Vector3d& oldS,
-        const Ufe::Matrix4d& newM)
+    UsdSetMatrix4dUndoableCmd(const Ufe::Path& path, const Ufe::Matrix4d& newM)
         : Ufe::SetMatrix4dUndoableCommand(path)
-        , _oldT(oldT)
-        , _oldR(oldR)
-        , _oldS(oldS)
     {
         // Decompose new matrix to extract TRS.  Neither GfMatrix4d::Factor
         // nor GfTransform decomposition provide results that match Maya,
@@ -206,23 +198,40 @@ public:
         return true;
     }
 
-    void undo() override { perform(_oldT, _oldR, _oldS); }
-    void redo() override { perform(_newT, _newR, _newS); }
+    void execute() override
+    {
+        UsdUndoBlock undoBlock(&_undoableItem);
+
+        auto t3d = Ufe::Transform3d::transform3d(sceneItem());
+        t3d->translate(_newT.x(), _newT.y(), _newT.z());
+        t3d->rotate(_newR.x(), _newR.y(), _newR.z());
+        t3d->scale(_newS.x(), _newS.y(), _newS.z());
+
+#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
+        _executeCalled = true;
+#endif
+    }
+
+    void undo() override { _undoableItem.undo(); }
+    void redo() override
+    {
+#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
+        if (!_executeCalled) {
+            execute();
+            return;
+        }
+#endif
+        _undoableItem.redo();
+    }
 
 private:
-    void perform(const Ufe::Vector3d& t, const Ufe::Vector3d& r, const Ufe::Vector3d& s)
-    {
-        auto t3d = Ufe::Transform3d::transform3d(sceneItem());
-        t3d->translate(t.x(), t.y(), t.z());
-        t3d->rotate(r.x(), r.y(), r.z());
-        t3d->scale(s.x(), s.y(), s.z());
-    }
-    Ufe::Vector3d _oldT;
-    Ufe::Vector3d _oldR;
-    Ufe::Vector3d _oldS;
-    Ufe::Vector3d _newT;
-    Ufe::Vector3d _newR;
-    Ufe::Vector3d _newS;
+#if !defined(REMOVE_PR122_WORKAROUND_MAYA_109685)
+    bool _executeCalled { false };
+#endif
+    UsdUndoableItem _undoableItem;
+    Ufe::Vector3d   _newT;
+    Ufe::Vector3d   _newR;
+    Ufe::Vector3d   _newS;
 };
 
 // Helper class to factor out common code for translate, rotate, scale
@@ -698,8 +707,7 @@ UsdTransform3dMayaXformStack::pivotCmd(const TfToken& pvtOpSuffix, double x, dou
 Ufe::SetMatrix4dUndoableCommand::Ptr
 UsdTransform3dMayaXformStack::setMatrixCmd(const Ufe::Matrix4d& m)
 {
-    return std::make_shared<UsdSetMatrix4dUndoableCmd>(
-        path(), translation(), rotation(), scale(), m);
+    return std::make_shared<UsdSetMatrix4dUndoableCmd>(path(), m);
 }
 
 UsdTransform3dMayaXformStack::SetXformOpOrderFn

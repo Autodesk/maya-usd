@@ -312,6 +312,9 @@ protected:
     MAYAUSD_CORE_PUBLIC
     void _IncreaseUsdStageVersion() { _UsdStageVersion++; }
 
+    MAYAUSD_CORE_PUBLIC
+    void copyInternalData(MPxNode* srcNode) override;
+
 private:
     MayaUsdProxyShapeBase(const MayaUsdProxyShapeBase&);
     MayaUsdProxyShapeBase& operator=(const MayaUsdProxyShapeBase&);

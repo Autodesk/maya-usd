@@ -35,8 +35,10 @@
 #include <maya/MFnDependencyNode.h>
 #include <maya/MGlobal.h>
 #include <maya/MObjectHandle.h>
+#include <ufe/hierarchy.h>
 #include <ufe/pathSegment.h>
 #include <ufe/rtid.h>
+#include <ufe/selection.h>
 
 #include <cassert>
 #include <cctype>
@@ -329,6 +331,38 @@ UsdTimeCode getTime(const Ufe::Path& path)
     TF_VERIFY(proxyShape);
 
     return proxyShape->getTime();
+}
+
+Ufe::Selection removeDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+{
+    // Filter the src selection, removing items below the filterPath
+    Ufe::Selection dst;
+    for (const auto& item : src) {
+        const auto& itemPath = item->path();
+        // The filterPath itself is still valid.
+        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
+            dst.append(item);
+        }
+    }
+    return dst;
+}
+
+Ufe::Selection recreateDescendants(const Ufe::Selection& src, const Ufe::Path& filterPath)
+{
+    // If a src selection item starts with the filterPath, re-create it.
+    Ufe::Selection dst;
+    for (const auto& item : src) {
+        const auto& itemPath = item->path();
+        // The filterPath itself is still valid.
+        if (!itemPath.startsWith(filterPath) || itemPath == filterPath) {
+            dst.append(item);
+        } else {
+            auto recreatedItem = Ufe::Hierarchy::createItem(item->path());
+            TF_AXIOM(recreatedItem);
+            dst.append(recreatedItem);
+        }
+    }
+    return dst;
 }
 
 } // namespace ufe
