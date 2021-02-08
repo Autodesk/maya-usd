@@ -23,7 +23,6 @@
 #include <pxr/base/tf/registryManager.h>
 #include <pxr/pxr.h>
 
-#include <__threading_support>
 #include <iterator>
 #include <map>
 #include <string>
