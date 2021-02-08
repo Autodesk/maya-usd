@@ -138,6 +138,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 // clang-format on
 
+//! \brief  Query the pick mode to use when picking point instances in the viewport.
+//! \return A UsdPointInstancesPickMode enum value indicating the pick mode behavior
+//!         to employ when the picked object is a point instance.
+//!
+//! This function retrieves the value for the point instances pick mode optionVar
+//! and converts it into a UsdPointInstancesPickMode enum value. If the optionVar
+//! has not been set or otherwise has an invalid value, the default pick mode of
+//! PointInstancer is returned.
 UsdPointInstancesPickMode GetPointInstancesPickMode()
 {
     static const MString kOptionVarName(MayaUsdOptionVars->PointInstancesPickMode.GetText());
