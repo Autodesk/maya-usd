@@ -174,9 +174,9 @@ UsdPointInstancesPickMode GetPointInstancesPickMode()
 UsdPrim GetPrimOrAncestorWithKind(const UsdPrim& prim, const TfToken& kind)
 {
     UsdPrim iterPrim = prim;
+    TfToken primKind;
 
     while (iterPrim) {
-        TfToken primKind;
         if (UsdModelAPI(iterPrim).GetKind(&primKind) && KindRegistry::IsA(primKind, kind)) {
             break;
         }
