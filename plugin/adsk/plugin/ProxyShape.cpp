@@ -19,10 +19,6 @@
 #include <mayaUsd/nodes/proxyShapePlugin.h>
 #include <mayaUsd/utils/util.h>
 
-#if defined(WANT_UFE_BUILD)
-#include <mayaUsd/nodes/layerManager.h>
-#endif
-
 namespace MAYAUSD_NS_DEF {
 
 // ========================================================
@@ -73,19 +69,5 @@ void ProxyShape::postConstructor()
     enableProxyAccessor();
 #endif
 }
-
-#if defined(WANT_UFE_BUILD)
-SdfLayerRefPtr ProxyShape::computeRootLayer(MDataBlock& dataBlock, const std::string& filePath)
-{
-    auto rootLayerName = dataBlock.inputValue(rootLayerNameAttr).asString();
-    return LayerManager::findLayer(UsdMayaUtil::convert(rootLayerName));
-}
-
-SdfLayerRefPtr ProxyShape::computeSessionLayer(MDataBlock& dataBlock)
-{
-    auto sessionLayerName = dataBlock.inputValue(sessionLayerNameAttr).asString();
-    return LayerManager::findLayer(UsdMayaUtil::convert(sessionLayerName));
-}
-#endif
 
 } // namespace MAYAUSD_NS_DEF

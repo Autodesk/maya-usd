@@ -44,15 +44,6 @@ public:
 
     void postConstructor() override;
 
-protected:
-#if defined(WANT_UFE_BUILD)
-    MAYAUSD_PLUGIN_PUBLIC
-    SdfLayerRefPtr computeRootLayer(MDataBlock&, const std::string&) override;
-
-    MAYAUSD_PLUGIN_PUBLIC
-    SdfLayerRefPtr computeSessionLayer(MDataBlock&) override;
-#endif
-
 private:
     ProxyShape();
 

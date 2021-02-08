@@ -94,6 +94,8 @@
 #include <vector>
 
 #if defined(WANT_UFE_BUILD)
+#include <mayaUsd/nodes/layerManager.h>
+
 #include <ufe/path.h>
 #ifdef UFE_V2_FEATURES_AVAILABLE
 #include <ufe/pathString.h>
@@ -455,6 +457,30 @@ MStatus MayaUsdProxyShapeBase::compute(const MPlug& plug, MDataBlock& dataBlock)
     return MS::kUnknownParameter;
 }
 
+#if defined(WANT_UFE_BUILD)
+/* virtual */
+SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock& dataBlock, const std::string&)
+{
+    if (LayerManager::supportedNodeType(MPxNode::typeId())) {
+        auto rootLayerName = dataBlock.inputValue(rootLayerNameAttr).asString();
+        return LayerManager::findLayer(UsdMayaUtil::convert(rootLayerName));
+    } else {
+        return nullptr;
+    }
+}
+
+/* virtual */
+SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock& dataBlock)
+{
+    if (LayerManager::supportedNodeType(MPxNode::typeId())) {
+        auto sessionLayerName = dataBlock.inputValue(sessionLayerNameAttr).asString();
+        return LayerManager::findLayer(UsdMayaUtil::convert(sessionLayerName));
+    } else {
+        return nullptr;
+    }
+}
+
+#else
 /* virtual */
 SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock&, const std::string&)
 {
@@ -463,6 +489,8 @@ SdfLayerRefPtr MayaUsdProxyShapeBase::computeRootLayer(MDataBlock&, const std::s
 
 /* virtual */
 SdfLayerRefPtr MayaUsdProxyShapeBase::computeSessionLayer(MDataBlock&) { return nullptr; }
+
+#endif
 
 MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 {
