@@ -328,6 +328,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                     TF_VERIFY(numChars > 0);
                     memcpy(extractedFilePath, newFileName, strlen(newFileName));
                     memset(extractedFilePath + strlen(newFileName), 0, 1);
+                    ++counter;
                 }
                 TF_WARN(
                     "A file was duplicated within the archive, but was unique in content. Writing "
@@ -367,6 +368,7 @@ bool PxrMayaUsdUVTexture_Reader::Read(UsdMayaPrimReaderContext* context)
                         TF_VERIFY(numChars > 0);
                         memcpy(extractedFilePath, newFileName, strlen(newFileName));
                         memset(extractedFilePath + strlen(newFileName), 0, 1);
+                        ++counter;
                     }
                     TF_WARN(
                         "A duplicate file exists, but was unique in content. Writing a new"
