@@ -566,11 +566,13 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                     UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
 
                 if (SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(fileString)) {
+                    static const MString kSessionLayerOptionVarName(
+                        MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen.GetText());
+
                     SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
 
-                    bool targetSession = MGlobal::optionVarIntValue(UsdMayaUtil::convert(
-                                             MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen))
-                        == 1;
+                    bool targetSession
+                        = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
                     targetSession = targetSession || !rootLayer->PermissionToEdit();
 
                     if (sessionLayer || targetSession) {
