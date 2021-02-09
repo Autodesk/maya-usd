@@ -1,12 +1,16 @@
-set(TARGET_NAME MTOH_TEST)
+set(TARGET_NAME VP2_RENDER_DELEGATE_TEST)
 
 # Unit test scripts.
-set(TEST_SCRIPT_FILES
-    testMtohBasicRender.py
-    testMtohCommand.py
-    testMtohDagChanges.py
-    testMtohVisibility.py
-)
+set(TEST_SCRIPT_FILES "")
+
+if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND USD_VERSION_NUM GREATER_EQUAL 2008)
+    # The point instance selection tests requires UsdImaging API version 14 or
+    # later, which is only provided by core USD 20.08 or later.
+    list(APPEND TEST_SCRIPT_FILES
+        testVP2RenderDelegatePointInstanceSelection.py
+        testVP2RenderDelegatePointInstancesPickMode.py
+    )
+endif()
 
 add_custom_target(${TARGET_NAME} ALL)
 
@@ -24,6 +28,8 @@ foreach(script ${TEST_SCRIPT_FILES})
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         PYTHON_SCRIPT ${script}
         ENV
+            "VP2_RENDER_DELEGATE_PROXY=1"
+
             "MAYA_PLUG_IN_PATH=${CMAKE_INSTALL_PREFIX}/lib/maya"
             "LD_LIBRARY_PATH=${ADDITIONAL_LD_LIBRARY_PATH}"
 
@@ -37,5 +43,5 @@ foreach(script ${TEST_SCRIPT_FILES})
     )
 
     # Assign a CTest label to these tests for easy filtering.
-    set_property(TEST ${target} APPEND PROPERTY LABELS mtoh)
+    set_property(TEST ${target} APPEND PROPERTY LABELS vp2RenderDelegate)
 endforeach()

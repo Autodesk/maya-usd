@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Autodesk
+// Copyright 2021 Autodesk
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,27 +13,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-#include <pxr/base/tf/pyModule.h>
+
+#include <mayaUsd/base/tokens.h>
+
+#include <pxr/base/tf/pyStaticTokens.h>
 #include <pxr/pxr.h>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+void wrapTokens()
 {
-    TF_WRAP(Adaptor);
-    TF_WRAP(BlockSceneModificationContext);
-    TF_WRAP(ColorSpace);
-    TF_WRAP(Converter);
-    TF_WRAP(ConverterArgs);
-    TF_WRAP(DiagnosticDelegate);
-    TF_WRAP(MeshWriteUtils);
-    TF_WRAP(Query);
-    TF_WRAP(ReadUtil);
-    TF_WRAP(RoundTripUtil);
-    TF_WRAP(StageCache);
-    TF_WRAP(Tokens);
-    TF_WRAP(UsdUndoManager);
-    TF_WRAP(UserTaggedAttribute);
-    TF_WRAP(WriteUtil);
-    TF_WRAP(XformStack);
+    TF_PY_WRAP_PUBLIC_TOKENS("OptionVarTokens", MayaUsdOptionVars, MAYA_USD_OPTIONVAR_TOKENS);
 }

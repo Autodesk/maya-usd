@@ -151,14 +151,14 @@ void setupDefaultMenu(SessionState* in_sessionState, QMainWindow* in_parent)
         usdSaveMenu->addAction(formatAscii);
         bool isBinary = true;
 
-        auto formatArgsOption
-            = UsdMayaUtil::convert(MayaUsdOptionVars->mayaUsd_SaveLayerFormatArgBinaryOption);
-        if (MGlobal::optionVarExists(formatArgsOption)) {
-            isBinary = MGlobal::optionVarIntValue(formatArgsOption) != 0;
+        static const MString kSaveLayerFormatBinaryOption(
+            MayaUsdOptionVars->SaveLayerFormatArgBinaryOption.GetText());
+        if (MGlobal::optionVarExists(kSaveLayerFormatBinaryOption)) {
+            isBinary = MGlobal::optionVarIntValue(kSaveLayerFormatBinaryOption) != 0;
         }
         isBinary ? formatBinary->setChecked(true) : formatAscii->setChecked(true);
         auto onFileFormatChanged = [=](QAction* action) {
-            MGlobal::setOptionVarValue(formatArgsOption, action->data().toInt());
+            MGlobal::setOptionVarValue(kSaveLayerFormatBinaryOption, action->data().toInt());
         };
         QObject::connect(formatGroup, &QActionGroup::triggered, in_parent, onFileFormatChanged);
 

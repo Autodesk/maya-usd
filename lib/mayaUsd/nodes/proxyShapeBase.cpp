@@ -112,6 +112,7 @@ MayaUsdProxyShapeBase::ClosestPointDelegate MayaUsdProxyShapeBase::_sharedCloses
     = nullptr;
 
 const std::string kAnonymousLayerName { "anonymousLayer1" };
+const std::string kSessionLayerPostfix { "-session" };
 
 // ========================================================
 
@@ -144,6 +145,53 @@ MObject MayaUsdProxyShapeBase::outStageDataAttr;
 MObject MayaUsdProxyShapeBase::outStageCacheIdAttr;
 
 namespace {
+// utility function to extract the tag name from an anonymous layer.
+// e.g
+// given layer identifier = anon:00000232FE3FB470:anonymousLayer1234
+// tag name = anonymousLayer1234
+std::string extractAnonTagName(const std::string& identifier)
+{
+    std::size_t found = identifier.find_last_of(":");
+    return identifier.substr(found + 1);
+}
+
+// recursive function to create new anonymous Sublayer(s)
+// and set the edit target accordingly.
+void createNewAnonSubLayerRecursive(
+    const UsdStageRefPtr& newUsdStage,
+    const SdfLayerRefPtr& targetLayer,
+    const SdfLayerRefPtr& parentLayer)
+{
+    if (!parentLayer->IsAnonymous()) {
+        return;
+    }
+
+    SdfSubLayerProxy sublayers = parentLayer->GetSubLayerPaths();
+    for (auto path : sublayers) {
+        SdfLayerRefPtr subLayer = SdfLayer::Find(path);
+        if (subLayer) {
+            const std::string tagName = extractAnonTagName(subLayer->GetIdentifier());
+            if (subLayer->IsAnonymous()) {
+                SdfLayerRefPtr newLayer = SdfLayer::CreateAnonymous(tagName);
+                newLayer->TransferContent(subLayer);
+
+                size_t index = sublayers.Find(path);
+                parentLayer->RemoveSubLayerPath(index);
+                parentLayer->InsertSubLayerPath(newLayer->GetIdentifier(), index);
+
+                if (extractAnonTagName(targetLayer->GetIdentifier()) == tagName) {
+                    newUsdStage->SetEditTarget(newLayer);
+                }
+
+                createNewAnonSubLayerRecursive(newUsdStage, targetLayer, newLayer);
+            } else {
+                if (extractAnonTagName(targetLayer->GetIdentifier()) == tagName) {
+                    newUsdStage->SetEditTarget(subLayer);
+                }
+            }
+        }
+    }
+}
 //! Profiler category for proxy accessor events
 const int _shapeBaseProfilerCategory = MProfiler::addCategory(
 #if MAYA_API_VERSION >= 20190000
@@ -514,7 +562,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
     } else if (!dataBlock.context().isNormal()) {
         // Create the output outData ========
         MFnPluginData pluginDataFn;
-        MObject       stageDataObj = pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+        pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         MayaUsdStageData* outData
@@ -617,18 +665,18 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
                 UsdStageCacheContext ctx(
                     UsdMayaStageCache::Get(loadSet == UsdStage::InitialLoadSet::LoadAll));
 
-                SdfLayerRefPtr sessionLayer = nullptr;
                 SdfLayerRefPtr rootLayer = computeRootLayer(dataBlock, fileString);
                 if (nullptr == rootLayer)
                     rootLayer = SdfLayer::FindOrOpen(fileString);
 
                 if (rootLayer) {
-                    sessionLayer = computeSessionLayer(dataBlock);
+                    SdfLayerRefPtr sessionLayer = computeSessionLayer(dataBlock);
+
+                    static const MString kSessionLayerOptionVarName(
+                        MayaUsdOptionVars->ProxyTargetsSessionLayerOnOpen.GetText());
 
                     bool targetSession
-                        = MGlobal::optionVarIntValue(UsdMayaUtil::convert(
-                              MayaUsdOptionVars->mayaUsd_ProxyTargetsSessionLayerOnOpen))
-                        == 1;
+                        = MGlobal::optionVarIntValue(kSessionLayerOptionVarName) == 1;
                     targetSession = targetSession || !rootLayer->PermissionToEdit();
 
                     if (sessionLayer || targetSession) {
@@ -658,7 +706,7 @@ MStatus MayaUsdProxyShapeBase::computeInStageDataCached(MDataBlock& dataBlock)
 
         // Create the output outData ========
         MFnPluginData pluginDataFn;
-        MObject       stageDataObj = pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+        pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
         CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
         MayaUsdStageData* stageData
@@ -744,7 +792,7 @@ MStatus MayaUsdProxyShapeBase::computeOutStageData(MDataBlock& dataBlock)
 
     // Create the output outData
     MFnPluginData pluginDataFn;
-    MObject       stageDataObj = pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+    pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
     CHECK_MSTATUS_AND_RETURN_IT(retValue);
 
     MayaUsdStageData* stageData = reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
@@ -842,13 +890,104 @@ UsdTimeCode MayaUsdProxyShapeBase::GetOutputTime(MDataBlock dataBlock) const
     return _GetTime(dataBlock);
 }
 
+void MayaUsdProxyShapeBase::copyInternalData(MPxNode* srcNode)
+{
+    MStatus retValue { MS::kSuccess };
+
+    // get the source data block
+    MayaUsdProxyShapeBase* srcProxyShapeBase = static_cast<MayaUsdProxyShapeBase*>(srcNode);
+    MDataBlock             srcDataBlock = srcProxyShapeBase->forceCache();
+
+    // ---------------------------------------------------------------------------------
+    // copyInternalData is called multiple times so we do have to protect against it.
+    // ---------------------------------------------------------------------------------
+
+    // first, read the input value from "outStageDataAttr". outStageDataAttr gets computed when
+    // we get the stage on the proxy. If there is no incoming data, we return right away.
+    MDataHandle srcInDataCachedHandle = srcDataBlock.inputValue(outStageDataAttr, &retValue);
+    if (srcInDataCachedHandle.data().isNull()) {
+        return;
+    }
+
+    // query from the destination block to make sure inStageDataCachedAttr attribute is clean. If it
+    // is clean that means we already have the attr value.
+    MDataBlock dataBlock = forceCache();
+    if (dataBlock.isClean(inStageDataCachedAttr)) {
+        return;
+    }
+
+    // get the handle inDataCachedHandle and return if it doesn't have the data.
+    MDataHandle inDataCachedHandle = dataBlock.outputValue(inStageDataCachedAttr, &retValue);
+    if (inDataCachedHandle.data().isNull()) {
+        return;
+    }
+
+    MayaUsdStageData* srcInData
+        = dynamic_cast<MayaUsdStageData*>(srcInDataCachedHandle.asPluginData());
+    if (!srcInData || !srcInData->stage) {
+        return;
+    }
+
+    // get the pointer to source stage
+    UsdStageRefPtr srcUsdStage = srcInData->stage;
+
+    // transfer session layer
+    // session layer is never shared so transfer its content always.
+    SdfLayerRefPtr sessionLayer
+        = SdfLayer::CreateAnonymous(kAnonymousLayerName + kSessionLayerPostfix + ".usda");
+    sessionLayer->TransferContent(srcUsdStage->GetSessionLayer());
+
+    // decide if the root layer needs to be shared or deep copied.
+    SdfLayerRefPtr rootLayer;
+    if (srcUsdStage->GetRootLayer()->IsAnonymous()) {
+        rootLayer = SdfLayer::CreateAnonymous(kAnonymousLayerName);
+        rootLayer->TransferContent(srcUsdStage->GetRootLayer());
+    } else {
+        rootLayer = srcUsdStage->GetRootLayer();
+    }
+
+    // create a new usd stage from the root and session layers
+    UsdStageRefPtr newUsdStage
+        = UsdStage::OpenMasked(rootLayer, sessionLayer, UsdStagePopulationMask::All());
+    TF_VERIFY(newUsdStage);
+
+    // handle edit target for session and root layers.
+    // setting edit target for SubLayers is handled separately.
+    auto srcCurrentTargetLayer = srcUsdStage->GetEditTarget().GetLayer();
+    auto isSessionLayer
+        = srcCurrentTargetLayer->GetIdentifier().find(kSessionLayerPostfix) != std::string::npos;
+    auto isAnonymous = srcUsdStage->GetRootLayer()->IsAnonymous();
+    if (isSessionLayer) {
+        newUsdStage->SetEditTarget(newUsdStage->GetSessionLayer());
+    } else if (!isSessionLayer && !isAnonymous) {
+        newUsdStage->SetEditTarget(srcCurrentTargetLayer);
+    }
+
+    // recursively create new anon Sublayer(s) for session and root layers
+    createNewAnonSubLayerRecursive(newUsdStage, srcCurrentTargetLayer, sessionLayer);
+    createNewAnonSubLayerRecursive(newUsdStage, srcCurrentTargetLayer, rootLayer);
+
+    // set the stage and primPath
+    MFnPluginData pluginDataFn;
+    pluginDataFn.create(MayaUsdStageData::mayaTypeId, &retValue);
+    CHECK_MSTATUS(retValue);
+
+    MayaUsdStageData* newUsdStageData
+        = reinterpret_cast<MayaUsdStageData*>(pluginDataFn.data(&retValue));
+    CHECK_MSTATUS(retValue);
+
+    newUsdStageData->stage = newUsdStage;
+    newUsdStageData->primPath = newUsdStage->GetPseudoRoot().GetPath();
+
+    // mark the data clean.
+    inDataCachedHandle.set(newUsdStageData);
+    inDataCachedHandle.setClean();
+}
+
 /* virtual */
 MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
 {
     TRACE_FUNCTION();
-
-    MProfilingScope profilingScope(
-        _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Get shape BoundingBox");
 
     MStatus status;
 
@@ -870,6 +1009,9 @@ MBoundingBox MayaUsdProxyShapeBase::boundingBox() const
     if (cacheLookup != _boundingBoxCache.end()) {
         return cacheLookup->second;
     }
+
+    MProfilingScope profilingScope(
+        _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Compute USD Stage BoundingBox");
 
     UsdPrim prim = _GetUsdPrim(dataBlock);
     if (!prim) {
@@ -1265,6 +1407,11 @@ void MayaUsdProxyShapeBase::_OnStageObjectsChanged(const UsdNotice::ObjectsChang
 {
     MProfilingScope profilingScope(
         _shapeBaseProfilerCategory, MProfiler::kColorB_L1, "Process USD objects changed");
+
+    // This will definitely force a BBox recomputation on "Frame All" or when framing a selected
+    // stage. Computing bounds in USD is expensive, so if it pops up in other frequently used
+    // scenarios we will have to investigate ways to make this cache clearing less expensive.
+    clearBoundingBoxCache();
 
     ProxyAccessor::stageChanged(_usdAccessor, thisMObject(), notice);
 

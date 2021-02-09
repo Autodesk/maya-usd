@@ -144,13 +144,13 @@ std::string UsdMayaSerialization::generateUniqueFileName(const std::string& base
 
 std::string UsdMayaSerialization::usdFormatArgOption()
 {
+    static const MString kSaveLayerFormatBinaryOption(
+        MayaUsdOptionVars->SaveLayerFormatArgBinaryOption.GetText());
     bool binary = true;
-    auto formatArgsOption
-        = UsdMayaUtil::convert(MayaUsdOptionVars->mayaUsd_SaveLayerFormatArgBinaryOption);
-    if (MGlobal::optionVarExists(formatArgsOption)) {
-        binary = MGlobal::optionVarIntValue(formatArgsOption) != 0;
+    if (MGlobal::optionVarExists(kSaveLayerFormatBinaryOption)) {
+        binary = MGlobal::optionVarIntValue(kSaveLayerFormatBinaryOption) != 0;
     } else {
-        MGlobal::setOptionVarValue(formatArgsOption, 1);
+        MGlobal::setOptionVarValue(kSaveLayerFormatBinaryOption, 1);
     }
     return binary ? UsdUsdcFileFormatTokens->Id.GetText() : UsdUsdaFileFormatTokens->Id.GetText();
 }
@@ -158,17 +158,18 @@ std::string UsdMayaSerialization::usdFormatArgOption()
 /* static */
 UsdMayaSerialization::USDUnsavedEditsOption UsdMayaSerialization::serializeUsdEditsLocationOption()
 {
+    static const MString kSerializedUsdEditsLocation(
+        MayaUsdOptionVars->SerializedUsdEditsLocation.GetText());
+
     bool optVarExists = true;
-    auto saveOptionVar
-        = UsdMayaUtil::convert(MayaUsdOptionVars->mayaUsd_SerializedUsdEditsLocation);
-    int saveOption = MGlobal::optionVarIntValue(saveOptionVar, &optVarExists);
+    int  saveOption = MGlobal::optionVarIntValue(kSerializedUsdEditsLocation, &optVarExists);
 
     // Default is to save back to .usd files, set it to that if the optionVar doesn't exist yet.
     // optionVar's are also just ints so make sure the value is a correct one.
     // If we end up initializing the value then write it back to the optionVar itself.
     if (!optVarExists || (saveOption < kSaveToUSDFiles || saveOption > kIgnoreUSDEdits)) {
         saveOption = kSaveToUSDFiles;
-        MGlobal::setOptionVarValue(saveOptionVar, saveOption);
+        MGlobal::setOptionVarValue(kSerializedUsdEditsLocation, saveOption);
     }
 
     if (saveOption == kSaveToMayaSceneFile) {
