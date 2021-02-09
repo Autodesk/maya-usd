@@ -579,6 +579,18 @@ void findUnionAndProcessArrays(
     return;
 }
 
+MStatus mayaPrefixBlendShapeTargetNameForUSD(MString &targetName, const MObject &blendShapeNode)
+{
+    MStatus stat;
+    MFnDependencyNode fnNode(blendShapeNode, &stat);
+    CHECK_MSTATUS_AND_RETURN_IT(stat);
+    MString blendShapeName = fnNode.absoluteName();
+    // NOTE: (yliangsiew) We format the name to be more like an SdfPath for the sake of semantics.
+    stat = blendShapeName.substitute(":", "/");
+    targetName = blendShapeName + "/" + targetName;
+    return stat;
+}
+
 // NOTE: (yliangsiew) This gets called once for each shape being exported
 // under a single transform.
 MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchema)
@@ -629,8 +641,14 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
 
     bool exportAnim = !(exportArgs.timeSamples.empty());
 
+    // NOTE: (yliangsiew) Because in UsdSkelBlendShape, the SkelAnimation stores the names of _all_
+    // blendshapes across the entire USD in a single array, we need a way to avoid collisions, while
+    // preserving the "nice" names of the individual target shapes. So the BlendShape prim itself will
+    // have the "nice" short name, while we use a unique long name to refer to the blendshape target
+    // internally for namespacing purposes.
     SdfPathVector  usdBlendShapePaths;
-    VtTokenArray   usdBlendShapeNames;
+    VtTokenArray   usdBlendShapeShortNames;
+    VtTokenArray usdBlendShapeLongNames;
     const SdfPath& primSchemaPath = primSchema.GetPrim().GetPath();
     for (size_t i = 0; i < numOfBlendShapeDeformers; ++i) {
         MayaBlendShapeDatum blendShapeInfo = blendShapeDeformerInfos[i];
@@ -651,6 +669,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     MayaBlendShapeTargetDatum targetDatum = weightInfo.targets[k];
                     MObject                   targetMesh = targetDatum.targetMesh;
                     MString                   curTargetNameMStr;
+                    MString curTargetLongNameMStr;
                     if (!targetMesh.isNull()) {
                         // NOTE: (yliangsiew) Because UsdSkelBlendShape does not
                         // support animated targets (the `normalOffsets` and
@@ -664,7 +683,10 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                                 "connections first before attempting to export.");
                             return MObject::kNullObj;
                         }
-                        curTargetNameMStr = UsdMayaUtil::GetUniqueNameOfDAGNode(targetMesh);
+                        curTargetNameMStr = UsdMayaUtil::GetUniqueNameOfDagNode(targetMesh);
+                        curTargetLongNameMStr = MString(curTargetNameMStr);
+                        stat = mayaPrefixBlendShapeTargetNameForUSD(curTargetLongNameMStr, blendShapeInfo.blendShapeDeformer);
+                        CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                     } else {
                         MFnDependencyNode fnNode(blendShapeInfo.blendShapeDeformer, &stat);
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
@@ -682,19 +704,26 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                                     // we'll use that instead of calling our target "weight_".
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         if (k == 0) {
-                            curTargetNameMStr
-                                = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
+                            curTargetNameMStr = MString(plgBlendShapeName);
                         } else {
                             // NOTE: (yliangsiew) Because a single weight can drive multiple
                             // targets, we have to put a numeric suffix in the target name.
-                            curTargetNameMStr = MString(
-                                TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
+                            curTargetNameMStr = MString(TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
                         }
+                        // NOTE: (yliangsiew) Need to format a scene-globally-unique
+                        // blendshape target name here to avoid name collisions where
+                        // different meshes could have the same exact target names (Since
+                        // UsdSkelBlendShape stores _all_ the target names across the
+                        // entire file in a single array for the animation samples.)
+                        curTargetLongNameMStr = MString(curTargetNameMStr);
+                        stat = mayaPrefixBlendShapeTargetNameForUSD(curTargetLongNameMStr, blendShapeInfo.blendShapeDeformer);
+                        CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                     }
 
                     TF_VERIFY(curTargetNameMStr.length() != 0);
                     std::string curTargetName
                         = TfMakeValidIdentifier(std::string(curTargetNameMStr.asChar()));
+                    std::string curTargetLongName = TfMakeValidIdentifier(std::string(curTargetLongNameMStr.asChar()));
                     SdfPath usdBlendShapePath = primSchemaPath.AppendChild(TfToken(curTargetName));
                     UsdSkelBlendShape usdBlendShape
                         = UsdSkelBlendShape::Define(this->GetUsdStage(), usdBlendShapePath);
@@ -710,7 +739,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     usdBlendShape.CreateNormalOffsetsAttr(VtValue(targetDatum.normalOffsets));
 
                     usdBlendShapePaths.push_back(usdBlendShapePath);
-                    usdBlendShapeNames.push_back(TfToken(curTargetName));
+                    usdBlendShapeShortNames.push_back(TfToken(curTargetName));
+                    usdBlendShapeLongNames.push_back(TfToken(curTargetLongName));
 
                     // NOTE: (yliangsiew) Because animation export is deferred until subsequent
                     // calls in meshWriter.cpp, we just store the plugs to retrieve the samples from
@@ -725,7 +755,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         TF_VERIFY(weightsPlug.isArray());
                         MPlug weightPlug = weightsPlug.elementByLogicalIndex(weightIndex);
-                        this->_animBlendShapeWeightPlugs.append(weightPlug);
+                        // this->_animBlendShapeWeightPlugs.append(weightPlug);
+                        this->_writeJobCtx.mBlendShapesAnimWeightPlugs.append(weightPlug);
                     }
                 }
                 break;
@@ -826,6 +857,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     MObject                   targetMesh = targetDatum.targetMesh;
                     // NOTE: (yliangsiew) If mesh is already baked in, format name differently.
                     MString curTargetNameMStr;
+                    MString curTargetLongNameMStr;
                     if (!targetMesh.isNull()) {
                         // NOTE: (yliangsiew) Because UsdSkelBlendShape does not
                         // support animated targets (the `normalOffsets` and
@@ -839,7 +871,15 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                                 "connections first before attempting to export.");
                             return MObject::kNullObj;
                         }
-                        curTargetNameMStr = UsdMayaUtil::GetUniqueNameOfDAGNode(targetMesh);
+                        // NOTE: (yliangsiew) Need to format a scene-globally-unique
+                        // blendshape target name here to avoid name collisions where
+                        // different meshes could have the same exact target names (Since
+                        // UsdSkelBlendShape stores _all_ the target names across the
+                        // entire file in a single array for the animation samples.)
+                        curTargetNameMStr = UsdMayaUtil::GetUniqueNameOfDagNode(targetMesh);
+                        curTargetLongNameMStr = MString(curTargetNameMStr);
+                        stat = mayaPrefixBlendShapeTargetNameForUSD(curTargetLongNameMStr, blendShapeInfo.blendShapeDeformer);
+                        CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                     } else {
                         MFnDependencyNode fnNode(blendShapeInfo.blendShapeDeformer, &stat);
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
@@ -857,19 +897,27 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                                     // we'll use that instead of calling our target "weight_".
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                         if (k == 0) {
-                            curTargetNameMStr
-                                = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
+                            // NOTE: (yliangsiew) Need to format a scene-globally-unique
+                            // blendshape target name here to avoid name collisions where
+                            // different meshes could have the same exact target names (Since
+                            // UsdSkelBlendShape stores _all_ the target names across the
+                            // entire file in a single array for the animation samples.)
+                            curTargetNameMStr = MString(plgBlendShapeName);
                             parentTargetNameMStr = MString(curTargetNameMStr);
                         } else {
                             // NOTE: (yliangsiew) Because a single weight can drive multiple
                             // targets, we have to put a numeric suffix in the target name.
-                            curTargetNameMStr = MString(
-                                TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
+                            curTargetNameMStr = MString(TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
                         }
+                        curTargetLongNameMStr = MString(curTargetNameMStr);
+                        stat = mayaPrefixBlendShapeTargetNameForUSD(curTargetLongNameMStr, blendShapeInfo.blendShapeDeformer);
+                        CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                     }
                     TF_VERIFY(curTargetNameMStr.length() != 0);
                     std::string curTargetName
                         = TfMakeValidIdentifier(std::string(curTargetNameMStr.asChar()));
+                    std::string curTargetLongName
+                        = TfMakeValidIdentifier(std::string(curTargetLongNameMStr.asChar()));
                     std::string parentTargetName
                         = TfMakeValidIdentifier(std::string(parentTargetNameMStr.asChar()));
                     unsigned int targetWeightIndex = weightInfo.targetItemIndices[k];
@@ -879,8 +927,10 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         usdBlendShape.CreateOffsetsAttr(VtValue(processedOffsetsArrays[k]));
                         usdBlendShape.CreateNormalOffsetsAttr(
                             VtValue(processedNormalsOffsetsArrays[k]));
+
                         usdBlendShapePaths.push_back(usdBlendShapePath);
-                        usdBlendShapeNames.push_back(TfToken(parentTargetName));
+                        usdBlendShapeShortNames.push_back(TfToken(parentTargetName));
+                        usdBlendShapeLongNames.push_back(TfToken(curTargetLongName));
 
                         // NOTE: (yliangsiew) Because animation export is deferred until subsequent
                         // calls in meshWriter.cpp, we just store the plugs to retrieve the samples
@@ -895,7 +945,8 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
                             TF_VERIFY(weightsPlug.isArray());
                             MPlug weightPlug = weightsPlug.elementByLogicalIndex(weightIndex);
-                            this->_animBlendShapeWeightPlugs.append(weightPlug);
+                            // this->_animBlendShapeWeightPlugs.append(weightPlug);
+                            this->_writeJobCtx.mBlendShapesAnimWeightPlugs.append(weightPlug);
                         }
                     } else {
                         float weightValue
@@ -923,7 +974,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
 
     const UsdSkelBindingAPI bindingAPI = UsdSkelBindingAPI::Apply(primSchema.GetPrim());
     UsdAttribute            blendShapesAttr = bindingAPI.CreateBlendShapesAttr();
-    blendShapesAttr.Set(VtValue(usdBlendShapeNames));
+    blendShapesAttr.Set(VtValue(usdBlendShapeLongNames));
 
     UsdRelationship targetsRel = bindingAPI.CreateBlendShapeTargetsRel();
     targetsRel.SetTargets(usdBlendShapePaths);
@@ -990,14 +1041,20 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
         }
     }
 
+    // NOTE: (yliangsiew) Because this function is run for each prim, we do this so as to format
+    // the union of blendshape target names.
     VtTokenArray existingBlendShapeNames;
     UsdAttribute skelAnimBlendShapesAttr = _skelAnim.GetBlendShapesAttr();
     if (skelAnimBlendShapesAttr.HasAuthoredValue()) {
         skelAnimBlendShapesAttr.Get(&existingBlendShapeNames);
+        for (size_t i=0; i < usdBlendShapeLongNames.size(); ++i) {
+            existingBlendShapeNames.push_back(usdBlendShapeLongNames[i]);
+        }
+        skelAnimBlendShapesAttr.Set(existingBlendShapeNames);
     } else {
         skelAnimBlendShapesAttr = _skelAnim.CreateBlendShapesAttr();
+        skelAnimBlendShapesAttr.Set(usdBlendShapeLongNames);
     }
-    skelAnimBlendShapesAttr.Set(usdBlendShapeNames);
 
     return deformedMesh;
 }
@@ -1020,18 +1077,15 @@ bool PxrUsdTranslators_MeshWriter::writeBlendShapeAnimation(const UsdTimeCode& u
         blendShapeWeightsAttr = this->_skelAnim.CreateBlendShapeWeightsAttr();
     }
 
-    unsigned int numWeightPlugs = this->_animBlendShapeWeightPlugs.length();
-    if (numExistingBlendShapes != numWeightPlugs) {
-        return false;
-    }
-
-    for (size_t i = 0; i < usdWeights.size(); ++i) {
-        MPlug weightPlug = this->_animBlendShapeWeightPlugs[i];
+    // NOTE: (yliangsiew) This should be the combined array of _all_ animated blendshape weight plugs
+    // that line up with the array and indices of the blendshape names above.
+    unsigned int numWeightPlugs = this->_writeJobCtx.mBlendShapesAnimWeightPlugs.length();
+    TF_VERIFY(numExistingBlendShapes == numWeightPlugs);
+    for (unsigned int i = 0; i < numWeightPlugs; ++i) {
+        MPlug weightPlug = this->_writeJobCtx.mBlendShapesAnimWeightPlugs[i];
         usdWeights[i] = weightPlug.asFloat();
     }
-
     bool result = blendShapeWeightsAttr.Set(VtValue(usdWeights), usdTime);
-
     return result;
 }
 

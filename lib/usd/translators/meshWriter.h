@@ -37,7 +37,6 @@
 #include <maya/MBoundingBox.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MFnMesh.h>
-#include <maya/MPlugArray.h>
 #include <maya/MString.h>
 
 #include <set>
@@ -77,9 +76,6 @@ private:
 
     /// Input mesh before any skeletal deformations, cached between iterations.
     MObject _skelInputMesh;
-
-    /// The animated plugs of any blendshape nodes involved in mesh deformation.
-    MPlugArray _animBlendShapeWeightPlugs;
 
     /// The previous sample for the mesh extents. Cached between iterations.
     VtVec3fArray _prevMeshExtentsSample;
