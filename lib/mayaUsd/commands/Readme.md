@@ -385,8 +385,8 @@ names and annotations for various elements passed to the other commands.
 | `-findExportName`      | `-fen`     | string         | Retrieve the nice name of an export shading mode |
 | `-findImportName`      | `-fin`     | string         | Retrieve the nice name of an import shading mode |
 | `-import`              | `-im`      | noarg          | Retrieve the list of import shading mode nice names. |
-| `-importOptions`       | `-io`      | string         | Retrieve the real name of the shading mode given its nice name. These can be used in the `shadingMode` option of the export command. |
-| `-importAnnotation`    | `-ia`      | string         | Retrieve the a pair of names that completely define a shading mode, as used by the import `shadingMode` option |
+| `-importOptions`       | `-io`      | string         | Retrieve the a pair of names that completely define a shading mode, as used by the import `shadingMode` option |
+| `-importAnnotation`    | `-ia`      | string         | Retrieve the description of the import shading mode option |
 
 
 ## `EditTargetCommand`
