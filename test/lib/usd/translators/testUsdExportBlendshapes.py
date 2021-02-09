@@ -95,6 +95,22 @@ class TestUsdExportBlendshapes(unittest.TestCase):
         for bs in blendShapes:
             self.assertEqual(bs.GetTypeName(), 'BlendShape')
 
+        # NOTE: (yliangsiew) Test exporting empty blendshape targets.
+        om.MFileIO.open(self.scene_path, None, True)
+        cmds.select("cube_empty_blendshape_targets|base", r=True)
+        cmds.mayaUSDExport(f=temp_file, v=True, sl=True, ebs=True, skl="auto", skn="auto", ignoreWarnings=True)
+        stage = Usd.Stage.Open(temp_file)
+        prim = stage.GetPrimAtPath("/cube_empty_blendshape_targets/base")
+        blendShapes = prim.GetChildren()
+        for bs in blendShapes:
+            self.assertEqual(bs.GetTypeName(), 'BlendShape')
+            skelBS = UsdSkel.BlendShape(bs)
+            normalsAttr = skelBS.GetNormalOffsetsAttr()
+            offsetsAttr = skelBS.GetOffsetsAttr()
+            normals = normalsAttr.Get()
+            offsets = offsetsAttr.Get()
+            self.assertEqual(len(normals), 0)
+            self.assertEqual(len(offsets), 0)
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
