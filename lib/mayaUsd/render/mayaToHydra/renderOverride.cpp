@@ -264,6 +264,12 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
 
 MtohRenderOverride::~MtohRenderOverride()
 {
+    const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
+    if (ufeSelection) {
+        ufeSelection->removeObserver(_ufeSelectionObserver);
+        _ufeSelectionObserver = nullptr;
+    }
+
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
             "MtohRenderOverride destroyed (%s - %s - %s)\n",
@@ -467,10 +473,18 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
         drawContext.getRenderTargetSize(width, height);
 
         GfVec4d viewport(originX, originY, width, height);
+#if USD_VERSION_NUM >= 1910
         _taskController->SetFreeCameraMatrices(
+#else
+        _taskController->SetCameraMatrices(
+#endif // USD_VERSION_NUM >= 1910
             GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kViewMtx)),
             GetGfMatrixFromMaya(drawContext.getMatrix(MHWRender::MFrameContext::kProjectionMtx)));
+#if USD_VERSION_NUM >= 1910
         _taskController->SetRenderViewport(viewport);
+#else
+        _taskController->SetCameraViewport(viewport);
+#endif // USD_VERSION_NUM >= 1910
 
         HdTaskSharedPtrVector tasks = _taskController->GetRenderingTasks();
 
@@ -580,7 +594,7 @@ MStatus MtohRenderOverride::Render(const MHWRender::MDrawContext& drawContext)
     } else
         _taskController->SetSelectionEnableOutline(false);
 #endif
-#if USD_VERSION_NUM <= 2005
+#if USD_VERSION_NUM > 1911 && USD_VERSION_NUM <= 2005
     _taskController->SetColorizeQuantizationEnabled(_globals.enableColorQuantization);
 #endif
 
@@ -649,9 +663,7 @@ void MtohRenderOverride::_InitHydraResources()
 {
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg("MtohRenderOverride::_InitHydraResources(%s)\n", _rendererDesc.rendererName.GetText());
-#if USD_VERSION_NUM < 2102
     GlfGlewInit();
-#endif
     GlfContextCaps::InitInstance();
     _rendererPlugin
         = HdRendererPluginRegistry::GetInstance().GetRendererPlugin(_rendererDesc.rendererName);
@@ -969,8 +981,7 @@ bool MtohRenderOverride::select(
 
     // Execute picking tasks.
     HdTaskSharedPtrVector pickingTasks = _taskController->GetPickingTasks();
-    VtValue               pickParamsValue(pickParams);
-    _engine.SetTaskContextData(HdxPickTokens->pickParams, pickParamsValue);
+    _engine.SetTaskContextData(HdxPickTokens->pickParams, VtValue(pickParams));
     _engine.Execute(_taskController->GetRenderIndex(), &pickingTasks);
 
     if (pointSnappingActive) {
