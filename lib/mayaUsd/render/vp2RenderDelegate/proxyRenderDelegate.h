@@ -75,6 +75,26 @@ enum HdVP2SelectionStatus
     kFullyLead          //!< A Rprim is lead (meaning fully lead for instanced Rprims)
 };
 
+//! Pick resolution behavior to use when the picked object is a point instance.
+enum class UsdPointInstancesPickMode
+{
+    //! The PointInstancer prim that generated the point instance is picked. If
+    //! multiple nested PointInstancers are involved, the top-level
+    //! PointInstancer is the one picked. If a selection kind is specified, the
+    //! traversal up the hierarchy looking for a kind match will begin at that
+    //! PointInstancer.
+    PointInstancer,
+    //! The specific point instance is picked. These are represented as
+    //! UsdSceneItems with UFE paths to a PointInstancer prim and a non-negative
+    //! instanceIndex for the specific point instance. In this mode, any setting
+    //! for selection kind is ignored.
+    Instances,
+    //! The prototype being instanced by the point instance is picked. If a
+    //! selection kind is specified, the traversal up the hierarchy looking for
+    //! a kind match will begin at the prototype prim.
+    Prototypes
+};
+
 /*! \brief  USD Proxy rendering routine via VP2 MPxSubSceneOverride
 
     This drawing routine leverages HdVP2RenderDelegate for synchronization
@@ -262,6 +282,9 @@ private:
 
     //! Token of the Kind to be selected from viewport. If it empty, select the exact prims.
     TfToken _selectionKind;
+
+    //! Pick resolution behavior to use when the picked object is a point instance.
+    UsdPointInstancesPickMode _pointInstancesPickMode;
 #endif
 };
 
