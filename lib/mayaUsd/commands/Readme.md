@@ -180,14 +180,20 @@ further `kind`/model inference optional. The current behavior is:
     hierarchy of models from the root down to the "leaf" model references.
 
 
-#### UV Name Translation: `map1` becomes `st`
+#### UV Set Names
 
 Currently, for Mesh export (and similarly for NurbsPatch, also),
-we rename the UV set `map1` to `st`. `st` is the primary UV set
-for RenderMan, so this is very convenient for a Renderman-based
-pipeline. We understand this behavior is not desirable for all,
-and do plan to allow this translation (or none) to be specifiable.
-The translation is reversed on importing USD into Maya.
+the UV set names will be preserved.
+
+A previous version renamed the UV sets. To get back this old behavior,
+set the `MAYAUSD_EXPORT_MAP1_AS_PRIMARY_UV_SET` on export or
+`MAYAUSD_IMPORT_PRIMARY_UV_SET_AS_MAP1` when importing. The old
+renaming behavior worked as follow: we renamed the UV set `map1` to `st`.
+`st` is the primary UV set for RenderMan, so this was very convenient
+for a Renderman-based pipeline. The translation is reversed on
+importing USD into Maya, when the environment variable shown above
+is set. We understand this behavior was not desirable for all,
+so this translation is now off by default.
 
 
 ### Custom Attributes and Tagging for USD
@@ -241,6 +247,7 @@ attributes by using its `attrprefix` argument. Here is an example of
 what that call to `mayaUSDExport` might look like:
 
 ```python
+cmds.loadPlugin('pxrUsd')
 cmds.mayaUSDExport(
     file=usdFilePath,
     chaser=['alembic'],
@@ -278,6 +285,7 @@ then the following custom attributes will be exported:
 Example `mayaUSDExport` invocation with `attrprefix` option:
 
 ```python
+cmds.loadPlugin('pxrUsd')
 cmds.mayaUSDExport(
     file=usdFilePath,
     chaser=['alembic'],
@@ -313,6 +321,7 @@ the Maya attribute. (We currently ignore `_AbcType` hint attributes.)
 Example `mayaUSDExport` invocation with `primvarprefix` option:
 
 ```python
+cmds.loadPlugin('pxrUsd')
 cmds.mayaUSDExport(
     file=usdFilePath,
     chaser=['alembic'],
@@ -371,13 +380,13 @@ names and annotations for various elements passed to the other commands.
 | Long flag              | Short flag | Type           | Description |
 | ---------------------- | ---------- | -------------- | ----------- |
 | `-export`              | `-ex`      | noarg          | Retrieve the list of export shading mode nice names. |
-| `-exportOptions`       | `-eo`      | string         | Retrieve the real name of the shading mode given its nice name. These can be used in the `shadingMode` option of the export command. |
+| `-exportOptions`       | `-eo`      | string         | Retrieve the names necessary to be passed to the `shadingMode` and `convertMaterialsTo` flags of the export command. |
 | `-exportAnnotation`    | `-ea`      | string         | Retrieve the description of the export shading mode option |
 | `-findExportName`      | `-fen`     | string         | Retrieve the nice name of an export shading mode |
 | `-findImportName`      | `-fin`     | string         | Retrieve the nice name of an import shading mode |
 | `-import`              | `-im`      | noarg          | Retrieve the list of import shading mode nice names. |
 | `-importOptions`       | `-io`      | string         | Retrieve the real name of the shading mode given its nice name. These can be used in the `shadingMode` option of the export command. |
-| `-importAnnotation`    | `-ia`      | string         | Retrieve the description of the import shading mode option |
+| `-importAnnotation`    | `-ia`      | string         | Retrieve the a pair of names that completely define a shading mode, as used by the import `shadingMode` option |
 
 
 ## `EditTargetCommand`
