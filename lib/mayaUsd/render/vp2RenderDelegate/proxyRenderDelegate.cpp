@@ -804,7 +804,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     SdfPath topLevelPath;
     int     topLevelInstanceIndex = UsdImagingDelegate::ALL_INSTANCES;
 
-#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+#if defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 14
     HdInstancerContext instancerContext;
     SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex, &instancerContext);
 
@@ -815,6 +815,8 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
         topLevelPath = instancerContext.front().first;
         topLevelInstanceIndex = instancerContext.front().second;
     }
+#elif defined(USD_IMAGING_API_VERSION) && USD_IMAGING_API_VERSION >= 13
+    SdfPath usdPath = _sceneDelegate->GetScenePrimPath(rprimId, instanceIndex);
 #else
     SdfPath indexPath;
     if (drawInstID > 0) {
@@ -834,7 +836,7 @@ bool ProxyRenderDelegate::getInstancedSelectionPath(
     }
 
     // The "Instances" point instances pick mode is not supported for
-    // USD_IMAGING_API_VERSION < 13 (core USD versions earlier than 20.05), so
+    // USD_IMAGING_API_VERSION < 14 (core USD versions earlier than 20.08), so
     // no setting of topLevelPath or topLevelInstanceIndex here.
 #endif
 
