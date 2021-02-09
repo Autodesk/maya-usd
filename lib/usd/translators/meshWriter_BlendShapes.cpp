@@ -255,14 +255,20 @@ MStatus mayaBlendShapeTriggerAllTargets(MObject& blendShape)
 /**
  * Gets information about available blend shapes for a given deformed mesh (i.e. final result)
  *
- * @param mesh        The deformed mesh to find the blendshape info(s) for.
- * @param outInfos    Storage for the result.
+ * @param mesh                   The deformed mesh to find the blendshape info(s) for.
  *
- * @return            A status code.
+ * @param outInfos               Storage for the result.
+ *
+ * @param getEmptyBlendShapes    If set to `true`, will also consider empty/blendshape targets valid
+ *                               and retrieve them. If not, empty targets will be skipped in the
+ *                               final result.
+ *
+ * @return                       A status code.
  */
 MStatus mayaGetBlendShapeInfosForMesh(
     const MObject&                    deformedMesh,
-    std::vector<MayaBlendShapeDatum>& outInfos)
+    std::vector<MayaBlendShapeDatum>& outInfos,
+    const bool                        getEmptyBlendShapes)
 {
     // TODO: (yliangsiew) Eh, find a way to avoid incremental allocations like these and just
     // allocate upfront. But hard to do with the iterative search functions of the DG...
@@ -305,9 +311,21 @@ MStatus mayaGetBlendShapeInfosForMesh(
         MObject curBlendShape = itDg.currentItem();
         TF_VERIFY(curBlendShape.hasFn(MFn::kBlendShape));
 
-        MPlug outputGeomPlug = itDg.thisPlug();
-        TF_VERIFY(outputGeomPlug.isElement() == true);
-        unsigned int outputGeomPlugIdx = outputGeomPlug.logicalIndex();
+        MPlug outputGeomElemPlug = itDg.thisPlug();
+        // NOTE: (yliangsiew) Because this can end up grabbing the wrong plug (i.e.
+        // blendShape.weight[1]), we double-check here and advance the iterator if necessary.
+        if (!outputGeomElemPlug.isElement()) {
+            itDg.next();
+            continue;
+        }
+        MPlug outputGeomPlug = outputGeomElemPlug.array(&stat);
+        CHECK_MSTATUS_AND_RETURN_IT(stat);
+        MString outputGeomPlugName = outputGeomPlug.partialName(0, 0, 0, 0, 0, 1);
+        if (outputGeomPlugName != "outputGeometry") {
+            itDg.next();
+            continue;
+        }
+        unsigned int outputGeomPlugIdx = outputGeomElemPlug.logicalIndex();
 
         // NOTE: (yliangsiew) Because we can have multiple output
         // deformed meshes from a single blendshape deformer, we have
@@ -395,14 +413,30 @@ MStatus mayaGetBlendShapeInfosForMesh(
                 MIntArray                 indices;
                 stat = UsdMayaUtil::GetAllIndicesFromComponentListDataPlug(
                     plgInComponentsTgt, indices);
-                CHECK_MSTATUS_AND_RETURN_IT(stat);
+                // NOTE: (yliangsiew) If the plug has no indices data (i.e. "blank" blendshape),
+                // or if it is a zero-length array,
+                // create an empty meshTargetDatum to represent a "no-op" blendshape target.
+                if (getEmptyBlendShapes && (stat != MStatus::kSuccess || indices.length() == 0)) {
+                    meshTargetDatum.indices.clear();
+                    meshTargetDatum.normalOffsets.clear();
+                    meshTargetDatum.ptOffsets.clear();
+                    meshTargetDatum.targetMesh = MObject::kNullObj;
+                    weightInfo.targets.push_back(meshTargetDatum);
+                    continue;
+                } else if (stat != MStatus::kSuccess) {
+                    TF_RUNTIME_ERROR(
+                        "Found uninitialized plug; unable to determine blendshape target info from "
+                        "it: %s",
+                        plgInComponentsTgt.name().asChar());
+                    continue;
+                }
+
                 for (unsigned int m = 0; m < indices.length(); ++m) {
                     meshTargetDatum.indices.push_back(indices[m]);
                 }
-
                 unsigned int numComponentIndices = meshTargetDatum.indices.size();
                 if (numComponentIndices == 0) {
-                    TF_WARN(
+                    TF_RUNTIME_ERROR(
                         "Found zero-length component indices on a plug; cannot determine "
                         "blendshape target info from it: %s",
                         plgInComponentsTgt.name().asChar());
@@ -505,19 +539,28 @@ void findUnionAndProcessArrays(
     for (size_t i = 0; i < numArrays; ++i) {
         const VtVec3fArray& origOffsetsArray = offsetsArrays[i];
         const size_t        numOrigOffsets = origOffsetsArray.size();
-        TF_VERIFY(numOrigOffsets != 0);
-        VtVec3fArray& newOffsetsArray = unionOffsetsArrays[i];
+        VtVec3fArray&       newOffsetsArray = unionOffsetsArrays[i];
         newOffsetsArray.assign(numUnionIndices, GfVec3f(0.0f));
 
         const VtVec3fArray& origNormalsArray = normalsArrays[i];
-#ifdef _DEBUG
-        const size_t numOrigNormals = origNormalsArray.size();
+        const size_t        numOrigNormals = origNormalsArray.size();
+        if (numOrigNormals == 0 && numOrigOffsets == 0) {
+            // NOTE: (yliangsiew) Means that the target is completely empty (no deltas, no effect).
+            // If so, we don't even bother trying to match, because whatever is stored in the
+            // offsets and normals for this target is meaningless.
+            continue;
+        }
         TF_VERIFY(numOrigOffsets == numOrigNormals);
-#endif
         VtVec3fArray& newNormalsArray = unionNormalsArrays[i];
         newNormalsArray.assign(numUnionIndices, GfVec3f(0.0f));
 
         const VtIntArray& origIndicesArray = indicesArrays[i];
+        if (origIndicesArray.size() == 0) {
+            // NOTE: (yliangsiew) Means that the target is completely empty (no indices, no effect).
+            // If so, we don't even bother trying to match, because whatever is stored in the
+            // offsets and normals for this target is meaningless.
+            continue;
+        }
         for (size_t j = 0, k = 0; j < numUnionIndices; ++j) {
             int index = unionIndices[j];
             int origIndex = origIndicesArray[k];
@@ -553,7 +596,11 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
     // TODO: (yliangsiew) Figure out if this can be isolated. It's kind of hard
     // because we want to avoid repeated walks through the DG.
     std::vector<MayaBlendShapeDatum> blendShapeDeformerInfos;
-    stat = mayaGetBlendShapeInfosForMesh(deformedMesh, blendShapeDeformerInfos);
+    if (exportArgs.ignoreWarnings) {
+        stat = mayaGetBlendShapeInfosForMesh(deformedMesh, blendShapeDeformerInfos, true);
+    } else {
+        stat = mayaGetBlendShapeInfosForMesh(deformedMesh, blendShapeDeformerInfos, false);
+    }
     if (stat != MStatus::kSuccess) {
         TF_WARN(
             "Could not read blendshape information for the mesh: %s.",
@@ -634,10 +681,15 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             &stat); // NOTE: (yliangsiew) The target name is set as an alias, so
                                     // we'll use that instead of calling our target "weight_".
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
-                        // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
-                        // have to put a numeric suffix in the target name.
-                        curTargetNameMStr
-                            = TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str();
+                        if (k == 0) {
+                            curTargetNameMStr
+                                = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
+                        } else {
+                            // NOTE: (yliangsiew) Because a single weight can drive multiple
+                            // targets, we have to put a numeric suffix in the target name.
+                            curTargetNameMStr = MString(
+                                TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
+                        }
                     }
 
                     TF_VERIFY(curTargetNameMStr.length() != 0);
@@ -691,7 +743,6 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                 // it in the exporter either.
                 for (size_t k = 0; k < numOfTargets; ++k) {
                     MayaBlendShapeTargetDatum targetDatum = weightInfo.targets[k];
-                    MString                   curTargetNameMStr;
                     MObject                   targetMesh = targetDatum.targetMesh;
                     if (!targetMesh.isNull() && MObjectHandle(targetMesh).isAlive()
                         && targetMesh.hasFn(MFn::kMesh) && MAnimUtil::isAnimated(targetMesh)) {
@@ -767,6 +818,9 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                     processedOffsetsArrays,
                     processedNormalsOffsetsArrays);
 
+                // NOTE: (yliangsiew) For in-between targets, we need to store the
+                // original target name rather than the suffixed ones.
+                MString parentTargetNameMStr;
                 for (size_t k = 0; k < numOfTargets; ++k) {
                     MayaBlendShapeTargetDatum targetDatum = weightInfo.targets[k];
                     MObject                   targetMesh = targetDatum.targetMesh;
@@ -802,14 +856,22 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                             &stat); // NOTE: (yliangsiew) The target name is set as an alias, so
                                     // we'll use that instead of calling our target "weight_".
                         CHECK_MSTATUS_AND_RETURN(stat, MObject::kNullObj);
-                        // NOTE: (yliangsiew) Because a single weight can drive multiple targets, we
-                        // have to put a numeric suffix in the target name.
-                        curTargetNameMStr
-                            = TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str();
+                        if (k == 0) {
+                            curTargetNameMStr
+                                = MString(TfStringPrintf("%s", plgBlendShapeName.asChar()).c_str());
+                            parentTargetNameMStr = MString(curTargetNameMStr);
+                        } else {
+                            // NOTE: (yliangsiew) Because a single weight can drive multiple
+                            // targets, we have to put a numeric suffix in the target name.
+                            curTargetNameMStr = MString(
+                                TfStringPrintf("%s%zu", plgBlendShapeName.asChar(), k).c_str());
+                        }
                     }
                     TF_VERIFY(curTargetNameMStr.length() != 0);
                     std::string curTargetName
                         = TfMakeValidIdentifier(std::string(curTargetNameMStr.asChar()));
+                    std::string parentTargetName
+                        = TfMakeValidIdentifier(std::string(parentTargetNameMStr.asChar()));
                     unsigned int targetWeightIndex = weightInfo.targetItemIndices[k];
                     if (targetWeightIndex == 6000) { // NOTE: (yliangsiew) For default fullweight,
                                                      // we don't append the weight name.
@@ -818,7 +880,7 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
                         usdBlendShape.CreateNormalOffsetsAttr(
                             VtValue(processedNormalsOffsetsArrays[k]));
                         usdBlendShapePaths.push_back(usdBlendShapePath);
-                        usdBlendShapeNames.push_back(TfToken(curTargetName));
+                        usdBlendShapeNames.push_back(TfToken(parentTargetName));
 
                         // NOTE: (yliangsiew) Because animation export is deferred until subsequent
                         // calls in meshWriter.cpp, we just store the plugs to retrieve the samples
@@ -935,7 +997,6 @@ MObject PxrUsdTranslators_MeshWriter::writeBlendShapeData(UsdGeomMesh& primSchem
     } else {
         skelAnimBlendShapesAttr = _skelAnim.CreateBlendShapesAttr();
     }
-
     skelAnimBlendShapesAttr.Set(usdBlendShapeNames);
 
     return deformedMesh;

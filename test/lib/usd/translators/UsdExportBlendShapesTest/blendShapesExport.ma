@@ -1,22 +1,20 @@
 //Maya ASCII 2020 scene
 //Name: blendShapesExport.ma
-//Last modified: Mon, Jan 11, 2021 10:01:56 AM
+//Last modified: Mon, Feb 08, 2021 11:09:12 AM
 //Codeset: UTF-8
 requires maya "2020";
-requires "stereoCamera" "10.0";
-requires "stereoCamera" "10.0";
 currentUnit -l centimeter -a degree -t film;
 fileInfo "application" "maya";
 fileInfo "product" "Maya 2020";
 fileInfo "version" "2020";
 fileInfo "cutIdentifier" "202009141615-87c40af620";
 fileInfo "osv" "Mac OS X 10.16";
-fileInfo "UUID" "7BF656E0-1E4C-539B-30DC-7F812558CD9D";
+fileInfo "UUID" "1824D090-6C48-96C0-4A43-DCAE977A8A2D";
 fileInfo "vrayBuild" "4.30.02 e646822";
 createNode transform -s -n "persp";
 	rename -uid "2077CAC5-BF47-33B8-4402-70A6511A185B";
 	setAttr ".v" no;
-	setAttr ".t" -type "double3" 20.763300040363571 19.129491846540319 11.688706809040287 ;
+	setAttr ".t" -type "double3" 21.554419416131427 18.011175660575638 11.990618836469697 ;
 	setAttr ".r" -type "double3" -36.338352729700354 55.399999999998691 -8.4016634219489009e-15 ;
 createNode camera -s -n "perspShape" -p "persp";
 	rename -uid "8991EE25-C345-99C4-8B97-049999C7F7C3";
@@ -118,15 +116,15 @@ createNode mesh -n "tgtShape" -p "|basic_cube_1_blendshape_no_anim|tgt";
 	setAttr ".dcc" -type "string" "Ambient+Diffuse";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr -s 7 ".pt[0:6]" -type "float3"  -0.13434362 0.14127305 0.14774829 
-		-0.0021889743 0.0023018818 0.0024073881 -0.57672817 0.60647583 0.63427365 -0.13434362 
-		0.14127305 0.14774829 -0.13434362 0.14127305 0.14774829 -0.0021889743 0.0023018818 
+	setAttr -s 7 ".pt[0:6]" -type "float3"  -0.13434362 0.14127305 0.14774829
+		-0.0021889743 0.0023018818 0.0024073881 -0.57672817 0.60647583 0.63427365 -0.13434362
+		0.14127305 0.14774829 -0.13434362 0.14127305 0.14774829 -0.0021889743 0.0023018818
 		0.0024073881 -0.0021889743 0.0023018818 0.0024073881;
 	setAttr -s 8 ".vt[0:7]"  -0.5 -0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 0.5 0.5 0.5
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -195,7 +193,7 @@ createNode mesh -n "tgtShape1" -p "|basic_cube_2_inbetweens_no_anim|tgts|tgt1";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -235,7 +233,7 @@ createNode mesh -n "tgtShape2" -p "|basic_cube_2_inbetweens_no_anim|tgts|tgt2";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -270,13 +268,13 @@ createNode mesh -n "tgtShape3" -p "|basic_cube_2_inbetweens_no_anim|tgts|tgt3";
 	setAttr ".dcc" -type "string" "Ambient+Diffuse";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr -s 2 ".pt[4:5]" -type "float3"  -0.062199187 0.14360872 -0.61249459 
+	setAttr -s 2 ".pt[4:5]" -type "float3"  -0.062199187 0.14360872 -0.61249459
 		-0.012448186 0.13965988 -0.88584316;
 	setAttr -s 8 ".vt[0:7]"  -0.5 -0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 0.5 0.5 0.5
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -346,7 +344,7 @@ createNode mesh -n "tgtShape" -p "|basic_cube_4_blendshapes_no_anim|tgts|tgt";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -388,7 +386,7 @@ createNode mesh -n "tgt2Shape" -p "|basic_cube_4_blendshapes_no_anim|tgts|tgt2";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -431,7 +429,7 @@ createNode mesh -n "tgt3Shape" -p "|basic_cube_4_blendshapes_no_anim|tgts|tgt3";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -483,7 +481,7 @@ createNode mesh -n "baseShapeOrig" -p "|basic_cube_4_blendshape_inbetween_anim|b
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -519,7 +517,7 @@ createNode mesh -n "baseShapeOrig1" -p "|basic_cube_4_blendshape_inbetween_anim|
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -561,7 +559,7 @@ createNode mesh -n "tgtShape" -p "|basic_cube_4_blendshape_inbetween_anim|tgts|t
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -603,7 +601,7 @@ createNode mesh -n "tgt2Shape" -p "|basic_cube_4_blendshape_inbetween_anim|tgts|
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -646,7 +644,7 @@ createNode mesh -n "tgt3Shape" -p "|basic_cube_4_blendshape_inbetween_anim|tgts|
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -698,7 +696,7 @@ createNode mesh -n "baseShapeOrig" -p "|basic_cube_3_blendshape_anim|base";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -733,7 +731,7 @@ createNode mesh -n "baseShapeOrig2" -p "|basic_cube_3_blendshape_anim|base";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -772,7 +770,7 @@ createNode mesh -n "tgtShape" -p "|basic_cube_3_blendshape_anim|tgt";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -823,7 +821,7 @@ createNode mesh -n "baseShape1Orig" -p "|basic_cube_2_inbetween_anim|base";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -859,7 +857,7 @@ createNode mesh -n "baseShapeOrig" -p "|basic_cube_2_inbetween_anim|base";
 		 -0.5 0.49999997 -0.49999994 0.82545203 0.36220634 -1.51770234 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -901,7 +899,7 @@ createNode mesh -n "tgtShape1" -p "|basic_cube_2_inbetween_anim|tgts|tgt1";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -941,7 +939,7 @@ createNode mesh -n "tgtShape2" -p "|basic_cube_2_inbetween_anim|tgts|tgt2";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -976,13 +974,13 @@ createNode mesh -n "tgtShape3" -p "|basic_cube_2_inbetween_anim|tgts|tgt3";
 	setAttr ".dcc" -type "string" "Ambient+Diffuse";
 	setAttr ".covm[0]"  0 1 1;
 	setAttr ".cdvm[0]"  0 1 1;
-	setAttr -s 2 ".pt[4:5]" -type "float3"  -0.062199187 0.14360872 -0.61249459 
+	setAttr -s 2 ".pt[4:5]" -type "float3"  -0.062199187 0.14360872 -0.61249459
 		-0.012448186 0.13965988 -0.88584316;
 	setAttr -s 8 ".vt[0:7]"  -0.5 -0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 0.5 0.5 0.5
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -1060,7 +1058,7 @@ createNode mesh -n "pCube2baseShape2Orig" -p "pCube2base";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -1101,7 +1099,7 @@ createNode mesh -n "pCube1tgtShape" -p "pCube1tgt";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -1140,7 +1138,7 @@ createNode mesh -n "pCube2tgtShape" -p "pCube2tgt";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -1207,7 +1205,7 @@ createNode mesh -n "tgtShape" -p "|cube_extra_deformer_in_stack|group9|tgt";
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -1286,7 +1284,7 @@ createNode mesh -n "tgtShape" -p "|basic_cube_4_blendshape_baked_targets|tgts|tg
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -1328,7 +1326,7 @@ createNode mesh -n "tgt2Shape" -p "|basic_cube_4_blendshape_baked_targets|tgts|t
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -1371,7 +1369,7 @@ createNode mesh -n "tgt3Shape" -p "|basic_cube_4_blendshape_baked_targets|tgts|t
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -1432,7 +1430,7 @@ createNode mesh -n "baseShapeOrig" -p "|basic_skinned_cube_blendshape_baked_targ
 		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
 	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
 		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
-	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces" 
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
 		f 4 0 5 -2 -5
 		mu 0 4 0 1 3 2
 		f 4 1 7 -3 -7
@@ -1470,24 +1468,149 @@ createNode joint -n "joint3" -p "joint2";
 	setAttr ".bps" -type "matrix" 1.0000000000000004 0 0 0 0 1 0 0 0 0 1.0000000000000004 0
 		 -6 0 -1 1;
 	setAttr ".radi" 0.55172413793103448;
+createNode transform -n "cube_empty_blendshape_targets";
+	rename -uid "B49A1E9F-D14C-F892-134C-969D6F8490E2";
+createNode transform -n "base" -p "cube_empty_blendshape_targets";
+	rename -uid "ADA42BDF-0742-6D10-3B19-5BBED695C63C";
+createNode mesh -n "baseShape" -p "|cube_empty_blendshape_targets|base";
+	rename -uid "0149BEB7-0042-A393-FDE9-40B11A23CB34";
+	setAttr -k off ".v";
+	setAttr -s 4 ".iog[0].og";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+createNode mesh -n "baseShapeOrig" -p "|cube_empty_blendshape_targets|base";
+	rename -uid "151867D8-7B41-5856-0AA6-ECBB31038A0D";
+	setAttr -k off ".v";
+	setAttr ".io" yes;
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -0.5 -0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 0.5 0.5 0.5
+		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+createNode transform -n "tgt" -p "cube_empty_blendshape_targets";
+	rename -uid "CEE4DE5A-0842-78A1-FF69-CFBC25123116";
+	setAttr ".t" -type "double3" 0 0 -2.5388789843565038 ;
+createNode mesh -n "tgtShape" -p "|cube_empty_blendshape_targets|tgt";
+	rename -uid "8008E50A-EC4C-9453-8AE7-40BE92D9CF8B";
+	setAttr -k off ".v";
+	setAttr -s 2 ".iog[0].og";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -0.5 -0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 0.5 0.5 0.5
+		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
+createNode transform -n "tgt2" -p "cube_empty_blendshape_targets";
+	rename -uid "25B7F089-4345-25B4-66BF-D7ACA40A41A4";
+	setAttr ".t" -type "double3" 0 0 -5.6279012708447969 ;
+createNode mesh -n "tgt2Shape" -p "|cube_empty_blendshape_targets|tgt2";
+	rename -uid "7EF09E84-424C-32DF-8D1D-E89A8DDC503E";
+	setAttr -k off ".v";
+	setAttr ".vir" yes;
+	setAttr ".vif" yes;
+	setAttr ".uvst[0].uvsn" -type "string" "map1";
+	setAttr -s 14 ".uvst[0].uvsp[0:13]" -type "float2" 0.375 0 0.625 0 0.375
+		 0.25 0.625 0.25 0.375 0.5 0.625 0.5 0.375 0.75 0.625 0.75 0.375 1 0.625 1 0.875 0
+		 0.875 0.25 0.125 0 0.125 0.25;
+	setAttr ".cuvs" -type "string" "map1";
+	setAttr ".dcc" -type "string" "Ambient+Diffuse";
+	setAttr ".covm[0]"  0 1 1;
+	setAttr ".cdvm[0]"  0 1 1;
+	setAttr -s 8 ".vt[0:7]"  -0.5 -0.5 0.5 0.5 -0.5 0.5 -0.5 0.5 0.5 0.5 0.5 0.5
+		 -0.5 0.5 -0.5 0.5 0.5 -0.5 -0.5 -0.5 -0.5 0.5 -0.5 -0.5;
+	setAttr -s 12 ".ed[0:11]"  0 1 0 2 3 0 4 5 0 6 7 0 0 2 0 1 3 0 2 4 0
+		 3 5 0 4 6 0 5 7 0 6 0 0 7 1 0;
+	setAttr -s 6 -ch 24 ".fc[0:5]" -type "polyFaces"
+		f 4 0 5 -2 -5
+		mu 0 4 0 1 3 2
+		f 4 1 7 -3 -7
+		mu 0 4 2 3 5 4
+		f 4 2 9 -4 -9
+		mu 0 4 4 5 7 6
+		f 4 3 11 -1 -11
+		mu 0 4 6 7 9 8
+		f 4 -12 -10 -8 -6
+		mu 0 4 1 10 11 3
+		f 4 10 4 6 8
+		mu 0 4 12 0 2 13;
+	setAttr ".cd" -type "dataPolyComponent" Index_Data Edge 0 ;
+	setAttr ".cvd" -type "dataPolyComponent" Index_Data Vertex 0 ;
+	setAttr ".pd[0]" -type "dataPolyComponent" Index_Data UV 0 ;
+	setAttr ".hfd" -type "dataPolyComponent" Index_Data Face 0 ;
 createNode lightLinker -s -n "lightLinker1";
-	rename -uid "46456D72-0E43-B636-1DC2-89982C9A3E5C";
+	rename -uid "9AD09FF2-F743-B7B3-3680-C4ABD8F7A5A4";
 	setAttr -s 2 ".lnk";
 	setAttr -s 2 ".slnk";
 createNode shapeEditorManager -n "shapeEditorManager";
-	rename -uid "EFF3D16D-9645-6CD1-546A-95A43D14A242";
-	setAttr ".bsdt[0].bscd" -type "Int32Array" 11 8 9 11 12 13
-		 15 16 17 18 21 22 ;
-	setAttr -s 11 ".bspr";
-	setAttr -s 11 ".obsv";
+	rename -uid "12E7987C-F743-2252-04C2-F8BD27CE8E5D";
+	setAttr ".bsdt[0].bscd" -type "Int32Array" 12 8 9 11 12 13
+		 15 16 17 18 21 22 0 ;
+	setAttr -s 12 ".bspr";
+	setAttr -s 12 ".obsv";
 createNode poseInterpolatorManager -n "poseInterpolatorManager";
-	rename -uid "E5C73CF6-F44C-696F-E453-B697612F2B0E";
+	rename -uid "F5B62934-6046-C7BC-C512-17B8CBE4E52E";
 createNode displayLayerManager -n "layerManager";
-	rename -uid "F903DABD-9C43-C446-5DD4-909C5014FA94";
+	rename -uid "CEC7A86E-4C47-AE5F-B503-11B96539406F";
 createNode displayLayer -n "defaultLayer";
 	rename -uid "66B28721-5A42-036C-3710-C7AE0952167E";
 createNode renderLayerManager -n "renderLayerManager";
-	rename -uid "F275558B-C34C-83BA-D6A3-3196243ED040";
+	rename -uid "3D63BD46-E74D-3770-F68D-33ADE7AF90E5";
 createNode renderLayer -n "defaultRenderLayer";
 	rename -uid "029602C9-1546-B736-B15A-E786C1A212A0";
 	setAttr ".g" yes;
@@ -1794,19 +1917,19 @@ createNode polyCube -n "polyCube6";
 	setAttr ".cuv" 4;
 createNode nonLinear -n "squash1";
 	rename -uid "EDA449B2-6F47-8526-B058-999E2C107A93";
-	addAttr -uap -is true -ci true -k true -sn "fac" -ln "factor" -smn -10 -smx 10 
+	addAttr -uap -is true -ci true -k true -sn "fac" -ln "factor" -smn -10 -smx 10
 		-at "double";
-	addAttr -uap -is true -ci true -k true -sn "exp" -ln "expand" -dv 1 -min 0 -smn 
+	addAttr -uap -is true -ci true -k true -sn "exp" -ln "expand" -dv 1 -min 0 -smn
 		0 -smx 10 -at "double";
-	addAttr -uap -is true -ci true -k true -sn "mp" -ln "maxExpandPos" -dv 0.5 -min 
+	addAttr -uap -is true -ci true -k true -sn "mp" -ln "maxExpandPos" -dv 0.5 -min
 		0.01 -max 0.99 -at "double";
-	addAttr -uap -is true -ci true -k true -sn "ss" -ln "startSmoothness" -min 0 -max 
+	addAttr -uap -is true -ci true -k true -sn "ss" -ln "startSmoothness" -min 0 -max
 		1 -at "double";
-	addAttr -uap -is true -ci true -k true -sn "es" -ln "endSmoothness" -min 0 -max 
+	addAttr -uap -is true -ci true -k true -sn "es" -ln "endSmoothness" -min 0 -max
 		1 -at "double";
-	addAttr -uap -is true -ci true -k true -sn "lb" -ln "lowBound" -dv -1 -max 0 -smn 
+	addAttr -uap -is true -ci true -k true -sn "lb" -ln "lowBound" -dv -1 -max 0 -smn
 		-10 -smx 0 -at "double";
-	addAttr -uap -is true -ci true -k true -sn "hb" -ln "highBound" -dv 1 -min 0 -smn 
+	addAttr -uap -is true -ci true -k true -sn "hb" -ln "highBound" -dv 1 -min 0 -smn
 		0 -smx 10 -at "double";
 	setAttr -av -k on ".fac";
 	setAttr -av -k on ".exp";
@@ -2195,6 +2318,40 @@ createNode nodeGraphEditorInfo -n "MayaNodeEditorSavedTabsInfo";
 	setAttr ".tgi[0].ni[15].x" 970;
 	setAttr ".tgi[0].ni[15].y" 124.28571319580078;
 	setAttr ".tgi[0].ni[15].nvs" 18304;
+createNode blendShape -n "blendShape24";
+	rename -uid "EBC6EDE5-1246-8D3B-A35A-3CAB1861A90C";
+	addAttr -ci true -h true -sn "aal" -ln "attributeAliasList" -dt "attributeAlias";
+	setAttr -s 2 ".w[0:1]"  0 0;
+	setAttr -s 2 ".it[0].itg";
+	setAttr ".mlid" 0;
+	setAttr ".mlpr" 0;
+	setAttr -s 2 ".pndr[0:1]"  0 0;
+	setAttr ".tgdt[0].cid" -type "Int32Array" 2 0 1 ;
+	setAttr ".aal" -type "attributeAlias" {"tgt2","weight[0]","tgt","weight[1]"} ;
+createNode tweak -n "tweak24";
+	rename -uid "63A3A058-204D-ABFB-CED3-6EADB5CD6486";
+createNode objectSet -n "blendShape24Set";
+	rename -uid "550DA42C-2B4B-702C-110F-45B1C858ACB5";
+	setAttr ".ihi" 0;
+	setAttr ".vo" yes;
+createNode groupId -n "blendShape24GroupId";
+	rename -uid "9C361E36-E347-257A-70B8-E29E12CB73C7";
+	setAttr ".ihi" 0;
+createNode groupParts -n "blendShape24GroupParts";
+	rename -uid "AF772962-144B-E062-7EF3-2C84F895DD7F";
+	setAttr ".ihi" 0;
+	setAttr ".ic" -type "componentList" 1 "vtx[*]";
+createNode objectSet -n "tweakSet24";
+	rename -uid "F1C9A6A4-4E49-3D99-D36E-C7B0E798A751";
+	setAttr ".ihi" 0;
+	setAttr ".vo" yes;
+createNode groupId -n "groupId47";
+	rename -uid "9166DBD1-AF42-C1E1-ECF1-50862489D5AB";
+	setAttr ".ihi" 0;
+createNode groupParts -n "groupParts47";
+	rename -uid "13D28E11-814B-2310-5BBB-76AACB219837";
+	setAttr ".ihi" 0;
+	setAttr ".ic" -type "componentList" 1 "vtx[*]";
 select -ne :time1;
 	setAttr -av -k on ".cch";
 	setAttr -av -cb on ".ihi";
@@ -2264,7 +2421,7 @@ select -ne :initialShadingGroup;
 	setAttr -k on ".vwm";
 	setAttr -k on ".tpv";
 	setAttr -k on ".uit";
-	setAttr -s 31 ".dsm";
+	setAttr -s 34 ".dsm";
 	setAttr -cb on ".mwc";
 	setAttr -cb on ".an";
 	setAttr -cb on ".il";
@@ -2403,6 +2560,9 @@ select -ne :defaultResolution;
 	setAttr -av -k on ".zsl";
 	setAttr -av -k on ".isu";
 	setAttr -av -k on ".pdu";
+select -ne :defaultColorMgtGlobals;
+	setAttr ".cme" no;
+	setAttr ".cfp" -type "string" "/usr/local/apps/opencolorio_configs/1.1.6-a7/aces_1.1_re_1.0.6/config.ocio";
 select -ne :hardwareRenderGlobals;
 	setAttr -av -k on ".cch";
 	setAttr -cb on ".ihi";
@@ -2602,10 +2762,23 @@ connectAttr "joint3_rotateZ.o" "joint3.rz";
 connectAttr "joint3_scaleX.o" "joint3.sx";
 connectAttr "joint3_scaleY.o" "joint3.sy";
 connectAttr "joint3_scaleZ.o" "joint3.sz";
+connectAttr "blendShape24GroupId.id" "|cube_empty_blendshape_targets|base|baseShape.iog.og[0].gid"
+		;
+connectAttr "blendShape24Set.mwc" "|cube_empty_blendshape_targets|base|baseShape.iog.og[0].gco"
+		;
+connectAttr "groupId47.id" "|cube_empty_blendshape_targets|base|baseShape.iog.og[1].gid"
+		;
+connectAttr "tweakSet24.mwc" "|cube_empty_blendshape_targets|base|baseShape.iog.og[1].gco"
+		;
+connectAttr "blendShape24.og[0]" "|cube_empty_blendshape_targets|base|baseShape.i"
+		;
+connectAttr "tweak24.vl[0].vt[0]" "|cube_empty_blendshape_targets|base|baseShape.twl"
+		;
 relationship "link" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "link" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialShadingGroup.message" ":defaultLightSet.message";
 relationship "shadowLink" ":lightLinker1" ":initialParticleSE.message" ":defaultLightSet.message";
+connectAttr "blendShape24.mlpr" "shapeEditorManager.bspr[0]";
 connectAttr "blendShape9.mlpr" "shapeEditorManager.bspr[8]";
 connectAttr "blendShape10.mlpr" "shapeEditorManager.bspr[9]";
 connectAttr "blendShape12.mlpr" "shapeEditorManager.bspr[11]";
@@ -2882,10 +3055,10 @@ connectAttr "bindPose2.m[0]" "bindPose2.p[1]";
 connectAttr "bindPose2.m[1]" "bindPose2.p[2]";
 connectAttr "joint2.bps" "bindPose2.wm[1]";
 connectAttr "joint3.bps" "bindPose2.wm[2]";
+connectAttr "blendShape23_tgt.o" "blendShape23.w[0]";
 connectAttr "blendShape23GroupParts.og" "blendShape23.ip[0].ig";
 connectAttr "blendShape23GroupId.id" "blendShape23.ip[0].gi";
 connectAttr "shapeEditorManager.obsv[22]" "blendShape23.tgdt[0].dpvs";
-connectAttr "blendShape23_tgt.o" "blendShape23.w[0]";
 connectAttr "blendShape23GroupId.msg" "blendShape23Set.gn" -na;
 connectAttr "|basic_skinned_cube_blendshape_baked_target_anim|base|baseShape.iog.og[2]" "blendShape23Set.dsm"
 		 -na;
@@ -2914,6 +3087,28 @@ connectAttr "pCube2baseShape.msg" "MayaNodeEditorSavedTabsInfo.tgi[0].ni[14].dn"
 		;
 connectAttr "shapeEditorManager.msg" "MayaNodeEditorSavedTabsInfo.tgi[0].ni[15].dn"
 		;
+connectAttr "blendShape24GroupParts.og" "blendShape24.ip[0].ig";
+connectAttr "blendShape24GroupId.id" "blendShape24.ip[0].gi";
+connectAttr "shapeEditorManager.obsv[0]" "blendShape24.tgdt[0].dpvs";
+connectAttr "|cube_empty_blendshape_targets|tgt2|tgt2Shape.w" "blendShape24.it[0].itg[0].iti[6000].igt"
+		;
+connectAttr "|cube_empty_blendshape_targets|tgt|tgtShape.w" "blendShape24.it[0].itg[1].iti[6000].igt"
+		;
+connectAttr "groupParts47.og" "tweak24.ip[0].ig";
+connectAttr "groupId47.id" "tweak24.ip[0].gi";
+connectAttr "blendShape24GroupId.msg" "blendShape24Set.gn" -na;
+connectAttr "|cube_empty_blendshape_targets|base|baseShape.iog.og[0]" "blendShape24Set.dsm"
+		 -na;
+connectAttr "blendShape24.msg" "blendShape24Set.ub[0]";
+connectAttr "tweak24.og[0]" "blendShape24GroupParts.ig";
+connectAttr "blendShape24GroupId.id" "blendShape24GroupParts.gi";
+connectAttr "groupId47.msg" "tweakSet24.gn" -na;
+connectAttr "|cube_empty_blendshape_targets|base|baseShape.iog.og[1]" "tweakSet24.dsm"
+		 -na;
+connectAttr "tweak24.msg" "tweakSet24.ub[0]";
+connectAttr "|cube_empty_blendshape_targets|base|baseShapeOrig.w" "groupParts47.ig"
+		;
+connectAttr "groupId47.id" "groupParts47.gi";
 connectAttr "defaultRenderLayer.msg" ":defaultRenderingList1.r" -na;
 connectAttr "|basic_cube_1_blendshape_no_anim|base|baseShape.iog" ":initialShadingGroup.dsm"
 		 -na;
@@ -2972,5 +3167,11 @@ connectAttr "|basic_cube_4_blendshape_baked_targets|tgts|tgt2|tgt2Shape.iog" ":i
 connectAttr "|basic_cube_4_blendshape_baked_targets|tgts|tgt3|tgt3Shape.iog" ":initialShadingGroup.dsm"
 		 -na;
 connectAttr "|basic_skinned_cube_blendshape_baked_target_anim|base|baseShape.iog" ":initialShadingGroup.dsm"
+		 -na;
+connectAttr "|cube_empty_blendshape_targets|base|baseShape.iog" ":initialShadingGroup.dsm"
+		 -na;
+connectAttr "|cube_empty_blendshape_targets|tgt|tgtShape.iog" ":initialShadingGroup.dsm"
+		 -na;
+connectAttr "|cube_empty_blendshape_targets|tgt2|tgt2Shape.iog" ":initialShadingGroup.dsm"
 		 -na;
 // End of blendShapesExport.ma
