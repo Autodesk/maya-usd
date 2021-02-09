@@ -3,9 +3,9 @@ set(TARGET_NAME VP2_RENDER_DELEGATE_TEST)
 # Unit test scripts.
 set(TEST_SCRIPT_FILES "")
 
-if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND USD_VERSION_NUM GREATER_EQUAL 2005)
-    # The point instance selection tests requires UsdImaging API version 13 or
-    # later, which is only provided by core USD 20.05 or later.
+if (CMAKE_UFE_V2_FEATURES_AVAILABLE AND USD_VERSION_NUM GREATER_EQUAL 2008)
+    # The point instance selection tests requires UsdImaging API version 14 or
+    # later, which is only provided by core USD 20.08 or later.
     list(APPEND TEST_SCRIPT_FILES
         testVP2RenderDelegatePointInstanceSelection.py
         testVP2RenderDelegatePointInstancesPickMode.py
@@ -36,6 +36,10 @@ foreach(script ${TEST_SCRIPT_FILES})
             # Maya uses a very old version of GLEW, so we need support for
             # pre-loading a newer version from elsewhere.
             "LD_PRELOAD=${ADDITIONAL_LD_PRELOAD}"
+
+            # Fallback to old color management. We will have to investigate
+            # and introduce OCIOv2 compatible version of these tests.
+            "MAYA_COLOR_MANAGEMENT_SYNCOLOR=1"
     )
 
     # Assign a CTest label to these tests for easy filtering.
