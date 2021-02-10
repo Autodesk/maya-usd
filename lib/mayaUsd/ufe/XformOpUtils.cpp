@@ -48,10 +48,7 @@ GfMatrix4d computeLocalTransform(
 
 template <bool INCLUSIVE>
 GfMatrix4d
-computePrimLocalTransform(
-    const UsdPrim&          prim,
-    const UsdGeomXformOp&   op,
-    const UsdTimeCode&      time)
+computePrimLocalTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTimeCode& time)
 {
     UsdGeomXformable xformable(prim);
     bool             unused;
@@ -69,29 +66,25 @@ computePrimLocalTransform(
 template GfMatrix4d computeLocalTransform<true>(
     const std::vector<UsdGeomXformOp>&          ops,
     std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time
-);
+    const UsdTimeCode&                          time);
 template GfMatrix4d computeLocalTransform<false>(
     const std::vector<UsdGeomXformOp>&          ops,
     std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time
-);
+    const UsdTimeCode&                          time);
 
 template GfMatrix4d computePrimLocalTransform<true>(
-    const UsdPrim&          prim,
-    const UsdGeomXformOp&   op,
-    const UsdTimeCode&      time
-);
+    const UsdPrim&        prim,
+    const UsdGeomXformOp& op,
+    const UsdTimeCode&    time);
 template GfMatrix4d computePrimLocalTransform<false>(
-    const UsdPrim&          prim,
-    const UsdGeomXformOp&   op,
-    const UsdTimeCode&      time
-);
+    const UsdPrim&        prim,
+    const UsdGeomXformOp& op,
+    const UsdTimeCode&    time);
 
 std::vector<UsdGeomXformOp> getOrderedXformOps(const UsdPrim& prim)
 {
     UsdGeomXformable xformable(prim);
-    bool unused;
+    bool             unused;
     return xformable.GetOrderedXformOps(&unused);
 }
 

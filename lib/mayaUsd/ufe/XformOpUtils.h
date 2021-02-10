@@ -17,9 +17,9 @@
 
 #include <mayaUsd/mayaUsd.h>
 
-#include <pxr/usd/usdGeom/xformOp.h>
-#include <pxr/usd/usd/prim.h>
 #include <pxr/base/gf/matrix4d.h>
+#include <pxr/usd/usd/prim.h>
+#include <pxr/usd/usdGeom/xformOp.h>
 
 #include <vector>
 
@@ -32,18 +32,14 @@ template <bool INCLUSIVE>
 GfMatrix4d computeLocalTransform(
     const std::vector<UsdGeomXformOp>&          ops,
     std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time
-);
+    const UsdTimeCode&                          time);
 
 constexpr auto computeLocalInclusiveTransform = computeLocalTransform<true>;
 constexpr auto computeLocalExclusiveTransform = computeLocalTransform<false>;
 
 template <bool INCLUSIVE>
-GfMatrix4d computePrimLocalTransform(
-    const UsdPrim&          prim,
-    const UsdGeomXformOp&   op,
-    const UsdTimeCode&      time
-);
+GfMatrix4d
+computePrimLocalTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTimeCode& time);
 
 constexpr auto computePrimLocalInclusiveTransform = computePrimLocalTransform<true>;
 constexpr auto computePrimLocalExclusiveTransform = computePrimLocalTransform<false>;
