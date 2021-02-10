@@ -31,6 +31,22 @@ class UsdMaya_ReadJobWithSceneAssembly;
 class PxrMayaUSDImportCommand : public MayaUsd::MayaUSDImportCommand
 {
 public:
+    //
+    // Command flags are a mix of Arg Tokens defined in readJob.h
+    // and some that are defined by this command itself.
+    // All short forms of the Maya flag names are defined here.
+    // All long forms of flags defined by the command are also here.
+    // All long forms of flags defined by the Arg Tokens are queried
+    // for and set when creating the MSyntax object.
+    // Derived classes can use the short forms of the flags when
+    // calling Maya functions like argData.isFlagSet()
+    //
+    // The list of short forms of flags defined as Arg Tokens:
+    static constexpr auto kAssemblyRepFlag = "ar";
+
+    PXRUSDMAYA_API
+    static MSyntax createSyntax();
+
     PXRUSDMAYA_API
     static void* creator();
 
