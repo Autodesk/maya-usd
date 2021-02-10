@@ -264,6 +264,14 @@ MtohRenderOverride::MtohRenderOverride(const MtohRendererDescription& desc)
 
 MtohRenderOverride::~MtohRenderOverride()
 {
+#if WANT_UFE_BUILD
+    const Ufe::GlobalSelection::Ptr& ufeSelection = Ufe::GlobalSelection::get();
+    if (ufeSelection) {
+        ufeSelection->removeObserver(_ufeSelectionObserver);
+        _ufeSelectionObserver = nullptr;
+    }
+#endif // WANT_UFE_BUILD
+
     TF_DEBUG(HDMAYA_RENDEROVERRIDE_RESOURCES)
         .Msg(
             "MtohRenderOverride destroyed (%s - %s - %s)\n",

@@ -36,6 +36,10 @@
 #include <maya/MPxNode.h>
 #include <maya/MStatus.h>
 
+#if defined(WANT_UFE_BUILD)
+#include <mayaUsd/nodes/layerManager.h>
+#endif
+
 PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
@@ -102,6 +106,15 @@ MStatus MayaUsdProxyShapePlugin::initialize(MFnPlugin& plugin)
         UsdMayaPointBasedDeformerNode::initialize,
         MPxNode::kDeformerNode);
     CHECK_MSTATUS_AND_RETURN_IT(status);
+
+#if defined(WANT_UFE_BUILD)
+    status = plugin.registerNode(
+        MayaUsd::LayerManager::typeName,
+        MayaUsd::LayerManager::typeId,
+        MayaUsd::LayerManager::creator,
+        MayaUsd::LayerManager::initialize);
+    CHECK_MSTATUS(status);
+#endif
 
     // Hybrid Hydra / VP2 rendering uses a draw override to draw the proxy
     // shape.  The Pixar and MayaUsd plugins use the UsdMayaProxyDrawOverride,
@@ -191,6 +204,11 @@ MStatus MayaUsdProxyShapePlugin::finalize(MFnPlugin& plugin)
 
     status = plugin.deregisterNode(UsdMayaPointBasedDeformerNode::typeId);
     CHECK_MSTATUS(status);
+
+#if defined(WANT_UFE_BUILD)
+    status = plugin.deregisterNode(MayaUsd::LayerManager::typeId);
+    CHECK_MSTATUS(status);
+#endif
 
     status = plugin.deregisterNode(UsdMayaStageNode::typeId);
     CHECK_MSTATUS(status);

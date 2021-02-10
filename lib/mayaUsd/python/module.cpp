@@ -31,8 +31,9 @@ TF_WRAP_MODULE
     TF_WRAP(ReadUtil);
     TF_WRAP(RoundTripUtil);
     TF_WRAP(StageCache);
+    TF_WRAP(Tokens);
+    TF_WRAP(UsdUndoManager);
     TF_WRAP(UserTaggedAttribute);
     TF_WRAP(WriteUtil);
     TF_WRAP(XformStack);
-    TF_WRAP(UsdUndoManager);
 }

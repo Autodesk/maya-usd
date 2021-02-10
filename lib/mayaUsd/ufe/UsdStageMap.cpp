@@ -122,6 +122,17 @@ Ufe::Path UsdStageMap::path(UsdStageWeakPtr stage)
     return Ufe::Path();
 }
 
+UsdStageMap::StageSet UsdStageMap::allStages()
+{
+    rebuildIfDirty();
+
+    StageSet stages;
+    for (const auto& pair : fObjectToStage) {
+        stages.insert(pair.second);
+    }
+    return stages;
+}
+
 void UsdStageMap::setDirty()
 {
     fObjectToStage.clear();
