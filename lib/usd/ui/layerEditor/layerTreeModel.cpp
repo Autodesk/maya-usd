@@ -42,15 +42,6 @@ namespace {
 const QString LAYER_EDITOR_MIME_TYPE = QStringLiteral("text/plain");
 const QString LAYED_EDITOR_MIME_SEP = QStringLiteral(";");
 
-QStringList getLayerListAsQStringList(const UsdLayerEditor::LayerItemVector& layerItems)
-{
-    QStringList result;
-    for (auto item : layerItems) {
-        result.append(item->data(Qt::DisplayRole).value<QString>());
-    }
-    return result;
-}
-
 } // namespace
 
 namespace UsdLayerEditor {
