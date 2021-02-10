@@ -55,6 +55,7 @@
 #endif
 
 #if defined(WANT_UFE_BUILD)
+#include <mayaUsd/nodes/layerManager.h>
 #include <mayaUsd/ufe/Global.h>
 
 #ifdef UFE_V2_FEATURES_AVAILABLE
@@ -69,6 +70,10 @@
 // functionality.  PPT, 1-Dec-2020.
 #include <maya/MGlobal.h>
 #include <maya/MPxCommand.h>
+#endif
+
+#if defined(WANT_QT_BUILD)
+#include <mayaUsdUI/ui/batchSaveLayersUIDelegate.h>
 #endif
 
 #endif
@@ -315,6 +320,13 @@ MStatus initializePlugin(MObject obj)
         }
     }
 
+#if defined(WANT_UFE_BUILD)
+    MayaUsd::LayerManager::addSupportForNodeType(MAYAUSD_NS::ProxyShape::typeId);
+#if defined(WANT_QT_BUILD)
+    MayaUsd::LayerManager::SetBatchSaveDelegate(UsdLayerEditor::batchSaveLayersUIDelegate);
+#endif
+#endif
+
     UsdMayaSceneResetNotice::InstallListener();
     UsdMayaDiagnosticDelegate::InstallDelegate();
 
@@ -397,6 +409,13 @@ MStatus uninitializePlugin(MObject obj)
 
     status = MayaUsd::ufe::finalize();
     CHECK_MSTATUS(status);
+#endif
+
+#if defined(WANT_UFE_BUILD)
+    MayaUsd::LayerManager::removeSupportForNodeType(MAYAUSD_NS::ProxyShape::typeId);
+#if defined(WANT_QT_BUILD)
+    MayaUsd::LayerManager::SetBatchSaveDelegate(nullptr);
+#endif
 #endif
 
     UsdMayaSceneResetNotice::RemoveListener();
