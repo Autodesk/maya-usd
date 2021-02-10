@@ -44,6 +44,17 @@ std::string getMayaReferencedFileDir(const MObject& proxyShapeNode);
 MAYAUSD_CORE_PUBLIC
 std::string getMayaSceneFileDir();
 
+/*! \brief returns the Maya workspace file rule entry for scenes
+ */
+MAYAUSD_CORE_PUBLIC
+std::string getMayaWorkspaceScenesDir();
+
+/*! \brief returns a unique file name
+ */
+MAYAUSD_CORE_PUBLIC
+std::string
+getUniqueFileName(const std::string& dir, const std::string& basename, const std::string& ext);
+
 /*! \brief returns the aboluste path relative to the maya file
  */
 MAYAUSD_CORE_PUBLIC

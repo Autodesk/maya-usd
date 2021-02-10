@@ -146,15 +146,64 @@ public:
             _subPath = layer->GetSubLayerPaths()[_index];
             holdOnPathIfDirty(layer, _subPath);
 
-            // if the layer to remove is the current edit target,
+            // if the current edit target is the layer to remove or
+            // a sublayer of the layer to remove,
             // set the root layer as the current edit target
-            auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _subPath);
+            auto layerToRemove = SdfLayer::FindRelativeToLayer(layer, _subPath);
             auto stage = getStage();
             auto currentTarget = stage->GetEditTarget().GetLayer();
-            if (currentTarget && subLayerHandle
-                && currentTarget->GetIdentifier() == subLayerHandle->GetIdentifier()) {
-                _isEditTarget = true;
-                stage->SetEditTarget(stage->GetRootLayer());
+
+            // Helper function to find if a layer is in the
+            // hierarchy of another layer
+            //
+            // rootLayer: The root layer of the hierarchy
+            // layer: The layer to find
+            // ignore : Optional layer used has the root of a hierarchy that
+            //          we don't want to check in.
+            // ignoreSubPath : Optional subpath used whith ignore layer.
+            auto isInHierarchy = [](const SdfLayerHandle& rootLayer,
+                                    const SdfLayerHandle& layer,
+                                    const SdfLayerHandle* ignore = nullptr,
+                                    const std::string*    ignoreSubPath = nullptr) {
+                // Impl used for recursive call
+                auto isInHierarchyImpl = [](const SdfLayerHandle& rootLayer,
+                                            const SdfLayerHandle& layer,
+                                            const SdfLayerHandle* ignore,
+                                            const std::string*    ignoreSubPath,
+                                            auto&                 implRef) {
+                    if (!rootLayer || !layer)
+                        return false;
+
+                    if (rootLayer->GetIdentifier() == layer->GetIdentifier())
+                        return true;
+
+                    const auto subLayerPaths = rootLayer->GetSubLayerPaths();
+                    for (const auto& subLayerPath : subLayerPaths) {
+
+                        if (ignore && ignoreSubPath
+                            && (*ignore)->GetIdentifier() == rootLayer->GetIdentifier()
+                            && *ignoreSubPath == subLayerPath)
+                            continue;
+
+                        const auto subLayer
+                            = SdfLayer::FindRelativeToLayer(rootLayer, subLayerPath);
+                        if (implRef(subLayer, layer, ignore, ignoreSubPath, implRef))
+                            return true;
+                    }
+                    return false;
+                };
+                return isInHierarchyImpl(
+                    rootLayer, layer, ignore, ignoreSubPath, isInHierarchyImpl);
+            };
+
+            if (isInHierarchy(layerToRemove, currentTarget)) {
+                // The current edit layer is in the hierarchy of the layer to remove,
+                // now we need to be sure the edit target layer is not also a sublayer
+                // of another layer in the stage.
+                if (!isInHierarchy(stage->GetRootLayer(), currentTarget, &layer, &_subPath)) {
+                    _editTargetPath = currentTarget->GetIdentifier();
+                    stage->SetEditTarget(stage->GetRootLayer());
+                }
             }
 
             layer->RemoveSubLayerPath(_index);
@@ -181,9 +230,9 @@ public:
 
                 // if the removed layer was the edit target,
                 // set it back to the current edit target
-                if (_isEditTarget) {
+                if (!_editTargetPath.empty()) {
                     auto stage = getStage();
-                    auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _subPath);
+                    auto subLayerHandle = SdfLayer::FindRelativeToLayer(layer, _editTargetPath);
                     stage->SetEditTarget(subLayerHandle);
                 }
             } else {
@@ -210,7 +259,7 @@ public:
     }
 
 protected:
-    bool _isEditTarget = false;
+    std::string _editTargetPath;
 
     UsdStageWeakPtr getStage()
     {

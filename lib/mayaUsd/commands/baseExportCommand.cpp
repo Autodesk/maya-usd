@@ -151,11 +151,11 @@ MSyntax MayaUSDExportCommand::createSyntax()
     syntax.addFlag(
         kMelPerFrameCallbackFlag,
         UsdMayaJobExportArgsTokens->melPerFrameCallback.GetText(),
-        MSyntax::kNoArg);
+        MSyntax::kString);
     syntax.addFlag(
         kMelPostCallbackFlag,
         UsdMayaJobExportArgsTokens->melPostCallback.GetText(),
-        MSyntax::kNoArg);
+        MSyntax::kString);
     syntax.addFlag(
         kPythonPerFrameCallbackFlag,
         UsdMayaJobExportArgsTokens->pythonPerFrameCallback.GetText(),

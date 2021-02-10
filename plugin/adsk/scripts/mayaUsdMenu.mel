@@ -95,7 +95,7 @@ proc initRuntimeCommands() {
 
     if (!`runTimeCommand -exists mayaUsdCreateStageFromFileOptions`) {
         runTimeCommand -default true
-            -annotation "Create a USD Stage from an existing USD file options"
+            -annotation `getMayaUsdString("kMenuStageFromFileOptionsAnn")`
             -category   "Menu items.Maya USD"
             -command    "mayaUsd_createStageFromFileOptions"
             mayaUsdCreateStageFromFileOptions;
@@ -104,8 +104,8 @@ proc initRuntimeCommands() {
     if (`exists mayaUsdLayerEditorWindow`) {
         if (!`runTimeCommand -exists mayaUsdOpenUsdLayerEditor`) {
             runTimeCommand -default true
-                -label 		"USD Layer Editor"
-                -annotation "Organize and edit USD data in layers"
+                -label 		`getMayaUsdString("kMenuLayerEditor")`
+                -annotation `getMayaUsdString("kMenuLayerEditorAnn")`
                 -category   "Menu items.Common.Windows.General Editors"
                 -command 	"mayaUsdLayerEditorWindow mayaUsdLayerEditor"
                 -image		"USD_generic.png"
@@ -138,16 +138,18 @@ global proc mayaUsdMenu_createMenuCallback() {
         // find the insertion point, after the Scene Management separator
         $sceneManagementDivider = findDividerByLabel($gMainCreateMenu, uiRes("m_ModCreateMenu.kCreateSceneMgt"));
         if ($sceneManagementDivider != "") {
+            string $subMenuLabel = `getMayaUsdString("kMenuStageSubMenu")`;
+            string $subMenuAnn   = `getMayaUsdString("kMenuStageSubMenuAnn")`;
             $gMayaUsdCreateSubMenu = `menuItem -subMenu true -insertAfter $sceneManagementDivider -tearOff true
-                -label "Universal Scene Description (USD)" 
-                -annotation "Create a USD stage" 
+                -label $subMenuLabel
+                -annotation $subMenuAnn
                 -image "USD_generic.png"
                 -version $mayaVersion`;
             menuItem -runTimeCommand mayaUsdCreateStageWithNewLayer;
             menuItem -runTimeCommand mayaUsdCreateStageFromFile;
             menuItem -runTimeCommand mayaUsdCreateStageFromFileOptions -optionBox true;
         } else {
-            error "Could not create mayaUSD create menu";
+            error `getMayaUsdString("kMenuStageCreateMenuError")`;
         }
     }
 }
@@ -169,11 +171,12 @@ global proc mayaUsdMenu_windowMenuCallback() {
 global proc mayaUsdMenu_generalEditorsMenuCallback() {
     if (`exists mayaUsdLayerEditorWindow` && !(`menuItem -query -exists wmUsdLayerEditorMenuitem`))
     {
+        string $mayaVersion = getMayaMajorVersion();
         global string $gMayaUsdOpenUsdLayerEditorMenuItem;
         $gMayaUsdOpenUsdLayerEditorMenuItem = `menuItem
             -insertAfter wmNamespaceEditor 
             -enableCommandRepeat false
-            -version "2021"
+            -version $mayaVersion
             -runTimeCommand mayaUsdOpenUsdLayerEditor
             wmUsdLayerEditorMenuitem`;
     }
@@ -241,7 +244,7 @@ global proc mayaUsdMenu_layerEditorContextMenu(string $panelName) {
 
     if ($invalidLayer) {
         $cmd = makeCommand($panelName, "removeSubLayer");
-        menuItem -label "Remove" -c $cmd;
+        menuItem -label `getMayaUsdString("kMenuRemove")` -c $cmd;
         return; // that's all we can support on invalid layers
     }
 
