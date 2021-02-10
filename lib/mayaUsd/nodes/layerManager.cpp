@@ -47,7 +47,6 @@
 #include <maya/MItDag.h>
 #include <maya/MItDependencyNodes.h>
 #include <maya/MSceneMessage.h>
-
 #include <ufe/globalSelection.h>
 #include <ufe/observableSelection.h>
 #include <ufe/selectionNotification.h>

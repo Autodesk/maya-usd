@@ -603,5 +603,4 @@ bool SaveLayersDialog::saveLayerFilePathUI(std::string& out_filePath, std::strin
     return true;
 }
 
-
 } // namespace UsdLayerEditor
