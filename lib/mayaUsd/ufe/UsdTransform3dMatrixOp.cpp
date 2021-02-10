@@ -294,19 +294,19 @@ UsdTransform3dMatrixOp::create(const UsdSceneItem::Ptr& item, const UsdGeomXform
 
 Ufe::Vector3d UsdTransform3dMatrixOp::translation() const
 {
-    auto local = computePrimLocalInclusiveTransform(prim(), _op, getTime(path()));
+    auto local = computeLocalInclusiveTransform(prim(), _op, getTime(path()));
     return toUfe(local.ExtractTranslation());
 }
 
 Ufe::Vector3d UsdTransform3dMatrixOp::rotation() const
 {
-    auto local = computePrimLocalInclusiveTransform(prim(), _op, getTime(path()));
+    auto local = computeLocalInclusiveTransform(prim(), _op, getTime(path()));
     return toUfe(local.DecomposeRotation(GfVec3d::XAxis(), GfVec3d::YAxis(), GfVec3d::ZAxis()));
 }
 
 Ufe::Vector3d UsdTransform3dMatrixOp::scale() const
 {
-    auto       local = computePrimLocalInclusiveTransform(prim(), _op, getTime(path()));
+    auto       local = computeLocalInclusiveTransform(prim(), _op, getTime(path()));
     GfMatrix4d unusedR, unusedP, unusedU;
     GfVec3d    s, unusedT;
     if (!local.Factor(&unusedR, &s, &unusedU, &unusedT, &unusedP)) {
@@ -372,7 +372,7 @@ Ufe::Matrix4d UsdTransform3dMatrixOp::segmentInclusiveMatrix() const
     auto              time = getTime(path());
     UsdGeomXformCache xformCache(time);
     auto              parent = xformCache.GetParentToWorldTransform(prim());
-    auto              local = computePrimLocalInclusiveTransform(prim(), _op, time);
+    auto              local = computeLocalInclusiveTransform(prim(), _op, time);
     return toUfe(local * parent);
 }
 
@@ -382,7 +382,7 @@ Ufe::Matrix4d UsdTransform3dMatrixOp::segmentExclusiveMatrix() const
     auto              time = getTime(path());
     UsdGeomXformCache xformCache(time);
     auto              parent = xformCache.GetParentToWorldTransform(prim());
-    auto              local = computePrimLocalExclusiveTransform(prim(), _op, time);
+    auto              local = computeLocalExclusiveTransform(prim(), _op, time);
     return toUfe(local * parent);
 }
 

@@ -21,8 +21,9 @@
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
+namespace {
 template <bool INCLUSIVE>
-GfMatrix4d computeLocalTransform(
+GfMatrix4d computeLocalTransformWithIterator(
     const std::vector<UsdGeomXformOp>&          ops,
     std::vector<UsdGeomXformOp>::const_iterator endOp,
     const UsdTimeCode&                          time)
@@ -48,7 +49,7 @@ GfMatrix4d computeLocalTransform(
 
 template <bool INCLUSIVE>
 GfMatrix4d
-computePrimLocalTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTimeCode& time)
+computeLocalTransformWithOp(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTimeCode& time)
 {
     UsdGeomXformable xformable(prim);
     bool             unused;
@@ -60,26 +61,41 @@ computePrimLocalTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const U
         TF_FATAL_ERROR("Matrix op %s not found in transform ops.", op.GetOpName().GetText());
     }
 
-    return computeLocalTransform<INCLUSIVE>(ops, i, time);
+    return computeLocalTransformWithIterator<INCLUSIVE>(ops, i, time);
+}
+} // namespace
+
+GfMatrix4d computeLocalInclusiveTransform(
+    const std::vector<UsdGeomXformOp>&          ops,
+    std::vector<UsdGeomXformOp>::const_iterator endOp,
+    const UsdTimeCode&                          time)
+{
+    return computeLocalTransformWithIterator<true>(ops, endOp, time);
 }
 
-template GfMatrix4d computeLocalTransform<true>(
-    const std::vector<UsdGeomXformOp>&          ops,
-    std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time);
-template GfMatrix4d computeLocalTransform<false>(
-    const std::vector<UsdGeomXformOp>&          ops,
-    std::vector<UsdGeomXformOp>::const_iterator endOp,
-    const UsdTimeCode&                          time);
+GfMatrix4d computeLocalInclusiveTransform(
+    const UsdPrim&        prim,
+    const UsdGeomXformOp& op,
+    const UsdTimeCode&    time)
+{
+    return computeLocalTransformWithOp<true>(prim, op, time);
+}
 
-template GfMatrix4d computePrimLocalTransform<true>(
+GfMatrix4d computeLocalExclusiveTransform(
+    const std::vector<UsdGeomXformOp>&          ops,
+    std::vector<UsdGeomXformOp>::const_iterator endOp,
+    const UsdTimeCode&                          time)
+{
+    return computeLocalTransformWithIterator<false>(ops, endOp, time);
+}
+
+GfMatrix4d computeLocalExclusiveTransform(
     const UsdPrim&        prim,
     const UsdGeomXformOp& op,
-    const UsdTimeCode&    time);
-template GfMatrix4d computePrimLocalTransform<false>(
-    const UsdPrim&        prim,
-    const UsdGeomXformOp& op,
-    const UsdTimeCode&    time);
+    const UsdTimeCode&    time)
+{
+    return computeLocalTransformWithOp<false>(prim, op, time);
+}
 
 std::vector<UsdGeomXformOp> getOrderedXformOps(const UsdPrim& prim)
 {

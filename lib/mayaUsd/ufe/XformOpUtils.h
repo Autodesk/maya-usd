@@ -28,21 +28,25 @@ PXR_NAMESPACE_USING_DIRECTIVE
 namespace MAYAUSD_NS_DEF {
 namespace ufe {
 
-template <bool INCLUSIVE>
-GfMatrix4d computeLocalTransform(
+GfMatrix4d computeLocalInclusiveTransform(
     const std::vector<UsdGeomXformOp>&          ops,
     std::vector<UsdGeomXformOp>::const_iterator endOp,
     const UsdTimeCode&                          time);
 
-constexpr auto computeLocalInclusiveTransform = computeLocalTransform<true>;
-constexpr auto computeLocalExclusiveTransform = computeLocalTransform<false>;
+GfMatrix4d computeLocalInclusiveTransform(
+    const UsdPrim&        prim,
+    const UsdGeomXformOp& op,
+    const UsdTimeCode&    time);
 
-template <bool INCLUSIVE>
-GfMatrix4d
-computePrimLocalTransform(const UsdPrim& prim, const UsdGeomXformOp& op, const UsdTimeCode& time);
+GfMatrix4d computeLocalExclusiveTransform(
+    const std::vector<UsdGeomXformOp>&          ops,
+    std::vector<UsdGeomXformOp>::const_iterator endOp,
+    const UsdTimeCode&                          time);
 
-constexpr auto computePrimLocalInclusiveTransform = computePrimLocalTransform<true>;
-constexpr auto computePrimLocalExclusiveTransform = computePrimLocalTransform<false>;
+GfMatrix4d computeLocalExclusiveTransform(
+    const UsdPrim&        prim,
+    const UsdGeomXformOp& op,
+    const UsdTimeCode&    time);
 
 std::vector<UsdGeomXformOp> getOrderedXformOps(const UsdPrim& prim);
 
