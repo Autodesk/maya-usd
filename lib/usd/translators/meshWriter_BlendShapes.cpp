@@ -1080,7 +1080,10 @@ bool PxrUsdTranslators_MeshWriter::writeBlendShapeAnimation(const UsdTimeCode& u
     // NOTE: (yliangsiew) This should be the combined array of _all_ animated blendshape weight plugs
     // that line up with the array and indices of the blendshape names above.
     unsigned int numWeightPlugs = this->_writeJobCtx.mBlendShapesAnimWeightPlugs.length();
-    TF_VERIFY(numExistingBlendShapes == numWeightPlugs);
+    if (numExistingBlendShapes != numWeightPlugs) {
+        TF_RUNTIME_ERROR("There was a mismatch in the blendshapes determined and their corresponding weight plugs.");
+        return false;
+    }
     for (unsigned int i = 0; i < numWeightPlugs; ++i) {
         MPlug weightPlug = this->_writeJobCtx.mBlendShapesAnimWeightPlugs[i];
         usdWeights[i] = weightPlug.asFloat();
